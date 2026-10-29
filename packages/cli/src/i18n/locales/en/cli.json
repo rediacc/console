@@ -2107,7 +2107,11 @@
         "notUsable": "The local copy is not usable until a run completes.",
         "summaryRow": "{{repo}} from {{machine}}: {{status}} -> {{image}}",
         "summarySizes": "  size {{apparent}} (allocated {{allocated}}), received {{literal}}, matched {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  error: {{error}}"
+        "summaryError": "  error: {{error}}",
+        "optionStore": "Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN",
+        "optionAt": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)",
+        "storeDone": "{{repo}}: fetched snapshot {{snapshot}} -> {{image}} ({{bytes}} bytes fetched)",
+        "storeOfflineNote": "The copy is encrypted and cannot be opened on this OS; send it to a Linux machine with 'rdc backup upload'."
       },
       "upload": {
         "description": "Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.",
@@ -2809,7 +2813,21 @@
       "fromRepoUnknown": "Repository {{name}} (--from-repo) is not in this config.",
       "nameTaken": "A repository named {{name}} already exists. Pass --as <name> to upload under another name.",
       "localSha256Mismatch": "{{image}} no longer matches the sha256 recorded when it was downloaded (expected {{expected}}, got {{actual}}). Download it again, or pass --skip-verify to send it anyway.",
-      "registerFailed": "The image was placed on {{machine}} as {{guid}}, but registering it in the config failed: {{error}}. Find the unregistered image with: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "The image was placed on {{machine}} as {{guid}}, but registering it in the config failed: {{error}}. Find the unregistered image with: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at only applies with --store.",
+      "storeRefusesMachine": "--store reads the backup store directly and takes no -m <machine>.",
+      "storeRefusesCheckpoint": "--store takes no --checkpoint; it never touches a machine.",
+      "storeRefusesForks": "--store copies one repository and takes neither --all nor --include-forks.",
+      "storeNeedsOneRef": "--store needs exactly one repository name.",
+      "storeLineageNotFound": "The backup store has no such repository for this token's team.",
+      "storeRateLimited": "The restore-session limit for this token is reached; try again later.",
+      "storeRetentionExpired": "The retention period of this backup has expired; its data can no longer be restored.",
+      "storeTeamScope": "A restore session needs an API token that belongs to a team; this token has none.",
+      "storeRole": "A restore session needs a token created by a current organization owner or admin.",
+      "storeNoScope": "The account refused the restore session. --store needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN (a CLI login never carries backup:restore); create one on the portal's API Tokens page.",
+      "storeFetchFailed": "The fetch failed: {{reason}}",
+      "storeResumeAt": "The partial copy at {{partial}} is kept; running the same command again resumes from it.",
+      "storeNoLuksHeader": "{{image}} does not start with a LUKS header, so it is not a repository image. Remove it and run the download again."
     },
     "tofu": {
       "notInstalled": "OpenTofu is not installed. Install it with: rdc tools install tofu",

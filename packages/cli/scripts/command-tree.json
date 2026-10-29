@@ -1873,6 +1873,18 @@
               "descriptionKey": "commands.backup.download.optionSkipSpaceCheck",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--store",
+              "descriptionKey": "commands.backup.download.optionStore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--at <time|snapshot>",
+              "descriptionKey": "commands.backup.download.optionAt",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [

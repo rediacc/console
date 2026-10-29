@@ -317,7 +317,11 @@
         "notUsable": "La copie locale n'est pas utilisable tant qu'une exécution n'est pas terminée.",
         "summaryRow": "{{repo}} depuis {{machine}} : {{status}} -> {{image}}",
         "summarySizes": "  taille {{apparent}} (allouée {{allocated}}), reçu {{literal}}, identique {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  erreur : {{error}}"
+        "summaryError": "  erreur : {{error}}",
+        "optionStore": "Reconstruit l'image chiffrée directement depuis le magasin de sauvegardes, sans machine. Requiert un jeton d'API avec la portée backup:read + backup:restore dans REDIACC_TOKEN",
+        "optionAt": "Avec --store, l'instantané à récupérer : une date (ISO 8601) ou un id d'instantané (par défaut, le plus récent)",
+        "storeDone": "{{repo}} : instantané {{snapshot}} récupéré -> {{image}} ({{bytes}} octets téléchargés)",
+        "storeOfflineNote": "La copie est chiffrée et ne peut pas être ouverte sur ce système ; elle s'envoie vers une machine Linux avec 'rdc backup upload'."
       },
       "upload": {
         "description": "Envoie à une machine une image de dépôt locale, créée par 'rdc backup download', et l'enregistre comme nouveau dépôt. Le transfert reprend après une interruption, et la machine vérifie le sha256 et l'en-tête LUKS avant de placer l'image.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "Le dépôt {{name}} (--from-repo) n'est pas dans cette configuration.",
       "nameTaken": "Un dépôt nommé {{name}} existe déjà. Passez --as <name> pour envoyer sous un autre nom.",
       "localSha256Mismatch": "{{image}} ne correspond plus au sha256 enregistré lors du téléchargement (attendu {{expected}}, obtenu {{actual}}). Téléchargez-la à nouveau, ou passez --skip-verify pour l'envoyer quand même.",
-      "registerFailed": "L'image a été placée sur {{machine}} sous {{guid}}, mais son enregistrement dans la configuration a échoué : {{error}}. Retrouvez l'image non enregistrée avec : rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "L'image a été placée sur {{machine}} sous {{guid}}, mais son enregistrement dans la configuration a échoué : {{error}}. Retrouvez l'image non enregistrée avec : rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at ne s'applique qu'avec --store.",
+      "storeRefusesMachine": "--store lit directement le magasin de sauvegardes et n'accepte pas -m <machine>.",
+      "storeRefusesCheckpoint": "--store n'accepte pas --checkpoint, car aucune machine n'est sollicitée.",
+      "storeRefusesForks": "--store copie un seul dépôt et n'accepte ni --all ni --include-forks.",
+      "storeNeedsOneRef": "--store exige exactement un nom de dépôt.",
+      "storeLineageNotFound": "Le magasin de sauvegardes ne contient pas ce dépôt pour l'équipe de ce jeton.",
+      "storeRateLimited": "La limite de sessions de restauration de ce jeton est atteinte ; réessayer plus tard.",
+      "storeRetentionExpired": "La durée de rétention de cette sauvegarde est écoulée ; ses données ne sont plus restaurables.",
+      "storeTeamScope": "Une session de restauration exige un jeton d'API rattaché à une équipe ; ce jeton n'en a pas.",
+      "storeRole": "Une session de restauration exige un jeton créé par un propriétaire ou un administrateur actuel de l'organisation.",
+      "storeNoScope": "Le compte a refusé la session de restauration. --store exige un jeton d'API avec la portée backup:read + backup:restore dans REDIACC_TOKEN (une connexion CLI ne l'inclut jamais) ; il se crée sur la page API Tokens du portail.",
+      "storeFetchFailed": "La récupération a échoué : {{reason}}",
+      "storeResumeAt": "La copie partielle dans {{partial}} est conservée ; relancer la même commande la reprend.",
+      "storeNoLuksHeader": "{{image}} ne commence pas par un en-tête LUKS : ce n'est pas une image de dépôt. La supprimer puis relancer le téléchargement."
     },
     "tofu": {
       "notInstalled": "OpenTofu n'est pas installé. Installez-le avec : rdc tools install tofu",

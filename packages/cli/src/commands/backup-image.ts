@@ -8,9 +8,11 @@
  * detachable, MCP-excluded.
  */
 
+import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { resolve as resolvePath } from 'node:path';
+import { open } from 'node:fs/promises';
+import { join, resolve as resolvePath } from 'node:path';
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
@@ -23,6 +25,11 @@ import {
 } from '../remote/ssh/index.js';
 import { assertRsyncCapable, runImageRsync } from '../remote/sync/image-rsync.js';
 import { getRsyncSSHCommand } from '../remote/sync/rsync.js';
+import { accountServerFetch } from '../services/account/account-client.js';
+import {
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+} from '../services/account/subscription-auth.js';
 import { bandwidthToBytesPerSecond } from '../services/backup/backup-strategy-validate.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
@@ -35,6 +42,12 @@ import {
   startExportSession,
   startImportSession,
 } from '../services/backup-image/session.js';
+import {
+  type RenetRun,
+  type RestoreSession,
+  runStoreFetch,
+  type StoreFetchDeps,
+} from '../services/backup-image/store-fetch.js';
 import {
   DEFAULT_RETRIES,
   type DownloadDeps,
@@ -50,6 +63,7 @@ import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
 import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
+import { opsExecutorService } from '../services/executor/ops-executor.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { REMOTE_RENET_PATH } from '../services/renet/renet-provisioner.js';
 import { ERROR_CODES } from '../types/errors.js';
@@ -59,7 +73,8 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
-import { resolveRepoRef } from '../utils/repo-target.js';
+import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveLineage } from './backup-storage-browse.js';
 import { postPushDeploy } from './repo-backup.js';
 
 export { runDownload, runUpload };
@@ -418,6 +433,76 @@ async function realUploadDeps(
   };
 }
 
+function assertStoreSelection(refs: string[], options: DownloadCliOptions): void {
+  if (options.machine) throw new ValidationError(t('errors.backupImage.storeRefusesMachine'));
+  if (options.checkpoint) throw new ValidationError(t('errors.backupImage.storeRefusesCheckpoint'));
+  if (options.includeForks || options.all) {
+    throw new ValidationError(t('errors.backupImage.storeRefusesForks'));
+  }
+  if (refs.length !== 1) throw new ValidationError(t('errors.backupImage.storeNeedsOneRef'));
+}
+
+function realStoreFetchDeps(): StoreFetchDeps {
+  return {
+    resolveLineage,
+    resolveSnapshot: async (lineage, at) => {
+      const { resolveSnapshotAt } = await import('./backup.js');
+      return resolveSnapshotAt(lineage, at);
+    },
+    mintSession: (lineageGuid) =>
+      accountServerFetch<RestoreSession>('/account/api/v1/backups/restore-session', {
+        method: 'POST',
+        body: { lineageGuid },
+      }),
+    apiBase: () => {
+      const state = getSubscriptionTokenState();
+      const server = state.kind === 'ready' ? state.serverUrl : getSubscriptionServerUrl();
+      return `${server}/account/api/v1/backups`;
+    },
+    renetPath: () => opsExecutorService.getRenetPath(),
+    runRenet: spawnRenetWithStdin,
+    readHead: async (file, length) => {
+      const handle = await open(file, 'r');
+      try {
+        const buf = Buffer.alloc(length);
+        const { bytesRead } = await handle.read(buf, 0, length, 0);
+        return buf.subarray(0, bytesRead);
+      } finally {
+        await handle.close();
+      }
+    },
+    now: () => new Date(),
+  };
+}
+
+/** Runs renet with the session on stdin (never argv) and collects its output. */
+function spawnRenetWithStdin(
+  renet: string,
+  args: string[],
+  stdin: string,
+  signal?: AbortSignal
+): Promise<RenetRun> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(renet, args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      signal,
+      windowsHide: true,
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d: Buffer) => {
+      stdout += d.toString();
+    });
+    child.stderr.on('data', (d: Buffer) => {
+      stderr = (stderr + d.toString()).slice(-STDERR_TAIL);
+    });
+    child.on('error', reject);
+    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
+    child.stdin.on('error', () => undefined);
+    child.stdin.end(stdin);
+  });
+}
+
 interface DownloadCliOptions {
   to: string;
   all?: boolean;
@@ -428,6 +513,8 @@ interface DownloadCliOptions {
   retries?: string;
   skipVerify?: boolean;
   skipSpaceCheck?: boolean;
+  store?: boolean;
+  at?: string;
 }
 
 /** Repositories by name, or `--all -m <machine>`; never both, never neither. */
@@ -440,6 +527,30 @@ function assertDownloadSelection(refs: string[], options: DownloadCliOptions): v
   }
   if (!options.all && refs.length === 0) {
     throw new ValidationError(t('errors.backupImage.refsRequired'));
+  }
+}
+
+/** The --store branch: no machine, so the machine-path options are refused by name. */
+async function runStoreDownloadCommand(refs: string[], options: DownloadCliOptions): Promise<void> {
+  assertStoreSelection(refs, options);
+  const json = getOutputFormat() === 'json';
+  const { name, tag, repoKey } = await resolveRepoRefLocal(refs[0]);
+  const dest = join(resolvePath(options.to), `${name}.${tag}.img`);
+  const result = await withInterrupt((signal) =>
+    runStoreFetch({ ref: repoKey, dest, at: options.at, signal }, realStoreFetchDeps())
+  );
+  const { record } = result;
+  if (json) {
+    writeStdout(
+      `${JSON.stringify({ status: record.status, image: dest, snapshotId: result.snapshotId, bytesFetched: record.bytesFetched ?? 0 })}\n`
+    );
+    return;
+  }
+  writeStdout(
+    `${t('commands.backup.download.storeDone', { repo: repoKey, snapshot: result.snapshotId, image: dest, bytes: String(record.bytesFetched ?? 0) })}\n`
+  );
+  if (process.platform !== 'linux') {
+    writeStdout(`${t('commands.backup.download.storeOfflineNote')}\n`);
   }
 }
 
@@ -457,8 +568,15 @@ function registerDownload(backup: Command): void {
     .option('--retries <n>', t('commands.backup.download.optionRetries'))
     .option('--skip-verify', t('commands.backup.download.optionSkipVerify'))
     .option('--skip-space-check', t('commands.backup.download.optionSkipSpaceCheck'))
+    .option('--store', t('commands.backup.download.optionStore'))
+    .option('--at <time|snapshot>', t('commands.backup.download.optionAt'))
     .action(async (refs: string[], options: DownloadCliOptions) => {
       try {
+        if (options.store) {
+          await runStoreDownloadCommand(refs, options);
+          return;
+        }
+        if (options.at) throw new ValidationError(t('errors.backupImage.atNeedsStore'));
         assertDownloadSelection(refs, options);
         const json = getOutputFormat() === 'json';
         const { exitCode } = await withInterrupt((signal) =>

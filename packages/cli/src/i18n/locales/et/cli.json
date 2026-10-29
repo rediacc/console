@@ -317,7 +317,11 @@
         "notUsable": "Kohalik koopia pole kasutatav enne, kui käivitus lõpeb.",
         "summaryRow": "{{repo}} (masin {{machine}}): {{status}} -> {{image}}",
         "summarySizes": "  suurus {{apparent}} (eraldatud {{allocated}}), vastu võetud {{literal}}, kattuv {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  viga: {{error}}"
+        "summaryError": "  viga: {{error}}",
+        "optionStore": "Ehitab krüptitud kujutise otse varunduste hoidlast, ilma masinata. Vaja on API-tokenit skoobiga backup:read + backup:restore muutujas REDIACC_TOKEN",
+        "optionAt": "Koos --store'iga: hangitav hetktõmmis, kellaaeg (ISO 8601) või hetktõmmise id (vaikimisi uusim)",
+        "storeDone": "{{repo}}: hetktõmmis {{snapshot}} hangitud -> {{image}} ({{bytes}} baiti alla laaditud)",
+        "storeOfflineNote": "Koopia on krüptitud ja seda ei saa selles operatsioonisüsteemis avada; selle saab Linuxi masinasse saata käsuga 'rdc backup upload'."
       },
       "upload": {
         "description": "Saadab kohaliku hoidla tõmmise, mille tegi 'rdc backup download', masinasse ja registreerib selle uue hoidlana. Edastus jätkub pärast katkestust ning masin kontrollib sha256 ja LUKS-i päist enne tõmmise paigutamist.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "Hoidlat {{name}} (--from-repo) pole selles konfiguratsioonis.",
       "nameTaken": "Hoidla nimega {{name}} on juba olemas. Anna --as <name>, et laadida see üles teise nime all.",
       "localSha256Mismatch": "{{image}} ei klapi enam allalaadimisel salvestatud sha256-ga (oodati {{expected}}, saadi {{actual}}). Laadi see uuesti alla või anna --skip-verify, et see siiski saata.",
-      "registerFailed": "Tõmmis paigutati masinasse {{machine}} kui {{guid}}, kuid selle registreerimine konfiguratsioonis ebaõnnestus: {{error}}. Registreerimata tõmmise leiad käsuga: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "Tõmmis paigutati masinasse {{machine}} kui {{guid}}, kuid selle registreerimine konfiguratsioonis ebaõnnestus: {{error}}. Registreerimata tõmmise leiad käsuga: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at kehtib ainult koos --store'iga.",
+      "storeRefusesMachine": "--store loeb otse varunduste hoidlast ega võta valikut -m <machine>.",
+      "storeRefusesCheckpoint": "--store ei võta valikut --checkpoint, sest see ei puuduta ühtegi masinat.",
+      "storeRefusesForks": "--store kopeerib ühe hoidla ega võta valikuid --all ega --include-forks.",
+      "storeNeedsOneRef": "--store nõuab täpselt ühte hoidla nime.",
+      "storeLineageNotFound": "Varunduste hoidlas pole selle tokeni meeskonnale sellist hoidlat.",
+      "storeRateLimited": "Selle tokeni taastamissessioonide piir on täis; proovida hiljem uuesti.",
+      "storeRetentionExpired": "Selle varunduse säilitusaeg on möödas; selle andmeid ei saa enam taastada.",
+      "storeTeamScope": "Taastamissessioon nõuab meeskonnaga seotud API-tokenit; sellel tokenil meeskonda pole.",
+      "storeRole": "Taastamissessioon nõuab tokenit, mille lõi organisatsiooni praegune omanik või administraator.",
+      "storeNoScope": "Konto lükkas taastamissessiooni tagasi. --store nõuab API-tokenit skoobiga backup:read + backup:restore muutujas REDIACC_TOKEN (CLI sisselogimine seda ei anna); selle saab luua portaali lehel API Tokens.",
+      "storeFetchFailed": "Hankimine ebaõnnestus: {{reason}}",
+      "storeResumeAt": "Osaline koopia asukohas {{partial}} säilitatakse; sama käsu uuesti käivitamine jätkab sealt.",
+      "storeNoLuksHeader": "{{image}} ei alga LUKS-päisega, seega pole see hoidla kujutis. Fail tuleb eemaldada ja allalaadimine kordada."
     },
     "tofu": {
       "notInstalled": "OpenTofu pole paigaldatud. Paigalda see käsuga: rdc tools install tofu",

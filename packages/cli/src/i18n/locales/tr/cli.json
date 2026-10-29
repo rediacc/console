@@ -317,7 +317,11 @@
         "notUsable": "Yerel kopya, bir çalıştırma tamamlanana kadar kullanılamaz.",
         "summaryRow": "{{repo}} ({{machine}}): {{status}} -> {{image}}",
         "summarySizes": "  boyut {{apparent}} (ayrılan {{allocated}}), alınan {{literal}}, eşleşen {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  hata: {{error}}"
+        "summaryError": "  hata: {{error}}",
+        "optionStore": "Şifreli imajı makine olmadan doğrudan yedek deposundan yeniden oluşturur. REDIACC_TOKEN içinde backup:read + backup:restore kapsamlı bir API belirteci gerekir",
+        "optionAt": "--store ile alınacak anlık görüntü: bir zaman (ISO 8601) veya anlık görüntü kimliği (varsayılan: en yenisi)",
+        "storeDone": "{{repo}}: {{snapshot}} anlık görüntüsü alındı -> {{image}} ({{bytes}} bayt indirildi)",
+        "storeOfflineNote": "Kopya şifrelidir ve bu işletim sisteminde açılamaz; 'rdc backup upload' ile bir Linux makinesine gönderilebilir."
       },
       "upload": {
         "description": "'rdc backup download' ile oluşturulmuş yerel bir depo imajını bir makineye gönderir ve yeni bir depo olarak kaydeder. Aktarım kesintiden sonra kaldığı yerden devam eder; makine imajı yerleştirmeden önce sha256 ve LUKS başlığını denetler.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "{{name}} deposu (--from-repo) bu yapılandırmada yok.",
       "nameTaken": "{{name}} adında bir depo zaten var. Başka bir adla yüklemek için --as <name> verin.",
       "localSha256Mismatch": "{{image}} artık indirilirken kaydedilen sha256 ile eşleşmiyor (beklenen {{expected}}, bulunan {{actual}}). İmajı yeniden indirin ya da yine de göndermek için --skip-verify verin.",
-      "registerFailed": "İmaj {{machine}} makinesine {{guid}} olarak yerleştirildi, ancak yapılandırmaya kaydı başarısız oldu: {{error}}. Kaydedilmemiş imajı şu komutla bulabilirsiniz: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "İmaj {{machine}} makinesine {{guid}} olarak yerleştirildi, ancak yapılandırmaya kaydı başarısız oldu: {{error}}. Kaydedilmemiş imajı şu komutla bulabilirsiniz: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at yalnızca --store ile birlikte geçerlidir.",
+      "storeRefusesMachine": "--store doğrudan yedek deposundan okur ve -m <machine> kabul etmez.",
+      "storeRefusesCheckpoint": "--store hiçbir makineye dokunmadığı için --checkpoint kabul etmez.",
+      "storeRefusesForks": "--store tek bir depo kopyalar; --all ve --include-forks kabul etmez.",
+      "storeNeedsOneRef": "--store tam olarak bir depo adı ister.",
+      "storeLineageNotFound": "Yedek deposunda bu belirtecin ekibi için böyle bir depo yok.",
+      "storeRateLimited": "Bu belirtecin geri yükleme oturumu sınırına ulaşıldı; sonra tekrar denenmeli.",
+      "storeRetentionExpired": "Bu yedeğin saklama süresi doldu; verileri artık geri yüklenemez.",
+      "storeTeamScope": "Geri yükleme oturumu için bir ekibe bağlı API belirteci gerekir; bu belirtecin ekibi yok.",
+      "storeRole": "Geri yükleme oturumu için şu anki bir kuruluş sahibi veya yöneticisinin oluşturduğu belirteç gerekir.",
+      "storeNoScope": "Hesap geri yükleme oturumunu reddetti. --store, REDIACC_TOKEN içinde backup:read + backup:restore kapsamlı bir API belirteci ister (CLI girişi bunu hiçbir zaman taşımaz); portalın API Tokens sayfasında oluşturulur.",
+      "storeFetchFailed": "Alma başarısız oldu: {{reason}}",
+      "storeResumeAt": "{{partial}} konumundaki kısmi kopya saklanır; aynı komut yeniden çalıştırılınca oradan devam eder.",
+      "storeNoLuksHeader": "{{image}} bir LUKS başlığıyla başlamıyor, yani bir depo imajı değil. Dosya silinip indirme yeniden yapılmalı."
     },
     "tofu": {
       "notInstalled": "OpenTofu kurulu değil. Şu komutla kurun: rdc tools install tofu",

@@ -317,7 +317,11 @@
         "notUsable": "La copia local no se puede usar hasta que una ejecución termine.",
         "summaryRow": "{{repo}} desde {{machine}}: {{status}} -> {{image}}",
         "summarySizes": "  tamaño {{apparent}} (asignado {{allocated}}), recibido {{literal}}, coincidente {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  fallo: {{error}}"
+        "summaryError": "  fallo: {{error}}",
+        "optionStore": "Reconstruye la imagen cifrada directamente desde el almacén de copias, sin máquina. Requiere un token de API con el ámbito backup:read + backup:restore en REDIACC_TOKEN",
+        "optionAt": "Con --store, la instantánea que se obtiene: una fecha (ISO 8601) o un id de instantánea (por defecto, la más reciente)",
+        "storeDone": "{{repo}}: instantánea {{snapshot}} obtenida -> {{image}} ({{bytes}} bytes descargados)",
+        "storeOfflineNote": "La copia está cifrada y no se puede abrir en este sistema operativo; se envía a una máquina Linux con 'rdc backup upload'."
       },
       "upload": {
         "description": "Envía a una máquina una imagen de repositorio local, creada con 'rdc backup download', y la registra como repositorio nuevo. La transferencia se reanuda tras una interrupción, y la máquina comprueba el sha256 y la cabecera LUKS antes de colocar la imagen.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "El repositorio {{name}} (--from-repo) no está en esta configuración.",
       "nameTaken": "Ya existe un repositorio llamado {{name}}. Pasa --as <name> para subirlo con otro nombre.",
       "localSha256Mismatch": "{{image}} ya no coincide con el sha256 registrado al descargarla (esperado {{expected}}, obtenido {{actual}}). Descárgala de nuevo, o pasa --skip-verify para enviarla igualmente.",
-      "registerFailed": "La imagen se colocó en {{machine}} como {{guid}}, pero falló su registro en la configuración: {{error}}. Encuentra la imagen sin registrar con: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "La imagen se colocó en {{machine}} como {{guid}}, pero falló su registro en la configuración: {{error}}. Encuentra la imagen sin registrar con: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at solo se aplica junto con --store.",
+      "storeRefusesMachine": "--store lee directamente del almacén de copias y no admite -m <machine>.",
+      "storeRefusesCheckpoint": "--store no admite --checkpoint, porque no toca ninguna máquina.",
+      "storeRefusesForks": "--store copia un único repositorio y no admite --all ni --include-forks.",
+      "storeNeedsOneRef": "--store requiere exactamente un nombre de repositorio.",
+      "storeLineageNotFound": "El almacén de copias no tiene ese repositorio para el equipo de este token.",
+      "storeRateLimited": "Se alcanzó el límite de sesiones de restauración de este token; se puede reintentar más tarde.",
+      "storeRetentionExpired": "El periodo de retención de esta copia ha vencido; sus datos ya no se pueden restaurar.",
+      "storeTeamScope": "Una sesión de restauración requiere un token de API de un equipo; este token no tiene ninguno.",
+      "storeRole": "Una sesión de restauración requiere un token creado por un propietario o administrador actual de la organización.",
+      "storeNoScope": "La cuenta rechazó la sesión de restauración. --store requiere un token de API con el ámbito backup:read + backup:restore en REDIACC_TOKEN (un inicio de sesión de la CLI nunca lo incluye); se crea en la página API Tokens del portal.",
+      "storeFetchFailed": "La descarga falló: {{reason}}",
+      "storeResumeAt": "La copia parcial en {{partial}} se conserva; al repetir el mismo comando se reanuda desde ahí.",
+      "storeNoLuksHeader": "{{image}} no empieza con una cabecera LUKS, así que no es una imagen de repositorio. Eliminarla y repetir la descarga."
     },
     "tofu": {
       "notInstalled": "OpenTofu no está instalado. Instálalo con: rdc tools install tofu",

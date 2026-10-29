@@ -9,7 +9,7 @@ List detached jobs on a machine, newest first
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (omit to list this config's pending job tickets)
 
 > MCP tool
 
@@ -19,7 +19,7 @@ Show a detached job's status
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 
 > MCP tool
 
@@ -29,7 +29,7 @@ Replay or follow a detached job's event log
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `-f, --follow`: Stream until the job finishes
 - `--since-line <n>`: Resume after this many lines (the count you already received)
 - `--debug`: Enable debug output
@@ -42,8 +42,19 @@ Cancel a running detached job
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `-y, --yes`: Skip confirmation prompt
+
+> MCP tool
+
+### rdc job wait <job-id>
+
+Resume following a job from its ticket, then acknowledge it and exit with the job's exit code
+
+**Options:**
+
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
+- `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
 
 > MCP tool
 
@@ -249,7 +260,7 @@ Add a cloud provider
 
 - `--provider <source>`: Known provider source (e.g., linode/linode, hetznercloud/hcloud)
 - `--source <source>`: Custom OpenTofu provider source (e.g., vultr/vultr)
-- `--token <token>`: API token for the cloud provider
+- `--token-env <var>`: Name of the environment variable holding the provider API token; the token itself never goes on the command line
 - `--region <region>`: Default region for new machines
 - `--type <type>`: Default instance type/size
 - `--image <image>`: Default OS image
@@ -393,6 +404,8 @@ Create or update a backup strategy
 - `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
 - `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
 - `--bwlimit <limit>`: Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., "6M", "500K")
+- `--read-bwlimit <limit>`: Read cap for this strategy's snapshots: same units as --bwlimit; none clears it
+- `--cpu-limit <percent>`: CPU ceiling for this strategy's snapshots: percent of all cores, 1-100 (default 50); none clears it
 - `--include <repos>`: Only back up these repos (comma-separated names)
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
 - `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
@@ -540,6 +553,9 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 - `--cold`: Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run
 - `--bwlimit <rate>`: Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--parallelism <n>`: Number of chunks uploaded at once (default 4)
+- `--read-bwlimit <rate>`: Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited
+- `--hash-parallelism <n>`: Cells hashed at once (default 1; 0 = one per CPU, up to 16)
+- `--cpu-limit <percent>`: CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -582,6 +598,17 @@ Delete one stored snapshot; its exclusive data is freed by the next garbage coll
 
 > MCP excluded: Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.
 
+### rdc backup reconcile [repo-ref]
+
+Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)
+
+**Options:**
+
+- `--dry-run`: Report the figures without changing the ledger
+- `--check`: Dry run that exits 1 when the ledger differs from the store
+
+> MCP tool
+
 ### rdc backup list [artifact-ref]
 
 List backup artifacts on a machine.
@@ -594,6 +621,44 @@ List backup artifacts on a machine.
 
 > MCP tool
 
+### rdc backup download [refs]
+
+Copy repository images from a machine to a local directory or an external drive. Each run takes a fresh snapshot held only while the session lives, updates the local copy in place by rsync delta, resumes after an interruption, and verifies the result by sha256.
+
+**Options:**
+
+- `--to <dir>`: Existing, writable directory that receives <machine>/<name>.<tag>.img (never created)
+- `--all`: Copy every grand repository placed on the machine named by -m
+- `-m, --machine <name>`: Machine name
+- `--include-forks`: With --all, also copy forks
+- `--bwlimit <rate>`: Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)
+- `--checkpoint`: Checkpoint and freeze the repository before the snapshot (hot backup)
+- `--retries <n>`: In-run retries after a network failure (default: 3)
+- `--skip-verify`: Skip the sha256 comparison after rsync; rsync's own checksum still runs
+- `--skip-space-check`: Warn instead of refusing when the target may not have enough free space
+- `--store`: Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN
+- `--at <time|snapshot>`: With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)
+
+> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+
+### rdc backup upload <image-file>
+
+Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.
+
+**Options:**
+
+- `--to <machine>`: Machine that receives the image
+- `--as <name>`: Name for the new repository (default: the image's repository name)
+- `--datastore <name>`: Place the image on this named datastore instead of the machine's default
+- `--from-repo <name>`: Config repository that supplies the credential and lineage when the state file is lost or names an unknown repository
+- `--bwlimit <rate>`: Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)
+- `--retries <n>`: In-run retries after a network failure (default: 3)
+- `--up`: Start the repository once it is registered
+- `--skip-verify`: Skip comparing the local image with the sha256 recorded when it was downloaded
+- `--debug`: Enable debug output
+
+> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+
 ### rdc backup restore <artifact-ref>
 
 Turn a backup artifact into a live repository. Placement is stated here.
@@ -605,6 +670,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
 - `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
+- `--no-seed`: Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)
 - `--path <file-or-dir>`: Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)
 - `--to <dir>`: Directory to place the restored path under (default: the machine's restores folder for the snapshot)
 - `--up`: Deploy the restored repository after the transfer
@@ -614,6 +680,17 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `--debug`: Enable debug output
 
 > MCP tool | agent: fork-only
+
+### rdc backup purge <repo-ref>
+
+Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.
+
+**Options:**
+
+- `--dry-run`: Show what would be done without making changes
+- `-y, --yes`: Skip confirmation prompt
+
+> agent: fork-only | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
 
 ### rdc cluster create <cluster>
 
@@ -1352,7 +1429,7 @@ Push repository to another machine. Storage destinations are retired; use `rdc b
 - `--provision <provider>`: Auto-provision target machine via cloud provider if it doesn't exist
 - `--checkpoint`: Create CRIU checkpoint before backup (captures process memory state for live migration)
 - `--force`: Force overwrite existing backup
-- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--bwlimit <limit>`: Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--delta-base <guid>`: Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
 - `--strategy <strategy>`: Block-delta strategy when using a delta base: auto, physical, or shared
 - `--debug`: Enable debug output
@@ -1370,7 +1447,7 @@ Pull repository from another machine. Storage sources are retired; use `rdc back
 - `--from-machine <machine>`: 
 - `--force`: Force overwrite existing repository
 - `--up`: After pull, mount and deploy repository on this machine
-- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--bwlimit <limit>`: Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--delta-base <guid>`: Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)
 - `--strategy <strategy>`: Block-delta strategy when using a delta base: auto, physical, or shared
 - `--debug`: Enable debug output
@@ -1386,7 +1463,7 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 
 - `--to <place>`: Destination machine or cluster
 - `--provision <provider>`: Auto-provision target via cloud provider (e.g., hetzner, linode)
-- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., 10M)
+- `--bwlimit <limit>`: Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--checkpoint`: CRIU live migration: capture and restore process memory state
 - `--delta-base <guid>`: Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)
 - `--strategy <strategy>`: Block-delta strategy for the cutover: auto, physical, or shared
@@ -1980,6 +2057,26 @@ Check VS Code installation and configuration
 **Options:**
 
 - `--insiders`: Use VS Code Insiders settings
+
+### rdc tools install <tool>
+
+Download the OpenTofu release pinned in this rdc build, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.
+
+**Options:**
+
+- `--force`: Reinstall even when the pinned version is already present
+
+> MCP excluded: Installs a local binary on the MCP host. Run it from the CLI.
+
+### rdc tools list
+
+List the provisioning engine this CLI would run (OpenTofu or Terraform) and every OpenTofu version in its tools directory, each with its version, where it came from, and its path.
+
+**Options:**
+
+- `--output <format>`: Output format (json)
+
+> MCP excluded: Lists local binaries on the MCP host. Run it from the CLI.
 
 ### rdc update
 

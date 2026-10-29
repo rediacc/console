@@ -317,7 +317,11 @@
         "notUsable": "لا يمكن استخدام النسخة المحلية قبل اكتمال أحد التشغيلات.",
         "summaryRow": "{{repo}} من {{machine}}: {{status}} -> {{image}}",
         "summarySizes": "  الحجم {{apparent}} (المخصص {{allocated}})، المستلم {{literal}}، المطابق {{matched}}، sha256 {{sha256}}",
-        "summaryError": "  خطأ: {{error}}"
+        "summaryError": "  خطأ: {{error}}",
+        "optionStore": "يعيد بناء الصورة المشفرة مباشرة من مخزن النسخ الاحتياطية دون أي جهاز. يتطلب رمز API بنطاق backup:read + backup:restore في REDIACC_TOKEN",
+        "optionAt": "مع --store: اللقطة المطلوب جلبها، وقت (ISO 8601) أو معرّف لقطة (الافتراضي: الأحدث)",
+        "storeDone": "{{repo}}: جُلبت اللقطة {{snapshot}} -> {{image}} (نُزّل {{bytes}} بايت)",
+        "storeOfflineNote": "النسخة مشفرة ولا يمكن فتحها على نظام التشغيل هذا؛ يمكن إرسالها إلى جهاز Linux بالأمر 'rdc backup upload'."
       },
       "upload": {
         "description": "يرسل صورة مستودع محلية، أنشأها 'rdc backup download'، إلى جهاز ويسجّلها كمستودع جديد. يُستأنف النقل بعد أي انقطاع، ويتحقق الجهاز من sha256 ومن ترويسة LUKS قبل وضع الصورة.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "المستودع {{name}} (--from-repo) غير موجود في هذا الإعداد.",
       "nameTaken": "يوجد بالفعل مستودع باسم {{name}}. مرّر --as <name> للرفع باسم آخر.",
       "localSha256Mismatch": "لم تعد {{image}} تطابق قيمة sha256 المسجّلة عند تنزيلها (المتوقع {{expected}}، الفعلي {{actual}}). نزّلها من جديد، أو مرّر --skip-verify لإرسالها على أي حال.",
-      "registerFailed": "وُضعت الصورة على {{machine}} باسم {{guid}}، لكن تسجيلها في الإعداد فشل: {{error}}. للعثور على الصورة غير المسجّلة استخدم: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "وُضعت الصورة على {{machine}} باسم {{guid}}، لكن تسجيلها في الإعداد فشل: {{error}}. للعثور على الصورة غير المسجّلة استخدم: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at يسري فقط مع --store.",
+      "storeRefusesMachine": "--store يقرأ مباشرة من مخزن النسخ الاحتياطية ولا يقبل -m <machine>.",
+      "storeRefusesCheckpoint": "--store لا يقبل --checkpoint لأنه لا يلمس أي جهاز.",
+      "storeRefusesForks": "--store ينسخ مستودعًا واحدًا ولا يقبل --all ولا --include-forks.",
+      "storeNeedsOneRef": "--store يتطلب اسم مستودع واحدًا بالضبط.",
+      "storeLineageNotFound": "لا يوجد هذا المستودع في مخزن النسخ الاحتياطية لفريق هذا الرمز.",
+      "storeRateLimited": "بلغ هذا الرمز حد جلسات الاستعادة؛ يمكن المحاولة لاحقًا.",
+      "storeRetentionExpired": "انتهت مدة الاحتفاظ بهذه النسخة الاحتياطية، ولم يعد ممكنًا استعادة بياناتها.",
+      "storeTeamScope": "تتطلب جلسة الاستعادة رمز API تابعًا لفريق؛ هذا الرمز لا فريق له.",
+      "storeRole": "تتطلب جلسة الاستعادة رمزًا أنشأه مالك المؤسسة الحالي أو مسؤولها.",
+      "storeNoScope": "رفض الحساب جلسة الاستعادة. يتطلب --store رمز API بنطاق backup:read + backup:restore في REDIACC_TOKEN (تسجيل الدخول عبر CLI لا يحمله أبدًا)؛ يُنشأ من صفحة API Tokens في البوابة.",
+      "storeFetchFailed": "فشل الجلب: {{reason}}",
+      "storeResumeAt": "النسخة الجزئية في {{partial}} محفوظة؛ تشغيل الأمر نفسه مجددًا يكمل منها.",
+      "storeNoLuksHeader": "{{image}} لا يبدأ برأس LUKS، لذا فهو ليس صورة مستودع. يُحذف الملف ويُعاد التنزيل."
     },
     "tofu": {
       "notInstalled": "OpenTofu غير مثبّت. ثبّته بالأمر: rdc tools install tofu",

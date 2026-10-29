@@ -293,6 +293,28 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.download.optionSkipSpaceCheck",
           "label": "Warn instead of refusing when the target may not have enough free space"
+        },
+        {
+          "flags": "--store",
+          "long": "store",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionStore",
+          "label": "Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN"
+        },
+        {
+          "flags": "--at <time|snapshot>",
+          "long": "at",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionAt",
+          "label": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)"
         }
       ],
       "positionals": [

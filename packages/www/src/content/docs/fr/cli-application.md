@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "c91b80f411edc734"
+sourceHash: "17c269cc15a5ad9c"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2799,6 +2799,8 @@ rdc backup download [refs...] [options]
 | `--retries <n>` | {{t:cli.commands.backup.download.optionRetries}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-verify` | {{t:cli.commands.backup.download.optionSkipVerify}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-space-check` | {{t:cli.commands.backup.download.optionSkipSpaceCheck}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--store` | {{t:cli.commands.backup.download.optionStore}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--at <time|snapshot>` | {{t:cli.commands.backup.download.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-backup-upload"></a>

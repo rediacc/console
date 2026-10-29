@@ -317,7 +317,11 @@
         "notUsable": "実行が完了するまで、ローカルのコピーは使用できません。",
         "summaryRow": "{{machine}} の {{repo}}: {{status}} -> {{image}}",
         "summarySizes": "  サイズ {{apparent}}（割り当て {{allocated}}）、受信 {{literal}}、一致 {{matched}}、sha256 {{sha256}}",
-        "summaryError": "  エラー: {{error}}"
+        "summaryError": "  エラー: {{error}}",
+        "optionStore": "マシンを使わず、バックアップストアから暗号化イメージを直接再構築します。REDIACC_TOKEN に backup:read + backup:restore スコープ付きの API トークンが必要です",
+        "optionAt": "--store と併用して取得するスナップショット。時刻 (ISO 8601) またはスナップショット ID (既定: 最新)",
+        "storeDone": "{{repo}}: スナップショット {{snapshot}} を取得しました -> {{image}} ({{bytes}} バイト取得)",
+        "storeOfflineNote": "このコピーは暗号化されており、この OS では開けません。'rdc backup upload' で Linux マシンへ送れます。"
       },
       "upload": {
         "description": "'rdc backup download' で作成したローカルのリポジトリイメージをマシンに送信し、新しいリポジトリとして登録します。転送は中断後に再開でき、マシン側でイメージを配置する前に sha256 と LUKS ヘッダーを確認します。",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "リポジトリ {{name}}（--from-repo）はこの設定にありません。",
       "nameTaken": "{{name}} という名前のリポジトリは既に存在します。別の名前でアップロードするには --as <name> を指定してください。",
       "localSha256Mismatch": "{{image}} がダウンロード時に記録した sha256 と一致しなくなりました（期待値 {{expected}}、実際 {{actual}}）。再ダウンロードするか、そのまま送信するには --skip-verify を指定してください。",
-      "registerFailed": "イメージは {{machine}} に {{guid}} として配置されましたが、設定への登録に失敗しました: {{error}}。未登録のイメージは次のコマンドで確認できます: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "イメージは {{machine}} に {{guid}} として配置されましたが、設定への登録に失敗しました: {{error}}。未登録のイメージは次のコマンドで確認できます: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at は --store と併用した場合のみ有効です。",
+      "storeRefusesMachine": "--store はバックアップストアから直接読み取るため、-m <machine> は指定できません。",
+      "storeRefusesCheckpoint": "--store はマシンに触れないため、--checkpoint は指定できません。",
+      "storeRefusesForks": "--store は 1 つのリポジトリをコピーします。--all と --include-forks は指定できません。",
+      "storeNeedsOneRef": "--store にはリポジトリ名をちょうど 1 つ指定してください。",
+      "storeLineageNotFound": "このトークンのチームには、バックアップストア内に該当するリポジトリがありません。",
+      "storeRateLimited": "このトークンのリストアセッション上限に達しました。しばらくしてから再試行してください。",
+      "storeRetentionExpired": "このバックアップの保持期間が過ぎており、データは復元できません。",
+      "storeTeamScope": "リストアセッションにはチームに属する API トークンが必要です。このトークンにはチームがありません。",
+      "storeRole": "リストアセッションには、現在の組織オーナーまたは管理者が作成したトークンが必要です。",
+      "storeNoScope": "アカウントがリストアセッションを拒否しました。--store には REDIACC_TOKEN に backup:read + backup:restore スコープ付きの API トークンが必要です (CLI ログインには付きません)。ポータルの API Tokens ページで作成できます。",
+      "storeFetchFailed": "取得に失敗しました: {{reason}}",
+      "storeResumeAt": "{{partial}} の途中までのコピーは残してあり、同じコマンドを再実行すると続きから再開します。",
+      "storeNoLuksHeader": "{{image}} は LUKS ヘッダーで始まっておらず、リポジトリイメージではありません。削除してからダウンロードをやり直してください。"
     },
     "tofu": {
       "notInstalled": "OpenTofuがインストールされていません。次のコマンドでインストールしてください: rdc tools install tofu",

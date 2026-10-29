@@ -317,7 +317,11 @@
         "notUsable": "运行完成之前，本地副本不可用。",
         "summaryRow": "来自 {{machine}} 的 {{repo}}：{{status}} -> {{image}}",
         "summarySizes": "  大小 {{apparent}}（已分配 {{allocated}}），已接收 {{literal}}，已匹配 {{matched}}，sha256 {{sha256}}",
-        "summaryError": "  错误：{{error}}"
+        "summaryError": "  错误：{{error}}",
+        "optionStore": "无需机器，直接从备份存储重建加密镜像。需要在 REDIACC_TOKEN 中提供带 backup:read + backup:restore 范围的 API 令牌",
+        "optionAt": "配合 --store 使用，指定要获取的快照：时间 (ISO 8601) 或快照 ID (默认：最新)",
+        "storeDone": "{{repo}}：已获取快照 {{snapshot}} -> {{image}} (已下载 {{bytes}} 字节)",
+        "storeOfflineNote": "该副本已加密，无法在此操作系统上打开；可用 'rdc backup upload' 发送到 Linux 机器。"
       },
       "upload": {
         "description": "将 'rdc backup download' 生成的本地仓库镜像发送到机器，并注册为新仓库。传输中断后可续传，机器会在放置镜像之前校验 sha256 和 LUKS 头。",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "仓库 {{name}}（--from-repo）不在此配置中。",
       "nameTaken": "已存在名为 {{name}} 的仓库。请传入 --as <name>，以其他名称上传。",
       "localSha256Mismatch": "{{image}} 与下载时记录的 sha256 不再一致（预期 {{expected}}，实际 {{actual}}）。请重新下载，或传入 --skip-verify 强制发送。",
-      "registerFailed": "镜像已作为 {{guid}} 放置到 {{machine}}，但在配置中注册失败：{{error}}。可用以下命令找到未注册的镜像：rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "镜像已作为 {{guid}} 放置到 {{machine}}，但在配置中注册失败：{{error}}。可用以下命令找到未注册的镜像：rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at 仅在配合 --store 时有效。",
+      "storeRefusesMachine": "--store 直接读取备份存储，不接受 -m <machine>。",
+      "storeRefusesCheckpoint": "--store 不接触任何机器，因此不接受 --checkpoint。",
+      "storeRefusesForks": "--store 只复制一个仓库，不接受 --all 和 --include-forks。",
+      "storeNeedsOneRef": "--store 需要且仅需要一个仓库名称。",
+      "storeLineageNotFound": "备份存储中没有属于此令牌所在团队的该仓库。",
+      "storeRateLimited": "此令牌的恢复会话次数已达上限，请稍后再试。",
+      "storeRetentionExpired": "此备份的保留期已过，数据无法再恢复。",
+      "storeTeamScope": "恢复会话需要属于某个团队的 API 令牌，此令牌没有团队。",
+      "storeRole": "恢复会话需要由当前组织所有者或管理员创建的令牌。",
+      "storeNoScope": "账户拒绝了恢复会话。--store 需要在 REDIACC_TOKEN 中提供带 backup:read + backup:restore 范围的 API 令牌 (CLI 登录从不带有该范围)；可在门户的 API Tokens 页面创建。",
+      "storeFetchFailed": "获取失败：{{reason}}",
+      "storeResumeAt": "位于 {{partial}} 的部分副本会保留，再次运行同一命令即可从中继续。",
+      "storeNoLuksHeader": "{{image}} 不以 LUKS 头开头，因此不是仓库镜像。请删除后重新下载。"
     },
     "tofu": {
       "notInstalled": "未安装 OpenTofu。请用以下命令安装：rdc tools install tofu",

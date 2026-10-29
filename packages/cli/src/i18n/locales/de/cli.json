@@ -317,7 +317,11 @@
         "notUsable": "Die lokale Kopie ist erst nach einem abgeschlossenen Lauf nutzbar.",
         "summaryRow": "{{repo}} von {{machine}}: {{status}} -> {{image}}",
         "summarySizes": "  Größe {{apparent}} (belegt {{allocated}}), empfangen {{literal}}, abgeglichen {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  Fehler: {{error}}"
+        "summaryError": "  Fehler: {{error}}",
+        "optionStore": "Das verschlüsselte Image direkt aus dem Backup-Speicher aufbauen, ohne Maschine. Benötigt ein API-Token mit dem Scope backup:read + backup:restore in REDIACC_TOKEN",
+        "optionAt": "Mit --store: der abzurufende Snapshot als Zeitpunkt (ISO 8601) oder Snapshot-ID (Standard: der neueste)",
+        "storeDone": "{{repo}}: Snapshot {{snapshot}} abgerufen -> {{image}} ({{bytes}} Bytes geladen)",
+        "storeOfflineNote": "Die Kopie ist verschlüsselt und lässt sich auf diesem Betriebssystem nicht öffnen; mit 'rdc backup upload' auf eine Linux-Maschine übertragen."
       },
       "upload": {
         "description": "Ein lokales Repository-Image, das 'rdc backup download' erstellt hat, an eine Maschine senden und als neues Repository registrieren. Die Übertragung wird nach einer Unterbrechung fortgesetzt, und die Maschine prüft sha256 und LUKS-Header, bevor das Image abgelegt wird.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "Das Repository {{name}} (--from-repo) ist nicht in dieser Konfiguration.",
       "nameTaken": "Ein Repository namens {{name}} existiert bereits. Geben Sie --as <name> an, um unter einem anderen Namen hochzuladen.",
       "localSha256Mismatch": "{{image}} stimmt nicht mehr mit dem beim Download gespeicherten sha256 überein (erwartet {{expected}}, erhalten {{actual}}). Laden Sie es erneut herunter oder geben Sie --skip-verify an, um es trotzdem zu senden.",
-      "registerFailed": "Das Image wurde auf {{machine}} als {{guid}} abgelegt, aber die Registrierung in der Konfiguration ist fehlgeschlagen: {{error}}. Das nicht registrierte Image finden Sie mit: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "Das Image wurde auf {{machine}} als {{guid}} abgelegt, aber die Registrierung in der Konfiguration ist fehlgeschlagen: {{error}}. Das nicht registrierte Image finden Sie mit: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at gilt nur zusammen mit --store.",
+      "storeRefusesMachine": "--store liest direkt aus dem Backup-Speicher und akzeptiert kein -m <machine>.",
+      "storeRefusesCheckpoint": "--store akzeptiert kein --checkpoint, da keine Maschine berührt wird.",
+      "storeRefusesForks": "--store kopiert genau ein Repository und akzeptiert weder --all noch --include-forks.",
+      "storeNeedsOneRef": "--store braucht genau einen Repository-Namen.",
+      "storeLineageNotFound": "Im Backup-Speicher gibt es für das Team dieses Tokens kein solches Repository.",
+      "storeRateLimited": "Das Limit für Restore-Sitzungen dieses Tokens ist erreicht; später erneut versuchen.",
+      "storeRetentionExpired": "Die Aufbewahrungsfrist dieses Backups ist abgelaufen; die Daten lassen sich nicht mehr wiederherstellen.",
+      "storeTeamScope": "Eine Restore-Sitzung braucht ein API-Token, das zu einem Team gehört; dieses Token hat keines.",
+      "storeRole": "Eine Restore-Sitzung braucht ein Token, das ein aktueller Organisationsinhaber oder Admin erstellt hat.",
+      "storeNoScope": "Das Konto hat die Restore-Sitzung abgelehnt. --store braucht ein API-Token mit dem Scope backup:read + backup:restore in REDIACC_TOKEN (eine CLI-Anmeldung hat ihn nie); es lässt sich auf der Portal-Seite API Tokens erstellen.",
+      "storeFetchFailed": "Der Abruf ist fehlgeschlagen: {{reason}}",
+      "storeResumeAt": "Die unvollständige Kopie unter {{partial}} bleibt erhalten; derselbe Befehl setzt sie fort.",
+      "storeNoLuksHeader": "{{image}} beginnt nicht mit einem LUKS-Header und ist daher kein Repository-Image. Datei entfernen und den Download wiederholen."
     },
     "tofu": {
       "notInstalled": "OpenTofu ist nicht installiert. Installieren mit: rdc tools install tofu",

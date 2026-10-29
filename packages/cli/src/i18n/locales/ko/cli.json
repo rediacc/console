@@ -317,7 +317,11 @@
         "notUsable": "실행이 완료되기 전에는 로컬 사본을 사용할 수 없습니다.",
         "summaryRow": "{{machine}}의 {{repo}}: {{status}} -> {{image}}",
         "summarySizes": "  크기 {{apparent}}(할당 {{allocated}}), 수신 {{literal}}, 일치 {{matched}}, sha256 {{sha256}}",
-        "summaryError": "  오류: {{error}}"
+        "summaryError": "  오류: {{error}}",
+        "optionStore": "머신 없이 백업 저장소에서 암호화된 이미지를 바로 재구성합니다. REDIACC_TOKEN에 backup:read + backup:restore 범위의 API 토큰이 필요합니다",
+        "optionAt": "--store와 함께 가져올 스냅샷: 시각(ISO 8601) 또는 스냅샷 ID (기본값: 최신)",
+        "storeDone": "{{repo}}: 스냅샷 {{snapshot}} 가져옴 -> {{image}} ({{bytes}}바이트 내려받음)",
+        "storeOfflineNote": "복사본은 암호화되어 있어 이 운영체제에서는 열 수 없습니다. 'rdc backup upload'로 Linux 머신에 보낼 수 있습니다."
       },
       "upload": {
         "description": "'rdc backup download'로 만든 로컬 저장소 이미지를 머신으로 보내 새 저장소로 등록합니다. 전송은 중단 후 이어서 진행할 수 있으며, 머신은 이미지를 배치하기 전에 sha256과 LUKS 헤더를 확인합니다.",
@@ -2829,7 +2833,21 @@
       "fromRepoUnknown": "저장소 {{name}}(--from-repo)이(가) 이 구성에 없습니다.",
       "nameTaken": "{{name}} 이름의 저장소가 이미 있습니다. 다른 이름으로 업로드하려면 --as <name>을 지정해 주세요.",
       "localSha256Mismatch": "{{image}}이(가) 다운로드 때 기록한 sha256과 더 이상 일치하지 않습니다(기대값 {{expected}}, 실제 {{actual}}). 다시 다운로드하거나, 그대로 보내려면 --skip-verify를 지정해 주세요.",
-      "registerFailed": "이미지는 {{machine}}에 {{guid}}(으)로 배치되었지만 구성에 등록하지 못했습니다: {{error}}. 등록되지 않은 이미지는 다음 명령으로 찾을 수 있습니다: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+      "registerFailed": "이미지는 {{machine}}에 {{guid}}(으)로 배치되었지만 구성에 등록하지 못했습니다: {{error}}. 등록되지 않은 이미지는 다음 명령으로 찾을 수 있습니다: rdc machine prune {{machine}} --orphaned-repos --dry-run",
+      "atNeedsStore": "--at은 --store와 함께 쓸 때만 적용됩니다.",
+      "storeRefusesMachine": "--store는 백업 저장소를 직접 읽으므로 -m <machine>을 받지 않습니다.",
+      "storeRefusesCheckpoint": "--store는 머신을 건드리지 않으므로 --checkpoint를 받지 않습니다.",
+      "storeRefusesForks": "--store는 저장소 하나만 복사하며 --all과 --include-forks를 받지 않습니다.",
+      "storeNeedsOneRef": "--store에는 저장소 이름이 정확히 하나 필요합니다.",
+      "storeLineageNotFound": "백업 저장소에 이 토큰의 팀에 해당하는 저장소가 없습니다.",
+      "storeRateLimited": "이 토큰의 복원 세션 한도에 도달했습니다. 나중에 다시 시도하세요.",
+      "storeRetentionExpired": "이 백업의 보존 기간이 만료되어 데이터를 더 이상 복원할 수 없습니다.",
+      "storeTeamScope": "복원 세션에는 팀에 속한 API 토큰이 필요합니다. 이 토큰에는 팀이 없습니다.",
+      "storeRole": "복원 세션에는 현재 조직 소유자 또는 관리자가 만든 토큰이 필요합니다.",
+      "storeNoScope": "계정이 복원 세션을 거부했습니다. --store에는 REDIACC_TOKEN에 backup:read + backup:restore 범위의 API 토큰이 필요합니다(CLI 로그인에는 포함되지 않음). 포털의 API Tokens 페이지에서 만들 수 있습니다.",
+      "storeFetchFailed": "가져오기에 실패했습니다: {{reason}}",
+      "storeResumeAt": "{{partial}}의 부분 복사본은 유지되며, 같은 명령을 다시 실행하면 이어서 진행합니다.",
+      "storeNoLuksHeader": "{{image}}이(가) LUKS 헤더로 시작하지 않아 저장소 이미지가 아닙니다. 삭제한 뒤 다운로드를 다시 실행하세요."
     },
     "tofu": {
       "notInstalled": "OpenTofu가 설치되어 있지 않습니다. 다음 명령으로 설치하세요: rdc tools install tofu",
