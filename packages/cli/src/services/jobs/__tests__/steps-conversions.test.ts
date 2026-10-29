@@ -111,13 +111,16 @@ describe('conversion steps', () => {
     expect(stale).toEqual([]);
   }, 60_000);
 
-  it('no planned step declares a secret-looking param', () => {
+  it('no planned step declares a secret-looking param name', () => {
+    const secretLike = /(pass|secret|token|key|credential)/i;
+    const offenders: string[] = [];
     for (const name of planned) {
-      const def = getStepDefinition(name);
-      for (const key of def?.params ?? []) {
+      for (const key of getStepDefinition(name)?.params ?? []) {
+        if (secretLike.test(key)) offenders.push(`${name}.${key}`);
         expect(() => planStep(name, { [key]: 'x' }), `${name}.${key}`).not.toThrow();
       }
     }
+    expect(offenders).toEqual([]);
   });
 });
 
@@ -198,13 +201,23 @@ describe('conversion step handlers', () => {
     const remove = vi
       .spyOn(configService, 'removeMachine')
       .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('Machine not found'));
+      .mockRejectedValueOnce(new Error('Machine "c1-agents-2" not found'));
 
     await (await resolveStepHandler('removeClusterMembers'))(
       ctx({ params: { cluster: 'c1', pool: 'agents', targetCount: 1, currentCount: 3 } })
     );
 
     expect(remove.mock.calls.map((c) => c[0])).toEqual(['c1-agents-3', 'c1-agents-2']);
+  });
+
+  it('removeClusterMembers rethrows a failure that is not the not-found case', async () => {
+    vi.spyOn(configService, 'removeMachine').mockRejectedValueOnce(new Error('disk full'));
+
+    await expect(
+      (await resolveStepHandler('removeClusterMembers'))(
+        ctx({ params: { cluster: 'c1', pool: 'agents', targetCount: 1, currentCount: 3 } })
+      )
+    ).rejects.toThrow('disk full');
   });
 
   it('printCapturedJson prints the job output as data', async () => {

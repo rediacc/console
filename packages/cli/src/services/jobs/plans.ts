@@ -59,6 +59,14 @@ export interface JobPlan {
   exception?: string;
   /** Why the plan names no `fn`, or what else the conversion box must know. */
   note?: string;
+  /** For a plan with no `fn`: the overlap.go name (a command kind) its `lock` is read from. */
+  lockFrom?: string;
+  /**
+   * For a plan with no `fn`: the renet function or kind it runs that overlap.go does not
+   * classify the way `lock` says (`overlap` is what overlap.go gives it today), so the gap is
+   * named, and a change in overlap.go fails the coverage test.
+   */
+  lockGap?: { runs: string; overlap: LockClass };
 }
 
 const NEW_KIND =
@@ -215,6 +223,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'repo canary remove': {
     form: 'single',
     lock: 'repo-exclusive',
+    lockGap: { runs: 'kube_delete', overlap: 'read' },
     timeout: '10m',
     box: 'J16',
     steps: ['forgetCanary'],
@@ -470,6 +479,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'backup schedule': {
     form: 'command-kind',
     lock: 'machine-exclusive',
+    lockGap: { runs: 'backup-unit', overlap: 'machine-shared' },
     timeout: '10m',
     box: 'J17',
     steps: ['seedStrategyRetention', 'warnIfConfigStorageUnenrolled'],
@@ -478,6 +488,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'backup status': {
     form: 'command-kind',
     lock: 'read',
+    lockFrom: 'backup-status',
     timeout: '10m',
     box: 'J17',
     steps: ['renderBackupStatus'],
@@ -522,6 +533,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'machine infra push': {
     form: 'compound',
     lock: 'machine-exclusive',
+    lockGap: { runs: 'infra-push', overlap: 'read' },
     timeout: '10m',
     box: 'J18',
     steps: ['ensureMachineDns'],
@@ -549,6 +561,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'machine restart-services': {
     form: 'command-kind',
     lock: 'machine-exclusive',
+    lockFrom: 'daemons-restart',
     timeout: '24h',
     box: 'J18',
     steps: ['renderRestartServices'],
@@ -732,6 +745,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'subscription refresh': {
     form: 'compound',
     lock: 'machine-exclusive',
+    lockGap: { runs: 'license-refresh', overlap: 'read' },
     timeout: '10m',
     box: 'J20',
     steps: ['renderSubscriptionRefresh'],
@@ -740,6 +754,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'subscription status': {
     form: 'command-kind',
     lock: 'read',
+    lockGap: { runs: 'license-status', overlap: 'read' },
     timeout: '10m',
     box: 'J20',
     steps: ['renderSubscriptionStatus'],

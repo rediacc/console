@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildJobPollArgv,
   createTerminalLedger,
@@ -117,6 +117,59 @@ describe('parseJobPollOutput', () => {
     expect(body.events[0]?.line).toBe(5);
     expect(body.events[0]?.event).toMatchObject({ type: 'truncated' });
     expect(body.nextLine).toBe(6);
+  });
+
+  it('numbers lines by their real position, a blank line still counts', () => {
+    const out = ['{"type":"a"}', '', '{"type":"b"}', trailer()].join('\n');
+    const body = parseJobPollOutput(out, { sinceLine: 10, maxLines: 500 });
+    expect(body.events.map((e) => e.line)).toEqual([10, 12]);
+    expect(body.nextLine).toBe(13);
+  });
+
+  it('throws JobPollParseError when the last line is the JSON literal null', () => {
+    expect(() => parseJobPollOutput('{"type":"a"}\nnull\n', { sinceLine: 0 })).toThrow(
+      JobPollParseError
+    );
+    expect(() => parseJobPollOutput('3\n', { sinceLine: 0 })).toThrow(JobPollParseError);
+  });
+
+  it('clamps a negative or non-finite sinceLine like the argv builder', () => {
+    const out = ['{"type":"a"}', trailer()].join('\n');
+    for (const bad of [-3, Number.NaN, Number.NEGATIVE_INFINITY]) {
+      const body = parseJobPollOutput(out, { sinceLine: bad });
+      expect(body.events[0]?.line).toBe(0);
+      expect(body.nextLine).toBe(1);
+      expect(buildJobPollArgv(ID, bad)).toContain('0');
+    }
+  });
+
+  it('measures the body size incrementally, not by re-serializing the whole body per line', () => {
+    const lines = Array.from({ length: 400 }, (_, i) => JSON.stringify({ type: 'log', n: i }));
+    const out = [...lines, trailer()].join('\n');
+    const spy = vi.spyOn(JSON, 'stringify');
+    let body: ReturnType<typeof parseJobPollOutput>;
+    try {
+      body = parseJobPollOutput(out, { sinceLine: 0, maxLines: 500 });
+    } finally {
+      spy.mockRestore();
+    }
+    const serialized = spy.mock.results.reduce(
+      (sum, r) => sum + (typeof r.value === 'string' ? r.value.length : 0),
+      0
+    );
+    expect(body.events).toHaveLength(400);
+    // Linear: about the size of the output itself, where a per-line full serialization is quadratic.
+    expect(serialized).toBeLessThan(out.length * 4);
+  });
+
+  it('keeps the exact byte cap with the incremental count', () => {
+    const big = JSON.stringify({ type: 'log', text: 'x'.repeat(30 * 1024) });
+    const out = [...Array.from({ length: 12 }, () => big), trailer()].join('\n');
+    const body = parseJobPollOutput(out, { sinceLine: 98, maxLines: 500 });
+    expect(Buffer.byteLength(JSON.stringify(body))).toBeLessThanOrEqual(MAX_BODY_BYTES);
+    expect(body.more).toBe(true);
+    const next = parseJobPollOutput([big, trailer()].join('\n'), { sinceLine: body.nextLine });
+    expect(next.events[0]?.line).toBe(body.nextLine);
   });
 
   it('throws when the status trailer is missing', () => {

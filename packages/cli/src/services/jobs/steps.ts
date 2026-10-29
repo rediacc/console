@@ -66,6 +66,17 @@ export interface PlannedStep {
 }
 
 const STEP_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+/** Drops one member record; only removeMachine's `Machine "<name>" not found` is benign, any other failure leaves the record behind and must surface. */
+async function removeMemberRecord(member: string): Promise<void> {
+  const { configService } = await import('../config/config-resources.js');
+  try {
+    await configService.removeMachine(member);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message !== `Machine "${member}" not found`) throw error;
+  }
+}
+
 const SECRET_KEY = /secret|vault|password|passwd|token|credential|env|private|key/i;
 
 export class StepHandlerUnboundError extends Error {
@@ -624,21 +635,15 @@ const CONVERSION_STEPS: StepDefinition[] = [
     name: 'removeClusterMembers',
     on: 'success',
     params: ['cluster', 'pool', 'targetCount', 'currentCount'],
-    load: async () => {
-      const { configService } = await import('../config/config-resources.js');
-      return async (ctx) => {
+    load: () =>
+      Promise.resolve(async (ctx: StepContext) => {
         const cluster = str(ctx.params, 'cluster');
         const pool = str(ctx.params, 'pool');
         const target = optNum(ctx.params, 'targetCount') ?? 0;
         for (let i = optNum(ctx.params, 'currentCount') ?? 0; i > target; i--) {
-          try {
-            await configService.removeMachine(`${cluster}-${pool}-${i}`);
-          } catch {
-            // Member record may not exist; ignore.
-          }
+          await removeMemberRecord(`${cluster}-${pool}-${i}`);
         }
-      };
-    },
+      }),
   },
   {
     // The audit record the cluster verbs write on success. The duration runs from the plan's start to the job's finish.

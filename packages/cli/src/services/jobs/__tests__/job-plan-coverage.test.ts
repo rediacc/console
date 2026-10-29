@@ -89,9 +89,29 @@ const machinePlane = CLI_CONTRACT.commands
   .map((c) => c.pathKey)
   .sort(byText);
 
+/** A plan with no `fn` is checked through the name it reads its lock from, or the gap it declares. */
+function fnlessMismatches(cmd: string, plan: JobPlan): string[] {
+  const { lockFrom, lockGap } = plan;
+  if (lockFrom && lockGap) return [`${cmd}: names both lockFrom and lockGap`];
+  if (lockFrom) {
+    const listed = overlap.byName.get(lockFrom);
+    if (!listed) return [`${cmd}: lockFrom ${lockFrom} is not in overlap.go`];
+    return listed === plan.lock ? [] : [`${cmd}: ${plan.lock} != ${listed} (${lockFrom})`];
+  }
+  if (lockGap) {
+    const actual = overlap.classForJob(lockGap.runs, 'guid');
+    return actual === lockGap.overlap
+      ? []
+      : [
+          `${cmd}: overlap.go gives ${lockGap.runs} ${actual}, the declared gap says ${lockGap.overlap}`,
+        ];
+  }
+  return [`${cmd}: no fn, so it needs lockFrom or lockGap`];
+}
+
 /** How a plan's declared classes differ from overlap.go's, for the job with and without a repository. */
 function classMismatches(cmd: string, plan: JobPlan): string[] {
-  if (!plan.fn) return [];
+  if (!plan.fn) return fnlessMismatches(cmd, plan);
   const found: string[] = [];
   const repoScoped = overlap.classForJob(plan.fn, 'guid');
   if (plan.lock !== repoScoped) found.push(`${cmd}: ${plan.lock} != ${repoScoped}`);
@@ -161,6 +181,33 @@ describe('JOB_PLANS coverage', () => {
       if (plan.fn) continue;
       expect(plan.note?.trim().length ?? 0, `${cmd} has no fn and no note`).toBeGreaterThan(10);
     }
+  });
+
+  it('a plan with no fn is checked against overlap.go through lockFrom or a named lockGap', () => {
+    const fnless = Object.entries(JOB_PLANS).filter(([, plan]) => !plan.fn);
+    expect(fnless.map(([cmd]) => cmd)).toContain('repo canary remove');
+    expect(fnless.flatMap(([cmd, plan]) => classMismatches(cmd, plan))).toEqual([]);
+  });
+
+  it('a wrong lock on a plan with no fn is caught', () => {
+    const wrongFrom: JobPlan = {
+      form: 'command-kind',
+      lock: 'repo-exclusive',
+      timeout: '10m',
+      box: 'J17',
+      lockFrom: 'backup-status',
+    };
+    expect(classMismatches('x', wrongFrom)).toHaveLength(1);
+    const staleGap: JobPlan = {
+      form: 'single',
+      lock: 'repo-exclusive',
+      timeout: '10m',
+      box: 'J16',
+      lockGap: { runs: 'kube_delete', overlap: 'machine-exclusive' },
+    };
+    expect(classMismatches('x', staleGap)).toHaveLength(1);
+    const bare: JobPlan = { form: 'single', lock: 'read', timeout: '10m', box: 'J16' };
+    expect(classMismatches('x', bare)).toHaveLength(1);
   });
 
   it('the J4 verbs are the nine J0 verbs', () => {
