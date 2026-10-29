@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "“{{name}}”没有已存储的备份,无需清除。",
   "commands.backup.purge.success": "已清除“{{name}}”的 {{count}} 个快照,释放了 {{bytes}}。",
   "commands.backup.purge.usageDelta": "此仓库的存储量:清除前 {{beforeBytes}}({{beforeChunks}} 个分块),清除后 {{afterBytes}}({{afterChunks}} 个分块)。",
+  "commands.backup.purge.usageUnavailable": "清除已完成,但无法读取清除后的用量:{{error}}",
   "commands.backup.reconcile.argRepoRef": "要核对的仓库(默认:令牌范围内的所有仓库)",
   "commands.backup.reconcile.checkSkipped": "已跳过的谱系未检查：{{lineages}}",
   "commands.backup.reconcile.columns.ledger": "台账",

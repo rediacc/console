@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "\"{{name}}\" has no stored backups; nothing to purge.",
   "commands.backup.purge.success": "Purged {{count}} snapshot(s) of \"{{name}}\" and freed {{bytes}}.",
   "commands.backup.purge.usageDelta": "Stored for this repository: {{beforeBytes}} in {{beforeChunks}} chunk(s) before, {{afterBytes}} in {{afterChunks}} chunk(s) after.",
+  "commands.backup.purge.usageUnavailable": "Purged, but the usage after the purge could not be read: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Repository to reconcile (default: every repository in the token's scope)",
   "commands.backup.reconcile.checkSkipped": "Skipped lineages were not checked: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Ledger",

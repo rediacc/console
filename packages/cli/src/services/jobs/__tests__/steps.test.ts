@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { JOB_PLANS } from '../plans.js';
 import {
   dueSteps,
   listStepNames,
@@ -125,5 +126,16 @@ describe('pending steps', () => {
       dueSteps({ steps: migrate, stepsDone: [] }, 'running', ['cutover_complete'])
     ).toHaveLength(1);
     expect(dueSteps({ steps: migrate, stepsDone: [] }, 'running', [])).toHaveLength(0);
+  });
+
+  it('a repo create plan refreshes identity when the job is seen to finish, carrying the size it licenses', () => {
+    // A --background create returns before the repo exists, so the refresh rides the ticket instead of the call.
+    expect(JOB_PLANS['repo create'].steps).toContain('identityRefresh');
+    const step = planStep('identityRefresh', {
+      function: 'repository_create',
+      repository: 'web',
+      size: '2G',
+    });
+    expect(step.params).toMatchObject({ repository: 'web', size: '2G' });
   });
 });

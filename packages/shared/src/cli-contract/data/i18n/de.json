@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "„{{name}}“ hat keine gespeicherten Backups; es gibt nichts zu bereinigen.",
   "commands.backup.purge.success": "{{count}} Snapshot(s) von „{{name}}“ bereinigt, {{bytes}} freigegeben.",
   "commands.backup.purge.usageDelta": "Für dieses Repository gespeichert: vorher {{beforeBytes}} in {{beforeChunks}} Chunk(s), nachher {{afterBytes}} in {{afterChunks}} Chunk(s).",
+  "commands.backup.purge.usageUnavailable": "Bereinigt, aber die Belegung nach der Bereinigung konnte nicht gelesen werden: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Abzugleichendes Repository (Standard: jedes Repository im Geltungsbereich des Tokens)",
   "commands.backup.reconcile.checkSkipped": "Übersprungene Lineages wurden nicht geprüft: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Verbucht",

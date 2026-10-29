@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "« {{name}} » n'a aucune sauvegarde stockée ; rien à purger.",
   "commands.backup.purge.success": "{{count}} instantané(s) de « {{name}} » purgé(s), {{bytes}} libéré(s).",
   "commands.backup.purge.usageDelta": "Stocké pour ce dépôt : {{beforeBytes}} dans {{beforeChunks}} bloc(s) avant, {{afterBytes}} dans {{afterChunks}} bloc(s) après.",
+  "commands.backup.purge.usageUnavailable": "Purge effectuée, mais l'utilisation après la purge n'a pas pu être lue : {{error}}",
   "commands.backup.reconcile.argRepoRef": "Dépôt à réconcilier (par défaut : tous ceux du périmètre du jeton)",
   "commands.backup.reconcile.checkSkipped": "Les lignées ignorées n'ont pas été vérifiées : {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registre",

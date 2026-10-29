@@ -345,7 +345,8 @@
         "nothingStored": "لا توجد نسخ احتياطية مخزّنة لـ \"{{name}}\"؛ لا شيء لإفراغه.",
         "confirm": "سيؤدي هذا إلى حذف كل اللقطات المخزّنة لـ \"{{name}}\" وعددها {{count}} ({{bytes}}) ولا يمكن التراجع عنه. اكتب اسم المستودع للتأكيد:",
         "success": "أُفرغت {{count}} لقطة من \"{{name}}\" وتحرّر {{bytes}}.",
-        "usageDelta": "المخزّن لهذا المستودع: {{beforeBytes}} في {{beforeChunks}} جزء قبل الإفراغ، و{{afterBytes}} في {{afterChunks}} جزء بعده."
+        "usageDelta": "المخزّن لهذا المستودع: {{beforeBytes}} في {{beforeChunks}} جزء قبل الإفراغ، و{{afterBytes}} في {{afterChunks}} جزء بعده.",
+        "usageUnavailable": "اكتمل الإفراغ، لكن تعذّرت قراءة الاستخدام بعده: {{error}}"
       }
     },
     "cluster": {

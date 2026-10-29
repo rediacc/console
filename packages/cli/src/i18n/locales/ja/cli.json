@@ -345,7 +345,8 @@
         "nothingStored": "「{{name}}」には保存済みのバックアップがないため、パージするものはありません。",
         "confirm": "「{{name}}」の保存済みスナップショット {{count}} 件 ({{bytes}}) をすべて削除します。この操作は元に戻せません。確認のためリポジトリ名を入力してください:",
         "success": "「{{name}}」のスナップショット {{count}} 件をパージし、{{bytes}} を解放しました。",
-        "usageDelta": "このリポジトリの保存量: パージ前 {{beforeBytes}} ({{beforeChunks}} チャンク)、パージ後 {{afterBytes}} ({{afterChunks}} チャンク)。"
+        "usageDelta": "このリポジトリの保存量: パージ前 {{beforeBytes}} ({{beforeChunks}} チャンク)、パージ後 {{afterBytes}} ({{afterChunks}} チャンク)。",
+        "usageUnavailable": "パージは完了しましたが、パージ後の使用量を読み取れませんでした: {{error}}"
       }
     },
     "cluster": {

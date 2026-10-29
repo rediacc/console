@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "Hoidlal \"{{name}}\" pole salvestatud varukoopiaid; pole midagi puhastada.",
   "commands.backup.purge.success": "Hoidla \"{{name}}\" {{count}} hetktõmmist puhastati, vabanes {{bytes}}.",
   "commands.backup.purge.usageDelta": "Selle hoidla salvestatud maht: enne {{beforeBytes}} {{beforeChunks}} tükis, pärast {{afterBytes}} {{afterChunks}} tükis.",
+  "commands.backup.purge.usageUnavailable": "Puhastus tehtud, kuid pärast puhastust kasutust ei õnnestunud lugeda: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Ühtlustatav hoidla (vaikimisi kõik loa ulatuses olevad)",
   "commands.backup.reconcile.checkSkipped": "Vahele jäetud liine ei kontrollitud: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Register",

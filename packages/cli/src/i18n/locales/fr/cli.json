@@ -345,7 +345,8 @@
         "nothingStored": "« {{name}} » n'a aucune sauvegarde stockée ; rien à purger.",
         "confirm": "Cette opération supprime définitivement les {{count}} instantané(s) stockés de « {{name}} » ({{bytes}}). Saisissez le nom du dépôt pour confirmer :",
         "success": "{{count}} instantané(s) de « {{name}} » purgé(s), {{bytes}} libéré(s).",
-        "usageDelta": "Stocké pour ce dépôt : {{beforeBytes}} dans {{beforeChunks}} bloc(s) avant, {{afterBytes}} dans {{afterChunks}} bloc(s) après."
+        "usageDelta": "Stocké pour ce dépôt : {{beforeBytes}} dans {{beforeChunks}} bloc(s) avant, {{afterBytes}} dans {{afterChunks}} bloc(s) après.",
+        "usageUnavailable": "Purge effectuée, mais l'utilisation après la purge n'a pas pu être lue : {{error}}"
       }
     },
     "cluster": {

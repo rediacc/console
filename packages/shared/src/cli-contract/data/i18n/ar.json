@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "لا توجد نسخ احتياطية مخزّنة لـ \"{{name}}\"؛ لا شيء لإفراغه.",
   "commands.backup.purge.success": "أُفرغت {{count}} لقطة من \"{{name}}\" وتحرّر {{bytes}}.",
   "commands.backup.purge.usageDelta": "المخزّن لهذا المستودع: {{beforeBytes}} في {{beforeChunks}} جزء قبل الإفراغ، و{{afterBytes}} في {{afterChunks}} جزء بعده.",
+  "commands.backup.purge.usageUnavailable": "اكتمل الإفراغ، لكن تعذّرت قراءة الاستخدام بعده: {{error}}",
   "commands.backup.reconcile.argRepoRef": "المستودع المراد مطابقته (الافتراضي: كل مستودعات نطاق الرمز)",
   "commands.backup.reconcile.checkSkipped": "لم يتم التحقق من السلاسل التي تم تخطيها: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "السجل",

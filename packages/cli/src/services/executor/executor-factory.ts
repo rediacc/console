@@ -81,20 +81,20 @@ export function isBackgroundRequested(): boolean {
  * call, so a start retried after a dropped answer carries the same id and a call
  * served by the executor daemon still carries the client's invocation.
  *
- * A caller's explicit window or request id wins.
+ * A caller's explicit numeric window or request id wins; an undefined window means none was chosen.
  */
 export function attachDecorator(inner: Executor): Executor {
   return {
     execute(options) {
       const served = currentRequestContext() !== undefined;
       const window =
-        'attachWindowMs' in options
-          ? options.attachWindowMs
-          : attachWindowMs({
+        options.attachWindowMs === undefined
+          ? attachWindowMs({
               background: backgroundRequested && !served,
               served,
               client: clientKindFromEnv(),
-            });
+            })
+          : options.attachWindowMs;
       return inner.execute({
         ...options,
         attachWindowMs: window,

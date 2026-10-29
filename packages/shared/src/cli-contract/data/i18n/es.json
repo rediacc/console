@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "\"{{name}}\" no tiene copias guardadas; no hay nada que purgar.",
   "commands.backup.purge.success": "Se purgaron {{count}} instantánea(s) de \"{{name}}\" y se liberaron {{bytes}}.",
   "commands.backup.purge.usageDelta": "Guardado para este repositorio: antes {{beforeBytes}} en {{beforeChunks}} fragmento(s), después {{afterBytes}} en {{afterChunks}} fragmento(s).",
+  "commands.backup.purge.usageUnavailable": "Purgado, pero no se pudo leer el uso después de la purga: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Repositorio a conciliar (por defecto: todos los del alcance del token)",
   "commands.backup.reconcile.checkSkipped": "No se comprobaron los linajes omitidos: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registro",

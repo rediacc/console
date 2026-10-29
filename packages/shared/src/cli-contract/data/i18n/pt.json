@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "\"{{name}}\" não tem backups armazenados; não há nada a limpar.",
   "commands.backup.purge.success": "{{count}} snapshot(s) de \"{{name}}\" limpo(s), {{bytes}} liberado(s).",
   "commands.backup.purge.usageDelta": "Armazenado para este repositório: antes {{beforeBytes}} em {{beforeChunks}} bloco(s), depois {{afterBytes}} em {{afterChunks}} bloco(s).",
+  "commands.backup.purge.usageUnavailable": "Limpeza concluída, mas não foi possível ler o uso após a limpeza: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Repositório a reconciliar (padrão: todos no escopo do token)",
   "commands.backup.reconcile.checkSkipped": "As linhagens ignoradas não foram verificadas: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registro",

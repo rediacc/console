@@ -801,6 +801,7 @@ const DEFINITIONS: StepDefinition[] = [
       'repository',
       'tag',
       'network_id',
+      'size',
       'checkpoint',
       'immutable',
       'up',

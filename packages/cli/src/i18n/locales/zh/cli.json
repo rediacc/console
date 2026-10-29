@@ -345,7 +345,8 @@
         "nothingStored": "“{{name}}”没有已存储的备份,无需清除。",
         "confirm": "此操作将删除“{{name}}”全部 {{count}} 个已存储快照({{bytes}}),且无法撤销。输入仓库名称以确认:",
         "success": "已清除“{{name}}”的 {{count}} 个快照,释放了 {{bytes}}。",
-        "usageDelta": "此仓库的存储量:清除前 {{beforeBytes}}({{beforeChunks}} 个分块),清除后 {{afterBytes}}({{afterChunks}} 个分块)。"
+        "usageDelta": "此仓库的存储量:清除前 {{beforeBytes}}({{beforeChunks}} 个分块),清除后 {{afterBytes}}({{afterChunks}} 个分块)。",
+        "usageUnavailable": "清除已完成,但无法读取清除后的用量:{{error}}"
       }
     },
     "cluster": {

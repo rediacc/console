@@ -87,6 +87,13 @@ describe('attach decorator', () => {
     expect(calls.map((c) => c.requestId)).toEqual(['inv-1:m:1', 'inv-1:m:2', 'inv-1:other:1']);
   });
 
+  it('treats an explicit undefined window as unset, so --background still gives 0', async () => {
+    const { calls, executor } = recordingExecutor();
+    setBackgroundRequested(true);
+    await attachDecorator(executor).execute({ ...call, attachWindowMs: undefined });
+    expect(calls[0].attachWindowMs).toBe(0);
+  });
+
   it("keeps a caller's explicit window and request id", async () => {
     const { calls, executor } = recordingExecutor();
     setBackgroundRequested(true);

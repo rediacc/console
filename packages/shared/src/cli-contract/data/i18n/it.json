@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "\"{{name}}\" non ha backup archiviati; non c'è nulla da eliminare.",
   "commands.backup.purge.success": "Eliminati {{count}} snapshot di \"{{name}}\", liberati {{bytes}}.",
   "commands.backup.purge.usageDelta": "Spazio archiviato per questo repository: prima {{beforeBytes}} in {{beforeChunks}} chunk, dopo {{afterBytes}} in {{afterChunks}} chunk.",
+  "commands.backup.purge.usageUnavailable": "Eliminazione completata, ma non è stato possibile leggere l'utilizzo dopo l'eliminazione: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Repository da riconciliare (predefinito: tutti quelli nell'ambito del token)",
   "commands.backup.reconcile.checkSkipped": "Le lineage saltate non sono state verificate: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registro",

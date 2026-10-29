@@ -45,6 +45,19 @@ async function lineageFootprint(
   return { storedBytes: row?.storedBytes ?? 0, chunkCount: row?.chunkCount ?? 0 };
 }
 
+/** The post-purge usage read: a failure after a successful DELETE is reported, never fatal. */
+async function footprintAfterPurge(
+  lineage: string
+): Promise<{ storedBytes: number; chunkCount: number } | undefined> {
+  try {
+    return await lineageFootprint(lineage);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    outputService.warn(t('commands.backup.purge.usageUnavailable', { error: message }));
+    return undefined;
+  }
+}
+
 /** The config record behind the ref, read only. Unknown repos and forks are refused here, before any account call. */
 async function resolvePurgeTarget(repoRef: string): Promise<{ repoKey: string; lineage: string }> {
   const { repoKey } = await resolveRepoRefLocal(repoRef);
@@ -107,7 +120,7 @@ export async function runBackupPurge(repoRef: string, options: PurgeOptions): Pr
     return;
   }
 
-  // The server answers 404 for a lineage with neither usage nor manifests: say so instead of sending a DELETE that cannot succeed.
+  // The usage and manifests reads answer empty for an unknown lineage, but the DELETE answers 404 for one with neither: say so instead of sending a DELETE that cannot succeed.
   if (snapshots === 0 && before.storedBytes === 0 && before.chunkCount === 0) {
     outputService.info(t('commands.backup.purge.nothingStored', { name: repoKey }));
     return;
@@ -126,7 +139,7 @@ export async function runBackupPurge(repoRef: string, options: PurgeOptions): Pr
     { method: 'DELETE' }
   );
   // The purge response carries no chunk count, so the usage row before and after is the evidence for chunks.
-  const after = await lineageFootprint(lineage).catch(() => undefined);
+  const after = await footprintAfterPurge(lineage);
 
   if (format !== 'table') {
     outputService.print({ ...plan, purged, after: after ?? null }, format);

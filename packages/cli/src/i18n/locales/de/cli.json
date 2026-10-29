@@ -345,7 +345,8 @@
         "nothingStored": "„{{name}}“ hat keine gespeicherten Backups; es gibt nichts zu bereinigen.",
         "confirm": "Dadurch werden alle {{count}} gespeicherten Snapshot(s) von „{{name}}“ ({{bytes}}) unwiderruflich gelöscht. Zur Bestätigung den Repository-Namen eingeben:",
         "success": "{{count}} Snapshot(s) von „{{name}}“ bereinigt, {{bytes}} freigegeben.",
-        "usageDelta": "Für dieses Repository gespeichert: vorher {{beforeBytes}} in {{beforeChunks}} Chunk(s), nachher {{afterBytes}} in {{afterChunks}} Chunk(s)."
+        "usageDelta": "Für dieses Repository gespeichert: vorher {{beforeBytes}} in {{beforeChunks}} Chunk(s), nachher {{afterBytes}} in {{afterChunks}} Chunk(s).",
+        "usageUnavailable": "Bereinigt, aber die Belegung nach der Bereinigung konnte nicht gelesen werden: {{error}}"
       }
     },
     "cluster": {

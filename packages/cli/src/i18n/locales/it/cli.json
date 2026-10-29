@@ -345,7 +345,8 @@
         "nothingStored": "\"{{name}}\" non ha backup archiviati; non c'è nulla da eliminare.",
         "confirm": "Verranno eliminati tutti i {{count}} snapshot archiviati di \"{{name}}\" ({{bytes}}) e l'operazione è irreversibile. Digita il nome del repository per confermare:",
         "success": "Eliminati {{count}} snapshot di \"{{name}}\", liberati {{bytes}}.",
-        "usageDelta": "Spazio archiviato per questo repository: prima {{beforeBytes}} in {{beforeChunks}} chunk, dopo {{afterBytes}} in {{afterChunks}} chunk."
+        "usageDelta": "Spazio archiviato per questo repository: prima {{beforeBytes}} in {{beforeChunks}} chunk, dopo {{afterBytes}} in {{afterChunks}} chunk.",
+        "usageUnavailable": "Eliminazione completata, ma non è stato possibile leggere l'utilizzo dopo l'eliminazione: {{error}}"
       }
     },
     "cluster": {

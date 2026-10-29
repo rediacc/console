@@ -173,7 +173,7 @@ class LocalExecutorService {
       }
     }
 
-    // A job still running past its window has not created anything yet, so its identity refresh waits for whoever sees it finish.
+    // A job still running past its window may already have created repos, but the identity refresh needs the finished repo on disk, so the `identityRefresh` plan step runs it when the job is seen to finish.
     if (result.success && result.state !== 'running' && !options.deferIdentityRefresh) {
       await maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
     }

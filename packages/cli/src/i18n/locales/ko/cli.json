@@ -345,7 +345,8 @@
         "nothingStored": "\"{{name}}\"에 저장된 백업이 없어 퍼지할 것이 없습니다.",
         "confirm": "\"{{name}}\"에 저장된 스냅샷 {{count}}개({{bytes}})를 모두 삭제하며 되돌릴 수 없습니다. 확인하려면 저장소 이름을 입력하세요:",
         "success": "\"{{name}}\"의 스냅샷 {{count}}개를 퍼지하고 {{bytes}}를 확보했습니다.",
-        "usageDelta": "이 저장소의 저장량: 퍼지 전 {{beforeBytes}}(청크 {{beforeChunks}}개), 퍼지 후 {{afterBytes}}(청크 {{afterChunks}}개)."
+        "usageDelta": "이 저장소의 저장량: 퍼지 전 {{beforeBytes}}(청크 {{beforeChunks}}개), 퍼지 후 {{afterBytes}}(청크 {{afterChunks}}개).",
+        "usageUnavailable": "퍼지는 완료되었지만 퍼지 후 사용량을 읽지 못했습니다: {{error}}"
       }
     },
     "cluster": {

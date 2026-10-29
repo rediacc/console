@@ -345,7 +345,8 @@
         "nothingStored": "\"{{name}}\" não tem backups armazenados; não há nada a limpar.",
         "confirm": "Isto apaga todos os {{count}} snapshot(s) armazenados de \"{{name}}\" ({{bytes}}) e não pode ser desfeito. Digite o nome do repositório para confirmar:",
         "success": "{{count}} snapshot(s) de \"{{name}}\" limpo(s), {{bytes}} liberado(s).",
-        "usageDelta": "Armazenado para este repositório: antes {{beforeBytes}} em {{beforeChunks}} bloco(s), depois {{afterBytes}} em {{afterChunks}} bloco(s)."
+        "usageDelta": "Armazenado para este repositório: antes {{beforeBytes}} em {{beforeChunks}} bloco(s), depois {{afterBytes}} em {{afterChunks}} bloco(s).",
+        "usageUnavailable": "Limpeza concluída, mas não foi possível ler o uso após a limpeza: {{error}}"
       }
     },
     "cluster": {

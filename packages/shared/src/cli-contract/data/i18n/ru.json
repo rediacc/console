@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "У «{{name}}» нет сохранённых бэкапов, очищать нечего.",
   "commands.backup.purge.success": "Очищено снимков «{{name}}»: {{count}}, освобождено {{bytes}}.",
   "commands.backup.purge.usageDelta": "Хранится для этого репозитория до очистки: {{beforeBytes}} (чанков: {{beforeChunks}}); после очистки: {{afterBytes}} (чанков: {{afterChunks}}).",
+  "commands.backup.purge.usageUnavailable": "Очистка выполнена, но не удалось прочитать объём хранения после очистки: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Репозиторий для сверки (по умолчанию все репозитории в области токена)",
   "commands.backup.reconcile.checkSkipped": "Пропущенные линии не проверялись: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Учёт",

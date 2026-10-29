@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "\"{{name}}\" deposunun depolanmış yedeği yok; temizlenecek bir şey yok.",
   "commands.backup.purge.success": "\"{{name}}\" deposunun {{count}} anlık görüntüsü temizlendi, {{bytes}} yer açıldı.",
   "commands.backup.purge.usageDelta": "Bu depo için depolanan: önce {{beforeChunks}} parçada {{beforeBytes}}, sonra {{afterChunks}} parçada {{afterBytes}}.",
+  "commands.backup.purge.usageUnavailable": "Temizleme tamamlandı ancak temizlemeden sonraki kullanım okunamadı: {{error}}",
   "commands.backup.reconcile.argRepoRef": "Uzlaştırılacak depo (varsayılan: belirtecin kapsamındaki tüm depolar)",
   "commands.backup.reconcile.checkSkipped": "Atlanan soy hatları denetlenmedi: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Kayıt",

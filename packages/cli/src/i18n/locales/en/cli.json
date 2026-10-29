@@ -2135,7 +2135,8 @@
         "nothingStored": "\"{{name}}\" has no stored backups; nothing to purge.",
         "confirm": "This deletes all {{count}} stored snapshot(s) of \"{{name}}\" ({{bytes}}) and cannot be undone. Type the repository name to confirm:",
         "success": "Purged {{count}} snapshot(s) of \"{{name}}\" and freed {{bytes}}.",
-        "usageDelta": "Stored for this repository: {{beforeBytes}} in {{beforeChunks}} chunk(s) before, {{afterBytes}} in {{afterChunks}} chunk(s) after."
+        "usageDelta": "Stored for this repository: {{beforeBytes}} in {{beforeChunks}} chunk(s) before, {{afterBytes}} in {{afterChunks}} chunk(s) after.",
+        "usageUnavailable": "Purged, but the usage after the purge could not be read: {{error}}"
       }
     },
     "sync": {

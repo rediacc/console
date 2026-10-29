@@ -6,6 +6,7 @@ vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
 const mockFetch = vi.hoisted(() => vi.fn());
 const mockInfo = vi.hoisted(() => vi.fn());
 const mockSuccess = vi.hoisted(() => vi.fn());
+const mockWarn = vi.hoisted(() => vi.fn());
 const mockAskInput = vi.hoisted(() => vi.fn());
 const mockResolveRef = vi.hoisted(() => vi.fn());
 const mockPolicy = vi.hoisted(() => vi.fn());
@@ -18,7 +19,7 @@ vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: mockInfo,
     success: mockSuccess,
-    warn: vi.fn(),
+    warn: mockWarn,
     error: vi.fn(),
     print: vi.fn(),
   },
@@ -100,6 +101,7 @@ describe('backup purge', () => {
     mockFetch.mockReset();
     mockInfo.mockReset();
     mockSuccess.mockReset();
+    mockWarn.mockReset();
     mockAskInput.mockReset();
     mockPolicy.mockReset();
     mockResolveRef.mockReset();
@@ -134,6 +136,23 @@ describe('backup purge', () => {
     // The server reports no chunk count, so the usage before and after is printed.
     expect(mockInfo).toHaveBeenCalledWith('commands.backup.purge.usageDelta');
     expect(configWrites).toEqual([]);
+  });
+
+  it('warns when the usage read after a successful purge fails', async () => {
+    let usageReads = 0;
+    const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((path: string, init?: unknown) => {
+      if (path === '/account/api/v1/backups/usage' && ++usageReads === 2) {
+        return Promise.reject(new Error('usage down'));
+      }
+      return served(path, init);
+    });
+    await run(['shop', '-y']);
+
+    expect(deleteCalls()).toHaveLength(1);
+    expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.success');
+    expect(mockWarn).toHaveBeenCalledWith('commands.backup.purge.usageUnavailable');
+    expect(mockInfo).not.toHaveBeenCalledWith('commands.backup.purge.usageDelta');
   });
 
   it('a typed name that does not match cancels and sends nothing destructive', async () => {

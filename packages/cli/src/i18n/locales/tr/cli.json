@@ -345,7 +345,8 @@
         "nothingStored": "\"{{name}}\" deposunun depolanmış yedeği yok; temizlenecek bir şey yok.",
         "confirm": "Bu işlem \"{{name}}\" deposunun depolanan {{count}} anlık görüntüsünün tamamını ({{bytes}}) siler ve geri alınamaz. Onaylamak için depo adını yazın:",
         "success": "\"{{name}}\" deposunun {{count}} anlık görüntüsü temizlendi, {{bytes}} yer açıldı.",
-        "usageDelta": "Bu depo için depolanan: önce {{beforeChunks}} parçada {{beforeBytes}}, sonra {{afterChunks}} parçada {{afterBytes}}."
+        "usageDelta": "Bu depo için depolanan: önce {{beforeChunks}} parçada {{beforeBytes}}, sonra {{afterChunks}} parçada {{afterBytes}}.",
+        "usageUnavailable": "Temizleme tamamlandı ancak temizlemeden sonraki kullanım okunamadı: {{error}}"
       }
     },
     "cluster": {

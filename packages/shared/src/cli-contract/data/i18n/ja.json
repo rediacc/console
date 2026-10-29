@@ -61,6 +61,7 @@
   "commands.backup.purge.nothingStored": "「{{name}}」には保存済みのバックアップがないため、パージするものはありません。",
   "commands.backup.purge.success": "「{{name}}」のスナップショット {{count}} 件をパージし、{{bytes}} を解放しました。",
   "commands.backup.purge.usageDelta": "このリポジトリの保存量: パージ前 {{beforeBytes}} ({{beforeChunks}} チャンク)、パージ後 {{afterBytes}} ({{afterChunks}} チャンク)。",
+  "commands.backup.purge.usageUnavailable": "パージは完了しましたが、パージ後の使用量を読み取れませんでした: {{error}}",
   "commands.backup.reconcile.argRepoRef": "照合するリポジトリ(省略時はトークンの範囲内のすべて)",
   "commands.backup.reconcile.checkSkipped": "スキップされた系統はチェックされていません: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "台帳",

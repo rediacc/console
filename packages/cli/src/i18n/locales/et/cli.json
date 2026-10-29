@@ -345,7 +345,8 @@
         "nothingStored": "Hoidlal \"{{name}}\" pole salvestatud varukoopiaid; pole midagi puhastada.",
         "confirm": "See kustutab hoidla \"{{name}}\" kõik {{count}} salvestatud hetktõmmist ({{bytes}}) ja seda ei saa tagasi võtta. Kinnitamiseks sisesta hoidla nimi:",
         "success": "Hoidla \"{{name}}\" {{count}} hetktõmmist puhastati, vabanes {{bytes}}.",
-        "usageDelta": "Selle hoidla salvestatud maht: enne {{beforeBytes}} {{beforeChunks}} tükis, pärast {{afterBytes}} {{afterChunks}} tükis."
+        "usageDelta": "Selle hoidla salvestatud maht: enne {{beforeBytes}} {{beforeChunks}} tükis, pärast {{afterBytes}} {{afterChunks}} tükis.",
+        "usageUnavailable": "Puhastus tehtud, kuid pärast puhastust kasutust ei õnnestunud lugeda: {{error}}"
       }
     },
     "cluster": {

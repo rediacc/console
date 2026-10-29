@@ -269,7 +269,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-exclusive',
     timeout: '24h',
     box: 'J16',
-    steps: ['reconcileBackupSchedules', 'rollbackCreate'],
+    steps: ['identityRefresh', 'reconcileBackupSchedules', 'rollbackCreate'],
     note: 'network_id "auto" removes the conflict-retry leg (J0b finding 8)',
   },
   'repo delete': {
