@@ -124,6 +124,24 @@ def test_the_stage_job_is_edge_only_reads_actions_and_gates_the_deploy(account):
             assert "actions" not in (other.get("permissions") or {}), name
 
 
+def sitekey_problem(stps: list[dict]) -> str | None:
+    """deploy_account refuses before any write unless TURNSTILE_SITE_KEY is bound (portal_sitekey_refusal); the deploy step must bind it from the Bitwarden name."""
+    env = by_name(stps, "Deploy account Worker").get("env") or {}
+    if env.get("TURNSTILE_SITE_KEY") != "${{ env.BWS_TURNSTILE_SITE_KEY }}":
+        return "the account deploy step does not bind TURNSTILE_SITE_KEY"
+    return None
+
+
+def test_the_account_deploy_binds_the_turnstile_site_key(deploy):
+    assert sitekey_problem(deploy) is None
+
+
+def test_sitekey_control_an_unbound_key_is_seen(deploy):
+    planted = copy.deepcopy(deploy)
+    del by_name(planted, "Deploy account Worker")["env"]["TURNSTILE_SITE_KEY"]
+    assert sitekey_problem(planted) is not None
+
+
 # ---- the forward order, the enable condition, the rollback -------------------
 
 
