@@ -21,19 +21,19 @@ Body-Sig: b6f0f2554f953dcb
 ### e7b2d599.1 [medium] .ci/rediacc_ci/ops/proxy_job_cost.py:13
 Anchor: in-diff
 Claim: The OUTPUT docstring says the container line is `container active_seconds=X apps=N scope=all|listed`, but run() prints `container active_seconds=%.2f rows=%d scope=%s`, so an operator parsing the documented `apps=N` field gets no match.
-Resolution: open
+Resolution: fixed d4e96d170d6aea8ec3c27d3c26a7c84a4454f8b6 | d778be9d 2026-10-29T11:53:41Z
 
 ### e7b2d599.2 [low] .ci/rediacc_ci/ops/job_latency.py:81
 Anchor: in-diff
 Claim: measure() collects rediacc.job.start_latency_ms values from every run's output unconditionally, while the docstring says collection happens under --debug; without --debug, a start_latency line is printed whenever rdc emits the attribute.
-Resolution: open
+Resolution: fixed d4e96d170d6aea8ec3c27d3c26a7c84a4454f8b6 | d778be9d 2026-10-29T11:53:42Z
 
 ### e7b2d599.3 [low] .ci/rediacc_ci/ops/job_latency.py:123
 Anchor: in-diff
 Claim: compare() checks only that start_latency exists in both result files, not its p50/p95/max keys, so a hand-edited file missing one of them raises an uncaught KeyError (traceback, exit 1) instead of the documented exit 2.
-Resolution: open
+Resolution: fixed d4e96d170d6aea8ec3c27d3c26a7c84a4454f8b6 | d778be9d 2026-10-29T11:53:42Z
 
 ### e7b2d599.4 [low] .ci/rediacc_ci/ops/job_latency.py:180
 Anchor: in-diff
 Claim: The --out write is outside the try/except LatencyError block, so an unwritable --out path raises OSError after the numbers are printed, giving a traceback and exit 1 rather than the documented exit codes.
-Resolution: open
+Resolution: fixed d4e96d170d6aea8ec3c27d3c26a7c84a4454f8b6 | d778be9d 2026-10-29T11:53:42Z
