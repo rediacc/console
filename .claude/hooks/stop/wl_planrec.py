@@ -2268,8 +2268,20 @@ def append_investigation(root, row):
     path.parent.mkdir(parents=True, exist_ok=True)
     rec = dict(row)
     rec.setdefault("at", C.stamp_now())
+    # A re-run of the same --write (same box, tree, verdict, pointers and note) adds no testimony, only a duplicate line in the ledger; return the row already there.
+    same = _investigation_identity(rec)
+    for prior in reversed(read_investigations(root)):
+        if prior.get("plan") == rec.get("plan") and prior.get("sig") == rec.get("sig"):
+            if _investigation_identity(prior) == same:
+                return prior
+            break
     S._append_lines(str(path), _investigation_lock(path), [rec])
     return rec
+
+
+def _investigation_identity(rec):
+    """Every field of an investigation row except its timestamp."""
+    return json.dumps({k: v for k, v in rec.items() if k != "at"}, sort_keys=True)
 
 
 def read_investigations(root):

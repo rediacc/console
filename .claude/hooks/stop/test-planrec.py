@@ -1440,6 +1440,18 @@ control(
     (len(R.read_investigations(ROOT)), R.investigation_for(ROOT, REL, _sig_done).get("retro")),
     (_n_before + 1, True),
 )
+R.append_investigation(ROOT, dict(_rrow, at="2099-01-01T00:00:00Z"))
+control(
+    "...and the same row written again (only the timestamp differs) adds no second line",
+    len(R.read_investigations(ROOT)),
+    _n_before + 1,
+)
+R.append_investigation(ROOT, dict(_rrow, note=_rrow["note"] + " amended"))
+control(
+    "CONTROL: a row whose note differs still appends",
+    len(R.read_investigations(ROOT)),
+    _n_before + 2,
+)
 
 raises(
     "--retro on an OPEN box is refused: it can still be investigated before the work",
