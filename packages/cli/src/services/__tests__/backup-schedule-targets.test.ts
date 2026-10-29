@@ -163,7 +163,7 @@ describe('strategyUnitSpecs (G1)', () => {
       spec.scope
     );
     expect(commands).toEqual([
-      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --repo ${G.mail} --repo ${G.mailFork}`,
+      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --repo ${G.mail} --repo ${G.mailFork} --parallelism 2`,
     ]);
   });
 });

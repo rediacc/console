@@ -14,6 +14,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
+import { bandwidthToBytesPerSecond } from '../services/backup/backup-strategy-validate.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
@@ -423,6 +424,26 @@ function registerBackupVerify(backup: Command): void {
 const RENET_QUOTA_REFUSED_EXIT = 16;
 
 /**
+ * The upload knobs of `backup snapshot`, as the renet function takes them. The rate is converted here, with the strategy's own parser, so a typo is refused before any SSH is opened; renet receives bytes/second. Before this the verb had no way to carry a cap at all and every ad-hoc snapshot uploaded at line rate.
+ */
+export function snapshotUploadParams(options: { bwlimit?: string; parallelism?: string }): {
+  bwlimit?: string;
+  parallelism?: number;
+} {
+  const params: { bwlimit?: string; parallelism?: number } = {};
+  const bytesPerSecond = bandwidthToBytesPerSecond(options.bwlimit);
+  if (bytesPerSecond !== undefined) params.bwlimit = String(bytesPerSecond);
+  if (options.parallelism !== undefined) {
+    const n = Number(options.parallelism);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`--parallelism must be a positive integer, got "${options.parallelism}"`);
+    }
+    params.parallelism = n;
+  }
+  return params;
+}
+
+/**
  * `backup snapshot <repo> [--reseed] [--dry-run]`, upload a chunk-store
  * snapshot. This is the write side of the chunk path: the first run uploads the
  * full non-zero inventory, every run after it uploads only changed cells.
@@ -435,13 +456,23 @@ function registerBackupSnapshot(backup: Command): void {
     .option('--reseed', t('commands.backup.snapshot.optionReseed'))
     .option('--dry-run', t('commands.backup.snapshot.optionDryRun'))
     .option('--cold', t('commands.backup.snapshot.optionCold'))
+    .option('--bwlimit <rate>', t('commands.backup.snapshot.optionBwlimit'))
+    .option('--parallelism <n>', t('commands.backup.snapshot.optionParallelism'))
     .option('--debug', t('options.debug'))
     .action(
       async (
         repoRef: string,
-        options: { reseed?: boolean; dryRun?: boolean; cold?: boolean; debug?: boolean }
+        options: {
+          reseed?: boolean;
+          dryRun?: boolean;
+          cold?: boolean;
+          bwlimit?: string;
+          parallelism?: string;
+          debug?: boolean;
+        }
       ) => {
         try {
+          const uploadParams = snapshotUploadParams(options);
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
           const result = await executeRepoFunction(
             'backup_snapshot',
@@ -452,6 +483,7 @@ function registerBackupSnapshot(backup: Command): void {
               dry_run: options.dryRun ?? false,
               // Without this the cold path was reachable only from a scheduled unit or by SSH-ing to the machine: the generator emits --cold, but an operator wanting one application-consistent snapshot before a risky change had no supported route to it.
               cold: options.cold ?? false,
+              ...uploadParams,
             },
             { debug: options.debug },
             {

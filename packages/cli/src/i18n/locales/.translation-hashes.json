@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2088,
-    "sourceCommit": "cc75046f3d72a9b2fe1c54f9ca36c0dc3e289797"
+    "keyCount": 2090,
+    "sourceCommit": "e8a1e28d489743158173c2972b5088837d9d3cef"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -120,8 +120,10 @@
     "commands.backup.snapshot.completed": "40be5fa7",
     "commands.backup.snapshot.description": "11cac068",
     "commands.backup.snapshot.failed": "c6beabd5",
+    "commands.backup.snapshot.optionBwlimit": "f8e3db3b",
     "commands.backup.snapshot.optionCold": "1f552c3c",
     "commands.backup.snapshot.optionDryRun": "b4e0818b",
+    "commands.backup.snapshot.optionParallelism": "f58f4f66",
     "commands.backup.snapshot.optionReseed": "aa7213c5",
     "commands.backup.snapshot.quotaRefused": "35aa45d4",
     "commands.backup.snapshot.starting": "f739c227",

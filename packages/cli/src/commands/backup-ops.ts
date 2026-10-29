@@ -98,8 +98,10 @@ async function triggerAdhocBackup(
 
   const adhocUnit = `rediacc-backup-${name}-adhoc`;
   await clearFinishedAdhocUnit(sftp, adhocUnit, name);
-  const fullCmd = commands.join(' && ');
-  const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} --remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+  const { buildAdhocSystemdRun } = await import(
+    '../services/backup/backup-schedule-unit-generator.js'
+  );
+  const systemdRunCmd = buildAdhocSystemdRun(adhocUnit, commands);
 
   if (debug) {
     outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);

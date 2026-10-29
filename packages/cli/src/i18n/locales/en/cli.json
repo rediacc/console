@@ -1932,7 +1932,9 @@
         "starting": "Snapshotting {{name}} to chunk storage...",
         "completed": "Snapshot stored for {{name}}",
         "failed": "Snapshot failed for {{name}}",
-        "quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota"
+        "quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota",
+        "optionBwlimit": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited",
+        "optionParallelism": "Number of chunks uploaded at once (default 4)"
       },
       "status": {
         "description": "Show backup status and timer state on a remote machine"

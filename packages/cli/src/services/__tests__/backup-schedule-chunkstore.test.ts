@@ -22,7 +22,11 @@ import {
 } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
-import { buildBackupCommands } from '../backup/backup-schedule-unit-generator.js';
+import {
+  buildAdhocSystemdRun,
+  buildBackupCommands,
+  generateServiceUnit,
+} from '../backup/backup-schedule-unit-generator.js';
 
 const RENET = '/usr/bin/renet';
 const DATASTORE = WK_DATASTORE_PATH;
@@ -59,7 +63,7 @@ describe('scheduled backups to the chunk store', () => {
   it('emits a snapshot command instead of silently skipping the destination', () => {
     const { commands } = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET);
     expect(commands).toHaveLength(1);
-    expect(commands[0]).toBe(`${RENET} backup snapshot --datastore ${DATASTORE}`);
+    expect(commands[0]).toBe(`${RENET} backup snapshot --datastore ${DATASTORE} --parallelism 2`);
   });
 
   it('carries NO credentials into the unit or its EnvironmentFile', () => {
@@ -86,26 +90,74 @@ describe('scheduled backups to the chunk store', () => {
       exclude: [],
     });
     expect(inc.commands[0]).toBe(
-      `${RENET} backup snapshot --datastore ${DATASTORE} --repo ${g1} --repo ${g2}`
+      `${RENET} backup snapshot --datastore ${DATASTORE} --repo ${g1} --repo ${g2} --parallelism 2`
     );
     const exc = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET, {
       exclude: [g1],
     });
     expect(exc.commands[0]).toBe(
-      `${RENET} backup snapshot --datastore ${DATASTORE} --exclude-repo ${g1}`
+      `${RENET} backup snapshot --datastore ${DATASTORE} --exclude-repo ${g1} --parallelism 2`
     );
   });
 
   it('keeps the strategy bandwidth limit on argv, converted to bytes/second', () => {
-    // The schema declares bandwidthLimit as a unit-suffixed string ('6M') but `backup snapshot --bwlimit` is an Int64 in bytes/second, so passing the string through would fail at cobra's flag parse, inside the timer, at run time, long after the deploy reported success.
+    // The schema declares bandwidthLimit as a unit-suffixed string ('6M'); the unit carries bytes/second so it never depends on renet re-parsing a suffix. M is DECIMAL: 6M = 6,000,000 B/s.
     const { commands } = buildBackupCommands(
       strategy({ bandwidthLimit: '6M' }),
       [hosted()],
       DATASTORE,
       RENET
     );
-    expect(commands[0]).toContain('--bwlimit 6291456');
+    expect(commands[0]).toContain('--bwlimit 6000000');
     expect(commands[0]).not.toContain('--bwlimit 6M');
+  });
+
+  it('carries the hostinger cap (100Mbps) and the modest parallelism on every strategy run', () => {
+    // Operator order 2026-10-29: 100 Mbit/s, never unlimited, modest concurrency.
+    const { commands } = buildBackupCommands(
+      strategy({ bandwidthLimit: '100Mbps' }),
+      [hosted()],
+      DATASTORE,
+      RENET
+    );
+    expect(commands[0]).toContain('--bwlimit 12500000');
+    expect(commands[0]).toContain('--parallelism 2');
+  });
+
+  it("applies a destination's own cap, the tightest one winning (it was silently ignored)", () => {
+    // `backup strategy set s --destination d --bwlimit 6M` stores the cap on the destination; the generator read only the strategy-level field, so no unit ever applied it.
+    const { commands } = buildBackupCommands(
+      strategy({ bandwidthLimit: '100Mbps' }),
+      [hosted('a'), { ...hosted('b'), bandwidthLimit: '6M' }],
+      DATASTORE,
+      RENET
+    );
+    expect(commands[0]).toContain('--bwlimit 6000000');
+    expect(commands[0]).not.toContain('--bwlimit 12500000');
+  });
+
+  it('runs the scheduled unit and the ad-hoc strategy run at low CPU and I/O priority', () => {
+    const { serviceContent } = generateServiceUnit(
+      's',
+      strategy({ bandwidthLimit: '100Mbps' }),
+      [hosted()],
+      DATASTORE,
+      RENET
+    );
+    expect(serviceContent).toContain('\nNice=10\n');
+    expect(serviceContent).toContain('\nIOSchedulingClass=idle\n');
+    expect(serviceContent).toContain('--bwlimit 12500000 --parallelism 2');
+
+    const { commands } = buildBackupCommands(
+      strategy({ bandwidthLimit: '100Mbps' }),
+      [hosted()],
+      DATASTORE,
+      RENET
+    );
+    const adhoc = buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands);
+    expect(adhoc).toMatch(/^sudo systemd-run --unit=rediacc-backup-s-adhoc --remain-after-exit /);
+    expect(adhoc).toContain('-p Nice=10 -p IOSchedulingClass=idle');
+    expect(adhoc).toContain('--bwlimit 12500000 --parallelism 2');
   });
 
   it('passes a plain byte count straight through', () => {
@@ -127,7 +179,7 @@ describe('scheduled backups to the chunk store', () => {
     // Dropping it would silently lift a cap the operator set deliberately, an unmetered backup saturating the uplink, with nothing in the logs.
     expect(() =>
       buildBackupCommands(strategy({ bandwidthLimit: 'fast' }), [hosted()], DATASTORE, RENET)
-    ).toThrow(/bandwidthLimit "fast" is not a size/);
+    ).toThrow(/Bandwidth limit "fast" is not a size/);
   });
 
   it('takes ONE snapshot per run whatever the number of destinations (G3)', () => {

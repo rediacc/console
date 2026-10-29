@@ -29,25 +29,77 @@ function unschedulableDestinationReason(dest: { name: string; kind?: string }): 
 }
 
 /**
- * `bandwidthLimit` is a SUFFIXED SIZE STRING ('6M'), the form the schema declares. `renet backup snapshot --bwlimit` is an Int64 in BYTES PER SECOND (cmd/renet/backup_snapshot.go:132), so passing the string through unchanged emits `--bwlimit 6M`, which dies at cobra's flag parse, at RUN time, inside a systemd timer.
+ * `bandwidthLimit` is a rate string, and `renet backup snapshot --bwlimit` is emitted in BYTES PER SECOND, so the unit and the function never depend on renet re-parsing a suffix.
  *
- * Suffixes are binary (6M = 6 MiB/s). A value that cannot be parsed is REFUSED rather than dropped or passed through: dropping it silently lifts a cap the operator set deliberately.
+ * The grammar is renet's `pkg/bwrate` table, with the same test vectors on both sides:
+ * - a bare number (optionally `B` or `B/s`) is bytes/second;
+ * - `K`, `M`, `G`, `T` (optionally `B`, `B/s`) are DECIMAL bytes: 12.5M = 12,500,000 B/s;
+ * - `Ki`, `Mi`, `Gi`, `Ti` (optionally `B`, `B/s`) are binary bytes: 6Mi = 6 MiB/s;
+ * - `bit`, `bps`, `bit/s` after a decimal prefix are BITS: 100Mbps = 12,500,000 B/s.
+ *
+ * `100Mb` is refused: megabits by convention, megabytes by habit, and either guess is an 8x error. A value that cannot be parsed is REFUSED rather than dropped or passed through: dropping it silently lifts a cap the operator set deliberately. `0` means unlimited and returns undefined.
  */
 export function bandwidthToBytesPerSecond(limit: string | undefined): number | undefined {
-  if (!limit) return undefined;
-  const m = /^(\d+(?:\.\d+)?)\s*([KMGTkmgt])?i?[Bb]?$/.exec(limit.trim());
-  if (!m) {
+  if (!limit?.trim()) return undefined;
+  const parsed = parseRate(limit.trim());
+  if (typeof parsed === 'string') {
     throw new Error(
-      `Backup strategy bandwidthLimit "${limit}" is not a size this can convert. ` +
-        'Use a plain number of bytes/second, or a suffixed value such as "6M". ' +
-        'Refusing rather than dropping it, because dropping would silently remove ' +
+      `Bandwidth limit "${limit}" is not a size this can convert (${parsed}). ` +
+        'Use bytes/second (12500000), decimal bytes (12.5M), binary bytes (12Mi) or bits ' +
+        '(100Mbps). Refusing rather than dropping it, because dropping would silently remove ' +
         'a cap you set.'
     );
   }
-  const scale: Record<string, number> = { k: 1024, m: 1024 ** 2, g: 1024 ** 3, t: 1024 ** 4 };
-  // .at(2) rather than m[2]: the group is OPTIONAL, and this repo does not set noUncheckedIndexedAccess, so m[2] is typed as always-present and lint calls the guard redundant. .at() returns string | undefined, which is the truth.
-  const unit = m.at(2)?.toLowerCase() ?? '';
-  return Math.round(Number(m[1]) * (unit ? scale[unit] : 1));
+  return parsed === 0 ? undefined : parsed;
+}
+
+const DECIMAL_SCALE: Record<string, number> = { '': 1, k: 1e3, m: 1e6, g: 1e9, t: 1e12 };
+const BINARY_SCALE: Record<string, number> = { k: 2 ** 10, m: 2 ** 20, g: 2 ** 30, t: 2 ** 40 };
+
+/** Why a binary (`i`) unit is unusable, or undefined when it is fine. */
+function binaryUnitProblem(prefix: string, bits: boolean): string | undefined {
+  if (!prefix) return 'a binary unit needs a prefix';
+  if (bits) return 'bit rates are decimal';
+  return undefined;
+}
+
+/** Bytes/second for a trimmed rate string, or the reason it is refused. */
+function parseRate(limit: string): number | string {
+  const m = /^(\d+(?:\.\d+)?)\s*([KMGTkmgt]?)(i?)(B|B\/s|bit|bits|bit\/s|bps)?$/.exec(limit);
+  if (!m) return 'unknown unit';
+  const value = Number(m[1]);
+  const prefix = m[2].toLowerCase();
+  const binary = m[3] === 'i';
+  // .at(4) rather than m[4]: the group is OPTIONAL, and this repo does not set noUncheckedIndexedAccess, so m[4] is typed as always-present. .at() returns string | undefined, which is the truth.
+  const unit = m.at(4) ?? '';
+  const bits = unit.startsWith('bit') || unit === 'bps';
+  const unitProblem = binary ? binaryUnitProblem(prefix, bits) : undefined;
+  if (unitProblem) return unitProblem;
+  const scale = binary ? BINARY_SCALE[prefix] : DECIMAL_SCALE[prefix];
+  const rounded = Math.round((value * scale) / (bits ? 8 : 1));
+  if (rounded === 0 && value > 0) return 'it rounds to zero bytes/second';
+  return rounded;
+}
+
+/**
+ * Concurrent chunk uploads a scheduled or strategy run uses: modest, so a capped upload is a steady trickle rather than a fan of connections each waiting its turn (operator order 2026-10-29). renet's own default is 4.
+ */
+export const STRATEGY_UPLOAD_PARALLELISM = 2;
+
+/**
+ * The cap one strategy run uploads at, in bytes/second, or undefined for none.
+ *
+ * A destination's own `bandwidthLimit` overrides the strategy's (the precedence `backup strategy show` prints). One run is ONE upload whatever the number of destinations, so the tightest effective cap among them wins: honouring a looser one would break the tighter one's promise. Before this the run read only the strategy-level field, so `backup strategy set s --destination d --bwlimit 6M` stored a cap no unit ever applied.
+ */
+export function effectiveBandwidthLimit(
+  strategy: { bandwidthLimit?: string },
+  destinations: { bandwidthLimit?: string }[]
+): number | undefined {
+  const caps = destinations
+    .map((d) => bandwidthToBytesPerSecond(d.bandwidthLimit ?? strategy.bandwidthLimit))
+    .filter((v): v is number => v !== undefined);
+  if (caps.length > 0) return Math.min(...caps);
+  return bandwidthToBytesPerSecond(strategy.bandwidthLimit);
 }
 
 /** Why a cron expression cannot become an OnCalendar line, or undefined when it can. */
@@ -97,7 +149,7 @@ export function strategyUnschedulableReason(
     destinationsReason(destinations);
   if (reason) return reason;
   try {
-    bandwidthToBytesPerSecond(strategy.bandwidthLimit);
+    effectiveBandwidthLimit(strategy, destinations);
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }

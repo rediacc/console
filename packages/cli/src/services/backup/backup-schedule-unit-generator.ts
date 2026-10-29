@@ -17,8 +17,9 @@ import { envFilePath } from './backup-env-file.js';
 import type { UnitScope } from './backup-schedule-targets.js';
 import {
   assertStrategySchedulable,
-  bandwidthToBytesPerSecond,
+  effectiveBandwidthLimit,
   invalidCronReason,
+  STRATEGY_UPLOAD_PARALLELISM,
 } from './backup-strategy-validate.js';
 
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
@@ -111,6 +112,7 @@ interface BackupBuild {
  */
 function buildChunkStoreCommand(
   strategy: BackupStrategyConfig,
+  destinations: BackupStrategyDestination[],
   datastore: string,
   remoteRenetPath: string,
   scope: UnitScope
@@ -125,8 +127,10 @@ function buildChunkStoreCommand(
   } else {
     for (const guid of scope.exclude) parts.push(`--exclude-repo ${guid}`);
   }
-  const bwlimit = bandwidthToBytesPerSecond(strategy.bandwidthLimit);
+  // The cap is the tightest of the strategy's and its destinations' (effectiveBandwidthLimit), in bytes/second. Parallelism is always pinned: a capped run fanned over renet's default workers only queues them on the one budget.
+  const bwlimit = effectiveBandwidthLimit(strategy, destinations);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
+  parts.push(`--parallelism ${STRATEGY_UPLOAD_PARALLELISM}`);
   return parts.join(' ');
 }
 
@@ -157,7 +161,7 @@ export function buildBackupCommands(
   // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. One run is ONE snapshot whatever the number of destinations: a second identical command would upload the same cells again and commit a second manifest for the same point in time.
   assertStrategySchedulable(strategy, destinations);
   return {
-    commands: [buildChunkStoreCommand(strategy, datastore, remoteRenetPath, scope)],
+    commands: [buildChunkStoreCommand(strategy, destinations, datastore, remoteRenetPath, scope)],
     envVars,
   };
 }
@@ -188,6 +192,21 @@ const LICENSE_RENEW_JITTER = '45s';
  */
 function licenseRenewCommand(remoteRenetPath: string): string {
   return `-${remoteRenetPath} license renew --jitter ${LICENSE_RENEW_JITTER}`;
+}
+
+/**
+ * A backup is background work and runs below the repositories it protects, on CPU and on disk: a hosting provider once took a machine offline over a backup's CPU load (operator order 2026-10-29). These are the unit-file form of the `nice -n 10 ionice -c 3` prefix the renet function puts on an ad-hoc snapshot; the ad-hoc strategy run passes the same pair to systemd-run.
+ */
+export const LOW_PRIORITY_PROPERTIES = ['Nice=10', 'IOSchedulingClass=idle'] as const;
+const LOW_PRIORITY_DIRECTIVES = LOW_PRIORITY_PROPERTIES.join('\n');
+
+/**
+ * The `systemd-run` line `backup run` uses when a strategy has no deployed unit: the strategy's commands (which carry its cap and parallelism) inside a transient unit at the same low priority a scheduled unit gets.
+ */
+export function buildAdhocSystemdRun(unit: string, commands: string[]): string {
+  const props = LOW_PRIORITY_PROPERTIES.map((p) => `-p ${p}`).join(' ');
+  const fullCmd = commands.join(' && ');
+  return `sudo systemd-run --unit=${unit} --remain-after-exit ${props} /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
 }
 
 interface ServiceUnitBuild {
@@ -238,6 +257,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+${LOW_PRIORITY_DIRECTIVES}
 TimeoutStartSec=infinity
 TimeoutStopSec=${stopTimeout}
 ${envFileLine}${renewLine}${execLines.join('\n')}

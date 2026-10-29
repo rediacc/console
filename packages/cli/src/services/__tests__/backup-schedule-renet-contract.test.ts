@@ -10,7 +10,8 @@
  * What is checked, mirroring pflag and renet's own validation without executing anything:
  *   - the subcommand is `backup snapshot`;
  *   - every token is a declared long flag (`--name value` or `--name=value`), no positionals;
- *   - Bool flags take no separate value; Int/Int64 values are integers (`--bwlimit 6M` dies in pflag);
+ *   - Bool flags take no separate value; Int/Int64 values are integers; a `rateFlag` (`--bwlimit`) takes what
+ *     renet's pkg/bwrate parses, checked here with the CLI's bandwidthToBytesPerSecond (same grammar, same vectors);
  *   - flags renet passes to requireRepoGUIDs take GUIDs only (renet refuses a repo NAME at run time).
  *
  * The renet submodule is checked out by the CI job that runs these tests (ci-quality.yml, the
@@ -25,6 +26,7 @@ import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import { computeDesiredUnits } from '../backup/backup-schedule-reconcile.js';
 import { machineUnitSpecs, type ScheduledStrategy } from '../backup/backup-schedule-targets.js';
+import { bandwidthToBytesPerSecond } from '../backup/backup-strategy-validate.js';
 
 const RENET_CMD_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -33,7 +35,15 @@ const RENET_CMD_DIR = path.resolve(
 const SNAPSHOT_GO = path.join(RENET_CMD_DIR, 'backup_snapshot.go');
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type FlagType = 'String' | 'StringArray' | 'StringSlice' | 'Bool' | 'Int' | 'Int64' | 'Duration';
+type FlagType =
+  | 'String'
+  | 'StringArray'
+  | 'StringSlice'
+  | 'Bool'
+  | 'Int'
+  | 'Int64'
+  | 'Duration'
+  | 'Rate';
 
 interface SnapshotFlagSet {
   flags: Map<string, FlagType>;
@@ -61,9 +71,29 @@ function readSnapshotFlagSet(): SnapshotFlagSet {
     if (!name) throw new Error(`cannot resolve flag name ${m[4]} in ${SNAPSHOT_GO}`);
     flags.set(name, m[1] as FlagType);
   }
+  // `Flags().Var(&rateFlag{}, "bwlimit", ...)`: a custom pflag.Value, read as its own type.
+  for (const m of src.matchAll(
+    /backupSnapshotCmd\.Flags\(\)\.Var\(\s*&rateFlag\{\},\s*"([^"]+)"/g
+  )) {
+    flags.set(m[1], 'Rate');
+  }
   if (flags.size === 0) throw new Error(`no backupSnapshotCmd flags found in ${SNAPSHOT_GO}`);
   const guidOnly = new Set([...src.matchAll(/requireRepoGUIDs\(\s*"([\w-]+)"/g)].map((m) => m[1]));
   return { flags, guidOnly };
+}
+
+/** pflag's parse of an Int/Int64 value, or renet's rateFlag parse of a Rate value. */
+function typedValueProblem(name: string, type: FlagType, value: string): string | undefined {
+  if ((type === 'Int' || type === 'Int64') && !/^-?\d+$/.test(value)) {
+    return `invalid argument "${value}" for --${name}: not an integer`;
+  }
+  if (type !== 'Rate') return undefined;
+  try {
+    bandwidthToBytesPerSecond(value);
+    return undefined;
+  } catch {
+    return `invalid argument "${value}" for --${name}: not a rate`;
+  }
 }
 
 /** Problems with one flag's value: pflag's type parse, then renet's GUID-only rule. */
@@ -80,9 +110,8 @@ function valueProblems(
   }
   if (value === undefined) return [`flag needs an argument: --${name}`];
   const problems: string[] = [];
-  if ((type === 'Int' || type === 'Int64') && !/^-?\d+$/.test(value)) {
-    problems.push(`invalid argument "${value}" for --${name}: not an integer`);
-  }
+  const typeProblem = typedValueProblem(name, type, value);
+  if (typeProblem) problems.push(typeProblem);
   if (set.guidOnly.has(name) && !GUID.test(value)) {
     problems.push(`--${name} takes repository GUIDs only, got "${value}"`);
   }
@@ -197,7 +226,8 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
 
   it('reads the real flag set, including the GUID-only repo flags', () => {
     expect(set.flags.get('datastore')).toBe('String');
-    expect(set.flags.get('bwlimit')).toBe('Int64');
+    expect(set.flags.get('bwlimit')).toBe('Rate');
+    expect(set.flags.get('parallelism')).toBe('Int');
     expect(set.flags.get('cold')).toBe('Bool');
     expect(set.guidOnly.has('repo')).toBe(true);
   });
@@ -220,9 +250,12 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     ).toEqual(['--repo takes repository GUIDs only, got "mail"']);
   });
 
-  it('an unconverted bandwidth limit and an unknown flag are refused (control)', () => {
-    expect(snapshotArgvProblems('/r backup snapshot --bwlimit 6M --mode=hot', set)).toEqual([
-      'invalid argument "6M" for --bwlimit: not an integer',
+  it('an ambiguous bandwidth limit, a non-integer parallelism and an unknown flag are refused (control)', () => {
+    expect(
+      snapshotArgvProblems('/r backup snapshot --bwlimit 100Mb --parallelism two --mode=hot', set)
+    ).toEqual([
+      'invalid argument "100Mb" for --bwlimit: not a rate',
+      'invalid argument "two" for --parallelism: not an integer',
       'unknown flag: --mode',
     ]);
   });

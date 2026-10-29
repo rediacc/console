@@ -64,7 +64,7 @@ describe('backup strategy bind refuses what schedule would refuse (G8)', () => {
     strategies = { s: { schedule: 'daily', destinations: [hosted] } };
     await expect(assertStrategyBindable('s')).rejects.toThrow(/cron/);
     strategies = { s: { schedule: '0 3 * * *', bandwidthLimit: 'fast', destinations: [hosted] } };
-    await expect(assertStrategyBindable('s')).rejects.toThrow(/bandwidthLimit/);
+    await expect(assertStrategyBindable('s')).rejects.toThrow(/Bandwidth limit/);
   });
 
   it('ignores a disabled unschedulable destination, as the scheduler does', async () => {

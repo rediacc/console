@@ -148,8 +148,10 @@
         "completed": "Instantánea guardada para {{name}}",
         "description": "Subir una instantánea al almacenamiento fragmentado: primero el inventario completo, después las celdas modificadas",
         "failed": "Falló la instantánea de {{name}}",
+        "optionBwlimit": "Límite de subida: bytes por segundo, unidades decimales (12.5M = 12,5 MB/s), binarias (12Mi) o bits (100Mbps). Sin indicarlo no hay límite",
         "optionCold": "Detiene los contenedores, congela, reinicia y solo entonces sube. Cuesta un corte real breve a cambio de una instantánea coherente con la aplicación; no se puede combinar con --dry-run",
         "optionDryRun": "Solo planificar: sin subida. Informa qué se movería",
+        "optionParallelism": "Cuántos fragmentos se suben a la vez (4 por defecto)",
         "optionReseed": "Desconfiar del ancla local y subir un inventario completo (vuelve a subir todo y recarga la cuota)",
         "quotaRefused": "Instantánea rechazada para {{name}}: cuota de almacenamiento superada. Elimina instantáneas antiguas o aumenta la cuota",
         "starting": "Creando instantánea de {{name}} en el almacenamiento fragmentado..."

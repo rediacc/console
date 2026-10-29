@@ -961,6 +961,29 @@
           "label": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run"
         },
         {
+          "flags": "--bwlimit <rate>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionBwlimit",
+          "label": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+        },
+        {
+          "flags": "--parallelism <n>",
+          "long": "parallelism",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionParallelism",
+          "label": "Number of chunks uploaded at once (default 4)"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,

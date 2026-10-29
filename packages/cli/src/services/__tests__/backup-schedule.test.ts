@@ -260,7 +260,7 @@ describe('generateServiceUnit', () => {
     );
     expect(serviceContent).toContain('ExecStart=/usr/bin/renet backup snapshot');
     // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and the unit-suffixed '6M' the schema declares would die at cobra's flag parse inside the timer, at run time, on a machine nobody is watching.
-    expect(serviceContent).toContain('--bwlimit 6291456');
+    expect(serviceContent).toContain('--bwlimit 6000000');
     expect(serviceContent).not.toContain('--bwlimit 6M');
     // The chunk store carries no credentials by construction, so the
     // EnvironmentFile= sidecar has nothing to hold any more.

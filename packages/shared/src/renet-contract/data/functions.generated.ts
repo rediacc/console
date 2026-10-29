@@ -134,6 +134,10 @@ export interface BackupSnapshotParams {
   dryRun?: boolean;
   /** Quiesce first: stop each repository's containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run */
   cold?: boolean;
+  /** Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited */
+  bwlimit?: string;
+  /** Concurrent chunk uploads (0 = engine default) */
+  parallelism?: number;
 }
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */
@@ -1933,6 +1937,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'bool',
         default: 'false',
         help: 'Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run',
+      },
+      bwlimit: {
+        type: 'string',
+        help: 'Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited',
+      },
+      parallelism: {
+        type: 'int',
+        help: 'Concurrent chunk uploads (0 = engine default)',
       },
     },
   },

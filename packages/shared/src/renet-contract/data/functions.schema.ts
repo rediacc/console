@@ -110,6 +110,8 @@ export const BackupSnapshotParamsSchema = z.object({
   reseed: z.boolean().default(false).optional().describe('Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)'),
   dryRun: z.boolean().default(false).optional().describe('Plan only: no session, no grant, no upload; report what would move'),
   cold: z.boolean().default(false).optional().describe('Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run'),
+  bwlimit: z.string().optional().describe('Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
+  parallelism: z.number().int().optional().describe('Concurrent chunk uploads (0 = engine default)'),
 });
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */

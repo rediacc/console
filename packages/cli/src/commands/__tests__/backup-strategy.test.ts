@@ -105,7 +105,9 @@ describe('creating a destination an operator can actually schedule', () => {
       WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
-    expect(commands).toEqual([`/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH}`]);
+    expect(commands).toEqual([
+      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --parallelism 2`,
+    ]);
     // No credential reaches the unit: the machine authenticates with its licence blob and the server hands back a short-lived grant.
     expect(envVars).toEqual({});
   });

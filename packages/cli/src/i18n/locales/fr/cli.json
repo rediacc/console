@@ -148,8 +148,10 @@
         "completed": "Instantané enregistré pour {{name}}",
         "description": "Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite",
         "failed": "Échec de l'instantané pour {{name}}",
+        "optionBwlimit": "Plafond d'envoi : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
         "optionCold": "Arrête les conteneurs, fige, redémarre, puis téléverse. Coûte une brève coupure réelle en échange d'un instantané cohérent au niveau applicatif ; incompatible avec --dry-run",
         "optionDryRun": "Planifier seulement : aucun envoi. Indique ce qui serait déplacé",
+        "optionParallelism": "Nombre de blocs envoyés en parallèle (4 par défaut)",
         "optionReseed": "Ne pas faire confiance à l'ancre locale et renvoyer un inventaire complet (renvoie tout et recharge le quota)",
         "quotaRefused": "Instantané refusé pour {{name}} : quota de stockage dépassé. Purgez d'anciens instantanés ou augmentez le quota",
         "starting": "Création de l'instantané de {{name}} vers le stockage fragmenté..."
