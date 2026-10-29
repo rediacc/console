@@ -21,6 +21,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import { writeStdout } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { bindStepHandler } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { CliExitError, notFound, stateMismatch } from '../utils/cli-exit-error.js';
@@ -67,6 +68,8 @@ async function rollbackCreateRepo(name: string): Promise<void> {
     outputService.warn(t('commands.repo.create.rollback', { repository: name }));
   }
 }
+
+bindStepHandler('rollbackCreate', ({ params }) => rollbackCreateRepo(String(params.repo)));
 
 /** Render the create result: timeline/success on success, rollback + failure otherwise. */
 async function renderCreateResult(

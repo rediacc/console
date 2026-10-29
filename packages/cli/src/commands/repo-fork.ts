@@ -30,6 +30,7 @@ import {
   type RenetEvent,
 } from '../services/executor/executor-factory.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
+import { bindStepHandler } from '../services/jobs/steps.js';
 import {
   type MachineConnectionLease,
   machineConnections,
@@ -177,6 +178,12 @@ async function rollbackFork(forkKey: string, keyState: ForkKeyState): Promise<vo
   }
   await removeDeployedForkKey(forkKey, keyState);
 }
+
+bindStepHandler('rollbackFork', ({ params }) => {
+  const text = (key: string) =>
+    typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
+  return rollbackFork(String(params.repo), { machine: text('machine'), guid: text('guid') });
+});
 
 /** Validate and register a new fork in the config. Returns the new GUID and networkId. */
 async function registerFork(

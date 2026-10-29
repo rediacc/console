@@ -208,6 +208,10 @@
     "./paths/*": {
       "types": "./dist/paths/*.d.ts",
       "default": "./dist/paths/*.js"
+    },
+    "./job-poll/*": {
+      "types": "./dist/job-poll/*.d.ts",
+      "default": "./dist/job-poll/*.js"
     }
   },
   "files": [

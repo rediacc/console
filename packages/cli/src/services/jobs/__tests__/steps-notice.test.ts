@@ -178,6 +178,18 @@ describe('the notice in a text run', () => {
     expect(store.pending()).toHaveLength(1);
   });
 
+  it('announces a ticket that still owes a step once, then only the pending line', () => {
+    addFinished();
+    const write = vi.fn();
+    printFinishedNotices({ store, write });
+    printFinishedNotices({ store, write });
+
+    const lines = write.mock.calls.map((c) => c[0] as string);
+    expect(lines.filter((l) => l.includes('succeeded'))).toHaveLength(1);
+    expect(lines.filter((l) => l === `steps pending: rdc job wait ${JOB_ID}`)).toHaveLength(2);
+    expect(store.pending()).toHaveLength(1);
+  });
+
   it('starts no step once the budget is spent', async () => {
     addFinished();
     const runner = spyRunner();

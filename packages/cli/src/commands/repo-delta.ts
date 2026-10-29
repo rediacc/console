@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { RepositoryConfig } from '@rediacc/shared/config-schema';
 import { configService } from '../services/config/config-resources.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { bindStepHandler } from '../services/jobs/steps.js';
 
 /**
  * Resolve a hands-free delta base for pushing `repoConfig` to `machine`.
@@ -135,3 +136,14 @@ async function recordPushBase(
     /* best-effort: retention already happened on the machine */
   }
 }
+
+bindStepHandler('recordPushBase', async ({ params, finishedAt }) => {
+  const method = params.method === 'delta' ? 'delta' : 'rsync';
+  await recordPushBase(
+    String(params.repo),
+    String(params.machine),
+    method,
+    String(params.verifiedBase),
+    finishedAt ?? new Date().toISOString()
+  );
+});

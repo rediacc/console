@@ -47,6 +47,7 @@ export type TicketKind =
   | 'seen'
   | 'finished'
   | 'acknowledged'
+  | 'announced'
   | 'then-started'
   | 'step-done';
 
@@ -117,6 +118,8 @@ export interface Ticket {
   steps: TicketStep[];
   stepsDone: string[];
   acknowledged: boolean;
+  /** The finished notice was printed once; a ticket still owing a step gets only the pending line afterwards. */
+  announced: boolean;
   /** Timestamp of the last event that observed the job (seen or finished). */
   lastCheckedAt?: string;
 }
@@ -224,6 +227,7 @@ export function foldEvents(events: TicketEvent[]): Ticket[] {
         steps: [],
         stepsDone: [],
         acknowledged: false,
+        announced: false,
       };
       tickets.set(e.requestId, t);
     }
@@ -260,6 +264,9 @@ const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => vo
   },
   acknowledged: (t) => {
     t.acknowledged = true;
+  },
+  announced: (t) => {
+    t.announced = true;
   },
   'then-started': (t) => {
     t.thenStarted = true;

@@ -5,7 +5,8 @@
  * NOTICE_MAX_TICKETS, in parallel, inside NOTICE_BUDGET_MS, one status read
  * each, and only tickets not checked in the last NOTICE_THROTTLE_MS. postAction
  * prints one stderr line per ticket that finished and acknowledges it, so each
- * ticket is announced once. With no tickets the check makes no machine call.
+ * ticket is announced once (a ticket still owing a step is marked announced and
+ * gets only the pending line afterwards). With no tickets the check makes no machine call.
  *
  * Steps (section 18): in an interactive text run the notice runs the steps a
  * finished ticket owes, for up to NOTICE_STEPS_BUDGET_MS after the command's
@@ -147,9 +148,10 @@ export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 
   try {
     const now = (deps.now ?? Date.now)();
     for (const ticket of finishedTickets(deps.store)) {
-      deps.write(formatNotice(ticket, now));
+      if (!ticket.announced) deps.write(formatNotice(ticket, now));
       if (pendingStepNames(ticket).length > 0) {
         deps.write(pendingLine(ticket));
+        if (!ticket.announced) deps.store.append('announced', ticket.requestId);
         continue;
       }
       deps.store.append('acknowledged', ticket.requestId);

@@ -12,6 +12,7 @@ import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { bindStepHandler } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -619,6 +620,10 @@ async function reportRestoreStats(stats: RestoreStats | undefined): Promise<void
     outputService.info(t('commands.backup.restore.statsSeedSkipped', { skipped }));
   }
 }
+
+bindStepHandler('reportRestoreStats', ({ output }) =>
+  reportRestoreStats(parseRestoreStats(output))
+);
 
 /** Deploy a restored repo (`--up`), rendering the health-gate outcome. */
 async function restoreDeploy(

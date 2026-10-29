@@ -10,6 +10,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
+import { bindStepHandler } from '../services/jobs/steps.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { lineageOf, RENET_NO_LISTING_EXIT } from './backup-storage-browse.js';
@@ -185,7 +186,12 @@ export async function runRestorePath(args: {
     return;
   }
 
-  const record = parseRecord(result.stdout);
+  await reportRestorePath(repoKey, result.stdout);
+}
+
+/** Print the restore-path record parsed from the job's stdout. */
+async function reportRestorePath(repoKey: string, stdout: string | undefined): Promise<void> {
+  const record = parseRecord(stdout);
   if (!record) {
     throw new Error(`restore-path returned no record for "${repoKey}"`);
   }
@@ -215,3 +221,7 @@ export async function runRestorePath(args: {
     outputService.warn(t('commands.backup.restore.pathSkipped', { count: record.skipped }));
   }
 }
+
+bindStepHandler('reportRestorePath', ({ params, output }) =>
+  reportRestorePath(String(params.repo), output)
+);
