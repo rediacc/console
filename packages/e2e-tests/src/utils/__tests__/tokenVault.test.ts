@@ -68,19 +68,19 @@ describe('buildTokenVault non-string values', () => {
 });
 
 describe('testFunction with a token', () => {
-  it('refuses a call carrying both a password and a token instead of dropping the token', () => {
+  it('refuses a call carrying both a password and a token instead of dropping the token', async () => {
     const runner = Object.create(RenetFunctionsTestRunner.prototype) as unknown as Pick<
       RenetFunctionsTestRunner,
       'testFunction'
     >;
-    expect(() =>
+    await expect(
       runner.testFunction({
         function: 'kube_join',
         password: 'pw',
         repository: 'r',
         token: TOKEN,
       })
-    ).toThrow(/token/);
+    ).rejects.toThrow(/token/);
   });
 
   it('keeps the token out of every command and sends it on stdin', async () => {

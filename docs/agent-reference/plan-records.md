@@ -114,9 +114,9 @@ a slug, and a stale `Status:` header being a claim rather than evidence.
 
 ## Live proof: a plan that touches a deployable surface
 
-A plan whose `Owns:` globs hit a deployable surface closes only on a live receipt from bench or hostinger. The design is `agent/plans/PLAN-tested-on-bench.md`; the surface map is `.ci/config/proof-tiers.json`, read through `.ci/rediacc_ci/proof/surfaces.py`. Deploy tooling and proof tooling are not surfaces, so a plan owning only those carries `Live-Proof: none`.
+A plan whose `Owns:` globs hit a deployable surface closes only on a live receipt from bench or hostinger. The design is `agent/plans/PLAN-tested-on-bench.md`; the surface map is `.ci/config/proof-tiers.json`, read through `.ci/rediacc_ci/proof/surfaces.py`. Deploy tooling and proof tooling are not surfaces. A plan is a **required plan** when its `Owns:` globs hit at least one mapped surface; a plan owning only tooling is not required, so it owes no `Live-Proof:` line, and a `none` line it writes anyway still has to cite a ruling.
 
-**The header.** One anchored line inside the 12-line X window, parsed by `parse_live_proof` in `.claude/hooks/stop/wl_plandeps.py` (the same parser serves the pre-edit guard and the gate), in one of two forms:
+**The header.** One anchored line inside the first 12 lines of the plan file (`X_HEADER_LINES` in `wl_plandeps.py`, the window `Owns:` and `Concurrency:` share), parsed by `parse_live_proof` in `.claude/hooks/stop/wl_plandeps.py` (the same parser serves the pre-edit guard and the gate), in one of two forms:
 
 - `Live-Proof: bench|hostinger[, <target>...] -- <reason>` declares the targets. The reason needs at least 12 characters. `edge` and `stable` are refused by name.
 - `Live-Proof: none -- <reason>` is the opt-out. The reason must cite a ruling, either a closed worklist item (`#<id>`) or a committed operator quote (`"<quote>" in <path>`), resolved by `resolve_live_proof_waiver`. A `none` with no resolvable citation is refused.

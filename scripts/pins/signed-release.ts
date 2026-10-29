@@ -23,7 +23,8 @@
  *                 THE BUMP: an unverifiable chain is never folded into a pass.
  *   4. digests    SHA256SUMS parses, names every asset a site needs, and agrees with every
  *                 digest the release API published for the same asset.
- * Checks 1, 2 and 4 run offline over the recorded files, which is what the selftest drives.
+ * Checks 1 and 2 run offline over the recorded files. Check 4 needs the API digests, so only a bump
+ * (verifySignedRelease) runs it; the selftest drives it with fixtures.
  *
  * THE RECORD. The verified SHA256SUMS, its signature and its certificate are written under the
  * spec's `evidence` directory, byte for byte as published. The pin's sha256 sites name that
@@ -35,8 +36,9 @@
  *   npx tsx scripts/pins/signed-release.ts --selftest      the offline controls (also run by
  *                                                          `npm run pins -- --selftest`)
  *   npx tsx scripts/pins/signed-release.ts --verify-record <id>
- *                                                          checks 1, 2 and 4 over the recorded
- *                                                          files, then 3 when cosign is present
+ *                                                          checks 1 and 2 over the recorded
+ *                                                          files, then 3; a missing cosign
+ *                                                          exits 1, it does not skip check 3
  */
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';

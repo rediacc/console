@@ -804,7 +804,7 @@ export class RenetFunctionsTestRunner {
       // The passphrase rides in a vault file uploaded over stdin, never in a logged command line.
       return this.runVaultJSON(
         opts.function,
-        buildPasswordVault(opts, DEFAULT_NETWORK_ID),
+        () => buildPasswordVault(opts, DEFAULT_NETWORK_ID),
         opts.timeout
       );
     }
@@ -812,7 +812,7 @@ export class RenetFunctionsTestRunner {
       // The join token rides in a vault file uploaded over stdin, never in a logged command line.
       return this.runVaultJSON(
         opts.function,
-        buildTokenVault(opts, DEFAULT_NETWORK_ID),
+        () => buildTokenVault(opts, DEFAULT_NETWORK_ID),
         opts.timeout
       );
     }
@@ -937,18 +937,21 @@ export class RenetFunctionsTestRunner {
     vault: VaultBuilder,
     timeout?: number
   ): Promise<ExecResult> {
-    return this.runVaultJSON(functionName, vault.toJSON(), timeout);
+    return this.runVaultJSON(functionName, () => vault.toJSON(), timeout);
   }
 
   /**
    * Upload vault JSON to the target VM over stdin (it can hold repository credentials, so it never
    * rides in the logged command text) and run the function against it.
+   *
+   * The vault arrives as a builder so that a refusal it throws (an option the vault cannot carry) surfaces as a rejected promise, like every other failure of this async method, and not as a synchronous throw from testFunction.
    */
   private async runVaultJSON(
     functionName: string,
-    vaultJSON: string,
+    buildVaultJSON: () => string,
     timeout?: number
   ): Promise<ExecResult> {
+    const vaultJSON = buildVaultJSON();
     const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
     const uploadResult = await this.executeViaBridge(`umask 077 && cat > ${vaultPath}`, timeout, {
       stdin: vaultJSON,

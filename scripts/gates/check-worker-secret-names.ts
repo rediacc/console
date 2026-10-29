@@ -176,6 +176,9 @@ export function schemaKeys(text: string): Set<string> {
   return new Set([...text.matchAll(SCHEMA_KEY)].map((m) => m[1]));
 }
 
+/** A Python `wrangler secret bulk` argv: a literal `"wrangler"` head or the pinned `wrangler.ARGV` splat. */
+const PY_BULK_ARGV = /(?:"wrangler"|\bwrangler\.ARGV),\s*"secret",\s*"bulk"/;
+
 /**
  * Does this shell source build a `wrangler secret bulk` payload?
  *
@@ -190,9 +193,6 @@ export function schemaKeys(text: string): Set<string> {
  * that merely mention it; a `KEY: $var` line alone matches any jq object. A file
  * doing both is piping a hand-built payload at a Worker, which is the class.
  */
-/** A Python `wrangler secret bulk` argv: a literal `"wrangler"` head or the pinned `wrangler.ARGV` splat. */
-const PY_BULK_ARGV = /(?:"wrangler"|\bwrangler\.ARGV),\s*"secret",\s*"bulk"/;
-
 export function looksLikeBuilder(text: string, file = ''): boolean {
   if (file.endsWith('.py')) {
     // A Python builder spells the command as an argv list, and the file must also carry a payload the extractors can read: a test that only quotes the argv has none.

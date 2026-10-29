@@ -17,6 +17,11 @@ describe('formatExecutionLog', () => {
     expect(logged).toContain(`[STDOUT] ${TOKEN.length} bytes (redacted)`);
     expect(logged).toContain('[EXIT] 0');
   });
+
+  it('counts UTF-8 bytes, not UTF-16 code units', () => {
+    const logged = formatExecutionLog('é€', '', 0, true).join('\n');
+    expect(logged).toContain('[STDOUT] 5 bytes (redacted)');
+  });
 });
 
 describe('KubeMethods secret-output verbs', () => {

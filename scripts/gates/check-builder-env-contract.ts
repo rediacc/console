@@ -119,6 +119,10 @@ interface Pair {
  * Measured 2026-09-02: 44/32/4, 27/25/0, 17/16/0 (exports / direct reads /
  * fan-ins). The floors sit under those, far enough to survive an honest edit
  * and close enough that a lost payload is a refusal, not a pass.
+ *
+ * Region-and-channel fan-ins (`SUFFIXED_CHANNEL_PREFIXES`), counted when channelFanInFloor was
+ * added: 1/0/0, one prefix (`ACCOUNT_CONFIG_SERVER_KEY`) in the account builder and none in the
+ * other two.
  */
 const PAIRS: Pair[] = [
   {

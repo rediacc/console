@@ -14,10 +14,14 @@ export function formatExecutionLog(
 ): string[] {
   const lines: string[] = [];
   if (stdout.trim()) {
-    lines.push(redact ? `[STDOUT] ${stdout.length} bytes (redacted)` : `[STDOUT]\n${stdout}`);
+    lines.push(
+      redact ? `[STDOUT] ${Buffer.byteLength(stdout)} bytes (redacted)` : `[STDOUT]\n${stdout}`
+    );
   }
   if (stderr.trim()) {
-    lines.push(redact ? `[STDERR] ${stderr.length} bytes (redacted)` : `[STDERR]\n${stderr}`);
+    lines.push(
+      redact ? `[STDERR] ${Buffer.byteLength(stderr)} bytes (redacted)` : `[STDERR]\n${stderr}`
+    );
   }
   lines.push(`[EXIT] ${code}`);
   return lines;

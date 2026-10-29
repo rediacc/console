@@ -219,14 +219,16 @@ export function createToolchainDriver(
         });
       }
     }
-    // A package.json site (toolchain:wrangler's workers/account/package.json) leaves its lockfile naming the old
-    // version unless the lockfile pass runs in that directory, so npm ci refuses the pair and the old tool stays installed.
+    // A package.json site (toolchain:wrangler's workers/account/package.json) leaves its lockfile naming the old version unless the lockfile pass runs in that directory, so npm ci refuses the pair and the old tool stays installed.
+    // pinnedNpm throws PlanRefused when .devcontainer/toolchain.env lacks NPM_VERSION, so a package.json site refuses the plan there instead of planning with an ambient npm (toolchain:wrangler planned without that file before this pass existed).
     if (entry.id !== 'toolchain:npm') {
       for (const s of entry.sites.filter(
         (x) => x.file === 'package.json' || x.file.endsWith('/package.json')
       )) {
         const dir = path.posix.dirname(s.file);
         const lock = path.posix.join(dir, 'package-lock.json');
+        // No lockfile beside the site means nothing to go stale, and the pass would CREATE one and declare it in `writes`.
+        if (!fs.existsSync(path.join(ctx.root, s.repo, lock))) continue;
         steps.push({
           label: `canonical lockfile pass for ${s.repo === '.' ? '' : `${s.repo}/`}${lock} after the ${s.file} rewrite`,
           run: `npx -y npm@${pinnedNpm(ctx.root)} install --package-lock-only --ignore-scripts`,

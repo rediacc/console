@@ -48,7 +48,7 @@ const LOCKS = [
   'private/account/e2e/package-lock.json',
 ];
 
-function tree(): string {
+function tree(locks: string[] = LOCKS): string {
   return makeTree(
     [
       ENV,
@@ -64,7 +64,7 @@ function tree(): string {
       '.ci/scripts/private/license-mint/go.mod',
     ],
     {
-      ...Object.fromEntries(LOCKS.map((l) => [l, '{}\n'])),
+      ...Object.fromEntries(locks.map((l) => [l, '{}\n'])),
       'private/account/Dockerfile': fs.readFileSync(
         path.join(LIVE_ROOT, 'private/account/Dockerfile'),
         'utf8'
@@ -430,6 +430,38 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
         `"wrangler": "${patchOf(wr)}"`
       ),
       w.refused
+    );
+    const noLock = await plan(
+      'toolchain:wrangler',
+      patchOf(wr),
+      {},
+      tree(LOCKS.filter((l) => l !== 'workers/account/package-lock.json'))
+    );
+    add(
+      'wrangler: a package.json site with no lockfile beside it gets no lockfile pass, so none is created',
+      noLock.plan !== undefined &&
+        !noLock.plan.steps.some(
+          (st) =>
+            st.cwd === 'workers/account' ||
+            st.writes.some((x) => x.file === 'workers/account/package-lock.json')
+        ),
+      noLock.refused ?? (noLock.plan?.steps ?? []).map((st) => `${st.cwd}: ${st.run}`).join(' | ')
+    );
+    const noNpmRoot = tree();
+    const envPath = path.join(noNpmRoot, ENV);
+    fs.writeFileSync(
+      envPath,
+      fs
+        .readFileSync(envPath, 'utf8')
+        .split('\n')
+        .filter((l) => !l.startsWith('NPM_VERSION='))
+        .join('\n')
+    );
+    const noNpm = await plan('toolchain:wrangler', patchOf(wr), {}, noNpmRoot);
+    add(
+      'wrangler: a toolchain.env without NPM_VERSION refuses the plan rather than planning an ambient npm',
+      (noNpm.refused ?? '').includes('NPM_VERSION is missing'),
+      noNpm.refused ?? 'a plan was returned'
     );
     const node = createToolchainDriver(stubUpstream({}), mutant);
     let why = '';

@@ -391,9 +391,10 @@ export function extractConstArray(content: string, name: string): string[] | nul
   const open = new RegExp(`\\b${name}\\s*=\\s*\\[`).exec(content);
   if (!open) return null;
   const rest = content.slice(open.index + open[0].length);
-  const close = /\]\s*as\s+const\b/.exec(rest);
-  if (!close) return null;
-  return [...rest.slice(0, close.index).matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1]!);
+  // The array of quoted verbs ends at the FIRST `]`, which must be followed by `as const`. Searching the rest of the file for `] as const` instead would run a missing `as const` on into a later array.
+  const end = rest.indexOf(']');
+  if (end < 0 || !/^\s*as\s+const\b/.test(rest.slice(end + 1))) return null;
+  return [...rest.slice(0, end).matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1]!);
 }
 
 /**
@@ -525,6 +526,14 @@ export function runControls(): string[] {
   check(
     'MIRROR: an absent array is null, not empty',
     extractConstArray('export const X = [] as const;', 'RENET_BRIDGE_FUNCTIONS'),
+    null
+  );
+  check(
+    'MIRROR: an array without `as const` is null, not the next array read into it',
+    extractConstArray(
+      "export const RENET_BRIDGE_FUNCTIONS = ['a'];\nexport const LATER = ['z'] as const;\n",
+      'RENET_BRIDGE_FUNCTIONS'
+    ),
     null
   );
   check(

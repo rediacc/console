@@ -522,7 +522,16 @@ test.describe
       expect(record.errors ?? []).toEqual([]);
     });
 
-    test('7. docker-prune --apply --offline brings the daemon back', async () => {
+    test('7. docker-prune --apply --offline stops the daemon and brings it back', async () => {
+      // The socket's change time is when the daemon bound it. An offline window that stopped and restarted the daemon leaves a newer one, so an answering daemon alone (which a never-stopped daemon also gives) is not taken as the proof.
+      const socket = `${WK_RUNTIME_DIR}/docker-${DEFAULT_NETWORK_ID}.sock`;
+      const boundAt = async (): Promise<number> => {
+        const res = await runner.executeViaBridge(`sudo stat -c %Z ${socket}`);
+        expect(res.code, `stat ${socket}: ${res.stderr}`).toBe(0);
+        return Number(res.stdout.trim());
+      };
+      const boundBefore = await boundAt();
+      expect(boundBefore, 'the daemon socket has no change time').toBeGreaterThan(0);
       const run = await runner.repositoryDockerPrune({
         name: repositoryName,
         datastorePath,
@@ -541,5 +550,12 @@ test.describe
         `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${record.network_id}.sock info --format '{{.ServerVersion}}'`
       );
       expect(info.code, `docker info after offline prune: ${info.stderr}`).toBe(0);
+      expect(record.network_id, 'the prune ran against another daemon than the one measured').toBe(
+        Number(DEFAULT_NETWORK_ID)
+      );
+      expect(
+        await boundAt(),
+        'the daemon socket was not re-bound, so the offline window never restarted the daemon'
+      ).toBeGreaterThan(boundBefore);
     });
   });

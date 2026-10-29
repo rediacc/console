@@ -251,14 +251,23 @@ ${dataSource ?? ''}`;
     };
 
     // Bring the kube repo up carrying its declared secret. Secrets ride the SAME CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque Secret (wave3b). So the up call must carry the env var (bridge-once cannot).
-    const repoUpWithSecret = async (name: string): Promise<ExecResult> =>
-      w1.executeViaBridge(
+    //
+    // xargs is the exit-status source of this pipeline: renet exiting 1-125 comes back as 123 (255 as 124, a signal as 125), so the code is only good for zero versus non-zero. A variable-free pipe cannot do better, because executeViaBridge relays through three shells that expand `$`. A caller that needs renet's real exit code must run it another way, and the stderr prefix below says so when the up fails.
+    const repoUpWithSecret = async (name: string): Promise<ExecResult> => {
+      const res = await w1.executeViaBridge(
         // The value arrives on stdin and xargs places it in the env, so it is not in the logged command text.
         `sudo xargs -d '\n' -I{} env REDIACC_SECRET_APP_SECRET={} renet repository up ` +
           `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`,
         undefined,
         { stdin: `${APP_SECRET_VALUE}\n` }
       );
+      return res.code === 0
+        ? res
+        : {
+            ...res,
+            stderr: `[repoUpWithSecret: exit ${res.code} is xargs's status; renet's own 1-125 shows as 123]\n${res.stderr}`,
+          };
+    };
 
     // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER the datastore mount (kubelet pod volumes) and containerd overlays mounted at /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds neither, so the datastore release is then CORRECTLY refused by the
     // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain is gate finding #20 (4 witnesses).

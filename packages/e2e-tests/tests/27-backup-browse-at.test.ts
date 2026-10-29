@@ -580,10 +580,14 @@ test.describe
             restoreSnapshotId
           );
           expect(missing.code, 'a missing path restored without error').not.toBe(0);
-          expect(
-            w1.getCombinedOutput(missing),
-            'the refusal does not carry NO_SUCH_PATH'
-          ).toContain('NO_SUCH_PATH');
+          // NO_SUCH_PATH alone could ride along with an unrelated crash, so the refusal must also name the path that was asked for.
+          const missingOutput = w1.getCombinedOutput(missing);
+          expect(missingOutput, 'the refusal does not carry NO_SUCH_PATH').toContain(
+            'NO_SUCH_PATH'
+          );
+          expect(missingOutput, 'the refusal does not name the missing path').toContain(
+            `missing-${stamp}`
+          );
           const absent = await w1.executeViaBridge(
             `sudo test -e "${missingTo}" && echo present || echo absent`
           );
@@ -605,7 +609,7 @@ test.describe
           `cd "${dir}" && find . -type f | sort | xargs sha256sum`;
         const filler = 64 * 1024 * 1024;
         const fileBytes = 300000;
-        // Fewer chunks than the whole-image plan by at least the filler's cells (64 MiB / the largest cell the grid uses is 16 or more).
+        // Fewer chunks than the whole-image plan by at least the filler's cells. This holds for the default 4 MiB cell grid (chunkstore.DefaultCellBytes, so 64 MiB is 16 cells); a grid with larger cells would shrink the filler's cell count below 16, and the margin would have to shrink with it.
         const marginCells = 16;
 
         interface PathRecord {

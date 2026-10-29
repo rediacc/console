@@ -5,7 +5,7 @@
  * WHO WRITES IT. `npm run pins -- bump cli-tool:opentofu`: the toolchain driver rewrites the
  * version and the six sha256 values at the sites .ci/config/pins.json names, after
  * scripts/pins/signed-release.ts verified the release's signed SHA256SUMS. This module is the
- * file's template: it wrote the first copy (`--write <version>` over the recorded SHA256SUMS), and
+ * file's template: it wrote the first copy (`--write`, which reads the version from the recorded SHA256SUMS and takes no argument), and
  * `npm run pins -- --selftest` holds the live file byte-equal to `render()` of its own values, so a
  * hand edit of any line the sites do not cover (a URL, a key, the header) is red too.
  *

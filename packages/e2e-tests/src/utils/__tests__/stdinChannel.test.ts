@@ -67,4 +67,12 @@ describe('buildPasswordVault', () => {
   it('refuses an option the vault does not carry rather than dropping it', () => {
     expect(() => buildPasswordVault({ ...opts, pool: 'p' }, '2816')).toThrow(/pool/);
   });
+
+  // The old flag path emitted `--password` with no `--repository`; the vault path has no slot for a credential without a repository, so the call is refused instead of sending a vault that cannot unlock anything.
+  it('refuses a password without a repository', () => {
+    const { repository: _repository, ...withoutRepository } = opts;
+    expect(() => buildPasswordVault(withoutRepository, '2816')).toThrow(
+      'needs both password and repository'
+    );
+  });
 });
