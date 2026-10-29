@@ -106,7 +106,8 @@ function debug(message: string): void {
  * Whether these options may be served by the daemon at all. Everything that
  * cannot be faithfully reproduced from a returned result plus streamed events
  * stays on the direct path: an interactive/PTY or client-side-streaming command
- * (passthroughOutput), a detached job (its own live tail), a served dispatch
+ * (passthroughOutput), a job with a finite attach window (`-b`, MCP: its
+ * ticket output belongs to the invoking process), a served dispatch
  * (which pins its own executor), or a non-serializable option.
  *
  * It is also inert under vitest (`process.env.VITEST`): the CLI's unit tests mock
@@ -121,7 +122,7 @@ function daemonEligible(options: ExecuteOptions, allowUnderTest: boolean): boole
     isDaemonPlatform() &&
     process.env.REDIACC_NO_DAEMON !== '1' &&
     !currentRequestContext() &&
-    !options.detached &&
+    options.attachWindowMs === undefined &&
     !options.passthroughOutput &&
     isDaemonSerializable(options)
   );

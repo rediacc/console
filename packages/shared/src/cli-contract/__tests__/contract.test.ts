@@ -150,7 +150,9 @@ describe('CLI contract', () => {
     // 85 -> 88: `machine gpu list`, `repo gpu grant` and `repo gpu revoke` landed (PLAN-gpu-device-grants). Each runs a renet function on the machine that holds the GPU (the grant writes the machine's CDI grant file and the list reads its inventory), is non-interactive, and its config mirror is a cache of renet's own listing, so all three are genuinely proxy-capable like `repo up`.
     //
     // 88 -> 89: `repo prune` landed (PLAN-repo-docker-storage-prune R5). It runs repository_docker_prune on the machine holding the repository and is non-interactive, so it is proxy-capable like `repo trim`. `machine access push` (PLAN-ssh-key-source-ranges C1) is machine-plane but excluded below: an executor never rewrites its own access.
-    expect(proxyCapableCommands().length).toBe(89);
+    //
+    // 89 -> 90: `rdc job wait` landed (PLAN-detached-jobs J5). It follows a machine job over SSH like the other `job *` verbs, which are proxy-capable and never detachable (they read the spool).
+    expect(proxyCapableCommands().length).toBe(90);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -179,6 +181,8 @@ describe('CLI contract', () => {
     excluded.push('machine converge');
     // Rewrites the machine's authorized_keys, including the executor's own key's line: an executor never changes its own access (PLAN-ssh-key-source-ranges C1).
     excluded.push('machine access push');
+    // Client-side rsync of the encrypted repo image to or from the operator's own disk (PLAN-backup-local-image C1).
+    excluded.push('backup download', 'backup upload');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
@@ -325,14 +329,73 @@ describe('CLI contract', () => {
   });
 
   it('marks a proxyable non-job command detachable, and never a job command', () => {
-    // detachable = proxyCapable && domain !== 'job'. It is the field --background
-    // and the serve dispatch read to decide whether to start a detached job.
+    // detachable = proxyCapable && domain !== 'job', minus the section 24 exceptions. It is the field --background
+    // and the serve dispatch read to decide whether to start a machine job.
     expect(getCommand('repo up')?.detachable).toBe(true);
     expect(getCommand('repo cat')?.detachable).toBe(true);
     for (const cmd of CLI_CONTRACT.commands) {
       if (cmd.domain === 'job') expect(cmd.detachable, cmd.pathKey).toBe(false);
       if (cmd.detachable) expect(cmd.proxyCapable, cmd.pathKey).toBe(true);
     }
+  });
+
+  it('pins the detachable set to the J0b machine-plane job audit', () => {
+    // agent/plans/PLAN-detached-jobs.md, "J0b machine-plane job audit": every proxyable machine-plane command runs as one machine job (section 14) except the rows whose form is `exempt`. The proxyable exempt rows are exactly these six, each with its reason in DETACH_EXCLUSIONS. A command added to the machine plane joins the detachable set by default, and this list changes with it, which is the point: the set is decided, never drifted into.
+    const exceptions = CLI_CONTRACT.commands
+      .filter((c) => c.proxyCapable && c.domain !== 'job' && !c.detachable)
+      .map((c) => c.pathKey)
+      .sort((a, b) => a.localeCompare(b));
+    expect(exceptions).toEqual([
+      'cluster destroy',
+      'datastore list',
+      'machine deprovision',
+      'machine infra cert push',
+      'vscode serve status',
+      'vscode serve stop',
+    ]);
+    const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
+    expect(detachable).toHaveLength(78);
+    // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
+    for (const pathKey of [
+      'repo list',
+      'repo create',
+      'backup run',
+      'repo migrate',
+      'machine setup',
+    ]) {
+      expect(detachable, pathKey).toContain(pathKey);
+    }
+  });
+
+  it('gives every section 24 exception a --background refusal reason, and no other command one', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      const exception = cmd.proxyCapable && cmd.domain !== 'job' && !cmd.detachable;
+      if (exception) expect(cmd.detachBlockedReason, cmd.pathKey).toMatch(/without --background/);
+      else expect(cmd.detachBlockedReason, cmd.pathKey).toBeUndefined();
+    }
+  });
+
+  it('refuses a contract whose exception carries no reason, or whose job verb is detachable', () => {
+    // Control for checkDetachable: the committed contract is clean, so plant each defect and watch the invariant name it.
+    const cmd = getCommand('datastore list');
+    const job = getCommand('job list');
+    if (!cmd || !job) throw new Error('fixture commands missing');
+    const planted = {
+      ...CLI_CONTRACT,
+      commands: [
+        { ...cmd, detachBlockedReason: undefined },
+        { ...job, detachable: true },
+        { ...getCommand('repo up')!, detachBlockedReason: 'stray' },
+      ],
+    };
+    const problems = checkContractInvariants(planted);
+    expect(problems).toContain(
+      'datastore list: proxyable but not detachable, with no detachBlockedReason'
+    );
+    expect(problems).toContain('job list: a job verb cannot be detachable');
+    expect(problems).toContain(
+      'repo up: detachBlockedReason set on a command that is not an exception'
+    );
   });
 
   it('binds resource-shaped options to the right kinds', () => {

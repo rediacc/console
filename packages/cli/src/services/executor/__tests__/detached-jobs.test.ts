@@ -191,27 +191,53 @@ describe('recovery decision for a detached exit-10 result (bug #33)', () => {
   });
 });
 
-describe('runRemoteExecution foreground launches', () => {
+/** One `job start --attach` stream: the handle, the events, the status trailer. */
+function attachStream(events: string, state: string, exitCode: number): string {
+  return (
+    `${JSON.stringify({ type: 'job_handle', job_id: JOB_ID, unit: 'u', log_path: 'p' })}\n` +
+    events +
+    `${JSON.stringify({
+      type: 'job_status',
+      job_id: JOB_ID,
+      function: 'backup_push',
+      state,
+      exit_code: exitCode,
+      started_at: '2026-07-12T16:58:10.000Z',
+      finished_at: '2026-07-12T16:58:11.000Z',
+    })}\n`
+  );
+}
+
+const stream =
+  (payload: string) => (_cmd: string, handlers: { onStdout?: (d: Buffer) => void }) => {
+    handlers.onStdout?.(Buffer.from(payload));
+    return Promise.resolve(0);
+  };
+
+function baseMocks(): void {
+  vi.clearAllMocks();
+  mockExecStreaming.mockReset();
+  process.env.REDIACC_TELEMETRY_DISABLED = '1';
+  delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
+  mockGetLocalConfig.mockResolvedValue({
+    sshPrivateKey: 'PRIVATE_KEY',
+    sshPublicKey: 'PUBLIC_KEY',
+    ssh: { privateKeyPath: '/tmp/id', publicKeyPath: '/tmp/id.pub' },
+  });
+  mockGetLocalMachine.mockResolvedValue({
+    machineName: 'hostinger',
+    ip: '127.0.0.1',
+    user: 'root',
+    port: 22,
+  });
+  mockListStorages.mockResolvedValue([]);
+  mockListRepositories.mockResolvedValue([]);
+}
+
+describe('foreground job runs', () => {
   const savedTelemetry = process.env.REDIACC_TELEMETRY_DISABLED;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    process.env.REDIACC_TELEMETRY_DISABLED = '1';
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-    mockGetLocalConfig.mockResolvedValue({
-      sshPrivateKey: 'PRIVATE_KEY',
-      sshPublicKey: 'PUBLIC_KEY',
-      ssh: { privateKeyPath: '/tmp/id', publicKeyPath: '/tmp/id.pub' },
-    });
-    mockGetLocalMachine.mockResolvedValue({
-      machineName: 'hostinger',
-      ip: '127.0.0.1',
-      user: 'root',
-      port: 22,
-    });
-    mockListStorages.mockResolvedValue([]);
-    mockListRepositories.mockResolvedValue([]);
-  });
+  beforeEach(baseMocks);
 
   afterEach(() => {
     if (savedTelemetry === undefined) delete process.env.REDIACC_TELEMETRY_DISABLED;
@@ -220,12 +246,13 @@ describe('runRemoteExecution foreground launches', () => {
 
   it('reconstructs stdout in events mode: text, not raw NDJSON, so parseCapturedJson works (bug #31)', async () => {
     mockExecStreaming.mockImplementationOnce(
-      (_cmd: string, handlers: { onStdout?: (data: Buffer) => void }) => {
-        handlers.onStdout?.(
-          Buffer.from(eventLine({ type: 'output', msg: '[repository_list] [{"name":"mail"}]' }))
-        );
-        return Promise.resolve(0);
-      }
+      stream(
+        attachStream(
+          eventLine({ type: 'output', msg: '[repository_list] [{"name":"mail"}]' }),
+          'succeeded',
+          0
+        )
+      )
     );
 
     const events: RenetEvent[] = [];
@@ -245,8 +272,8 @@ describe('runRemoteExecution foreground launches', () => {
     expect(events).toHaveLength(1);
   });
 
-  it('carries the data-transfer ceiling on a foreground backup_snapshot launch', async () => {
-    mockExecStreaming.mockImplementationOnce(() => Promise.resolve(0));
+  it('carries the data-transfer ceiling on a backup_snapshot job start', async () => {
+    mockExecStreaming.mockImplementationOnce(stream(attachStream('', 'succeeded', 0)));
 
     await localExecutorService.execute({
       functionName: 'backup_snapshot',
@@ -254,30 +281,17 @@ describe('runRemoteExecution foreground launches', () => {
     });
 
     const command = String(mockExecStreaming.mock.calls[0]?.[0]);
-    expect(command).toContain(`execute --executor local --timeout ${DATA_TRANSFER_TIMEOUT_MS}ms`);
+    expect(command).toContain(
+      `job start --executor local --json --timeout ${DATA_TRANSFER_TIMEOUT_MS}ms`
+    );
   });
 });
 
-describe('detached execution license recovery (bug #33)', () => {
+describe('job license recovery (bug #33)', () => {
   const savedTelemetry = process.env.REDIACC_TELEMETRY_DISABLED;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    process.env.REDIACC_TELEMETRY_DISABLED = '1';
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-    mockGetLocalConfig.mockResolvedValue({
-      sshPrivateKey: 'PRIVATE_KEY',
-      sshPublicKey: 'PUBLIC_KEY',
-      ssh: { privateKeyPath: '/tmp/id', publicKeyPath: '/tmp/id.pub' },
-    });
-    mockGetLocalMachine.mockResolvedValue({
-      machineName: 'hostinger',
-      ip: '127.0.0.1',
-      user: 'root',
-      port: 22,
-    });
-    mockListStorages.mockResolvedValue([]);
-    mockListRepositories.mockResolvedValue([]);
+    baseMocks();
     mockGetRepository.mockResolvedValue(undefined);
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
     mockRefreshRepoLicensesBatch.mockResolvedValue({
@@ -299,83 +313,60 @@ describe('detached execution license recovery (bug #33)', () => {
     else process.env.REDIACC_TELEMETRY_DISABLED = savedTelemetry;
   });
 
-  it('recovers the license and retries when a detached job exits 10', async () => {
-    const handle = JSON.stringify({ job_id: JOB_ID, unit: 'u', log_path: 'p' });
+  it('recovers the license and retries as a NEW job when a job exits 10', async () => {
     const licenseMarker = eventLine({
       type: 'output',
       msg: JSON.stringify({ code: 'LICENSE_REQUIRED', reason: 'missing' }),
     });
-    const failedStatus = JSON.stringify({
-      job_id: JOB_ID,
-      function: 'backup_push',
-      state: 'failed',
-      exit_code: 10,
-      started_at: '2026-07-12T16:58:10.000Z',
-      finished_at: '2026-07-12T16:58:11.000Z',
-    });
-    const okStatus = JSON.stringify({
-      job_id: JOB_ID,
-      function: 'backup_push',
-      state: 'succeeded',
-      exit_code: 0,
-      started_at: '2026-07-12T16:58:12.000Z',
-      finished_at: '2026-07-12T16:58:13.000Z',
-    });
-
-    const stream =
-      (payload: string) => (_cmd: string, handlers: { onStdout?: (d: Buffer) => void }) => {
-        handlers.onStdout?.(Buffer.from(payload));
-        return Promise.resolve(0);
-      };
 
     mockExecStreaming
-      // Attempt 1: start, follow (license marker), status -> failed exit 10.
-      .mockImplementationOnce(stream(handle))
-      .mockImplementationOnce(stream(licenseMarker))
-      .mockImplementationOnce(stream(failedStatus))
-      // Attempt 2 after recovery: start, follow (clean), status -> succeeded.
-      .mockImplementationOnce(stream(handle))
-      .mockImplementationOnce(stream(eventLine({ type: 'output', msg: 'done' })))
-      .mockImplementationOnce(stream(okStatus));
+      // Attempt 1: the attached start streams the license marker and ends failed with exit 10.
+      .mockImplementationOnce(stream(attachStream(licenseMarker, 'failed', 10)))
+      // Attempt 2 after recovery: a clean run.
+      .mockImplementationOnce(
+        stream(attachStream(eventLine({ type: 'output', msg: 'done' }), 'succeeded', 0))
+      );
 
     const result = await localExecutorService.execute({
       functionName: 'backup_push',
       machineName: 'hostinger',
-      detached: true,
       captureOutput: true,
+      requestId: 'inv:hostinger:1',
     });
 
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
-    expect(mockExecStreaming).toHaveBeenCalledTimes(6);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(2);
+    // The retry is a second job: reusing the first request id would dedupe onto the job that refused.
+    const ids = mockExecStreaming.mock.calls.map(
+      (c) => /--request-id '([^']+)'/.exec(String(c[0]))?.[1]
+    );
+    expect(ids).toEqual(['inv:hostinger:1', 'inv:hostinger:1:r']);
     expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
   });
 
-  it('returns immediately under follow:false, carrying the job id (--background)', async () => {
+  it('returns immediately with a zero attach window, carrying the job id (--background)', async () => {
     const handle = JSON.stringify({ job_id: JOB_ID, unit: 'u', log_path: 'p' });
-    mockExecStreaming.mockImplementationOnce(
-      (_cmd: string, handlers: { onStdout?: (d: Buffer) => void }) => {
-        handlers.onStdout?.(Buffer.from(handle));
-        return Promise.resolve(0);
-      }
-    );
+    mockExecStreaming.mockImplementationOnce(stream(handle));
 
     const started: string[] = [];
     const result = await localExecutorService.execute({
       functionName: 'backup_push',
       machineName: 'hostinger',
-      detached: true,
-      follow: false,
+      attachWindowMs: 0,
       onJobStarted: (id) => started.push(id),
     });
 
-    // Only `job start` ran: no follow, no status read.
+    // Only `job start` ran, without --attach: no follow, no status read.
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
-    expect(String(mockExecStreaming.mock.calls[0]?.[0])).toContain(
+    const command = String(mockExecStreaming.mock.calls[0]?.[0]);
+    expect(command).toContain(
       `job start --executor local --json --timeout ${DATA_TRANSFER_TIMEOUT_MS}ms`
     );
+    expect(command).not.toContain('--attach');
     expect(started).toEqual([JOB_ID]);
     expect(result.success).toBe(true);
     expect(result.jobId).toBe(JOB_ID);
+    expect(result.state).toBe('running');
   });
 });

@@ -329,13 +329,20 @@ export interface ContractCommand {
    * Safe to run as a DETACHED renet job: start it under a transient unit and
    * follow its spool, so a dropped connection does not lose the work.
    *
-   * Derived as `proxyCapable && domain !== 'job'` (minus a small exclusion
-   * table): the classes proxyCapable already rules out are exactly the ones that
-   * break under detach, and `rdc job *` manages jobs rather than doing machine
-   * work, so detaching one is circular. The serve dispatch turns detach on for a
-   * proxied command; `--background` turns it on for a local one.
+   * Derived as `proxyCapable && domain !== 'job'` minus the section 24
+   * exceptions of agent/plans/PLAN-detached-jobs.md (DETACH_EXCLUSIONS in
+   * generate-cli-contract.ts): every proxyable machine-plane command runs its
+   * renet calls as one machine job, `rdc job *` reads the spool (a job per job
+   * query is circular), and an exception makes no renet call or cannot run as a
+   * root unit. `--background` is accepted exactly where this is true.
    */
   detachable: boolean;
+  /**
+   * Why a proxyable command does not run as a machine job, phrased for the
+   * operator. Present exactly when the command is proxyCapable, not a `job`
+   * verb, and not detachable, so a `--background` refusal always has a message.
+   */
+  detachBlockedReason?: string;
 
   // ── Resource binding (how a caller targets this command) ────────────────
   /**

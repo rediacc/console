@@ -61,7 +61,7 @@ export function assertProxyCapable(
 /**
  * Detachable verbs that `--background` must still refuse locally, with the reason, until agent/plans/PLAN-detached-jobs.md (J2, J3) runs each as one terminal job.
  *
- * `--background` detaches EVERY machine call of the verb with follow off, probes included (executor-factory's backgroundDecorator). For these verbs that is unsafe, per the J0 audit in that plan: a later call starts before the earlier job finishes, a probe answers empty and fails open, or a local step records a result that has not happened. `repo migrate -b` deletes the source while its delta push still reads it. The proxy path is unaffected: it detaches and follows each call to completion.
+ * `--background` gives EVERY machine call of the verb a zero attach window, probes included (executor-factory's attachDecorator), so each returns its ticket at once. For these verbs that is unsafe, per the J0 audit in that plan: a later call starts before the earlier job finishes, a probe answers empty and fails open, or a local step records a result that has not happened. `repo migrate -b` deletes the source while its delta push still reads it. The proxy path is unaffected: it detaches and follows each call to completion.
  */
 export const BACKGROUND_UNSAFE: Record<string, string> = {
   'repo up': 'runs its probe and its DNS, certificate and URL steps before the containers are up',
@@ -92,6 +92,12 @@ export function assertDetachable(commandPath: string, entry: ContractCommand | u
     );
   }
   if (entry?.detachable) return;
+
+  if (entry?.detachBlockedReason) {
+    throw new Error(
+      `"rdc ${commandPath}" cannot run in the background: ${entry.detachBlockedReason}`
+    );
+  }
 
   if (entry?.domain === 'job') {
     throw new Error(

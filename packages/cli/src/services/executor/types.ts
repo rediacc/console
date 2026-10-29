@@ -25,6 +25,22 @@
  * event stream, so the client's render path is identical in both modes.
  */
 
+import type { JobOverlap, JobState } from '@rediacc/shared/cli-contract/wire';
+
+/**
+ * One step of a `job start --steps` plan, as renet keeps it in the spool. The
+ * same shape as services/jobs/steps.ts SpoolStep, restated rather than imported:
+ * this seam module must not reach the step registry (which reaches the
+ * executor), or every config-only command importing the request context would
+ * look machine-touching to the plane rule (packages/cli/scripts/lib/plane-rules.ts).
+ */
+export interface JobStepPlan {
+  name: string;
+  on: 'success' | 'failure' | `marker:${string}`;
+  params?: Record<string, string | number | boolean>;
+  needs_output?: boolean;
+}
+
 /** Structured event from renet's NDJSON events protocol. */
 export interface RenetEvent {
   type: 'log' | 'step_start' | 'step_done' | 'output' | 'result';
@@ -123,24 +139,44 @@ export interface ExecuteOptions {
   /** Suppress CLI step spinners (steps still recorded for the timeline) */
   quietSpinners?: boolean;
   /**
-   * Run the operation as a DETACHED renet job rather than a synchronous one.
+   * How long the call stays attached to the machine job it starts
+   * (agent/plans/PLAN-detached-jobs.md section 15). Set by the ENTRY POINT at
+   * the executor seam (executor-factory's attach decorator), never by a verb:
+   * unset is unlimited (a direct terminal run), JOB_ATTACH_WINDOW_MS for the
+   * proxy, the web console and MCP, 0 for `--background`. A job that finishes
+   * inside the window returns its result; one that outlives it returns the
+   * ticket (`state: 'running'`).
    *
-   * The machine starts the work under a transient systemd unit and records its
-   * progress to a job spool, so the operation survives a dropped connection and
-   * a client can re-attach to the event stream where it left off. This is what
-   * makes a long backup or migration safe to run through a proxy, where the
-   * connection cannot be assumed to outlive the work.
-   *
-   * Off by default: an operator watching a command in their own terminal wants
-   * the synchronous path. Nothing sets it yet; the serve dispatch turns it on
-   * for proxied commands, where the connection cannot outlive the work.
+   * Every renet call runs as a job (section 14) except the section 24
+   * exemptions (`runsOutsideJob`), so there is no `detached` switch.
+   */
+  attachWindowMs?: number;
+  /**
+   * The job's idempotency key (section 17). Normally unset: the executor mints
+   * `<invocation>:<machine>:<seq>` once per call, and a start retried after a
+   * dropped answer carries the same id, so renet attaches it to the first job.
+   */
+  requestId?: string;
+  /**
+   * The client-side step plan (`job start --steps`, section 18), written into
+   * the job's spool so every observer finds the same plan. Set by
+   * `executorJobCall` for a command that runs through `runJob`.
+   */
+  jobSteps?: JobStepPlan[];
+  /**
+   * The caller owns the call's ticket (`runJob` writes `starting`, `started`
+   * and `finished` around the start), so the executor writes none of its own.
+   */
+  externalTicket?: boolean;
+  /**
+   * @deprecated Ignored. Every renet call is a job (section 14). The serve
+   * dispatch (services/serve/command-dispatch.ts) still writes it; J6b removes
+   * that writer and this field with it.
    */
   detached?: boolean;
   /**
-   * Whether a detached run FOLLOWS the job to completion (the default) or returns
-   * the moment the job starts. `--background` turns this off: the CLI prints the
-   * job id and a resume hint and exits, leaving the work running on the machine.
-   * Only meaningful together with `detached`.
+   * @deprecated Ignored. `attachWindowMs` decides how long a call follows its
+   * job. The serve dispatch still writes it; J6b removes both.
    */
   follow?: boolean;
   /**
@@ -188,8 +224,20 @@ export interface ExecuteResult {
    * (non-capture failure path), so failure renderers must not repeat it.
    */
   outputEchoed?: boolean;
-  /** The detached job id, set when a run started one but did not follow it (--background). */
+  /** The machine job the call ran as. */
   jobId?: string;
+  /** The job's request id (section 17), so a caller can find the ticket. */
+  requestId?: string;
+  /**
+   * The job's state when the call returned. `running` means the job outlived
+   * the attach window and this result is the ticket, not the answer; the work
+   * goes on, and `rdc job wait <id>` follows it.
+   */
+  state?: JobState;
+  /** True when the job finished inside the attach window. */
+  attached?: boolean;
+  /** The live jobs and scheduled units the start met (section 19). J21 renders them. */
+  overlaps?: JobOverlap[];
   /** Step timing from renet (parsed from JSON output) */
   steps?: { name: string; duration_ms: number; detail?: string }[];
   /** CLI-side step timing (config, SSH connect, provision, verify, license) */

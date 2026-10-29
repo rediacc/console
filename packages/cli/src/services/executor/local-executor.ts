@@ -41,7 +41,7 @@ import {
 } from '../renet/runtime-converge.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
-import { runDetachedExecution } from './detached-execution.js';
+import { runJobExecution, runsOutsideJob } from './detached-execution.js';
 import { resolveExtraMachines } from './extra-machines.js';
 import { createJobOutputCollector } from './job-client.js';
 import {
@@ -159,10 +159,10 @@ class LocalExecutorService {
         startTime
       );
       if (recovered === null) {
-        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE doing any work, so a second run cannot double-execute even a detached job (a strictly weaker claim than startJob's version-skew fallback).
+        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE doing any work, so a second run cannot double-execute. The re-run is a NEW job, so it carries a new request id: the first one would dedupe onto the job that refused.
         result = await this.runOperation(
           sftp,
-          options,
+          options.requestId ? { ...options, requestId: `${options.requestId}:r` } : options,
           remoteRenetPath,
           vault,
           machine,
@@ -173,7 +173,8 @@ class LocalExecutorService {
       }
     }
 
-    if (result.success && !options.deferIdentityRefresh) {
+    // A job still running past its window has not created anything yet, so its identity refresh waits for whoever sees it finish.
+    if (result.success && result.state !== 'running' && !options.deferIdentityRefresh) {
       await maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
     }
 
@@ -186,13 +187,14 @@ class LocalExecutorService {
   }
 
   /**
-   * Run the operation once, detached when the caller asked for it and the
-   * machine supports it, else synchronously. Both variants flow back through the
-   * shared recovery, identity-refresh, and duration tail in
-   * executeWithConnectedSftp, so a detached run is no longer a second code path
-   * that silently skips license recovery (finding #33).
+   * Run the operation once, as a machine job (agent/plans/PLAN-detached-jobs.md
+   * section 14). Only the section 24 exemptions (`runsOutsideJob`: an
+   * interactive TTY exec, a log follow) stay on `renet execute`. There is no
+   * synchronous fallback: a renet too old for jobs refuses with the upgrade
+   * command (Design 11). Both paths flow back through the shared recovery,
+   * identity-refresh, and duration tail in executeWithConnectedSftp (finding #33).
    */
-  private async runOperation(
+  private runOperation(
     sftp: SFTPClient,
     options: ExecuteOptions,
     remoteRenetPath: string,
@@ -200,18 +202,10 @@ class LocalExecutorService {
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string
   ): Promise<ExecuteResult> {
-    if (options.detached) {
-      const detached = await runDetachedExecution(
-        remoteRenetPath,
-        vault,
-        options,
-        machine,
-        sshPrivateKey
-      );
-      // null means the machine's renet has no `job` command: fall back to sync.
-      if (detached !== null) return detached;
+    if (runsOutsideJob(options)) {
+      return this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
     }
-    return this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+    return runJobExecution(remoteRenetPath, vault, options, machine, sshPrivateKey);
   }
 
   /**

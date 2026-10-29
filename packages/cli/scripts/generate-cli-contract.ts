@@ -108,17 +108,30 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
 };
 
 /**
- * Machine-plane commands that are proxyable but must NOT be detached, keyed by
- * command path, with the reason.
+ * Proxyable machine-plane commands that do NOT run as a machine job, keyed by
+ * command path, with the reason (agent/plans/PLAN-detached-jobs.md section 24
+ * and the J0b audit). Every other proxyable, non-`job` command is `detachable`:
+ * its renet calls run as one machine job (section 14), and `--background`
+ * returns the ticket at once.
  *
- * Empty for now: `detachable = proxyCapable && domain !== 'job'` already covers
- * every current case (the classes proxyCapable excludes are exactly the ones
- * that break under detach, and `rdc job *` manages jobs rather than doing
- * machine work). This table exists as the escape hatch for a proxyable,
- * non-job command that a future reshape must keep synchronous: the analog of
- * PROXY_EXCLUSIONS one layer up.
+ * Each reason is user-facing: `--background` prints it when it refuses the
+ * command (`detachBlockedReason` in the contract), so it says why and what to
+ * run instead.
  */
-const DETACH_EXCLUSIONS: Record<string, string> = {};
+const DETACH_EXCLUSIONS: Record<string, string> = {
+  'cluster destroy':
+    'Tears the cluster down with local OpenTofu or ops calls and never reaches a machine over SSH, so there is no machine job to detach. Run it without --background.',
+  'datastore list':
+    'Reads the local config and state only and makes no machine call, so there is no machine job to detach. Run it without --background.',
+  'machine deprovision':
+    'Destroys the machine with local OpenTofu and has no SSH leg, so there is no machine job to detach. Run it without --background.',
+  'machine infra cert push':
+    'Writes the local certificate cache to the machine in one raw file write, with no renet call to run as a job. Run it without --background.',
+  'vscode serve status':
+    'Runs a script as the repository user, not as root, so it cannot run as a root job unit. Run it without --background.',
+  'vscode serve stop':
+    'Runs a script as the repository user, not as root, so it cannot run as a root job unit. Run it without --background.',
+};
 
 /**
  * What a positional token names, keyed by its argument name.
@@ -502,9 +515,10 @@ const commands: ContractCommand[] = walked.map((w) => {
     ? undefined
     : proxyBlockedReason(w.pathKey, plane, interactive);
 
-  // Detach is the same predicate as proxy, minus jobs (they manage jobs, not machine work) and an escape-hatch table. The serve dispatch turns it on for
-  // a proxied command; `--background` turns it on for a local one.
+  // Every proxyable machine-plane command runs as one machine job (PLAN-detached-jobs section 14), minus the `job *` verbs (they read the spool) and the
+  // section 24 exceptions in DETACH_EXCLUSIONS. `--background` is accepted exactly where this is true.
   const detachable = proxyCapable && domain !== 'job' && !(w.pathKey in DETACH_EXCLUSIONS);
+  const detachBlockedReason = proxyCapable ? DETACH_EXCLUSIONS[w.pathKey] : undefined;
 
   return {
     path: w.path,
@@ -535,6 +549,7 @@ const commands: ContractCommand[] = walked.map((w) => {
     proxyCapable,
     ...(blockedReason ? { proxyBlockedReason: blockedReason } : {}),
     detachable,
+    ...(detachBlockedReason ? { detachBlockedReason } : {}),
 
     machineOption: resolveMachineOption(domain, options),
     repoOption: resolveRepoOption(domain, options, mcp?.repoArg),

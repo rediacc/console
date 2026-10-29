@@ -15,8 +15,8 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2759,
- "files": 677,
+ "count": 2757,
+ "files": 676,
  "by_rule": {
   "R1": 1506,
   "R11": 143,
@@ -24,7 +24,7 @@
   "R18": 13,
   "R19": 55,
   "R2": 602,
-  "R7": 439
+  "R7": 437
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -4194,11 +4194,6 @@
     "7bc01db9543641cb"
    ]
   },
-  "packages/cli/src/services/executor/__tests__/background-flag.test.ts": {
-   "R7": [
-    "9ce99d1da824b91e"
-   ]
-  },
   "packages/cli/src/services/executor/daemon/lifecycle.ts": {
    "R7": [
     "69978b1f3e166a88"
@@ -4431,7 +4426,6 @@
   },
   "packages/shared/src/cli-contract/validation.ts": {
    "R7": [
-    "10bc4a170c6fb9d0",
     "10f65d1bd85ed450"
    ]
   },

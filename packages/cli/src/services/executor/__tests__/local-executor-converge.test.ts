@@ -44,7 +44,32 @@ const { calls, state, mockExec, mockExecStreaming, mockAcquireRemoteRenet } = vi
         state.stdins.push(stdin);
         const fn = /"function":"([a-z_]+)"/.exec(stdin)?.[1] ?? 'unknown';
         calls.push(`run:${fn}`);
-        if (fn === 'machine_converge_runtime') opts.onStdout?.(state.convergeStdout);
+        const stdout = fn === 'machine_converge_runtime' ? state.convergeStdout : '';
+        if (!_cmd.includes(' job start ')) {
+          // The session's converge pre-pass stays a `renet execute` (plain text stdout).
+          opts.onStdout?.(stdout);
+          return Promise.resolve(0);
+        }
+        // Every requested function runs as a machine job: one attached `job start` stream of handle, output events and status trailer.
+        const jobId = 'j18c1994eaa33d30d-3d9813b2';
+        const outputEvents = stdout
+          .split('\n')
+          .filter((line) => line.length > 0)
+          .map((msg) => `${JSON.stringify({ type: 'output', msg })}\n`)
+          .join('');
+        opts.onStdout?.(
+          `${JSON.stringify({ type: 'job_handle', job_id: jobId, unit: 'u', log_path: 'p' })}\n` +
+            outputEvents +
+            `${JSON.stringify({
+              type: 'job_status',
+              job_id: jobId,
+              function: fn,
+              state: 'succeeded',
+              exit_code: 0,
+              started_at: '2026-10-29T10:00:00Z',
+              finished_at: '2026-10-29T10:00:01Z',
+            })}\n`
+        );
         return Promise.resolve(0);
       }
     ),
@@ -60,6 +85,8 @@ vi.mock('../../machine/machine-connection.js', () => ({
     acquireFor: vi.fn(() =>
       Promise.resolve({
         sftp: { exec: mockExec, execStreaming: mockExecStreaming },
+        // The job path reaches the connection through the lease, so a reattach can re-establish it.
+        ensure: () => Promise.resolve({ exec: mockExec, execStreaming: mockExecStreaming }),
         release: vi.fn(),
       })
     ),

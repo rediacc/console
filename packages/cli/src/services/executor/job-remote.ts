@@ -23,6 +23,7 @@ import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/tim
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
+import { REATTACH_BUDGET_MS } from '../jobs/attach.js';
 import { type MachineConnectionLease, machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, type RenetAccess } from '../renet/renet-execution.js';
 import {
@@ -41,24 +42,46 @@ import {
   parseJobStatus,
   renetOlderThanCliMessage,
 } from './job-client.js';
-import { isMachineReadableRelayLine } from './output-lines.js';
+import { cleanRelayLine, isMachineReadableRelayLine } from './output-lines.js';
 import type { RenetEvent } from './types.js';
 
 /**
- * How many times a dropped log tail is reconnected before giving up.
- *
- * Reconnecting is cheap and safe: the job runs on the machine either way, so
- * resuming only changes what we can SEE of it. The ceiling exists to stop an
- * unreachable machine from spinning forever, not to ration attempts.
+ * How long a dropped log tail keeps reconnecting before it gives up
+ * (agent/plans/PLAN-detached-jobs.md Design 2, section 16): a time budget, not
+ * an attempt count, so a laptop that sleeps through a short Wi-Fi change does
+ * not detach. Reconnecting is cheap and safe: the job runs on the machine
+ * either way, so resuming only changes what we can SEE of it.
  */
-const MAX_LOG_RECONNECTS = 5;
+export const LOG_RECONNECT_BUDGET_MS = REATTACH_BUDGET_MS;
 
 /** Backoff before reconnecting a dropped log tail, capped so it stays responsive. */
-function logReconnectDelayMs(attempt: number): number {
+export function logReconnectDelayMs(attempt: number): number {
   return Math.min(500 * 2 ** attempt, 5000);
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Raised when a follow lost its transport for longer than the reconnect budget.
+ * The job is unaffected; the caller keeps the ticket and exits FOLLOW_LOST.
+ */
+export class FollowLostError extends Error {
+  constructor(
+    readonly jobId: string,
+    readonly sinceLine: number,
+    readonly cause: Error
+  ) {
+    super(`Lost the log stream of job ${jobId} at line ${sinceLine}: ${cause.message}`);
+    this.name = 'FollowLostError';
+  }
+}
+
+/** The reconnect clock, seamed so a test can run the 2-minute budget instantly. */
+export interface ReconnectTiming {
+  budgetMs?: number;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}
 
 /** How a caller wants a job's log stream rendered and reported. */
 export interface JobFollowOptions {
@@ -72,6 +95,8 @@ export interface JobFollowOptions {
    * detaching on SIGINT, unchanged from before.
    */
   signal?: AbortSignal;
+  /** The reconnect budget and clock (default: LOG_RECONNECT_BUDGET_MS, real time). */
+  reconnect?: ReconnectTiming;
 }
 
 /** One attempt at tailing a job's logs. */
@@ -209,7 +234,8 @@ export async function followJobLogs(
   cursor: JobLogCursor,
   machineName?: string
 ): Promise<boolean> {
-  for (let attempt = 0; ; attempt++) {
+  const streak = new DropStreak(options.reconnect, cursor);
+  for (;;) {
     const outcome = await followJobLogsOnce(
       lease,
       remoteRenetPath,
@@ -229,7 +255,7 @@ export async function followJobLogs(
     }
 
     // Transport died. The JOB is untouched (it runs under systemd, not under this connection), so all that is lost is our view of it. Resume from the last COMPLETE line: renet re-sends anything it only half-delivered.
-    if (attempt >= MAX_LOG_RECONNECTS) throw outcome.error;
+    if (streak.exhausted()) throw new FollowLostError(jobId, cursor.sinceLine, outcome.error);
 
     if (options.debug) {
       outputService.info(
@@ -237,7 +263,47 @@ export async function followJobLogs(
       );
     }
 
-    await delay(logReconnectDelayMs(attempt));
+    await streak.pause();
+  }
+}
+
+/**
+ * A run of consecutive drops. The budget runs from the first drop of a streak,
+ * and a stream that delivered lines since resets it: only a connection that
+ * stays gone detaches.
+ */
+class DropStreak {
+  private readonly now: () => number;
+  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly budgetMs: number;
+  private lostSince: number | undefined;
+  private lineAtDrop: number;
+  private attempt = 0;
+
+  constructor(
+    timing: ReconnectTiming | undefined,
+    private readonly cursor: JobLogCursor
+  ) {
+    this.now = timing?.now ?? Date.now;
+    this.sleep = timing?.sleep ?? delay;
+    this.budgetMs = timing?.budgetMs ?? LOG_RECONNECT_BUDGET_MS;
+    this.lineAtDrop = cursor.sinceLine;
+  }
+
+  /** Record a drop; true when the transport has been gone for the whole budget. */
+  exhausted(): boolean {
+    if (this.lostSince === undefined || this.cursor.sinceLine > this.lineAtDrop) {
+      this.lostSince = this.now();
+      this.lineAtDrop = this.cursor.sinceLine;
+      this.attempt = 0;
+    }
+    return this.now() - this.lostSince >= this.budgetMs;
+  }
+
+  /** The capped backoff before the next reconnect. */
+  async pause(): Promise<void> {
+    await this.sleep(logReconnectDelayMs(this.attempt));
+    this.attempt += 1;
   }
 }
 
@@ -400,6 +466,34 @@ export function renderJobEvent(event: RenetEvent): void {
   }
 
   writeStdout(line.text);
+}
+
+/**
+ * The renderer for a job whose output IS the answer (`repo exec`, `repo logs`:
+ * `passthroughOutput`). The inner process's lines go to stdout with renet's
+ * relay prefix stripped and its logrus lines dropped, exactly as the
+ * `renet execute` passthrough handler prints them; step progress goes to
+ * stderr, because stdout belongs to the command.
+ */
+export function passthroughJobRenderer(renderSteps: boolean): (event: RenetEvent) => void {
+  return (event) => {
+    if (event.type === 'step_start' || event.type === 'step_done') {
+      if (renderSteps) writeStepToStderr(event);
+      return;
+    }
+    if (event.type === 'output') writeCleanedOutput(event.msg);
+  };
+}
+
+function writeStepToStderr(event: RenetEvent): void {
+  const line = jobEventLine(event);
+  if (line) writeStderr(line.text);
+}
+
+function writeCleanedOutput(msg: string | undefined): void {
+  if (msg == null) return;
+  const cleaned = cleanRelayLine(msg);
+  if (cleaned !== undefined) writeStdout(`${cleaned}\n`);
 }
 
 /** What one event renders to, or null if it renders to nothing. */

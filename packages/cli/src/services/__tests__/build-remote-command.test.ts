@@ -199,8 +199,12 @@ describe('renet run timeout', () => {
     expect(DATA_TRANSFER_TIMEOUT_MS).toBeGreaterThan(10 * 60 * 1000);
   });
 
+  it('gives health-gated repository_up the 24 h class (PLAN-detached-jobs section 20)', () => {
+    expect(resolveRenetTimeoutMs('repository_up', undefined)).toBe(DATA_TRANSFER_TIMEOUT_MS);
+  });
+
   it('leaves other verbs on renet default and lets an explicit value win', () => {
-    expect(resolveRenetTimeoutMs('repository_up', undefined)).toBeUndefined();
+    expect(resolveRenetTimeoutMs('repository_down', undefined)).toBeUndefined();
     expect(resolveRenetTimeoutMs('backup_snapshot', 5000)).toBe(5000);
   });
 });

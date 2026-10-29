@@ -375,6 +375,8 @@ export class ProxyClient {
       state.outcome = toOutcome(line);
       return;
     }
+    // A heartbeat only keeps a quiet attach window's connection alive.
+    if (line.kind === 'heartbeat') return;
     // An event. Dedupe on the spool-line ordinal so a resumed boundary line renders exactly once.
     if (line.line != null && line.line <= state.highestLine) return;
     if (line.line != null) state.highestLine = line.line;

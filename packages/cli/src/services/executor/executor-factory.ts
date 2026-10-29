@@ -20,6 +20,7 @@
  */
 
 import { currentRequestContext } from '../core/request-context.js';
+import { attachWindowMs, clientKindFromEnv, invocationMinter } from '../jobs/attach.js';
 import { createDaemonExecutor } from './daemon/client.js';
 import { requestExecutor, tapExecutor } from './event-tap.js';
 import { localExecutorService } from './local-executor.js';
@@ -68,20 +69,37 @@ export function isBackgroundRequested(): boolean {
 }
 
 /**
- * Turn a `--background` invocation's machine work into a fire-and-forget
- * detached job: start it and return the instant it starts, leaving it running.
+ * Stamp every call with its entry point's attach window and its request id
+ * (agent/plans/PLAN-detached-jobs.md sections 15 and 17). The window comes from
+ * the entry point, never from the verb: unlimited for a direct terminal run,
+ * JOB_ATTACH_WINDOW_MS inside a served dispatch or an MCP child, and 0 under
+ * `--background`, whose ticket returns the moment the job starts.
  *
- * Two guards keep this from misfiring. It only acts when the global is set, so
- * an ordinary run is untouched. And it is a NO-OP inside a serve request context
- * (`currentRequestContext()` present): the process global would otherwise leak
- * across concurrent in-flight requests, and inside a dispatch the dispatch owns
- * the detach decision (via `deps.detach`), not a client's flag.
+ * The `--background` global is ignored inside a serve request context: it would
+ * otherwise leak across concurrent in-flight requests, and a dispatch's window is
+ * the proxy's. The request id is minted here, in the invoking process, once per
+ * call, so a start retried after a dropped answer carries the same id and a call
+ * served by the executor daemon still carries the client's invocation.
+ *
+ * A caller's explicit window or request id wins.
  */
-export function backgroundDecorator(inner: Executor): Executor {
-  if (!backgroundRequested || currentRequestContext()) return inner;
+export function attachDecorator(inner: Executor): Executor {
   return {
     execute(options) {
-      return inner.execute({ ...options, detached: true, follow: false });
+      const served = currentRequestContext() !== undefined;
+      const window =
+        'attachWindowMs' in options
+          ? options.attachWindowMs
+          : attachWindowMs({
+              background: backgroundRequested && !served,
+              served,
+              client: clientKindFromEnv(),
+            });
+      return inner.execute({
+        ...options,
+        attachWindowMs: window,
+        requestId: options.requestId ?? invocationMinter().next(options.machineName),
+      });
     },
   };
 }
@@ -97,5 +115,5 @@ export function backgroundDecorator(inner: Executor): Executor {
  * `--background` composes over whichever it is, and is inert inside a dispatch.
  */
 export function getExecutor(): Executor {
-  return tapExecutor(backgroundDecorator(requestExecutor() ?? getDaemonBackedExecutor()));
+  return tapExecutor(attachDecorator(requestExecutor() ?? getDaemonBackedExecutor()));
 }

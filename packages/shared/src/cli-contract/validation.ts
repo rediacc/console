@@ -138,6 +138,7 @@ export const ContractCommandSchema = z.object({
   proxyCapable: z.boolean(),
   proxyBlockedReason: z.string().min(1).optional(),
   detachable: z.boolean(),
+  detachBlockedReason: z.string().min(1).optional(),
 
   machineOption: z.string().nullable(),
   repoOption: z.string().nullable(),
@@ -319,12 +320,28 @@ function checkPositionalBindings(cmd: ContractCommand): string[] {
   return problems;
 }
 
-/** detachable is derived from proxyCapable, so it can never be set on a command that is not. */
+/**
+ * detachable is derived from proxyCapable, so it can never be set on a command
+ * that is not, nor on a `job` verb. A proxyable non-job command that is not
+ * detachable is a section 24 exception and must say why (detachBlockedReason);
+ * any other command must not carry that reason.
+ */
 function checkDetachable(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
   if (cmd.detachable && !cmd.proxyCapable) {
-    return [`${cmd.pathKey}: detachable but not proxyCapable`];
+    problems.push(`${cmd.pathKey}: detachable but not proxyCapable`);
   }
-  return [];
+  if (cmd.detachable && cmd.domain === 'job') {
+    problems.push(`${cmd.pathKey}: a job verb cannot be detachable`);
+  }
+  const exception = cmd.proxyCapable && cmd.domain !== 'job' && !cmd.detachable;
+  if (exception && !cmd.detachBlockedReason) {
+    problems.push(`${cmd.pathKey}: proxyable but not detachable, with no detachBlockedReason`);
+  }
+  if (!exception && cmd.detachBlockedReason) {
+    problems.push(`${cmd.pathKey}: detachBlockedReason set on a command that is not an exception`);
+  }
+  return problems;
 }
 
 /**

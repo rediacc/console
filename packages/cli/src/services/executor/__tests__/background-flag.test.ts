@@ -1,16 +1,18 @@
 /**
- * The `--background` decorator (B9 of the ref/detach work).
+ * The attach decorator at the executor seam (agent/plans/PLAN-detached-jobs.md
+ * sections 15 and 17): the entry point, never the verb, sets each call's attach
+ * window, and the invoking process mints its request id.
  *
- * `--background` turns a local command's machine work into a fire-and-forget
- * detached job by composing a decorator at the executor seam. Two properties
- * matter and are pinned here: it forwards `{ detached: true, follow: false }`
- * ONLY when the process global is set, and it is a strict NO-OP inside a serve
- * request context so the global can never leak across concurrent requests.
+ *   - direct terminal run: unlimited (no window);
+ *   - `--background`: 0, the ticket at once;
+ *   - a served dispatch (proxy, web console) or an MCP child: JOB_ATTACH_WINDOW_MS;
+ *   - the `--background` global never leaks into a served dispatch.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createOutputState, runInRequestContext } from '../../core/request-context.js';
+import { JOB_ATTACH_WINDOW_MS, JOB_CLIENT_ENV, resetInvocationMinter } from '../../jobs/attach.js';
 import {
-  backgroundDecorator,
+  attachDecorator,
   isBackgroundRequested,
   setBackgroundRequested,
 } from '../executor-factory.js';
@@ -30,57 +32,65 @@ function recordingExecutor(): { calls: ExecuteOptions[]; executor: Executor } {
   };
 }
 
-afterEach(() => setBackgroundRequested(false));
+const call = { functionName: 'repository_up', machineName: 'm' };
 
-describe('background flag', () => {
-  it('defaults off, and the setter flips it', () => {
+beforeEach(() => resetInvocationMinter('inv-1'));
+afterEach(() => {
+  setBackgroundRequested(false);
+  delete process.env[JOB_CLIENT_ENV];
+  resetInvocationMinter();
+});
+
+describe('attach decorator', () => {
+  it('defaults the background flag off, and the setter flips it', () => {
     expect(isBackgroundRequested()).toBe(false);
     setBackgroundRequested(true);
     expect(isBackgroundRequested()).toBe(true);
   });
 
-  it('forwards detached + no-follow when the global is set, outside a request', async () => {
+  it('leaves a direct terminal run attached for the whole job', async () => {
     const { calls, executor } = recordingExecutor();
-    setBackgroundRequested(true);
-
-    await backgroundDecorator(executor).execute({
-      functionName: 'repository_up',
-      machineName: 'm',
-    });
-
-    expect(calls).toHaveLength(1);
-    expect(calls[0].detached).toBe(true);
-    expect(calls[0].follow).toBe(false);
+    await attachDecorator(executor).execute(call);
+    expect(calls[0].attachWindowMs).toBeUndefined();
   });
 
-  it('is a no-op when the global is not set', async () => {
-    const { calls, executor } = recordingExecutor();
-    // Not set: the decorator returns the inner executor untouched.
-    expect(backgroundDecorator(executor)).toBe(executor);
-
-    await backgroundDecorator(executor).execute({
-      functionName: 'repository_up',
-      machineName: 'm',
-    });
-    expect(calls[0].detached).toBeUndefined();
-    expect(calls[0].follow).toBeUndefined();
-  });
-
-  it('NEVER detaches inside a serve request context, even with the global set', async () => {
+  it('gives --background a window of 0, outside a request', async () => {
     const { calls, executor } = recordingExecutor();
     setBackgroundRequested(true);
+    await attachDecorator(executor).execute(call);
+    expect(calls[0].attachWindowMs).toBe(0);
+  });
 
-    // A dispatch owns the detach decision; a client's process global must not
-    // leak into it, or one request would detach another's work.
-    await runInRequestContext({ output: createOutputState(), stdout: [], stderr: [] }, async () => {
-      expect(backgroundDecorator(executor)).toBe(executor);
-      await backgroundDecorator(executor).execute({
-        functionName: 'repository_up',
-        machineName: 'm',
-      });
-    });
+  it('gives a served dispatch the proxy window, even with the --background global set', async () => {
+    const { calls, executor } = recordingExecutor();
+    setBackgroundRequested(true);
+    // A dispatch's window is the proxy's; a client's process global must not leak into it, or one request would background another's work.
+    await runInRequestContext({ output: createOutputState(), stdout: [], stderr: [] }, () =>
+      attachDecorator(executor).execute(call)
+    );
+    expect(calls[0].attachWindowMs).toBe(JOB_ATTACH_WINDOW_MS);
+  });
 
-    expect(calls[0].detached).toBeUndefined();
-    expect(calls[0].follow).toBeUndefined();
+  it('gives an MCP child the MCP window', async () => {
+    const { calls, executor } = recordingExecutor();
+    process.env[JOB_CLIENT_ENV] = 'mcp';
+    await attachDecorator(executor).execute(call);
+    expect(calls[0].attachWindowMs).toBe(JOB_ATTACH_WINDOW_MS);
+  });
+
+  it('mints one request id per call from the invocation id, per machine', async () => {
+    const { calls, executor } = recordingExecutor();
+    const decorated = attachDecorator(executor);
+    await decorated.execute(call);
+    await decorated.execute(call);
+    await decorated.execute({ ...call, machineName: 'other' });
+    expect(calls.map((c) => c.requestId)).toEqual(['inv-1:m:1', 'inv-1:m:2', 'inv-1:other:1']);
+  });
+
+  it("keeps a caller's explicit window and request id", async () => {
+    const { calls, executor } = recordingExecutor();
+    setBackgroundRequested(true);
+    await attachDecorator(executor).execute({ ...call, attachWindowMs: 5, requestId: 'r-1' });
+    expect(calls[0]).toMatchObject({ attachWindowMs: 5, requestId: 'r-1' });
   });
 });
