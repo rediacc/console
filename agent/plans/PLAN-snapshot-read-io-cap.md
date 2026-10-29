@@ -227,7 +227,7 @@ First-Seen: 2026-10-29
 ## Operator rulings, second round (2026-10-29)
 
 - Ad-hoc upload default (ASKED 2026-10-29, "No, keep unlimited by default"): `rdc backup snapshot` keeps an unlimited `--bwlimit` default; only scheduled strategies and explicit flags cap the upload. The read cap defaults of this plan (50M, one hash worker) are unaffected.
-- Acceptance bound: hostinger has 8 cores (nproc, recorded in PLAN-backup-program), so the 4.0 peak-load bound of L1 and L2 stands.
+- Acceptance bound (the plan's default, no ASKED record exists for it, and it is not an operator answer): hostinger has 8 cores (nproc=8, recorded in PLAN-backup-program.md, the Hostinger facts record), so a 4.0 peak-load bound is half the cores. L1's exit condition was later ruled as the 120 s baseline mean plus 3.5, which a busy baseline loosens; the evidence that the cap lowers load is the before/after comparison under L1 (11.41 peak uncapped against 5.88 with the cap), not the relative bound alone.
 
 ## Operator ruling, CPU ceiling (2026-10-29)
 
@@ -241,6 +241,7 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
   - The backup_snapshot function takes `cpu_limit` (a percent of all cores, 1-100, default 50) and wraps the verb in `systemd-run --scope --quiet -p CPUQuota=<percent x nproc>%` inside the existing nice and ionice prefix. Where systemd-run is absent it falls back to the current prefix and records that in the record (`cpuQuota: null`). The verb records `cpuLimitPercent` and `cpuQuota` in its record.
   - Accept: `cd private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1 && go test ./cmd/renet/ -run TestBackupSnapshot -count=1` rc 0.
     (ticked) 2026-10-29T12:43:44Z by d778be9d: commit:12717d20a
+    (review note 2026-10-29, 9f92c43e) Rerun 2026-10-29 of the Accept commands: `cd private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1` rc=0 and `go test ./cmd/renet/ -run TestBackupSnapshot -count=1` rc=0.
 - [x] C4. CLI: `rdc backup snapshot --cpu-limit <percent>`, a strategy-level `cpuLimit`, and CPUQuota on the scheduled unit and the ad-hoc systemd-run.
   - Owns: packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/i18n/locales/*/cli.json, and their tests
   - The unit carries `CPUQuota=<percent x nproc>%`, with nproc read on the machine at schedule time; the snapshot summary prints the CPU limit.

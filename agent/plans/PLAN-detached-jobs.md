@@ -362,7 +362,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0 and `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
     (ticked) 2026-10-29T10:19:43Z by d778be9d: commit:53e96d940 J0 audit section in the plan; citations and deps gates show no finding
 
-- [x] J0b [lead] Machine-plane job audit, read-only: one table row per machine-plane command in packages/shared/src/cli-contract/data/contract.generated.ts (102 at 2026-10-29). That is the ten covered verbs of J0 (re-checked), the 75 others listed under "The 84 `detachable` commands" (including machine setup, machine provision, the datastore verbs, the cluster verbs, repo resize, repo gc and repo prune), the five `job *` verbs and the thirteen non-proxyable commands. Columns:
+- [x] J0b [lead] Machine-plane job audit, read-only: one table row per machine-plane command in packages/shared/src/cli-contract/data/contract.generated.ts (102 at 2026-10-29). That is the nine covered verbs of J0 (re-checked; the detachable set is 9 covered + 75 others = 84), the 75 others listed under "The 84 `detachable` commands" (including machine setup, machine provision, the datastore verbs, the cluster verbs, repo resize, repo gc and repo prune), the five `job *` verbs and the thirteen non-proxyable commands. Columns:
   1. command, and its CLI entry file:line;
   2. machine calls in order (renet function, raw renet subcommand, SFTP, systemctl or local subprocess);
   3. single-job form (single call, precondition fold, command-kind, compound function, successor) or the section 24 exception and its reason;
@@ -496,6 +496,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: packages/cli/src/services/jobs/** (new), packages/cli/src/commands/job.ts, packages/cli/src/commands/__tests__/job-wait.test.ts (new), packages/cli/src/commands/__tests__/job-tickets.test.ts (new), packages/cli/src/cli.ts (the finished-notice lines only), packages/cli/src/i18n/locales/en/cli.json. Accept: `cd packages/cli && npx vitest run src/services/jobs src/commands/__tests__/job-wait.test.ts src/commands/__tests__/job-tickets.test.ts` rc 0, and `npm run check:ci-i18n-cli-key-usage` rc 0.
   Amended (third round): a `starting` record is appended before every start (section 16), and `job wait` resolves a ticket stuck at `starting` through `job list --request-id`.
+    (review note 2026-10-29, 9f92c43e) The tick records the vitest result only. Rerun 2026-10-29: `npm run check:ci-i18n-cli-key-usage` rc=0.
 
 - [x] J15 [writer] Ticket steps and `runJob`. After J1b and J5. Changes:
   - packages/cli/src/services/jobs/steps.ts holds the registry, packages/cli/src/services/jobs/run-job.ts holds `runJob(call, steps)`, packages/cli/src/services/jobs/attach.ts holds `JOB_ATTACH_WINDOW_MS`, and packages/cli/src/services/jobs/plans.ts holds the converted-verb registry (sections 15, 18, 25);
@@ -615,6 +616,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Amended (third round): the reading also covers the 20 s attach window, during which `inFlight` is 1 and the alarm renews as for any request.
     (live record 2026-10-29, d778be9d) J10 reading: workers/proxy/src/org-executor.ts:332 renews only while inFlight > 0, so a request that ends after its 20 s attach window (or with the result) lets inFlight fall to zero between polls and the idle branch applies unchanged; during the window inFlight is 1, as for any request. No change under workers/proxy/src. `npm run check:ci-proxy-cost-guard` rc 0 (16 containers at max_instances <= 25, sleepAfter <= 120 s, worst case 1967.35 USD a month under the 2100 limit).
     (ticked) 2026-10-29T12:08:29Z by d778be9d: commit:ca9cf2625
+    (review note 2026-10-29, 9f92c43e) The tick reading cites workers/proxy/src/org-executor.ts:332 only. The condition on L1 (no poll holding the lease past its body) is not evidenced by this tick and stays owed to L1; until L1 runs, the no-change verdict is the code reading alone.
 
 - [ ] J11 [lead] The VM proof for the renet change: `npm run vm:check -- --changed` VERIFIED on the tree carrying J1 and J3, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt.
@@ -714,7 +716,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 ## Operator rulings, second round (2026-10-29)
 
 - Poll cap (ASKED 2026-10-29, "Keep 2-30 s, measure first (Recommended)"): the 2-30 s backoff ships as ruled; L2 measures Durable Object and container time before any change to the cap.
-- `backup run` stays outside the covered verbs (the plan's default for its second question); J0 confirms it never calls `renet execute`. Superseded by the third round: every machine command is a job, and section 21 makes `backup run` one.
+- `backup run` stays outside the covered verbs (the plan's default for its second question, not an operator answer: no ASKED record exists for it); J0 confirms it never calls `renet execute`. Superseded by the third round: every machine command is a job, and section 21 makes `backup run` one.
 
 ## Operator rulings, third round (2026-10-29)
 

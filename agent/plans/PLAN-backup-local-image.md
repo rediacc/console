@@ -292,6 +292,7 @@ R2's changes:
   - control: without the cleanup defer, the EOF case leaves the snapshot and the test reds.
 
   Owns: private/renet/cmd/renet/backup_export.go (new), private/renet/cmd/renet/backup_export_test.go (new), private/renet/cmd/renet/backup_import.go (new), private/renet/cmd/renet/backup_import_test.go (new), private/renet/cmd/renet/backup.go (two AddCommand lines only), private/renet/pkg/i18n/locales/*.go (two help keys only), private/renet/pkg/i18n/locales/hashes.json (two help keys only). Accept: `cd private/renet && go test ./cmd/renet/ -run 'TestBackupExport|TestBackupImport' -count=1` rc 0, `cd private/renet && go vet ./cmd/renet/` rc 0, and `cd private/renet && go test ./pkg/i18n/` rc 0.
+    (review note 2026-10-29, 9f92c43e) Rerun 2026-10-29 of the Accept commands: `go test ./cmd/renet/ -run 'TestBackupExport|TestBackupImport' -count=1` rc=0, `go vet ./cmd/renet/` rc=0 (reported above), `go test ./pkg/i18n/` rc=0 (reported above).
 
 - [x] R2 [writer] Prune and pool visibility (Design 9).
   - The stale-lock probe and the `StalePullStaging` class in prune.

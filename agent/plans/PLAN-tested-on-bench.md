@@ -209,6 +209,7 @@ Worklist: pending -- filed at promotion
     - `grep -rn "vm_check_trigger\|vm_check_receipt" .ci .claude CLAUDE.md docs --include=*.py --include=*.md --include=*.json` prints nothing outside `agent/`;
     - `npm run vm:check` exit 0, writing a `tier: vm`, schema 3 `receipt.json`.
     (ticked) 2026-10-28T06:16:24Z by d778be9d: 2026-10-28 by d778be9d: commit:efed615f0; pytest test_proof_vm_tier.py test_drills_vm_check.py test_drills_backup_check_trigger.py test_release_local_gates.py rc=0 (774 with the proof and drill tests); test-block_vm_unverified_push.py rc=0 (98 cases) and test-block_backup_unverified_push.py rc=0; the vm_check_trigger/vm_check_receipt grep prints nothing outside .ci/cache; npm run vm:check exit 0, VERIFIED, 175 assertions 0 failed, receipt tier vm schema 3 (tree bf6f6c5c2b1e)
+    (review note 2026-10-29, 9f92c43e) The tick says the grep prints nothing "outside .ci/cache", narrower than the Accept's "outside agent/". Rerun 2026-10-29 of `grep -rn "vm_check_trigger\|vm_check_receipt" .ci .claude CLAUDE.md docs --include=*.py --include=*.md --include=*.json`: no hit outside agent/ and outside other checkouts under .claude/worktrees (whose copies of agent/reviews carry the names).
 - [x] V3 [writer] The `Live-Proof:` grammar in `wl_plandeps`, with the X-field shape and the 12-line window. A `none -- <reason>` line must cite a closed worklist item or a committed operator quote (ruling 2). The pre-edit guard `block_plan_without_depends.py` refuses a new plan whose Owns hit a surface in `proof-tiers.json` and that carries no Live-Proof line.
   - Accept: `python3 .claude/hooks/stop/test-plandeps.py` rc=0 and `python3 .claude/rediacc_hooks/guards/test-block_plan_without_depends.py` rc=0, with cases for a missing, malformed, emphasized, out-of-window and rulingless-`none` line.
     (ticked) 2026-10-28T05:33:18Z by d778be9d: 2026-10-28 by d778be9d: commit:0e5d2c31e; python3 .claude/hooks/stop/test-plandeps.py rc=0 (319 controls, with missing, malformed, emphasized, out-of-window and rulingless-none cases) and python3 .claude/rediacc_hooks/guards/test-block_plan_without_depends.py rc=0 (87 cases, 0 failures); check_plan_deps.py rc=0
@@ -232,13 +233,15 @@ Worklist: pending -- filed at promotion
 - [x] V6 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py`.
   - Rules LP1 to LP7, with every edge reference removed. LP7 also fires on a surface with an admissible target but no registry check.
   - The advisory line for `Live-Proof: none`, the gate metadata (`lane: quality-branch`, `selftest: true`), the `package.json` script `ci-plan-live-proof` and a lane-durations entry. Set `baseline_at` to the landing date.
-  - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent), and `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
+  - Accept: `npm run check:ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent), and `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
     (ticked) 2026-10-28T15:36:55Z by d778be9d: V6 gate in commit 39b555c05: check_plan_live_proof.py --selftest rc=0 (82 controls), test_gate_plan_live_proof.py in a 261-passed pytest run rc=0, baseline_at 2026-10-28, wired in ci-quality.yml quality-branch
+    (review note 2026-10-29, 9f92c43e) The Accept named `npm run ci-plan-live-proof`; the package.json script is `check:ci-plan-live-proof` (V5 registers it under that name), and the Accept lines now say so. The tick ran `check_plan_live_proof.py --selftest`, the script that npm entry runs. Rerun 2026-10-29: `npm run check:ci-plan-live-proof -- --selftest` rc=0.
 - [x] V7 [lead] Migration.
   - Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan. Re-run the item 7 census against the widened map first: renet now includes `proxy/**`, and account includes `packages/shared/src/**`.
   - Each `none` needs a ruling (ruling 2). Each zero-open-box plan gets a fresh-run LP box (ruling 3). Then regenerate `plan-boxes.json`.
-  - Accept: `npm run ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings, `npm run check:ci-plan-boxes` rc=0, `npm run check:ci-plan-deps` rc=0.
+  - Accept: `npm run check:ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings, `npm run check:ci-plan-boxes` rc=0, `npm run check:ci-plan-deps` rc=0.
     (ticked) 2026-10-28T15:37:00Z by d778be9d: V7 migration in commit 39b555c05: 27 plans carry Live-Proof lines and 35 LP boxes; npm run check:ci-plan-live-proof rc=0 (28 required plans judged, no finding, 0 PENDING)
+    (review note 2026-10-29, 9f92c43e) The tick records `check:ci-plan-live-proof` only. Rerun 2026-10-29: `npm run check:ci-plan-boxes` rc=0 and `npm run check:ci-plan-deps` rc=0. `npm run check:ci-plan-live-proof` itself exits 1 on the current tree with LP1 to LP3 findings on plans added since (for example PLAN-snapshot-read-io-cap, PLAN-backup-download-from-store, PLAN-backup-meter-orphaned-chunks), so the V7 zero-finding Accept holds for the migration commit, not for today's tree.
 - [ ] V8 [lead] Pilot: one real receipt on each target. Before running, ASK the operator to confirm a branch renet may be provisioned on hostinger (this restarts the router and daemons).
   - bench: PLAN-config-server-key's LP-bench box after its K3, with `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - hostinger: one renet-surface plan's LP-hostinger box through `renet-live` on `--config eu-bench`; candidate PLAN-hostinger-upgrade-followups T1, whose Traefik pin is renet-embedded. Run it after a VERIFIED `npm run vm:check -- --changed` on the same tree.
@@ -251,7 +254,7 @@ Worklist: pending -- filed at promotion
   - Accept: the guard's `test-*.py` rc=0 with a planted hand-appended row refused and a recorder append allowed; `pytest -q .ci/rediacc_ci/tests/test_ops_live_proof.py` rc=0 with a row whose log digest mismatches refused by `verify`.
     (ticked) 2026-10-28T14:59:29Z by d778be9d: V10: ledger guards in commit 22b7a40cd; test-block_live_proof_ledger_write.py rc=0 (FAILURES 0), the shell-write guard test rc=0, test_ops_live_proof.py 37 passed including the log-digest mismatch refused by verify
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface (proof tooling is excluded by item 2). V8 exercises the tooling end to end on both targets.
-  - Accept: `npm run ci-plan-live-proof` rc=0 on the commit that ticks V8.
+  - Accept: `npm run check:ci-plan-live-proof` rc=0 on the commit that ticks V8.
 
 ### Tasks of the first draft (superseded by the revision above)
 
@@ -283,11 +286,12 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     - `true` as a check refuses
     - the row id round-trips
     (ticked) 2026-10-28T14:59:04Z by d778be9d: superseded first-draft V4, closed with revised V5 (c5b50ba5, commit b8f513f40); test_ops_live_proof.py 37 passed: dirty tree, moved bench version, planted secret refuse
+    (review note 2026-10-29, 9f92c43e) The "revised V5 (c5b50ba5)" in the tick is the revised plan's V5, "The live tier and recorder" (the same commit b8f513f40), which is ticked above in this file; c5b50ba5 is a stale signature label and no longer matches any box (that box is signed 24fba445).
 - [x] V5 [writer] The gate `.ci/scripts/quality/check_plan_live_proof.py` (LP1 to LP7, the advisory lines, the gate metadata block with `lane: quality-branch` and `selftest: true`), its `package.json` script `check:ci-plan-live-proof`, and a lane-durations entry. Set `baseline_at` to the landing date.
-  - Accept: `npm run ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent). `npm run ci-plan-live-proof` rc=0 on the landing tree, where it reports LP1 findings for the V6 set as expected until V6 lands in the same PR. `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
+  - Accept: `npm run check:ci-plan-live-proof -- --selftest` rc=0 (every plant caught, healthy fixture silent). `npm run check:ci-plan-live-proof` rc=0 on the landing tree, where it reports LP1 findings for the V6 set as expected until V6 lands in the same PR. `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_plan_live_proof.py -q` rc=0.
     (ticked) 2026-10-28T15:36:58Z by d778be9d: superseded first-draft V5 gate, closed with the revised V6 (b80617d6) in commit 39b555c05; check:ci-plan-live-proof rc=0
 - [x] V6 [lead] Migration. Add the `Live-Proof:` line and the `LP-<target> [live]` boxes (with Accept sub-lines) to every required live plan listed in Design item 7, then regenerate `plan-boxes.json`. Any `none` gets the waiver Question 2 settles. Retro rows only as Question 3 allows.
-  - Accept: `npm run ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings; `npm run check:ci-plan-boxes` rc=0; `npm run check:ci-plan-deps` rc=0.
+  - Accept: `npm run check:ci-plan-live-proof` rc=0 with zero LP1 to LP3 findings; `npm run check:ci-plan-boxes` rc=0; `npm run check:ci-plan-deps` rc=0.
     (ticked) 2026-10-28T15:37:03Z by d778be9d: superseded first-draft V6 migration, closed with the revised V7 (7acacf6d) in commit 39b555c05; check:ci-plan-live-proof rc=0
 - [ ] V7 [lead] Pilot: one real receipt end to end on bench and one on hostinger through `--config eu-bench`. Candidate: PLAN-config-server-key's live box, after its K3 provisioning. Run `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0, and `npm run ci-plan-live-proof` rc=0 on the commit that ticks it.

@@ -146,7 +146,7 @@ Most of this exists already, and A1 pins it with tests:
 
 - [x] A1 [writer, account] Server-side metering of every stored chunk.
   Changes:
-  - Migration private/account/drizzle/0069_backup_lineage_reconcile_due.sql (+ drizzle/meta/_journal.json) adding `backup_lineage_usage.reconcile_due_at` and `backup_upload_leases.machine_id`, and both columns in src/db/schema.ts (backupLineageUsage and backupUploadLeases only).
+  - Migration private/account/drizzle/0069_backup_lineage_reconcile_due.sql (+ drizzle/meta/_journal.json) adding `backup_lineage_usage.reconcile_due_at` and `backup_upload_leases.machine_id` (one migration file carries both ALTERs; the name mentions only the first), and both columns in src/db/schema.ts (backupLineageUsage and backupUploadLeases only).
   - backup.dto.ts:
     - `supersedesSnapshotId: snapshotIdSchema.optional()` on `backupGrantRequest`;
     - `reconciled` optional on `backupCommitResponse`;
@@ -241,11 +241,11 @@ Most of this exists already, and A1 pins it with tests:
   1. `./rdc.sh --config eu-remote backup reconcile --dry-run -o json` records the before figures.
   2. With the operator's go, `./rdc.sh --config eu-remote backup reconcile -o json` applies.
   3. `./rdc.sh --config eu-remote backup usage -o json`: storedBytes must equal the sum of `/c/` object sizes and chunkCount the count of `/c/` keys in a fresh independent R2 listing of the subscription prefix. The figures expected at the time of writing were 13,262,389,248 and 3162; the seed has since grown the store (2026-10-29: R2 106,940,214,348 bytes in 25,496 chunks against a ledger of 17,321 chunks), so the check is equality with a fresh listing, not those numbers; manifests are not counted.
+  4. Over the manifest set: per lineage the reconcile output's referenced and unreferenced chunk counts sum to the listing count. `unreferencedChunks` need not be 0: unreferenced debris stays billed until GC deletes it after the 7-day grace (the Orphans ruling below), and `unreferencedPastGraceChunks` names what the next GC deletes.
   5. The rerun class is covered: nextcloud's first seed attempt failed at commit after uploading about 6607 chunks, and its rerun committed after uploading only 50 (snapshot 20261029T154848Z-4960a85b93ae46e0), so its lineage read about 0.2 GB for a 22.6 GB repo. After the repair, nextcloud's lineage bytes equal the referenced chunk bytes of its manifest.
-  4. Over the manifest set: the reconcile output reports `unreferencedChunks: 0` for every lineage, so the listing and the referenced set agree.
 
   Owns: agent/plans/PLAN-backup-meter-orphaned-chunks.md (receipts only).
-  Accept: `./rdc.sh --config eu-remote backup reconcile --check` rc 0, and the usage and listing figures recorded as equal in this box.
+  Accept: `./rdc.sh --config eu-remote backup reconcile --check` rc 0, the usage and listing figures recorded as equal in this box, and step 5's nextcloud lineage bytes recorded as equal to the referenced chunk bytes of its manifest.
 
 ## Operator rulings, second round (2026-10-29)
 

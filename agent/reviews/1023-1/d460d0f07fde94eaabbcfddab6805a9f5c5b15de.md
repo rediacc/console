@@ -21,14 +21,14 @@ Body-Sig: eb8e135124e64d77
 ### d460d0f0.1 [low] pkg/chunkstore/key_rotation_luks_test.go:85
 Anchor: in-diff
 Claim: The write loop keeps only the last WriteAt error in werr, overwriting earlier ones, so a failure on an early cell can be hidden if a later write succeeds; the test then fails with a less specific error or none at all.
-Resolution: open
+Resolution: fixed 2f196307a808e5b76179719732d68e292bbc37cc | d778be9d 2026-10-29T22:30:34Z
 
 ### d460d0f0.2 [low] pkg/chunkstore/key_rotation_luks_test.go:91
 Anchor: in-diff
 Claim: The error from dev.Close() is discarded with `_ =`, so a flush failure on the device-mapper handle would go unreported before the mapping is closed and the snapshot is taken from a possibly incomplete write.
-Resolution: open
+Resolution: fixed 2f196307a808e5b76179719732d68e292bbc37cc | d778be9d 2026-10-29T22:30:34Z
 
 ### d460d0f0.3 [low] pkg/chunkstore/key_rotation_luks_test.go:82
 Anchor: in-diff
 Claim: The opened mapping is closed by explicit calls only, not via t.Cleanup; a panic or runtime.Goexit between open and close leaks the fixed name k9-keyrot-probe, and the next run then fails at the cryptsetup open on line 78.
-Resolution: open
+Resolution: fixed 2f196307a808e5b76179719732d68e292bbc37cc | d778be9d 2026-10-29T22:30:34Z
