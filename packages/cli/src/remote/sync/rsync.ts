@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { writeStdout } from '../../services/core/request-context.js';
 import { getMsys2Environment, getRsyncPath, getSshPath } from '../msys2/paths.js';
@@ -37,6 +37,30 @@ export async function getRsyncCommand(): Promise<string> {
   throw new Error('rsync not found. Please install rsync.');
 }
 
+let rsyncVersionTextPromise: Promise<string> | undefined;
+
+/**
+ * Text of `rsync --version` (banner included), run once per process and cached.
+ * Rejects when rsync is missing; a failed lookup is not cached.
+ */
+export function getRsyncVersionText(): Promise<string> {
+  rsyncVersionTextPromise ??= getRsyncCommand()
+    .then(
+      (cmd) =>
+        new Promise<string>((resolve, reject) => {
+          execFile(cmd, ['--version'], { encoding: 'utf8' }, (err, stdout) => {
+            if (err) reject(err);
+            else resolve(stdout);
+          });
+        })
+    )
+    .catch((error: unknown) => {
+      rsyncVersionTextPromise = undefined;
+      throw error;
+    });
+  return rsyncVersionTextPromise;
+}
+
 /**
  * Gets the SSH command for rsync with options
  *
@@ -45,7 +69,7 @@ export async function getRsyncCommand(): Promise<string> {
  * @param sshOptions - SSH options string
  * @returns SSH command string for rsync -e option
  */
-async function getRsyncSSHCommand(sshOptions: string): Promise<string> {
+export async function getRsyncSSHCommand(sshOptions: string): Promise<string> {
   if (getPlatform() !== 'windows') {
     return `ssh ${sshOptions}`;
   }
@@ -182,6 +206,7 @@ function addSyncModeArgs(
     }
   }
   if (options.verify) {
+    // No --partial on purpose: real runs pass --inplace and rsync documents that --inplace implies --partial, so an interrupted verify run keeps its data.
     args.push('--checksum', '--ignore-times');
   } else {
     args.push('--partial');
