@@ -523,7 +523,7 @@ def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
 
 
 def test_a_commit_behind_a_cd_that_returns_still_starts_its_review(world):
-    """#52978244: the event cwd is where the shell ENDED, so `cd sub && git commit ... && cd ..` resolved the bare `git commit` to the console and left the submodule commit unreviewed."""
+    """Pins that a commit behind `cd sub && git commit ... && cd ..` starts its submodule review. Written for #52978244 as a suspected cause; it passes on the current hook, so cwd resolution was ruled out and this guards the behaviour, it does not reproduce that miss."""
     sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, out, err, _t = world.hook("cd sub && git commit -m x -- f.py && cd ..")
@@ -533,7 +533,7 @@ def test_a_commit_behind_a_cd_that_returns_still_starts_its_review(world):
 
 
 def test_a_cd_into_a_non_submodule_still_starts_nothing(world):
-    """CONTROL for #52978244: checking every project repository on a cd must not widen membership; a gitignored repo is still excluded."""
+    """CONTROL: a commit behind a cd into a repository that `.gitmodules` does not register (a plain nested repo, as private/growth is) starts no review; membership is `.gitmodules`, not location."""
     _submodule(world, "registered")
     other = world.repo / "growth"
     other.mkdir()
