@@ -116,9 +116,31 @@ describe('assertProxyCapable', () => {
 
 describe('assertDetachable', () => {
   it('allows a detachable command through', () => {
-    const entry = getCommand('repo up');
+    const entry = getCommand('repo down');
     expect(entry?.detachable).toBe(true);
-    expect(() => assertDetachable('repo up', entry)).not.toThrow();
+    expect(() => assertDetachable('repo down', entry)).not.toThrow();
+  });
+
+  it('refuses a detachable verb that is unsafe with --background, naming why', () => {
+    for (const verb of [
+      'repo up',
+      'repo fork',
+      'repo checkout',
+      'repo commit',
+      'repo push',
+      'repo pull',
+      'repo migrate',
+      'backup snapshot',
+      'backup restore',
+      'backup verify',
+    ]) {
+      const entry = getCommand(verb);
+      expect(entry?.detachable, verb).toBe(true);
+      expect(() => assertDetachable(verb, entry), verb).toThrow(/cannot run with --background yet/);
+    }
+    expect(() => assertDetachable('repo migrate', getCommand('repo migrate'))).toThrow(
+      /deletes the source/
+    );
   });
 
   it('refuses a job command with a circular-detach message', () => {

@@ -69,7 +69,34 @@ export function assertProxyCapable(
  * work, so backgrounding one is circular. No new validation invariant: the
  * message is composed here from fields the contract already carries.
  */
+/**
+ * Detachable verbs that `--background` must still refuse locally, with the reason, until agent/plans/PLAN-detached-jobs.md (J2, J3) runs each as one terminal job.
+ *
+ * `--background` detaches EVERY machine call of the verb with follow off, probes included (executor-factory's backgroundDecorator). For these verbs that is unsafe, per the J0 audit in that plan: a later call starts before the earlier job finishes, a probe answers empty and fails open, or a local step records a result that has not happened. `repo migrate -b` deletes the source while its delta push still reads it. The proxy path is unaffected: it detaches and follows each call to completion.
+ */
+const BACKGROUND_UNSAFE: Record<string, string> = {
+  'repo up': 'runs its probe and its DNS, certificate and URL steps before the containers are up',
+  'repo fork':
+    'refreshes the identity and re-renders backup units before the fork exists, and its legacy up leg races the fork',
+  'repo checkout': 'forks through repo fork, which is not safe in the background',
+  'repo commit': 'forks through repo fork, which is not safe in the background',
+  'repo push': 'records a delta base for a push that has not finished',
+  'repo pull': 'starts the --up deploy while the pull is still running',
+  'repo migrate': 'deletes the source while the delta push is still reading it',
+  'backup snapshot': 'records the run as stored when the job starts',
+  'backup restore':
+    'records success when the job starts, races --up, and loses the source anchor --at needs',
+  'backup verify': 'records and prints "verified" before anything is verified',
+};
+
 export function assertDetachable(commandPath: string, entry: ContractCommand | undefined): void {
+  const unsafe = BACKGROUND_UNSAFE[commandPath];
+  if (entry?.detachable && unsafe) {
+    throw new Error(
+      `"rdc ${commandPath}" cannot run with --background yet: it ${unsafe}. ` +
+        `Run it without --background; it keeps running on the machine only through --proxy.`
+    );
+  }
   if (entry?.detachable) return;
 
   if (entry?.domain === 'job') {
