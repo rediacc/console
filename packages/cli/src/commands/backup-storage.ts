@@ -431,8 +431,18 @@ export function snapshotUploadParams(options: { bwlimit?: string; parallelism?: 
   parallelism?: number;
 } {
   const params: { bwlimit?: string; parallelism?: number } = {};
-  const bytesPerSecond = bandwidthToBytesPerSecond(options.bwlimit);
-  if (bytesPerSecond !== undefined) params.bwlimit = String(bytesPerSecond);
+  if (options.bwlimit !== undefined) {
+    // A given --bwlimit must name a rate: a blank one (an unset shell variable) is refused, never
+    // read as "no cap".
+    const bytesPerSecond =
+      options.bwlimit.trim() === '' ? undefined : bandwidthToBytesPerSecond(options.bwlimit);
+    if (bytesPerSecond === undefined) {
+      throw new Error(
+        `--bwlimit must be a rate such as 100Mbps or 12.5M, got "${options.bwlimit}"`
+      );
+    }
+    params.bwlimit = String(bytesPerSecond);
+  }
   if (options.parallelism !== undefined) {
     const n = Number(options.parallelism);
     if (!Number.isInteger(n) || n < 1) {

@@ -74,3 +74,15 @@ describe('backup snapshot carries the upload cap and parallelism to the renet fu
     expect(mockExecute).not.toHaveBeenCalled();
   });
 });
+
+describe('snapshotUploadParams refuses a blank or unparseable --bwlimit', () => {
+  it.each(['', '   ', 'fast'])('refuses %j instead of uploading unlimited', async (value) => {
+    const { snapshotUploadParams } = await import('../backup-storage.js');
+    expect(() => snapshotUploadParams({ bwlimit: value })).toThrow();
+  });
+  it('leaves the cap off only when --bwlimit is absent', async () => {
+    const { snapshotUploadParams } = await import('../backup-storage.js');
+    expect(snapshotUploadParams({})).toEqual({});
+    expect(snapshotUploadParams({ bwlimit: '100Mbps' })).toEqual({ bwlimit: '12500000' });
+  });
+});
