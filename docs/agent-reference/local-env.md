@@ -146,23 +146,14 @@ CLI's recovery framework (`needsLicenseRecovery` in `packages/cli/src/services/e
 To reproduce license-enforcement issues locally, set:
 
 ```bash
-ACCOUNT_ED25519_PUBLIC_KEY="<the production ed25519 public key>" \
 RDC_RENET_LICENSE=1 \
 ./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine>
 ./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
 ```
 
-**Where the key comes from, corrected 2026-07-29.** This block used to fetch it with `curl -fsS https://www.rediacc.com/api/public/account-key`. That endpoint returns **404** and the account API is not served from `www.rediacc.com` at all (its other routes answer `410 Gone` there, while the same paths answer `200` on a PR preview worker). There is no public URL for the key today.
+The production ed25519 public key comes from Bitwarden (`.ci/config/bws-secret-map.json`) through `./rdc.sh`, which supplies `ACCOUNT_ED25519_PUBLIC_KEY` to the renet build. No paste and no `ACCOUNT_ED25519_PUBLIC_KEY=` prefix are needed, and a renet build without the key fails instead of baking a wrong one. GitHub secrets are write-only and the account API serves no public URL for the key, so the store is the only source.
 
-CI does not need one, but **not for the reason this paragraph used to give**. It said `ACCOUNT_ED25519_PUBLIC_KEY` "already exists as an organisation secret ... verify with `gh api orgs/rediacc/actions/secrets`". That command now returns `{"total_count":0,"secrets":[]}`, and the paragraph was wrong twice over: the org store is not merely empty, it is **unused**. The key lives in
-**Bitwarden** (`.ci/config/bws-secret-map.json`) and workflows pull it through `./.github/actions/bws-secrets`. Running the old verification command and seeing zero reads as "the secret was deleted" when the truth is "you are looking in the wrong store".
-
-Locally you must paste the value. GitHub secrets are **write-only** -- `gh` can list their names and never their contents -- so there is no command that fetches it, and the old one-liner was not merely pointing at a dead URL, it was pointing at a shape of solution that cannot exist for a secret.
-
-Whatever you substitute, do NOT pipe an unchecked HTTP response into this variable. That was the original bug and it is worth stating plainly: with plain `curl -s` a 404 is SILENT, its HTML body becomes the value, and that HTML is baked into `keys.ProductionPublicKey` via ldflags. The build succeeds and every prod-signed licence then fails as `invalid_signature` -- exactly the
-symptom this variable exists to prevent. The documented cure was producing the disease.
-
-`RDC_RENET_LICENSE=1` selects an enforcing build, which lives in `private/renet/bin/enforce/` and never replaces `bin/renet` (the nolicense build). The variable only decides which directory `./rdc.sh` puts on `PATH`, so an invocation without it keeps using the nolicense binary and nothing needs unsetting or rebuilding afterwards. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on the test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as
+`RDC_RENET_LICENSE=1` selects an enforcing build, which lives in `private/renet/bin/enforce/` and never replaces `bin/renet` (the nolicense build). The variable only decides which directory `./rdc.sh` puts on `PATH`, so an invocation without it keeps using the nolicense binary and nothing needs unsetting or rebuilding afterwards. The key is the production ed25519 public key, which matches the account server that issued the licenses on the test machines. The build flow wires it into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as
 `invalid_signature`.
 
 ## A real passkey provider in the account E2E suite
