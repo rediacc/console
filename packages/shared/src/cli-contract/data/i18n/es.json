@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "No se encontraron manifiestos de copia de seguridad.",
   "commands.backup.manifests.fetching": "Obteniendo manifiestos de copia de seguridad...",
   "commands.backup.reconcile.argRepoRef": "Repositorio a conciliar (por defecto: todos los del alcance del token)",
+  "commands.backup.reconcile.checkSkipped": "No se comprobaron los linajes omitidos: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registro",
   "commands.backup.reconcile.columns.lineage": "Linaje",
   "commands.backup.reconcile.columns.observed": "Observado",

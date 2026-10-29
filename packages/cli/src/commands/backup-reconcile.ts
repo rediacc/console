@@ -47,11 +47,20 @@ interface ReconcileOptions {
   check?: boolean;
 }
 
-/** True when any lineage's observed figures differ from its ledger, or the aggregate drifted. */
+/**
+ * True when a lineage the server could reconcile has observed figures that differ
+ * from its ledger. A lineage the server skipped (`leased`: an upload is running;
+ * `unreadable`) was deliberately left alone, so `--check` neither judges it nor
+ * fails on it; it is listed in the output with its reason instead. The aggregate
+ * `driftBytes` includes skipped lineages, so it counts only when none was skipped:
+ * with a skip it cannot be told apart from the skipped lineage's own drift.
+ */
 export function hasDrift(res: ReconcileResponse): boolean {
+  const judged = res.lineages.filter((l) => !l.skipped);
+  const aggregateDrift = judged.length === res.lineages.length && res.driftBytes !== 0;
   return (
-    res.driftBytes !== 0 ||
-    res.lineages.some(
+    aggregateDrift ||
+    judged.some(
       (l) => l.observedBytes !== l.ledgerBytesBefore || l.observedChunks !== l.ledgerChunksBefore
     )
   );
@@ -127,6 +136,21 @@ function reportResult(res: ReconcileResponse, dryRun: boolean): Promise<void> | 
   return printTable(res, dryRun);
 }
 
+function reportCheck(res: ReconcileResponse): void {
+  const table = getOutputFormat() === 'table';
+  const skipped = res.lineages.filter((l) => l.skipped);
+  if (skipped.length > 0 && table) {
+    outputService.warn(
+      t('commands.backup.reconcile.checkSkipped', {
+        lineages: skipped.map((l) => `${l.lineageGuid} (${l.skipped})`).join(', '),
+      })
+    );
+  }
+  if (!hasDrift(res)) return;
+  if (table) outputService.warn(t('commands.backup.reconcile.driftFound'));
+  setExitCode(1);
+}
+
 async function runReconcile(repoRef: string | undefined, options: ReconcileOptions) {
   const dryRun = isDryRun(options);
   const lineageGuid = repoRef ? await resolveLineage(repoRef) : undefined;
@@ -138,11 +162,7 @@ async function runReconcile(repoRef: string | undefined, options: ReconcileOptio
 
   await reportResult(res, dryRun);
 
-  if (options.check && hasDrift(res)) {
-    if (getOutputFormat() === 'table')
-      outputService.warn(t('commands.backup.reconcile.driftFound'));
-    setExitCode(1);
-  }
+  if (options.check) reportCheck(res);
 }
 
 export function registerBackupReconcile(backup: Command): void {

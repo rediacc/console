@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "No backup manifests found.",
   "commands.backup.manifests.fetching": "Fetching backup manifests...",
   "commands.backup.reconcile.argRepoRef": "Repository to reconcile (default: every repository in the token's scope)",
+  "commands.backup.reconcile.checkSkipped": "Skipped lineages were not checked: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Ledger",
   "commands.backup.reconcile.columns.lineage": "Lineage",
   "commands.backup.reconcile.columns.observed": "Observed",

@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Não foram encontrados manifestos de cópia de segurança.",
   "commands.backup.manifests.fetching": "A obter manifestos de cópia de segurança...",
   "commands.backup.reconcile.argRepoRef": "Repositório a reconciliar (padrão: todos no escopo do token)",
+  "commands.backup.reconcile.checkSkipped": "As linhagens ignoradas não foram verificadas: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registro",
   "commands.backup.reconcile.columns.lineage": "Linhagem",
   "commands.backup.reconcile.columns.observed": "Observado",

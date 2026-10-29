@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "No se comprobaron los linajes omitidos: {{lineages}}",
         "description": "Restablece el registro de bytes almacenados de un repositorio a lo que el almacén contiene realmente (nunca borra un fragmento)",
         "argRepoRef": "Repositorio a conciliar (por defecto: todos los del alcance del token)",
         "optionDryRun": "Mostrar las cifras sin modificar el registro",

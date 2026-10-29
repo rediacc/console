@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "已跳过的谱系未检查：{{lineages}}",
         "description": "将仓库的已存储字节台账重置为存储中的实际内容(绝不删除任何数据块)",
         "argRepoRef": "要核对的仓库(默认:令牌范围内的所有仓库)",
         "optionDryRun": "只显示数据,不修改台账",

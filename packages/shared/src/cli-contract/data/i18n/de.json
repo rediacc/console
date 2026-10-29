@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Keine Backup-Manifeste gefunden.",
   "commands.backup.manifests.fetching": "Backup-Manifeste werden abgerufen...",
   "commands.backup.reconcile.argRepoRef": "Abzugleichendes Repository (Standard: jedes Repository im Geltungsbereich des Tokens)",
+  "commands.backup.reconcile.checkSkipped": "Übersprungene Lineages wurden nicht geprüft: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Verbucht",
   "commands.backup.reconcile.columns.lineage": "Verlauf",
   "commands.backup.reconcile.columns.observed": "Gefunden",

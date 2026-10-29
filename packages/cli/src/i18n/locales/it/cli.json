@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "Le lineage saltate non sono state verificate: {{lineages}}",
         "description": "Riallinea il registro dei byte archiviati di un repository a ciò che lo store contiene davvero (non elimina mai un chunk)",
         "argRepoRef": "Repository da riconciliare (predefinito: tutti quelli nell'ambito del token)",
         "optionDryRun": "Mostra i valori senza modificare il registro",

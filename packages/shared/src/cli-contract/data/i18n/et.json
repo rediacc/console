@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Varukoopia manifeste ei leitud.",
   "commands.backup.manifests.fetching": "Varukoopia manifestide toomine...",
   "commands.backup.reconcile.argRepoRef": "Ühtlustatav hoidla (vaikimisi kõik loa ulatuses olevad)",
+  "commands.backup.reconcile.checkSkipped": "Vahele jäetud liine ei kontrollitud: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Register",
   "commands.backup.reconcile.columns.lineage": "Liin",
   "commands.backup.reconcile.columns.observed": "Leitud",

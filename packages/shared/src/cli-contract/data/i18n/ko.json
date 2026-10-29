@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "백업 매니페스트를 찾을 수 없습니다.",
   "commands.backup.manifests.fetching": "백업 매니페스트를 가져오는 중...",
   "commands.backup.reconcile.argRepoRef": "조정할 저장소(기본값: 토큰 범위의 모든 저장소)",
+  "commands.backup.reconcile.checkSkipped": "건너뛴 계보는 확인하지 않았습니다: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "장부",
   "commands.backup.reconcile.columns.lineage": "계통",
   "commands.backup.reconcile.columns.observed": "관측",

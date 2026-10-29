@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Yedek manifesti bulunamadı.",
   "commands.backup.manifests.fetching": "Yedek manifestleri alınıyor...",
   "commands.backup.reconcile.argRepoRef": "Uzlaştırılacak depo (varsayılan: belirtecin kapsamındaki tüm depolar)",
+  "commands.backup.reconcile.checkSkipped": "Atlanan soy hatları denetlenmedi: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Kayıt",
   "commands.backup.reconcile.columns.lineage": "Soy",
   "commands.backup.reconcile.columns.observed": "Gözlenen",

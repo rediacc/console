@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Манифесты резервных копий не найдены.",
   "commands.backup.manifests.fetching": "Получение манифестов резервных копий...",
   "commands.backup.reconcile.argRepoRef": "Репозиторий для сверки (по умолчанию все репозитории в области токена)",
+  "commands.backup.reconcile.checkSkipped": "Пропущенные линии не проверялись: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Учёт",
   "commands.backup.reconcile.columns.lineage": "Линия",
   "commands.backup.reconcile.columns.observed": "Найдено",

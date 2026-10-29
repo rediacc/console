@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "As linhagens ignoradas não foram verificadas: {{lineages}}",
         "description": "Redefine o registro de bytes armazenados de um repositório para o que o armazenamento realmente contém (nunca apaga um fragmento)",
         "argRepoRef": "Repositório a reconciliar (padrão: todos no escopo do token)",
         "optionDryRun": "Mostrar os números sem alterar o registro",

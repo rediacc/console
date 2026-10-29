@@ -2013,6 +2013,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "Skipped lineages were not checked: {{lineages}}",
         "description": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
         "argRepoRef": "Repository to reconcile (default: every repository in the token's scope)",
         "optionDryRun": "Report the figures without changing the ledger",

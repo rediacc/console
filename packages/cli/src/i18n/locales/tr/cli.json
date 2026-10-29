@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "Atlanan soy hatları denetlenmedi: {{lineages}}",
         "description": "Bir deponun depolanan bayt kaydını mağazadaki gerçek duruma getirir (hiçbir parçayı silmez)",
         "argRepoRef": "Uzlaştırılacak depo (varsayılan: belirtecin kapsamındaki tüm depolar)",
         "optionDryRun": "Kaydı değiştirmeden rakamları göster",

@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Nessun manifest di backup trovato.",
   "commands.backup.manifests.fetching": "Recupero dei manifest di backup...",
   "commands.backup.reconcile.argRepoRef": "Repository da riconciliare (predefinito: tutti quelli nell'ambito del token)",
+  "commands.backup.reconcile.checkSkipped": "Le lineage saltate non sono state verificate: {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registro",
   "commands.backup.reconcile.columns.lineage": "Linea",
   "commands.backup.reconcile.columns.observed": "Osservato",

@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "Aucun manifeste de sauvegarde trouvé.",
   "commands.backup.manifests.fetching": "Récupération des manifestes de sauvegarde...",
   "commands.backup.reconcile.argRepoRef": "Dépôt à réconcilier (par défaut : tous ceux du périmètre du jeton)",
+  "commands.backup.reconcile.checkSkipped": "Les lignées ignorées n'ont pas été vérifiées : {{lineages}}",
   "commands.backup.reconcile.columns.ledger": "Registre",
   "commands.backup.reconcile.columns.lineage": "Lignée",
   "commands.backup.reconcile.columns.observed": "Observé",

@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "Übersprungene Lineages wurden nicht geprüft: {{lineages}}",
         "description": "Setzt das Speicher-Ledger eines Repositorys auf den tatsächlichen Stand des Stores zurück (löscht nie einen Chunk)",
         "argRepoRef": "Abzugleichendes Repository (Standard: jedes Repository im Geltungsbereich des Tokens)",
         "optionDryRun": "Zahlen nur anzeigen, ohne das Ledger zu ändern",

@@ -369,7 +369,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,

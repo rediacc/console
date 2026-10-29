@@ -233,6 +233,7 @@
         }
       },
       "reconcile": {
+        "checkSkipped": "Les lignées ignorées n'ont pas été vérifiées : {{lineages}}",
         "description": "Remet le registre des octets stockés d'un dépôt à ce que le magasin contient réellement (ne supprime jamais un fragment)",
         "argRepoRef": "Dépôt à réconcilier (par défaut : tous ceux du périmètre du jeton)",
         "optionDryRun": "Afficher les chiffres sans modifier le registre",

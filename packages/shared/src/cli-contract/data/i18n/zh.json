@@ -31,6 +31,7 @@
   "commands.backup.manifests.empty": "未找到备份清单。",
   "commands.backup.manifests.fetching": "正在获取备份清单...",
   "commands.backup.reconcile.argRepoRef": "要核对的仓库(默认:令牌范围内的所有仓库)",
+  "commands.backup.reconcile.checkSkipped": "已跳过的谱系未检查：{{lineages}}",
   "commands.backup.reconcile.columns.ledger": "台账",
   "commands.backup.reconcile.columns.lineage": "谱系",
   "commands.backup.reconcile.columns.observed": "实测",

@@ -6,19 +6,23 @@ vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
 const mockFetch = vi.hoisted(() => vi.fn());
 const mockPrint = vi.hoisted(() => vi.fn());
 const mockSetExitCode = vi.hoisted(() => vi.fn());
+const mockWarn = vi.hoisted(() => vi.fn());
+const mockFormat = vi.hoisted(() => vi.fn((..._args: unknown[]) => 'TABLE'));
+const mockInfo = vi.hoisted(() => vi.fn());
+const outputFormat = vi.hoisted(() => ({ value: 'json' }));
 
 vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: mockFetch }));
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
-    info: vi.fn(),
-    warn: vi.fn(),
+    info: mockInfo,
+    warn: mockWarn,
     print: mockPrint,
-    format: vi.fn(() => 'TABLE'),
+    format: mockFormat,
   },
 }));
 vi.mock('../../services/core/request-context.js', () => ({ setExitCode: mockSetExitCode }));
 vi.mock('../../utils/errors.js', () => ({
-  getOutputFormat: () => 'json',
+  getOutputFormat: () => outputFormat.value,
   handleError: (error: unknown) => {
     throw error;
   },
@@ -47,10 +51,18 @@ function lineage(over: Record<string, unknown> = {}) {
   };
 }
 
-function response(over: { lineage?: Record<string, unknown>; driftBytes?: number } = {}) {
+function response(
+  over: {
+    lineage?: Record<string, unknown>;
+    driftBytes?: number;
+    lineages?: ReturnType<typeof lineage>[];
+    truncated?: boolean;
+  } = {}
+) {
   return {
     subscriptionId: 'sub-1',
-    lineages: [lineage(over.lineage)],
+    ...(over.truncated === undefined ? {} : { truncated: over.truncated }),
+    lineages: over.lineages ?? [lineage(over.lineage)],
     ledgerBytes: 100,
     ledgerChunkCount: 4,
     bucketChunkBytes: 100,
@@ -72,6 +84,10 @@ describe('backup reconcile', () => {
     mockFetch.mockReset();
     mockPrint.mockReset();
     mockSetExitCode.mockReset();
+    mockWarn.mockReset();
+    mockInfo.mockReset();
+    mockFormat.mockClear();
+    outputFormat.value = 'json';
   });
 
   it('posts the resolved lineage and dryRun', async () => {
@@ -122,5 +138,69 @@ describe('backup reconcile', () => {
     mockFetch.mockResolvedValue(res);
     await run(['shop']);
     expect(mockPrint).toHaveBeenCalledWith(res, 'json');
+  });
+
+  it('--check ignores a skipped lineage, even one whose figures differ, and names it', async () => {
+    outputFormat.value = 'table';
+    const skipped = lineage({
+      lineageGuid: 'busy-1',
+      observedBytes: 0,
+      observedChunks: 0,
+      skipped: 'leased',
+    });
+    mockFetch.mockResolvedValue(response({ lineages: [lineage(), skipped], driftBytes: 100 }));
+    await run(['--check']);
+    expect(mockSetExitCode).not.toHaveBeenCalled();
+    expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+    const rows = mockFormat.mock.calls[0][0] as { lineage: string; status: string }[];
+    expect(rows.find((r) => r.lineage === 'busy-1')?.status).toBe(
+      'commands.backup.reconcile.skipped.leased'
+    );
+  });
+
+  it('--check still fails on a reconcilable lineage next to a skipped one', async () => {
+    mockFetch.mockResolvedValue(
+      response({
+        lineages: [
+          lineage({ observedBytes: 40, observedChunks: 2 }),
+          lineage({ lineageGuid: 'busy-1', skipped: 'unreadable' }),
+        ],
+      })
+    );
+    await run(['--check']);
+    expect(mockSetExitCode).toHaveBeenCalledWith(1);
+  });
+
+  it('--check fails when only driftBytes is non-zero and nothing was skipped', async () => {
+    mockFetch.mockResolvedValue(response({ driftBytes: -5 }));
+    await run(['--check']);
+    expect(mockSetExitCode).toHaveBeenCalledWith(1);
+  });
+
+  it('table output renders rows and the summary, and warns when truncated', async () => {
+    outputFormat.value = 'table';
+    mockFetch.mockResolvedValue(response({ truncated: true }));
+    await run(['shop']);
+    expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.truncated');
+    expect(mockFormat).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          lineage: 'lineage-1',
+          status: 'commands.backup.reconcile.status.clean',
+        }),
+      ],
+      'table',
+      expect.any(Array)
+    );
+    expect(mockPrint).toHaveBeenCalledWith('TABLE');
+    expect(mockInfo).toHaveBeenCalledWith('commands.backup.reconcile.summary');
+  });
+
+  it('table output does not warn when the response is complete, and prints empty', async () => {
+    outputFormat.value = 'table';
+    mockFetch.mockResolvedValue(response({ lineages: [] }));
+    await run(['shop']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockPrint).toHaveBeenCalledWith('commands.backup.reconcile.empty');
   });
 });
