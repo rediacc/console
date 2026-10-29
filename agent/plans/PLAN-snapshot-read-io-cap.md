@@ -199,16 +199,17 @@ First-Seen: 2026-10-29
   - Exit conditions:
     - The verb's rc is 0.
     - The record shows a non-empty `rehashReason`, `readCapBps=50000000` and `hashWorkers=1`.
-    - Peak 1-min load during the run is at most 4.0.
+    - Peak 1-min load during the run is at most the 120 s baseline mean plus 2.0 (operator ruling via #ad4f884a, 2026-10-29: hostinger idles at 5.14, so an absolute 4.0 cannot hold; run 1 measured baseline + 1.61).
     - Peak iowait is at most 15.
     - The run takes at least 0.9 x `imageBytes` / 50,000,000 seconds. This last check shows the cap actually bounded the read, and that the low load did not come from a page-cache hit.
   - If the dry run refuses for lack of a licence on the fork, issue the fork's licence first, the way any new repository gets one, and rerun.
   - Accept: `bash /tmp/scr/readcap.sh` rc 0.
+    (live record 2026-10-29, 9f92c43e) L1 run 10:30-10:34Z on hostinger, script rc=1, NOT PASSED, nothing retuned. Context confirmed (nproc=8, sda mq-deadline, loop0 none). Baseline 120 s: mean 1-min load 5.14 (n=5, other services; already over the 4.0 bound before the run). Run window 160 s: peak load 6.75, peak iowait 13 (within 15). Verb rc=0 but the CLI printed no record, so imageBytes, rehashReason, readCapBps and hashWorkers were NOT observed and the duration bound could not be evaluated (160 s includes CLI/ssh overhead). Commands: `repo fork mautic --tag readcap` rc=0; `backup snapshot mautic:readcap --dry-run` rc=0; `repo delete mautic:readcap -y` rc=6 (machine-side delete done, config save failed: eu.rediacc.com unreachable, NETWORK_ERROR), retried rc=6 (same), retried rc=0 (fork credential archived); `repo list -m hostinger` shows only mautic:latest, original untouched. Findings: (1) snapshot success output omits the record, so the L1 conditions cannot be read without --debug/--json; (2) hostinger idle load is above 4.0, so the L1/L2 load bound needs a delta-over-baseline or a quiet host; (3) repo delete performs the machine delete before the config save, so a save failure leaves a half-deleted state.
 
 - [ ] L2. A real capped snapshot of a mid-size repo, under the existing sampler.
   - Owns: none in the tree.
   - Run `bash /tmp/scr/seed.sh demo-heartbeat` (2.15 GB; it peaked at load 8.13 before), unchanged. The read cap comes from the verb default, and seed.sh already passes `--bwlimit 100Mbps --parallelism 2`.
-  - Accept: `bash /tmp/scr/seed.sh demo-heartbeat && tail -n 3 /tmp/seed/summary.log | awk '/^demo-heartbeat /{for(i=2;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}} END{exit !(v["rc"]=="0" && v["peakload"]+0<=4.0 && v["peakwa"]+0<=15 && v["loadover8x3"]=="0")}'` rc 0.
+  - Accept: `bash /tmp/scr/seed.sh demo-heartbeat && tail -n 3 /tmp/seed/summary.log | awk '/^demo-heartbeat /{for(i=2;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}} END{exit !(v["rc"]=="0" && v["peakload"]+0<=v["baseload"]+2.0 && v["peakwa"]+0<=15 && v["loadover8x3"]=="0")}'` rc 0.
 
 ## Risks
 
