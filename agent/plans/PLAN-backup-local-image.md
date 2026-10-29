@@ -293,11 +293,12 @@ R2's changes:
 
   Owns: private/renet/cmd/renet/backup_export.go (new), private/renet/cmd/renet/backup_export_test.go (new), private/renet/cmd/renet/backup_import.go (new), private/renet/cmd/renet/backup_import_test.go (new), private/renet/cmd/renet/backup.go (two AddCommand lines only), private/renet/pkg/i18n/locales/*.go (two help keys only), private/renet/pkg/i18n/locales/hashes.json (two help keys only). Accept: `cd private/renet && go test ./cmd/renet/ -run 'TestBackupExport|TestBackupImport' -count=1` rc 0, `cd private/renet && go vet ./cmd/renet/` rc 0, and `cd private/renet && go test ./pkg/i18n/` rc 0.
 
-- [ ] R2 [writer] Prune and pool visibility (Design 9).
+- [x] R2 [writer] Prune and pool visibility (Design 9).
   - The stale-lock probe and the `StalePullStaging` class in prune.
   - `scanPool` counts `.snapshot-*` and `.restore-*` with the active and stale split and the pinned bytes, under the renamed fields in private/renet/pkg/list/types.go.
   - The CLI side: `renderPoolSummary` reads the renamed fields with the same i18n parameters, and the prune parser gains `pull-staging`.
   - The lead regenerates packages/shared/src/renet-contract/data/list-types.generated.ts with the command its header names (`./build.sh deploy prep`) after the writer's edit.
+    (ticked) 2026-10-29T14:57:15Z by d778be9d: commit:f87f835b4 go test pkg/list pkg/prune rc=0, machine-status-pool and datastore-prune-pull-staging vitest rc=0
 
   Tests:
   - a held `.lock-<guid>` with no image is NOT listed and an unheld one is;
@@ -337,7 +338,7 @@ R2's changes:
 
   Owns: packages/cli/src/services/backup-image/state.ts (new), packages/cli/src/services/backup-image/preflight.ts (new), packages/cli/src/services/backup-image/__tests__/state.test.ts (new), packages/cli/src/services/backup-image/__tests__/preflight.test.ts (new). Accept: `cd packages/cli && npx vitest run src/services/backup-image/__tests__/state.test.ts src/services/backup-image/__tests__/preflight.test.ts` rc 0.
 
-- [ ] T1 [writer] Tests that fail without the change, written before C1 against the module API named in Design 2, 3 and 8.
+- [x] T1 [writer] Tests that fail without the change, written before C1 against the module API named in Design 2, 3 and 8.
   - **converge.test.ts** runs the real local `rsync` with the C1 argv between two local paths (`--no-whole-file` forces the delta path). A missing rsync binary fails the test; it does not skip. Cases:
     - a 64 MiB fixture with holes and random data, against a 40 % prefix of an older version;
     - a complete older version with scattered changed blocks;
@@ -360,10 +361,11 @@ R2's changes:
     - a resume reuses the pending GUID;
     - `--sparse` is sent only when `fresh`.
   - Control: each file is red on the tree before C1, recorded under "Live records".
+    (ticked) 2026-10-29T14:57:18Z by d778be9d: commit:9c3f5e108 T1 rc 1 before C1 (33 failed) and rc 0 after (34 passed)
 
   Owns: packages/cli/src/services/backup-image/__tests__/converge.test.ts (new), packages/cli/src/remote/sync/__tests__/image-rsync.test.ts (new), packages/cli/src/commands/__tests__/backup-image-download.test.ts (new), packages/cli/src/commands/__tests__/backup-image-upload.test.ts (new). Accept: `cd packages/cli && npx vitest run src/services/backup-image/__tests__/converge.test.ts src/remote/sync/__tests__/image-rsync.test.ts src/commands/__tests__/backup-image-download.test.ts src/commands/__tests__/backup-image-upload.test.ts` rc 1 recorded before C1 and rc 0 after C1.
 
-- [ ] C1 [writer] CLI verbs. Follows R1, X1, S1 and T1.
+- [x] C1 [writer] CLI verbs. Follows R1, X1, S1 and T1.
   - `rdc backup download` and `rdc backup upload` in packages/cli/src/commands/backup-image.ts (new), registered from `registerBackupCommands` (packages/cli/src/commands/backup.ts:654-665).
   - `SFTPClient.execSession`.
   - The session client (session.ts) and the transfer loop with retries and verification (transfer.ts).
@@ -372,11 +374,13 @@ R2's changes:
   - `restoredIdentity` exported.
   - The en keys for every new string, plus the reworded `storageHealthPoolSnapshots` (packages/cli/src/i18n/locales/en/cli.json:905).
   - The lead regenerates the contract with `npm run generate:cli-contract -w @rediacc/cli` after the writer's edit.
+    (ticked) 2026-10-29T14:57:21Z by d778be9d: commit:9c3f5e108 T1 34 passed, full CLI vitest 4153 passed rc=0, tsc rc=0
 
   Owns: packages/cli/src/commands/backup-image.ts (new), packages/cli/src/services/backup-image/session.ts (new), packages/cli/src/services/backup-image/transfer.ts (new), packages/cli/src/remote/sync/image-rsync.ts (new), packages/cli/src/remote/sftp/client.ts (one execSession method only), packages/cli/src/commands/backup.ts (one register call and the restoredIdentity export only), packages/cli/scripts/generate-cli-contract.ts (two PROXY_EXCLUSIONS entries only), packages/cli/src/config/command-metadata.ts (two mcpExcludeReason entries only), packages/cli/src/utils/command-policy.ts (two CMD entries only), packages/shared/src/cli-contract/data/contract.generated.ts (regenerated only), packages/cli/src/i18n/locales/en/cli.json. Accept: the T1 command above rc 0, `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0, and `npm run check:ci-i18n-cli-key-usage` rc 0.
 
-- [ ] I1 [writer] i18n in the 12 derived CLI locales. Follows C1. The new en keys and the reworded pool line are naturalized per docs/i18n/CONVENTIONS.md.
+- [x] I1 [writer] i18n in the 12 derived CLI locales. Follows C1. The new en keys and the reworded pool line are naturalized per docs/i18n/CONVENTIONS.md.
   Owns: packages/cli/src/i18n/locales/*/cli.json (non-en). Accept: `npm run check:i18n` rc 0.
+    (ticked) 2026-10-29T14:57:23Z by d778be9d: commit:9c3f5e108 check:i18n rc=0, check:i18n:hashes rc=0
 
 - [ ] D1 [writer] Docs. Follows C1.
   - A new page, backup-download.md, in English first, then translated into the 12 other languages. It covers:
