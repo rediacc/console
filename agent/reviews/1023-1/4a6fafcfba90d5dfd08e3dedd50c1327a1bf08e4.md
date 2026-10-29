@@ -21,19 +21,19 @@ Body-Sig: 9d1f28f9e0bcfc50
 ### 4a6fafcf.1 [medium] packages/cli/src/services/config/config-resources.ts:272
 Anchor: in-diff
 Claim: If the rollback updateAccess call itself throws, its error replaces the setMachines error in the catch, so the user sees an access-write failure while the machine stays with its bindings already dropped, contrary to the comment on line 271 that says its bindings come back.
-Resolution: open
+Resolution: fixed 59043d4db3a8fe8f82c23e9c3ec36d65e58617bb | d778be9d 2026-10-29T18:31:47Z
 
 ### 4a6fafcf.2 [low] packages/cli/src/services/__tests__/config-resources.test.ts:156
 Anchor: in-diff
 Claim: The updateAccess mock calls the edit but never applies its result to mockAccess, so the test cannot show that the restore reinstates the stored bindings; it only checks the value passed to the second edit.
-Resolution: open
+Resolution: fixed 59043d4db3a8fe8f82c23e9c3ec36d65e58617bb | d778be9d 2026-10-29T18:31:48Z
 
 ### 4a6fafcf.3 [low] packages/cli/src/services/__tests__/config-resources.test.ts:163
 Anchor: in-diff
 Claim: The assertion expect(mockMachines).toHaveProperty('m3') passes even without the fix, because removeMachine deletes from the spread copy returned by getMachines, so this line adds no coverage of the rollback.
-Resolution: open
+Resolution: fixed 59043d4db3a8fe8f82c23e9c3ec36d65e58617bb | d778be9d 2026-10-29T18:31:48Z
 
 ### 4a6fafcf.4 [low] packages/cli/src/commands/config-access.ts:53
 Anchor: in-diff
 Claim: The rangesFromOptions doc comment still says it returns undefined when no range flag was given and does not mention that a given but empty --ipv4 or --ipv6 now throws, so a caller reading the doc would not expect that error.
-Resolution: open
+Resolution: fixed 59043d4db3a8fe8f82c23e9c3ec36d65e58617bb | d778be9d 2026-10-29T18:31:48Z

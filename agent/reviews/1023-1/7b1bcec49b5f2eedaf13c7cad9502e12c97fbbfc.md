@@ -21,7 +21,7 @@ Body-Sig: 2194b7572e8e80c1
 ### 7b1bcec4.1 [medium] packages/cli/src/services/renet/renet-execution.ts:241
 Anchor: in-diff
 Claim: selectRenetUploadBinary now runs `go version -m` on the working-tree binary before the cache lookup, so a dirty-tree upload whose binary cannot be read by go (no Go toolchain, or a non-Go file) throws here even when a complete cached build exists; the previous code only ran go on a cache miss. No test covers this failure path.
-Resolution: open
+Resolution: fixed 59043d4db3a8fe8f82c23e9c3ec36d65e58617bb | d778be9d 2026-10-29T18:31:52Z
 
 ### 7b1bcec4.2 [low] .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py:138
 Anchor: in-diff
