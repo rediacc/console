@@ -883,6 +883,8 @@ class Backup:
 
         missing = unique
         declared = len(missing) * CELL_BYTES
+        # Built before the grant: the grant declares its byte length, and manifest_body stamps createdAt, so a second build would change the length.
+        manifest = manifest_body(self.snap_seed, self.seed_plan, lineage)
         grant_text = self.session_api(
             "POST",
             "/grants",
@@ -891,6 +893,8 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": declared,
                 "hashes": missing,
+                "manifestBytes": len(manifest.encode()),
+                "chunkBytes": {h: CELL_BYTES for h in missing},
             },
         )
         self.grant = _as_dict(grant_text)
@@ -937,7 +941,6 @@ class Backup:
             "the server now HEADs every one of them in the store: the bytes really landed",
         )
 
-        manifest = manifest_body(self.snap_seed, self.seed_plan, lineage)
         status = self.put_manifest(self.snap_seed, manifest)
         d.last_cmd = "PUT the manifest object through the grant's manifestPutUrl"
         d.assert_equal(
@@ -1000,6 +1003,9 @@ class Backup:
         d.assert_equal("1", str(len(missing)), "one cell changed, so exactly one cell transfers")
 
         declared = CELL_BYTES
+        manifest = manifest_body(
+            self.snap_incr, self.incr_plan, lineage, self.snap_seed, self.seed_plan
+        )
         grant_text = self.session_api(
             "POST",
             "/grants",
@@ -1008,6 +1014,8 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": declared,
                 "hashes": missing,
+                "manifestBytes": len(manifest.encode()),
+                "chunkBytes": {h: CELL_BYTES for h in missing},
             },
         )
         self.grant = _as_dict(grant_text)
@@ -1018,9 +1026,6 @@ class Backup:
         d.last_cmd = "PUT the single changed cell"
         d.assert_equal("0", str(failures), "the changed cell uploads")
 
-        manifest = manifest_body(
-            self.snap_incr, self.incr_plan, lineage, self.snap_seed, self.seed_plan
-        )
         status = self.put_manifest(self.snap_incr, manifest)
         d.last_cmd = "PUT the DELTA manifest object"
         d.assert_equal("200", status, "the delta manifest reaches the bucket")
@@ -1193,6 +1198,7 @@ class Backup:
             "lineageGuid": self.lineage,
             "declaredBytes": 1,
             "hashes": [],
+            "manifestBytes": 1,
         }
         refused = self.session_api("POST", "/grants", probe)
         self.capture("POST /backups/grants (one byte over the quota)", refused)
@@ -1415,6 +1421,7 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": 0,
                 "hashes": [],
+                "manifestBytes": 1,
             },
             header,
         )
@@ -1515,6 +1522,7 @@ class Backup:
             "%s/grants" % self.backup_api(),
             {
                 "hashes": [],
+                "manifestBytes": 1,
                 "declaredBytes": 1,
                 "lineageGuid": self.lineage,
                 "snapshotId": self.snap_seed,
@@ -1587,6 +1595,9 @@ class Backup:
         held = set(_as_list(self.field("existing", exists)))
         missing = [h for h in plan["unique"] if h not in held]
         declared = len(missing) * CELL_BYTES
+        manifest = manifest_body(
+            snapshot, plan, lineage, parent[0] if parent else "", parent[1] if parent else None
+        )
         grant_text = self.session_api(
             "POST",
             "/grants",
@@ -1595,6 +1606,8 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": declared,
                 "hashes": missing,
+                "manifestBytes": len(manifest.encode()),
+                "chunkBytes": {h: CELL_BYTES for h in missing},
             },
         )
         self.grant = _as_dict(grant_text)
@@ -1603,9 +1616,6 @@ class Backup:
         failures = self.upload_cells(plan, image, missing)
         d.last_cmd = "PUT the missing cells of leg l snapshot %d" % step
         d.assert_equal("0", str(failures), "snapshot %d: every cell PUT returns 200" % step)
-        manifest = manifest_body(
-            snapshot, plan, lineage, parent[0] if parent else "", parent[1] if parent else None
-        )
         d.last_cmd = "PUT the manifest of leg l snapshot %d" % step
         d.assert_equal(
             "200", self.put_manifest(snapshot, manifest), "snapshot %d: the manifest lands" % step
@@ -1910,7 +1920,6 @@ class Backup:
         plan = make_two_cell_image(image)
         chunk_a, chunk_b = (plan["cells"][i] for i in M_CELLS)
         cell_a = slice_cell(image, M_CELLS[0])
-        cell_b = slice_cell(image, M_CELLS[1])
         stream = self.api(
             "POST",
             self.backup_api() + "/streams",
@@ -1929,6 +1938,7 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": CELL_BYTES,
                 "hashes": [chunk_a],
+                "manifestBytes": 1,
                 "chunkBytes": {chunk_a: CELL_BYTES},
             },
             header,
@@ -1988,7 +1998,7 @@ class Backup:
             with contextlib.suppress(OSError):
                 self.s3_delete(self.chunk_url(lineage, chunk_a))
 
-        # Informational: an UNSIZED grant is the shipped renet's compatibility path and carries no bound. Logged, never asserted, because the day the server closes it (400) is the day this note changes.
+        # An UNSIZED grant (hashes without chunkBytes) is closed for good: the route answers 400, so no chunk is ever presigned without a size bound.
         legacy_text = self.api(
             "POST",
             self.backup_api() + "/grants",
@@ -1997,18 +2007,12 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": CELL_BYTES,
                 "hashes": [chunk_b],
+                "manifestBytes": 1,
             },
             header,
         )
-        if self.status == "200":
-            legacy = wire.jstr(self.field("grant.putUrls.%s" % chunk_b, legacy_text))
-            code = self.presigned_put(legacy, cell_b + b"\x00", {"If-None-Match": "*"})
-            d.note("unsized grant, oversize PUT: the store answered %d (no bound is signed)" % code)
-            if self.accepted(code):
-                with contextlib.suppress(OSError):
-                    self.s3_delete(self.chunk_url(lineage, chunk_b))
-        else:
-            d.note("unsized grants now answer %s: the compatibility path has closed" % self.status)
+        self.capture("POST /backups/grants (unsized, no chunkBytes)", legacy_text)
+        d.assert_equal("400", self.status, "an UNSIZED grant (hashes, no chunkBytes) is refused")
 
     def a_seed_digest(self, restore_token: str) -> str:
         """One non-zero chunk hash of this tenant's seed snapshot, read from its root manifest through a read grant (the same way in the host-only and the --renet drill)."""
@@ -2125,6 +2129,7 @@ class Backup:
                     "lineageGuid": a_lineage,
                     "declaredBytes": CELL_BYTES,
                     "hashes": [a_digest],
+                    "manifestBytes": 1,
                     "chunkBytes": {a_digest: CELL_BYTES},
                 },
                 twin_session,
@@ -2164,6 +2169,7 @@ class Backup:
                 "lineageGuid": twin_lineage,
                 "declaredBytes": CELL_BYTES,
                 "hashes": [fresh_hash],
+                "manifestBytes": 1,
                 "chunkBytes": {fresh_hash: CELL_BYTES},
             },
             twin_session,

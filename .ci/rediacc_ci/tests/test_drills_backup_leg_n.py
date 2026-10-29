@@ -37,10 +37,8 @@ class Plane:
             return "content-length;host;if-none-match"
         return SIGNED_BOTH
 
-    def url(self, digest: str, sized: bool) -> str:
+    def url(self, digest: str) -> str:
         base = "http://store/bucket/t/sub-1/l/lin/c/%s" % digest
-        if not sized:
-            return base + "?X-Amz-Signature=s"
         return base + "?X-Amz-SignedHeaders=" + urllib.parse.quote(self.signed(), safe="")
 
     def put(self, url: str, body: bytes, headers: dict[str, str]) -> int:
@@ -78,8 +76,10 @@ class Plane:
         if url.endswith("/exists"):
             return 200, {"existing": [h for h in data["hashes"] if h in self.objects]}
         if url.endswith("/grants"):
-            sized = "chunkBytes" in data
-            return 200, {"grant": {"putUrls": {h: self.url(h, sized) for h in data["hashes"]}}}
+            # The account refuses a grant without its sizes (private/account 4da3475): every call carries manifestBytes, and a call naming hashes carries chunkBytes.
+            if "manifestBytes" not in data or (data.get("hashes") and "chunkBytes" not in data):
+                return 400, {"error": "chunkBytes and manifestBytes are required"}
+            return 200, {"grant": {"putUrls": {h: self.url(h) for h in data["hashes"]}}}
         raise AssertionError("unmodelled call %s" % url)
 
 
@@ -131,7 +131,7 @@ def test_leg_n_passes_against_a_store_that_enforces_the_signed_bound(
     try:
         subject.leg_n_bounded_put()
         assert subject.d.failures == 0
-        # Oversize refused, wrong content refused, the exact body accepted; the unsized control is informational.
+        # Oversize refused, wrong content refused, the exact body accepted; the unsized grant is refused with 400 (failures == 0 covers that assertion).
         assert plane.puts[:3] == [(CELL + 1, 403), (CELL, 400), (CELL, 200)]
     finally:
         subject.d.teardown()
