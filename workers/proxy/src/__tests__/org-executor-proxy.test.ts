@@ -174,6 +174,7 @@ describe('proxying', () => {
       expect(response.status).toBe(502);
       expect(await response.json()).toMatchObject({ code: 'EXECUTOR_UNREACHABLE' });
       expect(warn).toHaveBeenCalledWith('proxy: org executor forward failed', {
+        stage: 'forward',
         name: 'RangeError',
         message: 'port went away',
       });
@@ -183,7 +184,7 @@ describe('proxying', () => {
     }
   });
 
-  it('names the step that failed: a storage error before the forward is not logged as a forward', async () => {
+  it('names the step that failed as a field: a storage error before the forward keeps the fixed alert string with stage touch', async () => {
     const h = harness();
     await h.ready;
     await h.executor.pin(ORG, 0, 'light');
@@ -194,14 +195,11 @@ describe('proxying', () => {
     try {
       const response = await h.executor.fetch(new Request('https://executor.internal/v1/command'));
       expect(response.status).toBe(502);
-      expect(warn).toHaveBeenCalledWith('proxy: org executor touch failed', {
+      expect(warn).toHaveBeenCalledWith('proxy: org executor forward failed', {
+        stage: 'touch',
         name: 'TypeError',
         message: 'alarm store down',
       });
-      expect(warn).not.toHaveBeenCalledWith(
-        'proxy: org executor forward failed',
-        expect.anything()
-      );
     } finally {
       warn.mockRestore();
     }

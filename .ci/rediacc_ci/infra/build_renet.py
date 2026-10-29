@@ -76,14 +76,16 @@ def _build(argv: list[str]) -> int:
 
     # ensure_renet_built derives its root from LOCAL_ROOT_DIR, so this file's root is named, not left to the caller's environment.
     env = {**os.environ, "LOCAL_ROOT_DIR": str(root)}
-    # build.sh's own exit status is the wrapper's when the build fails, as the shell twin returned it; 1 only when no status was recorded (review 6de769e7.2).
+    # build.sh's own exit status is the wrapper's when the build fails, as the shell twin returned it; 1 only when no status was recorded (review 6de769e7.2). A build killed by a signal is a negative subprocess code, which the shell reports as 128 + the signal, so it is mapped to that (review f57d518c.2).
     status: list[int] = []
     try:
         built = local_common.ensure_renet_built(env, flavor=flavor, status=status)
     except local_common.LocalCommonError as error:
         return error.code
     if not built:
-        return status[-1] if status else 1
+        if not status:
+            return 1
+        return 128 - status[-1] if status[-1] < 0 else status[-1]
 
     github_env = os.environ.get("GITHUB_ENV", "")
     if github_env:

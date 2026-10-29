@@ -35,6 +35,8 @@ if flavor == "enforce":
 out.mkdir(parents=True, exist_ok=True)
 for name in ("renet", "renet-linux-amd64", "renet-linux-arm64"):
     (out / name).write_text("fake-renet-" + flavor + "\\n", encoding="utf-8")
+if RC < 0:
+    os.kill(os.getpid(), -RC)
 sys.exit(RC)
 """
 
@@ -206,6 +208,14 @@ def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
     assert out["exit"] == 3, out
     assert out["calls"]
     assert not (root / "private" / "renet" / "bin" / ".renet-build-stamp").exists()
+    assert "RENET_BINARY=" not in out["stdout"]
+
+
+def test_a_build_killed_by_a_signal_exits_128_plus_the_signal(tmp_path):
+    # A negative subprocess code would exit as 256 - signal (247 for SIGKILL); the shell twin reports 128 + signal (review f57d518c.2).
+    root = _fixture(tmp_path, build_rc=-9)
+    out = _run(root, "--nolicense")
+    assert out["exit"] == 137, out
     assert "RENET_BINARY=" not in out["stdout"]
 
 

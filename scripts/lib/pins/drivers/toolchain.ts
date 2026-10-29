@@ -220,7 +220,7 @@ export function createToolchainDriver(
       }
     }
     // A package.json site (toolchain:wrangler's workers/account/package.json) leaves its lockfile naming the old version unless the lockfile pass runs in that directory, so npm ci refuses the pair and the old tool stays installed.
-    // pinnedNpm throws PlanRefused when .devcontainer/toolchain.env lacks NPM_VERSION, so a package.json site refuses the plan there instead of planning with an ambient npm (toolchain:wrangler planned without that file before this pass existed).
+    // pinnedNpm throws PlanRefused when .devcontainer/toolchain.env lacks NPM_VERSION, so a package.json site that has a lockfile refuses the plan there instead of planning with an ambient npm (toolchain:wrangler planned without that file before this pass existed). A site with no lockfile beside it is skipped below before pinnedNpm runs, and plans without that refusal.
     if (entry.id !== 'toolchain:npm') {
       for (const s of entry.sites.filter(
         (x) => x.file === 'package.json' || x.file.endsWith('/package.json')

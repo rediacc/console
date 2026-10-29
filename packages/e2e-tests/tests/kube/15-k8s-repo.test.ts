@@ -265,7 +265,7 @@ ${dataSource ?? ''}`;
         ? res
         : {
             ...res,
-            stderr: `[repoUpWithSecret: exit ${res.code} is xargs's status; renet's own 1-125 shows as 123]\n${res.stderr}`,
+            stderr: `[repoUpWithSecret: exit ${res.code}; from xargs, 123 is any renet exit 1-125, 124 is renet's 255 and 125 is a signal; 126/127 is renet not runnable, and 255 comes from the bridge or SSH]\n${res.stderr}`,
           };
     };
 

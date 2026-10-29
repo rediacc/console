@@ -296,7 +296,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       void this.afterRequest();
     };
     // Which step threw, so a storage or lease error is not logged as a failed forward (review
-    // 2b65e8c7.2). The caller's answer is the same either way: nothing reached the executor.
+    // 2b65e8c7.2). The caller's answer is the same either way, a 502; only a failure at 'touch' or 'lease' proves nothing reached the executor, while 'forward' can throw after the request was delivered (reading the response), so the executor may have run the command.
     let stage: 'touch' | 'lease' | 'forward' = 'touch';
     try {
       await this.touch();
@@ -318,7 +318,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       });
     } catch (error) {
       done();
-      console.warn(`proxy: org executor ${stage} failed`, errorSummary(error));
+      // The message stays the fixed forward-failure string any alert matches; the stage rides as a field.
+      console.warn('proxy: org executor forward failed', { stage, ...errorSummary(error) });
       return Response.json(
         { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
         { status: 502 }

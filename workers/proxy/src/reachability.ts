@@ -45,7 +45,7 @@ const DOH_URL = 'https://cloudflare-dns.com/dns-query';
 const DNS_TYPES = { A: 1, AAAA: 28 } as const;
 
 /** The A and AAAA answers for `name`, from DNS over HTTPS. */
-async function resolveDoh(name: string): Promise<string[]> {
+export async function resolveDoh(name: string): Promise<string[]> {
   const out: string[] = [];
   for (const [type, code] of Object.entries(DNS_TYPES)) {
     const response = await fetch(`${DOH_URL}?name=${encodeURIComponent(name)}&type=${type}`, {
@@ -62,6 +62,8 @@ async function resolveDoh(name: string): Promise<string[]> {
 
 /** How long the probe waits for the banner. */
 export const PROBE_TIMEOUT_MS = 4_000;
+/** The most addresses of one name the probe tries, so a dead first answer does not mask a live one. */
+const MAX_ADDRESSES = 4;
 /** The most the probe reads before it decides. */
 const MAX_READ_BYTES = 256;
 /** Every SSH server opens with this (RFC 4253 section 4.2). */
@@ -258,12 +260,12 @@ function closeQuietly(socket: Socket): void {
   }
 }
 
-/** The address a DNS name resolved to, vetted: every answer must be allowed, and the first is the one connected to. Otherwise the verdict that ends the probe. */
-async function vettedAddress(
+/** The addresses a DNS name resolved to, vetted: every answer must be allowed, and each is a candidate to connect to, in answer order (at most MAX_ADDRESSES). Otherwise the verdict that ends the probe. */
+async function vettedAddresses(
   name: string,
   resolve: ProbeDeps['resolve'],
   remainingMs: number
-): Promise<string | ProbeResult> {
+): Promise<string[] | ProbeResult> {
   let answers: string[] | typeof TIMEOUT;
   try {
     answers = await within(resolve(name), remainingMs);
@@ -275,7 +277,7 @@ async function vettedAddress(
   if (!answers.every(addressAllowed)) {
     return { verdict: 'target-unreachable', reason: 'refused-address' };
   }
-  return answers[0].trim().toLowerCase();
+  return answers.slice(0, MAX_ADDRESSES).map((answer) => answer.trim().toLowerCase());
 }
 
 /** The host in the form `connect` reads: an IPv6 literal goes in brackets. */
@@ -293,14 +295,33 @@ export async function probeSshBanner(
   const doConnect = deps.connect ?? connect;
   const now = deps.now ?? Date.now;
   const deadline = now() + (deps.timeoutMs ?? PROBE_TIMEOUT_MS);
-  const address = isAddressLiteral(target.host)
-    ? target.host
-    : await vettedAddress(target.host, deps.resolve ?? resolveDoh, deadline - now());
-  if (typeof address !== 'string') return address;
+  const addresses = isAddressLiteral(target.host)
+    ? [target.host]
+    : await vettedAddresses(target.host, deps.resolve ?? resolveDoh, deadline - now());
+  if (!Array.isArray(addresses)) return addresses;
+  let result: ProbeResult = { verdict: 'target-unreachable', reason: 'error' };
+  for (const [at, address] of addresses.entries()) {
+    // Each address gets an even share of what is left, so a silent first one leaves time for the next.
+    const left = addresses.length - at;
+    const attemptDeadline = now() + Math.max(0, deadline - now()) / left;
+    result = await probeAddress(address, target.port, doConnect, attemptDeadline, now);
+    if (result.verdict === 'reachable') return result;
+  }
+  return result;
+}
+
+/** One connect and banner read against a single vetted address. */
+async function probeAddress(
+  address: string,
+  port: number,
+  doConnect: ProbeDeps['connect'],
+  deadline: number,
+  now: () => number
+): Promise<ProbeResult> {
   let socket: Socket;
   try {
     socket = doConnect(
-      { hostname: addressHost(address), port: target.port },
+      { hostname: addressHost(address), port },
       { secureTransport: 'off', allowHalfOpen: false }
     );
   } catch {

@@ -5,7 +5,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PROBE_TIMEOUT_MS, probeSshBanner, probeTarget } from '../reachability';
+import { PROBE_TIMEOUT_MS, probeSshBanner, probeTarget, resolveDoh } from '../reachability';
 import { fakeSocket, type ScriptedRead } from './cloudflare-sockets-stub';
 
 const TARGET = { host: '203.0.113.7', port: 22 };
@@ -130,6 +130,34 @@ describe('probeSshBanner on a DNS name (5bce4385.1)', () => {
     });
   }
 
+  it('7bf996cf.2: a dead first address falls through to the next vetted one', async () => {
+    const dead = fakeSocket([{ reject: new Error('connection reset') }]);
+    const live = fakeSocket(['SSH-2.0-x']);
+    const sockets = [dead.socket, live.socket];
+    const connect = vi.fn(() => sockets.shift() as (typeof dead)['socket']);
+    const resolve = vi.fn(async () => ['203.0.113.9', '203.0.113.10']);
+    expect(await probeSshBanner(NAME, { connect, resolve })).toEqual({
+      verdict: 'reachable',
+      reason: 'banner',
+    });
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(connect).toHaveBeenLastCalledWith(
+      { hostname: '203.0.113.10', port: 2222 },
+      expect.anything()
+    );
+    expect(dead.closes).toBe(1);
+  });
+
+  it('7bf996cf.2: every address dead is target-unreachable, each tried once', async () => {
+    const connect = vi.fn(() => fakeSocket([{ reject: new Error('reset') }]).socket);
+    const resolve = vi.fn(async () => ['203.0.113.9', '203.0.113.10']);
+    expect(await probeSshBanner(NAME, { connect, resolve })).toEqual({
+      verdict: 'target-unreachable',
+      reason: 'error',
+    });
+    expect(connect).toHaveBeenCalledTimes(2);
+  });
+
   it('a name that resolves to nothing, or whose lookup fails, is unresolved and opens no socket', async () => {
     const connect = vi.fn();
     expect(await probeSshBanner(NAME, { connect, resolve: async () => [] })).toEqual({
@@ -235,5 +263,56 @@ describe('probeTarget', () => {
   ];
   it.each(invalid)('refuses %s as report-target-invalid', (_name, value) => {
     expect(probeTarget(value)).toEqual({ refused: 'report-target-invalid' });
+  });
+});
+
+describe('resolveDoh (7bf996cf.3)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubFetch(answers: Record<string, unknown>, ok = true) {
+    const fetchMock = vi.fn((url: string) => {
+      const type = new URL(url).searchParams.get('type') as string;
+      return Promise.resolve({
+        ok,
+        status: ok ? 200 : 503,
+        json: () => Promise.resolve(answers[type] ?? {}),
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  it('asks A and AAAA and keeps only the answers of the type asked', async () => {
+    const fetchMock = stubFetch({
+      A: {
+        Answer: [
+          { type: 1, data: '203.0.113.9' },
+          { type: 5, data: 'cname.example.' },
+        ],
+      },
+      AAAA: {
+        Answer: [
+          { type: 28, data: '2001:db8::9' },
+          { type: 1, data: '198.51.100.1' },
+        ],
+      },
+    });
+    expect(await resolveDoh('machine.example.com')).toEqual(['203.0.113.9', '2001:db8::9']);
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).toContain('name=machine.example.com');
+    expect(urls.map((u) => new URL(u).searchParams.get('type'))).toEqual(['A', 'AAAA']);
+  });
+
+  it('a name with no Answer section resolves to nothing', async () => {
+    stubFetch({});
+    expect(await resolveDoh('nothing.example.com')).toEqual([]);
+  });
+
+  it('a non-OK DoH status rejects instead of reading as an empty answer', async () => {
+    stubFetch({}, false);
+    await expect(resolveDoh('machine.example.com')).rejects.toThrow('doh-http-503');
   });
 });
