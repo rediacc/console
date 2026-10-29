@@ -228,6 +228,7 @@
         "description": "Kinnita hoidla varukoopia ankur chunk-hoidla vastu",
         "failed": "Varukoopia kinnitamine ebaõnnestus hoidlale {{name}}",
         "optionDeep": "Räsi uuesti iga salvestatud rakk (täielik kinnitamine) valimipõhise kontrolli asemel",
+        "optionStore": "Lase serveril räsida uuesti selle hoidla iga salvestatud tükk ja nimetada puuduvad või rikutud tükid",
         "starting": "Varukoopia kinnitamine hoidlale {{name}} ({{level}})..."
       },
       "snapshots": {

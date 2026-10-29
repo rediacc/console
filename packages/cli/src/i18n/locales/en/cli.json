@@ -2006,6 +2006,7 @@
       "verify": {
         "description": "Verify a repository's backup anchor against the chunk store",
         "optionDeep": "Re-hash every recorded cell (full verification) instead of a sampled check",
+        "optionStore": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one",
         "starting": "Verifying backup for {{name}} ({{level}})...",
         "completed": "Backup verified for {{name}}",
         "failed": "Backup verification failed for {{name}}"

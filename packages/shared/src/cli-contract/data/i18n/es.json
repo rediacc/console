@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Verificar el ancla de copia de seguridad de un repositorio contra el almacenamiento fragmentado",
   "commands.backup.verify.failed": "Falló la verificación de la copia de seguridad de {{name}}",
   "commands.backup.verify.optionDeep": "Recalcular el hash de cada celda registrada (verificación completa) en lugar de una comprobación muestreada",
+  "commands.backup.verify.optionStore": "Hacer que el servidor recalcule el hash de cada fragmento almacenado de este repositorio y señale los que falten o estén dañados",
   "commands.backup.verify.starting": "Verificando la copia de seguridad de {{name}} ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Dominio base para el DNS público del clúster (si no, heredado de una máquina hermana)",
   "commands.cluster.create.cidrOption": "CIDR de la red privada (p. ej. 10.0.0.0/24)",

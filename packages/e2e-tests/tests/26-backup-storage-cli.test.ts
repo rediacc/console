@@ -51,6 +51,14 @@ import {
 } from '../src/utils/declaredSkip';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
+/** `rdc backup verify --store -o json`: the server re-hashed every chunk the lineage references. */
+interface StoreVerifyVerdict {
+  lineageGuid: string;
+  checked: number;
+  missing: string[];
+  corrupt: string[];
+}
+
 /**
  * Suite 26 — the chunk-store backup path from the CLI and the control plane.
  *
@@ -1202,6 +1210,20 @@ test.describe
         const victim = await provisionRepo(cli, w1, CORRUPT_NAME, M1);
         const record = await snapshotOf(w1, victim.guid);
         const corrupted = corruptStoredChunk(access!, victim.guid);
+        const corruptedHash = corrupted.key.slice(corrupted.key.lastIndexOf('/') + 1);
+        const storeVerify = async () => {
+          const { result, json } = await cli.runJson<CliEnvelope<StoreVerifyVerdict>>([
+            'backup',
+            'verify',
+            CORRUPT_NAME,
+            '--store',
+          ]);
+          expect(
+            json?.data,
+            `backup verify --store printed no JSON verdict:\n${result.stdout.slice(0, 400)}`
+          ).toBeDefined();
+          return { result, verdict: json!.data as StoreVerifyVerdict };
+        };
         try {
           expect(corrupted.flipped, 'the fixture reported no byte flip').toMatch(
             /^[0-9a-f]{2} [0-9a-f]{2}$/
@@ -1218,9 +1240,25 @@ test.describe
             await imageSha(w2, back.guid),
             'a corrupted chunk was assembled into a placed image'
           ).toBe('');
+          // K11 "verify reports it": the server re-hashes the lineage's stored chunks and names the flipped one by its hash.
+          const flipped = await storeVerify();
+          expect(
+            flipped.result.code,
+            `backup verify --store exited 0 over a flipped chunk: ${bothChannels(flipped.result).slice(-600)}`
+          ).not.toBe(0);
+          expect(flipped.verdict.corrupt).toContain(corruptedHash);
+          expect(flipped.verdict.missing).toEqual([]);
         } finally {
           corrupted.restore();
         }
+        // Control: with the original bytes back, the same store verify is clean, so the red above came from the flip.
+        const repaired = await storeVerify();
+        expect(
+          repaired.result.code,
+          `backup verify --store after repair: ${bothChannels(repaired.result).slice(-600)}`
+        ).toBe(0);
+        expect(repaired.verdict.corrupt).toEqual([]);
+        expect(repaired.verdict.missing).toEqual([]);
         // Local verify checks the machine's anchor against the journal, not the bucket (backup_verify.go: store-side verification is the server's scrub), so it stays green. This pins that scope rather than leaving it a surprise.
         const verify = await cli.run(['backup', 'verify', CORRUPT_NAME, '--deep']);
         expect(verify.code, `verify after repair: ${bothChannels(verify).slice(-600)}`).toBe(0);

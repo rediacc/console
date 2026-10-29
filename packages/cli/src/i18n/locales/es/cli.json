@@ -228,6 +228,7 @@
         "description": "Verificar el ancla de copia de seguridad de un repositorio contra el almacenamiento fragmentado",
         "failed": "Falló la verificación de la copia de seguridad de {{name}}",
         "optionDeep": "Recalcular el hash de cada celda registrada (verificación completa) en lugar de una comprobación muestreada",
+        "optionStore": "Hacer que el servidor recalcule el hash de cada fragmento almacenado de este repositorio y señale los que falten o estén dañados",
         "starting": "Verificando la copia de seguridad de {{name}} ({{level}})..."
       },
       "snapshots": {

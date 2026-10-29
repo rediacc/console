@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2086,
-    "sourceCommit": "c5695bf5a40aef56cdc5200cb017c3325ce09236"
+    "keyCount": 2088,
+    "sourceCommit": "cc75046f3d72a9b2fe1c54f9ca36c0dc3e289797"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -181,6 +181,7 @@
     "commands.backup.verify.description": "bcf351a0",
     "commands.backup.verify.failed": "8921c8fd",
     "commands.backup.verify.optionDeep": "e2f6e8f9",
+    "commands.backup.verify.optionStore": "597a7c72",
     "commands.backup.verify.starting": "10d32493",
     "commands.cluster.create.baseDomainOption": "1c1244f2",
     "commands.cluster.create.cidrOption": "4c7c998b",
@@ -478,6 +479,7 @@
     "commands.config.remote.integrityFailed": "0018705d",
     "commands.config.remote.legacyEnvelope": "0f1effe3",
     "commands.config.remote.masterPassword.change.description": "5ef99ce6",
+    "commands.config.remote.masterPassword.change.descriptionShort": "a1128ae2",
     "commands.config.remote.masterPassword.change.emailPrompt": "981751e4",
     "commands.config.remote.masterPassword.change.loginPasswordPrompt": "7529d31a",
     "commands.config.remote.masterPassword.change.newPasswordConfirm": "07a7555e",

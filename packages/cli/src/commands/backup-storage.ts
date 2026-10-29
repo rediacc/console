@@ -5,7 +5,8 @@
  * E2E-sealed); they need the `backup:read` scope
  * on the presented token. `verify` is executor-side: it runs the renet
  * `backup_verify` verb on the machine that holds the repo, the machine, not the
- * server, owns the anchor and the cell data.
+ * server, owns the anchor and the cell data. `verify --store` is the exception,
+ * a control-plane call: the server re-hashes the lineage's stored chunks.
  */
 
 import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
@@ -18,7 +19,7 @@ import { setExitCode } from '../services/core/request-context.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { resolveRepoRef } from '../utils/repo-target.js';
+import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
 import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
 import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
 import {
@@ -304,46 +305,112 @@ function registerBackupBrowse(backup: Command): void {
     );
 }
 
-/** `backup verify <repo> [--deep]`, executor-side anchor verification. */
+/** POST /backups/verify, level `chunks`: one capped page of the lineage's re-hashed chunks. */
+interface BackupChunkVerifyResponse {
+  subscriptionId: string;
+  chunks: {
+    lineageGuid: string;
+    checked: number;
+    missing: string[];
+    corrupt: string[];
+    nextAfter: string | null;
+  };
+}
+
+/** The `backup verify --store` verdict: every referenced chunk of the lineage, re-hashed by the server. */
+export interface StoreVerifyVerdict {
+  lineageGuid: string;
+  checked: number;
+  missing: string[];
+  corrupt: string[];
+}
+
+/**
+ * Walk the server's chunk verify for one lineage, page by page, until the
+ * cursor runs out. Each page re-hashes at most the server's cap
+ * (BACKUP_VERIFY_CHUNKS_MAX), so a large lineage is many requests.
+ */
+export async function runStoreVerify(lineageGuid: string): Promise<StoreVerifyVerdict> {
+  const verdict: StoreVerifyVerdict = { lineageGuid, checked: 0, missing: [], corrupt: [] };
+  let after: string | undefined;
+  for (;;) {
+    const page = await accountServerFetch<BackupChunkVerifyResponse>(
+      '/account/api/v1/backups/verify',
+      { method: 'POST', body: { lineageGuid, level: 'chunks', after } }
+    );
+    verdict.checked += page.chunks.checked;
+    verdict.missing.push(...page.chunks.missing);
+    verdict.corrupt.push(...page.chunks.corrupt);
+    if (!page.chunks.nextAfter) return verdict;
+    // A cursor that does not advance would loop forever on a misbehaving server.
+    if (page.chunks.nextAfter === after) {
+      throw new Error(`backup verify --store: the server repeated cursor ${after}`);
+    }
+    after = page.chunks.nextAfter;
+  }
+}
+
+/**
+ * `backup verify <repo> [--deep] [--store]`. Without `--store`, executor-side
+ * anchor verification on the machine. With `--store`, the server re-downloads
+ * every chunk the repo's lineage references and re-hashes it, so a flipped or
+ * lost object in the store is named by its hash; exit 1 when any is.
+ */
 function registerBackupVerify(backup: Command): void {
   backup
     .command('verify')
     .argument('<repo-ref>', t('options.repoRef'))
     .description(t('commands.backup.verify.description'))
     .option('--deep', t('commands.backup.verify.optionDeep'))
+    .option('--store', t('commands.backup.verify.optionStore'))
     .option('--debug', t('options.debug'))
-    .action(async (repoRef: string, options: { deep?: boolean; debug?: boolean }) => {
-      try {
-        const { repoKey, machineName } = await resolveRepoRef(repoRef);
-        const level = options.deep ? 'full' : 'spot';
-        const result = await executeRepoFunction(
-          'backup_verify',
-          repoKey,
-          machineName,
-          { level },
-          // captureOutput: the verdict IS the answer here. Without it the step detector drops the verb's JSON and `backup verify` exits 0 with EMPTY stdout whether the anchor verified or mismatched, which is the one thing an operator must be able to tell apart.
-          { debug: options.debug, captureOutput: true },
-          {
-            starting: t('commands.backup.verify.starting', { name: repoKey, level }),
-            completed: t('commands.backup.verify.completed', { name: repoKey }),
-            failed: t('commands.backup.verify.failed', { name: repoKey }),
+    .action(
+      async (repoRef: string, options: { deep?: boolean; store?: boolean; debug?: boolean }) => {
+        try {
+          if (options.store) {
+            const { repoKey } = await resolveRepoRefLocal(repoRef);
+            const verdict = await runStoreVerify(await resolveLineage(repoRef));
+            const format = getOutputFormat();
+            outputService.print(verdict, format === 'table' ? 'json' : format);
+            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
+            await recordBackupRun(repoKey, {
+              kind: 'verify',
+              status: clean ? 'verified' : 'mismatch',
+            });
+            if (!clean) setExitCode(1);
+            return;
           }
-        );
-        if (!result.success) {
-          // executeRepoFunction already rendered the failure (envelope and exit code), and renet's verdict rides its output tail.
-          // Printing the verdict too would put a SECOND JSON document on stdout.
-          await recordBackupRun(repoKey, { kind: 'verify', status: 'mismatch' });
-          return;
+          const { repoKey, machineName } = await resolveRepoRef(repoRef);
+          const level = options.deep ? 'full' : 'spot';
+          const result = await executeRepoFunction(
+            'backup_verify',
+            repoKey,
+            machineName,
+            { level },
+            // captureOutput: the verdict IS the answer here. Without it the step detector drops the verb's JSON and `backup verify` exits 0 with EMPTY stdout whether the anchor verified or mismatched, which is the one thing an operator must be able to tell apart.
+            { debug: options.debug, captureOutput: true },
+            {
+              starting: t('commands.backup.verify.starting', { name: repoKey, level }),
+              completed: t('commands.backup.verify.completed', { name: repoKey }),
+              failed: t('commands.backup.verify.failed', { name: repoKey }),
+            }
+          );
+          if (!result.success) {
+            // executeRepoFunction already rendered the failure (envelope and exit code), and renet's verdict rides its output tail.
+            // Printing the verdict too would put a SECOND JSON document on stdout.
+            await recordBackupRun(repoKey, { kind: 'verify', status: 'mismatch' });
+            return;
+          }
+          // The verdict is structured data, so it is printed as structured data in every mode -- including `table`, where the alternative would be a hand-written English sentence (a new i18n key across 13 locales) that says strictly less than the record itself.
+          const verdict = parseVerifyVerdict(result.stdout) ?? { status: 'verified', level };
+          const format = getOutputFormat();
+          outputService.print(verdict, format === 'table' ? 'json' : format);
+          await recordBackupRun(repoKey, { kind: 'verify', status: 'verified' });
+        } catch (error) {
+          handleError(error);
         }
-        // The verdict is structured data, so it is printed as structured data in every mode -- including `table`, where the alternative would be a hand-written English sentence (a new i18n key across 13 locales) that says strictly less than the record itself.
-        const verdict = parseVerifyVerdict(result.stdout) ?? { status: 'verified', level };
-        const format = getOutputFormat();
-        outputService.print(verdict, format === 'table' ? 'json' : format);
-        await recordBackupRun(repoKey, { kind: 'verify', status: 'verified' });
-      } catch (error) {
-        handleError(error);
       }
-    });
+    );
 }
 
 /**

@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "التحقق من مرساة النسخ الاحتياطي لمستودع مقابل التخزين المجزّأ",
   "commands.backup.verify.failed": "فشل التحقق من النسخة الاحتياطية لـ \"{{name}}\"",
   "commands.backup.verify.optionDeep": "إعادة تجزئة كل خلية مسجَّلة (تحقق كامل) بدلاً من فحص عيّني",
+  "commands.backup.verify.optionStore": "اطلب من الخادم إعادة تجزئة كل جزء مخزَّن لهذا المستودع وتسمية أي جزء مفقود أو تالف",
   "commands.backup.verify.starting": "جارٍ التحقق من النسخة الاحتياطية لـ \"{{name}}\" ({{level}})...",
   "commands.cluster.create.baseDomainOption": "النطاق الأساسي لـ DNS العام للعنقود (وإلا يُورَث من جهاز شقيق)",
   "commands.cluster.create.cidrOption": "CIDR الشبكة الخاصة (مثلاً 10.0.0.0/24)",

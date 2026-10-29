@@ -228,6 +228,7 @@
         "description": "Verifica l'ancora di backup di un repository rispetto allo storage a chunk",
         "failed": "Verifica del backup non riuscita per {{name}}",
         "optionDeep": "Ricalcola l'hash di ogni cella registrata (verifica completa) invece di un controllo campionato",
+        "optionStore": "Fa ricalcolare al server l'hash di ogni chunk archiviato di questo repository e segnala quelli mancanti o danneggiati",
         "starting": "Verifica del backup di {{name}} ({{level}}) in corso..."
       },
       "snapshots": {

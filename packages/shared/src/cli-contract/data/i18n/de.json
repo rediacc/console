@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Den Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren",
   "commands.backup.verify.failed": "Backup-Verifizierung für {{name}} fehlgeschlagen",
   "commands.backup.verify.optionDeep": "Jede erfasste Zelle neu hashen (vollständige Verifizierung) statt einer stichprobenartigen Prüfung",
+  "commands.backup.verify.optionStore": "Jeden gespeicherten Chunk dieses Repositorys auf dem Server neu hashen lassen und fehlende oder beschädigte benennen",
   "commands.backup.verify.starting": "Backup für {{name}} wird verifiziert ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Basis-Domain für die öffentliche DNS des Clusters (sonst von einer benachbarten Maschine geerbt)",
   "commands.cluster.create.cidrOption": "Privates Netzwerk-CIDR (z. B. 10.0.0.0/24)",

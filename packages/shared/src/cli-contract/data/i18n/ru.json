@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Проверить якорь резервной копии репозитория по блочному хранилищу",
   "commands.backup.verify.failed": "Не удалось проверить резервную копию {{name}}",
   "commands.backup.verify.optionDeep": "Пересчитать хеш каждой записанной ячейки (полная проверка) вместо выборочной проверки",
+  "commands.backup.verify.optionStore": "Попросить сервер пересчитать хеш каждого сохранённого блока этого репозитория и назвать отсутствующие или повреждённые",
   "commands.backup.verify.starting": "Проверка резервной копии {{name}} ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Базовый домен для публичного DNS кластера (иначе наследуется от соседней машины)",
   "commands.cluster.create.cidrOption": "CIDR частной сети (например, 10.0.0.0/24)",

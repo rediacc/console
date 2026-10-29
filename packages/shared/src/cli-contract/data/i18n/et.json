@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Kinnita hoidla varukoopia ankur chunk-hoidla vastu",
   "commands.backup.verify.failed": "Varukoopia kinnitamine ebaõnnestus hoidlale {{name}}",
   "commands.backup.verify.optionDeep": "Räsi uuesti iga salvestatud rakk (täielik kinnitamine) valimipõhise kontrolli asemel",
+  "commands.backup.verify.optionStore": "Lase serveril räsida uuesti selle hoidla iga salvestatud tükk ja nimetada puuduvad või rikutud tükid",
   "commands.backup.verify.starting": "Varukoopia kinnitamine hoidlale {{name}} ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Klastri avaliku DNS-i alusdomeen (muidu päritud kõrvalmasinast)",
   "commands.cluster.create.cidrOption": "Privaatvõrgu CIDR (nt 10.0.0.0/24)",

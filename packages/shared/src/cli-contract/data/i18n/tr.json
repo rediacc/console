@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Bir deponun yedek çıpasını parça depolamaya karşı doğrula",
   "commands.backup.verify.failed": "{{name}} için yedek doğrulaması başarısız oldu",
   "commands.backup.verify.optionDeep": "Örneklemeli kontrol yerine kayıtlı her hücreyi yeniden özetle (tam doğrulama)",
+  "commands.backup.verify.optionStore": "Sunucunun bu deponun saklanan her parçasını yeniden özetlemesini ve eksik ya da bozuk olanları adıyla bildirmesini sağla",
   "commands.backup.verify.starting": "{{name}} için yedek doğrulanıyor ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Kümenin genel DNS'i için temel alan adı (aksi takdirde bir kardeş makineden devralınır)",
   "commands.cluster.create.cidrOption": "Özel ağ CIDR'i (ör. 10.0.0.0/24)",

@@ -1547,6 +1547,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Re-hash every recorded cell (full verification) instead of a sampled check"
         },
         {
+          "flags": "--store",
+          "long": "store",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.verify.optionStore",
+          "label": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,

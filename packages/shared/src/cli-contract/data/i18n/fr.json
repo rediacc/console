@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Vérifier l'ancre de sauvegarde d'un dépôt par rapport au stockage fragmenté",
   "commands.backup.verify.failed": "Échec de la vérification de la sauvegarde pour {{name}}",
   "commands.backup.verify.optionDeep": "Recalculer le hachage de chaque cellule enregistrée (vérification complète) plutôt qu'un contrôle par échantillonnage",
+  "commands.backup.verify.optionStore": "Faire recalculer par le serveur le hachage de chaque bloc stocké de ce dépôt et signaler les blocs manquants ou corrompus",
   "commands.backup.verify.starting": "Vérification de la sauvegarde de {{name}} ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Domaine de base pour le DNS public du cluster (hérité d'une machine voisine à défaut)",
   "commands.cluster.create.cidrOption": "CIDR du réseau privé (ex. 10.0.0.0/24)",

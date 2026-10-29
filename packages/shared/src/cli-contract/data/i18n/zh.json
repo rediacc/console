@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "对照分块存储验证仓库的备份锚点",
   "commands.backup.verify.failed": "{{name}} 的备份验证失败",
   "commands.backup.verify.optionDeep": "对每个已记录的单元重新计算哈希（完整验证），而不是抽样检查",
+  "commands.backup.verify.optionStore": "让服务器对此仓库已存储的每个块重新计算哈希，并指出缺失或损坏的块",
   "commands.backup.verify.starting": "正在验证 {{name}} 的备份（{{level}}）...",
   "commands.cluster.create.baseDomainOption": "集群公共 DNS 的基础域名（否则从同级机器继承）",
   "commands.cluster.create.cidrOption": "私有网络 CIDR（例如 10.0.0.0/24）",

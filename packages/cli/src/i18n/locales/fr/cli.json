@@ -228,6 +228,7 @@
         "description": "Vérifier l'ancre de sauvegarde d'un dépôt par rapport au stockage fragmenté",
         "failed": "Échec de la vérification de la sauvegarde pour {{name}}",
         "optionDeep": "Recalculer le hachage de chaque cellule enregistrée (vérification complète) plutôt qu'un contrôle par échantillonnage",
+        "optionStore": "Faire recalculer par le serveur le hachage de chaque bloc stocké de ce dépôt et signaler les blocs manquants ou corrompus",
         "starting": "Vérification de la sauvegarde de {{name}} ({{level}})..."
       },
       "snapshots": {

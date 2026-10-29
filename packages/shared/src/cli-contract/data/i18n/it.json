@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Verifica l'ancora di backup di un repository rispetto allo storage a chunk",
   "commands.backup.verify.failed": "Verifica del backup non riuscita per {{name}}",
   "commands.backup.verify.optionDeep": "Ricalcola l'hash di ogni cella registrata (verifica completa) invece di un controllo campionato",
+  "commands.backup.verify.optionStore": "Fa ricalcolare al server l'hash di ogni chunk archiviato di questo repository e segnala quelli mancanti o danneggiati",
   "commands.backup.verify.starting": "Verifica del backup di {{name}} ({{level}}) in corso...",
   "commands.cluster.create.baseDomainOption": "Dominio base per il DNS pubblico del cluster (altrimenti ereditato da un macchinario dello stesso gruppo)",
   "commands.cluster.create.cidrOption": "CIDR della rete privata (es. 10.0.0.0/24)",

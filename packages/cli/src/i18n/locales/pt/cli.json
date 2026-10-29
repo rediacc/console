@@ -228,6 +228,7 @@
         "description": "Verificar a âncora de cópia de segurança de um repositório face ao armazenamento fragmentado",
         "failed": "Falha na verificação da cópia de segurança de {{name}}",
         "optionDeep": "Recalcular o hash de cada célula registada (verificação completa) em vez de uma verificação por amostragem",
+        "optionStore": "Pedir ao servidor que recalcule o hash de cada bloco guardado deste repositório e indique os que faltam ou estão corrompidos",
         "starting": "A verificar a cópia de segurança de {{name}} ({{level}})..."
       },
       "snapshots": {

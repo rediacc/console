@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "リポジトリのバックアップアンカーをチャンクストアと照合して検証する",
   "commands.backup.verify.failed": "{{name}} のバックアップ検証に失敗しました",
   "commands.backup.verify.optionDeep": "サンプリングによるチェックの代わりに、記録済みの全セルを再ハッシュする（完全な検証）",
+  "commands.backup.verify.optionStore": "このリポジトリの保存済みチャンクをすべてサーバー側で再ハッシュし、欠落または破損したチャンクを示す",
   "commands.backup.verify.starting": "{{name}} のバックアップを検証中（{{level}}）...",
   "commands.cluster.create.baseDomainOption": "クラスターの公開 DNS 用ベースドメイン（未指定の場合は兄弟マシンから継承）",
   "commands.cluster.create.cidrOption": "プライベートネットワークの CIDR（例: 10.0.0.0/24）",

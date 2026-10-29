@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "저장소의 백업 앵커를 청크 스토리지와 대조하여 검증합니다",
   "commands.backup.verify.failed": "{{name}}의 백업 검증에 실패했습니다",
   "commands.backup.verify.optionDeep": "샘플링 검사 대신 기록된 모든 셀을 다시 해시합니다 (전체 검증)",
+  "commands.backup.verify.optionStore": "서버가 이 저장소에 저장된 모든 청크를 다시 해시하고 누락되거나 손상된 청크를 알려 줍니다",
   "commands.backup.verify.starting": "{{name}}의 백업을 검증하는 중 ({{level}})...",
   "commands.cluster.create.baseDomainOption": "클러스터 공개 DNS용 기본 도메인 (지정하지 않으면 형제 머신에서 상속)",
   "commands.cluster.create.cidrOption": "프라이빗 네트워크 CIDR (예: 10.0.0.0/24)",

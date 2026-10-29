@@ -510,6 +510,7 @@ Verify a repository's backup anchor against the chunk store
 **Options:**
 
 - `--deep`: Re-hash every recorded cell (full verification) instead of a sampled check
+- `--store`: Have the server re-hash every stored chunk of this repository and name any missing or corrupt one
 - `--debug`: Enable debug output
 
 > MCP tool

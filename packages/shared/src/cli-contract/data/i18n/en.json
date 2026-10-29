@@ -173,6 +173,7 @@
   "commands.backup.verify.description": "Verify a repository's backup anchor against the chunk store",
   "commands.backup.verify.failed": "Backup verification failed for {{name}}",
   "commands.backup.verify.optionDeep": "Re-hash every recorded cell (full verification) instead of a sampled check",
+  "commands.backup.verify.optionStore": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one",
   "commands.backup.verify.starting": "Verifying backup for {{name}} ({{level}})...",
   "commands.cluster.create.baseDomainOption": "Base domain for cluster public DNS (else inherited from a sibling machine)",
   "commands.cluster.create.cidrOption": "Private network CIDR (e.g. 10.0.0.0/24)",

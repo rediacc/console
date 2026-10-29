@@ -228,6 +228,7 @@
         "description": "Den Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren",
         "failed": "Backup-Verifizierung für {{name}} fehlgeschlagen",
         "optionDeep": "Jede erfasste Zelle neu hashen (vollständige Verifizierung) statt einer stichprobenartigen Prüfung",
+        "optionStore": "Jeden gespeicherten Chunk dieses Repositorys auf dem Server neu hashen lassen und fehlende oder beschädigte benennen",
         "starting": "Backup für {{name}} wird verifiziert ({{level}})..."
       },
       "snapshots": {
