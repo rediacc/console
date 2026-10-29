@@ -80,6 +80,31 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-backup-local-image.md": {
+      "status": "approved",
+      "owner": "unowned",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 14,
+      "done": 0,
+      "open_sigs": [
+        "129cdf9a",
+        "339bf791",
+        "55c84971",
+        "5c59f4aa",
+        "5e91f886",
+        "7692f2db",
+        "7e3d19ee",
+        "85493dc7",
+        "89621109",
+        "a7dd084e",
+        "ab5be0dc",
+        "b00bc9df",
+        "fa769782",
+        "fcfb17fb"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-backup-meter-orphaned-chunks.md": {
       "status": "approved",
       "owner": "unowned",
