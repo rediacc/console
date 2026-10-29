@@ -17,8 +17,11 @@ import { envFilePath } from './backup-env-file.js';
 import type { UnitScope } from './backup-schedule-targets.js';
 import {
   assertStrategySchedulable,
+  cpuQuotaValue,
+  DEFAULT_CPU_LIMIT_PERCENT,
   effectiveBandwidthLimit,
   invalidCronReason,
+  parseCpuLimitPercent,
   readCapBytesPerSecond,
   STRATEGY_UPLOAD_PARALLELISM,
 } from './backup-strategy-validate.js';
@@ -116,7 +119,8 @@ function buildChunkStoreCommand(
   destinations: BackupStrategyDestination[],
   datastore: string,
   remoteRenetPath: string,
-  scope: UnitScope
+  scope: UnitScope,
+  cpuCount?: number
 ): string {
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
@@ -135,7 +139,18 @@ function buildChunkStoreCommand(
   // The read cap is strategy level (the read is local, not tied to a destination) and is emitted ONLY when set, so every other unit gets the verb's gentle default and an older renet is not handed a flag it does not know. --hash-parallelism is never emitted: the verb default (1) stands.
   const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
   if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
+  parts.push(...cpuFlags(strategy, cpuCount));
   return parts.join(' ');
+}
+
+/** The `--cpu-limit` and `--cpu-quota` flags of a scheduled command. The ceiling itself is the unit's CPUQuota= (cpuQuotaDirective); the flags only make the snapshot record say what bound it. Emitted only with a resolved core count, like the directive. */
+function cpuFlags(strategy: BackupStrategyConfig, cpuCount: number | undefined): string[] {
+  if (cpuCount === undefined) return [];
+  const limit = cpuLimitOf(strategy);
+  const quota = cpuQuotaValue(limit, cpuCount);
+  return quota === undefined
+    ? [`--cpu-limit ${limit}`]
+    : [`--cpu-limit ${limit}`, `--cpu-quota ${quota}`];
 }
 
 /**
@@ -158,14 +173,17 @@ export function buildBackupCommands(
   destinations: BackupStrategyDestination[],
   datastore: string,
   remoteRenetPath: string,
-  scope: UnitScope = unresolvedScope(strategy)
+  scope: UnitScope = unresolvedScope(strategy),
+  cpuCount?: number
 ): BackupBuild {
   const envVars: Record<string, string> = {};
 
   // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. One run is ONE snapshot whatever the number of destinations: a second identical command would upload the same cells again and commit a second manifest for the same point in time.
   assertStrategySchedulable(strategy, destinations);
   return {
-    commands: [buildChunkStoreCommand(strategy, destinations, datastore, remoteRenetPath, scope)],
+    commands: [
+      buildChunkStoreCommand(strategy, destinations, datastore, remoteRenetPath, scope, cpuCount),
+    ],
     envVars,
   };
 }
@@ -208,11 +226,34 @@ export const LOW_PRIORITY_PROPERTIES = [
 ] as const;
 const LOW_PRIORITY_DIRECTIVES = LOW_PRIORITY_PROPERTIES.join('\n');
 
+/** A strategy's CPU ceiling in percent of all cores: its own, validated, or the default of 50. */
+function cpuLimitOf(strategy: BackupStrategyConfig): number {
+  return strategy.cpuLimit === undefined
+    ? DEFAULT_CPU_LIMIT_PERCENT
+    : parseCpuLimitPercent(strategy.cpuLimit);
+}
+
+/**
+ * The `CPUQuota=` line of a scheduled unit, or '' when no ceiling applies. systemd has no "share of all cores" syntax, only a percent of ONE core, so the quota is percent x cores and the core count has to be known when the unit is written. It is read on the machine itself (`nproc`, the count renet's own scope uses, see resolveMachineCpuCount in backup-schedule.ts), because the operator's workstation, a config field or an inventory number can each name a different machine's size. Without a count no directive is written: a guessed core count would be a wrong quota, and the deploy path refuses to render without one.
+ */
+function cpuQuotaDirective(strategy: BackupStrategyConfig, cpuCount: number | undefined): string {
+  if (cpuCount === undefined) return '';
+  const quota = cpuQuotaValue(cpuLimitOf(strategy), cpuCount);
+  return quota === undefined ? '' : `CPUQuota=${quota}\n`;
+}
+
 /**
  * The `systemd-run` line `backup run` uses when a strategy has no deployed unit: the strategy's commands (which carry its cap and parallelism) inside a transient unit at the same low priority a scheduled unit gets.
  */
-export function buildAdhocSystemdRun(unit: string, commands: string[]): string {
-  const props = LOW_PRIORITY_PROPERTIES.map((p) => `-p ${p}`).join(' ');
+export function buildAdhocSystemdRun(
+  unit: string,
+  commands: string[],
+  cpuLimit: number = DEFAULT_CPU_LIMIT_PERCENT
+): string {
+  // The core count is resolved by the machine's own shell when the line runs (`$(nproc)`), so the quota is right for whichever machine executes it, with no extra round trip. 100 asks for no ceiling and writes no property.
+  const limit = parseCpuLimitPercent(cpuLimit);
+  const cpuProp = limit >= 100 ? '' : ` -p CPUQuota=$(( $(nproc) * ${limit} ))%`;
+  const props = LOW_PRIORITY_PROPERTIES.map((p) => `-p ${p}`).join(' ') + cpuProp;
   const fullCmd = commands.join(' && ');
   return `sudo systemd-run --unit=${unit} --remain-after-exit ${props} /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
 }
@@ -235,14 +276,16 @@ export function generateServiceUnit(
   destinations: BackupStrategyDestination[],
   datastore: string,
   remoteRenetPath: string,
-  scope?: UnitScope
+  scope?: UnitScope,
+  cpuCount?: number
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
     destinations,
     datastore,
     remoteRenetPath,
-    scope
+    scope,
+    cpuCount
   );
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
   const envFileLine =
@@ -266,7 +309,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 ${LOW_PRIORITY_DIRECTIVES}
-TimeoutStartSec=infinity
+${cpuQuotaDirective(strategy, cpuCount)}TimeoutStartSec=infinity
 TimeoutStopSec=${stopTimeout}
 ${envFileLine}${renewLine}${execLines.join('\n')}
 

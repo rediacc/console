@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2149,
-    "sourceCommit": "d4e96d170d6aea8ec3c27d3c26a7c84a4454f8b6"
+    "keyCount": 2155,
+    "sourceCommit": "59fdb8e064d91125bf9ff09c7a0fbce9c449910d"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -143,6 +143,9 @@
     "commands.backup.schedule.success": "7774dec5",
     "commands.backup.snapshot.bwlimitInvalid": "0e85a5c2",
     "commands.backup.snapshot.completed": "40be5fa7",
+    "commands.backup.snapshot.cpuLimit": "cce59820",
+    "commands.backup.snapshot.cpuLimitInvalid": "97340bc9",
+    "commands.backup.snapshot.cpuLimitUnenforced": "dcb54ecb",
     "commands.backup.snapshot.description": "11cac068",
     "commands.backup.snapshot.dryRunLabel": "5fb84b10",
     "commands.backup.snapshot.failed": "c6beabd5",
@@ -150,6 +153,7 @@
     "commands.backup.snapshot.hashWorkers": "4ca80a38",
     "commands.backup.snapshot.optionBwlimit": "f8e3db3b",
     "commands.backup.snapshot.optionCold": "1f552c3c",
+    "commands.backup.snapshot.optionCpuLimit": "f6b02d7d",
     "commands.backup.snapshot.optionDryRun": "b4e0818b",
     "commands.backup.snapshot.optionHashParallelism": "6084d18a",
     "commands.backup.snapshot.optionParallelism": "f58f4f66",
@@ -188,10 +192,12 @@
     "commands.backup.strategy.set.cadence.daily": "8e9dab6a",
     "commands.backup.strategy.set.cadence.monthly": "eaa5c698",
     "commands.backup.strategy.set.cadence.weekly": "5edcaa24",
+    "commands.backup.strategy.set.cpuLimitStrategyOnly": "97df5d8a",
     "commands.backup.strategy.set.description": "b4bc2880",
     "commands.backup.strategy.set.examples.configure": "9ee68b8b",
     "commands.backup.strategy.set.examples.disable": "00eb43fa",
     "commands.backup.strategy.set.optionBwlimit": "e1344fb4",
+    "commands.backup.strategy.set.optionCpuLimit": "c9c5b6e0",
     "commands.backup.strategy.set.optionCron": "c88e2894",
     "commands.backup.strategy.set.optionDestination": "30cea19d",
     "commands.backup.strategy.set.optionDisable": "b221d6c0",

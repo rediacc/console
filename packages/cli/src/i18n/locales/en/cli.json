@@ -1950,7 +1950,11 @@
         "bwlimitInvalid": "--bwlimit must be a rate such as 100Mbps or 12.5M, got \"{{value}}\".",
         "parallelismInvalid": "--parallelism must be a positive integer, got \"{{value}}\".",
         "readBwlimitInvalid": "--read-bwlimit must be a rate such as 50M or 400Mbps (0 = unlimited), got \"{{value}}\".",
-        "hashParallelismInvalid": "--hash-parallelism must be an integer from 0 to 16 (0 = one per CPU), got \"{{value}}\"."
+        "hashParallelismInvalid": "--hash-parallelism must be an integer from 0 to 16 (0 = one per CPU), got \"{{value}}\".",
+        "optionCpuLimit": "CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)",
+        "cpuLimitInvalid": "--cpu-limit must be an integer from 1 to 100 (percent of all cores), got \"{{value}}\".",
+        "cpuLimit": "CPU limit: {{percent}}% of all cores (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "CPU limit: {{percent}}% requested, not enforced on this machine"
       },
       "status": {
         "description": "Show backup status and timer state on a remote machine"
@@ -1986,7 +1990,9 @@
           },
           "retentionNotPushed": "Retention is saved for strategy \"{{strategy}}\" but no account token is available to apply it. Sign in, then run this command again.",
           "retentionPushed": "Retention applied to {{count}} repository(ies).",
-          "retentionPushFailed": "Retention is saved for strategy \"{{strategy}}\" but could not be applied ({{reason}}). Run this command again when the server is reachable."
+          "retentionPushFailed": "Retention is saved for strategy \"{{strategy}}\" but could not be applied ({{reason}}). Run this command again when the server is reachable.",
+          "optionCpuLimit": "CPU ceiling for this strategy's snapshots: percent of all cores, 1-100 (default 50); none clears it",
+          "cpuLimitStrategyOnly": "--cpu-limit applies to the whole strategy; drop --destination."
         },
         "bind": {
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",

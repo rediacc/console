@@ -168,7 +168,11 @@
         "readCapUnlimited": "Limite de leitura: ilimitado",
         "hashWorkers": "Processos de hash: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit deve ser uma taxa como 50M ou 400Mbps (0 = sem limite), mas foi recebido \"{{value}}\".",
-        "starting": "A criar snapshot de {{name}} para o armazenamento fragmentado..."
+        "starting": "A criar snapshot de {{name}} para o armazenamento fragmentado...",
+        "optionCpuLimit": "Teto de CPU deste snapshot: percentagem de todos os núcleos, 1-100 (padrão 50; 100 = sem teto)",
+        "cpuLimitInvalid": "--cpu-limit deve ser um inteiro de 1 a 100 (percentagem de todos os núcleos), recebido: \"{{value}}\".",
+        "cpuLimit": "Limite de CPU: {{percent}}% de todos os núcleos (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "Limite de CPU: {{percent}}% solicitado, não aplicado nesta máquina"
       },
       "status": {
         "description": "Mostrar estado da cópia de segurança e estado do temporizador numa máquina remota"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "A retenção da estratégia \"{{strategy}}\" está salva, mas não há token de conta para aplicá-la. Entre na conta e execute o comando de novo.",
           "retentionPushed": "Retenção aplicada a {{count}} repositório(s).",
-          "retentionPushFailed": "A retenção da estratégia \"{{strategy}}\" está salva, mas não pôde ser aplicada ({{reason}}). Execute o comando de novo quando o servidor responder."
+          "retentionPushFailed": "A retenção da estratégia \"{{strategy}}\" está salva, mas não pôde ser aplicada ({{reason}}). Execute o comando de novo quando o servidor responder.",
+          "optionCpuLimit": "Teto de CPU dos snapshots desta estratégia: percentagem de todos os núcleos, 1-100 (padrão 50); none remove-o",
+          "cpuLimitStrategyOnly": "--cpu-limit aplica-se a toda a estratégia; remova --destination."
         },
         "show": {
           "description": "Mostrar os detalhes de uma estratégia de cópia de segurança",

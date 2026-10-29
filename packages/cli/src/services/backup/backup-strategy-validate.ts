@@ -100,6 +100,29 @@ function parseRate(limit: string): number | string {
  */
 export const STRATEGY_UPLOAD_PARALLELISM = 2;
 
+/** The ceiling a snapshot runs under when nothing says otherwise: half of all cores (operator order 2026-10-29). Mirrors renet's defaultCPULimitPercent. */
+export const DEFAULT_CPU_LIMIT_PERCENT = 50;
+
+/**
+ * Parse a CPU ceiling: an integer percent of ALL cores, 1 to 100 (100 = no ceiling). Anything else throws ValidationError, so a typo is refused where it is typed (before SSH, at `strategy set`, at unit generation) and never reaches renet or a unit as a different number.
+ */
+export function parseCpuLimitPercent(raw: string | number): number {
+  const text = String(raw).trim();
+  const n = Number(text);
+  if (text === '' || !Number.isInteger(n) || n < 1 || n > 100) {
+    throw new ValidationError(
+      t('commands.backup.snapshot.cpuLimitInvalid', { value: String(raw) })
+    );
+  }
+  return n;
+}
+
+/** The systemd `CPUQuota=` value for a ceiling on a machine with `cpuCount` cores (one core is 100%), or undefined for 100, which asks for no ceiling. */
+export function cpuQuotaValue(limitPercent: number, cpuCount: number): string | undefined {
+  if (limitPercent >= 100) return undefined;
+  return `${limitPercent * cpuCount}%`;
+}
+
 /**
  * The cap one strategy run uploads at, in bytes/second, or undefined for none.
  *
@@ -167,6 +190,8 @@ export function strategyUnschedulableReason(
     effectiveBandwidthLimit(strategy, destinations);
     // A typo in the read cap must refuse the unit, never reach it as an unlimited read.
     readCapBytesPerSecond(strategy.readBandwidthLimit);
+    // An out-of-range ceiling (a hand-edited config) refuses the unit rather than becoming a different quota.
+    if (strategy.cpuLimit !== undefined) parseCpuLimitPercent(strategy.cpuLimit);
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }

@@ -233,6 +233,31 @@ export async function readRemoteState(
   return result;
 }
 
+/**
+ * The number of CPUs the machine offers its processes, read on the machine with `nproc`.
+ *
+ * Why this and not another source: the unit's CPUQuota is percent x cores, and only the machine knows its own core count. `nproc` honours the CPU affinity mask and cgroup limits of the process asking, which is the count renet's own scope math uses (Go's runtime.NumCPU), so the unit and the ad-hoc function agree; `/proc/cpuinfo` would count offlined or masked cores. A failed or non-numeric answer THROWS: writing the unit with a guessed count would put a wrong quota on a machine and nobody would notice until its load climbed.
+ */
+export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> {
+  let out = '';
+  let err = '';
+  const exitCode = await sftp.execStreaming('nproc', {
+    onStdout: (data) => {
+      out += data;
+    },
+    onStderr: (data) => {
+      err += data;
+    },
+  });
+  const n = Number(out.trim());
+  if (exitCode !== 0 || !Number.isInteger(n) || n < 1) {
+    throw new Error(
+      `Could not read the CPU count on the machine (nproc exit ${exitCode}, output "${out.trim()}"${err.trim() ? `, ${err.trim()}` : ''}); a CPU ceiling cannot be written without it.`
+    );
+  }
+  return n;
+}
+
 // --------------------------------------------------------------------------- Phase B, Compute desired units ---------------------------------------------------------------------------
 
 /**
@@ -242,7 +267,8 @@ export async function readRemoteState(
  */
 export function computeDesiredUnits(
   specs: ScheduleUnitSpec[],
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  cpuCount?: number
 ): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
   for (const spec of specs) {
@@ -257,7 +283,8 @@ export function computeDesiredUnits(
       enabledDests,
       spec.datastore.path,
       remoteRenetPath,
-      spec.scope
+      spec.scope,
+      cpuCount
     );
     const timerContent = generateTimerUnit(spec.unitName, cronToOnCalendar(spec.schedule));
     result.set(spec.unitName, {

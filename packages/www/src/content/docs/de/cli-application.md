@@ -7,7 +7,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "1d46abfa0b5b6497"
+sourceHash: "4b5627876e0d38ba"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2616,6 +2616,7 @@ rdc backup snapshot <repo-ref> [options]
 | `--parallelism <n>` | {{t:cli.commands.backup.snapshot.optionParallelism}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--read-bwlimit <rate>` | {{t:cli.commands.backup.snapshot.optionReadBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--hash-parallelism <n>` | {{t:cli.commands.backup.snapshot.optionHashParallelism}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cpu-limit <percent>` | {{t:cli.commands.backup.snapshot.optionCpuLimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2655,6 +2656,7 @@ rdc backup strategy set <strategy> [options]
 | `--mode <mode>` | {{t:cli.commands.backup.strategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--read-bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionReadBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cpu-limit <percent>` | {{t:cli.commands.backup.strategy.set.optionCpuLimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include <repos>` | {{t:cli.commands.backup.strategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--exclude <repos>` | {{t:cli.commands.backup.strategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--retention <spec>` | {{t:cli.commands.backup.strategy.set.optionRetention}} | {{t:cli.docs.optionLabels.no}} | - |

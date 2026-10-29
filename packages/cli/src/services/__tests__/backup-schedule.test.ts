@@ -98,6 +98,8 @@ function scriptedExec(scripts: ExecScript[]): void {
           return Promise.resolve(s.exit ?? 0);
         }
       }
+      // The deploy reads the machine's core count for the unit's CPUQuota; an unscripted machine has eight.
+      if (cmd === 'nproc') opts?.onStdout?.(Buffer.from('8\n'));
       return Promise.resolve(0);
     }
   );
@@ -150,7 +152,10 @@ async function desiredContentFor(
     strategy,
     destinations,
     datastore,
-    remoteRenetPath
+    remoteRenetPath,
+    undefined,
+    // The scripted machine reports eight cores (scriptedExec), so the deployed unit carries CPUQuota=400%.
+    8
   );
   const timerContent = _testing.generateTimerUnit(
     strategyName,
@@ -1255,7 +1260,8 @@ describe('pushBackupSchedule (reconcile)', () => {
       before.strategy.destinations,
       before.datastore.path,
       '/usr/bin/renet',
-      before.scope
+      before.scope,
+      8
     ).serviceContent;
     const timer = _testing.generateTimerUnit('hourly-hot', _testing.cronToOnCalendar('0 * * * *'));
     const svcPath = '/etc/systemd/system/rediacc-backup-hourly-hot.service';

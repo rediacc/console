@@ -168,7 +168,11 @@
         "readCapUnlimited": "読み取り上限: 無制限",
         "hashWorkers": "ハッシュワーカー数: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit には 50M や 400Mbps のような速度を指定してください (0 は無制限)。指定された値: \"{{value}}\"",
-        "starting": "{{name}} をチャンクストアにスナップショット中..."
+        "starting": "{{name}} をチャンクストアにスナップショット中...",
+        "optionCpuLimit": "このスナップショットの CPU 上限: 全コアに対する割合、1-100（既定 50、100 = 上限なし）",
+        "cpuLimitInvalid": "--cpu-limit は 1 から 100 の整数（全コアに対する割合）で指定してください。受け取った値: \"{{value}}\"。",
+        "cpuLimit": "CPU 上限: 全コアの {{percent}}%（CPUQuota={{quota}}）",
+        "cpuLimitUnenforced": "CPU 上限: {{percent}}% を要求しましたが、このマシンでは適用されません"
       },
       "status": {
         "description": "リモートマシンのバックアップ状態とタイマー状態を表示"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用に使うアカウントトークンがありません。サインインしてからもう一度実行してください。",
           "retentionPushed": "{{count}} 件のリポジトリに保持設定を適用しました。",
-          "retentionPushFailed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用できませんでした({{reason}})。サーバーに接続できるようになったらもう一度実行してください。"
+          "retentionPushFailed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用できませんでした({{reason}})。サーバーに接続できるようになったらもう一度実行してください。",
+          "optionCpuLimit": "この戦略のスナップショットの CPU 上限: 全コアに対する割合、1-100（既定 50）。none で解除",
+          "cpuLimitStrategyOnly": "--cpu-limit は戦略全体に適用されます。--destination を外してください。"
         },
         "show": {
           "description": "バックアップ戦略の詳細を表示",

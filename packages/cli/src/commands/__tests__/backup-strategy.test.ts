@@ -213,3 +213,37 @@ describe('strategy read cap (--read-bwlimit)', () => {
     expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '0' })).toBeUndefined();
   });
 });
+
+describe('strategy CPU ceiling (--cpu-limit)', () => {
+  it('stores the percent as cpuLimit and leaves it alone when not passed', () => {
+    expect(buildStrategyUpdate({ cpuLimit: '30' }, undefined).cpuLimit).toBe(30);
+    expect('cpuLimit' in buildStrategyUpdate({ cron: '0 * * * *' }, undefined)).toBe(false);
+  });
+
+  it('clears the ceiling on none', () => {
+    const u = buildStrategyUpdate({ cpuLimit: 'none' }, undefined);
+    expect('cpuLimit' in u).toBe(true);
+    expect(u.cpuLimit).toBeUndefined();
+  });
+
+  it.each(['0', '101', '-1', '1.5', 'abc', ' '])('refuses %j at set time', (value) => {
+    expect(() => buildStrategyUpdate({ cpuLimit: value }, undefined)).toThrow(
+      /--cpu-limit must be an integer from 1 to 100/
+    );
+  });
+
+  it('is refused together with --destination, because the ceiling is not tied to a destination', async () => {
+    await expect(
+      applyBackupStrategyOptions('s', { destination: 'd', cpuLimit: '30' })
+    ).rejects.toThrow(/applies to the whole strategy/);
+  });
+
+  it('makes a strategy with an out-of-range ceiling unschedulable, and accepts 1, 50 and 100', () => {
+    const base = { destinations: [], schedule: '0 * * * *' };
+    expect(strategyUnschedulableReason({ ...base, cpuLimit: 0 })).toMatch(/--cpu-limit must be/);
+    expect(strategyUnschedulableReason({ ...base, cpuLimit: 101 })).toMatch(/--cpu-limit must be/);
+    for (const cpuLimit of [1, 50, 100]) {
+      expect(strategyUnschedulableReason({ ...base, cpuLimit })).toBeUndefined();
+    }
+  });
+});

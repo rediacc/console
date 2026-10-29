@@ -168,7 +168,11 @@
         "readCapUnlimited": "Okuma sınırı: sınırsız",
         "hashWorkers": "Karma işçisi sayısı: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit 50M veya 400Mbps gibi bir hız olmalıdır (0 = sınırsız), \"{{value}}\" verildi.",
-        "starting": "{{name}} parça depolamaya anlık görüntü olarak alınıyor..."
+        "starting": "{{name}} parça depolamaya anlık görüntü olarak alınıyor...",
+        "optionCpuLimit": "Bu anlık görüntü için CPU üst sınırı: tüm çekirdeklerin yüzdesi, 1-100 (varsayılan 50; 100 = sınır yok)",
+        "cpuLimitInvalid": "--cpu-limit 1 ile 100 arasında bir tam sayı olmalıdır (tüm çekirdeklerin yüzdesi), alınan: \"{{value}}\".",
+        "cpuLimit": "CPU sınırı: tüm çekirdeklerin %{{percent}} kadarı (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "CPU sınırı: %{{percent}} istendi, bu makinede uygulanmadı"
       },
       "status": {
         "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulamak için hesap belirteci yok. Oturum açıp komutu yeniden çalıştırın.",
           "retentionPushed": "Saklama kuralı {{count}} depoya uygulandı.",
-          "retentionPushFailed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulanamadı ({{reason}}). Sunucuya erişilebildiğinde komutu yeniden çalıştırın."
+          "retentionPushFailed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulanamadı ({{reason}}). Sunucuya erişilebildiğinde komutu yeniden çalıştırın.",
+          "optionCpuLimit": "Bu stratejinin anlık görüntüleri için CPU üst sınırı: tüm çekirdeklerin yüzdesi, 1-100 (varsayılan 50); none kaldırır",
+          "cpuLimitStrategyOnly": "--cpu-limit stratejinin tamamı için geçerlidir; --destination'ı çıkarın."
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",

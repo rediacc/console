@@ -168,7 +168,11 @@
         "readCapUnlimited": "Lesegrenze: unbegrenzt",
         "hashWorkers": "Hash-Worker: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit muss eine Rate wie 50M oder 400Mbps sein (0 = unbegrenzt), erhalten: \"{{value}}\".",
-        "starting": "{{name}} wird in den Chunk-Store gesichert..."
+        "starting": "{{name}} wird in den Chunk-Store gesichert...",
+        "optionCpuLimit": "CPU-Obergrenze für diesen Snapshot: Prozent aller Kerne, 1-100 (Standard 50; 100 = keine Obergrenze)",
+        "cpuLimitInvalid": "--cpu-limit muss eine ganze Zahl von 1 bis 100 sein (Prozent aller Kerne), erhalten: \"{{value}}\".",
+        "cpuLimit": "CPU-Limit: {{percent}} % aller Kerne (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "CPU-Limit: {{percent}} % angefordert, auf diesem Rechner nicht durchgesetzt"
       },
       "status": {
         "description": "Backup-Status und Timer-Zustand auf einem Remote-Rechner anzeigen"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "Die Aufbewahrung der Strategie „{{strategy}}“ ist gespeichert, aber es gibt kein Konto-Token, um sie anzuwenden. Melden Sie sich an und führen Sie den Befehl erneut aus.",
           "retentionPushed": "Aufbewahrung auf {{count}} Repository(s) angewendet.",
-          "retentionPushFailed": "Die Aufbewahrung der Strategie „{{strategy}}“ ist gespeichert, konnte aber nicht angewendet werden ({{reason}}). Führen Sie den Befehl erneut aus, sobald der Server erreichbar ist."
+          "retentionPushFailed": "Die Aufbewahrung der Strategie „{{strategy}}“ ist gespeichert, konnte aber nicht angewendet werden ({{reason}}). Führen Sie den Befehl erneut aus, sobald der Server erreichbar ist.",
+          "optionCpuLimit": "CPU-Obergrenze für die Snapshots dieser Strategie: Prozent aller Kerne, 1-100 (Standard 50); none hebt sie auf",
+          "cpuLimitStrategyOnly": "--cpu-limit gilt für die gesamte Strategie; --destination weglassen."
         },
         "show": {
           "description": "Backup-Strategie-Details anzeigen",

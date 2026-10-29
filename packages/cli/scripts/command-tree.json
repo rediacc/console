@@ -1196,6 +1196,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--cpu-limit <percent>",
+                  "descriptionKey": "commands.backup.strategy.set.optionCpuLimit",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--include <repos>",
                   "descriptionKey": "commands.backup.strategy.set.optionInclude",
                   "mandatory": false,
@@ -1589,6 +1595,12 @@
             {
               "flags": "--hash-parallelism <n>",
               "descriptionKey": "commands.backup.snapshot.optionHashParallelism",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cpu-limit <percent>",
+              "descriptionKey": "commands.backup.snapshot.optionCpuLimit",
               "mandatory": false,
               "defaultValue": null
             },

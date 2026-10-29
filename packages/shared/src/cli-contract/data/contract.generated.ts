@@ -1084,6 +1084,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Cells hashed at once (default 1; 0 = one per CPU, up to 16)"
         },
         {
+          "flags": "--cpu-limit <percent>",
+          "long": "cpu-limit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionCpuLimit",
+          "label": "CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -1430,6 +1441,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionReadBwlimit",
           "label": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it"
+        },
+        {
+          "flags": "--cpu-limit <percent>",
+          "long": "cpu-limit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionCpuLimit",
+          "label": "CPU ceiling for this strategy's snapshots: percent of all cores, 1-100 (default 50); none clears it"
         },
         {
           "flags": "--include <repos>",

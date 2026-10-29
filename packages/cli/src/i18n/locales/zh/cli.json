@@ -168,7 +168,11 @@
         "readCapUnlimited": "读取上限：无限制",
         "hashWorkers": "哈希线程数：{{workers}}",
         "readBwlimitInvalid": "--read-bwlimit 必须是 50M 或 400Mbps 这样的速率（0 表示不限速），当前为 \"{{value}}\"。",
-        "starting": "正在将 {{name}} 快照到分块存储..."
+        "starting": "正在将 {{name}} 快照到分块存储...",
+        "optionCpuLimit": "此快照的 CPU 上限：占全部核心的百分比，1-100（默认 50；100 = 不设上限）",
+        "cpuLimitInvalid": "--cpu-limit 必须是 1 到 100 的整数（占全部核心的百分比），收到：\"{{value}}\"。",
+        "cpuLimit": "CPU 限制：占全部核心的 {{percent}}%（CPUQuota={{quota}}）",
+        "cpuLimitUnenforced": "CPU 限制：已请求 {{percent}}%，但在此机器上未生效"
       },
       "status": {
         "description": "显示远程机器上的备份状态和定时器状态"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "策略“{{strategy}}”的保留设置已保存,但没有可用的账户令牌来应用它。请先登录,然后重新运行此命令。",
           "retentionPushed": "已将保留设置应用到 {{count}} 个仓库。",
-          "retentionPushFailed": "策略“{{strategy}}”的保留设置已保存,但未能应用({{reason}})。服务器可访问后请重新运行此命令。"
+          "retentionPushFailed": "策略“{{strategy}}”的保留设置已保存,但未能应用({{reason}})。服务器可访问后请重新运行此命令。",
+          "optionCpuLimit": "此策略快照的 CPU 上限：占全部核心的百分比，1-100（默认 50）；none 表示清除",
+          "cpuLimitStrategyOnly": "--cpu-limit 作用于整个策略；请去掉 --destination。"
         },
         "show": {
           "description": "显示备份策略详情",

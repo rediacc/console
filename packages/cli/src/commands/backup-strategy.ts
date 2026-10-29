@@ -11,6 +11,7 @@ import {
 } from '../services/backup/backup-retention.js';
 import {
   bandwidthToBytesPerSecond,
+  parseCpuLimitPercent,
   readCapBytesPerSecond,
   strategyUnschedulableReason,
 } from '../services/backup/backup-strategy-validate.js';
@@ -111,6 +112,7 @@ export function buildStrategyUpdate(
     mode?: string;
     bwlimit?: string;
     readBwlimit?: string;
+    cpuLimit?: string;
     include?: string;
     exclude?: string;
     retention?: string;
@@ -150,6 +152,13 @@ export function buildStrategyUpdate(
       readCapBytesPerSecond(raw);
       u.readBandwidthLimit = opts.readBwlimit;
     }
+  }
+  // `none` clears the ceiling, so the verb default (50 percent of all cores) applies again.
+  if (opts.cpuLimit !== undefined) {
+    u.cpuLimit =
+      opts.cpuLimit.trim().toLowerCase() === 'none'
+        ? undefined
+        : parseCpuLimitPercent(opts.cpuLimit);
   }
   // include/exclude are mutually exclusive; setting one clears the other.
   // An empty/"none" value clears the filter entirely.
@@ -204,6 +213,7 @@ export async function applyBackupStrategyOptions(
     mode?: string;
     bwlimit?: string;
     readBwlimit?: string;
+    cpuLimit?: string;
     include?: string;
     exclude?: string;
     retention?: string;
@@ -215,6 +225,10 @@ export async function applyBackupStrategyOptions(
   const targetsDestination = Boolean(options.destination);
   if (targetsDestination && options.readBwlimit !== undefined) {
     throw new ValidationError(t('commands.backup.strategy.set.readBwlimitStrategyOnly'));
+  }
+
+  if (targetsDestination && options.cpuLimit !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.cpuLimitStrategyOnly'));
   }
 
   // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
@@ -326,6 +340,9 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
   if (strategy.readBandwidthLimit) {
     outputService.info(`  Read bandwidth limit: ${strategy.readBandwidthLimit}`);
   }
+  if (strategy.cpuLimit !== undefined) {
+    outputService.info(`  CPU limit: ${strategy.cpuLimit}% of all cores`);
+  }
   if (strategy.include) outputService.info(`  Include: ${strategy.include.join(', ')}`);
   if (strategy.exclude) outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
   if (strategy.retention) {
@@ -392,6 +409,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     )
     .option('--bwlimit <limit>', t('commands.backup.strategy.set.optionBwlimit'))
     .option('--read-bwlimit <limit>', t('commands.backup.strategy.set.optionReadBwlimit'))
+    .option('--cpu-limit <percent>', t('commands.backup.strategy.set.optionCpuLimit'))
     .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
     .option('--retention <spec>', t('commands.backup.strategy.set.optionRetention'))

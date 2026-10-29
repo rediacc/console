@@ -134,3 +134,71 @@ describe('backup snapshot carries the read cap and hash parallelism', () => {
     expect(mockExecute).not.toHaveBeenCalled();
   });
 });
+
+describe('backup snapshot carries the CPU ceiling', () => {
+  beforeEach(() => {
+    mockExecute.mockReset();
+    mockExecute.mockResolvedValue({ success: true, exitCode: 0, stdout: '' });
+  });
+
+  it('sends --cpu-limit 30 as the number cpu_limit', async () => {
+    await snapshot(['--cpu-limit', '30']);
+    expect(sentParams()).toMatchObject({ cpu_limit: 30 });
+  });
+
+  it('sends 100, the top of the range', async () => {
+    await snapshot(['--cpu-limit', '100']);
+    expect(sentParams()).toMatchObject({ cpu_limit: 100 });
+  });
+
+  it('omits cpu_limit when the flag is absent, so renet applies its default of 50', async () => {
+    await snapshot([]);
+    expect(sentParams()).not.toHaveProperty('cpu_limit');
+  });
+
+  it.each(['0', '101', '-5', '2.5', 'half', ' '])(
+    'refuses --cpu-limit %j before reaching the machine',
+    async (value) => {
+      await expect(snapshot(['--cpu-limit', value])).rejects.toThrow(
+        /commands\.backup\.snapshot\.cpuLimitInvalid/
+      );
+      expect(mockExecute).not.toHaveBeenCalled();
+    }
+  );
+});
+
+describe('the snapshot summary prints the CPU limit', () => {
+  it('names the limit and quota, or says plainly that none was enforced', async () => {
+    vi.resetModules();
+    vi.doMock('../../utils/errors.js', () => ({
+      ValidationError: class ValidationError extends Error {},
+      getOutputFormat: () => 'table',
+      handleError: (error: unknown) => {
+        throw error;
+      },
+    }));
+    const { registerBackupStorageCommands: register } = await import('../backup-storage.js');
+    const { outputService } = await import('../../services/core/output.js');
+    const { executeRepoFunction } = await import('../../utils/repo-executor.js');
+    const run = async (record: object) => {
+      vi.mocked(executeRepoFunction).mockResolvedValue({
+        success: true,
+        exitCode: 0,
+        stdout: JSON.stringify({ status: 'ok', ...record }),
+      } as never);
+      vi.mocked(outputService.info).mockClear();
+      const backup = new Command('backup');
+      backup.exitOverride();
+      register(backup);
+      await backup.parseAsync(['snapshot', 'shop'], { from: 'user' });
+      return vi.mocked(outputService.info).mock.calls.map((c) => String(c[0]));
+    };
+    expect(await run({ cpuLimitPercent: 50, cpuQuota: '400%' })).toContain(
+      'commands.backup.snapshot.cpuLimit'
+    );
+    expect(await run({ cpuLimitPercent: 50, cpuQuota: null })).toContain(
+      'commands.backup.snapshot.cpuLimitUnenforced'
+    );
+    vi.doUnmock('../../utils/errors.js');
+  });
+});

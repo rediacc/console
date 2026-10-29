@@ -168,7 +168,11 @@
         "readCapUnlimited": "Límite de lectura: sin límite",
         "hashWorkers": "Procesos de hash: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit debe ser una velocidad como 50M o 400Mbps (0 = sin límite), y se recibió \"{{value}}\".",
-        "starting": "Creando instantánea de {{name}} en el almacenamiento fragmentado..."
+        "starting": "Creando instantánea de {{name}} en el almacenamiento fragmentado...",
+        "optionCpuLimit": "Tope de CPU de este snapshot: porcentaje de todos los núcleos, 1-100 (50 por defecto; 100 = sin tope)",
+        "cpuLimitInvalid": "--cpu-limit debe ser un entero de 1 a 100 (porcentaje de todos los núcleos), recibido: \"{{value}}\".",
+        "cpuLimit": "Límite de CPU: {{percent}} % de todos los núcleos (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "Límite de CPU: {{percent}} % solicitado, no aplicado en esta máquina"
       },
       "status": {
         "description": "Mostrar estado de respaldo y estado del temporizador en una máquina remota"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "La retención de la estrategia \"{{strategy}}\" está guardada, pero no hay token de cuenta para aplicarla. Inicie sesión y vuelva a ejecutar el comando.",
           "retentionPushed": "Retención aplicada a {{count}} repositorio(s).",
-          "retentionPushFailed": "La retención de la estrategia \"{{strategy}}\" está guardada, pero no se pudo aplicar ({{reason}}). Vuelva a ejecutar el comando cuando el servidor responda."
+          "retentionPushFailed": "La retención de la estrategia \"{{strategy}}\" está guardada, pero no se pudo aplicar ({{reason}}). Vuelva a ejecutar el comando cuando el servidor responda.",
+          "optionCpuLimit": "Tope de CPU de los snapshots de esta estrategia: porcentaje de todos los núcleos, 1-100 (50 por defecto); none lo elimina",
+          "cpuLimitStrategyOnly": "--cpu-limit se aplica a toda la estrategia; quita --destination."
         },
         "show": {
           "description": "Mostrar detalles de la estrategia de respaldo",

@@ -16,6 +16,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import {
   bandwidthToBytesPerSecond,
+  parseCpuLimitPercent,
   readCapBytesPerSecond,
 } from '../services/backup/backup-strategy-validate.js';
 import { outputService } from '../services/core/output.js';
@@ -436,18 +437,23 @@ export function snapshotUploadParams(options: {
   parallelism?: string;
   readBwlimit?: string;
   hashParallelism?: string;
+  cpuLimit?: string;
 }): {
   bwlimit?: string;
   parallelism?: number;
   read_bwlimit?: string;
   hash_parallelism?: number;
+  cpu_limit?: number;
 } {
   const params: {
     bwlimit?: string;
     parallelism?: number;
     read_bwlimit?: string;
     hash_parallelism?: number;
+    cpu_limit?: number;
   } = {};
+  // Refused here, before any SSH: renet would refuse it too, but only after a connection and a licence round trip. Omitted means renet applies its default of 50.
+  if (options.cpuLimit !== undefined) params.cpu_limit = parseCpuLimitPercent(options.cpuLimit);
   if (options.bwlimit !== undefined) {
     // A given --bwlimit must name a rate: a blank one (an unset shell variable) is refused, never
     // read as "no cap".
@@ -501,6 +507,8 @@ interface SnapshotRecord {
   rehashReason?: string;
   readCapBps?: number;
   hashWorkers?: number;
+  cpuLimitPercent?: number;
+  cpuQuota?: string | null;
   chunksUploaded?: number;
   bytesUploaded?: number;
   durationMs?: number;
@@ -538,6 +546,17 @@ function printSnapshotRecord(stdout: string | undefined): void {
   if (record.hashWorkers) {
     outputService.info(t('commands.backup.snapshot.hashWorkers', { workers: record.hashWorkers }));
   }
+  // cpuQuota is null where no ceiling was enforced (a limit of 100, or no systemd-run on the machine), and the summary must say so rather than print a limit that did not bind.
+  if (record.cpuLimitPercent) {
+    outputService.info(
+      record.cpuQuota
+        ? t('commands.backup.snapshot.cpuLimit', {
+            percent: record.cpuLimitPercent,
+            quota: record.cpuQuota,
+          })
+        : t('commands.backup.snapshot.cpuLimitUnenforced', { percent: record.cpuLimitPercent })
+    );
+  }
 }
 
 /**
@@ -557,6 +576,7 @@ function registerBackupSnapshot(backup: Command): void {
     .option('--parallelism <n>', t('commands.backup.snapshot.optionParallelism'))
     .option('--read-bwlimit <rate>', t('commands.backup.snapshot.optionReadBwlimit'))
     .option('--hash-parallelism <n>', t('commands.backup.snapshot.optionHashParallelism'))
+    .option('--cpu-limit <percent>', t('commands.backup.snapshot.optionCpuLimit'))
     .option('--debug', t('options.debug'))
     .action(
       async (
@@ -569,6 +589,7 @@ function registerBackupSnapshot(backup: Command): void {
           parallelism?: string;
           readBwlimit?: string;
           hashParallelism?: string;
+          cpuLimit?: string;
           debug?: boolean;
         }
       ) => {

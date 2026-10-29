@@ -368,6 +368,8 @@ const BackupStrategyConfigSchema = z.object({
   bandwidthLimit: z.string().optional(),
   /** Read cap for hashing and cell reads, strategy level only (the read is local to the machine). Same grammar as bandwidthLimit; 0 = unlimited. */
   readBandwidthLimit: z.string().optional(),
+  /** Hard CPU ceiling of a snapshot, strategy level: percent of ALL cores (1-100, 100 = no ceiling). Unset means the verb's default, 50. */
+  cpuLimit: z.number().int().min(1).max(100).optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   retention: RetentionPolicySchema.optional(),

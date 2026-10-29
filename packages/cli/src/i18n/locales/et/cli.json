@@ -168,7 +168,11 @@
         "readCapUnlimited": "Lugemispiir: piiramatu",
         "hashWorkers": "Räsimise töölised: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit peab olema kiirus, näiteks 50M või 400Mbps (0 = piiranguta), aga saadi \"{{value}}\".",
-        "starting": "{{name}} hetktõmmise tegemine chunk-hoidlasse..."
+        "starting": "{{name}} hetktõmmise tegemine chunk-hoidlasse...",
+        "optionCpuLimit": "Selle hetktõmmise protsessori ülempiir: protsent kõigist tuumadest, 1-100 (vaikimisi 50; 100 = ülempiiri pole)",
+        "cpuLimitInvalid": "--cpu-limit peab olema täisarv vahemikus 1 kuni 100 (protsent kõigist tuumadest), saadud: \"{{value}}\".",
+        "cpuLimit": "Protsessori piirang: {{percent}}% kõigist tuumadest (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "Protsessori piirang: taotletud {{percent}}%, sellel masinal ei rakendata"
       },
       "status": {
         "description": "Näitab varukoopia olekut ja taimeri olekut kaugmasinal"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid selle rakendamiseks pole konto tokenit. Logi sisse ja käivita käsk uuesti.",
           "retentionPushed": "Säilitus rakendati {{count}} hoidlale.",
-          "retentionPushFailed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid seda ei õnnestunud rakendada ({{reason}}). Käivita käsk uuesti, kui server on kättesaadav."
+          "retentionPushFailed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid seda ei õnnestunud rakendada ({{reason}}). Käivita käsk uuesti, kui server on kättesaadav.",
+          "optionCpuLimit": "Selle strateegia hetktõmmiste protsessori ülempiir: protsent kõigist tuumadest, 1-100 (vaikimisi 50); none eemaldab selle",
+          "cpuLimitStrategyOnly": "--cpu-limit kehtib kogu strateegiale; eemalda --destination."
         },
         "show": {
           "description": "Kuva varundussettrateegia üksikasjad",

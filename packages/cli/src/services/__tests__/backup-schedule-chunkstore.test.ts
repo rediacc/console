@@ -271,3 +271,83 @@ describe('the refusal that replaced the retired path', () => {
     ).toThrow(/Backup destination "dest1"/);
   });
 });
+
+describe('the CPU ceiling reaches the scheduled unit and the ad-hoc run', () => {
+  const unit = (cpuLimit: number | undefined, cpuCount: number | undefined) =>
+    generateServiceUnit(
+      's',
+      strategy({ cpuLimit }),
+      [hosted()],
+      DATASTORE,
+      RENET,
+      undefined,
+      cpuCount
+    ).serviceContent;
+
+  it('writes CPUQuota = percent x the machine core count, default 50 percent', () => {
+    expect(unit(undefined, 8)).toContain('\nCPUQuota=400%\n');
+    expect(unit(25, 8)).toContain('\nCPUQuota=200%\n');
+    expect(unit(50, 2)).toContain('\nCPUQuota=100%\n');
+  });
+
+  it('tells the snapshot record what bound it', () => {
+    const { commands } = buildBackupCommands(
+      strategy({ cpuLimit: 25 }),
+      [hosted()],
+      DATASTORE,
+      RENET,
+      undefined,
+      8
+    );
+    expect(commands[0]).toContain('--cpu-limit 25 --cpu-quota 200%');
+  });
+
+  it('writes no quota for 100 (no ceiling), and none without a resolved core count', () => {
+    expect(unit(100, 8)).not.toContain('CPUQuota');
+    expect(unit(undefined, undefined)).not.toContain('CPUQuota');
+    const { commands } = buildBackupCommands(strategy({}), [hosted()], DATASTORE, RENET);
+    expect(commands[0]).not.toContain('--cpu-limit');
+  });
+
+  it('refuses an out-of-range ceiling instead of rendering a different quota', () => {
+    expect(() => unit(0, 8)).toThrow();
+    expect(() => unit(101, 8)).toThrow();
+  });
+
+  it('puts the quota on the ad-hoc systemd-run, resolved by the machine shell', () => {
+    const adhoc = buildAdhocSystemdRun('u', ['renet backup snapshot']);
+    expect(adhoc).toContain('-p CPUQuota=$(( $(nproc) * 50 ))%');
+    expect(buildAdhocSystemdRun('u', ['x'], 20)).toContain('-p CPUQuota=$(( $(nproc) * 20 ))%');
+    expect(buildAdhocSystemdRun('u', ['x'], 100)).not.toContain('CPUQuota');
+    expect(() => buildAdhocSystemdRun('u', ['x'], 0)).toThrow();
+  });
+});
+
+describe('the machine core count behind the quota', () => {
+  const sftpAnswering = (stdout: string, code = 0) =>
+    ({
+      execStreaming: (
+        command: string,
+        h: { onStdout: (d: string) => void; onStderr: (d: string) => void }
+      ) => {
+        expect(command).toBe('nproc');
+        h.onStdout(stdout);
+        return Promise.resolve(code);
+      },
+    }) as never;
+
+  it('reads nproc on the machine', async () => {
+    const { resolveMachineCpuCount } = await import('../backup/backup-schedule-reconcile.js');
+    expect(await resolveMachineCpuCount(sftpAnswering('8\n'))).toBe(8);
+  });
+
+  it.each([
+    ['', 0],
+    ['many', 0],
+    ['0', 0],
+    ['8', 127],
+  ])('refuses to guess from %j (exit %i)', async (out, code) => {
+    const { resolveMachineCpuCount } = await import('../backup/backup-schedule-reconcile.js');
+    await expect(resolveMachineCpuCount(sftpAnswering(out, code))).rejects.toThrow(/CPU count/);
+  });
+});

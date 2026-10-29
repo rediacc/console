@@ -45,6 +45,7 @@ import {
   parseSystemctlShow,
   type ReconcileOptions,
   readRemoteState,
+  resolveMachineCpuCount,
 } from './backup-schedule-reconcile.js';
 import {
   type ExpectedScheduleUnit,
@@ -370,7 +371,8 @@ export async function pushBackupSchedule(
   const sftp = lease.sftp;
 
   try {
-    const desired = computeDesiredUnits(specs, remoteRenetPath);
+    const cpuCount = await resolveMachineCpuCount(sftp);
+    const desired = computeDesiredUnits(specs, remoteRenetPath, cpuCount);
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);
     applyInFlightGate(plan, options.force ?? false);

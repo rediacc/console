@@ -168,7 +168,11 @@
         "readCapUnlimited": "읽기 상한: 무제한",
         "hashWorkers": "해시 작업자 수: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit에는 50M이나 400Mbps 같은 속도를 지정해야 합니다(0은 무제한). 입력값: \"{{value}}\"",
-        "starting": "{{name}}을(를) 청크 스토리지에 스냅샷하는 중..."
+        "starting": "{{name}}을(를) 청크 스토리지에 스냅샷하는 중...",
+        "optionCpuLimit": "이 스냅샷의 CPU 상한: 전체 코어 대비 백분율, 1-100 (기본 50, 100 = 상한 없음)",
+        "cpuLimitInvalid": "--cpu-limit 는 1에서 100 사이의 정수(전체 코어 대비 백분율)여야 합니다. 입력값: \"{{value}}\".",
+        "cpuLimit": "CPU 제한: 전체 코어의 {{percent}}% (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "CPU 제한: {{percent}}% 요청됨, 이 머신에서는 적용되지 않음"
       },
       "status": {
         "description": "원격 머신의 백업 상태 및 타이머 상태를 표시합니다"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "전략 \"{{strategy}}\"의 보존 설정은 저장했지만 적용에 쓸 계정 토큰이 없습니다. 로그인한 뒤 명령을 다시 실행하세요.",
           "retentionPushed": "저장소 {{count}}개에 보존 설정을 적용했습니다.",
-          "retentionPushFailed": "전략 \"{{strategy}}\"의 보존 설정은 저장했지만 적용하지 못했습니다({{reason}}). 서버에 연결되면 명령을 다시 실행하세요."
+          "retentionPushFailed": "전략 \"{{strategy}}\"의 보존 설정은 저장했지만 적용하지 못했습니다({{reason}}). 서버에 연결되면 명령을 다시 실행하세요.",
+          "optionCpuLimit": "이 전략의 스냅샷에 대한 CPU 상한: 전체 코어 대비 백분율, 1-100 (기본 50). none 으로 해제",
+          "cpuLimitStrategyOnly": "--cpu-limit 는 전략 전체에 적용됩니다. --destination 을 제거하세요."
         },
         "show": {
           "description": "백업 전략 세부 정보를 표시합니다",

@@ -168,7 +168,11 @@
         "readCapUnlimited": "Limite di lettura: illimitato",
         "hashWorkers": "Worker di hash: {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit deve essere una velocità come 50M o 400Mbps (0 = illimitato), ricevuto \"{{value}}\".",
-        "starting": "Creazione dello snapshot di {{name}} su storage a chunk..."
+        "starting": "Creazione dello snapshot di {{name}} su storage a chunk...",
+        "optionCpuLimit": "Limite di CPU di questo snapshot: percentuale di tutti i core, 1-100 (predefinito 50; 100 = nessun limite)",
+        "cpuLimitInvalid": "--cpu-limit deve essere un intero da 1 a 100 (percentuale di tutti i core), ricevuto: \"{{value}}\".",
+        "cpuLimit": "Limite CPU: {{percent}}% di tutti i core (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "Limite CPU: {{percent}}% richiesto, non applicato su questa macchina"
       },
       "status": {
         "description": "Mostra lo stato del backup e dei timer su una macchina remota"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non c'è un token dell'account per applicarla. Accedi ed esegui di nuovo il comando.",
           "retentionPushed": "Conservazione applicata a {{count}} repository.",
-          "retentionPushFailed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non è stato possibile applicarla ({{reason}}). Esegui di nuovo il comando quando il server risponde."
+          "retentionPushFailed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non è stato possibile applicarla ({{reason}}). Esegui di nuovo il comando quando il server risponde.",
+          "optionCpuLimit": "Limite di CPU degli snapshot di questa strategia: percentuale di tutti i core, 1-100 (predefinito 50); none lo rimuove",
+          "cpuLimitStrategyOnly": "--cpu-limit vale per l'intera strategia; rimuovi --destination."
         },
         "show": {
           "description": "Mostra i dettagli della strategia di backup",

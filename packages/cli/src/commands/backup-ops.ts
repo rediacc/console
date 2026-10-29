@@ -101,7 +101,7 @@ async function triggerAdhocBackup(
   const { buildAdhocSystemdRun } = await import(
     '../services/backup/backup-schedule-unit-generator.js'
   );
-  const systemdRunCmd = buildAdhocSystemdRun(adhocUnit, commands);
+  const systemdRunCmd = buildAdhocSystemdRun(adhocUnit, commands, config.cpuLimit);
 
   if (debug) {
     outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);

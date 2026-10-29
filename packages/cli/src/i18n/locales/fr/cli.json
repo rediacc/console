@@ -168,7 +168,11 @@
         "readCapUnlimited": "Limite de lecture : illimitée",
         "hashWorkers": "Processus de hachage : {{workers}}",
         "readBwlimitInvalid": "--read-bwlimit doit être un débit comme 50M ou 400Mbps (0 = illimité), reçu \"{{value}}\".",
-        "starting": "Création de l'instantané de {{name}} vers le stockage fragmenté..."
+        "starting": "Création de l'instantané de {{name}} vers le stockage fragmenté...",
+        "optionCpuLimit": "Plafond CPU de ce snapshot : pourcentage de l'ensemble des cœurs, 1-100 (50 par défaut ; 100 = aucun plafond)",
+        "cpuLimitInvalid": "--cpu-limit doit être un entier de 1 à 100 (pourcentage de l'ensemble des cœurs), reçu : \"{{value}}\".",
+        "cpuLimit": "Limite CPU : {{percent}} % de l'ensemble des cœurs (CPUQuota={{quota}})",
+        "cpuLimitUnenforced": "Limite CPU : {{percent}} % demandé, non appliqué sur cette machine"
       },
       "status": {
         "description": "Afficher l'état de sauvegarde et l'état du minuteur sur une machine distante"
@@ -223,7 +227,9 @@
           },
           "retentionNotPushed": "La rétention de la stratégie « {{strategy}} » est enregistrée, mais aucun jeton de compte n'est disponible pour l'appliquer. Connectez-vous, puis relancez la commande.",
           "retentionPushed": "Rétention appliquée à {{count}} dépôt(s).",
-          "retentionPushFailed": "La rétention de la stratégie « {{strategy}} » est enregistrée, mais n'a pas pu être appliquée ({{reason}}). Relancez la commande quand le serveur répond."
+          "retentionPushFailed": "La rétention de la stratégie « {{strategy}} » est enregistrée, mais n'a pas pu être appliquée ({{reason}}). Relancez la commande quand le serveur répond.",
+          "optionCpuLimit": "Plafond CPU des snapshots de cette stratégie : pourcentage de l'ensemble des cœurs, 1-100 (50 par défaut) ; none le supprime",
+          "cpuLimitStrategyOnly": "--cpu-limit s'applique à toute la stratégie ; retirez --destination."
         },
         "show": {
           "description": "Afficher les détails de la stratégie de sauvegarde",
