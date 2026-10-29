@@ -1850,7 +1850,7 @@
         "familyHasForks": "migrate verschiebt die gesamte Familie auf eine Maschine, aber {{name}} hat noch Forks: {{forks}}. Verschieben Sie jeden Fork mit 'rdc repo push {{name}}:<tag> --to <place>' dorthin, wo Sie ihn haben möchten, oder warten Sie auf die Migration der gesamten Familie.",
         "forkRefError": "migrate verschiebt ein Repository und alle seine Forks zusammen, und {{name}}:{{tag}} ist ein Fork. Um eine Kopie des Forks woanders zu platzieren, verwenden Sie 'rdc repo push {{name}}:{{tag}} --to <place>' (die Kopie ist ein Backup-Artefakt; 'rdc backup restore' macht sie aktiv), oder befördern Sie ihn zuerst mit 'rdc repo promote {{name}}:{{tag}}'.",
         "noOpSameHome": "Repository {{name}} befindet sich bereits auf {{machine}}; nichts zu migrieren.",
-        "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. 10M)",
+        "optionBwlimit": "Transfer-Obergrenze: Bytes pro Sekunde, Dezimaleinheiten (12.5M = 12,5 MB/s), Binäreinheiten (12Mi) oder Bits (100Mbps). Ohne Angabe gibt es keine Grenze",
         "optionCheckpoint": "CRIU-Live-Migration: Prozessspeicherzustand erfassen und wiederherstellen",
         "optionDeltaBase": "Unveränderliche Basis-GUID für das Umschalt-Delta (erweitert; Standard ist die Phase-1-Basis)",
         "optionKeepSource": "Quell-Images nach einem erfolgreichen Umzug behalten (werden standardmäßig gelöscht; übrig gebliebene Kopien sind über keinen Konfigurationseintrag adressierbar und werden von reconcile als Streufunde markiert)",
@@ -1968,7 +1968,7 @@
           "andStart": "Ein Repository pullen und sofort starten.",
           "basic": "Ein Repository von einer anderen Maschine pullen."
         },
-        "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
+        "optionBwlimit": "Transfer-Obergrenze: Bytes pro Sekunde, Dezimaleinheiten (12.5M = 12,5 MB/s), Binäreinheiten (12Mi) oder Bits (100Mbps). Ohne Angabe gibt es keine Grenze",
         "optionDeltaBase": "Unveränderliche Basis-GUID, die auf beiden Rechnern byte-identisch vorliegt; nur geänderte Blöcke empfangen (Rechnerquelle)",
         "optionForce": "Vorhandenes Repository überschreiben erzwingen",
         "optionFrom": "Name der Quellmaschine (wird automatisch aus der Konfiguration erkannt)",
@@ -1987,7 +1987,7 @@
         "examples": {
           "toMachine": "Ein Repository zu einer anderen Maschine pushen."
         },
-        "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
+        "optionBwlimit": "Transfer-Obergrenze: Bytes pro Sekunde, Dezimaleinheiten (12.5M = 12,5 MB/s), Binäreinheiten (12Mi) oder Bits (100Mbps). Ohne Angabe gibt es keine Grenze",
         "optionCheckpoint": "CRIU-Checkpoint vor Backup erstellen (erfasst Prozessspeicherstatus für Live-Migration)",
         "optionDeltaBase": "Unveränderliche Basis-GUID, die auf beiden Rechnern byte-identisch vorliegt; nur geänderte Blöcke übertragen (Rechnerziel). Weglassen für automatische Basiswahl",
         "optionForce": "Vorhandenes Backup überschreiben erzwingen",

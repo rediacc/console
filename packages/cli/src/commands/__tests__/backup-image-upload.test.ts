@@ -4,8 +4,8 @@
  * Pins the API C1 implements in commands/backup-image.ts: `runUpload(options, deps)` takes every
  * side effect through `deps`, throws for a refusal, and returns `{ exitCode, results }`.
  * The local image and its state file are real files in a temp directory, written with the S1
- * state module. Red until C1 creates the module; it is loaded with a runtime path so tsc does not
- * need it yet.
+ * state module. The module is loaded with a runtime path so these tests stay independent of the
+ * command's import graph.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,6 +63,7 @@ interface UploadDeps {
   hashFile(path: string): Promise<string>;
   register(entry: {
     name: string;
+    tag: string;
     guid: string;
     machine: string;
     lineage: string | null;
@@ -70,6 +71,7 @@ interface UploadDeps {
   sleep(ms: number): Promise<void>;
   now(): Date;
   write(text: string): void;
+  signal?: AbortSignal;
 }
 interface UploadOptions {
   image: string;
@@ -99,16 +101,17 @@ const sourceRepo: SourceRepo = {
 let root: string;
 let events: string[];
 let rsyncArgs: string[][];
+let registered: { name: string; tag: string }[];
 
-function seedState(kind: 'complete' | 'incomplete', withUpload?: boolean): string {
-  const p = localImagePaths(root, 'hostinger', 'mail', 'latest');
+function seedState(kind: 'complete' | 'incomplete', withUpload?: boolean, tag = 'latest'): string {
+  const p = localImagePaths(root, 'hostinger', 'mail', tag);
   mkdirSync(p.machineDir, { recursive: true });
   writeFileSync(p.image, 'image');
   let st: ImageState = beginRun(null, {
     config: 'eu-remote',
     machine: 'hostinger',
-    image: 'mail.latest.img',
-    repo: { name: 'mail', tag: 'latest', guid: 'g-1', grandGuid: 'grand-1' },
+    image: `mail.${tag}.img`,
+    repo: { name: 'mail', tag, guid: 'g-1', grandGuid: 'grand-1' },
     snapshotTakenAt: '2026-10-29T10:00:00Z',
     snapshotName: '.snapshot-g-1-x',
     apparentBytes: 1024,
@@ -174,6 +177,7 @@ function deps(over: Partial<UploadDeps> = {}, ready: Partial<ImportReady> = {}):
     },
     hashFile: async () => DIGEST,
     register: (e) => {
+      registered.push({ name: e.name, tag: e.tag });
       events.push(`register:${e.guid}`);
       return Promise.resolve();
     },
@@ -195,6 +199,7 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'ul-'));
   events = [];
   rsyncArgs = [];
+  registered = [];
 });
 afterEach(() => {
   rmSync(root, { recursive: true, force: true });
@@ -239,6 +244,33 @@ describe('runUpload', () => {
     ]);
     const st = readImageState(localImagePaths(root, 'hostinger', 'mail', 'latest').state);
     expect(st?.upload).toMatchObject({ guid: 'fresh-guid', status: 'finalized' });
+  });
+
+  it('registers a non-latest image under its own tag (9c3f5e10.1)', async () => {
+    const m = await load();
+    const image = seedState('complete', false, 'dev');
+    const { exitCode } = await m.runUpload(opts(image), deps());
+    expect(exitCode).toBe(0);
+    expect(registered).toEqual([{ name: 'mail', tag: 'dev' }]);
+  });
+
+  it('Ctrl-C during the rsync quits the import session, skips finalize and register, keeps the pending record (9c3f5e10.5)', async () => {
+    const m = await load();
+    const image = seedState('complete');
+    const ac = new AbortController();
+    const d = deps({
+      signal: ac.signal,
+      runRsync: () => {
+        events.push('rsync');
+        ac.abort();
+        return Promise.resolve({ exitCode: 20, literalBytes: 0, matchedBytes: 0 });
+      },
+    });
+    const { exitCode } = await m.runUpload(opts(image), d);
+    expect(exitCode).toBe(130);
+    expect(events).toEqual(['open:fresh-guid', 'rsync', 'quit']);
+    const st = readImageState(localImagePaths(root, 'hostinger', 'mail', 'latest').state);
+    expect(st?.upload).toMatchObject({ guid: 'fresh-guid', status: 'staging' });
   });
 
   it('does not register when the finalize fails', async () => {

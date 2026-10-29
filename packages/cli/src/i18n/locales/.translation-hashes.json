@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 2220,
-    "sourceCommit": "f87f835b44b2bb748156e9dd3fddfa7533bfeec7"
+    "sourceCommit": "9c3f5e108cc12fc86cff0b53a270e7a552e02294"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1400,7 +1400,7 @@
     "commands.repo.migrate.familyHasForks": "2b2497de",
     "commands.repo.migrate.forkRefError": "94ec38a5",
     "commands.repo.migrate.noOpSameHome": "08b81659",
-    "commands.repo.migrate.optionBwlimit": "520d6bd3",
+    "commands.repo.migrate.optionBwlimit": "a8f2808b",
     "commands.repo.migrate.optionCheckpoint": "04fcf42a",
     "commands.repo.migrate.optionDeltaBase": "c5cff924",
     "commands.repo.migrate.optionKeepSource": "c08df8e3",
@@ -1498,7 +1498,7 @@
     "commands.repo.pull.descriptionShort": "54f32488",
     "commands.repo.pull.examples.andStart": "14c8553b",
     "commands.repo.pull.examples.basic": "23e53062",
-    "commands.repo.pull.optionBwlimit": "5102119e",
+    "commands.repo.pull.optionBwlimit": "a8f2808b",
     "commands.repo.pull.optionDeltaBase": "20cecb53",
     "commands.repo.pull.optionForce": "9b9897cc",
     "commands.repo.pull.optionFrom": "efe58fc3",
@@ -1513,7 +1513,7 @@
     "commands.repo.push.descriptionShort": "48ed5853",
     "commands.repo.push.destRequired": "a19b5c21",
     "commands.repo.push.examples.toMachine": "bfbb127a",
-    "commands.repo.push.optionBwlimit": "5102119e",
+    "commands.repo.push.optionBwlimit": "a8f2808b",
     "commands.repo.push.optionCheckpoint": "531800b9",
     "commands.repo.push.optionDeltaBase": "a3bbf65d",
     "commands.repo.push.optionForce": "09cdd752",

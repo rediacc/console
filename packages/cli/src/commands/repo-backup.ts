@@ -13,6 +13,7 @@ import { renderLocalExecutionFailure } from '../utils/local-execution-failures.j
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
+import { bwlimitParam } from './bwlimit-param.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import { applyPullDeltaParams, applyPushDeltaParams, finalizePush } from './repo-delta.js';
 import { reportPushStats } from './repo-push-stats.js';
@@ -235,7 +236,7 @@ async function preparePush(
     options
   );
   attachSeedLineage(params, repoConfig);
-  if (options.bwlimit) params.bwlimit = options.bwlimit;
+  if (options.bwlimit !== undefined) params.bwlimit = bwlimitParam(String(options.bwlimit));
 
   // Deterministic CoW-delta push (machine target only). Resolves a base (explicit or hands-free) and retains a fresh immutable base on both ends; returns the GUID to record on success.
   const retainBase =
@@ -363,7 +364,7 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
   params.sourceType = resolvedType;
   params.from = sourceName;
   if (execOptions.force) params.force = true;
-  if (execOptions.bwlimit) params.bwlimit = execOptions.bwlimit;
+  if (execOptions.bwlimit !== undefined) params.bwlimit = bwlimitParam(String(execOptions.bwlimit));
   // Delta pull is machine-source only.
   if (resolvedType === 'machine') applyPullDeltaParams(params, execOptions);
 

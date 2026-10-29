@@ -52,7 +52,9 @@ import { targetFloor } from '../services/config/network-id-discovery.js';
 import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { REMOTE_RENET_PATH } from '../services/renet/renet-provisioner.js';
+import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
+import { CliExitError } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -195,10 +197,13 @@ async function listedRepos(): Promise<ListedRepo[]> {
   });
 }
 
+/** A cluster repo has no machine image to copy; under `--all` it is simply not this machine's. */
+class ClusterRepoError extends ValidationError {}
+
 async function targetFor(ref: string, listed: ListedRepo[]): Promise<ImageTarget> {
   const resolved = await resolveRepoRef(ref, { readOnly: true });
   if (resolved.kubeCluster) {
-    throw new ValidationError(t('errors.backupImage.clusterRepo', { ref }));
+    throw new ClusterRepoError(t('errors.backupImage.clusterRepo', { ref }));
   }
   const repo = await configService.getRepository(resolved.repoKey);
   if (!repo) throw new ValidationError(t('errors.backupImage.repoUnknown', { ref }));
@@ -216,23 +221,57 @@ async function targetFor(ref: string, listed: ListedRepo[]): Promise<ImageTarget
   };
 }
 
+/** A cluster repo, or one whose datastore is detached, resolves to no machine at all. */
+function isNotOnAnyMachine(error: unknown): boolean {
+  return (
+    error instanceof ClusterRepoError ||
+    (error instanceof CliExitError && error.code === ERROR_CODES.DETACHED)
+  );
+}
+
+/**
+ * `--all -m <machine>`: the grand repos (and forks, with `--include-forks`) placed on that machine.
+ * Only "not on this machine" skips silently: a repo whose datastore is detached has no machine, and
+ * one placed elsewhere or in a cluster is not this machine's. Anything else (a policy refusal, a
+ * config error) is that repo's own failure and stops the run with its message.
+ */
+async function onMachineOrNull(
+  key: string,
+  machine: string,
+  resolve: (key: string) => Promise<ImageTarget>
+): Promise<ImageTarget | null> {
+  try {
+    const target = await resolve(key);
+    return target.machine === machine ? target : null;
+  } catch (error) {
+    if (isNotOnAnyMachine(error)) return null;
+    throw error;
+  }
+}
+
+export async function selectAllTargets(
+  listed: Pick<ListedRepo, 'key' | 'isGrand'>[],
+  opts: { all: string; includeForks?: boolean },
+  resolve: (key: string) => Promise<ImageTarget>
+): Promise<ImageTarget[]> {
+  const out: ImageTarget[] = [];
+  for (const repo of listed) {
+    if (!repo.isGrand && !opts.includeForks) continue;
+    const target = await onMachineOrNull(repo.key, opts.all, resolve);
+    if (target) out.push(target);
+  }
+  return out;
+}
+
 async function resolveDownloadTargets(
   refs: string[],
   opts: { all?: string; includeForks?: boolean }
 ): Promise<ImageTarget[]> {
   const listed = await listedRepos();
   if (!opts.all) return Promise.all(refs.map((ref) => targetFor(ref, listed)));
-  const out: ImageTarget[] = [];
-  for (const repo of listed) {
-    if (!repo.isGrand && !opts.includeForks) continue;
-    try {
-      const target = await targetFor(repo.key, listed);
-      if (target.machine === opts.all) out.push(target);
-    } catch {
-      // A repo that resolves to no machine (detached datastore, cluster) is not on this machine.
-    }
-  }
-  return out;
+  return selectAllTargets(listed, { all: opts.all, includeForks: opts.includeForks }, (key) =>
+    targetFor(key, listed)
+  );
 }
 
 function realDownloadDeps(
@@ -299,10 +338,10 @@ async function registerUploaded(entry: RegisterEntry): Promise<void> {
     floor: await targetFloor({ machine: entry.machine }),
   });
   // A fresh GUID minted before the transfer (so a resume lands in the same staging), carrying the source's lineage as grandGuid, exactly as `backup restore` registers a restored image.
-  await configService.addRepository(compositeKey(entry.name, 'latest'), {
+  await configService.addRepository(compositeKey(entry.name, entry.tag), {
     repositoryGuid: entry.guid,
     ...(entry.lineage ? { grandGuid: entry.lineage } : {}),
-    tag: 'latest',
+    tag: entry.tag,
     // The image bytes are the source's ciphertext, so the copy unlocks with the source's credential under its new GUID.
     credential: entry.credential,
     networkId,
@@ -312,11 +351,14 @@ async function registerUploaded(entry: RegisterEntry): Promise<void> {
   await reconcileBackupSchedules(entry.machine);
 }
 
-async function realUploadDeps(opts: {
-  datastore?: string;
-  debug?: boolean;
-  json: boolean;
-}): Promise<UploadDeps> {
+async function realUploadDeps(
+  signal: AbortSignal,
+  opts: {
+    datastore?: string;
+    debug?: boolean;
+    json: boolean;
+  }
+): Promise<UploadDeps> {
   const listed = await listedRepos();
   const byName = (name: string): ListedRepo | undefined => {
     const exact = listed.find((r) => r.key === name || compositeKey(r.family, r.tag) === name);
@@ -350,6 +392,7 @@ async function realUploadDeps(opts: {
     runRsync: (req) =>
       runImageRsync({
         ...req,
+        signal,
         onProgress: (p) =>
           progressLine(
             `\r${t('commands.backup.download.progress', { percent: String(p.percentage), speed: p.speed, eta: p.eta })}`
@@ -364,6 +407,7 @@ async function realUploadDeps(opts: {
     now: () => new Date(),
     write: (text) => writeStdout(text),
     progress: opts.json ? undefined : progressLine,
+    signal,
     datastorePath: (machine, datastore) => machineDatastorePath(machine, datastore),
     assertCreate: async (name, machine) => {
       await assertCommandPolicy(CMD.BACKUP_UPLOAD, name);
@@ -471,21 +515,27 @@ function registerUpload(backup: Command): void {
     .action(async (image: string, options: UploadCliOptions) => {
       try {
         const json = getOutputFormat() === 'json';
-        const { exitCode } = await runUpload(
-          {
-            image: resolvePath(image),
-            to: options.to,
-            as: options.as,
-            datastore: options.datastore,
-            fromRepo: options.fromRepo,
-            skipVerify: options.skipVerify,
-            bwlimitKiBps: kibps(options.bwlimit),
-            retries: parseRetries(options.retries),
-            up: options.up,
-            config: configService.getEffectiveConfigName(),
-            output: json ? 'json' : 'human',
-          },
-          await realUploadDeps({ datastore: options.datastore, debug: options.debug, json })
+        const { exitCode } = await withInterrupt(async (signal) =>
+          runUpload(
+            {
+              image: resolvePath(image),
+              to: options.to,
+              as: options.as,
+              datastore: options.datastore,
+              fromRepo: options.fromRepo,
+              skipVerify: options.skipVerify,
+              bwlimitKiBps: kibps(options.bwlimit),
+              retries: parseRetries(options.retries),
+              up: options.up,
+              config: configService.getEffectiveConfigName(),
+              output: json ? 'json' : 'human',
+            },
+            await realUploadDeps(signal, {
+              datastore: options.datastore,
+              debug: options.debug,
+              json,
+            })
+          )
         );
         setExitCode(exitCode);
       } catch (error) {

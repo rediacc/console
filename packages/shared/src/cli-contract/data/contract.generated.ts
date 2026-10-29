@@ -11179,8 +11179,8 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "format": "bandwidth",
           "tier": "advanced",
-          "descriptionKey": "commands.repo.migrate.optionBwlimit",
-          "label": "Bandwidth limit for rsync transfer (e.g., 10M)"
+          "descriptionKey": "commands.repo.push.optionBwlimit",
+          "label": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
         },
         {
           "flags": "--checkpoint",
@@ -11783,7 +11783,7 @@ export const CLI_CONTRACT: CliContract = {
           "format": "bandwidth",
           "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionBwlimit",
-          "label": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")"
+          "label": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
         },
         {
           "flags": "--delta-base <guid>",
@@ -11974,7 +11974,7 @@ export const CLI_CONTRACT: CliContract = {
           "format": "bandwidth",
           "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionBwlimit",
-          "label": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")"
+          "label": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
         },
         {
           "flags": "--delta-base <guid>",

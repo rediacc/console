@@ -3500,7 +3500,7 @@
             },
             {
               "flags": "--bwlimit <limit>",
-              "descriptionKey": "commands.repo.migrate.optionBwlimit",
+              "descriptionKey": "commands.repo.push.optionBwlimit",
               "mandatory": false,
               "defaultValue": null
             },

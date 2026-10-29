@@ -1850,7 +1850,7 @@
         "familyHasForks": "migrate déplace toute la famille vers une seule machine, mais {{name}} a encore des forks : {{forks}}. Poussez chaque fork où vous le souhaitez avec 'rdc repo push {{name}}:<tag> --to <place>', ou attendez une migration de toute la famille.",
         "forkRefError": "migrate déplace un dépôt et tous ses forks ensemble, et {{name}}:{{tag}} est un fork. Pour placer une copie du fork ailleurs, utilisez 'rdc repo push {{name}}:{{tag}} --to <place>' (la copie est un artefact de sauvegarde ; 'rdc backup restore' la rend active), ou promouvez-le d'abord avec 'rdc repo promote {{name}}:{{tag}}'.",
         "noOpSameHome": "Le dépôt {{name}} se trouve déjà sur {{machine}} ; rien à migrer.",
-        "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : 10M)",
+        "optionBwlimit": "Plafond de transfert : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
         "optionCheckpoint": "Migration en direct CRIU : capturer et restaurer l'état de la mémoire des processus",
         "optionDeltaBase": "GUID de base immuable pour le delta de bascule (avancé ; par défaut, la base de la phase 1)",
         "optionKeepSource": "Conserver les images source après un déplacement réussi (elles sont supprimées par défaut ; les copies restantes ne sont adressables par aucun enregistrement de configuration et reconcile les signale comme égarées)",
@@ -1968,7 +1968,7 @@
           "andStart": "Récupérer un dépôt et le démarrer immédiatement.",
           "basic": "Récupérer un dépôt depuis une autre machine."
         },
-        "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : \"6M\", \"10M\")",
+        "optionBwlimit": "Plafond de transfert : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
         "optionDeltaBase": "GUID de base immuable présent à l'identique sur les deux machines ; ne recevoir que les blocs modifiés (source machine)",
         "optionForce": "Forcer l'écrasement du dépôt existant",
         "optionFrom": "Nom de la machine source (détecté automatiquement depuis la configuration)",
@@ -1987,7 +1987,7 @@
         "examples": {
           "toMachine": "Pousser un dépôt vers une autre machine."
         },
-        "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : \"6M\", \"10M\")",
+        "optionBwlimit": "Plafond de transfert : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
         "optionCheckpoint": "Créer un checkpoint CRIU avant la sauvegarde (capture l'état de la mémoire des processus pour la migration à chaud)",
         "optionDeltaBase": "GUID de base immuable présent à l'identique sur les deux machines ; ne transférer que les blocs modifiés (cible machine). Omettre pour une base automatique sans intervention",
         "optionForce": "Forcer l'écrasement de la sauvegarde existante",

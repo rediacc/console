@@ -1850,7 +1850,7 @@
         "familyHasForks": "migrate liigutab kogu perekonna ühele masinale, kuid hoidlal {{name}} on ikka veel forke: {{forks}}. Saada iga fork soovitud kohta käsuga 'rdc repo push {{name}}:<tag> --to <place>', või oota kogu perekonna migreerimist.",
         "forkRefError": "migrate liigutab hoidla ja kõik selle forgid koos, ning {{name}}:{{tag}} on fork. Forgi koopia mujale paigutamiseks kasuta 'rdc repo push {{name}}:{{tag}} --to <place>' (koopia on varukoopia artefakt; 'rdc backup restore' teeb selle aktiivseks), või edenda see esmalt käsuga 'rdc repo promote {{name}}:{{tag}}'.",
         "noOpSameHome": "Hoidla {{name}} asub juba masinal {{machine}}; midagi migreerida ei ole.",
-        "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt 10M)",
+        "optionBwlimit": "Ülekande piirang: baite sekundis, kümnendühikutes (12.5M = 12,5 MB/s), kahendühikutes (12Mi) või bittides (100Mbps). Määramata jättes piirangut pole",
         "optionCheckpoint": "CRIU otsemigratsion: jäädvusta ja taasta protsessi mäluseisund",
         "optionDeltaBase": "Muutumatu baas-GUID ülemineku deltaks (edasijõudnutele; vaikimisi 1. faasi baas)",
         "optionKeepSource": "Säilita lähte-image'id pärast edukat kolimist (vaikimisi kustutatakse; ülejäänud koopiad ei ole ühegi konfiguratsioonikirje kaudu aadresseeritavad ning reconcile märgib need hulkurdiks)",
@@ -1968,7 +1968,7 @@
           "andStart": "Too hoidla ja käivita see kohe.",
           "basic": "Too hoidla teisest masinast."
         },
-        "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
+        "optionBwlimit": "Ülekande piirang: baite sekundis, kümnendühikutes (12.5M = 12,5 MB/s), kahendühikutes (12Mi) või bittides (100Mbps). Määramata jättes piirangut pole",
         "optionDeltaBase": "Muutumatu baas-GUID, mis on mõlemal masinal baidihaaval identne; võta vastu ainult muutunud plokid (masinaallikas)",
         "optionForce": "Sundi olemasoleva hoidla ülekirjutamine",
         "optionFrom": "Allikamasina nimi (tuvastatakse automaatselt konfiguratsioonist)",
@@ -1987,7 +1987,7 @@
         "examples": {
           "toMachine": "Saada hoidla teisele masinale."
         },
-        "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
+        "optionBwlimit": "Ülekande piirang: baite sekundis, kümnendühikutes (12.5M = 12,5 MB/s), kahendühikutes (12Mi) või bittides (100Mbps). Määramata jättes piirangut pole",
         "optionCheckpoint": "Loo CRIU kontrollpunkt enne varukoopiat (jäädvustab protsessi mäluseisundi otseülekandeks)",
         "optionDeltaBase": "Muutumatu baas-GUID, mis on mõlemal masinal baidihaaval identne; kanna üle ainult muutunud plokid (masinasihtkoht). Jäta välja automaatse baasi jaoks",
         "optionForce": "Sundi olemasoleva varukoopia ülekirjutamine",

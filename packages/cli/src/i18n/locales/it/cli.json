@@ -1850,7 +1850,7 @@
         "familyHasForks": "migrate sposta l'intera famiglia su una sola macchina, ma {{name}} ha ancora fork: {{forks}}. Esegui il push di ogni fork dove desideri con 'rdc repo push {{name}}:<tag> --to <place>', oppure attendi una migrazione dell'intera famiglia.",
         "forkRefError": "migrate sposta un repository insieme a tutti i suoi fork, e {{name}}:{{tag}} è un fork. Per posizionare una copia del fork altrove usa 'rdc repo push {{name}}:{{tag}} --to <place>' (la copia è un artefatto di backup; 'rdc backup restore' la rende attiva), oppure promuovilo prima con 'rdc repo promote {{name}}:{{tag}}'.",
         "noOpSameHome": "Il repository {{name}} si trova già su {{machine}}; niente da migrare.",
-        "optionBwlimit": "Limite di banda per il trasferimento rsync (es. 10M)",
+        "optionBwlimit": "Limite di trasferimento: byte al secondo, unità decimali (12.5M = 12,5 MB/s), binarie (12Mi) o bit (100Mbps). Se omesso non c'è alcun limite",
         "optionCheckpoint": "Migrazione live CRIU: cattura e ripristina lo stato in memoria dei processi",
         "optionDeltaBase": "GUID di base immutabile per il delta del cutover (avanzato; predefinito alla base della Fase 1)",
         "optionKeepSource": "Mantieni le immagini sorgente dopo uno spostamento riuscito (per impostazione predefinita vengono eliminate; le copie residue non sono indirizzabili da alcun record di configurazione e reconcile le segnala come orfane)",
@@ -1968,7 +1968,7 @@
           "andStart": "Esegui il pull di un repository e avvialo subito.",
           "basic": "Esegui il pull di un repository da un'altra macchina."
         },
-        "optionBwlimit": "Limite di banda per il trasferimento rsync (es. \"6M\", \"10M\")",
+        "optionBwlimit": "Limite di trasferimento: byte al secondo, unità decimali (12.5M = 12,5 MB/s), binarie (12Mi) o bit (100Mbps). Se omesso non c'è alcun limite",
         "optionDeltaBase": "GUID di base immutabile presente byte per byte identico su entrambi i macchinari; ricevi solo i blocchi modificati (sorgente macchinario)",
         "optionForce": "Forza la sovrascrittura del repository esistente",
         "optionFrom": "Nome della macchina di origine (rilevato automaticamente dalla configurazione)",
@@ -1987,7 +1987,7 @@
         "examples": {
           "toMachine": "Esegui il push di un repository verso un'altra macchina."
         },
-        "optionBwlimit": "Limite di banda per il trasferimento rsync (es. \"6M\", \"10M\")",
+        "optionBwlimit": "Limite di trasferimento: byte al secondo, unità decimali (12.5M = 12,5 MB/s), binarie (12Mi) o bit (100Mbps). Se omesso non c'è alcun limite",
         "optionCheckpoint": "Crea un checkpoint CRIU prima del backup (cattura lo stato in memoria dei processi per la migrazione live)",
         "optionDeltaBase": "GUID di base immutabile presente byte per byte identico su entrambi i macchinari; trasferisci solo i blocchi modificati (destinazione macchinario). Ometti per la base automatica senza intervento",
         "optionForce": "Forza la sovrascrittura del backup esistente",

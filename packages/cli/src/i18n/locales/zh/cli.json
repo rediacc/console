@@ -1850,7 +1850,7 @@
         "familyHasForks": "migrate 会将整个家族迁移到一台机器上，但 {{name}} 仍有 fork：{{forks}}。请用 'rdc repo push {{name}}:<tag> --to <place>' 将每个 fork 推送到你想要的位置，或等待整个家族一起迁移。",
         "forkRefError": "migrate 会将仓库及其所有 fork 一起迁移，而 {{name}}:{{tag}} 是一个 fork。要将 fork 的副本放到别处，请使用 'rdc repo push {{name}}:{{tag}} --to <place>'（该副本是备份产物；'rdc backup restore' 可使其生效），或先用 'rdc repo promote {{name}}:{{tag}}' 将其提升。",
         "noOpSameHome": "仓库 {{name}} 已位于 {{machine}} 上；无需迁移。",
-        "optionBwlimit": "rsync 传输带宽限制（例如 10M）",
+        "optionBwlimit": "传输速率上限：可用每秒字节数、十进制单位（12.5M = 12.5 MB/s）、二进制单位（12Mi）或比特（100Mbps）。不设置则不限速",
         "optionCheckpoint": "CRIU 实时迁移：捕获和恢复进程内存状态",
         "optionDeltaBase": "用于切换增量的不可变基准 GUID（高级；默认使用阶段 1 的基准）",
         "optionKeepSource": "成功迁移后保留源镜像（默认会被删除；残留副本无法通过任何配置记录寻址，reconcile 会将其标记为孤立项）",
@@ -1968,7 +1968,7 @@
           "andStart": "拉取仓库并立即启动它。",
           "basic": "从另一台机器拉取仓库。"
         },
-        "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
+        "optionBwlimit": "传输速率上限：可用每秒字节数、十进制单位（12.5M = 12.5 MB/s）、二进制单位（12Mi）或比特（100Mbps）。不设置则不限速",
         "optionDeltaBase": "在两台机器上字节完全相同的不可变基准 GUID；仅接收已更改的块（机器源）",
         "optionForce": "强制覆盖现有仓库",
         "optionFrom": "源机器名称（从配置中自动检测）",
@@ -1987,7 +1987,7 @@
         "examples": {
           "toMachine": "将仓库推送到另一台机器。"
         },
-        "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
+        "optionBwlimit": "传输速率上限：可用每秒字节数、十进制单位（12.5M = 12.5 MB/s）、二进制单位（12Mi）或比特（100Mbps）。不设置则不限速",
         "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
         "optionDeltaBase": "在两台机器上字节完全相同的不可变基准 GUID；仅传输已更改的块（机器目标）。省略以自动选择基准",
         "optionForce": "强制覆盖现有备份",

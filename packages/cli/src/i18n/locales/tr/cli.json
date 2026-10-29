@@ -1850,7 +1850,7 @@
         "familyHasForks": "migrate tüm aileyi tek bir makineye taşır, ancak {{name}} hâlâ çatallara sahip: {{forks}}. Her çatalı istediğiniz yere 'rdc repo push {{name}}:<tag> --to <place>' ile gönderin veya tüm ailenin taşınmasını bekleyin.",
         "forkRefError": "migrate bir depoyu ve tüm çatallarını birlikte taşır, ve {{name}}:{{tag}} bir çatal. Çatalın bir kopyasını başka bir yere koymak için 'rdc repo push {{name}}:{{tag}} --to <place>' kullanın (kopya bir yedekleme yapısıdır; 'rdc backup restore' onu aktif hale getirir) veya önce 'rdc repo promote {{name}}:{{tag}}' ile terfi ettirin.",
         "noOpSameHome": "{{name}} deposu zaten {{machine}} üzerinde yaşıyor; taşınacak bir şey yok.",
-        "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. 10M)",
+        "optionBwlimit": "Aktarım hızı sınırı: saniyede bayt, ondalık birimler (12.5M = 12,5 MB/s), ikili birimler (12Mi) ya da bit (100Mbps). Verilmezse sınır uygulanmaz",
         "optionCheckpoint": "CRIU canlı taşıma: süreç belleği durumunu yakala ve geri yükle",
         "optionDeltaBase": "Geçiş deltası için değişmez temel GUID (gelişmiş; varsayılan olarak Aşama 1 temeli kullanılır)",
         "optionKeepSource": "Başarılı bir taşımadan sonra kaynak imajları koru (varsayılan olarak silinirler; kalan kopyalar herhangi bir yapılandırma kaydıyla adreslenemez ve reconcile bunları başıboş olarak işaretler)",
@@ -1968,7 +1968,7 @@
           "andStart": "Bir depoyu çek ve hemen başlat.",
           "basic": "Bir depoyu başka bir makineden çek."
         },
-        "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. \"6M\", \"10M\")",
+        "optionBwlimit": "Aktarım hızı sınırı: saniyede bayt, ondalık birimler (12.5M = 12,5 MB/s), ikili birimler (12Mi) ya da bit (100Mbps). Verilmezse sınır uygulanmaz",
         "optionDeltaBase": "Her iki makinede de bayt düzeyinde birebir bulunan değişmez temel GUID; yalnızca değişen blokları al (makine kaynağı)",
         "optionForce": "Mevcut deponun üzerine yazmaya zorla",
         "optionFrom": "Kaynak makine adı (yapılandırmadan otomatik algılanır)",
@@ -1987,7 +1987,7 @@
         "examples": {
           "toMachine": "Bir depoyu başka bir makineye gönder."
         },
-        "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. \"6M\", \"10M\")",
+        "optionBwlimit": "Aktarım hızı sınırı: saniyede bayt, ondalık birimler (12.5M = 12,5 MB/s), ikili birimler (12Mi) ya da bit (100Mbps). Verilmezse sınır uygulanmaz",
         "optionCheckpoint": "Yedekleme öncesi CRIU checkpoint oluştur (canlı taşıma için işlem bellek durumunu yakalar)",
         "optionDeltaBase": "Her iki makinede de bayt düzeyinde birebir bulunan değişmez temel GUID; yalnızca değişen blokları aktar (makine hedefi). Otomatik temel için boş bırakın",
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",

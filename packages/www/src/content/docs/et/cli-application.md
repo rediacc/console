@@ -7,7 +7,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "9453cfb26c6be2b0"
+sourceHash: "aa3830de153ca18e"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1918,7 +1918,7 @@ rdc repo migrate <ref> [options]
 |------|-------------|----------|---------|
 | `--to <place>` | {{t:cli.commands.repo.migrate.optionTo}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--provision <provider>` | {{t:cli.commands.repo.migrate.optionProvision}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--bwlimit <limit>` | {{t:cli.commands.repo.migrate.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <limit>` | {{t:cli.commands.repo.push.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.migrate.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--delta-base <guid>` | {{t:cli.commands.repo.migrate.optionDeltaBase}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--strategy <strategy>` | {{t:cli.commands.repo.migrate.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |

@@ -4,8 +4,8 @@
  * The API C1 implements in commands/backup-image.ts is pinned by the interfaces below:
  * `runDownload(options, deps)` takes every side effect through `deps`, throws for a usage or
  * environment refusal (missing --to directory, missing rsync) and returns `{ exitCode, results }`
- * for per-repo outcomes. Red until C1 creates the module; it is loaded with a runtime path so tsc
- * does not need it yet.
+ * for per-repo outcomes. The module is loaded with a runtime path so these tests stay independent
+ * of the command's import graph.
  */
 
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -79,6 +79,11 @@ interface DownloadResult {
   error?: string;
 }
 interface Module {
+  selectAllTargets(
+    listed: { key: string; isGrand: boolean }[],
+    opts: { all: string; includeForks?: boolean },
+    resolve: (key: string) => Promise<ImageTarget>
+  ): Promise<ImageTarget[]>;
   runDownload(
     o: DownloadOptions,
     d: DownloadDeps
@@ -166,6 +171,43 @@ beforeEach(() => {
 });
 afterEach(() => {
   rmSync(to, { recursive: true, force: true });
+});
+
+describe('selectAllTargets (9c3f5e10.2)', () => {
+  const listed = [
+    { key: 'mail', isGrand: true },
+    { key: 'other', isGrand: true },
+  ];
+
+  it('skips a repo placed on another machine without a word', async () => {
+    const m = await load();
+    const out = await m.selectAllTargets(listed, { all: 'hostinger' }, (key) =>
+      Promise.resolve({ ...target, repo: key, machine: key === 'mail' ? 'hostinger' : 'elsewhere' })
+    );
+    expect(out.map((t) => t.repo)).toEqual(['mail']);
+  });
+
+  it('skips a repo whose datastore is detached (no machine)', async () => {
+    const m = await load();
+    const { CliExitError } = await import('../../utils/cli-exit-error.js');
+    const out = await m.selectAllTargets(listed, { all: 'hostinger' }, (key) =>
+      key === 'other'
+        ? Promise.reject(new CliExitError('DETACHED', 'datastore detached'))
+        : Promise.resolve({ ...target, repo: key })
+    );
+    expect(out.map((t) => t.repo)).toEqual(['mail']);
+  });
+
+  it('reports a policy refusal or config error instead of dropping the repo', async () => {
+    const m = await load();
+    await expect(
+      m.selectAllTargets(listed, { all: 'hostinger' }, (key) =>
+        key === 'other'
+          ? Promise.reject(new Error('command refused by policy for other'))
+          : Promise.resolve({ ...target, repo: key })
+      )
+    ).rejects.toThrow(/refused by policy/);
+  });
 });
 
 describe('runDownload', () => {

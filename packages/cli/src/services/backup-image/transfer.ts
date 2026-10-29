@@ -518,6 +518,8 @@ export interface SourceRepo {
 
 export interface RegisterEntry {
   name: string;
+  /** The source image's tag; the repo registers as `<name>:<tag>`. */
+  tag: string;
   guid: string;
   machine: string;
   lineage: string | null;
@@ -539,6 +541,8 @@ export interface UploadDeps {
   now(): Date;
   write(text: string): void;
   progress?(text: string): void;
+  /** Tripped by Ctrl-C: the rsync stops, the import session is quit and the pending upload stays resumable. */
+  signal?: AbortSignal;
   /** Absolute datastore path on the machine; defaults to the named mount or the default datastore. */
   datastorePath?(machine: string, datastore?: string): Promise<string>;
   /** The agent create-gate for the target name. */
@@ -693,6 +697,11 @@ function uploadRsyncOnce(
   });
 }
 
+/** Stops an upload step as interrupted once Ctrl-C tripped the signal. */
+function throwIfAborted(d: { signal?: AbortSignal }): void {
+  if (d.signal?.aborted) throw new Interrupted();
+}
+
 function isAlive(session: ImportSession): Promise<boolean> {
   return session.ping ? session.ping() : Promise.resolve(false);
 }
@@ -707,6 +716,7 @@ async function uploadRsyncLoop(
   const retries = o.retries ?? DEFAULT_RETRIES;
   for (let attempt = 0; ; attempt++) {
     const outcome = await uploadRsyncOnce(o, d, session);
+    throwIfAborted(d);
     if (outcome.exitCode === 0) return session;
     const failure = rsyncFailure(outcome);
     if (!RETRYABLE_RSYNC_EXITS.has(outcome.exitCode) || attempt >= retries) {
@@ -715,6 +725,7 @@ async function uploadRsyncLoop(
     }
     d.progress?.(`${t('commands.backup.upload.retrying', { error: failure })}\n`);
     await d.sleep(backoff(attempt));
+    throwIfAborted(d);
     if (await isAlive(session)) continue;
     // The staging survives the session; a new one resumes into it.
     await session.quit();
@@ -768,6 +779,7 @@ async function registerUpload(
   try {
     await d.register({
       name: plan.name,
+      tag: plan.state?.repo.tag ?? source.tag,
       guid,
       machine: o.to,
       lineage: source.grandGuid ?? source.guid,
@@ -798,18 +810,27 @@ export async function runUpload(o: UploadOptions, d: UploadDeps): Promise<{ exit
     const staged = await stageUpload(o, d, plan, localSha);
     const { upload } = staged;
     const guid = upload.guid;
-    const finalized = await transferAndFinalize(
-      o,
-      d,
-      {
-        machine: o.to,
-        guid,
-        datastore: upload.datastore,
-        seedGuid: staged.state.repo.guid || undefined,
-        allocatedBytes: staged.state.run.allocatedBytes || localAllocated(o.image),
-      },
-      localSha
-    );
+    let finalized: { path: string };
+    try {
+      finalized = await transferAndFinalize(
+        o,
+        d,
+        {
+          machine: o.to,
+          guid,
+          datastore: upload.datastore,
+          seedGuid: staged.state.repo.guid || undefined,
+          allocatedBytes: staged.state.run.allocatedBytes || localAllocated(o.image),
+        },
+        localSha
+      );
+    } catch (error) {
+      if (!(error instanceof Interrupted)) throw error;
+      // The staging record stays 'staging' (the remote bytes survive the quit), so a rerun resumes it.
+      writeImageState(statePath, recordUpload(staged.state, { ...upload, status: 'staging' }));
+      d.progress?.(`${t('commands.backup.download.interrupted')}\n`);
+      return { exitCode: EXIT_INTERRUPTED };
+    }
     await registerUpload(o, d, plan, guid);
     writeImageState(statePath, recordUpload(staged.state, { ...upload, status: 'finalized' }));
 

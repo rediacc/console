@@ -30,6 +30,7 @@ import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
+import { assertBwlimit, bwlimitParam } from './bwlimit-param.js';
 import { autoProvisionTarget, buildPushParams } from './repo-backup.js';
 import { postRepoUpTasks } from './repo-batch-utils.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
@@ -197,7 +198,7 @@ async function executePhase1(
   );
   const uniqueSeeds = [...new Set(seeds)];
   if (uniqueSeeds.length > 0) pushParams.params.seed = uniqueSeeds.join(',');
-  if (bwlimit) pushParams.params.bwlimit = bwlimit;
+  if (bwlimit !== undefined) pushParams.params.bwlimit = bwlimitParam(bwlimit);
   if (strategy) pushParams.params.strategy = strategy;
   // Retain the hot pre-copy as an immutable base so the Phase-2 cutover ships only the bytes that changed during Phase 1 (FIEMAP delta, not a full scan).
   pushParams.params.retainBase = retainBase;
@@ -239,7 +240,7 @@ async function executePhase2(
 
   // Cutover ships only the changes since the delta base, then prunes the temporary Phase-1 base from both machines (migration is a move, not an ongoing link). An explicit --delta-base is never pruned.
   const applyDelta = (params: Record<string, unknown>): void => {
-    if (bwlimit) params.bwlimit = bwlimit;
+    if (bwlimit !== undefined) params.bwlimit = bwlimitParam(bwlimit);
     params.deltaBase = delta.base;
     params.retainBasePrune = delta.prune;
     if (delta.strategy) params.strategy = delta.strategy;
@@ -454,6 +455,8 @@ async function finalizeCutover(
 export async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> {
   const { provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, keepSource, debug } =
     options;
+  // Refused before any provisioning or transfer, not at the first phase that reads it.
+  assertBwlimit(bwlimit);
 
   // Source is DERIVED from the repo's config placement (spec/03 §2.3): `machineName` is the ref's home machine (a cluster repo's home is its control node). Migrate's data plane (CoW images + rsync/FIEMAP) is runtime-agnostic, so it operates machine<->machine and does not thread kubeCluster (see resolveMigrateEndpoint).
   // `repoKey` (name or name:tag) drives config + renet; `name` is for messages.
