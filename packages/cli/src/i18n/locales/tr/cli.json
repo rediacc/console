@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at yalnızca --store ile birlikte geçerlidir.",
       "storeRefusesMachine": "--store doğrudan yedek deposundan okur ve -m <machine> kabul etmez.",
       "storeRefusesCheckpoint": "--store hiçbir makineye dokunmadığı için --checkpoint kabul etmez.",
+      "storeRefusesOption": "--store {{option}} kabul etmez: bu ayar makine üzerinden indirmeye aittir; depodan alma kendi kaldığı yerden sürer ve her parçayı doğrular.",
       "storeRefusesForks": "--store tek bir depo kopyalar; --all ve --include-forks kabul etmez.",
       "storeNeedsOneRef": "--store tam olarak bir depo adı ister.",
       "storeLineageNotFound": "Yedek deposunda bu belirtecin ekibi için böyle bir depo yok.",

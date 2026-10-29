@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at は --store と併用した場合のみ有効です。",
       "storeRefusesMachine": "--store はバックアップストアから直接読み取るため、-m <machine> は指定できません。",
       "storeRefusesCheckpoint": "--store はマシンに触れないため、--checkpoint は指定できません。",
+      "storeRefusesOption": "--store では {{option}} を指定できません。これはマシン経由のダウンロード用の設定です。ストアからの取得は自動で再開し、すべてのチャンクを検証します。",
       "storeRefusesForks": "--store は 1 つのリポジトリをコピーします。--all と --include-forks は指定できません。",
       "storeNeedsOneRef": "--store にはリポジトリ名をちょうど 1 つ指定してください。",
       "storeLineageNotFound": "このトークンのチームには、バックアップストア内に該当するリポジトリがありません。",

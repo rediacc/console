@@ -157,7 +157,7 @@ describe('runStoreFetch', () => {
 });
 
 describe('backup download --store option refusals', () => {
-  it('refuses -m, --checkpoint and --include-forks', async () => {
+  it('refuses -m, --checkpoint, --include-forks and the machine transfer options', async () => {
     vi.resetModules();
     vi.doMock('../../utils/errors.js', async (orig) => ({
       ...(await orig<typeof import('../../utils/errors.js')>()),
@@ -168,7 +168,15 @@ describe('backup download --store option refusals', () => {
     }));
     const { Command } = await import('commander');
     const { registerBackupImageCommands } = await import('../backup-image.js');
-    for (const flag of [['-m', 'box'], ['--checkpoint'], ['--include-forks']]) {
+    for (const flag of [
+      ['-m', 'box'],
+      ['--checkpoint'],
+      ['--include-forks'],
+      ['--bwlimit', '10M'],
+      ['--retries', '3'],
+      ['--skip-verify'],
+      ['--skip-space-check'],
+    ]) {
       const backup = new Command().exitOverride();
       registerBackupImageCommands(backup);
       await expect(

@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at ne s'applique qu'avec --store.",
       "storeRefusesMachine": "--store lit directement le magasin de sauvegardes et n'accepte pas -m <machine>.",
       "storeRefusesCheckpoint": "--store n'accepte pas --checkpoint, car aucune machine n'est sollicitée.",
+      "storeRefusesOption": "--store n'accepte pas {{option}} : ce réglage concerne le téléchargement via une machine ; la récupération depuis le stockage reprend d'elle-même et vérifie chaque chunk.",
       "storeRefusesForks": "--store copie un seul dépôt et n'accepte ni --all ni --include-forks.",
       "storeNeedsOneRef": "--store exige exactement un nom de dépôt.",
       "storeLineageNotFound": "Le magasin de sauvegardes ne contient pas ce dépôt pour l'équipe de ce jeton.",

@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at يسري فقط مع --store.",
       "storeRefusesMachine": "--store يقرأ مباشرة من مخزن النسخ الاحتياطية ولا يقبل -m <machine>.",
       "storeRefusesCheckpoint": "--store لا يقبل --checkpoint لأنه لا يلمس أي جهاز.",
+      "storeRefusesOption": "لا يقبل --store الخيار {{option}}: هذا الضبط خاص بالتنزيل عبر جهاز، أما الجلب من المخزن فيستأنف بنفسه ويتحقق من كل جزء.",
       "storeRefusesForks": "--store ينسخ مستودعًا واحدًا ولا يقبل --all ولا --include-forks.",
       "storeNeedsOneRef": "--store يتطلب اسم مستودع واحدًا بالضبط.",
       "storeLineageNotFound": "لا يوجد هذا المستودع في مخزن النسخ الاحتياطية لفريق هذا الرمز.",

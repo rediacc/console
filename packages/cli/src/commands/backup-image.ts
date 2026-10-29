@@ -440,6 +440,17 @@ function assertStoreSelection(refs: string[], options: DownloadCliOptions): void
     throw new ValidationError(t('errors.backupImage.storeRefusesForks'));
   }
   if (refs.length !== 1) throw new ValidationError(t('errors.backupImage.storeNeedsOneRef'));
+  // The machine download's transfer controls do not reach the store fetch;
+  // refusing them beats silently running unlimited or unverified-looking.
+  const ignored: [unknown, string][] = [
+    [options.bwlimit, '--bwlimit'],
+    [options.retries, '--retries'],
+    [options.skipVerify, '--skip-verify'],
+    [options.skipSpaceCheck, '--skip-space-check'],
+  ];
+  const given = ignored.find(([value]) => value !== undefined && value !== false);
+  if (given)
+    throw new ValidationError(t('errors.backupImage.storeRefusesOption', { option: given[1] }));
 }
 
 function realStoreFetchDeps(): StoreFetchDeps {

@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at은 --store와 함께 쓸 때만 적용됩니다.",
       "storeRefusesMachine": "--store는 백업 저장소를 직접 읽으므로 -m <machine>을 받지 않습니다.",
       "storeRefusesCheckpoint": "--store는 머신을 건드리지 않으므로 --checkpoint를 받지 않습니다.",
+      "storeRefusesOption": "--store는 {{option}}을(를) 받지 않습니다. 이 설정은 머신을 통한 다운로드용이며, 저장소에서 가져오기는 스스로 이어서 받고 모든 청크를 검증합니다.",
       "storeRefusesForks": "--store는 저장소 하나만 복사하며 --all과 --include-forks를 받지 않습니다.",
       "storeNeedsOneRef": "--store에는 저장소 이름이 정확히 하나 필요합니다.",
       "storeLineageNotFound": "백업 저장소에 이 토큰의 팀에 해당하는 저장소가 없습니다.",

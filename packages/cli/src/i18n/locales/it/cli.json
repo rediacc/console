@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at vale solo insieme a --store.",
       "storeRefusesMachine": "--store legge direttamente dall'archivio dei backup e non accetta -m <machine>.",
       "storeRefusesCheckpoint": "--store non accetta --checkpoint, perché non tocca alcuna macchina.",
+      "storeRefusesOption": "--store non accetta {{option}}: quel controllo riguarda il download tramite una macchina; il recupero dallo store riprende da solo e verifica ogni chunk.",
       "storeRefusesForks": "--store copia un solo repository e non accetta né --all né --include-forks.",
       "storeNeedsOneRef": "--store richiede esattamente un nome di repository.",
       "storeLineageNotFound": "L'archivio dei backup non contiene questo repository per il team di questo token.",

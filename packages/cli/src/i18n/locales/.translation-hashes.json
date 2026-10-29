@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2278,
-    "sourceCommit": "dfc2e286bb9650ba496af7f047bd050a9593ff75"
+    "keyCount": 2279,
+    "sourceCommit": "9cf170770f60a68bb5f3f073df046559a21812bf"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2013,6 +2013,7 @@
     "errors.backupImage.storeRefusesCheckpoint": "dd769edb",
     "errors.backupImage.storeRefusesForks": "94cce779",
     "errors.backupImage.storeRefusesMachine": "8b05a68a",
+    "errors.backupImage.storeRefusesOption": "0fa5216c",
     "errors.backupImage.storeResumeAt": "cb3b15bb",
     "errors.backupImage.storeRetentionExpired": "0aabfbea",
     "errors.backupImage.storeRole": "4c05288b",

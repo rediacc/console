@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at kehtib ainult koos --store'iga.",
       "storeRefusesMachine": "--store loeb otse varunduste hoidlast ega võta valikut -m <machine>.",
       "storeRefusesCheckpoint": "--store ei võta valikut --checkpoint, sest see ei puuduta ühtegi masinat.",
+      "storeRefusesOption": "--store ei võta valikut {{option}}: see juhib masina kaudu allalaadimist; hoidlast toomine jätkab ise ja kontrollib iga tükki.",
       "storeRefusesForks": "--store kopeerib ühe hoidla ega võta valikuid --all ega --include-forks.",
       "storeNeedsOneRef": "--store nõuab täpselt ühte hoidla nime.",
       "storeLineageNotFound": "Varunduste hoidlas pole selle tokeni meeskonnale sellist hoidlat.",

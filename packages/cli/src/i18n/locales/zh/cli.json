@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at 仅在配合 --store 时有效。",
       "storeRefusesMachine": "--store 直接读取备份存储，不接受 -m <machine>。",
       "storeRefusesCheckpoint": "--store 不接触任何机器，因此不接受 --checkpoint。",
+      "storeRefusesOption": "--store 不接受 {{option}}：该选项用于经由机器的下载；从存储获取会自行续传并校验每个数据块。",
       "storeRefusesForks": "--store 只复制一个仓库，不接受 --all 和 --include-forks。",
       "storeNeedsOneRef": "--store 需要且仅需要一个仓库名称。",
       "storeLineageNotFound": "备份存储中没有属于此令牌所在团队的该仓库。",

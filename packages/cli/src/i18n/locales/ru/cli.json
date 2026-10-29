@@ -2837,6 +2837,7 @@
       "atNeedsStore": "--at действует только вместе с --store.",
       "storeRefusesMachine": "--store читает прямо из хранилища резервных копий и не принимает -m <machine>.",
       "storeRefusesCheckpoint": "--store не принимает --checkpoint, так как не обращается к машине.",
+      "storeRefusesOption": "--store не принимает {{option}}: этот параметр относится к загрузке через машину, а получение из хранилища само продолжает работу и проверяет каждый чанк.",
       "storeRefusesForks": "--store копирует один репозиторий и не принимает ни --all, ни --include-forks.",
       "storeNeedsOneRef": "--store требует ровно одно имя репозитория.",
       "storeLineageNotFound": "В хранилище резервных копий нет такого репозитория для команды этого токена.",

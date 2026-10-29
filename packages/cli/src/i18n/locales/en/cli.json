@@ -2817,6 +2817,7 @@
       "atNeedsStore": "--at only applies with --store.",
       "storeRefusesMachine": "--store reads the backup store directly and takes no -m <machine>.",
       "storeRefusesCheckpoint": "--store takes no --checkpoint; it never touches a machine.",
+      "storeRefusesOption": "--store takes no {{option}}: that control belongs to the machine download; the store fetch has its own resume and verifies every chunk.",
       "storeRefusesForks": "--store copies one repository and takes neither --all nor --include-forks.",
       "storeNeedsOneRef": "--store needs exactly one repository name.",
       "storeLineageNotFound": "The backup store has no such repository for this token's team.",
