@@ -424,7 +424,9 @@ def test_cache_to_refuses_the_retired_dev_alias_and_writes_nothing(tmp_path) -> 
         env=env_for(root),
     )
     assert code == 0, err
-    assert target.read_text(encoding="utf-8") == "ACCOUNT_ED25519_PUBLIC_KEY=pub-prod\n"
+    assert target.read_text(encoding="utf-8") == (
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "ACCOUNT_ED25519_PUBLIC_KEY=pub-prod\n"
+    )
     assert stat.S_IMODE(target.stat().st_mode) == 0o644
 
 

@@ -528,3 +528,20 @@ def test_tail_of_replaces_email_addresses() -> None:
     tail = LT.tail_of(log)
     assert not any("@" in ln for ln in tail)
     assert '  "author_email": "<email>",' in tail
+    # Review 6a8bfccb.2: the package-spec case the comment names is redacted too.
+    assert "pinned <email> here" in LT.tail_of("pinned some-tool@0.39.0 here\n")
+    # Review 6a8bfccb.1: a sentence-ending period is not part of the host.
+    assert LT.tail_of("signed by ci@localhost.\n") == ["signed by <email>."]
+    assert LT.tail_of("mail ops@mail.example.com, then\n") == ["mail <email>, then"]
+
+
+@pytest.mark.parametrize("bad", [["cli", ["nested"]], [{"k": "v"}], [None], [1]])
+def test_a_row_whose_surfaces_hold_a_non_string_is_reported_not_raised(bad) -> None:
+    """Review b8f513f4.1: a nested list or object in `surfaces` is an INVALID row with a named problem, never a TypeError out of `validate_row`."""
+    row = _cli_row()
+    row["surfaces"] = bad
+    _reid(row)
+    problems = LT.validate_row(row)
+    assert any("surfaces is not a non-empty list of known surfaces" in p for p in problems), (
+        problems
+    )

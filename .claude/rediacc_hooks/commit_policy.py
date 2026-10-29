@@ -674,7 +674,7 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
     lexer = shellscan._Lexer(cmd)
     out: list[Segment] = []
 
-    # A COMMAND SUBSTITUTION RUNS ITS COMMANDS TOO (#736c233b): `R=$(timeout 5 git commit -m ...)` commits, and `shellscan._Walker.parts` walks it the same way. Its tokens came from this same lexer, so their offsets index `lexer.src` and the segment's span and heredocs stay right.
+    # A COMMAND SUBSTITUTION RUNS ITS COMMANDS TOO (#736c233b): `R=$(timeout 5 git commit -m ...)` commits, and `shellscan._Walker.parts` walks it the same way. `part.sub` is not a substring: it is the TOKEN list this same lexer built for the body (`shellscan._Lexer._sub` for `$(...)`, `_nested` for backticks, both over `self.src`), and `_parse` only arranges tokens, so their offsets index `lexer.src` and the segment's span and heredocs stay right (review 63863ef6.2).
     def walk_parts(parts):
         for part in parts:
             if part.sub is not None:

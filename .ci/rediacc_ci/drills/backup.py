@@ -786,7 +786,7 @@ class Backup:
             "presigned-s3",
             "the server reports a configured data plane (presigned S3 over the local store)",
         )
-        # dataPlaneUrl is where CHUNK BYTES go and is NOT an API root; renet says so at session.go:43-47 after mistaking it for one cost a 100% mint failure.
+        # dataPlaneUrl is where CHUNK BYTES go and is NOT an API root; renet says so at session.go's `DataPlaneURL` comment after mistaking it for one cost a 100% mint failure.
         self.aj(
             "dataPlaneUrl",
             self.store_url(),
@@ -894,7 +894,7 @@ class Backup:
                 "declaredBytes": declared,
                 "hashes": missing,
                 "manifestBytes": len(manifest.encode()),
-                "chunkBytes": {h: CELL_BYTES for h in missing},
+                "chunkBytes": dict.fromkeys(missing, CELL_BYTES),
             },
         )
         self.grant = _as_dict(grant_text)
@@ -1015,7 +1015,7 @@ class Backup:
                 "declaredBytes": declared,
                 "hashes": missing,
                 "manifestBytes": len(manifest.encode()),
-                "chunkBytes": {h: CELL_BYTES for h in missing},
+                "chunkBytes": dict.fromkeys(missing, CELL_BYTES),
             },
         )
         self.grant = _as_dict(grant_text)
@@ -1387,32 +1387,32 @@ class Backup:
         lineage = self.lineage
         header = {"X-Backup-Session": self.session_token}
 
-        # 1. The API root: the client derives it as the mint URL minus its /session suffix (session.go:134).
+        # 1. The API root: the client derives it as the mint URL minus its /session suffix (session.go `MintSession`, the `apiBase` TrimSuffix).
         derived = self.session_mint_url.removesuffix("/session")
-        d.last_cmd = "derive the API root the way session.go:134 does"
+        d.last_cmd = "derive the API root the way session.go's `MintSession` does"
         d.assert_equal(
             self.backup_api(),
             derived,
-            "the mint URL minus /session IS the control-plane root (session.go:134)",
+            "the mint URL minus /session IS the control-plane root (session.go `MintSession`, the `apiBase` TrimSuffix)",
         )
 
-        # 2. exists: path, header and body, exactly as ExistsBatch sends them (session.go:256-261). The header is X-Backup-Session, never a bearer.
+        # 2. exists: path, header and body, exactly as ExistsBatch sends them (session.go `ExistsBatch`). The header is X-Backup-Session, never a bearer.
         exists = self.api(
             "POST",
             "%s/exists" % self.backup_api(),
             {"lineageGuid": lineage, "hashes": ["a" * 64]},
             header,
         )
-        self.capture("POST /exists as ExistsBatch sends it (session.go:256-261)", exists)
+        self.capture("POST /exists as ExistsBatch sends it (session.go `ExistsBatch`)", exists)
         d.assert_equal("200", self.status, "renet's exists call is accepted verbatim")
-        # The client computes the MISSING set as the complement of `existing` (session.go:266-289): a missing key would be a silent zero-chunk backup.
+        # The client computes the MISSING set as the complement of `existing` (session.go `ExistsBatch`): a missing key would be a silent zero-chunk backup.
         self.av(
             isinstance(self.field("existing"), list),
             True,
             "the answer carries an 'existing' array (a missing key = a silent zero-chunk backup)",
         )
 
-        # 3. grants: the body MintGrant sends (session.go:293-299).
+        # 3. grants: the body MintGrant sends (session.go `MintGrant`). It carries `manifestBytes` whenever DeclareObjectBytes ran, which every backup does before its first grant, and the account refuses a grant without it (review f710ed4e.1); cited by function, since line ranges drift.
         grant = self.api(
             "POST",
             "%s/grants" % self.backup_api(),
@@ -1425,12 +1425,12 @@ class Backup:
             },
             header,
         )
-        self.capture("POST /grants as MintGrant sends it (session.go:293-299)", grant)
+        self.capture("POST /grants as MintGrant sends it (session.go `MintGrant`)", grant)
         d.assert_equal("200", self.status, "renet's grant body satisfies the route's schema")
         self.at("grant.kind", "string", "the response nests the grant under 'grant', with a kind")
         self.at("leaseId", "string", "and carries the leaseId the client stamps")
 
-        # 4. commit: the FIELD SET CommitManifest sends (session.go:341-352).
+        # 4. commit: the FIELD SET CommitManifest sends (session.go `CommitManifest`).
         commit = self.api(
             "POST",
             "%s/commit" % self.backup_api(),
@@ -1445,7 +1445,9 @@ class Backup:
             },
             header,
         )
-        self.capture("POST /commit as CommitManifest sends it (session.go:341-352)", commit)
+        self.capture(
+            "POST /commit as CommitManifest sends it (session.go `CommitManifest`)", commit
+        )
         d.assert_equal("200", self.status, "renet's commit field set is accepted")
         self.aj(
             "idempotent",
@@ -1453,14 +1455,16 @@ class Backup:
             "and replaying leg c's snapshot is idempotent, so this probe bills nothing",
         )
 
-        # 5. streams: GetOrCreateStream's body (session.go:148-151).
+        # 5. streams: GetOrCreateStream's body (session.go `GetOrCreateStream`).
         stream = self.api(
             "POST",
             "%s/streams" % self.backup_api(),
             {"repositoryGuid": lineage, "lineageGuid": lineage},
             header,
         )
-        self.capture("POST /streams as GetOrCreateStream sends it (session.go:148-151)", stream)
+        self.capture(
+            "POST /streams as GetOrCreateStream sends it (session.go `GetOrCreateStream`)", stream
+        )
         d.assert_equal("200", self.status, "renet's stream call is accepted")
         self.aj(
             "streamId",
@@ -1607,7 +1611,7 @@ class Backup:
                 "declaredBytes": declared,
                 "hashes": missing,
                 "manifestBytes": len(manifest.encode()),
-                "chunkBytes": {h: CELL_BYTES for h in missing},
+                "chunkBytes": dict.fromkeys(missing, CELL_BYTES),
             },
         )
         self.grant = _as_dict(grant_text)

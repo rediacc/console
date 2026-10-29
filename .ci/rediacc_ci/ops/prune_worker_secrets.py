@@ -156,12 +156,30 @@ def bench_worker(root: pathlib.Path | None = None) -> str:
     return name
 
 
+def _regions(base: pathlib.Path, *fields: str) -> list[dict[str, str]]:
+    """`regions.json`'s regions, each proved to carry `fields` as non-empty strings. A malformed file is a named ValueError, which `run` turns into exit 2 and its "failing closed, no verdict" line, never a bare KeyError traceback (review d1b6575d.1)."""
+    rel = REGIONS_REL
+    doc = json.loads(base.joinpath(REGIONS_REL).read_text(encoding="utf-8"))
+    found = doc.get("regions") if isinstance(doc, dict) else None
+    regions = found if isinstance(found, list) else None
+    if regions is None:
+        raise ValueError("%s has no `regions` list" % rel)
+    for at, region in enumerate(regions):
+        missing = [
+            f
+            for f in fields
+            if not (isinstance(region, dict) and isinstance(region.get(f), str) and region.get(f))
+        ]
+        if missing:
+            raise ValueError("%s regions[%d] lacks %s" % (rel, at, ", ".join(missing)))
+    return regions
+
+
 def load_workers(root: pathlib.Path | None = None, *, bench: bool = False) -> list[Row]:
     """Every (region, channel, worker) of `regions.json`, plus the bench Worker when `bench`."""
     base = paths.repo_root() if root is None else root
-    doc = json.loads(base.joinpath(REGIONS_REL).read_text(encoding="utf-8"))
     rows: list[Row] = []
-    for region in doc["regions"]:
+    for region in _regions(base, "id", "workerName", "edgeWorkerName"):
         rows.append(Row(region["id"], "stable", region["workerName"]))
         rows.append(Row(region["id"], "edge", region["edgeWorkerName"]))
     if bench:
@@ -170,7 +188,7 @@ def load_workers(root: pathlib.Path | None = None, *, bench: bool = False) -> li
 
 
 def extras(live: list[dict[str, object]], expected: list[str]) -> list[str]:
-    """Live secret names (type secret_text) the deploy does not push, sorted."""
+    """Live secret names (type secret_text) that are neither pushed by the deploy nor CD-owned (`CD_OWNED`, set by CD itself, such as EXECUTOR_MODE), and are not archives, sorted (review 9ebf8891.1)."""
     keep = set(expected) | CD_OWNED
     return sorted(
         str(item.get("name"))
@@ -292,8 +310,7 @@ def delete_extras(
 def region_suffixes(root: pathlib.Path | None = None) -> dict[str, str]:
     """Region id -> the `secretSuffix` that selects its fan-in keys in the store."""
     base = paths.repo_root() if root is None else root
-    doc = json.loads(base.joinpath(REGIONS_REL).read_text(encoding="utf-8"))
-    return {region["id"]: region["secretSuffix"] for region in doc["regions"]}
+    return {r["id"]: r["secretSuffix"] for r in _regions(base, "id", "secretSuffix")}
 
 
 def bws_key(name: str, suffix: str, region: str = "") -> str | None:
@@ -468,6 +485,8 @@ def run(
         except bws_env.RefusalError as exc:
             msg = "%s: the bws store could not be read; nothing archived" % SELF
             return 2, [*lines, msg, *exc.lines], rows
+        except (OSError, ValueError) as exc:
+            return 2, [*lines, "%s: %s; failing closed, nothing archived" % (SELF, exc)], rows
         tail = "dry run: nothing written" if opts.dry_run else "archive run finished"
         summary = "%s; %d extra(s) remain" % (tail, left) if left else "%s; none remain" % tail
         return (1 if left else 0), [*lines, *done, summary], rows

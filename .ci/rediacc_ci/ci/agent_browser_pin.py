@@ -3,7 +3,7 @@
 
 `.github/workflows/ci-quality.yml` runs this in two steps of the quality-static job: "Install agent-browser" calls `read` to learn the version to install, and "Verify agent-browser is functional" calls `verify` to compare `agent-browser --version` with the same ARG line. The pin lives in `.devcontainer/Dockerfile` as `ARG AGENT_BROWSER_VERSION=<version>`, the site the pins registry bumps.
 
-Both verbs fail loudly. A missing ARG line, an empty value, a failing `agent-browser --version` and a mismatch each exit 1 with a message on stderr. Two empty values never compare equal: empty is a refusal, not a match.
+Both verbs fail loudly. A missing ARG line, an empty value, a value that is not an exact version, a failing `agent-browser --version` and a mismatch each exit 1 with a message on stderr. Two empty values never compare equal: empty is a refusal, not a match.
 
 Environment: none. Everything arrives through flags.
 
@@ -31,6 +31,8 @@ ARG_NAME = "AGENT_BROWSER_VERSION"
 
 _ARG_LINE = re.compile(r"^ARG " + ARG_NAME + r"=(.*)$")
 _QUOTES = "\"'"
+# An exact semver: MAJOR.MINOR.PATCH with an optional pre-release and build part. `latest`, `^0.39.0` or `0.39` would reach `npm install agent-browser@<value>` as a range or a tag, so `read` refuses them before any install, as the old `sed` (which needed a leading digit) did (review a98e87fb.1).
+_EXACT_VERSION = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
 
 
 class PinError(Exception):
@@ -49,6 +51,11 @@ def parse_pin(text: str, source: str = DEFAULT_DOCKERFILE) -> str:
         value = match.group(1).strip().strip(_QUOTES).strip()
         if not value:
             raise PinError("ARG %s= in %s has an empty value" % (ARG_NAME, source))
+        if not _EXACT_VERSION.match(value):
+            raise PinError(
+                "ARG %s=%s in %s is not an exact version (MAJOR.MINOR.PATCH); a tag or range would install whatever npm resolves"
+                % (ARG_NAME, value, source)
+            )
         return value
     raise PinError("no `ARG %s=` line found in %s" % (ARG_NAME, source))
 

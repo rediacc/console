@@ -356,6 +356,13 @@ CASES = [
     ("a bare assignment prefix", "X=1 %s -F %s -- p" % (COMMIT, BODY_FILE_PATH), True),
     ("nice -n 5 before the commit", 'nice -n 5 %s -m "Did %s run it?" -- p' % (COMMIT, Y), True),
     ("nohup before the commit", 'nohup %s -m "Did %s run it?" -- p' % (COMMIT, Y), True),
+    # Review 63863ef6.3: `sudo`, the launcher the commit message named, before a commit and before a gh pr create.
+    ("sudo before the commit", 'sudo %s -m "Did %s run it?" -- p' % (COMMIT, Y), True),
+    (
+        "sudo -u root before a gh pr create",
+        'sudo -u root gh pr create --title "fix: x" --body "Did %s run it?"' % Y,
+        True,
+    ),
     (
         "a launcher inside a command substitution",
         'R=$(timeout 5 %s -m "Did %s run it?" -- p)' % (COMMIT, Y),

@@ -115,6 +115,7 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
     """(normalised globs, problems). Refusal rules first, then brace expansion (at most BRACE_MAX per glob), then `dir/` and a wildcard-free existing directory become `dir/**` (the latter only when `root` is given). A leading `./` and doubled slashes are dropped."""
     out: list[str] = []
     problems: list[str] = []
+    submodules: frozenset[str] | None = None  # read once per call, on the first glob that needs it
     for raw in globs or ():
         glob = str(raw).strip()
         why = glob_problem(glob)
@@ -132,13 +133,11 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
                 g = g[2:]
             if g.endswith("/"):
                 g = g.rstrip("/") + "/**"
-            elif (
-                root is not None
-                and not _has_wild(g)
-                and (pathlib.Path(root) / g).is_dir()
-                and g not in _submodule_roots(root)
-            ):
-                g += "/**"
+            elif root is not None and not _has_wild(g) and (pathlib.Path(root) / g).is_dir():
+                if submodules is None:
+                    submodules = _submodule_roots(root)
+                if g not in submodules:
+                    g += "/**"
             why = glob_problem(g)
             if why:
                 problems.append(why)
@@ -149,7 +148,7 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
 
 
 def _submodule_roots(root) -> frozenset[str]:
-    """The submodule paths `.gitmodules` declares. A bare submodule root in an Owns line names its gitlink (the pointer bump), not every file of the submodule: `private/renet (the gitlink bump only)` widened to `private/renet/**` made a plan claim all of renet and refused every renet writer beside it."""
+    """The submodule paths `.gitmodules` declares. A bare submodule root in an Owns line names its gitlink (the pointer bump), not every file of the submodule: `private/renet (the gitlink bump only)` widened to `private/renet/**` made a plan claim all of renet and refused every renet writer beside it. A plan that edits files inside the submodule writes `private/renet/` or `private/renet/**`, which still widen (test-plandeps.py pins both overlaps)."""
     try:
         text = (pathlib.Path(root) / ".gitmodules").read_text(encoding="utf-8")
     except OSError:

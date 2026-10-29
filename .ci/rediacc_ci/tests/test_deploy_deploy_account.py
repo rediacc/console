@@ -185,7 +185,10 @@ def _run_live(
     side = "old" if subject.suffix == ".sh" else "new"
     assets = root / "workers" / "account" / "dist" / "account" / "assets"
     planted = side == "new" and (root / "workers" / "account").is_dir() and not assets.exists()
+    # The topmost directory the planting creates, and only that, is removed after the run: a `dist` the fixture already held keeps its content (review a43d7f08.2).
+    created = None
     if planted:
+        created = next(d for d in (assets.parent.parent, assets.parent, assets) if not d.exists())
         # A built portal that carries the sitekey, as a correct build leaves it. Only the live port reads it, and it is removed after the run, so the tree the golden key hashes stays the same.
         assets.mkdir(parents=True)
         (assets / "index-fixture.js").write_text(
@@ -220,8 +223,8 @@ def _run_live(
         timeout=120,
         input="",
     )
-    if planted:
-        shutil.rmtree(root / "workers" / "account" / "dist")
+    if created is not None:
+        shutil.rmtree(created)
     return proc, call_log.read_text(encoding="utf-8")
 
 
@@ -618,7 +621,6 @@ def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: str):
         root,
         ("--region", "eu", "--target", "edge"),
         with_wrangler=True,
-        drop_env=(),
         **extra,
     )
 
@@ -734,6 +736,10 @@ def test_a_portal_without_the_sitekey_refuses_before_any_write(tmp_path: pathlib
 def test_an_unbound_or_malformed_sitekey_refuses(tmp_path: pathlib.Path) -> None:
     worker = tmp_path / "w"
     assert "not bound" in (port.portal_sitekey_refusal(worker, {}) or "")
+    # Review a43d7f08.1: the build-time name alone does not bind the deploy check.
+    assert "not bound" in (
+        port.portal_sitekey_refusal(worker, {"VITE_TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) or ""
+    )
     assert "does not look like" in (
         port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": "abc"}) or ""
     )
@@ -799,7 +805,9 @@ def test_the_smoke_refuses_the_2026_10_28_keyless_portal_on_an_enforcing_worker(
     assert "BROKEN" in refusal
     assert EU_HOST in refusal
     # The rebuild command and the rollback are both named.
-    assert 'VITE_TURNSTILE_SITE_KEY=\\"$TURNSTILE_SITE_KEY\\"' in refusal
+    # Inside the single-quoted `sh -c` script the quotes are plain, so the inner shell binds the bare key (review 760ca2d1.1).
+    assert '\'(cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" ' in refusal
+    assert '\\"' not in refusal
     assert "deploy_account --region eu" in refusal
     assert "wrangler rollback" in refusal
     assert "wrangler.eu.toml" in refusal
@@ -905,3 +913,14 @@ def test_main_fails_a_deploy_whose_served_portal_is_broken(
     assert order == ["migrate", "deploy", "smoke"]
     monkeypatch.setattr(port, "portal_smoke", lambda *_a: None)
     assert port.main(["--region", "eu"]) == 0
+
+
+def test_the_live_run_removes_only_what_it_planted(tmp_path: pathlib.Path) -> None:
+    """Review a43d7f08.2: a fixture `dist` that already holds other content keeps it after the live run plants and removes the portal assets."""
+    root = _fixture_root(tmp_path)
+    keep = root / "workers" / "account" / "dist" / "other.txt"
+    keep.parent.mkdir(parents=True, exist_ok=True)
+    keep.write_text("keep", encoding="utf-8")
+    _run(PORT, tmp_path, root, ("--region", "eu", "--target", "edge"))
+    assert keep.read_text(encoding="utf-8") == "keep"
+    assert not (root / "workers" / "account" / "dist" / "account").exists()

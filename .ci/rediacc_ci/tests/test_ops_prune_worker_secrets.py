@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import re
 import shlex
 
@@ -163,3 +164,43 @@ def test_an_unknown_region_suffix_is_a_named_refusal() -> None:
     assert verb.region_suffix({}, verb.BENCH) == ""
     with pytest.raises(ValueError, match="no secret suffix is known for region 'mars'"):
         verb.region_suffix({"eu": "EU"}, "mars")
+
+
+@pytest.mark.parametrize(
+    "doc",
+    [
+        {"regions": [{"id": "eu", "workerName": "w"}]},
+        {"regions": [{"id": "eu", "edgeWorkerName": "e"}]},
+        {"regions": "eu"},
+        {},
+        [],
+    ],
+    ids=["no-edge-worker", "no-worker", "regions-not-a-list", "no-regions", "not-an-object"],
+)
+def test_run_on_a_malformed_regions_file_fails_closed(tmp_path, doc) -> None:
+    """Review d1b6575d.1/.2: a regions.json missing a field `run` reads is exit 2 with the "failing closed, no verdict" line, through `run` itself, never a KeyError traceback. Nothing is fetched."""
+    (tmp_path / verb.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+
+    def fetch(*_a: object, **_k: object) -> object:
+        raise AssertionError("nothing may be fetched without a verdict on the Workers")
+
+    code, lines, rows = verb.run([], ENV, fetch, root=tmp_path)
+    assert code == 2, lines
+    assert any("failing closed, no verdict" in line for line in lines), lines
+    assert rows == []
+
+
+def test_archive_with_a_regions_file_lacking_a_suffix_fails_closed(tmp_path) -> None:
+    """The archive path reads `secretSuffix` after the survey; a region without one is exit 2, nothing archived."""
+    doc = {"regions": [{"id": "eu", "workerName": "w", "edgeWorkerName": "e"}]}
+    (tmp_path / verb.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    live = [{"name": "STALE_ONE", "type": "secret_text"}]
+    code, lines, _rows = verb.run(
+        ["--region", "eu", "--archive"],
+        ENV,
+        lambda *_a, **_k: live,
+        root=tmp_path,
+        values=lambda _k: {},
+    )
+    assert code == 2, lines
+    assert any("lacks secretSuffix" in line and "nothing archived" in line for line in lines), lines

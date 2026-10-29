@@ -146,8 +146,8 @@ def _norm(text: str) -> str:
     text = re.sub(r"   curl [^\n]*\n", "   <TOOLS>\n", text)
     # `--seed-repo` is a port-only flag (Rule T 7), so the usage line the bash twin prints lacks it.
     text = text.replace(" [--seed-repo]", "")
-    # Legs n and o are port-only (added in 581206c7b after the bash twin retired into a golden), so every leg list the bash prints lacks them.
-    text = text.replace(",n,o", "").replace(", n, o", "")
+    # Legs n and o are port-only: the bash twin retired into a golden before they existed, so every leg list it prints ends at m. The port's list is the bash's plus `n` and `o` as whole tokens at the END of a list (`DEFAULT_LEGS`, `KNOWN_LEGS`); anchored to that, so a list that loses n or o, or a longer token that merely starts with `n`, still differs. When the bash list changes, the golden is re-recorded and this line goes with the port-only legs (review dfc10e27.1-.3).
+    text = re.sub(r"(?<=\bm)(,|, )n\1o(?![\w,])", "", text)
     return re.sub(r"   python [^\n]*\n", "   <TOOLS>\n", text)
 
 
@@ -1536,3 +1536,18 @@ def test_a_config_file_or_token_is_found_and_named(tmp_path: pathlib.Path) -> No
 def test_no_config_home_at_all_is_no_config(tmp_path: pathlib.Path) -> None:
     code, _ = _no_config(tmp_path, lambda _h: None)
     assert code == 0
+
+
+def test_the_port_only_legs_strip_is_anchored() -> None:
+    """Review dfc10e27.1/.2: the normalisation removes `n` and `o` only as the last two whole tokens after `m`, in both separators; it leaves a longer token and a list in another order alone."""
+    assert _norm("legs a,b,m,n,o\n") == "legs a,b,m\n"
+    assert _norm("Known legs: a, m, n, o\n") == "Known legs: a, m\n"
+    assert _norm("a,m,n,option\n") == "a,m,n,option\n"
+    assert _norm("n, o, a\n") == "n, o, a\n"
+    assert _norm("a,m,n\n") == "a,m,n\n"
+
+
+def test_the_port_still_lists_legs_n_and_o() -> None:
+    """Review dfc10e27.1: the differential strips n and o from the port's lists, so this pins that the port really prints them."""
+    assert backup.DEFAULT_LEGS.endswith(",m,n,o")
+    assert backup.KNOWN_LEGS[-3:] == ["m", "n", "o"]

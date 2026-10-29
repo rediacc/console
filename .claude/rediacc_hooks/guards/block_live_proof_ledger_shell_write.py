@@ -44,9 +44,9 @@ WRITE_CODE = re.compile(
     r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|\.open\(\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|O_WRONLY|O_RDWR|O_APPEND|O_CREAT|O_TRUNC"
     r"|write_text|write_bytes|append_lines|os\.replace|os\.rename|shutil\.(copy|move)|unlink|writeFileSync|appendFileSync|>>"
 )
-# A Python call whose name says it writes; one whose argument holds the ledger is a write to it.
+# A Python call whose name says it writes; one whose argument holds the ledger is a write to it. `dumps` (`json.dumps`, `pickle.dumps`) returns text and writes nothing, so it is not one (review 22b7a40c.3).
 _WRITE_CALL = re.compile(
-    r"(?i)(write|append|dump|save|copy|move|replace|rename|unlink|remove|truncate)"
+    r"(?i)(write|append|dump(?!s)|save|copy|move|replace|rename|unlink|remove|truncate)"
 )
 _PATH_KEYWORDS = frozenset(("path", "file", "dst", "dest", "target", "filename"))
 _TWO_PATH_CALLS = frozenset(
@@ -180,13 +180,62 @@ def _string_edit(call):
     )
 
 
-def _holds_ledger(expr, names):
-    """Whether a Python expression carries the ledger: a string naming it (or its file name), a name bound to one, a `ledger_path(...)` call, or the `LEDGER` constant. Searched text (`_flow`) is not carried."""
+_FOLD_DEPTH = 32
+
+
+def _fold(node, consts, depth=0):
+    """The string a Python expression evaluates to when it is built only from string constants, `+`, an f-string of those, and names bound once to such an expression (`consts`); None otherwise. `'agent/ledgers/live-proof' + '.jsonl'` names the ledger as surely as the one literal does (review 22b7a40c.2)."""
+    if depth > _FOLD_DEPTH:
+        return None
+    if isinstance(node, ast.Constant):
+        return node.value if isinstance(node.value, str) else None
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _fold(node.left, consts, depth + 1)
+        right = _fold(node.right, consts, depth + 1) if left is not None else None
+        return None if right is None else left + right
+    if isinstance(node, ast.JoinedStr):
+        out = []
+        for v in node.values:
+            inner = v.value if isinstance(v, ast.FormattedValue) else v
+            if isinstance(v, ast.FormattedValue) and (
+                v.format_spec or v.conversion not in (-1, 115)
+            ):
+                return None
+            piece = _fold(inner, consts, depth + 1)
+            if piece is None:
+                return None
+            out.append(piece)
+        return "".join(out)
+    if isinstance(node, ast.Name):
+        return consts.get(node.id)
+    return None
+
+
+def _string_constants(bound):
+    """`{name: text}` for each name bound exactly once, to an expression `_fold` reduces to a string."""
+    consts: dict = {}
+    changed = True
+    while changed:
+        changed = False
+        for name, values in bound.items():
+            if name in consts or len(values) != 1:
+                continue
+            text = _fold(values[0], consts)
+            if text is not None:
+                consts[name] = text
+                changed = True
+    return consts
+
+
+def _names_ledger(text):
+    return isinstance(text, str) and text.rstrip("/").endswith(LEDGER_NAME)
+
+
+def _holds_ledger(expr, names, consts=None):
+    """Whether a Python expression carries the ledger: a string naming it (or its file name), constant or folded from constant pieces (`_fold`), a name bound to one, a `ledger_path(...)` call, or the `LEDGER` constant. Searched text (`_flow`) is not carried."""
     for n in _flow(expr):
-        constant = (
-            isinstance(n, ast.Constant)
-            and isinstance(n.value, str)
-            and n.value.rstrip("/").endswith(LEDGER_NAME)
+        constant = (isinstance(n, ast.Constant) and _names_ledger(n.value)) or (
+            isinstance(n, (ast.BinOp, ast.JoinedStr)) and _names_ledger(_fold(n, consts or {}))
         )
         name = isinstance(n, ast.Name) and (n.id in names or n.id == "LEDGER")
         attribute = isinstance(n, ast.Attribute) and n.attr in ("LEDGER", "ledger_path")
@@ -210,16 +259,17 @@ def _python_writes_ledger(program):
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         return None
     bound = shellscan.python_bindings(tree)
-    names: set = set()
+    consts = _string_constants(bound)
+    names: set = {n for n, text in consts.items() if _names_ledger(text)}
     changed = True
     while changed:
         changed = False
         for name, values in bound.items():
-            if name not in names and any(_holds_ledger(v, names) for v in values):
+            if name not in names and any(_holds_ledger(v, names, consts) for v in values):
                 names.add(name)
                 changed = True
     imports = shellscan.python_imports(tree)
-    if any(_holds_ledger(t, names) for t in shellscan.python_write_targets(tree, imports)):
+    if any(_holds_ledger(t, names, consts) for t in shellscan.python_write_targets(tree, imports)):
         return True
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not _WRITE_CALL.search(_call_name(node.func)):
@@ -242,7 +292,7 @@ def _python_writes_ledger(program):
             # A two-path call takes its DESTINATION second (`os.replace(src, dst)`, `shutil.copy(src, dst)`), and `shellscan.python_write_targets` reads that only on a module spelled `os` or `shutil`, so an aliased `import os as o; o.replace(forged, <ledger>)` reached nothing (found with #4e20f8c5).
             if _call_name(func) in _TWO_PATH_CALLS:
                 parts.extend(node.args[1:2])
-        if any(_holds_ledger(p, names) for p in parts):
+        if any(_holds_ledger(p, names, consts) for p in parts):
             return True
     return False
 
@@ -285,9 +335,15 @@ def _code_writes_ledger(code, program):
         )
     if drives:
         return "code that drives the recorder in-process with its write on"
-    if LEDGER_NAME not in code and "ledger_path" not in code and "LEDGER" not in code:
-        return ""
+    # A Python program is judged by its tree whatever its text says, so a name built by concatenation (`'live-proof' + '.jsonl'`) is read (review 22b7a40c.2); the text precheck stays for code no tree reads.
     verdict = _python_writes_ledger(program) if program is not None else None
+    if (
+        verdict is None
+        and LEDGER_NAME not in code
+        and "ledger_path" not in code
+        and "LEDGER" not in code
+    ):
+        return ""
     if verdict is None:
         verdict = any(
             (LEDGER_NAME in line or "ledger_path" in line) and WRITE_CODE.search(line)
@@ -316,6 +372,7 @@ def _offending(cmd, cwd):
             what = _operand_write(run, name, words, base)
             if what:
                 return what
+            # `copy_landings` answers absolute paths already joined to the run's own `cd`, so "/" resolves each on disk as it stands (`cd agent/ledgers && cp f live-proof.jsonl` is pinned by the tests, review 22b7a40c.1).
             if any(
                 _is_ledger(p, "/") for p, _into in shellscan.copy_landings(run, cwd, argv=words)
             ):

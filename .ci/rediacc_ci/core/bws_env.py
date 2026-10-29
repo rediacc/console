@@ -208,6 +208,15 @@ IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 # All three are PUBLIC keys: they are baked into built artefacts already (`.ci/docker/web/entrypoint.sh` bakes UPSTREAM_PUBLIC_KEY, `private/renet/build.sh` bakes the ed25519 one), so writing them to a 0644 file adds no exposure that shipping the binary did not.
 #
 # The reason the cache exists at all is `agent/plans/PLAN-env-to-bitwarden-v2.md` 0.4: four build-time readers need these offline, and "a build that needs the network to read a PUBLIC key is a regression". A cache with one writer and a named refresh command is not a second source of truth; a second file that also claims to be authoritative is.
+# THE CACHE NAMES ITS OWN GENERATION (review 824f3bd7.2). Before agent/plans/PLAN-production-key-only.md the pair table aliased `ACCOUNT_ED25519_PUBLIC_KEY` to the retired `_DEV` store entry, so a cache an older setup wrote holds the retired DEV key under the production name, and nothing in the `KEY=value` lines tells the two apart. Every writer now puts this header first, and a reader treats a cache without it as stale: it reads Bitwarden instead (rewriting the cache), or refuses naming `./run.sh setup`, rather than baking the retired key.
+PUBLIC_KEY_CACHE_HEADER = "# rediacc public-key cache v2: production store entries only (agent/plans/PLAN-production-key-only.md)\n"
+
+
+def public_key_cache_current(text: str) -> bool:
+    """Whether a public-key cache's text was written by a v2 writer (`PUBLIC_KEY_CACHE_HEADER` as its first line)."""
+    return text.replace("\r\n", "\n").startswith(PUBLIC_KEY_CACHE_HEADER)
+
+
 CACHEABLE = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
@@ -729,7 +738,7 @@ def load(
 
     `resolved` maps NAME to value for every name that came back non-empty. The caller decides what to do with it; nothing here writes it anywhere, prints it, or puts it in `os.environ`.
 
-    `rc` is the twin's return code: 1 if anything was absent or empty, else 0. The four preconditions raise `RefusalError` instead of returning, because they are a different kind of answer -- the twin cannot say "0 exported" for them, it stops before the fetch.
+    `rc` is the twin's return code: 1 if anything was absent or empty, else 0. The five preconditions (a parked spec, then the twin's four: the token, the binary, the map file, and a readable listing) raise `RefusalError` instead of returning, because they are a different kind of answer -- the twin cannot say "0 exported" for them, it stops before the fetch (review d3b47b36.2).
     """
     err = sys.stderr if stderr is None else stderr
     # Checked before the token, the binary and the store: a parked spec is refused whatever else is wrong, and its value never leaves Bitwarden.
@@ -956,7 +965,9 @@ def _cache_verb(target: str, names: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    body = "".join("%s=%s\n" % (local, resolved[local]) for _n, local in parse_specs(names))
+    body = PUBLIC_KEY_CACHE_HEADER + "".join(
+        "%s=%s\n" % (local, resolved[local]) for _n, local in parse_specs(names)
+    )
     with open(target, "w", encoding="utf-8") as handle:
         handle.write(body)
     # 0644 BY EXPLICIT chmod, not by umask. These are public keys and four build steps must read them under whatever user the build runs as; inheriting a 0600 umask would make the cache work for its writer and fail for its readers, which is the hardest kind of environment bug to see.
@@ -1429,6 +1440,11 @@ def park_preflight(names: list[str], rows: list[dict]) -> list[str]:
                 "%s already exists in the store; %s is already parked or collides"
                 % (PARKED_PREFIX + name, name)
             )
+        elif not isinstance(next(r for r in rows if r.get("key") == name).get("value"), str):
+            # The rename rewrites the value with what the listing carried; a row without one would be parked EMPTY, and the read-back, defaulting both sides to "", would still say MATCH (review d3b47b36.1).
+            problems.append(
+                "%s carries no value in the listing, so parking it would blank it" % name
+            )
     dupes = sorted({n for n in names if names.count(n) > 1})
     if dupes:
         problems.append("named more than once: %s" % " ".join(dupes))
@@ -1440,7 +1456,7 @@ def park_verdicts(
 ) -> list[tuple[str, str]]:
     """(NAME, MATCH|MISMATCH) per parked name, read back from a fresh listing. Pure.
 
-    MATCH needs all three: the entry with NAME's old id now carries `__NAME`, its value equals the value held before the write, and no entry is still called NAME.
+    MATCH needs all three: the entry with NAME's old id now carries `__NAME`, its value equals the value held before the write (which must have been a string; a listing that carried none proves nothing), and no entry is still called NAME.
     """
     by_id = {r.get("id"): r for r in rows}
     keys = {r.get("key") for r in rows}
@@ -1450,7 +1466,8 @@ def park_verdicts(
         now = by_id.get(old.get("id")) or {}
         ok = (
             now.get("key") == PARKED_PREFIX + name
-            and (now.get("value") or "") == (old.get("value") or "")
+            and isinstance(old.get("value"), str)
+            and now.get("value") == old.get("value")
             and name not in keys
         )
         out.append((name, MATCH if ok else MISMATCH))
@@ -1507,7 +1524,7 @@ def _park_verb(names: list[str]) -> int:
                 "op": "edit",
                 "id": row["id"],
                 "key": PARKED_PREFIX + name,
-                "value": row.get("value") or "",
+                "value": row["value"],
                 "note": row.get("note") or "",
                 "projectIds": [row["projectId"]],
             },

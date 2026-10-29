@@ -64,6 +64,18 @@ def test_read_empty_value_is_loud(tmp_path, capsys, line):
     assert "empty value" in err
 
 
+@pytest.mark.parametrize(
+    "value",
+    ["latest", "^0.39.0", "~0.39.4", "0.39", ">=0.39.0", "0.39.4 || 1.0.0", "v0.39.4", "next"],
+)
+def test_read_refuses_a_value_that_is_not_an_exact_version(tmp_path, capsys, value):
+    """Review a98e87fb.1: a tag or range would reach `npm install agent-browser@<value>` and install whatever npm resolves; `read` refuses it before the install step runs."""
+    rc, out, err = _read(tmp_path, "ARG AGENT_BROWSER_VERSION=" + value, capsys)
+    assert rc == 1
+    assert out == ""
+    assert "not an exact version" in err
+
+
 def test_read_unreadable_dockerfile_is_loud(tmp_path, capsys):
     rc = pin.main(["read", "--dockerfile", str(tmp_path / "nope")])
     assert rc == 1

@@ -40,6 +40,8 @@ import sys
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent.parent
 
 PUBLIC_KEY_CACHE = "private/account/.cache/public-keys.env"
+# `bws_env.PUBLIC_KEY_CACHE_HEADER`, spelled out because this module runs from a scratch root that vendors no `rediacc_ci.core`; test_ops_build_server.py asserts the two are one string.
+PUBLIC_KEY_CACHE_HEADER = "# rediacc public-key cache v2: production store entries only (agent/plans/PLAN-production-key-only.md)\n"
 ACCOUNT_KEY_PREFIX = "ACCOUNT_ED25519_PUBLIC_KEY="
 RENET_ARCHES = ("amd64", "arm64")
 RENET_BIN_DIR = "private/renet/bin"
@@ -87,9 +89,19 @@ def account_key() -> str:
     env_file = ROOT_DIR / PUBLIC_KEY_CACHE
     if not env_file.is_file():
         return ""
+    text = env_file.read_text(encoding="utf-8", errors="surrogateescape")
+    # A cache an older setup wrote may hold the retired DEV key under the production name (review 824f3bd7.2), so one without the v2 header bakes nothing; `./run.sh setup` rewrites it.
+    if not text.replace("\r\n", "\n").startswith(PUBLIC_KEY_CACHE_HEADER):
+        print(
+            "warning: ignoring %s: it predates the one-keypair store; run ./run.sh setup to refresh it"
+            % PUBLIC_KEY_CACHE,
+            file=sys.stderr,
+            flush=True,
+        )
+        return ""
     matched = [
         line[len(ACCOUNT_KEY_PREFIX) :]
-        for line in env_file.read_text(encoding="utf-8", errors="surrogateescape").split("\n")
+        for line in text.split("\n")
         if line.startswith(ACCOUNT_KEY_PREFIX)
     ]
     return "\n".join(matched).replace("\r", "").rstrip("\n")

@@ -33,8 +33,8 @@ LOG_DIR = (".ci", "cache", "live-proof")
 TAIL_MAX = 20
 TAIL_LINE_MAX = 300
 # tail_of replaces every `local@host` token in the captured check tail (wrangler's deployment listing carries `author_email`).
-# No TLD is required, so ci@localhost goes too; a package spec such as name@1.2.3 is redacted as well, which costs nothing in a tail.
-EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9_.-]+")
+# No TLD is required, so ci@localhost goes too; a package spec such as name@1.2.3 is redacted as well, which costs nothing in a tail. The host is dot-separated labels, so it never ends in a dot: a sentence-ending period after `ci@localhost.` stays in the tail (review 6a8bfccb.1).
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*")
 DEFAULT_TIMEOUT_S = 600
 BENCH_CACHE = "bench-cache"
 RENET_HASH = "renet-hash"
@@ -160,7 +160,7 @@ def _parse_check(cid: str, raw: object, targets: dict[str, Any]) -> Check:
     if not (isinstance(tlist, list) and tlist and all(t in targets for t in tlist)):
         raise RegistryError(f"{where}.targets is not a non-empty list of {sorted(targets)}")
     names = raw.get("surfaces")
-    if not (isinstance(names, list) and names and all(n in S.MAP.surfaces for n in names)):
+    if not (isinstance(names, list) and names and all(_known_surface(n) for n in names)):
         raise RegistryError(f"{where}.surfaces is not a non-empty list of known surfaces")
     for name in names:
         if not set(S.MAP.surfaces[name].live) & set(tlist):
@@ -306,6 +306,11 @@ def rebuild_argv(check: Check, target: str) -> tuple[str, ...]:
     return tuple(_fill(a, values) for a in check.rebuild)
 
 
+def _known_surface(name: object) -> bool:
+    """Whether `name` is a surface of the map. A non-string (a nested list or object a hand-edited row may carry) is unhashable, so the bare membership test raised TypeError and aborted `verify` instead of reporting the row (review b8f513f4.1)."""
+    return isinstance(name, str) and name in S.MAP.surfaces
+
+
 def judge_surfaces(surfaces: Iterable[str], check: Check | None) -> frozenset[str]:
     """The surfaces `receipt.identity_refusal` judges a row by: its own, plus renet for a renet-hash deploy."""
     out = set(surfaces)
@@ -440,7 +445,7 @@ def _check_problems(
 
 def _surface_problems(row: dict[str, Any], check: Check | None) -> list[str]:
     names = row.get("surfaces")
-    if not (isinstance(names, list) and names and all(n in S.MAP.surfaces for n in names)):
+    if not (isinstance(names, list) and names and all(_known_surface(n) for n in names)):
         return ["surfaces is not a non-empty list of known surfaces"]
     out: list[str] = []
     if check is not None:
@@ -471,7 +476,7 @@ def _git_problems(row: dict[str, Any], root: pathlib.Path) -> list[str]:
     if out:
         return out
     names = row.get("surfaces")
-    known = isinstance(names, list) and names and all(n in S.MAP.surfaces for n in names)
+    known = isinstance(names, list) and names and all(_known_surface(n) for n in names)
     if known and S.inputs(root, str(row["tree"]), names) != row.get("inputs"):
         out.append("inputs is not the digest of the row's tree for its surfaces")
     return out
@@ -508,7 +513,7 @@ def validate_row(
     out.extend(_surface_problems(row, check))
     raw_names = row.get("surfaces")
     names: list[str] = raw_names if isinstance(raw_names, list) else []
-    if all(n in S.MAP.surfaces for n in names):
+    if all(_known_surface(n) for n in names):
         refused = R.identity_refusal(row, judge_surfaces(names, check))
         if refused is not None:
             out.append(f"{refused.code}: {refused.message}")

@@ -444,7 +444,7 @@ def test_b10_cache_to_refuses_a_private_key_and_writes_no_file(gate, tmp_path):
     gate.assert_contains(out, "mode 0644", "and says so, including the mode a reader needs")
     gate.assert_eq(
         target.read_text(encoding="utf-8"),
-        "%s=ssh-ed25519-AAAA-public\n" % public_name,
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "%s=ssh-ed25519-AAAA-public\n" % public_name,
         "the cache file's contents are not the NAME=value line four readers sed",
     )
     gate.assert_eq(
@@ -485,7 +485,7 @@ def test_b10c_cache_to_refuses_the_retired_dev_alias_and_writes_no_file(gate, tm
     gate.assert_contains(out, "rc=0", "CONTROL: the unaliased public key IS cached")
     gate.assert_eq(
         target.read_text(encoding="utf-8"),
-        "ACCOUNT_ED25519_PUBLIC_KEY=prod-public\n",
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "ACCOUNT_ED25519_PUBLIC_KEY=prod-public\n",
         "the cache holds the production entry",
     )
     gate.assert_eq(stat.S_IMODE(target.stat().st_mode), 0o644, "the cache is not 0644")

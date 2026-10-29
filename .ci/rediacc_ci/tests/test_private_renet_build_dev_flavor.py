@@ -134,6 +134,15 @@ def test_control_collapsed_out_dir_is_caught(tmp_path: pathlib.Path) -> None:
     )
     assert count == 1
     renet = _tree(tmp_path, planted)
-    # With one shared directory, an enforcing build lands in bin/ and bin/enforce/ stays empty.
+    # With one shared directory, an enforcing build lands in bin/ and bin/enforce/ stays empty. The planted build itself must SUCCEED and leave exactly that symptom, so the control fails for the planted cause and not for any build failure (review 7b1bcec4.2).
+    plain = _seed(renet / "bin")
+    res = _dev(renet, tmp_path, "--license")
+    assert res.returncode == 0, res.stderr
+    assert not any((renet / "bin" / "enforce" / n).exists() for n in NAMES), (
+        "bin/enforce/ was written"
+    )
+    assert _read(renet / "bin") != plain, "the enforcing build did not land in bin/"
+    _assert_fresh(renet / "bin", nolicense=False)
+    # And the scenario the real tests run refuses this tree, at the plain-bin/ assertion.
     with pytest.raises((AssertionError, FileNotFoundError)):
-        _license_scenario(renet, tmp_path, "flag")
+        _license_scenario(_tree(tmp_path / "again", planted), tmp_path / "again", "flag")

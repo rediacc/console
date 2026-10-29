@@ -115,7 +115,8 @@ REBUILD_HINT = (
 
 def portal_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, str]) -> str | None:
     """None when the built portal under `dist/account/assets` carries the Turnstile sitekey the environment binds, else the refusal line."""
-    key = (env.get("TURNSTILE_SITE_KEY") or env.get("VITE_TURNSTILE_SITE_KEY") or "").strip()
+    # TURNSTILE_SITE_KEY only: the refusal below names that binding, and every caller binds it (the deploy-workers profile, the CD step). A `VITE_` fallback let a run with only the build-time name pass a check that says the deploy name must be bound (review a43d7f08.1).
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip()
     if not key:
         return "TURNSTILE_SITE_KEY is not bound, so the portal cannot be checked for the captcha widget; run under the account-secrets-<region>-<stable|edge> profile"
     if not SITEKEY_SHAPE.match(key):
@@ -160,9 +161,7 @@ def portal_smoke(
     host = route_host(config)
     if host is None:
         return None
-    key = (
-        env.get("TURNSTILE_SITE_KEY") or env.get("VITE_TURNSTILE_SITE_KEY") or ""
-    ).strip() or None
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip() or None
     verdict = portal_captcha.check_with_retry(host, fetch, key, sleep=sleep)
     if verdict.state == portal_captcha.OK:
         log.info("Portal smoke: %s %s" % (host, verdict.why))

@@ -33,7 +33,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 320  # 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 330  # 320 before the review 9450761b and dfb34f9d controls (submodule overlap, one .gitmodules read, the serving-plan mutex and Owns-none exclusive); 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -689,6 +689,33 @@ with tempfile.TemporaryDirectory() as _d:
         X.normalize_owns(["sub", "plain", "sub/inner"], _d)[0],
         ["sub", "plain/**", "sub/inner/**"],
     )
+    # Review 9450761b.1: the overlap a bare submodule root yields. It claims the gitlink, so a writer editing files inside the submodule is not refused beside it; `sub/` (or `sub/**`) is how a plan claims the whole submodule, and then it is.
+    _gitlink = X.normalize_owns(["sub"], _d)[0]
+    _whole = X.normalize_owns(["sub/"], _d)[0]
+    check(
+        "overlap: a bare submodule root misses files inside it",
+        X.owns_overlap(_gitlink, ["sub/x.go"]),
+        [],
+    )
+    check(
+        "overlap: the bare root meets its own gitlink",
+        bool(X.owns_overlap(_gitlink, ["sub"])),
+        True,
+    )
+    check(
+        "overlap: CONTROL, sub/ claims the whole submodule",
+        bool(X.owns_overlap(_whole, ["sub/x.go"])),
+        True,
+    )
+    # Review 9450761b.2: `.gitmodules` is read once per call, not once per glob.
+    _reads = []
+    _orig = X._submodule_roots
+    X._submodule_roots = lambda root: (_reads.append(root), _orig(root))[1]
+    try:
+        X.normalize_owns(["sub", "plain", "a", "b", "c"], _d)
+    finally:
+        X._submodule_roots = _orig
+    check("normalize: .gitmodules is read once per call", len(_reads), 1)
 for bad in ("/etc/x", "a/../b", "!a", "a\\b", "{a,b}/{c,d}/{e,f}/{g,h}/{i,j}/{k,l}", "a/{b"):
     check("normalize: refuses %r" % bad, bool(X.normalize_owns([bad])[1]), True)
 check(
@@ -896,6 +923,37 @@ check(
 check(
     "narrow m: an exclusive plan's mutex is judged on its whole Owns, so a declared path inside them is refused",
     sv(set(), LIVE_E, declared=("src/e/zz.py",)).kind,
+    "mutex",
+)
+# Review dfb34f9d.1: the same mutex for a spawn SERVING a plan, whose declared narrowing is judged against the live exclusive plan's WHOLE Owns, even where that plan's live writers declared a narrower set; and its passing twin, a declared narrowing disjoint from those Owns.
+LIVE_EN = X.LivePlans(LIVE_E)
+LIVE_EN.owns["PLAN-e.md"] = ("src/e/only.py",)
+check(
+    "narrow m2: a serving plan's declared path inside a live exclusive plan's whole Owns is refused, though its writers declared less",
+    sv({"PLAN-o.md"}, LIVE_EN, declared=("src/e/x.py",)).kind,
+    "mutex",
+)
+XI["PLAN-oe.md"] = px_("PLAN-oe.md", owns=("src/e/**", "src/oe/**"))
+check(
+    "narrow m2: CONTROL, a serving plan overlapping the exclusive plan on paper but declaring a disjoint narrowing is allowed",
+    sv({"PLAN-oe.md"}, LIVE_EN, declared=("src/oe/a.py",)).allow,
+    True,
+)
+check(
+    "narrow m2: CONTROL, the same serving plan with no declared narrowing is refused on its whole Owns",
+    sv({"PLAN-oe.md"}, LIVE_EN).kind,
+    "mutex",
+)
+# Review dfb34f9d.2: an exclusive plan is a mutex over ITS files, so one declaring `Owns: none` excludes nothing a spawn declares. A writer serving it is refused (`owns-none`, above), so only a lease can make it live.
+XI["PLAN-en.md"] = px_("PLAN-en.md", excl=True, owns=(), none=True)
+check(
+    "narrow m3: a live exclusive plan with Owns none admits a spawn with declared files",
+    sv(set(), {"PLAN-en.md": ["lease #e0e0e0e0 worker:w9"]}, declared=("src/q/a.py",)).allow,
+    True,
+)
+check(
+    "narrow m3: CONTROL, the same live plan still refuses a spawn whose files are unknown",
+    sv(set(), {"PLAN-en.md": ["lease #e0e0e0e0 worker:w9"]}).kind,
     "mutex",
 )
 

@@ -1364,9 +1364,16 @@ NO_ACCOUNT_KEY = (
 
 
 def _cached_account_key(key_cache: str) -> str:
+    """The key in the public-key cache, or "" when there is none or the cache predates the one-keypair store (no `bws_env.PUBLIC_KEY_CACHE_HEADER`: an older setup aliased the retired DEV entry onto the production name, review 824f3bd7.2)."""
     if not os.path.isfile(key_cache):
         return ""
     text = pathlib.Path(key_cache).read_text(encoding="utf-8", errors="surrogateescape")
+    if not bws_env.public_key_cache_current(text):
+        log.warn(
+            "Ignoring %s: it predates the one-keypair store and may hold the retired DEV key; refreshing it from Bitwarden."
+            % key_cache
+        )
+        return ""
     prefix = ACCOUNT_KEY_NAME + "="
     hits = [line[len(prefix) :] for line in text.split("\n") if line.startswith(prefix)]
     return _subst("\n".join(hits).replace("\r", ""))
@@ -1389,7 +1396,10 @@ def _load_and_cache(key_cache: str, environ: Mapping[str, str]) -> str:
     if not missing:
         os.makedirs(os.path.dirname(key_cache), exist_ok=True)
         with open(key_cache, "w", encoding="utf-8") as handle:
-            handle.write("".join("%s=%s\n" % (name, resolved[name]) for name in names))
+            handle.write(
+                bws_env.PUBLIC_KEY_CACHE_HEADER
+                + "".join("%s=%s\n" % (name, resolved[name]) for name in names)
+            )
         os.chmod(key_cache, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
     return resolved.get(ACCOUNT_KEY_NAME, "")
 
@@ -1397,8 +1407,8 @@ def _load_and_cache(key_cache: str, environ: Mapping[str, str]) -> str:
 def resolve_renet_account_key(renet_dir: str, environ: Mapping[str, str]) -> str:
     """The production public key a renet build bakes, or a refusal (agent/plans/PLAN-production-key-only.md Design 1).
 
-    In order: the shell environment; the public-key cache `./run.sh setup` writes (the key is public, and the cache keeps an offline build working); Bitwarden, read with `bws_env.load` under the caller's environment, which also rewrites the cache (whole or not at all, 0644, behind the `cache-to` allowlist); otherwise `LocalCommonError` naming `./run.sh setup`. A key is never invented and an empty one never reaches build.sh.
-    The one keyless answer is `RENET_KEYLESS=1` under `GITHUB_ACTIONS=true`, the CI test builds build.sh admits on the same terms; anywhere else `RENET_KEYLESS` is ignored.
+    In order: the shell environment; the public-key cache `./run.sh setup` writes (the key is public, and the cache keeps an offline build working); Bitwarden, read with `bws_env.load` under the caller's environment, which also rewrites the cache (whole or not at all, 0644, behind the `cache-to` allowlist); otherwise `LocalCommonError` naming `./run.sh setup`. A key is never invented, and an empty one reaches build.sh only on the keyless CI path: `RENET_KEYLESS=1` under `GITHUB_ACTIONS=true` answers "", `ensure_renet_built` passes it through as `ACCOUNT_ED25519_PUBLIC_KEY=`, and build.sh admits that on the same terms (review 824f3bd7.1); anywhere else `RENET_KEYLESS` is ignored.
+    A cache without `bws_env.PUBLIC_KEY_CACHE_HEADER` is skipped as stale, so Bitwarden answers instead.
     """
     account_key = environ.get(ACCOUNT_KEY_NAME, "")
     if account_key:
@@ -1419,10 +1429,15 @@ def resolve_renet_account_key(renet_dir: str, environ: Mapping[str, str]) -> str
     raise LocalCommonError("no %s" % ACCOUNT_KEY_NAME, code=1)
 
 
-def ensure_renet_built(env: dict[str, str] | None = None, flavor: str | None = None) -> bool:
+def ensure_renet_built(
+    env: dict[str, str] | None = None,
+    flavor: str | None = None,
+    status: list[int] | None = None,
+) -> bool:
     """`ensure_renet_built`, `.ci/lib/local-common.sh:759`, with one binary and one stamp per flavor (`renet_flavor`).
 
     The flavor comes from `RDC_RENET_LICENSE` unless the caller names it, and `./build.sh dev` gets it as an explicit flag, so a build of one flavor never touches the other's binary or stamp.
+    When build.sh fails the answer is False, and a caller that passes `status` gets build.sh's own exit status appended to it, so a CI wrapper can exit with that status rather than a flat 1 (review 6de769e7.2).
     """
     environ = os.environ if env is None else env
     root = local_root_dir(env)
@@ -1469,11 +1484,11 @@ def ensure_renet_built(env: dict[str, str] | None = None, flavor: str | None = N
 
     # The resolved key reaches build.sh through its environment: build.sh reads ACCOUNT_ED25519_PUBLIC_KEY from there only (agent/plans/PLAN-production-key-only.md K4).
     build_env = {**environ, ACCOUNT_KEY_NAME: account_key}
-    if (
-        _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir, env=build_env)
-        != 0
-    ):
+    rc = _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir, env=build_env)
+    if rc != 0:
         log.error("renet build failed (see the output above)")
+        if status is not None:
+            status.append(rc)
         return False
     if not os.path.isfile(renet_bin):
         log.error("Renet build failed: binary not found at %s" % renet_bin)

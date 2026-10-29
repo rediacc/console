@@ -84,8 +84,24 @@ CASES = [
         "cat <<'EOF' | git commit -F - -- a\nchore: x [skip ci]\nEOF",
         True,
     ),
+    # Review 63863ef6.1: a commit inside `$(...)` or backticks commits too, and its `-F -` heredoc reaches this guard through `commit_policy.target_segments`' substitution walk, not only the prose and bulk-transform guards.
+    (
+        "a -F - heredoc commit inside $(...)",
+        "R=$(git commit -F - -- a <<'EOF'\nchore: x [skip ci]\nEOF\n)",
+        True,
+    ),
+    (
+        "a -F - heredoc commit inside backticks",
+        "R=`git commit -F - -- a <<'EOF'\nchore: x [skip ci]\nEOF\n`",
+        True,
+    ),
     # ---- inverse -----------------------------------------------------------------------------
     ("a clean commit", 'git commit -m "chore: x" -- a', False),
+    (
+        "a clean -F - heredoc commit inside $(...)",
+        "R=$(git commit -F - -- a <<'EOF'\nchore: x\nEOF\n)",
+        False,
+    ),
     ("echo naming the token", "echo '[skip ci]'", False),
     ("git log --grep", "git log --grep '[skip ci]'", False),
     (

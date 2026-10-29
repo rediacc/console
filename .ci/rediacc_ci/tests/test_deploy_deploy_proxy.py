@@ -896,6 +896,7 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
     written = json.loads(record.read_text())
     assert isinstance(written.pop("cold_start_ms"), int)
     assert written == {
+        "release_by_version": {NEW_ID: VERSION},
         "target": "edge",
         "region": "us",
         "worker": "edge-rediacc-proxy-us",
@@ -1918,3 +1919,56 @@ def test_the_versions_view_reader_takes_only_the_named_plain_text_var() -> None:
         "--config",
         "c.toml",
     ]
+
+
+def test_two_consecutive_rollbacks_both_know_the_live_release(tmp_path: pathlib.Path) -> None:
+    """Review 941e1bff.1: a deploy record names the release of every version it has seen, so the first rollback records the release of the version it rolled to, and the second rollback asks the forward-only question about that release instead of warning and reading the newest tag. CONTROL: a target version no record names stays None, honestly."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(
+        json.dumps(
+            {
+                "version_id": NEW_ID,
+                "artifacts_version": "1.2.4",
+                "release_by_version": {TO_ID: VERSION},
+                "migration_tag": "v2",
+            }
+        ),
+        encoding="utf-8",
+    )
+    common = {"FAKE_LISTED_ID": TO_ID, "FAKE_READY_VERSION": TO_ID}
+    args = ("--target", "edge", "--region", "us", "--rollback", TO_ID, "--record", str(record))
+    proc, _calls = _run(tmp_path, root, args, **common)
+    assert proc.returncode == 0, proc.stderr
+    first = json.loads(record.read_text())
+    assert first["artifacts_version"] == VERSION
+    assert first["release_by_version"] == {TO_ID: VERSION, NEW_ID: "1.2.4"}
+    proc, _calls = _run(tmp_path, root, args, **common)
+    assert proc.returncode == 0, proc.stderr
+    assert "no record names the release of the live" not in proc.stderr
+    assert json.loads(record.read_text())["artifacts_version"] == VERSION
+    other = "44444444-4444-4444-8444-444444444444"
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "edge", "--region", "us", "--rollback", other, "--record", str(record)),
+        FAKE_LISTED_ID=other,
+        FAKE_READY_VERSION=other,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(record.read_text())["artifacts_version"] is None
+
+
+def test_a_failed_rollback_records_the_listed_id_lowercased(tmp_path: pathlib.Path) -> None:
+    """Review 941e1bff.2: the listing's id is written lowercased, as every other id in the record."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--rollback", TO_ID, "--record", str(record)),
+        FAKE_LISTED_ID=UPPER_ID,
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert json.loads(record.read_text())["version_id"] == UPPER_ID.lower()

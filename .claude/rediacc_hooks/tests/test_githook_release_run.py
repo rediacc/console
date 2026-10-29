@@ -78,8 +78,7 @@ ENTRY_ARGV = [PY or "/usr/bin/python3", "-P", "-s", "-m", MODULE]
 def _need_py() -> str:
     """PY, or a failed test: the interpreter cases have no meaning without a root-installed python3."""
     if PY is None:
-        pytest.fail("no root-installed python3 here")
-        raise AssertionError("pytest.fail returned")
+        pytest.fail("no root-installed python3 here")  # raises; typed NoReturn (review 8959ce94.2)
     return PY
 
 

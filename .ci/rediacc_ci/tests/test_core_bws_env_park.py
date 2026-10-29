@@ -184,6 +184,10 @@ def test_park_verdicts_need_the_same_id_the_new_key_the_old_value_and_no_live_na
     before = {"A": {"id": "1", "key": "A", "value": "v"}}
     good = [{"id": "1", "key": "__A", "value": "v"}]
     assert bws_env.park_verdicts(["A"], before, good) == [("A", bws_env.MATCH)]
+    # Review d3b47b36.1: a listing that carried no value proves nothing, even when the new row has none either.
+    assert bws_env.park_verdicts(
+        ["A"], {"A": {"id": "1", "key": "A"}}, [{"id": "1", "key": "__A"}]
+    ) == [("A", bws_env.MISMATCH)]
     for rows in (
         [{"id": "2", "key": "__A", "value": "v"}],
         [{"id": "1", "key": "A", "value": "v"}],
@@ -194,7 +198,7 @@ def test_park_verdicts_need_the_same_id_the_new_key_the_old_value_and_no_live_na
 
 
 def test_park_preflight_names_every_problem() -> None:
-    rows = [{"key": "A"}, {"key": "B"}, {"key": "__B"}, {"key": "D"}, {"key": "D"}]
+    rows = [{"key": k, "value": "v"} for k in ("A", "B", "__B", "D", "D")]
     problems = bws_env.park_preflight(["A", "__A", "B", "C", "D", "x>y", "A"], rows)
     text = "\n".join(problems)
     assert "__A is already a parked name" in text
@@ -209,3 +213,12 @@ def test_park_preflight_names_every_problem() -> None:
 def test_park_is_reachable_and_listed() -> None:
     assert "park NAME" in bws_env.USAGE.split("There is deliberately")[0]
     assert bws_env.main(["park"]) == 2, "no NAME is a usage error, before any store access"
+
+
+def test_park_preflight_refuses_a_listed_row_without_a_value() -> None:
+    """Review d3b47b36.1: parking rewrites the value from the listing, so a row without one would be blanked; the preflight refuses before any write. CONTROL: the same row with a value passes."""
+    assert any(
+        "A carries no value in the listing" in p
+        for p in bws_env.park_preflight(["A"], [{"key": "A", "id": "1"}])
+    )
+    assert bws_env.park_preflight(["A"], [{"key": "A", "id": "1", "value": ""}]) == []

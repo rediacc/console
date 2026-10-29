@@ -1312,7 +1312,9 @@ def test_an_unreadable_inputs_digest_writes_no_receipt_and_never_verifies(
     assert "vm:check VERIFIED" not in out
     assert receipt == {}
     cache = world.root / receipt_mod.CACHE_DIR
-    assert not list(cache.rglob("receipt.json")) if cache.exists() else True
+    # A cache directory that was never created holds no receipt either (review bd830f6f.4: spelled out, not as a conditional expression).
+    receipts = list(cache.rglob("receipt.json")) if cache.exists() else []
+    assert receipts == []
 
 
 def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathlib.Path) -> None:

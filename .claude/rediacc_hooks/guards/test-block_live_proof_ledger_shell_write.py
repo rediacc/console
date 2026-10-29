@@ -116,6 +116,58 @@ def searched_text_cases(ledger):
     ]
 
 
+def review_cases():
+    """Review 22b7a40c: a copy relative to the run's own `cd` (.1), a ledger name built from pieces (.2), and a read-only call on the ledger's name that only sounds like a write (.3)."""
+    lt = "PYTHONPATH=.ci python3 - <<'PY'\nfrom rediacc_ci.proof import live_tier as LT\n%s\nPY"
+    return [
+        (
+            "cp onto the ledger relative to a cd",
+            "cd agent/ledgers && cp /tmp/forged.jsonl live-proof.jsonl",
+            True,
+        ),
+        (
+            "cp onto the ledger through a partial cd",
+            "cd agent && cp /tmp/forged.jsonl ledgers/live-proof.jsonl",
+            True,
+        ),
+        (
+            "python concatenates the ledger name",
+            _py("open('agent/ledgers/live-proof' + '.jsonl', 'a').write('x')"),
+            True,
+        ),
+        (
+            "python concatenates the ledger name mid-word",
+            _py("open('agent/ledgers/live-' + 'proof.jsonl', 'a').write('x')"),
+            True,
+        ),
+        (
+            "python builds the ledger name in an f-string",
+            _py("d = 'agent/ledgers'\nopen(f'{d}/live-proof' '.jsonl', 'a').write('x')"),
+            True,
+        ),
+        (
+            "python binds a ledger piece and appends",
+            _py("ext = '.jsonl'\np = 'agent/ledgers/live-proof' + ext\nopen(p, 'a').write('x')"),
+            True,
+        ),
+        (
+            "python concatenates another file's name",
+            _py("open('agent/ledgers/effort' + '-outcomes.jsonl', 'a').write('x')"),
+            False,
+        ),
+        (
+            "python dumps the ledger's name to text",
+            lt % "import json\nprint(json.dumps(LT.LEDGER))",
+            False,
+        ),
+        (
+            "python edits the ledger's name as text",
+            lt % "print(str(LT.LEDGER).replace('a', 'b'))",
+            False,
+        ),
+    ]
+
+
 def main():
     spec = importlib.util.spec_from_file_location("test_live_proof_ledger_shared", SHARED)
     if spec is None or spec.loader is None:
@@ -123,6 +175,7 @@ def main():
     shared = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(shared)
     shared.SHELL_CASES.extend(searched_text_cases(shared.L))
+    shared.SHELL_CASES.extend(review_cases())
     return shared.main(("block_live_proof_ledger_shell_write",))
 
 

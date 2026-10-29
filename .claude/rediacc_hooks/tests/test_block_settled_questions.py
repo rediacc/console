@@ -72,6 +72,25 @@ REFUSE = [
         "",
         "decided by the hooks",
     ),
+    # Review 5071248a.1: the condition and immediacy words PUSH_HEADER_TIMING already counts.
+    (
+        "push timing: a condition word right after an unquoted rdc verb",
+        "Should we rdc repo push when ready?",
+        "",
+        "BLOCKED",
+    ),
+    (
+        "push timing: until after an unquoted rdc verb",
+        "Should we hold off and rdc repo push until CI is green?",
+        "",
+        "decided by the hooks",
+    ),
+    (
+        "push timing: immediately after an unquoted rdc verb",
+        "Should we rdc repo push immediately?",
+        "",
+        "BLOCKED",
+    ),
     ("permission: may I push", "May I push these to origin?", "", "BLOCKED"),
     ("permission: open the pr", "Should I open the PR?", "", "BLOCKED"),
 ]

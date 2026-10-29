@@ -10,6 +10,7 @@ import os
 import stat
 
 from rediacc_ci import paths
+from rediacc_ci.core import bws_env
 from rediacc_ci.setup import machine
 from rediacc_ci.setup.ctx import Ctx
 
@@ -108,7 +109,8 @@ def test_the_public_key_cache_holds_the_production_public_keys_unaliased(tmp_pat
     assert _run(root, _env(root, tmp_path)) == 0
     cache = root / machine.PUBLIC_KEY_CACHE
     assert cache.read_text(encoding="utf-8") == (
-        "ACCOUNT_ED25519_PUBLIC_KEY=ed-pub-prod\nACCOUNT_X25519_PUBLIC_KEY=x-pub-prod\n"
+        bws_env.PUBLIC_KEY_CACHE_HEADER
+        + "ACCOUNT_ED25519_PUBLIC_KEY=ed-pub-prod\nACCOUNT_X25519_PUBLIC_KEY=x-pub-prod\n"
     )
     assert stat.S_IMODE(cache.stat().st_mode) == 0o644
 

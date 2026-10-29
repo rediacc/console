@@ -152,8 +152,11 @@ PUSH_TO_MAIN = r"^( [a-z_]+){0,2} to (origin )?main([^a-z]|$)"
 # skipped when it sits inside a backtick span that does not start with `git` or `gh` (the span names some other program's command), or when it directly ends an unquoted `rdc <word>...` chain. `git push` in backticks, "push the branch" and every bare spelling of the ruling ("push now?") still count.
 NAMED_SPAN_GIT = r"^\s*(git|gh)(?![a-z_-])"
 NAMED_RDC_CHAIN = r"(^|[^a-z_-])rdc( [a-z_|-]+){1,3} $"
-# A timing word (or an "or wait" alternative) directly after the verb asks WHEN to run it ("should we rdc repo push now?"), so the chain is not a named command there (review c5695bf5.1). A later "now" ("rdc machine access push be barred from MCP now?") still reads as part of the question about the verb.
-NAMED_RDC_TIMING_AFTER = r"^[a-z]+\s+(now|yet|first|later|today|tonight|or (wait|keep|hold|continue|finish|not))(?![a-z])"
+# A timing word directly after the verb, a condition word (`when`, `until`, `once`), or an alternative that keeps the action open (`or wait`, `or keep`, `or hold`, `or continue`, `or finish`, `or not`) asks WHEN or WHETHER to run it ("should we rdc repo push now?", "... push when ready?"), so the chain is not a named command there (reviews c5695bf5.1, 5071248a.1). A later "now" ("rdc machine access push be barred from MCP now?") still reads as part of the question about the verb.
+NAMED_RDC_TIMING_AFTER = (
+    r"^[a-z]+\s+(now|yet|first|later|today|tonight|soon|immediately|right away|when|until|once"
+    r"|or (wait|keep|hold|continue|finish|not))(?![a-z])"
+)
 
 
 def _named_command(sentence, start):

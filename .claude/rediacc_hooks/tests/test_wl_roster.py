@@ -1560,7 +1560,7 @@ def test_q3_two_live_writers_breaking_a_mutex_are_a_roster_concurrency_block(wl)
 
 
 def test_q3g_a_disjoint_writer_beside_a_live_exclusive_plan_is_not_in_conflict(wl):
-    """The overlap rule's twin of q3 (dfb34f9d6): with F disjoint from E only E's writer breaks the mutex, because an exclusive plan cannot start while other plans are live; F's writer, whose files E does not claim, is not a conflict."""
+    """The overlap rule's twin of q3 (dfb34f9d6). Two rules, judged per writer: E's writer is a conflict under the mutex-own rule (an exclusive plan cannot start while other plans are live, and F is live); F's writer is judged under the overlap rule (a live exclusive plan refuses only a writer whose files meet its Owns), and with F's Owns disjoint from E's it is not a conflict (review 8959ce94.3)."""
     conflict_world(wl, "f", f_owns="src/f/**")
     v = verdict(wl)
     assert {aid for aid, _plans, _lines in v["plan_conflicts"]} == {W1}, v["plan_conflicts"]

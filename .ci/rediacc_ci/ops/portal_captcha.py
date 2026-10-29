@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 import sys
 import time
 import urllib.error
@@ -99,18 +100,29 @@ def check(host: str, fetch: Http, sitekey: str | None = None) -> Verdict:
     if not bundles:
         return Verdict(host, UNKNOWN, "the login page loads no /account/assets/index-*.js bundle")
     keyed = False
+    other_key = False
     for path in bundles:
         got = fetch("GET", base + path, None)
         if got.status != 200:
             return Verdict(host, UNKNOWN, "GET %s answered %s" % (path, got.status or got.error))
         if (sitekey in got.body) if sitekey else bool(SITEKEY_RE.search(got.body)):
             keyed = True
+        elif sitekey and SITEKEY_RE.search(got.body):
+            other_key = True
     if keyed:
         return Verdict(host, OK, "the portal bundle carries the Turnstile site key")
     login = fetch("POST", base + LOGIN_API, DUMMY_LOGIN)
     if login.status == 0:
         return Verdict(host, UNKNOWN, "POST %s got no answer (%s)" % (LOGIN_API, login.error))
     if CAPTCHA_REQUIRED in login.body:
+        # A bundle carrying some other key renders a widget whose token the Worker's secret cannot verify; saying "no key" there would send the operator looking for the wrong fault (review 760ca2d1.2).
+        if other_key:
+            return Verdict(
+                host,
+                BROKEN,
+                "the Worker answers %r and the portal bundle carries a different Turnstile site key than the one deployed, so its widget's tokens fail verification"
+                % CAPTCHA_REQUIRED,
+            )
         return Verdict(
             host,
             BROKEN,
@@ -175,10 +187,14 @@ def fix_command(host: str, regions: list[dict] | None = None) -> str:
             region,
             rollback,
         )
+    # The inner script is quoted once, for the outer shell (`shlex.quote`): inside its single quotes REBUILD's double quotes reach `sh -c` as quotes, so the key is bound bare. Escaping them as `\"` there handed the inner shell literal quote characters, and the rebuilt portal carried a key wrapped in them (review 760ca2d1.1).
+    inner = "%s && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region %s" % (
+        REBUILD,
+        region,
+    )
     return (
         "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-%s-stable -- "
-        "sh -c '%s && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region %s'; %s"
-        % (region, REBUILD.replace('"', '\\"'), region, rollback)
+        "sh -c %s; %s" % (region, shlex.quote(inner), rollback)
     )
 
 

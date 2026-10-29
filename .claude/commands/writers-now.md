@@ -1,5 +1,5 @@
 ---
-description: Drain the Promoted plans in agent/plans/QUEUE.md with parallel writers. One invocation starts at least one writer per unfinished Promoted plan, and three for a plan with more than five open boxes (split by thirds of its open boxes), filling writer_cap. Each writer gets a self-contained brief with the plan's Owns as its boundary and handles every box class itself (local, already done, bench, hostinger, post-merge, operator). A writer the concurrency guard refuses is queued, never dropped. The read-only survey is optional and lands in a file. Free text after the command narrows it to matching plans.
+description: Drain the Promoted plans in agent/plans/QUEUE.md with parallel writers. One invocation gives every unfinished Promoted plan at least one writer, started while writer_cap has a free slot and queued once it has none, and three for a plan with more than five open boxes (split by thirds of its open boxes), filling writer_cap. Each writer gets a self-contained brief with the plan's Owns as its boundary and handles every box class itself (local, already done, bench, hostinger, post-merge, operator). A writer the concurrency guard refuses is queued, never dropped. The read-only survey is optional and lands in a file. Free text after the command narrows it to matching plans.
 argument-hint: "[filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan]"
 allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(python3 -c:*)
 ---
@@ -31,7 +31,7 @@ The roster comes from the progress table and the plan files, not from a survey. 
 - **Order of starting**: first one writer per plan in table order (the first third for a split plan), then the second and third thirds in table order. Whatever does not fit in the free slots is queued (step 5), in that same order.
 - **Filling the cap**: when every planned writer fits and slots remain, the largest remaining share above five boxes splits into thirds again, repeated until the slots run out or no share is above five.
 
-Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other). Each sibling's brief names the other siblings' box ranges, which keeps file collisions out: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
+Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other), so the guard cannot keep two siblings out of one file. Sibling writers therefore run with `isolation: "worktree"`, each in its own checkout, and never write one tree: the lead copies each accepted report's files and merges by hand any file two siblings both report. Each sibling's brief still names the other siblings' box ranges, so such a file is rare: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
 
 ### 3. The survey, optional and on disk
 
@@ -39,7 +39,7 @@ A survey helps only when it does not hold the writers back. When one is wanted, 
 
 ### 4. Start the writers, all at once
 
-Every writer that fits is started in ONE message with parallel Agent calls. Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
+Every writer that fits is started in ONE message with parallel Agent calls, each with `isolation: "worktree"` (step 2). Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
 
 Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards and are copied from the plan header:
 

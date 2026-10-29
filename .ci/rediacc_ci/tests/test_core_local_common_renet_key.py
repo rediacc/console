@@ -99,7 +99,8 @@ def test_a_key_from_bitwarden_reaches_the_build_and_the_cache(tmp_path, monkeypa
     assert [env[KEY] for env in build] == ["prod-ed-pub"]
     cache = _cache(root)
     assert cache.read_text(encoding="utf-8") == (
-        "ACCOUNT_ED25519_PUBLIC_KEY=prod-ed-pub\nACCOUNT_X25519_PUBLIC_KEY=prod-x-pub\n"
+        bws_env.PUBLIC_KEY_CACHE_HEADER
+        + "ACCOUNT_ED25519_PUBLIC_KEY=prod-ed-pub\nACCOUNT_X25519_PUBLIC_KEY=prod-x-pub\n"
     )
     assert stat.S_IMODE(cache.stat().st_mode) == 0o644
 
@@ -115,10 +116,40 @@ def test_control_an_environment_key_never_reaches_bitwarden(tmp_path, monkeypatc
 def test_a_cached_key_is_used_offline(tmp_path, monkeypatch, build) -> None:
     root, _renet = _root(tmp_path)
     _cache(root).parent.mkdir(parents=True)
-    _cache(root).write_text("X=1\nACCOUNT_ED25519_PUBLIC_KEY=cached-key\r\n", encoding="utf-8")
+    _cache(root).write_text(
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "X=1\nACCOUNT_ED25519_PUBLIC_KEY=cached-key\r\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(bws_env, "load", _load_forbidden)
     assert local_common.ensure_renet_built(_env(root)) is True
     assert [env[KEY] for env in build] == ["cached-key"]
+
+
+def test_a_cache_from_before_the_one_keypair_store_is_refreshed(
+    tmp_path, monkeypatch, build, capsys
+) -> None:
+    """Review 824f3bd7.2: an older setup aliased the retired DEV entry onto the production name, so a cache without the v2 header may hold the retired DEV key. It is skipped, Bitwarden answers, and the cache is rewritten with the header; the cached-key test above is the CONTROL (the same cache with the header is used offline)."""
+    root, _renet = _root(tmp_path)
+    _cache(root).parent.mkdir(parents=True)
+    _cache(root).write_text("ACCOUNT_ED25519_PUBLIC_KEY=retired-dev-key\n", encoding="utf-8")
+    calls: list[list[str]] = []
+    answer = {KEY: "prod-ed-pub", X_KEY: "prod-x-pub"}
+    monkeypatch.setattr(bws_env, "load", _load_answering(calls, answer))
+    assert local_common.ensure_renet_built(_env(root)) is True
+    assert calls == [[KEY, X_KEY]]
+    assert [env[KEY] for env in build] == ["prod-ed-pub"]
+    assert "predates the one-keypair store" in capsys.readouterr().err
+    assert bws_env.public_key_cache_current(_cache(root).read_text(encoding="utf-8"))
+
+
+def test_a_stale_cache_with_no_bitwarden_refuses(tmp_path, monkeypatch, build) -> None:
+    root, renet = _root(tmp_path)
+    _cache(root).parent.mkdir(parents=True)
+    _cache(root).write_text("ACCOUNT_ED25519_PUBLIC_KEY=retired-dev-key\n", encoding="utf-8")
+    monkeypatch.setattr(bws_env, "load", _load_answering([], {}))
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.resolve_renet_account_key(str(renet), _env(root))
+    assert build == []
 
 
 def test_keyless_is_honoured_only_under_github_actions(tmp_path, monkeypatch, build) -> None:

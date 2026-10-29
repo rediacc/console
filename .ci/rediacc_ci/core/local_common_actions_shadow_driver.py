@@ -47,7 +47,7 @@ import subprocess
 import sys
 from typing import TYPE_CHECKING
 
-from rediacc_ci.core import local_common
+from rediacc_ci.core import bws_env, local_common
 from rediacc_ci.core.stubfarm import Farm
 
 if TYPE_CHECKING:  # annotation-only import
@@ -215,7 +215,7 @@ def fx_renet_env(root: pathlib.Path) -> None:
     """The public-key cache `ensure_renet_built` reads, plus the retired `.env` it must NOT read any more."""
     _write(
         root / "private" / "account" / ".cache" / "public-keys.env",
-        "X=1\nACCOUNT_ED25519_PUBLIC_KEY=pubkey-from-cache\r\n",
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "X=1\nACCOUNT_ED25519_PUBLIC_KEY=pubkey-from-cache\r\n",
     )
     _write(root / "private" / "account" / ".env", "ACCOUNT_ED25519_PUBLIC_KEY=stale-dotenv-key\n")
 

@@ -202,7 +202,8 @@ def test_a_swapped_binary_under_an_unchanged_stamp_is_rebuilt(tmp_path):
 def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
     root = _fixture(tmp_path, build_rc=3)
     out = _run(root, "--nolicense")
-    assert out["exit"] != 0, out
+    # build.sh's own status, not a flat 1 (review 6de769e7.2).
+    assert out["exit"] == 3, out
     assert out["calls"]
     assert not (root / "private" / "renet" / "bin" / ".renet-build-stamp").exists()
     assert "RENET_BINARY=" not in out["stdout"]

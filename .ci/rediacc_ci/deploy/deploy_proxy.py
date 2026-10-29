@@ -375,7 +375,7 @@ def _version_key(text: str) -> tuple[int, int, int] | None:
 
 
 def previous_release_tag(repo_root: pathlib.Path, version: str | None) -> str | None:
-    """The newest `v*` tag older than this release, or None when git names none. When this release's own tag exists the answer is the one after it, so redeploying an old release never compares against a newer release's migrations. A release not yet tagged is placed by its version number, so an untagged hotfix 1.2.5 beside a v1.3.0 compares against v1.2.x, not the newer line; a version that is not `X.Y.Z` is treated as newer than every tag."""
+    """The newest `v*` tag older than this release, or None when git names none. When this release's own tag exists the answer is the one after it, so redeploying an old release never compares against a newer release's migrations. A release not yet tagged is placed by its version number, so an untagged hotfix 1.2.5 beside a v1.3.0 compares against v1.2.x, not the newer line; a version that does not START with `X.Y.Z` (`_version_key` reads the leading three numbers, so `1.2.5-rc1` and `1.2.5.9` are placed as 1.2.5) is treated as newer than every tag (review bd830f6f.3)."""
     tags = (_git(repo_root, "tag", "--list", "v*", "--sort=-v:refname") or "").split()
     own = "v%s" % version
     if own in tags:
@@ -757,6 +757,30 @@ def stage_release(worker_dir: pathlib.Path, version: str) -> int:
 # ---- the record -------------------------------------------------------------
 
 
+def release_map(path: pathlib.Path | None) -> dict[str, str]:
+    """`{version id: release}` an existing record knows: its `release_by_version`, plus its own `version_id` and `artifacts_version`. Ids are lowercased, as `wrangler deployments list` prints them.
+
+    A rollback lands on a version whose release no single record field names; this map carries it from deploy to deploy, so a rollback record can name the release it rolled to and a SECOND rollback still asks the forward-only question about the live release (review 941e1bff.1)."""
+    if path is None or not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    known = data.get("release_by_version")
+    out = {
+        str(k).lower(): str(v)
+        for k, v in (known.items() if isinstance(known, dict) else ())
+        if k and v
+    }
+    vid, rel = data.get("version_id"), data.get("artifacts_version")
+    if vid and rel:
+        out[str(vid).lower()] = str(rel)
+    return out
+
+
 def write_record(path: pathlib.Path, record: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -902,6 +926,7 @@ def run_rollback(
     )
     # wrangler exposes no migration tag per version, and a rollback undoes no migration: the tag already applied is the one the record kept.
     recorded_tag = read_record_field(record_path, "migration_tag") or UNKNOWN
+    releases = {} if bench else release_map(record_path)
     os.chdir(worker_dir)
     previous = deployed_version(config)
     backend = version_backend(config, version_id)
@@ -915,28 +940,29 @@ def run_rollback(
     listed = deployed_version(config)
     revert = revert_line(config, previous, forward_only, current_tag)
 
-    def record(**fields: object) -> None:
+    def record(live: str | None = version_id, **fields: object) -> None:
         if record_path is None:
             return
-        write_record(
-            record_path,
-            {
-                "target": target,
-                "region": region,
-                "worker": spec.name,
-                "config": "%s/%s" % (WORKER_REL, config),
-                "rolled_back": True,
-                "version_id": version_id,
-                "requested_version_id": version_id,
-                "previous_version_id": previous,
-                "artifacts_version": None,
-                "rollback": revert,
-                "backend": backend,
-                "migration_tag": recorded_tag,
-                "var_overrides": {},
-                **fields,
-            },
-        )
+        body: dict[str, object] = {
+            "target": target,
+            "region": region,
+            "worker": spec.name,
+            "config": "%s/%s" % (WORKER_REL, config),
+            "rolled_back": True,
+            "version_id": live,
+            "requested_version_id": version_id,
+            "previous_version_id": previous,
+            # The release of the version now live, when an earlier record named it; None says nobody knows, and the next rollback warns.
+            "artifacts_version": releases.get(live) if live else None,
+            "rollback": revert,
+            "backend": backend,
+            "migration_tag": recorded_tag,
+            "var_overrides": {},
+            **fields,
+        }
+        if releases:
+            body["release_by_version"] = releases
+        write_record(record_path, body)
 
     if (listed or "").lower() != version_id:
         failure = (
@@ -944,8 +970,13 @@ def run_rollback(
             % (version_id, listed or "no version")
         )
         log.error(failure)
-        # `version_id` is what is live, never the unconfirmed target: a later `--smoke-only` reads it first.
-        record(smoke_rc=None, cold_start_ms=None, version_id=listed, failure=failure)
+        # `version_id` is what is live, never the unconfirmed target: a later `--smoke-only` reads it first. Lowercased like every id this run writes (review 941e1bff.2).
+        record(
+            live=listed.lower() if listed else None,
+            smoke_rc=None,
+            cold_start_ms=None,
+            failure=failure,
+        )
         return 1
     timing: dict[str, int] = {}
     smoke_rc = smoke(spec.routes[0], version_id, timing)
@@ -1083,9 +1114,15 @@ def main(argv: list[str]) -> int:
     smoke_rc = smoke(host, version_id, timing)
     rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:
+        # Read before the write replaces it: the earlier record knows the release of the version a later rollback may return to (`release_map`).
+        releases = release_map(record_path)
+        if not bench and args.version:
+            releases[version_id.lower()] = args.version
+        extra: dict[str, object] = {"release_by_version": releases} if releases else {}
         write_record(
             record_path,
             {
+                **extra,
                 "target": target,
                 "region": region,
                 "worker": spec.name,

@@ -10,7 +10,7 @@ The direction is decidable: scp's LAST argument is its destination, and a destin
 
 THE CLAUSE LOOP IS GONE (review a2d44aa4.1). The bash original split the command on `;&|` and read each clause with a here-string loop; its own comment recorded two ways that loop silently allowed every upload. The guard now reads shellscan's runs, so neither the split nor the loop exists, and scp's operands come from the shell's own word splitting instead of the last blank-separated field of a clause.
 
-AN UPLOAD TO A LOCAL OPS VM IS DEV WORK, NOT A DEPLOY (worklist #4e20f8c5, 2026-10-28). Every scp upload used to be refused, so `scp /tmp/ld-k9/chunkstore.test developer@192.168.111.22:/tmp/` (a Go test binary) and `scp Dockerfile compose.yml developer@192.168.111.22:/tmp/` (two text files) were both refused, though neither is the renet binary and the ops VMs (192.168.111.0/24) are dev-only by operator ruling: a guard blocking dev work there is the bug. An upload whose destination host is an ops VM is now allowed UNLESS a source has a renet name (`INSTALLED_NAME` on its basename), the destination path is the install directory or has a renet name, or any source or the destination is resolved only at run time (a variable, a substitution, a glob, a brace list), which stays judged strictly. Every other host is refused exactly as before.
+AN UPLOAD TO A LOCAL OPS VM IS DEV WORK, NOT A DEPLOY (worklist #4e20f8c5, 2026-10-28). Every scp upload used to be refused, so `scp /tmp/ld-k9/chunkstore.test developer@192.168.111.22:/tmp/` (a Go test binary) and `scp Dockerfile compose.yml developer@192.168.111.22:/tmp/` (two text files) were both refused, though neither is the renet binary and the ops VMs (192.168.111.0/24) are dev-only by operator ruling: a guard blocking dev work there is the bug. An upload whose destination host is an ops VM is now allowed UNLESS a source has a renet name (`INSTALLED_NAME` on its basename), a recursive (`-r`) source is a directory holding one, the destination path lands in the install directory or has a renet name, or any source or the destination is resolved only at run time (a variable, a substitution, a glob, a brace list), which stays judged strictly. Every other host is refused exactly as before.
 """
 
 import os
@@ -43,7 +43,7 @@ INSTALLED_NAME = re.compile(r"renet(?:[._-].*)?")
 
 # A host spec: a hostname (optionally user@) followed by a colon. A local path containing a colon has a slash before it, so it cannot match here.
 HOST_SPEC = r"^[A-Za-z0-9_.-]+(@[A-Za-z0-9_.-]+)?:"
-# The same spec split into its host and path, for the ops-VM test. Anchored like HOST_SPEC: it reads one scp operand from its first character.
+# The same spec split into its host and path, for the ops-VM test. Its one caller reads it with `fullmatch`, which anchors both ends already; the `^` only keeps the text parallel to HOST_SPEC (review 8959ce94.1).
 _HOST_PATH = re.compile(r"^(?:[A-Za-z0-9_.-]+@)?([A-Za-z0-9_.-]+):(.*)", re.DOTALL)
 # The local ops VMs, 192.168.111.0/24: dev-only, so an upload there is not a deploy unless it carries renet.
 OPS_VM = re.compile(r"192\.168\.111\.(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])")
@@ -177,6 +177,18 @@ EDGE_CASES = [
     ("a renet among other files to an ops VM", "scp a.txt bin/renet 192.168.111.22:/tmp/"),
     ("any file into the install dir of an ops VM", "scp x.bin 192.168.111.22:/usr/local/bin/"),
     ("any file renamed renet on an ops VM", "scp x.bin 192.168.111.22:/tmp/renet"),
+    # Review fe6ccbbb.1: `normpath` keeps a leading `//`, and a climbing relative path is read from a home this reader cannot see.
+    (
+        "a double-slash install dir on an ops VM",
+        "scp x.bin developer@192.168.111.22://usr/local/bin/tool",
+    ),
+    (
+        "a file under the install dir on an ops VM",
+        "scp x.bin 192.168.111.22:/usr/local/bin/sub/tool",
+    ),
+    ("a climbing path to an ops VM", "scp x.bin 192.168.111.22:../../usr/local/bin/tool"),
+    ("a climbing home path to an ops VM", "scp x.bin 192.168.111.22:~/../../usr/local/bin/tool"),
+    ("a plain relative path to an ops VM is dev work", "scp x.bin 192.168.111.22:work/x.bin"),
     ("any file to a non-ops host", "scp Dockerfile developer@10.0.0.5:/tmp/"),
     ("a near-miss address is not an ops VM", "scp Dockerfile 192.168.1110.2:/tmp/"),
     ("a run-time source to an ops VM", "scp $BIN 192.168.111.22:/tmp/"),
@@ -262,8 +274,34 @@ def _unreadable(word):
     return shellscan.unresolved(word) or any(ch in _EXPANDS for ch in word)
 
 
-def _dev_upload(sources, dest):
-    """Whether an upload is dev work on a local ops VM: the destination host is one, nothing is read only at run time, no source has a renet name, and the copy does not land in the install directory or under a renet name (#4e20f8c5)."""
+# How many entries a recursive source is walked through before it is judged strictly: `scp -r . vm:/tmp/` from the repository root is not walked to the end.
+_WALK_CAP = 5000
+
+
+def _tree_carries_renet(top):
+    """Whether a local directory a recursive scp sends holds a renet-named file, or holds more entries than `_WALK_CAP` (judged as if it did)."""
+    seen = 0
+    for _dirpath, dirnames, filenames in os.walk(top):
+        seen += len(dirnames) + len(filenames)
+        if seen > _WALK_CAP or any(_renet_named(name) for name in filenames):
+            return True
+    return False
+
+
+def _lands_in_install_dir(path):
+    """Whether a remote scp path lands in the install directory. POSIX keeps a leading `//` through `normpath`, so leading slashes are collapsed first (`//usr/local/bin/x`); a relative path that climbs (`../../usr/local/bin`) is relative to a remote home this reader cannot see, so it counts too (review fe6ccbbb.1)."""
+    if not path:
+        return False
+    landed = os.path.normpath(re.sub(r"^/+", "/", path))
+    if landed.startswith("~"):
+        landed = os.path.normpath(landed.split("/", 1)[1]) if "/" in landed else "."
+    if landed == ".." or landed.startswith("../"):
+        return True
+    return landed == INSTALL_DIR or landed.startswith(INSTALL_DIR + "/")
+
+
+def _dev_upload(sources, dest, recursive=False, cwd=None):
+    """Whether an upload is dev work on a local ops VM: the destination host is one, nothing is read only at run time, no source has a renet name, no recursive source is a directory holding one, and the copy does not land in the install directory or under a renet name (#4e20f8c5)."""
     spec = _HOST_PATH.fullmatch(dest)
     if spec is None or not OPS_VM.fullmatch(spec.group(1)):
         return False
@@ -271,14 +309,31 @@ def _dev_upload(sources, dest):
         return False
     if any(_renet_named(src) for src in sources):
         return False
+    # A recursive copy sends what a directory holds, so `scp -r bin vm:/tmp/` carries bin/renet though no source is named renet (review fe6ccbbb.2). The directory is read on disk; one that is not there sends nothing.
+    if recursive:
+        for src in sources:
+            top = os.path.join(cwd or os.getcwd(), os.path.expanduser(src))
+            if os.path.isdir(top) and _tree_carries_renet(top):
+                return False
     path = spec.group(2)
-    landed = os.path.normpath(path) if path else ""
-    return not (
-        landed == INSTALL_DIR or os.path.dirname(landed) == INSTALL_DIR or _renet_named(path)
-    )
+    return not (_lands_in_install_dir(path) or _renet_named(path))
 
 
-def _uploads(args):
+def _recursive(args):
+    """Whether scp's options carry `-r`, alone or in a bundle (`-rp`), read the way `_scp_operands` reads them."""
+    for word in args:
+        if word == "--":
+            return False
+        if word.startswith("-") and len(word) > 1 and not shellscan.unresolved(word):
+            for letter in word[1:]:
+                if letter == "r":
+                    return True
+                if letter in SCP_VALUE_LETTERS:
+                    break
+    return False
+
+
+def _uploads(args, cwd=None):
     """Whether scp given `args` sends a file to a host, as a deploy: an upload that is not dev work on an ops VM."""
     operands = _scp_operands(args)
     if len(operands) < 2:
@@ -289,7 +344,7 @@ def _uploads(args):
         hookio.grep_q(HOST_SPEC, src) for src in operands[:-1]
     )
     upload = unread_upload or hookio.grep_q(HOST_SPEC, dest)
-    return upload and not _dev_upload(operands[:-1], dest)
+    return upload and not _dev_upload(operands[:-1], dest, _recursive(args), cwd)
 
 
 def run(ev):
@@ -315,7 +370,7 @@ def run(ev):
                 readings = [args, args + fed]
             else:
                 readings = [[a.replace(marker, word) for a in args] for word in fed]
-        if any(_uploads(reading) for reading in readings):
+        if any(_uploads(reading, cwd) for reading in readings):
             ev.warn(MESSAGE)
             return hookio.DENY
     return hookio.ALLOW
