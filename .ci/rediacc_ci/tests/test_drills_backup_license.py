@@ -146,6 +146,8 @@ def _norm(text: str) -> str:
     text = re.sub(r"   curl [^\n]*\n", "   <TOOLS>\n", text)
     # `--seed-repo` is a port-only flag (Rule T 7), so the usage line the bash twin prints lacks it.
     text = text.replace(" [--seed-repo]", "")
+    # Legs n and o are port-only (added in 581206c7b after the bash twin retired into a golden), so every leg list the bash prints lacks them.
+    text = text.replace(",n,o", "").replace(", n, o", "")
     return re.sub(r"   python [^\n]*\n", "   <TOOLS>\n", text)
 
 
