@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 32 plans done, 489 of 616 boxes done (79%).
+Promoted: 3 of 35 plans done, 489 of 651 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -116,6 +116,9 @@ Promoted: 3 of 32 plans done, 489 of 616 boxes done (79%).
 | 30 | PLAN-ssh-key-source-ranges.md | 9/11 | 2 open |
 | 31 | PLAN-repo-docker-storage-prune.md | 10/14 | 4 open |
 | 32 | PLAN-production-key-only.md | 5/12 | 7 open |
+| 33 | PLAN-detached-jobs.md | 0/18 | 18 open |
+| 34 | PLAN-snapshot-read-io-cap.md | 0/11 | 11 open |
+| 35 | PLAN-backup-meter-orphaned-chunks.md | 0/6 | 6 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -150,6 +153,9 @@ Promoted: 3 of 32 plans done, 489 of 616 boxes done (79%).
 30. agent/plans/PLAN-ssh-key-source-ranges.md -- operator ASKED 2026-10-28T11:31Z "make it rdc config based ... define IPv4 on rediacc config too, with IPv6"; the executor key's allowed source ranges live in the rdc config and rdc writes the authorized_keys from=; unblocks bench L0
 31. agent/plans/PLAN-repo-docker-storage-prune.md -- operator ASKED 2026-10-28T11:21Z "do not cleanup directly! Maybe we need to improve the prune command/support of rdc"; rdc repo prune classifies and reclaims a repository's Docker storage and the reset stops leaking layers; hostinger gets the dry run only until the operator approves
 32. agent/plans/PLAN-production-key-only.md -- operator 2026-10-29 "make the production key primary and get rid of the development key ... promote the new plan at QUEUE.md and start in parallel"; one account keypair for every build, gateway and bench, the six ACCOUNT_*_DEV bws entries parked as __<NAME>, renet builds fail closed without a key
+33. agent/plans/PLAN-detached-jobs.md -- operator 2026-10-29 ASKED (all four Recommended) + "Remember we must promote all the new plans!": long verbs always run as machine jobs, proxy returns the ticket and the client polls, a ticket store per config, MCP returns the ticket
+34. agent/plans/PLAN-snapshot-read-io-cap.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; hostinger snapshot read/hash phase hit load 11.41 under the 100 Mbps upload cap; a read token bucket and hash worker count bound it before the bulk seed resumes
+35. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; 6.58 GB of chunks a killed run uploaded are in R2 but not in backup usage; bill them at commit, reconcile verb, repair hostinger
 
 ## Generated
 
@@ -161,14 +167,11 @@ Promoted: 3 of 32 plans done, 489 of 616 boxes done (79%).
 5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 6. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (12 of 14 boxes ticked)
 7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-8. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- P1, approved, not started
-9. agent/plans/PLAN-detached-jobs.md -- P1, approved, not started
-10. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-11. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-12. agent/plans/PLAN-snapshot-read-io-cap.md -- P1, approved, not started
-13. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-14. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-15. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-16. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-17. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+8. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+9. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+10. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+11. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+12. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+13. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+14. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
