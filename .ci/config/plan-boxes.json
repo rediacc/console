@@ -1882,10 +1882,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 11,
+      "open": 2,
+      "done": 12,
       "open_sigs": [
-        "8c7c85d4",
         "b9daaf63",
         "e990ac90"
       ],
@@ -1897,6 +1896,7 @@
         "7c7b94bb",
         "83bffb55",
         "884debe2",
+        "8c7c85d4",
         "9da781a9",
         "9f4cc8b1",
         "a63d1aaf",
