@@ -134,6 +134,15 @@ def bench_expected(root: pathlib.Path | None = None) -> list[str]:
     return keys
 
 
+def region_suffix(suffixes: Mapping[str, str], region: str) -> str:
+    """The bws key suffix of `region` (bench has none). An unknown region is a named refusal, not a bare KeyError."""
+    if region == BENCH:
+        return ""
+    if region not in suffixes:
+        raise ValueError("no secret suffix is known for region %r" % region)
+    return suffixes[region]
+
+
 def expected_for(row: Row, root: pathlib.Path | None = None) -> list[str]:
     """The names the deploy behind `row` pushes."""
     return bench_expected(root) if row.region == BENCH else expected_names()
@@ -318,7 +327,7 @@ def archive_extras(
     for row in rows:
         for name in row.extras:
             wanted[(row.worker, name)] = bws_key(
-                name, "" if row.region == BENCH else suffixes[row.region], row.region
+                name, region_suffix(suffixes, row.region), row.region
             )
     have = values(sorted({k for k in wanted.values() if k}))
     for row in rows:
@@ -427,7 +436,7 @@ def run(
             for w in load_workers(root, bench=opts.region == BENCH)
             if opts.region in ("all", w.region) and opts.target in ("all", w.target)
         ]
-    except (ApiError, OSError, ValueError, KeyError, tomllib.TOMLDecodeError) as exc:
+    except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     if not chosen:
         return (
@@ -437,7 +446,7 @@ def run(
         )
     try:
         rows = survey(chosen, account, token, fetch, root)
-    except (ApiError, OSError, ValueError, KeyError, tomllib.TOMLDecodeError) as exc:
+    except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     lines = [
         "%s (%s %s): %d live, %d pushed, extras: %s"

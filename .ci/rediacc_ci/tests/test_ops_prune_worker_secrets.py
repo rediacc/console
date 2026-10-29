@@ -156,3 +156,10 @@ def test_run_with_a_short_bench_payload_exits_2_and_lists_nothing(
     assert code == 2
     assert any("failing closed" in line for line in lines)
     assert rows == []
+
+
+def test_an_unknown_region_suffix_is_a_named_refusal() -> None:
+    assert verb.region_suffix({"eu": "EU"}, "eu") == "EU"
+    assert verb.region_suffix({}, verb.BENCH) == ""
+    with pytest.raises(ValueError, match="no secret suffix is known for region 'mars'"):
+        verb.region_suffix({"eu": "EU"}, "mars")
