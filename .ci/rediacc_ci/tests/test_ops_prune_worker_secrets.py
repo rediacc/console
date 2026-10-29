@@ -142,3 +142,17 @@ def test_a_short_bench_payload_fails_closed(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(verb.offline, "bench_payload_keys", lambda _text: ["ACCOUNT_JWT_SECRET"])
     with pytest.raises(ValueError, match="failing closed"):
         verb.bench_expected()
+
+
+def test_run_with_a_short_bench_payload_exits_2_and_lists_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(verb.offline, "bench_payload_keys", lambda _text: ["ACCOUNT_JWT_SECRET"])
+    live = [
+        {"name": "ACCOUNT_JWT_SECRET", "type": "secret_text"},
+        {"name": "OTHER", "type": "secret_text"},
+    ]
+    code, lines, rows = verb.run(["--region", "bench"], ENV, lambda *_a, **_k: live)
+    assert code == 2
+    assert any("failing closed" in line for line in lines)
+    assert rows == []

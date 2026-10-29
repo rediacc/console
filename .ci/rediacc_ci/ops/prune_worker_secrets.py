@@ -427,7 +427,7 @@ def run(
             for w in load_workers(root, bench=opts.region == BENCH)
             if opts.region in ("all", w.region) and opts.target in ("all", w.target)
         ]
-    except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
+    except (ApiError, OSError, ValueError, KeyError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     if not chosen:
         return (
@@ -437,7 +437,7 @@ def run(
         )
     try:
         rows = survey(chosen, account, token, fetch, root)
-    except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
+    except (ApiError, OSError, ValueError, KeyError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     lines = [
         "%s (%s %s): %d live, %d pushed, extras: %s"
