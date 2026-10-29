@@ -174,6 +174,23 @@ describe('backup run ad hoc re-run', () => {
     expect(machine.commands.some((c) => c.startsWith('sudo systemd-run'))).toBe(false);
   });
 
+  it.each(['auto-restart', 'reload', 'stop-sigterm'])(
+    'refuses while the ad-hoc unit is in the transitional state %s',
+    async (subState) => {
+      schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+      machine.subState = subState;
+      await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/still running/);
+      expect(machine.commands.some((c) => c.startsWith('sudo systemctl stop'))).toBe(false);
+    }
+  );
+
+  it.each(['exited', 'failed'])('clears a finished ad-hoc unit in state %s', async (subState) => {
+    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+    machine.subState = subState;
+    await rdcBackup('run', 'nightly', '-m', 'm1');
+    expect(machine.commands.some((c) => c.startsWith('sudo systemd-run'))).toBe(true);
+  });
+
   it('exits non-zero when systemd-run fails', async () => {
     schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
     machine.runExit = 1;

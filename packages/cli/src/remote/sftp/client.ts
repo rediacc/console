@@ -48,7 +48,6 @@ export interface SFTPClientConfig {
   ipv6?: string;
 }
 
-/** A hostname's IPv6 (AAAA) address, or undefined when it has none. */
 /** A live exec channel with stdin held open, returned by `SFTPClient.execSession`. */
 export interface ExecSessionHandle {
   /** Write one line to the remote stdin (a trailing newline is added when missing). */
@@ -64,6 +63,7 @@ export interface ExecSessionHandle {
 
 export type Ipv6Resolver = (hostname: string) => Promise<string | undefined>;
 
+/** A hostname's IPv6 (AAAA) address, or undefined when it has none. */
 const resolveAaaa: Ipv6Resolver = async (hostname) => {
   try {
     return (await lookup(hostname, { family: 6 })).address;
@@ -71,6 +71,31 @@ const resolveAaaa: Ipv6Resolver = async (hostname) => {
     return undefined;
   }
 };
+
+/** How long the AAAA lookup of the IPv6 retry may take before the original failure surfaces. */
+export const AAAA_LOOKUP_TIMEOUT_MS = 5_000;
+
+/** `resolve`, answering undefined once `ms` pass: a hung resolver must not delay the connect failure. */
+export function resolveWithin(
+  resolve: Ipv6Resolver,
+  hostname: string,
+  ms: number
+): Promise<string | undefined> {
+  return new Promise((done) => {
+    const timer = setTimeout(() => done(undefined), ms);
+    timer.unref?.();
+    resolve(hostname).then(
+      (address) => {
+        clearTimeout(timer);
+        done(address);
+      },
+      () => {
+        clearTimeout(timer);
+        done(undefined);
+      }
+    );
+  });
+}
 
 /**
  * SFTP Client for direct file operations over SSH
@@ -111,6 +136,8 @@ export class SFTPClient {
    *
    * A connect that never completes (kind `unreachable`) is retried once over the
    * machine's IPv6 address when it has one; every other failure is reported as is.
+   * The retry gets the same readyTimeout, so a machine that is down on both
+   * addresses fails after two timeout periods, not one.
    */
   async connect(): Promise<void> {
     if (this.connected) {
@@ -136,13 +163,16 @@ export class SFTPClient {
     }
   }
 
-  /** The IPv6 address to retry over: the configured one, else the AAAA record of a hostname. */
+  /**
+   * The IPv6 address to retry over: the configured one when it is an IPv6 literal, else the AAAA
+   * record of a hostname. A configured value that is not an IPv6 literal is never a retry target.
+   */
   private async ipv6Fallback(): Promise<string | undefined> {
     const { host, ipv6 } = this.config;
-    if (ipv6 && ipv6 !== host) return ipv6;
+    if (ipv6 && ipv6 !== host && isIP(ipv6) === 6) return ipv6;
     if (isIP(host) !== 0) return undefined;
-    const resolved = await this.resolveIpv6(host);
-    return resolved && resolved !== host ? resolved : undefined;
+    const resolved = await resolveWithin(this.resolveIpv6, host, AAAA_LOOKUP_TIMEOUT_MS);
+    return resolved && resolved !== host && isIP(resolved) === 6 ? resolved : undefined;
   }
 
   private connectTo(host: string): Promise<void> {
@@ -181,6 +211,11 @@ export class SFTPClient {
       });
 
       ssh.on('ready', () => {
+        // A late ready from the client the IPv6 retry replaced must not overwrite the live session.
+        if (ssh !== this.ssh) {
+          ssh.end();
+          return;
+        }
         ssh.sftp((err, sftp) => {
           if (err) {
             ssh.end();

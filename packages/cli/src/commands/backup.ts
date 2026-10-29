@@ -176,7 +176,7 @@ function registerBackupRestore(backup: Command): void {
         // No `--at`: a repo with a chunk-store lineage has no artifact on a machine to pull (the pull dies on a missing repositories/<guid>), so the restore means "the newest snapshot", exactly `--at <now>`. A repo with no manifests keeps the pull of its `repo push` artifact.
         const restoreAt =
           options.at ??
-          ((await lineageHasSnapshots(source.grandGuid ?? source.repositoryGuid))
+          ((await lineageHasSnapshots(source.grandGuid ?? source.repositoryGuid, artifactRef))
             ? new Date().toISOString()
             : undefined);
         // Only a snapshot restore has seeds to skip; refuse before the target is registered rather than ignore the flag.
@@ -387,15 +387,22 @@ async function runRestorePull(args: {
 /**
  * Whether the account index holds any snapshot of the lineage. An unreachable
  * index or an unreadable answer is "no": the caller then takes the pull route,
- * which is what restore did before the chunk store existed.
+ * which is what restore did before the chunk store existed. That fallback is
+ * said out loud, since on a chunk-store repo the pull has nothing to fetch.
  */
-async function lineageHasSnapshots(lineage: string): Promise<boolean> {
+async function lineageHasSnapshots(lineage: string, name: string): Promise<boolean> {
   try {
     const result = await accountServerFetch<BackupManifestsResponse>(
       `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
     );
     return result.manifests.length > 0; // a malformed answer throws into the catch
-  } catch {
+  } catch (error) {
+    outputService.warn(
+      t('commands.backup.restore.snapshotIndexUnreadable', {
+        name,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
     return false;
   }
 }

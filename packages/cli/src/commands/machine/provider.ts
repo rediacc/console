@@ -42,9 +42,12 @@ function readTokenFromEnv(varName: string): string {
   return value.trim();
 }
 
-/** Build a CloudProviderConfig from CLI options. */
-function buildProviderConfig(options: Record<string, string | undefined>): CloudProviderConfig {
-  const config: CloudProviderConfig = { apiToken: readTokenFromEnv(options.tokenEnv!) };
+/** Build a CloudProviderConfig from CLI options; `tokenEnv` is the --token-env value commander requires. */
+function buildProviderConfig(
+  tokenEnv: string,
+  options: Record<string, string | undefined>
+): CloudProviderConfig {
+  const config: CloudProviderConfig = { apiToken: readTokenFromEnv(tokenEnv) };
 
   if (options.provider) config.provider = options.provider;
   if (options.source) config.source = options.source;
@@ -100,7 +103,7 @@ export function registerProviderCommands(machine: Command, program: Command): vo
           );
         }
 
-        const providerConfig = buildProviderConfig(options);
+        const providerConfig = buildProviderConfig(String(options.tokenEnv), options);
         await configService.addCloudProvider(name, providerConfig);
         outputService.success(
           t('commands.machine.provider.add.success', {

@@ -261,17 +261,29 @@ describe('egress-unreachable report', () => {
     expect(result.errorGuidance).toBeUndefined();
   });
 
-  it('a thrown unreachable SshConnectError yields EGRESS_UNREACHABLE with its own guidance and no report, since it carries no target', async () => {
+  it('a thrown unreachable SshConnectError is reported with the address it carries, like an executor result', async () => {
     const fetchImpl = answerFetch({ count: 1, threshold: 3, relocated: false });
-    const { result } = await postCommand(
+    const { result, targets } = await postCommand(
       throwing('unreachable'),
       createEgressReporter({ fetchImpl })
     );
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(6);
     expect(result.errorCode).toBe('EGRESS_UNREACHABLE');
-    expect(result.errorGuidance).toMatch(/check that the machine accepts SSH from the internet/);
-    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(targets).toEqual([{ host: '10.0.0.1', port: 22 }]);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.errorGuidance).toBe(
+      'Attempt 1 of 3 before the executor moves to a new instance. Retry the command.'
+    );
+    expect(result).not.toHaveProperty('connectTarget');
+  });
+
+  it('still writes the result line when the reporter throws synchronously', async () => {
+    const { result } = await postCommand(failing('EGRESS_UNREACHABLE'), () => {
+      throw new Error('sync boom');
+    });
+    expect(result.errorCode).toBe('EGRESS_UNREACHABLE');
+    expect(result.errorGuidance).toMatch(/check that the machine accepts SSH/);
   });
 
   it('a thrown refused SshConnectError yields SSH_REFUSED and no report', async () => {

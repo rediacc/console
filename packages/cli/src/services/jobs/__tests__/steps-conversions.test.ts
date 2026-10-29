@@ -7,7 +7,7 @@
  * lands forces its name out of the list rather than leaving the list stale.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { configService } from '../../config/config-resources.js';
+import { configService, MachineNotFoundError } from '../../config/config-resources.js';
 import { outputService } from '../../core/output.js';
 import { JOB_PLANS } from '../plans.js';
 import {
@@ -15,6 +15,7 @@ import {
   listStepNames,
   planStep,
   resolveStepHandler,
+  SECRET_KEY,
   type StepContext,
   StepHandlerUnboundError,
 } from '../steps.js';
@@ -111,16 +112,21 @@ describe('conversion steps', () => {
     expect(stale).toEqual([]);
   }, 60_000);
 
-  it('no planned step declares a secret-looking param name', () => {
-    const secretLike = /(pass|secret|token|key|credential)/i;
+  it('no registered step declares a param name the secret pattern refuses', () => {
     const offenders: string[] = [];
-    for (const name of planned) {
+    for (const name of listStepNames()) {
       for (const key of getStepDefinition(name)?.params ?? []) {
-        if (secretLike.test(key)) offenders.push(`${name}.${key}`);
+        if (SECRET_KEY.test(key)) offenders.push(`${name}.${key}`);
         expect(() => planStep(name, { [key]: 'x' }), `${name}.${key}`).not.toThrow();
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('the secret pattern planStep enforces covers vault, env and private names', () => {
+    for (const key of ['vault', 'vaultId', 'envFile', 'privateKey', 'password', 'apiToken']) {
+      expect(() => planStep('recordPushBase', { [key]: 'x' }), key).toThrow(/refuses param/);
+    }
   });
 });
 
@@ -201,7 +207,7 @@ describe('conversion step handlers', () => {
     const remove = vi
       .spyOn(configService, 'removeMachine')
       .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('Machine "c1-agents-2" not found'));
+      .mockRejectedValueOnce(new MachineNotFoundError('c1-agents-2'));
 
     await (await resolveStepHandler('removeClusterMembers'))(
       ctx({ params: { cluster: 'c1', pool: 'agents', targetCount: 1, currentCount: 3 } })

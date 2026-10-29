@@ -95,7 +95,8 @@
         "pathNoListing": "L'instantané {{snapshot}} de {{name}} ne permet pas de restaurer un chemin. Restaurez tout le dépôt avec rdc backup restore --at, puis copiez le chemin.",
         "pathNoListingAbsent": "L'instantané {{snapshot}} de {{name}} n'a pas de liste de fichiers enregistrée, la restauration d'un chemin est donc impossible. Restaurez tout le dépôt avec rdc backup restore --at, puis copiez le chemin.",
         "pathNoListingLiveMount": "L'instantané {{snapshot}} de {{name}} n'a qu'une liste lue sur le montage actif, qui ne localise pas les fichiers avec exactitude. Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin.",
-        "pathNoListingNoPositions": "La liste de l'instantané {{snapshot}} de {{name}} ne contient pas la position des fichiers (elle précède la restauration de chemin). Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin."
+        "pathNoListingNoPositions": "La liste de l'instantané {{snapshot}} de {{name}} ne contient pas la position des fichiers (elle précède la restauration de chemin). Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin.",
+        "snapshotIndexUnreadable": "Impossible de lire l'index des instantanés de {{name}} ({{reason}}) : la restauration récupère donc l'artefact de la machine. Ajoutez --at pour restaurer un instantané du magasin de blocs."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "Échec de la vérification de la sauvegarde pour {{name}}",
         "optionDeep": "Recalculer le hachage de chaque cellule enregistrée (vérification complète) plutôt qu'un contrôle par échantillonnage",
         "optionStore": "Faire recalculer par le serveur le hachage de chaque bloc stocké de ce dépôt et signaler les blocs manquants ou corrompus",
-        "starting": "Vérification de la sauvegarde de {{name}} ({{level}})..."
+        "starting": "Vérification de la sauvegarde de {{name}} ({{level}})...",
+        "storeEmpty": "Le stockage ne contient aucun bloc pour {{name}} : rien n'a donc été vérifié."
       },
       "snapshots": {
         "description": "Gérer les instantanés stockés",

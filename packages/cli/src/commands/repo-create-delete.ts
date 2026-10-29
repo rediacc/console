@@ -60,20 +60,31 @@ function renderTimelineTotal(steps: { duration_ms: number }[]): void {
   outputService.setTimelineRendered();
 }
 
-/** Rollback a created repo registration if it exists. */
-async function rollbackCreateRepo(name: string): Promise<void> {
+/**
+ * Rollback the registration this create made. The GUID is the identity: a same-named repo registered since the failure
+ * (the step can run after a later command, from the finished notice) carries another GUID and is left alone.
+ */
+async function rollbackCreateRepo(name: string, guid: string): Promise<void> {
   const exists = await configService.getRepository(name);
-  if (exists) {
+  if (exists?.repositoryGuid === guid) {
     await configService.removeRepository(name);
     outputService.warn(t('commands.repo.create.rollback', { repository: name }));
   }
 }
 
-bindStepHandler('rollbackCreate', ({ params }) => rollbackCreateRepo(String(params.repo)));
+bindStepHandler('rollbackCreate', async ({ params }) => {
+  for (const key of ['repo', 'guid'] as const) {
+    if (typeof params[key] !== 'string' || params[key] === '') {
+      throw new Error(`step param "${key}" is missing`);
+    }
+  }
+  await rollbackCreateRepo(String(params.repo), String(params.guid));
+});
 
 /** Render the create result: timeline/success on success, rollback + failure otherwise. */
 async function renderCreateResult(
   name: string,
+  guid: string,
   machine: string,
   result: import('../services/executor/local-executor.js').ExecuteResult
 ): Promise<void> {
@@ -85,7 +96,7 @@ async function renderCreateResult(
     }
     await reconcileBackupSchedules(machine);
   } else {
-    await rollbackCreateRepo(name);
+    await rollbackCreateRepo(name, guid);
     renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
   }
 }
@@ -168,7 +179,7 @@ async function handleRepoCreateOnMachine(
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
-  let registered = false;
+  let createdGuid: string | undefined;
   try {
     await assertAgentRepoCreate(name, { machine: options.machine });
     await assertMachineExists(options.machine);
@@ -196,7 +207,7 @@ async function handleRepoCreateOnMachine(
       { sshPrivateKey, sshPublicKey },
       target
     );
-    registered = true;
+    createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {
@@ -233,9 +244,9 @@ async function handleRepoCreateOnMachine(
         }),
     });
 
-    await renderCreateResult(name, options.machine, result);
+    await renderCreateResult(name, repositoryGuid, options.machine, result);
   } catch (error) {
-    if (registered) await rollbackCreateRepo(name);
+    if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
     handleError(error);
   }
 }
@@ -255,7 +266,7 @@ async function handleRepoCreateOnDatastore(
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
-  let registered = false;
+  let createdGuid: string | undefined;
   try {
     await assertAgentRepoCreate(name, { datastore: options.datastore });
     const placement = await resolveDatastorePlacement(options.datastore);
@@ -279,7 +290,7 @@ async function handleRepoCreateOnDatastore(
       {},
       target
     );
-    registered = true;
+    createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {
@@ -329,9 +340,9 @@ async function handleRepoCreateOnDatastore(
         }),
     });
 
-    await renderCreateResult(name, placement.machine, result);
+    await renderCreateResult(name, repositoryGuid, placement.machine, result);
   } catch (error) {
-    if (registered) await rollbackCreateRepo(name);
+    if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
     handleError(error);
   }
 }

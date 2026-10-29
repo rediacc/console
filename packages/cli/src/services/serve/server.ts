@@ -332,7 +332,10 @@ export function createServeApp(deps: ServeDeps): Hono {
         connectTarget
       ) {
         const report = deps.reportEgressUnreachable ?? defaultEgressReporter();
-        const answer = await report(connectTarget).catch(() => undefined);
+        // A reporter that throws synchronously is caught too: the result line is always written.
+        const answer = await Promise.resolve()
+          .then(() => report(connectTarget))
+          .catch(() => undefined);
         result = { ...result, errorGuidance: egressGuidance(answer, connectTarget) };
       }
 

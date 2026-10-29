@@ -99,8 +99,27 @@ describe('transport-error ladder', () => {
     expect(step.delayMs).toBe(5_000);
   });
   it('restarts a fresh ladder after a success', () => {
-    const step = nextTransportStep(startTransportErrors(900_000), 900_000, mid);
-    if (step.giveUp) throw new Error('unexpected give-up');
-    expect(step.delayMs).toBe(2_000);
+    // A failure run from t=0 climbs the ladder.
+    let state = startTransportErrors(0);
+    for (const now of [0, 2_000, 5_000, 10_000]) {
+      const step = nextTransportStep(state, now, mid);
+      if (step.giveUp) throw new Error('unexpected give-up');
+      state = step.state;
+    }
+    expect(state.baseMs).toBeGreaterThan(INITIAL_DELAY_MS);
+    // A successful poll: the caller discards the error state and polls on the success ladder.
+    expect(nextPollStep(state.baseMs, { newLines: true, more: false }, mid).nextBaseMs).toBe(
+      INITIAL_DELAY_MS
+    );
+    // A failure at t=900s, long after the old run's budget: the stale state would give up at once.
+    expect(nextTransportStep(state, 900_000, mid).giveUp).toBe(true);
+    // The fresh run starts at the bottom of the ladder with the whole budget ahead of it.
+    const fresh = startTransportErrors(900_000);
+    const first = nextTransportStep(fresh, 900_000, mid);
+    if (first.giveUp) throw new Error('unexpected give-up');
+    expect(first.delayMs).toBe(INITIAL_DELAY_MS);
+    expect(nextTransportStep(first.state, 900_000 + TRANSPORT_BUDGET_MS - 1, mid).giveUp).toBe(
+      false
+    );
   });
 });

@@ -15,6 +15,12 @@ describe('buildRepositories bare-name addressing', () => {
     expect(result.repoGuid).toBe('guid-restored');
   });
 
+  it('never resolves a bare name to a lone fork stored under another tag', () => {
+    const configs = { 'app:dev': entry('guid-dev', 'app', 'guid-grand') };
+    expect(() => buildRepositories({ repository: 'app' }, configs)).toThrow(/has no GUID/);
+    expect(buildRepositories({ repository: 'app:dev' }, configs).repoGuid).toBe('guid-dev');
+  });
+
   it('prefers the grand over its forks', () => {
     const configs = {
       'app:fork1': entry('guid-fork', 'app', 'guid-grand'),

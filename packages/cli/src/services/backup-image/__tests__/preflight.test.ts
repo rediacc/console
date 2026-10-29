@@ -97,6 +97,15 @@ describe('probeSparse and allocatedBytesOf', () => {
     }
   });
 
+  it('answers false instead of throwing when the directory is missing', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'probe-'));
+    try {
+      expect(probeSparse(join(dir, 'absent'))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('uses blocks * 512, or the size when blocks are unknown', () => {
     expect(allocatedBytesOf({ size: 1000, blocks: 8 })).toBe(4096);
     expect(allocatedBytesOf({ size: 1000 })).toBe(1000);

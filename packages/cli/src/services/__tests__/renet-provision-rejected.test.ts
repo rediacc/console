@@ -1,3 +1,9 @@
+/**
+ * renet-execution's half of a rejected upload: a `version_rejected` provision result becomes a thrown
+ * message naming REDIACC_ALLOW_DOWNGRADE, never a success. The provisioner is mocked here; the
+ * persisted-entry probe that leads to the rejection is pinned against the real provisioner in
+ * renet-provision-remote-verify.test.ts.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockInspect, mockProvision, mockWarn, mockInfo, mockExecFileSync, mockExecSync } =

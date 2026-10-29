@@ -191,7 +191,7 @@ describe('recovery decision for a detached exit-10 result (bug #33)', () => {
   });
 });
 
-describe('runRemoteExecution reconstructs stdout in events mode (bug #31)', () => {
+describe('runRemoteExecution foreground launches', () => {
   const savedTelemetry = process.env.REDIACC_TELEMETRY_DISABLED;
 
   beforeEach(() => {
@@ -218,7 +218,7 @@ describe('runRemoteExecution reconstructs stdout in events mode (bug #31)', () =
     else process.env.REDIACC_TELEMETRY_DISABLED = savedTelemetry;
   });
 
-  it('returns reconstructed text, not raw NDJSON, so parseCapturedJson works', async () => {
+  it('reconstructs stdout in events mode: text, not raw NDJSON, so parseCapturedJson works (bug #31)', async () => {
     mockExecStreaming.mockImplementationOnce(
       (_cmd: string, handlers: { onStdout?: (data: Buffer) => void }) => {
         handlers.onStdout?.(

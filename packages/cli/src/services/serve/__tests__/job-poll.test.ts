@@ -87,6 +87,25 @@ describe('parseJobPollOutput', () => {
     expect(body.more).toBe(true);
   });
 
+  it('counts blank lines toward a full page, as renet counts them toward --max-lines', () => {
+    // renet's reader emits blank lines and counts each against the limit (pkg/jobs/logs.go), so
+    // three raw lines with one blank are a full page of three, and the rest may still be waiting.
+    const full = parseJobPollOutput(
+      [JSON.stringify({ n: 0 }), '', JSON.stringify({ n: 2 }), trailer()].join('\n'),
+      { sinceLine: 0, maxLines: 3 }
+    );
+    expect(full.events.map((e) => e.line)).toEqual([0, 2]);
+    expect(full.nextLine).toBe(3);
+    expect(full.more).toBe(true);
+    // Fewer raw lines than the limit is the end of what renet has.
+    const short = parseJobPollOutput([JSON.stringify({ n: 0 }), '', trailer()].join('\n'), {
+      sinceLine: 0,
+      maxLines: 3,
+    });
+    expect(short.nextLine).toBe(2);
+    expect(short.more).toBe(false);
+  });
+
   it('keeps a non-JSON line as a raw event instead of dropping it', () => {
     const body = parseJobPollOutput(['not json', trailer()].join('\n'), {
       sinceLine: 0,

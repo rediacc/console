@@ -1885,7 +1885,8 @@
         "pathNoListing": "Snapshot {{snapshot}} of {{name}} cannot serve a path restore. Restore the whole repository with rdc backup restore --at, then copy the path out.",
         "pathNoListingAbsent": "Snapshot {{snapshot}} of {{name}} has no stored file listing, so a path restore is not possible. Restore the whole repository with rdc backup restore --at, then copy the path out.",
         "pathNoListingLiveMount": "Snapshot {{snapshot}} of {{name}} has only a listing read from the live mount, which cannot locate files exactly. Take a new snapshot, or restore the whole repository with rdc backup restore --at and copy the path out.",
-        "pathNoListingNoPositions": "Snapshot {{snapshot}} of {{name}} has a listing without file positions (it predates path restore). Take a new snapshot, or restore the whole repository with rdc backup restore --at and copy the path out."
+        "pathNoListingNoPositions": "Snapshot {{snapshot}} of {{name}} has a listing without file positions (it predates path restore). Take a new snapshot, or restore the whole repository with rdc backup restore --at and copy the path out.",
+        "snapshotIndexUnreadable": "Could not read the snapshot index for {{name}} ({{reason}}), so the restore pulls the machine artifact. Pass --at to restore a chunk-store snapshot."
       },
       "retention": {
         "clear": {
@@ -2075,7 +2076,8 @@
         "optionStore": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one",
         "starting": "Verifying backup for {{name}} ({{level}})...",
         "completed": "Backup verified for {{name}}",
-        "failed": "Backup verification failed for {{name}}"
+        "failed": "Backup verification failed for {{name}}",
+        "storeEmpty": "The store holds no chunks for {{name}}, so nothing was verified."
       },
       "snapshots": {
         "description": "Manage stored snapshots",

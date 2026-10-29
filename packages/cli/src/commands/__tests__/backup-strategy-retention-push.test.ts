@@ -51,6 +51,17 @@ describe('strategy set --retention push failures', () => {
     expect(out.warn).not.toHaveBeenCalled();
   });
 
+  it('only warns on a 429 or 408, which a later run gets past', async () => {
+    retention.push.mockRejectedValue(
+      Object.assign(new Error('Too Many Requests'), { status: 429 })
+    );
+    await setRetention();
+    retention.push.mockRejectedValue(Object.assign(new Error('Request Timeout'), { status: 408 }));
+    await setRetention();
+    expect(out.warn).toHaveBeenCalledTimes(2);
+    expect(out.warn).toHaveBeenCalledWith('commands.backup.strategy.set.retentionPushFailed');
+  });
+
   it('only warns when the server is unreachable or answers 5xx', async () => {
     retention.push.mockRejectedValue(Object.assign(new Error('boom'), { status: 503 }));
     await setRetention();

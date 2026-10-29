@@ -238,6 +238,9 @@ describe('pushAccess', () => {
 
     expect(error).toBeInstanceOf(AccessLockoutError);
     expect(error).toMatchObject({ code: 'ACCESS_LOCKOUT', clientAddress: '203.0.113.7' });
+    expect((error as Error).message).toMatch(
+      /do not contain this session's source address 203\.0\.113\.7; pushing would lock the CLI out, so nothing was written$/
+    );
     expect(fakeSftp.writeFile).not.toHaveBeenCalled();
     expect(fakeSftp.execStreaming).not.toHaveBeenCalled();
     expect(readFileSync(authorizedKeysPath(), 'utf8')).toBe(EXISTING);

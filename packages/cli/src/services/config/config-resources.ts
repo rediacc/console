@@ -8,7 +8,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { RdcState } from '@rediacc/shared/config-schema';
+import type { AccessConfig, RdcState } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -66,6 +66,14 @@ async function assertValidResourceName(name: string): Promise<void> {
 
 export { dropAccessBindings } from './config-access.js';
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
+
+/** removeMachine of a name the config does not hold; a caller tolerating an already-missing machine tests for this class. */
+export class MachineNotFoundError extends Error {
+  constructor(readonly machine: string) {
+    super(`Machine "${machine}" not found`);
+    this.name = 'MachineNotFoundError';
+  }
+}
 
 class ConfigService extends ConfigAccessService {
   /**
@@ -228,7 +236,7 @@ class ConfigService extends ConfigAccessService {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
     const machines = state.getMachines();
-    if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
+    if (!(machineName in machines)) throw new MachineNotFoundError(machineName);
     // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
     // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
     const access = (await this.getCurrent())?.access;
@@ -244,7 +252,7 @@ class ConfigService extends ConfigAccessService {
       await state.setMachines(machines);
     } catch (error) {
       // The machine stays, so its bindings come back: neither half of the removal is left applied.
-      if (bound && access) await this.updateAccess(() => access);
+      if (bound && access) await this.restoreAccessAfterFailedRemoval(machineName, access, error);
       throw error;
     }
 
@@ -257,6 +265,23 @@ class ConfigService extends ConfigAccessService {
       /* non-fatal */
     }
     outputService.info(t('commands.config.machine.remove.sshConfigCleared', { name: machineName }));
+  }
+
+  /** Put the access bucket back after a failed removal; a failed restore must not hide why the removal failed, and says the bindings are gone. */
+  private async restoreAccessAfterFailedRemoval(
+    machineName: string,
+    access: AccessConfig,
+    removalError: unknown
+  ): Promise<void> {
+    try {
+      await this.updateAccess(() => access);
+    } catch (restoreError) {
+      const why = (e: unknown) => (e instanceof Error ? e.message : String(e));
+      throw new Error(
+        `${why(removalError)}; machine "${machineName}" was kept, but restoring its access-key bindings failed: ${why(restoreError)}`,
+        { cause: removalError }
+      );
+    }
   }
 
   async listMachines(): Promise<{ name: string; config: MachineConfig }[]> {

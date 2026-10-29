@@ -238,7 +238,7 @@ export async function selectRenetUploadBinary(
   outputService.info(
     `renet working tree ${state.top} has ${state.dirty.length} uncommitted path(s); using a build of committed HEAD ${commit.slice(0, 12)} (local edits not included; REDIACC_ALLOW_DIRTY_RENET=1 uploads the working-tree build)`
   );
-  const flavor = flavorOfBuildInfo(deps.goVersionM(localBinaryPath));
+  const flavor = workingTreeFlavor(localBinaryPath, state.top, commit, deps);
   const built = await buildRenetAtCommit(state.top, commit, deps, flavor);
   return {
     localBinaryPath: built,
@@ -246,6 +246,40 @@ export async function selectRenetUploadBinary(
     excludedPaths: state.dirty.length,
     guarded: false,
   };
+}
+
+/**
+ * The flavor of the working-tree binary, which picks the flavor of the clean build. When `go version -m`
+ * cannot read it (no Go toolchain, or not a Go binary), a complete cached clean build of `commit` in
+ * exactly one flavor answers instead; with none, or both, the failure names the binary and the cause.
+ */
+function workingTreeFlavor(
+  localBinaryPath: string,
+  top: string,
+  commit: string,
+  deps: RenetCleanBuildDeps
+): RenetFlavor {
+  try {
+    return flavorOfBuildInfo(deps.goVersionM(localBinaryPath));
+  } catch (error) {
+    const root = cleanBuildRoot(top, deps);
+    const ext = process.platform === 'win32' ? '.exe' : '';
+    const keyed = Boolean(cleanBuildEnv(top).ACCOUNT_ED25519_PUBLIC_KEY);
+    const cached = (Object.keys(RENET_FLAVOR_DIRS) as RenetFlavor[]).filter((flavor) =>
+      isCompleteCleanBuild(
+        path.join(root, cleanBuildDirName(commit, flavor)),
+        commit,
+        ext,
+        flavor,
+        keyed
+      )
+    );
+    if (cached.length === 1) return cached[0];
+    const cause = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Cannot read the build flavor of ${localBinaryPath} with \`go version -m\` (${cause}), and no single cached clean build of ${commit.slice(0, 12)} says which flavor to build.`
+    );
+  }
 }
 
 /**

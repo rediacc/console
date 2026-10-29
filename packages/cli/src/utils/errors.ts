@@ -47,21 +47,45 @@ class DispatchFailure extends DispatchExit {
   constructor(
     code: number,
     readonly errorCode: string,
-    readonly guidance: string | undefined
+    readonly guidance: string | undefined,
+    readonly connectTarget: { host: string; port: number } | undefined
   ) {
     super(code);
   }
 }
 
+/** A named failure: its code, guidance and, for an unanswered connect, the address it never reached. */
+interface NamedFailure {
+  errorCode: string;
+  guidance: string | undefined;
+  connectTarget?: { host: string; port: number };
+}
+
+/** The address of an unanswered SSH connect (kind `unreachable`), which `rdc serve` names in its egress report. */
+function unreachableTarget(error: unknown): { host: string; port: number } | undefined {
+  const e = error as { kind?: unknown; host?: unknown; port?: unknown };
+  return e.kind === 'unreachable' && typeof e.host === 'string' && typeof e.port === 'number'
+    ? { host: e.host, port: e.port }
+    : undefined;
+}
+
 /** The named code and guidance of an error that carries one (an SSH connect failure), or undefined. */
-export function namedFailureOf(
-  error: unknown
-): { errorCode: string; guidance: string | undefined } | undefined {
+export function namedFailureOf(error: unknown): NamedFailure | undefined {
   if (error instanceof DispatchFailure) {
-    return { errorCode: error.errorCode, guidance: error.guidance };
+    return {
+      errorCode: error.errorCode,
+      guidance: error.guidance,
+      ...(error.connectTarget && { connectTarget: error.connectTarget }),
+    };
   }
   const named = sshConnectError(error);
-  return named?.errorCode ? { errorCode: named.errorCode, guidance: named.guidance } : undefined;
+  if (!named?.errorCode) return undefined;
+  const connectTarget = unreachableTarget(error);
+  return {
+    errorCode: named.errorCode,
+    guidance: named.guidance,
+    ...(connectTarget && { connectTarget }),
+  };
 }
 
 /** Get actionable guidance for an error */
@@ -159,7 +183,12 @@ export function handleError(error: unknown): never {
   // for one tenant must not kill the process serving everyone else.
   const named = namedFailureOf(error);
   if (named && currentRequestContext()) {
-    throw new DispatchFailure(cliError.exitCode, named.errorCode, named.guidance);
+    throw new DispatchFailure(
+      cliError.exitCode,
+      named.errorCode,
+      named.guidance,
+      named.connectTarget
+    );
   }
   exitProcess(cliError.exitCode);
 }

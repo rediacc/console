@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2250,
-    "sourceCommit": "95a124a7c34b859184f1dc1ba80f38e8f548f01d"
+    "keyCount": 2252,
+    "sourceCommit": "566a14758174f81fa7eba87e25bc117ae5e96581"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -120,6 +120,7 @@
     "commands.backup.restore.pulling": "2de30120",
     "commands.backup.restore.restored": "8ed4ad00",
     "commands.backup.restore.restoringSnapshot": "510f88ee",
+    "commands.backup.restore.snapshotIndexUnreadable": "c9049619",
     "commands.backup.restore.sourceUnknown": "5be0a248",
     "commands.backup.restore.stats": "d18463ea",
     "commands.backup.restore.statsSeed": "4c734f76",
@@ -262,6 +263,7 @@
     "commands.backup.verify.optionDeep": "e2f6e8f9",
     "commands.backup.verify.optionStore": "597a7c72",
     "commands.backup.verify.starting": "10d32493",
+    "commands.backup.verify.storeEmpty": "7c454163",
     "commands.cluster.create.baseDomainOption": "1c1244f2",
     "commands.cluster.create.cidrOption": "4c7c998b",
     "commands.cluster.create.controlDsBackendOption": "fbf5b834",

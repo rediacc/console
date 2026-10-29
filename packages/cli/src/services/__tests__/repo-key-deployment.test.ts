@@ -69,7 +69,7 @@ describe('buildKeyDeploymentScript', () => {
       'AUTH_KEYS="$SSH_DIR/authorized_keys"',
       'mkdir -p "$SSH_DIR" && chmod 700 "$SSH_DIR"',
       `KEY_BLOB="${PUB_KEY.split(' ')[1]}"`,
-      `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS"; fi`,
+      `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS" || { rm -f "$TEMP"; echo "authorized_keys rewrite failed; key not appended" >&2; exit 1; }; fi`,
       `echo 'command="${REMOTE_RENET_PATH} sandbox-gateway myrepo --guid guid-123 --datastore ${DS}" ${PUB_KEY}' >> "$AUTH_KEYS"`,
       'chmod 600 "$AUTH_KEYS"',
     ].join('; ');
@@ -101,6 +101,33 @@ describe('buildKeyDeploymentScript', () => {
       expect(lines).toContain(lineB);
       expect(lines.filter((l) => l.includes(keyA))).toHaveLength(1);
       expect(lines).toHaveLength(3);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('fails without appending when rewriting the old line fails, so the key never lands twice', () => {
+    const key = `ssh-ed25519 ${'B'.repeat(60)}`;
+    const home = mkdtempSync(join(tmpdir(), 'keydeploy-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      mkdirSync(join(home, 'bin'));
+      const keys = join(home, '.ssh', 'authorized_keys');
+      const before = `ssh-rsa team\ncommand="old" ${key}\n`;
+      writeFileSync(keys, before);
+      // An awk whose rewrite pass (the program with `next`) fails, as on a full disk.
+      writeFileSync(
+        join(home, 'bin', 'awk'),
+        '#!/bin/bash\ncase "$*" in *next*) exit 2;; *) exec /usr/bin/env -i PATH=/usr/bin:/bin awk "$@";; esac\n',
+        { mode: 0o755 }
+      );
+      expect(() =>
+        execFileSync('bash', ['-c', buildKeyDeploymentScript('repoa', key, 'g1', DS)], {
+          env: { ...process.env, HOME: home, PATH: `${join(home, 'bin')}:${process.env.PATH}` },
+          stdio: 'pipe',
+        })
+      ).toThrow(/authorized_keys rewrite failed/);
+      expect(readFileSync(keys, 'utf8')).toBe(before);
     } finally {
       rmSync(home, { recursive: true, force: true });
     }

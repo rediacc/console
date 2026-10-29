@@ -169,20 +169,27 @@ async function removeDeployedForkKey(forkKey: string, keyState: ForkKeyState): P
   await removeRepoKeyIfDeployed(forkKey, keyState.machine, keyState.guid);
 }
 
-/** Rollback a fork registration if it exists, and the repo key it deployed. */
-async function rollbackFork(forkKey: string, keyState: ForkKeyState): Promise<void> {
+/**
+ * Rollback a fork registration if it is still the one this fork made, and the repo key it deployed. The GUID is the
+ * identity: a same-named fork registered since the failure (the step can run after a later command) is left alone.
+ */
+async function rollbackFork(forkKey: string, keyState: ForkKeyState, guid: string): Promise<void> {
   const exists = await configService.getRepository(forkKey);
-  if (exists) {
+  if (exists?.repositoryGuid === guid) {
     await configService.removeRepository(forkKey);
     outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
   }
   await removeDeployedForkKey(forkKey, keyState);
 }
 
-bindStepHandler('rollbackFork', ({ params }) => {
+bindStepHandler('rollbackFork', async ({ params }) => {
   const text = (key: string) =>
     typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
-  return rollbackFork(String(params.repo), { machine: text('machine'), guid: text('guid') });
+  const repo = text('repo');
+  const guid = text('guid');
+  if (repo === undefined) throw new Error('step param "repo" is missing');
+  if (guid === undefined) throw new Error('step param "guid" is missing');
+  await rollbackFork(repo, { machine: text('machine'), guid }, guid);
 });
 
 /** Validate and register a new fork in the config. Returns the new GUID and networkId. */
@@ -556,7 +563,7 @@ export async function handleForkAction(
   );
   let forkKey = '';
   // Rollback must only ever remove the row THIS invocation registered, a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
-  let registered = false;
+  let forkGuid: string | undefined;
   const keyState: ForkKeyState = {};
   try {
     // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag label grammar before any config mutation; `latest` stays reserved as the grand pointer that a fork must not clobber (#495).
@@ -579,7 +586,7 @@ export async function handleForkAction(
       parentConfig,
       options.immutable
     );
-    registered = true;
+    forkGuid = repositoryGuid;
 
     // Resolved BEFORE the lease: it is a config read, and anything between acquire() and the try/finally below escapes the release on a throw.
     const datastoreMount = await recordedDatastoreMount(parent);
@@ -603,8 +610,8 @@ export async function handleForkAction(
       lease.release();
     }
   } catch (error) {
-    if (registered) {
-      await rollbackFork(forkKey, keyState);
+    if (forkGuid !== undefined) {
+      await rollbackFork(forkKey, keyState, forkGuid);
     }
     handleError(error);
   }

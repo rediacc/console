@@ -62,9 +62,10 @@ export interface JobPlan {
   /** For a plan with no `fn`: the overlap.go name (a command kind) its `lock` is read from. */
   lockFrom?: string;
   /**
-   * For a plan with no `fn`: the renet function or kind it runs that overlap.go does not
-   * classify the way `lock` says (`overlap` is what overlap.go gives it today), so the gap is
-   * named, and a change in overlap.go fails the coverage test.
+   * For a plan with no `fn`: the renet function or kind it runs that overlap.go either does not
+   * list (its fallback rules classify it) or classifies differently from `lock`. `overlap` is what
+   * overlap.go gives it today, so a change in overlap.go fails the coverage test. A listed name
+   * whose class agrees with `lock` is a `lockFrom`, not a gap.
    */
   lockGap?: { runs: string; overlap: LockClass };
 }

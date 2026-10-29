@@ -95,7 +95,8 @@
         "pathNoListing": "La instantánea {{snapshot}} de {{name}} no admite restaurar una ruta. Restaura todo el repositorio con rdc backup restore --at y luego copia la ruta.",
         "pathNoListingAbsent": "La instantánea {{snapshot}} de {{name}} no tiene listado de archivos guardado, así que no se puede restaurar una ruta. Restaura todo el repositorio con rdc backup restore --at y luego copia la ruta.",
         "pathNoListingLiveMount": "La instantánea {{snapshot}} de {{name}} solo tiene un listado leído del montaje en vivo, que no ubica los archivos con exactitud. Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta.",
-        "pathNoListingNoPositions": "El listado de la instantánea {{snapshot}} de {{name}} no incluye posiciones de archivos (es anterior a la restauración de rutas). Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta."
+        "pathNoListingNoPositions": "El listado de la instantánea {{snapshot}} de {{name}} no incluye posiciones de archivos (es anterior a la restauración de rutas). Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta.",
+        "snapshotIndexUnreadable": "No se pudo leer el índice de instantáneas de {{name}} ({{reason}}), así que la restauración trae el artefacto de la máquina. Usa --at para restaurar una instantánea del almacén de fragmentos."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "Falló la verificación de la copia de seguridad de {{name}}",
         "optionDeep": "Recalcular el hash de cada celda registrada (verificación completa) en lugar de una comprobación muestreada",
         "optionStore": "Hacer que el servidor recalcule el hash de cada fragmento almacenado de este repositorio y señale los que falten o estén dañados",
-        "starting": "Verificando la copia de seguridad de {{name}} ({{level}})..."
+        "starting": "Verificando la copia de seguridad de {{name}} ({{level}})...",
+        "storeEmpty": "El almacén no tiene fragmentos de {{name}}, así que no se verificó nada."
       },
       "snapshots": {
         "description": "Gestionar las instantáneas almacenadas",

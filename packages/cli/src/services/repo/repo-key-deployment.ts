@@ -15,10 +15,10 @@ import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 
 const GATEWAY_BIN = REMOTE_RENET_PATH;
 
-// The datastore is written into the command= entry, which sshd hands to a shell and which sits inside a single-quoted echo below, so only plain absolute path characters are admitted.
 // The blob is written into the script inside double quotes, so only base64 characters are admitted.
 const SAFE_KEY_BLOB = /^[A-Za-z0-9+/]+={0,2}$/;
 
+// The datastore is written into the command= entry, which sshd hands to a shell and which sits inside a single-quoted echo below, so only plain absolute path characters are admitted.
 const SAFE_DATASTORE_PATH = /^\/[A-Za-z0-9._/-]+$/;
 
 /**
@@ -71,8 +71,9 @@ export function buildKeyDeploymentScript(
     'AUTH_KEYS="$SSH_DIR/authorized_keys"',
     'mkdir -p "$SSH_DIR" && chmod 700 "$SSH_DIR"',
     `KEY_BLOB="${keyBlob}"`,
-    // Remove the old version if present: a line is the key's when one of its whitespace fields is exactly the blob (command= options never hold it)
-    `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS"; fi`,
+    // Remove the old version if present: a line is the key's when one of its whitespace fields is exactly the blob (command= options never hold it).
+    // set -e does not stop an && list, so a failed rewrite exits explicitly: appending after it would leave the key on two lines.
+    `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS" || { rm -f "$TEMP"; echo "authorized_keys rewrite failed; key not appended" >&2; exit 1; }; fi`,
     // Append new key
     `echo '${keyLine}' >> "$AUTH_KEYS"`,
     'chmod 600 "$AUTH_KEYS"',

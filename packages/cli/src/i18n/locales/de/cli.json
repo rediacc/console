@@ -95,7 +95,8 @@
         "pathNoListing": "Snapshot {{snapshot}} von {{name}} unterstützt keine Pfad-Wiederherstellung. Stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
         "pathNoListingAbsent": "Snapshot {{snapshot}} von {{name}} hat keine gespeicherte Dateiliste, daher ist keine Pfad-Wiederherstellung möglich. Stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
         "pathNoListingLiveMount": "Snapshot {{snapshot}} von {{name}} hat nur eine Dateiliste vom laufenden Mount, die Dateien nicht exakt verortet. Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
-        "pathNoListingNoPositions": "Die Dateiliste von Snapshot {{snapshot}} von {{name}} enthält keine Dateipositionen (sie stammt aus der Zeit vor der Pfad-Wiederherstellung). Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus."
+        "pathNoListingNoPositions": "Die Dateiliste von Snapshot {{snapshot}} von {{name}} enthält keine Dateipositionen (sie stammt aus der Zeit vor der Pfad-Wiederherstellung). Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
+        "snapshotIndexUnreadable": "Der Snapshot-Index für {{name}} konnte nicht gelesen werden ({{reason}}), daher holt die Wiederherstellung das Artefakt der Maschine. Mit --at wird ein Snapshot aus dem Chunk-Speicher wiederhergestellt."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "Backup-Verifizierung für {{name}} fehlgeschlagen",
         "optionDeep": "Jede erfasste Zelle neu hashen (vollständige Verifizierung) statt einer stichprobenartigen Prüfung",
         "optionStore": "Jeden gespeicherten Chunk dieses Repositorys auf dem Server neu hashen lassen und fehlende oder beschädigte benennen",
-        "starting": "Backup für {{name}} wird verifiziert ({{level}})..."
+        "starting": "Backup für {{name}} wird verifiziert ({{level}})...",
+        "storeEmpty": "Der Speicher enthält keine Chunks für {{name}}, daher wurde nichts verifiziert."
       },
       "snapshots": {
         "description": "Gespeicherte Snapshots verwalten",

@@ -95,7 +95,8 @@
         "pathNoListing": "{{name}} 的快照 {{snapshot}} 无法用于路径恢复。请先用 rdc backup restore --at 恢复整个仓库，再把该路径复制出来。",
         "pathNoListingAbsent": "{{name}} 的快照 {{snapshot}} 没有保存文件列表，因此无法恢复路径。请先用 rdc backup restore --at 恢复整个仓库，再把该路径复制出来。",
         "pathNoListingLiveMount": "{{name}} 的快照 {{snapshot}} 只有从运行中挂载读取的列表，无法精确定位文件。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。",
-        "pathNoListingNoPositions": "{{name}} 的快照 {{snapshot}} 的列表不含文件位置（它早于路径恢复功能）。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。"
+        "pathNoListingNoPositions": "{{name}} 的快照 {{snapshot}} 的列表不含文件位置（它早于路径恢复功能）。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。",
+        "snapshotIndexUnreadable": "无法读取 {{name}} 的快照索引（{{reason}}），因此将从机器上拉取制品进行恢复。如需从块存储恢复快照，请传入 --at。"
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "{{name}} 的备份验证失败",
         "optionDeep": "对每个已记录的单元重新计算哈希（完整验证），而不是抽样检查",
         "optionStore": "让服务器对此仓库已存储的每个块重新计算哈希，并指出缺失或损坏的块",
-        "starting": "正在验证 {{name}} 的备份（{{level}}）..."
+        "starting": "正在验证 {{name}} 的备份（{{level}}）...",
+        "storeEmpty": "存储中没有 {{name}} 的任何块，因此未验证任何内容。"
       },
       "snapshots": {
         "description": "管理已存储的快照",

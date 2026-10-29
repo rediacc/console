@@ -111,6 +111,27 @@ describe('backup verify --store', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
+  it('refuses a server that cycles through cursors (A, B, A) instead of looping', async () => {
+    mockFetch
+      .mockResolvedValueOnce(page(1, H('a')))
+      .mockResolvedValueOnce(page(1, H('b')))
+      .mockResolvedValue(page(1, H('a')));
+    await expect(run(['shop', '--store'])).rejects.toThrow(/repeated cursor a{64}/);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('a lineage with no stored chunks is neither verified nor exit 0', async () => {
+    mockFetch.mockResolvedValueOnce(page(0, null));
+    await run(['shop', '--store']);
+
+    expect(mockSetExitCode).toHaveBeenCalledWith(1);
+    expect(mockRecord).toHaveBeenCalledWith('shop', { kind: 'verify', status: 'empty' });
+    expect(mockRecord).not.toHaveBeenCalledWith(
+      'shop',
+      expect.objectContaining({ status: 'verified' })
+    );
+  });
+
   it('without --store, still runs the machine-side verb and never calls the server verify', async () => {
     mockExecute.mockResolvedValue({
       success: true,

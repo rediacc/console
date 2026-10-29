@@ -545,6 +545,13 @@ describe('auditService.flush', () => {
       await auditService.flush();
     });
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
+    // Nothing was queued either: a flush outside the scope, where the token is usable, still sends nothing.
+    await runInRequestContext(containerContext, () => {
+      readyWithOneEvent();
+      return Promise.resolve();
+    });
+    await auditService.flush();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
   it('still sends inside a daemon request, which has no config scope', async () => {

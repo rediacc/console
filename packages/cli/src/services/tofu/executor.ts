@@ -8,7 +8,8 @@
  */
 
 import { type ExecFileOptions, execFile } from 'node:child_process';
-import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import { chmod, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCacheDir } from '@rediacc/shared/paths';
 import { compareVersions } from '@rediacc/shared/utils';
@@ -165,14 +166,26 @@ export class TofuExecutor {
   /**
    * Write main.tf.json to the work directory. The config carries the provider API token and the
    * state tofu writes beside it carries resource secrets, so the directory is 0700 and the file
-   * 0600 (chmod as well, since mkdir and writeFile modes apply only on creation).
+   * 0600 (chmod as well, since mkdir and writeFile modes apply only on creation, and the umask can narrow them).
    */
   async writeConfig(config: Record<string, unknown>): Promise<void> {
     await mkdir(this.workDir, { recursive: true, mode: 0o700 });
     await chmod(this.workDir, 0o700);
     const file = join(this.workDir, 'main.tf.json');
-    await writeFile(file, JSON.stringify(config, null, 2), { mode: 0o600 });
-    await chmod(file, 0o600);
+    // A fresh 0600 file renamed over the old one: the token is never written into a loose file, and a
+    // symlink at the target is replaced rather than followed out of the work directory.
+    const tmp = join(
+      this.workDir,
+      `.main.tf.json.${process.pid}.${randomBytes(6).toString('hex')}`
+    );
+    try {
+      await writeFile(tmp, JSON.stringify(config, null, 2), { mode: 0o600, flag: 'wx' });
+      await chmod(tmp, 0o600);
+      await rename(tmp, file);
+    } catch (error) {
+      await rm(tmp, { force: true });
+      throw error;
+    }
   }
 
   /** Run `tofu init`. */

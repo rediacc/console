@@ -83,8 +83,9 @@ function validateFlags(ref: string | undefined, options: PruneOptions): void {
 
 /**
  * The root program owns `-y, --yes` and consumes it wherever it appears on the
- * line, so this command's own option never fires; the root flag arrives as
- * REDIACC_YES=1 (cli.ts preAction).
+ * line; cli.ts preAction hands it down as `options.yes` and sets REDIACC_YES=1.
+ * An exported REDIACC_YES=1 confirms too, as it confirms every prompt
+ * (utils/prompt.ts askConfirm).
  */
 function assumeYes(options: PruneOptions): boolean {
   return options.yes === true || process.env.REDIACC_YES === '1';

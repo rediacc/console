@@ -152,21 +152,55 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
     };
     mockSetMachinesError = new Error('disk full');
     const { configService } = await import('../config/config-resources.js');
-    const edits: unknown[] = [];
+    const stored = structuredClone(mockAccess);
+    let edits = 0;
     const spy = vi.spyOn(configService, 'updateAccess').mockImplementation((edit) => {
-      edits.push(edit(mockAccess as never));
+      edits++;
+      mockAccess = edit(mockAccess as never);
       return Promise.resolve();
     });
     try {
       await expect(configService.removeMachine('m3')).rejects.toThrow('disk full');
-      expect(edits).toHaveLength(2);
-      expect(edits[1]).toEqual(mockAccess);
-      expect(mockMachines).toHaveProperty('m3');
+      // The prune applied, then the restore put the stored bindings back.
+      expect(edits).toBe(2);
+      expect(mockAccess).toEqual(stored);
     } finally {
       spy.mockRestore();
       mockAccess = undefined;
       mockSetMachinesError = undefined;
     }
+  });
+
+  it('removeMachine keeps the original error when restoring the bindings fails too', async () => {
+    mockMachines = { m3: { ip: '9.9.9.9', user: 'u3', port: 22 } };
+    mockAccess = {
+      keys: { probe: { publicKey: 'ssh-ed25519 AAAA probe', machines: { m3: true } } },
+    };
+    mockSetMachinesError = new Error('disk full');
+    const { configService } = await import('../config/config-resources.js');
+    const spy = vi
+      .spyOn(configService, 'updateAccess')
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('access write refused'));
+    try {
+      const failure = await configService.removeMachine('m3').catch((e: unknown) => e);
+      expect(failure).toBeInstanceOf(Error);
+      expect((failure as Error).message).toBe(
+        'disk full; machine "m3" was kept, but restoring its access-key bindings failed: access write refused'
+      );
+      expect((failure as Error).cause).toBe(mockSetMachinesError);
+    } finally {
+      spy.mockRestore();
+      mockAccess = undefined;
+      mockSetMachinesError = undefined;
+    }
+  });
+
+  it('removeMachine of a missing machine throws MachineNotFoundError', async () => {
+    mockMachines = {};
+    const { configService, MachineNotFoundError } = await import('../config/config-resources.js');
+    await expect(configService.removeMachine('gone')).rejects.toBeInstanceOf(MachineNotFoundError);
+    await expect(configService.removeMachine('gone')).rejects.toThrow('Machine "gone" not found');
   });
 
   it('removeMachine removes the SSH entry', async () => {

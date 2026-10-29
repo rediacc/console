@@ -5,7 +5,7 @@ import type { Client as SSHClient } from 'ssh2';
 import { afterEach, describe, expect, it } from 'vitest';
 import { seamedSftpClient } from '../../__tests__/sftp-client-seam.js';
 import { EXIT_CODES } from '../../types/index.js';
-import type { SFTPClient } from '../sftp/client.js';
+import { resolveWithin, type SFTPClient } from '../sftp/client.js';
 import {
   classifySshConnectFailure,
   SshConnectError,
@@ -249,6 +249,81 @@ describe('SFTPClient.connect IPv6 retry', () => {
     );
     expect(error.kind).toBe(outcome);
     expect(tried).toEqual([v4]);
+  });
+
+  it('a late ready from the replaced client never takes over the IPv6 session', async () => {
+    const clients: (EventEmitter & { sftpCalls?: number; ended?: number })[] = [];
+    const { create } = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
+    const tracking = () => {
+      const c = create() as unknown as EventEmitter & {
+        sftp: (cb: (err: Error | undefined, sftp: unknown) => void) => void;
+        end: () => void;
+        sftpCalls?: number;
+        ended?: number;
+      };
+      const sftp = c.sftp;
+      c.sftpCalls = 0;
+      c.ended = 0;
+      c.sftp = (cb) => {
+        c.sftpCalls = (c.sftpCalls ?? 0) + 1;
+        sftp(cb);
+      };
+      c.end = () => {
+        c.ended = (c.ended ?? 0) + 1;
+      };
+      clients.push(c);
+      return c as unknown as SSHClient;
+    };
+    const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, tracking, noAaaa);
+    await client.connect();
+    const endedBefore = clients[0]?.ended ?? 0;
+    clients[0]?.emit('ready');
+    expect(clients[0]?.sftpCalls).toBe(0);
+    expect(clients[0]?.ended).toBe(endedBefore + 1);
+    expect(clients[1]?.sftpCalls).toBe(1);
+    expect(client.isConnected()).toBe(true);
+  });
+
+  it.each(['192.0.2.99', 'not-an-address'])(
+    'a configured ipv6 that is no IPv6 literal (%s) is never a retry target',
+    async (bogus) => {
+      const { tried, create } = byHost({ [v4]: 'unreachable' });
+      const error = await connectError(
+        seamedSftpClient({ ...base, host: v4, ipv6: bogus }, create, noAaaa)
+      );
+      expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
+      expect(error.ipv6Attempt).toBeUndefined();
+      expect(tried).toEqual([v4]);
+    }
+  );
+
+  it('a hung AAAA resolver answers undefined once its time is up', async () => {
+    const started = Date.now();
+    const hung = () => new Promise<string | undefined>(() => undefined);
+    await expect(resolveWithin(hung, 'm.example.test', 50)).resolves.toBeUndefined();
+    expect(Date.now() - started).toBeLessThan(2_000);
+    await expect(resolveWithin(() => Promise.resolve(v6), 'm', 50)).resolves.toBe(v6);
+    await expect(resolveWithin(() => Promise.reject(new Error('x')), 'm', 50)).resolves.toBe(
+      undefined
+    );
+  });
+
+  it('the IPv6 retry runs with the same readyTimeout as the first attempt', async () => {
+    const timeouts: number[] = [];
+    const { create } = byHost({ [v4]: 'unreachable', [v6]: 'unreachable' });
+    const recording = () => {
+      const c = create() as unknown as {
+        connect: (cfg: { host: string; readyTimeout: number }) => void;
+      };
+      const connect = c.connect;
+      c.connect = (cfg) => {
+        timeouts.push(cfg.readyTimeout);
+        connect(cfg);
+      };
+      return c as unknown as SSHClient;
+    };
+    await connectError(seamedSftpClient({ ...base, host: v4, ipv6: v6 }, recording, noAaaa));
+    expect(timeouts).toEqual([base.timeout, base.timeout]);
   });
 
   it('a late close from the replaced client leaves the IPv6 session connected', async () => {

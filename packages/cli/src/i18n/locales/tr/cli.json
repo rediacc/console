@@ -95,7 +95,8 @@
         "pathNoListing": "{{name}} deposunun {{snapshot}} anlık görüntüsü yol geri yüklemesine uygun değil. Tüm depoyu rdc backup restore --at ile geri yükleyip yolu oradan kopyalayın.",
         "pathNoListingAbsent": "{{name}} deposunun {{snapshot}} anlık görüntüsünde kayıtlı dosya listesi yok, bu yüzden yol geri yüklenemez. Tüm depoyu rdc backup restore --at ile geri yükleyip yolu oradan kopyalayın.",
         "pathNoListingLiveMount": "{{name}} deposunun {{snapshot}} anlık görüntüsünde yalnızca çalışan bağlantı noktasından okunmuş bir liste var ve bu liste dosyaları tam olarak konumlandıramaz. Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın.",
-        "pathNoListingNoPositions": "{{name}} deposunun {{snapshot}} anlık görüntüsündeki listede dosya konumları yok (yol geri yüklemesinden önce alınmış). Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın."
+        "pathNoListingNoPositions": "{{name}} deposunun {{snapshot}} anlık görüntüsündeki listede dosya konumları yok (yol geri yüklemesinden önce alınmış). Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın.",
+        "snapshotIndexUnreadable": "{{name}} için anlık görüntü dizini okunamadı ({{reason}}), bu yüzden geri yükleme makinedeki yapıtı çekiyor. Parça deposundaki bir anlık görüntüyü geri yüklemek için --at verin."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "{{name}} için yedek doğrulaması başarısız oldu",
         "optionDeep": "Örneklemeli kontrol yerine kayıtlı her hücreyi yeniden özetle (tam doğrulama)",
         "optionStore": "Sunucunun bu deponun saklanan her parçasını yeniden özetlemesini ve eksik ya da bozuk olanları adıyla bildirmesini sağla",
-        "starting": "{{name}} için yedek doğrulanıyor ({{level}})..."
+        "starting": "{{name}} için yedek doğrulanıyor ({{level}})...",
+        "storeEmpty": "Depoda {{name}} için hiç parça yok, bu yüzden hiçbir şey doğrulanmadı."
       },
       "snapshots": {
         "description": "Saklanan anlık görüntüleri yönet",

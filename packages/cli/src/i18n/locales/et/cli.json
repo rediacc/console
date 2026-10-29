@@ -95,7 +95,8 @@
         "pathNoListing": "Hoidla {{name}} hetktõmmis {{snapshot}} ei sobi tee taastamiseks. Taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee sealt välja.",
         "pathNoListingAbsent": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud faililoendit, seega tee taastamine ei ole võimalik. Taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee sealt välja.",
         "pathNoListingLiveMount": "Hoidla {{name}} hetktõmmisel {{snapshot}} on ainult töötavast haakest loetud loend, mis ei leia faile täpselt üles. Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja.",
-        "pathNoListingNoPositions": "Hoidla {{name}} hetktõmmise {{snapshot}} loendis pole failide asukohti (see on tee taastamisest vanem). Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja."
+        "pathNoListingNoPositions": "Hoidla {{name}} hetktõmmise {{snapshot}} loendis pole failide asukohti (see on tee taastamisest vanem). Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja.",
+        "snapshotIndexUnreadable": "{{name}} hetktõmmiste indeksit ei õnnestunud lugeda ({{reason}}), seega tõmbab taastamine masina artefakti. Tükihoidla hetktõmmise taastamiseks lisa --at."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "Varukoopia kinnitamine ebaõnnestus hoidlale {{name}}",
         "optionDeep": "Räsi uuesti iga salvestatud rakk (täielik kinnitamine) valimipõhise kontrolli asemel",
         "optionStore": "Lase serveril räsida uuesti selle hoidla iga salvestatud tükk ja nimetada puuduvad või rikutud tükid",
-        "starting": "Varukoopia kinnitamine hoidlale {{name}} ({{level}})..."
+        "starting": "Varukoopia kinnitamine hoidlale {{name}} ({{level}})...",
+        "storeEmpty": "Hoidlas pole {{name}} jaoks ühtegi tükki, seega ei kontrollitud midagi."
       },
       "snapshots": {
         "description": "Halda salvestatud hetktõmmiseid",

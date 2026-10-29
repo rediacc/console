@@ -340,6 +340,7 @@ export interface StoreVerifyVerdict {
 export async function runStoreVerify(lineageGuid: string): Promise<StoreVerifyVerdict> {
   const verdict: StoreVerifyVerdict = { lineageGuid, checked: 0, missing: [], corrupt: [] };
   let after: string | undefined;
+  const sent = new Set<string>();
   for (;;) {
     const page = await accountServerFetch<BackupChunkVerifyResponse>(
       '/account/api/v1/backups/verify',
@@ -349,11 +350,12 @@ export async function runStoreVerify(lineageGuid: string): Promise<StoreVerifyVe
     verdict.missing.push(...page.chunks.missing);
     verdict.corrupt.push(...page.chunks.corrupt);
     if (!page.chunks.nextAfter) return verdict;
-    // A cursor that does not advance would loop forever on a misbehaving server.
-    if (page.chunks.nextAfter === after) {
-      throw new Error(`backup verify --store: the server repeated cursor ${after}`);
+    // A cursor already sent, the last one or any earlier (A, B, A), would loop forever on a misbehaving server.
+    if (sent.has(page.chunks.nextAfter) || page.chunks.nextAfter === after) {
+      throw new Error(`backup verify --store: the server repeated cursor ${page.chunks.nextAfter}`);
     }
     after = page.chunks.nextAfter;
+    sent.add(after);
   }
 }
 
@@ -379,6 +381,13 @@ function registerBackupVerify(backup: Command): void {
             const verdict = await runStoreVerify(await resolveLineage(repoRef));
             const format = getOutputFormat();
             outputService.print(verdict, format === 'table' ? 'json' : format);
+            // A lineage with no stored chunks verified nothing: it is not recorded or reported as verified.
+            if (verdict.checked === 0) {
+              outputService.warn(t('commands.backup.verify.storeEmpty', { name: repoKey }));
+              await recordBackupRun(repoKey, { kind: 'verify', status: 'empty' });
+              setExitCode(1);
+              return;
+            }
             const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
             await recordBackupRun(repoKey, {
               kind: 'verify',

@@ -95,7 +95,8 @@
         "pathNoListing": "{{name}}의 스냅샷 {{snapshot}}은(는) 경로 복원을 지원하지 않습니다. rdc backup restore --at 명령으로 저장소 전체를 복원한 뒤 경로를 복사하세요.",
         "pathNoListingAbsent": "{{name}}의 스냅샷 {{snapshot}}에는 저장된 파일 목록이 없어 경로 복원을 할 수 없습니다. rdc backup restore --at 명령으로 저장소 전체를 복원한 뒤 경로를 복사하세요.",
         "pathNoListingLiveMount": "{{name}}의 스냅샷 {{snapshot}}에는 실행 중인 마운트에서 읽은 목록만 있어 파일 위치를 정확히 알 수 없습니다. 새 스냅샷을 만들거나 rdc backup restore --at 명령으로 저장소 전체를 복원한 뒤 경로를 복사하세요.",
-        "pathNoListingNoPositions": "{{name}}의 스냅샷 {{snapshot}} 목록에는 파일 위치 정보가 없습니다 (경로 복원이 생기기 전에 만들어졌습니다). 새 스냅샷을 만들거나 rdc backup restore --at 명령으로 저장소 전체를 복원한 뒤 경로를 복사하세요."
+        "pathNoListingNoPositions": "{{name}}의 스냅샷 {{snapshot}} 목록에는 파일 위치 정보가 없습니다 (경로 복원이 생기기 전에 만들어졌습니다). 새 스냅샷을 만들거나 rdc backup restore --at 명령으로 저장소 전체를 복원한 뒤 경로를 복사하세요.",
+        "snapshotIndexUnreadable": "{{name}}의 스냅샷 색인을 읽지 못해({{reason}}) 머신의 아티팩트를 가져와 복원합니다. 청크 저장소의 스냅샷을 복원하려면 --at을 지정하세요."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "{{name}}의 백업 검증에 실패했습니다",
         "optionDeep": "샘플링 검사 대신 기록된 모든 셀을 다시 해시합니다 (전체 검증)",
         "optionStore": "서버가 이 저장소에 저장된 모든 청크를 다시 해시하고 누락되거나 손상된 청크를 알려 줍니다",
-        "starting": "{{name}}의 백업을 검증하는 중 ({{level}})..."
+        "starting": "{{name}}의 백업을 검증하는 중 ({{level}})...",
+        "storeEmpty": "저장소에 {{name}}의 청크가 없어 아무것도 검증하지 않았습니다."
       },
       "snapshots": {
         "description": "저장된 스냅샷을 관리합니다",

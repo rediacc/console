@@ -788,6 +788,25 @@ export function enrichJobs(
   return (jobs ?? []).map((j) => (j.repo_guid ? { ...j, repository: resolve(j.repo_guid) } : j));
 }
 
+/**
+ * The printed `machine status --output json` document: the enriched sections, then `jobs` (always
+ * present, an empty array when renet reports none), `stale_binary` and `backup_staleness`.
+ */
+export function statusJsonDocument(
+  enriched: Record<string, unknown>,
+  jobs: JobInfo[] | undefined,
+  resolve: (guid: string) => string,
+  staleBinary: RenetProcess[] | null,
+  staleBackups: StaleBackupRepo[]
+): Record<string, unknown> {
+  return {
+    ...enriched,
+    jobs: enrichJobs(jobs, resolve),
+    stale_binary: staleBinary,
+    backup_staleness: staleBackups,
+  };
+}
+
 function renderRunningJobs(jobs: JobInfo[] | undefined, resolve: (guid: string) => string): void {
   const lines = runningJobLines(jobs, resolve);
   if (lines.length === 0) return;
@@ -859,12 +878,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             machineName
           );
           outputService.print(
-            {
-              ...enriched,
-              jobs: enrichJobs(listResult.jobs, resolve),
-              stale_binary: staleBinary,
-              backup_staleness: staleBackups,
-            },
+            statusJsonDocument(enriched, listResult.jobs, resolve, staleBinary, staleBackups),
             format
           );
         } else {

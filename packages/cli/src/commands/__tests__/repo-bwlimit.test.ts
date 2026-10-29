@@ -134,6 +134,16 @@ describe('repo push/pull --bwlimit', () => {
     expect(mockExecute).not.toHaveBeenCalled();
   });
 
+  it('push refuses a blank --bwlimit instead of ignoring it', async () => {
+    await expect(run(['push', 'app', '--to', 'dst-machine', '--bwlimit', ''])).rejects.toThrow(
+      /bwlimitInvalid/
+    );
+    await expect(run(['pull', 'app', '--from', 'src2', '--bwlimit', '  '])).rejects.toThrow(
+      /bwlimitInvalid/
+    );
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
   it('push without --bwlimit sends none', async () => {
     await run(['push', 'app', '--to', 'dst-machine']);
     expect(callFor('backup_push')?.params.bwlimit).toBeUndefined();

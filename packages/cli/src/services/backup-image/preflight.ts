@@ -23,10 +23,19 @@ export function allocatedBytesOf(st: { size: number; blocks?: number }): number 
   return typeof st.blocks === 'number' ? st.blocks * 512 : st.size;
 }
 
-/** True when a file truncated to 64 MiB in `dir` occupies fewer blocks than its size. */
+/**
+ * True when a file truncated to 64 MiB in `dir` occupies fewer blocks than its size. False when the
+ * probe cannot run (a missing or unwritable `dir`): not sparse is the conservative answer, and the
+ * statfs of the same directory in checkSpace names the real failure.
+ */
 export function probeSparse(dir: string): boolean {
   const path = join(dir, `.rdc-sparse-probe-${process.pid}-${Date.now()}`);
-  const fd = openSync(path, 'wx', 0o600);
+  let fd: number;
+  try {
+    fd = openSync(path, 'wx', 0o600);
+  } catch {
+    return false;
+  }
   try {
     ftruncateSync(fd, SPARSE_PROBE_BYTES);
     const st = fstatSync(fd);

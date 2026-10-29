@@ -4,8 +4,9 @@
  * The API C1 implements in commands/backup-image.ts is pinned by the interfaces below:
  * `runDownload(options, deps)` takes every side effect through `deps`, throws for a usage or
  * environment refusal (missing --to directory, missing rsync) and returns `{ exitCode, results }`
- * for per-repo outcomes. The module is loaded with a runtime path so these tests stay independent
- * of the command's import graph.
+ * for per-repo outcomes. The module is imported through a runtime path and typed by the local
+ * interfaces below, so the type check of these tests does not follow the command's exports; at
+ * run time the module and its whole import graph load as usual.
  */
 
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

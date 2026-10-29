@@ -51,7 +51,8 @@ function assertRangeFlagsNamed(options: RangeOptions): void {
 }
 
 /**
- * The ranges named by the flags, or undefined when none was given.
+ * The ranges named by the flags, or undefined when none was given. A given
+ * `--ipv4` or `--ipv6` that names no CIDR throws a ValidationError.
  * `--hosted-executor` seeds both lists with the observed hosted-executor egress
  * ranges; `--ipv4`/`--ipv6` add to them. Repeats are dropped; the schema
  * validates each entry.

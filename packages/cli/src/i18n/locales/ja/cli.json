@@ -95,7 +95,8 @@
         "pathNoListing": "{{name}} のスナップショット {{snapshot}} ではパスの復元ができません。rdc backup restore --at でリポジトリ全体を復元し、そこからパスをコピーしてください。",
         "pathNoListingAbsent": "{{name}} のスナップショット {{snapshot}} には保存済みのファイル一覧がないため、パスの復元はできません。rdc backup restore --at でリポジトリ全体を復元し、そこからパスをコピーしてください。",
         "pathNoListingLiveMount": "{{name}} のスナップショット {{snapshot}} にあるのは稼働中のマウントから読み取った一覧だけで、ファイルの位置を正確に特定できません。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。",
-        "pathNoListingNoPositions": "{{name}} のスナップショット {{snapshot}} の一覧にはファイルの位置情報がありません（パスの復元に対応する前のものです）。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。"
+        "pathNoListingNoPositions": "{{name}} のスナップショット {{snapshot}} の一覧にはファイルの位置情報がありません（パスの復元に対応する前のものです）。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。",
+        "snapshotIndexUnreadable": "{{name}} のスナップショット索引を読み取れなかったため（{{reason}}）、マシン上のアーティファクトから復元します。チャンクストアのスナップショットを復元するには --at を指定してください。"
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "{{name}} のバックアップ検証に失敗しました",
         "optionDeep": "サンプリングによるチェックの代わりに、記録済みの全セルを再ハッシュする（完全な検証）",
         "optionStore": "このリポジトリの保存済みチャンクをすべてサーバー側で再ハッシュし、欠落または破損したチャンクを示す",
-        "starting": "{{name}} のバックアップを検証中（{{level}}）..."
+        "starting": "{{name}} のバックアップを検証中（{{level}}）...",
+        "storeEmpty": "ストアに {{name}} のチャンクが1つもないため、何も検証されていません。"
       },
       "snapshots": {
         "description": "保存済みスナップショットを管理します",

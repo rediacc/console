@@ -210,6 +210,15 @@ describe('repo fork — hard-isolate of secrets', () => {
   });
 });
 
+/** The parent for its ref; the fork row, as registerFork added it, once it exists. */
+function registeredOrParent(ref: string): unknown {
+  if (ref === 'app') return PARENT;
+  if (ref === 'app:staging' && mockAddRepository.mock.calls.length > 0) {
+    return mockAddRepository.mock.calls[0][1];
+  }
+  return undefined;
+}
+
 describe('repo fork — orchestration', () => {
   it('plain fork: defers identity refresh, no up leg, no post-up tasks, lease released', async () => {
     await handleForkAction('app', 'staging', { machine: 'hostinger' });
@@ -362,13 +371,7 @@ describe('repo fork — orchestration', () => {
   it('a thrown error after the key deploy also removes the key', async () => {
     mockExecute.mockRejectedValue(new Error('connection lost'));
     // The fork row exists once registerFork has added it, so the rollback finds it.
-    mockGetRepository.mockImplementation((ref: string) =>
-      Promise.resolve(
-        ref === 'app' || (ref === 'app:staging' && mockAddRepository.mock.calls.length > 0)
-          ? PARENT
-          : undefined
-      )
-    );
+    mockGetRepository.mockImplementation((ref: string) => Promise.resolve(registeredOrParent(ref)));
 
     await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
       'connection lost'
@@ -380,13 +383,7 @@ describe('repo fork — orchestration', () => {
 
   it('a failure before the key deploy never touches the machine key', async () => {
     mockAcquire.mockRejectedValue(new Error('ssh unreachable'));
-    mockGetRepository.mockImplementation((ref: string) =>
-      Promise.resolve(
-        ref === 'app' || (ref === 'app:staging' && mockAddRepository.mock.calls.length > 0)
-          ? PARENT
-          : undefined
-      )
-    );
+    mockGetRepository.mockImplementation((ref: string) => Promise.resolve(registeredOrParent(ref)));
 
     await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
       'ssh unreachable'

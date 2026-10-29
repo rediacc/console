@@ -235,5 +235,47 @@ describe('per-repo health after a supervisor restart (C3)', () => {
       expect.stringContaining('rediacc-docker-2816.service (1 container)')
     );
     expect(warn).toHaveBeenCalledWith(expect.stringContaining(UNHEALTHY));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('rediacc-docker-2880.service (containers: web exited/none)')
+    );
+  });
+
+  it('warns on an unhealthy repository that no failed process entry names, with its containers', () => {
+    const report = parseDaemonUpgradeJson(
+      JSON.stringify({
+        processes: [],
+        repos: [
+          {
+            unit: 'rediacc-docker-3000.service',
+            network_id: 3000,
+            healthy: false,
+            error: 'db not healthy',
+            containers: [{ id: 'c', name: 'db', state: 'running', health: 'unhealthy' }],
+          },
+        ],
+      })
+    );
+    reportDaemonUpgrade({ ran: true, ...report });
+    expect(warn).toHaveBeenCalledWith(
+      'Repository not healthy after the restart: rediacc-docker-3000.service: db not healthy (containers: db running/unhealthy)'
+    );
+  });
+
+  it('skips null entries instead of throwing away the whole report', () => {
+    const report = parseDaemonUpgradeJson(
+      JSON.stringify({
+        processes: [null, { pid: 1, unit: 'rediacc-hub.service', exe: CUR, action: 'restarted' }],
+        repos: [null, { unit: 'u', network_id: 1, healthy: true, containers: [null] }],
+      })
+    );
+    expect(report.restarted.map((p) => p.unit)).toEqual(['rediacc-hub.service']);
+    expect(report.repos).toEqual([{ unit: 'u', networkId: 1, healthy: true, containers: [] }]);
+  });
+
+  it('files a failed entry whose error is empty without an error key', () => {
+    const report = parseDaemonUpgradeJson(
+      JSON.stringify({ processes: [{ pid: 7, unit: 'u', exe: CUR, action: 'failed', error: '' }] })
+    );
+    expect(report.failed).toEqual([{ pid: 7, unit: 'u', exe: CUR }]);
   });
 });

@@ -138,6 +138,12 @@ async function recordPushBase(
 }
 
 bindStepHandler('recordPushBase', async ({ params, finishedAt }) => {
+  // A plan without a verified base has nothing to record; String() would store the text "undefined" as a delta base.
+  for (const key of ['repo', 'machine', 'verifiedBase'] as const) {
+    if (typeof params[key] !== 'string' || params[key] === '') {
+      throw new Error(`step param "${key}" is missing`);
+    }
+  }
   const method = params.method === 'delta' ? 'delta' : 'rsync';
   await recordPushBase(
     String(params.repo),

@@ -4,8 +4,9 @@
  * Pins the API C1 implements in commands/backup-image.ts: `runUpload(options, deps)` takes every
  * side effect through `deps`, throws for a refusal, and returns `{ exitCode, results }`.
  * The local image and its state file are real files in a temp directory, written with the S1
- * state module. The module is loaded with a runtime path so these tests stay independent of the
- * command's import graph.
+ * state module. The module is imported through a runtime path and typed by the local interfaces
+ * below, so the type check of these tests does not follow the command's exports; at run time the
+ * module and its whole import graph load as usual.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

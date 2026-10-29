@@ -491,6 +491,8 @@ function toFailure(
     ? {
         errorCode: named.errorCode,
         ...(named.guidance ? { errorGuidance: named.guidance } : {}),
+        // An unanswered connect keeps its address, so the egress report fires on this path as on executor.execute's.
+        ...(named.connectTarget ? { connectTarget: named.connectTarget } : {}),
       }
     : {};
 

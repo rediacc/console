@@ -13,7 +13,7 @@ vi.mock('../../i18n/index.js', () => ({
   t: (k: string, p?: Record<string, unknown>) => (p ? `${k} ${JSON.stringify(p)}` : k),
 }));
 
-const { runningJobLines, enrichJobs } = await import('../machine/status.js');
+const { runningJobLines, enrichJobs, statusJsonDocument } = await import('../machine/status.js');
 
 const GUID = 'a0000000-0000-4000-8000-000000000001';
 const FOREIGN = 'b0000000-0000-4000-8000-000000000002';
@@ -83,6 +83,14 @@ describe('machine status running jobs', () => {
     const out = enrichJobs([live], resolve);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ job_id: 'j-123', repo_guid: GUID, repository: 'mail' });
+  });
+
+  it('the printed JSON document always carries a jobs key, empty when renet reports none', () => {
+    const doc = statusJsonDocument({ machine: 'hostinger' }, undefined, resolve, null, []);
+    expect(Object.keys(doc)).toEqual(['machine', 'jobs', 'stale_binary', 'backup_staleness']);
+    expect(doc.jobs).toEqual([]);
+    const withJob = statusJsonDocument({ machine: 'hostinger' }, [live], resolve, null, []);
+    expect(withJob.jobs).toEqual([{ ...live, repository: 'mail' }]);
   });
 
   it('control: an empty or absent jobs section prints nothing extra', () => {

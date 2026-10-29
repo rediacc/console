@@ -196,7 +196,7 @@ describe('G4 wiring (source): verbs behind executors and prompts', () => {
     const body = sourceFrom('repo-create-delete.ts', 'async function renderCreateResult');
     const hook = body.indexOf('await reconcileBackupSchedules(machine)');
     expect(hook).toBeGreaterThan(-1);
-    expect(hook).toBeLessThan(body.indexOf('rollbackCreateRepo(name)'));
+    expect(hook).toBeLessThan(body.indexOf('rollbackCreateRepo(name, guid)'));
   });
 
   it('delete reconciles the machine after the config entry settles', () => {

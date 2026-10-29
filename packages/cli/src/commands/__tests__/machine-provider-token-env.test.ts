@@ -56,9 +56,22 @@ describe('machine provider add --token-env', () => {
   });
 
   it('no longer accepts the token itself on argv', async () => {
+    // --token-env is satisfied, so the only thing left to refuse is --token itself as an unknown option.
+    process.env.TEST_PROVIDER_TOKEN = 'tok-env';
     await expect(
-      add(['p1', '--provider', 'linode/linode', '--token', 'tok-123'])
-    ).rejects.toThrow();
+      add([
+        'p1',
+        '--provider',
+        'linode/linode',
+        '--token-env',
+        'TEST_PROVIDER_TOKEN',
+        '--token',
+        'tok-123',
+      ])
+    ).rejects.toMatchObject({
+      code: 'commander.unknownOption',
+      message: expect.stringContaining("'--token'"),
+    });
     expect(addCloudProvider).not.toHaveBeenCalled();
   });
 });

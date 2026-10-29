@@ -285,6 +285,44 @@ describe('network-ID conflicts', () => {
     });
   });
 
+  it('runWithNetworkIdRetry stops when a mismatch names a persisted ID already refused', async () => {
+    const { runWithNetworkIdRetry } = await import('../network-id-discovery.js');
+    await withRepoState(async () => {
+      const mismatch = JSON.stringify({
+        code: 'network_id_mismatch',
+        message: 'persisted',
+        network_id: 2944,
+        persisted_network_id: 2880,
+      });
+      const fail = (stderr: string) => ({ success: false, exitCode: 17, durationMs: 1, stderr });
+      // 2816 mismatches (persisted 2880); 2880 is in use; the fresh 2944 mismatches back to 2880.
+      const run = vi
+        .fn()
+        .mockResolvedValueOnce(
+          fail(
+            JSON.stringify({
+              code: 'network_id_mismatch',
+              message: 'persisted',
+              network_id: 2816,
+              persisted_network_id: 2880,
+            })
+          )
+        )
+        .mockResolvedValueOnce(fail(refusal(2880)))
+        .mockResolvedValue(fail(mismatch));
+      const result = await runWithNetworkIdRetry({
+        repoKey: 'z',
+        target: { machine: 'm' },
+        networkId: 2816,
+        run,
+        allocate: allocateAbove,
+      });
+      expect(run.mock.calls.map((c) => c[0])).toEqual([2816, 2880, 2944]);
+      expect(result.success).toBe(false);
+      expect(result.stderr).toBe(mismatch);
+    });
+  });
+
   it('runWithNetworkIdRetry does not retry an unrelated failure', async () => {
     const { runWithNetworkIdRetry } = await import('../network-id-discovery.js');
     const run = vi

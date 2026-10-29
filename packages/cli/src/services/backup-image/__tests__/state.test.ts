@@ -23,6 +23,7 @@ import {
   readImageState,
   recordUpload,
   releaseLocalLock,
+  writeFully,
   writeImageState,
 } from '../state.js';
 
@@ -93,6 +94,22 @@ describe('state file writes', () => {
     ).toThrow('crash');
     expect(readImageState(p.state)?.status).toBe('incomplete');
     expect(readdirSync(p.machineDir).filter((f) => f.includes('.tmp-'))).toEqual([]);
+  });
+
+  it('writes the rest of a short write and refuses a write that makes no progress', () => {
+    const chunks: string[] = [];
+    // A disk that takes at most 3 bytes per call.
+    writeFully(7, 'hello world', (_fd, buf, offset, length) => {
+      const n = Math.min(3, length);
+      chunks.push(buf.subarray(offset, offset + n).toString());
+      return n;
+    });
+    expect(chunks.join('')).toBe('hello world');
+    // A full disk: the first call writes 4 bytes, then nothing.
+    let calls = 0;
+    expect(() => writeFully(7, 'hello world', () => (calls++ === 0 ? 4 : 0))).toThrow(
+      'short write: 4 of 11 bytes written'
+    );
   });
 
   it('drops a planted credential field, never writing it', () => {
@@ -178,6 +195,52 @@ describe('local lock', () => {
     expect(() =>
       acquireLocalLock(lock(), { pid: 222, host: 'h', isPidAlive: () => false })
     ).toThrow(ImageLockError);
+  });
+
+  it('a crash between writing the lock body and publishing it leaves no lock, so the next run is not refused', () => {
+    expect(() =>
+      acquireLocalLock(lock(), {
+        pid: 111,
+        host: 'h',
+        beforePublish: () => {
+          throw new Error('crash');
+        },
+      })
+    ).toThrow('crash');
+    expect(existsSync(lock())).toBe(false);
+    expect(readdirSync(root)).toEqual([]);
+    expect(acquireLocalLock(lock(), { pid: 222, host: 'h' }).pid).toBe(222);
+  });
+
+  it('a takeover never deletes the fresh lock a faster run created over the same dead holder', () => {
+    acquireLocalLock(lock(), { pid: 111, host: 'h', isPidAlive: () => true });
+    const alive = (pid: number) => pid === 333;
+    expect(() =>
+      acquireLocalLock(lock(), {
+        pid: 222,
+        host: 'h',
+        isPidAlive: alive,
+        // The faster run (pid 333) removes the dead lock and creates its own while this one is between its read and its takeover.
+        beforeTakeover: () => {
+          rmSync(lock());
+          acquireLocalLock(lock(), { pid: 333, host: 'h', isPidAlive: alive });
+        },
+      })
+    ).toThrow(ImageLockError);
+    expect(JSON.parse(readFileSync(lock(), 'utf8')).pid).toBe(333);
+    expect(readdirSync(root)).toEqual(['mail.latest.lock']);
+  });
+
+  it('takes the lock when the dead holder is removed before the takeover', () => {
+    acquireLocalLock(lock(), { pid: 111, host: 'h', isPidAlive: () => true });
+    const info = acquireLocalLock(lock(), {
+      pid: 222,
+      host: 'h',
+      isPidAlive: () => false,
+      beforeTakeover: () => rmSync(lock()),
+    });
+    expect(info.pid).toBe(222);
+    expect(JSON.parse(readFileSync(lock(), 'utf8')).pid).toBe(222);
   });
 
   it('releases only its own lock', () => {

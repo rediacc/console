@@ -133,7 +133,7 @@ describe('repo prune refusals (before any execution)', () => {
     expect(mockAskConfirm).not.toHaveBeenCalled();
   });
 
-  // The root program owns -y/--yes and consumes it anywhere on the line (cli.ts), so the subcommand never sees options.yes; the flag arrives as REDIACC_YES=1.
+  // The root program owns -y/--yes and consumes it anywhere on the line (cli.ts); its preAction hands it down as options.yes and REDIACC_YES=1, and an exported REDIACC_YES=1 confirms on its own.
   it('lets --offline through in an agent environment when the root -y set REDIACC_YES', async () => {
     mockIsAgent.mockReturnValue(true);
     process.env.REDIACC_YES = '1';
@@ -144,6 +144,17 @@ describe('repo prune refusals (before any execution)', () => {
     }
     expect(mockExecute).toHaveBeenCalledTimes(1);
     expect(mockAskConfirm).not.toHaveBeenCalled();
+  });
+
+  it('an exported REDIACC_YES=1 outside an agent confirms the downtime, as it confirms every prompt', async () => {
+    process.env.REDIACC_YES = '1';
+    try {
+      await run('shop', '--apply', '--offline');
+    } finally {
+      delete process.env.REDIACC_YES;
+    }
+    expect(mockAskConfirm).not.toHaveBeenCalled();
+    expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 
   it('prints the downtime notice and asks for --offline without -y outside an agent', async () => {

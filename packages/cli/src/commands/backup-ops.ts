@@ -123,9 +123,13 @@ async function triggerAdhocBackup(
   }
 }
 
+/** SubStates of a unit that has finished (or was never loaded): only these are safe to stop and clear. */
+const FINISHED_SUBSTATES = new Set(['', 'dead', 'exited', 'failed']);
+
 /**
  * An ad-hoc unit lingers after it exits (`--remain-after-exit`), and systemd-run refuses a name that is
- * still loaded. Refuse while it is running; otherwise stop it and clear its failed state so the next run can reuse the name.
+ * still loaded. Refuse unless it has finished (any transitional state such as auto-restart or reload counts
+ * as running); otherwise stop it and clear its failed state so the next run can reuse the name.
  */
 async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: string): Promise<void> {
   let subState = '';
@@ -138,7 +142,7 @@ async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: stri
       onStderr: () => {},
     }
   );
-  if (['running', 'start', 'start-pre', 'start-post'].includes(subState.trim())) {
+  if (!FINISHED_SUBSTATES.has(subState.trim())) {
     throw new Error(
       `An ad-hoc backup for "${name}" is still running (${unit}.service). Wait for it, or cancel it with: rdc backup cancel ${name}`
     );

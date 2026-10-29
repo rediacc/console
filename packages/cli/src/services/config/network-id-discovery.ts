@@ -235,16 +235,17 @@ function toConflict(raw: Record<string, unknown>): NetworkIdConflict | undefined
 /**
  * The ID a refused verb moves to: a mismatch adopts the repo's persisted ID
  * (the machine wins, D4(a)); an ID in use allocates past the holder, above the
- * machine's used set.
+ * machine's used set. `undefined` when the mismatch names a persisted ID this
+ * run already saw refused: the repo can only run on that ID, so no retry can succeed.
  */
 export async function nextNetworkIdAfterConflict(
   conflict: NetworkIdConflict,
   target: NetworkIdTarget,
   allocate: (floor: number[]) => Promise<number> = allocateNetworkIdWithFloor,
   refused: number[] = []
-): Promise<number> {
+): Promise<number | undefined> {
   if (conflict.code === 'network_id_mismatch' && conflict.persistedNetworkId !== undefined) {
-    return conflict.persistedNetworkId;
+    return refused.includes(conflict.persistedNetworkId) ? undefined : conflict.persistedNetworkId;
   }
   const used = await targetFloor(target);
   return allocate([...new Set([...used, ...refused, conflict.networkId])]);
@@ -306,7 +307,7 @@ async function recordNetworkId(repoKey: string, networkId: number): Promise<void
 }
 
 /**
- * After renet refused a verb's network ID: move to the next one (past the holder, or the persisted ID on a mismatch), record it, and run `rerun` once with it. `undefined` when the failure is not a network-ID refusal.
+ * After renet refused a verb's network ID: move to the next one (past the holder, or the persisted ID on a mismatch), record it, and run `rerun` once with it. `undefined` when the failure is not a network-ID refusal, or is a mismatch whose persisted ID was already refused.
  */
 export async function rerunAfterNetworkIdConflict(input: {
   failed: ExecuteResult;
@@ -325,6 +326,7 @@ export async function rerunAfterNetworkIdConflict(input: {
     input.allocate,
     input.refused
   );
+  if (next === undefined) return undefined;
   await recordNetworkId(input.repoKey, next);
   return input.rerun(next);
 }

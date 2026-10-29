@@ -89,6 +89,18 @@ const machinePlane = CLI_CONTRACT.commands
   .map((c) => c.pathKey)
   .sort(byText);
 
+/**
+ * The lock the J0b audit asks for each plan whose lock overlap.go cannot vouch for (a lockGap). overlap.go is no
+ * oracle here, so the audited class is pinned: a changed lock must change this table in the same diff.
+ */
+const GAP_LOCKS: Readonly<Record<string, string>> = {
+  'repo canary remove': 'repo-exclusive',
+  'backup schedule': 'machine-exclusive',
+  'machine infra push': 'machine-exclusive',
+  'subscription refresh': 'machine-exclusive',
+  'subscription status': 'read',
+};
+
 /** A plan with no `fn` is checked through the name it reads its lock from, or the gap it declares. */
 function fnlessMismatches(cmd: string, plan: JobPlan): string[] {
   const { lockFrom, lockGap } = plan;
@@ -98,15 +110,30 @@ function fnlessMismatches(cmd: string, plan: JobPlan): string[] {
     if (!listed) return [`${cmd}: lockFrom ${lockFrom} is not in overlap.go`];
     return listed === plan.lock ? [] : [`${cmd}: ${plan.lock} != ${listed} (${lockFrom})`];
   }
-  if (lockGap) {
-    const actual = overlap.classForJob(lockGap.runs, 'guid');
-    return actual === lockGap.overlap
-      ? []
-      : [
-          `${cmd}: overlap.go gives ${lockGap.runs} ${actual}, the declared gap says ${lockGap.overlap}`,
-        ];
-  }
+  if (lockGap) return gapMismatches(cmd, plan.lock, lockGap);
   return [`${cmd}: no fn, so it needs lockFrom or lockGap`];
+}
+
+/** A lockGap holds while overlap.go still gives what it says, it is a real gap or an unlisted name, and the lock is the audited one. */
+function gapMismatches(
+  cmd: string,
+  lock: string,
+  lockGap: NonNullable<JobPlan['lockGap']>
+): string[] {
+  const actual = overlap.classForJob(lockGap.runs, 'guid');
+  if (actual !== lockGap.overlap) {
+    return [
+      `${cmd}: overlap.go gives ${lockGap.runs} ${actual}, the declared gap says ${lockGap.overlap}`,
+    ];
+  }
+  if (overlap.byName.has(lockGap.runs) && actual === lock) {
+    return [
+      `${cmd}: overlap.go lists ${lockGap.runs} as ${actual} like its lock, so it is a lockFrom`,
+    ];
+  }
+  const audited = GAP_LOCKS[cmd];
+  if (audited === undefined) return [`${cmd}: a new lockGap needs its audited lock in GAP_LOCKS`];
+  return lock === audited ? [] : [`${cmd}: lock ${lock} != audited ${audited}`];
 }
 
 /** How a plan's declared classes differ from overlap.go's, for the job with and without a repository. */
@@ -208,6 +235,33 @@ describe('JOB_PLANS coverage', () => {
     expect(classMismatches('x', staleGap)).toHaveLength(1);
     const bare: JobPlan = { form: 'single', lock: 'read', timeout: '10m', box: 'J16' };
     expect(classMismatches('x', bare)).toHaveLength(1);
+  });
+
+  it('a wrong lock on a lockGap plan is caught against its audited class', () => {
+    const infraPush = JOB_PLANS['machine infra push'];
+    expect(infraPush.lockGap).toBeDefined();
+    expect(classMismatches('machine infra push', { ...infraPush, lock: 'read' })).toEqual([
+      'machine infra push: lock read != audited machine-exclusive',
+    ]);
+    const refresh = JOB_PLANS['subscription refresh'];
+    expect(
+      classMismatches('subscription refresh', { ...refresh, lock: 'repo-shared' })
+    ).toHaveLength(1);
+    // A gap over a name overlap.go lists, with the class it already gives, is no gap.
+    const listedNoGap: JobPlan = {
+      form: 'command-kind',
+      lock: 'machine-shared',
+      timeout: '10m',
+      box: 'J17',
+      lockGap: { runs: 'backup-unit', overlap: 'machine-shared' },
+    };
+    expect(classMismatches('backup schedule', listedNoGap)).toEqual([
+      'backup schedule: overlap.go lists backup-unit as machine-shared like its lock, so it is a lockFrom',
+    ]);
+    // A new gap has no audited class yet.
+    expect(classMismatches('new gap', { ...infraPush })).toEqual([
+      'new gap: a new lockGap needs its audited lock in GAP_LOCKS',
+    ]);
   });
 
   it('the J4 verbs are the nine J0 verbs', () => {

@@ -88,6 +88,7 @@ vi.mock('../../utils/errors.js', async () => {
 });
 
 const { registerBackupCommands } = await import('../backup.js');
+const { outputService } = await import('../../services/core/output.js');
 
 async function run(argv: readonly string[]): Promise<void> {
   const program = new Command();
@@ -128,10 +129,21 @@ describe('backup restore without --at', () => {
     expect(fnCalls()).not.toContain('backup_restore');
   });
 
-  it('keeps the pull route when the index cannot be read', async () => {
+  it('keeps the pull route when the index cannot be read, and says so', async () => {
     mockFetch.mockRejectedValue(new Error('offline'));
     await run(ARGS);
     expect(fnCalls()).toContain('backup_pull');
+    expect(outputService.warn).toHaveBeenCalledWith(
+      'commands.backup.restore.snapshotIndexUnreadable:{"name":"m1:src","reason":"offline"}'
+    );
+  });
+
+  it('says nothing about the index when it answered', async () => {
+    mockFetch.mockResolvedValue({ manifests: [] });
+    await run(ARGS);
+    expect(outputService.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('snapshotIndexUnreadable')
+    );
   });
 });
 

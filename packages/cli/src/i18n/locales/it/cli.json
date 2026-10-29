@@ -95,7 +95,8 @@
         "pathNoListing": "Lo snapshot {{snapshot}} di {{name}} non consente il ripristino di un percorso. Ripristina l'intero repository con rdc backup restore --at, poi copia il percorso.",
         "pathNoListingAbsent": "Lo snapshot {{snapshot}} di {{name}} non ha un elenco di file salvato, quindi il ripristino di un percorso non è possibile. Ripristina l'intero repository con rdc backup restore --at, poi copia il percorso.",
         "pathNoListingLiveMount": "Lo snapshot {{snapshot}} di {{name}} ha solo un elenco letto dal montaggio attivo, che non individua i file con precisione. Crea un nuovo snapshot, oppure ripristina l'intero repository con rdc backup restore --at e copia il percorso.",
-        "pathNoListingNoPositions": "L'elenco dello snapshot {{snapshot}} di {{name}} non contiene le posizioni dei file (è precedente al ripristino di percorsi). Crea un nuovo snapshot, oppure ripristina l'intero repository con rdc backup restore --at e copia il percorso."
+        "pathNoListingNoPositions": "L'elenco dello snapshot {{snapshot}} di {{name}} non contiene le posizioni dei file (è precedente al ripristino di percorsi). Crea un nuovo snapshot, oppure ripristina l'intero repository con rdc backup restore --at e copia il percorso.",
+        "snapshotIndexUnreadable": "Impossibile leggere l'indice degli snapshot di {{name}} ({{reason}}), quindi il ripristino scarica l'artefatto della macchina. Usa --at per ripristinare uno snapshot dall'archivio dei chunk."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "Verifica del backup non riuscita per {{name}}",
         "optionDeep": "Ricalcola l'hash di ogni cella registrata (verifica completa) invece di un controllo campionato",
         "optionStore": "Fa ricalcolare al server l'hash di ogni chunk archiviato di questo repository e segnala quelli mancanti o danneggiati",
-        "starting": "Verifica del backup di {{name}} ({{level}}) in corso..."
+        "starting": "Verifica del backup di {{name}} ({{level}}) in corso...",
+        "storeEmpty": "L'archivio non contiene chunk per {{name}}, quindi non è stato verificato nulla."
       },
       "snapshots": {
         "description": "Gestisci gli snapshot archiviati",

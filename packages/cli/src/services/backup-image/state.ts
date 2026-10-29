@@ -12,6 +12,7 @@ import {
   closeSync,
   existsSync,
   fsyncSync,
+  linkSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -208,6 +209,48 @@ export interface WriteHooks {
   beforeRename?: () => void;
 }
 
+/**
+ * Writes all of `body` to `fd`. writeSync may write fewer bytes than asked (a full disk mid-write);
+ * the rest is written in further calls, and a call that writes nothing throws instead of looping.
+ */
+export function writeFully(
+  fd: number,
+  body: string,
+  write: (fd: number, buf: Buffer, offset: number, length: number) => number = writeSync
+): void {
+  const buf = Buffer.from(body, 'utf8');
+  let offset = 0;
+  while (offset < buf.length) {
+    const n = write(fd, buf, offset, buf.length - offset);
+    if (n <= 0) throw new Error(`short write: ${offset} of ${buf.length} bytes written`);
+    offset += n;
+  }
+}
+
+function unlinkQuietly(path: string): void {
+  try {
+    unlinkSync(path);
+  } catch {
+    // Already gone.
+  }
+}
+
+/** Writes `body` to a new 0600 file, fsynced; the file is removed again when any step fails. */
+function writeDurableTemp(tmp: string, body: string): void {
+  const fd = openSync(tmp, 'wx', 0o600);
+  try {
+    try {
+      writeFully(fd, body);
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+  } catch (error) {
+    unlinkQuietly(tmp);
+    throw error;
+  }
+}
+
 /** Atomic write: temp file in the same directory, fsync, rename, fsync of the directory. */
 export function writeImageState(statePath: string, state: ImageState, hooks?: WriteHooks): void {
   const dir = dirname(statePath);
@@ -217,22 +260,12 @@ export function writeImageState(statePath: string, state: ImageState, hooks?: Wr
   }
   const tmp = `${statePath}.tmp-${process.pid}-${randomBytes(4).toString('hex')}`;
   const body = `${JSON.stringify(sanitizeImageState(state), null, 2)}\n`;
-  const fd = openSync(tmp, 'wx', 0o600);
-  try {
-    writeSync(fd, body);
-    fsyncSync(fd);
-  } finally {
-    closeSync(fd);
-  }
+  writeDurableTemp(tmp, body);
   try {
     hooks?.beforeRename?.();
     renameSync(tmp, statePath);
   } catch (error) {
-    try {
-      unlinkSync(tmp);
-    } catch {
-      // The temp file may already be gone.
-    }
+    unlinkQuietly(tmp);
     throw error;
   }
   fsyncDir(dir);
@@ -357,6 +390,10 @@ export interface LockDeps {
   host?: string;
   now?: string;
   isPidAlive?: (pid: number) => boolean;
+  /** Test seam: runs after the lock body is durable in its temp file, before it is linked into place. */
+  beforePublish?: () => void;
+  /** Test seam: runs after a dead holder was read, before its lock is moved aside. */
+  beforeTakeover?: () => void;
 }
 
 export class ImageLockError extends Error {
@@ -407,25 +444,65 @@ function lockRefusal(lockPath: string, holder: LockInfo | null): ImageLockError 
   );
 }
 
-/** Creates the lock file exclusively; false when it already exists. */
-function tryCreateLock(lockPath: string, info: LockInfo): boolean {
+function uniqueSibling(path: string, kind: string): string {
+  return `${path}.${kind}-${process.pid}-${randomBytes(4).toString('hex')}`;
+}
+
+/**
+ * Creates the lock file exclusively; false when it already exists. The body is written to a
+ * temp file first and hard-linked into place (link fails with EEXIST like O_EXCL), so the lock
+ * is never visible without its holder: a crash leaves at most a stray temp file, never an empty lock.
+ */
+function tryCreateLock(lockPath: string, info: LockInfo, deps: LockDeps): boolean {
+  const tmp = uniqueSibling(lockPath, 'tmp');
+  writeDurableTemp(tmp, JSON.stringify(info));
   try {
-    const fd = openSync(lockPath, 'wx', 0o600);
-    try {
-      writeSync(fd, JSON.stringify(info));
-      fsyncSync(fd);
-    } finally {
-      closeSync(fd);
-    }
+    deps.beforePublish?.();
+    linkSync(tmp, lockPath);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
     throw error;
+  } finally {
+    unlinkQuietly(tmp);
   }
 }
 
+function sameHolder(a: LockInfo, b: LockInfo | null): boolean {
+  return b !== null && a.pid === b.pid && a.host === b.host && a.startedAt === b.startedAt;
+}
+
 /**
- * Takes `<stem>.lock` with O_EXCL. A lock from this host whose pid is dead is taken over;
+ * Moves a dead holder's lock aside. Two runs can read the same dead lock; the rename lets only one
+ * of them move it, and the content check catches a run that moved a fresh lock another run had just
+ * created in its place, which is put back. True when the dead lock is gone and creation may retry.
+ */
+function takeOver(lockPath: string, dead: LockInfo): boolean {
+  const grave = uniqueSibling(lockPath, 'stale');
+  try {
+    renameSync(lockPath, grave);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
+    throw error;
+  }
+  const moved = readLock(grave);
+  if (sameHolder(dead, moved)) {
+    unlinkQuietly(grave);
+    return true;
+  }
+  // A live lock went aside: put it back unless yet another run has created one meanwhile.
+  try {
+    linkSync(grave, lockPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+  } finally {
+    unlinkQuietly(grave);
+  }
+  return false;
+}
+
+/**
+ * Takes `<stem>.lock` exclusively. A lock from this host whose pid is dead is taken over;
  * a live holder, or one from another host, refuses the run.
  */
 export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInfo {
@@ -435,13 +512,30 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
     startedAt: deps.now ?? new Date().toISOString(),
   };
   const alive = deps.isPidAlive ?? defaultIsPidAlive;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (tryCreateLock(lockPath, info)) return info;
-    const holder = readLock(lockPath);
-    if (!isTakeoverable(holder, info.host, alive)) throw lockRefusal(lockPath, holder);
-    unlinkSync(lockPath);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (tryCreateLock(lockPath, info, deps)) return info;
+    clearDeadHolder(lockPath, info.host, alive, deps);
   }
   throw new ImageLockError(`could not take ${lockPath}`, readLock(lockPath));
+}
+
+/**
+ * After a create found the lock taken: returns once the lock is gone (it vanished, or its dead
+ * holder was moved aside) so creation may retry; throws when a live or foreign holder keeps it.
+ */
+function clearDeadHolder(
+  lockPath: string,
+  host: string,
+  alive: (pid: number) => boolean,
+  deps: LockDeps
+): void {
+  const holder = readLock(lockPath);
+  if (holder === null && !existsSync(lockPath)) return;
+  if (holder === null || !isTakeoverable(holder, host, alive)) {
+    throw lockRefusal(lockPath, holder);
+  }
+  deps.beforeTakeover?.();
+  if (!takeOver(lockPath, holder)) throw lockRefusal(lockPath, readLock(lockPath));
 }
 
 /** Removes the lock when this process owns it. */

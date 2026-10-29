@@ -95,7 +95,8 @@
         "pathNoListing": "O snapshot {{snapshot}} de {{name}} não permite restaurar um caminho. Restaure o repositório inteiro com rdc backup restore --at e depois copie o caminho.",
         "pathNoListingAbsent": "O snapshot {{snapshot}} de {{name}} não tem lista de arquivos guardada, então não dá para restaurar um caminho. Restaure o repositório inteiro com rdc backup restore --at e depois copie o caminho.",
         "pathNoListingLiveMount": "O snapshot {{snapshot}} de {{name}} só tem uma lista lida da montagem ativa, que não localiza os arquivos com exatidão. Faça um novo snapshot ou restaure o repositório inteiro com rdc backup restore --at e copie o caminho.",
-        "pathNoListingNoPositions": "A lista do snapshot {{snapshot}} de {{name}} não traz as posições dos arquivos (é anterior à restauração de caminhos). Faça um novo snapshot ou restaure o repositório inteiro com rdc backup restore --at e copie o caminho."
+        "pathNoListingNoPositions": "A lista do snapshot {{snapshot}} de {{name}} não traz as posições dos arquivos (é anterior à restauração de caminhos). Faça um novo snapshot ou restaure o repositório inteiro com rdc backup restore --at e copie o caminho.",
+        "snapshotIndexUnreadable": "Não foi possível ler o índice de snapshots de {{name}} ({{reason}}), por isso o restauro vai buscar o artefacto da máquina. Use --at para restaurar um snapshot do armazenamento de blocos."
       },
       "retention": {
         "clear": {
@@ -285,7 +286,8 @@
         "failed": "Falha na verificação da cópia de segurança de {{name}}",
         "optionDeep": "Recalcular o hash de cada célula registada (verificação completa) em vez de uma verificação por amostragem",
         "optionStore": "Pedir ao servidor que recalcule o hash de cada bloco guardado deste repositório e indique os que faltam ou estão corrompidos",
-        "starting": "A verificar a cópia de segurança de {{name}} ({{level}})..."
+        "starting": "A verificar a cópia de segurança de {{name}} ({{level}})...",
+        "storeEmpty": "O armazenamento não tem blocos de {{name}}, por isso nada foi verificado."
       },
       "snapshots": {
         "description": "Gerenciar os snapshots armazenados",

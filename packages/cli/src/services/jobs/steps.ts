@@ -66,18 +66,18 @@ export interface PlannedStep {
 }
 
 const STEP_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
-/** Drops one member record; only removeMachine's `Machine "<name>" not found` is benign, any other failure leaves the record behind and must surface. */
+/** Drops one member record; only removeMachine's MachineNotFoundError is benign, any other failure leaves the record behind and must surface. */
 async function removeMemberRecord(member: string): Promise<void> {
-  const { configService } = await import('../config/config-resources.js');
+  const { configService, MachineNotFoundError } = await import('../config/config-resources.js');
   try {
     await configService.removeMachine(member);
   } catch (error) {
-    const message = error instanceof Error ? error.message : '';
-    if (message !== `Machine "${member}" not found`) throw error;
+    if (!(error instanceof MachineNotFoundError)) throw error;
   }
 }
 
-const SECRET_KEY = /secret|vault|password|passwd|token|credential|env|private|key/i;
+/** A param name that looks like a secret; planStep refuses it. */
+export const SECRET_KEY = /secret|vault|password|passwd|token|credential|env|private|key/i;
 
 export class StepHandlerUnboundError extends Error {
   constructor(readonly step: string) {
@@ -770,7 +770,7 @@ const DEFINITIONS: StepDefinition[] = [
     },
   },
   boundStep(
-    { name: 'rollbackCreate', on: 'failure', params: ['repo'] },
+    { name: 'rollbackCreate', on: 'failure', params: ['repo', 'guid'] },
     () => import('../../commands/repo-create-delete.js')
   ),
   boundStep(

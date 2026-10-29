@@ -123,7 +123,7 @@ export function parseDaemonUpgradeJson(output: string): Omit<DaemonUpgradeReport
     failed: [],
     repos: Array.isArray(parsed) ? [] : parseRepoHealth((parsed as { repos?: unknown }).repos),
   };
-  for (const e of entries) sortEntry(report, e);
+  for (const e of entries) if (isRecord(e)) sortEntry(report, e);
   return report;
 }
 
@@ -137,6 +137,10 @@ function sortEntry(report: Omit<DaemonUpgradeReport, 'ran'>, e: DaemonUpgradeEnt
     report.stale.push({ ...proc, ...(detail && { reason: detail }) });
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
@@ -144,18 +148,18 @@ function text(value: unknown): string {
 /** The `repos` array of the report: one entry per supervisor restarted with --include-docker. */
 function parseRepoHealth(value: unknown): RepoHealth[] {
   if (!Array.isArray(value)) return [];
-  return value.map((entry: Record<string, unknown>) => ({
+  return value.filter(isRecord).map((entry) => ({
     unit: text(entry.unit) || '-',
     networkId: Number(entry.network_id),
     healthy: entry.healthy === true,
-    containers: (Array.isArray(entry.containers) ? entry.containers : []).map(
-      (c: Record<string, unknown>) => ({
+    containers: (Array.isArray(entry.containers) ? entry.containers : [])
+      .filter(isRecord)
+      .map((c) => ({
         id: text(c.id),
         name: text(c.name),
         state: text(c.state),
         health: text(c.health) || 'none',
-      })
-    ),
+      })),
     ...(typeof entry.error === 'string' && entry.error && { error: entry.error }),
   }));
 }
@@ -170,6 +174,18 @@ function toRenetProcess(e: DaemonUpgradeEntry): RenetProcess {
 
 function describeProcesses(procs: RenetProcess[]): string {
   return procs.map((p) => `${p.unit} (pid ${p.pid})`).join(', ');
+}
+
+/** One warning per repository left unhealthy, with its containers; the error is said once, so a failed process entry for the same unit that printed it is not repeated. */
+function warnUnhealthyRepos(report: DaemonUpgradeReport): void {
+  for (const r of report.repos.filter((repo) => !repo.healthy)) {
+    const said = report.failed.some((f) => f.unit === r.unit && f.error === r.error);
+    const containers = r.containers.map((c) => `${c.name} ${c.state}/${c.health}`).join(', ');
+    const error = r.error && !said ? `: ${r.error}` : '';
+    outputService.warn(
+      `Repository not healthy after the restart: ${r.unit}${error} (containers: ${containers || 'none'})`
+    );
+  }
 }
 
 /** Say what a daemon upgrade restarted and what is still stale. */
@@ -193,6 +209,7 @@ export function reportDaemonUpgrade(report: DaemonUpgradeReport): void {
       `renet daemon restart failed: ${f.unit} (pid ${f.pid})${f.error ? `: ${f.error}` : ''}`
     );
   }
+  warnUnhealthyRepos(report);
   if (report.stale.length > 0) {
     const how = report.ran
       ? 'Restart them with: rdc machine restart-services <machine> --include-docker'

@@ -296,6 +296,38 @@ describe('selectRenetUploadBinary', () => {
   });
 });
 
+describe('selectRenetUploadBinary when go cannot read the working-tree binary', () => {
+  function unreadable(deps: RenetCleanBuildDeps): void {
+    const real = deps.goVersionM;
+    deps.goVersionM = vi.fn((binary: string) => {
+      if (binary === workingBinary) throw new Error('spawn go ENOENT');
+      return real(binary);
+    });
+  }
+
+  it('reuses the one complete cached build of the commit instead of failing', async () => {
+    porcelain(' M pkg/list.go\n');
+    const { selectRenetUploadBinary } = await load();
+    await selectRenetUploadBinary(workingBinary, fakeDeps({ workingFlavor: 'enforce' }).deps);
+    const second = fakeDeps();
+    unreadable(second.deps);
+    const selection = await selectRenetUploadBinary(workingBinary, second.deps);
+    expect(selection.localBinaryPath).toBe(path.join(cacheRoot(), `${SHA}-enforce`, 'renet'));
+    expect(second.deps.build).not.toHaveBeenCalled();
+  });
+
+  it('with no cached build, names the binary and the go failure', async () => {
+    porcelain(' M pkg/list.go\n');
+    const { selectRenetUploadBinary } = await load();
+    const { deps } = fakeDeps();
+    unreadable(deps);
+    await expect(selectRenetUploadBinary(workingBinary, deps)).rejects.toThrow(
+      `Cannot read the build flavor of ${workingBinary} with \`go version -m\` (spawn go ENOENT)`
+    );
+    expect(deps.build).not.toHaveBeenCalled();
+  });
+});
+
 describe('buildRenetAtCommit flavors', () => {
   it('does not reuse a complete nolicense cache for an enforcing request at the same commit', async () => {
     const { buildRenetAtCommit } = await load();
