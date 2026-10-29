@@ -283,3 +283,8 @@ A covered verb that keeps working after its job (a second machine call or local 
 ## Live records
 
 (empty until L0)
+
+## Operator rulings, second round (2026-10-29)
+
+- Poll cap (ASKED 2026-10-29, "Keep 2-30 s, measure first (Recommended)"): the 2-30 s backoff ships as ruled; L2 measures Durable Object and container time before any change to the cap.
+- `backup run` stays outside the covered verbs (the plan's default for its second question); J0 confirms it never calls `renet execute`.

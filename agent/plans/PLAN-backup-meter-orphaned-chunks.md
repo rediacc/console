@@ -240,3 +240,8 @@ Most of this exists already, and A1 pins it with tests:
 
   Owns: agent/plans/PLAN-backup-meter-orphaned-chunks.md (receipts only).
   Accept: `./rdc.sh --config eu-remote backup reconcile --check` rc 0, and the usage and listing figures recorded as equal in this box.
+
+## Operator rulings, second round (2026-10-29)
+
+- Hostinger repair (ASKED 2026-10-29, "Let nightly run, then verify (Recommended)"): L0 captures the before state now, the 03:00 UTC maintenance run is allowed to re-bill, and L2 still runs `backup reconcile --check` after A1 reaches stable EU.
+- Orphans (ASKED 2026-10-29, "Bill them (Recommended)"): usage counts every chunk the store holds, referenced or not, until GC deletes it after the 7-day grace.
