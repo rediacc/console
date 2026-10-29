@@ -148,16 +148,20 @@ describe('parseJobPollOutput', () => {
     const out = [...lines, trailer()].join('\n');
     const spy = vi.spyOn(JSON, 'stringify');
     let body: ReturnType<typeof parseJobPollOutput>;
+    let serialized = 0;
     try {
       body = parseJobPollOutput(out, { sinceLine: 0, maxLines: 500 });
+      // Read the recorded results BEFORE mockRestore, which clears them.
+      serialized = spy.mock.results.reduce(
+        (sum, r) => sum + (typeof r.value === 'string' ? r.value.length : 0),
+        0
+      );
     } finally {
       spy.mockRestore();
     }
-    const serialized = spy.mock.results.reduce(
-      (sum, r) => sum + (typeof r.value === 'string' ? r.value.length : 0),
-      0
-    );
     expect(body.events).toHaveLength(400);
+    // Anti-vacuity: the parser does serialize, so a spy that recorded nothing would pass the bound below having measured nothing.
+    expect(serialized).toBeGreaterThan(0);
     // Linear: about the size of the output itself, where a per-line full serialization is quadratic.
     expect(serialized).toBeLessThan(out.length * 4);
   });
