@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "Задача {{jobId}} ({{what}}) успешно завершилась {{age}} назад. Подробности: rdc job logs {{jobId}}",
   "commands.job.status.description": "Показать статус отсоединённой задачи",
   "commands.job.status.examples.basic": "Показать статус одной задачи.",
+  "commands.job.steps.pending": "есть невыполненные шаги: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "Невыполненных шагов для конфигурации {{config}}: {{count}}",
   "commands.job.summary": "Управление отсоединёнными задачами на машине",
   "commands.job.ticketMachineOption": "Имя целевой машины (необязательно, если в этой конфигурации есть тикет задачи)",
   "commands.job.wait.description": "Продолжить отслеживание задачи по её тикету, затем подтвердить её и завершиться с кодом выхода задачи",

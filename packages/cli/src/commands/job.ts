@@ -36,6 +36,7 @@ import {
 import { formatAge, parseWaitTimeoutMs } from '../services/jobs/duration.js';
 import { type WaitOutcome, waitForJob } from '../services/jobs/job-wait.js';
 import { openTicketStore, sshWaitDeps } from '../services/jobs/remote-deps.js';
+import { pendingStepNames } from '../services/jobs/steps.js';
 import type { Ticket } from '../services/jobs/ticket-store.js';
 import type { RenetAccess } from '../services/renet/renet-execution.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
@@ -96,6 +97,7 @@ function toTicketRow(ticket: Ticket) {
     repo: ticket.repo ?? '-',
     machine: ticket.machine ?? '-',
     age: formatAge(ticket.startedAt),
+    stepsPending: pendingStepNames(ticket).length,
   };
 }
 

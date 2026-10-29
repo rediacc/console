@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2147,
-    "sourceCommit": "cd565de8b6912a5d9f597d1d06e562764e94d519"
+    "keyCount": 2149,
+    "sourceCommit": "d4e96d170d6aea8ec3c27d3c26a7c84a4454f8b6"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -773,6 +773,8 @@
     "commands.job.notice.succeeded": "2fd0cc54",
     "commands.job.status.description": "5d6357bd",
     "commands.job.status.examples.basic": "f1860a58",
+    "commands.job.steps.pending": "54935b83",
+    "commands.job.steps.pendingForConfig": "1f112a30",
     "commands.job.summary": "2ec333e2",
     "commands.job.ticketMachineOption": "ffc35071",
     "commands.job.wait.description": "91c81996",

@@ -2445,6 +2445,10 @@
         "succeeded": "Job {{jobId}} ({{what}}) succeeded {{age}} ago. Details: rdc job logs {{jobId}}",
         "failed": "Job {{jobId}} ({{what}}) failed with exit code {{exitCode}} {{age}} ago. Details: rdc job logs {{jobId}}",
         "cancelled": "Job {{jobId}} ({{what}}) was cancelled {{age}} ago. Details: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "steps pending: rdc job wait {{jobId}}",
+        "pendingForConfig": "{{count}} steps pending for config {{config}}"
       }
     }
   },

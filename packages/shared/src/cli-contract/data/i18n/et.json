@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "Töö {{jobId}} ({{what}}) õnnestus {{age}} tagasi. Üksikasjad: rdc job logs {{jobId}}",
   "commands.job.status.description": "Kuva eraldiseisva töö olek",
   "commands.job.status.examples.basic": "Kuva ühe töö olek.",
+  "commands.job.steps.pending": "ootel sammud: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel",
   "commands.job.summary": "Halda masina eraldiseisvaid töid",
   "commands.job.ticketMachineOption": "Sihtmasina nimi (valikuline, kui konfiguratsioonis on töö pilet olemas)",
   "commands.job.wait.description": "Jätka töö jälgimist selle pileti alusel, kinnita see ja lõpeta töö väljumiskoodiga",

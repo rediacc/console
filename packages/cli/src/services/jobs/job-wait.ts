@@ -4,10 +4,25 @@
  * Over SSH it resumes from the ticket's `lastSeenLine` through the same tail
  * `rdc job logs --follow` uses. The proxy path is J6's: `deps.followProxy` is
  * the seam, and until J6 supplies it a proxy ticket is refused with a message.
+ *
+ * Once the job is seen finished, the steps it owes run here (section 18),
+ * exactly once across observers. The ticket is acknowledged only when no step
+ * is left to another observer of this config.
  */
 
 import { isTerminalState, JobLogCursor, type JobStatus } from '../executor/job-client.js';
 import type { RenetEvent } from '../executor/types.js';
+import {
+  createStepObservationCollector,
+  emptyStepReport,
+  liveStepRunnerDeps,
+  type ObservedJob,
+  outstandingSteps,
+  runTicketSteps,
+  type StepRunnerDeps,
+  type StepRunReport,
+} from './run-job.js';
+import { dueSteps } from './steps.js';
 import { isTerminalTicketState, type Ticket, type TicketStore } from './ticket-store.js';
 
 /** Opaque to this module: whatever `withConnection` hands to follow and readStatus. */
@@ -29,10 +44,17 @@ export interface JobWaitDeps {
   followProxy?: (ticket: Ticket, signal: AbortSignal) => Promise<JobStatus | undefined>;
   /** Resolve a ticket stuck at `starting` through `job list --request-id`. Absent until renet supports it (J1b). */
   resolveStarting?: (ticket: Ticket) => Promise<string | undefined>;
+  /** The step runner. Built live (renet job claim over SSH) only when the ticket owes a step. */
+  steps?: StepRunnerDeps;
 }
 
 export type WaitOutcome =
-  | { kind: 'finished'; status: Pick<JobStatus, 'state' | 'exit_code' | 'error'>; exitCode: number }
+  | {
+      kind: 'finished';
+      status: Pick<JobStatus, 'state' | 'exit_code' | 'error'>;
+      exitCode: number;
+      steps: StepRunReport;
+    }
   | { kind: 'timeout' }
   | { kind: 'interrupted' }
   | { kind: 'unresolved' }
@@ -98,32 +120,79 @@ export async function waitForJob(
   if (!current?.jobId) return { kind: 'unresolved' };
   const jobId = current.jobId;
 
-  // Already known finished: nothing to follow, only acknowledge.
+  // Already known finished: nothing to follow; run what it owes and acknowledge.
   if (isTerminalTicketState(current.state)) {
     const status = { state: current.state as JobStatus['state'], exit_code: current.exitCode };
-    store.append('acknowledged', current.requestId);
-    return { kind: 'finished', status, exitCode: exitCodeFor(status) };
+    const steps = await settleSteps(store, current, { state: current.state }, deps);
+    return { kind: 'finished', status, exitCode: exitCodeFor(status), steps };
   }
   if (current.via?.kind === 'proxy' && !deps.followProxy) return { kind: 'proxy-unsupported' };
 
+  const seen = createStepObservationCollector();
+  const onEvent: WaitOptions['onEvent'] = (event, line) => {
+    seen.consume(event);
+    options.onEvent(event, line);
+  };
   const { result: status, timedOut } = await withWaitSignal(options, (signal) =>
     current.via?.kind === 'proxy'
       ? (deps.followProxy as NonNullable<JobWaitDeps['followProxy']>)(current, signal)
-      : followOverSsh(store, current, jobId, deps, options.onEvent, signal)
+      : followOverSsh(store, current, jobId, deps, onEvent, signal)
   );
 
   if (!status || !isTerminalState(status.state)) {
     return timedOut ? { kind: 'timeout' } : { kind: 'interrupted' };
   }
 
+  return finishWait(store, current, status, seen, deps);
+}
+
+/** Record the terminal state, run the steps it makes due, and build the outcome. */
+async function finishWait(
+  store: TicketStore,
+  current: Ticket,
+  status: JobStatus,
+  seen: ReturnType<typeof createStepObservationCollector>,
+  deps: JobWaitDeps
+): Promise<WaitOutcome> {
   const exitCode = exitCodeFor(status);
   store.append('finished', current.requestId, {
     state: status.state,
     exitCode,
     finishedAt: status.finished_at,
   });
-  store.append('acknowledged', current.requestId);
-  return { kind: 'finished', status, exitCode };
+  // A follow that resumed past line 0 missed the earlier events, so its markers are unknown: a marker step then falls back to the terminal state (stepIsDue).
+  const sawWholeStream = current.via?.kind !== 'proxy' && current.lastSeenLine === 0;
+  const steps = await settleSteps(
+    store,
+    { ...current, state: status.state },
+    {
+      state: status.state,
+      exitCode,
+      finishedAt: status.finished_at,
+      ...(sawWholeStream ? { markers: seen.markers } : {}),
+      output: seen.output || undefined,
+    },
+    deps
+  );
+  return { kind: 'finished', status, exitCode, steps };
+}
+
+/** Run the steps a finished ticket owes, then acknowledge it unless a step is left to another observer. */
+async function settleSteps(
+  store: TicketStore,
+  ticket: Ticket,
+  job: ObservedJob,
+  deps: JobWaitDeps
+): Promise<StepRunReport> {
+  let report = emptyStepReport();
+  const latest = store.find(ticket.requestId) ?? ticket;
+  const owed = { ...latest, state: job.state };
+  if (dueSteps(owed, job.state, job.markers).length > 0) {
+    const stepDeps = deps.steps ?? (await liveStepRunnerDeps(store));
+    report = await runTicketSteps(store, owed, job, stepDeps);
+  }
+  if (outstandingSteps(report).length === 0) store.append('acknowledged', ticket.requestId);
+  return report;
 }
 
 function followOverSsh(

@@ -1053,6 +1053,10 @@
         "succeeded": "نجحت المهمة {{jobId}} ({{what}}) قبل {{age}}. التفاصيل: rdc job logs {{jobId}}",
         "failed": "فشلت المهمة {{jobId}} ({{what}}) قبل {{age}} برمز الخروج {{exitCode}}. التفاصيل: rdc job logs {{jobId}}",
         "cancelled": "أُلغيت المهمة {{jobId}} ({{what}}) قبل {{age}}. التفاصيل: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "خطوات معلّقة: rdc job wait {{jobId}}",
+        "pendingForConfig": "{{count}} خطوات معلّقة للإعدادات {{config}}"
       }
     },
     "machine": {

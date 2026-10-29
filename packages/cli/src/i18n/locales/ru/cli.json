@@ -1053,6 +1053,10 @@
         "succeeded": "Задача {{jobId}} ({{what}}) успешно завершилась {{age}} назад. Подробности: rdc job logs {{jobId}}",
         "failed": "Задача {{jobId}} ({{what}}) завершилась с ошибкой, код выхода {{exitCode}}, {{age}} назад. Подробности: rdc job logs {{jobId}}",
         "cancelled": "Задача {{jobId}} ({{what}}) была отменена {{age}} назад. Подробности: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "есть невыполненные шаги: rdc job wait {{jobId}}",
+        "pendingForConfig": "Невыполненных шагов для конфигурации {{config}}: {{count}}"
       }
     },
     "machine": {

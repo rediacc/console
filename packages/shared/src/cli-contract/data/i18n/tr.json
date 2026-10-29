@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "{{jobId}} görevi ({{what}}) {{age}} önce başarıyla tamamlandı. Ayrıntılar: rdc job logs {{jobId}}",
   "commands.job.status.description": "Bağımsız bir görevin durumunu gösterir",
   "commands.job.status.examples.basic": "Tek bir görevin durumunu göster.",
+  "commands.job.steps.pending": "bekleyen adımlar var: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{config}} yapılandırması için {{count}} adım bekliyor",
   "commands.job.summary": "Bir makinedeki bağımsız görevleri yönetin",
   "commands.job.ticketMachineOption": "Hedef makine adı (bu yapılandırmada görevin bileti varsa isteğe bağlı)",
   "commands.job.wait.description": "Bir görevi biletinden devam ederek izlemeye al, ardından onayla ve görevin çıkış koduyla çık",

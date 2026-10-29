@@ -1053,6 +1053,10 @@
         "succeeded": "Töö {{jobId}} ({{what}}) õnnestus {{age}} tagasi. Üksikasjad: rdc job logs {{jobId}}",
         "failed": "Töö {{jobId}} ({{what}}) ebaõnnestus {{age}} tagasi väljumiskoodiga {{exitCode}}. Üksikasjad: rdc job logs {{jobId}}",
         "cancelled": "Töö {{jobId}} ({{what}}) tühistati {{age}} tagasi. Üksikasjad: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "ootel sammud: rdc job wait {{jobId}}",
+        "pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel"
       }
     },
     "machine": {

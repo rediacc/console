@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "Il job {{jobId}} ({{what}}) è riuscito {{age}} fa. Dettagli: rdc job logs {{jobId}}",
   "commands.job.status.description": "Mostra lo stato di un job in background",
   "commands.job.status.examples.basic": "Mostra lo stato di un job.",
+  "commands.job.steps.pending": "passaggi in sospeso: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{count}} passaggi in sospeso per la configurazione {{config}}",
   "commands.job.summary": "Gestisce i job in background su una macchina",
   "commands.job.ticketMachineOption": "Nome della macchina di destinazione (facoltativo se questa configurazione conserva un ticket per il job)",
   "commands.job.wait.description": "Riprendere il monitoraggio di un job dal suo ticket, poi confermarlo e uscire con il codice di uscita del job",

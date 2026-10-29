@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "نجحت المهمة {{jobId}} ({{what}}) قبل {{age}}. التفاصيل: rdc job logs {{jobId}}",
   "commands.job.status.description": "عرض حالة مهمة منفصلة",
   "commands.job.status.examples.basic": "عرض حالة مهمة واحدة.",
+  "commands.job.steps.pending": "خطوات معلّقة: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{count}} خطوات معلّقة للإعدادات {{config}}",
   "commands.job.summary": "إدارة المهام المنفصلة على جهاز",
   "commands.job.ticketMachineOption": "اسم الجهاز المستهدف (اختياري عندما تحتفظ هذه الإعدادات بتذكرة للمهمة)",
   "commands.job.wait.description": "استئناف متابعة مهمة من تذكرتها، ثم الإقرار بها والخروج برمز خروج المهمة",

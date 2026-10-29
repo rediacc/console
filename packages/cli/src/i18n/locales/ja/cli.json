@@ -1053,6 +1053,10 @@
         "succeeded": "ジョブ {{jobId}}({{what}})は {{age}} 前に成功しました。詳細: rdc job logs {{jobId}}",
         "failed": "ジョブ {{jobId}}({{what}})は {{age}} 前に終了コード {{exitCode}} で失敗しました。詳細: rdc job logs {{jobId}}",
         "cancelled": "ジョブ {{jobId}}({{what}})は {{age}} 前にキャンセルされました。詳細: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "未実行のステップがあります: rdc job wait {{jobId}}",
+        "pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件"
       }
     },
     "machine": {

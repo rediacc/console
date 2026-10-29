@@ -1053,6 +1053,10 @@
         "succeeded": "작업 {{jobId}}({{what}})이(가) {{age}} 전에 성공했습니다. 자세히: rdc job logs {{jobId}}",
         "failed": "작업 {{jobId}}({{what}})이(가) {{age}} 전에 종료 코드 {{exitCode}}(으)로 실패했습니다. 자세히: rdc job logs {{jobId}}",
         "cancelled": "작업 {{jobId}}({{what}})이(가) {{age}} 전에 취소되었습니다. 자세히: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "대기 중인 단계가 있습니다: rdc job wait {{jobId}}",
+        "pendingForConfig": "설정 {{config}}에 대기 중인 단계 {{count}}개"
       }
     },
     "machine": {

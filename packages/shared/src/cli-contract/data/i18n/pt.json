@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "O job {{jobId}} ({{what}}) foi concluído com sucesso há {{age}}. Detalhes: rdc job logs {{jobId}}",
   "commands.job.status.description": "Mostra o status de um job desanexado",
   "commands.job.status.examples.basic": "Mostra o estado de um job.",
+  "commands.job.steps.pending": "etapas pendentes: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{count}} etapas pendentes para a configuração {{config}}",
   "commands.job.summary": "Gerencia jobs desanexados em uma máquina",
   "commands.job.ticketMachineOption": "Nome da máquina de destino (opcional quando esta configuração guarda um ticket do job)",
   "commands.job.wait.description": "Retomar o acompanhamento de um job a partir do seu ticket, confirmá-lo e sair com o código de saída do job",

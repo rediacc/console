@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "작업 {{jobId}}({{what}})이(가) {{age}} 전에 성공했습니다. 자세히: rdc job logs {{jobId}}",
   "commands.job.status.description": "분리된 작업의 상태를 표시합니다",
   "commands.job.status.examples.basic": "단일 작업의 상태를 표시합니다.",
+  "commands.job.steps.pending": "대기 중인 단계가 있습니다: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "설정 {{config}}에 대기 중인 단계 {{count}}개",
   "commands.job.summary": "머신의 분리된 작업 관리",
   "commands.job.ticketMachineOption": "대상 머신 이름(이 설정에 작업 티켓이 있으면 생략 가능)",
   "commands.job.wait.description": "티켓을 바탕으로 작업 추적을 재개한 뒤 확인 처리하고, 작업의 종료 코드로 종료",

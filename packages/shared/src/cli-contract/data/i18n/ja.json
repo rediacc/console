@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "ジョブ {{jobId}}({{what}})は {{age}} 前に成功しました。詳細: rdc job logs {{jobId}}",
   "commands.job.status.description": "デタッチジョブのステータスを表示",
   "commands.job.status.examples.basic": "1つのジョブのステータスを表示する",
+  "commands.job.steps.pending": "未実行のステップがあります: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件",
   "commands.job.summary": "マシン上のデタッチジョブを管理",
   "commands.job.ticketMachineOption": "対象マシン名(この設定にジョブのチケットがあれば省略可)",
   "commands.job.wait.description": "チケットをもとにジョブの追跡を再開し、確認済みにしてジョブの終了コードで終了する",

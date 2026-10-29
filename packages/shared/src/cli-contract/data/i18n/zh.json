@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "任务 {{jobId}}({{what}})已于 {{age}} 前成功完成。详情:rdc job logs {{jobId}}",
   "commands.job.status.description": "显示分离任务的状态",
   "commands.job.status.examples.basic": "显示单个任务的状态。",
+  "commands.job.steps.pending": "有待执行的步骤：rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "配置 {{config}} 有 {{count}} 个待执行的步骤",
   "commands.job.summary": "管理机器上的分离任务",
   "commands.job.ticketMachineOption": "目标机器名称(此配置持有该任务的凭据时可省略)",
   "commands.job.wait.description": "根据凭据继续跟踪任务,随后确认并以该任务的退出码退出",

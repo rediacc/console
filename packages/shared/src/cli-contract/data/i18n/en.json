@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "Job {{jobId}} ({{what}}) succeeded {{age}} ago. Details: rdc job logs {{jobId}}",
   "commands.job.status.description": "Show a detached job's status",
   "commands.job.status.examples.basic": "Show the status of one job.",
+  "commands.job.steps.pending": "steps pending: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{count}} steps pending for config {{config}}",
   "commands.job.summary": "Manage detached jobs on a machine",
   "commands.job.ticketMachineOption": "Target machine name (optional when this config holds a ticket for the job)",
   "commands.job.wait.description": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",

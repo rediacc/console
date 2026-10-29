@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "Job {{jobId}} ({{what}}) war vor {{age}} erfolgreich. Details: rdc job logs {{jobId}}",
   "commands.job.status.description": "Zeigt den Status eines entkoppelten Jobs an",
   "commands.job.status.examples.basic": "Den Status eines Jobs anzeigen.",
+  "commands.job.steps.pending": "Schritte ausstehend: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{count}} Schritte ausstehend für die Konfiguration {{config}}",
   "commands.job.summary": "Entkoppelte Jobs auf einem Rechner verwalten",
   "commands.job.ticketMachineOption": "Name der Zielmaschine (optional, wenn diese Konfiguration ein Ticket für den Job hält)",
   "commands.job.wait.description": "Einen Job anhand seines Tickets weiterverfolgen, ihn dann quittieren und mit dem Exit-Code des Jobs beenden",

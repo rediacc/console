@@ -765,6 +765,8 @@
   "commands.job.notice.succeeded": "El trabajo {{jobId}} ({{what}}) finalizó correctamente hace {{age}}. Detalles: rdc job logs {{jobId}}",
   "commands.job.status.description": "Muestra el estado de un trabajo independiente",
   "commands.job.status.examples.basic": "Muestra el estado de un trabajo.",
+  "commands.job.steps.pending": "pasos pendientes: rdc job wait {{jobId}}",
+  "commands.job.steps.pendingForConfig": "{{count}} pasos pendientes para la configuración {{config}}",
   "commands.job.summary": "Administra trabajos independientes en una máquina",
   "commands.job.ticketMachineOption": "Nombre de la máquina de destino (opcional si esta configuración guarda un ticket del trabajo)",
   "commands.job.wait.description": "Retomar el seguimiento de un trabajo a partir de su ticket, darlo por visto y salir con el código de salida del trabajo",

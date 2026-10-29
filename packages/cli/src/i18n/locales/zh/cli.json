@@ -1053,6 +1053,10 @@
         "succeeded": "任务 {{jobId}}({{what}})已于 {{age}} 前成功完成。详情:rdc job logs {{jobId}}",
         "failed": "任务 {{jobId}}({{what}})已于 {{age}} 前失败,退出码 {{exitCode}}。详情:rdc job logs {{jobId}}",
         "cancelled": "任务 {{jobId}}({{what}})已于 {{age}} 前取消。详情:rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "有待执行的步骤：rdc job wait {{jobId}}",
+        "pendingForConfig": "配置 {{config}} 有 {{count}} 个待执行的步骤"
       }
     },
     "machine": {

@@ -1053,6 +1053,10 @@
         "succeeded": "Job {{jobId}} ({{what}}) war vor {{age}} erfolgreich. Details: rdc job logs {{jobId}}",
         "failed": "Job {{jobId}} ({{what}}) ist vor {{age}} mit Exit-Code {{exitCode}} fehlgeschlagen. Details: rdc job logs {{jobId}}",
         "cancelled": "Job {{jobId}} ({{what}}) wurde vor {{age}} abgebrochen. Details: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "Schritte ausstehend: rdc job wait {{jobId}}",
+        "pendingForConfig": "{{count}} Schritte ausstehend für die Konfiguration {{config}}"
       }
     },
     "machine": {

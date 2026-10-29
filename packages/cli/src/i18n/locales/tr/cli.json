@@ -1053,6 +1053,10 @@
         "succeeded": "{{jobId}} görevi ({{what}}) {{age}} önce başarıyla tamamlandı. Ayrıntılar: rdc job logs {{jobId}}",
         "failed": "{{jobId}} görevi ({{what}}) {{age}} önce {{exitCode}} çıkış koduyla başarısız oldu. Ayrıntılar: rdc job logs {{jobId}}",
         "cancelled": "{{jobId}} görevi ({{what}}) {{age}} önce iptal edildi. Ayrıntılar: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "bekleyen adımlar var: rdc job wait {{jobId}}",
+        "pendingForConfig": "{{config}} yapılandırması için {{count}} adım bekliyor"
       }
     },
     "machine": {

@@ -1053,6 +1053,10 @@
         "succeeded": "El trabajo {{jobId}} ({{what}}) finalizó correctamente hace {{age}}. Detalles: rdc job logs {{jobId}}",
         "failed": "El trabajo {{jobId}} ({{what}}) falló con el código de salida {{exitCode}} hace {{age}}. Detalles: rdc job logs {{jobId}}",
         "cancelled": "El trabajo {{jobId}} ({{what}}) se canceló hace {{age}}. Detalles: rdc job logs {{jobId}}"
+      },
+      "steps": {
+        "pending": "pasos pendientes: rdc job wait {{jobId}}",
+        "pendingForConfig": "{{count}} pasos pendientes para la configuración {{config}}"
       }
     },
     "machine": {
