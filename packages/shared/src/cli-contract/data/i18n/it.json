@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "Snapshot salvato per {{name}}",
   "commands.backup.snapshot.description": "Carica uno snapshot su storage a chunk: prima l'inventario completo, poi le celle modificate",
   "commands.backup.snapshot.failed": "Snapshot non riuscito per {{name}}",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism deve essere un intero pari o superiore a 0 (0 = uno per CPU), ricevuto \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism deve essere un intero da 0 a 16 (0 = uno per CPU), ricevuto \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "Limite di caricamento: byte al secondo, unità decimali (12.5M = 12,5 MB/s), binarie (12Mi) o bit (100Mbps). Se omesso non c'è alcun limite",
   "commands.backup.snapshot.optionCold": "Ferma i container, congela, riavvia e solo allora carica. Costa un breve fermo reale ma restituisce uno snapshot coerente a livello applicativo; non si può combinare con --dry-run",
   "commands.backup.snapshot.optionDryRun": "Pianifica soltanto: nessun caricamento. Riporta cosa verrebbe spostato",

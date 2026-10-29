@@ -173,6 +173,11 @@ describe('strategy retention (F4)', () => {
 describe('strategy read cap (--read-bwlimit)', () => {
   it('stores the value as readBandwidthLimit and leaves it alone when not passed', () => {
     expect(buildStrategyUpdate({ readBwlimit: '50M' }, undefined).readBandwidthLimit).toBe('50M');
+    expect(() => buildStrategyUpdate({ readBwlimit: 'fast' }, undefined)).toThrow();
+    expect(() => buildStrategyUpdate({ readBwlimit: ' ' }, undefined)).toThrow();
+    expect(() => buildStrategyUpdate({ bwlimit: '100Mb' }, undefined)).toThrow();
+    expect(() => buildStrategyUpdate({ bwlimit: '' }, undefined)).toThrow();
+    expect(buildStrategyUpdate({ readBwlimit: '0' }, undefined).readBandwidthLimit).toBe('0');
     expect('readBandwidthLimit' in buildStrategyUpdate({ cron: '0 * * * *' }, undefined)).toBe(
       false
     );

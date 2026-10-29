@@ -151,7 +151,7 @@
         "completed": "Snapshot für {{name}} gespeichert",
         "description": "Einen Chunk-Store-Snapshot hochladen: zuerst das vollständige Inventar, danach geänderte Zellen",
         "failed": "Snapshot für {{name}} fehlgeschlagen",
-        "hashParallelismInvalid": "--hash-parallelism muss eine ganze Zahl ab 0 sein (0 = eine pro CPU), erhalten: \"{{value}}\".",
+        "hashParallelismInvalid": "--hash-parallelism muss eine ganze Zahl von 0 bis 16 sein (0 = eine pro CPU), erhalten: \"{{value}}\".",
         "optionBwlimit": "Upload-Obergrenze: Bytes pro Sekunde, Dezimaleinheiten (12.5M = 12,5 MB/s), Binäreinheiten (12Mi) oder Bits (100Mbps). Ohne Angabe gibt es keine Grenze",
         "optionCold": "Container stoppen, einfrieren, neu starten, dann hochladen. Kostet eine kurze echte Ausfallzeit, liefert dafür einen anwendungskonsistenten Snapshot; nicht zusammen mit --dry-run verwendbar",
         "optionDryRun": "Nur planen: kein Upload. Zeigt, was sich bewegen würde",

@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "Снимок сохранен для {{name}}",
   "commands.backup.snapshot.description": "Загрузить снимок в блочное хранилище: сначала полный инвентарь, затем измененные ячейки",
   "commands.backup.snapshot.failed": "Не удалось создать снимок для {{name}}",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism должен быть целым числом не меньше 0 (0 = по одному на процессор), получено \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism должен быть целым числом от 0 до 16 (0 = по одному на процессор), получено \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "Ограничение скорости выгрузки: байты в секунду, десятичные единицы (12.5M = 12,5 МБ/с), двоичные (12Mi) или биты (100Mbps). Если не задано, ограничения нет",
   "commands.backup.snapshot.optionCold": "Останавливает контейнеры, замораживает, запускает их снова и только потом выгружает. Ценой короткого реального простоя даёт согласованный на уровне приложения снимок; вместе с --dry-run не работает",
   "commands.backup.snapshot.optionDryRun": "Только план: без загрузки. Сообщает, что переместилось бы",

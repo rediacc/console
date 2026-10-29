@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "{{name}} için anlık görüntü kaydedildi",
   "commands.backup.snapshot.description": "Parça depolamaya bir anlık görüntü yükle: önce tam envanter, sonra değişen hücreler",
   "commands.backup.snapshot.failed": "{{name}} için anlık görüntü başarısız oldu",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism 0 veya daha büyük bir tam sayı olmalıdır (0 = CPU başına bir), \"{{value}}\" verildi.",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism 0 ile 16 arasında bir tam sayı olmalıdır (0 = CPU başına bir), \"{{value}}\" verildi.",
   "commands.backup.snapshot.optionBwlimit": "Yükleme hızı sınırı: saniyede bayt, ondalık birimler (12.5M = 12,5 MB/s), ikili birimler (12Mi) ya da bit (100Mbps). Verilmezse sınır uygulanmaz",
   "commands.backup.snapshot.optionCold": "Konteynerleri durdurur, dondurur, yeniden başlatır ve ancak ondan sonra yükler. Kısa ama gerçek bir kesinti karşılığında uygulama tutarlı bir anlık görüntü verir; --dry-run ile birlikte kullanılamaz",
   "commands.backup.snapshot.optionDryRun": "Yalnızca planla: yükleme yapılmaz. Nelerin taşınacağını bildirir",

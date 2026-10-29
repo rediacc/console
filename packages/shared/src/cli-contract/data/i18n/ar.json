@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "تم حفظ اللقطة لـ \"{{name}}\"",
   "commands.backup.snapshot.description": "رفع لقطة إلى التخزين المجزّأ: المخزون الكامل أولاً، ثم الخلايا المتغيّرة",
   "commands.backup.snapshot.failed": "فشلت اللقطة لـ \"{{name}}\"",
-  "commands.backup.snapshot.hashParallelismInvalid": "يجب أن يكون --hash-parallelism عددًا صحيحًا لا يقل عن 0 (0 = واحد لكل معالج)، لكن القيمة المُدخلة هي \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "يجب أن يكون --hash-parallelism عددًا صحيحًا من 0 إلى 16 (0 = واحد لكل معالج)، لكن القيمة المُدخلة هي \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "حدّ سرعة الرفع: بايت في الثانية، أو وحدات عشرية (12.5M = ‏12.5 MB/s)، أو وحدات ثنائية (12Mi)، أو بتات (100Mbps). بدونه لا يوجد حدّ",
   "commands.backup.snapshot.optionCold": "أوقِف الحاويات ثم جمِّد ثم أعِد التشغيل ثم ارفع. يكلّف انقطاعًا قصيرًا فعليًا لكنه يعطي لقطة متسقة على مستوى التطبيق، ولا يمكن استخدامه مع ‎--dry-run",
   "commands.backup.snapshot.optionDryRun": "التخطيط فقط: بلا رفع. يُظهر ما كان سيتحرك",

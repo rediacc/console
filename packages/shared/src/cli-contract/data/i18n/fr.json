@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "Instantané enregistré pour {{name}}",
   "commands.backup.snapshot.description": "Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite",
   "commands.backup.snapshot.failed": "Échec de l'instantané pour {{name}}",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism doit être un entier supérieur ou égal à 0 (0 = un par CPU), reçu \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism doit être un entier de 0 à 16 (0 = un par CPU), reçu \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "Plafond d'envoi : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
   "commands.backup.snapshot.optionCold": "Arrête les conteneurs, fige, redémarre, puis téléverse. Coûte une brève coupure réelle en échange d'un instantané cohérent au niveau applicatif ; incompatible avec --dry-run",
   "commands.backup.snapshot.optionDryRun": "Planifier seulement : aucun envoi. Indique ce qui serait déplacé",

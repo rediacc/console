@@ -151,7 +151,7 @@
         "completed": "Snapshot guardado para {{name}}",
         "description": "Enviar um snapshot para o armazenamento fragmentado: primeiro o inventário completo, depois as células alteradas",
         "failed": "Falha no snapshot de {{name}}",
-        "hashParallelismInvalid": "--hash-parallelism deve ser um inteiro igual ou maior que 0 (0 = um por CPU), mas foi recebido \"{{value}}\".",
+        "hashParallelismInvalid": "--hash-parallelism deve ser um inteiro de 0 a 16 (0 = um por CPU), mas foi recebido \"{{value}}\".",
         "optionBwlimit": "Limite de envio: bytes por segundo, unidades decimais (12.5M = 12,5 MB/s), binárias (12Mi) ou bits (100Mbps). Sem valor, não há limite",
         "optionCold": "Para os contêineres, congela, reinicia e só então envia. Custa uma parada real curta em troca de um snapshot consistente com a aplicação; não pode ser combinado com --dry-run",
         "optionDryRun": "Apenas planear: sem envio. Reporta o que se moveria",

@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "Snapshot stored for {{name}}",
   "commands.backup.snapshot.description": "Upload a chunk-store snapshot: full inventory first, changed cells after",
   "commands.backup.snapshot.failed": "Snapshot failed for {{name}}",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism must be an integer of 0 or more (0 = one per CPU), got \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism must be an integer from 0 to 16 (0 = one per CPU), got \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited",
   "commands.backup.snapshot.optionCold": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run",
   "commands.backup.snapshot.optionDryRun": "Plan only: no upload. Reports what would move",

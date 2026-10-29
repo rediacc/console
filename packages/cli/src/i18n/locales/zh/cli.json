@@ -151,7 +151,7 @@
         "completed": "已保存 {{name}} 的快照",
         "description": "上传分块存储快照：首次为完整清单，之后仅为变更单元",
         "failed": "{{name}} 的快照失败",
-        "hashParallelismInvalid": "--hash-parallelism 必须是不小于 0 的整数（0 表示每个 CPU 一个），当前为 \"{{value}}\"。",
+        "hashParallelismInvalid": "--hash-parallelism 必须是 0 到 16 之间的整数（0 表示每个 CPU 一个），当前为 \"{{value}}\"。",
         "optionBwlimit": "上传速率上限：可用每秒字节数、十进制单位（12.5M = 12.5 MB/s）、二进制单位（12Mi）或比特（100Mbps）。不设置则不限速",
         "optionCold": "先停止容器并冻结，重启之后再上传。用一次短暂的真实停机换来应用一致的快照；不能与 --dry-run 同时使用",
         "optionDryRun": "仅规划：不上传。报告将会移动哪些内容",

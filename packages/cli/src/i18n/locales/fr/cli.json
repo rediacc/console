@@ -151,7 +151,7 @@
         "completed": "Instantané enregistré pour {{name}}",
         "description": "Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite",
         "failed": "Échec de l'instantané pour {{name}}",
-        "hashParallelismInvalid": "--hash-parallelism doit être un entier supérieur ou égal à 0 (0 = un par CPU), reçu \"{{value}}\".",
+        "hashParallelismInvalid": "--hash-parallelism doit être un entier de 0 à 16 (0 = un par CPU), reçu \"{{value}}\".",
         "optionBwlimit": "Plafond d'envoi : octets par seconde, unités décimales (12.5M = 12,5 Mo/s), binaires (12Mi) ou bits (100Mbps). Sans valeur, aucun plafond",
         "optionCold": "Arrête les conteneurs, fige, redémarre, puis téléverse. Coûte une brève coupure réelle en échange d'un instantané cohérent au niveau applicatif ; incompatible avec --dry-run",
         "optionDryRun": "Planifier seulement : aucun envoi. Indique ce qui serait déplacé",

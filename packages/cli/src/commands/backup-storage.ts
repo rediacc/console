@@ -481,7 +481,7 @@ export function snapshotUploadParams(options: {
   if (options.hashParallelism !== undefined) {
     const raw = options.hashParallelism.trim();
     const n = Number(raw);
-    if (raw === '' || !Number.isInteger(n) || n < 0) {
+    if (raw === '' || !Number.isInteger(n) || n < 0 || n > 16) {
       throw new ValidationError(
         t('commands.backup.snapshot.hashParallelismInvalid', { value: options.hashParallelism })
       );

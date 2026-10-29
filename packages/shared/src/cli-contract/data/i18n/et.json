@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "Hetktõmmis salvestatud hoidlale {{name}}",
   "commands.backup.snapshot.description": "Lae hetktõmmis chunk-hoidlasse: esmalt täielik inventuur, seejärel muutunud rakud",
   "commands.backup.snapshot.failed": "Hetktõmmis ebaõnnestus hoidlale {{name}}",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism peab olema täisarv alates 0-st (0 = üks protsessori kohta), aga saadi \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism peab olema täisarv vahemikus 0 kuni 16 (0 = üks protsessori kohta), aga saadi \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "Üleslaadimise piirang: baite sekundis, kümnendühikutes (12.5M = 12,5 MB/s), kahendühikutes (12Mi) või bittides (100Mbps). Määramata jättes piirangut pole",
   "commands.backup.snapshot.optionCold": "Peatab konteinerid, külmutab, käivitab uuesti ja alles siis laadib üles. Maksab lühikese päris katkestuse, aga annab rakendusega kooskõlas oleva hetktõmmise; koos võtmega --dry-run ei tööta",
   "commands.backup.snapshot.optionDryRun": "Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks",

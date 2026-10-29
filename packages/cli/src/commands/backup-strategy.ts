@@ -9,7 +9,11 @@ import {
   RetentionSpecError,
   retentionCronMismatches,
 } from '../services/backup/backup-retention.js';
-import { strategyUnschedulableReason } from '../services/backup/backup-strategy-validate.js';
+import {
+  bandwidthToBytesPerSecond,
+  readCapBytesPerSecond,
+  strategyUnschedulableReason,
+} from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
@@ -122,11 +126,30 @@ export function buildStrategyUpdate(
     u.mode = opts.mode as 'hot' | 'cold';
   }
   if (enabled !== undefined) u.enabled = enabled;
-  if (opts.bwlimit !== undefined) u.bandwidthLimit = opts.bwlimit;
+  // Both caps are validated here, at set time: an unparseable value stored now would only surface later as an unschedulable strategy.
+  if (opts.bwlimit !== undefined) {
+    if (opts.bwlimit.trim() === '') {
+      throw new ValidationError(
+        t('commands.backup.snapshot.bwlimitInvalid', { value: opts.bwlimit })
+      );
+    }
+    bandwidthToBytesPerSecond(opts.bwlimit);
+    u.bandwidthLimit = opts.bwlimit;
+  }
   // `none` clears the read cap, so the verb default applies again.
   if (opts.readBwlimit !== undefined) {
-    u.readBandwidthLimit =
-      opts.readBwlimit.trim().toLowerCase() === 'none' ? undefined : opts.readBwlimit;
+    const raw = opts.readBwlimit.trim();
+    if (raw.toLowerCase() === 'none') {
+      u.readBandwidthLimit = undefined;
+    } else {
+      if (raw === '') {
+        throw new ValidationError(
+          t('commands.backup.snapshot.readBwlimitInvalid', { value: opts.readBwlimit })
+        );
+      }
+      readCapBytesPerSecond(raw);
+      u.readBandwidthLimit = opts.readBwlimit;
+    }
   }
   // include/exclude are mutually exclusive; setting one clears the other.
   // An empty/"none" value clears the filter entirely.

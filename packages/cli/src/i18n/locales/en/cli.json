@@ -1942,7 +1942,7 @@
         "bwlimitInvalid": "--bwlimit must be a rate such as 100Mbps or 12.5M, got \"{{value}}\".",
         "parallelismInvalid": "--parallelism must be a positive integer, got \"{{value}}\".",
         "readBwlimitInvalid": "--read-bwlimit must be a rate such as 50M or 400Mbps (0 = unlimited), got \"{{value}}\".",
-        "hashParallelismInvalid": "--hash-parallelism must be an integer of 0 or more (0 = one per CPU), got \"{{value}}\"."
+        "hashParallelismInvalid": "--hash-parallelism must be an integer from 0 to 16 (0 = one per CPU), got \"{{value}}\"."
       },
       "status": {
         "description": "Show backup status and timer state on a remote machine"

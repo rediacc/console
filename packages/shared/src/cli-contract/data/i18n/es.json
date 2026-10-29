@@ -115,7 +115,7 @@
   "commands.backup.snapshot.completed": "Instantánea guardada para {{name}}",
   "commands.backup.snapshot.description": "Subir una instantánea al almacenamiento fragmentado: primero el inventario completo, después las celdas modificadas",
   "commands.backup.snapshot.failed": "Falló la instantánea de {{name}}",
-  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism debe ser un entero igual o mayor que 0 (0 = uno por CPU), y se recibió \"{{value}}\".",
+  "commands.backup.snapshot.hashParallelismInvalid": "--hash-parallelism debe ser un entero de 0 a 16 (0 = uno por CPU), y se recibió \"{{value}}\".",
   "commands.backup.snapshot.optionBwlimit": "Límite de subida: bytes por segundo, unidades decimales (12.5M = 12,5 MB/s), binarias (12Mi) o bits (100Mbps). Sin indicarlo no hay límite",
   "commands.backup.snapshot.optionCold": "Detiene los contenedores, congela, reinicia y solo entonces sube. Cuesta un corte real breve a cambio de una instantánea coherente con la aplicación; no se puede combinar con --dry-run",
   "commands.backup.snapshot.optionDryRun": "Solo planificar: sin subida. Informa qué se movería",

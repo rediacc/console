@@ -122,6 +122,9 @@ describe('backup snapshot carries the read cap and hash parallelism', () => {
     await expect(snapshot(['--read-bwlimit', ' '])).rejects.toThrow(
       /commands\.backup\.snapshot\.readBwlimitInvalid/
     );
+    await expect(snapshot(['--hash-parallelism', '17'])).rejects.toThrow(
+      /commands\.backup\.snapshot\.hashParallelismInvalid/
+    );
     await expect(snapshot(['--hash-parallelism', '-1'])).rejects.toThrow(
       /commands\.backup\.snapshot\.hashParallelismInvalid/
     );
