@@ -14,7 +14,9 @@ The PUT is an unmeasured step for the ASSETS binding (only the DELETE was measur
 
 Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu --target stable`
 
-Options: `--region eu|us|asia|all` (default all), `--target stable|edge|all` (default all), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
+BENCH. `--region bench` selects the bench account Worker (its name read from `workers/account/wrangler.bench.toml`, the file `deploy_bench` deploys with). Its expected set is the key set of `deploy_bench.secrets_payload()`, read with the region-consistency gate's own extractor, and its legacy names map through `BENCH_LEGACY_BWS`, because bench binds the DEV X25519 pair, JWT secret and server API key, the unsuffixed production ED25519 pair and the `_BENCH` Turnstile secret (`.ci/config/secret-supply.json`, `deploy-bench`). Bench is never part of `--region all`: it is chosen by name. Profile for a bench run: `deploy-workers` (Cloudflare token, account id) plus the bws store read the archive needs.
+
+Options: `--region eu|us|asia|bench|all` (default all; `all` excludes bench), `--target stable|edge|all` (default all), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
 
 Exit codes: 0 no extras, 1 extras listed (or a delete failed), 2 no verdict (missing credential, API failure, unknown option, `--archive` or `--delete` without an explicit `--region`, `--delete` combined with `--dry-run`).
 """
@@ -28,6 +30,7 @@ import os
 import re
 import sys
 import time
+import tomllib
 import urllib.error
 import urllib.parse
 from typing import TYPE_CHECKING
@@ -36,6 +39,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import bws_env, https
 from rediacc_ci.deploy import console_executor
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
+from rediacc_ci.quality import region_consistency_offline as offline
 from rediacc_ci.well_known import CF_API_BASE
 
 if TYPE_CHECKING:
@@ -66,6 +70,18 @@ LEGACY_BWS: dict[str, str] = {
     "TURNSTILE_SECRET_KEY": "CLOUDFLARE_TURNSTILE_SECRET_KEY",
     "OTLP_CLIENT_CREDENTIALS": "OBS_OTLP_CREDENTIALS_{SUFFIX}",
 }
+# The same legacy names on the bench Worker, whose successors come from the deploy-bench profile's bindings (secret-supply.json): DEV X25519 pair, JWT secret and server API key, the unsuffixed production ED25519 pair, the bench Turnstile secret.
+BENCH_LEGACY_BWS: dict[str, str] = {
+    "API_KEY": "ACCOUNT_SERVER_API_KEY_DEV",
+    "JWT_SECRET": "ACCOUNT_JWT_SECRET_DEV",
+    "ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
+    "ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
+    "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY_DEV",
+    "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY_DEV",
+    "TURNSTILE_SECRET_KEY": "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH",
+}
+BENCH = "bench"
+BENCH_WRANGLER_REL = ("workers", "account", "wrangler.bench.toml")
 
 
 class ApiError(Exception):
@@ -102,14 +118,38 @@ def expected_names() -> list[str]:
     return [key for key, _var, _source in pusher.KEYS]
 
 
-def load_workers(root: pathlib.Path | None = None) -> list[Row]:
-    """Every (region, channel, worker) of `regions.json`."""
+def bench_expected(root: pathlib.Path | None = None) -> list[str]:
+    """The key names `deploy_bench.secrets_payload()` pushes, read with the region-consistency gate's extractor."""
+    base = paths.repo_root() if root is None else root
+    text = base.joinpath(offline.BENCH_DEPLOY_REL).read_text(encoding="utf-8")
+    return offline.bench_payload_keys(text)
+
+
+def expected_for(row: Row, root: pathlib.Path | None = None) -> list[str]:
+    """The names the deploy behind `row` pushes."""
+    return bench_expected(root) if row.region == BENCH else expected_names()
+
+
+def bench_worker(root: pathlib.Path | None = None) -> str:
+    """The bench account Worker's name, from the config `deploy_bench` deploys with."""
+    base = paths.repo_root() if root is None else root
+    with base.joinpath(*BENCH_WRANGLER_REL).open("rb") as fh:
+        name = tomllib.load(fh).get("name")
+    if not isinstance(name, str) or not name:
+        raise ApiError("%s has no Worker name" % "/".join(BENCH_WRANGLER_REL))
+    return name
+
+
+def load_workers(root: pathlib.Path | None = None, *, bench: bool = False) -> list[Row]:
+    """Every (region, channel, worker) of `regions.json`, plus the bench Worker when `bench`."""
     base = paths.repo_root() if root is None else root
     doc = json.loads(base.joinpath(REGIONS_REL).read_text(encoding="utf-8"))
     rows: list[Row] = []
     for region in doc["regions"]:
         rows.append(Row(region["id"], "stable", region["workerName"]))
         rows.append(Row(region["id"], "edge", region["edgeWorkerName"]))
+    if bench:
+        rows.append(Row(BENCH, BENCH, bench_worker(base)))
     return rows
 
 
@@ -175,10 +215,16 @@ def secrets_path(account: str, worker: str, name: str | None = None) -> str:
     return base if name is None else base + "/" + urllib.parse.quote(name, safe="")
 
 
-def survey(rows: list[Row], account: str, token: str, fetch: Fetch) -> list[Row]:
+def survey(
+    rows: list[Row],
+    account: str,
+    token: str,
+    fetch: Fetch,
+    root: pathlib.Path | None = None,
+) -> list[Row]:
     """Fill each row with its live count and extras."""
-    want = expected_names()
     for row in rows:
+        want = expected_for(row, root)
         result = fetch("GET", secrets_path(account, row.worker), token)
         if not isinstance(result, list):
             raise ApiError("the secrets list of %s is not a list" % row.worker)
@@ -234,9 +280,9 @@ def region_suffixes(root: pathlib.Path | None = None) -> dict[str, str]:
     return {region["id"]: region["secretSuffix"] for region in doc["regions"]}
 
 
-def bws_key(name: str, suffix: str) -> str | None:
+def bws_key(name: str, suffix: str, region: str = "") -> str | None:
     """The bws key behind a legacy Worker secret name, or None when no mapping exists."""
-    template = LEGACY_BWS.get(name)
+    template = (BENCH_LEGACY_BWS if region == BENCH else LEGACY_BWS).get(name)
     return None if template is None else template.replace("{SUFFIX}", suffix)
 
 
@@ -262,7 +308,7 @@ def archive_extras(
     wanted: dict[tuple[str, str], str | None] = {}
     for row in rows:
         for name in row.extras:
-            wanted[(row.worker, name)] = bws_key(name, suffixes[row.region])
+            wanted[(row.worker, name)] = bws_key(name, suffixes.get(row.region, ""), row.region)
     have = values(sorted({k for k in wanted.values() if k}))
     for row in rows:
         for name in row.extras:
@@ -355,7 +401,7 @@ def run(
     if (opts.delete or opts.archive) and opts.region == "all":
         # A delete names its region: one run never removes secrets from every account Worker at once.
         flag = "--archive" if opts.archive else "--delete"
-        return 2, ["%s: %s needs --region eu|us|asia; nothing deleted" % (SELF, flag)], []
+        return 2, ["%s: %s needs --region eu|us|asia|bench; nothing deleted" % (SELF, flag)], []
     token = (env.get("CLOUDFLARE_API_TOKEN") or "").strip()
     account = (env.get("CLOUDFLARE_ACCOUNT_ID") or "").strip()
     if not token or not account:
@@ -364,11 +410,14 @@ def run(
             ["%s: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set; no verdict" % SELF],
             [],
         )
-    chosen = [
-        w
-        for w in load_workers(root)
-        if opts.region in ("all", w.region) and opts.target in ("all", w.target)
-    ]
+    try:
+        chosen = [
+            w
+            for w in load_workers(root, bench=opts.region == BENCH)
+            if opts.region in ("all", w.region) and opts.target in ("all", w.target)
+        ]
+    except (ApiError, OSError, tomllib.TOMLDecodeError) as exc:
+        return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     if not chosen:
         return (
             2,
@@ -376,8 +425,8 @@ def run(
             [],
         )
     try:
-        rows = survey(chosen, account, token, fetch)
-    except ApiError as exc:
+        rows = survey(chosen, account, token, fetch, root)
+    except (ApiError, OSError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     lines = [
         "%s (%s %s): %d live, %d pushed, extras: %s"
