@@ -86,6 +86,16 @@ nothing would have noticed a nineteenth that was a real omission. Three more ass
      exclusion), so the three cannot drift into three different shapes. A
      comment or docstring quoting it does not count.
 
+ 16. NO MAPPED OR BOUND NAME IS PARKED. `bws_env park` renames a retired
+     entry to `__<NAME>` (same id, same value) and keeps it for recovery
+     only: agent/plans/PLAN-production-key-only.md parks the six retired
+     ACCOUNT_*_DEV entries that way. A parked name in the map, in a
+     secret-supply profile spec (either half), or in a workflow's
+     bws-secrets request would bind a retired value again, so each is named.
+     The literal `bws_env.PARKED_PATTERN` must also be the `PARKED_RE`
+     declaration in scripts/ops/bws-map-refresh.py (the exclusion), parsed
+     the way assertion 15 parses ARCHIVE_RE.
+
 Control-first: the parser is proven on synthetic input in both directions before any verdict, and the failure direction is proven by a planted name.
 
 ---- gate ----
@@ -114,6 +124,7 @@ from rediacc_ci import workflows
 # IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the `account-dev` profile actually binds, and a second copy of the nine names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
 from rediacc_ci.core.bws_env import ARCHIVE_PATTERN as BWS_ENV_ARCHIVE_PATTERN
 from rediacc_ci.core.bws_env import JSON_REQUIRED as BWS_ENV_JSON_REQUIRED
+from rediacc_ci.core.bws_env import PARKED_PATTERN as BWS_ENV_PARKED_PATTERN
 from rediacc_ci.core.bws_env import parse_spec as bws_parse_spec
 
 # Overridable so a gate-test can drive the REAL scan against a fixture tree instead of only the pure-logic selftest. This is not an escape hatch: every anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at an empty directory reds rather than passes.
@@ -866,8 +877,8 @@ def blank_multiline_ts_literals(code: str) -> str:
     return _TS_TOKEN_RE.sub(lambda m: "" if m.group(1) and "\n" in m.group(1) else m.group(0), code)
 
 
-def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
-    """Does the file's CODE declare ARCHIVE_RE with exactly this pattern?
+def archive_pin_declared(rel: str, text: str, pattern: str, symbol: str = "ARCHIVE_RE") -> bool:
+    """Does the file's CODE declare `symbol` (ARCHIVE_RE unless told otherwise) with exactly this pattern?
 
     Python is parsed: a module-level `ARCHIVE_RE = re.compile(<str>)` whose string equals the pattern, so a comment or docstring can never count. TypeScript has no parser here, so `/* */` and `//` comments are stripped first and the declaration must then start a line. A file that does not parse pins nothing.
     """
@@ -883,7 +894,7 @@ def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
     last: ast.expr | None = None
     for node in tree.body:
         if isinstance(node, ast.Assign) and [getattr(t, "id", None) for t in node.targets] == [
-            "ARCHIVE_RE"
+            symbol
         ]:
             last = node.value
     if not isinstance(last, ast.Call):
@@ -929,6 +940,72 @@ def archive_clone_problems(
             problems.append(
                 f"{rel} does not declare {archive_pin_declaration(rel, pattern)!r} in code; its ARCHIVE_RE has drifted from bws_env.ARCHIVE_PATTERN"
             )
+    return problems
+
+
+PARKED_PIN_FILE = "scripts/ops/bws-map-refresh.py"
+
+
+def parked_pin_declaration(pattern: str) -> str:
+    """The declaration that pins the parked regex in the refresher (the form a problem message names)."""
+    return f'PARKED_RE = re.compile(r"{pattern}")'
+
+
+def supply_bound_names(supply: Path | None = None) -> tuple[dict[str, str], list[str]]:
+    """({name: where} for both halves of every secret-supply spec, problems). An unreadable file is a problem, not a skip."""
+    src = SUPPLY if supply is None else supply
+    try:
+        consumers = json.loads(src.read_text(encoding="utf-8"))["consumers"]
+        items = list(consumers.items())
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        return {}, [f"cannot read the profiles in {src} ({exc}); assertion 16 is blind"]
+    bound: dict[str, str] = {}
+    for profile, body in items:
+        if not isinstance(body, dict):
+            continue
+        for raw in list(body.get("required") or []) + list(body.get("optional") or []):
+            spec = bws_parse_spec(str(raw))
+            if spec:
+                for half in spec:
+                    bound.setdefault(half, f"{src.name} consumers.{profile}")
+    return bound, []
+
+
+def parked_problems(
+    secrets: dict,
+    bound: dict[str, str],
+    pattern: str = BWS_ENV_PARKED_PATTERN,
+    pin_text: str | None = None,
+) -> list[str]:
+    """Assertion 16. No mapped or bound name is parked, and the refresher's PARKED_RE is bws_env.PARKED_PATTERN.
+
+    `bound` maps a name to where it is bound (a profile, a workflow line). `pin_text` is the refresher's text (None reads PARKED_PIN_FILE from the tree); an unreadable pin is a problem, not a skip.
+    """
+    rx = re.compile(pattern)
+    problems = [
+        f"mapped name {name!r} is a parked entry (matches {pattern}); it is a retired value, "
+        f"drop it from the map (scripts/ops/bws-map-refresh.py excludes it)"
+        for name in sorted(secrets)
+        if rx.search(name)
+    ]
+    problems += [
+        f"{where} binds {name!r}, a parked entry (matches {pattern}); bind the live name instead"
+        for name, where in sorted(bound.items())
+        if rx.search(name)
+    ]
+    if pin_text is None:
+        try:
+            pin_text = (ROOT / PARKED_PIN_FILE).read_text(encoding="utf-8")
+        except OSError as exc:
+            return [
+                *problems,
+                f"cannot read {PARKED_PIN_FILE} ({exc}); the parked pattern pin is blind",
+            ]
+    if not archive_pin_declared(PARKED_PIN_FILE, pin_text, pattern, symbol="PARKED_RE"):
+        problems.append(
+            f"{PARKED_PIN_FILE} does not declare {parked_pin_declaration(pattern)!r} in code; "
+            f"its PARKED_RE has drifted from bws_env.PARKED_PATTERN"
+        )
     return problems
 
 
@@ -1389,7 +1466,7 @@ jobs:
     def seller14(bound: list[str], declared: list[str]) -> list[str]:
         with tempfile.TemporaryDirectory() as d:
             sup = Path(d) / "secret-supply.json"
-            specs = ["ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET", *bound]
+            specs = ["AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID", *bound]
             sup.write_text(
                 json.dumps({"consumers": {SELLER_PROFILE: {"optional": specs}}}),
                 encoding="utf-8",
@@ -1574,7 +1651,7 @@ jobs:
             ),
         ),
         (
-            "16: a division is not a regex literal, so a block comment after it is still stripped",
+            "15: a division is not a regex literal, so a block comment after it is still stripped",
             lambda: (
                 strip_ts_comments("const a = x / b; /* c */ const d = 1 / 2; /* e */ z")
                 == "const a = x / b;  const d = 1 / 2;  z"
@@ -1585,6 +1662,64 @@ jobs:
         good15 = probe15()
         print(f"  {'PASS' if good15 else 'FAIL'}  {label}")
         if not good15:
+            bad += 1
+
+    # ---- assertion 16: no mapped or bound name is parked, and the refresher pins the pattern ----
+    ppat = BWS_ENV_PARKED_PATTERN
+    good_pin = "import re\n" + parked_pin_declaration(ppat) + "\n"
+    checks16 = [
+        (
+            "CONTROL: a clean map, clean bindings and a verbatim pin are silent",
+            lambda: parked_problems({"A": {}}, {"A": "w.yml:1"}, ppat, good_pin) == [],
+        ),
+        (
+            "16: a mapped parked name is named",
+            lambda: any(
+                "'__A_DEV'" in m for m in parked_problems({"__A_DEV": {}}, {}, ppat, good_pin)
+            ),
+        ),
+        (
+            "16: a bound parked name is named with where it is bound",
+            lambda: any(
+                "consumers.p" in m and "'__A_DEV'" in m
+                for m in parked_problems({}, {"__A_DEV": "s.json consumers.p"}, ppat, good_pin)
+            ),
+        ),
+        (
+            "16: an archive clone is NOT a parked name (assertion 15 owns it)",
+            lambda: (
+                parked_problems({"__A__ROTATED_20260101T000000Z": {}}, {}, ppat, good_pin) == []
+            ),
+        ),
+        (
+            "16: a single leading underscore is not parked",
+            lambda: parked_problems({"_A": {}}, {}, ppat, good_pin) == [],
+        ),
+        (
+            "16: a drifted refresher pin is named",
+            lambda: any(
+                "drifted" in m
+                for m in parked_problems(
+                    {}, {}, ppat, 'import re\nPARKED_RE = re.compile(r"^__")\n'
+                )
+            ),
+        ),
+        (
+            "16: a pin kept only in a comment is named",
+            lambda: any(
+                "drifted" in m
+                for m in parked_problems({}, {}, ppat, "# " + parked_pin_declaration(ppat) + "\n")
+            ),
+        ),
+        (
+            "16: an unreadable supply file refuses rather than passing",
+            lambda: any("blind" in m for m in supply_bound_names(Path("/nonexistent/s.json"))[1]),
+        ),
+    ]
+    for label, probe16 in checks16:
+        good16 = probe16()
+        print(f"  {'PASS' if good16 else 'FAIL'}  {label}")
+        if not good16:
             bad += 1
     return 1 if bad else 0
 
@@ -1629,6 +1764,8 @@ def main() -> int:
 
     # 1 + 2. every request resolves
     callers = 0
+    # Assertion 16's workflow half: every name a bws-secrets step requests, with where.
+    requested: dict[str, str] = {}
     workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     if not workflows:
         # ZERO FILES is not "zero callers". Zero callers among real workflows is the pre-cutover state and passes with a note below; zero workflow files means the scan lost its subject entirely, and a gate that passes over an empty set is the failure mode this repo names most often. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` caught exactly this on the first run: the map is copied into its empty
@@ -1646,6 +1783,8 @@ def main() -> int:
             callers += 1
         for line, name, env in reqs:
             rel = f.relative_to(ROOT)
+            requested.setdefault(name, f"{rel}:{line}")
+            requested.setdefault(env, f"{rel}:{line}")
             if name not in secrets:
                 problems.append(
                     f"{rel}:{line} requests {name!r}, which the map does not hold -- the job would fail at run time"
@@ -1686,6 +1825,11 @@ def main() -> int:
 
     # 15. No archive clone is mapped, and the archive pattern has one spelling across bws_env, the archiver and the refresher.
     problems += archive_clone_problems(secrets)
+
+    # 16. No mapped or bound name is parked, and the refresher's PARKED_RE is bws_env's.
+    bound, bound_problems = supply_bound_names()
+    problems += bound_problems
+    problems += parked_problems(secrets, {**requested, **bound})
 
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
@@ -1738,6 +1882,11 @@ def main() -> int:
     print(
         f"✓ archive clones: no mapped name matches {BWS_ENV_ARCHIVE_PATTERN}, and "
         f"{len(ARCHIVE_PIN_FILES)} file(s) declare it as ARCHIVE_RE"
+    )
+    print(
+        f"✓ parked: no mapped, profile-bound or requested name matches {BWS_ENV_PARKED_PATTERN} "
+        f"({len(bound)} profile name(s), {len(requested)} requested name(s)), and "
+        f"{PARKED_PIN_FILE} declares it as PARKED_RE"
     )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(
