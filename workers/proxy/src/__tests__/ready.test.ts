@@ -18,6 +18,7 @@ vi.mock('@cloudflare/containers', () => ({
 
 import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
+import { COORDINATOR_TIMEOUT_MS } from '../org-executor-support';
 import { READY_CACHE_MS, readiness, resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';
@@ -221,6 +222,52 @@ describe('/v1/ready executors (box L0 drills)', () => {
       status: 200,
       body: { ready: true, workerVersion: VERSION_ID },
     });
+  });
+
+  it('leaves executors out, and still answers ready, when the coordinator stalls instead of failing', async () => {
+    vi.useFakeTimers();
+    try {
+      const capacity = coordinator(() => new Promise(() => undefined));
+      const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
+      const pending = readiness(e);
+      await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS + 1);
+      expect(await pending).toEqual({
+        status: 200,
+        body: { ready: true, workerVersion: VERSION_ID },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('answers not ready, instead of hanging, when the issuer probe or server-info stalls', async () => {
+    vi.useFakeTimers();
+    try {
+      const stalledProbe = env(
+        issuer(() => new Promise(() => undefined)),
+        account(),
+        metadata
+      );
+      const probing = readiness(stalledProbe);
+      await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS + 1);
+      expect(await probing).toEqual({
+        status: 503,
+        body: { ready: false, reason: 'issuer-probe-failed' },
+      });
+
+      resetReadyCache();
+      const stalledAccount = {
+        binding: { fetch: () => new Promise(() => undefined) } as unknown as Fetcher,
+      };
+      const fetching = readiness(env(issuer(probeOk), stalledAccount, metadata));
+      await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS + 1);
+      expect(await fetching).toEqual({
+        status: 503,
+        body: { ready: false, reason: 'server-info-unreachable' },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('asks the coordinator nothing on a not-ready answer, and at most once per cache window', async () => {

@@ -285,6 +285,24 @@ describe('review 5acbb97d', () => {
     expect(h.capacity.release).toHaveBeenCalledWith(LEASE);
   });
 
+  it('2ec734de.1: a start whose container vanishes after the lease releases that lease', async () => {
+    // The no-container refusal of startLeased (bd830f6f.1): the container is there when start
+    // checks, and gone once the lease is held.
+    const h = harness();
+    await h.ready;
+    h.capacity.acquire.mockImplementationOnce(() => {
+      h.dropContainer();
+      return Promise.resolve({ ok: true });
+    });
+    expect(await h.executor.pin(ORG, 0, 'light')).toMatchObject({
+      code: 'EXECUTOR_START_FAILED',
+      reason: 'no-container',
+    });
+    expect(h.capacity.release).toHaveBeenCalledTimes(1);
+    expect(h.capacity.release).toHaveBeenCalledWith(LEASE);
+    expect(h.container.starts).toHaveLength(0);
+  });
+
   it('5acbb97d.3: a monitor() rejection during readiness releases the lease exactly once', async () => {
     const h = harness();
     await h.ready;

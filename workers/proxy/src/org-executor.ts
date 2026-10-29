@@ -295,12 +295,17 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       this.inFlight -= 1;
       void this.afterRequest();
     };
+    // Which step threw, so a storage or lease error is not logged as a failed forward (review
+    // 2b65e8c7.2). The caller's answer is the same either way: nothing reached the executor.
+    let stage: 'touch' | 'lease' | 'forward' = 'touch';
     try {
       await this.touch();
+      stage = 'lease';
       if (!(await this.holdLease())) {
         done();
         return refusalResponse('EXECUTOR_CAPACITY');
       }
+      stage = 'forward';
       const response = await container.getTcpPort(EXECUTOR_PORT).fetch(containerRequest(request));
       if (response.body === null) {
         done();
@@ -313,7 +318,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       });
     } catch (error) {
       done();
-      console.warn('proxy: org executor forward failed', errorSummary(error));
+      console.warn(`proxy: org executor ${stage} failed`, errorSummary(error));
       return Response.json(
         { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
         { status: 502 }

@@ -92,6 +92,79 @@ describe('probeSshBanner', () => {
   });
 });
 
+describe('probeSshBanner on a DNS name (5bce4385.1)', () => {
+  const NAME = { host: 'machine.example.com', port: 2222 };
+
+  it('connects to the vetted address the name resolved to, never to the name', async () => {
+    const fake = fakeSocket(['SSH-2.0-x']);
+    const connect = vi.fn(() => fake.socket);
+    const resolve = vi.fn(async () => ['203.0.113.9', '2001:db8::9']);
+    expect(await probeSshBanner(NAME, { connect, resolve })).toEqual({
+      verdict: 'reachable',
+      reason: 'banner',
+    });
+    expect(resolve).toHaveBeenCalledWith('machine.example.com');
+    expect(connect).toHaveBeenCalledWith(
+      { hostname: '203.0.113.9', port: 2222 },
+      expect.anything()
+    );
+  });
+
+  for (const [label, answers] of [
+    ['RFC 1918', ['10.0.0.5']],
+    ['loopback', ['127.0.0.1']],
+    ['CGNAT', ['100.64.1.1']],
+    ['link-local', ['169.254.169.254']],
+    ['IPv6 ULA', ['fd00::1']],
+    ['IPv4-mapped loopback', ['::ffff:127.0.0.1']],
+    ['one private answer among public ones', ['203.0.113.9', '192.168.1.1']],
+  ] as const) {
+    it(`refuses a name with a ${label} answer and opens no socket`, async () => {
+      const connect = vi.fn();
+      const resolve = vi.fn(async () => [...answers]);
+      expect(await probeSshBanner(NAME, { connect, resolve })).toEqual({
+        verdict: 'target-unreachable',
+        reason: 'refused-address',
+      });
+      expect(connect).not.toHaveBeenCalled();
+    });
+  }
+
+  it('a name that resolves to nothing, or whose lookup fails, is unresolved and opens no socket', async () => {
+    const connect = vi.fn();
+    expect(await probeSshBanner(NAME, { connect, resolve: async () => [] })).toEqual({
+      verdict: 'target-unreachable',
+      reason: 'unresolved',
+    });
+    expect(
+      await probeSshBanner(NAME, {
+        connect,
+        resolve: () => Promise.reject(new Error('doh down')),
+      })
+    ).toEqual({ verdict: 'target-unreachable', reason: 'unresolved' });
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('a lookup that never answers times out inside the probe deadline', async () => {
+    vi.useFakeTimers();
+    const connect = vi.fn();
+    const pending = probeSshBanner(NAME, {
+      connect,
+      resolve: () => new Promise(() => undefined),
+    });
+    await vi.advanceTimersByTimeAsync(PROBE_TIMEOUT_MS);
+    expect(await pending).toEqual({ verdict: 'target-unreachable', reason: 'timeout' });
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('an address literal is never resolved', async () => {
+    const fake = fakeSocket(['SSH-2.0-x']);
+    const resolve = vi.fn(async () => ['203.0.113.9']);
+    await probeSshBanner(TARGET, { connect: vi.fn(() => fake.socket), resolve });
+    expect(resolve).not.toHaveBeenCalled();
+  });
+});
+
 describe('probeTarget', () => {
   const accepted: [string, unknown, { host: string; port: number }][] = [
     ['a public IPv4', { host: '203.0.113.7', port: 22 }, { host: '203.0.113.7', port: 22 }],

@@ -4,6 +4,10 @@
  * A Cloudflare container sees a TCP RST as a timeout (bench, 2026-10-28: iptables REJECT on hostinger port 1 still ended in EGRESS_UNREACHABLE), so a machine with a closed port looks the same as blocked egress. The probe tells them apart: a target that greets the Worker with an SSH banner is reachable, so the executor's own path is the broken one; anything else means the machine is the problem and moving the executor would not help.
  *
  * `probeTarget` decides which targets may be probed at all, since the container names the address: an integer port 1-65535 other than 25, and a public IPv4, IPv6 or DNS host. `probeSshBanner` only reads, at most 256 bytes, and never writes, so the container cannot use the Worker as a TCP client that sends anything.
+ *
+ * A DNS name is resolved by the Worker (DNS over HTTPS) before the probe, and EVERY address it answers is held to the same ranges as a literal: a name with any private, loopback, CGNAT or link-local answer is not probed, and the probe connects to a vetted address literal, never to the name, so a second resolution cannot hand it another address (review 5bce4385.1).
+ *
+ * What the probe can tell a tenant, weighed (review 5bce4385.1): the answer to a report is one verdict, whether an SSH banner greeted the Worker at host:port, at most PROBE_CAP times per window per instance. The executor container already runs with internet access (`enableInternet` in src/org-executor.ts), so it can connect to any public host itself and read far more than four bytes; the Worker adds only a second vantage point, which is the point of the check.
  */
 
 import { connect } from 'cloudflare:sockets';
@@ -22,12 +26,38 @@ export type ProbeVerdict = 'reachable' | 'target-unreachable' | 'skipped';
 
 export type ProbeResult =
   | { verdict: 'reachable'; reason: 'banner' }
-  | { verdict: 'target-unreachable'; reason: 'no-banner' | 'timeout' | 'error' };
+  | {
+      verdict: 'target-unreachable';
+      reason: 'no-banner' | 'timeout' | 'error' | 'unresolved' | 'refused-address';
+    };
 
 export interface ProbeDeps {
   connect: (address: SocketAddress, options?: SocketOptions) => Socket;
+  /** Every address a DNS name answers (A and AAAA). Defaults to DNS over HTTPS. */
+  resolve: (name: string) => Promise<string[]>;
   now: () => number;
   timeoutMs: number;
+}
+
+/** The DNS over HTTPS endpoint the default resolver asks (JSON API). */
+const DOH_URL = 'https://cloudflare-dns.com/dns-query';
+/** DNS record types: A and AAAA. */
+const DNS_TYPES = { A: 1, AAAA: 28 } as const;
+
+/** The A and AAAA answers for `name`, from DNS over HTTPS. */
+async function resolveDoh(name: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const [type, code] of Object.entries(DNS_TYPES)) {
+    const response = await fetch(`${DOH_URL}?name=${encodeURIComponent(name)}&type=${type}`, {
+      headers: { accept: 'application/dns-json' },
+    });
+    if (!response.ok) throw new Error(`doh-http-${response.status}`);
+    const body = (await response.json()) as { Answer?: { type?: number; data?: unknown }[] };
+    for (const answer of body.Answer ?? []) {
+      if (answer.type === code && typeof answer.data === 'string') out.push(answer.data);
+    }
+  }
+  return out;
 }
 
 /** How long the probe waits for the banner. */
@@ -129,6 +159,20 @@ function hostnameVerdict(host: string): 'ok' | TargetRefusal {
   return 'ok';
 }
 
+/** Whether an address literal a name resolved to may be connected to. */
+function addressAllowed(address: string): boolean {
+  const host = address.trim().toLowerCase();
+  const v4 = ipv4Octets(host);
+  if (v4) return !v4Refused(v4);
+  const v6 = host.includes(':') ? ipv6Hextets(host) : undefined;
+  return v6 !== undefined && !v6Refused(v6);
+}
+
+/** Whether `host` is an address literal rather than a DNS name. */
+function isAddressLiteral(host: string): boolean {
+  return ipv4Octets(host) !== undefined || host.includes(':');
+}
+
 /** Whether `host` (lowercased, unbracketed) may be probed, or why not. */
 function hostVerdict(host: string): 'ok' | TargetRefusal {
   if (host === '') return INVALID;
@@ -214,6 +258,26 @@ function closeQuietly(socket: Socket): void {
   }
 }
 
+/** The address a DNS name resolved to, vetted: every answer must be allowed, and the first is the one connected to. Otherwise the verdict that ends the probe. */
+async function vettedAddress(
+  name: string,
+  resolve: ProbeDeps['resolve'],
+  remainingMs: number
+): Promise<string | ProbeResult> {
+  let answers: string[] | typeof TIMEOUT;
+  try {
+    answers = await within(resolve(name), remainingMs);
+  } catch {
+    return { verdict: 'target-unreachable', reason: 'unresolved' };
+  }
+  if (answers === TIMEOUT) return { verdict: 'target-unreachable', reason: 'timeout' };
+  if (answers.length === 0) return { verdict: 'target-unreachable', reason: 'unresolved' };
+  if (!answers.every(addressAllowed)) {
+    return { verdict: 'target-unreachable', reason: 'refused-address' };
+  }
+  return answers[0].trim().toLowerCase();
+}
+
 /** The host in the form `connect` reads: an IPv6 literal goes in brackets. */
 function addressHost(host: string): string {
   return host.includes(':') ? `[${host}]` : host;
@@ -229,10 +293,14 @@ export async function probeSshBanner(
   const doConnect = deps.connect ?? connect;
   const now = deps.now ?? Date.now;
   const deadline = now() + (deps.timeoutMs ?? PROBE_TIMEOUT_MS);
+  const address = isAddressLiteral(target.host)
+    ? target.host
+    : await vettedAddress(target.host, deps.resolve ?? resolveDoh, deadline - now());
+  if (typeof address !== 'string') return address;
   let socket: Socket;
   try {
     socket = doConnect(
-      { hostname: addressHost(target.host), port: target.port },
+      { hostname: addressHost(address), port: target.port },
       { secureTransport: 'off', allowHalfOpen: false }
     );
   } catch {

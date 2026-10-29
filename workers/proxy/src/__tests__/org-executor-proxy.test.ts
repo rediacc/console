@@ -183,6 +183,30 @@ describe('proxying', () => {
     }
   });
 
+  it('names the step that failed: a storage error before the forward is not logged as a forward', async () => {
+    const h = harness();
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    const state = (h.executor as unknown as { ctx: { storage: { setAlarm: () => Promise<void> } } })
+      .ctx;
+    state.storage.setAlarm = () => Promise.reject(new TypeError('alarm store down'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const response = await h.executor.fetch(new Request('https://executor.internal/v1/command'));
+      expect(response.status).toBe(502);
+      expect(warn).toHaveBeenCalledWith('proxy: org executor touch failed', {
+        name: 'TypeError',
+        message: 'alarm store down',
+      });
+      expect(warn).not.toHaveBeenCalledWith(
+        'proxy: org executor forward failed',
+        expect.anything()
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('renews the lease at a request start at most once per 30 s', async () => {
     const h = harness();
     await h.ready;

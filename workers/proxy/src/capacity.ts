@@ -14,7 +14,11 @@ export const HARD_CAP = 25;
 export const HARD_HEAVY_CAP = 5;
 /** A lease's life: OrgExecutor's `sleepAfter` of 120 s plus 60 s of grace for a renew in flight. */
 export const LEASE_MS = 180_000;
-/** The name of the one coordinator instance per target. The suffix versions the table shape: v2 keys leases by executor name, not by org. */
+/**
+ * The name of the one coordinator instance per target. The suffix versions the table shape: v2 keys leases by executor name, not by org.
+ *
+ * A new suffix starts an EMPTY instance, so for at most LEASE_MS after the deploy that introduces it the cap does not see executors still holding a lease on the old instance: the running total can exceed the cap by the old holders, at most the old cap itself (review 872e964a.1). Each such executor moves over at its first renew (`renew` on the new instance answers `not-held`, and OrgExecutor acquires again there, src/org-executor.ts `holdLease`), and an idle one stops at `sleepAfter`, so the overshoot is one-time and bounded by LEASE_MS. It was accepted for the v1-to-v2 cutover; a future suffix change carries the same transient and should be deployed when the target is quiet.
+ */
 export const CAPACITY_NAME = 'capacity:v2';
 
 /** The instance size class a lease is counted under. `heavy` leases also count against the heavy sub-cap. */

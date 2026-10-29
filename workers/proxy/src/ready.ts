@@ -3,13 +3,18 @@
  *
  * Unauthenticated, so a deploy smoke can poll it. There is no org-less token to introspect, so it asks the issuer's `probe()` (writes nothing and mints nothing: the issuer env parses, D1 answers, and the scopes an issued token would carry are listed) and then `GET server-info` over ACCOUNT, which together prove the ISSUER binding answers, the ACCOUNT binding answers, and a token would carry the scopes the executor needs. It answers 200 `{ ready: true, workerVersion }` with the `[version_metadata]` id, which is how the smoke tells the new version from an old one still rolling out, or 503 `{ ready: false, reason }` with a reason code.
  *
- * A ready answer on a version with the EXECUTOR_CAPACITY binding also carries `executors`, the coordinator's `count()`: how many executor containers hold a live lease (`total`, of which `heavy`) and the caps in force. It is what a bench drill reads to watch a slot free or a heavy start land (agent/plans/PLAN-executor-durable-object-policy.md box L0). It is safe on an unauthenticated route because it is four small integers per target: no org id, executor name, placement or size of any one org, and the caps are the deployed config's. The count never decides readiness: a coordinator that cannot answer leaves `executors` out, so the deploy smoke keeps meaning what it meant.
+ * A ready answer on a version with the EXECUTOR_CAPACITY binding also carries `executors`, the coordinator's `count()`: how many executor containers hold a live lease (`total`, of which `heavy`) and the caps in force. It is what a bench drill reads to watch a slot free or a heavy start land (agent/plans/PLAN-executor-durable-object-policy.md box L0). The count never decides readiness: a coordinator that cannot answer, or does not answer within COORDINATOR_TIMEOUT_MS, leaves `executors` out, so the deploy smoke keeps meaning what it meant.
+ *
+ * What the unauthenticated route discloses, weighed (review 900c1e14.2): anyone who polls learns the deployment's aggregate executor occupancy, `total` and `heavy`, at most once per READY_CACHE_MS, and from the series when load rises and when heavy-tier runs start. It names no org, executor, placement or size of any one org, and the caps are the deployed config's, so no tenant's activity can be told apart from another's; on a deployment with a single active org the series is that org's activity timing, which is the residual cost. Against that, the drill needs the count without a credential, from the same smoke that polls readiness. The trade is accepted for that reason, and a deployment that must not publish occupancy drops the EXECUTOR_CAPACITY binding from this Worker's ready path.
+ *
+ * Each upstream call (the issuer probe, server-info, the coordinator count) is bounded by COORDINATOR_TIMEOUT_MS: a call that stalls instead of failing would otherwise hold the shared in-flight answer forever, so /v1/ready would never answer (review 900c1e14.1).
  *
  * The answer, ready or not, is cached for READY_CACHE_MS and computed once per isolate at a time, so polling the endpoint cannot drive the issuer into a mint storm, nor the coordinator into one request per poll.
  */
 
 import { type CapacityCount, capacityStub, type ExecutorCapacity } from './capacity';
 import { type EgressEnv } from './egress';
+import { bounded } from './org-executor-support';
 
 export const READY_CACHE_MS = 30_000;
 
@@ -61,7 +66,9 @@ async function computeReady(env: ReadyEnv): Promise<ReadyAnswer> {
 async function executorCount(env: ReadyEnv): Promise<CapacityCount | undefined> {
   if (!env.EXECUTOR_CAPACITY) return undefined;
   try {
-    const { total, heavy, cap, heavyCap } = await capacityStub(env.EXECUTOR_CAPACITY).count();
+    const { total, heavy, cap, heavyCap } = await bounded(
+      capacityStub(env.EXECUTOR_CAPACITY).count()
+    );
     return { total, heavy, cap, heavyCap };
   } catch {
     console.warn('proxy: ready: executor count unavailable');
@@ -74,7 +81,7 @@ async function issuerProbeFailure(env: ReadyEnv): Promise<string | undefined> {
   if (!env.ISSUER) return 'no-issuer';
   let answer: { ok?: unknown; scopes?: unknown } | undefined;
   try {
-    answer = await env.ISSUER.probe();
+    answer = await bounded(env.ISSUER.probe());
   } catch {
     return 'issuer-probe-failed';
   }
@@ -88,7 +95,7 @@ async function issuerProbeFailure(env: ReadyEnv): Promise<string | undefined> {
 async function serverInfoFailure(env: ReadyEnv): Promise<string | undefined> {
   const url = `${env.ACCOUNT_URL}/account/api/v1/.well-known/server-info`;
   try {
-    const response = env.ACCOUNT ? await env.ACCOUNT.fetch(url) : await fetch(url);
+    const response = await bounded(env.ACCOUNT ? env.ACCOUNT.fetch(url) : fetch(url));
     return response.ok ? undefined : `server-info-http-${response.status}`;
   } catch {
     return 'server-info-unreachable';

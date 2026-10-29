@@ -148,6 +148,8 @@ export interface Harness {
   probes: SocketAddress[];
   /** Change what the next probe sockets answer. */
   setBanner: (script: ScriptedRead[]) => void;
+  /** Take `ctx.container` away, as a runtime that lost the container binding would. */
+  dropContainer: () => void;
 }
 
 export interface HarnessOptions {
@@ -241,6 +243,9 @@ export function harness(options: HarnessOptions = {}): Harness {
     probes,
     setBanner: (script) => {
       banner = script;
+    },
+    dropContainer: () => {
+      (ctx as unknown as { container?: FakeContainer }).container = undefined;
     },
   };
 }
