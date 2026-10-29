@@ -524,7 +524,7 @@ def test_matches_needs_every_accept_field() -> None:
 
 
 def test_tail_of_replaces_email_addresses() -> None:
-    log = 'ok\n  "author_email": "someone@example.com",\nlast line\n'
+    log = 'ok\n  "author_email": "someone@example.com",\nby ci@build_host.corp.example\nlast line\n'
     tail = LT.tail_of(log)
-    assert not any("@example.com" in ln for ln in tail)
+    assert not any("@" in ln for ln in tail)
     assert '  "author_email": "<email>",' in tail
