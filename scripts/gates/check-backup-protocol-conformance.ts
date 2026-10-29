@@ -98,7 +98,7 @@ const LEGS: Leg[] = [
     requestSchema: 'backupGrantRequest',
     responseSchema: 'backupGrantResponse',
     // `chunkBytes` (plan S5): the size of every requested hash, so the account signs each presigned PUT with its Content-Length and x-amz-checksum-sha256. A spelling the schema does not accept is stripped silently and every URL goes back to unbounded.
-    requestKeys: ['snapshotId', 'lineageGuid', 'declaredBytes', 'hashes', 'chunkBytes'],
+    requestKeys: ['snapshotId', 'lineageGuid', 'declaredBytes', 'hashes', 'chunkBytes', 'manifestBytes', 'indexBytes'],
     // The write grant's own fields (manifestKey, and indexKey/indexPutUrl for the listing object) live in a nested schema this leg's response check does not reach; the listing is pinned where it is read back (/read-grants) and committed (/commit).
     responseKeys: ['grant', 'leaseId'],
   },
