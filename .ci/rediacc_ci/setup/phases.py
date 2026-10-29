@@ -81,6 +81,8 @@ PHASES: tuple[Phase, ...] = (
     Phase("setup_git_credentials", ".ci/lib/setup.sh:689", True),
     # `ensure_deps` is called bare: its exit code is IGNORED by setup(), which is why `fatal` is False here even though the function itself can fail.
     Phase("ensure_deps", ".ci/rediacc_ci/core/local_common.py", False),
+    # PLAN-cli-tofu-toolchain T7: dev installs OpenTofu through the customer path, `rdc tools install tofu`, so the pin has one copy.
+    Phase("rdc-tools-install", ".ci/rediacc_ci/setup/machine.py", True),
     Phase(
         "account-bws-bootstrap",
         ".ci/rediacc_ci/setup/machine.py",

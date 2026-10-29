@@ -27,6 +27,7 @@ THE TWO CONTRACTS THIS FILE IS JUDGED ON.
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import sys
@@ -374,6 +375,9 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     # package.json, package-lock.json and .npmrc and skips on a match.
     bridge.call("ensure_deps", ctx.root, ctx.env)
 
+    if _install_tofu(ctx) != 0:
+        return 1
+
     if "account-bws-bootstrap" in selected and _account_bws_bootstrap(ctx) != 0:
         return 1
 
@@ -407,6 +411,36 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     ctx.info("  ./run.sh account dev    start the account dev stack")
     ctx.info("  ./run.sh account db     browse the dev database")
     ctx.info("  ./run.sh devbox shell   a shell in the container")
+    return 0
+
+
+def _install_tofu(ctx: Ctx) -> int:
+    """Install the pinned OpenTofu through the customer path, `./rdc.sh tools install tofu`.
+
+    The pin lives in `.ci/config/pins.json` (leaf `cli-tool:opentofu`) and is compiled into the CLI, so nothing here names a version or a checksum: the reported version is read from `tools list -o json`. The install is a no-op when the pinned version is already in rdc's tools dir, so a second setup does no work.
+    """
+    ctx.step("OpenTofu (rdc tools)")
+    rdc = str(ctx.root / "rdc.sh")
+    # A cold CLI build can precede the first call, hence the generous deadline.
+    installed = ctx.run([rdc, "tools", "install", "tofu"], timeout=900)
+    if installed.rc != 0:
+        ctx.error(
+            "rdc tools install tofu failed (rc=%d): %s"
+            % (installed.rc, (installed.err.strip() or installed.out.strip())[-400:])
+        )
+        return 1
+    listed = ctx.run([rdc, "tools", "list", "-o", "json"], timeout=300)
+    version = ""
+    if listed.rc == 0:
+        try:
+            version = str(json.loads(listed.out[listed.out.index("{") :])["data"]["pinned"]["tofu"])
+        except (ValueError, KeyError, TypeError):
+            version = ""
+    if not version:
+        ctx.error("rdc tools list did not report the pinned tofu version (rc=%d)" % listed.rc)
+        return 1
+    ctx.info("OpenTofu %s installed (rdc tools)" % version)
+    ctx.say()
     return 0
 
 
