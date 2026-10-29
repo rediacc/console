@@ -21,4 +21,4 @@ Body-Sig: 5b46b3aa248816a9
 ### 5eeafe7a.1 [low] web/src/lib/job-poll.ts:142
 Anchor: in-diff
 Claim: turn() awaits opts.sleep(delayMs, opts.signal) with no try/catch, and the injected sleep type is Promise<void>, so if a real sleep rejects on abort, runJobPoll rejects instead of returning phase 'stopped' when unmount happens during a backoff wait. No test covers a rejecting sleep (the abort test's mock resolves), so this path is unverified.
-Resolution: open
+Resolution: fixed 911a89dc899f62e1af864a74f197d03081bd8283 | d778be9d 2026-10-29T14:32:24Z
