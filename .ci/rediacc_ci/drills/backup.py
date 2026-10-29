@@ -1,12 +1,12 @@
 """Port of `scripts/drills/backup.sh` (1505 lines): the live chunk-store battery.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup [--legs a,b,c,d,e,f,g,h,j,k,l,m] [--selftest] [--renet] [--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]
+    PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup [--legs a,b,c,d,e,f,g,h,j,k,l,m,n,o] [--selftest] [--renet] [--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]
 
 WHAT IT IS FOR. The backup-storage program replaces whole-image pushes with a content-addressed chunk store: a fixed cell grid over the LUKS image, SHA-256 of the ciphertext cell as object key and dedup key, a manifest per snapshot, and a control plane that mints sessions, answers which of a set of hashes are already held, mints delete-free write grants under a byte quota and commits manifests. This drill drives the whole path with real bytes over a real wire.
 
 COST. No virtual machines for the default legs. It runs against `./run.sh account dev` (restarted by the drill) and the RustFS that script starts on :9100, and uploads a few hundred kilobytes. Leg i (`rdc backup verify` on a real repo) is opt-in and refuses itself by name when no machine is there.
 
-LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy prunes down to the per-stream floor of 3, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically. m: the scheduled verify (levels b and c of `runMaintenance`) against the real store: a control pass reports two checked chunks and nothing missing or corrupt, then one chunk object is deleted and another overwritten straight in RustFS, and the next pass names the first as missing and the second as corrupt.
+LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy prunes down to the per-stream floor of 3, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically. m: the scheduled verify (levels b and c of `runMaintenance`) against the real store: a control pass reports two checked chunks and nothing missing or corrupt, then one chunk object is deleted and another overwritten straight in RustFS, and the next pass names the first as missing and the second as corrupt. n: a presigned chunk PUT is bound to its declared size and checksum: a body one byte too long and a same-length body with other bytes are both refused by the store, then the exact body through the same URL is accepted (the control, last, because the PUT is create-only). o: a twin tenant on its own subscription cannot reach this one's lineage: not through the license (guid ownership), the session binding, a path rewritten inside a signed URL, an object planted under the shared lineage id in its own prefix, or the manifest list.
 
 NOT PROVEN HERE, said plainly: by default no machine runs `renet backup snapshot` or `renet backup restore` in this host-only drill, and legs b-d produce their own cells. `--renet` (with `--vm`) swaps legs b-d for the real thing: a repository on the worker is snapshotted, one cell is rewritten, it is snapshotted again, and both are restored by renet and byte-compared (`rediacc_ci.drills.backup_renet`); the FIEMAP/anchor half is still renet's btrfs tier.
 
@@ -39,6 +39,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.parse
 import uuid
 from typing import TYPE_CHECKING
 
@@ -55,8 +56,8 @@ from rediacc_ci.drills import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-KNOWN_LEGS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"]
-DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m"
+KNOWN_LEGS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"]
+DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m,n,o"
 CELL_BYTES = 65536
 CELLS = 8
 # Cell 2 and cell 6 are holes: all-zero, elided from the manifest as "" the way FIEMAP-driven ZERO detection elides an unwritten extent.
@@ -68,7 +69,7 @@ M_CELLS = (0, 1)
 M_CONTROL_DAYS = 25
 M_TAMPER_DAYS = 33
 USAGE = (
-    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m] [--selftest] [--renet] "
+    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o] [--selftest] [--renet] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillBackup123!"
@@ -221,7 +222,7 @@ class Options:
 
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
-        return any(self.enabled(leg) for leg in "abcdefhjklm")
+        return any(self.enabled(leg) for leg in "abcdefhjklmno")
 
     def using_real_store(self) -> bool:
         return bool(self.store_endpoint)
@@ -420,7 +421,7 @@ class Backup:
         self.d.out.write(
             "\n  This drill runs against ./run.sh account dev and the RustFS it starts on\n"
             "  :%s. It provisions NOTHING and needs NO virtual machines.\n\n"
-            "    legs a,b,c,d,e,f,h,j,k,l,m the dev gateway (restarted by this drill) + Docker for\n"
+            "    legs a,b,c,d,e,f,h,j,k,l,m,n,o the dev gateway (restarted by this drill) + Docker for\n"
             "                        the RustFS chunk store. A few hundred KB uploaded into\n"
             "                        bucket %s, under this run's own tenant prefix.\n"
             "    leg  g              the LOCAL renet binary and a throwaway datastore\n"
@@ -448,7 +449,9 @@ class Backup:
                 log.error(
                     "Build it:  (cd private/renet && ./build.sh dev), or run any ./rdc.sh command."
                 )
-                log.error("Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k,l,m")
+                log.error(
+                    "Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k,l,m,n,o"
+                )
                 ok = False
             if not shutil.which("npx"):
                 log.error("Leg g runs the CLI's own parser through tsx and needs npx on PATH.")
@@ -603,10 +606,14 @@ class Backup:
         return str(code)
 
     def chunk_url(self, lineage: str, digest: str) -> str:
+        return self.chunk_url_in(self.subscription_id, lineage, digest)
+
+    def chunk_url_in(self, subscription: str, lineage: str, digest: str) -> str:
+        """The store URL of one chunk under an explicit tenant prefix (leg o plants objects under a tenant that is not this one's)."""
         return "%s/%s/t/%s/l/%s/c/%s" % (
             self.store_url(),
             self.bucket,
-            self.subscription_id,
+            subscription,
             lineage,
             digest,
         )
@@ -1863,6 +1870,435 @@ class Backup:
             )
             self.av(samples[0].get("corrupt"), [chunk_b], "and chunk B as corrupt, by hash")
 
+    # ------------------------------------------------------------------ legs n and o
+
+    def presigned_put(self, url: str, body: bytes, headers: dict[str, str]) -> int:
+        """One PUT through a presigned URL, the way a machine sends it (no store credentials). Returns the HTTP status."""
+        code, _ = wire.http_call("PUT", url, body, headers, json_body=False)
+        return code
+
+    def presigned_get(self, url: str) -> int:
+        code, _ = wire.http_bytes("GET", url)
+        return code
+
+    @staticmethod
+    def signed_header_names(url: str) -> set[str]:
+        """The header names a presigned URL's signature covers (`X-Amz-SignedHeaders`)."""
+        query = {
+            k.lower(): v for k, v in urllib.parse.parse_qs(urllib.parse.urlsplit(url).query).items()
+        }
+        return set((query.get("x-amz-signedheaders") or [""])[0].split(";"))
+
+    @staticmethod
+    def accepted(code: int) -> bool:
+        return 200 <= code < 300
+
+    def refusal(self, desc: str, code: int) -> None:
+        """Assert a store answer is a refusal, and log the exact code so a store-specific status (403 vs 400) is on the record."""
+        self.d.note("%s: the store answered %d" % (desc, code))
+        self.d.last_cmd = desc
+        self.av(self.accepted(code), False, "%s is REFUSED (not 2xx)" % desc)
+
+    def leg_n_bounded_put(self) -> None:
+        d = self.d
+        d.step("Leg n: a presigned chunk PUT is bound to its declared size and checksum")
+        lineage = str(uuid.uuid4())
+        _blob, _machine_id, token = self.mint_lineage_session(lineage)
+        header = {"X-Backup-Session": token}
+        image = self.work / "image-n.bin"
+        plan = make_two_cell_image(image)
+        chunk_a, chunk_b = (plan["cells"][i] for i in M_CELLS)
+        cell_a = slice_cell(image, M_CELLS[0])
+        cell_b = slice_cell(image, M_CELLS[1])
+        stream = self.api(
+            "POST",
+            self.backup_api() + "/streams",
+            {"repositoryGuid": lineage, "lineageGuid": lineage},
+            header,
+        )
+        self.capture("POST /backups/streams (leg n)", stream)
+        d.assert_equal("200", self.status, "a stream opens on the new lineage")
+
+        snapshot = "snap-n-%d" % int(time.time())
+        grant_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": lineage,
+                "declaredBytes": CELL_BYTES,
+                "hashes": [chunk_a],
+                "chunkBytes": {chunk_a: CELL_BYTES},
+            },
+            header,
+        )
+        self.capture("POST /backups/grants (leg n, sized)", grant_text)
+        d.assert_equal("200", self.status, "a SIZED write grant (chunkBytes) is minted")
+        url = wire.jstr(self.field("grant.putUrls.%s" % chunk_a, grant_text))
+        self.av(url.startswith("http"), True, "and presigns a PUT URL for the chunk")
+        signed = self.signed_header_names(url)
+        self.av("content-length" in signed, True, "the signature covers content-length (the size)")
+        self.av(
+            "x-amz-checksum-sha256" in signed,
+            True,
+            "and x-amz-checksum-sha256 (the content), as an unhoistable header",
+        )
+
+        checksum = base64.b64encode(bytes.fromhex(chunk_a)).decode()
+        headers = {"If-None-Match": "*", "x-amz-checksum-sha256": checksum}
+        landed = False
+        # 1. One byte too long, with the true checksum header: only the size is wrong.
+        oversize = self.presigned_put(url, cell_a + b"\x00", headers)
+        landed = landed or self.accepted(oversize)
+        self.refusal("PUT of the chunk plus ONE extra byte", oversize)
+        # 2. The same length, other bytes, with the true checksum header: only the content is wrong.
+        flipped = bytes([cell_a[0] ^ 0xFF]) + cell_a[1:]
+        wrong = self.presigned_put(url, flipped, headers)
+        landed = landed or self.accepted(wrong)
+        self.refusal("PUT of same-length bytes that do not hash to the signed checksum", wrong)
+
+        exists = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": lineage, "hashes": [chunk_a]},
+            header,
+        )
+        self.capture("POST /backups/exists (after the two refused PUTs)", exists)
+        self.av(_as_list(self.field("existing", exists)), [], "nothing landed in the store")
+
+        # CONTROL, last: the PUT is create-only, so in the other order the refusals above would be 412s and prove nothing.
+        control = self.presigned_put(url, cell_a, headers)
+        d.last_cmd = "PUT of the exact chunk through the same URL and headers"
+        d.assert_equal(
+            "200",
+            str(control),
+            "CONTROL: the exact body through the SAME URL is accepted, so the refusals were the bound",
+        )
+        exists = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": lineage, "hashes": [chunk_a]},
+            header,
+        )
+        self.capture("POST /backups/exists (after the control PUT)", exists)
+        self.av(_as_list(self.field("existing", exists)), [chunk_a], "and the chunk is now held")
+        if landed:
+            # A refusal that did not happen left a wrong object under the key; the bucket is disposable, but the next run must not inherit it.
+            with contextlib.suppress(OSError):
+                self.s3_delete(self.chunk_url(lineage, chunk_a))
+
+        # Informational: an UNSIZED grant is the shipped renet's compatibility path and carries no bound. Logged, never asserted, because the day the server closes it (400) is the day this note changes.
+        legacy_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": lineage,
+                "declaredBytes": CELL_BYTES,
+                "hashes": [chunk_b],
+            },
+            header,
+        )
+        if self.status == "200":
+            legacy = wire.jstr(self.field("grant.putUrls.%s" % chunk_b, legacy_text))
+            code = self.presigned_put(legacy, cell_b + b"\x00", {"If-None-Match": "*"})
+            d.note("unsized grant, oversize PUT: the store answered %d (no bound is signed)" % code)
+            if self.accepted(code):
+                with contextlib.suppress(OSError):
+                    self.s3_delete(self.chunk_url(lineage, chunk_b))
+        else:
+            d.note("unsized grants now answer %s: the compatibility path has closed" % self.status)
+
+    def a_seed_digest(self, restore_token: str) -> str:
+        """One non-zero chunk hash of this tenant's seed snapshot, read from its root manifest through a read grant (the same way in the host-only and the --renet drill)."""
+        chain_grant = self.read_grant(self.snap_seed, None, self.stored_lineage, restore_token)
+        chain = self.field("manifestChain", chain_grant)
+        urls = self.field("manifestGetUrls", chain_grant)
+        if not isinstance(chain, list) or not chain or not isinstance(urls, dict):
+            return ""
+        code, raw = wire.http_bytes("GET", urls.get(chain[0]) or "")
+        if code >= 400:
+            return ""
+        cells = json.loads(raw.decode()).get("cells") or []
+        return next((c for c in cells if c), "")
+
+    def leg_o_twin_tenant_isolation(self) -> None:
+        d = self.d
+        d.step("Leg o: a twin tenant cannot reach this tenant's lineage")
+        a_sub, a_lineage = self.subscription_id, self.stored_lineage
+        d.assert_not_equal("", a_lineage, "leg b stored a lineage for this tenant to protect")
+
+        # The twin: its own login, subscription and API token.
+        twin_email = "drill-backup-twin-%d@rediacc.io" % int(time.time())
+        d.account_ensure_login(twin_email, DRILL_PASSWORD)
+        d.account_ensure_subscription(twin_email, "PROFESSIONAL")
+        jar = http.cookiejar.MozillaCookieJar(str(self.work / "twin-cookies.txt"))
+        if not d.account_session(twin_email, DRILL_PASSWORD, jar):
+            raise SystemExit(1)
+        twin_sub = d.account_subscription_id(jar)
+        twin_bearer = d.account_mint_token(
+            jar,
+            twin_sub,
+            "drill-backup-twin",
+            ["license:read", "license:activate", "subscription:read", "backup:read"],
+        )
+        d.last_cmd = "twin tenant setup"
+        d.assert_not_equal(a_sub, twin_sub, "control: the twin is a different subscription")
+        twin_headers = {"Authorization": "Bearer %s" % twin_bearer}
+
+        # 1. The licence: a lineage is licensed to ONE subscription.
+        taken = self.api(
+            "POST",
+            "%s/licenses/activate-repo" % d.api_base(),
+            {
+                "machineId": secrets.token_hex(32),
+                "clientMachineId": secrets.token_hex(32),
+                "repositoryGuid": a_lineage,
+                "kind": "grand",
+                "requestedSizeGb": 1,
+            },
+            twin_headers,
+        )
+        self.capture("POST /licenses/activate-repo (twin, this tenant's lineage)", taken)
+        d.assert_equal(
+            "403", self.status, "the twin is REFUSED a license for this tenant's lineage"
+        )
+        self.aj("code", "REPO_GUID_OWNERSHIP_CONFLICT", "and it is refused BY NAME")
+
+        # The twin's own lineage, and one committed snapshot under it (its own control for every call below).
+        saved_bearer = (self.api_token, self.subscription_id)
+        self.api_token, self.subscription_id = twin_bearer, twin_sub
+        twin_lineage = str(uuid.uuid4())
+        try:
+            twin_blob, twin_machine, twin_token = self.mint_lineage_session(twin_lineage)
+        finally:
+            self.api_token, self.subscription_id = saved_bearer
+        twin_snapshot = "snap-o-%d" % int(time.time())
+        image = self.work / "image-o.bin"
+        plan = make_two_cell_image(image)
+        saved_session = (self.lineage, self.session_token)
+        self.lineage, self.session_token = twin_lineage, twin_token
+        try:
+            stream = self.session_api(
+                "POST", "/streams", {"repositoryGuid": twin_lineage, "lineageGuid": twin_lineage}
+            )
+            d.assert_equal("200", self.status, "the twin opens a stream on its own lineage")
+            stream_id = wire.jstr(self.field("streamId", stream))
+            self.commit_l_snapshot(0, twin_snapshot, stream_id, image, None, plan)
+        finally:
+            self.lineage, self.session_token = saved_session
+        twin_restore = self.mint_lineage_restore_session(twin_machine, twin_blob)
+        twin_chunk = plan["unique"][0]
+
+        # This tenant's side: a backup session and a restore session on the lineage leg b stored, and one of its chunk hashes.
+        minted = self.api(
+            "POST",
+            self.session_mint_url,
+            {"license": self.license_blob, "machineId": self.machine_id},
+        )
+        self.capture("POST /backups/session (this tenant, leg o)", minted)
+        d.assert_equal("200", self.status, "this tenant's backup session mints")
+        a_token = wire.jstr(self.field("token", minted))
+        self.run_fn("restore_session_token", self.mint_restore_session)
+        d.assert_exit(0, "this tenant's restore session mints")
+        a_restore = self.restore_session_token
+        a_digest = self.a_seed_digest(a_restore)
+        d.last_cmd = "read this tenant's seed manifest"
+        d.assert_not_equal("", a_digest, "control: this tenant's seed snapshot names a chunk")
+
+        # 2. The session binding: the twin's sessions name THIS lineage and are refused; the same calls on its own lineage are served.
+        twin_session = {"X-Backup-Session": twin_token}
+        twin_read_session = {"X-Backup-Session": twin_restore}
+        for desc, path, body, headers in (
+            (
+                "exists",
+                "/exists",
+                {"lineageGuid": a_lineage, "hashes": [a_digest]},
+                twin_session,
+            ),
+            (
+                "grants",
+                "/grants",
+                {
+                    "snapshotId": "snap-o-x-%d" % int(time.time()),
+                    "lineageGuid": a_lineage,
+                    "declaredBytes": CELL_BYTES,
+                    "hashes": [a_digest],
+                    "chunkBytes": {a_digest: CELL_BYTES},
+                },
+                twin_session,
+            ),
+            (
+                "read-grants",
+                "/read-grants",
+                {"lineageGuid": a_lineage, "snapshotId": self.snap_seed, "hashes": [a_digest]},
+                twin_read_session,
+            ),
+        ):
+            text = self.api("POST", self.backup_api() + path, body, headers)
+            self.capture("POST /backups%s (twin session, this tenant's lineage)" % path, text)
+            d.assert_equal("403", self.status, "twin session on this lineage: %s is refused" % desc)
+            self.aj("code", "BACKUP_LINEAGE_MISMATCH", "and refused BY NAME")
+        control = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": twin_lineage, "hashes": [twin_chunk]},
+            twin_session,
+        )
+        self.capture("POST /backups/exists (twin session, its own lineage)", control)
+        d.assert_equal(
+            "200", self.status, "CONTROL: the same twin session is served on its own lineage"
+        )
+        self.av(_as_list(self.field("existing", control)), [twin_chunk], "and sees its own chunk")
+
+        # 3. The prefix: every URL the twin is handed lies under its own tenant and lineage.
+        fresh = hashlib.sha256(("leg-o|tamper|%d" % time.time_ns()).encode()).digest()
+        fresh_cell = fresh * (CELL_BYTES // 32)
+        fresh_hash = sha256_hex(fresh_cell)
+        put_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": "snap-o-r-%d" % int(time.time()),
+                "lineageGuid": twin_lineage,
+                "declaredBytes": CELL_BYTES,
+                "hashes": [fresh_hash],
+                "chunkBytes": {fresh_hash: CELL_BYTES},
+            },
+            twin_session,
+        )
+        self.capture("POST /backups/grants (twin, its own lineage)", put_text)
+        d.assert_equal("200", self.status, "CONTROL: the twin is granted a PUT on its own lineage")
+        put_url = wire.jstr(self.field("grant.putUrls.%s" % fresh_hash, put_text))
+        read_text = self.read_grant(twin_snapshot, [twin_chunk], twin_lineage, twin_restore)
+        self.capture("POST /backups/read-grants (twin, its own lineage)", read_text)
+        d.assert_equal("200", self.status, "CONTROL: the twin is granted a read on its own lineage")
+        urls = [put_url, wire.jstr(self.field("grant.manifestPutUrl", put_text))]
+        for key in ("getUrls", "manifestGetUrls"):
+            mapping = self.field(key, read_text)
+            urls += [str(u) for u in (mapping.values() if isinstance(mapping, dict) else [])]
+        urls = [u for u in urls if u.startswith("http")]
+        own = "/t/%s/l/%s/" % (twin_sub, twin_lineage)
+        d.last_cmd = "inspect every URL minted for the twin"
+        self.av(len(urls) >= 3, True, "control: the twin's grants carry at least three URLs")
+        self.av([u for u in urls if own not in u], [], "every URL is under the twin's own prefix")
+        self.av(
+            [u for u in urls if "/t/%s/" % a_sub in u], [], "and none names this tenant's prefix"
+        )
+
+        # 4. The signature binds the key: the twin's PUT URL, path rewritten onto this tenant's lineage.
+        checksum = base64.b64encode(bytes.fromhex(fresh_hash)).decode()
+        headers = {"If-None-Match": "*", "x-amz-checksum-sha256": checksum}
+        mine = "/t/%s/l/%s/c/%s" % (a_sub, a_lineage, fresh_hash)
+        theirs = "/t/%s/l/%s/c/%s" % (twin_sub, twin_lineage, fresh_hash)
+        rewritten = put_url.replace(theirs, mine)
+        d.last_cmd = "rewrite the twin's presigned PUT path onto this tenant"
+        self.av(rewritten != put_url, True, "control: the rewrite changed the URL path")
+        self.refusal(
+            "PUT through the twin's URL rewritten onto this tenant's lineage",
+            self.presigned_put(rewritten, fresh_cell, headers),
+        )
+        landed = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": a_lineage, "hashes": [fresh_hash]},
+            {"X-Backup-Session": a_token},
+        )
+        self.capture("POST /backups/exists (this tenant, after the rewritten PUT)", landed)
+        self.av(_as_list(self.field("existing", landed)), [], "nothing landed under this tenant")
+        d.last_cmd = "PUT through the untampered URL"
+        d.assert_equal(
+            "200",
+            str(self.presigned_put(put_url, fresh_cell, headers)),
+            "CONTROL: the untampered URL accepts the same bytes",
+        )
+
+        # 5. The same for a read: a twin GET URL rewritten onto one of this tenant's chunks.
+        get_url = wire.jstr(self.field("getUrls.%s" % twin_chunk, read_text))
+        d.last_cmd = "GET through the twin's untampered read URL"
+        d.assert_equal(
+            "200", str(self.presigned_get(get_url)), "CONTROL: the twin reads its own chunk"
+        )
+        stolen = get_url.replace(
+            "/t/%s/l/%s/c/%s" % (twin_sub, twin_lineage, twin_chunk),
+            "/t/%s/l/%s/c/%s" % (a_sub, a_lineage, a_digest),
+        )
+        self.av(stolen != get_url, True, "control: the rewrite changed the URL path")
+        self.refusal(
+            "GET through the twin's read URL rewritten onto this tenant's chunk",
+            self.presigned_get(stolen),
+        )
+
+        # 6. Shared ids in the store: an object planted under THIS lineage id inside the twin's prefix is invisible to this tenant.
+        planted = hashlib.sha256(("leg-o|plant|%d" % time.time_ns()).encode()).digest() * (
+            CELL_BYTES // 32
+        )
+        planted_hash = sha256_hex(planted)
+        twin_plant = self.chunk_url_in(twin_sub, a_lineage, planted_hash)
+        own_plant = self.chunk_url_in(a_sub, a_lineage, planted_hash)
+        d.last_cmd = "plant an object under the twin's prefix with the lineage id of this tenant"
+        d.assert_equal("200", self.s3_put(twin_plant, planted), "the object is planted")
+        seen = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": a_lineage, "hashes": [planted_hash]},
+            {"X-Backup-Session": a_token},
+        )
+        self.capture("POST /backups/exists (this tenant, object planted under the twin)", seen)
+        self.av(_as_list(self.field("existing", seen)), [], "it is NOT visible to this tenant")
+        d.last_cmd = "plant the same object under this tenant's own prefix"
+        d.assert_equal(
+            "200", self.s3_put(own_plant, planted), "CONTROL: planted under its own prefix"
+        )
+        seen = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": a_lineage, "hashes": [planted_hash]},
+            {"X-Backup-Session": a_token},
+        )
+        self.capture("POST /backups/exists (this tenant, object planted under itself)", seen)
+        self.av(_as_list(self.field("existing", seen)), [planted_hash], "and it IS visible there")
+        d.last_cmd = "remove both planted objects"
+        d.assert_equal("204", self.s3_delete(own_plant), "the own-prefix plant is removed")
+        d.assert_equal("204", self.s3_delete(twin_plant), "and the twin-prefix plant is removed")
+
+        # 7. The manifest list: scoped to the token's subscription.
+        listed = self.api(
+            "GET", "%s/manifests?lineage=%s" % (self.backup_api(), a_lineage), None, twin_headers
+        )
+        self.capture("GET /backups/manifests (twin bearer, this tenant's lineage)", listed)
+        leaked = [
+            m
+            for m in _as_list(self.field("manifests", listed))
+            if isinstance(m, dict)
+            and (m.get("lineageGuid") == a_lineage or m.get("snapshotId") == self.snap_seed)
+        ]
+        self.av(leaked, [], "the twin's manifest list holds nothing of this tenant")
+        mine_listed = self.api(
+            "GET", "%s/manifests?lineage=%s" % (self.backup_api(), a_lineage), None, self.bearer()
+        )
+        self.capture("GET /backups/manifests (this tenant's bearer)", mine_listed)
+        self.av(
+            self.snap_seed
+            in [
+                m.get("snapshotId")
+                for m in _as_list(self.field("manifests", mine_listed))
+                if isinstance(m, dict)
+            ],
+            True,
+            "CONTROL: this tenant's own bearer lists its seed snapshot",
+        )
+
+        # This tenant's data is intact after all of the above.
+        restored = self.work / "restored-after-twin.bin"
+        self.run_fn(
+            "restore_snapshot %s %s" % (self.snap_seed, restored),
+            lambda: self.restore_snapshot(self.snap_seed, restored, a_lineage, a_restore),
+        )
+        d.assert_exit(0, "this tenant's seed snapshot still restores")
+        d.last_cmd = "sha256 of the image restored after the twin's attempts"
+        d.assert_equal(self.seed_sha, _sha_file(restored), "byte-identically")
+
     # ------------------------------------------------------------------ leg k
 
     def lapse_subscription(self) -> bool:
@@ -1937,12 +2373,18 @@ class Backup:
         self.setup_account()
         self.setup_renet()
 
-        # Legs b-f, h, j, k, l and m all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
+        # Legs b-f, h, j, k, l, m, n and o all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
         if o.needs_plane() and not o.enabled("a"):
             log.error(
-                "Legs b-f, h, j, k, l and m all run inside the session leg a mints, and there is no"
+                "Legs b-f, h, j, k, l, m, n and o all run inside the session leg a mints, and there is no"
             )
             log.error("session on disk to inherit. Include leg a:  --legs a,%s" % o.legs)
+            raise SystemExit(1)
+
+        # Leg o reads the lineage and snapshot leg b stored: without them it would test an empty tenant and pass.
+        if o.enabled("o") and not o.enabled("b"):
+            log.error("Leg o reaches for the lineage and snapshot leg b stores. Include leg b:")
+            log.error("    --legs a,b,%s" % o.legs)
             raise SystemExit(1)
 
         for leg, fn in (
@@ -1960,6 +2402,9 @@ class Backup:
             ("l", self.leg_l_gc_and_retention),
             # Leg m needs an entitled subscription too (it commits), and runs its clock past leg l's.
             ("m", self.leg_m_scheduled_verify),
+            # Legs n and o commit or license on an entitled subscription, so both run before k lapses it.
+            ("n", self.leg_n_bounded_put),
+            ("o", self.leg_o_twin_tenant_isolation),
             ("k", self.leg_k_lapsed_restore),
         ):
             if o.enabled(leg):

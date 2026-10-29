@@ -2126,6 +2126,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
+    id: 'check:ci-region-consistency',
+    run: 'npm run check:ci-region-consistency',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_region_consistency.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Region consistency',
+    },
+  },
+  {
     // PLAN-proxy-cd-six-targets K1. The seven proxy wrangler configs (six CD targets and bench) are generated from wrangler.template.toml and regions.json, and every one is refused by name when it carries another target's service, route, destination or a budget breach. A stale generated file, an unknown wrangler*.toml, a drifted WK_PROXY_*_HOST and an account config whose EXECUTOR binding is another target's proxy all fail here; `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs` regenerates.
     id: 'check:ci-proxy-configs',
     run: 'npm run check:ci-proxy-configs',

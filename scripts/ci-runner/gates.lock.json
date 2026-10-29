@@ -2208,6 +2208,20 @@
     }
   },
   {
+    "id": "check:ci-region-consistency",
+    "run": "npm run check:ci-region-consistency",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_region_consistency.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Region consistency"
+    }
+  },
+  {
     "id": "check:ci-proxy-configs",
     "run": "npm run check:ci-proxy-configs",
     "gate": true,

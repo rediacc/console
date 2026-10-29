@@ -253,6 +253,16 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
+      # The live half of check:ci-region-consistency: the seven account targets (stable and edge in eu, us,
+      # asia, plus bench) against Cloudflare, GET only, names and ids only. Drift exits 1; a listing the token
+      # cannot read (R2 needs Workers R2 Storage Read) is UNCHECKED and exits 2, never green.
+      - name: Region consistency (live)
+        if: ${{ !cancelled() }}
+        run: .ci/scripts/quality/check_region_consistency.py --live
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
   budget-check:
     name: CI time budget check
     # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets

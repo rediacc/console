@@ -129,5 +129,9 @@ export default test.defineConfig({
     { name: 'test-29', testMatch: '29-*.test.ts' },
     // GPU device grants (suite 30, PLAN-gpu-device-grants): machine_gpu_list and repository_gpu_grant|revoke against a fake CDI spec on a worker VM with no GPU. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
     { name: 'test-30', testMatch: '30-*.test.ts' },
+    // Suite 31 (backup large-repo, box K10): a 50 GiB seed on a 100 GB worker disk. Only the standalone nightly ct-backup-perf.yml runs it, through playwright.backup-large-repo.config.ts; gated so the sharded E2E Workers legs and local runs collect nothing.
+    ...(process.env.BACKUP_LARGE_REPO_SUITE === '1'
+      ? [{ name: 'test-31', testMatch: '31-*.test.ts' }]
+      : []),
   ],
 });

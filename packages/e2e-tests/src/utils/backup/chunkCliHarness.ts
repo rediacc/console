@@ -211,9 +211,10 @@ export const guidsBesides = (cli: CliRunner, own: string): string[] => {
  */
 export const ensureDatastore = async (
   runner: RenetFunctionsTestRunner,
-  label: string
+  label: string,
+  size = '10G'
 ): Promise<void> => {
-  const init = await runner.datastoreInitPool('10G', DS, false);
+  const init = await runner.datastoreInitPool(size, DS, false);
   if (init.code === 0) return;
   // Without --force, renet REFUSES an existing BTRFS datastore by name ("datastore already exists", datastore_init.go:106-111). That refusal is the answer this function wants, so it is the success case, not a failure — and it is a more reliable probe than a shell test, whose `&&`/`||` has to survive two levels of SSH quoting to mean anything.
   const output = runner.getCombinedOutput(init);
@@ -248,9 +249,10 @@ export const provisionRepo = async (
   cli: CliRunner,
   runner: RenetFunctionsTestRunner,
   name: string,
-  machine: string
+  machine: string,
+  size = '1G'
 ): Promise<ProvisionedRepo> => {
-  const create = await cli.run(['repo', 'create', name, '-m', machine, '--size', '1G']);
+  const create = await cli.run(['repo', 'create', name, '-m', machine, '--size', size]);
   expect(create.code, `repo create ${name}: ${bothChannels(create).slice(-1200)}`).toBe(0);
 
   const cfg = readCliConfig(cli);

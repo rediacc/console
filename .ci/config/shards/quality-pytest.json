@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-28T20:50:51.581Z",
+  "generatedAt": "2026-10-29T06:41:16.109Z",
   "legs": [
     {
       "index": 1,
@@ -45,6 +45,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_deps.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_preview_worker_reaping.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_record_paths.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_region_consistency.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_schema_coverage.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_scope_engine.py",
@@ -285,6 +286,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_o.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_onprem.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_license_flavor.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_license_seed.py",
@@ -478,6 +480,7 @@
         "pytest:.ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_check_trigger.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_m.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_n.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_local_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",

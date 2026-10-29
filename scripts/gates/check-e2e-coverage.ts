@@ -93,6 +93,8 @@ const PRODUCTION_REGISTRY: { file: string; isDefault: boolean }[] = [
   { file: 'playwright.backup-browse-at.config.ts', isDefault: false },
   // Suite 26 (box J6 of agent/plans/PLAN-backup-program.md): the chunk-store backup suite, run by its own ct-tests.yml job.
   { file: 'playwright.backup-storage.config.ts', isDefault: false },
+  // Suite 31 (box K10 of agent/plans/PLAN-backup-program.md): the 50 GiB large-repo nightly, run by the standalone ct-backup-perf.yml.
+  { file: 'playwright.backup-large-repo.config.ts', isDefault: false },
 ];
 
 /**

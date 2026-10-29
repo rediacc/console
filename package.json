@@ -337,6 +337,7 @@
     "check:ci-dead-case-arms": ".ci/scripts/quality/check_dead_case_arms.py",
     "check:ci-release-bump-skip": ".ci/scripts/quality/check_release_bump_skip.py",
     "check:ci-regions-sync": ".ci/scripts/quality/check_regions_sync.py",
+    "check:ci-region-consistency": ".ci/scripts/quality/check_region_consistency.py --selftest && .ci/scripts/quality/check_region_consistency.py",
     "check:ci-label-inventory": ".ci/scripts/quality/check_label_inventory.py",
     "check:ci-profiler-coverage": ".ci/scripts/quality/check_profiler_coverage.py",
     "check:ci-tutorial-noninteractive": "tsx scripts/gates/check-tutorial-noninteractive.ts",
