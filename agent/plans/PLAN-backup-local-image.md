@@ -396,7 +396,7 @@ R2's changes:
   Owns: packages/www/src/content/docs/*/backup-download.md (new), packages/www/src/content/docs/*/cli-application.md (regenerated only). Accept: `npm run check:i18n` rc 0.
 
 - [ ] V1 [lead] The VM proof for the renet change. `npm run vm:check -- --changed` must report VERIFIED on the tree carrying R1 and R2, as the push guard requires for the renet trigger paths.
-  Owns: agent/plans/PLAN-backup-local-image.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt.
+  Owns: agent/plans/PLAN-backup-local-image.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt, and `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --test 26-backup-storage-cli --fail-on-skip` rc 0 (PLAN-jobs-backup-real-machine-tests E2).
 
 - [ ] L1 [live] An ops VM or bench machine running the branch renet, with one small repo `app` (a LUKS image of at least 2 GiB, a running container) and a local target `/tmp/bdl`. Steps:
   1. `./rdc.sh backup download app@<vm> --to /tmp/bdl`, interrupted with `timeout -s INT 20`. Expect rc 130, state `incomplete`, and no `.snapshot-*` under `repositories/` within 90 s.
