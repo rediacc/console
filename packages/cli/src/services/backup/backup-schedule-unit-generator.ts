@@ -195,7 +195,7 @@ function licenseRenewCommand(remoteRenetPath: string): string {
 }
 
 /**
- * A backup is background work and runs below the repositories it protects, on CPU and on disk: a hosting provider once took a machine offline over a backup's CPU load (operator order 2026-10-29). These are the unit-file form of the `nice -n 10 ionice -c 3` prefix the renet function puts on an ad-hoc snapshot; the ad-hoc strategy run passes the same pair to systemd-run.
+ * A backup is background work and runs below the repositories it protects, on CPU and on disk: a hosting provider once took a machine offline over a backup's CPU load (operator order 2026-10-29). These are the unit-file form of the `nice -n 10 ionice -c 2 -n 7` prefix (best-effort I/O at its lowest level; the idle class can starve a snapshot without bound) that the renet function puts on an ad-hoc snapshot; the ad-hoc strategy run passes the same three properties to systemd-run.
  */
 export const LOW_PRIORITY_PROPERTIES = [
   'Nice=10',
