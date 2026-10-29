@@ -56,7 +56,7 @@ export const BackupPullParamsSchema = z.object({
   src: z.string().optional().describe('Source repository GUID on the source machine (defaults to the destination repository)'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
   force: z.boolean().default(false).optional().describe('Overwrite existing repository'),
-  bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
+  bwlimit: z.string().optional().describe('Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
   deltaBase: z.string().optional().describe('Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos)'),
   strategy: z
     .enum(['auto', 'physical', 'shared'])
@@ -79,7 +79,7 @@ export const BackupPushParamsSchema = z.object({
   checkpoint: z.boolean().default(false).optional().describe('CRIU hot backup (zero-downtime)'),
   override: z.boolean().optional().describe('Overwrite existing backup'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
-  bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
+  bwlimit: z.string().optional().describe('Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
   deltaBase: z.string().optional().describe('Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos)'),
   strategy: z
     .enum(['auto', 'physical', 'shared'])

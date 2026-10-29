@@ -380,7 +380,7 @@ export interface ListResult {
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
   services?: ServicesResult;
-  stale_processes: StaleProcess[];
+  stale_processes?: StaleProcessesSection;
   storage_health?: StorageHealthResult;
   system?: SystemInfo;
   system_containers?: ContainersResult;
@@ -400,6 +400,13 @@ export interface BackupRepoStatus {
   last_skipped_at?: string;
   last_success_at?: string;
   name?: string;
+}
+
+/** StaleProcessesSection (referenced type) */
+export interface StaleProcessesSection {
+  error?: string;
+  processes: StaleProcess[];
+  status: string;
 }
 
 // ============================================

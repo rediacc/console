@@ -64,7 +64,7 @@ export interface BackupPullParams {
   seed?: string;
   /** Overwrite existing repository */
   force?: boolean;
-  /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
+  /** Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited */
   bwlimit?: string;
   /** Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos) */
   deltaBase?: string;
@@ -92,7 +92,7 @@ export interface BackupPushParams {
   override?: boolean;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
-  /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
+  /** Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited */
   bwlimit?: string;
   /** Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos) */
   deltaBase?: string;
@@ -1770,7 +1770,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
       bwlimit: {
         type: 'string',
-        help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+        help: 'Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited',
       },
       deltaBase: {
         type: 'string',
@@ -1848,7 +1848,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
       bwlimit: {
         type: 'string',
-        help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+        help: 'Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited',
       },
       deltaBase: {
         type: 'string',
