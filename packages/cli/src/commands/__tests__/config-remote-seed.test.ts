@@ -102,6 +102,7 @@ vi.mock('../../utils/prompt.js', () => ({
 }));
 
 import { ConfigServerError } from '../../services/config/config-server-client.js';
+import { outputService } from '../../services/core/output.js';
 import type { RdcConfig } from '../../types/index.js';
 import { applyHandoff, finalizeEnable, type PendingRemoteConfig } from '../config-remote-enable.js';
 import type { HandoffPayload } from '../config-remote-handoff.js';
@@ -450,6 +451,38 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
     expect(mockAdapterInstance.push).toHaveBeenCalledTimes(1);
     expect(mockAdapterInstance.push.mock.calls[0]?.[1]).toBe(0);
     expect(adapterCtorArgs[0]?.[0]).toMatchObject({ configId: LOCAL_ID });
+  });
+
+  it('says on stderr that it seeded an empty store, and says nothing of the kind when it attaches', async () => {
+    const success = vi.spyOn(outputService, 'success').mockImplementation(() => undefined);
+    const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      mockAdapterInstance.pull
+        .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
+        .mockResolvedValueOnce({ config: structuredClone(serverConfig), version: 1, sdkEpoch: 1 });
+      mockAdapterInstance.push.mockResolvedValue({ version: 1 });
+      await finalizeEnable(pendingRemote(undefined), CONFIG_NAME);
+      expect(success).toHaveBeenCalledWith(
+        'Store was empty; pushed the local config as version 1.'
+      );
+      expect(stdout).not.toHaveBeenCalled();
+
+      // A store that already holds one config is attached to, never seeded: no seeded line.
+      success.mockClear();
+      mockAdapterInstance.push.mockClear();
+      mockAdapterInstance.listConfigs.mockResolvedValue([
+        { configId: CONFIG_ID, version: 1, lastModified: 'z', teamId: null },
+      ]);
+      mockAdapterInstance.pull
+        .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
+        .mockResolvedValueOnce({ config: structuredClone(serverConfig), version: 1, sdkEpoch: 1 });
+      await finalizeEnable(pendingRemote(undefined), CONFIG_NAME, { force: true });
+      expect(mockAdapterInstance.push).not.toHaveBeenCalled();
+      expect(success).not.toHaveBeenCalled();
+    } finally {
+      success.mockRestore();
+      stdout.mockRestore();
+    }
   });
 });
 
