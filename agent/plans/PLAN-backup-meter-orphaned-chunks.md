@@ -186,11 +186,12 @@ Most of this exists already, and A1 pins it with tests:
   Owns: private/account/drizzle/0069_backup_lineage_reconcile_due.sql (new), private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts (backupLineageUsage only), private/account/src/dto/backup.dto.ts, private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-gc.service.ts, private/account/src/routes/backups.ts, private/account/src/errors.ts (one code), private/account/tests/integration/backup-meter-orphaned-chunks.test.ts (new), private/account/tests/integration/backup-gc.test.ts and backup-verify-reconcile.test.ts (only where an expectation changes), private/account (gitlink bump only).
   Accept: `cd private/account && npx vitest run tests/integration/backup-meter-orphaned-chunks.test.ts tests/integration/backup-gc.test.ts tests/integration/backup-storage.test.ts tests/integration/backup-verify-reconcile.test.ts tests/integration/backup-maintenance-isolation.test.ts` rc 0, `npm run typecheck` rc 0 and `npm run lint` rc 0. With the service changes reverted and the test kept, `npx vitest run tests/integration/backup-meter-orphaned-chunks.test.ts` rc 1.
 
-- [ ] R1 [writer, renet] renet names the run it supersedes.
+- [x] R1 [writer, renet] renet names the run it supersedes.
   Changes:
   - uploader.go: before :207 overwrites `opts.Journal.Upload`, capture the prior snapshot id when it differs and is uncommitted. Hand it to the plane through a new optional `SupersedeRecorder` interface, following the `UploadMetricsRecorder` pattern at :55-61.
   - session.go: `MintGrant` (:359) adds `"supersedesSnapshotId"` when set and omits it when empty.
   - Verify that one snapshot per repository per machine is excluded for the whole run. If nothing enforces it, take an exclusive flock beside the journal in journal.go and refuse a second run with a named error.
+    (ticked) 2026-10-29T10:23:31Z by d778be9d: commit:8bb2a14cc
 
   Tests (uploader_test.go, session_test.go, journal_test.go), each failing on the current tree:
   - a journal holding `Upload{SnapshotID:"old", ManifestCommitted:false}` plus a new manifest records `old` on a fake plane;
@@ -201,12 +202,13 @@ Most of this exists already, and A1 pins it with tests:
   Owns: private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/session.go, private/renet/pkg/chunkstore/journal.go (the lock only, if needed), private/renet/pkg/chunkstore/uploader_test.go, private/renet/pkg/chunkstore/session_test.go, private/renet/pkg/chunkstore/journal_test.go, private/renet (gitlink bump only).
   Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'Supersede|JournalLock' -count=1` rc 0, `go test ./pkg/chunkstore/ ./cmd/renet/ -count=1` rc 0 and `go vet ./pkg/chunkstore/` rc 0. With the uploader change reverted, the Supersede test rc 1.
 
-- [ ] C1 [writer, CLI] `rdc backup reconcile`.
+- [x] C1 [writer, CLI] `rdc backup reconcile`.
   Changes:
   - New packages/cli/src/commands/backup-reconcile.ts implementing D5. The repo-ref resolves through `resolveLineage`. Table output shows ledger, observed, referenced and unreferenced per lineage; `-o json` prints the response.
   - One registration line in `registerBackupStorageCommands` (packages/cli/src/commands/backup-storage.ts:531-539).
   - i18n keys under `commands.backup.reconcile.*` in every locale, under the leases named in Concurrency.
   - Regenerate the CLI contract and docs data.
+    (ticked) 2026-10-29T10:23:34Z by d778be9d: commit:8bb2a14cc
 
   Tests (new packages/cli/src/commands/__tests__/backup-reconcile.test.ts, mocking `accountServerFetch`), each failing today because the command does not exist:
   - the POST body carries the resolved lineage and `dryRun`;

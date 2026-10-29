@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 36 plans done, 500 of 665 boxes done (75%).
+Promoted: 3 of 36 plans done, 502 of 665 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -118,7 +118,7 @@ Promoted: 3 of 36 plans done, 500 of 665 boxes done (75%).
 | 32 | PLAN-production-key-only.md | 5/12 | 7 open |
 | 33 | PLAN-detached-jobs.md | 1/18 | 17 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 9/11 | 2 open |
-| 35 | PLAN-backup-meter-orphaned-chunks.md | 1/6 | 5 open |
+| 35 | PLAN-backup-meter-orphaned-chunks.md | 3/6 | 3 open |
 | 36 | PLAN-backup-local-image.md | 0/14 | 14 open |
 <!-- queue:progress:end -->
 
