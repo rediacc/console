@@ -6,6 +6,8 @@ import ast
 import re
 import shlex
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.ops import prune_worker_secrets as verb
 
@@ -134,3 +136,9 @@ def test_run_region_bench_lists_the_extras_and_never_all() -> None:
     assert all("rediacc-account-bench" in c for c in calls)
     _c, _l, all_rows = verb.run([], ENV, lambda *_a, **_k: [])
     assert all(r.region != "bench" for r in all_rows)
+
+
+def test_a_short_bench_payload_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(verb.offline, "bench_payload_keys", lambda _text: ["ACCOUNT_JWT_SECRET"])
+    with pytest.raises(ValueError, match="failing closed"):
+        verb.bench_expected()

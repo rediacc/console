@@ -122,7 +122,16 @@ def bench_expected(root: pathlib.Path | None = None) -> list[str]:
     """The key names `deploy_bench.secrets_payload()` pushes, read with the region-consistency gate's extractor."""
     base = paths.repo_root() if root is None else root
     text = base.joinpath(offline.BENCH_DEPLOY_REL).read_text(encoding="utf-8")
-    return offline.bench_payload_keys(text)
+    keys = offline.bench_payload_keys(text)
+    # An extractor that stops matching deploy_bench would yield too few names, and every live
+    # bench secret would read as an extra that --delete removes. Below the regional key count
+    # (bench pushes the same set), refuse rather than guess.
+    if len(keys) < len(expected_names()):
+        raise ValueError(
+            "deploy_bench payload yielded %d key(s), fewer than the %d a regional deploy pushes; failing closed, no verdict"
+            % (len(keys), len(expected_names()))
+        )
+    return keys
 
 
 def expected_for(row: Row, root: pathlib.Path | None = None) -> list[str]:
@@ -308,7 +317,9 @@ def archive_extras(
     wanted: dict[tuple[str, str], str | None] = {}
     for row in rows:
         for name in row.extras:
-            wanted[(row.worker, name)] = bws_key(name, suffixes.get(row.region, ""), row.region)
+            wanted[(row.worker, name)] = bws_key(
+                name, "" if row.region == BENCH else suffixes[row.region], row.region
+            )
     have = values(sorted({k for k in wanted.values() if k}))
     for row in rows:
         for name in row.extras:
@@ -416,7 +427,7 @@ def run(
             for w in load_workers(root, bench=opts.region == BENCH)
             if opts.region in ("all", w.region) and opts.target in ("all", w.target)
         ]
-    except (ApiError, OSError, tomllib.TOMLDecodeError) as exc:
+    except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     if not chosen:
         return (
@@ -426,7 +437,7 @@ def run(
         )
     try:
         rows = survey(chosen, account, token, fetch, root)
-    except (ApiError, OSError, tomllib.TOMLDecodeError) as exc:
+    except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     lines = [
         "%s (%s %s): %d live, %d pushed, extras: %s"
