@@ -557,20 +557,21 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 0,
+      "open": 3,
+      "done": 6,
       "open_sigs": [
-        "0d186555",
-        "1bb21003",
-        "2e1fa6e5",
         "7993037e",
-        "c29a5a67",
-        "c5e092a0",
-        "cab479c2",
         "e9c480b3",
         "ec030c09"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "0d186555",
+        "1bb21003",
+        "2e1fa6e5",
+        "c29a5a67",
+        "c5e092a0",
+        "cab479c2"
+      ]
     },
     "agent/plans/PLAN-cloudflare-proxy.md": {
       "status": "approved",
@@ -1172,21 +1173,22 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 0,
+      "open": 8,
+      "done": 2,
       "open_sigs": [
         "29c37ab0",
         "90ade765",
         "932bf30c",
-        "99de90cc",
-        "9ea4a078",
         "afaa0431",
         "b54d76a6",
         "f64eeedf",
         "fd679fde",
         "fe5245eb"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "99de90cc",
+        "9ea4a078"
+      ]
     },
     "agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md": {
       "status": "compacted",

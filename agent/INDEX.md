@@ -490,7 +490,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 38 | 9 | 0 | 6327 |
+| `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 44 | 3 | 6 | 7007 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 404 | 5 | 25 | 60141 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 107 | 3 | 7 | 38443 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
@@ -521,7 +521,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-hostinger-upgrade-followups.md` | in-progress | 36 | 4 | 0 | 3965 |
-| `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 33 | 10 | 0 | 7515 |
+| `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 35 | 8 | 2 | 7746 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-lessons-registry-followups.md` | draft | 18 | 2 | 0 | 1649 |
