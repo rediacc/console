@@ -1,24 +1,24 @@
-## SESSION d778be9d 2026-10-29T06:55:18Z
+## SESSION d778be9d 2026-10-29T08:04:35Z
 
-# STATE d778be9d (2026-10-29 ~07:15Z), branch 1023-1, unpushed
+# STATE d778be9d (2026-10-29 ~08:05Z), branch 1023-1, unpushed
 
 ## Big pieces
-- PLAN-backup-program (41 open): hostinger cutover to R2 at 100 Mbps; gap boxes K10/K11/N4b/S5/S12 code landing.
-- PLAN-org-executor-connect-timeout-relocate: E9 bench rerun with the reachability probe, then E10.
-- Region consistency (operator 2026-10-29): 7-target secrets/buckets + check:ci-region-consistency.
+- PLAN-backup-program: hostinger to R2 at 100 Mbps. Q5-Q7, Q9, demo-heartbeat done; R2 rediacc-backups-eu 1530 objects / 6.40 GB = backup usage.
+- PLAN-production-key-only (promoted #32, b333f6454): K1-K5 writing.
+- PLAN-org-executor-connect-timeout-relocate: E9 rerun with the probe (5bce4385a).
 
-## Operator orders (2026-10-29)
-Brave, long term, local deploys, never lose repo data; hostinger backups 100 Mbps, nice/ionice, probe first, one repo at a time, Q11 last, Q11 text from measured numbers.
-
-## Done this context
-stable EU deployed (RELEASE_ASKED 06:21Z) fdb7d553 then ce7596d0, prev a1476077, D1 restore before 06:21Z; edge EU 0bf24b3f. Commits 5bce4385a (probe E11-E14), e8a1e28d4 + account 3fabea6 (K11), account 8237ac0 + 30dac34, 58af6cad6 (N4b). hostinger Q2-Q4 done, strategy not bound.
+## Facts to keep
+- Every ./rdc.sh against eu-remote runs under `bws_env exec --profile deploy-proxy` until K3/K4 land, or renet is rebuilt with the DEV key (prod key fingerprint by sha256 56721e1a; licence id fb37f1ae16f8b7c0).
+- stable EU account fdb7d553 -> ce7596d0 (prev a1476077). Bandwidth cap fixed: renet 985f4c7/9f559ae/e44441a/6bfd187, CLI 2bc0ae0a3/1c1d16d8a/0dc9406a3/1aa703549.
+- Region gate 581206c7b; bench legacy secrets archived+deleted (317baa02b).
 
 ## Delegated
-- add0931a9e064484a #97c844e9: region matrix + gate + provisioning (/tmp/writers-now/region-*.md). Accept: gate selftest + offline run.
-- a61842cb7ce9e18bf #2cfdf712 (worktree): bwlimit/parallelism/nice through backup_snapshot, CLI, strategy timer; diffs /tmp/bwlimit-renet.diff, /tmp/bwlimit-console.diff.
+- afc71e7f084a62df5 #863660ef: real-R2 restore on a fork of demo-heartbeat, then repos one by one at 100Mbps (never hermes), records in PLAN-backup-program live lines. Accept: per-repo rc/bytes/rate/load + R2 count.
+- af001bc0771a80a28 #9345ff86 K1 (worktree, /tmp/pko-k1.diff); afca779a3b51f72c8 #01f7a601 K2 (/tmp/pko-k2.diff); a42da48975b57eba5 #0ca3d823 K3 (/tmp/pko-k3.diff); a3c38bcf36f5f3d18 #3d8a94ca K4 (/tmp/pko-k4-console.diff, -renet.diff). Accept: each box's tests rc 0 on the main tree after patch.
+- K5 docs done in place (#39de9f5d), commit with K1-K4 after `check_prose_style.py check --drain`.
 
 ## Next action
-1. Commit the staged W1 drill legs + W4 K10 files once the region agent's files settle (gen-docs reads the whole tree); paths: backup.py, backup_check_trigger.py, legs n/o tests, quality-pytest.json, ct-backup-perf.yml, suite 31 files, chunkCliHarness.ts, check-e2e-coverage.ts, check-shard-manifest-coverage.ts, env-manifest.json, doc-registry.md, 07-port-brief.md.
-2. bwlimit report: apply diffs, go test + vitest, commit renet then pointer; resume cutover agent afc71e7f084a62df5 at Q5 (mail:bp-probe at 100 Mbps, record rate + hostinger CPU/load), then single repos, then Q11.
-3. Region report: commit gate, create missing buckets, push secrets (stable us/asia need RELEASE_ASKED).
-4. E9 after the backup writers. S6 #53b05748 fires 2026-10-31T07:07Z.
+1. As each K diff lands: apply only after the cutover agent's rdc.sh runs end (they touch bws_env/local_common/build.sh), rerun the box tests, commit (renet first, then pointer), tick the box with the tool's own sig.
+2. Then L1 bws park (six *_DEV -> __*), K6 gate + map refresh.
+3. Cutover: after the one-by-one seed, set nightly-hot bandwidthLimit 100Mbps, bind (Q10), Q11 at 100Mbps; rewrite Q11 text with measured rates (about 10 MB/s).
+4. S6 #53b05748 fires 2026-10-31T07:07Z.
