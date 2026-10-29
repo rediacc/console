@@ -177,9 +177,10 @@ Promoted: 3 of 39 plans done, 522 of 713 boxes done (73%).
 7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 8. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
 9. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-10. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-11. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-12. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-13. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-14. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+10. agent/plans/PLAN-backup-download-from-store.md -- P2, proposed, not started, dep-blocked
+11. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+12. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+13. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+15. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
