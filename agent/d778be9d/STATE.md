@@ -1,24 +1,25 @@
-## SESSION d778be9d 2026-10-29T08:21:53Z
+## SESSION d778be9d 2026-10-29T11:20:38Z
 
-# STATE d778be9d (2026-10-29 08:22Z), branch 1023-1, unpushed
+# STATE d778be9d (2026-10-29T11:2xZ, branch 1023-1, unpushed, turbo batch-end)
 
 ## Big pieces
-- PLAN-backup-program: hostinger -> R2 rediacc-backups-eu at 100Mbps. Done: Q2-Q7, Q9, demo-heartbeat, mail (R2 1553 objects / 6.50 GB). Seed driver running for 8 more repos.
-- PLAN-production-key-only (#32): K1 d3b47b367, K2 bfc0eeee3 (ticked), K5 efdb3cd51 committed; K4 done in worktree; K3 running.
-- PLAN-org-executor-connect-timeout-relocate E9 rerun with the probe (5bce4385a).
+- PLAN-detached-jobs (QUEUE 33): amended af9ea490f (every machine command one job, 20 s attach, ticket steps, overlap class matrix); wave 1 running.
+- PLAN-backup-program (QUEUE 2): hostinger seed resumed (read cap passed L1).
+- PLAN-backup-local-image (QUEUE 36): promoted, no writers yet.
 
-## Facts
-- Every ./rdc.sh against eu-remote runs under `bws_env exec --profile deploy-proxy` (prod key) until K3/K4 land.
-- Never `patch` a worktree writer diff: it can delete files (memory feedback_worktree_diff_deletions). Copy files from .claude/worktrees/agent-<id>/ and read git diff vs HEAD.
-- Stable EU fdb7d553 -> ce7596d0 (prev a1476077).
+## Done this context
+- Timeout fix d6ea91581; K3+K4 824f3bd7b; --no-seed 70f55f7c0; read cap cd82f93/9875bdd04, L1 passed (29bbd48cd); metering A1/R1/C1 landed (8bb2a14cc, account d124c0d); -b refuses ten unsafe verbs (53e96d940); snapshot record + repo delete retry (fca380390); promote message (afcb5c297).
 
 ## Delegated
-- afc71e7f084a62df5 #863660ef: background seed driver /tmp/scr/seed.sh (log /tmp/seed/summary.log), repos mautic..demo-stackoverflow at 100Mbps, never hermes; aborts on fail/rate/load. Accept: per-repo lines in PLAN-backup-program under Q11 + R2 counts.
-- a42da48975b57eba5 #0ca3d823 K3 (worktree, /tmp/pko-k3.diff): reset DB-only, PUBLIC_KEY_SPECS unaliased, ensure_renet_built env->cache->bws->refuse with RENET_KEYLESS+GITHUB_ACTIONS passthrough. Accept: box tests rc 0.
-- K4 a3c38bcf36f5f3d18 #3d8a94ca finished: files in .claude/worktrees/agent-a3c38bcf36f5f3d18 (11 console paths + private/renet build.sh), RETIRED_FINGERPRINTS e7987a5718cad9a6.
+- afc71e7f084a62df5 #863660ef: hostinger seed: L2 demo-heartbeat then bulk; stop rule baseload+3.5 x3; records above Q12 in PLAN-backup-program.
+- afd28f8f5673d8c39 #783310da: J0b audit -> /tmp/j0b-audit.md; lead pastes into plan, ticks J0b, amends Concurrency.
+- ad68dacd45d9886af #4c830529: J1 renet in worktree; lead copies files (never patch), renet commit then pointer.
+- ad818f284efbed01c #85a41674: J5 ticket store in worktree; lead copies files, regenerates cli contract and docs.
+- acd3297bac9f1dfbb #f6dbb39d: J12 + J23 python tools in main tree.
 
 ## Next action
-1. When K3 reports: copy K3 + K4 files (renet build.sh commit first, then pointer), rerun both boxes' tests, commit, tick K3/K4 and K1 (0e69a80c) / K5 (ddb2599f) via --plan-investigate then --plan-tick (#420c1156).
-2. Then L1: `bws_env park` the six ACCOUNT_*_DEV (operator asked why no __ names yet), then K6 gate + map refresh.
-3. On the seed driver finishing: record totals, set nightly-hot bandwidthLimit 100Mbps, bind (Q10), fix Q7/Q11 text (#95344625).
-4. #841bed08 restore --no-seed for a real R2 download. S6 #53b05748 fires 2026-10-31T07:07Z.
+1. Settle the open per-commit review findings now (a5fbc437 x4, afcb5c29 x2, fca38039 x2, and any on af9ea490, 29bbd48c): fix or mark with path:line evidence, then --review-commit.
+2. As each delegated report lands: spot-check, accept, copy worktree files (no +++ /dev/null), regenerate, commit by path (submodule first), --plan-investigate + --plan-tick, close the item.
+3. Wave 2: J1b after J1; J2b, J3, J3b after J0b; J15 after J1b+J5; then J16-J20, J6/J6b, J8/J8b, J21, J22, J9; tick J24 (fourth-round rulings recorded in afcb5c297).
+4. PLAN-backup-local-image writers once the detached-jobs executor files are free.
+5. Metering L0 step 4 after 2026-10-30T03:30Z (#533d7a65); S6 default from 2026-10-31T06:00Z (#53b05748).
