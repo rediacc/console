@@ -75,18 +75,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 0,
+      "open": 5,
+      "done": 2,
       "open_sigs": [
         "0128b879",
         "7f342f40",
         "88337d5a",
         "ac625afc",
-        "b1c4f7cb",
+        "b1c4f7cb"
+      ],
+      "done_sigs": [
         "c060ce7a",
         "c53965ed"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-backup-list-executor-fix.md": {
       "status": "compacted",
@@ -147,16 +148,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 3,
+      "done": 2,
       "open_sigs": [
         "06492e4e",
         "0dd37fd7",
-        "2a858fea",
+        "2a858fea"
+      ],
+      "done_sigs": [
         "b75e70c6",
         "db7a591c"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
       "status": "executing",
