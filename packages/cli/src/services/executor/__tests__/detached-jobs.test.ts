@@ -18,6 +18,7 @@ import {
   jobStatusToExecuteResult,
   parseJobStatus,
 } from '../job-client.js';
+import { DATA_TRANSFER_TIMEOUT_MS } from '../renet-command.js';
 import type { RenetEvent } from '../types.js';
 
 const {
@@ -243,6 +244,18 @@ describe('runRemoteExecution reconstructs stdout in events mode (bug #31)', () =
     // The event still reaches the caller's renderer; capture is additive to it.
     expect(events).toHaveLength(1);
   });
+
+  it('carries the data-transfer ceiling on a foreground backup_snapshot launch', async () => {
+    mockExecStreaming.mockImplementationOnce(() => Promise.resolve(0));
+
+    await localExecutorService.execute({
+      functionName: 'backup_snapshot',
+      machineName: 'hostinger',
+    });
+
+    const command = String(mockExecStreaming.mock.calls[0]?.[0]);
+    expect(command).toContain(`execute --executor local --timeout ${DATA_TRANSFER_TIMEOUT_MS}ms`);
+  });
 });
 
 describe('detached execution license recovery (bug #33)', () => {
@@ -358,6 +371,9 @@ describe('detached execution license recovery (bug #33)', () => {
 
     // Only `job start` ran: no follow, no status read.
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
+    expect(String(mockExecStreaming.mock.calls[0]?.[0])).toContain(
+      `job start --executor local --json --timeout ${DATA_TRANSFER_TIMEOUT_MS}ms`
+    );
     expect(started).toEqual([JOB_ID]);
     expect(result.success).toBe(true);
     expect(result.jobId).toBe(JOB_ID);

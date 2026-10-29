@@ -98,7 +98,7 @@ const DATA_TRANSFER_FUNCTIONS = new Set([
 ]);
 
 /**
- * The `--timeout` a renet run carries. Both `renet execute` and `renet job start` cancel at 10 minutes when none is passed, which killed a foreground snapshot of a 6.6 GB repo at 12.5 MB/s with `signal: terminated` (2026-10-29, hostinger seed). A data-moving backup verb gets a ceiling sized for the transfer instead; an explicit caller value always wins.
+ * The `--timeout` a renet run carries. Both `renet execute` and `renet job start` cancel at 10 minutes when none is passed, which killed the hostinger seed's foreground snapshot of mautic at duration_ms=600019 with `signal: terminated` (2026-10-29), mid-upload under a 100 Mbps cap. A data-moving backup verb gets a ceiling sized for the transfer instead: a 200 GB repo at 12.5 MB/s needs about 4.5 hours, and 24 hours leaves room for a slower link. The cost is that a stalled transfer is cancelled only at that ceiling, which `rdc job cancel` or Ctrl-C ends sooner. An explicit caller value always wins.
  */
 export function resolveRenetTimeoutMs(
   functionName: string,

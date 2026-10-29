@@ -186,7 +186,14 @@ describe('renet run timeout', () => {
   });
 
   it('gives a data-moving backup verb a ceiling above renet 10-minute default', () => {
-    for (const fn of ['backup_snapshot', 'backup_push', 'backup_pull', 'backup_restore']) {
+    for (const fn of [
+      'backup_snapshot',
+      'backup_push',
+      'backup_pull',
+      'backup_restore',
+      'backup_restore_path',
+      'backup_verify',
+    ]) {
       expect(resolveRenetTimeoutMs(fn, undefined)).toBe(DATA_TRANSFER_TIMEOUT_MS);
     }
     expect(DATA_TRANSFER_TIMEOUT_MS).toBeGreaterThan(10 * 60 * 1000);
