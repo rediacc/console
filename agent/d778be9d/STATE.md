@@ -1,27 +1,21 @@
-## SESSION d778be9d 2026-10-29T13:42:08Z
+## SESSION d778be9d 2026-10-29T15:01:22Z
 
 # STATE d778be9d (branch 1023-1, unpushed, turbo batch-end)
 
 ## Big pieces
-- PLAN-detached-jobs (33): J2-J3b are ready in .claude/worktrees/agent-a70c3474d33dfbde7 and held until the seed ends. The build-now shares A-E are running (below).
-- PLAN-snapshot-read-io-cap (34): C4 landed in 7e2a14893 and is ticked, with fixes 903fbfe6f, 59ba3202 and da8d629b.
-- PLAN-backup-local-image (36): R2 is in share C. C1 is share F (#db3e739e), queued behind the detached-jobs writers by block_plan_concurrency on backup.ts. Its brief is in the session transcript: copy the T1 tests from agent-ac660471adf2ea20d and implement C1 per plan lines 366-376.
-- PLAN-backup-program (2): the hostinger seed (#863660ef).
+- PLAN-detached-jobs (33): shares A-E landed (renet a1e32d4 d6ccc52 ce62fd0, CLI 2199d1e0b 5b273dc2c 81805ca3b f87f835b4, review fixes b925c10ac and renet 3a527bb). J2-J3b are ready in .claude/worktrees/agent-a70c3474d33dfbde7 and held until the seed ends; J6 wiring steps are on #06ea7ea8.
+- PLAN-backup-local-image (36): R2, T1, C1 and I1 are ticked (791a0a32e). CLI review fixes are writer #3c85a39e; marker scoping is #eea0cfd3. D1, V1, L1, L2 and P0 remain.
+- PLAN-backup-plane-shared-bucket-hardening (37): approved and promoted (5b7801703), no writer yet.
+- PLAN-backup-program (2): the seed (#863660ef) is on nextcloud. The renet session re-mint (c8472d2) fixes uploads past one hour but is not deployed on hostinger.
 
 ## Next action
-1. As each share reports:
-   - spot-check against the artifact;
-   - renet files: copy from /tmp/renet-share-X into private/renet, commit in renet, then the pointer;
-   - CLI files: copy from the worktree with a drift check (`diff <(git show HEAD:f) wt/f | grep -c '^<'`), merge locales by key, regenerate the contract, list-types and docs in the main tree, run vitest, tsc and biome, and commit by path.
-   - Share B lands only after J2-J3b.
-2. When shares A-E have reported, spawn share F (#db3e739e).
-3. When the seed ends: commit the plan record, land J2-J3b (#06ea7ea8), then land share B and add repository_migrate (24 h) and repository_gc to renet-command.ts.
-4. Time-gated: #533d7a65 from 2026-10-30T03:30Z, #53b05748 from 2026-10-31T06:00Z.
+1. On the #3c85a39e report: copy from its worktree (drift check, locales by key), run vitest, tsc and i18n, commit, and mark 9c3f5e10.1-.5 fixed.
+2. On the #eea0cfd3 report: apply in /tmp/renet-i18nfix (rebase it to private/renet HEAD first), merge locales by key, go test, commit, ff-merge into private/renet, regenerate the renet contract, commit the pointer, and mark d6ccc528.3, 3a527bb4.1 and c8472d2c.1.
+3. Spawn writers for PLAN-backup-plane-shared-bucket-hardening A1 (account) and R1 (renet).
+4. When the seed ends: land J2-J3b (#06ea7ea8), then J6, then add repository_migrate and repository_gc to renet-command.ts.
+5. Time-gated: #533d7a65 from 2026-10-30T03:30Z, #53b05748 from 2026-10-31T06:00Z.
 
 ## Delegated
-- a9ba8e07f465372b0 / #f55e8365 / share A: R1, R2, R3 in /tmp/renet-share-A / accept: go test ./cmd/renet ./pkg/jobs ./pkg/functions/... and ./pkg/i18n
-- a90557468b6873c10 / #39065bc4 / share B: R4, R5, R8 in /tmp/renet-share-B / accept: go test ./cmd/renet ./pkg/functions/... ./pkg/license ./pkg/jobs
-- a0d522cbbdb24e207 / #6a2eb64d / share C: detached C4, R7 and local-image R2 in /tmp/renet-share-C and its worktree / accept: go test ./pkg/list ./pkg/prune, the three new vitest files, tsc, key usage
-- a1cf1858468e097c7 / #f2b7ff32 / share D: C2, C3, C7 (services/jobs, mcp tests) / accept: vitest src/services/jobs src/commands/mcp, tsc
-- a3cb136b7970f76b7 / #2a6ff2c2 / share E: C5 serve job-poll, C6 account web job-poll in /tmp/account-share-E / accept: both vitest files, tsc
-- afc71e7f084a62df5 / #863660ef / hostinger seed: gitlab, then nextcloud, miscellaneous, demo-stackoverflow
+- a068fbe23fb0fda28 / #3c85a39e / backup-image.ts, transfer.ts, session.ts, repo-backup.ts, repo-migrate.ts and locales / accept: backup-image and repo vitest, tsc, key usage
+- ac10b4b9790fec275 / #eea0cfd3 / renet license marker, licenses.go, vault typescript.go, chunkstore session.go in /tmp/renet-fix2 / accept: go test of license, list, chunkstore, functions, i18n
+- afc71e7f084a62df5 / #863660ef / hostinger seed: nextcloud, then miscellaneous and demo-stackoverflow; on a 401 at commit it reruns once
