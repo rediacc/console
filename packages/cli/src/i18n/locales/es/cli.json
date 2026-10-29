@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "Ranuras de máquinas",
         "subscriptionRepoLicenses": "Licencias de repositorios",
         "subscriptionStatus": "Estado de suscripción",
-        "subscriptionToken": "Token de acceso"
+        "subscriptionToken": "Token de acceso",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "Diagnosticar el entorno CLI y la integración de renet",
       "descriptionShort": "Diagnosticar el entorno CLI y la integración de renet",
@@ -1020,10 +1022,13 @@
         "environment": "Entorno",
         "renet": "Red Renet",
         "subscription": "Suscripción",
-        "virtualization": "Virtualización"
+        "virtualization": "Virtualización",
+        "tools": "Herramientas"
       },
       "subscriptionUnreachable": "no se puede conectar al servidor de suscripción",
-      "title": "Diagnóstico de Rediacc CLI"
+      "title": "Diagnóstico de Rediacc CLI",
+      "tofuInstallHint": "Ejecuta: rdc tools install tofu",
+      "rsyncInstallHint": "Instala rsync con el gestor de paquetes del sistema"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} detenido"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "Instalar y listar las herramientas locales que usa rdc",
+      "description": "Gestiona las herramientas locales que rdc ejecuta en esta máquina. `rdc tools install tofu` descarga la versión fijada de OpenTofu, comprueba su SHA-256 con la suma integrada en rdc antes de extraerla y deja el binario en el directorio de herramientas de rdc. `rdc tools list` muestra cada herramienta con su versión y dónde se encontró.",
+      "install": {
+        "descriptionShort": "Instalar una herramienta fijada y verificada por suma de comprobación",
+        "description": "Descarga la versión de OpenTofu fijada en esta compilación de rdc, verifica su suma SHA-256 y la instala en el directorio de herramientas de rdc. Si la suma no coincide, se borra la descarga y no se instala nada. Terraform nunca se instala; si ya hay uno en el PATH, se usa tal cual.",
+        "argTool": "Herramienta que instalar (tofu)",
+        "optionForce": "Reinstalar aunque la versión fijada ya esté presente",
+        "downloading": "Descargando OpenTofu {{version}} para {{platform}}...",
+        "installed": "OpenTofu {{version}} instalado en {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} ya está instalado en {{path}}"
+      },
+      "list": {
+        "descriptionShort": "Ver las herramientas instaladas, sus versiones y su origen",
+        "description": "Lista el motor de aprovisionamiento que ejecutaría rdc (OpenTofu o Terraform) y cada versión de OpenTofu del directorio de herramientas de rdc, con su versión, su origen y su ruta.",
+        "empty": "No se encontró OpenTofu ni Terraform. Instala OpenTofu con: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "variable REDIACC_TOFU",
+        "rdc": "instalado por rdc",
+        "path": "PATH del sistema"
+      },
+      "errors": {
+        "unknownTool": "Herramienta desconocida «{{tool}}». Herramientas disponibles: {{available}}",
+        "unsupportedPlatform": "No hay ninguna compilación fijada de OpenTofu para {{platform}}/{{arch}}",
+        "insecureUrl": "Se rechaza descargar desde una URL sin HTTPS: {{url}}",
+        "checksumMismatch": "La suma de comprobación de {{url}} no coincide: se esperaba {{expected}} y se obtuvo {{actual}}. Se borró la descarga y no se instaló nada.",
+        "badArchive": "El archivo descargado no se puede usar: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "Sincronización de archivos",
       "term": "Acceso Terminal SSH",
       "update": "Actualizaciones de CLI",
-      "vscode": "Integración con VS Code"
+      "vscode": "Integración con VS Code",
+      "tools": "Herramientas locales"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "Ya existe un repositorio llamado {{name}}. Pasa --as <name> para subirlo con otro nombre.",
       "localSha256Mismatch": "{{image}} ya no coincide con el sha256 registrado al descargarla (esperado {{expected}}, obtenido {{actual}}). Descárgala de nuevo, o pasa --skip-verify para enviarla igualmente.",
       "registerFailed": "La imagen se colocó en {{machine}} como {{guid}}, pero falló su registro en la configuración: {{error}}. Encuentra la imagen sin registrar con: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofu no está instalado. Instálalo con: rdc tools install tofu",
+      "belowFloor": "{{engine}} {{version}} en {{path}} es anterior a la versión mínima {{floor}}. Instala el OpenTofu fijado con: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU apunta a {{path}}, que no se ejecuta como OpenTofu ni como Terraform. Corrígelo o quítalo, o instala el OpenTofu fijado con: rdc tools install tofu"
     }
   },
   "help": {

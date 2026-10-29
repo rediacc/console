@@ -56,6 +56,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   // ── Tools ───────────────────────────────────────────────────────────
   { name: 'config', domain: 'TOOLS' },
   { name: 'doctor', domain: 'TOOLS' },
+  { name: 'tools', domain: 'TOOLS' },
   { name: 'update', domain: 'TOOLS' },
   { name: 'vscode', domain: 'TOOLS' },
   { name: 'mcp', domain: 'TOOLS' },

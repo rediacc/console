@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "机器槽位",
         "subscriptionRepoLicenses": "仓库许可证",
         "subscriptionStatus": "状态",
-        "subscriptionToken": "访问令牌"
+        "subscriptionToken": "访问令牌",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "诊断CLI环境和renet集成",
       "descriptionShort": "诊断CLI环境和renet集成",
@@ -1020,10 +1022,13 @@
         "environment": "环境",
         "renet": "Renet网络",
         "subscription": "订阅",
-        "virtualization": "虚拟化"
+        "virtualization": "虚拟化",
+        "tools": "工具"
       },
       "subscriptionUnreachable": "无法连接订阅服务器",
-      "title": "Rediacc CLI 诊断工具"
+      "title": "Rediacc CLI 诊断工具",
+      "tofuInstallHint": "运行：rdc tools install tofu",
+      "rsyncInstallHint": "请用系统包管理器安装 rsync"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} 已停止"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "安装并列出 rdc 使用的本地工具",
+      "description": "管理 rdc 在本机运行的本地工具。`rdc tools install tofu` 会下载固定版本的 OpenTofu，在解压前将其 SHA-256 与 rdc 内置的校验和比对，然后把二进制文件放入 rdc 的工具目录。`rdc tools list` 显示每个工具的版本及其来源。",
+      "install": {
+        "descriptionShort": "安装经过校验和验证的固定版本工具",
+        "description": "下载此 rdc 构建中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。",
+        "argTool": "要安装的工具 （tofu）",
+        "optionForce": "即使固定版本已存在也重新安装",
+        "downloading": "正在下载适用于 {{platform}} 的 OpenTofu {{version}}...",
+        "installed": "已将 OpenTofu {{version}} 安装到 {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} 已安装在 {{path}}"
+      },
+      "list": {
+        "descriptionShort": "显示已安装的工具、版本和来源",
+        "description": "列出 rdc 将要运行的预配引擎（OpenTofu 或 Terraform），以及 rdc 工具目录中的每个 OpenTofu 版本，并附上版本、来源和路径。",
+        "empty": "未找到 OpenTofu 或 Terraform。请用以下命令安装 OpenTofu：rdc tools install tofu"
+      },
+      "sources": {
+        "env": "REDIACC_TOFU 变量",
+        "rdc": "由 rdc 安装",
+        "path": "系统 PATH"
+      },
+      "errors": {
+        "unknownTool": "未知工具“{{tool}}”。可用工具：{{available}}",
+        "unsupportedPlatform": "没有适用于 {{platform}}/{{arch}} 的固定 OpenTofu 构建",
+        "insecureUrl": "拒绝从非 HTTPS 地址下载：{{url}}",
+        "checksumMismatch": "{{url}} 的校验和不匹配：应为 {{expected}}，实际为 {{actual}}。已删除下载的文件，未安装任何内容。",
+        "badArchive": "下载的归档文件无法使用：{{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "文件同步",
       "term": "SSH 终端访问",
       "update": "CLI 更新",
-      "vscode": "VS Code 集成"
+      "vscode": "VS Code 集成",
+      "tools": "本地工具"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "已存在名为 {{name}} 的仓库。请传入 --as <name>，以其他名称上传。",
       "localSha256Mismatch": "{{image}} 与下载时记录的 sha256 不再一致（预期 {{expected}}，实际 {{actual}}）。请重新下载，或传入 --skip-verify 强制发送。",
       "registerFailed": "镜像已作为 {{guid}} 放置到 {{machine}}，但在配置中注册失败：{{error}}。可用以下命令找到未注册的镜像：rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "未安装 OpenTofu。请用以下命令安装：rdc tools install tofu",
+      "belowFloor": "{{path}} 处的 {{engine}} {{version}} 低于最低版本 {{floor}}。请用以下命令安装固定版本的 OpenTofu：rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU 指向 {{path}}，但它无法作为 OpenTofu 或 Terraform 运行。请修正或删除该变量，或用以下命令安装固定版本的 OpenTofu：rdc tools install tofu"
     }
   },
   "help": {

@@ -82,6 +82,9 @@ const ALLOWED_IDENTICAL = new Set([
   'Intel',
   'Oracle',
   'Azure',
+  // Tool names shown as doctor check labels (`rdc doctor` Tools section); proper nouns like Docker above.
+  'OpenTofu',
+  'rsync',
   // OS / platform names — kept identical across all locales (proper nouns)
   'Linux',
   'macOS',

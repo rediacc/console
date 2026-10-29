@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "Слоты машин",
         "subscriptionRepoLicenses": "Лицензии репозиториев",
         "subscriptionStatus": "Статус",
-        "subscriptionToken": "Токен"
+        "subscriptionToken": "Токен",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "Диагностика среды CLI и интеграции renet",
       "descriptionShort": "Диагностика среды CLI и интеграции renet",
@@ -1020,10 +1022,13 @@
         "environment": "Среда",
         "renet": "Сеть Renet",
         "subscription": "Подписка",
-        "virtualization": "Виртуализация"
+        "virtualization": "Виртуализация",
+        "tools": "Инструменты"
       },
       "subscriptionUnreachable": "не удалось связаться с сервером подписки",
-      "title": "Диагностика Rediacc CLI"
+      "title": "Диагностика Rediacc CLI",
+      "tofuInstallHint": "Выполните: rdc tools install tofu",
+      "rsyncInstallHint": "Установите rsync системным менеджером пакетов"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} остановлен"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "Установка и список локальных инструментов rdc",
+      "description": "Управляет локальными инструментами, которые rdc запускает на этой машине. `rdc tools install tofu` скачивает закреплённый релиз OpenTofu, до распаковки сверяет его SHA-256 с контрольной суммой, встроенной в rdc, и помещает бинарный файл в каталог инструментов rdc. `rdc tools list` показывает каждый инструмент, его версию и откуда он взят.",
+      "install": {
+        "descriptionShort": "Установить закреплённый инструмент с проверкой контрольной суммы",
+        "description": "Скачивает релиз OpenTofu, закреплённый в этой сборке rdc, проверяет его контрольную сумму SHA-256 и устанавливает в каталог инструментов rdc. При несовпадении суммы загрузка удаляется и ничего не устанавливается. Terraform никогда не устанавливается; если он уже есть в PATH, используется как есть.",
+        "argTool": "Устанавливаемый инструмент (tofu)",
+        "optionForce": "Переустановить, даже если закреплённая версия уже есть",
+        "downloading": "Загрузка OpenTofu {{version}} для {{platform}}...",
+        "installed": "OpenTofu {{version}} установлен в {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} уже установлен в {{path}}"
+      },
+      "list": {
+        "descriptionShort": "Показать установленные инструменты, их версии и источники",
+        "description": "Выводит движок провижининга, который запустил бы rdc (OpenTofu или Terraform), и все версии OpenTofu в каталоге инструментов rdc, с версией, источником и путём.",
+        "empty": "Ни OpenTofu, ни Terraform не найдены. Установите OpenTofu командой: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "переменная REDIACC_TOFU",
+        "rdc": "установлен rdc",
+        "path": "системный PATH"
+      },
+      "errors": {
+        "unknownTool": "Неизвестный инструмент «{{tool}}». Доступные инструменты: {{available}}",
+        "unsupportedPlatform": "Для {{platform}}/{{arch}} нет закреплённой сборки OpenTofu",
+        "insecureUrl": "Загрузка по адресу без HTTPS запрещена: {{url}}",
+        "checksumMismatch": "Контрольная сумма {{url}} не совпадает: ожидалось {{expected}}, получено {{actual}}. Загрузка удалена, ничего не установлено.",
+        "badArchive": "Скачанный архив непригоден: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "Синхронизация файлов",
       "term": "Доступ к SSH-терминалу",
       "update": "Обновления CLI",
-      "vscode": "Интеграция с VS Code"
+      "vscode": "Интеграция с VS Code",
+      "tools": "Локальные инструменты"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "Репозиторий с именем {{name}} уже существует. Передайте --as <name>, чтобы загрузить образ под другим именем.",
       "localSha256Mismatch": "{{image}} больше не совпадает с sha256, записанным при скачивании (ожидалось {{expected}}, получено {{actual}}). Скачайте его заново или передайте --skip-verify, чтобы отправить как есть.",
       "registerFailed": "Образ размещён на {{machine}} как {{guid}}, но зарегистрировать его в конфигурации не удалось: {{error}}. Найти незарегистрированный образ можно командой: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofu не установлен. Установите его командой: rdc tools install tofu",
+      "belowFloor": "{{engine}} {{version}} в {{path}} старше минимальной версии {{floor}}. Установите закреплённый OpenTofu командой: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU указывает на {{path}}, но этот файл не запускается ни как OpenTofu, ни как Terraform. Исправьте или удалите переменную либо установите закреплённый OpenTofu командой: rdc tools install tofu"
     }
   },
   "help": {

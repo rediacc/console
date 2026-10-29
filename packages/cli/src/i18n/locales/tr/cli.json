@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "Makine yuvaları",
         "subscriptionRepoLicenses": "Depo lisansları",
         "subscriptionStatus": "Durum",
-        "subscriptionToken": "Erişim jetonu"
+        "subscriptionToken": "Erişim jetonu",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
       "descriptionShort": "CLI ortamını ve renet entegrasyonunu tanıla",
@@ -1020,10 +1022,13 @@
         "environment": "Ortam",
         "renet": "Renet ağı",
         "subscription": "Abonelik",
-        "virtualization": "Sanallaştırma"
+        "virtualization": "Sanallaştırma",
+        "tools": "Araçlar"
       },
       "subscriptionUnreachable": "abonelik sunucusuna ulaşılamıyor",
-      "title": "Rediacc CLI Tanılama"
+      "title": "Rediacc CLI Tanılama",
+      "tofuInstallHint": "Çalıştırın: rdc tools install tofu",
+      "rsyncInstallHint": "rsync'i sistemin paket yöneticisiyle kurun"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} durduruldu"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "rdc'nin kullandığı yerel araçları kur ve listele",
+      "description": "rdc'nin bu makinede çalıştırdığı yerel araçları yönetir. `rdc tools install tofu`, sabitlenmiş OpenTofu sürümünü indirir, açmadan önce SHA-256 değerini rdc'ye gömülü sağlama toplamıyla karşılaştırır ve ikili dosyayı rdc'nin araç dizinine yerleştirir. `rdc tools list` her aracı sürümü ve bulunduğu yerle birlikte gösterir.",
+      "install": {
+        "descriptionShort": "Sabitlenmiş ve sağlama toplamıyla doğrulanmış bir araç kur",
+        "description": "Bu rdc derlemesinde sabitlenmiş OpenTofu sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır.",
+        "argTool": "Kurulacak araç (tofu)",
+        "optionForce": "Sabitlenmiş sürüm zaten varsa bile yeniden kur",
+        "downloading": "{{platform}} için OpenTofu {{version}} indiriliyor...",
+        "installed": "OpenTofu {{version}} şuraya kuruldu: {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} zaten şurada kurulu: {{path}}"
+      },
+      "list": {
+        "descriptionShort": "Kurulu araçları, sürümlerini ve kaynaklarını göster",
+        "description": "rdc'nin çalıştıracağı hazırlama motorunu (OpenTofu veya Terraform) ve rdc'nin araç dizinindeki her OpenTofu sürümünü; sürümü, kaynağı ve yoluyla birlikte listeler.",
+        "empty": "OpenTofu veya Terraform bulunamadı. OpenTofu'yu şu komutla kurun: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "REDIACC_TOFU değişkeni",
+        "rdc": "rdc tarafından kuruldu",
+        "path": "sistem PATH'i"
+      },
+      "errors": {
+        "unknownTool": "Bilinmeyen araç \"{{tool}}\". Kullanılabilir araçlar: {{available}}",
+        "unsupportedPlatform": "{{platform}}/{{arch}} için sabitlenmiş bir OpenTofu derlemesi yok",
+        "insecureUrl": "HTTPS olmayan bir adresten indirme reddedildi: {{url}}",
+        "checksumMismatch": "{{url}} için sağlama toplamı tutmuyor: beklenen {{expected}}, gelen {{actual}}. İndirilen dosya silindi, hiçbir şey kurulmadı.",
+        "badArchive": "İndirilen arşiv kullanılamıyor: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "Dosya Senkronizasyonu",
       "term": "SSH Terminal Erişimi",
       "update": "CLI Güncellemeleri",
-      "vscode": "VS Code Entegrasyonu"
+      "vscode": "VS Code Entegrasyonu",
+      "tools": "Yerel araçlar"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "{{name}} adında bir depo zaten var. Başka bir adla yüklemek için --as <name> verin.",
       "localSha256Mismatch": "{{image}} artık indirilirken kaydedilen sha256 ile eşleşmiyor (beklenen {{expected}}, bulunan {{actual}}). İmajı yeniden indirin ya da yine de göndermek için --skip-verify verin.",
       "registerFailed": "İmaj {{machine}} makinesine {{guid}} olarak yerleştirildi, ancak yapılandırmaya kaydı başarısız oldu: {{error}}. Kaydedilmemiş imajı şu komutla bulabilirsiniz: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofu kurulu değil. Şu komutla kurun: rdc tools install tofu",
+      "belowFloor": "{{path}} konumundaki {{engine}} {{version}}, en düşük sürüm olan {{floor}} sürümünden eski. Sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU, {{path}} yolunu gösteriyor ancak bu dosya OpenTofu ya da Terraform olarak çalışmıyor. Değişkeni düzeltin veya kaldırın ya da sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu"
     }
   },
   "help": {

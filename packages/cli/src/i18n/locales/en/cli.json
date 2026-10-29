@@ -150,7 +150,8 @@
         "renet": "Renet",
         "configuration": "Configuration",
         "subscription": "Subscription",
-        "virtualization": "Virtualization"
+        "virtualization": "Virtualization",
+        "tools": "Tools"
       },
       "checks": {
         "nodeVersion": "Node.js",
@@ -168,7 +169,9 @@
         "subscriptionStatus": "Status",
         "subscriptionMachineSlots": "Machine slots",
         "subscriptionRepoLicenses": "Repo licenses",
-        "opsPrereqs": "OPS prerequisites"
+        "opsPrereqs": "OPS prerequisites",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "allPassed": "All checks passed",
       "hasWarnings": "{{count}} warning(s)",
@@ -177,7 +180,9 @@
       "notConfigured": "not configured",
       "notLoggedIn": "not logged in",
       "subscriptionUnreachable": "unable to reach subscription server",
-      "opsSkipped": "renet not available (skipped)"
+      "opsSkipped": "renet not available (skipped)",
+      "tofuInstallHint": "Run: rdc tools install tofu",
+      "rsyncInstallHint": "Install rsync with the system package manager"
     },
     "config": {
       "descriptionShort": "Manage config files",
@@ -2493,6 +2498,36 @@
         "pending": "steps pending: rdc job wait {{jobId}}",
         "pendingForConfig": "{{count}} steps pending for config {{config}}"
       }
+    },
+    "tools": {
+      "descriptionShort": "Install and list the local tools this CLI runs",
+      "description": "Manage the local tools this CLI runs on the workstation. `rdc tools install tofu` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into this CLI before extracting it, and places the binary in the CLI's tools directory. `rdc tools list` shows each tool with its version and where it was found.",
+      "install": {
+        "descriptionShort": "Install a pinned, checksum-verified tool",
+        "description": "Download the OpenTofu release pinned in this rdc build, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+        "argTool": "Tool to install (tofu)",
+        "optionForce": "Reinstall even when the pinned version is already present",
+        "downloading": "Downloading OpenTofu {{version}} for {{platform}}...",
+        "installed": "Installed OpenTofu {{version}} at {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} is already installed at {{path}}"
+      },
+      "list": {
+        "descriptionShort": "Show installed tools, their versions and sources",
+        "description": "List the provisioning engine this CLI would run (OpenTofu or Terraform) and every OpenTofu version in its tools directory, each with its version, where it came from, and its path.",
+        "empty": "No OpenTofu or Terraform found. Install OpenTofu with: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "REDIACC_TOFU variable",
+        "rdc": "installed by rdc",
+        "path": "system PATH"
+      },
+      "errors": {
+        "unknownTool": "Unknown tool \"{{tool}}\". Available tools: {{available}}",
+        "unsupportedPlatform": "No pinned OpenTofu build exists for {{platform}}/{{arch}}",
+        "insecureUrl": "Refusing to download over a non-HTTPS URL: {{url}}",
+        "checksumMismatch": "Checksum mismatch for {{url}}: expected {{expected}}, got {{actual}}. The download was deleted and nothing was installed.",
+        "badArchive": "The downloaded archive cannot be used: {{reason}}"
+      }
     }
   },
   "help": {
@@ -2762,6 +2797,11 @@
       "nameTaken": "A repository named {{name}} already exists. Pass --as <name> to upload under another name.",
       "localSha256Mismatch": "{{image}} no longer matches the sha256 recorded when it was downloaded (expected {{expected}}, got {{actual}}). Download it again, or pass --skip-verify to send it anyway.",
       "registerFailed": "The image was placed on {{machine}} as {{guid}}, but registering it in the config failed: {{error}}. Find the unregistered image with: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofu is not installed. Install it with: rdc tools install tofu",
+      "belowFloor": "{{engine}} {{version}} at {{path}} is older than the minimum {{floor}}. Install the pinned OpenTofu with: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU is set to {{path}}, which does not run as OpenTofu or Terraform. Fix or unset it, or install the pinned OpenTofu with: rdc tools install tofu"
     }
   },
   "options": {
@@ -2919,7 +2959,8 @@
       "sync": "File Sync",
       "backup": "Backup & Restore",
       "job": "Detached Jobs",
-      "serve": "Executor Service"
+      "serve": "Executor Service",
+      "tools": "Local Tools"
     },
     "errors": {
       "heading": "Common Error Messages",

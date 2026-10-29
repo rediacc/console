@@ -58,6 +58,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   ops: { plane: 'other' },
   doctor: { plane: 'other' },
   credits: { plane: 'other' },
+  tools: { plane: 'other' },
   update: { plane: 'other' },
   mcp: { plane: 'other' },
 

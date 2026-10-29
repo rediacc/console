@@ -13935,6 +13935,75 @@
     },
     {
       "path": [
+        "tools",
+        "install"
+      ],
+      "pathKey": "tools install",
+      "domain": "tools",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.tools.install.description",
+      "label": "Download the OpenTofu release pinned in this rdc build, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+      "options": [
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.tools.install.optionForce",
+          "label": "Reinstall even when the pinned version is already present"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "tool",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.tools.install.argTool",
+          "label": "Tool to install (tofu)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Installs a local binary on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "tools",
+        "list"
+      ],
+      "pathKey": "tools list",
+      "domain": "tools",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.tools.list.description",
+      "label": "List the provisioning engine this CLI would run (OpenTofu or Terraform) and every OpenTofu version in its tools directory, each with its version, where it came from, and its path.",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Lists local binaries on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
         "update"
       ],
       "pathKey": "update",

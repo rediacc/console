@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "Slots de máquina",
         "subscriptionRepoLicenses": "Licenças de repositório",
         "subscriptionStatus": "Estado",
-        "subscriptionToken": "Token"
+        "subscriptionToken": "Token",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "Executar verificações de diagnóstico ao ambiente do CLI: versão do Node.js, disponibilidade do binário renet, validade do ficheiro de configuração, estado das chaves SSH e conectividade de rede. Produz um relatório de saúde estruturado com indicadores de aprovação/falha.",
       "descriptionShort": "Diagnosticar o ambiente do CLI e a integração do renet",
@@ -1020,10 +1022,13 @@
         "environment": "Ambiente",
         "renet": "Renet",
         "subscription": "Subscrição",
-        "virtualization": "Virtualização"
+        "virtualization": "Virtualização",
+        "tools": "Ferramentas"
       },
       "subscriptionUnreachable": "impossível contactar o servidor de subscrição",
-      "title": "Diagnóstico do CLI Rediacc"
+      "title": "Diagnóstico do CLI Rediacc",
+      "tofuInstallHint": "Execute: rdc tools install tofu",
+      "rsyncInstallHint": "Instale o rsync com o gerenciador de pacotes do sistema"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} parado"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "Instalar e listar as ferramentas locais que o rdc usa",
+      "description": "Gerencia as ferramentas locais que o rdc executa nesta máquina. `rdc tools install tofu` baixa a versão fixada do OpenTofu, confere o SHA-256 com o checksum embutido no rdc antes de extrair e coloca o binário no diretório de ferramentas do rdc. `rdc tools list` mostra cada ferramenta com a versão e onde foi encontrada.",
+      "install": {
+        "descriptionShort": "Instalar uma ferramenta fixada e verificada por checksum",
+        "description": "Baixa a versão do OpenTofu fixada neste build do rdc, verifica o checksum SHA-256 e a instala no diretório de ferramentas do rdc. Se o checksum não bater, o download é apagado e nada é instalado. O Terraform nunca é instalado; se já houver um no PATH, ele é usado como está.",
+        "argTool": "Ferramenta a instalar (tofu)",
+        "optionForce": "Reinstalar mesmo que a versão fixada já esteja presente",
+        "downloading": "Baixando OpenTofu {{version}} para {{platform}}...",
+        "installed": "OpenTofu {{version}} instalado em {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} já está instalado em {{path}}"
+      },
+      "list": {
+        "descriptionShort": "Mostrar ferramentas instaladas, versões e origem",
+        "description": "Lista o motor de provisionamento que o rdc executaria (OpenTofu ou Terraform) e cada versão do OpenTofu no diretório de ferramentas do rdc, com versão, origem e caminho.",
+        "empty": "Nenhum OpenTofu ou Terraform encontrado. Instale o OpenTofu com: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "variável REDIACC_TOFU",
+        "rdc": "instalado pelo rdc",
+        "path": "PATH do sistema"
+      },
+      "errors": {
+        "unknownTool": "Ferramenta desconhecida \"{{tool}}\". Ferramentas disponíveis: {{available}}",
+        "unsupportedPlatform": "Não existe build fixado do OpenTofu para {{platform}}/{{arch}}",
+        "insecureUrl": "Download recusado a partir de uma URL sem HTTPS: {{url}}",
+        "checksumMismatch": "Checksum divergente para {{url}}: esperado {{expected}}, obtido {{actual}}. O download foi apagado e nada foi instalado.",
+        "badArchive": "O arquivo baixado não pode ser usado: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "Sincronização de Ficheiros",
       "term": "Acesso SSH por Terminal",
       "update": "Atualizações da CLI",
-      "vscode": "Integração com VS Code"
+      "vscode": "Integração com VS Code",
+      "tools": "Ferramentas locais"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "Já existe um repositório chamado {{name}}. Passe --as <name> para enviar com outro nome.",
       "localSha256Mismatch": "{{image}} já não corresponde ao sha256 registado no download (esperado {{expected}}, obtido {{actual}}). Transfira-a novamente, ou passe --skip-verify para a enviar mesmo assim.",
       "registerFailed": "A imagem foi colocada em {{machine}} como {{guid}}, mas o registo na configuração falhou: {{error}}. Encontre a imagem não registada com: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "O OpenTofu não está instalado. Instale com: rdc tools install tofu",
+      "belowFloor": "{{engine}} {{version}} em {{path}} é anterior à versão mínima {{floor}}. Instale o OpenTofu fixado com: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU aponta para {{path}}, que não executa como OpenTofu nem como Terraform. Corrija ou remova a variável, ou instale o OpenTofu fixado com: rdc tools install tofu"
     }
   },
   "help": {

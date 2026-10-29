@@ -20,6 +20,7 @@ const LOCAL_GROUPS = [
   'update',
   'credits',
   'doctor',
+  'tools',
   'ops',
   'serve',
 ];

@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "فتحات الأجهزة",
         "subscriptionRepoLicenses": "تراخيص المستودعات",
         "subscriptionStatus": "حالة الاشتراك",
-        "subscriptionToken": "الرمز المميز"
+        "subscriptionToken": "الرمز المميز",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "تشخيص بيئة CLI وتكامل renet",
       "descriptionShort": "تشخيص بيئة CLI وتكامل renet",
@@ -1020,10 +1022,13 @@
         "environment": "البيئة",
         "renet": "شبكة Renet",
         "subscription": "الاشتراك",
-        "virtualization": "المحاكاة الافتراضية"
+        "virtualization": "المحاكاة الافتراضية",
+        "tools": "الأدوات"
       },
       "subscriptionUnreachable": "تعذر الوصول إلى خادم الاشتراك",
-      "title": "أداة تشخيص Rediacc CLI"
+      "title": "أداة تشخيص Rediacc CLI",
+      "tofuInstallHint": "شغّل: rdc tools install tofu",
+      "rsyncInstallHint": "ثبّت rsync باستخدام مدير حزم النظام"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "تم إيقاف {{provider}}"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "تثبيت الأدوات المحلية التي يستخدمها rdc وعرضها",
+      "description": "يدير الأدوات المحلية التي يشغّلها rdc على هذا الجهاز. يقوم `rdc tools install tofu` بتنزيل إصدار OpenTofu المحدد، ويطابق قيمة SHA-256 الخاصة به مع المجموع الاختباري المضمّن في rdc قبل فك الضغط، ثم يضع الملف التنفيذي في مجلد أدوات rdc. ويعرض `rdc tools list` كل أداة مع إصدارها ومكان العثور عليها.",
+      "install": {
+        "descriptionShort": "تثبيت أداة بإصدار محدد وتم التحقق منها بالمجموع الاختباري",
+        "description": "ينزّل إصدار OpenTofu المحدد في نسخة rdc هذه، ويتحقق من مجموعه الاختباري SHA-256، ثم يثبّته في مجلد أدوات rdc. إذا لم يتطابق المجموع الاختباري يُحذف الملف المنزَّل ولا يُثبَّت أي شيء. لا يثبّت rdc أداة Terraform أبدًا، وإن كانت موجودة في PATH فتُستخدم كما هي.",
+        "argTool": "الأداة المراد تثبيتها (tofu)",
+        "optionForce": "إعادة التثبيت حتى لو كان الإصدار المحدد موجودًا",
+        "downloading": "جارٍ تنزيل OpenTofu {{version}} لـ {{platform}}...",
+        "installed": "تم تثبيت OpenTofu {{version}} في {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} مثبّت بالفعل في {{path}}"
+      },
+      "list": {
+        "descriptionShort": "عرض الأدوات المثبّتة وإصداراتها ومصادرها",
+        "description": "يعرض محرك التجهيز الذي سيشغّله rdc (OpenTofu أو Terraform) وكل إصدار من OpenTofu في مجلد أدوات rdc، مع الإصدار والمصدر والمسار.",
+        "empty": "لم يُعثر على OpenTofu أو Terraform. ثبّت OpenTofu بالأمر: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "المتغير REDIACC_TOFU",
+        "rdc": "مثبّت بواسطة rdc",
+        "path": "مسار PATH للنظام"
+      },
+      "errors": {
+        "unknownTool": "أداة غير معروفة \"{{tool}}\". الأدوات المتاحة: {{available}}",
+        "unsupportedPlatform": "لا يوجد إصدار محدد من OpenTofu للمنصة {{platform}}/{{arch}}",
+        "insecureUrl": "تم رفض التنزيل من عنوان لا يستخدم HTTPS: {{url}}",
+        "checksumMismatch": "المجموع الاختباري لـ {{url}} غير مطابق: المتوقع {{expected}}، والفعلي {{actual}}. تم حذف الملف المنزَّل ولم يُثبَّت أي شيء.",
+        "badArchive": "لا يمكن استخدام الأرشيف المنزَّل: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "مزامنة الملفات",
       "term": "وصول طرفية SSH",
       "update": "تحديثات سطر الأوامر",
-      "vscode": "تكامل VS Code"
+      "vscode": "تكامل VS Code",
+      "tools": "الأدوات المحلية"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "يوجد بالفعل مستودع باسم {{name}}. مرّر --as <name> للرفع باسم آخر.",
       "localSha256Mismatch": "لم تعد {{image}} تطابق قيمة sha256 المسجّلة عند تنزيلها (المتوقع {{expected}}، الفعلي {{actual}}). نزّلها من جديد، أو مرّر --skip-verify لإرسالها على أي حال.",
       "registerFailed": "وُضعت الصورة على {{machine}} باسم {{guid}}، لكن تسجيلها في الإعداد فشل: {{error}}. للعثور على الصورة غير المسجّلة استخدم: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofu غير مثبّت. ثبّته بالأمر: rdc tools install tofu",
+      "belowFloor": "{{engine}} {{version}} في {{path}} أقدم من الحد الأدنى للإصدار {{floor}}. ثبّت إصدار OpenTofu المحدد بالأمر: rdc tools install tofu",
+      "overrideUnusable": "يشير REDIACC_TOFU إلى {{path}}، لكنه لا يعمل بوصفه OpenTofu أو Terraform. صحّح المتغير أو احذفه، أو ثبّت إصدار OpenTofu المحدد بالأمر: rdc tools install tofu"
     }
   },
   "help": {

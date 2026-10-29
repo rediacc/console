@@ -17,6 +17,7 @@ import { registerServeCommand } from './commands/serve.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerTermCommands } from './commands/term.js';
+import { registerToolsCommands } from './commands/tools.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
@@ -377,6 +378,7 @@ export function createCli(): Command {
   registerClusterCommands(cli);
   registerTermCommands(cli);
   registerVSCodeCommands(cli);
+  registerToolsCommands(cli);
   registerUpdateCommand(cli);
   registerOpsCommands(cli);
   registerDatastoreCommands(cli);

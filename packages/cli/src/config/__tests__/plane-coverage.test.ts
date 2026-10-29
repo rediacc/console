@@ -131,8 +131,10 @@ describe('command plane coverage', () => {
     //
     // 190 -> 191, machine 102 -> 103: `job wait` (PLAN-detached-jobs J5) resumes following a job on its machine, so it is machine-plane like its `job` siblings.
     // 191 -> 193, machine 103 -> 105: `backup download` and `backup upload` (PLAN-backup-local-image C1) hold a renet session on the machine, so they keep the backup domain's machine plane; the contract keeps them off the proxy as client-side transfers.
-    expect(COMMANDS.length).toBe(193);
-    expect(counts).toEqual({ config: 57, machine: 105, other: 31 });
+    //
+    // 193 -> 195, other 31 -> 33: `tools install` and `tools list` (PLAN-cli-tofu-toolchain T3) install and list local binaries on the workstation, never a machine.
+    expect(COMMANDS.length).toBe(195);
+    expect(counts).toEqual({ config: 57, machine: 105, other: 33 });
   });
 
   it('records the interactive commands', () => {

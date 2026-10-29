@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { DEFAULTS } from '@rediacc/shared/config';
 import {
@@ -10,6 +10,7 @@ import { isSubscriptionActive, type SubscriptionStatus } from '@rediacc/shared/s
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { getRsyncPath } from '../remote/msys2/paths.js';
 import { fetchSubscriptionLicenseReport } from '../services/account/license.js';
 import {
   getSubscriptionServerUrl,
@@ -22,32 +23,30 @@ import {
   verifyEmbeddedRenetIntegrity,
 } from '../services/core/embedded-assets.js';
 import { outputService, terminalWidth } from '../services/core/output.js';
+import {
+  describeTofuFailure,
+  resolveTofu,
+  type TofuResolution,
+} from '../services/tofu/executor.js';
+import { findOnPath, type PathLookupOptions } from '../services/tools/path-lookup.js';
 import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { getInstallMethod, isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
+import { toolSourceLabel } from './tools.js';
 
-type CheckStatus = 'ok' | 'warn' | 'fail';
+export type CheckStatus = 'ok' | 'warn' | 'fail';
 
-interface CheckResult {
+export interface CheckResult {
   name: string;
   value: string;
   status: CheckStatus;
   hint?: string;
 }
 
-interface CheckSection {
+export interface CheckSection {
   title: string;
   checks: CheckResult[];
-}
-
-function commandExists(cmd: string): boolean {
-  try {
-    execSync(`which ${cmd}`, { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function runCommand(cmd: string, args: string[]): { ok: boolean; output: string } {
@@ -66,12 +65,7 @@ function resolveRenetPath(contextRenetPath?: string): string | null {
   if (contextRenetPath && contextRenetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
     if (existsSync(contextRenetPath)) return contextRenetPath;
   }
-  try {
-    const whichCmd = process.platform === 'win32' ? 'where.exe renet' : 'which renet';
-    return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
-  } catch {
-    return null;
-  }
+  return findOnPath('renet');
 }
 
 function checkToolVersion(
@@ -81,10 +75,11 @@ function checkToolVersion(
   nameKey: string,
   hint: string
 ): CheckResult {
-  if (!commandExists(cmd)) {
+  const resolved = findOnPath(cmd);
+  if (!resolved) {
     return { name: t(nameKey), value: t('commands.doctor.notInstalled'), status: 'warn', hint };
   }
-  const result = runCommand(cmd, args);
+  const result = runCommand(resolved, args);
   const version = result.ok ? extractVersion(result.output) : 'unknown';
   return { name: t(nameKey), value: version, status: 'ok' };
 }
@@ -135,6 +130,64 @@ function checkEnvironment(): CheckSection {
   }
 
   return { title: t('commands.doctor.sections.environment'), checks };
+}
+
+export interface ToolsCheckDeps {
+  resolveTofu?: () => Promise<TofuResolution>;
+  /** PATH lookup options for rsync (env, platform); the real environment by default. */
+  pathLookup?: PathLookupOptions;
+  /** Output of `rsync --version`, or null when it does not run. */
+  rsyncVersion?: (path: string) => string | null;
+}
+
+/** A local rsync: the MSYS2 one rdc's sync uses on Windows, else the first on PATH. */
+function findRsync(lookup?: PathLookupOptions): string | null {
+  if (!lookup && process.platform === 'win32') {
+    const msys = getRsyncPath();
+    if (msys !== 'rsync' && existsSync(msys)) return msys;
+  }
+  return findOnPath('rsync', lookup);
+}
+
+function defaultRsyncVersion(path: string): string | null {
+  const result = runCommand(path, ['--version']);
+  return result.ok ? result.output : null;
+}
+
+async function checkTofu(resolve: () => Promise<TofuResolution>): Promise<CheckResult> {
+  const name = t('commands.doctor.checks.tofu');
+  const hint = t('commands.doctor.tofuInstallHint');
+  const result = await resolve();
+  if (result.ok) {
+    const { engine } = result;
+    const label = engine.engine === 'tofu' ? engine.version : `terraform ${engine.version}`;
+    return { name, value: `${label} (${toolSourceLabel(engine.source)})`, status: 'ok' };
+  }
+  if (result.reason === 'missing') {
+    return { name, value: t('commands.doctor.notInstalled'), status: 'warn', hint };
+  }
+  return { name, value: describeTofuFailure(result), status: 'warn', hint };
+}
+
+/** Local tools rdc runs itself: the provisioning engine and rsync. */
+export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSection> {
+  const checks: CheckResult[] = [await checkTofu(deps.resolveTofu ?? (() => resolveTofu()))];
+
+  const rsyncName = t('commands.doctor.checks.rsync');
+  const rsyncPath = findRsync(deps.pathLookup);
+  if (rsyncPath) {
+    const out = (deps.rsyncVersion ?? defaultRsyncVersion)(rsyncPath);
+    const version = out ? (/version\s+(\S+)/.exec(out)?.[1] ?? 'unknown') : 'unknown';
+    checks.push({ name: rsyncName, value: version, status: 'ok' });
+  } else {
+    checks.push({
+      name: rsyncName,
+      value: t('commands.doctor.notInstalled'),
+      status: 'warn',
+      hint: t('commands.doctor.rsyncInstallHint'),
+    });
+  }
+  return { title: t('commands.doctor.sections.tools'), checks };
 }
 
 function checkRenetBinary(checks: CheckResult[], renetPath: string | null): void {
@@ -512,6 +565,7 @@ export function registerDoctorCommand(program: Command): void {
       const outputFormat = (options.output ?? program.opts().output) as OutputFormat | undefined;
       const sections: CheckSection[] = [
         checkEnvironment(),
+        await checkTools(),
         await checkRenet(),
         await checkConfiguration(),
         await checkSubscription(),

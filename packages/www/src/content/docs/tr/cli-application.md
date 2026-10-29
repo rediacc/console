@@ -7,7 +7,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "aa3830de153ca18e"
+sourceHash: "f2024793579921d1"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3115,13 +3115,43 @@ rdc doctor
 
 ---
 
+<a id="cli-local-group-tools"></a>
+## 16. {{t:cli.docs.sectionTitles.tools}}
+
+{{t:cli.commands.tools.description}}
+
+<a id="cli-local-tools-install"></a>
+### 16.1 install
+
+{{t:cli.commands.tools.install.description}}
+
+```bash
+rdc tools install <tool> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--force` | {{t:cli.commands.tools.install.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-tools-list"></a>
+### 16.2 list
+
+{{t:cli.commands.tools.list.description}}
+
+```bash
+rdc tools list
+```
+
+---
+
 <a id="cli-local-group-ops"></a>
-## 16. {{t:cli.docs.sectionTitles.ops}}
+## 17. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 16.1 up
+### 17.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -3142,7 +3172,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 16.2 down
+### 17.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -3157,7 +3187,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 16.3 status
+### 17.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -3171,7 +3201,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 16.4 ssh
+### 17.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -3188,7 +3218,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 16.5 setup
+### 17.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -3202,7 +3232,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 16.6 check
+### 17.6 check
 
 {{t:cli.commands.ops.check.description}}
 
@@ -3213,7 +3243,7 @@ rdc ops check
 ---
 
 <a id="cli-local-group-serve"></a>
-## 17. {{t:cli.docs.sectionTitles.serve}}
+## 18. {{t:cli.docs.sectionTitles.serve}}
 
 {{t:cli.commands.serve.description}}
 

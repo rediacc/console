@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "マシンスロット",
         "subscriptionRepoLicenses": "リポジトリライセンス",
         "subscriptionStatus": "ステータス",
-        "subscriptionToken": "トークン"
+        "subscriptionToken": "トークン",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "CLI環境とrenet統合を診断",
       "descriptionShort": "CLI環境とrenet統合を診断",
@@ -1020,10 +1022,13 @@
         "environment": "環境",
         "renet": "Renetネットワーク",
         "subscription": "サブスクリプション",
-        "virtualization": "仮想化"
+        "virtualization": "仮想化",
+        "tools": "ツール"
       },
       "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
-      "title": "Rediacc CLI 診断ツール"
+      "title": "Rediacc CLI 診断ツール",
+      "tofuInstallHint": "実行: rdc tools install tofu",
+      "rsyncInstallHint": "システムのパッケージマネージャーでrsyncをインストールしてください"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} を停止しました"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "rdcが使うローカルツールのインストールと一覧表示",
+      "description": "このマシンでrdcが実行するローカルツールを管理します。`rdc tools install tofu` は固定されたOpenTofuリリースをダウンロードし、展開する前にrdcに組み込まれたチェックサムとSHA-256を照合して、バイナリをrdcのツールディレクトリに配置します。`rdc tools list` は各ツールのバージョンと検出元を表示します。",
+      "install": {
+        "descriptionShort": "固定されチェックサム検証済みのツールをインストール",
+        "description": "このrdcビルドに固定されたOpenTofuリリースをダウンロードし、SHA-256チェックサムを検証してからrdcのツールディレクトリにインストールします。チェックサムが一致しない場合はダウンロードを削除し、何もインストールしません。Terraformは決してインストールせず、PATH上にあるものはそのまま使います。",
+        "argTool": "インストールするツール (tofu)",
+        "optionForce": "固定バージョンがすでにあっても再インストールする",
+        "downloading": "{{platform}} 向けのOpenTofu {{version}}をダウンロード中...",
+        "installed": "OpenTofu {{version}}を {{path}} にインストールしました",
+        "alreadyInstalled": "OpenTofu {{version}}はすでに {{path}} にインストールされています"
+      },
+      "list": {
+        "descriptionShort": "インストール済みツールとバージョン、入手元を表示",
+        "description": "rdcが実行するプロビジョニングエンジン(OpenTofuまたはTerraform)と、rdcのツールディレクトリにあるすべてのOpenTofuバージョンを、バージョン・入手元・パスとともに一覧表示します。",
+        "empty": "OpenTofuもTerraformも見つかりません。次のコマンドでOpenTofuをインストールしてください: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "REDIACC_TOFU 変数",
+        "rdc": "rdcがインストール",
+        "path": "システムのPATH"
+      },
+      "errors": {
+        "unknownTool": "不明なツール「{{tool}}」です。利用可能なツール: {{available}}",
+        "unsupportedPlatform": "{{platform}}/{{arch}} 向けの固定されたOpenTofuビルドはありません",
+        "insecureUrl": "HTTPSでないURLからのダウンロードを拒否しました: {{url}}",
+        "checksumMismatch": "{{url}} のチェックサムが一致しません。期待値 {{expected}}、実際 {{actual}}。ダウンロードを削除し、何もインストールしていません。",
+        "badArchive": "ダウンロードしたアーカイブは使用できません: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "ファイル同期",
       "term": "SSHターミナルアクセス",
       "update": "CLIアップデート",
-      "vscode": "VS Code統合"
+      "vscode": "VS Code統合",
+      "tools": "ローカルツール"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "{{name}} という名前のリポジトリは既に存在します。別の名前でアップロードするには --as <name> を指定してください。",
       "localSha256Mismatch": "{{image}} がダウンロード時に記録した sha256 と一致しなくなりました（期待値 {{expected}}、実際 {{actual}}）。再ダウンロードするか、そのまま送信するには --skip-verify を指定してください。",
       "registerFailed": "イメージは {{machine}} に {{guid}} として配置されましたが、設定への登録に失敗しました: {{error}}。未登録のイメージは次のコマンドで確認できます: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofuがインストールされていません。次のコマンドでインストールしてください: rdc tools install tofu",
+      "belowFloor": "{{path}} の{{engine}} {{version}}は最低バージョン {{floor}} より古いです。次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU は {{path}} を指していますが、OpenTofuとしてもTerraformとしても実行できません。変数を修正または削除するか、次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu"
     }
   },
   "help": {

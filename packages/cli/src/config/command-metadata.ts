@@ -494,6 +494,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo sync status': {
     mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
   },
+  // Local workstation tools (PLAN-cli-tofu-toolchain): they install and list binaries on the host running rdc, not on a machine.
+  'tools install': {
+    mcpExcludeReason: 'Installs a local binary on the MCP host. Run it from the CLI.',
+  },
+  'tools list': {
+    mcpExcludeReason: 'Lists local binaries on the MCP host. Run it from the CLI.',
+  },
   // Client-side image transfers (PLAN-backup-local-image): same exclusion and grand guard as repo sync download/upload.
   'backup download': {
     grandGuard: true,

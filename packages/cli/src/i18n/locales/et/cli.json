@@ -1005,7 +1005,9 @@
         "subscriptionMachineSlots": "Masinapaigad",
         "subscriptionRepoLicenses": "Repositooriumi litsentsid",
         "subscriptionStatus": "Olek",
-        "subscriptionToken": "Token"
+        "subscriptionToken": "Token",
+        "tofu": "OpenTofu",
+        "rsync": "rsync"
       },
       "description": "Käivitab diagnostikakontrollid CLI keskkonnas: Node.js versioon, renet-i binaarfaili kättesaadavus, konfiguratsioonifaili kehtivus, SSH-võtme olek ja võrguühenduvus. Väljastab struktureeritud tervisearuande läbitud/ebaõnnestunud näitajatega.",
       "descriptionShort": "Diagnoosib CLI keskkonda ja renet-i integratsiooni",
@@ -1020,10 +1022,13 @@
         "environment": "Keskkond",
         "renet": "Renet",
         "subscription": "Tellimus",
-        "virtualization": "Virtualiseerimine"
+        "virtualization": "Virtualiseerimine",
+        "tools": "Tööriistad"
       },
       "subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
-      "title": "Rediacc CLI diagnostika"
+      "title": "Rediacc CLI diagnostika",
+      "tofuInstallHint": "Käivita: rdc tools install tofu",
+      "rsyncInstallHint": "Paigalda rsync süsteemi paketihalduriga"
     },
     "job": {
       "cancel": {
@@ -2474,6 +2479,36 @@
           "stopped": "{{provider}} peatatud"
         }
       }
+    },
+    "tools": {
+      "descriptionShort": "rdc kasutatavate kohalike tööriistade paigaldamine ja loend",
+      "description": "Haldab kohalikke tööriistu, mida rdc selles masinas käivitab. `rdc tools install tofu` laadib alla kinnitatud OpenTofu väljalaske, võrdleb enne lahtipakkimist selle SHA-256 väärtust rdc-sse sisseehitatud kontrollsummaga ja paigutab binaarfaili rdc tööriistade kataloogi. `rdc tools list` näitab iga tööriista koos versiooni ja leiukohaga.",
+      "install": {
+        "descriptionShort": "Paigalda kinnitatud ja kontrollsummaga kontrollitud tööriist",
+        "description": "Laadib alla selles rdc järgus kinnitatud OpenTofu väljalaske, kontrollib selle SHA-256 kontrollsummat ja paigaldab selle rdc tööriistade kataloogi. Kui kontrollsumma ei klapi, kustutatakse allalaaditud fail ja midagi ei paigaldata. Terraformi ei paigaldata kunagi; kui see on juba PATH-is olemas, kasutatakse seda nii, nagu see on.",
+        "argTool": "Paigaldatav tööriist (tofu)",
+        "optionForce": "Paigalda uuesti ka siis, kui kinnitatud versioon on juba olemas",
+        "downloading": "OpenTofu {{version}} allalaadimine platvormile {{platform}}...",
+        "installed": "OpenTofu {{version}} paigaldati asukohta {{path}}",
+        "alreadyInstalled": "OpenTofu {{version}} on juba paigaldatud asukohta {{path}}"
+      },
+      "list": {
+        "descriptionShort": "Näita paigaldatud tööriistu, nende versioone ja allikaid",
+        "description": "Loetleb ettevalmistusmootori, mida rdc käivitaks (OpenTofu või Terraform), ja kõik rdc tööriistade kataloogis olevad OpenTofu versioonid koos versiooni, allika ja asukohaga.",
+        "empty": "OpenTofut ega Terraformi ei leitud. Paigalda OpenTofu käsuga: rdc tools install tofu"
+      },
+      "sources": {
+        "env": "muutuja REDIACC_TOFU",
+        "rdc": "paigaldas rdc",
+        "path": "süsteemi PATH"
+      },
+      "errors": {
+        "unknownTool": "Tundmatu tööriist „{{tool}}“. Saadaolevad tööriistad: {{available}}",
+        "unsupportedPlatform": "Platvormile {{platform}}/{{arch}} pole kinnitatud OpenTofu järku",
+        "insecureUrl": "Allalaadimisest HTTPS-ita aadressilt keelduti: {{url}}",
+        "checksumMismatch": "Faili {{url}} kontrollsumma ei klapi: oodati {{expected}}, saadi {{actual}}. Allalaaditud fail kustutati ja midagi ei paigaldatud.",
+        "badArchive": "Allalaaditud arhiivi ei saa kasutada: {{reason}}"
+      }
     }
   },
   "docs": {
@@ -2540,7 +2575,8 @@
       "sync": "Failide sünkroonimine",
       "term": "SSH-terminali juurdepääs",
       "update": "CLI uuendused",
-      "vscode": "VS Code'i integratsioon"
+      "vscode": "VS Code'i integratsioon",
+      "tools": "Kohalikud tööriistad"
     },
     "supplements": {
       "config": {
@@ -2781,6 +2817,11 @@
       "nameTaken": "Hoidla nimega {{name}} on juba olemas. Anna --as <name>, et laadida see üles teise nime all.",
       "localSha256Mismatch": "{{image}} ei klapi enam allalaadimisel salvestatud sha256-ga (oodati {{expected}}, saadi {{actual}}). Laadi see uuesti alla või anna --skip-verify, et see siiski saata.",
       "registerFailed": "Tõmmis paigutati masinasse {{machine}} kui {{guid}}, kuid selle registreerimine konfiguratsioonis ebaõnnestus: {{error}}. Registreerimata tõmmise leiad käsuga: rdc machine prune {{machine}} --orphaned-repos --dry-run"
+    },
+    "tofu": {
+      "notInstalled": "OpenTofu pole paigaldatud. Paigalda see käsuga: rdc tools install tofu",
+      "belowFloor": "{{engine}} {{version}} asukohas {{path}} on vanem kui miinimumversioon {{floor}}. Paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu",
+      "overrideUnusable": "REDIACC_TOFU osutab failile {{path}}, mis ei käivitu ei OpenTofu ega Terraformina. Paranda või eemalda muutuja või paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu"
     }
   },
   "help": {

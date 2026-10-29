@@ -5663,6 +5663,42 @@
       ]
     },
     {
+      "name": "tools",
+      "descriptionKey": "commands.tools.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "install",
+          "descriptionKey": "commands.tools.install.description",
+          "options": [
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.tools.install.optionForce",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "tool",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.tools.list.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "update",
       "descriptionKey": "commands.update.description",
       "options": [
