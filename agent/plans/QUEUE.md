@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 35 plans done, 489 of 651 boxes done (75%).
+Promoted: 3 of 36 plans done, 489 of 665 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -119,6 +119,7 @@ Promoted: 3 of 35 plans done, 489 of 651 boxes done (75%).
 | 33 | PLAN-detached-jobs.md | 0/18 | 18 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 0/11 | 11 open |
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 0/6 | 6 open |
+| 36 | PLAN-backup-local-image.md | 0/14 | 14 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -156,6 +157,7 @@ Promoted: 3 of 35 plans done, 489 of 651 boxes done (75%).
 33. agent/plans/PLAN-detached-jobs.md -- operator 2026-10-29 ASKED (all four Recommended) + "Remember we must promote all the new plans!": long verbs always run as machine jobs, proxy returns the ticket and the client polls, a ticket store per config, MCP returns the ticket
 34. agent/plans/PLAN-snapshot-read-io-cap.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; hostinger snapshot read/hash phase hit load 11.41 under the 100 Mbps upload cap; a read token bucket and hash worker count bound it before the bulk seed resumes
 35. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; 6.58 GB of chunks a killed run uploaded are in R2 but not in backup usage; bill them at commit, reconcile verb, repair hostinger
+36. agent/plans/PLAN-backup-local-image.md -- operator 2026-10-29 ASKED (all four Recommended) + "you are promoting the new plans, right?": rdc backup download/upload of the encrypted repo image to a local path or external drive, in-place weekly update, fresh snapshot per run, prune fixes
 
 ## Generated
 
@@ -167,12 +169,11 @@ Promoted: 3 of 35 plans done, 489 of 651 boxes done (75%).
 5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 6. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (12 of 14 boxes ticked)
 7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-8. agent/plans/PLAN-backup-local-image.md -- P1, approved, not started
-9. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-10. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-11. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
-12. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-13. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-15. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+8. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+9. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+10. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, not started
+11. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+12. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+13. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+14. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
