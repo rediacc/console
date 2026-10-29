@@ -776,6 +776,8 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'job logs': SPOOL,
   'job status': SPOOL,
   'job wait': SPOOL,
+  'backup download': LOCAL_SYNC,
+  'backup upload': LOCAL_SYNC,
   'repo sync download': LOCAL_SYNC,
   'repo sync status': LOCAL_SYNC,
   'repo sync upload': LOCAL_SYNC,

@@ -85,6 +85,10 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   // Registered as a dry-run download: it still shells out to a client-side rsync that diffs against the operator's local tree.
   'repo sync status':
     'Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.',
+  'backup download':
+    'Copies the repository image to a local directory with a client-side rsync; a remote executor would write the image onto its own disk. Run it without --proxy.',
+  'backup upload':
+    'Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.',
 
   // ── Local effect ──────────────────────────────────────────────────────
   'machine infra cert pull':

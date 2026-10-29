@@ -1817,6 +1817,144 @@
           "subcommands": []
         },
         {
+          "name": "download",
+          "descriptionKey": "commands.backup.download.description",
+          "options": [
+            {
+              "flags": "--to <dir>",
+              "descriptionKey": "commands.backup.download.optionTo",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.backup.download.optionAll",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--include-forks",
+              "descriptionKey": "commands.backup.download.optionIncludeForks",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bwlimit <rate>",
+              "descriptionKey": "commands.backup.download.optionBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--checkpoint",
+              "descriptionKey": "commands.backup.download.optionCheckpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--retries <n>",
+              "descriptionKey": "commands.backup.download.optionRetries",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-verify",
+              "descriptionKey": "commands.backup.download.optionSkipVerify",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-space-check",
+              "descriptionKey": "commands.backup.download.optionSkipSpaceCheck",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "refs",
+              "required": false,
+              "variadic": true,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "upload",
+          "descriptionKey": "commands.backup.upload.description",
+          "options": [
+            {
+              "flags": "--to <machine>",
+              "descriptionKey": "commands.backup.upload.optionTo",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--as <name>",
+              "descriptionKey": "commands.backup.upload.optionAs",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--datastore <name>",
+              "descriptionKey": "commands.backup.upload.optionDatastore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from-repo <name>",
+              "descriptionKey": "commands.backup.upload.optionFromRepo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bwlimit <rate>",
+              "descriptionKey": "commands.backup.download.optionBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--retries <n>",
+              "descriptionKey": "commands.backup.download.optionRetries",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--up",
+              "descriptionKey": "commands.backup.upload.optionUp",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-verify",
+              "descriptionKey": "commands.backup.upload.optionSkipVerify",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "image-file",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "restore",
           "descriptionKey": "commands.backup.restore.description",
           "options": [

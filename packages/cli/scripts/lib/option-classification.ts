@@ -66,6 +66,7 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   'repo push --to': ['machine'],
   'repo pull --from': ['machine'],
   'repo migrate --to': ['machine', 'cluster'],
+  'backup upload --to': ['machine'],
   'cluster fork --to': ['cluster'],
   'cluster migrate --to': ['cluster'],
   'cluster rehearse --on': ['cluster'],
@@ -102,6 +103,10 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   'backup restore --to': {
     waived:
       'a directory path on the target machine that receives the restored files, not a repository, machine or other contract resource',
+  },
+  'backup download --to': {
+    waived:
+      'a local directory or external drive on the operator machine that receives the image, not a repository, machine or other contract resource',
   },
   'repo merge --base': {
     waived:

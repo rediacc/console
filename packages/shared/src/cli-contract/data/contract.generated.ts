@@ -181,6 +181,145 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "download"
+      ],
+      "pathKey": "backup download",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.download.description",
+      "label": "Copy repository images from a machine to a local directory or an external drive. Each run takes a fresh snapshot held only while the session lives, updates the local copy in place by rsync delta, resumes after an interruption, and verifies the result by sha256.",
+      "options": [
+        {
+          "flags": "--to <dir>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.backup.download.optionTo",
+          "label": "Existing, writable directory that receives <machine>/<name>.<tag>.img (never created)"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionAll",
+          "label": "Copy every grand repository placed on the machine named by -m"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--include-forks",
+          "long": "include-forks",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionIncludeForks",
+          "label": "With --all, also copy forks"
+        },
+        {
+          "flags": "--bwlimit <rate>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionBwlimit",
+          "label": "Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)"
+        },
+        {
+          "flags": "--checkpoint",
+          "long": "checkpoint",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionCheckpoint",
+          "label": "Checkpoint and freeze the repository before the snapshot (hot backup)"
+        },
+        {
+          "flags": "--retries <n>",
+          "long": "retries",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionRetries",
+          "label": "In-run retries after a network failure (default: 3)"
+        },
+        {
+          "flags": "--skip-verify",
+          "long": "skip-verify",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionSkipVerify",
+          "label": "Skip the sha256 comparison after rsync; rsync's own checksum still runs"
+        },
+        {
+          "flags": "--skip-space-check",
+          "long": "skip-space-check",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionSkipSpaceCheck",
+          "label": "Warn instead of refusing when the target may not have enough free space"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "refs",
+          "kind": "plain",
+          "required": false,
+          "variadic": true,
+          "descriptionKey": "commands.backup.download.argRefs",
+          "label": "Repositories to copy (name, name:tag, optionally @machine)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Copies the repository image to a local directory with a client-side rsync; a remote executor would write the image onto its own disk. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
         "list"
       ],
       "pathKey": "backup list",
@@ -1640,6 +1779,147 @@ export const CLI_CONTRACT: CliContract = {
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
       "detachable": false,
       "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "upload"
+      ],
+      "pathKey": "backup upload",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.upload.description",
+      "label": "Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.",
+      "options": [
+        {
+          "flags": "--to <machine>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.backup.upload.optionTo",
+          "label": "Machine that receives the image"
+        },
+        {
+          "flags": "--as <name>",
+          "long": "as",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionAs",
+          "label": "Name for the new repository (default: the image's repository name)"
+        },
+        {
+          "flags": "--datastore <name>",
+          "long": "datastore",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "datastore"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.backup.upload.optionDatastore",
+          "label": "Place the image on this named datastore instead of the machine's default"
+        },
+        {
+          "flags": "--from-repo <name>",
+          "long": "from-repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionFromRepo",
+          "label": "Config repository that supplies the credential and lineage when the state file is lost or names an unknown repository"
+        },
+        {
+          "flags": "--bwlimit <rate>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionBwlimit",
+          "label": "Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)"
+        },
+        {
+          "flags": "--retries <n>",
+          "long": "retries",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionRetries",
+          "label": "In-run retries after a network failure (default: 3)"
+        },
+        {
+          "flags": "--up",
+          "long": "up",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionUp",
+          "label": "Start the repository once it is registered"
+        },
+        {
+          "flags": "--skip-verify",
+          "long": "skip-verify",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionSkipVerify",
+          "label": "Skip comparing the local image with the sha256 recorded when it was downloaded"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "image-file",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.backup.upload.argImage",
+          "label": "Local image file (<name>.<tag>.img) with its .state.json beside it"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null

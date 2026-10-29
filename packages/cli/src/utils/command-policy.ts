@@ -79,6 +79,9 @@ export const CMD = {
   VSCODE_CONNECT: 'vscode connect',
   RUN: 'run',
   BACKUP_RESTORE: 'backup restore',
+  // Client-side image transfers (PLAN-backup-local-image): download only reads a reflink snapshot, upload registers a NEW repo behind the agent create-gate.
+  BACKUP_DOWNLOAD: 'backup download',
+  BACKUP_UPLOAD: 'backup upload',
   CLUSTER_CREATE: 'cluster create',
   CLUSTER_DESTROY: 'cluster destroy',
   CLUSTER_SCALE: 'cluster scale',

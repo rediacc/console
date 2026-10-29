@@ -49,6 +49,19 @@ export interface SFTPClientConfig {
 }
 
 /** A hostname's IPv6 (AAAA) address, or undefined when it has none. */
+/** A live exec channel with stdin held open, returned by `SFTPClient.execSession`. */
+export interface ExecSessionHandle {
+  /** Write one line to the remote stdin (a trailing newline is added when missing). */
+  write(line: string): void;
+  /** End the remote stdin (EOF). */
+  end(): void;
+  /** The next stdout line, or null once the channel has closed and no line is buffered. */
+  nextLine(): Promise<string | null>;
+  /** Exit code on close; null when the channel closed without one. */
+  exit: Promise<number | null>;
+  isClosed(): boolean;
+}
+
 export type Ipv6Resolver = (hostname: string) => Promise<string | undefined>;
 
 const resolveAaaa: Ipv6Resolver = async (hostname) => {
@@ -590,6 +603,79 @@ export class SFTPClient {
 
         channel.on('error', (channelErr: Error) => {
           reject(new Error(`Channel error: ${channelErr.message}`));
+        });
+      });
+    });
+  }
+
+  /**
+   * Open an exec channel whose stdin stays open, for a line protocol with a long-lived remote helper (`renet backup export|import`).
+   * Unlike execStreaming, stdin is NOT ended: the caller writes lines with `write` and ends the session with `end` (stdin EOF).
+   * stdout is split into lines; `nextLine` resolves with the next one, or null once the channel has closed and every buffered line was read.
+   * `exit` resolves with the exit code on close (null when the channel closed without one).
+   */
+  async execSession(
+    command: string,
+    options: { onStderr?: (data: Buffer) => void } = {}
+  ): Promise<ExecSessionHandle> {
+    if (!this.connected) {
+      throw new Error('SFTP client is not connected');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.ssh.exec(command, (err, channel) => {
+        if (err) {
+          reject(new Error(`Failed to execute command: ${err.message}`));
+          return;
+        }
+        const lines: string[] = [];
+        const waiters: ((line: string | null) => void)[] = [];
+        let partial = '';
+        let closed = false;
+        let resolveExit: (code: number | null) => void = () => undefined;
+        const exit = new Promise<number | null>((r) => {
+          resolveExit = r;
+        });
+        const push = (line: string | null): void => {
+          const waiter = waiters.shift();
+          if (waiter) waiter(line);
+          else if (line !== null) lines.push(line);
+        };
+        channel.on('data', (data: Buffer) => {
+          partial += data.toString();
+          let nl = partial.indexOf('\n');
+          while (nl >= 0) {
+            push(partial.slice(0, nl).replace(/\r$/, ''));
+            partial = partial.slice(nl + 1);
+            nl = partial.indexOf('\n');
+          }
+        });
+        channel.stderr.on('data', (data: Buffer) => options.onStderr?.(data));
+        channel.on('close', (code: number | null) => {
+          if (partial) push(partial);
+          partial = '';
+          closed = true;
+          while (waiters.length > 0) waiters.shift()?.(null);
+          resolveExit(typeof code === 'number' ? code : null);
+        });
+        channel.on('error', () => {
+          // A channel error is followed by close, which settles every waiter and the exit promise.
+        });
+        resolve({
+          write: (line: string) => {
+            if (!closed) channel.write(line.endsWith('\n') ? line : `${line}\n`);
+          },
+          end: () => {
+            if (!closed) channel.end();
+          },
+          nextLine: () => {
+            const line = lines.shift();
+            if (line !== undefined) return Promise.resolve(line);
+            if (closed) return Promise.resolve(null);
+            return new Promise<string | null>((r) => waiters.push(r));
+          },
+          exit,
+          isClosed: () => closed,
         });
       });
     });

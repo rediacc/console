@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "4b5627876e0d38ba"
+sourceHash: "9453cfb26c6be2b0"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2778,6 +2778,50 @@ rdc backup verify <repo-ref> [options]
 ```bash
 rdc backup snapshots delete <repo-ref> <snapshot-id>
 ```
+
+<a id="cli-local-backup-download"></a>
+### 8.16 download
+
+{{t:cli.commands.backup.download.description}}
+
+```bash
+rdc backup download [refs...] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--to <dir>` | {{t:cli.commands.backup.download.optionTo}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--all` | {{t:cli.commands.backup.download.optionAll}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--include-forks` | {{t:cli.commands.backup.download.optionIncludeForks}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <rate>` | {{t:cli.commands.backup.download.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--checkpoint` | {{t:cli.commands.backup.download.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--retries <n>` | {{t:cli.commands.backup.download.optionRetries}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-verify` | {{t:cli.commands.backup.download.optionSkipVerify}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-space-check` | {{t:cli.commands.backup.download.optionSkipSpaceCheck}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-upload"></a>
+### 8.17 upload
+
+{{t:cli.commands.backup.upload.description}}
+
+```bash
+rdc backup upload <image-file> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--to <machine>` | {{t:cli.commands.backup.upload.optionTo}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--as <name>` | {{t:cli.commands.backup.upload.optionAs}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--datastore <name>` | {{t:cli.commands.backup.upload.optionDatastore}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from-repo <name>` | {{t:cli.commands.backup.upload.optionFromRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <rate>` | {{t:cli.commands.backup.download.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--retries <n>` | {{t:cli.commands.backup.download.optionRetries}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--up` | {{t:cli.commands.backup.upload.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-verify` | {{t:cli.commands.backup.upload.optionSkipVerify}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 ---
 

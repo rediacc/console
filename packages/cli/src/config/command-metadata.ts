@@ -494,6 +494,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo sync status': {
     mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
   },
+  // Client-side image transfers (PLAN-backup-local-image): same exclusion and grand guard as repo sync download/upload.
+  'backup download': {
+    grandGuard: true,
+    mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
+  },
+  'backup upload': {
+    grandGuard: true,
+    mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
+  },
 
   'config list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },

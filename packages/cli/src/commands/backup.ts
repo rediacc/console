@@ -22,6 +22,7 @@ import { renderLocalExecutionFailure } from '../utils/local-execution-failures.j
 import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
+import { registerBackupImageCommands } from './backup-image.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
@@ -666,5 +667,6 @@ export function registerBackupCommands(program: Command): void {
   registerBackupOpsCommands(backup);
   registerBackupStorageCommands(backup);
   registerBackupList(backup);
+  registerBackupImageCommands(backup);
   registerBackupRestore(backup);
 }

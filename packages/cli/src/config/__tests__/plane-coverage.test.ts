@@ -130,8 +130,9 @@ describe('command plane coverage', () => {
     // 189 -> 190, other 30 -> 31: `backup reconcile` (PLAN-backup-meter-orphaned-chunks C1) is an accountServerFetch call that reconciles the backup ledger against the store, never a machine, so `other` like `backup usage`.
     //
     // 190 -> 191, machine 102 -> 103: `job wait` (PLAN-detached-jobs J5) resumes following a job on its machine, so it is machine-plane like its `job` siblings.
-    expect(COMMANDS.length).toBe(191);
-    expect(counts).toEqual({ config: 57, machine: 103, other: 31 });
+    // 191 -> 193, machine 103 -> 105: `backup download` and `backup upload` (PLAN-backup-local-image C1) hold a renet session on the machine, so they keep the backup domain's machine plane; the contract keeps them off the proxy as client-side transfers.
+    expect(COMMANDS.length).toBe(193);
+    expect(counts).toEqual({ config: 57, machine: 105, other: 31 });
   });
 
   it('records the interactive commands', () => {
@@ -181,7 +182,8 @@ describe('command plane coverage', () => {
     // 96 -> 97: `machine access push` is machine-plane and non-interactive; the contract excludes it from proxying (an executor never rewrites its own access).
     // 97 -> 98: `repo prune` is machine-plane and non-interactive (the `--offline` confirmation is a plain prompt, skipped by -y).
     // 98 -> 99: `job wait` (PLAN-detached-jobs J5) is machine-plane and non-interactive, like `job logs --follow`.
-    expect(machineNonInteractive.length).toBe(99);
+    // 99 -> 101: `backup download` and `backup upload` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local.
+    expect(machineNonInteractive.length).toBe(101);
   });
 
   it('plane and interactive entries all point at real commands', () => {
