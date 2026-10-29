@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Modalita controllo salute: esce con codice 2 se ci sono container non sani",
   "commands.machine.status.infrastructure": "Infrastruttura",
   "commands.machine.status.licenseBackupBlocked": "\nBACKUP BLOCCATI: {{repositoryGuid}} è stato rifiutato dal sistema di licenze dal {{at}} ({{reason}}). {{message}}\nI backup pianificati per questo repository non sono in esecuzione. Riemetti con: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} su {{repo}}, avviato {{startedAt}} da {{origin}}. Per seguirlo: {{attach}}",
+  "commands.machine.status.runningJobsSection": "Job (in corso o terminati nell'ultima ora)",
   "commands.machine.status.servicesAllStable": "Tutti i servizi sono stabili",
   "commands.machine.status.servicesUnstableFound": "{{count}} servizio/i instabile/i trovato/i",
   "commands.machine.status.stabilityCheck": "Modalita controllo stabilita: esce con codice 2 se ci sono servizi in errore/riavvio",

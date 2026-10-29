@@ -1355,7 +1355,9 @@
         "staleBinarySection": "过期的二进制文件",
         "staleBinaryWarning": "有 {{count}} 个 renet 进程仍在运行已被替换的二进制文件，在其单元重启前会一直使用旧代码。",
         "staleBackupSection": "滞后的备份",
-        "staleBackupWarning": "有 {{count}} 个仓库距上次备份已超过其计划间隔的两倍。"
+        "staleBackupWarning": "有 {{count}} 个仓库距上次备份已超过其计划间隔的两倍。",
+        "runningJobsRow": "{{id}} {{state}}:{{repo}} 上的 {{verb}},由 {{origin}} 于 {{startedAt}} 启动。跟踪:{{attach}}",
+        "runningJobsSection": "作业(运行中或最近一小时内结束)"
       },
       "gpu": {
         "descriptionShort": "查看机器的 GPU 和设备授权",

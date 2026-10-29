@@ -1355,7 +1355,9 @@
         "staleBinarySection": "Veraltete Binaries",
         "staleBinaryWarning": "{{count}} renet-Prozess(e) laufen noch mit einem ersetzten Binary und behalten den alten Code, bis ihre Units neu starten.",
         "staleBackupSection": "Überfällige Backups",
-        "staleBackupWarning": "Das letzte Backup von {{count}} Repository(s) liegt mehr als doppelt so lange zurück wie das Intervall ihres Zeitplans."
+        "staleBackupWarning": "Das letzte Backup von {{count}} Repository(s) liegt mehr als doppelt so lange zurück wie das Intervall ihres Zeitplans.",
+        "runningJobsRow": "{{id}} {{state}}: {{verb}} auf {{repo}}, gestartet {{startedAt}} von {{origin}}. Verfolgen: {{attach}}",
+        "runningJobsSection": "Jobs (laufend oder in der letzten Stunde beendet)"
       },
       "gpu": {
         "descriptionShort": "GPUs und Geräte-Freigaben einer Maschine anzeigen",

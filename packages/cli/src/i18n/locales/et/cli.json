@@ -1355,7 +1355,9 @@
         "staleBinarySection": "Aegunud binaarid",
         "staleBinaryWarning": "{{count}} renet-protsessi töötab endiselt asendatud binaariga ja kasutab vana koodi, kuni nende üksused taaskäivituvad.",
         "staleBackupSection": "Hilinenud varukoopiad",
-        "staleBackupWarning": "{{count}} hoidla viimasest varukoopiast on möödas üle kahe ajakava intervalli."
+        "staleBackupWarning": "{{count}} hoidla viimasest varukoopiast on möödas üle kahe ajakava intervalli.",
+        "runningJobsRow": "{{id}} {{state}}: {{verb}} hoidlas {{repo}}, käivitatud {{startedAt}}, käivitaja {{origin}}. Jälgimiseks: {{attach}}",
+        "runningJobsSection": "Tööd (käimas või viimase tunni jooksul lõppenud)"
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",

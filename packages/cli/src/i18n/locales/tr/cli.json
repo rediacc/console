@@ -1355,7 +1355,9 @@
         "staleBinarySection": "Eski İkili Dosyalar",
         "staleBinaryWarning": "{{count}} renet süreci hâlâ değiştirilmiş bir ikili dosyayla çalışıyor ve birimleri yeniden başlayana kadar eski kodu kullanıyor.",
         "staleBackupSection": "Gecikmiş Yedekler",
-        "staleBackupWarning": "{{count}} deponun son yedeği, zamanlama aralığının iki katından daha eski."
+        "staleBackupWarning": "{{count}} deponun son yedeği, zamanlama aralığının iki katından daha eski.",
+        "runningJobsRow": "{{id}} {{state}}: {{repo}} üzerinde {{verb}}, {{startedAt}} tarihinde {{origin}} tarafından başlatıldı. İzlemek için: {{attach}}",
+        "runningJobsSection": "İşler (çalışan veya son bir saat içinde biten)"
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",

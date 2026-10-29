@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Mode de vérification de santé - sort avec le code 2 si des conteneurs ne sont pas sains",
   "commands.machine.status.infrastructure": "Infrastructure",
   "commands.machine.status.licenseBackupBlocked": "\nSAUVEGARDES BLOQUÉES : {{repositoryGuid}} est refusé par le système de licences depuis {{at}} ({{reason}}). {{message}}\nLes sauvegardes planifiées pour ce dépôt ne s'exécutent pas. Réémettez avec : rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}} : {{verb}} sur {{repo}}, lancée {{startedAt}} par {{origin}}. Pour la suivre : {{attach}}",
+  "commands.machine.status.runningJobsSection": "Tâches (en cours ou terminées depuis moins d'une heure)",
   "commands.machine.status.servicesAllStable": "Tous les services sont stables",
   "commands.machine.status.servicesUnstableFound": "{{count}} service(s) instable(s) trouvé(s)",
   "commands.machine.status.stabilityCheck": "Mode de vérification de stabilité - sort avec le code 2 si des services échouent/redémarrent",

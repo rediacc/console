@@ -114,6 +114,7 @@ const KIND_FIXTURES: Record<string, unknown[]> = {
   stale_locks: ['.lock-guid-e'],
   stale_snapshots: ['.snapshot-f'],
   stale_restore_staging: ['.restore-guid-h'],
+  stale_backup_pull_staging: ['.guid-m'],
   stale_churn_probe_bases: ['.churn-probe-i'],
   stale_backup_anchors: ['.chunk-anchors/guid-k'],
   stale_backup_journals: ['default-guid-l.json'],

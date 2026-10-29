@@ -33,6 +33,8 @@ export interface DatastorePrunableResources {
   stale_snapshots?: string[] | null;
   // Reclaimable staging left by a killed `backup restore`.
   stale_restore_staging?: string[] | null;
+  // Staging a killed `backup pull` strands (repositories/.<guid>).
+  stale_backup_pull_staging?: string[] | null;
   stale_churn_probe_bases?: string[] | null;
   stale_backup_anchors?: string[] | null;
   stale_backup_journals?: string[] | null;
@@ -86,6 +88,7 @@ export function buildPrunePreviewRows(resources: DatastorePrunableResources): Pr
   };
   add('stale-snapshot', resources.stale_snapshots);
   add('restore-staging', resources.stale_restore_staging);
+  add('pull-staging', resources.stale_backup_pull_staging);
   add('churn-probe-base', resources.stale_churn_probe_bases);
   add('backup-anchor', resources.stale_backup_anchors);
   add('backup-journal', resources.stale_backup_journals);

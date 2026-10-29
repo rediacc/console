@@ -144,6 +144,8 @@ export interface BackupSnapshotParams {
   readBwlimit?: string;
   /** Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16 */
   hashParallelism?: number;
+  /** Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
 }
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */
@@ -1138,6 +1140,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_gc',
   'repository_gpu_grant',
   'repository_gpu_revoke',
   'repository_health',
@@ -1146,6 +1149,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_log',
   'repository_logs',
   'repository_merge',
+  'repository_migrate',
   'repository_mount',
   'repository_ownership',
   'repository_policy_get',
@@ -1964,6 +1968,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       hashParallelism: {
         type: 'int',
         help: 'Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota',
       },
     },
   },

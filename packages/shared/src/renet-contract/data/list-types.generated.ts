@@ -159,13 +159,41 @@ export interface RepositoryInfo {
   volume_status: string;
 }
 
+/** Marker written when licensing refuses a repo's backup */
+export interface LicenseBlockedBackup {
+  at: string;
+  code: string;
+  message: string;
+  reason: string;
+  repositoryGuid: string;
+  source: string;
+}
+
+/** One repo's result from the last unattended license renewal */
+export interface LicenseRenewal {
+  code?: string;
+  datastoreId?: string;
+  keyId: string;
+  message?: string;
+  newKeyId?: string;
+  newSequence?: number;
+  outcome: string;
+  overLimit: boolean;
+  repositoryGuid: string;
+}
+
 /** Per-repository license validation status */
 export interface LicenseStatusEntry {
+  blockedBackup?: LicenseBlockedBackup;
+  datastoreId?: string;
+  datastorePath?: string;
+  expiresAt?: string;
   grandGuid?: string;
   hardExpiresAt?: string;
   installed: boolean;
   issuedAt?: string;
   kind?: string;
+  lastRenewal?: LicenseRenewal;
   machineId?: string;
   message?: string;
   refreshRecommendedAt?: string;
@@ -241,13 +269,13 @@ export interface RepositoryStorageHealth {
 
 /** Datastore pool fill level and backup-snapshot pinning */
 export interface PoolStorageHealth {
-  active_backup_snapshots: number;
-  backup_snapshot_pinned_bytes: number;
-  backup_snapshot_pinned_human: string;
+  active_transfer_snapshots: number;
   free_bytes: number;
   free_human: string;
-  stale_backup_snapshots: number;
+  stale_transfer_snapshots: number;
   total_bytes: number;
+  transfer_pinned_bytes: number;
+  transfer_pinned_human: string;
   used_bytes: number;
   used_human: string;
   used_percent: number;
@@ -334,6 +362,13 @@ export interface JobInfo {
   state: string;
 }
 
+/** A renet process still running a replaced binary */
+export interface StaleProcess {
+  exe: string;
+  pid: number;
+  unit: string;
+}
+
 /** Complete machine status from 'renet list all --json' */
 export interface ListResult {
   backup_coverage?: BackupCoverage;
@@ -345,6 +380,7 @@ export interface ListResult {
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
   services?: ServicesResult;
+  stale_processes: StaleProcess[];
   storage_health?: StorageHealthResult;
   system?: SystemInfo;
   system_containers?: ContainersResult;

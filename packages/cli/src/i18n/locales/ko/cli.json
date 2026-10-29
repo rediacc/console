@@ -1355,7 +1355,9 @@
         "staleBinarySection": "오래된 바이너리",
         "staleBinaryWarning": "renet 프로세스 {{count}}개가 아직 교체된 바이너리로 실행 중이며, 유닛이 다시 시작될 때까지 이전 코드를 유지합니다.",
         "staleBackupSection": "지연된 백업",
-        "staleBackupWarning": "리포지토리 {{count}}개의 마지막 백업이 일정 간격의 두 배 이상 지났습니다."
+        "staleBackupWarning": "리포지토리 {{count}}개의 마지막 백업이 일정 간격의 두 배 이상 지났습니다.",
+        "runningJobsRow": "{{id}} {{state}}: {{repo}}의 {{verb}}, {{startedAt}}에 {{origin}}이(가) 시작함. 따라가려면: {{attach}}",
+        "runningJobsSection": "작업 (실행 중이거나 최근 1시간 안에 끝남)"
       },
       "gpu": {
         "descriptionShort": "머신의 GPU와 장치 부여 현황 확인",

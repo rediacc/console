@@ -1355,7 +1355,9 @@
         "staleBinarySection": "Binaires obsolètes",
         "staleBinaryWarning": "{{count}} processus renet exécutent encore un binaire remplacé et conservent l'ancien code jusqu'au redémarrage de leurs unités.",
         "staleBackupSection": "Sauvegardes en retard",
-        "staleBackupWarning": "La dernière sauvegarde de {{count}} dépôt(s) remonte à plus de deux fois l'intervalle de leur planification."
+        "staleBackupWarning": "La dernière sauvegarde de {{count}} dépôt(s) remonte à plus de deux fois l'intervalle de leur planification.",
+        "runningJobsRow": "{{id}} {{state}} : {{verb}} sur {{repo}}, lancée {{startedAt}} par {{origin}}. Pour la suivre : {{attach}}",
+        "runningJobsSection": "Tâches (en cours ou terminées depuis moins d'une heure)"
       },
       "gpu": {
         "descriptionShort": "Inspecter les GPU et les autorisations de périphériques d'une machine",

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2155,
-    "sourceCommit": "59fdb8e064d91125bf9ff09c7a0fbce9c449910d"
+    "keyCount": 2157,
+    "sourceCommit": "7e2a14893ca36a7a045ca941d4e535b025c71859"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1042,6 +1042,8 @@
     "commands.machine.status.healthCheck": "8bc8c238",
     "commands.machine.status.infrastructure": "1c4dc948",
     "commands.machine.status.licenseBackupBlocked": "5686ce95",
+    "commands.machine.status.runningJobsRow": "0cd99dee",
+    "commands.machine.status.runningJobsSection": "4d3ae380",
     "commands.machine.status.servicesAllStable": "e93db5a0",
     "commands.machine.status.servicesUnstableFound": "80d7eead",
     "commands.machine.status.stabilityCheck": "96c5de1d",

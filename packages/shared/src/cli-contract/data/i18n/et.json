@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Seisundikontrolli režiim - väljub koodiga 2, kui mõni on ebaterve",
   "commands.machine.status.infrastructure": "Infrastruktuur",
   "commands.machine.status.licenseBackupBlocked": "\nVARUNDUS BLOKEERITUD: {{repositoryGuid}} on litsentsimise poolt tagasi lükatud alates {{at}} ({{reason}}). {{message}}\nSelle repositooriumi plaanitud varundused ei tööta. Väljasta uuesti käsuga: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} hoidlas {{repo}}, käivitatud {{startedAt}}, käivitaja {{origin}}. Jälgimiseks: {{attach}}",
+  "commands.machine.status.runningJobsSection": "Tööd (käimas või viimase tunni jooksul lõppenud)",
   "commands.machine.status.servicesAllStable": "Kõik teenused on stabiilsed",
   "commands.machine.status.servicesUnstableFound": "Leitud {{count}} ebastabiilset teenust",
   "commands.machine.status.stabilityCheck": "Stabiilsuse kontrolli režiim - väljub koodiga 2, kui mõni on ebaõnnestunud/taaskäivitav",

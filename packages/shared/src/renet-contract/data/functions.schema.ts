@@ -115,6 +115,7 @@ export const BackupSnapshotParamsSchema = z.object({
   parallelism: z.number().int().optional().describe('Concurrent chunk uploads (0 = engine default)'),
   readBwlimit: z.string().optional().describe('Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   hashParallelism: z.number().int().optional().describe('Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota'),
 });
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */

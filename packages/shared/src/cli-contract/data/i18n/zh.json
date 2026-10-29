@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
   "commands.machine.status.infrastructure": "基础设施",
   "commands.machine.status.licenseBackupBlocked": "\n备份已阻止：{{repositoryGuid}} 自 {{at}} 起被许可系统拒绝（{{reason}}）。{{message}}\n该仓库的计划备份未在运行。请使用以下命令重新签发：rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}:{{repo}} 上的 {{verb}},由 {{origin}} 于 {{startedAt}} 启动。跟踪:{{attach}}",
+  "commands.machine.status.runningJobsSection": "作业(运行中或最近一小时内结束)",
   "commands.machine.status.servicesAllStable": "所有服务都稳定",
   "commands.machine.status.servicesUnstableFound": "找到 {{count}} 个不稳定的服务",
   "commands.machine.status.stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",

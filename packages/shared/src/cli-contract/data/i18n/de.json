@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Zustandsprüfungsmodus - beendet mit Code 2 bei ungesunden Containern",
   "commands.machine.status.infrastructure": "Infrastruktur",
   "commands.machine.status.licenseBackupBlocked": "\nBACKUPS BLOCKIERT: {{repositoryGuid}} wird seit {{at}} von der Lizenzierung abgelehnt ({{reason}}). {{message}}\nGeplante Backups für dieses Repository laufen nicht. Neu ausstellen mit: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} auf {{repo}}, gestartet {{startedAt}} von {{origin}}. Verfolgen: {{attach}}",
+  "commands.machine.status.runningJobsSection": "Jobs (laufend oder in der letzten Stunde beendet)",
   "commands.machine.status.servicesAllStable": "Alle Dienste sind stabil",
   "commands.machine.status.servicesUnstableFound": "{{count}} instabile(r) Dienst(e) gefunden",
   "commands.machine.status.stabilityCheck": "Stabilitätsprüfungsmodus - beendet mit Code 2 bei fehlgeschlagenen/neu startenden Diensten",

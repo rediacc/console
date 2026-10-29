@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Modo de verificación de salud - sale con código 2 si hay algún no saludable",
   "commands.machine.status.infrastructure": "Infraestructura",
   "commands.machine.status.licenseBackupBlocked": "\nCOPIAS DE SEGURIDAD BLOQUEADAS: {{repositoryGuid}} ha sido rechazado por el sistema de licencias desde {{at}} ({{reason}}). {{message}}\nLas copias de seguridad programadas para este repositorio no se están ejecutando. Vuelve a emitir con: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} en {{repo}}, iniciado {{startedAt}} por {{origin}}. Para seguirlo: {{attach}}",
+  "commands.machine.status.runningJobsSection": "Trabajos (en curso o terminados en la última hora)",
   "commands.machine.status.servicesAllStable": "Todos los servicios están estables",
   "commands.machine.status.servicesUnstableFound": "{{count}} servicio(s) inestable(s) encontrado(s)",
   "commands.machine.status.stabilityCheck": "Modo de verificación de estabilidad - sale con código 2 si hay algún fallido/reiniciando",

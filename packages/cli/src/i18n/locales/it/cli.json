@@ -1355,7 +1355,9 @@
         "staleBinarySection": "Binari obsoleti",
         "staleBinaryWarning": "{{count}} processi renet eseguono ancora un binario sostituito e mantengono il vecchio codice finché le loro unità non vengono riavviate.",
         "staleBackupSection": "Backup in ritardo",
-        "staleBackupWarning": "L'ultimo backup di {{count}} repository risale a più del doppio dell'intervallo della loro pianificazione."
+        "staleBackupWarning": "L'ultimo backup di {{count}} repository risale a più del doppio dell'intervallo della loro pianificazione.",
+        "runningJobsRow": "{{id}} {{state}}: {{verb}} su {{repo}}, avviato {{startedAt}} da {{origin}}. Per seguirlo: {{attach}}",
+        "runningJobsSection": "Job (in corso o terminati nell'ultima ora)"
       },
       "gpu": {
         "descriptionShort": "Ispeziona le GPU e le concessioni di dispositivi di una macchina",

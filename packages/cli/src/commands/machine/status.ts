@@ -1,5 +1,7 @@
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type {
+  JobInfo,
+  JobOrigin,
   ListResult,
   StorageHealthResult,
   SystemInfo,
@@ -468,9 +470,9 @@ function printStorageSummary(sys: SystemInfo | undefined): void {
   );
 }
 
-/** Pool fill level + backup-snapshot pinning, shown under the storage-health
- * table (rediacc/renet#76). */
-function renderPoolSummary(pool: StorageHealthResult['pool']): void {
+/** Pool fill level + the space transfer snapshots and staging pin, shown under
+ * the storage-health table (rediacc/renet#76). */
+export function renderPoolSummary(pool: StorageHealthResult['pool']): void {
   if (!pool) return;
   outputService.info(
     t('commands.machine.status.storageHealthPoolSummary', {
@@ -479,12 +481,12 @@ function renderPoolSummary(pool: StorageHealthResult['pool']): void {
       percent: pool.used_percent.toFixed(1),
     })
   );
-  if (pool.active_backup_snapshots > 0 || pool.stale_backup_snapshots > 0) {
+  if (pool.active_transfer_snapshots > 0 || pool.stale_transfer_snapshots > 0) {
     outputService.info(
       t('commands.machine.status.storageHealthPoolSnapshots', {
-        pinned: pool.backup_snapshot_pinned_human,
-        active: pool.active_backup_snapshots,
-        stale: pool.stale_backup_snapshots,
+        pinned: pool.transfer_pinned_human,
+        active: pool.active_transfer_snapshots,
+        stale: pool.stale_transfer_snapshots,
       })
     );
   }
@@ -743,6 +745,56 @@ function renderStaleness(
   }
 }
 
+/** Who started a job, as one cell: client, config name, then the actor or SSH user. */
+function formatJobOrigin(origin: JobOrigin | undefined): string {
+  if (!origin) return '-';
+  const who = origin.actor ?? origin.ssh_user;
+  const head = [origin.client, origin.config_name].filter(Boolean).join(' ');
+  const text = who ? `${head} (${who})`.trim() : head;
+  return text || '-';
+}
+
+/**
+ * The running-jobs section (PLAN-detached-jobs J21): the header and one line per live or recently
+ * finished job, each naming the exact command that attaches to it. Empty when renet reports no
+ * jobs, or is too old to report the section at all.
+ */
+export function runningJobLines(
+  jobs: JobInfo[] | undefined,
+  resolve: (guid: string) => string
+): string[] {
+  if (!jobs || jobs.length === 0) return [];
+  return [
+    t('commands.machine.status.runningJobsSection'),
+    ...jobs.map((j) =>
+      t('commands.machine.status.runningJobsRow', {
+        id: j.job_id,
+        verb: j.function ?? j.command ?? '-',
+        repo: j.repo_guid ? resolve(j.repo_guid) : '-',
+        startedAt: j.started_at,
+        origin: formatJobOrigin(j.origin),
+        state: j.state,
+        attach: j.attach,
+      })
+    ),
+  ];
+}
+
+/** The jobs section for JSON output, with each repo GUID resolved to its name. */
+export function enrichJobs(
+  jobs: JobInfo[] | undefined,
+  resolve: (guid: string) => string
+): (JobInfo & { repository?: string })[] {
+  return (jobs ?? []).map((j) => (j.repo_guid ? { ...j, repository: resolve(j.repo_guid) } : j));
+}
+
+function renderRunningJobs(jobs: JobInfo[] | undefined, resolve: (guid: string) => string): void {
+  const lines = runningJobLines(jobs, resolve);
+  if (lines.length === 0) return;
+  outputService.info(`\n${lines[0]}`);
+  for (const line of lines.slice(1)) outputService.info(line);
+}
+
 export function registerStatusCommand(machine: Command, program: Command): void {
   machine
     .command('status')
@@ -809,6 +861,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
           outputService.print(
             {
               ...enriched,
+              jobs: enrichJobs(listResult.jobs, resolve),
               stale_binary: staleBinary,
               backup_staleness: staleBackups,
             },
@@ -826,6 +879,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
           );
           renderBlockedBackupAlerts(licenseDetail);
           renderStaleness(staleBinary, staleBackups, resolve);
+          renderRunningJobs(listResult.jobs, resolve);
         }
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)

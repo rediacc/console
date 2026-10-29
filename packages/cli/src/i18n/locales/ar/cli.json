@@ -1355,7 +1355,9 @@
         "staleBinarySection": "ملفات تنفيذية قديمة",
         "staleBinaryWarning": "لا تزال {{count}} من عمليات renet تعمل بملف تنفيذي مستبدَل، وتبقى على الشيفرة القديمة حتى يُعاد تشغيل وحداتها.",
         "staleBackupSection": "نسخ احتياطية متأخرة",
-        "staleBackupWarning": "مضى على آخر نسخة احتياطية لـ {{count}} من المستودعات أكثر من ضعف الفاصل الزمني لجدولها."
+        "staleBackupWarning": "مضى على آخر نسخة احتياطية لـ {{count}} من المستودعات أكثر من ضعف الفاصل الزمني لجدولها.",
+        "runningJobsRow": "{{id}} {{state}}: {{verb}} على {{repo}}، بدأت في {{startedAt}} بواسطة {{origin}}. للمتابعة: {{attach}}",
+        "runningJobsSection": "المهام (الجارية أو المنتهية خلال الساعة الماضية)"
       },
       "gpu": {
         "descriptionShort": "فحص وحدات GPU وتصاريح الأجهزة في جهاز",

@@ -915,7 +915,9 @@
         "staleBinarySection": "Stale Binaries",
         "staleBinaryWarning": "{{count}} renet process(es) still run a replaced binary and keep the old code until their units restart.",
         "staleBackupSection": "Stale Backups",
-        "staleBackupWarning": "{{count}} repository(ies) were last backed up more than twice their schedule interval ago."
+        "staleBackupWarning": "{{count}} repository(ies) were last backed up more than twice their schedule interval ago.",
+        "runningJobsRow": "{{id}} {{state}}: {{verb}} on {{repo}}, started {{startedAt}} by {{origin}}. Attach: {{attach}}",
+        "runningJobsSection": "Jobs (running or finished in the last hour)"
       },
       "gpu": {
         "descriptionShort": "Inspect a machine's GPUs and device grants",

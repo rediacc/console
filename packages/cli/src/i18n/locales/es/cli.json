@@ -1355,7 +1355,9 @@
         "staleBinarySection": "Binarios obsoletos",
         "staleBinaryWarning": "{{count}} proceso(s) de renet siguen ejecutando un binario reemplazado y conservan el código antiguo hasta que se reinicien sus unidades.",
         "staleBackupSection": "Copias de seguridad atrasadas",
-        "staleBackupWarning": "La última copia de seguridad de {{count}} repositorio(s) es anterior al doble del intervalo de su programación."
+        "staleBackupWarning": "La última copia de seguridad de {{count}} repositorio(s) es anterior al doble del intervalo de su programación.",
+        "runningJobsRow": "{{id}} {{state}}: {{verb}} en {{repo}}, iniciado {{startedAt}} por {{origin}}. Para seguirlo: {{attach}}",
+        "runningJobsSection": "Trabajos (en curso o terminados en la última hora)"
       },
       "gpu": {
         "descriptionShort": "Inspeccionar las GPU y las concesiones de dispositivos de una máquina",

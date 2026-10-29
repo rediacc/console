@@ -1355,7 +1355,9 @@
         "staleBinarySection": "古いバイナリ",
         "staleBinaryWarning": "{{count}} 個の renet プロセスが置き換え済みのバイナリで動作しており、ユニットが再起動するまで古いコードのままです。",
         "staleBackupSection": "遅れているバックアップ",
-        "staleBackupWarning": "{{count}} 個のリポジトリで、最後のバックアップからスケジュール間隔の 2 倍以上が経過しています。"
+        "staleBackupWarning": "{{count}} 個のリポジトリで、最後のバックアップからスケジュール間隔の 2 倍以上が経過しています。",
+        "runningJobsRow": "{{id}} {{state}}: {{repo}} の {{verb}}、{{startedAt}} に {{origin}} が開始。追跡するには: {{attach}}",
+        "runningJobsSection": "ジョブ(実行中、または直近1時間以内に終了)"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",

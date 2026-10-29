@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Health check mode - exits with code 2 if any unhealthy",
   "commands.machine.status.infrastructure": "Infrastructure",
   "commands.machine.status.licenseBackupBlocked": "\nBACKUPS BLOCKED: {{repositoryGuid}} has been refused by licensing since {{at}} ({{reason}}). {{message}}\nScheduled backups for this repository are not running. Reissue with: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} on {{repo}}, started {{startedAt}} by {{origin}}. Attach: {{attach}}",
+  "commands.machine.status.runningJobsSection": "Jobs (running or finished in the last hour)",
   "commands.machine.status.servicesAllStable": "All services are stable",
   "commands.machine.status.servicesUnstableFound": "{{count}} unstable service(s) found",
   "commands.machine.status.stabilityCheck": "Stability check mode - exits with code 2 if any failed/restarting",

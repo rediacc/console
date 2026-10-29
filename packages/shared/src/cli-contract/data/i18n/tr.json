@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Sağlık kontrolü modu - sağlıksız varsa kod 2 ile çıkar",
   "commands.machine.status.infrastructure": "Altyapı",
   "commands.machine.status.licenseBackupBlocked": "\nYEDEKLEMELER ENGELLENDİ: {{repositoryGuid}}, {{at}} tarihinden beri lisanslama tarafından reddediliyor ({{reason}}). {{message}}\nBu depo için zamanlanmış yedeklemeler çalışmıyor. Şununla yeniden verin: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{repo}} üzerinde {{verb}}, {{startedAt}} tarihinde {{origin}} tarafından başlatıldı. İzlemek için: {{attach}}",
+  "commands.machine.status.runningJobsSection": "İşler (çalışan veya son bir saat içinde biten)",
   "commands.machine.status.servicesAllStable": "Tüm servisler kararlı",
   "commands.machine.status.servicesUnstableFound": "{{count}} kararsız servis bulundu",
   "commands.machine.status.stabilityCheck": "Kararlılık kontrolü modu - başarısız/yeniden başlayan varsa kod 2 ile çıkar",

@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "Режим проверки состояния - завершается с кодом 2 при наличии нездоровых",
   "commands.machine.status.infrastructure": "Инфраструктура",
   "commands.machine.status.licenseBackupBlocked": "\nРЕЗЕРВНОЕ КОПИРОВАНИЕ ЗАБЛОКИРОВАНО: {{repositoryGuid}} отклонён системой лицензирования с {{at}} ({{reason}}). {{message}}\nЗапланированные резервные копии для этого репозитория не выполняются. Переоформите лицензию: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} в {{repo}}, запущено {{startedAt}}, источник: {{origin}}. Подключиться: {{attach}}",
+  "commands.machine.status.runningJobsSection": "Задания (выполняются или завершились за последний час)",
   "commands.machine.status.servicesAllStable": "Все сервисы стабильны",
   "commands.machine.status.servicesUnstableFound": "Найдено {{count}} нестабильных сервиса(ов)",
   "commands.machine.status.stabilityCheck": "Режим проверки стабильности - завершается с кодом 2 при наличии сбойных/перезапускающихся",

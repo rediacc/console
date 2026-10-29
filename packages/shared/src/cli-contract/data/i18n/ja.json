@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
   "commands.machine.status.infrastructure": "インフラストラクチャ",
   "commands.machine.status.licenseBackupBlocked": "\nバックアップがブロックされています: {{repositoryGuid}} は {{at}} からライセンス認証によって拒否されています（{{reason}}）。{{message}}\nこのリポジトリのスケジュールされたバックアップは実行されていません。次のコマンドで再発行してください: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{repo}} の {{verb}}、{{startedAt}} に {{origin}} が開始。追跡するには: {{attach}}",
+  "commands.machine.status.runningJobsSection": "ジョブ(実行中、または直近1時間以内に終了)",
   "commands.machine.status.servicesAllStable": "すべてのサービスが安定しています",
   "commands.machine.status.servicesUnstableFound": "{{count}} 個の不安定なサービスが見つかりました",
   "commands.machine.status.stabilityCheck": "安定性チェックモード - 失敗/再起動中のものがある場合はコード2で終了します",

@@ -1034,6 +1034,8 @@
   "commands.machine.status.healthCheck": "وضع فحص الصحة - الخروج برمز 2 إذا وُجدت حاويات غير سليمة",
   "commands.machine.status.infrastructure": "البنية التحتية",
   "commands.machine.status.licenseBackupBlocked": "\nالنسخ الاحتياطي محظور: تم رفض {{repositoryGuid}} من قبل نظام الترخيص منذ {{at}} ({{reason}}). {{message}}\nالنسخ الاحتياطية المجدولة لهذا المستودع لا تعمل. أعد الإصدار باستخدام: rdc subscription refresh",
+  "commands.machine.status.runningJobsRow": "{{id}} {{state}}: {{verb}} على {{repo}}، بدأت في {{startedAt}} بواسطة {{origin}}. للمتابعة: {{attach}}",
+  "commands.machine.status.runningJobsSection": "المهام (الجارية أو المنتهية خلال الساعة الماضية)",
   "commands.machine.status.servicesAllStable": "جميع الخدمات مستقرة",
   "commands.machine.status.servicesUnstableFound": "تم العثور على {{count}} خدمة غير مستقرة",
   "commands.machine.status.stabilityCheck": "وضع فحص الاستقرار - الخروج برمز 2 إذا وُجدت خدمات فاشلة/تعيد التشغيل",
