@@ -562,7 +562,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
-| `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 251 | 3 | 11 | 34646 |
+| `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 251 | 3 | 11 | 35133 |
 | `agent/plans/PLAN-ssh-key-source-ranges.md` | executing | 136 | 2 | 9 | 30726 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |
 | `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3329 |

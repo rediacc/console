@@ -233,8 +233,8 @@ First-Seen: 2026-10-29
 
 Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answered: "can't we have a limit for cpu usage? For example upto 50% of the all cores? Mean and baseline is difficult to understand for end users. btw 50% is not a problem." <!-- style-ok -->
 
-- A snapshot runs under a hard CPU ceiling, expressed as a share of all cores: default 50 %, which on an 8-core machine is `CPUQuota=400%`. The kernel enforces it, so it holds whatever the repo size, unlike a load-average rule.
-- The hostinger seed stops on CPU, not load: backup CPU above 50 % of all cores for three samples in a row.
+- A snapshot runs under a hard CPU ceiling, expressed as a share of all cores: default 50 %, which on an 8-core machine is `CPUQuota=400%`. The kernel enforces it on the snapshot scope's own tasks, so it holds whatever the repo size, unlike a load-average rule. Work done by kernel threads outside the scope (dm-crypt, loop and btrfs workers serving the datastore) is not charged to it, so system-wide CPU attributable to the backup can exceed 50 %. The ceiling bounds the scope; the stop rule below watches the whole machine.
+- The hostinger seed stops on CPU, not load: machine-wide busy CPU (100 minus idle, from per-sample `/proc/stat` deltas) above 50 % of all cores for three samples in a row. The scope's own usage is read from its cgroup `cpu.stat` `usage_usec` delta and recorded beside it, not used for the stop.
 
 - [x] R5. renet: run backup_snapshot inside a transient systemd scope with CPUQuota.
   - Owns: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go, private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go
