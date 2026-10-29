@@ -156,7 +156,8 @@ class Transfer:
         d.account_ensure_subscription(self.email, "PROFESSIONAL")
         seed = d.api_post(
             "/test/seed-config-store",
-            # emptyStore: no dev-fixture entry, so Phase 1 enrolls against a store that really is empty (an enable that sees one listed config attaches to it instead of seeding).
+            # emptyStore: no dev-fixture entry, so Phase 1 enrolls against a store that is really empty.
+            # An enable that sees one listed config attaches to it instead of seeding.
             {"email": self.email, "password": STORE_PASSWORD, "emptyStore": True},
         )
         store_id = lib.json_get(seed, "storeId")

@@ -453,7 +453,7 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
     expect(adapterCtorArgs[0]?.[0]).toMatchObject({ configId: LOCAL_ID });
   });
 
-  it('says on stderr that it seeded an empty store, and says nothing of the kind when it attaches', async () => {
+  it('reports through outputService.success (stderr) that it seeded an empty store, and says nothing of the kind when it attaches', async () => {
     const success = vi.spyOn(outputService, 'success').mockImplementation(() => undefined);
     const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     try {
@@ -470,7 +470,7 @@ describe('finalizeEnable --config-id (attach to an existing store entry)', () =>
       // A store that already holds one config is attached to, never seeded: no seeded line.
       success.mockClear();
       mockAdapterInstance.push.mockClear();
-      mockAdapterInstance.listConfigs.mockResolvedValue([
+      mockAdapterInstance.listConfigs.mockResolvedValueOnce([
         { configId: CONFIG_ID, version: 1, lastModified: 'z', teamId: null },
       ]);
       mockAdapterInstance.pull
