@@ -1,19 +1,19 @@
-## SESSION d778be9d 2026-10-29T23:40:41Z
+## SESSION d778be9d 2026-10-30T00:15:18Z
 
-# d778be9d STATE (2026-10-29T23:45Z, branch 1023-1, operator away until morning, order #d910962b)
+# d778be9d STATE (2026-10-30T00:20Z, branch 1023-1, operator away until morning, order #d910962b)
 
 ## Big pieces
-- Store download: A1 A2 R1 C1 L1 ticked. R2 waits for the native macOS/Windows CI job; L2 (hostinger fetch twice) next.
-- Hardening: A1 R1 C1 L1 ticked (probe rc=0 on stable+edge eu/us/asia and bench). L2 after the stable deploy.
-- Stable EU deploy #707f08ca BLOCKED on merge of 1023-1 (promote-stable promotes edge only); hostinger renet carries R1.
-- Review debt: 174 findings settled in shares (renet 157ea91 2f19630 86b8b8d d50f30e 9241331; console 4739e15e9 e4a70c3f0 a1b8eeeb8 24e037f41; cli cac18e213; plans acd803e50 06dccf0f8 ef01b5b1e; account 7a85cf4 54a59c8 69af6b8 ce9e4aa 8ce873b). Only fresh reviews of the newest commits remain; run wl_review.py --check.
-- Found and fixed on the way: check:ci-setup-idempotency D red at HEAD (wrapped signature), test_check_config_server_key_constant collection error plus floors, env registry drift, two untested shard units (pkg/bwrate etc.), printed python -m hop.
-- T7 tofu code landed b81120ebf; live accept needs a host without tofu.
+- Store download: A1 A2 R1 C1 L1 ticked; R2 waits for the native CI job; L2 blocked on the stable deploy.
+- Hardening: A1 R1 C1 L1 ticked; L2 after the stable deploy.
+- Stable EU deploy #707f08ca BLOCKED on merge of 1023-1 (promote-stable promotes edge only). Store L2 and hardening L2 sit behind it.
+- Tofu: T1-T8 except T7 live accept done; T6 provider lock pins landed 466afe701 (30 providers). T7 live accept needs a host without tofu. L1 open.
+- Landed tonight: purge rounds (account 770cd34, cli e9bd6740c), deprovision slot release (account da3f9e1/6b4d89a), --no-infra and --no-docker flag fixes, X1 ticked (1ddf33a4f), every 1023-1 review share settled through round 2.
 
 ## Delegated
-- none running.
+- a9d1edba43eeb9f12 #dd7b3149 cli round 3 (466afe70.1-.3, e9bd6740.1-.4): tofu executor lock, CI tofu install step before CLI unit tests, purge done contract, register JSDoc, deactivate path. Accept: tofu + purge vitest, check:ci-workflows.
+- a6f9ab6e9a4a1a963 #734c0e88 account round 3 (6b4d89a1.1-.2): atomic deactivate with the delete as gate, remainingChunks test. Accept: full account vitest.
 
 ## Next action
-- wl_review.py --check; settle any new finding on 1a953019 / 24e037f4 the same way (fix, commit by path, review-mark).
-- #52978244 review hook misses: read /tmp/claude-worklist/reviews/logs for 69af6b8 and 9241331.
-- Then: store L2 on hostinger (read-only fetch twice, --store, bws deploy-proxy eu-remote), tofu T6 provider lock pins, test-plan E1-E4/D1/X1, J6 #06ea7ea8, #152b786f purge batching, #45470e7a --no-infra DNS.
+- As each reports: spot-check, rerun its accept, commit by path (account first, then pointer), review-mark each id.
+- Then wl_review.py --check until clean.
+- Open next: #88d878bf cherryservers mapping, #52978244 review hook misses, #869dbd51 backup drills (after CLI writers stop), #674d39cc Q10 hostinger strategy bind, J6 #06ea7ea8.
