@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 4 of 41 plans done, 570 of 741 boxes done (76%).
+Promoted: 4 of 41 plans done, 571 of 741 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -122,7 +122,7 @@ Promoted: 4 of 41 plans done, 570 of 741 boxes done (76%).
 | 36 | PLAN-backup-local-image.md | 8/14 | 6 open |
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 4/7 | 3 open |
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
-| 39 | PLAN-cli-tofu-toolchain.md | 8/10 | 2 open |
+| 39 | PLAN-cli-tofu-toolchain.md | 9/10 | 1 open |
 | 40 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 41 | PLAN-settings-set-verb.md | 0/4 | 4 open |
 <!-- queue:progress:end -->

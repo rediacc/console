@@ -565,11 +565,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 8,
+      "open": 1,
+      "done": 9,
       "open_sigs": [
-        "11388dba",
-        "ec030c09"
+        "11388dba"
       ],
       "done_sigs": [
         "0d186555",
@@ -579,7 +578,8 @@
         "c29a5a67",
         "c5e092a0",
         "cab479c2",
-        "e9c480b3"
+        "e9c480b3",
+        "ec030c09"
       ]
     },
     "agent/plans/PLAN-cloudflare-proxy.md": {
