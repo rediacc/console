@@ -1,7 +1,12 @@
 """`npm run vm:check`: prove the renet side (the repo shell, sync, SFTP and VS Code paths of `rdc` on the ops VMs) and the account side (private/account's suites and the account drills against a fresh dev gateway), and write the receipt the push guard reads.
 
     npm run vm:check [-- --changed] [--os <image>] [--parent <grand>] [--machine <name>] [--wait <s>] [--selftest] [--keep-work]
+    npm run vm:check -- [--changed] --dry-run [--paths <path>[,...]]
     ./run.sh drill vmcheck [same flags]
+
+AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg is never run here, because an e2e suite's global setup can reset the fleet and each suite needs its own `.env`. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg's fleet, whether `ops status` showed it running, how to bring it up and the exact commands. A renet path in no area gets the base battery alone.
+
+`--dry-run` prints the plan (the hits, the phases and their steps, each area's legs, suites and CI jobs, and the best verdict the run could reach) and touches nothing; `--paths` replaces the diff with the given console-relative paths, to ask what a change WOULD select.
 
 Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-account-vm-check.md are the specification; each step below carries its id there.
 
@@ -55,6 +60,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
 from rediacc_ci.drills import (
+    backup_check_trigger,
     converge_preflight,
     gpu_grants,
     lib,
@@ -278,6 +284,139 @@ PHASE_STEPS: dict[str, tuple[str, ...]] = {
     ),
     SIDE_ACCOUNT: ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3"),
 }
+# --------------------------------------------------------------------------- areas
+
+# The steps a run always takes before any phase step: the lock, the build identity, the account token, the fleet and the keys.
+INFRA_STEPS = ("P0", "P1", "P4", "P2", "P3")
+# The A2 drills a `vmcheck` area leg may name alone (the license area names A2.3); the rest of the account phase is the account side's.
+A2_STEPS = ("A2.1", "A2.2", "A2.3")
+LEG_OK = "ok"
+LEG_FAILED = "failed"
+LEG_NOT_RUN = "not-run"
+LEG_NOT_VERIFIED = "not-verified"
+# Why vm:check never runs an `external` leg itself, said once wherever one is reported.
+EXTERNAL_WHY = (
+    "vm:check does not run e2e suites or other-fleet drills: their global setup can reset the fleet"
+    " (renet datastore init --force deletes the vmcheck-base grand and every repo on it) and each"
+    " needs packages/e2e-tests/.env written for its own topology"
+)
+
+
+def area_steps(areas: Collection[str]) -> frozenset[str]:
+    """Every vm:check step id the `vmcheck` legs of `areas` name."""
+    return frozenset(
+        step
+        for name in areas
+        for leg in trigger.MAP.areas[name].legs
+        if leg.kind == trigger.LEG_VMCHECK
+        for step in leg.steps
+    )
+
+
+def known_step_ids() -> frozenset[str]:
+    """Every step id a `vmcheck` area leg may name: the infra chain, both phases and A2."""
+    return (
+        frozenset(INFRA_STEPS)
+        | frozenset(A2_STEPS)
+        | frozenset(step for steps in PHASE_STEPS.values() for step in steps)
+    )
+
+
+def fleet_state(fleet: trigger.Fleet, running: Collection[str] | None) -> str:
+    """`running` when `ops status` showed every fleet ip running, `not running` when it did not, `unknown` when the fleet was never read (a dry run, or a run stopped before P2)."""
+    if running is None:
+        return "unknown"
+    return "running" if set(fleet.ips) <= set(running) else "not running"
+
+
+def external_detail(leg: trigger.Leg, running: Collection[str] | None) -> str:
+    fleet = trigger.MAP.fleets[leg.fleet]
+    return "fleet %s (%s) %s; bring it up: %s; then run: %s" % (
+        fleet.name,
+        " ".join(fleet.ips),
+        fleet_state(fleet, running),
+        fleet.up,
+        " && ".join(leg.cmd),
+    )
+
+
+def judge_leg(
+    leg: trigger.Leg,
+    rows: Sequence[Mapping[str, Any]],
+    receipt_fn: Callable[[str], tuple[bool, str]],
+    running: Collection[str] | None,
+) -> tuple[str, str]:
+    """(status, detail) of one area leg after a run. A `vmcheck` leg is ok only when each of its steps recorded a row and every such row is ok; a `receipt` leg is ok only when `receipt_fn` admits the tree; an `external` leg is never ok here, since vm:check never runs it."""
+    if leg.kind == trigger.LEG_VMCHECK:
+        mine = [r for r in rows if r.get("id") in leg.steps]
+        seen = {r["id"] for r in mine}
+        if any(r.get("verdict") == "FAIL" for r in mine):
+            return LEG_FAILED, "a step of %s failed" % ", ".join(leg.steps)
+        if seen == set(leg.steps) and all(r.get("verdict") == "ok" for r in mine):
+            return LEG_OK, "steps %s ran ok" % ", ".join(leg.steps)
+        missing = [s for s in leg.steps if s not in seen]
+        return LEG_NOT_RUN, "steps %s recorded no ok row" % ", ".join(missing or leg.steps)
+    if leg.kind == trigger.LEG_RECEIPT:
+        ok, message = receipt_fn(leg.receipt)
+        if ok:
+            return LEG_OK, message
+        return LEG_NOT_VERIFIED, "%s; produce it with: %s" % (message, " && ".join(leg.cmd))
+    return LEG_NOT_RUN, external_detail(leg, running)
+
+
+def judge_areas(
+    areas: Collection[str],
+    rows: Sequence[Mapping[str, Any]],
+    receipt_fn: Callable[[str], tuple[bool, str]],
+    running: Collection[str] | None,
+) -> dict[str, dict[str, Any]]:
+    """`{area: {"legs": [{id, kind, status, detail}, ...]}}` in map order, for the receipt and the summary."""
+    out: dict[str, dict[str, Any]] = {}
+    for name in trigger.AREAS:
+        if name not in areas:
+            continue
+        legs = []
+        for leg in trigger.MAP.areas[name].legs:
+            status, detail = judge_leg(leg, rows, receipt_fn, running)
+            legs.append({"id": leg.id, "kind": leg.kind, "status": status, "detail": detail})
+        out[name] = {"legs": legs}
+    return out
+
+
+def area_shortfall(results: Mapping[str, Mapping[str, Any]]) -> list[str]:
+    """`<area>/<leg>: <detail>` for every leg that is not ok."""
+    return [
+        "%s/%s: %s" % (name, leg["id"], leg["detail"])
+        for name, entry in results.items()
+        for leg in entry["legs"]
+        if leg["status"] != LEG_OK
+    ]
+
+
+def is_repo_root(root: pathlib.Path) -> bool:
+    """True when `root` is the top of a git work tree. A directory inside some other repository is not: git would answer for that outer repository's diff."""
+    top = trigger.make_git(root)(["rev-parse", "--show-toplevel"])
+    if not top:
+        return False
+    try:
+        return pathlib.Path(top).resolve() == root.resolve()
+    except OSError:
+        return False
+
+
+def backup_receipt_admits(root: pathlib.Path, tree: str) -> tuple[bool, str]:
+    """The backup-check receipt's verdict for `tree` (the rule block_backup_unverified_push applies)."""
+    if not tree:
+        return False, "HEAD^{tree} is unreadable, so no backup receipt can be matched"
+    verdict = backup_check_trigger.admit(
+        root,
+        tree,
+        backup_check_trigger.inputs_of_tree(root, tree),
+        backup_check_trigger.pointers_of_tree(root, tree),
+    )
+    return verdict.ok, "backup-check receipt [%s]: %s" % (verdict.code, verdict.message)
+
+
 # The account suites of A1: (step id, npm script, the package that holds it, None for the console root).
 ACCOUNT_SUITES: tuple[tuple[str, str, str | None], ...] = (
     ("A1.1", "check:ci-account-server", None),
@@ -832,6 +971,10 @@ class Options:
     net_base: str = DEFAULT_NET_BASE
     # `--only <id>[,...]` runs P0 plus the named steps alone, to iterate one step without a full run; a run so narrowed writes a run record, never receipt.json, and never reaches VERIFIED (`_finish`), so the push guard never admits it.
     only: frozenset[str] = frozenset()
+    # `--dry-run` prints what the run would prove (sides, phases, areas and their legs) and touches nothing: no lock, no fleet, no gateway, no receipt.
+    dry_run: bool = False
+    # `--paths <p>[,...]` (only with `--dry-run`) evaluates the given console-relative paths instead of the diff, to ask what a change WOULD select.
+    paths: tuple[str, ...] = ()
 
 
 def only_step_ids() -> frozenset[str]:
@@ -852,7 +995,18 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--machine", default="")
     parser.add_argument("--wait", dest="wait_s", type=float, default=DEFAULT_WAIT_S)
     parser.add_argument("--only", default="")
+    parser.add_argument("--dry-run", dest="dry_run", action="store_true")
+    parser.add_argument("--paths", action="append", default=[])
     ns = parser.parse_args(rest)
+    paths_ = tuple(p.strip() for chunk in ns.paths for p in chunk.split(",") if p.strip())
+    if ns.paths and not paths_:
+        parser.error("--paths needs at least one path")
+    if paths_ and not ns.dry_run:
+        parser.error("--paths only applies with --dry-run")
+    if ns.dry_run and ns.only:
+        parser.error("--dry-run and --only do not combine: --only is an iteration run")
+    if paths_ and ns.base is not None:
+        parser.error("--paths replaces the diff, so --base has nothing to name")
     if ns.base is not None:
         ns.base = ns.base.strip()
     if ns.base is not None and not ns.base:
@@ -877,6 +1031,8 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         keep_work=keep_work,
         net_base=env.get("VM_NET_BASE") or DEFAULT_NET_BASE,
         only=only,
+        dry_run=ns.dry_run,
+        paths=paths_,
     )
 
 
@@ -903,8 +1059,11 @@ class VmCheck:
         ),
         u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
         extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
+        receipt_fn: Callable[[pathlib.Path, str], tuple[bool, str]] = backup_receipt_admits,
     ) -> None:
         self.root = root
+        # Judges a `receipt` area leg (the backup-check receipt) for this run's tree; a test injects a stub.
+        self.receipt_fn = receipt_fn
         self.opts = opts
         self.host = host
         self.account = account
@@ -975,7 +1134,11 @@ class VmCheck:
             "via": "always",
             "hits": [],
             "sides": sorted(trigger.SIDES),
+            "areas": [],
         }
+        # The areas of `tiers.vm.areas` the change touches (always evaluated against the push base, with or without `--changed`, so a full run cannot skip an area's legs), and their legs' verdicts after the run.
+        self.areas: frozenset[str] = frozenset()
+        self.area_results: dict[str, dict[str, Any]] = {}
         # Both phases unless `--changed` narrows them.
         self.phases: dict[str, dict[str, bool]] = {
             side: {"required": True, "ran": False} for side in trigger.SIDES
@@ -1190,6 +1353,8 @@ class VmCheck:
         self.head = self.git("rev-parse", "HEAD")
         if self.opts.changed and not self._evaluate_trigger():
             return EXIT_VERIFIED
+        if not self.opts.changed and not self.opts.only:
+            self._evaluate_areas()
         self.inputs = self.inputs_fn(self.root)
         self._read_account()
         self._note_old_receipts()
@@ -1229,24 +1394,28 @@ class VmCheck:
             self.say("vm:check: %s" % warning)
         if base.merge_base is None:
             self.say(
-                "vm:check: no push base resolved (tried %s); running the full check, both phases"
+                "vm:check: no push base resolved (tried %s); running the full check, both phases and every area"
                 % ", ".join(base.tried)
             )
+            self.areas = frozenset(trigger.AREAS)
             self.trigger_info = {
                 "base": None,
                 "via": "unresolved",
                 "hits": [],
                 "sides": sorted(trigger.SIDES),
+                "areas": list(trigger.AREAS),
             }
             return True
         changed = trigger.changed_paths(self.root, base.merge_base, "worktree")
         # A touched change always names a side (a hit carries its side, an unknown range its submodule's); none at all would be a trigger defect, so it costs both phases rather than none.
         sides = set(changed.sides) or set(trigger.SIDES)
+        self.areas = changed.areas
         self.trigger_info = {
             "base": base.ref,
             "via": base.via,
             "hits": [*changed.hits, *("unknown " + u for u in changed.unknown)],
             "sides": sorted(sides),
+            "areas": [a for a in trigger.AREAS if a in changed.areas],
         }
         if not changed.touched:
             self.say(
@@ -1262,7 +1431,37 @@ class VmCheck:
         )
         for hit in self.trigger_info["hits"][:10]:
             self.say("  %s" % hit)
+        self._say_areas(changed.unmapped)
         return True
+
+    def _say_areas(self, unmapped: Sequence[str]) -> None:
+        self.say(
+            "vm:check: areas %s%s"
+            % (
+                ", ".join(a for a in trigger.AREAS if a in self.areas) or "none",
+                "; %d renet path(s) in no area get the base battery alone" % len(unmapped)
+                if unmapped
+                else "",
+            )
+        )
+
+    def _evaluate_areas(self) -> None:
+        """A full run (no `--changed`) still owes the legs of every area the change touches, or a full run would be the way past an area's NOT_VERIFIED. The areas come from the same diff `--changed` reads; an unresolved base in a repository selects every area. A root that is no git repository has no tree to push, and `HEAD^{tree}` keeps such a run from writing a receipt, so its areas are not read."""
+        git = trigger.make_git(self.root)
+        if not is_repo_root(self.root):
+            self.say("vm:check: %s is not a git repository root, so no area is read" % self.root)
+            return
+        branch = git(["rev-parse", "--abbrev-ref", "HEAD"])
+        base = trigger.push_base(git, branch if branch and branch != "HEAD" else None)
+        if base.merge_base is None:
+            self.areas = frozenset(trigger.AREAS)
+            self.say("vm:check: no push base resolved, so every area's legs are owed")
+        else:
+            changed = trigger.changed_paths(self.root, base.merge_base, "worktree")
+            self.areas = changed.areas
+            self.say("vm:check: full run; areas read against %s (via %s)" % (base.ref, base.via))
+            self._say_areas(changed.unmapped)
+        self.trigger_info["areas"] = [a for a in trigger.AREAS if a in self.areas]
 
     def _read_account(self) -> None:
         """The account pointer, checkout and worktree state the receipt records; an account phase on a checkout that is not the pointer, or modified, is said up front, since its receipt cannot admit a push."""
@@ -1346,12 +1545,20 @@ class VmCheck:
                 for side in trigger.SIDES
             )
         )
+        # The steps the touched areas' `vmcheck` legs name (the license area names A0 and A2.3): run even when the account side is not required, since the area needs them.
+        wanted = area_steps(self.areas)
+        area_a2 = frozenset(wanted & set(A2_STEPS))
+        if self.areas:
+            self.say(
+                "vm:check: area legs run here: %s"
+                % (", ".join(sorted(wanted)) if wanted else "none beyond the phases")
+            )
         # A1 before P0: the suites hold no fleet lock, and a red suite stops the run before any VM is touched.
         if account and not self.a1_suites():
             return
         self.p0_lock()
         self.p1_renet()
-        if account:
+        if account or "A0" in wanted:
             self.a0_gateway()
         # P4 before P2: the account decides which config the fleet, machine and key steps read and write.
         self.p4_account()
@@ -1360,6 +1567,8 @@ class VmCheck:
         self.p3_keys()
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
         if account and not self.a2_drills():
+            return
+        if not account and area_a2 and not self.a2_drills(area_a2):
             return
         if not renet:
             return
@@ -2079,13 +2288,15 @@ class VmCheck:
             ),
         )
 
-    def a2_drills(self) -> bool:
-        """The three account drills, each judged by `classify_drill` (under `--only`, the named ones). False after a failed row; a could-not-judge drill raises once all ran."""
+    def a2_drills(self, subset: Collection[str] | None = None) -> bool:
+        """The three account drills, each judged by `classify_drill` (under `--only`, the named ones; with `subset`, the ones an area leg names). False after a failed row; a could-not-judge drill raises once all ran."""
         env = self.drill_env()
         pending: tuple[str, str] | None = None
         green = True
         for step_id, name, argv in self.drill_argvs():
             if self.opts.only and not self._only_wants(step_id):
+                continue
+            if subset is not None and step_id not in subset:
                 continue
             res = self.host.run(argv, env=env, timeout=DRILL_TIMEOUT_S)
             outcome, detail = classify_drill(res)
@@ -2733,6 +2944,24 @@ class VmCheck:
         status, reason = verdict(
             self.assertions, self.failures, self.reason, self.leftovers, self.phases
         )
+        if not self.opts.only:
+            self.area_results = judge_areas(
+                self.areas,
+                self.steps,
+                lambda _receipt: self.receipt_fn(self.root, self.tree),
+                self.ips if self.fleet_mode else None,
+            )
+            short = area_shortfall(self.area_results)
+            if short and status == receipt_mod.VERIFIED:
+                # The phases passed, but a touched area's own proof did not run: VERIFIED would claim an area nothing exercised.
+                status, reason = (
+                    receipt_mod.NOT_VERIFIED,
+                    {
+                        "class": "area-not-verified",
+                        "detail": "%d area leg(s) not proven (%s): %s"
+                        % (len(short), EXTERNAL_WHY, "; ".join(short)),
+                    },
+                )
         if self.opts.only and status == receipt_mod.VERIFIED:
             # An `--only` run judged just the named steps, so it can never stand for the whole check: it is NOT_VERIFIED and writes a run record, never receipt.json, so the push guard never admits it.
             status, reason = (
@@ -2807,6 +3036,10 @@ class VmCheck:
             "renet": renet,
             "trigger": dict(self.trigger_info),
             "phases": {side: dict(phase) for side, phase in self.phases.items()},
+            "areas": {
+                name: {"legs": [dict(leg) for leg in entry["legs"]]}
+                for name, entry in self.area_results.items()
+            },
             "gateway": dict(self.account_info["gateway"]),
             "fleet": {
                 "mode": self.fleet_mode or None,
@@ -2856,6 +3089,9 @@ class VmCheck:
                 ),
             )
         )
+        for name, entry in self.area_results.items():
+            for leg in entry["legs"]:
+                self.say("  area %s/%s %s: %s" % (name, leg["id"], leg["status"], leg["detail"]))
         gateway = self.account_info["gateway"]
         if gateway["mode"]:
             self.say(
@@ -2890,6 +3126,124 @@ class VmCheck:
                     "  this run never held the fleet lock, so %s and the tree archives were left as they were"
                     % receipt_mod.LATEST
                 )
+
+
+# --------------------------------------------------------------------------- dry run
+
+
+def plan_lines(changed: trigger.Changed | None, sides: Collection[str]) -> list[str]:
+    """The run a change would get, as lines: the phases and their steps, then each touched area with every leg (what vm:check runs, judges, or reports NOT_VERIFIED with its fleet and commands), its suites and its CI jobs. `changed` None is a run with no diff read."""
+    lines: list[str] = []
+    areas = changed.areas if changed is not None else frozenset()
+    lines.append("  always: %s" % ", ".join(INFRA_STEPS))
+    for side in trigger.SIDES:
+        state = "required" if side in sides else "not required"
+        lines.append("  phase %s %s: %s" % (side, state, ", ".join(PHASE_STEPS[side])))
+    if changed is not None and changed.unmapped:
+        lines.append(
+            "  %d renet path(s) in no area (base battery alone): %s"
+            % (len(changed.unmapped), ", ".join(changed.unmapped[:5]))
+        )
+    extra = sorted(area_steps(areas) - {s for side in sides for s in PHASE_STEPS[side]})
+    if extra:
+        lines.append("  area steps run beyond the required phases: %s" % ", ".join(extra))
+    owed: list[str] = []
+    for name in trigger.AREAS:
+        if name not in areas:
+            continue
+        area = trigger.MAP.areas[name]
+        lines.append("  area %s: %s" % (name, area.what))
+        for leg in area.legs:
+            if leg.kind == trigger.LEG_VMCHECK:
+                lines.append(
+                    "    leg %s RUNS steps %s: %s" % (leg.id, ", ".join(leg.steps), leg.what)
+                )
+            elif leg.kind == trigger.LEG_RECEIPT:
+                lines.append(
+                    "    leg %s JUDGES the %s receipt (%s); produce it with: %s"
+                    % (leg.id, leg.receipt, leg.what, " && ".join(leg.cmd))
+                )
+                owed.append(
+                    "%s/%s (unless the %s receipt admits the tree)" % (name, leg.id, leg.receipt)
+                )
+            else:
+                lines.append(
+                    "    leg %s NOT RUN, reported NOT_VERIFIED: %s; %s"
+                    % (leg.id, leg.what, external_detail(leg, None))
+                )
+                owed.append("%s/%s" % (name, leg.id))
+        lines.extend("    suite %s" % suite for suite in area.suites)
+        lines.append("    ci jobs: %s" % ", ".join(area.ci_jobs))
+    lines.append(
+        "  areas: %s; best verdict: %s"
+        % (
+            ", ".join(a for a in trigger.AREAS if a in areas) or "none",
+            "VERIFIED" if not owed else "NOT_VERIFIED area-not-verified, owed %s" % "; ".join(owed),
+        )
+    )
+    return lines
+
+
+def dry_run(root: pathlib.Path, opts: Options, out=None) -> int:
+    """`--dry-run`: print what the run would prove and touch nothing (no lock, no fleet, no gateway, no receipt). Exit 0 when the plan was read; 2 when the diff could not be read at all, since a plan over an unreadable change would be a guess."""
+    stream = out if out is not None else sys.stdout
+
+    def say(text: str) -> None:
+        print(text, file=stream)
+
+    say("=== %s --dry-run (nothing runs: no lock, no fleet, no gateway, no receipt) ===" % NAME)
+    changed: trigger.Changed | None
+    if opts.paths:
+        changed = trigger.changed_from_paths(opts.paths)
+        say("vm:check: --paths %d given, %d trigger path(s)" % (len(opts.paths), len(changed.hits)))
+    else:
+        git = trigger.make_git(root)
+        if not is_repo_root(root):
+            say("vm:check: %s is not a git repository root, so no change can be read" % root)
+            return 2
+        branch = git(["rev-parse", "--abbrev-ref", "HEAD"])
+        if opts.base:
+            commit = git(["rev-parse", "--verify", "--quiet", f"{opts.base}^{{commit}}"])
+            if not commit:
+                raise SystemExit(
+                    "vm:check: --base %s names no commit in this repository" % opts.base
+                )
+            base = trigger.BaseResolution(opts.base, "--base", commit, (opts.base,), ())
+        else:
+            base = trigger.push_base(git, branch if branch and branch != "HEAD" else None)
+        if base.merge_base is None:
+            say(
+                "vm:check: no push base resolved (tried %s): both phases and every area"
+                % ", ".join(base.tried)
+            )
+            changed = trigger.Changed(
+                hits=(), sides=frozenset(trigger.SIDES), areas=frozenset(trigger.AREAS)
+            )
+        else:
+            changed = trigger.changed_paths(root, base.merge_base, "worktree")
+            say(
+                "vm:check: %d trigger path(s) changed since %s (via %s)"
+                % (len(changed.hits) + len(changed.unknown), base.ref, base.via)
+            )
+    for hit in changed.hits[:20]:
+        say("  %s" % hit)
+    if len(changed.hits) > 20:
+        say("  ... and %d more" % (len(changed.hits) - 20))
+    for unknown in changed.unknown:
+        say("  unknown %s" % unknown)
+    if (opts.changed or opts.paths) and not changed.touched:
+        say(
+            "vm:check: no trigger path changed; a real run would verify nothing and write no receipt"
+        )
+        return 0
+    if opts.changed or opts.paths:
+        sides = set(changed.sides) or set(trigger.SIDES)
+    else:
+        sides = set(trigger.SIDES)
+        say("vm:check: no --changed, so both phases are required")
+    for line in plan_lines(changed, sides):
+        say(line)
+    return 0
 
 
 # --------------------------------------------------------------------------- selftest and entry
@@ -2929,10 +3283,13 @@ def main(
     ),
     u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
     extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
+    receipt_fn: Callable[[pathlib.Path, str], tuple[bool, str]] = backup_receipt_admits,
 ) -> int:
     opts = parse_args(argv, environ)
     if opts.selftest:
         return selftest(out)
+    if opts.dry_run:
+        return dry_run(root or paths.repo_root(), opts, out)
     drill = lib.Drill("vmcheck", keep_work=opts.keep_work, stdout=out)
     drill.init()
     check = VmCheck(
@@ -2951,6 +3308,7 @@ def main(
         renet_modified_fn=renet_modified_fn,
         u1_fn=u1_fn,
         extra_fns=extra_fns,
+        receipt_fn=receipt_fn,
     )
     try:
         return check.run()

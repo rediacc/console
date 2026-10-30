@@ -10,6 +10,8 @@ The receipt folder also holds files that are not receipts (A0's `gateway.json` r
 
 A step row may carry `log` (the path of the kept full output) and `failedAssertions` (a drill's failed assertions, `<number> <description>`); the receipt may carry `runDir`, the directory of that evidence. All three are optional, and checked for shape when present.
 
+A receipt may carry `areas` (agent/plans/PLAN-renet-change-test-triggers.md V1): `{area: {"legs": [{id, kind, status, detail}]}}` for the renet areas the change touched, with `trigger.areas` naming them. A leg that is not `ok` already made the run NOT_VERIFIED (`area-not-verified`), so `admit` needs no rule of its own for them; `areas` is checked for shape only.
+
 A receipt records two phases (`phases.renet`, `phases.account`, each `{required, ran}`) and the sides the trigger found (`trigger.sides`). A VERIFIED receipt needs at least one phase that ran and every required phase ran.
 
 `admit` is the rule the push guard applies. A receipt admits a push when its status is VERIFIED, its `tree` equals the pushed tree or its `inputs` digest equals the digest of the pushed tree, every side the push touches (`sides`) had its phase run, and `receipt.identity_refusal` keeps the identity rules for the surfaces of those sides: a clean console tree, each needed submodule checked out at its pointer and unmodified, and a renet build that is the renet pointer and unmodified when a surface needs one. A later commit outside the trigger paths keeps the `inputs` digest, so it costs no new VM run; any trigger blob or pointer move changes it.
@@ -134,7 +136,7 @@ def validate(receipt: object) -> list[str]:
     # admit reads these with .get, so a truthy non-object would raise instead of refusing.
     errors.extend(
         f"{key} is not an object"
-        for key in ("trigger", "fleet", "teardown", "phases", "gateway")
+        for key in ("trigger", "fleet", "teardown", "phases", "gateway", "areas")
         if key in receipt and not isinstance(receipt[key], dict)
     )
     errors.extend(_phase_errors(receipt, status))

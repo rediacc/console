@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-30T10:23:46.868Z",
+  "generatedAt": "2026-10-30T16:50:23.348Z",
   "legs": [
     {
       "index": 1,
@@ -64,6 +64,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_worklist_env_registry.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_harness.py",
+        "pytest:.ci/rediacc_ci/tests/proof/test_vm_check_areas.py",
         "pytest:.ci/rediacc_ci/tests/test_build_buildx_push_web.py",
         "pytest:.ci/rediacc_ci/tests/test_build_ensure_nfpm.py",
         "pytest:.ci/rediacc_ci/tests/test_build_linux_packages.py",
@@ -250,6 +251,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_inline.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_plan_citations_reachable.py",
+        "pytest:.ci/rediacc_ci/tests/proof/test_scope_map_areas.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_captcha_switch.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_bootstrap_aws_resolver.py",
@@ -443,6 +445,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_designed_failure.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_observer_exclusion.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_retry_allowlist.py",
+        "pytest:.ci/rediacc_ci/tests/proof/test_proof_areas.py",
         "pytest:.ci/rediacc_ci/tests/test_bootstrap_agg.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_json.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_pages.py",
@@ -543,6 +546,7 @@
         "pytest:.ci/rediacc_ci/tests/test_release_renet_key_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_release_resolve_ci_run.py",
         "pytest:.ci/rediacc_ci/tests/test_release_update_homebrew_tap.py",
+        "pytest:.ci/rediacc_ci/tests/test_renet_test_map_stop.py",
         "pytest:.ci/rediacc_ci/tests/test_review_pr_labels.py",
         "pytest:.ci/rediacc_ci/tests/test_runtmp.py",
         "pytest:.ci/rediacc_ci/tests/test_security_shfmt.py",
@@ -748,6 +752,7 @@
         "pytest:.ci/rediacc_ci/tests/test_release_retention_contract.py",
         "pytest:.ci/rediacc_ci/tests/test_release_tag.py",
         "pytest:.ci/rediacc_ci/tests/test_release_tag_submodules.py",
+        "pytest:.ci/rediacc_ci/tests/test_renet_test_map_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_review_claude_review_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_security_actionlint.py",
         "pytest:.ci/rediacc_ci/tests/test_security_check_commands.py",

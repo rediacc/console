@@ -766,6 +766,11 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "e2e_workers elite_run fork_isolation install_methods license_enforcement ops "
         "package_tests renet update_flow"
     )
+    # A renet path in ONE area of proof-tiers.json (agent/plans/PLAN-renet-change-test-triggers.md V2): the licence area's VM jobs (e2e_workers, fork_isolation) beside every non-VM renet key.
+    renet_license_keys = (
+        "drills e2e_workers elite_run fork_isolation install_methods license_enforcement ops "
+        "package_tests renet update_flow"
+    )
     account_keys = (
         "account_e2e drills e2e_backup_browse_at e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode "
         "e2e_migrate e2e_workers fork_isolation ops"
@@ -823,8 +828,15 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     expect_classify(
         gate, "cli source", "reduced|19|%s" % cli_keys, "packages/cli/src/commands/repo.ts"
     )
+    # A renet path in no area (and the bare gitlink) still runs every VM job: the areas narrow only what they can bound.
     expect_classify(
-        gate, "renet source", "reduced|19|%s" % renet_keys, "private/renet/pkg/license/keys.go"
+        gate, "renet source", "reduced|19|%s" % renet_keys, "private/renet/pkg/hub/hub.go"
+    )
+    expect_classify(
+        gate,
+        "renet licence-area source",
+        "reduced|19|%s" % renet_license_keys,
+        "private/renet/pkg/license/keys.go",
     )
     expect_classify(
         gate, "account source", "reduced|19|%s" % account_keys, "private/account/src/index.ts"

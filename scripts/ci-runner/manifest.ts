@@ -4110,15 +4110,15 @@ export const GATES: readonly GateSpec[] = [
   },
   // >>> gen-manifest: region 35
   {
-    id: 'check:ci-renet-chunkstore-unit',
-    run: 'npm run check:ci-renet-chunkstore-unit',
+    id: 'check:ci-renet-test-map',
+    run: 'npm run check:ci-renet-test-map',
     gate: true,
-    leaves: ['scripts/gates/check-renet-chunkstore-unit.ts'],
+    leaves: ['scripts/gates/check-renet-test-map.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-go',
-      step: 'Run chunkstore unit tests',
+      step: 'Renet test map and mapped Go tests',
     },
   },
   // <<< gen-manifest: region 35

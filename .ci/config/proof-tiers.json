@@ -9,6 +9,7 @@
         "private/renet/pkg/**",
         "private/renet/proxy/**",
         "private/renet/build.sh",
+        "private/renet/scripts/pull-with-retry.sh",
         "private/renet/go.mod",
         "private/renet/go.sum",
         "private/renet/embed-assets.lock.json"
@@ -85,7 +86,259 @@
         ".ci/rediacc_ci/drills/converge_preflight.py": ["renet"],
         ".ci/rediacc_ci/drills/gpu_grants.py": ["renet"],
         ".ci/rediacc_ci/drills/vm_ssh.py": ["renet", "account"],
-        ".ci/rediacc_ci/drills/wire.py": ["renet", "account"]
+        ".ci/rediacc_ci/drills/wire.py": ["renet", "account"],
+        ".ci/rediacc_ci/drills/backup_check_trigger.py": ["renet"]
+      },
+      "areas_about": [
+        "agent/plans/PLAN-renet-change-test-triggers.md Design item 3, the one area map.",
+        "An area names renet globs (inside the renet surface), the legs that prove a change there, the e2e suites that exercise it and the CI VM jobs that run them.",
+        "vm:check computes the touched areas from the same diff as its sides; it RUNS a `vmcheck` leg (step ids of its own battery on its worker fleet), JUDGES a `receipt` leg by the named receipt, and never runs an `external` leg (an e2e suite or drill whose fleet vm:check does not own, or whose global setup resets the fleet).",
+        "Each leg not proven makes the run NOT_VERIFIED `area-not-verified`, naming its fleet and its exact commands. A renet runtime path in no area gets the renet base battery alone.",
+        ".ci/scripts/ci/scope-map.cjs reads `globs`, `ci_jobs` and the top-level `exclude`: an expanded renet path selects only its areas' VM jobs, and the bare gitlink or a renet path in no area selects them all.",
+        "The `exclude` list (test files, docs) is the VM tier's: a test-only renet change needs no VM proof and no CI VM job, and its Go tests are the renet test map's receipt (.ci/config/renet-test-map.json), not this file's."
+      ],
+      "fleets": {
+        "worker": {
+          "ips": ["192.168.111.1", "192.168.111.11"],
+          "up": "./rdc.sh ops up --basic"
+        },
+        "two-workers": {
+          "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12"],
+          "up": "./rdc.sh ops up"
+        },
+        "ceph": {
+          "ips": ["192.168.111.1", "192.168.111.21", "192.168.111.22", "192.168.111.23"],
+          "up": "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+        },
+        "ceph-workers": {
+          "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12", "192.168.111.21", "192.168.111.22"],
+          "up": "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+        },
+        "k3s-ceph": {
+          "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12", "192.168.111.21", "192.168.111.22", "192.168.111.23"],
+          "up": "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+        },
+        "second-group": {
+          "ips": ["192.168.111.1", "192.168.111.11", "192.168.112.5", "192.168.112.51"],
+          "up": "./rdc.sh ops up --basic, then group B as ct-tests.yml 'Boot second KVM group (B)' does: VM_NET=renet12 VM_NET_BASE=192.168.112 VM_NET_OFFSET=0 VM_BRIDGE=5 VM_WORKERS=51 VM_CEPH_NODES='' PROVISION_CEPH_CLUSTER=false private/renet/bin/renet ops up --force --parallel"
+        }
+      },
+      "areas": {
+        "license": {
+          "what": "the licence store, tier map, renewal and presence checks renet enforces per repository",
+          "globs": [
+            "private/renet/pkg/license/**",
+            "private/renet/pkg/subscription/**",
+            "private/renet/cmd/renet/license_*.go",
+            "private/renet/cmd/renet/repository_license_*.go",
+            "private/renet/cmd/renet/backup_license.go"
+          ],
+          "legs": [
+            {"id": "license-drill", "kind": "vmcheck", "steps": ["A0", "A2.3"], "what": "the license drill, legs c,d,e,f (renewal from a credential-less machine, refusal on a lapsed subscription, soft claim over cap, the DTO boundary), on the worker against the dev gateway A0 starts"}
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/04-repository-lifecycle.test.ts",
+            "packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts",
+            "packages/e2e-tests/tests/kube/24-cluster-licensing.test.ts"
+          ],
+          "ci_jobs": ["e2e_workers", "fork_isolation"]
+        },
+        "functions": {
+          "what": "the function registry and executor behind `renet execute`, which every rdc repo verb dispatches through",
+          "globs": [
+            "private/renet/pkg/functions/*.go",
+            "private/renet/pkg/functions/{commands,compatibility,progress,provider,vault}/**",
+            "private/renet/cmd/renet/{functions_commands,execute_command}.go"
+          ],
+          "legs": [
+            {"id": "execute-path", "kind": "vmcheck", "steps": ["P5", "V1.1", "U1"], "what": "repo create, fork and converge on the worker, each through `renet execute`"}
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/03-datastore-lifecycle.test.ts",
+            "packages/e2e-tests/tests/04-repository-lifecycle.test.ts",
+            "packages/e2e-tests/tests/05-rediaccfiles-updown.test.ts",
+            "packages/e2e-tests/tests/06-daemon-operations.test.ts",
+            "packages/e2e-tests/tests/07-container-operations.test.ts"
+          ],
+          "ci_jobs": ["e2e_workers", "fork_isolation"]
+        },
+        "migrate": {
+          "what": "repository migration between machines and between KVM groups, and the cross-group mesh it rides",
+          "globs": [
+            "private/renet/cmd/renet/repository_migrate*.go",
+            "private/renet/pkg/functions/commands/repository_migrate.go",
+            "private/renet/pkg/infra/mesh/**"
+          ],
+          "legs": [
+            {
+              "id": "cli-migrate-23",
+              "kind": "external",
+              "fleet": "two-workers",
+              "what": "suite 23, rdc-driven repo migrate routing across two workers",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
+                "BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip"
+              ]
+            },
+            {
+              "id": "dual-group-18",
+              "kind": "external",
+              "fleet": "second-group",
+              "what": "suite 18, a migrate from group A to a second KVM group B (the e2e_migrate job)",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\" --vm-ram-worker 4096 --k8s",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.migrate.config.ts --fail-on-skip"
+              ]
+            }
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts",
+            "packages/e2e-tests/tests/23-cli-migrate-routing.test.ts"
+          ],
+          "ci_jobs": ["e2e_migrate", "e2e_workers"]
+        },
+        "multi-vm": {
+          "what": "operations spanning two workers: machine-to-machine push and pull, the SSH layer and the orchestration workflows",
+          "globs": [
+            "private/renet/pkg/ssh/**",
+            "private/renet/pkg/orchestration/**",
+            "private/renet/pkg/infra/mesh/**",
+            "private/renet/cmd/renet/backup_{push,pull}*.go"
+          ],
+          "legs": [
+            {
+              "id": "multi-machine-11",
+              "kind": "external",
+              "fleet": "two-workers",
+              "what": "suite 11, connectivity, setup, push/pull and parallel execution across workers .11 and .12",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
+                "BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 11-multi-machine --fail-on-skip"
+              ]
+            }
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/11-multi-machine.test.ts",
+            "packages/e2e-tests/tests/12d-full-integration-multi-machine.test.ts"
+          ],
+          "ci_jobs": ["e2e_workers"]
+        },
+        "ceph": {
+          "what": "RBD-backed datastores, Ceph cluster provisioning and the ceph functions",
+          "globs": [
+            "private/renet/pkg/rbd/**",
+            "private/renet/pkg/infra/{ceph,cephpkg}/**",
+            "private/renet/pkg/toolexec/ceph/**",
+            "private/renet/cmd/renet/ceph*.go",
+            "private/renet/cmd/renet/ops_{ceph,up_ceph_mirror}.go",
+            "private/renet/pkg/functions/commands/ceph.go"
+          ],
+          "legs": [
+            {
+              "id": "ceph-08-09-12c",
+              "kind": "external",
+              "fleet": "ceph",
+              "what": "the e2e_ceph job: pool and image, snapshot and clone, full integration on the Ceph trio",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --ceph --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.ceph.config.ts --fail-on-skip"
+              ]
+            },
+            {
+              "id": "ceph-workers-13-14",
+              "kind": "external",
+              "fleet": "ceph-workers",
+              "what": "the e2e_ceph_workers job: a Ceph datastore and multiple clients on the workers",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22\" --vm-ram-worker 2560 --vm-ram-ceph 2560",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip"
+              ]
+            }
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/ceph/08-ceph-pool-image.test.ts",
+            "packages/e2e-tests/tests/ceph/09-ceph-snapshot-clone.test.ts",
+            "packages/e2e-tests/tests/ceph/12c-full-integration-ceph.test.ts",
+            "packages/e2e-tests/tests/ceph/13-ceph-datastore.test.ts",
+            "packages/e2e-tests/tests/ceph/14-ceph-multiclient.test.ts"
+          ],
+          "ci_jobs": ["e2e_ceph", "e2e_ceph_workers", "e2e_k8s_ceph"]
+        },
+        "kube": {
+          "what": "k8s repositories: the k3s runtime inside a repo, the CSI driver, kube volumes and multinode clusters",
+          "globs": [
+            "private/renet/pkg/{kube,kubecsi,kubevolume}/**",
+            "private/renet/cmd/renet/kube*.go",
+            "private/renet/cmd/renet/repository_fork_kube.go",
+            "private/renet/pkg/functions/commands/kube*.go",
+            "private/renet/pkg/reporuntime/kube*.go",
+            "private/renet/pkg/nodeteardown/**"
+          ],
+          "legs": [
+            {
+              "id": "k8s-15",
+              "kind": "external",
+              "fleet": "worker",
+              "what": "the e2e_k8s job: a k8s repo running k3s inside a datastore-backed image on one worker",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\" --vm-ram-worker 4096",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s.config.ts --fail-on-skip"
+              ]
+            },
+            {
+              "id": "k8s-ceph-16",
+              "kind": "external",
+              "fleet": "k3s-ceph",
+              "what": "the e2e_k8s_ceph job: a datastore cluster on Ceph",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-ceph.config.ts --fail-on-skip"
+              ]
+            },
+            {
+              "id": "k8s-multinode-17-24",
+              "kind": "external",
+              "fleet": "k3s-ceph",
+              "what": "the e2e_k8s_multinode job: a multinode cluster, and suite 24's cluster licensing (CLUSTER_LICENSING_SUITE=1)",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560",
+                "CLUSTER_LICENSING_SUITE=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-multinode.config.ts --fail-on-skip"
+              ]
+            }
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/kube/15-k8s-repo.test.ts",
+            "packages/e2e-tests/tests/kube/16-datastore-cluster.test.ts",
+            "packages/e2e-tests/tests/kube/17-multinode-cluster.test.ts",
+            "packages/e2e-tests/tests/kube/24-cluster-licensing.test.ts"
+          ],
+          "ci_jobs": ["e2e_k8s", "e2e_k8s_ceph", "e2e_k8s_multinode"]
+        },
+        "backup": {
+          "what": "the chunk store, snapshot, push, pull, restore and prune paths, and the datastore they read",
+          "globs": [
+            "private/renet/cmd/renet/{backup,datastore,repository_prune,prune_commands}*",
+            "private/renet/pkg/{chunkstore,delta,datastore,coldbackup,backupstate,prune,restorepath,bwrate,fiemap,repodiff,snapshot}/**",
+            "private/renet/pkg/functions/commands/backup.go"
+          ],
+          "legs": [
+            {
+              "id": "backup-drills",
+              "kind": "receipt",
+              "receipt": "backup-check",
+              "what": "the backup drills' VERIFIED receipt for this tree (rediacc_ci.drills.backup_check_trigger.admit, the receipt block_backup_unverified_push reads)",
+              "cmd": ["./run.sh drill backup", "./run.sh drill backup-onprem"]
+            }
+          ],
+          "suites": [
+            "packages/e2e-tests/tests/10-backup-checkpoint.test.ts",
+            "packages/e2e-tests/tests/15-storage-backup.test.ts",
+            "packages/e2e-tests/tests/25-backup-chunk-store.test.ts",
+            "packages/e2e-tests/tests/26-backup-storage-cli.test.ts",
+            "packages/e2e-tests/tests/27-backup-browse-at.test.ts"
+          ],
+          "ci_jobs": ["e2e_workers", "e2e_backup_browse_at"]
+        }
       }
     },
     "live": {

@@ -2559,6 +2559,16 @@ def _soaked_pins_report(worklist, session_id, state_doc):
             outq_add(worklist, session_id, state_doc, "soaked-pins", text, 3)
 
 
+def _renet_tests_report(worklist, session_id, state_doc):
+    """Advise the renet test command when renet Go code changed and no receipt covers it (PLAN-renet-change-test-triggers M4). NEVER blocks and never raises."""
+    with contextlib.suppress(Exception):
+        import wl_renettests
+
+        text = wl_renettests.advisory(C.project_root(C.project_start()))
+        if text:
+            outq_add(worklist, session_id, state_doc, "renet-tests", text, 3)
+
+
 def _resprofile_report(worklist, session_id, state_doc):
     """Report-only structural findings from the previous CI run's captures, and the tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must not be an escape, but this describes how work was done, so "we did not measure" must never become "the stop is refused". Every failure is swallowed; the off switch is
     WORKLIST_PROFILE=off. See agent/plans/PLAN-shell-resource-profiling.md section 3."""
@@ -3166,6 +3176,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     state_doc = S.load_state(worklist, session_id)
     _resprofile_report(worklist, session_id, state_doc)
     _soaked_pins_report(worklist, session_id, state_doc)
+    _renet_tests_report(worklist, session_id, state_doc)
     if _cfg_problems:
         outq_add(
             worklist,

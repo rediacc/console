@@ -6,6 +6,8 @@ GLOBS. Every surface glob and exclude is a console-relative glob in the Owns gra
 
 TWO TIERS. A surface may have a VM phase (`tiers.vm.phases`: `renet` covers the renet and cli-remote surfaces, `account` the account surface) and live targets (`surfaces.<name>.live`). `tiers.vm.instrument` lists drill files whose change needs a new VM run though they deploy nothing. `Changed.hits` and `Changed.sides` are the VM tier (the paths that need a vm:check run and the phases they select; `sides` keeps its name because the vm:check receipt records it); `Changed.surfaces` is every surface a change reaches, VM phase or not.
 
+AREAS. `tiers.vm.areas` splits the renet surface by what proves it (agent/plans/PLAN-renet-change-test-triggers.md Design item 3): `areas_of` names the areas of one path, `Changed.areas` those of a change and `Changed.unmapped` the renet hits in no area, which get the base battery alone. An unknown renet range, or a diff that failed, selects every area. Each area's legs (`vmcheck`, `receipt`, `external`), its fleets and its CI jobs are parsed here and judged by vm_check; `.ci/scripts/ci/scope-map.cjs` reads the same globs for CI.
+
 Both submodules are diffed the same way. When a gitlink differs (push mode) or the submodule worktree has moved (worktree mode), the range is diffed inside the submodule. A range that cannot be computed is reported in `Changed.unknown` as `<submodule> <sha>: <why>`, adds every phase and surface living in that submodule, and counts as touched; it is never dropped.
 
 THE INPUTS DIGEST, version 3 (`inputs`): a `v3` line, the sorted `git ls-tree -r` blob lines of the console paths in the given surfaces and instrument globs (the whole tree listed, then filtered here with the map's own globs and excludes), then the gitlink pointer of each submodule a given surface lives in, sorted. With no surfaces given it is the VM tier's digest (every phase surface plus the instrument). A v2 digest never equals a v3 one, because the version line differs.
@@ -41,6 +43,8 @@ ACCOUNT_SUBMODULE = "private/account"
 SUBMODULES = (RENET_SUBMODULE, ACCOUNT_SUBMODULE)
 DIGEST_VERSION = "v3"
 RENET_BIN = "bin/renet"
+# The surface every area glob must sit inside: an area path is a renet runtime path, so the renet phase (the base battery) always runs beside the area's legs.
+SIDE_RENET_SURFACE = "renet"
 
 Mode = Literal["push", "worktree"]
 
@@ -58,6 +62,44 @@ class Surface:
     submodules: frozenset[str]
 
 
+LEG_VMCHECK = "vmcheck"
+LEG_RECEIPT = "receipt"
+LEG_EXTERNAL = "external"
+LEG_KINDS = (LEG_VMCHECK, LEG_RECEIPT, LEG_EXTERNAL)
+# The receipts a `receipt` leg may name; vm_check knows how to judge each.
+LEG_RECEIPTS = ("backup-check",)
+
+
+@dataclasses.dataclass(frozen=True)
+class Fleet:
+    name: str
+    ips: tuple[str, ...]
+    up: str
+
+
+@dataclasses.dataclass(frozen=True)
+class Leg:
+    """One proof of an area. `vmcheck` names step ids of vm:check's own battery; `receipt` names a receipt vm:check judges; `external` names a fleet and the commands vm:check prints but never runs."""
+
+    id: str
+    kind: str
+    what: str
+    steps: tuple[str, ...] = ()
+    fleet: str = ""
+    receipt: str = ""
+    cmd: tuple[str, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True)
+class Area:
+    name: str
+    what: str
+    globs: tuple[str, ...]
+    legs: tuple[Leg, ...]
+    suites: tuple[str, ...]
+    ci_jobs: tuple[str, ...]
+
+
 @dataclasses.dataclass(frozen=True)
 class ProofMap:
     surfaces: dict[str, Surface]
@@ -65,6 +107,8 @@ class ProofMap:
     phases: dict[str, frozenset[str]]
     instrument: dict[str, frozenset[str]]
     live: dict[str, Any]
+    fleets: dict[str, Fleet] = dataclasses.field(default_factory=dict)
+    areas: dict[str, Area] = dataclasses.field(default_factory=dict)
 
 
 def _normalised(globs: object, where: str) -> tuple[str, ...]:
@@ -121,8 +165,90 @@ def _parse_vm(vm: dict[str, Any], surfaces: dict[str, Surface]) -> tuple[dict, d
     return phases, instrument
 
 
+def _strs(value: object, where: str, *, empty_ok: bool = False) -> tuple[str, ...]:
+    if not isinstance(value, list) or not all(isinstance(v, str) and v.strip() for v in value):
+        raise MapError(f"{where} is not a list of non-empty strings")
+    if not value and not empty_ok:
+        raise MapError(f"{where} is empty")
+    return tuple(value)
+
+
+def _parse_fleets(entries: object) -> dict[str, Fleet]:
+    if not isinstance(entries, dict) or not entries:
+        raise MapError("tiers.vm.fleets is empty")
+    fleets: dict[str, Fleet] = {}
+    for name, entry in entries.items():
+        if not isinstance(entry, dict) or not isinstance(entry.get("up"), str) or not entry["up"]:
+            raise MapError(f"tiers.vm.fleets.{name} needs ips and an up command")
+        fleets[name] = Fleet(
+            name, _strs(entry.get("ips"), f"tiers.vm.fleets.{name}.ips"), entry["up"]
+        )
+    return fleets
+
+
+def _parse_leg(raw: object, where: str, fleets: dict[str, Fleet]) -> Leg:
+    if not isinstance(raw, dict) or not isinstance(raw.get("id"), str) or not raw["id"]:
+        raise MapError(f"{where} needs an id")
+    where = f"{where} {raw['id']}"
+    kind = raw.get("kind")
+    what = raw.get("what")
+    if kind not in LEG_KINDS:
+        raise MapError(f"{where}: kind {kind!r} is not one of {', '.join(LEG_KINDS)}")
+    if not isinstance(what, str) or not what:
+        raise MapError(f"{where} needs a what")
+    if kind == LEG_VMCHECK:
+        return Leg(raw["id"], kind, what, steps=_strs(raw.get("steps"), f"{where}.steps"))
+    cmd = _strs(raw.get("cmd"), f"{where}.cmd")
+    if kind == LEG_RECEIPT:
+        if raw.get("receipt") not in LEG_RECEIPTS:
+            raise MapError(f"{where}: receipt {raw.get('receipt')!r} is not one of {LEG_RECEIPTS}")
+        return Leg(raw["id"], kind, what, receipt=raw["receipt"], cmd=cmd)
+    if raw.get("fleet") not in fleets:
+        raise MapError(f"{where}: fleet {raw.get('fleet')!r} is not in tiers.vm.fleets")
+    return Leg(raw["id"], kind, what, fleet=raw["fleet"], cmd=cmd)
+
+
+def _parse_areas(
+    entries: object, fleets: dict[str, Fleet], renet: Surface | None
+) -> dict[str, Area]:
+    """Every area, or MapError. An area with no glob, no leg or no CI job is blind; a glob outside private/renet/ is not a renet area; two legs sharing an id would report as one."""
+    if not isinstance(entries, dict) or not entries:
+        raise MapError("tiers.vm.areas is empty: no renet change could select an area")
+    if renet is None:
+        raise MapError("tiers.vm.areas needs the renet surface")
+    areas: dict[str, Area] = {}
+    for name, entry in entries.items():
+        where = f"tiers.vm.areas.{name}"
+        if not isinstance(entry, dict) or not isinstance(entry.get("what"), str):
+            raise MapError(f"{where} needs a what")
+        globs = _normalised(entry.get("globs"), f"{where}.globs")
+        outside = [g for g in globs if not g.startswith(f"{RENET_SUBMODULE}/")]
+        if outside:
+            raise MapError(f"{where}.globs leave {RENET_SUBMODULE}/: {outside}")
+        # An area glob the renet surface cannot reach would select legs while the renet phase, and the push guard with it, never fires.
+        stray = [g for g in globs if not wl_planconc.owns_overlap([g], renet.globs)]
+        if stray:
+            raise MapError(f"{where}.globs reach no path of the renet surface: {stray}")
+        raw_legs = entry.get("legs")
+        if not isinstance(raw_legs, list) or not raw_legs:
+            raise MapError(f"{where}.legs is empty: nothing would prove the area")
+        legs = tuple(_parse_leg(leg, f"{where}.legs", fleets) for leg in raw_legs)
+        ids = [leg.id for leg in legs]
+        if len(set(ids)) != len(ids):
+            raise MapError(f"{where}.legs repeat an id: {ids}")
+        areas[name] = Area(
+            name,
+            entry["what"],
+            globs,
+            legs,
+            _strs(entry.get("suites"), f"{where}.suites", empty_ok=True),
+            _strs(entry.get("ci_jobs"), f"{where}.ci_jobs"),
+        )
+    return areas
+
+
 def parse_map(raw: object) -> ProofMap:
-    """The map, or MapError naming the first defect. Zero surfaces, an unknown surface in a phase, a phase-less instrument entry and a missing renet or account phase are all defects."""
+    """The map, or MapError naming the first defect. Zero surfaces, an unknown surface in a phase, a phase-less instrument entry, a missing renet or account phase, an empty area table and an area leg naming an unknown fleet are all defects."""
     if not isinstance(raw, dict) or raw.get("schema") != MAP_SCHEMA:
         raise MapError(f"the map is not an object of schema {MAP_SCHEMA}")
     if raw.get("submodules") != list(SUBMODULES):
@@ -136,7 +262,9 @@ def parse_map(raw: object) -> ProofMap:
     live = tiers.get("live")
     if not isinstance(live, dict):
         raise MapError("tiers.live is missing")
-    return ProofMap(surfaces, exclude, phases, instrument, live)
+    fleets = _parse_fleets(tiers["vm"].get("fleets"))
+    areas = _parse_areas(tiers["vm"].get("areas"), fleets, surfaces.get(SIDE_RENET_SURFACE))
+    return ProofMap(surfaces, exclude, phases, instrument, live, fleets, areas)
 
 
 def load(path: pathlib.Path = MAP_PATH) -> ProofMap:
@@ -189,6 +317,17 @@ def surfaces_of(path: str) -> frozenset[str]:
     return frozenset(n for n, rxs in _SURFACE_RX.items() if any(rx.match(path) for rx in rxs))
 
 
+AREAS = tuple(MAP.areas)
+_AREA_RX = {name: _regexes(a.globs) for name, a in MAP.areas.items()}
+
+
+def areas_of(path: str) -> frozenset[str]:
+    """Every area a console-relative `path` falls in; empty when it is excluded or in none. A renet runtime path in no area gets the base battery alone."""
+    if excluded(path):
+        return frozenset()
+    return frozenset(n for n, rxs in _AREA_RX.items() if any(rx.match(path) for rx in rxs))
+
+
 def phases_for(surfaces: Iterable[str]) -> frozenset[str]:
     """The VM phases that cover any of `surfaces`."""
     wanted = set(surfaces)
@@ -237,6 +376,10 @@ class Changed:
     unknown: tuple[str, ...] = ()
     sides: frozenset[str] = frozenset()
     surfaces: frozenset[str] = frozenset()
+    # The areas of `tiers.vm.areas` the hits fall in; every area when the renet range is unknown.
+    areas: frozenset[str] = frozenset()
+    # The renet hits that fall in no area: they get the renet base battery alone.
+    unmapped: tuple[str, ...] = ()
 
     @property
     def touched(self) -> bool:
@@ -331,16 +474,37 @@ class _Tally:
     hits: list[str] = dataclasses.field(default_factory=list)
     sides: set[str] = dataclasses.field(default_factory=set)
     surfaces: set[str] = dataclasses.field(default_factory=set)
+    areas: set[str] = dataclasses.field(default_factory=set)
+    unmapped: list[str] = dataclasses.field(default_factory=list)
 
     def add(self, paths_: Iterable[str]) -> None:
         found_hits: set[str] = set()
         for p in paths_:
-            self.surfaces |= surfaces_of(p)
+            hit = surfaces_of(p)
+            self.surfaces |= hit
             sides = console_sides(p)
             if sides:
                 self.sides |= sides
                 found_hits.add(p)
+            if SIDE_RENET_SURFACE in hit:
+                found = areas_of(p)
+                self.areas |= found
+                if not found:
+                    self.unmapped.append(p)
         self.hits += sorted(found_hits)
+
+
+def changed_from_paths(paths_: Iterable[str]) -> Changed:
+    """What a given list of console-relative paths touches, with no git: `vm:check --dry-run --paths` and the tests read the map through this."""
+    tally = _Tally()
+    tally.add(set(paths_))
+    return Changed(
+        hits=tuple(tally.hits),
+        sides=frozenset(tally.sides),
+        surfaces=frozenset(tally.surfaces),
+        areas=frozenset(tally.areas),
+        unmapped=tuple(sorted(tally.unmapped)),
+    )
 
 
 def changed_paths(root: pathlib.Path, base: str, mode: Mode, tip: str = "HEAD") -> Changed:
@@ -359,6 +523,7 @@ def changed_paths(root: pathlib.Path, base: str, mode: Mode, tip: str = "HEAD") 
             unknown=(f"{base}: git diff failed",),
             sides=frozenset(SIDES),
             surfaces=frozenset(SURFACES),
+            areas=frozenset(AREAS),
         )
     changed = _lines(names)
     if mode == "worktree":
@@ -377,12 +542,17 @@ def changed_paths(root: pathlib.Path, base: str, mode: Mode, tip: str = "HEAD") 
             unknown.append(f"{sub} {old or new or 'none'}: {why}")
             tally.sides |= SUBMODULE_SIDES[sub]
             tally.surfaces |= SUBMODULE_SURFACES[sub]
+            if sub == RENET_SUBMODULE:
+                # An unknown renet range could be in any area, so it needs every area's proof.
+                tally.areas |= set(AREAS)
         tally.add({f"{sub}/{rel}" for rel in rels})
     return Changed(
         hits=tuple(tally.hits),
         unknown=tuple(unknown),
         sides=frozenset(tally.sides),
         surfaces=frozenset(tally.surfaces),
+        areas=frozenset(tally.areas),
+        unmapped=tuple(sorted(tally.unmapped)),
     )
 
 

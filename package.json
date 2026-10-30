@@ -320,7 +320,7 @@
     "check:ci-cta-bolt": "npm run check:cta-bolt -w @rediacc/www",
     "check:ci-no-otlp-creds": ".ci/scripts/quality/check_no_otlp_creds.py",
     "check:ci-no-rclone-embedded": "tsx scripts/gates/check-no-rclone-embedded.ts --selftest && tsx scripts/gates/check-no-rclone-embedded.ts",
-    "check:ci-renet-chunkstore-unit": "tsx scripts/gates/check-renet-chunkstore-unit.ts --selftest && tsx scripts/gates/check-renet-chunkstore-unit.ts",
+    "check:ci-renet-test-map": "tsx scripts/gates/check-renet-test-map.ts --selftest && tsx scripts/gates/check-renet-test-map.ts",
     "check:ci-account-backup": "cd private/account && npx vitest run tests/integration/backup-*.test.ts --reporter=dot",
     "check:ci-subscription-schema": ".ci/scripts/quality/check_subscription_schema.py",
     "check:ci-pricing-consistency": "tsx scripts/gates/check-pricing-consistency.ts",

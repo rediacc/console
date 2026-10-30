@@ -508,6 +508,9 @@
     "effort-tune": {
       "advise": "low"
     },
+    "renet-tests": {
+      "advise": "low"
+    },
     "soaked-pins": {
       "advise": "smart"
     },

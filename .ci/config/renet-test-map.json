@@ -1,0 +1,1643 @@
+{
+  "schema": 1,
+  "module": "github.com/rediacc/renet",
+  "areaNames": [
+    "license",
+    "functions",
+    "migrate",
+    "multi-vm",
+    "ceph",
+    "kube",
+    "backup"
+  ],
+  "whole": [
+    {
+      "glob": "go.mod",
+      "why": "the module graph reaches every package"
+    },
+    {
+      "glob": "go.sum",
+      "why": "a dependency checksum change reaches every package that imports it"
+    }
+  ],
+  "always": [
+    {
+      "package": "pkg/i18n",
+      "why": "extract_baseline_test.go reads every Go source under pkg/ and cmd/ as text, so any Go change can turn it red"
+    }
+  ],
+  "entries": [
+    {
+      "glob": "cmd/renet/**",
+      "areas": [],
+      "packages": [
+        "cmd/renet"
+      ],
+      "dependents": []
+    },
+    {
+      "glob": "pkg/atomicjson/**",
+      "areas": [],
+      "packages": [
+        "pkg/atomicjson"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/backupstate",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/list",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/backupstate/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/backupstate"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/list"
+      ]
+    },
+    {
+      "glob": "pkg/bwrate/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/bwrate"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/functions/commands"
+      ]
+    },
+    {
+      "glob": "pkg/certexport/**",
+      "areas": [],
+      "packages": [
+        "pkg/certexport",
+        "pkg/certexport/trigger"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/reporuntime",
+        "pkg/router"
+      ]
+    },
+    {
+      "glob": "pkg/chunkstore/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/chunkstore",
+        "pkg/chunkstore/toccrypt"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/credentials",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/repodiff",
+        "pkg/reporuntime",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/coldbackup/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/coldbackup"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/dockerstore",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/compose/**",
+      "areas": [],
+      "packages": [
+        "pkg/compose"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/config/**",
+      "areas": [],
+      "packages": [
+        "pkg/config"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/coldbackup",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/credentials",
+        "pkg/daemon",
+        "pkg/datastore",
+        "pkg/dns",
+        "pkg/dockerproxy",
+        "pkg/dockerstore",
+        "pkg/ebpf",
+        "pkg/filesystem",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/functions/compatibility",
+        "pkg/functions/progress",
+        "pkg/functions/provider",
+        "pkg/hostmetrics",
+        "pkg/hub",
+        "pkg/infra/bridgesvc",
+        "pkg/infra/ceph",
+        "pkg/infra/docker",
+        "pkg/infra/image",
+        "pkg/infra/mesh",
+        "pkg/infra/opsconfig",
+        "pkg/infra/vm/hyperv",
+        "pkg/infra/vm/kvm",
+        "pkg/infra/vm/qemu",
+        "pkg/infra/vm/terraform",
+        "pkg/infra/worker",
+        "pkg/jobs",
+        "pkg/kube",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kube/registry",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/license",
+        "pkg/list",
+        "pkg/locking",
+        "pkg/luks",
+        "pkg/nodeteardown",
+        "pkg/orchestration",
+        "pkg/output",
+        "pkg/proxy",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/rbd",
+        "pkg/repodiff",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/sandbox",
+        "pkg/storage",
+        "pkg/subscription",
+        "pkg/thinpool",
+        "pkg/toolexec",
+        "pkg/toolexec/ceph",
+        "pkg/toolexec/devicemapper",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/convergeguard/**",
+      "areas": [],
+      "packages": [
+        "pkg/convergeguard"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/credentials/**",
+      "areas": [],
+      "packages": [
+        "pkg/credentials"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/repodiff",
+        "pkg/reporuntime",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/daemon/**",
+      "areas": [],
+      "packages": [
+        "pkg/daemon"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/datastore/**",
+      "areas": [],
+      "packages": [
+        "pkg/datastore"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/delta/**",
+      "areas": [
+        "backup",
+        "migrate"
+      ],
+      "packages": [
+        "pkg/delta"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/repodiff",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/dns/**",
+      "areas": [],
+      "packages": [
+        "pkg/dns"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/dockergrant/**",
+      "areas": [],
+      "packages": [
+        "pkg/dockergrant"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hostmetrics",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/proxy",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/dockerpolicy/**",
+      "areas": [],
+      "packages": [
+        "pkg/dockerpolicy"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/dockergrant",
+        "pkg/dockerproxy",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/hostmetrics",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/proxy",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/dockerproxy/**",
+      "areas": [],
+      "packages": [
+        "pkg/dockerproxy"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/dockerstore/**",
+      "areas": [],
+      "packages": [
+        "pkg/dockerstore"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/ebpf/**",
+      "areas": [],
+      "packages": [
+        "pkg/ebpf"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/embed/**",
+      "areas": [],
+      "packages": [
+        "pkg/embed"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/infra/ceph",
+        "pkg/infra/docker",
+        "pkg/infra/worker",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kube/registry"
+      ]
+    },
+    {
+      "glob": "pkg/fiemap/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/fiemap"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/delta",
+        "pkg/repodiff",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/filesystem/**",
+      "areas": [],
+      "packages": [
+        "pkg/filesystem"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/license",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/repodiff",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/storage",
+        "pkg/subscription",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/functions/**",
+      "areas": [
+        "functions"
+      ],
+      "packages": [
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/functions/compatibility",
+        "pkg/functions/progress",
+        "pkg/functions/provider",
+        "pkg/functions/vault"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/jobs"
+      ]
+    },
+    {
+      "glob": "pkg/gpu/**",
+      "areas": [],
+      "packages": [
+        "pkg/gpu"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/health/**",
+      "areas": [],
+      "packages": [
+        "pkg/health"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/reporuntime",
+        "pkg/router"
+      ]
+    },
+    {
+      "glob": "pkg/hostmetrics/**",
+      "areas": [],
+      "packages": [
+        "pkg/hostmetrics"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/proxy",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/hub/**",
+      "areas": [
+        "multi-vm"
+      ],
+      "packages": [
+        "pkg/hub"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/i18n/**",
+      "areas": [],
+      "packages": [
+        "pkg/i18n",
+        "pkg/i18n/locales"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/atomicjson",
+        "pkg/backupstate",
+        "pkg/bwrate",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/chunkstore/toccrypt",
+        "pkg/coldbackup",
+        "pkg/compose",
+        "pkg/config",
+        "pkg/convergeguard",
+        "pkg/credentials",
+        "pkg/daemon",
+        "pkg/datastore",
+        "pkg/delta",
+        "pkg/dns",
+        "pkg/dockergrant",
+        "pkg/dockerproxy",
+        "pkg/dockerstore",
+        "pkg/ebpf",
+        "pkg/filesystem",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/functions/compatibility",
+        "pkg/functions/progress",
+        "pkg/functions/provider",
+        "pkg/gpu",
+        "pkg/hostmetrics",
+        "pkg/hub",
+        "pkg/infra/bridgesvc",
+        "pkg/infra/ceph",
+        "pkg/infra/cephpkg",
+        "pkg/infra/docker",
+        "pkg/infra/image",
+        "pkg/infra/mesh",
+        "pkg/infra/opsconfig",
+        "pkg/infra/vm/hyperv",
+        "pkg/infra/vm/kvm",
+        "pkg/infra/vm/qemu",
+        "pkg/infra/vm/terraform",
+        "pkg/infra/worker",
+        "pkg/jobs",
+        "pkg/kernel",
+        "pkg/kube",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kube/registry",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/license",
+        "pkg/list",
+        "pkg/locking",
+        "pkg/luks",
+        "pkg/nodeteardown",
+        "pkg/orchestration",
+        "pkg/output",
+        "pkg/proxy",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/rbd",
+        "pkg/repodiff",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/sandbox",
+        "pkg/ssh",
+        "pkg/storage",
+        "pkg/subscription",
+        "pkg/thinpool",
+        "pkg/toolexec",
+        "pkg/toolexec/ceph",
+        "pkg/toolexec/devicemapper",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/infra/**",
+      "areas": [],
+      "packages": [
+        "pkg/infra/aptretry",
+        "pkg/infra/aptsources",
+        "pkg/infra/bridgesvc",
+        "pkg/infra/docker",
+        "pkg/infra/image",
+        "pkg/infra/opsconfig",
+        "pkg/infra/pkgset",
+        "pkg/infra/worker"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/infra/ceph",
+        "pkg/infra/mesh",
+        "pkg/infra/vm/hyperv",
+        "pkg/infra/vm/kvm",
+        "pkg/infra/vm/qemu",
+        "pkg/infra/vm/terraform"
+      ]
+    },
+    {
+      "glob": "pkg/infra/ceph/**",
+      "areas": [
+        "ceph"
+      ],
+      "packages": [
+        "pkg/infra/ceph"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/infra/cephpkg/**",
+      "areas": [
+        "ceph"
+      ],
+      "packages": [
+        "pkg/infra/cephpkg"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/infra/mesh/**",
+      "areas": [
+        "multi-vm"
+      ],
+      "packages": [
+        "pkg/infra/mesh"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/infra/ceph"
+      ]
+    },
+    {
+      "glob": "pkg/infra/vm/**",
+      "areas": [
+        "multi-vm"
+      ],
+      "packages": [
+        "pkg/infra/vm",
+        "pkg/infra/vm/cloudinit",
+        "pkg/infra/vm/hyperv",
+        "pkg/infra/vm/imagedl",
+        "pkg/infra/vm/kvm",
+        "pkg/infra/vm/qemu",
+        "pkg/infra/vm/terraform"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/infra/ceph",
+        "pkg/infra/docker",
+        "pkg/infra/image",
+        "pkg/infra/mesh",
+        "pkg/infra/worker"
+      ]
+    },
+    {
+      "glob": "pkg/jobs/**",
+      "areas": [],
+      "packages": [
+        "pkg/jobs"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/list"
+      ]
+    },
+    {
+      "glob": "pkg/kernel/**",
+      "areas": [],
+      "packages": [
+        "pkg/kernel"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/delta",
+        "pkg/repodiff",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/kube/**",
+      "areas": [
+        "kube",
+        "migrate"
+      ],
+      "packages": [
+        "pkg/kube",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kube/registry"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/infra/ceph",
+        "pkg/infra/docker",
+        "pkg/infra/worker",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/kubecsi/**",
+      "areas": [
+        "kube"
+      ],
+      "packages": [
+        "pkg/kubecsi"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro"
+      ]
+    },
+    {
+      "glob": "pkg/kubevolume/**",
+      "areas": [
+        "kube"
+      ],
+      "packages": [
+        "pkg/kubevolume"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi"
+      ]
+    },
+    {
+      "glob": "pkg/license/**",
+      "areas": [
+        "license"
+      ],
+      "packages": [
+        "pkg/license",
+        "pkg/license/keys"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/reporuntime",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/list/**",
+      "areas": [],
+      "packages": [
+        "pkg/list"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/locking/**",
+      "areas": [],
+      "packages": [
+        "pkg/locking"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/jobs",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/loop/**",
+      "areas": [],
+      "packages": [
+        "pkg/loop"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/luks/**",
+      "areas": [],
+      "packages": [
+        "pkg/luks"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/credentials",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/license",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/repodiff",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/storage",
+        "pkg/subscription",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/nodeteardown/**",
+      "areas": [
+        "kube"
+      ],
+      "packages": [
+        "pkg/nodeteardown"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/datastore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/rbd",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/orchestration/**",
+      "areas": [],
+      "packages": [
+        "pkg/orchestration"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/output/**",
+      "areas": [],
+      "packages": [
+        "pkg/output"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/procwalk/**",
+      "areas": [],
+      "packages": [
+        "pkg/procwalk"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/proxy/**",
+      "areas": [],
+      "packages": [
+        "pkg/proxy"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/prune/**",
+      "areas": [],
+      "packages": [
+        "pkg/prune"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/list",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/ps/**",
+      "areas": [],
+      "packages": [
+        "pkg/ps"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/list",
+        "pkg/prune",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/rbd/**",
+      "areas": [
+        "ceph"
+      ],
+      "packages": [
+        "pkg/rbd"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/datastore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/rediaccfile/**",
+      "areas": [],
+      "packages": [
+        "pkg/rediaccfile"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/repodiff/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/repodiff"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/repoguid/**",
+      "areas": [],
+      "packages": [
+        "pkg/repoguid"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/functions/provider",
+        "pkg/kube",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/reporuntime",
+        "pkg/restorepath",
+        "pkg/sandbox",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/repomerge/**",
+      "areas": [],
+      "packages": [
+        "pkg/repomerge"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/reporuntime/**",
+      "areas": [],
+      "packages": [
+        "pkg/reporuntime"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume"
+      ]
+    },
+    {
+      "glob": "pkg/repository/**",
+      "areas": [],
+      "packages": [
+        "pkg/repository"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/reporuntime",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/restorepath/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/restorepath"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/router/**",
+      "areas": [],
+      "packages": [
+        "pkg/router"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/runpaths/**",
+      "areas": [],
+      "packages": [
+        "pkg/runpaths"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/dns",
+        "pkg/dockergrant",
+        "pkg/dockerpolicy",
+        "pkg/dockerproxy",
+        "pkg/ebpf",
+        "pkg/functions",
+        "pkg/functions/commands",
+        "pkg/hostmetrics",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/proxy",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/sandbox/**",
+      "areas": [],
+      "packages": [
+        "pkg/sandbox"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/functions",
+        "pkg/kube",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/reporuntime",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/snapshot/**",
+      "areas": [
+        "backup"
+      ],
+      "packages": [
+        "pkg/snapshot"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/orchestration",
+        "pkg/reporuntime"
+      ]
+    },
+    {
+      "glob": "pkg/ssh/**",
+      "areas": [
+        "multi-vm"
+      ],
+      "packages": [
+        "pkg/ssh"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions",
+        "pkg/functions/compatibility"
+      ]
+    },
+    {
+      "glob": "pkg/stats/**",
+      "areas": [],
+      "packages": [
+        "pkg/stats"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/list",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/storage/**",
+      "areas": [],
+      "packages": [
+        "pkg/storage"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/license",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/subscription",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/subscription/**",
+      "areas": [
+        "license"
+      ],
+      "packages": [
+        "pkg/subscription"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/license",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/reporuntime",
+        "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/systemctl/**",
+      "areas": [],
+      "packages": [
+        "pkg/systemctl"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/infra/ceph",
+        "pkg/infra/docker",
+        "pkg/infra/worker",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kube/registry",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/telemetry/**",
+      "areas": [],
+      "packages": [
+        "pkg/telemetry"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/testutil/**",
+      "areas": [],
+      "packages": [
+        "pkg/testutil"
+      ],
+      "dependents": []
+    },
+    {
+      "glob": "pkg/thinpool/**",
+      "areas": [],
+      "packages": [
+        "pkg/thinpool"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/list"
+      ]
+    },
+    {
+      "glob": "pkg/toolexec/**",
+      "areas": [],
+      "packages": [
+        "pkg/toolexec",
+        "pkg/toolexec/devicemapper"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/datastore",
+        "pkg/functions",
+        "pkg/infra/ceph",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/nodeteardown",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/rbd",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/thinpool",
+        "pkg/toolexec/ceph",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/toolexec/ceph/**",
+      "areas": [
+        "ceph"
+      ],
+      "packages": [
+        "pkg/toolexec/ceph"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/chunkstore",
+        "pkg/datastore",
+        "pkg/functions",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/rbd",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/trim/**",
+      "areas": [],
+      "packages": [
+        "pkg/trim"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/list"
+      ]
+    },
+    {
+      "glob": "pkg/vaultcrypto/**",
+      "areas": [],
+      "packages": [
+        "pkg/vaultcrypto"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/functions"
+      ]
+    }
+  ]
+}

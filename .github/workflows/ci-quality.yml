@@ -2913,9 +2913,9 @@ jobs:
 
       # J2 (PLAN-backup-program): the chunk-store data plane, non-root, counted
       # (the gate refuses a green that ran fewer tests than its floor).
-      - name: Run chunkstore unit tests
+      - name: Renet test map and mapped Go tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-renet-chunkstore-unit
+        run: npm run check:ci-renet-test-map
 
       - name: Assert no NODE_ENV branching in account routes
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
