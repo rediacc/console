@@ -367,20 +367,43 @@ describe('CLI contract', () => {
     }
   });
 
-  it('keys DETACH_EXCLUSIONS only on commands that exist, and a planted unknown key is caught', () => {
-    // The generator fails on a stale key (generate-cli-contract.ts, staleExclusions). Read its table as text, so the
-    // same check runs here without executing the generator, and prove the check with a planted key as the control.
+  it('keys the exclusion tables only on commands that exist, and a planted unknown key is caught', () => {
+    // The generator is a script that writes files on import, so it cannot be imported. Its staleExclusions statement is
+    // lifted from the source text and evaluated, so weakening that statement turns this test red, and a planted key is the control.
     const source = readFileSync(
       fileURLToPath(new URL('../../../../cli/scripts/generate-cli-contract.ts', import.meta.url)),
       'utf-8'
     );
-    const block = /const DETACH_EXCLUSIONS[^=]*=\s*\{([\s\S]*?)\n\};/.exec(source)?.[1] ?? '';
-    const keys = [...block.matchAll(/^ {2}'([^']+)':/gm)].map((m) => m[1] as string);
-    expect(keys.length).toBeGreaterThan(0);
+    const tableKeys = (name: string): Record<string, string> => {
+      const block =
+        new RegExp(`const ${name}[^=]*=\\s*\\{([\\s\\S]*?)\\n\\};`).exec(source)?.[1] ?? '';
+      return Object.fromEntries(
+        [...block.matchAll(/^ {2}'([^']+)':/gm)].map((m) => [m[1] as string, ''])
+      );
+    };
+    const expression = /const staleExclusions = (\[[\s\S]*?\]\.filter\([^;]*\));/.exec(source)?.[1];
+    if (!expression) throw new Error('staleExclusions statement not found in the generator');
+    const generatorStale = new Function(
+      'PROXY_EXCLUSIONS',
+      'DETACH_EXCLUSIONS',
+      'livePathKeys',
+      `return ${expression.replaceAll(' as const', '')};`
+    ) as (
+      proxy: Record<string, string>,
+      detach: Record<string, string>,
+      live: Set<string>
+    ) => Array<readonly [string, string]>;
+    const proxy = tableKeys('PROXY_EXCLUSIONS');
+    const detach = tableKeys('DETACH_EXCLUSIONS');
+    expect(Object.keys(detach).length).toBeGreaterThan(0);
     const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
-    const stale = (names: string[]) => names.filter((k) => !live.has(k));
-    expect(stale(keys)).toEqual([]);
-    expect(stale([...keys, 'repo no-such-verb'])).toEqual(['repo no-such-verb']);
+    expect(generatorStale(proxy, detach, live)).toEqual([]);
+    expect(generatorStale(proxy, { ...detach, 'repo no-such-verb': '' }, live)).toEqual([
+      ['repo no-such-verb', 'DETACH_EXCLUSIONS'],
+    ]);
+    expect(generatorStale({ ...proxy, 'repo no-such-proxy': '' }, detach, live)).toEqual([
+      ['repo no-such-proxy', 'PROXY_EXCLUSIONS'],
+    ]);
   });
 
   it('gives every section 24 exception a --background refusal reason, and no other command one', () => {

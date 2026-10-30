@@ -428,6 +428,33 @@ describe('repo create network ID: renet allocates inside the job', () => {
     expect(requestNetworkIdAuto).toHaveBeenCalledWith(
       expect.objectContaining({ machine: 'm1', repoName: 'shop', recordAs: 'shop:latest' })
     );
+    // The directive is the channel that sends network_id "auto" (executor-factory); the registered line names that value.
+    const { outputService } = await import('../../services/core/output.js');
+    const registered = vi
+      .mocked(outputService.info)
+      .mock.calls.map((c) => String(c[0]))
+      .find((line) => line.includes('shop'));
+    expect(registered).toContain('auto');
+    expect(registered).not.toMatch(/\b42\b/);
+  });
+
+  it('keeps the created repo registered when finishing the outcome throws after the job ran', async () => {
+    const { configService } = await import('../../services/config/config-resources.js');
+    // The registration exists once addRepository ran, under the GUID it recorded.
+    vi.mocked(configService.getRepository).mockImplementation(() => {
+      const recorded = addRepository.mock.calls[0]?.[1];
+      return Promise.resolve(recorded as never);
+    });
+    const { outputService } = await import('../../services/core/output.js');
+    vi.mocked(outputService.success).mockImplementationOnce(() => {
+      throw new Error('render broke');
+    });
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    vi.mocked(configService.getRepository).mockImplementation(() => Promise.resolve(undefined));
+    expect(execute.mock.calls.map((c) => c[0].functionName)).toEqual(['repository_create']);
+    expect(configService.removeRepository).not.toHaveBeenCalled();
+    expect(handleError).not.toHaveBeenCalled();
+    expect(outputService.warn).toHaveBeenCalledWith(expect.stringContaining('was created'));
   });
 
   it('makes exactly one job for a refused ID, never a retry, with the rollback as its failure step', async () => {

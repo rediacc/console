@@ -21,7 +21,12 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { getExecutor, requestNetworkIdAuto } from '../services/executor/executor-factory.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
-import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import {
+  type CommandJobOutcome,
+  pendingExitCode,
+  runCommandJob,
+} from '../services/jobs/command-job.js';
+import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
@@ -117,11 +122,25 @@ async function runCreateJob(
   size: string | undefined,
   options: ExecuteOptions
 ): Promise<void> {
+  // A rejection here means the job did not start, so the caller rolls the registration back.
   const outcome = await runCommandJob(
     'repo create',
     { ...options, deferIdentityRefresh: true },
     createSteps(name, guid, machine, size)
   );
+  // From here the repo exists on the machine (or the job still runs): nothing below may reach the caller's rollback.
+  try {
+    settleCreateOutcome(name, outcome);
+  } catch (error) {
+    outputService.warn(
+      `repo create: ${name} was created, but finishing it failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+    setExitCode(1);
+  }
+}
+
+/** Render the finished or pending create, and name the success-side steps that did not finish. */
+function settleCreateOutcome(name: string, outcome: CommandJobOutcome): void {
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
     if (code !== undefined) setExitCode(code);
@@ -133,6 +152,12 @@ async function runCreateJob(
       renderTimelineTotal(result.allSteps);
     } else {
       outputService.success(t('commands.repo.create.completed'));
+    }
+    const unfinished = outstandingSteps(outcome.steps);
+    if (unfinished.length > 0) {
+      outputService.warn(
+        `repo create: ${name} was created, but the step(s) ${unfinished.join(', ')} did not finish; rdc job wait settles them.`
+      );
     }
   } else {
     renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
@@ -197,7 +222,7 @@ export async function registerNewRepo(
   target: NetworkIdTarget,
   /** The create job asks renet for the ID (`network_id: "auto"`): no ID is allocated here and the record carries none. */
   networkIdAuto = false
-): Promise<{ repositoryGuid: string; networkId: number }> {
+): Promise<{ repositoryGuid: string; networkId?: number }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
@@ -207,16 +232,19 @@ export async function registerNewRepo(
   }
   const repositoryGuid = randomUUID();
   // D3(a): the floor is the target machine's used set, so a lagging counter skips IDs other devices placed there.
-  const networkId = networkIdAuto ? 0 : await allocateNetworkIdWithFloor(await targetFloor(target));
+  const networkId = networkIdAuto
+    ? undefined
+    : await allocateNetworkIdWithFloor(await targetFloor(target));
   await configService.addRepository(compositeKey(name, 'latest'), {
     repositoryGuid,
     tag: 'latest',
     credential: generateCredential(),
-    ...(networkId > 0 ? { networkId } : {}),
+    ...(networkId === undefined ? {} : { networkId }),
     placement,
     ...extra,
   });
-  return { repositoryGuid, networkId };
+  // In auto mode renet allocates the ID inside the job, so none is returned here.
+  return networkId === undefined ? { repositoryGuid } : { repositoryGuid, networkId };
 }
 
 /** `repo create <name> --machine <m>`: a docker repo on the machine's default datastore. */
@@ -276,6 +304,7 @@ async function handleRepoCreateOnMachine(
       })
     );
 
+    // No network_id in the params below: requestCreateNetworkId queues a directive the executor seam spends on this dispatch (executor-factory requestNetworkIdAuto -> withDirective), which sends network_id "auto" to renet.
     requestCreateNetworkId(name, repositoryGuid, options.machine);
     await runCreateJob(name, repositoryGuid, options.machine, options.size, {
       functionName: 'repository_create',
@@ -352,6 +381,7 @@ async function handleRepoCreateOnDatastore(
       })
     );
 
+    // No network_id in the params below: see the machine form, where the executor seam sends network_id "auto" from the directive.
     requestCreateNetworkId(name, repositoryGuid, placement.machine);
     await runCreateJob(name, repositoryGuid, placement.machine, options.size, {
       functionName: 'repository_create',

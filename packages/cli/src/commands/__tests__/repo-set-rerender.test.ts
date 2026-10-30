@@ -215,6 +215,12 @@ describe('G4 wiring (source): verbs behind executors and prompts', () => {
     expect(hook).toBeGreaterThan(rollback);
   });
 
+  it('registers reconcileBackupSchedules to run on success, so a failed create never re-renders units', async () => {
+    const { planStep } = await import('../../services/jobs/steps.js');
+    expect(planStep('reconcileBackupSchedules', { machine: 'm1' }).on).toBe('success');
+    expect(planStep('rollbackCreate', { repo: 'r', guid: 'g' }).on).not.toBe('success');
+  });
+
   it('delete reconciles the machine after the config entry settles', () => {
     const body = sourceFrom('repo-create-delete.ts', 'async function handleDeleteSuccess');
     const settle = body.indexOf('await settleConfigEntry(');
