@@ -2181,7 +2181,7 @@
               "title": "2.5 Dati di Telemetria del Prodotto"
             },
             "freeLicenseData": {
-              "content": ["Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, insieme agli identificativi di macchina e repository contenuti nella richiesta. Il contatore basato su quell'hash viene eliminato dopo 72 ore; il record della licenza conserva solo l'hash. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."],
+              "content": ["Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, e solo nel contatore del singolo indirizzo, dove viene eliminato dopo 72 ore. Il record della licenza contiene gli identificativi di macchina e repository presenti nella richiesta e nessun dato IP. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."],
               "title": "2.6 Richieste di licenza gratuita"
             }
           },
@@ -9385,16 +9385,16 @@
                 "<strong>Ciclo di vita del Renet Agent:</strong> eventi di avvio, arresto e riconnessione",
                 "<strong>Profilazione delle performance:</strong> campioni di utilizzo della CPU e profili di allocazione della memoria, raccolti automaticamente e inviati al nostro endpoint di profilazione"
               ],
-              "title": "7.1 Dati Raccolti"
+              "title": "5.1 Dati Raccolti"
             },
             "bridgeOptOut": {
               "content": [
                 "Impostare la variabile d'ambiente <code>REDIACC_TELEMETRY_DISABLED=1</code> per disabilitare la telemetria del Renet Agent (inclusa la profilazione)."
               ],
-              "title": "7.2 Come Disattivare la Telemetria"
+              "title": "5.2 Come Disattivare la Telemetria"
             }
           },
-          "title": "7. Telemetria del Renet Agent"
+          "title": "5. Telemetria del Renet Agent"
         },
         "ccpa": {
           "content": [
@@ -9407,14 +9407,14 @@
             "<strong>Vendita/Condivisione:</strong> non vendiamo né condividiamo i dati di telemetria come definito dal CCPA/CPRA",
             "<strong>Diritto all'opt-out:</strong> utilizzi i meccanismi di opt-out specifici del prodotto descritti nelle sezioni 4-7 sopra. Rispettiamo altresì il segnale Global Privacy Control (GPC) nella nostra Web Application."
           ],
-          "title": "11. Residenti in California (CCPA/CPRA)"
+          "title": "9. Residenti in California (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Potremo aggiornare la presente Informativa sulla Telemetria in caso di aggiunta di nuovi prodotti, modifica dei dati raccolti o cambiamento delle nostre pratiche di elaborazione. Le modifiche verranno pubblicate su questa pagina con una data di entrata in vigore aggiornata. Notificheremo agli utenti le modifiche sostanziali tramite le note di rilascio dei prodotti e il sito web."
           ],
           "id": "changes",
-          "title": "12. Modifiche alla Presente Informativa"
+          "title": "10. Modifiche alla Presente Informativa"
         },
         "cli": {
           "content": [
@@ -9433,7 +9433,7 @@
                 "<strong>Sessione:</strong> ID di sessione generato casualmente, durata dell'esecuzione del comando",
                 "<strong>Profilazione delle performance:</strong> campioni di utilizzo della CPU e profili di allocazione della memoria, raccolti automaticamente e inviati al nostro endpoint di profilazione"
               ],
-              "title": "5.1 Dati Raccolti"
+              "title": "4.1 Dati Raccolti"
             },
             "cliOptOut": {
               "content": [
@@ -9444,10 +9444,10 @@
                 "Impostare <code>telemetryEnabled: false</code> nel file di configurazione della CLI",
                 "La telemetria è <strong>automaticamente disabilitata</strong> negli ambienti CI (rilevata tramite la variabile d'ambiente <code>CI</code>)"
               ],
-              "title": "5.2 Come Disattivare la Telemetria"
+              "title": "4.2 Come Disattivare la Telemetria"
             }
           },
-          "title": "5. Telemetria della CLI"
+          "title": "4. Telemetria della CLI"
         },
         "dataProcessing": {
           "content": [
@@ -9461,14 +9461,14 @@
             "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono condivisi, venduti o resi accessibili a terze parti.",
             "<strong>Infrastruttura:</strong> tutti i dati di telemetria vengono elaborati e archiviati su infrastruttura situata all'interno dell'Unione Europea."
           ],
-          "title": "8. Elaborazione e Archiviazione dei Dati"
+          "title": "6. Elaborazione e Archiviazione dei Dati"
         },
         "internationalTransfers": {
           "content": [
             "I dati di telemetria vengono elaborati e archiviati esclusivamente su server situati nell'Unione Europea. Nell'improbabile eventualità in cui i dati di telemetria debbano essere trasferiti al di fuori dell'UE/SEE (ad es., per il disaster recovery), saranno adottate adeguate misure di salvaguardia, incluse le Clausole Contrattuali Standard (SCC) approvate dalla Commissione Europea."
           ],
           "id": "international-transfers",
-          "title": "9. Trasferimenti Internazionali di Dati"
+          "title": "7. Trasferimenti Internazionali di Dati"
         },
         "introduction": {
           "content": [
@@ -9513,7 +9513,7 @@
             "<strong>Opt-out:</strong> disabilitare la telemetria in qualsiasi momento tramite i meccanismi specifici del prodotto descritti sopra",
             "<strong>Reclamo:</strong> presentare un reclamo all'Ispettorato Estone per la Protezione dei Dati (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) o all'autorita' di controllo locale competente"
           ],
-          "title": "10. I Suoi Diritti"
+          "title": "8. I Suoi Diritti"
         }
       },
       "toc": {

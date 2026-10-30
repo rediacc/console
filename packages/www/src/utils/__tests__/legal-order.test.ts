@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import de from '../../i18n/translations/de.json';
-import en from '../../i18n/translations/en.json';
 import { orderedKeys, titleNumber } from '../legal-order';
 
 describe('titleNumber', () => {
@@ -13,7 +11,7 @@ describe('titleNumber', () => {
 });
 
 describe('orderedKeys', () => {
-  it('orders by number, not by key order, and keeps unnumbered keys last in place', () => {
+  it('orders by number, not by key order, and moves unnumbered keys to the end in their original order', () => {
     const entries = {
       z: { title: '10. Last' },
       a: { title: 'No number' },
@@ -28,24 +26,49 @@ describe('orderedKeys', () => {
     expect(orderedKeys({ x: { title: '2.10 Ten' }, y: { title: '2.9 Nine' } })).toEqual(['y', 'x']);
   });
 
-  it('renders every locale of the privacy policy in the English reading order', () => {
-    // The de file stores its sections as 10, 9, 5, 7, ...: key order would render them so.
-    for (const file of [en, de]) {
-      const sections = file.pages.privacyPolicy.sections as Record<string, { title: string }>;
-      const numbers = orderedKeys(sections).map((k) => titleNumber(sections[k].title)?.[0]);
-      expect(numbers).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-      const subs = file.pages.privacyPolicy.sections.informationWeCollect.subsections as Record<
-        string,
-        { title: string }
-      >;
-      expect(orderedKeys(subs).map((k) => titleNumber(subs[k].title)?.join('.'))).toEqual([
-        '2.1',
-        '2.2',
-        '2.3',
-        '2.4',
-        '2.5',
-        '2.6',
-      ]);
-    }
+  // Every locale of every legal page, ordered by the English numbering: its own titles then read 1..n, and each section's subsections n.1..n.m, so a stale number in a translation fails here.
+  const LOCALES = import.meta.glob('../../i18n/translations/*.json', {
+    eager: true,
+    import: 'default',
   });
+  const PAGES = [
+    'privacyPolicy',
+    'cookiePolicy',
+    'termsOfService',
+    'refundPolicy',
+    'telemetryPolicy',
+  ];
+  type Titled = Record<string, { title: string; subsections?: Record<string, { title: string }> }>;
+
+  it('covers all 13 locales', () => {
+    expect(Object.keys(LOCALES)).toHaveLength(13);
+  });
+
+  const EN = LOCALES['../../i18n/translations/en.json'] as {
+    pages: Record<string, { sections: Titled }>;
+  };
+
+  for (const [path, file] of Object.entries(LOCALES)) {
+    for (const page of PAGES) {
+      it(`orders ${page} in ${path.split('/').pop()}`, () => {
+        const sections = (file as { pages: Record<string, { sections: Titled }> }).pages[page]
+          .sections;
+        const enSections = EN.pages[page].sections;
+        const keys = orderedKeys(sections, enSections);
+        expect(keys.map((k) => titleNumber(sections[k].title)?.[0])).toEqual(
+          keys.map((_, i) => i + 1)
+        );
+        for (const k of keys) {
+          const subs = sections[k].subsections;
+          if (!subs) continue;
+          const sectionNumber = titleNumber(sections[k].title)?.[0];
+          expect(
+            orderedKeys(subs, enSections[k]?.subsections).map((s) =>
+              titleNumber(subs[s].title)?.join('.')
+            )
+          ).toEqual(Object.keys(subs).map((_, i) => `${sectionNumber}.${i + 1}`));
+        }
+      });
+    }
+  }
 });

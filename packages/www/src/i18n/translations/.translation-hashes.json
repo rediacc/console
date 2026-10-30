@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 5691,
-    "sourceCommit": "aee63ccd11bc025872eb1192b448e790b67f4489"
+    "sourceCommit": "a2022a0076a1a9f92f2ed4930dcd89c74454bb3a"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -1223,7 +1223,7 @@
     "pages.privacyPolicy.sections.informationWeCollect.subsections.contactFormData.title": "2be60e06",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.cookies.content.0": "1d48b16b",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.cookies.title": "2d3a8ee4",
-    "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.content.0": "e111502c",
+    "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.content.0": "095a4797",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.title": "becd4bcd",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.0": "b880f23f",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.1": "afc06e17",

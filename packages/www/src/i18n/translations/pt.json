@@ -2185,7 +2185,7 @@
               "title": "2.5 Dados de Telemetria do Produto"
             },
             "freeLicenseData": {
-              "content": ["Quando uma máquina pede uma licença gratuita sem conta, guardamos um hash com chave do endereço IP de origem (o endereço IPv4 completo ou o prefixo /64 de um endereço IPv6), nunca o endereço em si, juntamente com os identificadores de máquina e de repositório incluídos no pedido. O contador criado a partir desse hash é eliminado ao fim de 72 horas; o registo da licença guarda apenas o hash. A base legal é o nosso interesse legítimo em evitar o abuso de um serviço gratuito."],
+              "content": ["Quando uma máquina pede uma licença gratuita sem conta, guardamos um hash com chave do endereço IP de origem (o endereço IPv4 completo ou o prefixo /64 de um endereço IPv6), nunca o endereço em si, e apenas no contador de cada endereço, onde é eliminado ao fim de 72 horas. O registo da licença contém os identificadores de máquina e de repositório incluídos no pedido e nenhum dado de IP. A base legal é o nosso interesse legítimo em evitar o abuso de um serviço gratuito."],
               "title": "2.6 Pedidos de licença gratuita"
             }
           },
@@ -9389,16 +9389,16 @@
                 "<strong>Ciclo de vida do Agente Renet:</strong> eventos de arranque, encerramento e reconexão",
                 "<strong>Profiling de desempenho:</strong> amostras de utilização de CPU e perfis de alocação de memória, recolhidos automaticamente e enviados para o nosso endpoint de profiling"
               ],
-              "title": "7.1 Dados Recolhidos"
+              "title": "5.1 Dados Recolhidos"
             },
             "bridgeOptOut": {
               "content": [
                 "Defina a variável de ambiente <code>REDIACC_TELEMETRY_DISABLED=1</code> para desativar a telemetria do Agente Renet (incluindo o profiling)."
               ],
-              "title": "7.2 Como Recusar"
+              "title": "5.2 Como Recusar"
             }
           },
-          "title": "7. Telemetria do Agente Renet"
+          "title": "5. Telemetria do Agente Renet"
         },
         "ccpa": {
           "content": [
@@ -9411,14 +9411,14 @@
             "<strong>Venda/Partilha:</strong> Não vendemos nem partilhamos dados de telemetria conforme definido pela CCPA/CPRA",
             "<strong>Direito de recusa:</strong> Utilize os mecanismos de recusa específicos de cada produto descritos nas secções 4 a 7 acima. A nossa Aplicação Web também respeita o sinal do Controlo Global de Privacidade (GPC)."
           ],
-          "title": "11. Residentes na Califórnia (CCPA/CPRA)"
+          "title": "9. Residentes na Califórnia (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Podemos atualizar esta Política de Telemetria quando adicionarmos novos produtos, alterarmos os dados recolhidos ou modificarmos as nossas práticas de processamento. As alterações serão publicadas nesta página com uma data de entrada em vigor atualizada. Notificaremos os utilizadores sobre alterações relevantes através das notas de versão dos nossos produtos e do sítio web."
           ],
           "id": "changes",
-          "title": "12. Alterações a Esta Política"
+          "title": "10. Alterações a Esta Política"
         },
         "cli": {
           "content": [
@@ -9437,7 +9437,7 @@
                 "<strong>Sessão:</strong> ID de sessão gerado aleatoriamente, duração de execução do comando",
                 "<strong>Profiling de desempenho:</strong> amostras de utilização de CPU e perfis de alocação de memória, recolhidos automaticamente e enviados para o nosso endpoint de profiling"
               ],
-              "title": "5.1 Dados Recolhidos"
+              "title": "4.1 Dados Recolhidos"
             },
             "cliOptOut": {
               "content": [
@@ -9448,10 +9448,10 @@
                 "Defina <code>telemetryEnabled: false</code> no seu ficheiro de configuração da CLI",
                 "A telemetria é <strong>automaticamente desativada</strong> em ambientes de CI (detetada através da variável de ambiente <code>CI</code>)"
               ],
-              "title": "5.2 Como Recusar"
+              "title": "4.2 Como Recusar"
             }
           },
-          "title": "5. Telemetria da CLI"
+          "title": "4. Telemetria da CLI"
         },
         "dataProcessing": {
           "content": [
@@ -9465,14 +9465,14 @@
             "<strong>Sem partilha com terceiros:</strong> Os dados de telemetria não são partilhados, vendidos nem acessíveis a terceiros.",
             "<strong>Infraestrutura:</strong> Todos os dados de telemetria são processados e armazenados em infraestrutura localizada na União Europeia."
           ],
-          "title": "8. Processamento e Armazenamento de Dados"
+          "title": "6. Processamento e Armazenamento de Dados"
         },
         "internationalTransfers": {
           "content": [
             "Os dados de telemetria são processados e armazenados exclusivamente em servidores dentro da União Europeia. Na improvável eventualidade de os dados de telemetria necessitarem de ser transferidos para fora da UE/EEE (por exemplo, para recuperação de desastres), serão aplicadas salvaguardas adequadas, incluindo as Cláusulas Contratuais-Tipo (CCT) aprovadas pela Comissão Europeia."
           ],
           "id": "international-transfers",
-          "title": "9. Transferências Internacionais de Dados"
+          "title": "7. Transferências Internacionais de Dados"
         },
         "introduction": {
           "content": [
@@ -9517,7 +9517,7 @@
             "<strong>Recusa:</strong> Desativar a telemetria em qualquer momento utilizando os mecanismos específicos de cada produto descritos acima",
             "<strong>Reclamação:</strong> Apresentar reclamação à Autoridade de Proteção de Dados da Estónia (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) ou à sua autoridade de controlo local"
           ],
-          "title": "10. Os Seus Direitos"
+          "title": "8. Os Seus Direitos"
         }
       },
       "toc": {

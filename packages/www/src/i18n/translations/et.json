@@ -2179,7 +2179,7 @@
               "title": "2.5 Tootetelemetria andmed"
             },
             "freeLicenseData": {
-              "content": ["Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, koos taotluses olevate masina- ja repositooriumi identifikaatoritega. Sellest räsist loodud loendur kustutatakse 72 tunni pärast; litsentsikirje säilitab ainult räsi. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."],
+              "content": ["Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, ja ainult aadressipõhises loenduris, kust see kustutatakse 72 tunni pärast. Litsentsikirje sisaldab taotluses olevaid masina- ja repositooriumi identifikaatoreid ega sisalda IP-andmeid. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."],
               "title": "2.6 Tasuta litsentsi taotlused"
             }
           },
@@ -9381,16 +9381,16 @@
                 "<strong>Renet agendi elutsükkel:</strong> käivitamise, sulgemise ja uuesti ühendamise sündmused",
                 "<strong>Jõudluse profileerimine:</strong> CPU kasutuse proovid ja mälu eraldamise profiilid, kogutud automaatselt ja saadetud meie profiilimise lõpp-punktile"
               ],
-              "title": "7.1 Kogutavad andmed"
+              "title": "5.1 Kogutavad andmed"
             },
             "bridgeOptOut": {
               "content": [
                 "Seadistage keskkonnamuutuja <code>REDIACC_TELEMETRY_DISABLED=1</code>, et keelata Renet agendi telemetria (sealhulgas profileerimine)."
               ],
-              "title": "7.2 Kuidas loobuda"
+              "title": "5.2 Kuidas loobuda"
             }
           },
-          "title": "7. Renet agendi telemetria"
+          "title": "5. Renet agendi telemetria"
         },
         "ccpa": {
           "content": [
@@ -9403,14 +9403,14 @@
             "<strong>Müük/jagamine:</strong> Me ei müü ega jaga telemetria andmeid CCPA/CPRA tähenduses",
             "<strong>Õigus loobuda:</strong> Kasutage ülalkirjeldatud tootespetsiifilisi loobumismehhanisme jaotistes 4–7. Austame ka meie veebirakenduses globaalse privaatsusjuhtimise (GPC) signaali."
           ],
-          "title": "11. California elanikud (CCPA/CPRA)"
+          "title": "9. California elanikud (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Võime seda telemetria poliitikat uuendada, kui lisame uusi tooteid, muudame kogutavaid andmeid või muudame töötlemise tavasid. Muudatused avaldatakse sellel lehel koos uuendatud jõustumiskuupäevaga. Teavitame kasutajaid olulistest muudatustest meie toote väljalaskemärkuste ja veebisaidi kaudu."
           ],
           "id": "changes",
-          "title": "12. Muudatused selles poliitikas"
+          "title": "10. Muudatused selles poliitikas"
         },
         "cli": {
           "content": [
@@ -9429,7 +9429,7 @@
                 "<strong>Seanss:</strong> juhuslikult genereeritud seansi ID, käsu täitmise kestus",
                 "<strong>Jõudluse profileerimine:</strong> CPU kasutuse proovid ja mälu eraldamise profiilid, kogutud automaatselt ja saadetud meie profiilimise lõpp-punktile"
               ],
-              "title": "5.1 Kogutavad andmed"
+              "title": "4.1 Kogutavad andmed"
             },
             "cliOptOut": {
               "content": [
@@ -9440,10 +9440,10 @@
                 "Seadistage <code>telemetryEnabled: false</code> oma CLI konfiguratsioonifailis",
                 "Telemetria on <strong>automaatselt keelatud</strong> CI keskkondades (tuvastatav <code>CI</code> keskkonnamuutuja kaudu)"
               ],
-              "title": "5.2 Kuidas loobuda"
+              "title": "4.2 Kuidas loobuda"
             }
           },
-          "title": "5. CLI telemetria"
+          "title": "4. CLI telemetria"
         },
         "dataProcessing": {
           "content": [
@@ -9457,14 +9457,14 @@
             "<strong>Kolmandate osapooltega jagamine puudub:</strong> Telemetria andmeid ei jagata, müüda ega ole juurdepääsetavad kolmandale osapoolele.",
             "<strong>Infrastruktuur:</strong> Kõiki telemetria andmeid töödeldakse ja salvestatakse Euroopa Liidus asuvatel serveritel."
           ],
-          "title": "8. Andmete töötlemine ja salvestamine"
+          "title": "6. Andmete töötlemine ja salvestamine"
         },
         "internationalTransfers": {
           "content": [
             "Telemetria andmeid töödeldakse ja salvestatakse eranditult Euroopa Liidus asuvatel serveritel. Ebatõenäolisel juhul, kui telemetria andmeid on vaja EL/EMP-st välja edastada (nt katastroofitaaste jaoks), rakendatakse asjakohaseid kaitsemeetmeid, sealhulgas Euroopa Komisjoni kinnitatud standardsed lepingutingimused (SCCs)."
           ],
           "id": "international-transfers",
-          "title": "9. Rahvusvahelised andmeedastused"
+          "title": "7. Rahvusvahelised andmeedastused"
         },
         "introduction": {
           "content": [
@@ -9509,7 +9509,7 @@
             "<strong>Loobumine:</strong> Keelata telemetria igal ajal, kasutades ülalkirjeldatud tootespetsiifilisi mehhanisme",
             "<strong>Kaebus:</strong> Esitada kaebus Eesti andmekaitse inspektsioonile (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) või oma kohalikule järelevalveasutusele"
           ],
-          "title": "10. Teie õigused"
+          "title": "8. Teie õigused"
         }
       },
       "toc": {

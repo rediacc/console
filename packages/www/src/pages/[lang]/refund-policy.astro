@@ -14,7 +14,9 @@ const { t, to } = createTranslator(lang);
 
 const PAGE_KEY = 'pages.refundPolicy';
 const sections = to(`${PAGE_KEY}.sections` as any) as Record<string, any>;
-const sectionKeys = orderedKeys(sections);
+// English is the source of truth for the numbering; a locale's own numbers can be stale.
+const enSections = createTranslator('en').to(`${PAGE_KEY}.sections` as any) as Record<string, any>;
+const sectionKeys = orderedKeys(sections, enSections);
 
 const relatedPages = [
   { href: `/${lang}/terms-of-service`, label: t('footer.legalLinks.termsOfService') },
@@ -67,7 +69,7 @@ const relatedPages = [
                     ))}
                   </ul>
                 )}
-                {section.subsections && orderedKeys(section.subsections).map((subKey) => {
+                {section.subsections && orderedKeys(section.subsections, enSections[key]?.subsections).map((subKey) => {
                   const sub = section.subsections[subKey];
                   return (
                     <>

@@ -2175,7 +2175,7 @@
               "title": "2.5 Produkttelemetriedaten"
             },
             "freeLicenseData": {
-              "content": ["Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, zusammen mit den Maschinen- und Repository-Kennungen aus der Anfrage. Der aus diesem Hash gebildete Zähler wird nach 72 Stunden gelöscht; der Lizenzdatensatz enthält nur den Hash. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."],
+              "content": ["Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, und zwar nur im Zähler je Adresse, wo er nach 72 Stunden gelöscht wird. Der Lizenzdatensatz enthält die Maschinen- und Repository-Kennungen aus der Anfrage und keine IP-Daten. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."],
               "title": "2.6 Anfragen nach einer kostenlosen Lizenz"
             }
           },
@@ -9369,16 +9369,16 @@
                 "<strong>Renet-Agent-Lebenszyklus:</strong> Start-, Stopp- und Wiederverbindungsereignisse",
                 "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
-              "title": "7.1 Erfasste Daten"
+              "title": "5.1 Erfasste Daten"
             },
             "bridgeOptOut": {
               "content": [
                 "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>, um die Renet-Agent-Telemetrie (einschließlich Profiling) zu deaktivieren."
               ],
-              "title": "7.2 So melden Sie sich ab"
+              "title": "5.2 So melden Sie sich ab"
             }
           },
-          "title": "7. Renet-Agent-Telemetrie"
+          "title": "5. Renet-Agent-Telemetrie"
         },
         "ccpa": {
           "content": [
@@ -9391,14 +9391,14 @@
             "<strong>Verkauf/Weitergabe:</strong> Wir verkaufen oder teilen keine Telemetriedaten im Sinne des CCPA/CPRA",
             "<strong>Recht auf Abmeldung:</strong> Verwenden Sie die in den Abschnitten 4–7 oben beschriebenen produktspezifischen Abmeldemechanismen. Wir berücksichtigen auch das Global Privacy Control (GPC)-Signal in unserer Webanwendung."
           ],
-          "title": "11. Einwohner Kaliforniens (CCPA/CPRA)"
+          "title": "9. Einwohner Kaliforniens (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Wir können diese Telemetrie-Richtlinie aktualisieren, wenn wir neue Produkte hinzufügen, die erfassten Daten ändern oder unsere Verarbeitungspraktiken modifizieren. Änderungen werden auf dieser Seite mit einem aktualisierten Gültigkeitsdatum veröffentlicht. Wir benachrichtigen Benutzer über wesentliche Änderungen durch unsere Produkt-Release-Hinweise und Website."
           ],
           "id": "changes",
-          "title": "12. Änderungen dieser Richtlinie"
+          "title": "10. Änderungen dieser Richtlinie"
         },
         "cli": {
           "content": [
@@ -9417,7 +9417,7 @@
                 "<strong>Sitzung:</strong> zufällig generierte Sitzungs-ID, Befehlsausführungsdauer",
                 "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
-              "title": "5.1 Erfasste Daten"
+              "title": "4.1 Erfasste Daten"
             },
             "cliOptOut": {
               "content": [
@@ -9428,10 +9428,10 @@
                 "Setzen Sie <code>telemetryEnabled: false</code> in Ihrer CLI-Konfigurationsdatei",
                 "Die Telemetrie wird in CI-Umgebungen <strong>automatisch deaktiviert</strong> (erkannt über die Umgebungsvariable <code>CI</code>)"
               ],
-              "title": "5.2 So melden Sie sich ab"
+              "title": "4.2 So melden Sie sich ab"
             }
           },
-          "title": "5. CLI-Telemetrie"
+          "title": "4. CLI-Telemetrie"
         },
         "dataProcessing": {
           "content": [
@@ -9445,14 +9445,14 @@
             "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht an Dritte weitergegeben, verkauft oder zugänglich gemacht.",
             "<strong>Infrastruktur:</strong> Alle Telemetriedaten werden auf Infrastruktur innerhalb der Europäischen Union verarbeitet und gespeichert."
           ],
-          "title": "8. Datenverarbeitung und -speicherung"
+          "title": "6. Datenverarbeitung und -speicherung"
         },
         "internationalTransfers": {
           "content": [
             "Telemetriedaten werden ausschließlich auf Servern innerhalb der Europäischen Union verarbeitet und gespeichert. Für den unwahrscheinlichen Fall, dass Telemetriedaten außerhalb der EU/des EWR übermittelt werden müssen (z. B. für die Notfallwiederherstellung), werden geeignete Schutzmaßnahmen getroffen, einschließlich Standardvertragsklauseln (SCCs) gemäß der Genehmigung der Europäischen Kommission."
           ],
           "id": "international-transfers",
-          "title": "9. Internationale Datenübermittlungen"
+          "title": "7. Internationale Datenübermittlungen"
         },
         "introduction": {
           "content": [
@@ -9497,7 +9497,7 @@
             "<strong>Abmeldung:</strong> Telemetrie jederzeit über die oben beschriebenen produktspezifischen Mechanismen deaktivieren",
             "<strong>Beschwerde:</strong> Eine Beschwerde bei der estnischen Datenschutzaufsicht (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) oder Ihrer lokalen Aufsichtsbehörde einreichen"
           ],
-          "title": "10. Ihre Rechte"
+          "title": "8. Ihre Rechte"
         }
       },
       "toc": {
@@ -9528,7 +9528,7 @@
             "Wenn Sie diesen Bedingungen nicht zustimmen, duerfen Sie die Dienste nicht nutzen oder darauf zugreifen. Diese Bedingungen stellen eine rechtsverbindliche Vereinbarung zwischen Ihnen und der Rediacc OUe (Registernummer 17363830) dar, einer in Estland registrierten Gesellschaft mit Sitz in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estland (\"Rediacc\", \"wir\", \"uns\" oder \"unser\")."
           ],
           "id": "acceptance",
-          "title": "1. Annahme der Bedingungen"
+          "title": "2. Annahme der Bedingungen"
         },
         "accounts": {
           "content": [
@@ -9544,7 +9544,7 @@
             "Sicherstellung, dass autorisierte Benutzer diese Bedingungen einhalten",
             "Wahrung der Vertraulichkeit Ihrer Konfigurationsdateien, einschliesslich privater SSH-Schluessel und Verschluesselungszugangsdaten"
           ],
-          "title": "3. Konten und Registrierung"
+          "title": "4. Konten und Registrierung"
         },
         "changes": {
           "content": [
@@ -9552,7 +9552,7 @@
             "Ihre fortgesetzte Nutzung der Dienste nach Inkrafttreten der aktualisierten Bedingungen gilt als Annahme der ueberarbeiteten Bedingungen. Wenn Sie den aktualisierten Bedingungen nicht zustimmen, muessen Sie die Nutzung der Dienste einstellen und Ihr Abonnement kuendigen, bevor die Aenderungen in Kraft treten."
           ],
           "id": "changes",
-          "title": "14. Änderungen dieser Bedingungen"
+          "title": "19. Änderungen dieser Bedingungen"
         },
         "dataOwnership": {
           "content": [
@@ -9561,7 +9561,7 @@
             "Gemaess dem EU-Datengesetz (Verordnung 2023/2854) haben Sie bei Nutzung der Cloud-Funktionen der Plattform das Recht, den Anbieter zu wechseln oder zu einem selbst gehosteten Setup zu migrieren. Ihre Kundendaten werden auf Ihren eigenen Maschinen gespeichert und befinden sich stets unter Ihrer Kontrolle. Kontodaten und Konfigurationen, die auf der Plattform gespeichert sind, koennen in standardisierten, maschinenlesbaren Formaten exportiert werden. Wir leisten angemessene Unterstuetzung waehrend eines Uebergangszeitraums von bis zu dreissig (30) Tagen nach Ihrer Anfrage."
           ],
           "id": "data-ownership",
-          "title": "8. Ihre Daten"
+          "title": "11. Ihre Daten"
         },
         "definitions": {
           "content": ["Die folgenden Definitionen gelten fuer diese gesamten Nutzungsbedingungen:"],
@@ -9597,7 +9597,7 @@
             "Ungeachtet des Vorstehenden kann jede Partei vor jedem zustaendigen Gericht einstweiligen Rechtsschutz oder andere billigkeitsrechtliche Massnahmen beantragen, um die tatsaechliche oder drohende Verletzung, Aneignung oder Versto ssung gegen geistige Eigentumsrechte oder Vertraulichkeitspflichten zu verhindern."
           ],
           "id": "governing-law",
-          "title": "13. Anwendbares Recht"
+          "title": "18. Anwendbares Recht"
         },
         "indemnification": {
           "id": "indemnification",
@@ -9617,7 +9617,7 @@
               "title": "16.2 By Rediacc"
             }
           },
-          "title": "11. Freistellung"
+          "title": "16. Freistellung"
         },
         "intellectualProperty": {
           "content": [
@@ -9626,7 +9626,7 @@
             "Wir duerfen anonymisierte, aggregierte Daten, die aus Ihrer Nutzung der Dienste abgeleitet werden (einschliesslich Telemetriedaten), fuer Produktverbesserung, Analysen und Benchmarking-Zwecke erfassen und verwenden. Solche aggregierten Daten identifizieren weder Sie noch einzelne Benutzer."
           ],
           "id": "intellectual-property",
-          "title": "7. Geistiges Eigentum"
+          "title": "12. Geistiges Eigentum"
         },
         "limitationOfLiability": {
           "content": [
@@ -9635,7 +9635,7 @@
             "DIE BESCHRAENKUNGEN UND AUSSCHLUESSE IN DEN ABSCHNITTEN 14 UND 15 GELTEN NICHT FUER: (A) HAFTUNG FUER TOD ODER KOERPERVERLETZUNG DURCH FAHRLAESSIGKEIT; (B) HAFTUNG FUER BETRUG ODER ARGLISTIGE TAEUSCHUNG; (C) HAFTUNG FUER VORSAETZLICHES FEHLVERHALTEN (TAHTLIK RIKKUMINE) ODER GROBE FAHRLAESSIGKEIT (RASKE HOOLETUS) NACH DEM ESTNISCHEN SCHULDRECHTSGESETZ; ODER (D) JEGLICHE ANDERE HAFTUNG, DIE NACH GELTENDEM RECHT NICHT AUSGESCHLOSSEN ODER BESCHRAENKT WERDEN KANN."
           ],
           "id": "limitation-of-liability",
-          "title": "10. Haftungsbeschränkung"
+          "title": "15. Haftungsbeschränkung"
         },
         "onPremiseLicense": {
           "content": [
@@ -9692,7 +9692,7 @@
             "<strong>Plattform:</strong> Die Webanwendung und das Kontoportal fuer Abonnementverwaltung, Teamzusammenarbeit und (sofern verfuegbar) cloudbasiertes Infrastrukturmanagement",
             "<strong>Professionelle Dienstleistungen:</strong> Optionale Beratung, Migrationsunterstuetzung und Implementierungshilfe, vorbehaltlich separater Dienstleistungsvereinbarungen"
           ],
-          "title": "2. Beschreibung der Dienste"
+          "title": "3. Beschreibung der Dienste"
         },
         "subscriptions": {
           "content": [
@@ -9742,7 +9742,7 @@
               "title": "5.2 Taxes"
             }
           },
-          "title": "4. Abonnements und Zahlung"
+          "title": "5. Abonnements und Zahlung"
         },
         "telemetry": {
           "content": [
@@ -9751,7 +9751,7 @@
             "In Rechtsordnungen, die eine ausdrueckliche Einwilligung zur Telemetrieerfassung auf Endgeraeten erfordern (einschliesslich gemaess der ePrivacy-Richtlinie in der Umsetzung Ihrer Rechtsordnung), sollten Sie Ihre Telemetrieeinstellungen vor der erstmaligen Nutzung der On-Premise-Software konfigurieren. Ihre fortgesetzte Nutzung der Dienste bei aktivierter Telemetrie stellt Ihre Einwilligung in die in der <a href=\"telemetry-policy\">Telemetrierichtlinie</a> beschriebene Erfassung dar."
           ],
           "id": "telemetry",
-          "title": "6. Telemetrie und Datenerfassung"
+          "title": "10. Telemetrie und Datenerfassung"
         },
         "termination": {
           "content": [
@@ -9765,7 +9765,7 @@
             "Kontodaten werden fuer dreissig (30) Tage aufbewahrt, um den Export zu ermoeglichen, und dann aus unseren aktiven Systemen geloescht",
             "Die Abschnitte 1 (Definitionen), 11 (Ihre Daten), 12 (Geistiges Eigentum), 14 (Gewaehrleistungen), 15 (Haftung), 16 (Freistellung) und 18 (Anwendbares Recht) ueberdauern die Kuendigung"
           ],
-          "title": "12. Kündigung"
+          "title": "17. Kündigung"
         },
         "thirdPartyComponents": {
           "content": [

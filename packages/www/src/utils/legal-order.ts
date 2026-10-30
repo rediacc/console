@@ -4,8 +4,8 @@
  * The legal pages read `sections` and `subsections` from the translation
  * files, and each locale stores those keys in its own order (the de and ja
  * privacy policy kept them as "10.", "9.", "5.", ...). Key order is therefore
- * not reading order: the number at the start of each title is. Keys whose
- * title carries no leading number keep their relative order after the
+ * not reading order: the number at the start of each English title is. Keys
+ * whose title carries no leading number keep their relative order after the
  * numbered ones.
  */
 
@@ -24,11 +24,22 @@ function compareNumbers(a: number[], b: number[]): number {
   return 0;
 }
 
-/** The keys of `entries` in the order their titles are numbered. */
-export function orderedKeys(entries: Record<string, { title?: unknown }>): string[] {
+/**
+ * The keys of `entries` in the order their titles are numbered. With `reference` (the English
+ * entries, the source of truth), each key is placed by the reference title's number, so a
+ * translation whose own numbers are stale still renders in the English order.
+ */
+export function orderedKeys(
+  entries: Record<string, { title?: unknown }>,
+  reference?: Record<string, { title?: unknown }>
+): string[] {
   const keys = Object.keys(entries);
   return keys
-    .map((key, index) => ({ key, index, num: titleNumber(entries[key]?.title) }))
+    .map((key, index) => ({
+      key,
+      index,
+      num: titleNumber((reference?.[key] ?? entries[key])?.title),
+    }))
     .sort((x, y) => {
       if (x.num && y.num) return compareNumbers(x.num, y.num) || x.index - y.index;
       if (x.num) return -1;
