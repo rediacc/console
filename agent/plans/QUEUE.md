@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 42 plans done, 588 of 754 boxes done (77%).
+Promoted: 6 of 42 plans done, 589 of 754 boxes done (78%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -119,7 +119,7 @@ Promoted: 6 of 42 plans done, 588 of 754 boxes done (77%).
 | 33 | PLAN-detached-jobs.md | 12/39 | 27 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 12/16 | 4 open |
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 4/8 | 4 open |
-| 36 | PLAN-backup-local-image.md | 8/14 | 6 open |
+| 36 | PLAN-backup-local-image.md | 9/14 | 5 open |
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 4/7 | 3 open |
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
 | 39 | PLAN-cli-tofu-toolchain.md | 9/10 | 1 open |
@@ -183,14 +183,15 @@ Promoted: 6 of 42 plans done, 588 of 754 boxes done (77%).
 7. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (13 of 14 boxes ticked)
 8. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
 9. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-10. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-11. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-12. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-13. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, not started
-14. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-15. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-16. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-17. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+10. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, not started
+11. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+12. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+13. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+14. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, not started
+15. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+16. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+17. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+18. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 

@@ -106,19 +106,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 8,
+      "open": 5,
+      "done": 9,
       "open_sigs": [
         "129cdf9a",
         "339bf791",
         "55c84971",
         "5c59f4aa",
-        "7692f2db",
-        "85493dc7"
+        "7692f2db"
       ],
       "done_sigs": [
         "5e91f886",
         "7e3d19ee",
+        "85493dc7",
         "89621109",
         "a7dd084e",
         "ab5be0dc",
@@ -948,6 +948,22 @@
         "9933d672",
         "c1f1de21"
       ]
+    },
+    "agent/plans/PLAN-drop-free-license-ip-prefix-hash.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "0bffb38a",
+        "462d436a",
+        "8318baef",
+        "a6974538",
+        "df744ffa"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",

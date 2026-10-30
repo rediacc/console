@@ -383,7 +383,7 @@ R2's changes:
   Owns: packages/cli/src/i18n/locales/*/cli.json (non-en). Accept: `npm run check:i18n` rc 0.
     (ticked) 2026-10-29T14:57:23Z by d778be9d: commit:3122331e8 check:i18n rc=0, check:i18n:hashes rc=0
 
-- [ ] D1 [writer] Docs. Follows C1.
+- [x] D1 [writer] Docs. Follows C1.
   - A new page, backup-download.md, in English first, then translated into the 12 other languages. It covers:
     - what the copy is (the encrypted image, with the credential kept in the config, which links to config storage enrollment);
     - the weekly in-place update and its one-copy space rule;
@@ -394,6 +394,7 @@ R2's changes:
     - upload, and finding stale snapshots with `machine status` and `machine prune`.
   - The lead regenerates cli-application.md with `npm run generate:cli-docs -w @rediacc/www`.
   Owns: packages/www/src/content/docs/*/backup-download.md (new), packages/www/src/content/docs/*/cli-application.md (regenerated only). Accept: `npm run check:i18n` rc 0.
+    (ticked) 2026-10-30T22:53:37Z by d778be9d: commit:8fd4b0569 packages/www/src/content/docs/en/backup-download.md:1; 13 locale pages; check:i18n rc 0
 
 - [ ] V1 [lead] The VM proof for the renet change. `npm run vm:check -- --changed` must report VERIFIED on the tree carrying R1 and R2, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt, and `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --test 26-backup-storage-cli --fail-on-skip` rc 0 (PLAN-jobs-backup-real-machine-tests E2).
