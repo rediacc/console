@@ -78,17 +78,20 @@ describe('executePlan removals', () => {
     const diff = removed('linked', false);
     if (diff.remote) diff.remote.isEnabledTimer = true;
     const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
-    await executePlan(sftp, plan([diff]), {});
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('removed strategy "linked" (exit 5)')
-    );
-    warn.mockRestore();
+    try {
+      await executePlan(sftp, plan([diff]), {});
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('removed strategy "linked" (exit 5)')
+      );
+    } finally {
+      warn.mockRestore();
+    }
     const stop = commands.find((c) => c.includes('systemctl stop rediacc-backup-linked.timer'));
     expect(stop).toContain(
       'rm -f /etc/systemd/system/timers.target.wants/rediacc-backup-linked.timer'
     );
     // A failed stop fails the whole command, whatever the steps after it return.
-    expect(stop).toContain('systemctl stop rediacc-backup-linked.timer || rc=1');
+    expect(stop).toContain('systemctl stop rediacc-backup-linked.timer || rc=$?');
     expect(stop).toContain('exit $rc');
     // The env file is still removed after the failed stop: the schedule went on.
     expect(commands.some((c) => c.includes("rm -f '/etc/rediacc/backup-linked.env'"))).toBe(true);
