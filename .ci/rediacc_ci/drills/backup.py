@@ -829,7 +829,11 @@ class Backup:
                 failures += 1
                 continue
             # If-None-Match is MANDATORY: the account presigns these URLs with IfNoneMatch, SigV4 signs the headers a request carries, and dropping it answers 403 SignatureDoesNotMatch. This drill IS the machine's stand-in, so it sends exactly what pkg/chunkstore/grants.go sends.
-            code, _ = wire.http_call("PUT", url, data, {"If-None-Match": "*"}, json_body=False)
+            headers = {"If-None-Match": "*"}
+            # A size-bound URL (every chunk grant since chunkBytes became required) also signs x-amz-checksum-sha256, the base64 of the hash the grant was minted for; renet sends it only when the URL names it (grants.go signsChunkChecksum), and so does this stand-in.
+            if "x-amz-checksum-sha256" in self.signed_header_names(url):
+                headers["x-amz-checksum-sha256"] = base64.b64encode(bytes.fromhex(digest)).decode()
+            code, _ = wire.http_call("PUT", url, data, headers, json_body=False)
             if code != 200:
                 failures += 1
         return failures
