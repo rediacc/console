@@ -23,10 +23,50 @@ interface LineageUsageRow {
   chunkCount: number;
 }
 
+/** One round of DELETE /backups/lineages/:guid: the account deletes a bounded batch and says whether any remains. */
 interface LineagePurgeResponse {
   lineageGuid: string;
+  done: boolean;
   freedBytes: number;
   deletedSnapshots: number;
+  deletedChunks: number;
+  deletedBytes: number;
+  remainingChunks?: number;
+}
+
+/** Guard against a server that never reports done: 200 rounds of the account's 5,000-object batch is a million objects. */
+const MAX_PURGE_ROUNDS = 200;
+
+/**
+ * Repeat the account's bounded lineage delete until it reports done, printing progress per round
+ * (stderr). The last round carries the lineage totals the ledger freed. Rounds are idempotent, so
+ * a failed run is finished by running the command again.
+ */
+export async function purgeLineageRounds(
+  name: string,
+  lineage: string,
+  formatBytes: (bytes: number) => string
+): Promise<LineagePurgeResponse> {
+  let deletedChunks = 0;
+  let deletedBytes = 0;
+  for (let round = 1; round <= MAX_PURGE_ROUNDS; round++) {
+    const result = await accountServerFetch<LineagePurgeResponse>(
+      `/account/api/v1/backups/lineages/${encodeURIComponent(lineage)}`,
+      { method: 'DELETE' }
+    );
+    deletedChunks += result.deletedChunks;
+    deletedBytes += result.deletedBytes;
+    if (result.done) return { ...result, deletedChunks, deletedBytes };
+    outputService.info(
+      t('commands.backup.purge.progress', {
+        name,
+        round,
+        chunks: deletedChunks,
+        bytes: formatBytes(deletedBytes),
+      })
+    );
+  }
+  throw new Error(t('commands.backup.purge.tooManyRounds', { name, rounds: MAX_PURGE_ROUNDS }));
 }
 
 interface PurgeOptions {
@@ -134,11 +174,8 @@ export async function runBackupPurge(repoRef: string, options: PurgeOptions): Pr
     return;
   }
 
-  const purged = await accountServerFetch<LineagePurgeResponse>(
-    `/account/api/v1/backups/lineages/${encodeURIComponent(lineage)}`,
-    { method: 'DELETE' }
-  );
-  // The purge response carries no chunk count, so the usage row before and after is the evidence for chunks.
+  const purged = await purgeLineageRounds(repoKey, lineage, formatSizeBytes);
+  // The usage row before and after is the evidence for the stored chunk count.
   const after = await footprintAfterPurge(lineage);
 
   if (format !== 'table') {

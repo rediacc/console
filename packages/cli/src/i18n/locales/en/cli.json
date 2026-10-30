@@ -702,7 +702,8 @@
         "noState": "No OpenTofu state found for \"{{name}}\". Use 'config remove-machine' for manually added machines.",
         "destroyFailed": "Infrastructure destroy failed for {{name}}: {{error}}. Continuing with config removal (--force).",
         "dnsDeleted": "Deleted DNS record: {{type}} {{name}}",
-        "dnsCleanedUp": "Removed {{count}} DNS record(s)"
+        "dnsCleanedUp": "Removed {{count}} DNS record(s)",
+        "deactivateFailed": "Could not release the account activation slot for {{name}}: {{reason}}. The slot frees on its own 5 hours after the last activity."
       },
       "prune": {
         "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
@@ -2136,7 +2137,9 @@
         "confirm": "This deletes all {{count}} stored snapshot(s) of \"{{name}}\" ({{bytes}}) and cannot be undone. Type the repository name to confirm:",
         "success": "Purged {{count}} snapshot(s) of \"{{name}}\" and freed {{bytes}}.",
         "usageDelta": "Stored for this repository: {{beforeBytes}} in {{beforeChunks}} chunk(s) before, {{afterBytes}} in {{afterChunks}} chunk(s) after.",
-        "usageUnavailable": "Purged, but the usage after the purge could not be read: {{error}}"
+        "usageUnavailable": "Purged, but the usage after the purge could not be read: {{error}}",
+        "progress": "Purging \"{{name}}\": round {{round}}, {{chunks}} object(s) deleted so far ({{bytes}}).",
+        "tooManyRounds": "Purging \"{{name}}\" did not finish after {{rounds}} rounds. Run the purge again to continue."
       }
     },
     "sync": {

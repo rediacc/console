@@ -346,7 +346,9 @@
         "confirm": "Esto borra las {{count}} instantánea(s) guardadas de \"{{name}}\" ({{bytes}}) y no se puede deshacer. Escribe el nombre del repositorio para confirmar:",
         "success": "Se purgaron {{count}} instantánea(s) de \"{{name}}\" y se liberaron {{bytes}}.",
         "usageDelta": "Guardado para este repositorio: antes {{beforeBytes}} en {{beforeChunks}} fragmento(s), después {{afterBytes}} en {{afterChunks}} fragmento(s).",
-        "usageUnavailable": "Purgado, pero no se pudo leer el uso después de la purga: {{error}}"
+        "usageUnavailable": "Purgado, pero no se pudo leer el uso después de la purga: {{error}}",
+        "progress": "Purgando \"{{name}}\": ronda {{round}}, {{chunks}} objeto(s) eliminado(s) hasta ahora ({{bytes}}).",
+        "tooManyRounds": "La purga de \"{{name}}\" no terminó tras {{rounds}} rondas. Ejecutar la purga de nuevo para continuar."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "Máquina {{name}} destruida y eliminada de la configuración",
         "confirm": "Esto destruirá permanentemente la máquina \"{{name}}\" y todos sus datos. ¿Continuar?",
+        "deactivateFailed": "No se pudo liberar el espacio de activación de la cuenta para {{name}}: {{reason}}. El espacio se libera solo 5 horas después de la última actividad.",
         "description": "Destruir una máquina aprovisionada en la nube y eliminar de la configuración",
         "destroyFailed": "Falló la destrucción de infraestructura para {{name}}: {{error}}. Continuando con la eliminación de configuración (--force).",
         "destroying": "Destruyendo {{name}}...",

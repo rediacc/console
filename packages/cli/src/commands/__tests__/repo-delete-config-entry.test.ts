@@ -102,7 +102,13 @@ describe('repo delete settles the cloud backups (F8)', () => {
   });
 
   it('--purge-backups deletes the lineage now and says how much was freed', async () => {
-    mockFetch.mockResolvedValue({ deletedSnapshots: 4, freedBytes: 2048 });
+    mockFetch.mockResolvedValue({
+      done: true,
+      deletedSnapshots: 4,
+      freedBytes: 2048,
+      deletedChunks: 9,
+      deletedBytes: 2048,
+    });
     await settleCloudBackups('lva', grand, true);
     const [url, init] = mockFetch.mock.calls[0] as [string, { method: string }];
     expect(url).toBe('/account/api/v1/backups/lineages/g1');

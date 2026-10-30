@@ -545,6 +545,23 @@ async function handleRepoDelete(
 }
 
 /** Register `repo create` and `repo delete` subcommands. */
+/**
+ * Commander stores `--no-docker` as `docker: false` and never sets `noDocker`, so the flag was a no-op;
+ * this maps the parsed options to the shape handleRepoCreate takes (callers other than the CLI pass
+ * `noDocker` directly).
+ */
+export function repoCreateOptions(options: {
+  machine?: string;
+  datastore?: string;
+  size?: string;
+  docker?: boolean;
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+}): Parameters<typeof handleRepoCreate>[1] {
+  const { docker, ...rest } = options;
+  return { ...rest, noDocker: docker === false };
+}
+
 export function registerRepoCreateDeleteCommands(repo: Command): void {
   // repo create <name> --machine <m> | --datastore <d> (placement union, spec §5.4)
   repo
@@ -558,7 +575,7 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (name: string, options) => {
-      await handleRepoCreate(name, options);
+      await handleRepoCreate(name, repoCreateOptions(options));
     });
 
   // repo delete <ref>

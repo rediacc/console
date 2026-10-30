@@ -346,7 +346,9 @@
         "confirm": "Cette opération supprime définitivement les {{count}} instantané(s) stockés de « {{name}} » ({{bytes}}). Saisissez le nom du dépôt pour confirmer :",
         "success": "{{count}} instantané(s) de « {{name}} » purgé(s), {{bytes}} libéré(s).",
         "usageDelta": "Stocké pour ce dépôt : {{beforeBytes}} dans {{beforeChunks}} bloc(s) avant, {{afterBytes}} dans {{afterChunks}} bloc(s) après.",
-        "usageUnavailable": "Purge effectuée, mais l'utilisation après la purge n'a pas pu être lue : {{error}}"
+        "usageUnavailable": "Purge effectuée, mais l'utilisation après la purge n'a pas pu être lue : {{error}}",
+        "progress": "Purge de « {{name}} » : passe {{round}}, {{chunks}} objet(s) supprimé(s) jusqu'ici ({{bytes}}).",
+        "tooManyRounds": "La purge de « {{name}} » n'est pas terminée après {{rounds}} passes. Relancer la purge pour continuer."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "Machine {{name}} détruite et supprimée de la configuration",
         "confirm": "Cela détruira définitivement la machine \"{{name}}\" et toutes ses données. Continuer ?",
+        "deactivateFailed": "Impossible de libérer l'emplacement d'activation du compte pour {{name}} : {{reason}}. L'emplacement se libère de lui-même 5 heures après la dernière activité.",
         "description": "Détruire une machine provisionnée dans le cloud et la supprimer de la configuration",
         "destroyFailed": "Échec de la destruction de l'infrastructure pour {{name}} : {{error}}. Poursuite de la suppression de la configuration (--force).",
         "destroying": "Destruction de {{name}}...",

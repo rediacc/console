@@ -346,7 +346,9 @@
         "confirm": "\"{{name}}\"에 저장된 스냅샷 {{count}}개({{bytes}})를 모두 삭제하며 되돌릴 수 없습니다. 확인하려면 저장소 이름을 입력하세요:",
         "success": "\"{{name}}\"의 스냅샷 {{count}}개를 퍼지하고 {{bytes}}를 확보했습니다.",
         "usageDelta": "이 저장소의 저장량: 퍼지 전 {{beforeBytes}}(청크 {{beforeChunks}}개), 퍼지 후 {{afterBytes}}(청크 {{afterChunks}}개).",
-        "usageUnavailable": "퍼지는 완료되었지만 퍼지 후 사용량을 읽지 못했습니다: {{error}}"
+        "usageUnavailable": "퍼지는 완료되었지만 퍼지 후 사용량을 읽지 못했습니다: {{error}}",
+        "progress": "\"{{name}}\" 퍼지 중: {{round}}번째 라운드, 지금까지 객체 {{chunks}}개 삭제({{bytes}}).",
+        "tooManyRounds": "\"{{name}}\" 퍼지가 {{rounds}}번의 라운드 후에도 끝나지 않았습니다. 계속하려면 다시 실행하세요."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "머신 {{name}}이 삭제되어 설정에서 제거되었습니다",
         "confirm": "머신 \"{{name}}\"과 모든 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?",
+        "deactivateFailed": "{{name}}의 계정 활성화 슬롯을 해제하지 못했습니다: {{reason}}. 슬롯은 마지막 활동 후 5시간이 지나면 저절로 비워집니다.",
         "description": "클라우드 프로비저닝된 머신을 삭제하고 설정에서 제거합니다",
         "destroyFailed": "{{name}}의 인프라 삭제 실패: {{error}}. --force로 설정 제거를 계속합니다.",
         "destroying": "{{name}} 삭제 중...",

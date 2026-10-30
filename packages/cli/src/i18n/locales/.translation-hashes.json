@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2280,
-    "sourceCommit": "3f4cc271ba26f9d11758010d936ad8a0e4fef860"
+    "keyCount": 2283,
+    "sourceCommit": "cac18e213cdd0525efe778bc3e407d4842f5b7cd"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -67,7 +67,9 @@
     "commands.backup.purge.forkRefused": "24fe1559",
     "commands.backup.purge.notFound": "89e2e8dc",
     "commands.backup.purge.nothingStored": "99d836d5",
+    "commands.backup.purge.progress": "7e3a32e7",
     "commands.backup.purge.success": "96e8724d",
+    "commands.backup.purge.tooManyRounds": "ae66599d",
     "commands.backup.purge.usageDelta": "07467548",
     "commands.backup.purge.usageUnavailable": "e41ca6d7",
     "commands.backup.reconcile.argRepoRef": "447d1062",
@@ -896,6 +898,7 @@
     "commands.machine.converge.unmanagedLine": "ef36ed2d",
     "commands.machine.deprovision.completed": "e5b9d350",
     "commands.machine.deprovision.confirm": "9241bcef",
+    "commands.machine.deprovision.deactivateFailed": "1b38a19d",
     "commands.machine.deprovision.description": "1894d9d6",
     "commands.machine.deprovision.destroyFailed": "160fffec",
     "commands.machine.deprovision.destroying": "d67b2c30",

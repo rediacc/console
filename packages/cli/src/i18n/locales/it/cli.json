@@ -346,7 +346,9 @@
         "confirm": "Verranno eliminati tutti i {{count}} snapshot archiviati di \"{{name}}\" ({{bytes}}) e l'operazione è irreversibile. Digita il nome del repository per confermare:",
         "success": "Eliminati {{count}} snapshot di \"{{name}}\", liberati {{bytes}}.",
         "usageDelta": "Spazio archiviato per questo repository: prima {{beforeBytes}} in {{beforeChunks}} chunk, dopo {{afterBytes}} in {{afterChunks}} chunk.",
-        "usageUnavailable": "Eliminazione completata, ma non è stato possibile leggere l'utilizzo dopo l'eliminazione: {{error}}"
+        "usageUnavailable": "Eliminazione completata, ma non è stato possibile leggere l'utilizzo dopo l'eliminazione: {{error}}",
+        "progress": "Eliminazione di \"{{name}}\": passaggio {{round}}, finora eliminati {{chunks}} oggetti ({{bytes}}).",
+        "tooManyRounds": "L'eliminazione di \"{{name}}\" non è terminata dopo {{rounds}} passaggi. Eseguire di nuovo il comando per continuare."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "Macchina {{name}} distrutta e rimossa dalla configurazione",
         "confirm": "Questa operazione distruggera permanentemente la macchina \"{{name}}\" e tutti i suoi dati. Continuare?",
+        "deactivateFailed": "Impossibile liberare lo slot di attivazione dell'account per {{name}}: {{reason}}. Lo slot si libera da solo 5 ore dopo l'ultima attività.",
         "description": "Distruggi una macchina provisioned nel cloud e rimuovila dalla configurazione",
         "destroyFailed": "Distruzione infrastruttura fallita per {{name}}: {{error}}. Continuo con la rimozione dalla configurazione (--force).",
         "destroying": "Distruzione di {{name}} in corso...",

@@ -346,7 +346,9 @@
         "confirm": "Dadurch werden alle {{count}} gespeicherten Snapshot(s) von „{{name}}“ ({{bytes}}) unwiderruflich gelöscht. Zur Bestätigung den Repository-Namen eingeben:",
         "success": "{{count}} Snapshot(s) von „{{name}}“ bereinigt, {{bytes}} freigegeben.",
         "usageDelta": "Für dieses Repository gespeichert: vorher {{beforeBytes}} in {{beforeChunks}} Chunk(s), nachher {{afterBytes}} in {{afterChunks}} Chunk(s).",
-        "usageUnavailable": "Bereinigt, aber die Belegung nach der Bereinigung konnte nicht gelesen werden: {{error}}"
+        "usageUnavailable": "Bereinigt, aber die Belegung nach der Bereinigung konnte nicht gelesen werden: {{error}}",
+        "progress": "Bereinigung von „{{name}}“: Durchgang {{round}}, bisher {{chunks}} Objekt(e) gelöscht ({{bytes}}).",
+        "tooManyRounds": "Die Bereinigung von „{{name}}“ war nach {{rounds}} Durchgängen nicht abgeschlossen. Den Befehl erneut ausführen, um fortzufahren."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "Maschine {{name}} zerstört und aus Konfiguration entfernt",
         "confirm": "Dies wird Maschine \"{{name}}\" und alle ihre Daten dauerhaft zerstören. Fortfahren?",
+        "deactivateFailed": "Der Aktivierungsplatz im Konto für {{name}} konnte nicht freigegeben werden: {{reason}}. Der Platz wird 5 Stunden nach der letzten Aktivität von selbst frei.",
         "description": "Cloud-bereitgestellte Maschine zerstören und aus Konfiguration entfernen",
         "destroyFailed": "Infrastruktur-Zerstörung für {{name}} fehlgeschlagen: {{error}}. Fahre mit Konfigurationsentfernung fort (--force).",
         "destroying": "{{name}} wird zerstört...",

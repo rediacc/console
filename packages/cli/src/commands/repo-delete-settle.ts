@@ -8,6 +8,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { purgeLineageRounds } from './backup-purge.js';
 
 export type DeletedRepoConfig = {
   repositoryGuid: string;
@@ -80,11 +81,8 @@ export async function settleCloudBackups(
   const lineage = repoConfig.grandGuid ?? repoConfig.repositoryGuid;
   const path = `/account/api/v1/backups/lineages/${encodeURIComponent(lineage)}`;
   if (purgeBackups) {
-    const purged = await accountServerFetch<{ deletedSnapshots: number; freedBytes: number }>(
-      path,
-      { method: 'DELETE' }
-    );
     const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+    const purged = await purgeLineageRounds(name, lineage, formatSizeBytes);
     outputService.info(
       t('commands.repo.delete.backupsPurged', {
         repository: name,

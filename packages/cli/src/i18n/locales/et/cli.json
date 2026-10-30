@@ -346,7 +346,9 @@
         "confirm": "See kustutab hoidla \"{{name}}\" kõik {{count}} salvestatud hetktõmmist ({{bytes}}) ja seda ei saa tagasi võtta. Kinnitamiseks sisesta hoidla nimi:",
         "success": "Hoidla \"{{name}}\" {{count}} hetktõmmist puhastati, vabanes {{bytes}}.",
         "usageDelta": "Selle hoidla salvestatud maht: enne {{beforeBytes}} {{beforeChunks}} tükis, pärast {{afterBytes}} {{afterChunks}} tükis.",
-        "usageUnavailable": "Puhastus tehtud, kuid pärast puhastust kasutust ei õnnestunud lugeda: {{error}}"
+        "usageUnavailable": "Puhastus tehtud, kuid pärast puhastust kasutust ei õnnestunud lugeda: {{error}}",
+        "progress": "Hoidla \"{{name}}\" puhastamine: {{round}}. voor, seni kustutatud {{chunks}} objekti ({{bytes}}).",
+        "tooManyRounds": "Hoidla \"{{name}}\" puhastus ei lõppenud {{rounds}} vooruga. Jätkamiseks käivita puhastus uuesti."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "Masin {{name}} hävitatud ja konfiguratsioonist eemaldatud",
         "confirm": "See hävitab masina \"{{name}}\" ja kõik selle andmed jäädavalt. Jätkad?",
+        "deactivateFailed": "Kontol oleva aktiveerimiskoht masinale {{name}} jäi vabastamata: {{reason}}. Koht vabaneb ise 5 tundi pärast viimast tegevust.",
         "description": "Hävitab pilves ettevalmistatud masina ja eemaldab konfiguratsioonist",
         "destroyFailed": "Infrastruktuuri hävitamine ebaõnnestus masina {{name}} jaoks: {{error}}. Jätkatakse konfiguratsiooni eemaldamisega (--force).",
         "destroying": "{{name}} hävitatakse...",

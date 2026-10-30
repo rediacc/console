@@ -346,7 +346,9 @@
         "confirm": "此操作将删除“{{name}}”全部 {{count}} 个已存储快照({{bytes}}),且无法撤销。输入仓库名称以确认:",
         "success": "已清除“{{name}}”的 {{count}} 个快照,释放了 {{bytes}}。",
         "usageDelta": "此仓库的存储量:清除前 {{beforeBytes}}({{beforeChunks}} 个分块),清除后 {{afterBytes}}({{afterChunks}} 个分块)。",
-        "usageUnavailable": "清除已完成,但无法读取清除后的用量:{{error}}"
+        "usageUnavailable": "清除已完成,但无法读取清除后的用量:{{error}}",
+        "progress": "正在清除“{{name}}”:第 {{round}} 轮,已删除 {{chunks}} 个对象({{bytes}})。",
+        "tooManyRounds": "“{{name}}”的清除在 {{rounds}} 轮后仍未完成。再次运行即可继续。"
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "机器 {{name}} 已销毁并从配置中移除",
         "confirm": "这将永久销毁机器 \"{{name}}\" 及其所有数据。是否继续？",
+        "deactivateFailed": "无法释放 {{name}} 在账户中的激活名额：{{reason}}。名额会在最后一次活动 5 小时后自动释放。",
         "description": "销毁云配置的机器并从配置中移除",
         "destroyFailed": "{{name}} 的基础设施销毁失败：{{error}}。继续移除配置 (--force)。",
         "destroying": "正在销毁 {{name}}...",

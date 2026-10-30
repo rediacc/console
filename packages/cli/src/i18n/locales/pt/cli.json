@@ -346,7 +346,9 @@
         "confirm": "Isto apaga todos os {{count}} snapshot(s) armazenados de \"{{name}}\" ({{bytes}}) e não pode ser desfeito. Digite o nome do repositório para confirmar:",
         "success": "{{count}} snapshot(s) de \"{{name}}\" limpo(s), {{bytes}} liberado(s).",
         "usageDelta": "Armazenado para este repositório: antes {{beforeBytes}} em {{beforeChunks}} bloco(s), depois {{afterBytes}} em {{afterChunks}} bloco(s).",
-        "usageUnavailable": "Limpeza concluída, mas não foi possível ler o uso após a limpeza: {{error}}"
+        "usageUnavailable": "Limpeza concluída, mas não foi possível ler o uso após a limpeza: {{error}}",
+        "progress": "Limpando \"{{name}}\": rodada {{round}}, {{chunks}} objeto(s) removido(s) até agora ({{bytes}}).",
+        "tooManyRounds": "A limpeza de \"{{name}}\" não terminou após {{rounds}} rodadas. Executar a limpeza de novo para continuar."
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "Máquina {{name}} destruída e removida da configuração",
         "confirm": "Isto vai destruir permanentemente a máquina \"{{name}}\" e todos os seus dados. Continuar?",
+        "deactivateFailed": "Não foi possível liberar a vaga de ativação da conta para {{name}}: {{reason}}. A vaga é liberada sozinha 5 horas após a última atividade.",
         "description": "Destruir uma máquina provisionada na cloud e remover da configuração",
         "destroyFailed": "Falha na destruição da infraestrutura para {{name}}: {{error}}. A continuar com a remoção da configuração (--force).",
         "destroying": "A destruir {{name}}...",

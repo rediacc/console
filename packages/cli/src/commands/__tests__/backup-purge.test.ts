@@ -67,7 +67,14 @@ function serveAccount(): void {
   mockFetch.mockImplementation((path: string, init?: { method?: string }) => {
     if (init?.method === 'DELETE') {
       purged = true;
-      return Promise.resolve({ lineageGuid: LINEAGE, freedBytes: 4096, deletedSnapshots: 2 });
+      return Promise.resolve({
+        lineageGuid: LINEAGE,
+        done: true,
+        freedBytes: 4096,
+        deletedSnapshots: 2,
+        deletedChunks: 7,
+        deletedBytes: 4096,
+      });
     }
     if (path.startsWith('/account/api/v1/backups/manifests')) {
       return Promise.resolve({ manifests: [{ snapshotId: 's1' }, { snapshotId: 's2' }] });
@@ -81,6 +88,19 @@ function serveAccount(): void {
     }
     return Promise.reject(new Error(`unexpected account call ${path}`));
   });
+}
+
+/** One DELETE answer: the last round carries the ledger totals, earlier ones a remaining estimate. */
+function purgeRound(done: boolean): Record<string, unknown> {
+  return {
+    lineageGuid: LINEAGE,
+    done,
+    freedBytes: done ? 4096 : 0,
+    deletedSnapshots: done ? 2 : 0,
+    deletedChunks: 5,
+    deletedBytes: 100,
+    remainingChunks: done ? undefined : 10,
+  };
 }
 
 async function run(args: string[]): Promise<void> {
@@ -136,6 +156,46 @@ describe('backup purge', () => {
     // The server reports no chunk count, so the usage before and after is printed.
     expect(mockInfo).toHaveBeenCalledWith('commands.backup.purge.usageDelta');
     expect(configWrites).toEqual([]);
+  });
+
+  it('loops DELETE until done, printing progress per round, then reads usage once more', async () => {
+    const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
+    let rounds = 0;
+    mockFetch.mockImplementation((path: string, init?: { method?: string }) =>
+      init?.method === 'DELETE' ? Promise.resolve(purgeRound(++rounds === 3)) : served(path, init)
+    );
+    await run(['shop', '-y']);
+
+    expect(deleteCalls()).toHaveLength(3);
+    const progress = mockInfo.mock.calls.filter((c) => c[0] === 'commands.backup.purge.progress');
+    expect(progress).toHaveLength(2);
+    expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.success');
+    expect(mockInfo).toHaveBeenCalledWith('commands.backup.purge.usageDelta');
+    // The post-purge usage read happens after the last DELETE.
+    const calls = mockFetch.mock.calls.map(
+      (c) => (c[1] as { method?: string } | undefined)?.method ?? c[0]
+    );
+    expect(calls.at(-1)).toBe('/account/api/v1/backups/usage');
+    expect(calls.lastIndexOf('DELETE')).toBe(calls.length - 2);
+  });
+
+  it('stops with an error when the account never reports done', async () => {
+    const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((path: string, init?: { method?: string }) =>
+      init?.method === 'DELETE'
+        ? Promise.resolve({
+            lineageGuid: LINEAGE,
+            done: false,
+            freedBytes: 0,
+            deletedSnapshots: 0,
+            deletedChunks: 1,
+            deletedBytes: 1,
+          })
+        : served(path, init)
+    );
+    await expect(run(['shop', '-y'])).rejects.toThrow('commands.backup.purge.tooManyRounds');
+    expect(deleteCalls()).toHaveLength(200);
+    expect(mockSuccess).not.toHaveBeenCalled();
   });
 
   it('warns when the usage read after a successful purge fails', async () => {

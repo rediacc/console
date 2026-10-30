@@ -346,7 +346,9 @@
         "confirm": "「{{name}}」の保存済みスナップショット {{count}} 件 ({{bytes}}) をすべて削除します。この操作は元に戻せません。確認のためリポジトリ名を入力してください:",
         "success": "「{{name}}」のスナップショット {{count}} 件をパージし、{{bytes}} を解放しました。",
         "usageDelta": "このリポジトリの保存量: パージ前 {{beforeBytes}} ({{beforeChunks}} チャンク)、パージ後 {{afterBytes}} ({{afterChunks}} チャンク)。",
-        "usageUnavailable": "パージは完了しましたが、パージ後の使用量を読み取れませんでした: {{error}}"
+        "usageUnavailable": "パージは完了しましたが、パージ後の使用量を読み取れませんでした: {{error}}",
+        "progress": "「{{name}}」をパージ中: {{round}} 回目、これまでに {{chunks}} 個のオブジェクトを削除しました({{bytes}})。",
+        "tooManyRounds": "「{{name}}」のパージは {{rounds}} 回で完了しませんでした。続行するにはもう一度実行してください。"
       }
     },
     "cluster": {
@@ -1135,6 +1137,7 @@
       "deprovision": {
         "completed": "マシン {{name}} が破棄され、設定から削除されました",
         "confirm": "マシン \"{{name}}\" とそのすべてのデータが完全に破棄されます。続行しますか？",
+        "deactivateFailed": "{{name}} のアカウント上のアクティベーション枠を解放できませんでした: {{reason}}。枠は最後のアクティビティから 5 時間後に自動で空きます。",
         "description": "クラウドでプロビジョニングされたマシンを破棄し、設定から削除する",
         "destroyFailed": "{{name}} のインフラ破棄に失敗しました: {{error}}。設定の削除を続行します (--force)。",
         "destroying": "{{name}} を破棄中...",
