@@ -127,7 +127,9 @@ async function removeOneStrategy(
     // exists. Best-effort with a warning, so one dangling unit never aborts the rest of the schedule.
     const unit = `rediacc-backup-${diff.name}.timer`;
     const exitCode = await sftp.execStreaming(
-      `sudo systemctl stop ${unit}; sudo rm -f /etc/systemd/system/timers.target.wants/${unit}; sudo systemctl daemon-reload`,
+      // Each step runs whatever the one before did, and any failure makes the whole command fail: a
+      // plain `a; b; c` reports only c, which hid a failed stop.
+      `sudo sh -c 'rc=0; systemctl stop ${unit} || rc=1; rm -f /etc/systemd/system/timers.target.wants/${unit} || rc=1; systemctl daemon-reload || rc=1; exit $rc'`,
       { onStdout: () => {}, onStderr: (data) => writeStderr(data) }
     );
     if (exitCode !== 0) {

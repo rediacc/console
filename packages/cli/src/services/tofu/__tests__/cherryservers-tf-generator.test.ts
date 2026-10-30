@@ -116,6 +116,19 @@ describe.skipIf(!HAVE_TOFU && process.env.CI !== 'true')('cherryservers IPv4 sel
     ).toBe('203.0.113.7');
   });
 
+  it('treats only 100.64/10 as CGNAT: 100.63.x and 100.128.x are public', () => {
+    const cgnatEdges = [
+      { address: '100.64.0.1', type: 'x', family: 4 },
+      { address: '100.127.255.254', type: 'x', family: 4 },
+    ];
+    expect(evalIpv4([...cgnatEdges, { address: '100.63.0.1', type: 'x', family: 4 }])).toBe(
+      '100.63.0.1'
+    );
+    expect(evalIpv4([...cgnatEdges, { address: '100.128.0.1', type: 'x', family: 4 }])).toBe(
+      '100.128.0.1'
+    );
+  });
+
   it('errors instead of answering null or a private address when no public IPv4 exists', () => {
     expect(() => evalIpv4([{ address: '10.0.0.5', type: 'private', family: 4 }])).toThrow();
   });
