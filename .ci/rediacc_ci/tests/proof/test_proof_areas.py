@@ -1,6 +1,6 @@
 """The renet areas of `.ci/config/proof-tiers.json` (`tiers.vm.areas`, agent/plans/PLAN-renet-change-test-triggers.md Design item 3), read through `rediacc_ci.proof.surfaces`.
 
-Three kinds of test. The loader refuses each shape of a blind map (planted defects through `parse_map`). The path lookup answers both directions: a path that must land in an area, and paths that must not (a test file, a doc, a renet path in no area). The live map is pinned against the live tree: every glob reaches a tracked renet file, every file an area glob reaches is in the renet surface, every suite, playwright config and `--test` filter a leg names exists, every `vmcheck` step is a step vm:check has, and the area names equal the renet test map's `areaNames`.
+Three kinds of test. The loader refuses each shape of a blind map (planted defects through `parse_map`). The path lookup answers both directions: a path that must land in an area, and paths that must not (a test file, a doc, a renet path in no area). The live map is pinned against the live tree: every glob reaches a tracked renet file, every file an area glob reaches is in the renet surface, every suite, playwright config and `--test` filter a leg names exists, every `vmcheck` step is a step vm:check has, and the renet test map holds no second area list.
 """
 
 from __future__ import annotations
@@ -290,14 +290,42 @@ def test_every_fleet_ip_is_on_an_ops_vm_network() -> None:
         assert all(re.fullmatch(r"192\.168\.11[12]\.\d+", ip) for ip in fleet.ips), fleet
 
 
-def test_the_area_names_equal_the_renet_test_maps() -> None:
-    """One area vocabulary across the two maps: .ci/config/renet-test-map.json (the Go test map) declares `areaNames` and tags its entries with them; proof-tiers.json owns what each area's paths, legs and CI jobs are."""
+def test_the_renet_test_map_holds_no_second_area_list() -> None:
+    """One source of truth for areas: `tiers.vm.areas` in proof-tiers.json. The Go test map (.ci/config/renet-test-map.json) once carried `areaNames` and a per-entry `areas` that had already drifted from it (pkg/hub, pkg/kube, pkg/delta); neither key may return, at any depth, and the gate source declares no area field."""
     if not RENET_TEST_MAP.is_file():
         pytest.skip("%s does not exist yet" % RENET_TEST_MAP.relative_to(ROOT))
-    other = json.loads(RENET_TEST_MAP.read_text(encoding="utf-8"))
-    assert tuple(other["areaNames"]) == S.AREAS
-    used = {a for entry in other.get("entries", []) for a in entry.get("areas", [])}
-    assert used <= set(S.AREAS), sorted(used - set(S.AREAS))
+    doc = json.loads(RENET_TEST_MAP.read_text(encoding="utf-8"))
+    found: list[str] = []
+
+    def walk(node: object, where: str) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if re.fullmatch(r"areas?|areaNames?", key, flags=re.IGNORECASE):
+                    found.append("%s.%s" % (where, key))
+                walk(value, "%s.%s" % (where, key))
+        elif isinstance(node, list):
+            for i, value in enumerate(node):
+                walk(value, "%s[%d]" % (where, i))
+
+    walk(doc, "$")
+    assert not found, "renet-test-map.json carries an area list again: %s" % found[:5]
+    assert doc["entries"], "the map has no entries; the pin walked nothing"
+    gate = (ROOT / "scripts" / "gates" / "check-renet-test-map.ts").read_text(encoding="utf-8")
+    assert not re.search(r"^\s*(areas|areaNames)\??:", gate, flags=re.MULTILINE), (
+        "check-renet-test-map.ts declares an area field again"
+    )
+    # Anti-vacuity: the pin sees keys when they exist.
+    planted = {"entries": [{"glob": "x/**", "areas": ["kube"]}]}
+    seen: list[str] = []
+    stack: list[object] = [planted]
+    while stack:
+        n = stack.pop()
+        if isinstance(n, dict):
+            seen += [k for k in n if k == "areas"]
+            stack += list(n.values())
+        elif isinstance(n, list):
+            stack += n
+    assert seen == ["areas"]
 
 
 def test_the_dry_run_names_its_own_flag_in_the_usage_line() -> None:

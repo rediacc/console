@@ -63,6 +63,8 @@ DOCS = built("rnt-docs")
 RENET_DOCS = built("rnt-renet-docs")
 LICENSE = built("rnt-license")
 LICENSE_OK = built("rnt-license-receipt")
+CONSOLE_READ_W = built("rnt-console-read")
+CONSOLE_READ_OK = built("rnt-console-read-receipt")
 LICENSE_PARTIAL = built("rnt-license-partial")
 LICENSE_SEED = built("rnt-license-seed-receipt")
 UNMAPPED_PARTIAL = built("rnt-unmapped-partial")
@@ -117,6 +119,15 @@ CASES = [
     ("console: docs only", PUSH, DOCS, None, False, ""),
     ("console: renet README only", PUSH, RENET_DOCS, None, False, ""),
     ("console: renet licence file, no receipt", PUSH, LICENSE, None, True, "[no-receipt]"),
+    (
+        "console: a console file renet tests read, no receipt",
+        PUSH,
+        CONSOLE_READ_W,
+        None,
+        True,
+        "[no-receipt]",
+    ),
+    ("console: a console file renet tests read, receipt", PUSH, CONSOLE_READ_OK, None, False, ""),
     ("console: names the command", PUSH, LICENSE, None, True, G.COMMAND),
     ("console: names the dependents", PUSH, LICENSE, None, True, "  cmd/renet\n"),
     ("console: an implicit push", "git push", LICENSE, None, True, "console push"),

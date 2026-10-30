@@ -2,7 +2,7 @@
 
 ONE MAP, TWO READERS. `.ci/config/renet-test-map.json` maps renet path globs to the Go packages they reach; `scripts/gates/check-renet-test-map.ts` runs the selected `go test` and writes a receipt keyed on the renet tree it tested. This module is the Python reading of the same map and the same receipts, used here and by `block_renet_untested_push`. `.ci/rediacc_ci/tests/test_renet_test_map_parity.py` holds the two readers to the same answer on the real map, so a rule changed on one side alone goes red.
 
-THE RULES, mirrored from the gate: a path belongs to its MOST SPECIFIC glob (`<dir>/**` or an exact path); a `whole` path (go.mod, go.sum) selects every package; a path under pkg/ or cmd/, or any `.go` file, that no glob claims selects every package (unknown is never "none"); a non-empty selection adds the `always` packages; anything else (docs, Python e2e) selects nothing.
+THE RULES, mirrored from the gate: a path belongs to its MOST SPECIFIC glob (`<dir>/**` or an exact path); a `whole` path (go.mod, go.sum) selects every package; a path under pkg/ or cmd/, or any `.go` file, that no glob claims selects every package (unknown is never "none"); a non-empty selection adds the `always` packages; anything else (docs, Python e2e) selects nothing. A path under a `retired` glob (a package deleted from renet) selects only the `always` set, and one under an `outside` glob (build-tagged e2e Go the gate cannot run) selects nothing. A CONSOLE path under a `console` glob (a file renet tests read from outside the module) selects the packages that row names, and not the `always` set. The map holds no areas: they live once in `.ci/config/proof-tiers.json`.
 
 THE RECEIPT is `<dir>/<renet tree>.json` with `dir` = `$RENET_TEST_RECEIPT_DIR`, else `$XDG_CACHE_HOME/rediacc/renet-tests`, else `~/.cache/rediacc/renet-tests`. It covers a selection when its tree is the tree in question and it ran every selected package (`all` covers anything).
 
@@ -20,7 +20,7 @@ import uuid
 MAP_REL = ".ci/config/renet-test-map.json"
 RENET = "private/renet"
 RECEIPT_SCHEMA = 1
-GO_ROOTS = ("pkg", "cmd")
+GO_ROOTS = ("pkg", "cmd", "scripts")
 COMMAND = "npm run check:ci-renet-test-map"
 MAX_LISTED = 8
 
@@ -63,12 +63,19 @@ def all_packages(test_map):
     return sorted({p for e in test_map["entries"] for p in e.get("packages", [])})
 
 
-def required_for(test_map, changed, every=None):
-    """{"all", "packages", "all_why", "mapped"} for the changed renet paths, the gate's `requiredFor`."""
+def required_for(test_map, changed, every=None, console_changed=()):
+    """{"all", "packages", "all_why", "mapped"} for the changed renet paths and the changed console paths, the gate's `requiredFor`."""
     every = all_packages(test_map) if every is None else every
     picked = set()
+    console_picked = set()
     all_why = []
     mapped = 0
+    retired = False
+    for path in console_changed:
+        for row in test_map.get("console", []):
+            if glob_matches(row["glob"], path):
+                mapped += 1
+                console_picked.update(row.get("packages", []))
     for path in changed:
         whole = next((w for w in test_map.get("whole", []) if glob_matches(w["glob"], path)), None)
         if whole is not None:
@@ -80,12 +87,18 @@ def required_for(test_map, changed, every=None):
             mapped += 1
             picked.update(entry.get("packages", []))
             picked.update(entry.get("dependents", []))
+        elif any(glob_matches(r["glob"], path) for r in test_map.get("retired", [])):
+            mapped += 1
+            retired = True
+        elif any(glob_matches(o["glob"], path) for o in test_map.get("outside", [])):
+            mapped += 1
         elif go_relevant(path):
             all_why.append("%s (no glob in %s claims it)" % (path, MAP_REL))
     if all_why:
         return {"all": True, "packages": sorted(every), "all_why": all_why, "mapped": mapped}
-    if picked:
+    if picked or retired:
         picked.update(a["package"] for a in test_map.get("always", []))
+    picked.update(console_picked)
     return {"all": False, "packages": sorted(picked), "all_why": [], "mapped": mapped}
 
 
@@ -165,6 +178,18 @@ def changed_since(renet, base):
     return sorted({p for p in (diff.split("\n") + extra.split("\n")) if p})
 
 
+def console_changed_since(root):
+    """Console paths differing between the merge-base with origin/main and the working files (untracked included); [] when git cannot say, since the renet side then selects every package anyway."""
+    merge_base = _git(root, "merge-base", "HEAD", "origin/main")
+    if not merge_base:
+        return []
+    diff = _git(root, "diff", "--name-only", merge_base)
+    extra = _git(root, "ls-files", "--others", "--exclude-standard")
+    if diff is None or extra is None:
+        return []
+    return sorted({p for p in (diff.split("\n") + extra.split("\n")) if p})
+
+
 def changed_between(renet, old, new):
     """Renet paths changed from commit `old` to `new`, or None when either is not in the checkout."""
     for sha in (old, new):
@@ -214,7 +239,7 @@ def pending(root, env=None):
         }
         changed = []
     else:
-        required = required_for(test_map, changed)
+        required = required_for(test_map, changed, None, console_changed_since(root))
         if not required["packages"]:
             return None
     tree, _dirty = working_tree(renet)

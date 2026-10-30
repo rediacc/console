@@ -74,26 +74,27 @@ UNEXAMINED = "block-renet-untested-push: %s; this push passed UNEXAMINED."
 
 # --------------------------------------------------------------------------- fixture worlds
 
+CONSOLE_READ = "packages/shared/src/subscription/schema.generated.json"
 FIXTURE_MAP = {
     "schema": 1,
     "module": "github.com/rediacc/renet",
-    "areaNames": ["license"],
     "whole": [{"glob": "go.mod", "why": "the module graph reaches every package"}],
     "always": [],
     "entries": [
-        {"glob": "cmd/renet/**", "areas": [], "packages": ["cmd/renet"], "dependents": []},
+        {"glob": "cmd/renet/**", "packages": ["cmd/renet"], "dependents": []},
         {
             "glob": "pkg/license/**",
-            "areas": ["license"],
             "packages": ["pkg/license"],
             "dependents": ["cmd/renet"],
         },
         {
             "glob": "pkg/sandbox/**",
-            "areas": [],
             "packages": ["pkg/sandbox"],
             "dependents": ["cmd/renet"],
         },
+    ],
+    "console": [
+        {"glob": CONSOLE_READ, "packages": ["pkg/license"], "why": "a renet test reads it"}
     ],
 }
 LICENSE_FILE = "pkg/license/store.go"
@@ -144,6 +145,15 @@ def _new_missing(path):
     return root
 
 
+def _console_read(path, receipt=False):
+    """The renet pointer does not move, but the branch changes a console file a renet test reads, so the renet packages that read it need a receipt."""
+    root = world(path)
+    VM._put(root, CONSOLE_READ, "{}\n")
+    VM._git(root, "add", CONSOLE_READ)
+    VM._git(root, "commit", "-q", "-m", "console read")
+    return plant_receipt(root, ["pkg/license"]) if receipt else root
+
+
 MISSING_NEW = "fedcba9876543210fedcba9876543210fedcba98"
 
 FIXTURES = {
@@ -167,6 +177,8 @@ FIXTURES = {
         world(p, renet_files=(UNMAPPED_FILE,)), [], every=True
     ),
     "rnt-missing-old": lambda p: world(p, renet_files=(LICENSE_FILE,), missing_old=True),
+    "rnt-console-read": _console_read,
+    "rnt-console-read-receipt": lambda p: _console_read(p, receipt=True),
 }
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
@@ -244,34 +256,51 @@ def _base(surfaces, repo, tip):
     return merge_base, "%s via %s" % (merge_base[:12], resolved.via or resolved.ref)
 
 
+def _console_changed(root, merge_base, commit):
+    """The console paths a pushed console commit changes since its merge-base, for the map's `console` rows (renet tests that read console files). Empty when the base is unknown."""
+    if not merge_base:
+        return []
+    out = (
+        commit_policy.git(["diff", "--no-renames", "--name-only", merge_base, commit], cwd=root)
+        or ""
+    )
+    return [
+        line
+        for line in out.splitlines()
+        if line and not line.startswith(RENET + "/") and line != RENET
+    ]
+
+
 def _range(wr, surfaces, root, form, commit):
-    """(renet commit, renet tree or None, changed paths or None, base label) for one pushed commit; changed is None when the range is unknown. (None, None, [], "") when the commit does not move renet."""
+    """(renet commit, renet tree or None, changed paths or None, base label, console changed) for one pushed commit; changed is None when the range is unknown. A console push whose renet pointer did not move still reports its console paths, since renet tests read some console files."""
     renet = pathlib.Path(root) / RENET
     if form == "renet":
         merge_base, label = _base(surfaces, renet, commit)
         tree = commit_policy.git(["rev-parse", "%s^{tree}" % commit], cwd=str(renet))
         if merge_base is None:
-            return commit, tree, None, label
-        return commit, tree, wr.changed_between(renet, merge_base, commit), label
+            return commit, tree, None, label, []
+        return commit, tree, wr.changed_between(renet, merge_base, commit), label, []
     new = commit_policy.git(["rev-parse", "%s:%s" % (commit, RENET)], cwd=root)
     if not new:
-        return None, None, [], ""
+        return None, None, [], "", []
     merge_base, label = _base(surfaces, root, commit)
+    console = _console_changed(root, merge_base, commit)
     old = (
         commit_policy.git(["rev-parse", "%s:%s" % (merge_base, RENET)], cwd=root)
         if merge_base
         else None
     )
-    if old == new:
-        return None, None, [], ""
     tree = commit_policy.git(["rev-parse", "%s^{tree}" % new], cwd=str(renet))
+    if old == new:
+        return new, tree, [], label, console
     if not old:
-        return new, tree, None, label if merge_base is None else "%s pins no renet" % label
+        return new, tree, None, label if merge_base is None else "%s pins no renet" % label, console
     return (
         new,
         tree,
         wr.changed_between(renet, old, new),
         "renet %s..%s (%s)" % (old[:12], new[:12], label),
+        console,
     )
 
 
@@ -442,7 +471,9 @@ def run(ev):
                     }
                 )
         for commit, (src, sending) in tips.items():
-            renet_commit, tree, changed, base_label = _range(WR, surfaces, root, form, commit)
+            renet_commit, tree, changed, base_label, console_changed = _range(
+                WR, surfaces, root, form, commit
+            )
             if changed is None:
                 required = {
                     "all": True,
@@ -454,7 +485,7 @@ def run(ev):
                     "mapped": 0,
                 }
             else:
-                required = WR.required_for(test_map, changed)
+                required = WR.required_for(test_map, changed, console_changed=console_changed)
             if not required["packages"]:
                 continue
             receipt = WR.read_receipt(tree)

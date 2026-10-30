@@ -1,15 +1,6 @@
 {
   "schema": 1,
   "module": "github.com/rediacc/renet",
-  "areaNames": [
-    "license",
-    "functions",
-    "migrate",
-    "multi-vm",
-    "ceph",
-    "kube",
-    "backup"
-  ],
   "whole": [
     {
       "glob": "go.mod",
@@ -26,10 +17,49 @@
       "why": "extract_baseline_test.go reads every Go source under pkg/ and cmd/ as text, so any Go change can turn it red"
     }
   ],
+  "console": [
+    {
+      "glob": "packages/shared/src/subscription/schema.generated.json",
+      "why": "pkg/subscription/schema_test.go reads the generated subscription schema",
+      "packages": [
+        "pkg/subscription"
+      ]
+    },
+    {
+      "glob": "packages/json/templates/platforms/nextcloud-aio/docker-compose.yaml",
+      "why": "pkg/compose/template_collabora_test.go compares its testdata copy to this shipped template",
+      "packages": [
+        "pkg/compose"
+      ]
+    },
+    {
+      "glob": "private/account/tests/integration/cross-language/fixtures.json",
+      "why": "the cross-language fixtures that pkg/license and pkg/subscription crosslang tests read",
+      "packages": [
+        "pkg/license",
+        "pkg/subscription"
+      ]
+    }
+  ],
+  "retired": [
+    {
+      "glob": "pkg/ipam/**",
+      "why": "package deleted from renet (driver.go, driver_test.go, types.go); a path of it in a diff is a deletion, and any importer that still names it fails go list"
+    },
+    {
+      "glob": "pkg/network/**",
+      "why": "package deleted from renet (driver.go, driver_test.go, types.go), the earlier home of the address allocator; a path of it in a diff is a deletion, and any importer that still names it fails go list"
+    }
+  ],
+  "outside": [
+    {
+      "glob": "tests/system/**",
+      "why": "e2e-tagged system tests (//go:build e2e) that need real infrastructure; the VM drills and e2e suites run them, a plain go test builds none of them"
+    }
+  ],
   "entries": [
     {
       "glob": "cmd/renet/**",
-      "areas": [],
       "packages": [
         "cmd/renet"
       ],
@@ -37,7 +67,6 @@
     },
     {
       "glob": "pkg/atomicjson/**",
-      "areas": [],
       "packages": [
         "pkg/atomicjson"
       ],
@@ -52,9 +81,6 @@
     },
     {
       "glob": "pkg/backupstate/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/backupstate"
       ],
@@ -65,9 +91,6 @@
     },
     {
       "glob": "pkg/bwrate/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/bwrate"
       ],
@@ -79,7 +102,6 @@
     },
     {
       "glob": "pkg/certexport/**",
-      "areas": [],
       "packages": [
         "pkg/certexport",
         "pkg/certexport/trigger"
@@ -101,9 +123,6 @@
     },
     {
       "glob": "pkg/chunkstore/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/chunkstore",
         "pkg/chunkstore/toccrypt"
@@ -126,9 +145,6 @@
     },
     {
       "glob": "pkg/coldbackup/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/coldbackup"
       ],
@@ -159,7 +175,6 @@
     },
     {
       "glob": "pkg/compose/**",
-      "areas": [],
       "packages": [
         "pkg/compose"
       ],
@@ -177,7 +192,6 @@
     },
     {
       "glob": "pkg/config/**",
-      "areas": [],
       "packages": [
         "pkg/config"
       ],
@@ -249,7 +263,6 @@
     },
     {
       "glob": "pkg/convergeguard/**",
-      "areas": [],
       "packages": [
         "pkg/convergeguard"
       ],
@@ -266,7 +279,6 @@
     },
     {
       "glob": "pkg/credentials/**",
-      "areas": [],
       "packages": [
         "pkg/credentials"
       ],
@@ -288,7 +300,6 @@
     },
     {
       "glob": "pkg/daemon/**",
-      "areas": [],
       "packages": [
         "pkg/daemon"
       ],
@@ -316,7 +327,6 @@
     },
     {
       "glob": "pkg/datastore/**",
-      "areas": [],
       "packages": [
         "pkg/datastore"
       ],
@@ -339,10 +349,6 @@
     },
     {
       "glob": "pkg/delta/**",
-      "areas": [
-        "backup",
-        "migrate"
-      ],
       "packages": [
         "pkg/delta"
       ],
@@ -355,7 +361,6 @@
     },
     {
       "glob": "pkg/dns/**",
-      "areas": [],
       "packages": [
         "pkg/dns"
       ],
@@ -365,7 +370,6 @@
     },
     {
       "glob": "pkg/dockergrant/**",
-      "areas": [],
       "packages": [
         "pkg/dockergrant"
       ],
@@ -396,7 +400,6 @@
     },
     {
       "glob": "pkg/dockerpolicy/**",
-      "areas": [],
       "packages": [
         "pkg/dockerpolicy"
       ],
@@ -430,7 +433,6 @@
     },
     {
       "glob": "pkg/dockerproxy/**",
-      "areas": [],
       "packages": [
         "pkg/dockerproxy"
       ],
@@ -448,7 +450,6 @@
     },
     {
       "glob": "pkg/dockerstore/**",
-      "areas": [],
       "packages": [
         "pkg/dockerstore"
       ],
@@ -477,7 +478,6 @@
     },
     {
       "glob": "pkg/ebpf/**",
-      "areas": [],
       "packages": [
         "pkg/ebpf"
       ],
@@ -506,7 +506,6 @@
     },
     {
       "glob": "pkg/embed/**",
-      "areas": [],
       "packages": [
         "pkg/embed"
       ],
@@ -523,9 +522,6 @@
     },
     {
       "glob": "pkg/fiemap/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/fiemap"
       ],
@@ -539,7 +535,6 @@
     },
     {
       "glob": "pkg/filesystem/**",
-      "areas": [],
       "packages": [
         "pkg/filesystem"
       ],
@@ -572,9 +567,6 @@
     },
     {
       "glob": "pkg/functions/**",
-      "areas": [
-        "functions"
-      ],
       "packages": [
         "pkg/functions",
         "pkg/functions/commands",
@@ -590,7 +582,6 @@
     },
     {
       "glob": "pkg/gpu/**",
-      "areas": [],
       "packages": [
         "pkg/gpu"
       ],
@@ -619,7 +610,6 @@
     },
     {
       "glob": "pkg/health/**",
-      "areas": [],
       "packages": [
         "pkg/health"
       ],
@@ -641,7 +631,6 @@
     },
     {
       "glob": "pkg/hostmetrics/**",
-      "areas": [],
       "packages": [
         "pkg/hostmetrics"
       ],
@@ -671,9 +660,6 @@
     },
     {
       "glob": "pkg/hub/**",
-      "areas": [
-        "multi-vm"
-      ],
       "packages": [
         "pkg/hub"
       ],
@@ -683,7 +669,6 @@
     },
     {
       "glob": "pkg/i18n/**",
-      "areas": [],
       "packages": [
         "pkg/i18n",
         "pkg/i18n/locales"
@@ -767,7 +752,6 @@
     },
     {
       "glob": "pkg/infra/**",
-      "areas": [],
       "packages": [
         "pkg/infra/aptretry",
         "pkg/infra/aptsources",
@@ -792,9 +776,6 @@
     },
     {
       "glob": "pkg/infra/ceph/**",
-      "areas": [
-        "ceph"
-      ],
       "packages": [
         "pkg/infra/ceph"
       ],
@@ -804,9 +785,6 @@
     },
     {
       "glob": "pkg/infra/cephpkg/**",
-      "areas": [
-        "ceph"
-      ],
       "packages": [
         "pkg/infra/cephpkg"
       ],
@@ -816,9 +794,6 @@
     },
     {
       "glob": "pkg/infra/mesh/**",
-      "areas": [
-        "multi-vm"
-      ],
       "packages": [
         "pkg/infra/mesh"
       ],
@@ -829,9 +804,6 @@
     },
     {
       "glob": "pkg/infra/vm/**",
-      "areas": [
-        "multi-vm"
-      ],
       "packages": [
         "pkg/infra/vm",
         "pkg/infra/vm/cloudinit",
@@ -854,7 +826,6 @@
     },
     {
       "glob": "pkg/jobs/**",
-      "areas": [],
       "packages": [
         "pkg/jobs"
       ],
@@ -865,7 +836,6 @@
     },
     {
       "glob": "pkg/kernel/**",
-      "areas": [],
       "packages": [
         "pkg/kernel"
       ],
@@ -879,10 +849,6 @@
     },
     {
       "glob": "pkg/kube/**",
-      "areas": [
-        "kube",
-        "migrate"
-      ],
       "packages": [
         "pkg/kube",
         "pkg/kube/csidriver",
@@ -902,9 +868,6 @@
     },
     {
       "glob": "pkg/kubecsi/**",
-      "areas": [
-        "kube"
-      ],
       "packages": [
         "pkg/kubecsi"
       ],
@@ -916,9 +879,6 @@
     },
     {
       "glob": "pkg/kubevolume/**",
-      "areas": [
-        "kube"
-      ],
       "packages": [
         "pkg/kubevolume"
       ],
@@ -931,9 +891,6 @@
     },
     {
       "glob": "pkg/license/**",
-      "areas": [
-        "license"
-      ],
       "packages": [
         "pkg/license",
         "pkg/license/keys"
@@ -954,7 +911,6 @@
     },
     {
       "glob": "pkg/list/**",
-      "areas": [],
       "packages": [
         "pkg/list"
       ],
@@ -964,7 +920,6 @@
     },
     {
       "glob": "pkg/locking/**",
-      "areas": [],
       "packages": [
         "pkg/locking"
       ],
@@ -994,7 +949,6 @@
     },
     {
       "glob": "pkg/loop/**",
-      "areas": [],
       "packages": [
         "pkg/loop"
       ],
@@ -1011,7 +965,6 @@
     },
     {
       "glob": "pkg/luks/**",
-      "areas": [],
       "packages": [
         "pkg/luks"
       ],
@@ -1039,9 +992,6 @@
     },
     {
       "glob": "pkg/nodeteardown/**",
-      "areas": [
-        "kube"
-      ],
       "packages": [
         "pkg/nodeteardown"
       ],
@@ -1066,7 +1016,6 @@
     },
     {
       "glob": "pkg/orchestration/**",
-      "areas": [],
       "packages": [
         "pkg/orchestration"
       ],
@@ -1082,7 +1031,6 @@
     },
     {
       "glob": "pkg/output/**",
-      "areas": [],
       "packages": [
         "pkg/output"
       ],
@@ -1102,7 +1050,6 @@
     },
     {
       "glob": "pkg/procwalk/**",
-      "areas": [],
       "packages": [
         "pkg/procwalk"
       ],
@@ -1112,7 +1059,6 @@
     },
     {
       "glob": "pkg/proxy/**",
-      "areas": [],
       "packages": [
         "pkg/proxy"
       ],
@@ -1141,7 +1087,6 @@
     },
     {
       "glob": "pkg/prune/**",
-      "areas": [],
       "packages": [
         "pkg/prune"
       ],
@@ -1155,7 +1100,6 @@
     },
     {
       "glob": "pkg/ps/**",
-      "areas": [],
       "packages": [
         "pkg/ps"
       ],
@@ -1170,9 +1114,6 @@
     },
     {
       "glob": "pkg/rbd/**",
-      "areas": [
-        "ceph"
-      ],
       "packages": [
         "pkg/rbd"
       ],
@@ -1196,7 +1137,6 @@
     },
     {
       "glob": "pkg/rediaccfile/**",
-      "areas": [],
       "packages": [
         "pkg/rediaccfile"
       ],
@@ -1214,9 +1154,6 @@
     },
     {
       "glob": "pkg/repodiff/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/repodiff"
       ],
@@ -1228,7 +1165,6 @@
     },
     {
       "glob": "pkg/repoguid/**",
-      "areas": [],
       "packages": [
         "pkg/repoguid"
       ],
@@ -1256,7 +1192,6 @@
     },
     {
       "glob": "pkg/repomerge/**",
-      "areas": [],
       "packages": [
         "pkg/repomerge"
       ],
@@ -1266,7 +1201,6 @@
     },
     {
       "glob": "pkg/reporuntime/**",
-      "areas": [],
       "packages": [
         "pkg/reporuntime"
       ],
@@ -1281,7 +1215,6 @@
     },
     {
       "glob": "pkg/repository/**",
-      "areas": [],
       "packages": [
         "pkg/repository"
       ],
@@ -1303,9 +1236,6 @@
     },
     {
       "glob": "pkg/restorepath/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/restorepath"
       ],
@@ -1315,7 +1245,6 @@
     },
     {
       "glob": "pkg/router/**",
-      "areas": [],
       "packages": [
         "pkg/router"
       ],
@@ -1336,7 +1265,6 @@
     },
     {
       "glob": "pkg/runpaths/**",
-      "areas": [],
       "packages": [
         "pkg/runpaths"
       ],
@@ -1374,7 +1302,6 @@
     },
     {
       "glob": "pkg/sandbox/**",
-      "areas": [],
       "packages": [
         "pkg/sandbox"
       ],
@@ -1399,9 +1326,6 @@
     },
     {
       "glob": "pkg/snapshot/**",
-      "areas": [
-        "backup"
-      ],
       "packages": [
         "pkg/snapshot"
       ],
@@ -1418,9 +1342,6 @@
     },
     {
       "glob": "pkg/ssh/**",
-      "areas": [
-        "multi-vm"
-      ],
       "packages": [
         "pkg/ssh"
       ],
@@ -1432,7 +1353,6 @@
     },
     {
       "glob": "pkg/stats/**",
-      "areas": [],
       "packages": [
         "pkg/stats"
       ],
@@ -1448,7 +1368,6 @@
     },
     {
       "glob": "pkg/storage/**",
-      "areas": [],
       "packages": [
         "pkg/storage"
       ],
@@ -1473,9 +1392,6 @@
     },
     {
       "glob": "pkg/subscription/**",
-      "areas": [
-        "license"
-      ],
       "packages": [
         "pkg/subscription"
       ],
@@ -1496,7 +1412,6 @@
     },
     {
       "glob": "pkg/systemctl/**",
-      "areas": [],
       "packages": [
         "pkg/systemctl"
       ],
@@ -1529,7 +1444,6 @@
     },
     {
       "glob": "pkg/telemetry/**",
-      "areas": [],
       "packages": [
         "pkg/telemetry"
       ],
@@ -1539,7 +1453,6 @@
     },
     {
       "glob": "pkg/testutil/**",
-      "areas": [],
       "packages": [
         "pkg/testutil"
       ],
@@ -1547,7 +1460,6 @@
     },
     {
       "glob": "pkg/thinpool/**",
-      "areas": [],
       "packages": [
         "pkg/thinpool"
       ],
@@ -1558,7 +1470,6 @@
     },
     {
       "glob": "pkg/toolexec/**",
-      "areas": [],
       "packages": [
         "pkg/toolexec",
         "pkg/toolexec/devicemapper"
@@ -1592,9 +1503,6 @@
     },
     {
       "glob": "pkg/toolexec/ceph/**",
-      "areas": [
-        "ceph"
-      ],
       "packages": [
         "pkg/toolexec/ceph"
       ],
@@ -1619,7 +1527,6 @@
     },
     {
       "glob": "pkg/trim/**",
-      "areas": [],
       "packages": [
         "pkg/trim"
       ],
@@ -1630,7 +1537,6 @@
     },
     {
       "glob": "pkg/vaultcrypto/**",
-      "areas": [],
       "packages": [
         "pkg/vaultcrypto"
       ],
@@ -1638,6 +1544,13 @@
         "cmd/renet",
         "pkg/functions"
       ]
+    },
+    {
+      "glob": "scripts/**",
+      "packages": [
+        "scripts"
+      ],
+      "dependents": []
     }
   ]
 }

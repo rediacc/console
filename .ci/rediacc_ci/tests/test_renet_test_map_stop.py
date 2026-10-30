@@ -18,15 +18,22 @@ if TYPE_CHECKING:
 MAP = {
     "schema": 1,
     "module": "github.com/rediacc/renet",
-    "areaNames": ["license"],
     "whole": [{"glob": "go.mod", "why": "the module graph reaches every package"}],
     "always": [{"package": "pkg/i18n", "why": "scans every source"}],
+    "console": [
+        {
+            "glob": "packages/shared/schema.json",
+            "why": "read by pkg/license",
+            "packages": ["pkg/license"],
+        }
+    ],
+    "retired": [{"glob": "pkg/gone/**", "why": "deleted"}],
+    "outside": [{"glob": "tests/system/**", "why": "e2e"}],
     "entries": [
-        {"glob": "cmd/renet/**", "areas": [], "packages": ["cmd/renet"], "dependents": []},
-        {"glob": "pkg/i18n/**", "areas": [], "packages": ["pkg/i18n"], "dependents": []},
+        {"glob": "cmd/renet/**", "packages": ["cmd/renet"], "dependents": []},
+        {"glob": "pkg/i18n/**", "packages": ["pkg/i18n"], "dependents": []},
         {
             "glob": "pkg/license/**",
-            "areas": ["license"],
             "packages": ["pkg/license"],
             "dependents": ["cmd/renet"],
         },
@@ -175,3 +182,42 @@ def test_an_unmapped_go_file_selects_every_package(tmp_path):
 
 def test_a_broken_world_is_silence_not_a_crash(tmp_path):
     assert wr.advisory(tmp_path / "nowhere", {"RENET_TEST_RECEIPT_DIR": str(tmp_path)}) is None
+
+
+def test_a_console_only_change_fires_for_the_packages_that_read_it(tmp_path):
+    root, renet, env = _world(tmp_path)
+    assert wr.advisory(root, env) is None
+    (root / "packages" / "shared").mkdir(parents=True)
+    (root / "packages/shared/schema.json").write_text("{}\n", encoding="utf-8")
+    text = wr.advisory(root, env)
+    assert text is not None, "a console file renet tests read changed and nothing fired"
+    assert "1 package(s)" in text, text  # pkg/license alone: no dependents, no always set
+    tree, _ = wr.working_tree(renet)
+    _receipt(env, tree, ["pkg/license"])
+    assert wr.advisory(root, env) is None
+    # Twin: a console file no row names stays silent.
+    (root / "packages/shared/unrelated.json").write_text("{}\n", encoding="utf-8")
+    assert wr.advisory(root, env) is None
+
+
+def test_a_deleted_retired_package_selects_only_the_always_set(tmp_path):
+    root, renet, env = _world(tmp_path)
+    (renet / "pkg/gone").mkdir()
+    (renet / "pkg/gone/x.go").write_text("package gone\n", encoding="utf-8")
+    _git(renet, "add", "-A")
+    _git(renet, "commit", "-q", "-m", "B")
+    _git(root, "add", "private/renet")
+    _git(root, "commit", "-q", "-m", "pin B")
+    _git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    (renet / "pkg/gone/x.go").unlink()
+    text = wr.advisory(root, env)
+    assert text is not None
+    assert "1 package(s)" in text, text  # pkg/i18n only; not every package
+    assert "every package" not in text
+
+
+def test_an_outside_go_path_selects_nothing(tmp_path):
+    root, renet, env = _world(tmp_path)
+    (renet / "tests/system").mkdir(parents=True)
+    (renet / "tests/system/a_e2e_test.go").write_text("package system\n", encoding="utf-8")
+    assert wr.advisory(root, env) is None

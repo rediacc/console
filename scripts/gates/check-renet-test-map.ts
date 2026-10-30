@@ -8,17 +8,26 @@
  *
  * THE MAP, `.ci/config/renet-test-map.json`, is the single source. Each entry is a renet path
  * glob (`<dir>/**` or an exact path), the Go packages that glob claims (`packages`), the in-repo
- * packages that import one of them, test imports included (`dependents`), and the vm:check areas
- * the path belongs to (`areas`, read by the vm:check side). A path belongs to its MOST SPECIFIC
+ * packages that import one of them, test imports included (`dependents`). The map holds NO area
+ * list: the vm:check areas live once, in `.ci/config/proof-tiers.json` (`tiers.vm.areas`), and a
+ * test pins that no second list comes back. A path belongs to its MOST SPECIFIC
  * glob, so `pkg/infra/ceph/**` takes its files from `pkg/infra/**`. `whole` names paths that
  * reach every package (go.mod, go.sum); `always` names packages whose tests read every Go source
  * as text (the i18n baseline scan), which no import graph shows, so they run on any Go change.
+ * `console` names CONSOLE-relative files renet tests read from outside the module (the
+ * subscription schema, the shipped compose template, the cross-language fixtures) and the
+ * packages that read them, so a console-only change selects them; the gate proves each file
+ * exists and each package's tests still name it. `retired` names globs of packages deleted from
+ * renet: a path under one is a deletion that selects only the `always` set, and the row must be
+ * deleted the day a live package or tracked file sits under it. `outside` names Go paths the
+ * gate cannot run, each with the reason (a build-tagged e2e suite that needs real infrastructure):
+ * a path under one selects nothing, and the row is counted in the shape line so it stays visible.
  *
  * WHAT THIS GATE PROVES, in order:
  *   1. The map is the import graph. Every package under private/renet/{pkg,cmd} is claimed by
  *      a glob, no entry claims nothing, and each entry's `packages` and `dependents` equal what
  *      `go list -json` says today. `--write` refreshes those two lists; it never adds an entry,
- *      because a new package needs a human to say which areas it belongs to.
+ *      because a new package needs a human to pick its glob.
  *   2. The renet diff since the console's merge-base with origin/main (the gitlink there against
  *      the renet working tree, untracked files included) selects packages through the map, and
  *      `go test -json` on exactly those passes. A path under pkg/ or cmd/ that no glob claims,
@@ -59,20 +68,26 @@ export const MAP_REL = '.ci/config/renet-test-map.json';
 export const RENET_REL = 'private/renet';
 export const RECEIPT_SCHEMA = 1;
 /** Directories whose packages the map must cover. */
-export const GO_ROOTS = ['pkg', 'cmd'];
+export const GO_ROOTS = ['pkg', 'cmd', 'scripts'];
 
 export interface Entry {
   glob: string;
-  areas: string[];
   packages: string[];
   dependents: string[];
+}
+export interface ConsoleEntry {
+  glob: string;
+  why: string;
+  packages: string[];
 }
 export interface TestMap {
   schema: number;
   module: string;
-  areaNames: string[];
   whole: { glob: string; why: string }[];
   always: { package: string; why: string }[];
+  console: ConsoleEntry[];
+  retired: { glob: string; why: string }[];
+  outside: { glob: string; why: string }[];
   entries: Entry[];
 }
 export interface GoPkg {
@@ -125,11 +140,21 @@ export function goRelevant(p: string): boolean {
 export function requiredFor(
   map: TestMap,
   changed: readonly string[],
-  all: readonly string[]
+  all: readonly string[],
+  consoleChanged: readonly string[] = []
 ): Required {
   const pk = new Set<string>();
+  const consolePk = new Set<string>();
   const allWhy: string[] = [];
   let mapped = 0;
+  let retired = false;
+  for (const p of consoleChanged) {
+    for (const c of map.console) {
+      if (!globMatches(c.glob, p)) continue;
+      mapped += 1;
+      for (const x of c.packages) consolePk.add(x);
+    }
+  }
   for (const p of changed) {
     const w = map.whole.find((x) => globMatches(x.glob, p));
     if (w) {
@@ -141,12 +166,18 @@ export function requiredFor(
     if (e) {
       mapped += 1;
       for (const x of [...e.packages, ...e.dependents]) pk.add(x);
+    } else if (map.retired.some((r) => globMatches(r.glob, p))) {
+      mapped += 1;
+      retired = true;
+    } else if (map.outside.some((o) => globMatches(o.glob, p))) {
+      mapped += 1;
     } else if (goRelevant(p)) {
       allWhy.push(`${p} (no glob in ${MAP_REL} claims it)`);
     }
   }
   if (allWhy.length > 0) return { all: true, packages: [...all].sort(byText), allWhy, mapped };
-  if (pk.size > 0) for (const a of map.always) pk.add(a.package);
+  if (pk.size > 0 || retired) for (const a of map.always) pk.add(a.package);
+  for (const x of consolePk) pk.add(x);
   return { all: false, packages: [...pk].sort(byText), allWhy, mapped };
 }
 
@@ -244,11 +275,20 @@ const same = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && a.every((x, i) => x === b[i]);
 
 /** Every way the map disagrees with the tree, each line naming the fix. */
-export function validate(map: TestMap, pkgs: readonly GoPkg[]): string[] {
+export interface TreeView {
+  /** True when the console-relative path (or the directory of a `/**` glob) exists. */
+  consoleExists: (rel: string) => boolean;
+  /** True when a `_test.go` file of renet package `pkg` contains `needle`. */
+  testsMention: (pkg: string, needle: string) => boolean;
+  /** True when a tracked renet file sits under `glob`. */
+  renetHas: (glob: string) => boolean;
+}
+
+export function validate(map: TestMap, pkgs: readonly GoPkg[], view?: TreeView): string[] {
   const out: string[] = [];
   if (pkgs.length === 0)
     out.push(
-      'go list found 0 packages under pkg/ and cmd/; the gate is not seeing the tree, so its green would mean nothing'
+      'go list found 0 packages under pkg/, cmd/ and scripts/; the gate is not seeing the tree, so its green would mean nothing'
     );
   const names = new Set(pkgs.map((p) => p.rel));
   const seen = new Set<string>();
@@ -256,9 +296,39 @@ export function validate(map: TestMap, pkgs: readonly GoPkg[]): string[] {
     if (seen.has(e.glob)) out.push(`${e.glob}: listed twice; keep one entry`);
     seen.add(e.glob);
     if (!globOk(e.glob)) out.push(`${e.glob}: a glob is "<dir>/**" or an exact path`);
-    for (const a of e.areas)
-      if (!map.areaNames.includes(a))
-        out.push(`${e.glob}: area "${a}" is not one of ${map.areaNames.join(', ')}`);
+  }
+  for (const c of map.console) {
+    if (!globOk(c.glob) || c.glob.startsWith(`${RENET_REL}/`))
+      out.push(
+        `console ${c.glob}: a console-relative "<dir>/**" or exact path outside ${RENET_REL}`
+      );
+    if (c.packages.length === 0) out.push(`console ${c.glob}: names no package; delete the row`);
+    for (const x of c.packages)
+      if (!names.has(x)) out.push(`console ${c.glob}: no such package ${x}; fix the name`);
+    if (!view) continue;
+    const base = c.glob.replace(/\/\*\*$/, '');
+    if (!view.consoleExists(base))
+      out.push(
+        `console ${c.glob}: no such console path; a renamed file selects nothing, so fix the glob`
+      );
+    const needle = base.split('/').pop() as string;
+    for (const x of c.packages)
+      if (names.has(x) && !view.testsMention(x, needle))
+        out.push(
+          `console ${c.glob}: no _test.go in ${x} names "${needle}" any more; the read is gone, delete ${x} from the row`
+        );
+  }
+  for (const o of map.outside) {
+    if (!globOk(o.glob)) out.push(`outside ${o.glob}: a glob is "<dir>/**" or an exact path`);
+    if (pkgs.some((p) => globMatches(o.glob, `${p.rel}/x.go`)))
+      out.push(`outside ${o.glob}: a package the gate runs sits under it; delete the row`);
+  }
+  for (const r of map.retired) {
+    if (!globOk(r.glob)) out.push(`retired ${r.glob}: a glob is "<dir>/**" or an exact path`);
+    if (pkgs.some((p) => globMatches(r.glob, `${p.rel}/x.go`)) || view?.renetHas(r.glob))
+      out.push(
+        `retired ${r.glob}: a live package or tracked file sits under it; delete the row and give the package an entry`
+      );
   }
   for (const w of map.whole)
     if (!globOk(w.glob)) out.push(`whole ${w.glob}: a glob is "<dir>/**" or an exact path`);
@@ -268,7 +338,7 @@ export function validate(map: TestMap, pkgs: readonly GoPkg[]): string[] {
   const { lists, uncovered } = expected(map, pkgs);
   for (const u of uncovered)
     out.push(
-      `${u}: no glob claims this package. Add {"glob": "${u}/**", "areas": [...]} to ${MAP_REL}, then run --write`
+      `${u}: no glob claims this package. Add {"glob": "${u}/**", "packages": [], "dependents": []} to ${MAP_REL}, then run --write`
     );
   for (const e of map.entries) {
     const want = lists.get(e.glob);
@@ -447,20 +517,24 @@ function selftest(): void {
   const map: TestMap = {
     schema: 1,
     module: 'm',
-    areaNames: ['license', 'ceph'],
     whole: [{ glob: 'go.mod', why: 'module graph' }],
     always: [{ package: 'pkg/i18n', why: 'scans sources' }],
+    console: [
+      { glob: 'shared/schema.json', why: 'read by pkg/a', packages: ['pkg/a'] },
+      { glob: 'fixtures/**', why: 'read by pkg/infra/ceph', packages: ['pkg/infra/ceph'] },
+    ],
+    retired: [{ glob: 'pkg/gone/**', why: 'deleted' }],
+    outside: [{ glob: 'tests/sys/**', why: 'build-tagged e2e' }],
     entries: [
-      { glob: 'pkg/a/**', areas: ['license'], packages: ['pkg/a'], dependents: ['cmd/r'] },
-      { glob: 'pkg/infra/**', areas: [], packages: ['pkg/infra'], dependents: [] },
+      { glob: 'pkg/a/**', packages: ['pkg/a'], dependents: ['cmd/r'] },
+      { glob: 'pkg/infra/**', packages: ['pkg/infra'], dependents: [] },
       {
         glob: 'pkg/infra/ceph/**',
-        areas: ['ceph'],
         packages: ['pkg/infra/ceph'],
         dependents: ['pkg/infra'],
       },
-      { glob: 'pkg/i18n/**', areas: [], packages: ['pkg/i18n'], dependents: [] },
-      { glob: 'cmd/r/**', areas: [], packages: ['cmd/r'], dependents: [] },
+      { glob: 'pkg/i18n/**', packages: ['pkg/i18n'], dependents: [] },
+      { glob: 'cmd/r/**', packages: ['cmd/r'], dependents: [] },
     ],
   };
   const pkgs: GoPkg[] = [
@@ -471,6 +545,72 @@ function selftest(): void {
     { rel: 'pkg/infra/ceph', deps: [], hasTests: true },
   ];
   const all = pkgs.map((p) => p.rel);
+  const view: TreeView = {
+    consoleExists: (r) => r === 'shared/schema.json' || r === 'fixtures',
+    testsMention: (pk, n) =>
+      (pk === 'pkg/a' && n === 'schema.json') || (pk === 'pkg/infra/ceph' && n === 'fixtures'),
+    renetHas: () => false,
+  };
+  ok(
+    validate(map, pkgs, view).length === 0,
+    'CONTROL: the console and retired rows validate against a matching tree'
+  );
+  ok(
+    validate(map, pkgs, { ...view, consoleExists: () => false }).some((f) =>
+      f.includes('no such console path')
+    ),
+    'a console row whose file is gone is refused'
+  );
+  ok(
+    validate(map, pkgs, { ...view, testsMention: () => false }).some((f) =>
+      f.includes('the read is gone')
+    ),
+    'a console row no test reads any more is refused'
+  );
+  ok(
+    validate(map, pkgs, { ...view, renetHas: () => true }).some((f) =>
+      f.startsWith('retired pkg/gone/**')
+    ),
+    'a retired row with a tracked file under it is refused'
+  );
+  ok(
+    validate({ ...map, retired: [{ glob: 'pkg/a/**', why: 'x' }] }, pkgs, view).some((f) =>
+      f.startsWith('retired pkg/a/**')
+    ),
+    'a retired row over a live package is refused'
+  );
+  const cr = requiredFor(map, [], all, ['shared/schema.json']);
+  ok(
+    !cr.all && same(cr.packages, ['pkg/a']),
+    'a console-only change selects the packages that read it, not the always set'
+  );
+  ok(
+    same(requiredFor(map, [], all, ['fixtures/x.json']).packages, ['pkg/infra/ceph']),
+    'a console directory glob selects its readers'
+  );
+  ok(
+    requiredFor(map, [], all, ['docs/x.md', 'shared/other.json']).packages.length === 0,
+    'CONTROL: an unrelated console path selects nothing'
+  );
+  const rt = requiredFor(map, ['pkg/gone/x.go'], all);
+  ok(
+    !rt.all && same(rt.packages, ['pkg/i18n']),
+    'a path under a retired glob selects the always set, not every package'
+  );
+  ok(
+    requiredFor(map, ['tests/sys/a_test.go'], all).packages.length === 0,
+    'a Go path under an outside row selects nothing, declared'
+  );
+  ok(
+    validate({ ...map, outside: [{ glob: 'pkg/a/**', why: 'x' }] }, pkgs, view).some((f) =>
+      f.startsWith('outside pkg/a/**')
+    ),
+    'an outside row over a package the gate runs is refused'
+  );
+  ok(
+    requiredFor(map, ['pkg/gone2/x.go'], all).all,
+    'CONTROL: a path beside a retired glob is still unknown, so every package'
+  );
   ok(validate(map, pkgs).length === 0, 'CONTROL: a map equal to the graph validates clean');
   ok(
     validate(map, [...pkgs, { rel: 'pkg/planted', deps: [], hasTests: true }]).some((f) =>
@@ -581,6 +721,45 @@ function changedPaths(renet: string, base: string): string[] {
   );
 }
 
+/** The console files changed since the merge-base with origin/main (tracked diff plus untracked). */
+function consoleChangedPaths(consoleRoot: string): string[] {
+  const mb = git(consoleRoot, ['merge-base', 'HEAD', 'origin/main']);
+  if (!mb) return [];
+  const diff = git(consoleRoot, ['diff', '--name-only', mb]) ?? '';
+  const untracked = git(consoleRoot, ['ls-files', '--others', '--exclude-standard']) ?? '';
+  return [...new Set([...diff.split('\n'), ...untracked.split('\n')].filter((x) => x !== ''))].sort(
+    byText
+  );
+}
+
+/** The real tree behind the map's console and retired rows. */
+function treeView(renet: string): TreeView {
+  const tests = new Map<string, string>();
+  const testText = (pkg: string): string => {
+    let t = tests.get(pkg);
+    if (t === undefined) {
+      const dir = path.join(renet, pkg);
+      t = fs.existsSync(dir)
+        ? fs
+            .readdirSync(dir)
+            .filter((f) => f.endsWith('_test.go'))
+            .map((f) => fs.readFileSync(path.join(dir, f), 'utf-8'))
+            .join('\n')
+        : '';
+      tests.set(pkg, t);
+    }
+    return t;
+  };
+  return {
+    consoleExists: (rel) => fs.existsSync(path.join(REPO_ROOT, rel)),
+    testsMention: (pkg, needle) => testText(pkg).includes(needle),
+    renetHas: (glob) => {
+      const base = glob.replace(/\/\*\*$/, '');
+      return (git(renet, ['ls-files', '--', base]) ?? '') !== '';
+    },
+  };
+}
+
 function main(): void {
   if (dispatchSelftest('check-renet-test-map', selftest)) return;
   const renet = submodulePath(RENET_REL);
@@ -599,29 +778,30 @@ function main(): void {
   if (process.argv.includes('--write')) {
     const next = refreshed(map, pkgs);
     fs.writeFileSync(path.join(REPO_ROOT, MAP_REL), `${JSON.stringify(next, null, 2)}\n`);
-    const left = validate(next, pkgs);
+    const left = validate(next, pkgs, treeView(renet));
     console.log(`wrote ${MAP_REL}: ${next.entries.length} entries over ${pkgs.length} packages`);
     for (const f of left) console.error(`${RED}  ${f}${NC}`);
     process.exit(left.length > 0 ? 1 : 0);
   }
-  const findings = validate(map, pkgs);
+  const findings = validate(map, pkgs, treeView(renet));
   if (findings.length > 0) {
     console.error(
       `${RED}✗ ${MAP_REL} disagrees with the renet import graph (${findings.length}):${NC}`
     );
     for (const f of findings) console.error(`  ${f}`);
-    console.error(`Do not widen a glob to hide a package: give it its own entry and areas.`);
+    console.error(`Do not widen a glob to hide a package: give it its own entry.`);
     process.exit(1);
   }
-  const shape = `${map.entries.length} entries, ${pkgs.length} packages, ${map.always.length} always, ${map.whole.length} whole-module`;
+  const shape = `${map.entries.length} entries, ${pkgs.length} packages, ${map.always.length} always, ${map.whole.length} whole-module, ${map.console.length} console read(s), ${map.retired.length} retired, ${map.outside.length} outside`;
 
   const { base, why } = renetBase(REPO_ROOT);
   const baseOk =
     base !== undefined && git(renet, ['cat-file', '-e', `${base}^{commit}`]) !== undefined;
   const changed = baseOk ? changedPaths(renet, base as string) : [];
   const all = pkgs.map((p) => p.rel);
+  const consoleChanged = baseOk ? consoleChangedPaths(REPO_ROOT) : [];
   const req = baseOk
-    ? requiredFor(map, changed, all)
+    ? requiredFor(map, changed, all, consoleChanged)
     : {
         all: true,
         packages: all,
