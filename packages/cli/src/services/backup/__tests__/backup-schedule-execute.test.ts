@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import type { SFTPClient } from '../../../remote/sftp/client.js';
+import { executePlan } from '../backup-schedule-execute.js';
+import type { ReconcilePlan, RemoteUnitState, StrategyDiff } from '../backup-schedule-reconcile.js';
+
+/** A fake SFTP client that records every remote command and fails `systemctl disable` on a missing unit, as systemd does. */
+function fakeSftp(units: Set<string>) {
+  const commands: string[] = [];
+  const sftp = {
+    execStreaming: (command: string) => {
+      commands.push(command);
+      const disable = /systemctl disable --now (\S+)/.exec(command);
+      return Promise.resolve(disable && !units.has(disable[1]) ? 1 : 0);
+    },
+  } as unknown as SFTPClient;
+  return { sftp, commands };
+}
+
+function file(path: string, exists: boolean) {
+  return { path, exists, sha256: exists ? 'x' : null };
+}
+
+function removed(name: string, timer: boolean): StrategyDiff {
+  const remote: RemoteUnitState = {
+    serviceFile: file(`/etc/systemd/system/rediacc-backup-${name}.service`, timer),
+    timerFile: file(`/etc/systemd/system/rediacc-backup-${name}.timer`, timer),
+    envFile: file(`/etc/rediacc/backup-${name}.env`, true),
+    isActiveService: false,
+    isActiveAdhoc: false,
+    isEnabledTimer: timer,
+    isActiveTimer: timer,
+    isFailed: false,
+  };
+  return { name, action: 'remove', desired: null, remote, changedFiles: [] } as StrategyDiff;
+}
+
+function plan(toRemove: StrategyDiff[]): ReconcilePlan {
+  return {
+    toCreate: [],
+    toUpdate: [],
+    toRemove,
+    unchanged: [],
+    skippedInFlight: [],
+    daemonReloadNeeded: false,
+  };
+}
+
+describe('executePlan removals', () => {
+  it('removes a strategy whose units are gone but whose env file was left behind, without disabling a missing timer', async () => {
+    const { sftp, commands } = fakeSftp(new Set());
+    await executePlan(sftp, plan([removed('weekly-cold', false)]), {});
+    expect(commands.some((c) => c.includes('systemctl disable'))).toBe(false);
+    expect(commands.some((c) => c.includes("rm -f '/etc/rediacc/backup-weekly-cold.env'"))).toBe(
+      true
+    );
+  });
+
+  it('still disables a timer that exists before removing its files', async () => {
+    const { sftp, commands } = fakeSftp(new Set(['rediacc-backup-nightly.timer']));
+    await executePlan(sftp, plan([removed('nightly', true)]), {});
+    const disable = commands.findIndex((c) =>
+      c.includes('systemctl disable --now rediacc-backup-nightly.timer')
+    );
+    const rm = commands.findIndex((c) => c.startsWith("sudo rm -f '"));
+    expect(disable).toBeGreaterThanOrEqual(0);
+    expect(rm).toBeGreaterThan(disable);
+  });
+});

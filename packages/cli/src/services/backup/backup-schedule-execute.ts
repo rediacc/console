@@ -111,12 +111,17 @@ async function removeOneStrategy(
 ): Promise<void> {
   const remote = diff.remote;
   if (!remote) return;
-  await runRemoteCommand(
-    sftp,
-    `sudo systemctl disable --now rediacc-backup-${diff.name}.timer`,
-    options,
-    `Failed to disable timer for removed strategy "${diff.name}"`
-  );
+  // Only a timer unit that exists can be disabled: systemctl exits 1 on a missing one, and a strategy
+  // whose units are already gone but whose env file was left behind (hostinger, 2026-10-30) otherwise
+  // aborted the whole schedule before any other strategy's timer was deployed.
+  if (remote.timerFile.exists) {
+    await runRemoteCommand(
+      sftp,
+      `sudo systemctl disable --now rediacc-backup-${diff.name}.timer`,
+      options,
+      `Failed to disable timer for removed strategy "${diff.name}"`
+    );
+  }
   const paths = collectExistingPaths(remote);
   if (paths.length === 0) return;
   await runRemoteCommand(
