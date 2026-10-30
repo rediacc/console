@@ -77,10 +77,10 @@ describe('renet licence tiers (generated contract)', () => {
       expect(usesTagAsProvisioningTarget('repository_commit_meta')).toBe(false);
     });
 
-    it('rejects create-tier verbs outside the repository prefix', () => {
-      // Licensed by renet, but there is no repo to mint a licence against, so the CLI must not route them through pre-flight issuance.
+    it('keeps build-out verbs out of pre-flight issuance', () => {
+      // Operator ruling 2026-10-30 (PLAN-renet-executor-tiered-license-check Q1, option A): build-out verbs need no licence, so renet maps them to none and the CLI issues nothing before them.
       for (const name of ['datastore_create', 'datastore_fork', 'kube_install']) {
-        expect(getRenetFunctionLicenseTier(name)).toBe('create');
+        expect(getRenetFunctionLicenseTier(name)).toBe('none');
         expect(isRepoProvisioningFunction(name)).toBe(false);
       }
     });
