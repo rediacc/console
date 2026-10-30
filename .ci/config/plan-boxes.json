@@ -1740,6 +1740,20 @@
         "f3681e45"
       ]
     },
+    "agent/plans/PLAN-renet-executor-tiered-license-check.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 0,
+      "open_sigs": [
+        "201f331a",
+        "50ce321e",
+        "d2002335"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-renet-fetch-retries.md": {
       "status": "approved",
       "owner": "d778be9d",

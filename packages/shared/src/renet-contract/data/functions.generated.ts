@@ -987,7 +987,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v2.3.2-199-g3044e03';
+export const RENET_FUNCTIONS_VERSION = 'v2.3.2-231-gc388e2a';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
