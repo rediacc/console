@@ -15,6 +15,7 @@ const mockFs = vi.hoisted(() => ({
   chmod: vi.fn().mockResolvedValue(undefined),
   copyFile: vi.fn().mockResolvedValue(undefined),
   mkdir: vi.fn().mockResolvedValue(undefined),
+  readdir: vi.fn().mockResolvedValue([]),
   readFile: vi.fn(),
   rename: vi.fn().mockResolvedValue(undefined),
   unlink: vi.fn().mockResolvedValue(undefined),
@@ -144,6 +145,7 @@ describe('services/background-updater', () => {
     mockFs.chmod.mockResolvedValue(undefined);
     mockFs.copyFile.mockResolvedValue(undefined);
     mockFs.mkdir.mockResolvedValue(undefined);
+    mockFs.readdir.mockResolvedValue([]);
     mockFs.rename.mockResolvedValue(undefined);
     mockFs.unlink.mockResolvedValue(undefined);
 
@@ -220,6 +222,84 @@ describe('services/background-updater', () => {
           lastError: 'network error',
         })
       );
+    });
+
+    it('removes orphaned rdc-*.tmp partials before downloading, keeping other files', async () => {
+      mockFs.readdir.mockResolvedValue([
+        'rdc-0.4.9.tmp',
+        'rdc-0.4.8.tmp',
+        'rdc-0.4.7',
+        'notes.tmp',
+      ]);
+      mockUpdater.fetchManifest.mockResolvedValue({
+        version: '0.5.0',
+        releaseDate: '2026-01-01T00:00:00Z',
+        releaseNotesUrl: '',
+        binaries: { 'linux-x64': { url: 'https://example.com/rdc', sha256: 'h' } },
+      });
+      mockUpdater.compareVersions.mockReturnValue(-1);
+      mockUpdater.computeSha256.mockResolvedValue('h');
+
+      await runBackgroundUpdateWorker();
+
+      const dir = '/home/testuser/.cache/rediacc/staged-update';
+      const unlinked = mockFs.unlink.mock.calls.map((c) => c[0]);
+      expect(unlinked).toContain(`${dir}/rdc-0.4.9.tmp`);
+      expect(unlinked).toContain(`${dir}/rdc-0.4.8.tmp`);
+      expect(unlinked).not.toContain(`${dir}/rdc-0.4.7`);
+      expect(unlinked).not.toContain(`${dir}/notes.tmp`);
+    });
+
+    it('removes its own partial and records the failure when the download throws', async () => {
+      mockUpdater.fetchManifest.mockResolvedValue({
+        version: '0.5.0',
+        releaseDate: '2026-01-01T00:00:00Z',
+        releaseNotesUrl: '',
+        binaries: { 'linux-x64': { url: 'https://example.com/rdc', sha256: 'h' } },
+      });
+      mockUpdater.compareVersions.mockReturnValue(-1);
+      mockUpdater.downloadFile.mockRejectedValue(new Error('socket hang up'));
+
+      await runBackgroundUpdateWorker();
+
+      expect(mockFs.unlink).toHaveBeenCalledWith(expect.stringContaining('.tmp'));
+      expect(mockUpdateState.writeUpdateState).toHaveBeenCalledWith(
+        expect.objectContaining({ consecutiveFailures: 1, lastError: 'socket hang up' })
+      );
+    });
+
+    it('does not kill a download at 30 s, and records the failure before the timer exits', async () => {
+      vi.useFakeTimers();
+      const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+      try {
+        mockUpdater.fetchManifest.mockResolvedValue({
+          version: '0.5.0',
+          releaseDate: '2026-01-01T00:00:00Z',
+          releaseNotesUrl: '',
+          binaries: { 'linux-x64': { url: 'https://example.com/rdc', sha256: 'h' } },
+        });
+        mockUpdater.compareVersions.mockReturnValue(-1);
+        mockUpdater.downloadFile.mockReturnValue(new Promise(() => {})); // never completes
+
+        void runBackgroundUpdateWorker();
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(exit).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(30 * 60_000);
+        expect(mockUpdateState.writeUpdateState).toHaveBeenCalledWith(
+          expect.objectContaining({
+            consecutiveFailures: 1,
+            lastError: 'Background update timed out',
+          })
+        );
+        expect(exit).toHaveBeenCalledWith(1);
+        expect(mockUpdateState.writeUpdateState.mock.invocationCallOrder[0]).toBeLessThan(
+          exit.mock.invocationCallOrder[0]
+        );
+      } finally {
+        exit.mockRestore();
+        vi.useRealTimers();
+      }
     });
 
     it('records successful check when already up to date', async () => {

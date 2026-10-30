@@ -224,7 +224,7 @@ Most of this exists already, and A1 pins it with tests:
   2. An independent R2 listing of `t/<subscriptionId>/` in rediacc-backups-eu, under the bws profile that binds the R2 pair (no value printed). Record the count and byte sum of `/c/` keys per lineage, and the `/m/` count.
   3. `./rdc.sh --config eu-remote backup manifests mautic -o json` records the committed snapshot ids.
   4. After 03:00 UTC on 2026-10-30, repeat 1 and record whether `backup_ledger_reconciled` fired for mautic. This confirms or refutes the self-heal prediction.
-    (ticked) 2026-10-30T04:43:35Z by d778be9d: L0 steps 1-3 recorded 2026-10-29 (usage, R2 listing, manifests rc=0); step 4 2026-10-30T04:45Z backup usage rc=0: mautic 03ee0999 chunkCount 1639 at 03:00:31Z, re-billed by the maintenance run (1613 listed + 26 tonight); prediction confirmed
+    (ticked) 2026-10-30T04:43:35Z by d778be9d: L0 steps 1-3 recorded 2026-10-29 (usage, R2 listing, manifests rc=0); step 4 backup usage rc=0 (read at or before 04:43Z): mautic 03ee0999 chunkCount 1639 at 03:00:31Z, re-billed by the maintenance run (1613 listed + 26 tonight). Verified: the ledger effect of a reconcile. Not verified: the `backup_ledger_reconciled` event was not read and the R2 listing was not repeated after 03:00; see the correction below
 
   Owns: agent/plans/PLAN-backup-meter-orphaned-chunks.md (receipts only).
   Accept: step 1 and step 3 rc 0, the listing command rc 0, and the receipts recorded in this box.

@@ -43,6 +43,7 @@ vi.mock('../../machine/machine-connection.js', () => ({
 
 import {
   assertHostedBackupAccount,
+  FREE_LICENSE_MAX_SIZE_GB,
   FREE_LICENSE_PATH,
   freeLicenseNoBackupMessage,
   isFreeLicenseBackupRefusal,
@@ -110,15 +111,29 @@ describe('resolveLicenseAuthority', () => {
     expect(login).not.toHaveBeenCalled();
     expect(m.askChoice).not.toHaveBeenCalled();
     expect(m.warn).toHaveBeenCalledWith(expect.stringContaining('errors.freeLicense.autoTaken'));
+    // The rendered text carries the cap: a dropped maxGb argument fails here.
+    expect(m.warn).toHaveBeenCalledWith(
+      expect.stringContaining(`"maxGb":${FREE_LICENSE_MAX_SIZE_GB}`)
+    );
   });
 
-  it('the offer names no duration: login, or a free licence up to 3 GB', async () => {
+  it('the offer names no duration and carries the free size cap in the locale text and the call', async () => {
     const en = (await import('../../../i18n/locales/en/cli.json')).default as {
       errors: { freeLicense: Record<string, string> };
     };
     const strings = Object.values(en.errors.freeLicense).join(' ');
     expect(strings).not.toMatch(/48|hour/i);
     expect(en.errors.freeLicense.offerFree).toContain('{{maxGb}} GB');
+    expect(FREE_LICENSE_MAX_SIZE_GB).toBe(3);
+    // Interpolate the real locale text with the value the code passes: the rendered offer says "3 GB".
+    const render = (text: string, vars: Record<string, unknown>) =>
+      text.replace(/\{\{(\w+)\}\}/g, (_, k: string) => String(vars[k]));
+    expect(render(en.errors.freeLicense.offerFree, { maxGb: FREE_LICENSE_MAX_SIZE_GB })).toContain(
+      '3 GB'
+    );
+    expect(
+      render(en.errors.freeLicense.autoTaken, { maxGb: FREE_LICENSE_MAX_SIZE_GB, url: 'u' })
+    ).toContain('3 GB');
   });
 
   it('at a terminal, choosing the free licence asks once and skips the login', async () => {
@@ -129,6 +144,9 @@ describe('resolveLicenseAuthority', () => {
     expect(m.askChoice).toHaveBeenCalledTimes(1);
     const [, choices] = m.askChoice.mock.calls[0] as [string, { value: string }[]];
     expect(choices.map((c) => c.value)).toEqual(['login', 'free']);
+    expect((choices as { name: string }[])[1].name).toContain(
+      `"maxGb":${FREE_LICENSE_MAX_SIZE_GB}`
+    );
     expect(login).not.toHaveBeenCalled();
     // The recovery path re-runs the pre-flight: the choice holds, nothing is asked again.
     await expect(resolveLicenseAuthority(login)).resolves.toBe('free');
