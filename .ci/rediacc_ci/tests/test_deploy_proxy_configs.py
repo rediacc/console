@@ -228,7 +228,9 @@ def test_a_non_decimal_cap_is_refused() -> None:
 
 
 def test_an_executor_backend_var_is_refused() -> None:
-    text = plant(real("edge-eu"), 'EXECUTOR_CAP = "25"', 'EXECUTOR_BACKEND = "durable"\nEXECUTOR_CAP = "25"')
+    text = plant(
+        real("edge-eu"), 'EXECUTOR_CAP = "25"', 'EXECUTOR_BACKEND = "durable"\nEXECUTOR_CAP = "25"'
+    )
     out = refusals(text, "edge-eu")
     assert "vars.EXECUTOR_BACKEND is not one a edge-eu config may carry" in out, out
 
@@ -304,7 +306,9 @@ def test_the_legacy_binding_is_refused() -> None:
 
 
 def test_a_missing_v3_migration_is_refused() -> None:
-    text = plant(real("us"), '\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]\n', "")
+    text = plant(
+        real("us"), '\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]\n', ""
+    )
     out = refusals(text, "us")
     assert any("[[migrations]] is" in r and "v3" in r for r in out), out
 

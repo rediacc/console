@@ -361,10 +361,11 @@ The egress entrypoint (`AccountEgress`, Design A or B) is an export of the main 
 
 ### Cleanup (Phase 3)
 
-- [ ] C1 [proxy] Retire the `Container` class, after L6.
+- [x] C1 [proxy] Retire the `Container` class, after L6.
   - Migration v3 `deleted_classes = ["ExecutorContainer"]`.
   - Remove the old entry, the `EXECUTOR` binding, `EXECUTOR_BACKEND` and its table, the `ContainerProxy` re-export, the static `outboundHandlers`, and `@cloudflare/containers` from package.json and the lockfile.
   - `config_refusals` and the cost guard require the one-entry shape.
+    (ticked) 2026-10-30T20:32:31Z by d778be9d: commit:a37df8dd workers/proxy test:unit rc 0 (327), proxy_configs --check rc 0, check:ci-proxy-cost-guard rc 0, 260 pytest passed, acceptance grep empty except the v1/v3 migration lines. DEPS-WAIVED: operator ruling ASKED:2026-10-30T19:29Z (#0fe1788c) puts C1 on this PR ahead of ML5
 
   -- Owns: workers/proxy/src/index.ts, workers/proxy/package.json, workers/proxy/package-lock.json, workers/proxy/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/tests/test_deploy_proxy_configs.py, .ci/scripts/quality/check_proxy_cost_guard.py, .ci/rediacc_ci/tests/test_check_proxy_cost_guard.py. Accept: `grep -rn '@cloudflare/containers\|ExecutorContainer\|ContainerProxy' workers/proxy/src workers/proxy/package.json workers/proxy/wrangler*.toml` prints nothing except the v1 and v3 migration lines; `cd workers/proxy && npm run test:unit` exits 0; `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs --check` and `npm run check:ci-proxy-cost-guard` exit 0.
 

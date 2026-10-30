@@ -651,7 +651,9 @@ def selftest() -> bool:
     one: list[dict] = [{"class_name": "O", "scheduling_policy": DURABLE_POLICY}]
     capped = {"vars": {"EXECUTOR_CAP": "10", "EXECUTOR_HEAVY_CAP": "1"}}
     control("a durable entry counts EXECUTOR_CAP", routed_count(one, capped, "c")[0] == 10)
-    control("a config with no durable entry counts nothing", routed_count([], capped, "c") == (0, 0, []))
+    control(
+        "a config with no durable entry counts nothing", routed_count([], capped, "c") == (0, 0, [])
+    )
     control(
         "the worst case per target is about $281 and within the limit",
         280 < monthly_usd(25, 5, True) < 282

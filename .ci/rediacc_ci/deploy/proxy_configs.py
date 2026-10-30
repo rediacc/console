@@ -287,7 +287,9 @@ def _executor_refusals(config: dict) -> list[str]:
     raw = config.get("containers")
     # A non-table element of an inline `containers = [...]` array stays in the count, so it matches no entry and refuses.
     containers = raw if isinstance(raw, list) else []
-    durable = [c for c in containers if isinstance(c, dict) and c.get("class_name") == DURABLE_CLASS]
+    durable = [
+        c for c in containers if isinstance(c, dict) and c.get("class_name") == DURABLE_CLASS
+    ]
     if len(containers) != 1 or len(durable) != 1:
         out.append(
             "[[containers]] is %r, not exactly the one %s entry"
