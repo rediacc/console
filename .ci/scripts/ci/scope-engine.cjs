@@ -701,7 +701,16 @@ function createRepoIo({
             const top = run('git', ['-C', sub, 'rev-parse', '--show-toplevel']).trim();
             if (fs.realpathSync(top) !== fs.realpathSync(sub))
               throw new Error('submodule-not-checked-out');
-            return run('git', ['-C', sub, 'diff', '--no-renames', '--name-only', '-z', oldSha, newSha]).split('\0');
+            return run('git', [
+              '-C',
+              sub,
+              'diff',
+              '--no-renames',
+              '--name-only',
+              '-z',
+              oldSha,
+              newSha,
+            ]).split('\0');
           },
         })
       ),
