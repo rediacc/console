@@ -1333,7 +1333,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ACTIONS_API_BASE` | gate-seam | - |
 | `ACTION_REFS_MIN_FILES` | gate-seam | - |
 | `AGENT_BROWSER_SESSION` | harness | - |
-| `AGENT_BROWSER_VERSION` | toolchain | - |
 | `AGENT_SESSION_ARCHIVAL_ROOT` | gate-seam | - |
 | `AGE_FAIL_DAYS` | gate-seam | - |
 | `AGE_WARN_DAYS` | gate-seam | - |
@@ -1358,6 +1357,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ARG_CONNECT_TIMEOUT` | ci-runner | - |
 | `ARG_VERIFY` | ci-runner | - |
 | `ARTIFACTS_DIR` | harness | - |
+| `ARTIFACT_DIR` | ci-runner | - |
 | `ASTRO_PORT` | harness | - |
 | `ATTEMPTS` | ci-runner | - |
 | `AUTOPILOT_ALLOW_PUSH` | tombstone | - |
@@ -1615,6 +1615,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `E2E_CLUSTER_NAME` | harness | - |
 | `E2E_CLUSTER_REPO` | harness | - |
 | `E2E_COV_ALLOWLIST` | gate-seam | - |
+| `E2E_COV_BRIDGE_FLOOR` | gate-seam | - |
 | `E2E_COV_DARK_SUITES` | gate-seam | - |
 | `E2E_COV_E2E_DIR` | gate-seam | - |
 | `E2E_COV_FUNCTIONS_FILE` | gate-seam | - |
@@ -1663,6 +1664,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `FORCE` | ci-runner | - |
 | `FORCE_FULL_CI` | ci-runner | - |
 | `FORMAT_SCOPE_ROOT` | gate-seam | - |
+| `FREE_LICENSE_HMAC_KEY` | secret | - |
 | `FULL_CI` | secret | - |
 | `FULL_CI_LABEL` | ci-runner | - |
 | `FULL_INTEGRATION` | harness | - |
@@ -1746,6 +1748,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `IS_BOT` | ci-runner | - |
 | `JOB_STATUS` | ci-runner | - |
 | `JWT_SECRET` | gate-seam | - |
+| `K10_SEED_GB` | harness | - |
 | `K8S_MODE` | harness | - |
 | `KEEP_CLUSTER` | harness | - |
 | `KEEP_GROUPS` | harness | - |
@@ -1768,6 +1771,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LANGUAGE_POLICY_ROOT` | gate-seam | - |
 | `LC_ALL` | machine-local | - |
 | `LC_CTYPE` | machine-local | - |
+| `LINODE_API_TOKEN` | secret | - |
 | `LIVE_CONSOLE_D1_DATABASE` | secret | - |
 | `LIVE_CONSOLE_EDGE_ASIA_D1_DATABASE` | secret | - |
 | `LIVE_CONSOLE_EDGE_ASIA_ORG_A_EMAIL` | secret | - |
@@ -1792,6 +1796,9 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LIVE_CONSOLE_EDGE_US_ORG_B_EMAIL` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_ORG_B_PASSWORD` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_ORG_B_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_C_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_C_TOTP_SECRET` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_STORE_PASSWORD` | secret | - |
 | `LIVE_CONSOLE_MACHINE` | secret | - |
 | `LIVE_CONSOLE_ORG_A_EMAIL` | secret | - |
@@ -2044,9 +2051,9 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_PROXY_URL` | product-runtime | - |
 | `REDIACC_PYTEST_REAL_DIST` | harness | - |
 | `REDIACC_REGION` | product-runtime | - |
-| `REDIACC_RELEASE_RUN` | harness | - |
 | `REDIACC_SECRET_STORE` | product-runtime | - |
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | product-runtime | - |
+| `REDIACC_SKIP_MACHINE_ACTIVATION` | tombstone | tombstone proof: `packages/cli/src/services/__tests__/local-executor-license-size.test.ts`, `packages/cli/src/services/__tests__/local-executor-restore-license.test.ts`, `packages/cli/src/services/__tests__/local-executor.test.ts` |
 | `REDIACC_SKIP_ROUTER_RESTART` | product-runtime | - |
 | `REDIACC_SKIP_RUNTIME_CONVERGE` | product-runtime | - |
 | `REDIACC_SKIP_SETUP_CHECK` | product-runtime | - |
@@ -2063,12 +2070,14 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_TELEMETRY_ENDPOINT` | product-runtime | - |
 | `REDIACC_TEST_ENV_APPLY` | gate-seam | - |
 | `REDIACC_TIMEOUT_BIN` | harness | - |
+| `REDIACC_TOFU` | product-runtime | - |
 | `REDIACC_TOKEN` | secret | - |
 | `REDIACC_TOOLCHAIN_LOADED` | toolchain | - |
 | `REDIACC_TRANSCRIPT_PATH` | harness | - |
 | `REDIACC_UPDATE_CHANNEL` | product-runtime | - |
 | `REDIACC_UPDATE_INTERVAL_HOURS` | product-runtime | - |
 | `REDIACC_VIA_DAEMON` | product-runtime | - |
+| `REDIACC_VM_DISK_DIR` | ci-runner | - |
 | `REDIACC_VSCODE_PATH` | product-runtime | - |
 | `REDIACC_WORKTREE_STDIN_PROCFS` | machine-local | - |
 | `REDIACC_YES` | product-runtime | - |
@@ -2093,11 +2102,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RENET_DIR` | gate-seam | - |
 | `RENET_EMBED_CACHE_HIT` | ci-runner | - |
 | `RENET_EXPECT_NO_ACCOUNT_SERVER` | harness | - |
-| `RENET_KEYLESS` | tombstone | tombstone proof: `.ci/rediacc_ci/tests/test_core_local_common_renet_key.py`, `.ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py`, `.ci/rediacc_ci/tests/test_renet_build_key_required.py` |
+| `RENET_KEYLESS` | tombstone | - |
 | `RENET_ROOT` | harness | - |
 | `RENET_TAG` | ci-runner | - |
 | `RENET_TEST_EXTRA_TIERS` | ci-runner | - |
 | `RENET_TEST_PKGS` | ci-runner | - |
+| `RENET_TOKEN` | ci-runner | - |
 | `RENET_VERSION` | ci-runner | - |
 | `REPO` | tombstone | - |
 | `REPOSITORY_NETWORK_MODE` | harness | - |
@@ -2265,6 +2275,10 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `TARGET` | ci-runner | - |
 | `TARGET_RUN_ID` | ci-runner | - |
 | `TEMPLATE` | tombstone | - |
+| `TEST_CLUSTER_PROJECT_ID` | harness | - |
+| `TEST_PROVIDER_TOKEN` | harness | - |
+| `TF_CLI_CONFIG_FILE` | harness | - |
+| `TF_PLUGIN_CACHE_DIR` | product-runtime | - |
 | `THRESHOLD_GB` | ci-runner | - |
 | `TIMEOUT_SECS` | ci-runner | - |
 | `TMPDIR` | machine-local | - |
@@ -2317,6 +2331,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `VM_BRIDGE` | harness | - |
 | `VM_CEPH_NODES` | harness | - |
 | `VM_CONTROL` | harness | - |
+| `VM_DSK` | ci-runner | - |
 | `VM_IMAGE` | harness | - |
 | `VM_NET` | harness | - |
 | `VM_NET_BASE` | harness | - |
@@ -2557,6 +2572,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `_DEVBOX_DOCKER` | harness | - |
 | `_WL_SITEPROFILE` | harness | - |
 
-1262 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+1277 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->

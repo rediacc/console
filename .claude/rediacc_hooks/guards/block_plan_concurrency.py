@@ -218,7 +218,7 @@ def run(event):
             )
         )
         return hookio.ALLOW
-    verdict = X.spawn_verdict(serving, live, lambda base: X.plan_x(root, base), declared)
+    verdict = X.spawn_verdict(serving, live, lambda base: X.plan_x(root, base), declared, root=root)
     if verdict.kind in ("mutex", "mutex-own"):
         return _refuse(event, verdict, kind, MUTEX_EXITS)
     if not verdict.allow:

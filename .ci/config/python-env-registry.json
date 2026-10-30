@@ -408,6 +408,7 @@
       "BACKUP_BUCKET_EDGE",
       "BACKUP_BUCKET_STABLE",
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+      "FREE_LICENSE_HMAC_KEY",
       "R2_JURISDICTION",
       "ROOT_EMAIL",
       "SELLER_ADDRESS_LINE1",
@@ -730,6 +731,7 @@
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+      "FREE_LICENSE_HMAC_KEY",
       "OBS_OTLP_CREDENTIALS",
       "REDIACC_BWS_PROFILES",
       "ROOT_EMAIL",
@@ -1541,6 +1543,9 @@
       "TWIN_PARITY_ALWAYS_DRIVE"
     ],
     ".ci/rediacc_ci/tests/pathmask.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/proof/test_vm_check_areas.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/regolden.py": [

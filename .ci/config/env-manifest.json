@@ -51,14 +51,14 @@
     "packages/cli/src/services/__tests__/account-client.test.ts": [
       "X25519_PUBLIC_KEY"
     ],
-    ".ci/rediacc_ci/tests/test_core_local_common_renet_key.py": [
-      "RENET_KEYLESS"
+    "packages/cli/src/services/__tests__/local-executor-license-size.test.ts": [
+      "REDIACC_SKIP_MACHINE_ACTIVATION"
     ],
-    ".ci/rediacc_ci/tests/test_renet_build_key_required.py": [
-      "RENET_KEYLESS"
+    "packages/cli/src/services/__tests__/local-executor-restore-license.test.ts": [
+      "REDIACC_SKIP_MACHINE_ACTIVATION"
     ],
-    ".ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py": [
-      "RENET_KEYLESS"
+    "packages/cli/src/services/__tests__/local-executor.test.ts": [
+      "REDIACC_SKIP_MACHINE_ACTIVATION"
     ]
   },
   "_tombstone_proof_sites_comment": [
@@ -168,6 +168,7 @@
       "DOCKERHUB_USERNAME",
       "E2E_ACCOUNT_API_TOKEN",
       "E2E_SSH_KEY",
+      "FREE_LICENSE_HMAC_KEY",
       "FULL_CI",
       "GH_APP_TOKEN",
       "GH_TOKEN",
@@ -178,6 +179,7 @@
       "GITHUB_TOKEN",
       "GIT_BOT_EMAIL",
       "GIT_BOT_NAME",
+      "LINODE_API_TOKEN",
       "LIVE_CONSOLE_D1_DATABASE",
       "LIVE_CONSOLE_EDGE_ASIA_D1_DATABASE",
       "LIVE_CONSOLE_EDGE_ASIA_ORG_A_EMAIL",
@@ -202,6 +204,9 @@
       "LIVE_CONSOLE_EDGE_US_ORG_B_EMAIL",
       "LIVE_CONSOLE_EDGE_US_ORG_B_PASSWORD",
       "LIVE_CONSOLE_EDGE_US_ORG_B_TOTP_SECRET",
+      "LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL",
+      "LIVE_CONSOLE_EDGE_US_ORG_C_PASSWORD",
+      "LIVE_CONSOLE_EDGE_US_ORG_C_TOTP_SECRET",
       "LIVE_CONSOLE_EDGE_US_STORE_PASSWORD",
       "LIVE_CONSOLE_MACHINE",
       "LIVE_CONSOLE_ORG_A_EMAIL",
@@ -289,6 +294,7 @@
       "ARG_BUNDLE",
       "ARG_CONNECT_TIMEOUT",
       "ARG_VERIFY",
+      "ARTIFACT_DIR",
       "ATTEMPTS",
       "AWS_DEFAULT_REGION",
       "AWS_MAX_ATTEMPTS",
@@ -452,6 +458,7 @@
       "PUBLISH_STABLE",
       "RECEIPT_LANE",
       "RECEIPT_PATH",
+      "REDIACC_VM_DISK_DIR",
       "REF",
       "REGION",
       "RELEASES_BASE_URL",
@@ -464,6 +471,7 @@
       "RENET_TAG",
       "RENET_TEST_EXTRA_TIERS",
       "RENET_TEST_PKGS",
+      "RENET_TOKEN",
       "RENET_VERSION",
       "REPO_CHANNEL",
       "REQUESTED",
@@ -541,6 +549,7 @@
       "VARIANT",
       "VERSION",
       "VM_BAKE",
+      "VM_DSK",
       "WATCHDOG_BUDGET_DIR",
       "WATCHDOG_BUDGET_MODE",
       "WATCHDOG_CLAUDE_MODEL",
@@ -625,6 +634,7 @@
       "DOCS_RENDER_PARITY_ROOT",
       "DOMAIN_PARTITION_ROOT",
       "E2E_COV_ALLOWLIST",
+      "E2E_COV_BRIDGE_FLOOR",
       "E2E_COV_DARK_SUITES",
       "E2E_COV_E2E_DIR",
       "E2E_COV_FUNCTIONS_FILE",
@@ -811,7 +821,6 @@
     ],
     "toolchain": [
       "ACTIONLINT_VERSION",
-      "AGENT_BROWSER_VERSION",
       "AGG_BIN",
       "AGG_SHA256_DARWIN_AARCH64",
       "AGG_SHA256_DARWIN_X86_64",
@@ -994,11 +1003,13 @@
       "REDIACC_SSH_LINGER_MS",
       "REDIACC_TELEMETRY_DISABLED",
       "REDIACC_TELEMETRY_ENDPOINT",
+      "REDIACC_TOFU",
       "REDIACC_UPDATE_CHANNEL",
       "REDIACC_UPDATE_INTERVAL_HOURS",
       "REDIACC_VIA_DAEMON",
       "REDIACC_VSCODE_PATH",
       "REDIACC_YES",
+      "TF_PLUGIN_CACHE_DIR",
       "VITEST",
       "VITE_CI_MODE",
       "VITE_TURNSTILE_SITE_KEY"
@@ -1104,6 +1115,7 @@
       "HOOK_LABEL_DIR",
       "HTTPS_PORT",
       "HTTP_PORT",
+      "K10_SEED_GB",
       "K8S_MODE",
       "KEEP_CLUSTER",
       "KEEP_GROUPS",
@@ -1135,7 +1147,6 @@
       "REDIACC_NPM_RUNTIME",
       "REDIACC_PID_WAIT_PROCFS",
       "REDIACC_PYTEST_REAL_DIST",
-      "REDIACC_RELEASE_RUN",
       "REDIACC_SMOKE_NO_DOCKER",
       "REDIACC_STARTUP_TIMEOUT",
       "REDIACC_TIMEOUT_BIN",
@@ -1159,6 +1170,9 @@
       "SSTOOLS_POWERSHELL",
       "STOPHOOK_CHILD",
       "STRIPE_E2E_WEBHOOK_SECRET",
+      "TEST_CLUSTER_PROJECT_ID",
+      "TEST_PROVIDER_TOKEN",
+      "TF_CLI_CONFIG_FILE",
       "TUTORIAL_BACKUP_HOST",
       "TUTORIAL_CHAR_DELAY",
       "TUTORIAL_LOG_DIR",
@@ -1360,6 +1374,7 @@
       "REDIACC_EXECUTOR_TOKEN",
       "REDIACC_NEW_CONFIG_PASSWORD",
       "REDIACC_NO_COLOR",
+      "REDIACC_SKIP_MACHINE_ACTIVATION",
       "REDIACC_SUBSCRIPTION_TOKEN",
       "REDIACC_SUBSCRIPTION_TOKEN_FILE",
       "REDIACC_TEAM",
