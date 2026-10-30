@@ -202,14 +202,23 @@ export class TofuExecutor {
 
   /**
    * Write `.terraform.lock.hcl` for the pinned providers main.tf.json requires, replacing any lock
-   * already there, so init refuses a provider package whose hash the pin does not list (from the
+   * already there when one is written, so init refuses a provider package whose hash the pin does not list (from the
    * registry and from the shared plugin cache alike). The pins hash the packages registry.opentofu.org
    * serves, which is where OpenTofu resolves an unqualified source; terraform resolves the same
    * source against its own registry, so under terraform no lock is written and init locks what it fetches.
+   * With no pinned provider required (or no main.tf.json yet), nothing is written and an existing lock is
+   * left as it is, for tofu to keep or rewrite; a missing main.tf.json is tofu's own diagnostic to give.
    */
   private async writeProviderLock(): Promise<void> {
     if ((await this.getEngine()).engine !== 'tofu') return;
-    const config = JSON.parse(await readFile(join(this.workDir, 'main.tf.json'), 'utf8')) as {
+    let raw: string;
+    try {
+      raw = await readFile(join(this.workDir, 'main.tf.json'), 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+    const config = JSON.parse(raw) as {
       terraform?: { required_providers?: Record<string, { source?: string; version?: string }> };
     };
     const lock = generateProviderLock(

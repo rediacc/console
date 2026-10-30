@@ -88,12 +88,20 @@ const FAKE_VERSION = '1.0.0';
 const tamper = (lock: string): string =>
   lock.replace(/"h1:(.)/, (_m, c: string) => `"h1:${c === 'A' ? 'B' : 'A'}`);
 
-describe.skipIf(TOFU === null)(
+// CI must not skip the core guarantee: without a tofu binary the suite fails there.
+describe.skipIf(TOFU === null && process.env.CI !== 'true')(
   'tofu init refuses a provider whose hash the pin does not list',
   () => {
     let root: string;
     let pin: ProviderPin;
     const saved: Record<string, string | undefined> = {};
+
+    it('has a tofu binary to run against (required when CI=true)', () => {
+      expect(
+        TOFU,
+        'no pinned tofu: run `rdc tools install tofu` or set REDIACC_TOFU'
+      ).not.toBeNull();
+    });
 
     beforeEach(async () => {
       root = await mkdtemp(join(tmpdir(), 'tofu-lock-'));
@@ -170,6 +178,24 @@ describe.skipIf(TOFU === null)(
       expect(await readFile(join(work, '.terraform.lock.hcl'), 'utf8')).toBe(
         generateProviderLock(config.terraform.required_providers, { [FAKE]: pin })
       );
+    });
+
+    it('leaves an existing lock and a missing main.tf.json to tofu when no pinned provider applies', async () => {
+      const work = join(root, 'nopin');
+      await mkdir(work, { recursive: true });
+      await writeFile(join(work, '.terraform.lock.hcl'), '# kept\n');
+      const exec = new TofuExecutor(work, {});
+      await exec.writeConfig({ terraform: { required_providers: {} } });
+      await exec.init().catch(() => undefined);
+      expect(await readFile(join(work, '.terraform.lock.hcl'), 'utf8')).toBe('# kept\n');
+      // No main.tf.json: no ENOENT from the lock step, tofu reports the empty directory itself.
+      const empty = join(root, 'empty');
+      await mkdir(empty, { recursive: true });
+      const err = await new TofuExecutor(empty, {}).init().then(
+        () => '',
+        (e: Error) => e.message
+      );
+      expect(err).not.toContain('ENOENT');
     });
 
     it('fails init when the pinned lock carries a changed hash', async () => {

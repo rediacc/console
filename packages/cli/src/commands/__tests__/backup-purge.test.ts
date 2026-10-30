@@ -179,6 +179,33 @@ describe('backup purge', () => {
     expect(calls.lastIndexOf('DELETE')).toBe(calls.length - 2);
   });
 
+  it('takes freedBytes and deletedSnapshots from the final round, summing chunks and bytes', async () => {
+    const rounds = [purgeRound(false), purgeRound(false), purgeRound(true)];
+    mockFetch.mockImplementation(() => Promise.resolve(rounds.shift()));
+    const { purgeLineageRounds } = await import('../backup-purge.js');
+    const total = await purgeLineageRounds('shop', LINEAGE, String);
+    expect(total.freedBytes).toBe(4096);
+    expect(total.deletedSnapshots).toBe(2);
+    expect(total.deletedChunks).toBe(15);
+    expect(total.deletedBytes).toBe(300);
+  });
+
+  it('treats a response with no done field as the final round (an older server)', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        lineageGuid: LINEAGE,
+        freedBytes: 7,
+        deletedSnapshots: 1,
+        deletedChunks: 2,
+        deletedBytes: 3,
+      })
+    );
+    const { purgeLineageRounds } = await import('../backup-purge.js');
+    const total = await purgeLineageRounds('shop', LINEAGE, String);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(total.freedBytes).toBe(7);
+  });
+
   it('stops with an error when the account never reports done', async () => {
     const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
     mockFetch.mockImplementation((path: string, init?: { method?: string }) =>

@@ -39,7 +39,10 @@ const MAX_PURGE_ROUNDS = 200;
 
 /**
  * Repeat the account's bounded lineage delete until it reports done, printing progress per round
- * (stderr). The last round carries the lineage totals the ledger freed. Rounds are idempotent, so
+ * (stderr). The account's contract: a round that is not done reports freedBytes 0 and deletedSnapshots 0,
+ * and the final round carries the lineage totals the ledger freed, so those two come from the final
+ * round alone while chunk and byte counts are summed. A response with no `done` field (an older server,
+ * one call per delete) is the final round. Rounds are idempotent, so
  * a failed run is finished by running the command again.
  */
 export async function purgeLineageRounds(
@@ -56,7 +59,7 @@ export async function purgeLineageRounds(
     );
     deletedChunks += result.deletedChunks;
     deletedBytes += result.deletedBytes;
-    if (result.done) return { ...result, deletedChunks, deletedBytes };
+    if (result.done !== false) return { ...result, deletedChunks, deletedBytes };
     outputService.info(
       t('commands.backup.purge.progress', {
         name,

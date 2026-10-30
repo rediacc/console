@@ -1881,6 +1881,10 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
+      - name: Install the pinned OpenTofu for the provider-lock tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npx tsx packages/cli/scripts/install-pinned-tofu.ts
+
       - name: Run CLI unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/cli
