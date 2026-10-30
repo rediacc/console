@@ -299,6 +299,12 @@ jobs:
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       # The stripped linux-amd64 twin build.sh dev staged beside the host binary
       # (same version, same key ldflag), so the artifact stays one binary.
+      # Console is public, so anyone signed in to GitHub can download this
+      # artifact. That is acceptable only because renet has one build and it
+      # enforces licensing on every path: `functions once --test-mode` no longer
+      # skips the tier check (renet 23c0c03b, guarded by
+      # TestExecutorHasNoLicenceSwitch), so this dev-versioned binary grants
+      # nothing a licence would not. Never upload a binary with a licence bypass.
       - name: Stage the test renet artifact
         run: |
           mkdir -p "$RUNNER_TEMP/renet-test"
