@@ -930,6 +930,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-docker-pin-digest.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "199f79e5",
+        "613db632",
+        "827ecc2d",
+        "94f47ede",
+        "9933d672",
+        "9d30d422"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",
       "owner": "unowned",
