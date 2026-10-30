@@ -15,13 +15,14 @@ import {
   allocateNetworkIdWithFloor,
   ensureRepositoryNetworkId,
   type NetworkIdTarget,
-  runWithNetworkIdRetry,
   targetFloor,
 } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import { writeStdout } from '../services/core/request-context.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
-import { bindStepHandler } from '../services/jobs/steps.js';
+import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { getExecutor, requestNetworkIdAuto } from '../services/executor/executor-factory.js';
+import type { ExecuteOptions } from '../services/executor/types.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { CliExitError, notFound, stateMismatch } from '../utils/cli-exit-error.js';
@@ -81,24 +82,72 @@ bindStepHandler('rollbackCreate', async ({ params }) => {
   await rollbackCreateRepo(String(params.repo), String(params.guid));
 });
 
-/** Render the create result: timeline/success on success, rollback + failure otherwise. */
-async function renderCreateResult(
+/**
+ * The steps a create job owes (PLAN-detached-jobs J16). A failed or cancelled job rolls the registration back; a
+ * succeeded one refreshes the licence identity with the size it was created with and re-renders the backup units.
+ * They ride the job's ticket, so a `--background` create or a lost tail still settles them from `rdc job wait`.
+ */
+function createSteps(
   name: string,
   guid: string,
   machine: string,
-  result: import('../services/executor/local-executor.js').ExecuteResult
+  size: string | undefined
+): PlannedStep[] {
+  return [
+    planStep('rollbackCreate', { repo: name, guid }),
+    planStep('identityRefresh', {
+      function: 'repository_create',
+      repository: name,
+      ...(size ? { size } : {}),
+    }),
+    planStep('reconcileBackupSchedules', { machine }),
+  ];
+}
+
+/**
+ * Run the create as one machine job and render its outcome. The steps (rollback, identity refresh, schedule
+ * re-render) already ran inside the job's attach window when this returns a finished outcome; a pending one owes them
+ * to the ticket. `network_id: "auto"` replaces the client's allocation and its conflict retry (J0b finding 8), so
+ * there is exactly one job and a refused start leaves the registration for the caller's catch to roll back.
+ */
+async function runCreateJob(
+  name: string,
+  guid: string,
+  machine: string,
+  size: string | undefined,
+  options: ExecuteOptions
 ): Promise<void> {
+  const outcome = await runCommandJob(
+    'repo create',
+    { ...options, deferIdentityRefresh: true },
+    createSteps(name, guid, machine, size)
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  const { result } = outcome;
   if (result.success) {
     if (result.allSteps && result.allSteps.length > 0) {
       renderTimelineTotal(result.allSteps);
     } else {
       outputService.success(t('commands.repo.create.completed'));
     }
-    await reconcileBackupSchedules(machine);
   } else {
-    await rollbackCreateRepo(name, guid);
     renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
   }
+}
+
+/** Ask the create job to have renet allocate the network ID, and record it in the config once it has. */
+function requestCreateNetworkId(name: string, guid: string, machine: string): void {
+  requestNetworkIdAuto({
+    machine,
+    aliases: [name, `${name}:latest`, guid],
+    repoGuid: guid,
+    repoName: name,
+    recordAs: `${name}:latest`,
+  });
 }
 
 /** A resolved named-datastore placement: where the repo's data lives + how to reach it. */
@@ -145,7 +194,9 @@ export async function registerNewRepo(
   name: string,
   placement: Placement,
   extra: { sshPrivateKey?: string; sshPublicKey?: string },
-  target: NetworkIdTarget
+  target: NetworkIdTarget,
+  /** The create job asks renet for the ID (`network_id: "auto"`): no ID is allocated here and the record carries none. */
+  networkIdAuto = false
 ): Promise<{ repositoryGuid: string; networkId: number }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
@@ -156,12 +207,12 @@ export async function registerNewRepo(
   }
   const repositoryGuid = randomUUID();
   // D3(a): the floor is the target machine's used set, so a lagging counter skips IDs other devices placed there.
-  const networkId = await allocateNetworkIdWithFloor(await targetFloor(target));
+  const networkId = networkIdAuto ? 0 : await allocateNetworkIdWithFloor(await targetFloor(target));
   await configService.addRepository(compositeKey(name, 'latest'), {
     repositoryGuid,
     tag: 'latest',
     credential: generateCredential(),
-    networkId,
+    ...(networkId > 0 ? { networkId } : {}),
     placement,
     ...extra,
   });
@@ -201,11 +252,12 @@ async function handleRepoCreateOnMachine(
 
     const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
     const target: NetworkIdTarget = { machine: options.machine };
-    const { repositoryGuid, networkId } = await registerNewRepo(
+    const { repositoryGuid } = await registerNewRepo(
       name,
       { machine: options.machine },
       { sshPrivateKey, sshPublicKey },
-      target
+      target,
+      true
     );
     createdGuid = repositoryGuid;
 
@@ -213,7 +265,7 @@ async function handleRepoCreateOnMachine(
       t('commands.repo.create.registered', {
         repository: name,
         guid: repositoryGuid.slice(0, 8),
-        networkId,
+        networkId: 'auto',
       })
     );
     outputService.info(
@@ -224,27 +276,19 @@ async function handleRepoCreateOnMachine(
       })
     );
 
-    const result = await runWithNetworkIdRetry({
-      repoKey: name,
-      target,
-      networkId,
-      run: (id) =>
-        getExecutor().execute({
-          functionName: 'repository_create',
-          machineName: options.machine,
-          params: {
-            repository: name,
-            size: options.size,
-            guid: repositoryGuid,
-            network_id: id,
-            ...(options.noDocker ? { start_docker: false } : {}),
-          },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        }),
+    requestCreateNetworkId(name, repositoryGuid, options.machine);
+    await runCreateJob(name, repositoryGuid, options.machine, options.size, {
+      functionName: 'repository_create',
+      machineName: options.machine,
+      params: {
+        repository: name,
+        size: options.size,
+        guid: repositoryGuid,
+        ...(options.noDocker ? { start_docker: false } : {}),
+      },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
     });
-
-    await renderCreateResult(name, repositoryGuid, options.machine, result);
   } catch (error) {
     if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
     handleError(error);
@@ -284,11 +328,12 @@ async function handleRepoCreateOnDatastore(
       datastore: placement.mountPath,
       ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
     };
-    const { repositoryGuid, networkId } = await registerNewRepo(
+    const { repositoryGuid } = await registerNewRepo(
       name,
       { datastore: options.datastore },
       {},
-      target
+      target,
+      true
     );
     createdGuid = repositoryGuid;
 
@@ -296,7 +341,7 @@ async function handleRepoCreateOnDatastore(
       t('commands.repo.create.registered', {
         repository: name,
         guid: repositoryGuid.slice(0, 8),
-        networkId,
+        networkId: 'auto',
       })
     );
     outputService.info(
@@ -307,40 +352,30 @@ async function handleRepoCreateOnDatastore(
       })
     );
 
-    const result = await runWithNetworkIdRetry({
-      repoKey: name,
-      target,
-      networkId,
-      run: (id) =>
-        getExecutor().execute({
-          functionName: 'repository_create',
-          machineName: placement.machine,
-          ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
-          // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this placement above and then said nothing about it, so renet fell back to the machine's default docker datastore: the placement written to the config and the placement sent to the machine were two different things, silently. This is the executor's vault channel (ExecuteOptions.datastore), NOT a param ,
-          // `repository_create` reads its datastore from the machine vault.
-          datastore: placement.mountPath,
-          params: {
-            repository: name,
-            guid: repositoryGuid,
-            network_id: id,
-            mount_path: placement.mountPath,
-            // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up` does (the #39 assertion channel: renet honors `runtime` as an assertion and errors on a disagreement rather than silently falling to the docker arm).
-            //
-            // Without it, this dispatch was incoherent with the validation eight lines above: the CLI knew the repo was kubernetes-placed, refused `--size` on exactly that ground, and then sent the DOCKER create, which requires a
-            // size. With --size the CLI refused; without it renet refused. No value of
-            // the flag worked, and `repo create` was unusable on the cluster path. The declaration is what lets renet size the volumes from the PVCs instead.
-            ...(isK8s
-              ? { runtime: 'kube', cluster: placement.kubeCluster, start_docker: false }
-              : {}),
-            ...(options.size ? { size: options.size } : {}),
-            ...(options.noDocker && !isK8s ? { start_docker: false } : {}),
-          },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        }),
+    requestCreateNetworkId(name, repositoryGuid, placement.machine);
+    await runCreateJob(name, repositoryGuid, placement.machine, options.size, {
+      functionName: 'repository_create',
+      machineName: placement.machine,
+      ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
+      // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this placement above and then said nothing about it, so renet fell back to the machine's default docker datastore: the placement written to the config and the placement sent to the machine were two different things, silently. This is the executor's vault channel (ExecuteOptions.datastore), NOT a param ,
+      // `repository_create` reads its datastore from the machine vault.
+      datastore: placement.mountPath,
+      params: {
+        repository: name,
+        guid: repositoryGuid,
+        mount_path: placement.mountPath,
+        // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up` does (the #39 assertion channel: renet honors `runtime` as an assertion and errors on a disagreement rather than silently falling to the docker arm).
+        //
+        // Without it, this dispatch was incoherent with the validation eight lines above: the CLI knew the repo was kubernetes-placed, refused `--size` on exactly that ground, and then sent the DOCKER create, which requires a
+        // size. With --size the CLI refused; without it renet refused. No value of
+        // the flag worked, and `repo create` was unusable on the cluster path. The declaration is what lets renet size the volumes from the PVCs instead.
+        ...(isK8s ? { runtime: 'kube', cluster: placement.kubeCluster, start_docker: false } : {}),
+        ...(options.size ? { size: options.size } : {}),
+        ...(options.noDocker && !isK8s ? { start_docker: false } : {}),
+      },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
     });
-
-    await renderCreateResult(name, repositoryGuid, placement.machine, result);
   } catch (error) {
     if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
     handleError(error);

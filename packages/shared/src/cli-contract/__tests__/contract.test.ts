@@ -367,6 +367,22 @@ describe('CLI contract', () => {
     }
   });
 
+  it('keys DETACH_EXCLUSIONS only on commands that exist, and a planted unknown key is caught', () => {
+    // The generator fails on a stale key (generate-cli-contract.ts, staleExclusions). Read its table as text, so the
+    // same check runs here without executing the generator, and prove the check with a planted key as the control.
+    const source = readFileSync(
+      fileURLToPath(new URL('../../../../cli/scripts/generate-cli-contract.ts', import.meta.url)),
+      'utf-8'
+    );
+    const block = /const DETACH_EXCLUSIONS[^=]*=\s*\{([\s\S]*?)\n\};/.exec(source)?.[1] ?? '';
+    const keys = [...block.matchAll(/^ {2}'([^']+)':/gm)].map((m) => m[1] as string);
+    expect(keys.length).toBeGreaterThan(0);
+    const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
+    const stale = (names: string[]) => names.filter((k) => !live.has(k));
+    expect(stale(keys)).toEqual([]);
+    expect(stale([...keys, 'repo no-such-verb'])).toEqual(['repo no-such-verb']);
+  });
+
   it('gives every section 24 exception a --background refusal reason, and no other command one', () => {
     for (const cmd of CLI_CONTRACT.commands) {
       const exception = cmd.proxyCapable && cmd.domain !== 'job' && !cmd.detachable;

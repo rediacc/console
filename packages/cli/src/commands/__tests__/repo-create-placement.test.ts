@@ -9,8 +9,11 @@
  * record carries the declared placement every derived-machine op resolves through.
  */
 
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { RdcConfig, RepositoryConfig } from '@rediacc/shared/config-schema';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExecuteOptions } from '../../services/executor/types.js';
 
 const execute = vi.fn((_options: ExecuteOptions) =>
@@ -19,8 +22,10 @@ const execute = vi.fn((_options: ExecuteOptions) =>
 const addRepository = vi.fn((_name: string, _config: RepositoryConfig) => Promise.resolve());
 const getCurrent = vi.fn<() => Promise<RdcConfig>>();
 
+const requestNetworkIdAuto = vi.fn();
 vi.mock('../../services/executor/executor-factory.js', () => ({
   getExecutor: () => ({ execute }),
+  requestNetworkIdAuto: (input: unknown) => requestNetworkIdAuto(input),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
@@ -67,7 +72,33 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 }));
 
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { setCommandJobDeps } from '../../services/jobs/command-job.js';
+import { TicketStore } from '../../services/jobs/ticket-store.js';
 import { handleRepoCreate } from '../repo-create-delete.js';
+
+// The create runs as one job (PLAN-detached-jobs J16): a real ticket store in a temp directory, and a step claim that grants every claim, so the test sees the command's own plan.
+let ticketDir: string;
+const claimed: string[][] = [];
+beforeEach(() => {
+  ticketDir = mkdtempSync(join(tmpdir(), 'repo-create-'));
+  claimed.length = 0;
+  setCommandJobDeps({
+    store: () => new TicketStore('test', ticketDir),
+    stepDeps: () =>
+      Promise.resolve({
+        observer: { configName: 'test' },
+        warn: () => undefined,
+        claim: ({ steps, done }) => {
+          if (!done) claimed.push(steps);
+          return Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const })));
+        },
+      }),
+  });
+});
+afterEach(() => {
+  setCommandJobDeps();
+  rmSync(ticketDir, { recursive: true, force: true });
+});
 
 /** The repository_create dispatch; the allocation floor's network_used query runs before it. */
 function createCall(): ExecuteOptions {
@@ -379,59 +410,56 @@ describe('repo create placement union (#38)', () => {
   });
 });
 
-// PLAN-config-networkid-discovery T3(d)/(e): the allocation floor is the TARGET machine's used set, and a refused ID is retried once past the holder.
-describe('repo create network ID floor and retry', () => {
+// PLAN-detached-jobs J16 (J0b finding 8): the create asks renet for the network ID inside the job, so the client neither probes `network_used` for a floor nor retries a refused ID.
+describe('repo create network ID: renet allocates inside the job', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getCurrent.mockResolvedValue(config());
   });
 
-  it('passes the target machine used set as the floor', async () => {
+  it('registers no ID, asks for "auto", and sends none in the params', async () => {
     const { configService } = await import('../../services/config/config-resources.js');
-    execute.mockImplementation((options: ExecuteOptions) =>
-      Promise.resolve(
-        options.functionName === 'network_used'
-          ? {
-              success: true,
-              allSteps: [],
-              stdout: '[{"kind":"repo","name":"x","network_id":2816}]',
-            }
-          : { success: true, allSteps: [] }
-      )
-    );
     await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
     expect(handleError).not.toHaveBeenCalled();
-    expect(execute.mock.calls[0][0]).toMatchObject({
-      functionName: 'network_used',
-      machineName: 'm1',
-    });
-    expect(configService.allocateNetworkId).toHaveBeenCalledWith({ floor: [2816] });
+    expect(configService.allocateNetworkId).not.toHaveBeenCalled();
+    expect(addRepository.mock.calls[0][1]).not.toHaveProperty('networkId');
+    expect(execute.mock.calls.map((c) => c[0].functionName)).toEqual(['repository_create']);
+    expect(createCall().params).not.toHaveProperty('network_id');
+    expect(requestNetworkIdAuto).toHaveBeenCalledWith(
+      expect.objectContaining({ machine: 'm1', repoName: 'shop', recordAs: 'shop:latest' })
+    );
   });
 
-  it('retries a create refused with network_id_in_use once, on a fresh ID past the holder', async () => {
-    const { configService } = await import('../../services/config/config-resources.js');
+  it('makes exactly one job for a refused ID, never a retry, with the rollback as its failure step', async () => {
     const refusal = JSON.stringify({ code: 'network_id_in_use', message: 'held', network_id: 42 });
-    let creates = 0;
-    execute.mockImplementation((options: ExecuteOptions) => {
-      if (options.functionName !== 'repository_create') {
-        return Promise.resolve({ success: false, allSteps: [] });
-      }
-      creates++;
-      return Promise.resolve(
-        creates === 1
-          ? { success: false, allSteps: [], exitCode: 17, stderr: refusal }
-          : { success: true, allSteps: [] }
-      );
-    });
-    vi.mocked(configService.allocateNetworkId).mockResolvedValueOnce(42).mockResolvedValueOnce(106);
+    execute.mockResolvedValueOnce({
+      success: false,
+      allSteps: [],
+      exitCode: 17,
+      stderr: refusal,
+      state: 'failed',
+      jobId: 'j-1',
+    } as never);
     await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
-    const ids = execute.mock.calls
-      .filter((c) => c[0].functionName === 'repository_create')
-      .map((c) => (c[0].params as { network_id: number }).network_id);
-    expect(ids).toEqual([42, 106]);
-    expect(configService.allocateNetworkId).toHaveBeenLastCalledWith({ floor: [42] });
-    expect(setRepositories).toHaveBeenCalledWith({
-      'shop:latest': { repositoryGuid: 'g', networkId: 106 },
+    expect(
+      execute.mock.calls.filter((c) => c[0].functionName === 'repository_create')
+    ).toHaveLength(1);
+    // The failure step is on the job's plan; the success steps are not run for a failed job.
+    expect(createCall().jobSteps?.map((step) => step.name)).toEqual([
+      'rollbackCreate',
+      'identityRefresh',
+      'reconcileBackupSchedules',
+    ]);
+  });
+
+  it('defers the licence identity refresh to the identityRefresh step, with the size it was created with', async () => {
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    expect(createCall().deferIdentityRefresh).toBe(true);
+    const refresh = createCall().jobSteps?.find((step) => step.name === 'identityRefresh');
+    expect(refresh?.params).toMatchObject({
+      function: 'repository_create',
+      repository: 'shop',
+      size: '5G',
     });
   });
 });

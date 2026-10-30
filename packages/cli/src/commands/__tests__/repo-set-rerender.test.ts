@@ -207,11 +207,12 @@ function sourceFrom(file: string, anchor: string): string {
 }
 
 describe('G4 wiring (source): verbs behind executors and prompts', () => {
-  it('create reconciles the machine on a successful result, before the rollback arm', () => {
-    const body = sourceFrom('repo-create-delete.ts', 'async function renderCreateResult');
-    const hook = body.indexOf('await reconcileBackupSchedules(machine)');
-    expect(hook).toBeGreaterThan(-1);
-    expect(hook).toBeLessThan(body.indexOf('rollbackCreateRepo(name, guid)'));
+  it('create reconciles the machine as a success step of its job, after the rollback failure step', () => {
+    const body = sourceFrom('repo-create-delete.ts', 'function createSteps');
+    const rollback = body.indexOf("planStep('rollbackCreate'");
+    const hook = body.indexOf("planStep('reconcileBackupSchedules'");
+    expect(rollback).toBeGreaterThan(-1);
+    expect(hook).toBeGreaterThan(rollback);
   });
 
   it('delete reconciles the machine after the config entry settles', () => {

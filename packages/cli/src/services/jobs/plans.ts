@@ -823,6 +823,8 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'backup verify',
   'repo checkout',
   'repo commit',
+  // J16: repo create is one job; its rollback, identity refresh and schedule re-render are steps.
+  'repo create',
   'repo down',
   'repo fork',
   'repo migrate',
