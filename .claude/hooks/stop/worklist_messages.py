@@ -2253,6 +2253,16 @@ Plan records (W12):
   --plan-revive <me> <agent/plans/PLAN-x.md> [--write]
                                 restore a record's full text from its blob
 
+Live proof (agent/plans/PLAN-tested-on-bench.md):
+  --live-proof <me>             LIST the open LP-<target> [live] boxes and
+                                the Accept line each one runs
+  --live-proof <me> <agent/plans/PLAN-x.md> <LP-box-sig> [--write] [--tick]
+                                run the box's `Accept: live-proof <target>
+                                <check>` through rediacc_ci.ops.live_proof
+                                record; --write appends the VERIFIED row to
+                                agent/ledgers/live-proof.jsonl, --tick then
+                                closes the box through the --plan-tick path
+
 Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per other verdict):
   --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> |
                      waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z]

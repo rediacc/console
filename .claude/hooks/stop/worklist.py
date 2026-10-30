@@ -907,6 +907,39 @@ def _plantick_cli(argv):
     )
 
 
+def _liveproof_cli(argv):
+    """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
+
+    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    import wl_liveproof as LP
+
+    if len(argv) < 2:
+        die(LP.USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    root = pathlib.Path(C.project_root(C.project_start()))
+    if len(argv) == 2:
+        print(LP.listing(root, CK.plan_records(root)))
+        return
+
+    def tick(rel, sig, evidence):
+        try:
+            _plantick_cli(["--plan-tick", me, rel, sig, evidence, "--write"])
+        except SystemExit as exc:
+            return exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 2)
+        return 0
+
+    sys.exit(LP.run(root, me, argv[2:], tick=tick))
+
+
 PREFLIGHT_LIST_CAP = 40
 
 
@@ -3267,6 +3300,9 @@ def main():
         return
     if sys.argv[1:2] == ["--plan-investigate"]:
         _planinvestigate_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--live-proof"]:
+        _liveproof_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--plan-preflight"]:
         _planpreflight_cli(sys.argv[1:])
