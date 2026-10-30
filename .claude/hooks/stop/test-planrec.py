@@ -335,6 +335,13 @@ truthy(
 falsy("resolve gate: a script it does not", R.resolve(ROOT, "gate", "check:ci-invented")[0])
 truthy("resolve plan: a plan on disk", R.resolve(ROOT, "plan", REL)[0])
 falsy("resolve plan: a plan that is not", R.resolve(ROOT, "plan", "agent/PLAN-nope.md")[0])
+_base = pathlib.Path(REL).name
+truthy("resolve plan: the PLAN-<slug>.md basename names the same plan", R.resolve(ROOT, "plan", _base)[0])
+control(
+    "resolve plan: a miss lists every folder tried, not only the flat legacy path",
+    "agent/plans/PLAN-nope.md" in R.resolve(ROOT, "plan", "PLAN-nope.md")[1],
+    True,
+)
 truthy("resolve trap: a Trap-Id in TRAPS.md", R.resolve(ROOT, "trap", "a-real-trap-id")[0])
 falsy("resolve trap: an invented one", R.resolve(ROOT, "trap", "not-a-trap-id")[0])
 Tally.count += 1

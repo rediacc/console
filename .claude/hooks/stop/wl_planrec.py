@@ -541,6 +541,9 @@ def resolve(root, kind, token):
         if token.startswith("agent/"):
             candidates = [token]
         else:
+            # The basename a reader copies from a listing (`PLAN-<slug>.md`) names the same plan as the bare slug; 2026-10-30 `plan:PLAN-backup-download-from-store.md` was refused as "agent/PLAN-PLAN-...md.md does not exist".
+            if token.startswith("PLAN-") and token.endswith(".md"):
+                token = token[len("PLAN-") : -len(".md")]
             candidates = [
                 "%s/PLAN-%s.md" % (d, token) if d else "agent/PLAN-%s.md" % token
                 for d in ("agent/plans/_done", "agent/plans/_removed", "agent/plans", "")
@@ -557,7 +560,7 @@ def resolve(root, kind, token):
                 rel = "%s/PLAN-%s.md" % (d, slug)
                 if (pathlib.Path(root) / rel).is_file():
                     return True, rel
-        return False, "%s does not exist" % candidates[-1]
+        return False, "no plan file at %s" % ", ".join(candidates)
     if kind == "trap":
         ids = _trap_ids(root)
         if not ids:
