@@ -559,16 +559,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 7,
+      "open": 1,
+      "done": 8,
       "open_sigs": [
-        "7993037e",
         "ec030c09"
       ],
       "done_sigs": [
         "0d186555",
         "1bb21003",
         "2e1fa6e5",
+        "7993037e",
         "c29a5a67",
         "c5e092a0",
         "cab479c2",

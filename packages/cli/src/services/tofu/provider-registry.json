@@ -111,9 +111,12 @@
       "region": "eu_nord_1"
     },
     "imageAttr": "image",
-    "ipv4Output": "primary_ip",
+    "ipv4Output": "one([for a in @self.ip_addresses : a.address if a.type == \"primary-ip\" && a.address_family == 4])",
     "labelAttr": "hostname",
     "regionAttr": "region",
+    "requiredEnvAttrs": {
+      "project_id": "CHERRY_PROJECT_ID"
+    },
     "resource": "cherryservers_server",
     "sizeAttr": "plan",
     "sshKey": {

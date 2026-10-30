@@ -14,6 +14,43 @@ interface TfGenerateOptions {
   apiToken: string;
   sshPublicKey: string;
   overrides?: { region?: string; instanceType?: string; image?: string };
+  /** Environment read for the mapping's `requiredEnvAttrs`; defaults to process.env. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/** The `@self` token a mapping output may use to mean the resource's own address. */
+const SELF_TOKEN = '@self';
+
+/**
+ * The `${...}` value of a mapping output. A plain output is an attribute path under the resource
+ * address; one that contains `@self` is a full expression with `@self` replaced by that address
+ * (for a provider whose IP sits in a set of objects that a path cannot index).
+ */
+export function tfOutputValue(address: string, output: string): string {
+  return output.includes(SELF_TOKEN)
+    ? `\${${output.replaceAll(SELF_TOKEN, address)}}`
+    : `\${${address}.${output}}`;
+}
+
+/**
+ * Resource arguments a provider requires that rdc has no input for (e.g. a project id), read from
+ * the environment variable the mapping names. A numeric value is emitted as a number.
+ */
+export function resolveRequiredEnvAttrs(
+  mapping: ProviderMapping,
+  env: NodeJS.ProcessEnv = process.env
+): Record<string, string | number> {
+  const attrs: Record<string, string | number> = {};
+  for (const [attr, envVar] of Object.entries(mapping.requiredEnvAttrs ?? {})) {
+    const value = env[envVar]?.trim();
+    if (!value) {
+      throw new Error(
+        `Provider '${mapping.source}' requires ${attr}: set the ${envVar} environment variable.`
+      );
+    }
+    attrs[attr] = /^\d+$/.test(value) ? Number(value) : value;
+  }
+  return attrs;
 }
 
 /**
@@ -24,7 +61,8 @@ function buildResourceAttrs(
   mapping: ProviderMapping,
   sshPublicKey: string,
   resources: Record<string, Record<string, unknown>>,
-  overrides?: TfGenerateOptions['overrides']
+  overrides?: TfGenerateOptions['overrides'],
+  env?: NodeJS.ProcessEnv
 ): Record<string, unknown> {
   const attrs: Record<string, unknown> = {};
   attrs[mapping.labelAttr] = machineName;
@@ -34,6 +72,8 @@ function buildResourceAttrs(
       attrs[key] = value;
     }
   }
+
+  Object.assign(attrs, resolveRequiredEnvAttrs(mapping, env));
 
   if (overrides?.region) attrs[mapping.regionAttr] = overrides.region;
   if (overrides?.instanceType) attrs[mapping.sizeAttr] = overrides.instanceType;
@@ -56,7 +96,7 @@ function buildResourceAttrs(
  * Generate a complete .tf.json object from a ProviderMapping.
  */
 export function generateTfJson(options: TfGenerateOptions): Record<string, unknown> {
-  const { machineName, mapping, apiToken, sshPublicKey, overrides } = options;
+  const { machineName, mapping, apiToken, sshPublicKey, overrides, env } = options;
 
   const providerName = mapping.source.split('/').pop()!;
   const providerNs = mapping.source.split('/')[0];
@@ -67,7 +107,8 @@ export function generateTfJson(options: TfGenerateOptions): Record<string, unkno
     mapping,
     sshPublicKey,
     resources,
-    overrides
+    overrides,
+    env
   );
   resources[mapping.resource] = { machine: resourceAttrs };
 
@@ -88,10 +129,10 @@ export function generateTfJson(options: TfGenerateOptions): Record<string, unkno
   }
 
   const outputs: Record<string, { value: string }> = {
-    ipv4: { value: `\${${mapping.resource}.machine.${mapping.ipv4Output}}` },
+    ipv4: { value: tfOutputValue(`${mapping.resource}.machine`, mapping.ipv4Output) },
   };
   if (mapping.ipv6Output) {
-    outputs.ipv6 = { value: `\${${mapping.resource}.machine.${mapping.ipv6Output}}` };
+    outputs.ipv6 = { value: tfOutputValue(`${mapping.resource}.machine`, mapping.ipv6Output) };
   }
 
   return {

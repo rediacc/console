@@ -222,6 +222,8 @@ export interface ProviderMapping {
   sshKey: ProviderSSHKeyConfig;
   firewall?: ProviderFirewallConfig;
   defaults?: Record<string, string>;
+  /** Required resource arguments with no rdc input: argument name to the environment variable that supplies it. */
+  requiredEnvAttrs?: Record<string, string>;
   /** Private-network block (cluster provisioning only). */
   network?: ProviderNetworkConfig;
   /** Disk class hint for OSD/data pools. */
