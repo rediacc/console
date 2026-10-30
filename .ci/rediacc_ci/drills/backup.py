@@ -220,6 +220,11 @@ class Options:
     def enabled(self, leg: str) -> bool:
         return leg in self.leg_set()
 
+    def legs_with(self, *required: str) -> str:
+        """The selected legs with `required` added in front, each leg named once (the suggestion a refusal prints)."""
+        legs = list(required) + [leg for leg in self.leg_set() if leg not in required]
+        return ",".join(legs)
+
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
         return any(self.enabled(leg) for leg in "abcdefhjklmno")
@@ -2377,6 +2382,21 @@ class Backup:
             d.note("selftest mode: stopping before any server or store work")
             return d.summary()
 
+        # Leg dependencies are refused before any setup: the gateway restart alone costs 20s or more.
+        # Legs b-f, h, j, k, l, m, n and o all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
+        if o.needs_plane() and not o.enabled("a"):
+            log.error(
+                "Legs b-f, h, j, k, l, m, n and o all run inside the session leg a mints, and there is no"
+            )
+            log.error("session on disk to inherit. Include leg a:  --legs %s" % o.legs_with("a"))
+            raise SystemExit(1)
+
+        # Leg o reads the lineage and snapshot leg b stored: without them it would test an empty tenant and pass.
+        if o.enabled("o") and not o.enabled("b"):
+            log.error("Leg o reaches for the lineage and snapshot leg b stores. Include leg b:")
+            log.error("    --legs %s" % o.legs_with("a", "b"))
+            raise SystemExit(1)
+
         self.preflight_tools()
         self.preflight_machines()
         self.announce_unrunnable()
@@ -2387,20 +2407,6 @@ class Backup:
         self.setup_store_bucket()
         self.setup_account()
         self.setup_renet()
-
-        # Legs b-f, h, j, k, l, m, n and o all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
-        if o.needs_plane() and not o.enabled("a"):
-            log.error(
-                "Legs b-f, h, j, k, l, m, n and o all run inside the session leg a mints, and there is no"
-            )
-            log.error("session on disk to inherit. Include leg a:  --legs a,%s" % o.legs)
-            raise SystemExit(1)
-
-        # Leg o reads the lineage and snapshot leg b stored: without them it would test an empty tenant and pass.
-        if o.enabled("o") and not o.enabled("b"):
-            log.error("Leg o reaches for the lineage and snapshot leg b stores. Include leg b:")
-            log.error("    --legs a,b,%s" % o.legs)
-            raise SystemExit(1)
 
         for leg, fn in (
             ("a", self.leg_a_session_mint),
