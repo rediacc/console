@@ -2,6 +2,18 @@
 
 `npm run login:bench` logs the `eu-bench` rdc config into https://bench.rediacc.com with the operator's own bench account, with no prompt and no browser (operator order 2026-10-27). It is bench only. Edge and stable keep human login, and no profile binds an account for them.
 
+## Whose step it is
+
+Running `npm run login:bench` is an agent's own step, never the operator's (operator order 2026-10-30). It is the remedy whenever an `eu-bench` command answers that the login is "tied to another network address", that the IP address changed, or "Not logged in": run it, then rerun the command. The CLI's own text for that error tells a human to type an authenticator code in an interactive terminal; for `eu-bench` that code is derived from the vault, so nobody is asked for it.
+
+Three places carry this so a session does not have to remember it:
+
+- `rediacc_ci.ops.live_proof record` runs `npm run login:bench` once when an `eu-bench` step fails that way, retries the step, and names the remedy if the login itself fails.
+- The trapguard rule `bench-login-is-the-agents-step` (`.claude/hooks/trapguard/dispatch.py`) adds the remedy to the context after any `./rdc.sh --config eu-bench` call that printed the error.
+- `block_settled_questions` refuses an AskUserQuestion asking the operator for an `eu-bench` authenticator code or login.
+
+The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fills`, or a dead `bws` machine token (see `.ci/config/bws-rotation-notice.txt`).
+
 ## What it does
 
 `rediacc_ci.ops.login_bench` runs these steps in order and stops at the first one that fails, naming it (exit 1):

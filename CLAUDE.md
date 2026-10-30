@@ -218,7 +218,7 @@ English (`packages/www/src/i18n/translations/en.json`) is the source of truth; t
 
 `./run.sh setup` prepares a machine idempotently and hands back a URL: host tools, docker, the devcontainer image, then ONE devbox container per worktree behind a shared traefik proxy, so the machine publishes exactly one port. `./run.sh devbox up|status|stop|shell|logs` drives it. Servers inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`) or traefik answers 502.
 
-Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./rdc.sh --dev` (or `RDC_DEV=1`); bench is just another config, `./rdc.sh --config bench`. There is no `RDC_PROD` or `RDC_BENCH`.
+Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./rdc.sh --dev` (or `RDC_DEV=1`); bench is just another config, `./rdc.sh --config eu-bench`. There is no `RDC_PROD` or `RDC_BENCH`.
 
 **[docs/agent-reference/local-env.md](docs/agent-reference/local-env.md)** carries the rest, and is worth reading BEFORE fighting any of it rather than after.
 

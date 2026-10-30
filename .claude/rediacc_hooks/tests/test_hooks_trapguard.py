@@ -377,6 +377,55 @@ CASES = [
         inject_json("echo x | bws secret list", "error: the access token could not be validated"),
         "trapguard: a real pipe into bws still counts as a bws run",
     ),
+    # bench-login-is-the-agents-step (operator order 2026-10-30). The firing output is the measured one, .ci/cache/live-proof/lp-d70f12649b8f.log.
+    inject(
+        ("check_inject fires", "npm run login:bench"),
+        inject_json(
+            "./rdc.sh --config eu-bench machine status hostinger -o json",
+            '{"success":false,"errors":[{"message":"The config token could not be renewed because this device\'s login is tied to another network address. Your IP address changed, and this login only works from the old one."}]}',
+        ),
+        "trapguard: an eu-bench IP-rebind failure names npm run login:bench",
+    ),
+    inject(
+        ("check_inject fires", "bench-login-is-the-agents-step"),
+        inject_json(
+            "cd /x && REDIACC_CONFIG=eu-bench ./rdc.sh subscription status",
+            "Not logged in. Humans should run `rdc subscription login`.",
+        ),
+        "trapguard: a REDIACC_CONFIG=eu-bench prefix with no login fires too",
+    ),
+    inject(
+        ("check_inject fires", "bench-login-is-the-agents-step"),
+        inject_json(
+            "./rdc.sh --config=eu-bench term connect hostinger -c true 2>&1 | tail -5",
+            "Your IP address changed, and this login only works from the old one.",
+        ),
+        "trapguard: the --config= spelling and a pipe after it still fire",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "./rdc.sh --config eu-remote machine status hostinger",
+            "this device's login is tied to another network address. Your IP address changed",
+        ),
+        "trapguard CONTROL: another config keeps human login and says nothing",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            'echo "./rdc.sh --config eu-bench failed: tied to another network address"',
+            "./rdc.sh --config eu-bench failed: tied to another network address",
+        ),
+        "trapguard CONTROL: eu-bench named inside a string is not an eu-bench run",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "./rdc.sh --config eu-bench machine status hostinger -o json",
+            '{"success":true,"data":{"machine":"hostinger"}}',
+        ),
+        "trapguard CONTROL: an eu-bench run that worked is never warned about",
+    ),
 ]
 
 

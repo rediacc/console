@@ -75,7 +75,10 @@ class Fake:
             "hash": LP.Result(0, BIN_SHA + "\n", ""),
             "version": LP.Result(0, "0.0.0-dev\n", ""),
             "deploy_proxy": LP.Result(0, "smoke ok\n", ""),
+            "login": LP.Result(0, "eu-bench is logged in to https://bench.rediacc.com\n", ""),
         }
+        # Per-key answers consumed in order before `answers` applies, for a step that fails once and then passes.
+        self.queued: dict[str, list[LP.Result]] = {}
         self.build = (
             f"bin/renet: go1.24\n\tbuild\tvcs.revision={renet_ptr}\n\tbuild\tvcs.modified=false\n"
         )
@@ -92,6 +95,8 @@ class Fake:
         )
 
     def key(self, argv: Sequence[str]) -> str:
+        if "login:bench" in argv:
+            return "login"
         if argv[0] == "curl":
             return "curl"
         if "wrangler" in argv:
@@ -114,6 +119,9 @@ class Fake:
     ) -> LP.Result:
         self.calls.append(tuple(argv))
         self.envs.append(env)
+        queued = self.queued.get(self.key(argv))
+        if queued:
+            return queued.pop(0)
         return self.answers[self.key(argv)]
 
     def read_build(self, _binary: pathlib.Path) -> str | None:
@@ -390,6 +398,77 @@ def test_a_failed_step_is_failed_and_writes_nothing(bed: Bed) -> None:
     assert "not logged in" in out.log_path.read_text(encoding="utf-8")
 
 
+# The eu-bench login is the recorder's own step (operator order 2026-10-30), measured in .ci/cache/live-proof/lp-d70f12649b8f.log.
+IP_REBIND = LP.Result(
+    1,
+    json.dumps(
+        {
+            "success": False,
+            "errors": [
+                {
+                    "code": "GENERAL_ERROR",
+                    "message": "The config token could not be renewed because this device's login is tied "
+                    "to another network address. Your IP address changed, and this login only works from "
+                    "the old one. To move it here, run any Rediacc CLI command in an interactive terminal "
+                    "(for example `rdc subscription status`) and enter the code from your authenticator app.",
+                }
+            ],
+        }
+    ),
+    "",
+)
+
+
+def test_an_ip_rebind_failure_runs_login_bench_once_and_retries_the_step(bed: Bed) -> None:
+    bed.fake.queued["status"] = [IP_REBIND]
+    out = bed.record(bed.request("renet-live", target="hostinger"))
+    assert out.status == R.VERIFIED, out.message
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["status", "login", "status", "hash"]
+    assert ("npm", "run", "--silent", "login:bench") in bed.fake.calls
+    assert out.row is not None
+    assert len(out.row["check"]["argv"]) == 2, "the retry is one step in the row, not two"
+    assert out.log_path is not None
+    text = out.log_path.read_text(encoding="utf-8")
+    assert "tied to another network address" in text
+    assert "retry after login:bench" in text
+
+
+def test_a_failing_login_bench_leaves_the_step_failed_and_names_the_remedy(bed: Bed) -> None:
+    bed.fake.queued["status"] = [IP_REBIND]
+    bed.fake.answers["login"] = LP.Result(1, "", "Logging eu-bench in failed (exit 1)\n")
+    out = bed.record(bed.request("renet-live", target="hostinger"))
+    assert (out.status, out.code) == (R.FAILED, LP.CODE_FAILED)
+    assert "npm run login:bench" in out.message
+    assert "never the operator" in out.message
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["status", "login"]
+
+
+def test_login_bench_runs_at_most_once_per_record(bed: Bed) -> None:
+    bed.fake.queued["status"] = [IP_REBIND, IP_REBIND]
+    out = bed.record(bed.request("renet-live", target="hostinger"))
+    assert out.status == R.FAILED
+    assert bed.fake.ran("login") == 1
+    assert "npm run login:bench" in out.message
+
+
+def test_an_unrelated_failure_does_not_run_login_bench(bed: Bed) -> None:
+    """The control: a step that failed for another reason never triggers a login."""
+    bed.fake.answers["subscription"] = LP.Result(1, "", "connection reset\n")
+    out = bed.record(bed.request("cli-bench"))
+    assert out.status == R.FAILED
+    assert bed.fake.ran("login") == 0
+    assert "login:bench" not in out.message
+
+
+def test_a_not_logged_in_eu_bench_step_logs_in_and_retries(bed: Bed) -> None:
+    bed.fake.queued["subscription"] = [
+        LP.Result(1, "", "Not logged in. Humans should run `rdc subscription login`.\n")
+    ]
+    out = bed.record(bed.request("cli-bench"))
+    assert out.status == R.VERIFIED, out.message
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["subscription", "login", "subscription"]
+
+
 def test_a_moved_bench_version_refuses_not_live(bed: Bed) -> None:
     bed.bench_json()
     assert bed.record(bed.request("account-smoke")).status == R.VERIFIED
@@ -436,6 +515,51 @@ def test_a_stale_binary_answer_that_is_not_empty_refuses(bed: Bed, answer: str) 
     assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
     assert "stale_binary" in out.message
     assert bed.fake.ran("hash") == 0
+
+
+# The CLI's real envelope nests the answer under `data` (.ci/cache/live-proof/lp-4e32f5e0d079.log); reading the top level alone reported "stale_binary is null" for every hostinger run.
+def _envelope(data: dict[str, Any]) -> str:
+    return json.dumps({"success": True, "command": "machine status", "data": data}, indent=2)
+
+
+def test_an_enveloped_empty_stale_binary_passes(bed: Bed) -> None:
+    bed.fake.answers["status"] = LP.Result(
+        0, _envelope({"machine": "hostinger", "stale_binary": []}), ""
+    )
+    out = bed.record(bed.request("renet-live", target="hostinger"))
+    assert out.status == R.VERIFIED, out.message
+
+
+def test_an_enveloped_stale_binary_list_names_its_count_and_units(bed: Bed) -> None:
+    stale = [
+        {
+            "pid": 589867,
+            "unit": "rediacc-docker-10176.service",
+            "exe": "/usr/lib/rediacc/renet/current/renet (deleted)",
+        },
+        {
+            "pid": 589901,
+            "unit": "rediacc-docker-10240.service",
+            "exe": "/usr/lib/rediacc/renet/current/renet (deleted)",
+        },
+    ]
+    bed.fake.answers["status"] = LP.Result(
+        0, _envelope({"machine": "hostinger", "stale_binary": stale}), ""
+    )
+    out = bed.record(bed.request("renet-live", target="hostinger"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "2 process(es)" in out.message
+    assert "rediacc-docker-10176.service" in out.message
+    assert "rediacc-docker-10240.service" in out.message
+    assert "null" not in out.message
+    assert bed.fake.ran("hash") == 0
+
+
+def test_an_envelope_without_the_key_is_still_refused(bed: Bed) -> None:
+    bed.fake.answers["status"] = LP.Result(0, _envelope({"machine": "hostinger"}), "")
+    out = bed.record(bed.request("renet-live", target="hostinger"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "stale_binary is null" in out.message
 
 
 def test_an_unrecorded_deploy_is_never_verified(bed: Bed) -> None:

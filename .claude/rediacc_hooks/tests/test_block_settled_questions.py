@@ -129,3 +129,63 @@ def test_genuine_push_question_still_refused(label, question, header, needle, tm
         proc.stderr,
     )
     assert needle in proc.stderr + proc.stdout, "%s: refusal text lacks %r" % (label, needle)
+
+
+# ---- the eu-bench login (operator order 2026-10-30) ----
+# The refused shape is the one asked on 2026-10-30 after `./rdc.sh --config eu-bench machine status hostinger` answered "tied to another network address": `npm run login:bench` is the agent's own step.
+BENCH_REFUSE = [
+    (
+        "the measured ask: type the TOTP",
+        (
+            "The eu-bench login is tied to another network address. Could you run "
+            "`rdc subscription status` in a terminal and enter the code from your authenticator app?"
+        ),
+        "",
+    ),
+    ("a bare code request", "Please send me the 6-digit TOTP code for eu-bench.", ""),
+    ("the header carries bench", "Can you log in again from this IP?", "eu-bench login"),
+    ("leave to run the script", "May I run npm run login:bench to refresh the login?", ""),
+    (
+        "bench.rediacc.com spelled out",
+        "Would you re-authenticate the bench.rediacc.com login for me?",
+        "",
+    ),
+]
+
+BENCH_PASS = [
+    (
+        "the operator's door: a placeholder value",
+        (
+            "login:bench refused REDIACC_BENCH_TOTP_SEED as still PLACEHOLDER-operator-fills; "
+            "can you fill it in Bitwarden?"
+        ),
+        "",
+    ),
+    ("a fact question about the code", "Is the bench TOTP derivation RFC 6238?", ""),
+    ("a design question about the flow", "Should the bench login flow cover us-bench too?", ""),
+    ("another config", "Could you enter the authenticator code for eu-remote?", ""),
+    ("a design question about the module", "Should we let login_bench retry a refused code?", ""),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "question", "header"), BENCH_REFUSE, ids=[c[0] for c in BENCH_REFUSE]
+)
+def test_an_eu_bench_login_ask_is_refused_with_the_remedy(label, question, header, tmp_path):
+    proc = _run(question, header, tmp_path)
+    assert proc.returncode == 2, "%s: not refused (rc=%d)\n%s" % (
+        label,
+        proc.returncode,
+        proc.stderr,
+    )
+    text = proc.stderr + proc.stdout
+    assert "npm run login:bench" in text, "%s: refusal lacks the remedy" % label
+    assert "never the operator's" in text
+
+
+@pytest.mark.parametrize(
+    ("label", "question", "header"), BENCH_PASS, ids=[c[0] for c in BENCH_PASS]
+)
+def test_a_bench_question_that_is_not_a_login_ask_passes(label, question, header, tmp_path):
+    proc = _run(question, header, tmp_path)
+    assert proc.returncode == 0, "%s: refused (rc=%d)\n%s" % (label, proc.returncode, proc.stderr)

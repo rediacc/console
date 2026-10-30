@@ -294,3 +294,45 @@ def test_anything_but_this_link_runs_enable(status):
     runner = FakeRunner(status=status)
     _login(runner)
     assert any("enable" in argv for argv, _e in runner.calls)
+
+
+# ---- whose step it is (operator order 2026-10-30) ----
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The config token could not be renewed because this device's login is tied to another network address.",
+        "Your IP address changed, and this login only works from the old one.",
+        "Not logged in. Humans should run `rdc subscription login`.",
+    ],
+)
+def test_the_cli_login_failures_read_as_login_needed(text):
+    assert login_bench.login_needed(text)
+
+
+def test_an_unrelated_failure_is_not_login_needed():
+    assert not login_bench.login_needed("connection reset by peer")
+
+
+@pytest.mark.parametrize(
+    ("argv", "want"),
+    [
+        (["./rdc.sh", "--config", "eu-bench", "machine", "status", "hostinger"], True),
+        (["./rdc.sh", "--config=eu-bench", "subscription", "status"], True),
+        (["./rdc.sh", "--config", "eu-remote", "machine", "status", "hostinger"], False),
+        (["./rdc.sh", "machine", "status", "eu-bench"], False),
+        (["./rdc.sh", "--config"], False),
+    ],
+)
+def test_targets_config_reads_only_the_eu_bench_selection(argv, want):
+    assert login_bench.targets_config(argv) is want
+
+
+def test_the_remedy_is_the_npm_script():
+    assert login_bench.REMEDY == "npm run login:bench"
+    assert login_bench.REMEDY_ARGV[-1] == "login:bench"
+    scripts = json.loads(
+        (login_bench.paths.repo_root() / "package.json").read_text(encoding="utf-8")
+    )["scripts"]
+    assert "rediacc_ci.ops.login_bench" in scripts["login:bench"]

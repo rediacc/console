@@ -17,6 +17,8 @@ Then, in order, each a refusal that stops the run:
 
 A bench-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under the `deploy-bench` Bitwarden profile, as deploy_bench does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
 
+THE eu-bench LOGIN IS THE RECORDER'S OWN STEP (operator order 2026-10-30). An eu-bench rdc step that fails because the login is tied to another network address, or is absent (`login_bench.login_needed`), runs `npm run login:bench` once and retries that step; the log keeps the failed answer, the login and the retry. A login that fails leaves the step FAILED and the message names the remedy. Nobody is asked for an authenticator code.
+
 VERIFY. `proof.live_tier.validate_row` over every ledger row (or one plan's), with the git checks and the kept-log digest. Exit 0 when every judged row is valid; 1 on any invalid or unparsable row, or when `--plan` finds no row.
 """
 
@@ -37,7 +39,7 @@ from typing import TYPE_CHECKING, Any
 from rediacc_ci import log, paths
 from rediacc_ci.core import jsonl_append, secrets
 from rediacc_ci.deploy import deploy_record
-from rediacc_ci.ops import cf_auth, deploy_bench
+from rediacc_ci.ops import cf_auth, deploy_bench, login_bench
 from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
@@ -57,6 +59,8 @@ CODE_LADDER = "ladder"
 CODE_FAILED = "check-failed"
 CODE_LEAK = "secret-shape"
 TIMEOUT_RC = 124
+# login_bench waits for a fresh TOTP window, refreshes the IP allowlist and runs up to four rdc children.
+LOGIN_TIMEOUT_S = 600
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 D = importlib.import_module("wl_plandeps")
@@ -299,6 +303,53 @@ def _bench_record(root: pathlib.Path, run: _Run) -> str | None:
     return None
 
 
+def _bench_login_needed(argv: Sequence[str], result: Result) -> bool:
+    """True when an eu-bench rdc step failed because its login is bound to another IP address, or absent."""
+    return (
+        result.rc != 0
+        and login_bench.targets_config(argv)
+        and login_bench.login_needed(result.stdout + result.stderr)
+    )
+
+
+def _relogin_and_retry(
+    root: pathlib.Path, world: World, log_: _Log, label: str, item: LT.Run, failed: Result
+) -> Result:
+    """Run `npm run login:bench` once (agent-allowed, idempotent; operator order 2026-10-30) and rerun the step; the failed answer stands when the login fails."""
+    log_.add(
+        f"# the eu-bench login is tied to another address or absent: running `{login_bench.REMEDY}` once, then retrying {label}"
+    )
+    argv = list(login_bench.REMEDY_ARGV)
+    login = world.run(argv, root, LOGIN_TIMEOUT_S, None)
+    log_.run("login-bench", argv, login)
+    if login.rc != 0:
+        log_.add(f"# `{login_bench.REMEDY}` exited {login.rc}; {label} is not retried")
+        return failed
+    retried = world.run(item.argv, root, item.step.timeout_s, None)
+    log_.run(label + " (retry after login:bench)", item.argv, retried)
+    return retried
+
+
+def _stale_binary(answer: dict[str, Any] | None) -> Any:
+    """`stale_binary` from a `machine status -o json` answer: the CLI nests it under `data` (`{"success":..., "data": {..., "stale_binary": [...]}}`); a top-level key is still read. None when neither carries it."""
+    if answer is None:
+        return None
+    data = answer.get("data")
+    if isinstance(data, dict) and "stale_binary" in data:
+        return data["stale_binary"]
+    return answer.get("stale_binary")
+
+
+def _stale_text(stale: Any) -> str:
+    """The refusal text for a stale_binary answer that is not []: the count and the units when it is a list."""
+    if not isinstance(stale, list):
+        return f"stale_binary is {json.dumps(stale)}, not []"
+    units = sorted(
+        {str(e.get("unit") or e.get("exe") or e.get("pid")) for e in stale if isinstance(e, dict)}
+    )
+    return f"stale_binary lists {len(stale)} process(es) still running a replaced renet, not []: {', '.join(units) or json.dumps(stale)}"
+
+
 def _step_refusal(
     run: _Run, step: LT.Step, machine: str | None, result: Result
 ) -> tuple[str, str] | None:
@@ -307,10 +358,9 @@ def _step_refusal(
     if result.rc != 0:
         return R.FAILED, f"{where} exited {result.rc}"
     if step.expect == LT.EXPECT_STALE_BINARY_EMPTY:
-        answer = _json_object(result.stdout)
-        stale = None if answer is None else answer.get("stale_binary")
+        stale = _stale_binary(_json_object(result.stdout))
         if stale != []:
-            return R.NOT_VERIFIED, f"{where}: stale_binary is {json.dumps(stale)}, not []"
+            return R.NOT_VERIFIED, f"{where}: {_stale_text(stale)}"
     elif step.expect == LT.EXPECT_RENET_HASH:
         local = (run.ident.get("renet") or {}).get("sha256") or ""
         remote = _remote_hash(result.stdout)
@@ -451,15 +501,23 @@ def record(
         why = _bench_record(root, run)
         if why is not None:
             return _refuse(run, root, world, R.NOT_VERIFIED, R.NOT_LIVE, why)
+    relogged = False
     for item in LT.expand(check, req.target, req.machine):
+        label = item.step.id + (f"@{item.machine}" if item.machine else "")
         result = world.run(item.argv, root, item.step.timeout_s, None)
-        log_.run(item.step.id + (f"@{item.machine}" if item.machine else ""), item.argv, result)
+        log_.run(label, item.argv, result)
+        if not relogged and _bench_login_needed(item.argv, result):
+            relogged = True
+            result = _relogin_and_retry(root, world, log_, label, item, result)
         run.argv.append(list(item.argv))
         run.rc = result.rc
         stop = _step_refusal(run, item.step, item.machine, result)
         if stop is not None:
             code = CODE_FAILED if stop[0] == R.FAILED else R.NOT_LIVE
-            return _refuse(run, root, world, stop[0], code, stop[1])
+            message = stop[1]
+            if _bench_login_needed(item.argv, result):
+                message += f"; the eu-bench login still needs `{login_bench.REMEDY}` (an agent's own step, never the operator's)"
+            return _refuse(run, root, world, stop[0], code, message)
     why = _confirm(root, run, world)
     if why is not None:
         return _refuse(run, root, world, R.NOT_VERIFIED, R.NOT_LIVE, why)

@@ -790,8 +790,8 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     print("  Worker: %s" % WORKER_NAME)
     print()
     print("Test it:")
-    print("  ./rdc.sh --config bench subscription login")
-    print("  ./rdc.sh --config bench repo create --name my-app -m my-server --size 2G")
+    print("  npm run login:bench")
+    print("  ./rdc.sh --config eu-bench repo create --name my-app -m my-server --size 2G")
 
 
 def main(argv: list[str]) -> int:

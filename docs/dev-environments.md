@@ -17,7 +17,7 @@ There is no global `server.json`, no mode env vars, no shared mutable state betw
 ```bash
 ./rdc.sh repo up app                  # default config 'rediacc' -> production
 ./rdc.sh --config dev repo up app     # 'dev' config -> local dev gateway
-./rdc.sh --config bench repo list     # 'bench' config -> bench.rediacc.com
+./rdc.sh --config eu-bench repo list  # 'eu-bench' config -> bench.rediacc.com
 ```
 
 Consequences by construction:
@@ -44,11 +44,11 @@ Everything else (token, machines, channel) lives in `dev.json` like any other co
 
 ## Bench
 
-Bench is just a config:
+Bench is just a config, `eu-bench`. `npm run login:bench` logs it in headlessly with the operator's bench account (docs/agent-reference/bench-login.md), and is the same remedy when a command answers that the login is tied to another network address:
 
 ```bash
-./rdc.sh --config bench subscription login --server https://bench.rediacc.com   # once
-./rdc.sh --config bench machine status test-1
+npm run login:bench
+./rdc.sh --config eu-bench machine status hostinger
 ```
 
 ## Production testing from source

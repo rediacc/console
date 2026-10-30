@@ -116,7 +116,7 @@ These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappea
 | `REDIACC_SUBSCRIPTION_TOKEN_FILE` | Per-config token file `api-token-<config>.json` |
 | `REDIACC_SUBSCRIPTION_TOKEN`, `REDIACC_API_TOKEN`, `REDIACC_EXECUTOR_TOKEN` | `REDIACC_TOKEN` |
 | `X25519_PUBLIC_KEY` (CLI env) | `account.e2ePublicKey` in the config |
-| `RDC_BENCH` | `./rdc.sh --config bench` |
+| `RDC_BENCH` | `./rdc.sh --config eu-bench` |
 | `RDC_UPDATE_CHANNEL` | `REDIACC_UPDATE_CHANNEL` |
 | `RDC_DISABLE_AUTOUPDATE` | `REDIACC_DISABLE_AUTOUPDATE` |
 | `RDC_UPDATE_INTERVAL_HOURS` | `REDIACC_UPDATE_INTERVAL_HOURS` |

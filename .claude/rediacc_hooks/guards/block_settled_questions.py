@@ -176,6 +176,21 @@ PUSH_HEADER_TIMING = r"(^|[^a-z])(now|yet|when|whether|wait|later|until|first)([
 
 # `tr '[:upper:]' '[:lower:]'` under LC_ALL=C: the 26 ASCII letters, nothing
 # else. See the port note in the module docstring.
+# THE eu-bench LOGIN (operator order 2026-10-30): asking the operator for an eu-bench authenticator code, or to log eu-bench in, is settled the same way. `npm run login:bench` (.ci/rediacc_ci/ops/login_bench.py) logs eu-bench in headlessly with the operator's own bench account and is agent-allowed; on 2026-10-30 an agent read the CLI's "tied to another network address" text, written for a human at a terminal, and asked the operator to type the TOTP anyway.
+# Judged per QUESTION (text plus header), not per sentence, because "eu-bench" and the code often sit in different sentences. All three must hold: bench named, a login or code named, and the question addressed to the operator or asking leave. A question about the vault values (`PLACEHOLDER-operator-fills`, a seed, a bws token) is the operator's genuine door and passes.
+BENCH_NAMED = r"(^|[^a-z0-9_-])(eu-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|$)"
+BENCH_LOGIN_ASK = (
+    r"totp|authenticator|2fa|two-factor|one-time (pass)?code|verification code|"
+    r"(6|six)-digit|(^|[^a-z])otp([^a-z]|$)|"
+    r"(log|sign) ?(it |eu-bench |bench )?(back )?in|login|re-?auth"
+)
+# Addressed to the operator, or asking leave: without it "Is the bench TOTP derivation RFC 6238?" is a fact question and "Should the bench login flow support us-bench?" a design one, and both pass.
+BENCH_ASK_SHAPE = r"(^|[^a-z])(you|your|please|operator|(should|shall|may|can) (i|we))([^a-z]|$)"
+# The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool.
+BENCH_OPERATOR_DOOR = (
+    r"placeholder|seed|bitwarden|(^|[^a-z])bws([^a-z]|$)|vault|machine token|rotate|login_bench"
+)
+
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
 
 NO_JQ = (
@@ -210,6 +225,25 @@ blocking the turn on a question.
 If you are NOT asking for permission -- a design question that happens to
 mention branching, or a factual question about a merge -- rephrase it as the
 question it actually is, and this hook will pass it.
+"""
+
+BENCH_LOGIN_MESSAGE = """BLOCKED: logging eu-bench in is the agent's own step, never the operator's
+(operator order 2026-10-30), so it is not a question.
+
+  Run:   npm run login:bench
+  then rerun the command that failed. It logs the eu-bench config in to
+  https://bench.rediacc.com headlessly with the operator's bench account (the
+  bench-login bws profile derives the authenticator code), refreshes the bench
+  IP allowlist, and is safe to repeat. Two TOTP logins inside one 30 s window
+  collide, so a second one waits for the next window.
+
+  The CLI's "tied to another network address ... enter the code from your
+  authenticator app" text is written for a human at a terminal; for eu-bench
+  that code comes from the vault. docs/agent-reference/bench-login.md
+
+The operator's door is only the vault itself: a value still holding
+PLACEHOLDER-operator-fills, or a dead bws machine token. Name that, with the
+entry login_bench printed, and the question passes.
 """
 
 PUSH_MESSAGE = """BLOCKED: when to push, and when to open the PR, is decided by the hooks, so it is
@@ -494,6 +528,16 @@ def _push_timing(sentence, header_object):
     return None
 
 
+def _bench_login(text):
+    """The matched login phrase when `text` asks the operator for an eu-bench login or code, else None (see THE eu-bench LOGIN)."""
+    if not re.search(BENCH_NAMED, text) or re.search(BENCH_OPERATOR_DOOR, text):
+        return None
+    if not re.search(BENCH_ASK_SHAPE, text):
+        return None
+    ask = re.search(BENCH_LOGIN_ASK, text)
+    return ask.group(0) if ask else None
+
+
 def _judge(sentence, header_object):
     """(permission, object) when this sentence asks leave for a settled action, else None."""
     perm = re.search(PERMISSION, sentence)
@@ -539,6 +583,11 @@ def run(ev):
         return hookio.ALLOW
 
     for text, header in _entries(ev.doc):
+        bench = _bench_login(text + " " + header)
+        if bench is not None:
+            _record(ev, question, "bench-login", bench)
+            ev.warn_raw(BENCH_LOGIN_MESSAGE)
+            return hookio.DENY
         header_hit = re.search(HEADER_OBJECT, header)
         header_object = header_hit.group(5) if header_hit else ""
         for sentence in [*re.split(SENTENCE_END, text), header]:

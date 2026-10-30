@@ -14,6 +14,8 @@ THE STEPS, in order:
   5. Run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url https://bench.rediacc.com` with REDIACC_STORE_MASTER_PASSWORD in the child environment, unless `config remote status` already reports the config connected to CONFIG_ID on bench: enable refuses a linked config ("nothing to enable", exit 2, measured 2026-10-27 on the first live run), so a second run skips the step instead of failing on it.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
+WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`).
+
 SECRETS. Every value travels by name in a child's environment: never on argv, never printed, never logged. Each `rdc` child gets only the values its own step needs, and `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from it, so an inherited dev selection cannot redirect the login to another server or config. A failed step exits 1 naming the step.
 """
 
@@ -59,6 +61,33 @@ CHILD_SECRET_NAMES = (
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
 
 USAGE = "usage: login_bench [--server %s] [--config %s]" % (SERVER, CONFIG)
+
+# THE LOGIN IS THE AGENT'S OWN STEP (operator order 2026-10-30). When an eu-bench command fails because the login is tied to another network address, the CLI tells a human to type an authenticator code in a terminal; an agent read that as an operator step and asked for the code. This run is the remedy, so callers that drive eu-bench (`rediacc_ci.ops.live_proof`) run it once and retry.
+REMEDY = "npm run login:bench"
+REMEDY_ARGV = ("npm", "run", "--silent", "login:bench")
+# What the CLI prints for a login bound to another IP (packages/cli/src/i18n/locales/en/cli.json `loginIpMismatch`, `errors.subscription.ipRebind.nonInteractive` and `reloginOnly`), and for no login at all (`errors.subscription.notLoggedIn`). `.claude/hooks/trapguard/dispatch.py` keeps a copy it cannot import.
+LOGIN_NEEDED_MARKERS = (
+    "tied to another network address",
+    "Your IP address changed",
+    "this login only works from the old one",
+    "Not logged in. Humans should run",
+)
+
+
+def login_needed(text: str) -> bool:
+    """True when `text` is the CLI saying the login must be redone or moved, which `npm run login:bench` does for eu-bench."""
+    return any(marker in text for marker in LOGIN_NEEDED_MARKERS)
+
+
+def targets_config(argv: Sequence[str]) -> bool:
+    """True when `argv` is an rdc run against the eu-bench config (`--config eu-bench` or `--config=eu-bench`)."""
+    args = list(argv)
+    return any(
+        (a == "--config" and i + 1 < len(args) and args[i + 1] == CONFIG)
+        or a == "--config=" + CONFIG
+        for i, a in enumerate(args)
+    )
+
 
 Runner = Callable[[Sequence[str], Mapping[str, str]], int]
 Capture = Callable[[Sequence[str], Mapping[str, str]], tuple[int, str]]
