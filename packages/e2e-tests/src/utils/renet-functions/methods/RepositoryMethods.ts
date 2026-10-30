@@ -1,3 +1,4 @@
+import { type BridgeExec, installRepoLicence } from '../../licence';
 import type { ExecResult, TestFunctionOptions } from '../types';
 
 /** repository_policy_set params (renet#76 auto-grow + scheduled trim). */
@@ -51,14 +52,34 @@ export type DockerPruneFunctionOptions = TestFunctionOptions &
  * Repository management methods for RenetFunctionsTestRunner.
  */
 export class RepositoryMethods {
-  constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
+  constructor(
+    private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>,
+    /** The runner's bridge executor, which installs the licence a create needs on the target. */
+    private readonly bridgeExec: BridgeExec
+  ) {}
 
-  repositoryNew(
+  /**
+   * repository_create, preceded by the licence renet demands for it.
+   *
+   * renet's `repository create` refuses with exit 10 LICENSE_REQUIRED unless a
+   * licence for the new repository's GUID is installed, and `functions once
+   * --test-mode` does not lift that gate. The licence is issued for `name`, so
+   * `name` must be a GUID (e2eRepoGuid); a refused issuance comes back as the
+   * code-10 result the create itself would have returned.
+   */
+  async repositoryNew(
     name: string,
     size: string,
     password?: string,
     datastorePath?: string
   ): Promise<ExecResult> {
+    const licence = await installRepoLicence(this.bridgeExec, {
+      repositoryGuid: name,
+      kind: 'grand',
+      size,
+      datastorePath,
+    });
+    if (licence.code !== 0) return licence;
     return this.testFunction({
       function: 'repository_create',
       repository: name,

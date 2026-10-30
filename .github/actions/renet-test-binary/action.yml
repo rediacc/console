@@ -1,0 +1,36 @@
+name: Install the run's shared renet
+description: >
+  Downloads the one licence-enforcing linux-amd64 renet that Build (Renet)
+  built for this run (artifact renet-test-linux-amd64-<sha>, uploaded by the
+  renet-embed-assets job of ci-build-renet.yml, or by the build job of a
+  standalone workflow), checks it against the artifact's checksum, installs it
+  as private/renet/bin/renet and private/renet/bin/renet-linux-amd64 (where
+  build_renet left it before agent/plans/PLAN-free-license.md F2, so every
+  reader of those paths is unchanged), and exports RENET_BINARY. The key gate
+  (rediacc_ci.release.renet_key_gate) then refuses the binary unless it bakes
+  ACCOUNT_ED25519_PUBLIC_KEY, so a leg whose account server signs with any
+  other key fails here, by name, instead of at its first licence check. The
+  caller exports ACCOUNT_ED25519_PUBLIC_KEY first: start_account publishes the
+  production public half to $GITHUB_ENV, and a leg with no account server maps
+  it from Bitwarden.
+
+runs:
+  using: composite
+  steps:
+    - name: Download the shared renet
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        name: renet-test-linux-amd64-${{ github.sha }}
+        path: ${{ runner.temp }}/renet-test-artifact
+
+    - name: Verify and install the shared renet
+      shell: bash
+      env:
+        ARTIFACT_DIR: ${{ runner.temp }}/renet-test-artifact
+      run: |
+        set -euo pipefail
+        (cd "$ARTIFACT_DIR" && sha256sum --check --strict checksums.sha256)
+        install -D -m 0755 "$ARTIFACT_DIR/renet-linux-amd64" private/renet/bin/renet
+        install -D -m 0755 "$ARTIFACT_DIR/renet-linux-amd64" private/renet/bin/renet-linux-amd64
+        PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate private/renet/bin/renet
+        echo "RENET_BINARY=$PWD/private/renet/bin/renet" >> "$GITHUB_ENV"

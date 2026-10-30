@@ -7,9 +7,10 @@ import {
   DEFAULT_DATASTORE_PATH,
   RENET_SETUP_TIMEOUT_MS,
 } from '../constants';
-import { getOpsManager } from '../utils/renet-functions/OpsManager';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
+import { ensureAccountToken } from '../utils/licence';
 import { log } from '../utils/log';
+import { getOpsManager } from '../utils/renet-functions/OpsManager';
 
 /**
  * One named unit of global setup that may run beside others.
@@ -376,6 +377,10 @@ async function bridgeGlobalSetup(_config: FullConfig) {
   const infra = new InfrastructureManager();
 
   try {
+    // Step 0: the account server repository licences come from. renet enforces licensing in every build, so a suite that creates a repository needs REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN (src/utils/licence.ts). Resolved before any VM work, and set on process.env, which the workers inherit.
+    log('');
+    log(`Step 0: ${await ensureAccountToken()}`);
+
     // Step 1: Soft reset VMs (mandatory - no skip option)
     log('');
     if (skipReset) {

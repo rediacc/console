@@ -2913,18 +2913,20 @@ async function liveRebalanceControls(
         }),
       });
       if (lane === 'quality-pytest') {
-        // The cap the BUDGET control relies on, shown to fire: one evaluation allowed, so each run stops after its first step and says so.
-        const tight = rebalanceAssign(
-          input.model,
-          input.ids,
-          input.constraints,
-          input.committed,
-          1
-        );
+        // The cap the BUDGET control relies on, shown to fire on a PLANTED non-optimal input (the live lane is a local optimum after a rebalance, so no step exists to stop). 45 blocks sit past the branch-and-bound limit, so the start is LPT, and LPT over 3,3,2,2,2 on two legs lands at 7 where 6 exists: the descent has steps to take, and a 1-evaluation cap stops it after the first.
+        const plantedMinutes: Record<string, number> = { p1: 3, p2: 3, p3: 2, p4: 2, p5: 2 };
+        for (let i = 0; i < 40; i++) plantedMinutes[`t${i}`] = 0.01;
+        const plantedIds = Object.keys(plantedMinutes);
+        const tight = rebalanceAssign(rbModel(2, plantedMinutes), plantedIds, {}, null, 1);
+        const free = rebalanceAssign(rbModel(2, plantedMinutes), plantedIds, {}, null);
         out.push({
-          name: `FIRES (live ${lane}): a local search held to 1 evaluation stops after one step and reports CAPPED, not a local optimum`,
-          ok: tight.search.includes('CAPPED') && tight.evaluations < result.evaluations,
-          detail: `${tight.evaluations} evaluation(s); ${tight.search}`,
+          name: 'FIRES (planted non-optimal): a local search held to 1 evaluation stops after one step and reports CAPPED, not a local optimum',
+          ok:
+            tight.search.includes('CAPPED') &&
+            !free.search.includes('CAPPED') &&
+            tight.evaluations > 0 &&
+            tight.evaluations < free.evaluations,
+          detail: `capped ${tight.evaluations} evaluation(s) vs free ${free.evaluations}; ${tight.search}`,
         });
         out.push({
           name: `BUDGET (live ${lane}): the rebalance reaches a local optimum within ${QUALITY_PYTEST_EVALUATION_BUDGET} candidate evaluations, so a search that stops converging is a red control, not a hang`,
@@ -3780,24 +3782,24 @@ async function selftest(): Promise<number> {
       })(),
     },
     {
-      name: "FIRES (live ct-tests.yml): every consumer needs the stager, and deleting E2E Ceph's needs: line turns exactly that job red",
+      name: "FIRES (live ct-tests.yml): every consumer needs the stager, and deleting E2E Backup Browse At's needs: line turns exactly that job red",
       ok: (() => {
         const rel = '.github/workflows/ct-tests.yml';
         const text = readFileSync(path.join(ROOT, rel), 'utf-8');
         const sites = embedCacheSites(rel, text);
         const consumers = sites.filter((s) => s.restores && s.job !== EMBED_STAGER_JOB);
         const planted = text.replace(
-          /(\n {2}test-e2e-ceph:\n(?:.*\n)*?) {4}needs: \[renet-embed-assets\]\n/,
+          /(\n {2}test-e2e-backup-browse-at:\n(?:.*\n)*?) {4}needs: \[renet-embed-assets\]\n/,
           '$1'
         );
         const after = embedStagingFindings(embedCacheSites(rel, planted), []);
         return (
-          consumers.length >= 10 &&
+          consumers.length >= 2 &&
           sites.some((s) => s.job === EMBED_STAGER_JOB && s.restores) &&
           embedStagingFindings(sites, []).length === 0 &&
           planted !== text &&
           after.length === 1 &&
-          (after[0] as string).includes('job test-e2e-ceph restores')
+          (after[0] as string).includes('job test-e2e-backup-browse-at restores')
         );
       })(),
     },

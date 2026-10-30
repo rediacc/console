@@ -31,8 +31,92 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The ONE renet build of this run (agent/plans/PLAN-free-license.md R2, F2):
+  # a licence-enforcing dev build baking the production public key, uploaded as
+  # renet-test-linux-amd64-<sha> for the five bake legs, which install it through
+  # .github/actions/renet-test-binary instead of building it five times. It
+  # builds even when every leg's probe ends early: the probe needs the renet
+  # sources only, and gating this job on five probes would cost a second
+  # checkout per leg.
+  build-renet:
+    name: Build (Renet)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Checkout, with the renet submodule on the readonly-preset App token, and
+    # Docker Hub pulls for a staging build. No registry write.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Init renet submodule
+        run: git submodule update --init --depth 1 private/renet
+      - name: Login to Docker Hub
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      # Same staged embed-assets cache as Build (Renet) in ci.yml (ci-build-renet.yml
+      # writes it); restore only, the bake never saves it.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet
+        env:
+          # The production PUBLIC key: build.sh fails closed without one.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      - name: Stage the renet artifact
+        run: |
+          mkdir -p "$RUNNER_TEMP/renet-test"
+          cp private/renet/bin/renet-linux-amd64 "$RUNNER_TEMP/renet-test/renet-linux-amd64"
+          cd "$RUNNER_TEMP/renet-test" && sha256sum renet-linux-amd64 > checksums.sha256
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: renet-test-linux-amd64-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/renet-test/renet-linux-amd64
+            ${{ runner.temp }}/renet-test/checksums.sha256
+          retention-days: 1
+          if-no-files-found: error
+
   bake:
     name: VM Bake (${{ matrix.os-image }})
+    needs: [build-renet]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # packages: write pushes the baked image to ghcr.io/rediacc/ci-vm-bake with
@@ -112,23 +196,13 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      # Same staged embed-assets cache as the E2E Workers legs (ci-build-renet.yml
-      # writes it); restore only, the bake never saves it.
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: steps.probe.outputs.exists == 'false'
-        id: embed-cache
-        with:
-          path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        if: steps.probe.outputs.exists == 'false' && steps.embed-cache.outputs.cache-hit != 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
-      - name: Build renet
+      # The run's one renet, from build-renet above; the key gate in the action
+      # checks it bakes the production public key.
+      - name: Install the shared renet
         if: steps.probe.outputs.exists == 'false'
         env:
-          # The production PUBLIC key: build.sh fails closed without one.
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+        uses: ./.github/actions/renet-test-binary
       - name: Install renet
         if: steps.probe.outputs.exists == 'false'
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet

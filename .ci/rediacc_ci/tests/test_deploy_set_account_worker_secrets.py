@@ -51,6 +51,7 @@ FIXTURE_ENV = {
     "ACCOUNT_X25519_PUBLIC_KEY": "x2",
     "ACCOUNT_SERVER_API_KEY": "ak",
     "ACCOUNT_JWT_SECRET": "jw",
+    "FREE_LICENSE_HMAC_KEY": "hm",
     "ROOT_EMAIL": "root@example.invalid",
     "AWS_SES_ACCESS_KEY_ID_EU": "sk-eu",
     "AWS_SES_SECRET_ACCESS_KEY_EU": "ss-eu",
@@ -176,7 +177,8 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the one document line the twin never had removed."""
+    """The recorded call with the two document lines the twin never had removed (the config server key and the free-licence HMAC key)."""
+    calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     return calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
 
 
@@ -424,6 +426,10 @@ def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> 
     _assert_agree(old, new, "bucket-first", old_calls, new_calls)
 
 
+# The two guards the twin never had; neither has a golden, and each has a port-only test.
+PORT_ONLY_GUARDS = ("ACCOUNT_CONFIG_SERVER_KEY", "FREE_LICENSE_HMAC_KEY")
+
+
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -432,7 +438,7 @@ def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     demanded = tuple(
         name
         for name in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
-        if name != "ACCOUNT_CONFIG_SERVER_KEY"
+        if name not in PORT_ONLY_GUARDS
     )
     assert len(demanded) == 17
     for name in demanded:
@@ -616,10 +622,10 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 30
+    assert len(port.KEYS) == 31
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 16
+    assert len(port.REQUIRED_NONEMPTY) == 17
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
@@ -962,6 +968,20 @@ def test_an_empty_config_server_key_is_refused_by_its_worker_key(
     # The printed Worker key is not a store name, so the refusal names the store entry too.
     assert "Its store entry is %s." % name in proc.stderr
     assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_CONFIG_SERVER_KEY"
+
+
+def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path) -> None:
+    """Port-only: the Worker key is pushed under its own name, and an empty value is refused with no wrangler call and no value in either stream."""
+    ok, calls = _port_raw(tmp_path, **_pair_for("stable"))
+    assert ok.returncode == 0, ok.stderr
+    assert json.loads(document(calls))["FREE_LICENSE_HMAC_KEY"] == "hm"
+    refused = tmp_path / "refused"
+    refused.mkdir()
+    proc, calls = _port_raw(refused, **_pair_for("stable"), FREE_LICENSE_HMAC_KEY="")
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "FREE_LICENSE_HMAC_KEY is EMPTY for" in proc.stderr
+    assert port.REQUIRED_NONEMPTY.count("FREE_LICENSE_HMAC_KEY") == 1
 
 
 def test_config_server_key_helper() -> None:

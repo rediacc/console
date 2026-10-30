@@ -213,6 +213,106 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  # The ONE renet every test leg of this run deploys (agent/plans/PLAN-free-license.md
+  # R2, F2): a licence-enforcing dev build (`build.sh dev`, version `-dev`, so
+  # `renet functions once --test-mode` works) baking the PRODUCTION public key,
+  # uploaded as the small linux-amd64-only artifact renet-test-linux-amd64-<sha>.
+  # ct-tests.yml, ct-e2e-probe.yml and ci-ops-test.yml install it through
+  # .github/actions/renet-test-binary instead of each building their own; their
+  # per-run account servers sign with the production private key, so the
+  # licences they issue verify under this binary. The release binaries above are
+  # not usable for this: a clean semver version refuses --test-mode. It runs on
+  # both paths (built or extracted), because the extracted bridge binary is a
+  # release build too. It is also this workflow's embed-assets stager on a miss
+  # (check-lane-budget.ts check 8), racing build-renet's own save harmlessly:
+  # the key is immutable and both save only a tree the receipt vouches for.
+  renet-embed-assets:
+    # The display name every renet-embed-assets job carries: the watchdog caps
+    # and the lane gate's ruled timeout (#23e93715, p90 13 / timeout 15) are
+    # keyed on it (test_gate_watchdog_budget.py).
+    name: Renet embed assets
+    # Checkout, with the private submodules on the readonly-preset App token,
+    # and Docker Hub pulls for a staging build. No registry write, no GitHub API.
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Login to Docker Hub
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build the test renet
+        id: build-renet
+        env:
+          # The production PUBLIC key: build.sh fails closed without one, and
+          # build_renet's key gate refuses a binary that does not bake it.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # The stripped linux-amd64 twin build.sh dev staged beside the host binary
+      # (same version, same key ldflag), so the artifact stays one binary.
+      - name: Stage the test renet artifact
+        run: |
+          mkdir -p "$RUNNER_TEMP/renet-test"
+          cp private/renet/bin/renet-linux-amd64 "$RUNNER_TEMP/renet-test/renet-linux-amd64"
+          cd "$RUNNER_TEMP/renet-test" && sha256sum renet-linux-amd64 > checksums.sha256
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: renet-test-linux-amd64-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/renet-test/renet-linux-amd64
+            ${{ runner.temp }}/renet-test/checksums.sha256
+          retention-days: 1
+          if-no-files-found: error
+
   # Extract renet binaries from existing bridge image when build is skipped.
   # Linux binaries come from the cached bridge image; Darwin and Windows binaries
   # are cross-compiled with embedded assets (CRIU/rsync) extracted from the image.

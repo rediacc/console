@@ -1004,8 +1004,8 @@ def _mint_env(**extra: str) -> dict[str, str]:
     return env
 
 
-def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_path) -> None:
-    """The whole contract: six `NAME=value` lines appended, non-empty values, names only on stderr, and stdout exactly one `::add-mask::` per value."""
+def test_mint_dev_keys_appends_exactly_seven_named_lines_and_prints_no_value(tmp_path) -> None:
+    """The whole contract: seven `NAME=value` lines appended, non-empty values, names only on stderr, and stdout exactly one `::add-mask::` per value."""
     target = tmp_path / "github_env"
     target.write_text("EARLIER=kept\n", encoding="utf-8")
     proc = _mint(_mint_env(GITHUB_ENV=str(target)))
@@ -1017,7 +1017,7 @@ def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_p
     assert [line.split("=", 1)[0] for line in minted] == list(account.CRYPTO_KEYS)
     values = [line.split("=", 1)[1] for line in minted]
     assert all(values), "an empty value was written"
-    assert len(set(values)) == 6, "two of the six minted values are identical"
+    assert len(set(values)) == 7, "two of the seven minted values are identical"
     # Masked, or every later step's env block prints them in this public repo's logs; the runner consumes these lines unshown.
     assert proc.stdout.splitlines() == ["::add-mask::%s" % v for v in values], (
         "stdout must be exactly one ::add-mask:: per minted value, in order"
@@ -1027,7 +1027,7 @@ def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_p
         assert value not in proc.stderr, "a minted value reached stderr"
     for name in account.CRYPTO_KEYS:
         assert name in proc.stderr, "%s is not named on stderr" % name
-    assert "6 throwaway dev key(s)" in proc.stderr
+    assert "7 throwaway dev key(s)" in proc.stderr
 
 
 def test_mint_dev_keys_refuses_without_github_env(tmp_path) -> None:

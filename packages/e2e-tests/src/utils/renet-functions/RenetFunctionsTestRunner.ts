@@ -181,7 +181,10 @@ export class RenetFunctionsTestRunner {
     this.datastoreMethods = new DatastoreMethods(this.testFunction.bind(this));
     this.registryMethods = new RegistryMethods(this.testFunction.bind(this));
     this.kubeMethods = new KubeMethods(this.testFunction.bind(this));
-    this.repositoryMethods = new RepositoryMethods(this.testFunction.bind(this));
+    this.repositoryMethods = new RepositoryMethods(
+      this.testFunction.bind(this),
+      this.executeViaBridge.bind(this)
+    );
     this.cephMethods = new CephMethods(this.testFunction.bind(this));
     this.containerMethods = new ContainerMethods(this.testFunction.bind(this));
     this.daemonMethods = new DaemonMethods(this.testFunction.bind(this));

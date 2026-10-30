@@ -1383,6 +1383,7 @@
     "Duplicate Run Check": 0.2,
     "Quality / Gate tests": 0.8,
     "CD Preflight": 0.5,
+    "Build (Renet) / Renet embed assets": 12.0,
     "Tests + Infra / Renet embed assets": 0.6,
     "OPS Tests / Renet embed assets": 0.7,
     "Quality / Secure Storage (keyctl)": 0.7,

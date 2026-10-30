@@ -74,7 +74,7 @@ DB_BROWSER_SCAN_SPAN = 40
 # `.ci/lib/account.sh:628`.
 DEFAULT_TOTP_EMAIL = DEV_USER_EMAIL
 
-# The six environment names the account server reads its DEV keypair and session secrets under, the six `account_reset` pushes to Bitwarden (`.ci/lib/account.sh:794-799`). `mint_dev_keys()` writes exactly these, in this order.
+# The seven environment names the account server reads its DEV keypair, session secrets and free-licence HMAC key under, the first six `account_reset` pushes to Bitwarden (`.ci/lib/account.sh:794-799`). `mint_dev_keys()` writes exactly these, in this order.
 CRYPTO_KEYS = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -82,6 +82,7 @@ CRYPTO_KEYS = (
     "ACCOUNT_X25519_PUBLIC_KEY",
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
+    "FREE_LICENSE_HMAC_KEY",
 )
 
 
@@ -989,6 +990,7 @@ def mint_dev_keys(env: dict[str, str] | None = None) -> int:
         keys.x25519_pub,
         keys.api_key,
         keys.jwt,
+        random_secret(),
     )
     bad = [
         name

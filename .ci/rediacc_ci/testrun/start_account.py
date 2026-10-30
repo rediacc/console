@@ -11,6 +11,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   5. The throwaway secrets come from `secrets.token_hex` instead of `openssl rand -hex 32`, whose silent failure left them empty in the retired `ci-env.sh` (see `infra/ci_env.py`). Same shape, 64 hex characters.
   6. The cookie jar lives in memory; the twin wrote and removed `account-for-e2e-cookies.txt`.
   7. The ED25519 signing pair is taken from the environment when BOTH `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` are set (the twin always minted its own), and the PUBLIC half is published as `ACCOUNT_ED25519_PUBLIC_KEY` next to `REDIACC_ACCOUNT_SERVER`. A renet build has to bake the signer's public key, or every licence this server signs is filed under a fingerprint renet never looks up (`start_backup_plane`). The private half is never printed or written.
+  8. `--require-env-pair` refuses to mint: without both halves in the environment the leg fails before anything starts. The CI legs pass it with the PRODUCTION pair mapped from Bitwarden, because they deploy the run's one production-keyed renet (agent/plans/PLAN-free-license.md R2, F2) and a throwaway pair would sign licences that renet refuses at the first repository create, long after this step reported success.
 """
 
 import contextlib
@@ -48,7 +49,7 @@ const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.ACCOUNT_ED25
 process.stdout.write(crypto.createPublicKey(priv).export({ type: "spki", format: "der" }).toString("base64"));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
-USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>]"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>] [--require-env-pair]"
 
 
 class LegError(Exception):
@@ -68,6 +69,8 @@ class Options:
         self.scopes = ",".join(SCOPES)
         # The host the published account server URL names; the server itself is always probed and seeded on 127.0.0.1.
         self.advertise_host = "127.0.0.1"
+        # Delta 8: the ED25519 pair must come from the environment; nothing is minted.
+        self.require_env_pair = False
 
 
 def parse(argv: list[str]) -> Options:
@@ -83,6 +86,10 @@ def parse(argv: list[str]) -> Options:
     i = 0
     while i < len(argv):
         flag = argv[i]
+        if flag == "--require-env-pair":
+            opts.require_env_pair = True
+            i += 1
+            continue
         if flag not in names:
             raise ValueError(f"Unknown option: {flag}")
         if i + 1 >= len(argv) or argv[i + 1] == "":
@@ -114,14 +121,27 @@ def generate_keys() -> dict[str, str]:
     return json.loads(done.stdout)
 
 
-def server_keys() -> dict[str, str]:
+def server_keys(require_env_pair: bool = False) -> dict[str, str]:
     """The throwaway key set, with the ED25519 signing pair taken from the environment when BOTH halves are there.
 
-    A caller that bakes the public half into a renet build (`start_backup_plane`) has to hold the pair before this server starts, or the licence blobs it signs are filed under a fingerprint that renet never looks up. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. The private half is passed to the server through its environment only, never printed or written.
+    A caller that bakes the public half into a renet build (`start_backup_plane`) has to hold the pair before this server starts, or the licence blobs it signs are filed under a fingerprint that renet never looks up. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. With `require_env_pair` (delta 8) half a pair, or none, is a LegError naming both variables, so a CI leg never mints a pair its production-keyed renet refuses. The private half is passed to the server through its environment only, never printed or written.
     """
-    keys = generate_keys()
     private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "").strip()
     public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "").strip()
+    if require_env_pair and not (private and public):
+        missing = [
+            name
+            for name, value in (
+                ("ACCOUNT_ED25519_PRIVATE_KEY", private),
+                ("ACCOUNT_ED25519_PUBLIC_KEY", public),
+            )
+            if not value
+        ]
+        raise LegError(
+            f"--require-env-pair: {' and '.join(missing)} not set; this leg signs with the production pair (map both from Bitwarden), and a minted pair would sign licences the production-keyed renet refuses",
+            show_log=False,
+        )
+    keys = generate_keys()
     if private and public:
         if derived_public_key() != public:
             raise LegError(
@@ -266,7 +286,7 @@ def run(opts: Options) -> int:
                 show_log=False,
             )
         log.step("Generating throwaway server keys...")
-        keys = server_keys()
+        keys = server_keys(opts.require_env_pair)
         log.step(f"Starting account server on port {opts.port}...")
         db_path = pathlib.Path(temp) / f"e2e-account-{os.getpid()}.db"
         try:

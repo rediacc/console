@@ -450,6 +450,7 @@ def _bench_env(monkeypatch, **overrides):
         "ACCOUNT_X25519_PUBLIC_KEY": "x2",
         "ACCOUNT_SERVER_API_KEY": "ak",
         "ACCOUNT_JWT_SECRET": "jw",
+        "FREE_LICENSE_HMAC_KEY": "hm",
         "ACCOUNT_CONFIG_SERVER_KEY": "ck",
         "ROOT_EMAIL": "root@example.invalid",
         "AWS_SES_ACCESS_KEY_ID": "sk",
@@ -470,6 +471,15 @@ def test_the_payload_carries_the_config_server_key(monkeypatch):
     payload = deploy_bench.secrets_payload()
     assert payload["ACCOUNT_CONFIG_SERVER_KEY"] == "ck"
     assert "CONFIG_SERVER_KEY" not in payload
+
+
+def test_the_payload_carries_the_free_license_hmac_key(monkeypatch):
+    """The free-licence HMAC key reaches the bench Worker under its own name, and an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["FREE_LICENSE_HMAC_KEY"] == "hm"
+    _bench_env(monkeypatch, FREE_LICENSE_HMAC_KEY="")
+    with pytest.raises(deploy_bench.DeployError, match="FREE_LICENSE_HMAC_KEY"):
+        deploy_bench.secrets_payload()
 
 
 def test_an_empty_config_server_key_refuses_the_bench_push(monkeypatch):

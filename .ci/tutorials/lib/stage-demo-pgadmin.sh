@@ -13,6 +13,9 @@
 
 set -euo pipefail
 export REDIACC_SKIP_FILE_WRITE_GUARD=1
+# Licensing is enforced: repo create/fork need a subscription token (tutorial-licence.sh).
+# shellcheck source=tutorial-licence.sh
+TUTORIAL_LICENCE_QUIET=1 source "$(dirname "${BASH_SOURCE[0]}")/tutorial-licence.sh"
 M="${TUTORIAL_MACHINE_NAME:-machine-11}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/demo-pgadmin" && pwd)"
 

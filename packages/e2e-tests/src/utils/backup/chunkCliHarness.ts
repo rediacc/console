@@ -11,6 +11,7 @@ import {
   verbIsRegistered,
 } from '../backupStorage';
 import { CliRunner } from '../CliRunner';
+import { loginCliToAccount } from '../licence';
 import { RenetFunctionsTestRunner } from '../renet-functions/RenetFunctionsTestRunner';
 
 // Shared by suites 26 and 27: the account-server and fleet wiring, the CLI login, and the repository provisioning both chunk-store CLI suites build on.
@@ -129,13 +130,8 @@ export const parseEnvelope = (raw: string, stderr = ''): Partial<CliEnvelope<unk
 export const bothChannels = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr;
 
 /**
- * Stand a CLI up against this account server, in its own config namespace.
- *
- * `licensing: true` is load-bearing, not tidiness: CliRunner's default exports
- * `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which makes
- * `ensureRepoLicenseForProvisioning` return immediately — so `repo create`
- * would produce exactly the unlicensed repo the bridge produced, and the
- * snapshot verb would refuse it again.
+ * Stand a CLI up against this account server, in its own config namespace, logged in
+ * (licence.ts loginCliToAccount), so `repo create` can issue the licence renet demands.
  */
 export const loginCli = async (cfg: string): Promise<CliRunner> => {
   await CliRunner.resetConfig(cfg);
@@ -145,14 +141,7 @@ export const loginCli = async (cfg: string): Promise<CliRunner> => {
     env: { REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
   });
   await cli.initConfig(SSH_KEY);
-  const login = await cli.run([
-    'subscription',
-    'login',
-    '--server',
-    ACCOUNT_SERVER,
-    '--token',
-    ACCOUNT_TOKEN,
-  ]);
+  const login = await loginCliToAccount(cli);
   expect(login.code, `subscription login: ${login.stderr.slice(-600)}`).toBe(0);
   return cli;
 };
@@ -238,9 +227,9 @@ export const registerMachines = async (cli: CliRunner): Promise<void> => {
 /**
  * Create a repository THROUGH THE CLI and prove it came out licensed.
  *
- * The proof is the point. `repo create` exits 0 on a fleet whose license
- * issuance quietly no-opped (that is exactly what
- * `REDIACC_SKIP_MACHINE_ACTIVATION=1` does), and the failure would then surface
+ * The proof is the point. A `repo create` whose license issuance quietly
+ * no-opped (what the retired `REDIACC_SKIP_MACHINE_ACTIVATION=1` did) would
+ * still exit 0, and the failure would then surface
  * three tests later as a snapshot refusing on "no license data" — read as a
  * broken uploader. So the license is read back off the MACHINE, where it has to
  * be true, before the caller relies on it.

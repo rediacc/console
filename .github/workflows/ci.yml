@@ -1175,13 +1175,21 @@ jobs:
       packages: read
     # T2.1 (PLAN-ci-time-budget, finding 3): no ct-tests.yml leg consumes a
     # build-docker-fast image (no ghcr.io/rediacc reference or *_tag input in
-    # that file; each leg builds renet and the CLI itself), verified against
+    # that file; each leg builds the CLI itself), verified against
     # run 36040274865's E2E Workers log. `ops up` used to also pull
     # elite/bridge:latest at runtime, a pull that failed "manifest unknown"
     # on every distro and that nothing consumed; renet no longer does it.
     # The needs edge was pure critical-path cost (about 10.5 min), not a
     # real dependency.
-    needs: [initialize]
+    # build-renet IS a real dependency (agent/plans/PLAN-free-license.md R2,
+    # F2): every VM/E2E leg installs the one renet that ci-build-renet.yml's
+    # renet-embed-assets job uploads (renet-test-linux-amd64-<sha>) instead of
+    # building its own.
+    # always() below keeps the caller running when build-renet skips or fails,
+    # so migration-test still runs on push-to-main; renet_built tells the legs
+    # that need the artifact to skip instead of dying in its download. A
+    # failed build-renet still reds CI Complete through build-cli (HARD).
+    needs: [initialize, build-renet]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
     # CALLED on push-to-main: its migration-test job has to run there (it
     # validates the D1 migrations that push is about to deploy), while every
@@ -1191,6 +1199,7 @@ jobs:
     with:
       full_suite: ${{ needs.initialize.outputs.full_suite }}
       pointer_bump_only: ${{ needs.initialize.outputs.pointer_bump_only }}
+      renet_built: ${{ needs.build-renet.result == 'success' && 'true' || 'false' }}
       # Scope decisions, one per ct-tests leaf. Empty (the default on every
       # non-PR event, where the scope step does not run) means RUN; only the
       # literal string 'false' skips. migration-test takes no scope input on
@@ -1229,10 +1238,14 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [initialize]
+    # build-renet: each probe leg installs the run's shared renet
+    # (agent/plans/PLAN-free-license.md F2), so the probe runs only when it was
+    # built; a failed build-renet reds CI Complete through build-cli.
+    needs: [initialize, build-renet]
     if: >-
       always() &&
       needs.initialize.result == 'success' &&
+      needs.build-renet.result == 'success' &&
       needs.initialize.outputs.is_bot != 'true' &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.outputs.run_e2e_workers != 'false'

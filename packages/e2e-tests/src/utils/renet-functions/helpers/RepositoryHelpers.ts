@@ -1,4 +1,5 @@
 import { repoDockerHost } from '@rediacc/shared/config/runtime-paths';
+import { installRepoLicence } from '../../licence';
 import { log } from '../../log';
 import type { ExecResult } from '../types';
 
@@ -14,6 +15,16 @@ export class RepositoryHelpers {
       options?: { stdin?: string }
     ) => Promise<ExecResult>
   ) {}
+
+  /** Install the fork-kind licence renet's create-tier gate wants for `guid`, a child of `parent`. */
+  private licenceFor(guid: string, parent: string, datastorePath: string): Promise<ExecResult> {
+    return installRepoLicence(this.executeViaBridge, {
+      repositoryGuid: guid,
+      kind: 'fork',
+      grandGuid: parent,
+      datastorePath,
+    });
+  }
 
   /**
    * Write a file to a mounted repository.
@@ -67,12 +78,15 @@ export class RepositoryHelpers {
    * @param tag Fork tag/name (cannot be 'latest')
    * @param datastorePath Path to the datastore
    */
-  createRepositoryFork(
+  async createRepositoryFork(
     parentRepo: string,
     tag: string,
     datastorePath: string,
     networkId?: string
   ): Promise<ExecResult> {
+    // `repository fork` refuses with LICENSE_REQUIRED unless the fork's own licence is installed (create tier, keyed on the fork's name), so `tag` is a GUID too.
+    const licence = await this.licenceFor(tag, parentRepo, datastorePath);
+    if (licence.code !== 0) return licence;
     // Use renet repository fork command for proper CoW forking. Without --up, renet records no network ID for the fork (the flag only feeds --checkpoint): the fork's first `repository up` records its own, and a later up on another ID is refused as network_id_mismatch. A checkout of an immutable commit never comes up and passes none.
     const networkFlag = networkId ? ` --network-id ${networkId}` : '';
     return this.executeViaBridge(
@@ -85,13 +99,16 @@ export class RepositoryHelpers {
    * Drives the renet CLI directly (commit/log/merge params are not in the bridge
    * once test-mode flag allowlist), mirroring createRepositoryFork.
    */
-  repositoryCommit(
+  async repositoryCommit(
     workingFork: string,
     commitGuid: string,
     message: string,
     datastorePath: string,
     commitParent?: string
   ): Promise<ExecResult> {
+    // A commit is a create-tier verb on the new commit's GUID, like a fork.
+    const licence = await this.licenceFor(commitGuid, workingFork, datastorePath);
+    if (licence.code !== 0) return licence;
     const parentFlag = commitParent ? ` --commit-parent "${commitParent}"` : '';
     return this.executeViaBridge(
       `sudo renet repository commit --name "${workingFork}" --tag "${commitGuid}" --message "${message}" --datastore "${datastorePath}"${parentFlag}`
@@ -141,11 +158,13 @@ export class RepositoryHelpers {
    * Create an immutable (read-only) fork — the commit-equivalent base. It refuses
    * to mount; check it out into a writable fork to use it.
    */
-  repositoryForkImmutable(
+  async repositoryForkImmutable(
     parentRepo: string,
     tag: string,
     datastorePath: string
   ): Promise<ExecResult> {
+    const licence = await this.licenceFor(tag, parentRepo, datastorePath);
+    if (licence.code !== 0) return licence;
     return this.executeViaBridge(
       `sudo renet repository fork --name "${parentRepo}" --tag "${tag}" --datastore "${datastorePath}" --immutable`
     );

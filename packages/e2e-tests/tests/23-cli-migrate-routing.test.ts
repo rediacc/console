@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
-import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
+import { loginCliToAccount } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Suite 23 (`E2E Workers`, CLI_SUITE leg): the FIRST rdc-driven e2e. The two-VM `repo migrate` routing family is CLI logic — config placement rewrite + `config reconcile` — that renet-side tests structurally cannot cover (07 §1-9). This suite drives the real `rdc` binary via CliRunner and cross-checks the CLI's claims against the bridge (SSH → renet) so the CLI asserts are
 // falsifiable, not self-referential.
@@ -119,6 +120,9 @@ test.describe
       // whether a datastore attach step is needed before repo create in the config-v3 model.
       await CliRunner.resetConfig();
       await cli.initConfig(SSH_KEY);
+      // renet enforces licensing, so `repo create` must issue a licence: the config logs in to the account server first.
+      const login = await loginCliToAccount(cli);
+      expect(login.code, `subscription login: ${login.stderr.slice(-600)}`).toBe(0);
       await cli.addMachine(M1, M1_IP, SSH_USER);
       await cli.addMachine(M2, M2_IP, SSH_USER);
 

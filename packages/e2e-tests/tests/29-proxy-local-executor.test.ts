@@ -8,8 +8,9 @@ import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { type AuditEvent, AuditEventsRequestSchema } from '@rediacc/shared';
 import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
-import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { type CliResult, CliRunner } from '../src/utils/CliRunner';
+import { loginCliToAccount } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Suite 29: `rdc --proxy` against a LOCAL executor (`rdc serve --mode daemon`),
@@ -358,6 +359,8 @@ test.describe
       // The config records the fleet's host keys, so one that outlived a fleet reset is stale: recreated each run (see CliRunner.resetConfig).
       await CliRunner.resetConfig(CONFIG_NAME);
       must('config init', await cli.initConfig(SSH_KEY));
+      // renet enforces licensing, so `repo create` and `repo fork` must issue licences: the config logs in to the account server first.
+      must('subscription login', await loginCliToAccount(cli));
       must('machine add', await cli.addMachine(MACHINE, MACHINE_IP, SSH_USER));
 
       await ensureDatastore();

@@ -166,6 +166,7 @@ def secrets_payload() -> dict[str, str]:
         "ACCOUNT_X25519_PUBLIC_KEY": os.environ.get("ACCOUNT_X25519_PUBLIC_KEY") or "",
         "ACCOUNT_SERVER_API_KEY": os.environ.get("ACCOUNT_SERVER_API_KEY") or "",
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET") or "",
+        "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY") or "",
         # Layer 3 of the config store; the deploy-bench profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY") or "",
     }
@@ -193,6 +194,7 @@ def secrets_payload() -> dict[str, str]:
         "ACCOUNT_X25519_PUBLIC_KEY": signing["ACCOUNT_X25519_PUBLIC_KEY"],
         "ACCOUNT_SERVER_API_KEY": signing["ACCOUNT_SERVER_API_KEY"],
         "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],
+        "FREE_LICENSE_HMAC_KEY": signing["FREE_LICENSE_HMAC_KEY"],
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],
         # Stripe is disabled (empty strings) so the worker boots without billing, as edge does.
         "STRIPE_SECRET_KEY": "",

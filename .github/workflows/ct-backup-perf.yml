@@ -122,8 +122,10 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The go build itself stays on-runner:
-      # console is public, so dev binaries must never be uploaded as artifacts.
+      # builder staging. The go build stays on-runner in this job alone: the
+      # backup plane signs with a pair of its own (start_backup_plane), so renet
+      # is rebuilt with that key after the plane starts, and the run's shared
+      # production-keyed renet (agent/plans/PLAN-free-license.md F2) cannot serve.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
         with:

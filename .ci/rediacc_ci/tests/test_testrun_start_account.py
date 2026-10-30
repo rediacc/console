@@ -496,3 +496,61 @@ def test_without_both_env_halves_the_keys_are_generated(
         "REDIACC_ACCOUNT_SERVER=http://127.0.0.1:4911",
         "E2E_ACCOUNT_API_TOKEN=rdt_unit",
     ]
+
+
+def test_require_env_pair_is_a_valueless_flag() -> None:
+    assert sa.parse([]).require_env_pair is False
+    opts = sa.parse(["--require-env-pair", "--port", "4911"])
+    assert opts.require_env_pair is True
+    assert opts.port == "4911"
+    assert "--require-env-pair" in sa.USAGE
+
+
+@pytest.mark.parametrize(
+    ("present", "named"),
+    [
+        ((), "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_ED25519_PUBLIC_KEY"),
+        (("ACCOUNT_ED25519_PUBLIC_KEY",), "ACCOUNT_ED25519_PRIVATE_KEY not set"),
+        (("ACCOUNT_ED25519_PRIVATE_KEY",), "ACCOUNT_ED25519_PUBLIC_KEY not set"),
+    ],
+    ids=["none", "public-only", "private-only"],
+)
+def test_delta_require_env_pair_refuses_to_mint(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys,
+    present: tuple[str, ...],
+    named: str,
+) -> None:
+    """Delta 8: a CI leg that lost its Bitwarden mapping fails at the key step, by name, before a server starts or a key is generated."""
+    for name in ("ACCOUNT_ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PUBLIC_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    for name in present:
+        monkeypatch.setenv(name, "HALF-SENTINEL")
+    calls: list[str] = []
+    monkeypatch.setattr(sa, "generate_keys", lambda: calls.append("generate") or dict(FAKE_KEYS))
+    monkeypatch.setattr(sa, "start_server", lambda *_a: calls.append("start"))
+    monkeypatch.setattr(sa, "healthy", lambda _port: False)
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    gh_env = tmp_path / "env"
+    monkeypatch.setenv("GITHUB_ENV", str(gh_env))
+    assert sa.run(sa.parse(["--require-env-pair", "--port", "4911"])) == 1
+    assert calls == []
+    assert not gh_env.exists()
+    err = capsys.readouterr().err
+    assert "--require-env-pair" in err
+    assert named in err
+    assert "HALF-SENTINEL" not in err
+
+
+def test_require_env_pair_signs_with_the_env_pair(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
+    monkeypatch.setattr(sa, "derived_public_key", lambda: "ENV-PUB")
+    keys = sa.server_keys(require_env_pair=True)
+    assert (keys["edPriv"], keys["edPub"]) == ("ENV-PRIVATE-SENTINEL", "ENV-PUB")
+    # The x25519 pair is not the signing pair and still comes from the generator.
+    assert (keys["xPriv"], keys["xPub"]) == ("GEN-XPRIV", "GEN-XPUB")
