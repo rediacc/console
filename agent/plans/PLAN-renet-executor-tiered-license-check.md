@@ -46,7 +46,7 @@ Follow-ups for the lead: the TierNone flips (setup and daemon verbs, the build-o
 ## Boxes
 
 - [x] T1: Each tiered function that can run without a repository is either TierNone in the tier map or checked at another scope, decided per function with file:line evidence. Accept: cd private/renet && go test ./pkg/functions/... ./pkg/license/... rc 0, with a test that fires on a planted unchecked repo-less tiered call.
-    (ticked) 2026-10-30T12:55:04Z by d778be9d: commit:0794745dd (+bd836a39e) repo-less tiered calls decided per function; go test rc 0, plant fired
+    (ticked) 2026-10-30T12:55:04Z by d778be9d: commit:d21eb33a8 (+6682b9379) repo-less tiered calls decided per function; go test rc 0, plant fired
 - [x] T2: renet ops test comprehensive installs a licence or refuses with a message naming how to provide one before repository_create. Accept: cd private/renet && go test ./cmd/renet/... rc 0.
-    (ticked) 2026-10-30T12:55:07Z by d778be9d: commit:bd836a39e ops test comprehensive requires a licensed GUID; go test ./cmd/renet rc 0, plant fired
+    (ticked) 2026-10-30T12:55:07Z by d778be9d: commit:6682b9379 ops test comprehensive requires a licensed GUID; go test ./cmd/renet rc 0, plant fired
 - [ ] L1: hostinger's released renet refuses a repo-less tiered call without a licence. Accept: the live call's exit 10 LICENSE_REQUIRED, recorded through the live_proof recorder.

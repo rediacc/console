@@ -219,7 +219,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - `PUBLIC_KEY_SPECS` becomes the two unsuffixed public names (.ci/rediacc_ci/setup/machine.py:416-421).
   - `ensure_renet_built` resolves env, then cache, then `bws_env.load`, then refuses (.ci/rediacc_ci/core/local_common.py:1369-1379; Design 1). The shadow rows are adjusted.
   - build_server.py docstring :10.
-    (ticked) 2026-10-29T09:01:22Z by d778be9d: commit:824f3bd7b
+    (ticked) 2026-10-29T09:01:22Z by d778be9d: commit:7c5b8234b
 
   Tests:
   - reset never runs `store-from-env` (a recording runner) and still removes the four DB files.
@@ -234,7 +234,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - Add `RENET_KEYLESS: "1"` to each keyless step: .github/workflows/ci-vm-bake.yml:127, .github/workflows/ct-backup-perf.yml:141, .github/workflows/ct-e2e-probe.yml:133 and :232, .github/workflows/ci-ops-test.yml:81 and :272, .github/workflows/ct-tests.yml:315, :491, :729 and every later `infra.build_renet --nolicense` that runs before a plane key exists. The writer audits each one. .github/workflows/ct-backup-perf.yml:223 keeps the plane key.
   - renet_key_gate drops `DEV_KEY_CACHE`, `--dev-cache` and `dev_fingerprint*` and gains `RETIRED_FINGERPRINTS` (D5).
   - .ci/rediacc_ci/release/local.py:1181 drops `dev_cache`.
-    (ticked) 2026-10-29T09:01:24Z by d778be9d: commit:824f3bd7b
+    (ticked) 2026-10-29T09:01:24Z by d778be9d: commit:7c5b8234b
 
   Tests (new test_renet_build_key_required.py driving `bash private/renet/build.sh key-ldflags`):
   - Env unset plus a cache file holding a key gives rc 1 with no output on stdout. This proves no cache fallback.
