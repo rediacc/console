@@ -864,8 +864,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 27,
-      "done": 12,
+      "open": 25,
+      "done": 14,
       "open_sigs": [
         "10ee1dbe",
         "1d17b634",
@@ -881,13 +881,11 @@
         "845dbf74",
         "87e959e9",
         "8ab57406",
-        "8ac038c6",
         "96524032",
         "96717f6c",
         "9be13bd8",
         "a070fa6e",
         "a116dd8b",
-        "aa12e3cb",
         "d4cf00e3",
         "e1e9d8df",
         "e25f1778",
@@ -903,8 +901,10 @@
         "50f312d5",
         "6b8d5026",
         "86690927",
+        "8ac038c6",
         "9f7e5779",
         "a7f33c86",
+        "aa12e3cb",
         "b00bc9df",
         "b29a4a04",
         "d02d75ce"
@@ -954,16 +954,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 1,
+      "done": 4,
       "open_sigs": [
+        "a6974538"
+      ],
+      "done_sigs": [
         "0bffb38a",
         "462d436a",
         "8318baef",
-        "a6974538",
         "df744ffa"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",

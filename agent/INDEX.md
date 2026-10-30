@@ -502,11 +502,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 92 | 1 | 18 | 33745 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1011 | 27 | 12 | 178294 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1013 | 25 | 14 | 178885 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 114 | 0 | 8 | 19538 |
-| `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 26 | 5 | 0 | 4224 |
+| `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 30 | 1 | 4 | 5351 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 493 | 7 | 15 | 65455 |

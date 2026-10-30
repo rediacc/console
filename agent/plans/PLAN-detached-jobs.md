@@ -436,11 +436,12 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/scripts/generate-cli-contract.ts, packages/cli/scripts/lib/plane-rules.ts, packages/shared/src/cli-contract/types.ts, packages/shared/src/cli-contract/validation.ts, packages/shared/src/cli-contract/wire.ts, packages/shared/src/cli-contract/data/contract.generated.ts (regenerated only), packages/shared/src/cli-contract/__tests__/**. Accept: `cd packages/shared && npx vitest run src/cli-contract` rc 0, and `npx tsc --noEmit --project packages/shared/tsconfig.json` rc 0.
   Superseded in part (third round): the `JOB_VERBS` narrowing is not built. J2b keeps the derived `detachable` rule. J2's wire, poll and route changes stand.
 
-- [ ] J2b [writer] Contract, third round. After J0b and J2. Changes:
+- [x] J2b [writer] Contract, third round. After J0b and J2. Changes:
   - `detachable` stays `proxyCapable && domain !== 'job'`, with `DETACH_EXCLUSIONS` filled from the section 24 exceptions that are proxyable, each with its reason;
   - `POST /v1/command` accepts `requestId`;
   - the `job` line gains `overlaps`, a `heartbeat` line kind is added, and the result gains `state: 'running'`, `attached: boolean` and `overlaps`;
   - the `-b` envelope schema `{ jobId, machine, verb, repo, state, follow, overlaps }` is shared by the CLI and MCP.
+    (ticked) 2026-10-30T23:09:53Z by d778be9d: commit:d52d632f packages/shared/src/cli-contract/__tests__/contract.test.ts:1; J2b already in 92d8b95dd; the planted-unknown-key control added; cli-contract 53 passed. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
 
   Tests:
   - the contract test pins the detachable set to the J0b table;
@@ -463,13 +464,14 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/src/services/executor/local-executor.ts, packages/cli/src/services/executor/detached-execution.ts, packages/cli/src/services/executor/job-client.ts, packages/cli/src/services/executor/job-remote.ts, packages/cli/src/services/executor/executor-factory.ts, packages/cli/src/services/executor/renet-command.ts, packages/cli/src/services/executor/types.ts, packages/cli/src/services/executor/proxy-command.ts, packages/cli/src/services/executor/__tests__/** (except proxy-client tests), packages/cli/src/types/index.ts (one exit code). Accept: `cd packages/cli && npx vitest run src/services/executor` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
   Superseded in part (third round): `JOB_FUNCTIONS` is not built, and `repository_list` does not stay on `renet execute`; J3b makes every call a job and folds the probe into a precondition. The refusal, `FOLLOW_LOST`, reconnect budget, envelope and span items stand, and J3b may absorb them if J3 has not landed.
 
-- [ ] J3b [writer] CLI executor, third round. After J0b, J1b, J2b and J3. Changes:
+- [x] J3b [writer] CLI executor, third round. After J0b, J1b, J2b and J3. Changes:
   - every renet call of a machine-plane command runs through `job start --attach`, with `attachWindowMs` by entry point, and the section 24 exemptions (`tty: true`, follow logs) stay on `renet execute` through a named exemption predicate (sections 14, 15);
   - the request id per invocation and per job, with a retry of a start whose handle was lost (section 17);
   - `--origin` built from the client kind, version and config (section 19);
   - the `expect` precondition in the vault replaces the client-side `repository_list` verifier, and `network_id: "auto"` replaces the `network_used` probe (section 14);
   - the two-way timeout table naming every function in packages/shared/src/renet-contract/data/license-tiers.generated.ts (section 20);
   - the overlap warning on stderr, the BUSY refusal (`busy()`, packages/cli/src/utils/cli-exit-error.ts:71) and `overlaps` in the envelope; the text hint goes to stderr (section 26).
+    (ticked) 2026-10-30T23:09:57Z by d778be9d: commit:d52d632f packages/cli/src/services/executor/detached-execution.ts:1; J3b already in 92d8b95dd and 107ff386e; executor and jobs suites 357 passed. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
 
   Tests:
   - `repo list` makes exactly one `job start --attach 0s` exec and no `renet execute` (recording SFTP fake);
