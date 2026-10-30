@@ -606,3 +606,28 @@ def test_unimportable_resolvers_exit_2_in_plan_mode_and_1_in_the_diff_gate(tmp_p
     assert "VACUOUS INPUT" in plan_mode.err
     assert plan_mode.rc == 2, plan_mode
     assert diff_mode.rc == 1, diff_mode
+
+
+def _citations_fn():
+    spec = importlib.util.spec_from_file_location("_plan_citations_snapshot_test", GATE)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    already = str(GATE.parent.resolve()) in sys.path
+    added = paths.on_sys_path(GATE.parent)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if not already:
+            sys.path.remove(added)
+    return module.citations
+
+
+def test_a_backup_snapshot_id_is_not_an_object_citation_but_a_bare_hex_run_still_is(gate):
+    """Red before SNAPSHOT_ID_RE: a renet snapshot id's 16-hex tail read as a dead git object, and a writer shortened the ids to get past it."""
+    citations = _citations_fn()
+    if citations("snapshot 20261030T020208Z-75f3a8f270363707 stored"):
+        gate.log_fail("a snapshot id after its timestamp prefix must not be cited as an object")
+    if ("object", "75f3a8f270363707") not in citations("a bare run 75f3a8f270363707 here"):
+        gate.log_fail("control: the same 16 hex without the timestamp prefix must still be judged")
+    gate.log_pass("snapshot ids are exempt only behind their timestamp prefix")

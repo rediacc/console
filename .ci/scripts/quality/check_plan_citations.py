@@ -277,6 +277,9 @@ FINGERPRINT_RE = re.compile(r"fingerprint:([0-9a-f]{7,64})", re.IGNORECASE)
 #: one missed dead pointer, never a false accusation.
 AGENT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])(a[0-9a-f]{16})(?![0-9a-zA-Z])")
 
+#: AN RDC BACKUP SNAPSHOT ID IS NEVER A GIT OBJECT: renet names a snapshot `<YYYYMMDD>T<HHMMSS>Z-<16 hex>`, and a live record must quote it verbatim so `backup manifests` can find it again. Its 16-hex tail satisfies HEXTOK_RE by shape alone, the UUID tail's class. Measured 2026-10-30: a writer shortened twelve snapshot ids in four backup plans to 8 hex to get past this gate, destroying the evidence the records exist to keep. Matched only right after the timestamp prefix, so a bare 16-hex run is still judged.
+SNAPSHOT_ID_RE = re.compile(r"\b\d{8}T\d{6}Z-([0-9a-f]{16})\b")
+
 #: A STOP-HOOK TICK ID IS NEVER A GIT OBJECT, the fourth instance of the class
 #: the three blocks above answer: a 12-hex run that satisfies HEXTOK_RE by
 #: coincidence of shape alone.
@@ -466,6 +469,7 @@ def citations(text):
         uuid_tail_spans += [d.span(1) for d in D1_BOOKMARK_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
+    agent_id_spans += [n.span(1) for n in SNAPSHOT_ID_RE.finditer(text or "")]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
     tick_id_spans = [t.span(1) for t in TICK_ID_RE.finditer(text or "")]
     tick_id_spans += [t.span(1) for t in MARKER_FILE_RE.finditer(text or "")]
