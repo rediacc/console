@@ -371,6 +371,8 @@ def test_the_same_sha_triggered_twice_starts_one_reviewer(world):
     _rc, out2, _e, _t = world.hook("git commit -m x -- f.py")
     assert "started for console %s" % sha[:8] in _context(out1)
     assert "started for" not in _context(out2), "a second trigger for a live sha spawned again"
+    # #52978244: a commit that starts no review says so in the same result, naming the repository HEAD.
+    assert "none due for console at %s" % sha[:7] in _context(out2)
     assert world.wait_for(world.review_file(sha))
     assert world.calls.read_text().count("call") == 1
 

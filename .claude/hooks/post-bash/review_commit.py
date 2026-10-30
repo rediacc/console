@@ -92,6 +92,14 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
                 % (repo, type(exc).__name__, str(exc)[:160])
             )
             continue
+        if not started:
+            # A commit that started no review is either already covered or a miss (#52978244); naming the
+            # repository's HEAD here makes a miss visible in the same tool result instead of at push time.
+            head = R.git_out(pathlib.Path(repo), "rev-parse", "--short", "HEAD") or "?"
+            lines.append(
+                "per-commit review: none due for %s at %s (covered already, or a miss: run wl_review.py --check)"
+                % (R.repo_label(root, repo), head)
+            )
         for sha, pid in started:
             lines.append(
                 "per-commit review started for %s %s (pid %s): its record lands in about a minute, in agent/reviews/%s/clean.jsonl or as %s.md"
