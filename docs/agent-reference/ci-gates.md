@@ -107,6 +107,12 @@ A major is refused unless the run carries `--major --reason "<why>"`; Go majors 
 
 `npm run pins -- verify` checks that every site matches its count and agrees with its leaf, and that no earlier run was killed mid-write. It needs the declared submodules checked out.
 
+### Changing a tunable
+
+A tunable registered in `.ci/config/settings.json` (the Cloudflare spend-guard ceilings today) changes through `npm run settings -- set <id> <value> --reason '<why>' [--task <id>]`, never by a hand edit.
+It parses the value by unit (`5TB`, `20M`, `$350`), refuses one outside the registered range, writes every copy and the ruling text through the pins transaction, runs the id's tests, restores on a red, and prints the commit lines without committing.
+`npm run settings -- list` and `get <id>` show every copy and whether they agree, and `check:ci-settings-registry` fails a copy that disagrees, dangles or sits out of range.
+
 ### Quick fixes for common failures
 
 | Check | Fix |

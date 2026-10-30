@@ -292,7 +292,9 @@ function set(c: Ctx, id: string, raw: string, reason: string, task: string | nul
       throw new Usage(
         `${e.id} names pytest tests and no pytest resolves (bash .ci/bootstrap.sh installs it; bash .ci/bootstrap.sh doctor shows what resolved); nothing written`
       );
-    pytest = `PYTHONPATH=.ci PYTHONDONTWRITEBYTECODE=1 ${shq(bin)} -q -p no:cacheprovider ${e.tests.pytest.map(shq).join(' ')}`;
+    // No `-p no:cacheprovider`: disabling that plugin unregisters pyproject's `cache_dir` ini key, and under its `--strict-config`
+    // pytest then exits 4 having collected nothing, so every real `set` went red and restored (the cache lands in the ignored .ci/cache/pytest).
+    pytest = `PYTHONPATH=.ci PYTHONDONTWRITEBYTECODE=1 ${shq(bin)} -q ${e.tests.pytest.map(shq).join(' ')}`;
   }
   const steps: PlanStep[] = pytest
     ? [{ label: `tests: ${pytest}`, run: pytest, cwd: '.', writes: [] }]
@@ -464,6 +466,20 @@ def test_r2_ceiling_is_not_the_poisoned_value():
 `;
 
 /**
+ * The console's own `[tool.pytest.ini_options]` table, verbatim, so the fixture's nested pytest
+ * meets the ini a real `set` meets (`--strict-config`, `cache_dir`, the addopts). A fixture with
+ * no ini once hid an argv that made every real run exit 4 having collected nothing.
+ */
+function pytestIni(text = fs.readFileSync(path.join(REPO_ROOT, 'pyproject.toml'), 'utf8')): string {
+  const m = /^\[tool\.pytest\.ini_options\]\n[\s\S]*?(?=^\[|(?![\s\S]))/m.exec(text);
+  if (!m)
+    throw new Error(
+      'pyproject.toml has no [tool.pytest.ini_options] table to copy into the fixture'
+    );
+  return m[0];
+}
+
+/**
  * A git tree holding the REAL registry, the REAL spend-guard JSON and the REAL cf_usage_report.py
  * (so the byte-span edits run on the shapes they will meet), with the R2 ceiling seeded back to
  * 200 GB at every copy and each id's tests pointed at one fixture test that goes red on 4 TB.
@@ -478,6 +494,7 @@ function fixture(): string {
     [PY]: fs.readFileSync(path.join(REPO_ROOT, PY), 'utf8'),
     'tests/test_fx.py': FIXTURE_TEST,
     '.gitignore': '.ci/cache/\n__pycache__/\n',
+    'pyproject.toml': pytestIni(),
   };
   const r2 = (parseRegistry(reg).find((e) => e.id === R2) as SettingEntry).copies;
   for (const cp of r2) files[cp.file] = writeCopy(files[cp.file], cp, 200e9);

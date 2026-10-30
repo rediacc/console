@@ -449,6 +449,9 @@ jobs:
       - name: Secret supply
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_secret_supply.py
+      - name: Settings registry
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_settings_registry.py
       - name: Setup port parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/rediacc_ci/setup/port_parity.py

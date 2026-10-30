@@ -2126,6 +2126,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-settings-set-verb S4. Every copy of a tunable registered in .ci/config/settings.json resolves, holds the same number and sits in range; a hand edit to one copy fails here, and `npm run settings -- set` writes them all. NO `paths:`: always selected.
+    id: 'check:ci-settings-registry',
+    run: 'npm run check:ci-settings-registry',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_settings_registry.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Settings registry',
+    },
+  },
+  {
     // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
     id: 'check:ci-region-consistency',
     run: 'npm run check:ci-region-consistency',

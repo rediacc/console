@@ -2208,6 +2208,20 @@
     }
   },
   {
+    "id": "check:ci-settings-registry",
+    "run": "npm run check:ci-settings-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_settings_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Settings registry"
+    }
+  },
+  {
     "id": "check:ci-region-consistency",
     "run": "npm run check:ci-region-consistency",
     "gate": true,
