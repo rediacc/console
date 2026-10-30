@@ -622,12 +622,24 @@ def _x_controls(tally: controls.Controls) -> None:
         ("an empty item", "a/**,, b/**"),
         ("two globs without a comma", "a/** b/**"),
         ("none mixed into a list", "a/**, none -- nothing"),
+        ("the same glob twice (wl_planconc reads it as no Owns)", "a/**, a/**"),
+        ("an unclosed note paren", "src/x.ts (a, b only"),
     ):
         tally.check("D13 planted: %s" % label, _xcodes(_xwith("p00", Owns=value)), {"D13"})
     tally.check("D13 planted: no Owns", _xcodes(_xwith("p00", Owns="DROP")), {"D13"})
     tally.check(
         "D13 twin: none with a reason",
         _xcodes(_xwith("p00", Owns="none -- an operator-action plan")),
+        set(),
+    )
+    tally.check(
+        "D13 twin: a comma inside a note stays one item",
+        _xcodes(_xwith("p00", Owns="src/x.ts (a, b only), docs/y/**")),
+        set(),
+    )
+    tally.check(
+        "D13 twin: a comma inside a brace group stays one glob",
+        _xcodes(_xwith("p00", Owns="src/{a,b}.ts")),
         set(),
     )
     tally.check(
