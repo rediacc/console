@@ -42,40 +42,48 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 - Fold the agreement check into check:ci-docker-image-freshness. A network read in CI fails closed: 429, 5xx, a missing `digest` or a malformed `digest` all count as RED (unknown is never a pass), the same as the gate's listing rule. A digest-only ref with no tag on its line is listed as "untagged, agreement not checkable", with no verdict either way.
 
 ## Boxes
-- [ ] D1 Add scripts/lib/docker-hub.ts with `hubRepo`, `hubTagUrl` and `parseTagDigest` as described in the Decision. Replace docker.ts:103 and check-docker-image-freshness.ts:256 with `hubRepo`. Accept: `npx tsc --noEmit -p scripts/tsconfig.json && npm run check:ci-docker-image-freshness`
-- [ ] D2 Make the docker driver resolve the digest:
+- [x] D1 Add scripts/lib/docker-hub.ts with `hubRepo`, `hubTagUrl` and `parseTagDigest` as described in the Decision. Replace docker.ts:103 and check-docker-image-freshness.ts:256 with `hubRepo`. Accept: `npx tsc --noEmit -p scripts/tsconfig.json && npm run check:ci-docker-image-freshness`
+    (ticked) 2026-10-30T21:47:32Z by d778be9d: commit:64aa5ed73 scripts/lib/docker-hub.ts:44; npx tsc --noEmit -p scripts/tsconfig.json rc 0; check:ci-docker-image-freshness rc 0
+- [x] D2 Make the docker driver resolve the digest:
   - In `plan`, for each site with role `digest`, call `deps.json(hubTagUrl(...), image)` and pass `{ version, digest }` to planLeafSites. Throw `PlanRefused("<id>: Docker Hub gives no digest for <image>:<tag>; refusing to move the tag without it")` on null or a throw.
   - Also refuse a version site whose text has `@sha256:` when the entry has no digest site.
   - Add the `digest` site to image:proxy-node in .ci/config/pins.json and drop "tag only" from its name.
   - Accept: `npx tsx scripts/lib/pins/drivers/selftest.ts && npm run check:ci-pin-registry && npm run pins -- plan image:proxy-node`. The plan output must show both `version` and `digest` changes.
-- [ ] T1 Add the mutant `docker-keep-digest` to T8_MUTANTS (scripts/lib/pins/drivers/shared.ts:28-50, plus a doc line) and to the MUTANTS tuple in test_gate_pin_family_drivers.py. In docker.ts the mutant supplies the old digest instead of the resolved one. Add three new dockerCases controls using `entry('image:proxy-node')`:
+    (ticked) 2026-10-30T21:47:42Z by d778be9d: commit:64aa5ed73 scripts/lib/pins/drivers/docker.ts:19; selftest rc 0; check:ci-pin-registry rc 0; the plan on a 26.12.0 scratch tree shows version and digest changes
+- [x] T1 Add the mutant `docker-keep-digest` to T8_MUTANTS (scripts/lib/pins/drivers/shared.ts:28-50, plus a doc line) and to the MUTANTS tuple in test_gate_pin_family_drivers.py. In docker.ts the mutant supplies the old digest instead of the resolved one. Add three new dockerCases controls using `entry('image:proxy-node')`:
   - (a) A tree holds `FROM node:26.12.0-slim@sha256:<a*64>`, and a Hub stub answers the listing plus `/tags/26.13.0-slim` → `{digest: "sha256:<b*64>"}`. The plan must write exactly `FROM node:26.13.0-slim@sha256:<b*64>`.
   - (b) A stub with no `digest`, or with an `images[]`-only digest, must give a `PlanRefused` that names the tag.
   - (c) An entry whose version site sees `@sha256:` but which has no digest site is refused.
   - Accept: `npx tsx scripts/lib/pins/drivers/selftest.ts`. Its output must include `MUTANT docker-keep-digest turns 1+ control(s) red`. Also run `PINS_T8_MUTANT=docker-keep-digest npx tsx scripts/lib/pins/drivers/selftest.ts; test $? -eq 1 && npm run check:ci-standalone-selftests`
-- [ ] G1 Fold the agreement check into scripts/gates/check-docker-image-freshness.ts:
+    (ticked) 2026-10-30T21:47:49Z by d778be9d: commit:64aa5ed73 scripts/lib/pins/drivers/shared.ts:39; PINS_T8_MUTANT=docker-keep-digest rc 1; family-drivers pytest 13 passed; check:ci-standalone-selftests rc 0
+- [x] G1 Fold the agreement check into scripts/gates/check-docker-image-freshness.ts:
   - Extend `Pin` with `digest?` by parsing `@(sha256:[0-9a-f]{64})` after the tag in `parsePins` (:190). Do the same for compose `image: <img>:<tag>@sha256:` lines in the tracked compose files.
   - For each pin with a digest, fetch `hubTagUrl` with the same token-then-anonymous attempts as `listHubTags`. A mismatch is RED and names `npm run pins -- bump <leaf> --to <tag>`. A failed lookup is RED with its cause.
   - Update the header to state the fail-closed rule.
   - Add selftest controls: a pure `digestFindings(pins, answers)` function that flags a mismatch (the control proving the check can fail), flags a missing answer, and passes a match.
   - Accept: `npm run check:ci-docker-image-freshness` is green after R1. Before R1 it must be red on workers/proxy/Dockerfile:20. Run it at HEAD first and record that red as the control on the real tree.
-- [ ] R0 Add the same-tag re-digest to scripts/lib/pins/drivers/docker.ts (lead ruling 2026-10-30), because the core never moves to a target equal to the pinned tag and official images re-push a tag with a new index digest while it is the newest of its line:
+    (ticked) 2026-10-30T21:47:53Z by d778be9d: commit:64aa5ed73 scripts/gates/check-docker-image-freshness.ts:153; gate selftest 52/52; red on the stale proxy digest before R1, rc 0 after
+- [x] R0 Add the same-tag re-digest to scripts/lib/pins/drivers/docker.ts (lead ruling 2026-10-30), because the core never moves to a target equal to the pinned tag and official images re-push a tag with a new index digest while it is the newest of its line:
   - When a leaf has a `digest` site and Docker Hub's index digest for the PINNED tag differs from the file's, inspect offers that tag again, labelled `<image>:<tag>@<first 12 hex of the served digest>`, dated by the tag's last push and eligible only past the release-age window. The label carries no second colon, because status.ts `majorLineOf` reads the text after the last colon and a hex prefix starting with digits would read as a phantom newer major. The core reads the label as a major (soak.ts `majorOf` is null for `<image>:`), so it is taken only with `--major --reason`. A matching digest offers nothing.
   - Plan rewrites the digest alone, names only the digest change, plans no baseline drain, and refuses when Hub has re-pushed the tag again since the label was printed.
   - Mutant `docker-skip-redigest` in T8_MUTANTS and the MUTANTS tuple; dockerCases controls for the stale-digest re-digest, the digest-only rewrite, the clean case (a matching digest is current), a label Hub has moved again, and a re-push inside the window.
   - Accept: `npx tsx scripts/lib/pins/drivers/selftest.ts` prints `MUTANT docker-skip-redigest turns 1+ control(s) red`, then `PINS_T8_MUTANT=docker-skip-redigest npx tsx scripts/lib/pins/drivers/selftest.ts; test $? -eq 1 && npm run check:ci-standalone-selftests`
-- [ ] R1 Repair workers/proxy/Dockerfile through the fixed bump, not by hand:
+    (ticked) 2026-10-30T21:48:09Z by d778be9d: commit:64aa5ed73 scripts/lib/pins/drivers/docker.ts:27; PINS_T8_MUTANT=docker-skip-redigest rc 1 (4 controls red); selftest rc 0
+- [x] R1 Repair workers/proxy/Dockerfile through the fixed bump, not by hand:
   - Run `npm run pins -- bump image:proxy-node --to node:26.13.0-slim --major --reason "re-resolve the digest left at 26.12.0 by #d4b2a051"`. If the core refuses because the target equals the current tag, take the newest 26.x.y-slim candidate that `npm run pins -- status image:proxy-node` offers instead. Do not hand-edit to get round the refusal.
   - Reword the comment at workers/proxy/Dockerfile:16-18 so it names no version.
   - Accept: `docker buildx imagetools inspect $(sed -n 's/^FROM \(node:[^@]*\)@.*/\1/p' workers/proxy/Dockerfile) --format '{{.Manifest.Digest}}'` must equal the digest in the file. Then `npm run check:ci-docker-image-freshness && npm run pins -- verify`
-- [ ] S1 Sweep the siblings:
+    (ticked) 2026-10-30T21:47:36Z by d778be9d: commit:64aa5ed73 workers/proxy/Dockerfile:20; file digest equals docker buildx imagetools inspect node:26.13.0-slim; pins verify rc 0; freshness gate rc 0
+- [x] S1 Sweep the siblings:
   - Check that the ttyd digest at .devcontainer/Dockerfile:769 still equals `docker buildx imagetools inspect tsl0922/ttyd:1.7.8-alpine` (the tag named in the comment at :768). Check private/elite/docker-compose.yml:107 and :157 against the rustfs tag the elite stack records.
   - Record each result here. A mismatch gets its own worklist item; do not hand-edit here.
   - Confirm that G1 lists both refs as "untagged".
   - Accept: `docker buildx imagetools inspect tsl0922/ttyd:1.7.8-alpine --format '{{.Manifest.Digest}}' | grep -q 9355735b28a407fe7fb09597f6773d5550f2502259d22b350a2e2460125f9072 && npm run check:ci-unverified-downloads && npm run check:ci-docker-image-freshness`
+    (ticked) 2026-10-30T21:47:39Z by d778be9d: commit:64aa5ed73 agent/plans/PLAN-docker-pin-digest.md:80; ttyd 1.7.8-alpine and rustfs 1.0.0-beta.12 digests agree with their registries; G1 lists them as untagged
 
-- [ ] X1 Make the FROM scan of check:ci-docker-image-freshness read the git-visible Dockerfiles (`git ls-files --recurse-submodules` plus untracked files git does not ignore) instead of a walk that skipped every directory starting with a dot, so .ci/docker/*, .ci/media/tts and .devcontainer are judged. A pin it newly finds stale is listed for the lead's decision (a bump, or `--write-baseline --seed-image` for a pin deliberately held), never baselined by the writer.
+- [x] X1 Make the FROM scan of check:ci-docker-image-freshness read the git-visible Dockerfiles (`git ls-files --recurse-submodules` plus untracked files git does not ignore) instead of a walk that skipped every directory starting with a dot, so .ci/docker/*, .ci/media/tts and .devcontainer are judged. A pin it newly finds stale is listed for the lead's decision (a bump, or `--write-baseline --seed-image` for a pin deliberately held), never baselined by the writer.
   - Accept: `npx tsx scripts/gates/check-docker-image-freshness.ts --selftest && PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/gates/test_gate_pin_remedies.py`, then `npm run check:ci-docker-image-freshness` red on `.ci/docker/render/Dockerfile:20 node:24-bookworm-slim` until the lead decides image:ci-node, and green after.
+    (ticked) 2026-10-30T21:47:46Z by d778be9d: commit:64aa5ed73 scripts/gates/check-docker-image-freshness.ts:47; dot-directory Dockerfiles now scanned; image:ci-node held by its blocklist BLOCKER and seeded; gate rc 0
 
 ## Results (2026-10-30)
 - D1, D2, T1 and G1 are implemented and their controls were run red and green.

@@ -935,9 +935,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
         "199f79e5",
         "4e304e0a",
         "613db632",
@@ -946,8 +947,7 @@
         "9933d672",
         "9d30d422",
         "c1f1de21"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",
