@@ -1,18 +1,19 @@
-## SESSION d778be9d 2026-10-30T01:06:19Z
+## SESSION d778be9d 2026-10-30T01:37:18Z
 
-# d778be9d STATE (2026-10-30T01:58Z, branch 1023-1, operator away until morning, order #d910962b)
+# d778be9d STATE (2026-10-30T02:40Z, branch 1023-1, operator away until morning, order #d910962b)
 
 ## Big pieces
-- Review debt: clean as of 388cbcac9; newest commits (a9320f5a0, 08bc7d495) reviewed or in flight. Run wl_review.py --check.
-- Backup drills: VERIFIED receipt for tree 6b0813c7a954 after the checksum-header fix 388cbcac9 (217/217 + onprem).
-- Hostinger: nightly-hot bound and scheduled (Q10 ticked 08bc7d495), first timer run 2026-10-30 02:00 UTC with a 12M upload cap; Q12 checks that run (backup status --machine hostinger --config eu-remote, backup usage).
-- Store download L2, hardening L2, stable EU deploy #707f08ca: BLOCKED on the merge of 1023-1.
-- Tofu: T7 deferred #bf4d459d (Go consent gate); durable edge rollout deferred #fd6b526a; #a150016d blocked on it.
+- Review debt: settled through 82adcc34f (its review in flight); run wl_review.py --check and settle any new finding.
+- Drills VERIFIED (388cbcac9). Hostinger nightly-hot scheduled 02:00 UTC with a 12M cap (Q10 ticked); Q12 = check that run: backup status --machine hostinger and backup usage on eu-remote.
+- Tofu T1-T8 ticked (T7 on the phase proof, DEFAULT of #bf4d459d); cherryservers 1.6.1 mapping fixed and tofu-console tested (74b3aba79..82adcc34f).
+- Parked for the operator: #707f08ca merge + stable EU deploy (with store L2 and hardening L2 behind it), #fd6b526a durable edge rollout (#a150016d behind it).
+- Scheduled: #533d7a65 backup-meter L0 step 4 NOT-BEFORE 03:30Z; #53b05748 S6 sweep cron bbf56276 fires 2026-10-31 08:07 UTC.
+- #52978244 review hook misses: instrumented (cc77c6654, 336dd8ca6); the next miss prints "none due for <repo>, HEAD <sha>".
 
 ## Delegated
-- abe29b74eb3c37c5d #88d878bf cherryservers 1.6.1 mapping (provider-registry.json entry, tf-generator, tofu tests). Accept: tofu vitest, tofu-provider-pins --check, pins verify.
+- none running.
 
 ## Next action
-- On the cherryservers report: spot-check, commit by path, tick #88d878bf.
-- After 02:00 UTC + run time: Q12 evidence from backup status and usage; tick Q12 if only changed cells uploaded.
-- #52978244 (review hook misses; all three misses had a later cd ../.. in the same command), J6 #06ea7ea8.
+- wl_review.py --check; settle findings.
+- After the 02:00 run finishes: Q12 evidence, tick.
+- 03:30Z: run the #533d7a65 DEFAULT (read-only backup usage + R2 listing, record under L0).
