@@ -2691,8 +2691,8 @@
     "freeLicense": {
       "offerPrompt": "Este comando precisa de uma licença e não foi encontrada nenhuma sessão iniciada. Iniciar sessão ou continuar com uma licença gratuita?",
       "offerLogin": "Iniciar sessão numa conta",
-      "offerFree": "Continuar com uma licença gratuita (até 3 GB)",
-      "autoTaken": "Não há sessão iniciada, por isso é usada uma licença gratuita (até 3 GB, sem cópias de segurança alojadas). Crie uma conta para ter mais: {{url}}",
+      "offerFree": "Continuar com uma licença gratuita (até {{maxGb}} GB)",
+      "autoTaken": "Não há sessão iniciada, por isso é usada uma licença gratuita (até {{maxGb}} GB, sem cópias de segurança alojadas). Crie uma conta para ter mais: {{url}}",
       "issued": "Licença gratuita instalada para este repositório (até {{maxGb}} GB).",
       "noHostedBackup": "Uma licença gratuita não inclui cópias de segurança alojadas. Crie uma conta e escolha um plano pago para fazer cópia de segurança deste repositório: {{url}}"
     },

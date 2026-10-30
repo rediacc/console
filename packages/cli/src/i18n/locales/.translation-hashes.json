@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 2280,
-    "sourceCommit": "4a1899ae4acd95c908a6ea361694ba9b8b040dfe"
+    "sourceCommit": "98c8ff78b6f3ecc3c8884817fe242adfbee898bd"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2044,10 +2044,10 @@
     "errors.editor.nonzeroExit": "22291935",
     "errors.editor.notFound": "40d10a72",
     "errors.editor.spawnFailed": "4982c53f",
-    "errors.freeLicense.autoTaken": "f5a350f4",
+    "errors.freeLicense.autoTaken": "55293932",
     "errors.freeLicense.issued": "8e45eb9d",
     "errors.freeLicense.noHostedBackup": "ca781aac",
-    "errors.freeLicense.offerFree": "a123915e",
+    "errors.freeLicense.offerFree": "73cc2913",
     "errors.freeLicense.offerLogin": "7ae2e813",
     "errors.freeLicense.offerPrompt": "fe15d97f",
     "errors.invalidFunctionParams": "e00a56a1",

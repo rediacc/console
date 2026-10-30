@@ -2691,8 +2691,8 @@
     "freeLicense": {
       "offerPrompt": "Bu komut bir lisans gerektiriyor ve oturum açılmamış. Oturum açmak mı, yoksa ücretsiz bir lisansla devam etmek mi?",
       "offerLogin": "Bir hesapla oturum aç",
-      "offerFree": "Ücretsiz lisansla devam et (3 GB'a kadar)",
-      "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor (3 GB'a kadar, barındırılan yedekleme yok). Daha fazlası için hesap oluşturun: {{url}}",
+      "offerFree": "Ücretsiz lisansla devam et ({{maxGb}} GB'a kadar)",
+      "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor ({{maxGb}} GB'a kadar, barındırılan yedekleme yok). Daha fazlası için hesap oluşturun: {{url}}",
       "issued": "Bu depo için ücretsiz lisans kuruldu (en fazla {{maxGb}} GB).",
       "noHostedBackup": "Ücretsiz lisansta barındırılan yedekleme yoktur. Bu depoyu yedeklemek için bir hesap oluşturup ücretli bir plan seçin: {{url}}"
     },

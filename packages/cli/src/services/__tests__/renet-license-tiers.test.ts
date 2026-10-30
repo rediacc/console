@@ -78,11 +78,44 @@ describe('renet licence tiers (generated contract)', () => {
     });
 
     it('keeps build-out verbs out of pre-flight issuance', () => {
-      // Operator ruling 2026-10-30 (PLAN-renet-executor-tiered-license-check Q1, option A): build-out verbs need no licence, so renet maps them to none and the CLI issues nothing before them.
-      for (const name of ['datastore_create', 'datastore_fork', 'kube_install']) {
-        expect(getRenetFunctionLicenseTier(name)).toBe('none');
-        expect(isRepoProvisioningFunction(name)).toBe(false);
+      // Operator ruling 2026-10-30 (PLAN-renet-executor-tiered-license-check Q1, option A): build-out verbs need no licence, so renet maps them to none and the CLI issues nothing before them. All 23 entries the ruling moved are pinned.
+      const buildOut = [
+        'ceph_bootstrap_cluster',
+        'ceph_client_config_install',
+        'ceph_cluster_create',
+        'ceph_install_prerequisites',
+        'ceph_pool_create',
+        'datastore_adopt',
+        'datastore_attach',
+        'datastore_create',
+        'datastore_expand',
+        'datastore_fork',
+        'datastore_resize',
+        'datastore_snapshot_create',
+        'kube_apply',
+        'kube_fork_dest_prep',
+        'kube_identity_rewrite',
+        'kube_install',
+        'kube_join',
+        'kube_node_label',
+        'kube_prep_fork',
+        'kube_registry_up',
+        'kube_registry_wire',
+        'kube_upgrade',
+        'repository_autostart_disable',
+      ];
+      expect(buildOut).toHaveLength(23);
+      for (const name of buildOut) {
+        expect(getRenetFunctionLicenseTier(name), name).toBe('none');
+        expect(isRepoProvisioningFunction(name), name).toBe(false);
       }
+    });
+
+    it('leaves no create-tier verb outside the repository prefix', () => {
+      const outside = Object.entries(LICENSE_TIERS)
+        .filter(([name, entry]) => entry.tier === 'create' && !name.startsWith('repository_'))
+        .map(([name]) => name);
+      expect(outside).toEqual([]);
     });
 
     it('rejects repository verbs of every other tier, and unknown names', () => {

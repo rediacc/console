@@ -251,6 +251,19 @@ describe('backup manifests', () => {
     expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'aaaaaaaa', 'bbbbbbbb']);
   });
 
+  it('places a manifest with an unparseable createdAt last instead of scrambling the order', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        entry({ snapshotId: 'a-aaaaaaaa', createdAt: 'x' }),
+        entry({ snapshotId: 'b-bbbbbbbb', createdAt: '2026-10-01T10:00:00Z' }),
+        entry({ snapshotId: 'c-cccccccc', createdAt: '2026-10-02T10:00:00Z' }),
+      ],
+    });
+    await run(['manifests']);
+    const rows = JSON.parse(mockPrint.mock.calls[0]?.[0] as string);
+    expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'bbbbbbbb', 'aaaaaaaa']);
+  });
+
   it('json keeps every wire field, adds repo (full GUID never truncated, null when unknown) and sorts newest first', async () => {
     outputFormat.value = 'json';
     mockAccountServerFetch.mockResolvedValue({

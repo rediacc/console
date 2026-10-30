@@ -7,6 +7,9 @@ import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/renet-func
 import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 import type { ExecResult } from '../../src/utils/renet-functions/types';
 
+/** Single-quote `value` for a POSIX shell, so a quote inside it cannot end the quoting early. */
+const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
+
 const execAsync = promisify(exec);
 
 // Suite 18 (`Bridge Migrate` job): the free local rehearsal of the wave-L cross-DC demo. It boots a SECOND concurrent KVM group (renet12 / 192.168.112, disjoint VM IDs 5+51) beside the ambient group A (renet11 / 192.168.111) and migrates a running single-node k3s cluster from a group-A worker to a group-B worker across the two private LANs (the host routes between the renet11 and
@@ -167,7 +170,7 @@ test.describe
                 B_WORKER_IP,
                 options?.stdin === undefined
                   ? cmd
-                  : `printf %s ${Buffer.from(options.stdin).toString('base64')} | base64 -d | bash -c '${cmd}'`,
+                  : `printf %s ${Buffer.from(options.stdin).toString('base64')} | base64 -d | bash -c ${shellQuote(cmd)}`,
                 timeout
               ),
         { repositoryGuid: REPO, kind: 'grand', size: '6G', datastorePath: DATASTORE }

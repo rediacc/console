@@ -2691,8 +2691,8 @@
     "freeLicense": {
       "offerPrompt": "Für diesen Befehl wird eine Lizenz benötigt, aber es ist keine Anmeldung vorhanden. Anmelden oder mit einer kostenlosen Lizenz fortfahren?",
       "offerLogin": "Bei einem Konto anmelden",
-      "offerFree": "Mit einer kostenlosen Lizenz fortfahren (bis zu 3 GB)",
-      "autoTaken": "Keine Anmeldung gefunden, daher wird eine kostenlose Lizenz verwendet (bis zu 3 GB, ohne gehostete Backups). Mehr gibt es mit einem Konto: {{url}}",
+      "offerFree": "Mit einer kostenlosen Lizenz fortfahren (bis zu {{maxGb}} GB)",
+      "autoTaken": "Keine Anmeldung gefunden, daher wird eine kostenlose Lizenz verwendet (bis zu {{maxGb}} GB, ohne gehostete Backups). Mehr gibt es mit einem Konto: {{url}}",
       "issued": "Kostenlose Lizenz für dieses Repository installiert (bis zu {{maxGb}} GB).",
       "noHostedBackup": "Eine kostenlose Lizenz enthält keine gehosteten Backups. Legen Sie ein Konto an und wählen Sie einen kostenpflichtigen Plan, um dieses Repository zu sichern: {{url}}"
     },

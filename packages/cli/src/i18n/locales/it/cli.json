@@ -2691,8 +2691,8 @@
     "freeLicense": {
       "offerPrompt": "Questo comando richiede una licenza e non risulta alcun accesso. Accedere o continuare con una licenza gratuita?",
       "offerLogin": "Accedi a un account",
-      "offerFree": "Continua con una licenza gratuita (fino a 3 GB)",
-      "autoTaken": "Nessun accesso trovato, quindi viene usata una licenza gratuita (fino a 3 GB, senza backup ospitati). Crea un account per avere di più: {{url}}",
+      "offerFree": "Continua con una licenza gratuita (fino a {{maxGb}} GB)",
+      "autoTaken": "Nessun accesso trovato, quindi viene usata una licenza gratuita (fino a {{maxGb}} GB, senza backup ospitati). Crea un account per avere di più: {{url}}",
       "issued": "Licenza gratuita installata per questo repository (fino a {{maxGb}} GB).",
       "noHostedBackup": "Una licenza gratuita non include backup ospitati. Crea un account e scegli un piano a pagamento per eseguire il backup di questo repository: {{url}}"
     },

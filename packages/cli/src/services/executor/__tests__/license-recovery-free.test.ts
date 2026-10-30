@@ -21,6 +21,8 @@ const m = vi.hoisted(() => ({
   markRefreshAttempted: vi.fn(),
   resolveCtx: vi.fn(),
   getRepository: vi.fn(),
+  acquire: vi.fn(),
+  refreshIdentity: vi.fn(),
 }));
 
 vi.mock('../../../i18n/index.js', () => ({ t: (key: string) => key }));
@@ -33,7 +35,7 @@ vi.mock('../../account/free-license.js', () => ({
 vi.mock('../../account/license.js', () => ({
   issueRepoLicense: m.issueRepoLicense,
   refreshRepoLicensesBatch: m.refreshBatch,
-  refreshRepoLicenseIdentity: vi.fn(),
+  refreshRepoLicenseIdentity: m.refreshIdentity,
 }));
 vi.mock('../../account/license-preflight.js', () => ({
   isMachineSlotLimitError: () => false,
@@ -52,7 +54,9 @@ vi.mock('../../config/config-resources.js', () => ({
 }));
 vi.mock('../../config/state-write-failure.js', () => ({ reportStateWriteRefused: vi.fn() }));
 vi.mock('../../core/output.js', () => ({ outputService: { info: vi.fn(), warn: vi.fn() } }));
-vi.mock('../../machine/machine-connection.js', () => ({ machineConnections: {} }));
+vi.mock('../../machine/machine-connection.js', () => ({
+  machineConnections: { acquire: m.acquire },
+}));
 vi.mock('../../telemetry/telemetry.js', () => ({
   telemetryService: { trackEvent: vi.fn(), trackError: vi.fn() },
 }));
@@ -67,6 +71,7 @@ vi.mock('../repo-license-context.js', () => ({
 import {
   ensureRepoLicenseForProvisioning,
   maybeRefreshRepoLicenses,
+  refreshRepoIdentityFor,
   resolveLicenseFailure,
 } from '../license-recovery.js';
 
@@ -286,5 +291,26 @@ describe('recovery of a refused repo', () => {
       });
       expect(await recover(UP, 'expired')).toBeNull();
     });
+  });
+});
+
+describe('refreshRepoIdentityFor runs with no skip switch', () => {
+  it('resolves the licence context and re-issues the identity proofs, then releases the lease', async () => {
+    const release = vi.fn();
+    const lease = { sftp: SFTP, machine: MACHINE, sshPrivateKey: 'key', release };
+    m.acquire.mockResolvedValue(lease);
+    m.resolveCtx.mockResolvedValue(CTX);
+    await refreshRepoIdentityFor('repository_fork', 'm1', { tag: 'x' });
+    expect(m.refreshIdentity).toHaveBeenCalledWith(MACHINE, 'key', CTX, undefined, SFTP);
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
+  it('still releases the lease when the identity refresh throws', async () => {
+    const release = vi.fn();
+    m.acquire.mockResolvedValue({ sftp: SFTP, machine: MACHINE, sshPrivateKey: 'key', release });
+    m.resolveCtx.mockResolvedValue(CTX);
+    m.refreshIdentity.mockRejectedValue(new Error('boom'));
+    await expect(refreshRepoIdentityFor('repository_fork', 'm1', {})).rejects.toThrow('boom');
+    expect(release).toHaveBeenCalledTimes(1);
   });
 });

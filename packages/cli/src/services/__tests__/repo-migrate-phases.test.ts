@@ -16,6 +16,7 @@ import { type JobWaitDeps, waitForJob } from '../jobs/job-wait.js';
 import type { ClaimExec } from '../jobs/run-job.js';
 import { planStep, resolveStepHandler, toTicketSteps } from '../jobs/steps.js';
 import { type Ticket, TicketStore } from '../jobs/ticket-store.js';
+import { telemetryService } from '../telemetry/telemetry.js';
 
 const RESULT_LINE = JSON.stringify({
   migrate_result: {
@@ -129,7 +130,11 @@ describe('malformed phase entries', () => {
     info.mockImplementation(() => {
       throw new Error('sink');
     });
+    const trackError = vi.spyOn(telemetryService, 'trackError').mockImplementation(() => {});
     expect(() => renderMigrateResult(RESULT_LINE)).not.toThrow();
+    expect(trackError).toHaveBeenCalledWith(expect.objectContaining({ message: 'sink' }), {
+      operation: 'repo.migrate.report_result',
+    });
   });
 
   it('prints a genuine zero-byte cutover (renet reports 0 when nothing was left to send, -1 when unmeasured)', () => {

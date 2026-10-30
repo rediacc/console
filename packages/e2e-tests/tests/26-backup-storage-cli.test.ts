@@ -101,8 +101,8 @@ interface StoreVerifyVerdict {
  * one ("no installed repository license: no license data"), and the only thing
  * that installs one is the CLI's `ensureRepoLicenseForProvisioning`
  * (local-executor.ts). A bridge-created repo has no license, so the seed upload
- * failed before any assertion could run. `CliRunner` therefore runs with
- * `licensing: true` here, and `provisionRepo` VERIFIES the license landed with
+ * failed before any assertion could run. The CLI creates the repo here,
+ * and `provisionRepo` VERIFIES the license landed with
  * `renet repository license-status` rather than trusting the exit code.
  *
  * A CLI-created repo also mints its OWN guid, credential and network id, so

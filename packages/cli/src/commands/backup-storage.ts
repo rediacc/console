@@ -169,8 +169,10 @@ function registerBackupManifests(backup: Command): void {
         };
         const repoOf = (lineage: string): string => nameOf(lineage) ?? lineage.slice(0, 8);
         // Newest first, by parsed time: ISO strings with and without fractional seconds do not order correctly as text.
+        // An unparseable createdAt counts as the oldest, so the comparator never returns NaN and the order stays deterministic.
+        const createdMs = (createdAt: string): number => Date.parse(createdAt) || 0;
         const sorted = [...result.manifests].sort(
-          (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+          (a, b) => createdMs(b.createdAt) - createdMs(a.createdAt)
         );
 
         const format = getOutputFormat();

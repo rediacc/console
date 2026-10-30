@@ -2691,8 +2691,8 @@
     "freeLicense": {
       "offerPrompt": "Cette commande nécessite une licence, et aucune connexion n'a été trouvée. Se connecter, ou continuer avec une licence gratuite ?",
       "offerLogin": "Se connecter à un compte",
-      "offerFree": "Continuer avec une licence gratuite (jusqu'à 3 Go)",
-      "autoTaken": "Aucune connexion trouvée : une licence gratuite est utilisée (jusqu'à 3 Go, sans sauvegardes hébergées). Créez un compte pour aller plus loin : {{url}}",
+      "offerFree": "Continuer avec une licence gratuite (jusqu'à {{maxGb}} Go)",
+      "autoTaken": "Aucune connexion trouvée : une licence gratuite est utilisée (jusqu'à {{maxGb}} Go, sans sauvegardes hébergées). Créez un compte pour aller plus loin : {{url}}",
       "issued": "Licence gratuite installée pour ce dépôt (jusqu'à {{maxGb}} Go).",
       "noHostedBackup": "Une licence gratuite n'inclut pas de sauvegardes hébergées. Créez un compte et choisissez une offre payante pour sauvegarder ce dépôt : {{url}}"
     },

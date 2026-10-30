@@ -73,13 +73,6 @@ export interface CliRunnerOptions {
    * mutations.
    */
   readonly configName?: string;
-  /**
-   * Marks a suite that exercises CLI-side license issuance and recovery.
-   * Licensing is always enforced now; the runner no longer switches it off,
-   * so a suite that creates a repository must log its config in to an
-   * account server (chunkCliHarness.ts loginCli).
-   */
-  readonly licensing?: boolean;
   /** Extra environment for the spawned CLI (e.g. REDIACC_ALLOW_CLUSTER_OPS). */
   readonly env?: NodeJS.ProcessEnv;
 }

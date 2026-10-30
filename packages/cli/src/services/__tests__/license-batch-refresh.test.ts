@@ -605,6 +605,34 @@ describe('refreshRepoLicensesBatch', () => {
       expect(result.recoveryFailureMode).toBeNull();
     });
 
+    it('counts only issued, refreshed and unchanged as recovery, not an unrecognised status', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [{ repositoryGuid: X, status: 'pending' }],
+      });
+      const result = await refreshRepoLicensesBatch(
+        machine,
+        'dummy-key',
+        '/usr/bin/renet',
+        undefined,
+        X
+      );
+      expect(result.recoveryFailureMode).toBe('server_rejected_all');
+    });
+
+    it('matches the required GUID case-insensitively', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [{ repositoryGuid: X.toUpperCase(), status: 'unchanged' }],
+      });
+      const result = await refreshRepoLicensesBatch(
+        machine,
+        'dummy-key',
+        '/usr/bin/renet',
+        undefined,
+        X
+      );
+      expect(result.recoveryFailureMode).toBeNull();
+    });
+
     it('fails when the refused repo is absent from the server results', async () => {
       mockAccountServerFetch.mockResolvedValueOnce({
         results: [{ repositoryGuid: Y, status: 'refreshed', license }],

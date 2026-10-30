@@ -118,7 +118,7 @@ describe('resolveLicenseAuthority', () => {
     };
     const strings = Object.values(en.errors.freeLicense).join(' ');
     expect(strings).not.toMatch(/48|hour/i);
-    expect(en.errors.freeLicense.offerFree).toContain('3 GB');
+    expect(en.errors.freeLicense.offerFree).toContain('{{maxGb}} GB');
   });
 
   it('at a terminal, choosing the free licence asks once and skips the login', async () => {

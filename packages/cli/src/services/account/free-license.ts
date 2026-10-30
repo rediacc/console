@@ -77,7 +77,12 @@ export async function resolveLicenseAuthority(
   if (chosenAuthority === 'free') return 'free';
 
   if (autoTakesFree()) {
-    outputService.warn(t('errors.freeLicense.autoTaken', { url: freeLicenseSignupUrl() }));
+    outputService.warn(
+      t('errors.freeLicense.autoTaken', {
+        url: freeLicenseSignupUrl(),
+        maxGb: FREE_LICENSE_MAX_SIZE_GB,
+      })
+    );
     chosenAuthority = 'free';
     return 'free';
   }
@@ -85,7 +90,10 @@ export async function resolveLicenseAuthority(
   if (process.stdin.isTTY === true && process.stdout.isTTY === true) {
     const choice = await askChoice<'login' | 'free'>(t('errors.freeLicense.offerPrompt'), [
       { name: t('errors.freeLicense.offerLogin'), value: 'login' },
-      { name: t('errors.freeLicense.offerFree'), value: 'free' },
+      {
+        name: t('errors.freeLicense.offerFree', { maxGb: FREE_LICENSE_MAX_SIZE_GB }),
+        value: 'free',
+      },
     ]);
     if (choice === 'free') {
       chosenAuthority = 'free';

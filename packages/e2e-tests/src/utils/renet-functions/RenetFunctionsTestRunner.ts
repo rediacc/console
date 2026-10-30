@@ -1,5 +1,6 @@
 // RenetFunctionsTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
+import { userInfo } from 'node:os';
 import { promisify } from 'node:util';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import {
@@ -208,11 +209,8 @@ export class RenetFunctionsTestRunner {
 
   /** The ssh user the runner connects as on the bridge and the targets. */
   private sshUser(): string {
-    const user = process.env.USER;
-    if (!user) {
-      throw new Error('USER environment variable is not set');
-    }
-    return user;
+    // USER is unset in some non-login shells (cron, containers); the account database still answers.
+    return process.env.USER || userInfo().username;
   }
 
   /** The mesh key renet's `sudo` child must use for cross-VM transfers (root has none of ours). */
@@ -662,15 +660,24 @@ export class RenetFunctionsTestRunner {
     }
     // The verb runs under `sudo -n`, so renet's inner ssh would otherwise connect as root with
     // root's keys. Name the bridge's ssh user and its mesh key explicitly.
+    flags += this.buildCrossVMFlags(opts);
+
+    return flags;
+  }
+
+  /** Source and destination machine flags; only the verbs that open an ssh connection to another VM accept the user and key flags. */
+  private buildCrossVMFlags(opts: TestFunctionOptions): string {
+    const crossVM = CROSS_VM_FUNCTIONS.has(opts.function);
+    const identity = ` --ssh-key ${this.sshKeyPath()}`;
+    let flags = '';
     if (opts.sourceMachine) {
       flags += ` --source-machine ${opts.sourceMachine}`;
-      flags += ` --source-user ${this.sshUser()} --ssh-key ${this.sshKeyPath()}`;
+      if (crossVM) flags += ` --source-user ${this.sshUser()}${identity}`;
     }
     if (opts.destMachine) {
       flags += ` --dest-machine ${opts.destMachine}`;
-      flags += ` --dest-user ${this.sshUser()} --ssh-key ${this.sshKeyPath()}`;
+      if (crossVM) flags += ` --dest-user ${this.sshUser()}${identity}`;
     }
-
     return flags;
   }
 
@@ -970,7 +977,7 @@ export class RenetFunctionsTestRunner {
 
   /**
    * Cross-VM verbs run under `sudo -n`, where the invoking user's ssh keys are not discovered:
-   * give the vault an explicit `ssh_key` param (the destination user already rides in extra_machines).
+   * give the vault an explicit `ssh_key` param, plus `dest_user` / `source_user` params when a machine is named without one.
    */
   private withCrossVMSSHKey(functionName: string, vaultJSON: string): string {
     if (!CROSS_VM_FUNCTIONS.has(functionName)) return vaultJSON;

@@ -264,9 +264,7 @@ test.describe
         await CliRunner.resetConfig(CFG);
         cli = CliRunner.create({
           configName: CFG,
-          // MUST be on: the default REDIACC_SKIP_MACHINE_ACTIVATION=1 removes
-          // issuance and recovery outright, which is the behaviour under test.
-          licensing: true,
+          // Issuance and recovery are always enforced, which is the behaviour under test.
           env: { ...CLUSTER_OPS_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
         });
         await cli.initConfig(SSH_KEY);
@@ -446,7 +444,6 @@ test.describe
         await CliRunner.resetConfig(CFG);
         cli = CliRunner.create({
           configName: CFG,
-          licensing: true,
           env: { ...CLUSTER_OPS_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
         });
         await cli.initConfig(SSH_KEY);

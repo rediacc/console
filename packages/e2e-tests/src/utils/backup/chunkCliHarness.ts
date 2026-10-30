@@ -137,7 +137,6 @@ export const loginCli = async (cfg: string): Promise<CliRunner> => {
   await CliRunner.resetConfig(cfg);
   const cli = CliRunner.create({
     configName: cfg,
-    licensing: true,
     env: { REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
   });
   await cli.initConfig(SSH_KEY);

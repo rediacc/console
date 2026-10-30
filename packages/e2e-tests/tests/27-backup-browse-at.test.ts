@@ -852,7 +852,6 @@ test.describe
         try {
           const sinkCli = CliRunner.create({
             configName: CFG,
-            licensing: true,
             env: { REDIACC_ACCOUNT_SERVER: sinkUrl },
           });
           // The stored token's serverUrl outranks REDIACC_ACCOUNT_SERVER for every account fetch (account-client.ts resolveServerUrl), so the env alone never redirects a logged-in config. The redirect is the stored token file, restored in finally.
