@@ -78,6 +78,34 @@ def _repo() -> str:
 # --------------------------------------------------------------------------- commit-msg ---------------------------------------------------------------------------
 
 
+# A CLAUDE SESSION LINK OR SESSION TRAILER (operator incident 2026-10-30, PR-TASK 9f92c43e): console is PUBLIC, and 80 commits carried `Claude-Session: https://claude.ai/code/session_<id>`, four of them pushed. The pre-bash guard `block_commit_meta` refuses it in an agent's own commands; these two hooks refuse it for a commit or a push made any other way. The two patterns are
+# the guard's own (`block_commit_meta.SESSION_TRAILER` / `SESSION_LINK`), copied because this module is loaded by file and cannot import the guard package; `test-block_commit_meta.py` fails if the copies differ. `CLAUDE_FOOTER` is the attribution footer, line-anchored the way the guard anchors it, and narrowed to `[Claude` so an honest "Generated with npm" line is not refused.
+SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
+SESSION_LINK = (
+    r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/-]?[A-Za-z0-9]"
+)
+CLAUDE_FOOTER = r"^[ \t]*(?:[^0-9A-Za-z\s]{0,4}[ \t]*)?Generated with \[?Claude"
+SESSION_LEAK = re.compile(
+    "%s|%s|%s" % (SESSION_TRAILER, SESSION_LINK, CLAUDE_FOOTER), re.IGNORECASE | re.MULTILINE
+)
+SESSION_ADVICE = (
+    "console is a PUBLIC repository: never put a Claude session link (claude.ai/code/session_...,\n"
+    "claude.ai/chat/..., an artifact or share link), a Claude-Session trailer or the\n"
+    "Generated-with-Claude-Code footer in a commit message. Strip that line."
+)
+SCISSORS = "# ------------------------ >8 ------------------------"
+
+
+def session_leak(msg: str) -> str:
+    """The first line of `msg` that carries a session link, a session trailer or the footer, "" when none."""
+    match = SESSION_LEAK.search(msg)
+    if not match:
+        return ""
+    start = msg.rfind("\n", 0, match.start()) + 1
+    end = msg.find("\n", match.end())
+    return msg[start : end if end >= 0 else len(msg)].strip()[:200]
+
+
 def commit_msg(argv: list[str]) -> int:
     if not argv:
         return 0
@@ -85,7 +113,12 @@ def commit_msg(argv: list[str]) -> int:
         raw = pathlib.Path(argv[0]).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return 0
+    # `git commit -v` appends the diff below the scissors line, and git drops it; a diff of THIS file would otherwise read as the message carrying what it bans.
+    raw = raw.split("\n" + SCISSORS, 1)[0] if not raw.startswith(SCISSORS) else ""
     msg = "\n".join(line for line in raw.split("\n") if not line.startswith("#"))
+    leaked = session_leak(msg)
+    if leaked:
+        return _refuse("the message carries `%s`.\n%s" % (leaked, SESSION_ADVICE))
     cfg = cp.load_config(CONSOLE_ROOT)
     found = cp.skip_tokens(msg, cfg)
     if found:
@@ -328,11 +361,70 @@ def _refuse_lines(notes: dict[int, str], refused: list[list[str]], message: str)
     return _refuse(message)
 
 
+def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str], str]:
+    """`(offenders, unchecked)`: each outgoing commit or annotated tag whose message carries a session link, a session trailer or the footer (`session_leak`), as `<sha12> <subject>: <line>`, and a non-empty `unchecked` when the range could not be read.
+
+    OUTGOING MEANS NO REMOTE HAS IT YET: each pushed tip's commits `--not --remotes`, so a commit some remote-tracking ref already holds (the four that reached GitHub before this hook existed) does not block every later push, while every NEW one does, whichever remote it is going to. A deleted ref sends nothing. An unreadable range is UNCHECKED and refused by the caller: an unknown is not a pass.
+    """
+    if not repo:
+        return [], "the repository cannot be read"
+    offenders: list[str] = []
+    tips: list[str] = []
+    for _local_ref, local_oid, remote_ref, _remote_oid in lines:
+        if local_oid == cp.ZERO_OID:
+            continue
+        kind = cp.git(["cat-file", "-t", local_oid], cwd=repo)
+        if kind is None:
+            return [], "`git cat-file -t %s` failed" % local_oid[:12]
+        if kind == "tag":
+            body = cp.git(["cat-file", "tag", local_oid], cwd=repo)
+            if body is None:
+                return [], "the tag object %s cannot be read" % local_oid[:12]
+            leaked = session_leak(body.split("\n\n", 1)[-1])
+            if leaked:
+                offenders.append("%s %s: %s" % (local_oid[:12], remote_ref, leaked))
+        tips.append(local_oid)
+    if not tips:
+        return offenders, ""
+    log = cp.git(["log", "--format=%H%x1f%s%x1f%B%x1e", *tips, "--not", "--remotes"], cwd=repo)
+    if log is None:
+        return [], "`git log <tips> --not --remotes` failed"
+    for record in log.split("\x1e"):
+        fields = record.strip("\n").split("\x1f", 2)
+        if len(fields) != 3:
+            continue
+        sha, subject, body = fields
+        leaked = session_leak(body)
+        if leaked:
+            offenders.append("%s %s: %s" % (sha[:12], subject[:60], leaked))
+    return offenders, ""
+
+
 def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
     remote = argv[0] if argv else "origin"
     lines = [line.split() for line in stdin.split("\n") if len(line.split()) == 4]
+    # FIRST, before every admission below (the mirror push, a release run): none of them makes a session link fit to publish.
+    leaks, unchecked = outgoing_session_leaks(repo, lines)
+    if unchecked:
+        return _refuse(
+            "UNCHECKED: the outgoing commit messages could not be read for Claude session links (%s).\n"
+            "An unknown is not a pass." % unchecked
+        )
+    if leaks:
+        return _refuse(
+            "%d outgoing commit(s) carry a Claude session link, Claude-Session trailer or\n"
+            "Claude Code footer:\n  %s%s\n%s\n"
+            "These commits are not on any remote yet: reword each one (a history rewrite of the\n"
+            "unpushed range is the operator's call) before this push can go."
+            % (
+                len(leaks),
+                "\n  ".join(leaks[:20]),
+                "\n  ... and %d more" % (len(leaks) - 20) if len(leaks) > 20 else "",
+                SESSION_ADVICE,
+            )
+        )
     if remote == MIRROR_REMOTE and any(line[2] == "refs/heads/main" for line in lines):
         reason = _mirror_push_refusal(repo, argv[1] if len(argv) > 1 else "", lines)
         if reason:

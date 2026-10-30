@@ -82,6 +82,21 @@ CLAUDE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+# A CLAUDE SESSION LINK OR SESSION TRAILER (operator incident 2026-10-30, PR-TASK 9f92c43e): console is PUBLIC, and agent commits carried a session trailer linking a private Claude session, four of them pushed. A SEPARATE pattern rather than a fifth alternative above, because `CLAUDE_PATTERN` is pinned byte-for-byte to the retired twin's recorded ERE by
+# `test_quality_claude_attribution.py`, and widening it would break that differential for a rule the twin never had. The two halves are the pre-bash guard's own (`.claude/rediacc_hooks/guards/block_commit_meta.py`) and the git hooks' (`githooks.py`), and `test-block_commit_meta.py` fails if the three copies differ. A trailer needs its separator and a link needs an id
+# character, so a PR body that NAMES the rule (`the Claude-Session trailer`, `claude.ai/code/session_<id>`) is not a finding.
+SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
+SESSION_LINK = (
+    r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/-]?[A-Za-z0-9]"
+)
+SESSION_PATTERN = re.compile("%s|%s" % (SESSION_TRAILER, SESSION_LINK), re.IGNORECASE)
+
+
+def attributed(text: str) -> bool:
+    """Does `text` carry an attribution marker (`CLAUDE_PATTERN`) or a session link or trailer (`SESSION_PATTERN`)?"""
+    return bool(CLAUDE_PATTERN.search(text) or SESSION_PATTERN.search(text))
+
+
 # The author check is deliberately broader than the attribution pattern: any author whose NAME or EMAIL mentions either brand is an attribution regardless of how the message is worded.
 AUTHOR_PATTERN = re.compile("(claude|anthropic)", re.IGNORECASE)
 
@@ -140,7 +155,7 @@ def first_match(text: str) -> str:
     A LINE, not the matched substring. The twin interpolates it whole into the issue text, so a port that reported only the matched fragment would produce a different message for the same PR.
     """
     for line in text.split("\n"):
-        if CLAUDE_PATTERN.search(line):
+        if attributed(line):
             return line
     return ""
 
@@ -221,7 +236,7 @@ def main(argv: list[str] | None = None) -> int:
     if not ok:
         return probe_failed()
 
-    if CLAUDE_PATTERN.search(pr_body):
+    if attributed(pr_body):
         issues.append('PR description contains: "%s"' % first_match(pr_body))
 
     # Check commit messages
@@ -295,7 +310,7 @@ def main(argv: list[str] | None = None) -> int:
     for row in rows:
         sha = str(row.get("sha") or "")
         message = str(row.get("message") or "")
-        if CLAUDE_PATTERN.search(message):
+        if attributed(message):
             issues.append('Commit %s contains: "%s"' % (sha[0:7], first_match(message)))
 
     # Check commit authors
@@ -329,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print("  git rebase -i HEAD~N  # where N is number of commits")
     print("  # Change 'pick' to 'reword' for commits to edit")
-    print("  # Remove %s lines and save" % _TRAILER)
+    print("  # Remove %s lines, session links and Claude-Session lines, and save" % _TRAILER)
     print("  git push --force")
     print()
     print("To fix PR description:")
@@ -383,6 +398,29 @@ def selftest() -> int:
             "MIRROR: a general mention is NOT attribution: %r" % body[:34],
             CLAUDE_PATTERN.search(body),
         )
+
+    # -- the session half (incident 2026-10-30), both directions -------------
+    _session = "Claude-" + "Session"
+    _link = "https://claude" + ".ai/code/session_01AbCd"
+    for body in (
+        "%s: %s" % (_session, _link),
+        "claude-code-%s: x" % "session",
+        "see %s" % _link,
+        "https://claude" + ".ai/chat/1a2b-3c4d",
+        "https://claude" + ".ai/share/ab1",
+    ):
+        ctl.truthy("PLANT: a session leak is detected in %r" % body[:34], attributed(body))
+    for body in (
+        "the %s trailer is banned" % _session,
+        "never paste claude.ai/code/session_<id> links",
+        "see https://claude.com/claude-code",
+    ):
+        ctl.falsy("MIRROR: naming the session rule is NOT a leak: %r" % body[:34], attributed(body))
+    ctl.check(
+        "the reported session match is the whole LINE",
+        first_match("intro\n%s: %s\ntail" % (_session, _link)),
+        "%s: %s" % (_session, _link),
+    )
 
     # -- the author check, both directions ----------------------------------
     ctl.truthy(

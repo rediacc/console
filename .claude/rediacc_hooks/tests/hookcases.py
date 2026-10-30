@@ -5632,4 +5632,33 @@ STATIC: list[Case] = [
         ),
         "inline-workflow-run: non-workflow file ok",
     ),
+    # 2026-10-30 (PR-TASK 9f92c43e): console is public, and a Claude session link or session trailer is refused on every publishing channel, while the audit shapes stay legal. Assembled, so no line here is itself one.
+    case(
+        "check_out 2 guards/block_commit_meta.py",
+        bash_json(
+            "git commit -m fix -m 'Claude-" + "Session: https://claude" + ".ai/code/session_01Ab'"
+        ),
+        "commit-meta session: a session trailer in a commit is refused, naming the public repository",
+        "PUBLIC repository",
+    ),
+    case(
+        "check 2 guards/block_commit_meta.py",
+        bash_json("gh pr comment 5 -b 'see https://claude" + ".ai/chat/1a2b-3c4d'"),
+        "commit-meta session: a chat link in a PR comment is refused",
+    ),
+    case(
+        "check 2 guards/block_commit_meta.py",
+        bash_json("gh api repos/o/r/issues/5/comments -f body='claude" + ".ai/code/session_01Ab'"),
+        "commit-meta session: a session link in a gh api comment field is refused",
+    ),
+    case(
+        "check 0 guards/block_commit_meta.py",
+        bash_json("git log --oneline --grep claude" + ".ai"),
+        "commit-meta session CONTROL: searching the log for claude.ai is an audit",
+    ),
+    case(
+        "check 0 guards/block_commit_meta.py",
+        bash_json("grep -rn 'Claude-" + "Session:' docs/"),
+        "commit-meta session CONTROL: grepping for the session trailer is an audit",
+    ),
 ]
