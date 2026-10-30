@@ -228,8 +228,8 @@ async function readActivatedMachineId(machineName: string): Promise<string | und
 
 /**
  * Free the machine's activation slot on the account server. Best effort: the machine is already
- * destroyed, so a failure warns and never fails the deprovision. A 404 means no activation held
- * the slot, which is the state wanted.
+ * destroyed, so a failure warns and never fails the deprovision. The route's own 404 means no
+ * activation held the slot, which is the state wanted.
  */
 async function releaseActivationSlot(machineName: string, machineId: string): Promise<void> {
   try {
@@ -238,7 +238,10 @@ async function releaseActivationSlot(machineName: string, machineId: string): Pr
       { method: 'POST' }
     );
   } catch (error) {
-    if ((error as { status?: number } | null)?.status === 404) return;
+    // Only the route's own JSON 404 (it carries a code) means no activation held the slot; a
+    // plain-text router 404 means the server lacks the route and the slot stays held.
+    const failure = error as { status?: number; code?: string } | null;
+    if (failure?.status === 404 && failure.code) return;
     outputService.warn(
       t('commands.machine.deprovision.deactivateFailed', {
         name: machineName,

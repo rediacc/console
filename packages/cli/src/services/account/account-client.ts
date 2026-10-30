@@ -447,7 +447,7 @@ async function accountServerFetchOnce<T>(
   const { status, body } = await openResponse(aesKey, responseEnvelope);
 
   // Parse the decrypted response
-  const parsed: T & { error?: string; code?: string } = body ? JSON.parse(body) : {};
+  const parsed: T & { error?: string; code?: string } = parseInnerBody<T>(body, status);
 
   // Handle CLI upgrade required (426). Pre-release builds (e.g. "0.0.0-dev") are developer artifacts, their channel governs suitability, not the server's numeric min-version gate. Swallow the 426 silently so callers treat it as a no-op instead of printing a nonsensical "upgrade your dev build" banner.
   if (status === 426) {
@@ -467,6 +467,26 @@ async function accountServerFetchOnce<T>(
   }
 
   return parsed;
+}
+
+const NON_JSON_SNIPPET_MAX = 120;
+
+/**
+ * Parse the decrypted inner body. A router-level reply (Hono's plain "404 Not Found" for a route
+ * the deployed server lacks) is text, not JSON; it surfaces as an error carrying the HTTP status
+ * and a body snippet instead of a bare JSON.parse message with no status.
+ */
+function parseInnerBody<T>(body: string, status: number): T & { error?: string; code?: string } {
+  if (!body) return {} as T & { error?: string; code?: string };
+  try {
+    return JSON.parse(body) as T & { error?: string; code?: string };
+  } catch {
+    const snippet = body.trim().slice(0, NON_JSON_SNIPPET_MAX);
+    throw createAccountError(
+      `Account server returned HTTP ${status} with a non-JSON body: ${snippet}`,
+      status
+    );
+  }
 }
 
 /** The server key and the fetch a tunnel request to `serverUrl` uses: the test seams when given, else that server's key. */

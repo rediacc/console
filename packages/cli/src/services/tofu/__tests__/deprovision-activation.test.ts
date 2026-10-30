@@ -81,10 +81,23 @@ describe('destroyCloudMachine releases the account activation slot', () => {
 
   it('treats a 404 not-activated as done', async () => {
     h.fetch.mockRejectedValue(
-      Object.assign(new Error('Machine is not activated'), { status: 404 })
+      Object.assign(new Error('Machine is not activated'), { status: 404, code: 'NOT_FOUND' })
     );
     await destroyCloudMachine('box');
     expect(h.warn).not.toHaveBeenCalled();
+  });
+
+  it('warns on a code-less 404: the server lacks the route, the slot stays held', async () => {
+    h.fetch.mockRejectedValue(
+      Object.assign(
+        new Error('Account server returned HTTP 404 with a non-JSON body: 404 Not Found'),
+        {
+          status: 404,
+        }
+      )
+    );
+    await destroyCloudMachine('box');
+    expect(h.warn).toHaveBeenCalledTimes(1);
   });
 
   it('warns on any other failure and the deprovision still succeeds', async () => {
