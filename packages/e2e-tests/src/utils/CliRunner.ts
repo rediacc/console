@@ -74,17 +74,10 @@ export interface CliRunnerOptions {
    */
   readonly configName?: string;
   /**
-   * Keep CLI-side license issuance and recovery ENABLED.
-   *
-   * The default sets `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which is right only
-   * for a suite that creates no repository through the CLI (the one licensed
-   * renet refuses an unlicensed create with exit 10) — and it does not merely
-   * quieten licensing, it removes it: `ensureRepoLicenseForProvisioning`
-   * returns immediately (`local-executor.ts:1095-1097`), so no slot is ever
-   * claimed, and `needsLicenseRecovery` refuses to act on renet's exit 10
-   * (`local-executor.ts:760`), so nothing is ever reissued. A licensing suite
-   * that inherited the default would assert against a system with the
-   * behaviour under test switched off.
+   * Marks a suite that exercises CLI-side license issuance and recovery.
+   * Licensing is always enforced now; the runner no longer switches it off,
+   * so a suite that creates a repository must log its config in to an
+   * account server (chunkCliHarness.ts loginCli).
    */
   readonly licensing?: boolean;
   /** Extra environment for the spawned CLI (e.g. REDIACC_ALLOW_CLUSTER_OPS). */
@@ -115,15 +108,11 @@ export class CliRunner {
     const configName = options.configName ?? E2E_CLI_CONFIG;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      // Issuance off unless the suite opts in. renet is always licence-enforcing (agent/plans/PLAN-production-key-only.md), so a suite that creates a repository through the CLI opts in with `licensing: true` AND logs this config in to an account server (chunkCliHarness.ts loginCli); without a login, issuance has no server to ask either way. CI shells have no agent ancestor, so the REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
-      ...(options.licensing ? {} : { REDIACC_SKIP_MACHINE_ACTIVATION: '1' }),
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',
       REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
       ...options.env,
     };
-    // An inherited value would defeat `licensing: true` silently, since the spread above only omits the key rather than clearing it.
-    if (options.licensing) delete env.REDIACC_SKIP_MACHINE_ACTIVATION;
 
     if (process.env.E2E_CLI_BIN) {
       return new CliRunner(process.env.E2E_CLI_BIN, [], env, undefined, configName);

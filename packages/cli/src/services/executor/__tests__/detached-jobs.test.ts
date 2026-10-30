@@ -218,7 +218,6 @@ function baseMocks(): void {
   vi.clearAllMocks();
   mockExecStreaming.mockReset();
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
-  delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   mockGetLocalConfig.mockResolvedValue({
     sshPrivateKey: 'PRIVATE_KEY',
     sshPublicKey: 'PUBLIC_KEY',

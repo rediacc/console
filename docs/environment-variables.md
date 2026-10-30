@@ -48,7 +48,6 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 
 | Variable | Purpose |
 |---|---|
-| `REDIACC_SKIP_MACHINE_ACTIVATION` | Skips CLI-side license issuance/recovery. Tutorial/test infra only. |
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | Disables the repo-context file-write guard. Tutorial/test infra only. |
 | `REDIACC_YES` | Assume-yes prompt bypass (mirror of `--yes`). |
 | `REDIACC_NO_DAEMON` | Forces the direct execution path (no executor daemon). |

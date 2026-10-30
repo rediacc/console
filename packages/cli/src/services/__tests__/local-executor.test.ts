@@ -737,15 +737,6 @@ describe('localExecutorService create/fork licensing flow', () => {
     expect(mockClose).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshIdentityFor is a no-op when machine activation is skipped', async () => {
-    process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
-    await localExecutorService.refreshIdentityFor('repository_create', 'hostinger', {
-      repository: 'myrepo',
-    });
-    expect(mockConnect).not.toHaveBeenCalled();
-    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
-  });
-
   // Bug #46: `kubeCluster` used to ALSO rewrite machineName to the cluster's control node. KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never reroutes the machine either: the caller's derived machine must stand, or every volume-level op on a k8s repo (trim, diff, commit, repo up's LUKS mount) runs on the control node instead of the host that mounts the datastore.
   describe('bug #46: kubeCluster injects KUBECONFIG but never reroutes the machine', () => {
     it('runs on the caller-derived machine (the datastore attach host), not the control node', async () => {

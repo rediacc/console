@@ -54,23 +54,20 @@ if [[ "${1:-}" == "--native" ]]; then
     PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.native "$@"
 fi
 
-if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
-    # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
-    # but ONLY when nothing is already installed there. A real SEA binary (from
-    # `./rdc.sh --native`) installs to ~/.local/share/rediacc/bin/rdc and
-    # points this symlink at it; forcibly repointing it back to the wrapper would
-    # silently undo that install. So we never overwrite an existing rdc on PATH —
-    # we only bootstrap the link when it is entirely absent (no file, no symlink,
-    # not even a dangling one).
-    _local_bin="$HOME/.local/bin"
-    mkdir -p "$_local_bin"
-    if [[ ! -e "$_local_bin/rdc" && ! -L "$_local_bin/rdc" ]]; then
-        ln -s "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
-    fi
-    unset _local_bin
-else
-    log_step "Preparing CLI development environment"
+# Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
+# but ONLY when nothing is already installed there. A real SEA binary (from
+# `./rdc.sh --native`) installs to ~/.local/share/rediacc/bin/rdc and
+# points this symlink at it; forcibly repointing it back to the wrapper would
+# silently undo that install. So we never overwrite an existing rdc on PATH —
+# we only bootstrap the link when it is entirely absent (no file, no symlink,
+# not even a dangling one).
+_local_bin="$HOME/.local/bin"
+mkdir -p "$_local_bin"
+if [[ ! -e "$_local_bin/rdc" && ! -L "$_local_bin/rdc" ]]; then
+    ln -s "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
 fi
+unset _local_bin
+log_step "Preparing CLI development environment"
 
 # Ensure the toolchain is current (node floor, deps, packages, CLI bundle, renet; the
 # order is core/local_common.py prepare_cli). All build/progress output goes to STDERR:
@@ -159,10 +156,8 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # The only export the dev path adds: select the "dev" config (server URL and E2E key live inside it).
     export REDIACC_CONFIG=dev
 
-    if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
-        log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
-        log_step "Starting CLI (dev config — $dev_server)"
-    fi
+    log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
+    log_step "Starting CLI (dev config — $dev_server)"
 else
     log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
     log_step "Starting CLI (config $(selected_config_name "$@"))"

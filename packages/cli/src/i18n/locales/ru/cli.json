@@ -2683,8 +2683,7 @@
       "preflightTokenNotReady": "Токен подписки не готов. Выполните: rdc subscription login. Развёртывание на {{machine}} пропущено.",
       "recoveryFailedNoKnownRepos": "На {{machine}} найдены репозитории, но ни один из них не отслеживается в локальной конфигурации. Просмотрите отслеживаемые репозитории с помощью `rdc repo list`, затем повторите попытку.",
       "recoveryFailedServerRejected": "Сервер аккаунта отклонил выдачу лицензии для репозитория на \"{{machine}}\". Первая ошибка: {{error}}. Выполните: rdc subscription refresh --repo <repo-ref> для получения подробностей.",
-      "recoveryFailedTokenNotReady": "Токен подписки не готов. Выполните: rdc subscription login, затем повторите попытку.",
-      "skipActivationHint": "На одноразовой машине можно полностью пропустить активацию, задав REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "recoveryFailedTokenNotReady": "Токен подписки не готов. Выполните: rdc subscription login, затем повторите попытку."
     },
     "machineNotFound": "Машина \"{{name}}\" не найдена",
     "machineRequired": "Требуется имя машины. Используйте --machine <name>",

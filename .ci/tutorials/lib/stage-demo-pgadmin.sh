@@ -13,7 +13,6 @@
 
 set -euo pipefail
 export REDIACC_SKIP_FILE_WRITE_GUARD=1
-export REDIACC_SKIP_MACHINE_ACTIVATION=1
 M="${TUTORIAL_MACHINE_NAME:-machine-11}"
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../apps/demo-pgadmin" && pwd)"
 

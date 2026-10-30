@@ -2683,8 +2683,7 @@
       "preflightTokenNotReady": "O token de subscrição não está pronto. Execute: rdc subscription login. A implementação em {{machine}} foi ignorada.",
       "recoveryFailedNoKnownRepos": "Foram encontrados repositórios em {{machine}}, mas nenhum está registado na sua configuração local. Liste os seus repositórios rastreados com `rdc repo list`, depois tente novamente.",
       "recoveryFailedServerRejected": "O servidor de conta rejeitou a emissão de licença para o repositório em \"{{machine}}\". Primeiro erro: {{error}}. Execute: rdc subscription refresh --repo <repo-ref> para obter detalhes.",
-      "recoveryFailedTokenNotReady": "O seu token de subscrição não está pronto. Execute: rdc subscription login, depois tente novamente.",
-      "skipActivationHint": "Numa máquina descartável, pode ignorar a ativação por completo com REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "recoveryFailedTokenNotReady": "O seu token de subscrição não está pronto. Execute: rdc subscription login, depois tente novamente."
     },
     "machineNotFound": "Máquina \"{{name}}\" não encontrada",
     "machineRequired": "Nome da máquina necessário. Use --machine <name>",

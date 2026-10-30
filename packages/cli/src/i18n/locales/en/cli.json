@@ -2661,7 +2661,6 @@
       "recoveryFailedNoKnownRepos": "Repositories were found on {{machine}} but none are tracked in your local config. List your tracked repos with `rdc repo list`, then retry.",
       "recoveryFailedServerRejected": "The account server rejected license issuance for the repository on \"{{machine}}\". First error: {{error}}. Run: rdc subscription refresh --repo <repo-ref> for details.",
       "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
-      "skipActivationHint": "On a throwaway machine you can skip activation entirely with REDIACC_SKIP_MACHINE_ACTIVATION=1.",
       "machineSlotLimit": "This placement needs {{needed}} more machine slot(s), and the subscription has {{free}} free ({{active}} of {{max}} in use). A slot is released automatically 5 hours after that machine's last activity, or immediately when the machine is removed. Raise the ceiling by upgrading the plan, or contact sales for a negotiated Enterprise or partner machine ceiling.",
       "partialPlacement": "The placement stopped part-way: {{placed}} machine(s) completed ({{placedNames}}) and {{remaining}} were never started ({{remainingNames}}). Nothing was rolled back, so the completed machines keep their repositories and their slots. Free a slot or raise the ceiling, then re-run: {{command}}",
       "nothingProvisioned": "Nothing was provisioned: the repository was not created."

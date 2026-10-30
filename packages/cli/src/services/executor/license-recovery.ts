@@ -56,11 +56,7 @@ import type { ExecuteOptions, ExecuteResult } from './types.js';
  * LICENSE_REQUIRED payload confirms it. Do not act on this function alone.
  */
 export function needsLicenseRecovery(result: ExecuteResult): boolean {
-  return (
-    !result.success &&
-    result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE &&
-    process.env.REDIACC_SKIP_MACHINE_ACTIVATION !== '1'
-  );
+  return !result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE;
 }
 
 type LicenseIssuanceOutcome =
@@ -463,8 +459,7 @@ function buildMissingLicenseMessage(
         );
     }
   })();
-  // Name the dev/test escape here (read by needsLicenseRecovery): it has bitten three agents who hit a license wall on a throwaway machine and did not know they could bypass activation entirely.
-  return `${base} ${t('errors.license.skipActivationHint')}`;
+  return base;
 }
 
 function resolveLicenseRecoveryGuidance(
@@ -563,7 +558,6 @@ export async function maybeRefreshRepoIdentity(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<void> {
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
   if (!isRepoProvisioningFunction(options.functionName)) return;
   const repoLicense = await resolveRepoLicenseContext(
     options.functionName,
@@ -588,7 +582,6 @@ export async function refreshRepoIdentityFor(
   machineName: string,
   params: Record<string, unknown>
 ): Promise<void> {
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
   const lease = await machineConnections.acquire(machineName);
   try {
     const repoLicense = await resolveRepoLicenseContext(

@@ -2683,8 +2683,7 @@
       "preflightTokenNotReady": "サブスクリプショントークンの準備ができていません。実行してください: rdc subscription login。{{machine}} へのデプロイはスキップされました。",
       "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。追跡中のリポジトリを確認するには `rdc repo list` を実行してから再試行してください。",
       "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
-      "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。",
-      "skipActivationHint": "使い捨てのマシンでは、REDIACC_SKIP_MACHINE_ACTIVATION=1 で有効化を完全にスキップできます"
+      "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。"
     },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",

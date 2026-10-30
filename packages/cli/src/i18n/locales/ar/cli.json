@@ -2683,8 +2683,7 @@
       "preflightTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login. تم تخطي النشر على {{machine}}.",
       "recoveryFailedNoKnownRepos": "تم العثور على مستودعات على {{machine}} لكن لا يوجد أي منها في إعداداتك المحلية. راجع مستودعاتك المتابَعة باستخدام `rdc repo list`، ثم أعد المحاولة.",
       "recoveryFailedServerRejected": "رفض خادم الحساب إصدار الترخيص للمستودع على \"{{machine}}\". الخطأ الأول: {{error}}. شغّل: rdc subscription refresh --repo <repo-ref> للمزيد من التفاصيل.",
-      "recoveryFailedTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login، ثم أعد المحاولة.",
-      "skipActivationHint": "على جهاز مؤقت يمكنك تخطي التفعيل تمامًا بـ REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "recoveryFailedTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login، ثم أعد المحاولة."
     },
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
     "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
