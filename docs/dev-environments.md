@@ -77,11 +77,7 @@ Dev builds of renet are the one licence-enforcing build, with the production pub
 
 `ACCOUNT_ED25519_PUBLIC_KEY` must match the server that signs the licenses you are testing against; it is baked in at build time (runtime setting has no effect).
 
-**Paste the value; there is no URL to fetch it from.** This block used to read `"$(curl -fsS https://www.rediacc.com/api/public/account-key)"`. That endpoint returns 404 -- verified again 2026-08-05 -- and the account API is not served from `www.rediacc.com` at all. Because the substitution is not checked, `curl -f` exits 22 and the variable is assigned the EMPTY string, the build
-succeeds, and every prod-signed license then fails as `invalid_signature`: precisely the symptom this variable exists to prevent. Drop the `-f` and it is worse, since the 404's HTML body gets baked into `keys.ProductionPublicKey` via ldflags.
-
-Never pipe an unchecked HTTP response into this variable. CI does not need to: `ACCOUNT_ED25519_PUBLIC_KEY` already exists as an organisation secret, so a workflow references it directly. Locally the value must be pasted -- GitHub secrets are write-only, so no command can fetch it, and the old one-liner was not merely pointing at a dead URL but at a shape of solution that cannot
-exist for a secret. Same correction as `CLAUDE.md`'s licensing section, which fixed its own copy on 2026-07-29 while this one was missed.
+**Never fetch the key over HTTP.** An old recipe read `"$(curl -fsS https://www.rediacc.com/api/public/account-key)"`; that endpoint returns 404, `curl -f` then assigns the empty string, the build succeeds, and every prod-signed license fails as `invalid_signature`. Without `-f` the 404's HTML body gets baked into `keys.ProductionPublicKey` via ldflags. CI references the `ACCOUNT_ED25519_PUBLIC_KEY` organisation secret directly, and locally `./rdc.sh` reads it from bws by name, so no build needs an HTTP fetch or a pasted value.
 
 ## Remote config store and offline behavior
 
