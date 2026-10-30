@@ -172,6 +172,47 @@ describe('backup manifests', () => {
     await run(['manifests']);
     expect(mockAccountServerFetch).toHaveBeenCalledWith('/account/api/v1/backups/manifests');
   });
+
+  const entry = (over: Record<string, unknown>) => ({
+    snapshotId: 'snap-aaaaaaaaaaaa',
+    lineageGuid: 'lin-1',
+    streamId: 's-1',
+    cellSizeBytes: 1048576,
+    totalBytes: 2147483648,
+    addedBytes: 1048576,
+    addedChunkCount: 3,
+    createdAt: '2026-10-01T10:00:00.000Z',
+    ...over,
+  });
+
+  it('renders newest first with repo name, short parent, humanized sizes and index', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        entry({
+          snapshotId: '20261001T100000Z-aaaaaaaabbbbbbbb',
+          createdAt: '2026-10-01T10:00:00Z',
+        }),
+        entry({
+          snapshotId: '20261002T100000Z-ccccccccdddddddd',
+          lineageGuid: 'lin-9',
+          parentSnapshotId: '20261001T100000Z-aaaaaaaabbbbbbbb',
+          hasIndex: true,
+          createdAt: '2026-10-02T10:00:00Z',
+        }),
+      ],
+    });
+    await run(['manifests']);
+    const rows = JSON.parse(mockPrint.mock.calls[0]?.[0] as string);
+    expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'aaaaaaaa']);
+    expect(rows[0]).toMatchObject({
+      repo: 'lin-9'.slice(0, 8),
+      parent: 'aaaaaaaa',
+      snapshot: '2026-10-02 10:00:00',
+      index: 'yes',
+      added: '1M / 3',
+    });
+    expect(rows[1]).toMatchObject({ repo: 'shop', parent: '-', index: 'no', total: '2G' });
+  });
 });
 
 /**

@@ -66,6 +66,7 @@ interface BackupManifestEntry {
   totalBytes: number;
   addedBytes: number;
   addedChunkCount: number;
+  hasIndex?: boolean;
   createdAt: string;
 }
 /**
@@ -152,37 +153,50 @@ function registerBackupManifests(backup: Command): void {
           `/account/api/v1/backups/manifests${query}`
         );
 
+        // The lineage is the grand's GUID, so a fork's snapshots resolve to the grand's name. An unknown lineage shows its short GUID.
+        const resolve = createGuidResolver(await loadGuidMap());
+        const repoOf = (lineage: string): string => {
+          const name = resolve(lineage);
+          return name === lineage ? lineage.slice(0, 8) : name;
+        };
+        // Newest first (ISO timestamps sort lexicographically).
+        const sorted = [...result.manifests].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
         const format = getOutputFormat();
         if (format !== 'table') {
-          outputService.print(result, format);
+          // Every wire field stays; `repo` is the one addition.
+          outputService.print(
+            { ...result, manifests: sorted.map((m) => ({ ...m, repo: repoOf(m.lineageGuid) })) },
+            format
+          );
           return;
         }
-        if (result.manifests.length === 0) {
+        if (sorted.length === 0) {
           outputService.print(t('commands.backup.manifests.empty'));
           return;
         }
 
         const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
-        const resolve = createGuidResolver(await loadGuidMap());
-        const rows = result.manifests
-          .map((m) => ({
-            repo: resolve(m.lineageGuid),
-            snapshot: m.snapshotId,
-            created: m.createdAt.replace('T', ' ').replace(/\..*$/, ''),
-            total: formatSizeBytes(m.totalBytes),
-            added: formatSizeBytes(m.addedBytes),
-            chunks: m.addedChunkCount,
-          }))
-          // Most recent first (ISO timestamps sort lexicographically).
-          .sort((a, b) => b.created.localeCompare(a.created));
+        // Ids read `<timestamp>Z-<hash>`: the timestamp is the Snapshot column already, so the short form is the first 8 hash characters. Full ids stay in `-o json`.
+        const shortId = (id: string): string => (id.split('-').pop() ?? id).slice(0, 8);
+        const rows = sorted.map((m) => ({
+          repo: repoOf(m.lineageGuid),
+          snapshot: m.createdAt.replace('T', ' ').replace(/\..*$/, '').replace(/Z$/, ''),
+          id: shortId(m.snapshotId),
+          parent: m.parentSnapshotId ? shortId(m.parentSnapshotId) : '-',
+          total: formatSizeBytes(m.totalBytes),
+          added: `${formatSizeBytes(m.addedBytes)} / ${m.addedChunkCount}`,
+          index: m.hasIndex ? 'yes' : 'no',
+        }));
 
         const columns = [
           { key: 'repo', header: 'Repo' },
           { key: 'snapshot', header: 'Snapshot' },
-          { key: 'created', header: 'Created' },
+          { key: 'id', header: 'Id' },
+          { key: 'parent', header: 'Parent' },
           { key: 'total', header: 'Total', align: 'right' as const },
-          { key: 'added', header: 'Added', align: 'right' as const },
-          { key: 'chunks', header: 'Chunks', align: 'right' as const },
+          { key: 'added', header: 'Added / chunks', align: 'right' as const },
+          { key: 'index', header: 'Index' },
         ];
         outputService.print(outputService.format(rows, format, columns));
       } catch (error) {
