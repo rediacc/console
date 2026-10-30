@@ -1745,14 +1745,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 0,
+      "open": 1,
+      "done": 2,
       "open_sigs": [
-        "201f331a",
+        "201f331a"
+      ],
+      "done_sigs": [
         "50ce321e",
         "d2002335"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-renet-fetch-retries.md": {
       "status": "approved",
