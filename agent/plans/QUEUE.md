@@ -179,13 +179,13 @@ Promoted: 6 of 42 plans done, 577 of 754 boxes done (76%).
 3. agent/plans/PLAN-renet-executor-tiered-license-check.md -- P1, executing, in progress (2 of 3 boxes ticked)
 4. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-6. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (13 of 14 boxes ticked)
-7. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-8. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-10. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-11. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-12. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, not started
+6. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, in progress (11 of 13 boxes ticked)
+7. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (13 of 14 boxes ticked)
+8. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+9. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+10. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+11. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+12. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 13. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
 14. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 15. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started

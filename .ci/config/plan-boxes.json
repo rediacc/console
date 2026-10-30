@@ -1761,13 +1761,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 0,
+      "open": 2,
+      "done": 11,
       "open_sigs": [
         "098555d6",
+        "38554e84"
+      ],
+      "done_sigs": [
         "2d60d810",
         "36976254",
-        "38554e84",
         "448f6839",
         "45fa063c",
         "68d0cf87",
@@ -1777,8 +1779,7 @@
         "c562604a",
         "cb8d7874",
         "d347a64f"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-renet-executor-tiered-license-check.md": {
       "status": "executing",
