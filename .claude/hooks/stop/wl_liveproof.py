@@ -196,13 +196,18 @@ def find_row(root: pathlib.Path, row_id: str) -> dict[str, Any] | None:
     return None
 
 
-def evidence(row: dict[str, Any]) -> str:
-    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check; a missing or non-integer rc is written `rc=unknown`, never as a pass, and `--tick` refuses it."""
-    check_rec = row.get("check") or {}
-    check = check_rec.get("id")
-    rc = check_rec.get("rc")
+def check_rc_text(row: dict[str, Any]) -> int | str:
+    """The row's check rc when it is an integer (a bool is not one), else `unknown`; a float 0.0 is not an integer rc."""
+    rc = (row.get("check") or {}).get("rc")
     if isinstance(rc, bool) or not isinstance(rc, int):
-        rc = "unknown"
+        return "unknown"
+    return rc
+
+
+def evidence(row: dict[str, Any]) -> str:
+    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check; a missing or non-integer rc (None, a float such as 0.0, a string) is written `rc=unknown`, never as a pass, and `--tick` refuses it."""
+    check = (row.get("check") or {}).get("id")
+    rc = check_rc_text(row)
     version = (row.get("deploy") or {}).get("version_id")
     return "live-proof %s %s %s rc=%s v=%s" % (row.get("id"), row.get("target"), check, rc, version)
 
@@ -327,11 +332,11 @@ def _run(root, me, args, tick, recorder, precheck, lt) -> int:
             1,
         )
     ev = evidence(row)
-    check_rc = (row.get("check") or {}).get("rc")
-    if do_tick and (isinstance(check_rc, bool) or check_rc != 0):
+    check_rc = check_rc_text(row)
+    if do_tick and (isinstance(check_rc, str) or check_rc != 0):
         raise RefusedError(
             "receipt %s names check %s with %s, not an integer rc=0; the box stays open and "
-            "is not ticked" % (row["id"], (row.get("check") or {}).get("id"), ev.split(" ")[-2]),
+            "is not ticked" % (row["id"], (row.get("check") or {}).get("id"), "rc=%s" % check_rc),
             1,
         )
     _say("receipt %s appended to %s: %s" % (row["id"], LEDGER_REL, ev))

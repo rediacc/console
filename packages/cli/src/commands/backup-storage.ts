@@ -153,20 +153,23 @@ function registerBackupManifests(backup: Command): void {
           `/account/api/v1/backups/manifests${query}`
         );
 
-        // The lineage is the grand's GUID, so a fork's snapshots resolve to the grand's name. An unknown lineage shows its short GUID.
+        // The lineage GUID is the grand repo's GUID, and every fork of it shares that GUID, so a fork's snapshots resolve to the grand's name. An unknown lineage resolves to null (`-o json`) or its short GUID (table).
         const resolve = createGuidResolver(await loadGuidMap());
-        const repoOf = (lineage: string): string => {
+        const nameOf = (lineage: string): string | null => {
           const name = resolve(lineage);
-          return name === lineage ? lineage.slice(0, 8) : name;
+          return name === lineage ? null : name;
         };
-        // Newest first (ISO timestamps sort lexicographically).
-        const sorted = [...result.manifests].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const repoOf = (lineage: string): string => nameOf(lineage) ?? lineage.slice(0, 8);
+        // Newest first, by parsed time: ISO strings with and without fractional seconds do not order correctly as text.
+        const sorted = [...result.manifests].sort(
+          (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+        );
 
         const format = getOutputFormat();
         if (format !== 'table') {
           // Every wire field stays; `repo` is the one addition.
           outputService.print(
-            { ...result, manifests: sorted.map((m) => ({ ...m, repo: repoOf(m.lineageGuid) })) },
+            { ...result, manifests: sorted.map((m) => ({ ...m, repo: nameOf(m.lineageGuid) })) },
             format
           );
           return;

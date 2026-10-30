@@ -522,3 +522,30 @@ def test_bring_up_stops_when_the_installed_sha_is_not_the_old_build(
     )
     assert not bring._install_old()
     assert rows[-1] == ("the pre-isolation renet is the worker's current renet", False)
+
+
+@pytest.mark.parametrize(
+    "doc",
+    [
+        {"resources": None, "state": {"repos": {"base": {"u1a": {"networkId": 8512}}}}},
+        {"resources": [], "state": {"repos": {"base": {"u1a": {"networkId": 8512}}}}},
+        {"resources": "x", "state": {}},
+    ],
+)
+def test_fork_record_is_none_for_a_null_or_non_dict_resources(doc: object) -> None:
+    assert u.fork_record(doc, "base", "u1a") is None
+
+
+@pytest.mark.parametrize("state", [None, [], "x", 3])
+def test_fork_record_is_none_for_a_null_or_non_dict_state(state: object) -> None:
+    doc = {
+        "resources": {
+            "repositories": {
+                "base": {
+                    "tags": {"u1a": {"repositoryGuid": "g-a", "credential": "c1", "grandGuid": "g"}}
+                }
+            }
+        },
+        "state": state,
+    }
+    assert u.fork_record(doc, "base", "u1a") is None

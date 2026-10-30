@@ -728,8 +728,11 @@ class OldLayoutBringUp:
         )
         if not self.check("upload the pre-isolation renet to the worker", sent.rc == 0, sent):
             # A partial upload is removed here: only the install script's trap would otherwise clean it, and it never runs.
-            self.ctx.host_run(
+            cleaned = self.ctx.host_run(
                 self.ssh("rm -f %s" % shlex.quote(staged)), env=self.ctx.environ, timeout=60
+            )
+            self.check(
+                "remove the partial upload %s from the worker" % staged, cleaned.rc == 0, cleaned
             )
             return False
         script = install_current_renet_script(staged)

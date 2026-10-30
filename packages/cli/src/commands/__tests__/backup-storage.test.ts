@@ -51,12 +51,14 @@ vi.mock('../../utils/guid-resolver.js', () => ({
   createGuidResolver: () => (guid: string) => (guid === 'lin-1' ? 'shop' : guid),
 }));
 
+const outputFormat = vi.hoisted(() => ({ value: 'table' }));
+
 vi.mock('../../utils/errors.js', async () => {
   const actual =
     await vi.importActual<typeof import('../../utils/errors.js')>('../../utils/errors.js');
   return {
     ...actual,
-    getOutputFormat: () => 'table',
+    getOutputFormat: () => outputFormat.value,
     handleError: (e: unknown) => {
       throw e;
     },
@@ -76,6 +78,7 @@ async function run(argv: string[]): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  outputFormat.value = 'table';
 });
 
 afterEach(() => {
@@ -212,6 +215,42 @@ describe('backup manifests', () => {
       added: '1M / 3',
     });
     expect(rows[1]).toMatchObject({ repo: 'shop', parent: '-', index: 'no', total: '2G' });
+  });
+
+  it('orders mixed fractional and whole-second timestamps by time', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        entry({ snapshotId: 'a-aaaaaaaa', createdAt: '2026-10-01T10:00:00.500Z' }),
+        entry({ snapshotId: 'b-bbbbbbbb', createdAt: '2026-10-01T10:00:00Z' }),
+        entry({ snapshotId: 'c-cccccccc', createdAt: '2026-10-01T10:00:01Z' }),
+      ],
+    });
+    await run(['manifests']);
+    const rows = JSON.parse(mockPrint.mock.calls[0]?.[0] as string);
+    expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'aaaaaaaa', 'bbbbbbbb']);
+  });
+
+  it('json keeps every wire field, adds repo (full GUID never truncated, null when unknown) and sorts newest first', async () => {
+    outputFormat.value = 'json';
+    mockAccountServerFetch.mockResolvedValue({
+      truncated: false,
+      manifests: [
+        entry({ snapshotId: 'old-1', createdAt: '2026-10-01T10:00:00Z' }),
+        entry({
+          snapshotId: 'new-2',
+          lineageGuid: 'lineage-unknown-0123456789',
+          createdAt: '2026-10-02T10:00:00Z',
+        }),
+      ],
+    });
+    await run(['manifests']);
+    const [payload, format] = mockPrint.mock.calls[0] as [Record<string, unknown>, string];
+    expect(format).toBe('json');
+    expect(payload.truncated).toBe(false);
+    const manifests = payload.manifests as Record<string, unknown>[];
+    expect(manifests.map((m) => m.snapshotId)).toEqual(['new-2', 'old-1']);
+    expect(manifests[0]).toMatchObject({ repo: null, lineageGuid: 'lineage-unknown-0123456789' });
+    expect(manifests[1]).toMatchObject({ repo: 'shop', streamId: 's-1', totalBytes: 2147483648 });
   });
 });
 

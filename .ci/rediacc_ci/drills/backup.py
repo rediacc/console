@@ -222,7 +222,7 @@ class Options:
 
     def legs_with(self, *required: str) -> str:
         """The selected legs with `required` added in front, each leg named once (the suggestion a refusal prints)."""
-        legs = list(required) + [leg for leg in self.leg_set() if leg not in required]
+        legs = list(dict.fromkeys([*required, *self.leg_set()]))
         return ",".join(legs)
 
     def needs_plane(self) -> bool:
