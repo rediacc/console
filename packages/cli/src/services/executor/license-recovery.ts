@@ -4,6 +4,7 @@
  * the opportunistic batch refresh, and the post-create identity refresh.
  */
 
+import { isValidGuid } from '@rediacc/shared/validation';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
@@ -28,7 +29,7 @@ import {
 import { isRefreshDue, markRefreshAttempted } from '../account/license-refresh-state.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from '../account/subscription-device-auth.js';
-import type { configService } from '../config/config-resources.js';
+import { configService } from '../config/config-resources.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
@@ -175,12 +176,14 @@ async function maybeIssueLicense(
       };
     }
   }
-  // For all other licensed operations, batch refresh existing repo licenses
+  // For all other licensed operations, batch refresh existing repo licenses. A success needs the REFUSED repo licensed, not just any repo on the machine, or the retry meets the same refusal.
+  const requiredGuid = await refusedRepoGuid(options);
   const batchResult = await refreshRepoLicensesBatch(
     machine,
     sshPrivateKey,
     remoteRenetPath,
-    sftp
+    sftp,
+    requiredGuid
   ).catch((err: unknown) => {
     telemetryService.trackError(err, { operation: 'executor.batch_refresh' });
     return {
@@ -195,7 +198,7 @@ async function maybeIssueLicense(
   if (batchResult.recoveryFailureMode === null) return { kind: 'success' };
   // No login: the batch needs a token, but an installed blob renews itself through renet's blob-authenticated path, which is how a FREE licence (or any licence on a machine whose operator is not logged in here) is renewed, without limit (PLAN-free-license R6).
   if (batchResult.recoveryFailureMode === 'token_not_ready') {
-    return renewWithoutToken(machine, sshPrivateKey, remoteRenetPath, sftp);
+    return renewWithoutToken(machine, sshPrivateKey, remoteRenetPath, sftp, requiredGuid);
   }
   return {
     kind: 'failure',
@@ -204,20 +207,45 @@ async function maybeIssueLicense(
   };
 }
 
-/** Recovery with no token: renet renews every installed blob now, and any renewal is a success. */
+/**
+ * The GUID of the repo a refused run named, or undefined for a machine-wide verb
+ * (or a name the config does not know), where recovery keeps machine-wide semantics.
+ */
+async function refusedRepoGuid(options: ExecuteOptions): Promise<string | undefined> {
+  if (!options.functionName.startsWith('repository_') || options.functionName.endsWith('_all')) {
+    return undefined;
+  }
+  const name = options.params?.repository;
+  if (typeof name !== 'string' || !name) return undefined;
+  // A tag-targeted verb names the SOURCE in `repository` while the licence it needs is the tag's, so it keeps machine-wide semantics.
+  if (typeof options.params?.tag === 'string' && options.params.tag) return undefined;
+  if (isValidGuid(name)) return name.toLowerCase();
+  try {
+    return (await configService.getRepository(name))?.repositoryGuid || undefined;
+  } catch (err) {
+    telemetryService.trackError(err, { operation: 'executor.refused_repo_guid' });
+    return undefined;
+  }
+}
+
+/** Recovery with no token: renet renews every installed blob now; a success is a renewal of the refused repo (any renewal when none is named). */
 async function renewWithoutToken(
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
   sshPrivateKey: string,
   remoteRenetPath: string,
-  sftp: SFTPClient
+  sftp: SFTPClient,
+  requiredGuid?: string
 ): Promise<LicenseIssuanceOutcome> {
   try {
-    const { renewed } = await renewInstalledLicenses(machine, sshPrivateKey, {
+    const { renewed, results } = await renewInstalledLicenses(machine, sshPrivateKey, {
       force: true,
       remoteRenetPath,
       sftp,
     });
-    if (renewed > 0) return { kind: 'success' };
+    const recovered = requiredGuid
+      ? results.some((r) => r.repositoryGuid === requiredGuid && r.outcome === 'renewed')
+      : renewed > 0;
+    if (recovered) return { kind: 'success' };
   } catch (err) {
     telemetryService.trackError(err, { operation: 'executor.renew_without_token' });
   }

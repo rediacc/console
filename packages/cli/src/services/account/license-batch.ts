@@ -138,11 +138,23 @@ function pickServerErrorSample(
   return failures[idx].error.slice(0, 200);
 }
 
+function requiredRepoErrorSample(
+  failures: { repositoryGuid: string; error: string }[],
+  requiredGuid: string
+): string {
+  const own = failures.find((f) => f.repositoryGuid === requiredGuid);
+  return (own?.error ?? `Repository ${requiredGuid} was not licensed by the account server`).slice(
+    0,
+    200
+  );
+}
+
 export function refreshRepoLicensesBatch(
   machine: MachineConfig,
   sshPrivateKey: string,
   remoteRenetPath?: string,
-  sharedSftp?: SFTPClient
+  sharedSftp?: SFTPClient,
+  requiredGuid?: string
 ): Promise<RepoBatchRefreshResult> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
@@ -161,15 +173,20 @@ export function refreshRepoLicensesBatch(
   }
 
   return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>
-    runRepoLicenseBatch(sftp, machine, remoteRenetPath)
+    runRepoLicenseBatch(sftp, machine, remoteRenetPath, requiredGuid)
   );
 }
 
-/** Scan, batch-refresh and install repo licenses over an established connection. */
+/**
+ * Scan, batch-refresh and install repo licenses over an established connection.
+ * With `requiredGuid` (the repo renet refused) the batch only counts as a
+ * recovery when THAT repo came back licensed; without it any licensed repo does.
+ */
 async function runRepoLicenseBatch(
   sftp: SFTPClient,
   machine: MachineConfig,
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  requiredGuid?: string
 ): Promise<RepoBatchRefreshResult> {
   const datastore = machine.datastore ?? DEFAULT_DATASTORE;
   const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses] = await Promise.all([
@@ -259,10 +276,16 @@ async function runRepoLicenseBatch(
   );
 
   const validCount = issued + refreshed + unchanged;
-  const recoveryFailureMode: RepoBatchRecoveryFailureMode =
-    validCount > 0 ? null : 'server_rejected_all';
-  const serverErrorSample =
-    validCount === 0 ? pickServerErrorSample(failures, serverFailuresBefore) : undefined;
+  const recovered = requiredGuid
+    ? body.results.some((r) => r.repositoryGuid === requiredGuid && r.status !== 'failed')
+    : validCount > 0;
+  const recoveryFailureMode: RepoBatchRecoveryFailureMode = recovered
+    ? null
+    : 'server_rejected_all';
+  const serverErrorSample = recovered
+    ? undefined
+    : ((requiredGuid ? requiredRepoErrorSample(failures, requiredGuid) : undefined) ??
+      pickServerErrorSample(failures, serverFailuresBefore));
   return {
     scanned: remoteRepos.length,
     issued,

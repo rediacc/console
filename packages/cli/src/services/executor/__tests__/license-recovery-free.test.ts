@@ -20,6 +20,7 @@ const m = vi.hoisted(() => ({
   isRefreshDue: vi.fn(),
   markRefreshAttempted: vi.fn(),
   resolveCtx: vi.fn(),
+  getRepository: vi.fn(),
 }));
 
 vi.mock('../../../i18n/index.js', () => ({ t: (key: string) => key }));
@@ -45,6 +46,9 @@ vi.mock('../../account/license-refresh-state.js', () => ({
 }));
 vi.mock('../../account/subscription-device-auth.js', () => ({
   authorizeSubscriptionViaDeviceCode: m.deviceAuth,
+}));
+vi.mock('../../config/config-resources.js', () => ({
+  configService: { getRepository: m.getRepository },
 }));
 vi.mock('../../config/state-write-failure.js', () => ({ reportStateWriteRefused: vi.fn() }));
 vi.mock('../../core/output.js', () => ({ outputService: { info: vi.fn(), warn: vi.fn() } }));
@@ -81,6 +85,7 @@ beforeEach(() => {
   m.isRefreshDue.mockResolvedValue(true);
   // What the batch answers with no token (license-batch.ts): the renewal below is the fallback.
   m.refreshBatch.mockResolvedValue({ recoveryFailureMode: 'token_not_ready' });
+  m.getRepository.mockResolvedValue(undefined);
 });
 
 describe('ensureRepoLicenseForProvisioning with no login', () => {
@@ -174,5 +179,103 @@ describe('FREE renewal with no login', () => {
       Date.now()
     );
     expect(out).toMatchObject({ errorCode: 'REPO_LICENSE_REFRESH_REQUIRED' });
+  });
+});
+
+describe('recovery of a refused repo', () => {
+  const X = '11111111-2222-4333-8444-aaaaaaaaaaaa';
+  const Y = '11111111-2222-4333-8444-bbbbbbbbbbbb';
+  const UP = {
+    functionName: 'repository_up',
+    machineName: 'm1',
+    params: { repository: 'x' },
+  } as never;
+  const recover = (options: never, reason = 'missing') =>
+    resolveLicenseFailure(
+      { success: false, exitCode: 10 } as never,
+      { reason } as never,
+      options,
+      MACHINE,
+      'key',
+      '/usr/bin/renet',
+      SFTP,
+      Date.now()
+    );
+
+  beforeEach(() => {
+    m.getRepository.mockResolvedValue({ repositoryGuid: X });
+    m.tokenState.mockReturnValue({ kind: 'ready' });
+  });
+
+  it('passes the refused repo GUID to the batch and fails when it is not licensed', async () => {
+    m.refreshBatch.mockResolvedValue({
+      recoveryFailureMode: 'server_rejected_all',
+      serverErrorSample: 'size limit',
+    });
+    const out = await recover(UP);
+    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, X);
+    expect(out).toMatchObject({ errorCode: 'REPO_LICENSE_ISSUANCE_REQUIRED' });
+  });
+
+  it('succeeds when the batch licensed the refused repo', async () => {
+    m.refreshBatch.mockResolvedValue({ recoveryFailureMode: null });
+    expect(await recover(UP)).toBeNull();
+  });
+
+  it('keeps machine-wide semantics for a verb naming no repo', async () => {
+    m.refreshBatch.mockResolvedValue({ recoveryFailureMode: null });
+    await recover({ functionName: 'repository_up_all', machineName: 'm1', params: {} } as never);
+    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, undefined);
+  });
+
+  it('takes a GUID-spelled repository param as the GUID without a config lookup', async () => {
+    const guid = '0f3c2a1e-9b8d-4c7a-a6e5-1d2c3b4a5f60';
+    m.refreshBatch.mockResolvedValue({ recoveryFailureMode: null });
+    m.getRepository.mockClear();
+    await recover({
+      functionName: 'repository_up',
+      machineName: 'm1',
+      params: { repository: guid.toUpperCase() },
+    } as never);
+    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, guid);
+    expect(m.getRepository).not.toHaveBeenCalled();
+  });
+
+  it('keeps machine-wide semantics for a tag-targeted verb, whose repository param is the source', async () => {
+    m.refreshBatch.mockResolvedValue({ recoveryFailureMode: null });
+    await recover({
+      functionName: 'repository_up',
+      machineName: 'm1',
+      params: { repository: 'app', tag: 'dev' },
+    } as never);
+    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, undefined);
+  });
+
+  describe('with no login', () => {
+    beforeEach(() => {
+      m.tokenState.mockReturnValue({ kind: 'missing' });
+      m.refreshBatch.mockResolvedValue({ recoveryFailureMode: 'token_not_ready' });
+    });
+
+    it('fails when only another repo was renewed', async () => {
+      m.renew.mockResolvedValue({
+        renewed: 1,
+        results: [{ repositoryGuid: Y, outcome: 'renewed' }],
+      });
+      expect(await recover(UP, 'expired')).toMatchObject({
+        errorCode: 'REPO_LICENSE_REFRESH_REQUIRED',
+      });
+    });
+
+    it('succeeds when the refused repo was renewed', async () => {
+      m.renew.mockResolvedValue({
+        renewed: 2,
+        results: [
+          { repositoryGuid: Y, outcome: 'refused' },
+          { repositoryGuid: X, outcome: 'renewed' },
+        ],
+      });
+      expect(await recover(UP, 'expired')).toBeNull();
+    });
   });
 });

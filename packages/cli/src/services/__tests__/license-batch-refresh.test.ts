@@ -556,4 +556,68 @@ describe('refreshRepoLicensesBatch', () => {
       expect(plain.body.clusterId).toBeUndefined();
     });
   });
+
+  describe('requiredGuid (the repo renet refused)', () => {
+    const X = '550e8400-e29b-41d4-a716-446655440000';
+    const Y = '550e8400-e29b-41d4-a716-446655440002';
+    const license = { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID };
+
+    beforeEach(() => {
+      mockListRepositories.mockResolvedValue([
+        { name: 'x', config: { repositoryGuid: X } },
+        { name: 'y', config: { repositoryGuid: Y } },
+      ]);
+    });
+
+    it('fails when only another repo on the machine was licensed', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [
+          { repositoryGuid: X, status: 'failed', error: 'size limit exceeded' },
+          { repositoryGuid: Y, status: 'issued', license },
+        ],
+      });
+      const result = await refreshRepoLicensesBatch(
+        machine,
+        'dummy-key',
+        '/usr/bin/renet',
+        undefined,
+        X
+      );
+      expect(result.valid).toBe(1);
+      expect(result.recoveryFailureMode).toBe('server_rejected_all');
+      expect(result.serverErrorSample).toBe('size limit exceeded');
+    });
+
+    it('succeeds when the refused repo itself came back licensed', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [
+          { repositoryGuid: X, status: 'unchanged' },
+          { repositoryGuid: Y, status: 'failed', error: 'nope' },
+        ],
+      });
+      const result = await refreshRepoLicensesBatch(
+        machine,
+        'dummy-key',
+        '/usr/bin/renet',
+        undefined,
+        X
+      );
+      expect(result.recoveryFailureMode).toBeNull();
+    });
+
+    it('fails when the refused repo is absent from the server results', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [{ repositoryGuid: Y, status: 'refreshed', license }],
+      });
+      const result = await refreshRepoLicensesBatch(
+        machine,
+        'dummy-key',
+        '/usr/bin/renet',
+        undefined,
+        X
+      );
+      expect(result.recoveryFailureMode).toBe('server_rejected_all');
+      expect(result.serverErrorSample).toContain(X);
+    });
+  });
 });
