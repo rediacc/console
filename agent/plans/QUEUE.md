@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 17 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1460 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1464 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:ac900033b92c056cf.
-- Leased items: 5: #831b7e48 (worker:bwwxbyfyk, d778be9d), #9328eff2 (worker:queue, d778be9d), #a150016d (worker:queue, d778be9d), #b5aac43e (worker:queue, d778be9d), #dbe5a8b2 (worker:ac900033b92c056cf, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:ac86b780dafca84f2, worker:aba794d22abd15a26.
+- Leased items: 6: #4c067458 (worker:ac86b780dafca84f2, d778be9d), #7bde1533 (worker:ac86b780dafca84f2, d778be9d), #831b7e48 (worker:bwwxbyfyk, d778be9d), #9328eff2 (worker:aba794d22abd15a26, d778be9d), #a150016d (worker:queue, d778be9d), #b5aac43e (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 5 of 42 plans done, 576 of 754 boxes done (76%).
+Promoted: 6 of 42 plans done, 577 of 754 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -94,7 +94,7 @@ Promoted: 5 of 42 plans done, 576 of 754 boxes done (76%).
 | 8 | PLAN-config-sync-hardening.md | 20/20 | done |
 | 9 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
 | 10 | PLAN-w7p5a-real-run-dispatch.md | 10/10 | done |
-| 11 | PLAN-pin-awscli-toolchain-python-compatible.md | 6/7 | 1 open |
+| 11 | PLAN-pin-awscli-toolchain-python-compatible.md | 7/7 | done |
 | 12 | PLAN-plan-preflight.md | 8/9 | 1 open |
 | 13 | PLAN-renet-run-docker-sock-isolation.md | 3/4 | 1 open |
 | 14 | PLAN-config-networkid-discovery.md | 7/8 | 1 open |
