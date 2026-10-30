@@ -46,6 +46,10 @@ vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../services/repo-migrate-license.js', () => ({
+  ensureTargetRepoLicense: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../repo-batch-utils.js', () => ({
   postRepoUpTasks: vi.fn().mockResolvedValue(undefined),
 }));

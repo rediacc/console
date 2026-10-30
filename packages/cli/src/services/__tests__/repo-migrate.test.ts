@@ -24,6 +24,17 @@ const h = vi.hoisted(() => ({
   failOn: null as string | null,
   /** repository_delete calls captured (R3). */
   deletedRepos: [] as string[],
+  /** Target-licence installs and executor calls, in the order they ran. */
+  order: [] as string[],
+  /** When set, the target-licence install throws this. */
+  licenseError: null as Error | null,
+}));
+
+vi.mock('../repo-migrate-license.js', () => ({
+  ensureTargetRepoLicense: vi.fn((repoKey: string, to: string) => {
+    h.order.push(`license:${repoKey}@${to}`);
+    return h.licenseError ? Promise.reject(h.licenseError) : Promise.resolve();
+  }),
 }));
 
 vi.mock('../config/network-id-discovery.js', async (importOriginal) => ({
@@ -45,7 +56,12 @@ vi.mock('../config/config-resources.js', () => ({
 }));
 
 /** The scripted answer of one executor call. */
-function scriptedResult(req: { functionName: string; params?: Record<string, unknown> }) {
+function scriptedResult(req: {
+  functionName: string;
+  machineName?: string;
+  params?: Record<string, unknown>;
+}) {
+  h.order.push(`${req.functionName}@${req.machineName ?? ''}`);
   if (req.functionName === 'repository_delete') {
     h.deletedRepos.push(String(req.params?.repository ?? ''));
   }
@@ -62,8 +78,9 @@ function scriptedResult(req: { functionName: string; params?: Record<string, unk
 
 vi.mock('../executor/executor-factory.js', () => ({
   getExecutor: () => ({
-    execute: vi.fn((req: { functionName: string; params?: Record<string, unknown> }) =>
-      Promise.resolve(scriptedResult(req))
+    execute: vi.fn(
+      (req: { functionName: string; machineName?: string; params?: Record<string, unknown> }) =>
+        Promise.resolve(scriptedResult(req))
     ),
   }),
 }));
@@ -138,6 +155,8 @@ beforeEach(() => {
   h.written = undefined;
   h.failOn = null;
   h.deletedRepos = [];
+  h.order = [];
+  h.licenseError = null;
   // Re-establish defaults each test: clearAllMocks() wipes call history but NOT implementations, so a per-test getCurrent/resolveRepoRef override would leak.
   vi.mocked(configService.getCurrent).mockResolvedValue(null);
   vi.mocked(resolveRepoRef).mockResolvedValue({
@@ -215,5 +234,25 @@ describe('repo migrate — source disposition (R3)', () => {
   it('retains the source under --keep-source', async () => {
     await migrateRepo('shop', { to: 'm2', keepSource: true });
     expect(h.deletedRepos).toHaveLength(0);
+  });
+});
+
+describe('repo migrate — the target licence (#89f10804)', () => {
+  it('installs the licence on the TARGET before repository_up runs there', async () => {
+    await migrateRepo('shop', { to: 'm2' });
+    // Before the fix the target got no licence at all: repository_up on m2 ended in `LICENSE_REQUIRED: missing: no license data`.
+    const license = h.order.indexOf('license:shop@m2');
+    const up = h.order.indexOf('repository_up@m2');
+    expect(license).toBeGreaterThanOrEqual(0);
+    expect(up).toBeGreaterThan(license);
+  });
+
+  it('a failed licence install stops before repository_up and keeps the source', async () => {
+    h.licenseError = new Error('machine slot limit reached');
+    await expect(migrateRepo('shop', { to: 'm2' })).rejects.toThrow();
+    expect(h.order).not.toContain('repository_up@m2');
+    // The target never came up, so the source copy is the recovery material and is not deleted.
+    expect(h.deletedRepos).toHaveLength(0);
+    expect(h.written).toEqual({ machine: 'm2' });
   });
 });

@@ -25,6 +25,7 @@ import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js'
 import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
@@ -172,6 +173,8 @@ async function startOnTarget(
 ): Promise<void> {
   outputService.info(`  ${t('commands.repo.migrate.startingTarget')}`);
   await deployRepoKeyIfNeeded(repoKey, to);
+  // The target's licence store holds nothing for this GUID (a licence is bound to its machine, and the push carries none), and renet licenses every `repository_up`. See ensureTargetRepoLicense.
+  await ensureTargetRepoLicense(repoKey, to);
   // Target side: the push landed the image in the TARGET's default datastore (buildExtraMachines gives a peer with no recorded datastore the default
   // mount), and placement has already been rewritten to `{machine: to}` to
   // match. So this leg declares no datastore ON PURPOSE, the source's named mount does not exist here.
