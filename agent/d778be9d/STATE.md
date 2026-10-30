@@ -1,19 +1,18 @@
-## SESSION d778be9d 2026-10-30T00:15:18Z
+## SESSION d778be9d 2026-10-30T00:38:00Z
 
-# d778be9d STATE (2026-10-30T00:20Z, branch 1023-1, operator away until morning, order #d910962b)
+# d778be9d STATE (2026-10-30T01:05Z, branch 1023-1, operator away until morning, order #d910962b)
 
 ## Big pieces
 - Store download: A1 A2 R1 C1 L1 ticked; R2 waits for the native CI job; L2 blocked on the stable deploy.
-- Hardening: A1 R1 C1 L1 ticked; L2 after the stable deploy.
-- Stable EU deploy #707f08ca BLOCKED on merge of 1023-1 (promote-stable promotes edge only). Store L2 and hardening L2 sit behind it.
-- Tofu: T1-T8 except T7 live accept done; T6 provider lock pins landed 466afe701 (30 providers). T7 live accept needs a host without tofu. L1 open.
-- Landed tonight: purge rounds (account 770cd34, cli e9bd6740c), deprovision slot release (account da3f9e1/6b4d89a), --no-infra and --no-docker flag fixes, X1 ticked (1ddf33a4f), every 1023-1 review share settled through round 2.
+- Hardening: A1 R1 C1 L1 ticked; L2 after the stable deploy. Stable EU deploy #707f08ca BLOCKED on merge of 1023-1.
+- Tofu: T1-T6 and T8 ticked; T7 deferred #bf4d459d (setup stops at a Go 1.26.6 < 1.27.3 consent gate; the tofu phase itself proven rc=0 on a tofu-less host). CI now installs the pinned tofu before the CLI unit tests (62876cdab).
+- Durable-object edge rollout L1/L2 deferred #fd6b526a (DEFAULT runs it); #a150016d blocked on it.
+- Landed tonight: purge rounds, deprovision slot release + POST /licenses/machines/:id/deactivate, runAtomic atomic on better-sqlite3 (account 00779b0), --no-infra/--no-docker fixes, provider lock pins, X1.
+- Review findings: settled through round 4; the newest commit 71f9bf307 awaits its review.
 
 ## Delegated
-- a9d1edba43eeb9f12 #dd7b3149 cli round 3 (466afe70.1-.3, e9bd6740.1-.4): tofu executor lock, CI tofu install step before CLI unit tests, purge done contract, register JSDoc, deactivate path. Accept: tofu + purge vitest, check:ci-workflows.
-- a6f9ab6e9a4a1a963 #734c0e88 account round 3 (6b4d89a1.1-.2): atomic deactivate with the delete as gate, remainingChunks test. Accept: full account vitest.
+- none running.
 
 ## Next action
-- As each reports: spot-check, rerun its accept, commit by path (account first, then pointer), review-mark each id.
-- Then wl_review.py --check until clean.
-- Open next: #88d878bf cherryservers mapping, #52978244 review hook misses, #869dbd51 backup drills (after CLI writers stop), #674d39cc Q10 hostinger strategy bind, J6 #06ea7ea8.
+- wl_review.py --check; settle any new finding (fix, commit by path, review-mark).
+- Open: #88d878bf cherryservers mapping, #52978244 review hook misses (cwd and detached HEAD ruled out), #869dbd51 backup drills, #674d39cc Q10 hostinger strategy bind, J6 #06ea7ea8, backup push due (needs a ci:quick receipt).
