@@ -124,6 +124,7 @@ import { migrateRepo } from '../../commands/repo-migrate.js';
 import { ValidationError } from '../../utils/errors.js';
 import { resolveRepoRef } from '../../utils/repo-target.js';
 import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
 
 /** Stand up a family record for the R2 guards (which read configService.getCurrent). */
 function familyConfig(grand: string, tags: string[]): void {
@@ -254,5 +255,12 @@ describe('repo migrate — the target licence (#89f10804)', () => {
     // The target never came up, so the source copy is the recovery material and is not deleted.
     expect(h.deletedRepos).toHaveLength(0);
     expect(h.written).toEqual({ machine: 'm2' });
+    // Placement already names the target and nothing runs there, so the failure tells the operator the recovery: `rdc repo up` on the target, with the source copy kept (placementRetryHint).
+    const warned = vi.mocked(outputService.warn).mock.calls.map(([line]) => String(line));
+    expect(warned).toContainEqual(
+      expect.stringMatching(
+        /points at m2, so 'rdc repo up shop' will retry there\. The source images were kept/
+      )
+    );
   });
 });

@@ -74,7 +74,7 @@ DB_BROWSER_SCAN_SPAN = 40
 # `.ci/lib/account.sh:628`.
 DEFAULT_TOTP_EMAIL = DEV_USER_EMAIL
 
-# The seven environment names the account server reads its DEV keypair, session secrets and free-licence HMAC key under, the first six `account_reset` pushes to Bitwarden (`.ci/lib/account.sh:794-799`). `mint_dev_keys()` writes exactly these, in this order.
+# The seven environment names the account server reads its signing keypairs, session secrets and free-licence HMAC key under, and the seven REQUIRED names of the `account-dev` profile (.ci/config/secret-supply.json). The dev gateway binds the production entries of the same names; `account_reset` pushes none of them since agent/plans/PLAN-production-key-only.md K3, so every one must already be in the Bitwarden store. `mint_dev_keys()` writes exactly these, in this order.
 CRYPTO_KEYS = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -298,7 +298,7 @@ KEYPAIR_JS = """
 
 
 class CryptoKeys:
-    """The six values `account_generate_crypto_keys` leaves in the shell."""
+    """The six values `account_generate_crypto_keys` leaves in the shell: the first six `CRYPTO_KEYS`. The seventh, `FREE_LICENSE_HMAC_KEY`, is one more `random_secret()`, which `mint_dev_keys()` draws itself."""
 
     __slots__ = ("api_key", "ed25519_priv", "ed25519_pub", "jwt", "x25519_priv", "x25519_pub")
 
@@ -322,7 +322,7 @@ class CryptoKeys:
 def _keygen_child(argv: list[str], strict: bool) -> str:
     """Run one keygen program and return its stdout.
 
-    STRICT IS THE TWIN, and the default is not. `keys=$(node --eval ...)` and `JWT_SEC=$(openssl ... | tr ... | cut ...)` are bare assignments under errexit and pipefail, so a failing `node` or `openssl` ends `account_reset` before anything is pushed to Bitwarden. `strict=True` raises `AccountError` with that status, and `account_lifecycle.reset()` uses it: without it a missing `node` would reach `store-from-env` with six empty values.
+    STRICT IS THE TWIN, and the default is not. `keys=$(node --eval ...)` and `JWT_SEC=$(openssl ... | tr ... | cut ...)` were bare assignments under errexit and pipefail, so a failing `node` or `openssl` ended the twin's `account_reset` before anything reached Bitwarden. `strict=True` raises `AccountError` with that status; `account_lifecycle.reset()` generates no key since agent/plans/PLAN-production-key-only.md K3, and the on-premise backup drill (`rediacc_ci.drills.backup_onprem`) is the caller that needs it, so a missing `node` stops the drill instead of booting a server on empty keys.
     `mint_dev_keys()` keeps the lenient default and refuses empty values itself, because it has no twin to die the same way as.
     """
     try:
@@ -961,19 +961,19 @@ def db(argv: list[str], env: dict[str, str] | None = None) -> int:
 
 
 def mint_dev_keys(env: dict[str, str] | None = None) -> int:
-    """`mint-dev-keys`: append a THROWAWAY set of the six `CRYPTO_KEYS` to the file `$GITHUB_ENV` names. Returns an exit code.
+    """`mint-dev-keys`: append a THROWAWAY set of the seven `CRYPTO_KEYS` to the file `$GITHUB_ENV` names. Returns an exit code.
 
     NEW, NOT PORTED: the twin has no counterpart. It exists for CI legs with no Bitwarden access, the Drills job in `.github/workflows/ct-tests.yml` first, which used to get a throwaway key set from `account_ensure_env` writing `private/account/.env`.
-    That file is gone. With no token, `bws_env exec` proceeds when every REQUIRED name of the profile is already in the environment and names the optional ones it left unset (`rediacc_ci.core.bws_env.hydrate`); the `account-dev` profile's six required names are exactly `CRYPTO_KEYS`, so six freshly minted values in the JOB environment let `./run.sh account dev` run with no token, and with no file in the tree.
+    That file is gone. With no token, `bws_env exec` proceeds when every REQUIRED name of the profile is already in the environment and names the optional ones it left unset (`rediacc_ci.core.bws_env.hydrate`); the `account-dev` profile's seven required names are exactly `CRYPTO_KEYS`, so seven freshly minted values in the JOB environment let `./run.sh account dev` run with no token, and with no file in the tree.
     GitHub reads `$GITHUB_ENV` into the environment of every LATER step of the job, which is the only place these values go.
 
     REFUSES WITH 2 when `GITHUB_ENV` is unset or empty: without it there is nowhere to put the values that is not a stream or a file in the tree, and printing them is exactly what this must never do.
 
     REFUSES WITH 1, WRITING NOTHING, when any generated value is empty (a missing `node` or `openssl` yields an empty capture, not an error) or carries a line break, which would inject a second assignment into the file.
 
-    MASKS EVERY VALUE BEFORE WRITING IT. `$GITHUB_ENV` values are not secrets to the runner, so every later step's `env:` block printed all six in clear in this public repository's logs (Drills job, 2026-09-30). Throwaway values leak nothing, but a change that fed real keys through here would leak the same way, so stdout carries exactly one `::add-mask::<value>` workflow command per value, which the runner consumes and never displays. Nothing else ever goes to stdout, and a refusal prints no mask.
+    MASKS EVERY VALUE BEFORE WRITING IT. `$GITHUB_ENV` values are not secrets to the runner, so every later step's `env:` block printed every one in clear in this public repository's logs (Drills job, 2026-09-30). Throwaway values leak nothing, but a change that fed real keys through here would leak the same way, so stdout carries exactly one `::add-mask::<value>` workflow command per value, which the runner consumes and never displays. Nothing else ever goes to stdout, and a refusal prints no mask.
 
-    Reports the six NAMES and a count on stderr, never a value.
+    Reports the seven NAMES and a count on stderr, never a value.
     """
     environ = os.environ if env is None else env
     target = environ.get("GITHUB_ENV", "")

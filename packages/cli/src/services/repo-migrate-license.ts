@@ -27,6 +27,7 @@ import { DEFAULT_DATASTORE, scanRemoteRepoLicenses } from './account/license-mac
 import type { RemoteRepoLicenseScanEntry } from './account/license-types.js';
 import { authorizeSubscriptionViaDeviceCode } from './account/subscription-device-auth.js';
 import { configService } from './config/config-resources.js';
+import { isRenetFlagUnsupported } from './executor/job-client.js';
 import { restoreLicenseAlreadyInstalled } from './executor/repo-license-context.js';
 import { type MachineConnectionLease, machineConnections } from './machine/machine-connection.js';
 
@@ -38,7 +39,22 @@ async function loginViaDeviceCode(): Promise<void> {
   });
 }
 
-/** renet's scan entry for the landed image, or undefined when the scan cannot answer (an older renet). */
+/**
+ * Whether a failed `repository license-scan` means the target's renet predates it: cobra's
+ * `unknown command "license-scan"`, or an `unknown flag` (`--all-datastores`, `--output`). Cobra
+ * rejects both while parsing, so nothing ran and nothing about the image is known either way.
+ */
+function isScanUnsupported(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /unknown command "license-scan"/.test(message) || isRenetFlagUnsupported(message);
+}
+
+/**
+ * renet's scan entry for the landed image, or undefined when the target's renet is too old to scan.
+ * Any other failure (a dropped SSH channel, an SFTP error, unparseable output) propagates: issuing
+ * with the default datastore and no size would licence the wrong scope, so the migrate fails before
+ * `repository_up` instead.
+ */
 async function scanLandedImage(
   sftp: Parameters<typeof scanRemoteRepoLicenses>[0],
   datastore: string,
@@ -47,8 +63,9 @@ async function scanLandedImage(
   try {
     const scanned = await scanRemoteRepoLicenses(sftp, datastore);
     return scanned.find((entry) => entry.repositoryGuid === repositoryGuid);
-  } catch {
-    return undefined;
+  } catch (error) {
+    if (isScanUnsupported(error)) return undefined;
+    throw error;
   }
 }
 

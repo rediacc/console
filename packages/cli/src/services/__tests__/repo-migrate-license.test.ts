@@ -17,6 +17,7 @@ const GRAND = '33333333-3333-4333-8333-333333333333';
 const h = vi.hoisted(() => ({
   repo: null as { repositoryGuid?: string; grandGuid?: string } | null,
   scan: [] as Record<string, unknown>[],
+  scanError: null as Error | null,
   installed: false,
   authority: 'token' as 'token' | 'free',
   issued: true,
@@ -47,7 +48,9 @@ vi.mock('../machine/machine-connection.js', () => ({
 }));
 vi.mock('../account/license-machine.js', () => ({
   DEFAULT_DATASTORE: '/mnt/rediacc',
-  scanRemoteRepoLicenses: vi.fn(() => Promise.resolve(h.scan)),
+  scanRemoteRepoLicenses: vi.fn(() =>
+    h.scanError ? Promise.reject(h.scanError) : Promise.resolve(h.scan)
+  ),
 }));
 vi.mock('../executor/repo-license-context.js', () => ({
   restoreLicenseAlreadyInstalled: vi.fn(() => Promise.resolve(h.installed)),
@@ -79,6 +82,7 @@ beforeEach(() => {
       storageFingerprint: 'fp',
     },
   ];
+  h.scanError = null;
   h.installed = false;
   h.authority = 'token';
   h.issued = true;
@@ -132,6 +136,35 @@ describe('ensureTargetRepoLicense', () => {
     await expect(ensureTargetRepoLicense('app', 'machine-12')).rejects.toThrow(
       'errors.subscription.activationFailed'
     );
+    expect(h.released).toBe(1);
+  });
+
+  it('falls back to the default datastore when the target renet has no license-scan', async () => {
+    h.authority = 'free';
+    h.scanError = new Error(
+      'Command exited with code 1: Error: unknown command "license-scan" for "renet repository"'
+    );
+    await ensureTargetRepoLicense('app', 'machine-12');
+    const [, , params] = vi.mocked(issueFreeRepoLicense).mock.calls[0];
+    expect(params).toMatchObject({ repositoryGuid: GUID, requestedSizeGb: undefined });
+    const [ctx] = vi.mocked(restoreLicenseAlreadyInstalled).mock.calls[0];
+    expect(ctx.datastoreMount).toBe('/mnt/rediacc');
+  });
+
+  it('falls back when the target renet rejects a scan flag', async () => {
+    h.scanError = new Error('Command exited with code 1: Error: unknown flag: --all-datastores');
+    await ensureTargetRepoLicense('app', 'machine-12');
+    expect(refreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates any other scan failure, issuing nothing, and still releases the connection', async () => {
+    h.scanError = new Error('Failed to execute command: Channel open failure');
+    await expect(ensureTargetRepoLicense('app', 'machine-12')).rejects.toThrow(
+      'Channel open failure'
+    );
+    expect(restoreLicenseAlreadyInstalled).not.toHaveBeenCalled();
+    expect(refreshRepoLicenseIdentity).not.toHaveBeenCalled();
+    expect(issueFreeRepoLicense).not.toHaveBeenCalled();
     expect(h.released).toBe(1);
   });
 
