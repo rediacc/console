@@ -14,7 +14,7 @@ import pathlib
 import shlex
 import shutil
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from rediacc_ci.drills import lib, vm_ssh
 from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
@@ -63,6 +63,113 @@ def build_old_renet_script(src_dir: str, out_binary: str, commit: str) -> str:
         "cd %(src)s && go build -tags nolicense -o %(out)s ./cmd/renet\n"
         % {"src": src, "out": out, "sha": sha}
     )
+
+
+# The path every provisioned machine resolves `renet` through: /usr/bin/renet -> current/renet -> the versioned slot (packages/cli/src/services/renet/renet-provisioner.ts REMOTE_CURRENT_PATH), and the host-scoped lock the provisioner installs under.
+RENET_CURRENT = "/usr/lib/rediacc/renet/current/renet"
+RENET_PROVISION_LOCK = "/tmp/.rdc-renet-provision.lock"
+
+
+def staged_renet_path(run_id: str, step: str) -> str:
+    """Where the old binary is uploaded on the worker before the install, e.g. `/tmp/.rdc-drill-renet-u1-vmc-...`."""
+    return "/tmp/.rdc-drill-renet-%s-%s" % (step.lower(), run_id)
+
+
+def with_stdin_from(path: str, argv: Sequence[str]) -> list[str]:
+    """`argv` with its stdin read from the local file `path`, through `bash -c`. The file's content never reaches any argv, which is how a repo credential travels to `--password-stdin`."""
+    return ["bash", "-c", 'exec "$@" < "$0"', path, *argv]
+
+
+def install_current_renet_script(staged: str, sudo: str = "sudo") -> str:
+    """The ssh user on the worker: replace the binary `RENET_CURRENT` resolves to with `staged`, under the provisioner's lock, and print `INSTALLED <sha256>`.
+
+    This is what the CLI's own provision did to the slot when `renetPath` named the old build (the dev VERSION is constant, so old and new share one slot), without a job: since console 87455a94f every CLI machine command is a renet job, and a renet older than the job flags refuses it. `NOTARGET` (exit 3) when `current` resolves outside the install root, which would mean the CLI never provisioned this machine.
+
+    The lock is taken as the ssh user and only the install runs under `sudo`, as the provisioner does: the lock file in /tmp belongs to that user, and with `fs.protected_regular=2` (Ubuntu's default) root cannot open another user's file in a sticky directory (`flock: cannot open lock file ...: Permission denied`, rc 66 on ops-worker, 2026-10-30). `sudo` is a parameter so the tests run the script unprivileged.
+    """
+    return (
+        # The staged upload goes on every exit, a failed install included.
+        "set -eu; staged=%(staged)s; trap 'rm -f \"$staged\"' EXIT; "
+        "target=$(readlink -f %(current)s || true); "
+        'case "$target" in %(root)s/*/renet) ;; *) echo "NOTARGET $target"; exit 3;; esac; '
+        'flock -w 120 %(lock)s %(sudo)s sh -c \'install -m 0755 "$1" "$2.drill" && mv -f "$2.drill" "$2"\' _ "$staged" "$target"; '
+        'echo "INSTALLED $(sha256sum "$target" | cut -d" " -f1)"'
+        % {
+            "staged": shlex.quote(staged),
+            "current": shlex.quote(RENET_CURRENT),
+            "root": shlex.quote(os.path.dirname(os.path.dirname(RENET_CURRENT))),
+            "lock": shlex.quote(RENET_PROVISION_LOCK),
+            "sudo": sudo,
+        }
+    )
+
+
+def installed_sha(text: str) -> str:
+    """The sha256 an `install_current_renet_script` run printed, "" when it printed none."""
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] == "INSTALLED" and len(parts[1]) == 64:
+            return parts[1]
+    return ""
+
+
+def old_repo_up_command(guid: str, network_id: int, repo_name: str, grand_guid: str) -> str:
+    """The command the pre-isolation renet's `repository_up` builder produced for a fork (renet 7070d28 `pkg/functions/commands/repository.go` RepositoryUpCommand.Build), run directly instead of through a job. The credential arrives on stdin."""
+    return " ".join(
+        shlex.quote(a)
+        for a in (
+            "sudo",
+            "renet",
+            "repository",
+            "up",
+            "--name",
+            guid,
+            "--datastore",
+            DATASTORE_PATH,
+            "--network-id",
+            str(network_id),
+            "--repo-name",
+            repo_name,
+            "--grand-guid",
+            grand_guid,
+            "--password-stdin",
+        )
+    )
+
+
+class ForkRecord(NamedTuple):
+    """What the old renet's `repository up` needs about one fork, as the CLI recorded it."""
+
+    guid: str
+    network_id: int
+    credential: str
+    grand_guid: str
+
+
+def fork_record(config_doc: Any, parent: str, tag: str) -> ForkRecord | None:
+    """Fork `parent:tag` from a config document, None when any field is missing. The guid, credential and grand guid are in `resources.repositories.<parent>.tags.<tag>` (the grand guid falls back to the parent's `latest`), the network id in the state half, `state.repos.<parent>.<tag>.networkId`. Read from the config, not `repo list`: that verb is a renet job and lists no network id for a fork that was never started (measured 2026-10-30)."""
+    doc = config_doc if isinstance(config_doc, dict) else {}
+    repos = doc.get("resources", {}).get("repositories", {})
+    entry = repos.get(parent) if isinstance(repos, dict) else None
+    tags = entry.get("tags") if isinstance(entry, dict) else None
+    if not isinstance(tags, dict):
+        return None
+    raw_fork, raw_latest = tags.get(tag), tags.get("latest")
+    fork: dict[str, Any] = raw_fork if isinstance(raw_fork, dict) else {}
+    latest: dict[str, Any] = raw_latest if isinstance(raw_latest, dict) else {}
+    state_repos = doc.get("state", {}).get("repos", {})
+    state_parent = state_repos.get(parent) if isinstance(state_repos, dict) else None
+    state_fork = state_parent.get(tag) if isinstance(state_parent, dict) else None
+    nid = state_fork.get("networkId") if isinstance(state_fork, dict) else None
+    guid = fork.get("repositoryGuid")
+    cred = fork.get("credential")
+    grand = fork.get("grandGuid") or latest.get("repositoryGuid")
+    fields = (guid, cred, grand)
+    if not all(isinstance(f, str) and f for f in fields):
+        return None
+    if not isinstance(nid, int) or isinstance(nid, bool) or nid <= 0:
+        return None
+    return ForkRecord(str(guid), nid, str(cred), str(grand))
 
 
 def old_docker_pid_file(network_id: int | str) -> str:
@@ -261,8 +368,8 @@ class _LiveU1:
         self.symlink.symlink_to(target)
 
     def _make_config(self) -> bool:
-        """The throwaway config: a copy of the dev config this run already seeded (so it carries the gateway's address and E2E key), with `renetPath` pointed at the symlink. The symlink starts on the OLD binary."""
-        self._point_symlink(self.old_bin)
+        """The throwaway config: a copy of the dev config this run already seeded (so it carries the gateway's address and E2E key), with `renetPath` pointed at the symlink. The symlink starts on the CURRENT binary: the CLI creates the repos through renet jobs, which the old binary cannot run."""
+        self._point_symlink(self.new_bin)
         dev_json = self._config_path("dev")
         target = self._config_path(self.cfg)
         if not dev_json.exists():
@@ -308,7 +415,7 @@ class _LiveU1:
         self.crdc("machine", "scan-keys", self.ctx.machine)
         return self.ctx.check(
             STEP,
-            "U1 config %s created with renetPath -> old renet" % self.cfg,
+            "U1 config %s created with renetPath -> the drill symlink" % self.cfg,
             target.exists(),
             evidence="renetPath=%s" % self.symlink,
         )
@@ -318,39 +425,29 @@ class _LiveU1:
         return base / ("%s.json" % name)
 
     def _bring_up_old(self) -> bool:
-        """Create the grand and two forks through the OLD renet (the symlink points at it), so their daemons come up on the flat layout."""
-        created = self.crdc(
-            "repo", "create", self.parent, "-m", self.ctx.machine, "--size", "2G", timeout=1800
+        """Create the grand and two forks through the CLI on the current renet, then start the forks under the OLD renet (`OldLayoutBringUp`), so their daemons come up on the flat layout."""
+        bring = OldLayoutBringUp(
+            self.ctx,
+            step=STEP,
+            check=lambda desc, ok, res=None, evidence="": self.ctx.check(
+                STEP, desc, ok, res, evidence=evidence
+            ),
+            crdc=self.crdc,
+            parent=self.parent,
+            tags=(self.tag_a, self.tag_b),
+            config_path=self._config_path(self.cfg),
+            point_symlink=self._point_symlink,
+            clear_provision_cache=self._clear_provision_cache,
+            old_bin=self.old_bin,
+            new_bin=self.new_bin,
+            tmp=self.tmp,
         )
-        if not self.ctx.check(
-            STEP, "create grand %s under old renet" % self.parent, created.rc == 0, created
-        ):
-            return False
-        self.created_grand = True
-        for tag in (self.tag_a, self.tag_b):
-            res = self.crdc("repo", "fork", self.parent, "--tag", tag, "--up", timeout=1800)
-            if not self.ctx.check(
-                STEP, "fork %s:%s --up (old renet)" % (self.parent, tag), res.rc == 0, res
-            ):
-                return False
-        self._read_net_ids()
-        return self.ctx.check(
-            STEP,
-            "both U1 forks have a network id and guid",
-            all(self.net_ids.get(t) for t in (self.tag_a, self.tag_b)),
-            evidence="net_ids=%s" % self.net_ids,
-        )
-
-    def _read_net_ids(self) -> None:
-        listed = self.crdc("repo", "list", "-m", self.ctx.machine, "-o", "json")
-        for entry in _data_list(listed.out) if listed.rc == 0 else []:
-            name = str(entry.get("name", ""))
-            for tag in (self.tag_a, self.tag_b):
-                if name == "%s:%s" % (self.parent, tag):
-                    nid = entry.get("networkId", entry.get("network_id"))
-                    if nid is not None:
-                        self.net_ids[tag] = int(nid)
-                    self.guids[tag] = str(entry.get("guid", ""))
+        try:
+            return bring.run()
+        finally:
+            self.created_grand = bring.created_grand
+            self.net_ids.update(bring.net_ids)
+            self.guids.update(bring.guids)
 
     def _old_layout_before_upgrade(self) -> None:
         """Before the upgrade each fork's daemon serves the flat socket and not the `net-<N>` one: the precondition that makes the converge rows mean something (a fork already on the new layout would pass them vacuously)."""
@@ -466,6 +563,10 @@ class _LiveU1:
 
     def _teardown(self) -> None:
         left: list[str] = []
+        # The deletes are renet jobs, which only the current renet runs: a run that stopped before the upgrade left the symlink on the old build.
+        if self.created_cfg:
+            self._point_symlink(self.new_bin)
+            self._clear_provision_cache()
         if self.created_grand:
             for tag in (self.tag_b, self.tag_a):
                 deleted = self.crdc("repo", "delete", "%s:%s" % (self.parent, tag), "-y")
@@ -484,7 +585,8 @@ class _LiveU1:
         )
         if revert.rc != 0:
             left.append(
-                "worker not reverted to the dev-config renet (machine setup rc=%d)" % revert.rc
+                "worker not reverted to the dev-config renet (machine setup rc=%d: %s)"
+                % (revert.rc, _clip(revert.err[-400:] or revert.out[-400:]))
             )
         self._delete_config_files(left)
         self._tmp_cleanup()
@@ -513,8 +615,8 @@ class _LiveU1:
     def _delete_config_files(self, left: list[str]) -> None:
         if not self.created_cfg:
             return
-        token = self._config_path(self.cfg).with_name("api-token-%s.json" % self.cfg)
-        for name in (self._config_path(self.cfg), token):
+        cfg = self._config_path(self.cfg)
+        for name in config_files(cfg, self.cfg):
             try:
                 if name.exists():
                     name.unlink()
@@ -523,6 +625,151 @@ class _LiveU1:
 
     def _tmp_cleanup(self) -> None:
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+
+class OldLayoutBringUp:
+    """Shared by U1 and U2: a grand and its forks whose daemons run on the pre-isolation (flat) layout, brought up without a CLI job.
+
+    Since console 87455a94f every CLI machine command is a renet job and the pre-isolation renet predates the job flags, so the CLI cannot drive it. The CLI still owns what only it can do -- the grand and the forks are created and registered (guid, network id, credential) through it while the CURRENT renet is provisioned, and the forks are NOT started. Then the old binary replaces the worker's current renet in place (`install_current_renet_script`, the slot the CLI's own provision used to overwrite) and each fork is started by the old renet's `repository up`, invoked over ssh exactly as its `repository_up` builder composed it, credential on stdin. The daemons that come up are the old binary's, on the flat layout, as under the old `fork --up`.
+
+    The caller's `renetPath` symlink ends on the old binary with its provision cache cleared, so a later CLI provision (a `repo sync upload`) verifies the old binary instead of replacing it, and the upgrade step's flip to the current build is a real binary change.
+    """
+
+    def __init__(
+        self,
+        ctx: Any,
+        *,
+        step: str,
+        check: Any,
+        crdc: Any,
+        parent: str,
+        tags: Sequence[str],
+        config_path: pathlib.Path,
+        point_symlink: Any,
+        clear_provision_cache: Any,
+        old_bin: pathlib.Path,
+        new_bin: pathlib.Path,
+        tmp: pathlib.Path,
+    ) -> None:
+        self.ctx = ctx
+        self.step = step
+        self.check = check
+        self.crdc = crdc
+        self.parent = parent
+        self.tags = tuple(tags)
+        self.config_path = config_path
+        self.point_symlink = point_symlink
+        self.clear_provision_cache = clear_provision_cache
+        self.old_bin = old_bin
+        self.new_bin = new_bin
+        self.tmp = tmp
+        self.created_grand = False
+        self.net_ids: dict[str, int] = {}
+        self.guids: dict[str, str] = {}
+        self.records: dict[str, ForkRecord] = {}
+
+    def ssh(self, command: str) -> list[str]:
+        return vm_ssh.ssh_argv(self.ctx.ssh_user, self.ctx.ssh_key, self.ctx.worker_ip, command)
+
+    def ref(self, tag: str) -> str:
+        return "%s:%s" % (self.parent, tag)
+
+    def run(self) -> bool:
+        return self._create() and self._read_ids() and self._install_old() and self._start_old()
+
+    def _create(self) -> bool:
+        self.point_symlink(self.new_bin)
+        created = self.crdc(
+            "repo", "create", self.parent, "-m", self.ctx.machine, "--size", "2G", timeout=1800
+        )
+        if not self.check(
+            "create grand %s (current renet)" % self.parent, created.rc == 0, created
+        ):
+            return False
+        self.created_grand = True
+        for tag in self.tags:
+            res = self.crdc("repo", "fork", self.parent, "--tag", tag, timeout=1800)
+            if not self.check(
+                "fork %s, not started (current renet)" % self.ref(tag), res.rc == 0, res
+            ):
+                return False
+        return True
+
+    def _read_ids(self) -> bool:
+        try:
+            doc = json.loads(self.config_path.read_text())
+        except (OSError, ValueError) as exc:
+            return self.check(
+                "the %s config parses" % self.step, False, evidence=type(exc).__name__
+            )
+        for tag in self.tags:
+            rec = fork_record(doc, self.parent, tag)
+            if rec is not None:
+                self.records[tag] = rec
+                self.net_ids[tag] = rec.network_id
+                self.guids[tag] = rec.guid
+        return self.check(
+            "every %s fork has a guid, network id, credential and grand guid in the config"
+            % self.step,
+            all(t in self.records for t in self.tags),
+            evidence="net_ids=%s" % self.net_ids,
+        )
+
+    def _install_old(self) -> bool:
+        self.point_symlink(self.old_bin)
+        self.clear_provision_cache()
+        staged = staged_renet_path(self.ctx.run_id, self.step)
+        sent = self.ctx.host_run(
+            with_stdin_from(str(self.old_bin), self.ssh("cat > %s" % shlex.quote(staged))),
+            env=self.ctx.environ,
+            timeout=900,
+        )
+        if not self.check("upload the pre-isolation renet to the worker", sent.rc == 0, sent):
+            return False
+        script = install_current_renet_script(staged)
+        res = self.ctx.host_run(
+            self.ssh("sh -c %s" % shlex.quote(script)), env=self.ctx.environ, timeout=300
+        )
+        want = file_sha256(self.old_bin)
+        got = installed_sha(res.out)
+        return self.check(
+            "the pre-isolation renet is the worker's current renet",
+            res.rc == 0 and bool(want) and got == want,
+            res,
+            evidence="installed=%s built=%s" % (got[:12], want[:12]),
+        )
+
+    def _start_old(self) -> bool:
+        for tag in self.tags:
+            rec = self.records[tag]
+            cred_file = self.tmp / ("cred-%s" % tag)
+            fd = os.open(cred_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "w") as handle:
+                handle.write(rec.credential + "\n")
+            try:
+                command = old_repo_up_command(
+                    rec.guid, rec.network_id, self.ref(tag), rec.grand_guid
+                )
+                res = self.ctx.host_run(
+                    with_stdin_from(str(cred_file), self.ssh(command)),
+                    env=self.ctx.environ,
+                    timeout=1800,
+                )
+            finally:
+                cred_file.unlink(missing_ok=True)
+            if not self.check(
+                "%s up through the old renet's repository up (flat layout)" % self.ref(tag),
+                res.rc == 0,
+                res,
+            ):
+                return False
+        return True
+
+
+def config_files(path: pathlib.Path, name: str) -> tuple[pathlib.Path, ...]:
+    """Every file a throwaway config leaves beside `path`: the config, its token, and the `.bak` copy the CLI writes on each save. The copy carries the same E2E key, repo credentials and ssh keys as the config, and a teardown that skipped it left one per run in ~/.config/rediacc (found 2026-10-30, 26 of them)."""
+    return (path, path.with_name("api-token-%s.json" % name), path.with_name("%s.json.bak" % name))
 
 
 def _data_list(raw: str) -> list[dict[str, Any]]:

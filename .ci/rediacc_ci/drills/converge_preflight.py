@@ -10,6 +10,7 @@ The CLI-free pieces (compose bodies, the id probe, and the parsers of the summar
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import shlex
@@ -330,8 +331,8 @@ class _LiveU2:
         return self.check("stage the current renet build", copied.rc == 0, copied)
 
     def _make_config(self) -> bool:
-        """A copy of the dev config this run seeded, with `renetPath` on a symlink that starts at the OLD binary and a fresh identity."""
-        self.point_symlink(self.old_bin)
+        """A copy of the dev config this run seeded, with `renetPath` on a symlink that starts at the CURRENT binary (the CLI creates the repos through renet jobs, which the old binary cannot run) and a fresh identity."""
+        self.point_symlink(self.new_bin)
         dev_json = self.config_path("dev")
         if not dev_json.exists():
             self.check(
@@ -344,8 +345,11 @@ class _LiveU2:
         doc["renetPath"] = str(self.symlink)
         doc["id"] = str(uuid.uuid4())
         target = self.config_path(self.cfg)
-        target.write_text(json.dumps(doc, indent=2) + "\n")
-        target.chmod(0o600)
+        # Created 0600 from the first byte, as U1 does: the copy carries the gateway E2E key, and write-then-chmod leaves a window where another local user can read it.
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w") as handle:
+            handle.write(json.dumps(doc, indent=2) + "\n")
         self.created_cfg = True
         listed = self.crdc("machine", "list", "-o", "json")
         names = [str(m.get("name")) for m in _data_list(listed.out)] if listed.rc == 0 else []
@@ -361,37 +365,33 @@ class _LiveU2:
             )
         self.crdc("machine", "scan-keys", self.ctx.machine)
         return self.check(
-            "U2 config %s created with renetPath -> old renet" % self.cfg,
+            "U2 config %s created with renetPath -> the drill symlink" % self.cfg,
             target.exists(),
             evidence="renetPath=%s" % self.symlink,
         )
 
     def _bring_up_old(self) -> bool:
-        created = self.crdc(
-            "repo", "create", self.parent, "-m", self.ctx.machine, "--size", "2G", timeout=1800
+        """The grand and three forks created through the CLI on the current renet, the forks started under the OLD renet (`upgrade_converge.OldLayoutBringUp`), so their daemons come up on the flat layout and `renet` on the worker is the gate-less old binary for `_deploy_services`."""
+        bring = upgrade_converge.OldLayoutBringUp(
+            self.ctx,
+            step=STEP_ID,
+            check=self.check,
+            crdc=self.crdc,
+            parent=self.parent,
+            tags=self.all_tags,
+            config_path=self.config_path(self.cfg),
+            point_symlink=self.point_symlink,
+            clear_provision_cache=self._clear_provision_cache,
+            old_bin=self.old_bin,
+            new_bin=self.new_bin,
+            tmp=self.tmp,
         )
-        if not self.check(
-            "create grand %s under old renet" % self.parent, created.rc == 0, created
-        ):
-            return False
-        self.created_grand = True
-        for tag in self.all_tags:
-            res = self.crdc("repo", "fork", self.parent, "--tag", tag, "--up", timeout=1800)
-            if not self.check("fork %s --up (old renet)" % self.ref(tag), res.rc == 0, res):
-                return False
-        listed = self.crdc("repo", "list", "-m", self.ctx.machine, "-o", "json")
-        for entry in _data_list(listed.out) if listed.rc == 0 else []:
-            for tag in self.all_tags:
-                if entry.get("name") == self.ref(tag):
-                    nid = entry.get("networkId", entry.get("network_id"))
-                    if nid is not None:
-                        self.net_ids[tag] = int(nid)
-                    self.guids[tag] = str(entry.get("guid", ""))
-        return self.check(
-            "all U2 forks have a network id and guid",
-            all(self.net_ids.get(t) and self.guids.get(t) for t in self.all_tags),
-            evidence="net_ids=%s" % self.net_ids,
-        )
+        try:
+            return bring.run()
+        finally:
+            self.created_grand = bring.created_grand
+            self.net_ids.update(bring.net_ids)
+            self.guids.update(bring.guids)
 
     def _deploy_services(self) -> bool:
         """The old renet has no gate, so every compose file comes up; the refused one is what the new gate would refuse, and the unmanaged one has no Rediaccfile so nothing would recreate it."""
@@ -543,6 +543,10 @@ class _LiveU2:
 
     def _teardown(self) -> None:
         left: list[str] = []
+        # The deletes are renet jobs, which only the current renet runs: a run that stopped before the upgrade left the symlink on the old build.
+        if self.created_cfg:
+            self.point_symlink(self.new_bin)
+            self._clear_provision_cache()
         if self.created_grand:
             for tag in (self.tag_c, self.tag_u, self.tag_r):
                 # The refused fork's service is down first so the delete cannot meet a running gate-refused container.
@@ -577,11 +581,11 @@ class _LiveU2:
         )
         if revert.rc != 0:
             left.append(
-                "worker not reverted to the dev-config renet (machine setup rc=%d)" % revert.rc
+                "worker not reverted to the dev-config renet (machine setup rc=%d: %s)"
+                % (revert.rc, _clip(revert.err[-400:] or revert.out[-400:]))
             )
         if self.created_cfg:
-            token = self.config_path(self.cfg).with_name("api-token-%s.json" % self.cfg)
-            for name in (self.config_path(self.cfg), token):
+            for name in upgrade_converge.config_files(self.config_path(self.cfg), self.cfg):
                 try:
                     if name.exists():
                         name.unlink()

@@ -6,6 +6,7 @@ import hashlib
 import inspect
 import json
 import os
+import pathlib
 import shutil
 import subprocess
 from typing import TYPE_CHECKING
@@ -17,7 +18,7 @@ from rediacc_ci.drills import vm_check
 from rediacc_ci.well_known import RUNTIME_DIR
 
 if TYPE_CHECKING:
-    import pathlib
+    from collections.abc import Callable
 
 SHA = "16538095dbbae2202b2d00bd9ff0a1b8a086ed11168ae3ecf1b2a195f4cdc4c0"
 # The stamp exactly as renet wrote it on ops-worker, 2026-10-24 (pretty-printed over several lines).
@@ -244,3 +245,280 @@ def test_host_namespace_guard_fails_closed_on_an_unreadable_namespace() -> None:
             check=False,
         ).stdout
         assert out.strip() == expect, (own, host, out)
+
+
+# --------------------------------------------------------------------------- the old-layout bring-up without a CLI job
+
+
+def test_with_stdin_from_feeds_the_file_and_keeps_it_out_of_argv(tmp_path: pathlib.Path) -> None:
+    secret = tmp_path / "cred"
+    secret.write_text("s3cret-value\n")
+    argv = u.with_stdin_from(str(secret), ["cat"])
+    assert not any("s3cret-value" in a for a in argv)
+    out = subprocess.run(argv, capture_output=True, text=True, check=False)
+    assert out.returncode == 0
+    assert out.stdout == "s3cret-value\n"
+
+
+def _install_world(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
+    root = tmp_path / "renet-root"
+    slot = root / "0.0.0-dev"
+    slot.mkdir(parents=True)
+    (slot / "renet").write_text("new binary\n")
+    (root / "current").mkdir()
+    (root / "current" / "renet").symlink_to(slot / "renet")
+    monkeypatch.setattr(u, "RENET_CURRENT", str(root / "current" / "renet"))
+    monkeypatch.setattr(u, "RENET_PROVISION_LOCK", str(tmp_path / "lock"))
+    return slot / "renet"
+
+
+@pytest.mark.skipif(shutil.which("flock") is None, reason="flock (util-linux) is not installed")
+def test_install_script_replaces_the_slot_current_resolves_to(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    slot = _install_world(tmp_path, monkeypatch)
+    staged = tmp_path / "staged"
+    staged.write_text("old binary\n")
+    script = u.install_current_renet_script(str(staged), sudo="")
+    out = subprocess.run(["sh", "-c", script], capture_output=True, text=True, check=False)
+    assert out.returncode == 0, out.stderr
+    assert slot.read_text() == "old binary\n"
+    assert not staged.exists()
+    assert os.access(slot, os.X_OK)
+    assert u.installed_sha(out.stdout) == hashlib.sha256(b"old binary\n").hexdigest()
+
+
+def test_install_script_refuses_a_current_outside_the_install_root(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(u, "RENET_CURRENT", str(tmp_path / "nowhere" / "current" / "renet"))
+    staged = tmp_path / "staged"
+    staged.write_text("old binary\n")
+    script = u.install_current_renet_script(str(staged), sudo="")
+    out = subprocess.run(["sh", "-c", script], capture_output=True, text=True, check=False)
+    assert not staged.exists()  # a refused install still removes the upload
+    assert out.returncode == 3
+    assert "NOTARGET" in out.stdout
+    assert u.installed_sha(out.stdout) == ""
+
+
+def test_the_live_install_script_targets_the_provisioned_slot() -> None:
+    script = u.install_current_renet_script("/tmp/x")
+    assert "/usr/lib/rediacc/renet/current/renet" in script
+    assert "/usr/lib/rediacc/renet/*/renet)" in script
+    # The lock is the ssh user's; only the install is privileged (fs.protected_regular).
+    assert "flock -w 120 /tmp/.rdc-renet-provision.lock sudo sh -c" in script
+    assert subprocess.run(["sh", "-n", "-c", script], check=False).returncode == 0
+
+
+@pytest.mark.parametrize(
+    ("text", "want"),
+    [
+        ("INSTALLED %s\n" % SHA, SHA),
+        ("noise\nINSTALLED %s\n" % SHA, SHA),
+        ("INSTALLED \n", ""),
+        ("INSTALLED abc\n", ""),
+        ("", ""),
+    ],
+)
+def test_installed_sha(text: str, want: str) -> None:
+    assert u.installed_sha(text) == want
+
+
+def test_old_repo_up_command_is_the_old_builder_shape() -> None:
+    cmd = u.old_repo_up_command("g-fork", 8512, "base:u1a", "g-grand")
+    assert u.shlex.split(cmd) == [
+        "sudo",
+        "renet",
+        "repository",
+        "up",
+        "--name",
+        "g-fork",
+        "--datastore",
+        u.DATASTORE_PATH,
+        "--network-id",
+        "8512",
+        "--repo-name",
+        "base:u1a",
+        "--grand-guid",
+        "g-grand",
+        "--password-stdin",
+    ]
+
+
+def _doc(tags: dict[str, dict[str, object]], net: dict[str, object]) -> dict[str, object]:
+    """A config document in the live shape: resources half for identity, state half for the network id."""
+    return {
+        "resources": {"repositories": {"base": {"tags": tags}}},
+        "state": {"repos": {"base": {t: {"networkId": n} for t, n in net.items()}}},
+    }
+
+
+def test_fork_record_reads_both_halves_and_falls_back_to_the_grand_latest() -> None:
+    doc = _doc(
+        {
+            "latest": {"repositoryGuid": "g-grand", "credential": "c0"},
+            "u1a": {"repositoryGuid": "g-a", "credential": "c1", "grandGuid": "g-explicit"},
+            "u1b": {"repositoryGuid": "g-b", "credential": "c2"},
+            "u1c": {"repositoryGuid": "g-c", "grandGuid": "g-explicit"},
+            "u1d": {"repositoryGuid": "g-d", "credential": "c4"},
+            "u1e": {"repositoryGuid": "g-e", "credential": "c5"},
+        },
+        {"u1a": 8512, "u1b": 8513, "u1c": 8514, "u1e": True},
+    )
+    assert u.fork_record(doc, "base", "u1a") == u.ForkRecord("g-a", 8512, "c1", "g-explicit")
+    assert u.fork_record(doc, "base", "u1b") == u.ForkRecord("g-b", 8513, "c2", "g-grand")
+    assert u.fork_record(doc, "base", "u1c") is None  # no credential
+    assert u.fork_record(doc, "base", "u1d") is None  # no network id
+    assert u.fork_record(doc, "base", "u1e") is None  # a bool is not a network id
+    assert u.fork_record(doc, "other", "u1a") is None
+    assert u.fork_record({}, "base", "u1a") is None
+
+
+def test_config_files_include_the_cli_backup_copy(tmp_path: pathlib.Path) -> None:
+    names = [p.name for p in u.config_files(tmp_path / "u1-x.json", "u1-x")]
+    assert names == ["u1-x.json", "api-token-u1-x.json", "u1-x.json.bak"]
+
+
+def _recorder(rows: list[tuple[str, bool]]) -> Callable[..., bool]:
+    """A `check` callable with the drill's signature that records (desc, ok) and returns ok."""
+
+    def check(desc: str, ok: bool, res: object = None, evidence: str = "") -> bool:
+        del res, evidence
+        rows.append((desc, ok))
+        return ok
+
+    return check
+
+
+class _Res:
+    def __init__(self, rc: int = 0, out: str = "", err: str = "") -> None:
+        self.rc, self.out, self.err = rc, out, err
+
+
+def test_bring_up_creates_on_the_current_renet_and_starts_on_the_old(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The order is the design: create and fork (no --up) while the symlink names the current build, then the old binary is installed and the forks are started by it, the credential on stdin only."""
+    old_bin, new_bin = tmp_path / "renet-old", tmp_path / "renet-new"
+    old_bin.write_bytes(b"old")
+    new_bin.write_bytes(b"new")
+    cfg = tmp_path / "u1.json"
+    cfg.write_text(
+        json.dumps(
+            _doc(
+                {
+                    "latest": {"repositoryGuid": "g-grand"},
+                    "a": {"repositoryGuid": "g-a", "credential": "SECRET-a"},
+                    "b": {"repositoryGuid": "g-b", "credential": "SECRET-b"},
+                },
+                {"a": 8512, "b": 8513},
+            )
+        )
+    )
+    events: list[tuple[str, ...]] = []
+    rows: list[tuple[str, bool]] = []
+    old_sha = hashlib.sha256(b"old").hexdigest()
+
+    def crdc(*args: str, **_kw: object) -> _Res:
+        events.append(("rdc", *args))
+        return _Res()
+
+    def host_run(argv: list[str], **_kw: object) -> _Res:
+        assert not any("SECRET-" in a for a in argv), argv
+        if argv[:3] == ["bash", "-c", 'exec "$@" < "$0"']:
+            events.append(("stdin", pathlib.Path(argv[3]).read_text().strip(), argv[-1]))
+        else:
+            events.append(("ssh", argv[-1]))
+        return _Res(out="INSTALLED %s\n" % old_sha)
+
+    ctx = type(
+        "Ctx",
+        (),
+        {
+            "machine": "ops-worker",
+            "run_id": "vmc-1",
+            "ssh_user": "u",
+            "ssh_key": "k",
+            "worker_ip": "1.2.3.4",
+            "environ": {},
+            "host_run": staticmethod(host_run),
+        },
+    )()
+    bring = u.OldLayoutBringUp(
+        ctx,
+        step="U1",
+        check=_recorder(rows),
+        crdc=crdc,
+        parent="base",
+        tags=("a", "b"),
+        config_path=cfg,
+        point_symlink=lambda target: events.append(("symlink", target.name)),
+        clear_provision_cache=lambda: events.append(("clear-cache",)),
+        old_bin=old_bin,
+        new_bin=new_bin,
+        tmp=tmp_path,
+    )
+    assert bring.run(), rows
+    assert all(ok for _d, ok in rows)
+    kinds = [e[0] if e[0] != "rdc" else "rdc " + " ".join(e[1:3]) for e in events]
+    assert kinds == [
+        "symlink",
+        "rdc repo create",
+        "rdc repo fork",
+        "rdc repo fork",
+        "symlink",
+        "clear-cache",
+        "stdin",  # the binary upload
+        "ssh",  # the install
+        "stdin",  # fork a up
+        "stdin",  # fork b up
+    ]
+    assert events[0] == ("symlink", "renet-new")
+    assert events[4] == ("symlink", "renet-old")
+    assert not any("--up" in e for e in events if e[0] == "rdc")
+    assert events[6][1] == "old"
+    assert events[8][1] == "SECRET-a"
+    assert "--network-id 8512" in events[8][2]
+    assert "--grand-guid g-grand" in events[8][2]
+    assert events[9][1] == "SECRET-b"
+    assert "--name g-b" in events[9][2]
+    assert bring.created_grand
+    assert bring.net_ids == {"a": 8512, "b": 8513}
+    assert not list(tmp_path.glob("cred-*"))
+
+
+def test_bring_up_stops_when_the_installed_sha_is_not_the_old_build(
+    tmp_path: pathlib.Path,
+) -> None:
+    old_bin = tmp_path / "renet-old"
+    old_bin.write_bytes(b"old")
+    rows: list[tuple[str, bool]] = []
+    ctx = type(
+        "Ctx",
+        (),
+        {
+            "run_id": "vmc-1",
+            "ssh_user": "u",
+            "ssh_key": "k",
+            "worker_ip": "1.2.3.4",
+            "environ": {},
+            "host_run": staticmethod(lambda _argv, **_kw: _Res(out="INSTALLED %s\n" % SHA)),
+        },
+    )()
+    bring = u.OldLayoutBringUp(
+        ctx,
+        step="U1",
+        check=_recorder(rows),
+        crdc=lambda *_a, **_k: _Res(),
+        parent="base",
+        tags=("a",),
+        config_path=tmp_path / "missing.json",
+        point_symlink=lambda _t: None,
+        clear_provision_cache=lambda: None,
+        old_bin=old_bin,
+        new_bin=old_bin,
+        tmp=tmp_path,
+    )
+    assert not bring._install_old()
+    assert rows[-1] == ("the pre-isolation renet is the worker's current renet", False)
