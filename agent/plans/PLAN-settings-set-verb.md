@@ -50,7 +50,7 @@ Concurrency: parallel -- S1 and S2 own new files except one script line each in 
   Owns: .ci/config/cf-spend-guard.json, .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/tests/test_ops_cf_usage_report.py. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_usage_report.py .ci/rediacc_ci/tests/test_ops_cf_notifications.py` rc 0, and `grep -n DEFAULT_CEILINGS .ci/rediacc_ci/ops/cf_usage_report.py` prints nothing.
 
 - [ ] S4 [writer] The registry gate. Changes: .ci/scripts/quality/check_settings_registry.py with the Design 5 rules and their controls, registered as the `check:ci-settings-registry` script in package.json, gate-costs.json and lane-durations.json; one paragraph in docs/agent-reference/ci-gates.md naming `npm run settings -- set` as the way to change a registered tunable.
-  Owns: .ci/scripts/quality/check_settings_registry.py, .ci/rediacc_ci/tests/gates/test_gate_settings_registry.py, package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, docs/agent-reference/ci-gates.md (one paragraph). Accept: `npm run check:ci-settings-registry` rc 0, the gate test rc 0, and `npm run check:ci-parity` rc 0.
+  Owns: .ci/scripts/quality/check_settings_registry.py, .ci/rediacc_ci/tests/gates/test_gate_settings_registry.py, package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, docs/agent-reference/ci-gates.md (one paragraph). Accept: the new settings-registry gate's npm script (added by this plan) at rc 0, the gate test rc 0, and `npm run check:ci-parity` rc 0.
 
 ## Alternatives rejected
 

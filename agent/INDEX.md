@@ -476,7 +476,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 262 | 4 | 4 | 33056 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 40 | 3 | 4 | 6520 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 49 | 0 | 7 | 7408 |
-| `agent/plans/PLAN-backup-program.md` | approved | 569 | 31 | 165 | 149034 |
+| `agent/plans/PLAN-backup-program.md` | approved | 569 | 31 | 165 | 149101 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 202 | 3 | 7 | 35742 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -534,14 +534,14 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 337 | 3 | 9 | 47523 |
-| `agent/plans/PLAN-per-flavor-renet-binary-paths.md` | executing | 158 | 0 | 8 | 27007 |
+| `agent/plans/PLAN-per-flavor-renet-binary-paths.md` | executing | 158 | 0 | 8 | 27002 |
 | `agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md` | executing | 81 | 1 | 6 | 16086 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 50 | 7 | 0 | 7813 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 120 | 0 | 16 | 19072 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 191 | 1 | 8 | 30642 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 34 | 3 | 0 | 3707 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-production-key-only.md` | approved | 356 | 14 | 5 | 49430 |
+| `agent/plans/PLAN-production-key-only.md` | approved | 356 | 14 | 5 | 49439 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 411 | 8 | 27 | 70356 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
@@ -549,8 +549,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 119 | 1 | 15 | 30118 |
-| `agent/plans/PLAN-renet-change-test-triggers.md` | executing | 46 | 0 | 7 | 7634 |
-| `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 52 | 1 | 2 | 11735 |
+| `agent/plans/PLAN-renet-change-test-triggers.md` | executing | 46 | 0 | 7 | 7865 |
+| `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 52 | 1 | 2 | 12099 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 53 | 1 | 2 | 6811 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 99 | 1 | 3 | 11248 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 43 | 1 | 4 | 8958 |
@@ -567,7 +567,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
-| `agent/plans/PLAN-settings-set-verb.md` | approved | 59 | 4 | 0 | 8613 |
+| `agent/plans/PLAN-settings-set-verb.md` | approved | 59 | 4 | 0 | 8644 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
