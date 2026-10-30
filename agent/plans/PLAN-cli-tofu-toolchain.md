@@ -38,7 +38,8 @@ Worklist: #9a7c3258, PR-TASK 9f92c43e
     (ticked) 2026-10-29T17:14:44Z by d778be9d: commit:95a124a7c executor-resolve tests rc=0
 - [x] T5 Doctor gains a Tools section (tofu with its version and source, rsync), and commandExists uses a cross-platform lookup instead of `which`. Accept: `npx vitest run src/commands/__tests__/doctor` rc 0, with a Windows-path case.
     (ticked) 2026-10-29T17:14:47Z by d778be9d: commit:95a124a7c doctor-tools tests rc=0
-- [ ] T6 [opus] Provider pinning: a pins leaf carrying `.terraform.lock.hcl` hashes for every provider in provider-registry.json, written into each machine's work dir before `init`, so `tofu init` refuses an unpinned provider build. Accept: the provider-lock test rc 0, and a lock file with a changed hash makes `tofu init` fail in the test fixture.
+- [x] T6 [opus] Provider pinning: a pins leaf carrying `.terraform.lock.hcl` hashes for every provider in provider-registry.json, written into each machine's work dir before `init`, so `tofu init` refuses an unpinned provider build. Accept: the provider-lock test rc 0, and a lock file with a changed hash makes `tofu init` fail in the test fixture.
+    (ticked) 2026-10-30T00:10:15Z by d778be9d: commit:466afe701 provider-lock vitest rc=0 with the real tofu init cases run: a changed h1 hash makes tofu init fail with the checksum mismatch; pins verify rc=0 (62 pins), check:ci-pin-registry rc=0
 - [ ] T7 Dev wiring: `./run.sh setup` and the devcontainer call `rdc tools install tofu`, so dev uses the customer path and keeps no second copy of the pin. Accept: `./run.sh setup` on a host without tofu leaves `rdc tools list` showing the pinned version, rc 0.
 - [x] T8 Regenerate the CLI contract and docs for the new verb. Accept: `npm run check:ci-cli-contract`, `npm run check:cli-docs` and `npm run check:i18n` rc 0.
     (ticked) 2026-10-29T17:14:50Z by d778be9d: commit:95a124a7c check:ci-cli-contract rc=0, check:cli-docs rc=0, check:i18n rc=0

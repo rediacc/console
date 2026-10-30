@@ -55,6 +55,17 @@ describe('executePlan removals', () => {
     );
   });
 
+  it('stops a timer systemd still runs after its unit file is gone', async () => {
+    const { sftp, commands } = fakeSftp(new Set());
+    const diff = removed('ghost', false);
+    if (diff.remote) diff.remote.isActiveTimer = true;
+    await executePlan(sftp, plan([diff]), {});
+    expect(commands.some((c) => c.includes('systemctl stop rediacc-backup-ghost.timer'))).toBe(
+      true
+    );
+    expect(commands.some((c) => c.includes('systemctl disable'))).toBe(false);
+  });
+
   it('still disables a timer that exists before removing its files', async () => {
     const { sftp, commands } = fakeSftp(new Set(['rediacc-backup-nightly.timer']));
     await executePlan(sftp, plan([removed('nightly', true)]), {});

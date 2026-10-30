@@ -121,6 +121,15 @@ async function removeOneStrategy(
       options,
       `Failed to disable timer for removed strategy "${diff.name}"`
     );
+  } else if (remote.isActiveTimer || remote.isEnabledTimer) {
+    // A timer systemd still runs without its unit file cannot be disabled, but it can be stopped,
+    // so it never fires again for a strategy that no longer exists.
+    await runRemoteCommand(
+      sftp,
+      `sudo systemctl stop rediacc-backup-${diff.name}.timer`,
+      options,
+      `Failed to stop timer for removed strategy "${diff.name}"`
+    );
   }
   const paths = collectExistingPaths(remote);
   if (paths.length === 0) return;

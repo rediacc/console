@@ -184,8 +184,8 @@
       "owner": "5cc33087",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 38,
-      "done": 158,
+      "open": 37,
+      "done": 159,
       "open_sigs": [
         "07955f58",
         "0a237b2e",
@@ -223,7 +223,6 @@
         "f6dcb754",
         "fa02c94a",
         "fbef928b",
-        "ffbb1388",
         "ffca002a"
       ],
       "done_sigs": [
@@ -384,6 +383,7 @@
         "f8b7ea0f",
         "fdac4a65",
         "fe39590a",
+        "ffbb1388",
         "ffc04b28"
       ]
     },
@@ -559,11 +559,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 6,
+      "open": 2,
+      "done": 7,
       "open_sigs": [
         "7993037e",
-        "e9c480b3",
         "ec030c09"
       ],
       "done_sigs": [
@@ -572,7 +571,8 @@
         "2e1fa6e5",
         "c29a5a67",
         "c5e092a0",
-        "cab479c2"
+        "cab479c2",
+        "e9c480b3"
       ]
     },
     "agent/plans/PLAN-cloudflare-proxy.md": {
@@ -1175,13 +1175,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 2,
+      "open": 7,
+      "done": 3,
       "open_sigs": [
         "29c37ab0",
         "90ade765",
         "932bf30c",
-        "afaa0431",
         "b54d76a6",
         "f64eeedf",
         "fd679fde",
@@ -1189,7 +1188,8 @@
       ],
       "done_sigs": [
         "99de90cc",
-        "9ea4a078"
+        "9ea4a078",
+        "afaa0431"
       ]
     },
     "agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md": {

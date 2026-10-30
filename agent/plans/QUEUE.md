@@ -69,23 +69,23 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1295 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1312 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 3: #17b0308a (worker:a4a097b99767d38e4, d778be9d), #a150016d (worker:queue, d778be9d), #bf4d459d (worker:a6d3b91b1279d6901, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a9d1edba43eeb9f12, worker:a6f9ab6e9a4a1a963.
+- Leased items: 4: #734c0e88 (worker:a6f9ab6e9a4a1a963, d778be9d), #a150016d (worker:queue, d778be9d), #bf4d459d (worker:a6d3b91b1279d6901, d778be9d), #dd7b3149 (worker:a9d1edba43eeb9f12, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 40 plans done, 541 of 720 boxes done (75%).
+Promoted: 3 of 40 plans done, 544 of 720 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-plan-per-pr-loop.md | 16/16 | done |
-| 2 | PLAN-backup-program.md | 158/196 | 38 open |
+| 2 | PLAN-backup-program.md | 159/196 | 37 open |
 | 3 | PLAN-cloudflare-proxy.md | 25/30 | 5 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 6/7 | 1 open |
 | 5 | PLAN-telemetry-export.md | 15/20 | 5 open |
@@ -121,8 +121,8 @@ Promoted: 3 of 40 plans done, 541 of 720 boxes done (75%).
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 3/6 | 3 open |
 | 36 | PLAN-backup-local-image.md | 7/14 | 7 open |
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 4/5 | 1 open |
-| 38 | PLAN-jobs-backup-real-machine-tests.md | 2/10 | 8 open |
-| 39 | PLAN-cli-tofu-toolchain.md | 6/9 | 3 open |
+| 38 | PLAN-jobs-backup-real-machine-tests.md | 3/10 | 7 open |
+| 39 | PLAN-cli-tofu-toolchain.md | 7/9 | 2 open |
 | 40 | PLAN-backup-download-from-store.md | 4/7 | 3 open |
 <!-- queue:progress:end -->
 
