@@ -1,18 +1,18 @@
-## SESSION d778be9d 2026-10-30T19:36:48Z
+## SESSION d778be9d 2026-10-30T23:38:20Z
 
-# STATE d778be9d (branch 1023-1, nothing pushed; PR none)
+Branch 1023-1, 2026-10-31 ~00:30Z. Nothing pushed, turbo on, no PR. Promoted 6/42 plans, 591/754 boxes.
 
-## Big pieces
-- PLAN-backup-program (30 open), PLAN-detached-jobs (27), PLAN-production-key-only (14), PLAN-free-license (13): nearly all open boxes are live, post-merge or operator-gated (writers-now round 2026-10-30T18:45Z confirmed it plan by plan).
+Rules: no Claude-Session trailer or claude.ai link ever (public repo); messages end at `PR-TASK: 9f92c43e`; message file in its own call; literal pathspecs; >20 files needs "Sampled N files read: ...". Generated files are judged on the COMMIT tree: with other uncommitted inputs, generate in a scratch clone (clone --shared, checkout HEAD, copy the unit's files, `ln -sfn` node_modules, gen-docs / plan-record there, copy outputs back). A triaged plan must use exactly the triaged path. pytest via `.ci/cache/toolchain/uv-tools/bin/pytest <path> -n 0`, never `-p no:cacheprovider`.
 
-## Delegated
-- a948b6a37d373d570 #e83467a1 PLAN-pin-awscli B7: read ci-trace history durations for cd-preflight, check-release-state, finalize-release-sentinel; accept: tick B7 with measured durations.
-- ada9c213927f35dc5 #9328eff2 PLAN-proxy-cd-six-targets (8 open boxes); accept: per-box report, lead commits and ticks.
-- bwwxbyfyk (shell) #831b7e48 ci:quick receipt; then vm:check -- --changed, then the guarded force-with-lease push of the scrubbed 1023-1 (#8515da02).
-- queue #b5aac43e: 17 plans not started (briefs /tmp/writers-now/brief-<plan>.md); retry as writers finish.
+Landed this context: docker_running semantics (renet 7d34ae8 082ae80, 3fae9817), C1 container class retired (a37df8dd), docker pin digest 8/8 (64aa5ed7), env registries (c9e86b6a), N1 pins (e80d4128, renet 993ae2f), settings S1 S2 S4 (06823e7c), free license F1 F2 F4-F8 code (047cc812 51934069, account edb65170, renet 51a1809c 0145827), legal pages English-ordered + 228 titles renumbered (8c805c92), drop FREE issuance IP hash (account d69b1a0e ddabe0a), bws signing keys step-scoped in 18 jobs (445b83f6, follow-up #a3910bfd), repo create detached (d52d632f 3decc360).
 
 ## Next action
-1. Apply operator rulings #0fe1788c (ASKED:2026-10-30T19:29Z): T15 tick with DEPS-WAIVED + waiver; R4 close as not needed (no hermes grow); C1 (PLAN-executor-durable-object-policy deb963d1) rides this PR: spawn its writer once pin-awscli and proxy-cd writers finish (exclusive plan); hostinger window for the 8 LP boxes after a VERIFIED vm:check.
-2. Commit the pending K11a tick (PLAN-backup-program, plan-boxes, INDEX, QUEUE, plan-investigation ledger) after re-running check:ci-plan-record --rendered-only --update in the same breath (QUEUE writer counts race it); retry T10 tick with a commit pointer.
-3. Settle new per-commit review findings as they land. Never add a Claude-Session line (public repo; guard a86b7a888).
-4. Operator-owned: main scrub (/tmp/scrub/MAIN-STEPS.md), revoke two leaked sessions, merge via /pr-babysit.
+1. Read the triage table from agent a3635006352c51249 (26 open review findings); mark FIXED / NOT-A-BUG with worklist.py --review-mark; fix the NEEDS-FIX groups, one commit per file group; then worklist.py --review-commit d778be9d and python3 .claude/hooks/stop/wl_review.py --check.
+2. Retry `npm run pins -- bump toolchain:pytest --task 9f92c43e`; decide the npm majors (glob@14, minimatch@11, oxc-parser@0.156).
+3. #0819d732 German ToS transliterations; #dd528d36 repo create post-dispatch rollback; edb65170.3 Free License card test.
+4. #831b7e48: npm run ci:quick with no commits during it, then npm run vm:check -- --changed, then the guarded lease push (#8515da02).
+5. [?] #707f08ca #a98ab330 #53b05748 not before 2026-10-31T06:00Z.
+
+## Big pieces
+- PLAN-detached-jobs J16 rest and J17-J19: need a command-kind executor path before the remaining verbs convert.
+- PLAN-scope-bws-signing-key follow-up #a3910bfd: the rest of the secret class plus the account server's /proc environment.
