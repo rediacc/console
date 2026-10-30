@@ -73,12 +73,7 @@ A machine managed by more than one universe (e.g. production and bench both depl
 `keyId` is a 16-hex fingerprint of the signing server's Ed25519 public key. Each universe's renet build validates only the file its baked key (or a delegation cert chained to it) can verify; other universes' files are inert. Switching universes therefore never invalidates licenses: the first operation in a new universe issues that universe's license once (`missing` -> auto-issue),
 and both coexist afterwards.
 
-Dev builds of renet are compiled with the `nolicense` tag by default (no enforcement) into `private/renet/bin/renet`. To reproduce license-flow bugs locally, select the enforcing build, which lives in `private/renet/bin/enforce/` and never replaces `bin/renet`:
-
-```bash
-ACCOUNT_ED25519_PUBLIC_KEY="<paste the value>" \
-RDC_RENET_LICENSE=1 ./rdc.sh --config <name> ...
-```
+Dev builds of renet are the one licence-enforcing build, with the production public key baked in, written to `private/renet/bin/renet`. `./rdc.sh` supplies the key from bws and runs the key gate on the result; a build without `ACCOUNT_ED25519_PUBLIC_KEY` fails. Licences for local work come from the dev or bench account server, which signs with the production key.
 
 `ACCOUNT_ED25519_PUBLIC_KEY` must match the server that signs the licenses you are testing against; it is baked in at build time (runtime setting has no effect).
 
