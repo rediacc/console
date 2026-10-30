@@ -1,4 +1,10 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { OPENTOFU_PIN } from '../../tools/opentofu-pin.generated.js';
+import registry from '../provider-registry.json' with { type: 'json' };
 import { resolveProviderMapping } from '../provider-resolver.js';
 import { generateTfJson } from '../tf-generator.js';
 
@@ -58,5 +64,56 @@ describe('cherryservers mapping', () => {
     const fields = [...value.matchAll(/\ba\.(\w+)/g)].map((m) => m[1]);
     expect(fields.length).toBeGreaterThan(0);
     for (const f of fields) expect(IP_ADDRESS_FIELDS.has(f)).toBe(true);
+  });
+});
+
+// The IPv4 output's selection logic, evaluated by the real tofu (`tofu console` needs no provider or
+// network) with @self.ip_addresses replaced by literal address lists.
+
+const TOFU_BIN =
+  process.env.REDIACC_TOFU ??
+  join(homedir(), '.local/state/rediacc/tools/opentofu', OPENTOFU_PIN.version, 'tofu');
+const HAVE_TOFU = process.platform !== 'win32' && existsSync(TOFU_BIN);
+
+function evalIpv4(addresses: { address: string; type: string; family: number }[]): string {
+  const entry = (registry as Record<string, { ipv4Output?: string }>)[
+    'cherryservers/cherryservers'
+  ];
+  const expr = String(entry.ipv4Output ?? '');
+  const list = `[${addresses
+    .map((a) => `{address = "${a.address}", type = "${a.type}", address_family = ${a.family}}`)
+    .join(', ')}]`;
+  const out = execFileSync(TOFU_BIN, ['console'], {
+    input: `${expr.replaceAll('@self.ip_addresses', list)}\n`,
+    encoding: 'utf8',
+  });
+  return out.trim().replace(/^"|"$/g, '');
+}
+
+describe.skipIf(!HAVE_TOFU && process.env.CI !== 'true')('cherryservers IPv4 selection', () => {
+  it('prefers the primary-ip IPv4', () => {
+    expect(
+      evalIpv4([
+        { address: '10.0.0.5', type: 'private-ip', family: 4 },
+        { address: '203.0.113.7', type: 'floating-ip', family: 4 },
+        { address: '198.51.100.9', type: 'primary-ip', family: 4 },
+      ])
+    ).toBe('198.51.100.9');
+  });
+
+  it('falls back to the first public IPv4 when no address is typed primary-ip, skipping RFC 1918', () => {
+    expect(
+      evalIpv4([
+        { address: '10.0.0.5', type: 'private', family: 4 },
+        { address: '172.20.1.1', type: 'private', family: 4 },
+        { address: '192.168.1.2', type: 'private', family: 4 },
+        { address: '2001:db8::1', type: 'public', family: 6 },
+        { address: '203.0.113.7', type: 'public', family: 4 },
+      ])
+    ).toBe('203.0.113.7');
+  });
+
+  it('errors instead of answering null or a private address when no public IPv4 exists', () => {
+    expect(() => evalIpv4([{ address: '10.0.0.5', type: 'private', family: 4 }])).toThrow();
   });
 });
