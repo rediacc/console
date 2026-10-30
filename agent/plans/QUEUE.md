@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 16 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1378 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1383 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a538c7712b5423f96.
-- Leased items: 2: #5bfe0775 (worker:a538c7712b5423f96, d778be9d), #a150016d (worker:queue, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a3496277ea56c8667, worker:a3bcf7a420394502a.
+- Leased items: 3: #39655212 (worker:a3496277ea56c8667, d778be9d), #5bfe0775 (worker:a3bcf7a420394502a, d778be9d), #a150016d (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 4 of 41 plans done, 569 of 741 boxes done (76%).
+Promoted: 4 of 41 plans done, 570 of 741 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -123,7 +123,7 @@ Promoted: 4 of 41 plans done, 569 of 741 boxes done (76%).
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 4/7 | 3 open |
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
 | 39 | PLAN-cli-tofu-toolchain.md | 8/10 | 2 open |
-| 40 | PLAN-backup-download-from-store.md | 4/9 | 5 open |
+| 40 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 41 | PLAN-settings-set-verb.md | 0/4 | 4 open |
 <!-- queue:progress:end -->
 
