@@ -859,10 +859,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 27,
-      "done": 12,
+      "open": 28,
+      "done": 11,
       "open_sigs": [
         "10ee1dbe",
+        "1d17b634",
         "27123f68",
         "27c5b83b",
         "3095ef97",
@@ -891,7 +892,6 @@
         "fb84a4e4"
       ],
       "done_sigs": [
-        "1d17b634",
         "21ab364f",
         "2bc62535",
         "3ae2c31f",
@@ -1027,6 +1027,19 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 0,
+      "open_sigs": [
+        "15031d34",
+        "fd28a95f"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
