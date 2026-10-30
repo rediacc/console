@@ -1,7 +1,7 @@
 /**
  * `OrgExecutor`: one org's executor container under the `durable_object` scheduling policy (agent/plans/PLAN-executor-durable-object-policy.md Design items 2 and 5, box W1).
  *
- * The frozen @cloudflare/containers `Container` class cannot run under the new policy, so this class drives `this.ctx.container` directly and imports nothing from that library. It rebuilds the helpers the proxy took from it: the start with per-instance env and outbound interception, the port readiness check, request proxying, and the `sleepAfter` idle timer. It adds what the policy moves into code: the lease on the target's cap (src/capacity.ts), the per-start instance size, the image-drift restart, and recovery after the Durable Object restarts under a running container.
+ * Cloudflare's library `Container` class could not run under the `durable_object` policy and is retired, so this class drives `this.ctx.container` directly and imports nothing from a library. It supplies what the proxy once took from it: the start with per-instance env and outbound interception, the port readiness check, request proxying, and the `sleepAfter` idle timer. It adds what the policy moves into code: the lease on the target's cap (src/capacity.ts), the per-start instance size, the image-drift restart, and recovery after the Durable Object restarts under a running container.
  *
  * The Worker calls `pin(orgId, placement, size)` with the org and placement `ExecutorIssuer.route` named, then forwards the request with `fetch`. Every refusal is an answer with a code, never error text for the Worker to guess at.
  *

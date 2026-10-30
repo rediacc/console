@@ -335,7 +335,7 @@ HEALTHY: dict = {
     "caller_auth_status": 400,
     "caller_introspected": True,
     "caller_issued_for_org": True,
-    "caller_containers": [CONTAINER_PREFIX + "ExecutorContainer-abc"],
+    "caller_containers": [CONTAINER_PREFIX + "OrgExecutor-abc"],
     "left_behind": [],
 }
 
@@ -675,7 +675,6 @@ def selftest() -> bool:
         ],
         "version_metadata": {"binding": VERSION_METADATA_BINDING},
         "containers": [
-            {"class_name": "ExecutorContainer", "image": "./Dockerfile", "max_instances": 25},
             {
                 "class_name": "OrgExecutor",
                 "scheduling_policy": "durable_object",
@@ -684,7 +683,6 @@ def selftest() -> bool:
         ],
         "durable_objects": {
             "bindings": [
-                {"name": "EXECUTOR", "class_name": "ExecutorContainer"},
                 {"name": "ORG_EXECUTOR", "class_name": "OrgExecutor"},
                 {"name": "EXECUTOR_CAPACITY", "class_name": "ExecutorCapacity"},
             ]
@@ -692,6 +690,7 @@ def selftest() -> bool:
         "migrations": [
             {"tag": "v1", "new_sqlite_classes": ["ExecutorContainer"]},
             {"tag": "v2", "new_sqlite_classes": ["OrgExecutor", "ExecutorCapacity"]},
+            {"tag": "v3", "deleted_classes": ["ExecutorContainer"]},
         ],
     }
     dev = {k: v for k, v in deploy.items() if k not in ("routes", "services")}
@@ -733,13 +732,13 @@ def selftest() -> bool:
         check(label, len(dev_config_findings({**dev, **patch}, deploy)) == 1)
 
     log = (
-        "#28 naming to docker.io/cloudflare-dev/executorcontainer:1008f582 0.0s done\n"
-        "#28 unpacking to docker.io/cloudflare-dev/executorcontainer:1008f582 2.6s done\n"
+        "#28 naming to docker.io/cloudflare-dev/orgexecutor:1008f582 0.0s done\n"
+        "#28 unpacking to docker.io/cloudflare-dev/orgexecutor:1008f582 2.6s done\n"
         "[wrangler:info] Ready on http://127.0.0.1:18932\n"
     )
     check(
         "the dev image tag is read from the build log",
-        dev_image_tags(log) == {"cloudflare-dev/executorcontainer:1008f582"},
+        dev_image_tags(log) == {"cloudflare-dev/orgexecutor:1008f582"},
     )
     check(
         "a log naming no dev image yields no tag",

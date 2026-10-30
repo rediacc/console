@@ -189,12 +189,6 @@ def test_persist_true_is_refused() -> None:
     assert any("observability.logs.persist is True" in r for r in out), out
 
 
-def test_max_instances_twenty_six_is_refused() -> None:
-    text = plant(real("edge-eu"), "max_instances = 25", "max_instances = 26")
-    out = refusals(text, "edge-eu")
-    assert "[[containers]] max_instances is 26, not 25" in out, out
-
-
 def test_max_instances_on_the_durable_entry_is_refused() -> None:
     text = plant(
         real("eu"),
@@ -233,15 +227,10 @@ def test_a_non_decimal_cap_is_refused() -> None:
     assert "vars.EXECUTOR_CAP is 25, not a decimal string" in out, out
 
 
-def test_executor_backend_both_is_refused() -> None:
-    text = plant(real("edge-eu"), 'EXECUTOR_BACKEND = "container"', 'EXECUTOR_BACKEND = "both"')
+def test_an_executor_backend_var_is_refused() -> None:
+    text = plant(real("edge-eu"), 'EXECUTOR_CAP = "25"', 'EXECUTOR_BACKEND = "durable"\nEXECUTOR_CAP = "25"')
     out = refusals(text, "edge-eu")
-    assert "vars.EXECUTOR_BACKEND is 'both', not one of container/durable" in out, out
-
-
-def test_executor_backend_durable_is_accepted() -> None:
-    text = plant(real("eu"), 'EXECUTOR_BACKEND = "container"', 'EXECUTOR_BACKEND = "durable"')
-    assert refusals(text, "eu") == []
+    assert "vars.EXECUTOR_BACKEND is not one a edge-eu config may carry" in out, out
 
 
 def test_a_missing_v2_migration_is_refused() -> None:
@@ -251,7 +240,7 @@ def test_a_missing_v2_migration_is_refused() -> None:
         "",
     )
     out = refusals(text, "eu")
-    assert any("[[migrations]] is" in r and "not v1, v2" in r for r in out), out
+    assert any("[[migrations]] is" in r and "v2" in r for r in out), out
 
 
 def test_a_missing_capacity_binding_is_refused() -> None:
@@ -272,14 +261,14 @@ def test_a_missing_durable_entry_is_refused() -> None:
         "",
     )
     out = refusals(text, "eu")
-    assert any("[[containers]] is ['ExecutorContainer']" in r for r in out), out
+    assert any("[[containers]] is []" in r for r in out), out
 
 
 def test_a_non_table_container_element_is_refused() -> None:
     config = tomllib.loads(real("eu"))
-    assert not any("[[containers]] is" in r for r in pc._executor_refusals(config, TARGETS["eu"]))
+    assert not any("[[containers]] is" in r for r in pc._executor_refusals(config))
     config["containers"].append("stray")
-    out = pc._executor_refusals(config, TARGETS["eu"])
+    out = pc._executor_refusals(config)
     assert any("[[containers]] is" in r and "'stray'" in r for r in out), out
 
 
@@ -291,25 +280,33 @@ def test_a_wrong_durable_image_is_refused() -> None:
     assert any("OrgExecutor images is" in r for r in out), out
 
 
-def test_the_one_entry_shape_after_phase_three_is_accepted() -> None:
-    text = real("bench")
-    legacy = text[
-        text.index('[[containers]]\nclass_name = "ExecutorContainer"') : text.index(
-            "# The `durable_object`"
-        )
-    ]
-    text = text.replace(legacy, "")
+def test_a_legacy_entry_beside_the_durable_one_is_refused() -> None:
     text = plant(
-        text,
-        '[[durable_objects.bindings]]\nname = "EXECUTOR"\nclass_name = "ExecutorContainer"\n\n',
-        "",
+        real("bench"),
+        '[[containers]]\nclass_name = "OrgExecutor"',
+        '[[containers]]\nclass_name = "ExecutorContainer"\nimage = "./Dockerfile"\n'
+        'image_build_context = "../.."\ninstance_type = "basic"\nmax_instances = 25\n\n'
+        '[[containers]]\nclass_name = "OrgExecutor"',
     )
+    out = refusals(text, "bench")
+    assert any("[[containers]] is ['ExecutorContainer', 'OrgExecutor']" in r for r in out), out
+
+
+def test_the_legacy_binding_is_refused() -> None:
     text = plant(
-        text,
-        'new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n',
-        'new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]\n',
+        real("bench"),
+        '[[durable_objects.bindings]]\nname = "ORG_EXECUTOR"',
+        '[[durable_objects.bindings]]\nname = "EXECUTOR"\nclass_name = "ExecutorContainer"\n\n'
+        '[[durable_objects.bindings]]\nname = "ORG_EXECUTOR"',
     )
-    assert refusals(text, "bench") == []
+    out = refusals(text, "bench")
+    assert any("[[durable_objects.bindings]] is" in r for r in out), out
+
+
+def test_a_missing_v3_migration_is_refused() -> None:
+    text = plant(real("us"), '\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]\n', "")
+    out = refusals(text, "us")
+    assert any("[[migrations]] is" in r and "v3" in r for r in out), out
 
 
 def test_an_env_table_is_refused() -> None:

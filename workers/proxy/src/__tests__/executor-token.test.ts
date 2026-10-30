@@ -6,20 +6,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@cloudflare/containers', () => ({
-  ContainerProxy: class {},
-  Container: class {
-    static outboundByHost: unknown;
-    constructor(
-      readonly ctx: unknown,
-      readonly env: unknown
-    ) {}
-  },
-  getContainer: () => ({
-    fetch: () => Promise.resolve(new Response('container')),
-  }),
-}));
-
 import { forwardAccountEgress as forward } from '../egress';
 import type { Env } from '../index';
 import {
@@ -101,7 +87,6 @@ function countingAccount(
 
 function env(issuer: CountingIssuer, account: CountingAccount, extra: Partial<Env> = {}): Env {
   return {
-    EXECUTOR: null as never,
     ACCOUNT_URL,
     ACCOUNT: account.binding,
     ISSUER: issuer.binding,

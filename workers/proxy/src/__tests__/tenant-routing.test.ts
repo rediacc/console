@@ -1,51 +1,14 @@
 /**
- * Per-org routing and pinning (agent/plans/PLAN-console-executor-multi-org.md box W1), and routing by placement on the `durable` backend (agent/plans/PLAN-org-executor-connect-timeout-relocate.md box E7).
+ * Per-org routing and pinning (agent/plans/PLAN-console-executor-multi-org.md box W1), and routing by placement (agent/plans/PLAN-org-executor-connect-timeout-relocate.md box E7).
  *
- * `ExecutorIssuer.route` is the account Worker's RPC (box A2); here it is a fake that counts calls. The Container base class is a stub that records what `pin` asks of it, so the tests prove what the Durable Object code requests, not what the library does with it (MU1 and MU3 were read in the library source, see the box notes).
+ * `ExecutorIssuer.route` is the account Worker's RPC (box A2); here it is a fake that counts calls. ORG_EXECUTOR is a fake namespace that records every stub it hands out and every pin.
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const lib = vi.hoisted(() => ({
-  names: [] as string[],
-  pins: [] as string[],
-  pinError: undefined as Error | undefined,
-  calls: [] as unknown[][],
-}));
-
-vi.mock('@cloudflare/containers', () => ({
-  ContainerProxy: class {},
-  Container: class {
-    static outboundHandlers: unknown;
-    envVars: Record<string, string> | undefined;
-    constructor(
-      readonly ctx: unknown,
-      readonly env: unknown
-    ) {}
-    setOutboundByHost(...args: unknown[]): Promise<void> {
-      lib.calls.push(['setOutboundByHost', ...args]);
-      return Promise.resolve();
-    }
-    startAndWaitForPorts(...args: unknown[]): Promise<void> {
-      lib.calls.push(['startAndWaitForPorts', ...args]);
-      return Promise.resolve();
-    }
-  },
-  getContainer: (_binding: unknown, name: string) => {
-    lib.names.push(name);
-    return {
-      pin: (org: string) => {
-        lib.pins.push(org);
-        return lib.pinError ? Promise.reject(lib.pinError) : Promise.resolve();
-      },
-      fetch: () => Promise.resolve(Response.json({ from: 'container', name })),
-    };
-  },
-}));
-
-import worker, { type Env, ExecutorContainer } from '../index';
+import worker, { type Env } from '../index';
 import type { ExecutorIssuerRpc } from '../issued-token';
-import { executorEnv as executorEnvVars, type PinAnswer } from '../org-executor';
+import type { PinAnswer } from '../org-executor';
 
 /** Which org a caller token belongs to; anything else is refused. */
 const ORG_OF: Record<string, string> = { rdt_a: 'org-a', rdt_b: 'org-b' };
@@ -73,144 +36,9 @@ function issuer(mode: 'ok' | 'throws' = 'ok'): Issuer {
   return counts;
 }
 
-function env(i: Issuer | undefined, extra: Partial<Env> = {}): Env {
-  return {
-    EXECUTOR: null as never,
-    ACCOUNT_URL: 'https://account.test',
-    ISSUER: i?.binding,
-    ...extra,
-  };
-}
-
-function call(token?: string): Request {
-  return new Request('https://proxy.test/v1/command', {
-    headers: token ? { authorization: `Bearer ${token}` } : {},
-  });
-}
-
-beforeEach(() => {
-  lib.names = [];
-  lib.pins = [];
-  lib.pinError = undefined;
-  lib.calls = [];
-  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
-
-describe('front door', () => {
-  it('two callers of two orgs reach two legacy Durable Object names, each named by the org alone', async () => {
-    const i = issuer();
-    const a = await worker.fetch(call('rdt_a'), env(i));
-    const b = await worker.fetch(call('rdt_b'), env(i));
-
-    expect(await a.json()).toEqual({ from: 'container', name: 'org-a' });
-    expect(await b.json()).toEqual({ from: 'container', name: 'org-b' });
-    expect(lib.names).toEqual(['org-a', 'org-b']);
-    expect(lib.pins).toEqual(['org-a', 'org-b']);
-    expect(i.routes).toEqual(['rdt_a', 'rdt_b']);
-  });
-
-  it('answers 401 for a route refusal, without starting a container', async () => {
-    const response = await worker.fetch(call('rdt_stranger'), env(issuer()));
-
-    expect(response.status).toBe(401);
-    expect(lib.names).toEqual([]);
-    expect(lib.pins).toEqual([]);
-  });
-
-  it('answers 401 for no bearer and never asks the issuer', async () => {
-    const i = issuer();
-    const response = await worker.fetch(call(), env(i));
-
-    expect(response.status).toBe(401);
-    expect(i.routes).toEqual([]);
-  });
-
-  for (const [name, i] of [
-    ['the issuer route call throws', issuer('throws')],
-    ['there is no ISSUER binding', undefined],
-  ] as const) {
-    it(`answers 503, not 401, when ${name}`, async () => {
-      const response = await worker.fetch(call('rdt_a'), env(i));
-
-      expect(response.status).toBe(503);
-      expect(lib.names).toEqual([]);
-    });
-  }
-
-  it('never mints at the front door, and a malformed route answer is refused', async () => {
-    const i = issuer();
-    for (const answer of [{}, { orgId: '' }, { orgId: 7, placement: 0 }, undefined]) {
-      (i.binding as unknown as { route: unknown }).route = () => Promise.resolve(answer);
-      const response = await worker.fetch(call('rdt_a'), env(i));
-      expect(response.status).toBe(401);
-    }
-    expect(i.issues).toBe(0);
-    expect(lib.names).toEqual([]);
-  });
-
-  it('a route answer without a valid placement is a 503 refused:route-placement-missing that starts nothing, on either backend', async () => {
-    for (const backend of ['container', 'durable']) {
-      for (const placement of [undefined, -1, 1.5, '1', null]) {
-        const i = issuer();
-        (i.binding as unknown as { route: unknown }).route = () =>
-          Promise.resolve({ orgId: 'org-a', placement });
-        const { ctx, attrs } = traced();
-        const response = await worker.fetch(
-          call('rdt_a'),
-          env(i, { EXECUTOR_BACKEND: backend, ORG_EXECUTOR: orgExecutors() }),
-          ctx
-        );
-
-        expect(response.status).toBe(503);
-        expect(attrs['rediacc.proxy.outcome']).toBe('refused:route-placement-missing');
-      }
-    }
-    expect(lib.names).toEqual([]);
-    expect(durable.gets).toEqual([]);
-  });
-});
-
-function traced(): { ctx: ExecutionContext; attrs: Record<string, unknown> } {
-  const attrs: Record<string, unknown> = {};
-  const ctx = {
-    tracing: {
-      getActiveSpan: () => ({
-        setAttribute: (k: string, v: unknown) => (attrs[k] = v),
-      }),
-    },
-  } as unknown as ExecutionContext;
-  return { ctx, attrs };
-}
-
-describe('legacy start failures', () => {
-  it('a start error is a 503 EXECUTOR_START_FAILED whatever its text: capacity is never guessed from error text', async () => {
-    for (const text of [
-      'Maximum instances reached for this container application',
-      'container capacity exceeded',
-      'image pull failed',
-    ]) {
-      lib.pinError = new Error(text);
-      const { ctx, attrs } = traced();
-      const response = await worker.fetch(call('rdt_a'), env(issuer()), ctx);
-
-      expect(response.status).toBe(503);
-      expect(response.headers.get('retry-after')).toBeNull();
-      expect(await response.json()).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
-      expect(attrs['rediacc.proxy.outcome']).toBe('start-failed');
-    }
-  });
-
-  it('never falls back to another org instance on a failed start', async () => {
-    lib.pinError = new Error('container capacity exceeded');
-    await worker.fetch(call('rdt_a'), env(issuer()));
-
-    expect(lib.names).toEqual(['org-a']);
-  });
-});
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** The `durable` backend's ORG_EXECUTOR namespace: records every stub it hands out and every pin, answering from `answers` in order (an empty queue answers ok on the asked size). */
+/** The ORG_EXECUTOR namespace: records every stub it hands out and every pin, answering from `answers` in order (an empty queue answers ok on the asked size). */
 const durable = {
   gets: [] as string[],
   oomAt: undefined as number | undefined,
@@ -252,6 +80,114 @@ function orgExecutors(): Env['ORG_EXECUTOR'] {
   } as unknown as Env['ORG_EXECUTOR'];
 }
 
+function env(i: Issuer | undefined, extra: Partial<Env> = {}): Env {
+  return {
+    ORG_EXECUTOR: orgExecutors(),
+    ACCOUNT_URL: 'https://account.test',
+    ISSUER: i?.binding,
+    ...extra,
+  };
+}
+
+function call(token?: string): Request {
+  return new Request('https://proxy.test/v1/command', {
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
+}
+
+beforeEach(() => {
+  durable.gets = [];
+  durable.oomAt = undefined;
+  durable.oomHeavyAt = undefined;
+  durable.pins = [];
+  durable.placements = [];
+  durable.answers = [];
+  durable.pinThrows = false;
+  durable.oomHeavyThrows = false;
+  durable.fetches = [];
+  vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+});
+
+describe('front door', () => {
+  it('two callers of two orgs reach two Durable Object names, each named by the org and its placement', async () => {
+    const i = issuer();
+    const a = await worker.fetch(call('rdt_a'), env(i));
+    const b = await worker.fetch(call('rdt_b'), env(i));
+
+    expect(await a.json()).toEqual({ from: 'org-executor', name: 'org-a:p0' });
+    expect(await b.json()).toEqual({ from: 'org-executor', name: 'org-b:p0' });
+    expect(durable.gets).toEqual(['org-a:p0', 'org-b:p0']);
+    expect(durable.pins.map(([org]) => org)).toEqual(['org-a', 'org-b']);
+    expect(i.routes).toEqual(['rdt_a', 'rdt_b']);
+  });
+
+  it('answers 401 for a route refusal, without starting an executor', async () => {
+    const response = await worker.fetch(call('rdt_stranger'), env(issuer()));
+
+    expect(response.status).toBe(401);
+    expect(durable.gets).toEqual([]);
+    expect(durable.pins).toEqual([]);
+  });
+
+  it('answers 401 for no bearer and never asks the issuer', async () => {
+    const i = issuer();
+    const response = await worker.fetch(call(), env(i));
+
+    expect(response.status).toBe(401);
+    expect(i.routes).toEqual([]);
+  });
+
+  for (const [name, i] of [
+    ['the issuer route call throws', issuer('throws')],
+    ['there is no ISSUER binding', undefined],
+  ] as const) {
+    it(`answers 503, not 401, when ${name}`, async () => {
+      const response = await worker.fetch(call('rdt_a'), env(i));
+
+      expect(response.status).toBe(503);
+      expect(durable.gets).toEqual([]);
+    });
+  }
+
+  it('never mints at the front door, and a malformed route answer is refused', async () => {
+    const i = issuer();
+    for (const answer of [{}, { orgId: '' }, { orgId: 7, placement: 0 }, undefined]) {
+      (i.binding as unknown as { route: unknown }).route = () => Promise.resolve(answer);
+      const response = await worker.fetch(call('rdt_a'), env(i));
+      expect(response.status).toBe(401);
+    }
+    expect(i.issues).toBe(0);
+    expect(durable.gets).toEqual([]);
+  });
+
+  it('a route answer without a valid placement is a 503 refused:route-placement-missing that starts nothing', async () => {
+    for (const placement of [undefined, -1, 1.5, '1', null]) {
+      const i = issuer();
+      (i.binding as unknown as { route: unknown }).route = () =>
+        Promise.resolve({ orgId: 'org-a', placement });
+      const { ctx, attrs } = traced();
+      const response = await worker.fetch(call('rdt_a'), env(i), ctx);
+
+      expect(response.status).toBe(503);
+      expect(attrs['rediacc.proxy.outcome']).toBe('refused:route-placement-missing');
+    }
+    expect(durable.gets).toEqual([]);
+    expect(durable.gets).toEqual([]);
+  });
+});
+
+function traced(): { ctx: ExecutionContext; attrs: Record<string, unknown> } {
+  const attrs: Record<string, unknown> = {};
+  const ctx = {
+    tracing: {
+      getActiveSpan: () => ({
+        setAttribute: (k: string, v: unknown) => (attrs[k] = v),
+      }),
+    },
+  } as unknown as ExecutionContext;
+  return { ctx, attrs };
+}
+
 /** An issuer whose route also answers a tier and a placement: `rdt_high` is a BUSINESS org, `rdt_std` a PROFESSIONAL one, `rdt_a` answers no tier, and `rdt_moved` is an org at placement 1. */
 function tieredIssuer(): Issuer {
   const counts = issuer();
@@ -269,40 +205,11 @@ function tieredIssuer(): Issuer {
 }
 
 function durableEnv(extra: Partial<Env> = {}): Env {
-  return env(tieredIssuer(), {
-    EXECUTOR_BACKEND: 'durable',
-    ORG_EXECUTOR: orgExecutors(),
-    ...extra,
-  });
+  return env(tieredIssuer(), { ORG_EXECUTOR: orgExecutors(), ...extra });
 }
 
-describe('backend routing by EXECUTOR_BACKEND', () => {
-  beforeEach(() => {
-    durable.gets = [];
-    durable.oomAt = undefined;
-    durable.oomHeavyAt = undefined;
-    durable.pins = [];
-    durable.placements = [];
-    durable.answers = [];
-    durable.pinThrows = false;
-    durable.oomHeavyThrows = false;
-    durable.fetches = [];
-  });
-
-  for (const backend of ['container', undefined, '', 'Durable', 'org-executor']) {
-    it(`EXECUTOR_BACKEND=${JSON.stringify(backend)} routes every request to EXECUTOR and never to ORG_EXECUTOR`, async () => {
-      const e = durableEnv({ EXECUTOR_BACKEND: backend });
-      for (const token of ['rdt_a', 'rdt_high', 'rdt_a']) {
-        const response = await worker.fetch(call(token), e);
-        expect(await response.json()).toMatchObject({ from: 'container' });
-      }
-
-      expect(lib.names).toEqual(['org-a', 'org-high', 'org-a']);
-      expect(durable.gets).toEqual([]);
-    });
-  }
-
-  it('durable routes every request to ORG_EXECUTOR and never to EXECUTOR', async () => {
+describe('routing', () => {
+  it('routes every request to ORG_EXECUTOR', async () => {
     const e = durableEnv();
     for (const token of ['rdt_a', 'rdt_high', 'rdt_a']) {
       const response = await worker.fetch(call(token), e);
@@ -313,16 +220,14 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
     expect(durable.gets).toEqual(['org-a:p0', 'org-high:p0', 'org-a:p0']);
     expect(durable.fetches).toEqual(['org-a:p0', 'org-high:p0', 'org-a:p0']);
     expect(durable.placements).toEqual([0, 0, 0]);
-    expect(lib.names).toEqual([]);
-    expect(lib.pins).toEqual([]);
   });
 
-  it('durable without an ORG_EXECUTOR binding is a 503 EXECUTOR_START_FAILED, never a fall back to EXECUTOR', async () => {
+  it('without an ORG_EXECUTOR binding is a 503 EXECUTOR_START_FAILED', async () => {
     const response = await worker.fetch(call('rdt_a'), durableEnv({ ORG_EXECUTOR: undefined }));
 
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({ code: 'EXECUTOR_START_FAILED' });
-    expect(lib.names).toEqual([]);
+    expect(durable.gets).toEqual([]);
   });
 
   it('a route answering placement 1 reaches the stub named org-a:p1 and pins with that placement', async () => {
@@ -334,7 +239,7 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
     expect(durable.placements).toEqual([1]);
   });
 
-  it('a route refusal starts nothing on the durable backend', async () => {
+  it('a route refusal starts nothing ', async () => {
     const response = await worker.fetch(call('rdt_stranger'), durableEnv());
 
     expect(response.status).toBe(401);
@@ -342,19 +247,7 @@ describe('backend routing by EXECUTOR_BACKEND', () => {
   });
 });
 
-describe('sizing on the durable backend', () => {
-  beforeEach(() => {
-    durable.gets = [];
-    durable.oomAt = undefined;
-    durable.oomHeavyAt = undefined;
-    durable.pins = [];
-    durable.placements = [];
-    durable.answers = [];
-    durable.pinThrows = false;
-    durable.oomHeavyThrows = false;
-    durable.fetches = [];
-  });
-
+describe('sizing', () => {
   it("tier 'high' starts heavy (standard-1)", async () => {
     await worker.fetch(call('rdt_high'), durableEnv());
     expect(durable.pins).toEqual([['org-high', 'heavy']]);
@@ -499,92 +392,5 @@ describe('sizing on the durable backend', () => {
         expect(String(value)).not.toContain('rdt_');
       }
     }
-  });
-});
-
-/** A Durable Object id as the runtime makes it: `idFromName` is stable per name and `equals` compares them. */
-function id(name: string): {
-  toString(): string;
-  equals(other: { toString(): string }): boolean;
-} {
-  return {
-    toString: () => `id:${name}`,
-    equals: (other) => other.toString() === `id:${name}`,
-  };
-}
-
-function instance(name: string): ExecutorContainer {
-  const e = env(undefined, {
-    EXECUTOR: {
-      idFromName: (n: string) => id(n),
-    } as unknown as Env['EXECUTOR'],
-  });
-  return new ExecutorContainer({ id: id(name) } as never, e);
-}
-
-describe('ExecutorContainer.pin', () => {
-  it('refuses an org whose idFromName differs from the instance id, and starts nothing', async () => {
-    const container = instance('org-a');
-
-    await expect(container.pin('org-b')).rejects.toThrow('pin-id-mismatch');
-    expect(lib.calls).toEqual([]);
-  });
-
-  it('refuses an empty or non-string org', async () => {
-    const container = instance('org-a');
-
-    await expect(container.pin('')).rejects.toThrow('pin-org-invalid');
-    await expect(container.pin(undefined as never)).rejects.toThrow('pin-org-invalid');
-    expect(lib.calls).toEqual([]);
-  });
-
-  it('a second pin with another org is refused, even when the id check alone would have passed', async () => {
-    const container = instance('org-a');
-    await container.pin('org-a');
-    // Forge the id match for org-b to reach the conflict rule on its own.
-    (container as unknown as { ctx: { id: unknown } }).ctx.id = {
-      toString: () => 'id:org-b',
-      equals: () => true,
-    };
-
-    await expect(container.pin('org-b')).rejects.toThrow('pin-org-conflict');
-    expect(lib.calls.filter((c) => c[0] === 'startAndWaitForPorts')).toHaveLength(1);
-  });
-
-  it('pins the same org again without a conflict', async () => {
-    const container = instance('org-a');
-    await container.pin('org-a');
-    await expect(container.pin('org-a')).resolves.toBeUndefined();
-  });
-
-  it('routes account.internal to accountEgress with the org, then starts with exactly the four env names', async () => {
-    const container = instance('org-a');
-    await container.pin('org-a');
-
-    expect(lib.calls[0]).toEqual([
-      'setOutboundByHost',
-      'account.internal',
-      'accountEgress',
-      { orgId: 'org-a' },
-    ]);
-    const start = lib.calls[1] as [string, { startOptions: { envVars: Record<string, string> } }];
-    expect(start[0]).toBe('startAndWaitForPorts');
-    const envVars = start[1].startOptions.envVars;
-    expect(Object.keys(envVars).sort((a, b) => a.localeCompare(b))).toEqual([
-      'REDIACC_ACCOUNT_SERVER',
-      'REDIACC_EXECUTOR_ORG_ID',
-      'REDIACC_REGION',
-      'REDIACC_TOKEN',
-    ]);
-    expect(envVars.REDIACC_EXECUTOR_ORG_ID).toBe('org-a');
-    expect(envVars.REDIACC_TOKEN).toBe('rediacc-executor-placeholder');
-    // A later restart that skips `pin` still carries the org.
-    expect(container.envVars).toEqual(envVars);
-    expect(envVars).toEqual(executorEnvVars((container as unknown as { env: Env }).env, 'org-a'));
-  });
-
-  it('installs the egress routing before the start, so no start happens with account.internal unrouted', async () => {
-    await instance('org-a').pin('org-a');
-    expect(lib.calls.map((c) => c[0])).toEqual(['setOutboundByHost', 'startAndWaitForPorts']);
   });
 });

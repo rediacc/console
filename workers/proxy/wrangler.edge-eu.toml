@@ -15,7 +15,6 @@ routes = [
 ACCOUNT_URL = "https://edge-eu.rediacc.com"
 REGION = "eu"
 ENVIRONMENT = "edge"
-EXECUTOR_BACKEND = "container"
 EXECUTOR_CAP = "25"
 EXECUTOR_HEAVY_CAP = "5"
 
@@ -43,23 +42,8 @@ entrypoint = "ExecutorIssuer"
 [version_metadata]
 binding = "CF_VERSION_METADATA"
 
-[[containers]]
-class_name = "ExecutorContainer"
-image = "./Dockerfile"
-# The Dockerfile COPYs from the repo root; wrangler defaults the build context to the
-# Dockerfile's own directory, so without this the image cannot build.
-image_build_context = "../.."
-# `basic` is 1/4 vCPU and 1 GiB. The executor is a Node process holding an SSH pool and a
-# decrypted config, so `lite` (256 MiB) is too small, while anything larger pays for memory
-# this workload does not use.
-instance_type = "basic"
-# One executor container per org, so the cap is sized by demand. Operator ruling
-# ASKED:2026-10-26T15:26Z: up to 25 per target, 7 deployable targets, idle orgs sleep after
-# 2 minutes (check:ci-proxy-cost-guard; the container spend alarm is cf_usage_report).
-max_instances = 25
-
 # The `durable_object` scheduling policy entry (agent/plans/PLAN-executor-durable-object-policy.md
-# Design item 2), beside the old one until Phase 3. It carries no max_instances and no
+# Design item 2). It carries no max_instances and no
 # instance_type: wrangler refuses both under this policy (spike DU6), so the cap of 25 lives in
 # src/capacity.ts and each start names its own instance size.
 [[containers]]
@@ -69,10 +53,6 @@ scheduling_policy = "durable_object"
 [containers.images.executor]
 dockerfile = "./Dockerfile"
 build_context = "../.."
-
-[[durable_objects.bindings]]
-name = "EXECUTOR"
-class_name = "ExecutorContainer"
 
 [[durable_objects.bindings]]
 name = "ORG_EXECUTOR"
@@ -88,10 +68,14 @@ class_name = "ExecutorCapacity"
 tag = "v1"
 new_sqlite_classes = ["ExecutorContainer"]
 
-# v2 adds the two classes of the durable backend; v1 stays until Phase 3 retires its class.
+# v2 adds the two classes of the durable_object policy; v3 retires the class v1 created.
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]
+
+[[migrations]]
+tag = "v3"
+deleted_classes = ["ExecutorContainer"]
 
 # Telemetry export: logs and traces go to the region's destination pair, which the account
 # Workers of the region share. Operator ruling 2026-10-23: Cloudflare keeps no copy

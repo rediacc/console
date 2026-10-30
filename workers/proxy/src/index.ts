@@ -1,12 +1,12 @@
 /**
  * The executor's container placement.
  *
- * A thin Worker in front of a Container that runs `rdc serve --mode container`.
+ * A thin Worker in front of the per-org `OrgExecutor` Durable Object, whose container runs `rdc serve --mode container`.
  * The Worker does exactly two jobs and no more:
  *
  *   1. Decide WHICH container instance a request belongs to. The Durable Object
- *      name is derived from the org (and, on the `durable` backend, its placement:
- *      src/placement.ts `executorName`), so one org's commands always land on the
+ *      name is derived from the org and its placement
+ *      (src/placement.ts `executorName`), so one org's commands always land on the
  *      same warm instance, and no other org's ever does. That is what makes the SSH connection pool and the
  *      decrypted-config cache worth having: a cold instance per command would
  *      throw both away every time.
@@ -22,17 +22,9 @@
  * config, to be routed to.
  */
 
-import { Container, getContainer } from '@cloudflare/containers';
 import type { ExecutorCapacity } from './capacity';
-import { accountEgress } from './egress';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
-import {
-  ACCOUNT_EGRESS_HOST,
-  type ExecutorRefusalCode,
-  executorEnv,
-  type OrgExecutor,
-  type PinAnswer,
-} from './org-executor';
+import type { ExecutorRefusalCode, OrgExecutor, PinAnswer } from './org-executor';
 import { executorName, placementOf } from './placement';
 import { readiness } from './ready';
 import {
@@ -46,26 +38,18 @@ import {
 import { activeSpan, type RuntimeSpan } from './span';
 
 // Every export of the main module is an entrypoint or a Durable Object class: workerd refuses to start on a plain value, and wrangler refuses a deploy whose bound Durable Object classes are not exported here.
-// Outbound interception (ExecutorContainer.outboundByHost) runs through this entrypoint; without the re-export a container start fails with "ctx.exports.ContainerProxy is undefined".
-export { ContainerProxy } from '@cloudflare/containers';
 // The cap coordinator, bound as EXECUTOR_CAPACITY.
 export { ExecutorCapacity } from './capacity';
-// The `durable_object` backend's egress, reached through `ctx.exports.AccountEgress` by OrgExecutor (Design A).
+// The egress, reached through `ctx.exports.AccountEgress` by OrgExecutor (Design A).
 export { AccountEgress } from './egress';
-// The `durable_object` backend's per-org executor, bound as ORG_EXECUTOR.
+// The per-org executor, bound as ORG_EXECUTOR.
 export { OrgExecutor } from './org-executor';
 
 export interface Env {
-  /** The legacy backend (the @cloudflare/containers `ExecutorContainer`), routed to when EXECUTOR_BACKEND is `container`. */
-  EXECUTOR: DurableObjectNamespace<ExecutorContainer>;
-  /** The `durable_object` backend (src/org-executor.ts), routed to when EXECUTOR_BACKEND is `durable`. A version routed to it without the binding refuses with EXECUTOR_START_FAILED. */
+  /** The per-org executor (src/org-executor.ts). A version deployed without the binding refuses with EXECUTOR_START_FAILED. */
   ORG_EXECUTOR?: DurableObjectNamespace<OrgExecutor>;
   /** The target's cap coordinator (src/capacity.ts); OrgExecutor holds a lease on it for each running container. */
   EXECUTOR_CAPACITY?: DurableObjectNamespace<ExecutorCapacity>;
-  /**
-   * Which backend this version routes every request to: `durable` for ORG_EXECUTOR, anything else (`container`, unset) for EXECUTOR. Generated per target by proxy_configs.py `BACKEND_BY_TARGET`. Chosen per version, never per request, so one version never routes an org to both backends.
-   */
-  EXECUTOR_BACKEND?: string;
   /** The coordinator's cap and heavy sub-cap, decimal strings (src/capacity.ts `capFrom`). */
   EXECUTOR_CAP?: string;
   EXECUTOR_HEAVY_CAP?: string;
@@ -110,60 +94,6 @@ function tagRequest(span: RuntimeSpan | undefined, request: Request, env: Env): 
 }
 
 /**
- * The legacy backend's container. The environment it boots with is src/org-executor.ts `executorEnv`, the same four names OrgExecutor starts with: REDIACC_TOKEN is a fixed placeholder that authenticates nothing, and REDIACC_EXECUTOR_ORG_ID is set here by Durable Object code in `pin`, never by the container or the caller.
- *
- * The container addresses the account server as ACCOUNT_EGRESS_HOST (`account.internal`). A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post the container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. So `pin` installs the `accountEgress` handler for that name, and `accountEgress` (src/egress.ts) checks the instance and org, checks the request against the allowlist, swaps the placeholder for the org's issued token, and sends it over the ACCOUNT binding (or to ACCOUNT_URL under `wrangler dev`, which has no binding). The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet.
- */
-export class ExecutorContainer extends Container<Env> {
-  // The named outbound handlers. An ASSIGNMENT in a static block, never a `static outboundHandlers = ...` field: @cloudflare/containers keeps the handlers in a registry behind an inherited static setter keyed by class name, and under ES2022 define semantics a field becomes an own property that shadows the setter, so the registry stays empty, ContainerProxy finds no handler and the request falls through to a plain fetch of account.internal that dies at DNS with a 530 (bench, 2026-10-24, two deploys). There is deliberately no static outboundByHost: an instance that was never pinned has no handler for account.internal and its call is refused.
-  static {
-    ExecutorContainer.outboundHandlers = {
-      accountEgress: (request: Request, env: unknown, ctx: unknown) =>
-        accountEgress(request, env as Env, ctx as Parameters<typeof accountEgress>[2]),
-    };
-  }
-
-  /** `rdc serve` listens here. */
-  defaultPort = 8080;
-
-  /**
-   * Idle timeout before the instance sleeps.
-   *
-   * Long enough that a session of console work reuses one warm executor, short
-   * enough that an idle tenant stops costing memory. Billing is dominated by
-   * provisioned memory rather than active CPU, so a few minutes of idle is cheap
-   * and a cold start (1 to 3 seconds, plus rebuilding the SSH pool) is not.
-   */
-  sleepAfter = '2m';
-
-  /** The org this instance serves, set once by `pin`. */
-  private pinnedOrg: string | undefined;
-
-  /**
-   * Pin this instance to one org and start its container. Called by the Worker with the org `ExecutorIssuer.route` named, before it forwards a request.
-   *
-   * The instance must be the Durable Object named for `orgId`, so an org that is not this instance's own name cannot be pinned; a second pin with another org is refused. The container starts with the per-instance env (MU3: `startOptions.envVars` replaces the class-level `envVars` wholesale in @cloudflare/containers 0.3.7, it is not merged, so all four names are passed) and `account.internal` is routed to `accountEgress` with `{ orgId }`.
-   */
-  async pin(orgId: string): Promise<void> {
-    if (typeof orgId !== 'string' || orgId === '') throw new Error('pin-org-invalid');
-    if (!this.ctx.id.equals(this.env.EXECUTOR.idFromName(orgId))) {
-      throw new Error('pin-id-mismatch');
-    }
-    if (this.pinnedOrg !== undefined && this.pinnedOrg !== orgId) {
-      throw new Error('pin-org-conflict');
-    }
-    this.pinnedOrg = orgId;
-    const envVars = executorEnv(this.env, orgId);
-    // A later start (after the instance slept) that does not go through `pin` still carries the org.
-    this.envVars = envVars;
-    await this.setOutboundByHost(ACCOUNT_EGRESS_HOST, 'accountEgress', {
-      orgId,
-    });
-    await this.startAndWaitForPorts({ startOptions: { envVars } });
-  }
-}
-
-/**
  * Log WHY a caller was refused, as a reason code only (never a token), then answer it as a Refusal.
  *
  * Every refusal used to be a silent null, so the first Phase 2 deploy (2026-09-24) could say only "401" while its cause stayed invisible even in `wrangler tail`.
@@ -187,7 +117,7 @@ interface Refusal {
 interface Tenant {
   orgId: string;
   tier: ExecutorTier;
-  /** The org's executor placement (D1 `organizations.executor_placement`): the `durable` backend's Durable Object is `executorName(orgId, placement)`. */
+  /** The org's executor placement (D1 `organizations.executor_placement`): the Durable Object is `executorName(orgId, placement)`. */
   placement: number;
 }
 
@@ -226,35 +156,6 @@ function startRefused(code: ExecutorRefusalCode, span: RuntimeSpan | undefined):
   console.warn('proxy: executor start failed');
   span?.setAttribute('rediacc.proxy.outcome', 'start-failed');
   return Response.json({ error: 'The executor could not be started.', code }, { status: 503 });
-}
-
-/** Pin the legacy backend's instance and start it. Answers undefined on success, else the response for a failed start. Any failure is EXECUTOR_START_FAILED: only the coordinator of the `durable` backend answers capacity, and error text is never guessed at. */
-async function startLegacyExecutor(
-  container: { pin(orgId: string): Promise<void> },
-  orgId: string,
-  span: RuntimeSpan | undefined
-): Promise<Response | undefined> {
-  try {
-    await container.pin(orgId);
-    return undefined;
-  } catch {
-    return startRefused('EXECUTOR_START_FAILED', span);
-  }
-}
-
-/** The legacy backend: the org's ExecutorContainer, pinned and started, then forwarded to. */
-async function viaContainer(
-  request: Request,
-  env: Env,
-  tenant: Tenant,
-  span: RuntimeSpan | undefined
-): Promise<Response> {
-  // Same org, same instance, every time.
-  const container = getContainer(env.EXECUTOR, tenant.orgId);
-  const failed = await startLegacyExecutor(container, tenant.orgId, span);
-  if (failed) return failed;
-  span?.setAttribute('rediacc.proxy.outcome', 'forwarded');
-  return container.fetch(request);
 }
 
 /** The slice of an OrgExecutor stub the Worker calls, typed from the class itself so a signature change there fails the typecheck here. */
@@ -325,7 +226,7 @@ async function forwardOutcome(
 }
 
 /**
- * The `durable_object` backend: the org's OrgExecutor at its placement, sized, pinned and forwarded to. Every refusal is the coordinator's or the Durable Object's code, never a guess.
+ * The org's OrgExecutor at its placement, sized, pinned and forwarded to. Every refusal is the coordinator's or the Durable Object's code, never a guess.
  *
  * An `EXECUTOR_RELOCATED` pin means the instance retired after the org moved (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design item 7): the issuer is asked once more, and the request is re-routed once when the placement went up. Anything else, including a second `EXECUTOR_RELOCATED`, is a 503 EXECUTOR_START_FAILED.
  */
@@ -396,9 +297,6 @@ export default {
       );
     }
 
-    // The backend is the version's, never the request's (Design item 2).
-    return env.EXECUTOR_BACKEND === 'durable'
-      ? viaOrgExecutor(request, env, tenant, span)
-      : viaContainer(request, env, tenant, span);
+    return viaOrgExecutor(request, env, tenant, span);
   },
 };

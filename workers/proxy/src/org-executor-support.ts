@@ -8,7 +8,7 @@ import type { ExecutorIssuerRpc } from './issued-token';
 import { executorName, placementOf } from './placement';
 import type { ProbeVerdict } from './reachability';
 
-/** The host the container addresses the account server by; the intercept routes it to the egress entrypoint (src/index.ts, the `ExecutorContainer` comment, says why). */
+/** The host the container addresses the account server by; `interceptOutboundHttp` routes it to the `AccountEgress` entrypoint. A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post a container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. */
 export const ACCOUNT_EGRESS_HOST = 'account.internal';
 /** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
 const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
@@ -111,7 +111,7 @@ type EgressFactory = (options: { props: ExecutorEgressProps }) => Fetcher;
 export type ExitResult = { clean: true } | { clean: false; error: unknown };
 
 /**
- * The environment `rdc serve --mode container` boots with: exactly these four names, on both backends (src/index.ts `ExecutorContainer.pin` uses it too).
+ * The environment `rdc serve --mode container` boots with: exactly these four names.
  *
  * REDIACC_TOKEN is the placeholder that authenticates nothing; the egress swaps it for the org's issued token, so no real token ever enters the container.
  */
@@ -195,7 +195,7 @@ export async function bounded<T>(call: Promise<T>): Promise<T> {
 }
 
 /**
- * The incoming request re-addressed to plain `http:`, keeping its method, headers, body and signal. A container TCP port speaks HTTP, so it refuses the `https://executor.internal/...` URL the proxy routes with; the replaced `@cloudflare/containers` library made the same swap before its port fetch.
+ * The incoming request re-addressed to plain `http:`, keeping its method, headers, body and signal. A container TCP port speaks HTTP, so it refuses the `https://executor.internal/...` URL the proxy routes with.
  */
 export function containerRequest(request: Request): Request {
   const url = new URL(request.url);

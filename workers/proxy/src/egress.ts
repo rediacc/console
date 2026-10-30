@@ -1,7 +1,7 @@
 /**
  * The container's only road to the account server, and the allowlist on it.
  *
- * The container boots with REDIACC_TOKEN set to EXECUTOR_TOKEN_PLACEHOLDER, never a real token, and addresses the account server as `http://account.internal`, which `ExecutorContainer.outboundByHost` routes here. This function forwards exactly the method and path pairs `rdc serve --mode container` calls (agent/plans/PLAN-proxy-cd-six-targets.md, Context, "Paths the container calls"):
+ * The container boots with REDIACC_TOKEN set to EXECUTOR_TOKEN_PLACEHOLDER, never a real token, and addresses the account server as `http://account.internal`, which `OrgExecutor` routes here (`interceptOutboundHttp`, to the `AccountEgress` entrypoint). This function forwards exactly the method and path pairs `rdc serve --mode container` calls (agent/plans/PLAN-proxy-cd-six-targets.md, Context, "Paths the container calls"):
  *
  *   - the four executor-bearer calls require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
  *   - the three unauthenticated calls leave with no Authorization at all;
@@ -12,7 +12,7 @@
  *
  * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. The one container caller seen (bench `wrangler tail`, 2026-10-28) is the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), which the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers.
  *
- * One request is answered here rather than forwarded: on the `durable_object` backend, `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor. The legacy `accountEgress` has no such route and refuses it as `route-not-allowed`.
+ * One request is answered here rather than forwarded: `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor.
  */
 
 import { WorkerEntrypoint } from 'cloudflare:workers';
@@ -70,17 +70,11 @@ function routeOf(
   return undefined;
 }
 
-/** The env slice the forward reads, whichever backend the request came from. */
+/** The env slice the forward reads. */
 export interface ForwardEnv {
   ACCOUNT_URL: string;
   ACCOUNT?: Fetcher;
   ISSUER?: Service<ExecutorIssuerRpc>;
-}
-
-/** The env slice the legacy `accountEgress` reads. */
-export interface EgressEnv extends ForwardEnv {
-  /** Only `idFromName` is used: the instance identity the egress cross-checks (agent/plans/PLAN-console-executor-multi-org.md, Design item 1.3). */
-  EXECUTOR: { idFromName(name: string): { toString(): string } };
 }
 
 /** The executor's report that it could not reach a machine: a JSON `{ host, port }` body (or none, from an older executor), no query, answered by `AccountEgress` and never forwarded (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design items 3 and 7, and E13). */
@@ -141,7 +135,7 @@ async function reportTarget(request: Request): Promise<ProbeTarget | TargetRefus
   return probeTarget(value);
 }
 
-/** The env slice `AccountEgress` reads: the same cross-check, against the `durable_object` backend's namespace, and the report on the calling instance itself. */
+/** The env slice `AccountEgress` reads: the instance cross-check against the ORG_EXECUTOR namespace, and the report on the calling instance itself. */
 export interface DurableEgressEnv extends ForwardEnv {
   ORG_EXECUTOR: {
     idFromName(name: string): { toString(): string };
@@ -175,45 +169,12 @@ async function issuedBearer(
   }
 }
 
-/** The params `ExecutorContainer.pin` installs with `setOutboundByHost`: set by Durable Object code, never by the container. */
-interface AccountEgressParams {
-  orgId: string;
-}
-
-/** What @cloudflare/containers hands a named outbound handler (dist/lib/container.d.ts `OutboundHandlerContext`): `containerId` is `this.ctx.id.toString()` of the calling instance. */
-export interface AccountEgressContext {
-  containerId: string;
-  className: string;
-  params?: Partial<AccountEgressParams>;
-}
-
 /**
- * The `accountEgress` named outbound handler.
- *
- * It requires `ctx.params.orgId` and requires the calling instance to be exactly the Durable Object named for that org (`ctx.containerId === env.EXECUTOR.idFromName(orgId).toString()`), so an instance can only ever obtain its own org's issued token. Both checks run before the allowlist and before the issuer is asked: a refusal here counts zero issuer calls.
- */
-export async function accountEgress(
-  request: Request,
-  env: EgressEnv,
-  ctx: AccountEgressContext | undefined
-): Promise<Response> {
-  const url = new URL(request.url);
-  const orgId = ctx?.params?.orgId;
-  if (typeof orgId !== 'string' || orgId === '') {
-    return refuseEgress('org-param-missing', request.method, url);
-  }
-  if (ctx?.containerId !== env.EXECUTOR.idFromName(orgId).toString()) {
-    return refuseEgress('container-org-mismatch', request.method, url);
-  }
-  return await forwardAccountEgress(request, env, orgId);
-}
-
-/**
- * The egress entrypoint for the `durable_object` backend (Design A): `OrgExecutor` binds it through `ctx.exports.AccountEgress({ props: { orgId, placement, containerId } })` and `interceptOutboundHttp` routes `account.internal` to that stub.
+ * The egress entrypoint (Design A): `OrgExecutor` binds it through `ctx.exports.AccountEgress({ props: { orgId, placement, containerId } })` and `interceptOutboundHttp` routes `account.internal` to that stub.
  *
  * Props are set only by Durable Object code, so the container cannot choose them. A request is refused 403 before the allowlist and before the issuer when the props are absent or malformed (`org-param-missing`), or when `containerId` is not `env.ORG_EXECUTOR.idFromName(executorName(orgId, placement)).toString()` (`container-org-mismatch`): an instance can only ever obtain its own org's issued token, and only report for itself.
  *
- * After those checks, `POST /executor/v1/egress-unreachable` with no query is answered here. Its body, at most 512 bytes of JSON `{ host, port }`, names the machine the executor could not reach: a malformed one is 400 `report-target-invalid` and a private or loopback address, localhost or port 25 is 403 `report-target-refused`, both before any RPC; an empty body is a report with no target, which never counts. An admitted report is `recordEgressUnreachable` on the calling instance, `{ count, threshold, relocated, counted, probe }` back to the executor, and the span outcome `relocated` when the report moved the org, `target-unreachable` when it did not count, else `egress-unreachable`. It never reaches ACCOUNT and never calls the issuer. Everything else is `forwardAccountEgress`, so the allowlist and the placeholder swap are the same code as on the legacy path.
+ * After those checks, `POST /executor/v1/egress-unreachable` with no query is answered here. Its body, at most 512 bytes of JSON `{ host, port }`, names the machine the executor could not reach: a malformed one is 400 `report-target-invalid` and a private or loopback address, localhost or port 25 is 403 `report-target-refused`, both before any RPC; an empty body is a report with no target, which never counts. An admitted report is `recordEgressUnreachable` on the calling instance, `{ count, threshold, relocated, counted, probe }` back to the executor, and the span outcome `relocated` when the report moved the org, `target-unreachable` when it did not count, else `egress-unreachable`. It never reaches ACCOUNT and never calls the issuer. Everything else is `forwardAccountEgress`, so the allowlist and the placeholder swap are `forwardAccountEgress`.
  *
  * Not bound in any wrangler config (box G2 fences that): it is reached only through `ctx.exports`.
  */

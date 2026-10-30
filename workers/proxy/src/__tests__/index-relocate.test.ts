@@ -1,43 +1,10 @@
 /**
  * The proxy Worker re-routing a relocated org (PLAN-org-executor-connect-timeout-relocate box E7): a pin answered `EXECUTOR_RELOCATED` asks the issuer's route again, once.
  *
- * The same harness as src/__tests__/index.test.ts: a stub Container, a stubbed global fetch for the account server, and the @cloudflare/containers module replaced, since it imports `cloudflare:workers`, which exists only inside workerd.
+ * The same harness as src/__tests__/index.test.ts: a stub ORG_EXECUTOR namespace and a stubbed global fetch for the account server.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-const routed = vi.hoisted(() => ({ tenants: [] as string[] }));
-/** The real library's handler registry: an inherited static setter files handlers under the class name, and ContainerProxy reads them back by that name. */
-const outboundRegistry = vi.hoisted(() => new Map<string, Record<string, unknown>>());
-
-vi.mock('@cloudflare/containers', () => ({
-  ContainerProxy: class {},
-  Container: class {
-    static get outboundByHost(): Record<string, unknown> | undefined {
-      return outboundRegistry.get(this.name);
-    }
-    static set outboundByHost(handlers: Record<string, unknown>) {
-      outboundRegistry.set(this.name, handlers);
-    }
-    static get outboundHandlers(): Record<string, unknown> | undefined {
-      return outboundRegistry.get(`handlers:${this.name}`);
-    }
-    static set outboundHandlers(handlers: Record<string, unknown>) {
-      outboundRegistry.set(`handlers:${this.name}`, handlers);
-    }
-    constructor(
-      readonly ctx: unknown,
-      readonly env: unknown
-    ) {}
-  },
-  getContainer: (_binding: unknown, name: string) => {
-    routed.tenants.push(name);
-    return {
-      pin: () => Promise.resolve(),
-      fetch: () => Promise.resolve(Response.json({ from: 'container', tenant: name })),
-    };
-  },
-}));
 
 import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
@@ -79,8 +46,6 @@ function fakeIssuer(refuse = false): Service<ExecutorIssuerRpc> {
 
 function env(overrides: Partial<Env> = {}): Env {
   return {
-    // Never dereferenced: getContainer is the stub above.
-    EXECUTOR: null as never,
     ACCOUNT_URL,
     ISSUER: fakeIssuer(),
     ...overrides,
@@ -107,7 +72,6 @@ function request(path: string, token?: string): Request {
 beforeEach(() => {
   resetIssuedTokenCache();
   resetReadyCache();
-  routed.tenants = [];
   accountFetch.mockClear();
   introspection = {
     active: true,
@@ -165,7 +129,7 @@ describe('re-routing a relocated org (PLAN-org-executor-connect-timeout-relocate
   }
 
   function durable(issuer: Service<ExecutorIssuerRpc>, executors: Env['ORG_EXECUTOR']): Env {
-    return env({ EXECUTOR_BACKEND: 'durable', ISSUER: issuer, ORG_EXECUTOR: executors });
+    return env({ ISSUER: issuer, ORG_EXECUTOR: executors });
   }
 
   it('a stub answering EXECUTOR_RELOCATED makes the Worker ask route again, and the next pin reaches org-1:p2', async () => {

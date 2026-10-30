@@ -1,5 +1,5 @@
 /**
- * The `accountEgress` named handler and the `AccountEgress` entrypoint (box W3, Design A): the instance and org checks that run before the allowlist and before the issuer (agent/plans/PLAN-console-executor-multi-org.md box W1, MU1), and the entrypoint's placement check and egress-unreachable report route (agent/plans/PLAN-org-executor-connect-timeout-relocate.md box E7).
+ * The `AccountEgress` entrypoint (box W3, Design A): the instance and org checks that run before the allowlist and before the issuer (agent/plans/PLAN-console-executor-multi-org.md box W1, MU1), and the entrypoint's placement check and egress-unreachable report route (agent/plans/PLAN-org-executor-connect-timeout-relocate.md box E7).
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,14 +13,14 @@ vi.mock('cloudflare:workers', () => ({
   },
 }));
 
-import { AccountEgress, accountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';
+import { AccountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
 import type { EgressReportAnswer } from '../org-executor';
 
 const API = 'http://account.internal/account/api/v1';
 
-/** `idFromName(name).toString()` is `id:<name>`, which is what the library reports as `containerId` for that instance (`this.ctx.id.toString()`, dist/lib/container.js). */
-const EXECUTOR = {
+/** `idFromName(name).toString()` is `id:<name>`, which is what OrgExecutor passes as `containerId` for that instance (`this.ctx.id.toString()`). */
+const NAMES = {
   idFromName: (name: string) => ({ toString: () => `id:${name}` }),
 };
 
@@ -51,7 +51,6 @@ function setup() {
     },
   } as unknown as Fetcher;
   const env = {
-    EXECUTOR,
     ACCOUNT_URL: 'https://account.test',
     ACCOUNT: account,
     ISSUER: issuer,
@@ -70,105 +69,6 @@ function introspect(): Request {
 beforeEach(() => {
   resetIssuedTokenCache();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-});
-
-describe('accountEgress identity checks', () => {
-  const cases: [string, unknown, string][] = [
-    ['no ctx at all', undefined, 'org-param-missing'],
-    ['no params', { containerId: 'id:org-a', className: 'ExecutorContainer' }, 'org-param-missing'],
-    [
-      'an empty org param',
-      { containerId: 'id:', className: 'x', params: { orgId: '' } },
-      'org-param-missing',
-    ],
-    [
-      'a non-string org param',
-      { containerId: 'id:7', className: 'x', params: { orgId: 7 } },
-      'org-param-missing',
-    ],
-    [
-      'params naming another org than the container id',
-      { containerId: 'id:org-b', className: 'x', params: { orgId: 'org-a' } },
-      'container-org-mismatch',
-    ],
-    [
-      'a missing container id',
-      { className: 'x', params: { orgId: 'org-a' } },
-      'container-org-mismatch',
-    ],
-  ];
-
-  for (const [name, ctx, reason] of cases) {
-    it(`refuses ${name} with 403 ${reason}, before the issuer is called and with nothing forwarded`, async () => {
-      const { env, seen, state } = setup();
-      const response = await accountEgress(introspect(), env, ctx as never);
-
-      expect(response.status).toBe(403);
-      expect(await response.json()).toMatchObject({ reason });
-      expect(state.issues).toEqual([]);
-      expect(state.fetches).toBe(0);
-      expect(seen).toEqual([]);
-    });
-  }
-
-  it('forwards for the matching instance with that org issued token, and mints only for that org', async () => {
-    const { env, seen, state } = setup();
-    const response = await accountEgress(introspect(), env, {
-      containerId: 'id:org-a',
-      className: 'ExecutorContainer',
-      params: { orgId: 'org-a' },
-    });
-
-    expect(response.status).toBe(200);
-    expect(state.issues).toEqual(['org-a']);
-    expect(seen[0]?.headers.get('authorization')).toBe('Bearer rdt_for_org-a');
-  });
-
-  it('two instances get two different org tokens, never each other', async () => {
-    const { env, seen } = setup();
-    for (const org of ['org-a', 'org-b']) {
-      await accountEgress(introspect(), env, {
-        containerId: `id:${org}`,
-        className: 'ExecutorContainer',
-        params: { orgId: org },
-      });
-    }
-
-    expect(seen.map((r) => r.headers.get('authorization'))).toEqual([
-      'Bearer rdt_for_org-a',
-      'Bearer rdt_for_org-b',
-    ]);
-  });
-
-  it('has no report route: the egress-unreachable report is refused 403 route-not-allowed, with nothing forwarded', async () => {
-    const { env, seen, state } = setup();
-    const response = await accountEgress(
-      new Request('http://account.internal/executor/v1/egress-unreachable', { method: 'POST' }),
-      env,
-      { containerId: 'id:org-a', className: 'ExecutorContainer', params: { orgId: 'org-a' } }
-    );
-
-    expect(response.status).toBe(403);
-    expect(await response.json()).toMatchObject({ reason: 'route-not-allowed' });
-    expect(state.issues).toEqual([]);
-    expect(seen).toEqual([]);
-  });
-
-  it('still applies the allowlist after the identity checks pass', async () => {
-    const { env, seen, state } = setup();
-    const response = await accountEgress(new Request(`${API}/admin/users`), env, {
-      containerId: 'id:org-a',
-      className: 'x',
-      params: { orgId: 'org-a' },
-    });
-
-    expect(response.status).toBe(403);
-    expect(await response.json()).toMatchObject({
-      reason: 'route-not-allowed',
-    });
-    expect(state.issues).toEqual([]);
-    expect(seen).toEqual([]);
-  });
 });
 
 /** Props for org-a's executor at placement 0, as OrgExecutor binds them. */
@@ -190,11 +90,10 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
     const { env, seen, state } = setup();
     const reports: { id: string; orgId: string; placement: number }[] = [];
     const attrs: Record<string, unknown> = {};
-    const rest = Object.fromEntries(Object.entries(env).filter(([k]) => k !== 'EXECUTOR'));
     const durable = {
-      ...rest,
+      ...env,
       ORG_EXECUTOR: {
-        ...EXECUTOR,
+        ...NAMES,
         get: (id: { toString(): string }) => ({
           recordEgressUnreachable: (orgId: string, placement: number) => {
             reports.push({ id: id.toString(), orgId, placement });
@@ -363,7 +262,7 @@ describe('AccountEgress egress-unreachable report route', () => {
       },
       ISSUER: env.ISSUER,
       ORG_EXECUTOR: {
-        ...EXECUTOR,
+        ...NAMES,
         get: (id: { toString(): string }) => ({
           recordEgressUnreachable: (orgId: string, placement: number, target?: unknown) => {
             reports.push({ id: id.toString(), orgId, placement, target });

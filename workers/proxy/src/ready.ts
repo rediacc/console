@@ -13,7 +13,7 @@
  */
 
 import { type CapacityCount, capacityStub, type ExecutorCapacity } from './capacity';
-import { type EgressEnv } from './egress';
+import type { ForwardEnv } from './egress';
 import { bounded } from './org-executor-support';
 
 export const READY_CACHE_MS = 30_000;
@@ -21,7 +21,7 @@ export const READY_CACHE_MS = 30_000;
 /** The scopes an issued executor token must carry. */
 const REQUIRED_SCOPES = ['proxy:exec', 'audit:write'] as const;
 
-export interface ReadyEnv extends EgressEnv {
+export interface ReadyEnv extends ForwardEnv {
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   EXECUTOR_CAPACITY?: DurableObjectNamespace<ExecutorCapacity>;
 }

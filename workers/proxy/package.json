@@ -8,9 +8,6 @@
     "dry-run": "wrangler deploy --config wrangler.eu.toml --dry-run --outdir /tmp/rediacc-proxy-dry-run",
     "test:unit": "vitest run"
   },
-  "dependencies": {
-    "@cloudflare/containers": "^0.3.7"
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260901.1",
     "typescript": "^7.0.2",

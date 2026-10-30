@@ -2,50 +2,16 @@
  * The proxy Worker: routing, the auth gate, and what it hands the container.
  *
  * Plain vitest in Node rather than @cloudflare/vitest-pool-workers: the Worker's
- * whole surface is a fetch handler and one Container subclass, so a stub
- * Container (which, like the real one, keeps the `env` it was constructed with)
- * and a stubbed global fetch for the account server are enough. The real
- * @cloudflare/containers module imports `cloudflare:workers`, which exists only
- * inside workerd, so it is replaced here.
+ * whole surface is a fetch handler, so a stub ORG_EXECUTOR namespace and a
+ * stubbed global fetch for the account server are enough.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routed = vi.hoisted(() => ({ tenants: [] as string[] }));
-/** The real library's handler registry: an inherited static setter files handlers under the class name, and ContainerProxy reads them back by that name. */
-const outboundRegistry = vi.hoisted(() => new Map<string, Record<string, unknown>>());
-
-vi.mock('@cloudflare/containers', () => ({
-  ContainerProxy: class {},
-  Container: class {
-    static get outboundByHost(): Record<string, unknown> | undefined {
-      return outboundRegistry.get(this.name);
-    }
-    static set outboundByHost(handlers: Record<string, unknown>) {
-      outboundRegistry.set(this.name, handlers);
-    }
-    static get outboundHandlers(): Record<string, unknown> | undefined {
-      return outboundRegistry.get(`handlers:${this.name}`);
-    }
-    static set outboundHandlers(handlers: Record<string, unknown>) {
-      outboundRegistry.set(`handlers:${this.name}`, handlers);
-    }
-    constructor(
-      readonly ctx: unknown,
-      readonly env: unknown
-    ) {}
-  },
-  getContainer: (_binding: unknown, name: string) => {
-    routed.tenants.push(name);
-    return {
-      pin: () => Promise.resolve(),
-      fetch: () => Promise.resolve(Response.json({ from: 'container', tenant: name })),
-    };
-  },
-}));
 
 import { forwardAccountEgress as forward } from '../egress';
-import worker, { type Env, ExecutorContainer } from '../index';
+import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
 import { executorEnv as executorEnvVars } from '../org-executor';
 import { resetReadyCache } from '../ready';
@@ -86,10 +52,26 @@ function fakeIssuer(refuse = false): Service<ExecutorIssuerRpc> {
   } as unknown as Service<ExecutorIssuerRpc>;
 }
 
+/** An ORG_EXECUTOR namespace whose every stub pins ok and answers 200, recording the Durable Object name of each stub in `routed.tenants`. */
+function fakeOrgExecutors(): Env['ORG_EXECUTOR'] {
+  return {
+    idFromName: (name: string) => ({ name }),
+    get: (doId: { name: string }) => {
+      routed.tenants.push(doId.name);
+      return {
+        oomAt: () => Promise.resolve(undefined),
+        oomHeavyAt: () => Promise.resolve(undefined),
+        pin: (_orgId: string, _placement: number, size: string) =>
+          Promise.resolve({ ok: true, size, egressUnreachableRecent: false }),
+        fetch: () => Promise.resolve(Response.json({ from: 'org-executor', tenant: doId.name })),
+      };
+    },
+  } as unknown as Env['ORG_EXECUTOR'];
+}
+
 function env(overrides: Partial<Env> = {}): Env {
   return {
-    // Never dereferenced: getContainer is the stub above.
-    EXECUTOR: null as never,
+    ORG_EXECUTOR: fakeOrgExecutors(),
     ACCOUNT_URL,
     ISSUER: fakeIssuer(),
     ...overrides,
@@ -186,7 +168,7 @@ describe('the auth gate', () => {
   }
 });
 
-describe('ExecutorContainer (B1)', () => {
+describe('the executor environment (B1)', () => {
   it('hands the container the placeholder token, the intercepted account host and its pinned org, never a real token', async () => {
     // A warm cache is the worst case: the issued token exists in the isolate when the container is built.
     await worker.fetch(request('/v1/command', CALLER), env());
@@ -205,23 +187,13 @@ describe('ExecutorContainer (B1)', () => {
   it('passes the configured region to the container', () => {
     expect(executorEnvVars(env({ REGION: 'us' }), ORG).REDIACC_REGION).toBe('us');
   });
-
-  it('keeps the sleep timeout at the budgeted two minutes', () => {
-    expect(new ExecutorContainer({} as never, env()).sleepAfter).toBe('2m');
-  });
 });
 
 describe('the main module exports (wrangler deploy, workerd start)', () => {
   it('exports every bound Durable Object class and the AccountEgress entrypoint, and nothing that is not a class', async () => {
     const main = await import('../index');
     // wrangler refuses a deploy whose bound Durable Objects are not exported (its error says the Worker depends on Durable Objects that the entrypoint file does not export), and OrgExecutor reaches the egress through ctx.exports.AccountEgress.
-    for (const name of [
-      'ExecutorContainer',
-      'OrgExecutor',
-      'ExecutorCapacity',
-      'AccountEgress',
-      'ContainerProxy',
-    ]) {
+    for (const name of ['OrgExecutor', 'ExecutorCapacity', 'AccountEgress']) {
       expect(typeof (main as Record<string, unknown>)[name], name).toBe('function');
     }
     // workerd treats every export of the main module as an entrypoint and refuses to start on a plain value.
@@ -251,15 +223,6 @@ describe('container account egress (bench Phase 2, 2026-10-24)', () => {
     for (const e of [boundEnv([]), env()]) {
       expect(executorEnvVars(e, ORG).REDIACC_ACCOUNT_SERVER).toBe(`http://${ACCOUNT_EGRESS_HOST}`);
     }
-  });
-
-  it('files the accountEgress named handler in the library registry, and no static per-host handler', () => {
-    // An own `outboundHandlers` property would shadow the setter and leave the registry empty (the bench 530).
-    expect(Object.hasOwn(ExecutorContainer, 'outboundHandlers')).toBe(false);
-    expect(Object.keys(outboundRegistry.get('handlers:ExecutorContainer') ?? {})).toEqual([
-      'accountEgress',
-    ]);
-    expect(outboundRegistry.has('ExecutorContainer')).toBe(false);
   });
 
   it('forwards an intercepted account call over the binding, keeping method, path, headers and body, with the issued token', async () => {

@@ -24,7 +24,7 @@ Worklist: #a150016d (finding), PR-TASK 9f92c43e
 So the container's account egress works, and only its outbound TCP to the machine is dropped. The drop happens upstream of the host.
 
 **Why it never recovers (verified in repo).**
-- The Durable Object name is the org id alone on both backends: `getContainer(env.EXECUTOR, tenant.orgId)` (workers/proxy/src/index.ts:263) and `namespace.idFromName(tenant.orgId)` (workers/proxy/src/index.ts:317).
+- The Durable Object name is the org id alone on both backends: `getContainer(env.EXECUTOR, tenant.orgId)` (the Container backend, removed by PLAN-executor-durable-object-policy C1) and `namespace.idFromName(...)` (workers/proxy/src/index.ts:203).
 - Both pins refuse any other id (workers/proxy/src/index.ts:164, workers/proxy/src/org-executor.ts:267).
 - Both egress identity checks require `containerId === idFromName(orgId)` (workers/proxy/src/egress.ts:137, workers/proxy/src/egress.ts:160).
 - No code path ever gives an org a different object. Whatever placement the object (and so its container) has, the org keeps.
@@ -40,7 +40,7 @@ So the container's account egress works, and only its outbound TCP to the machin
 - `LocalExecutorService.execute` then flattens the throw to `{ success: false, exitCode: 1, error }` with no `errorCode` (packages/cli/src/services/executor/local-executor.ts:593-601).
 - A raw throw falls to `normalizeError`'s GENERAL_ERROR fallback (packages/cli/src/utils/errors.ts:249-255). That is the GENERAL_ERROR the console shows.
 
-**Which backend org B is on (verified in repo, check on edge first).** The brief places the id at workers/proxy/src/index.ts:317, the `durable` path. However, every generated config routes `container`:
+**Which backend org B is on (verified in repo, check on edge first).** The brief places the id at the `durable` path (now workers/proxy/src/index.ts:203). However, every generated config routes `container`:
 - `BACKEND_BY_TARGET` is `container` for all eight targets (.ci/rediacc_ci/deploy/proxy_configs.py:69-71).
 - workers/proxy/wrangler.edge-us.toml:18 says `EXECUTOR_BACKEND = "container"`.
 
@@ -149,9 +149,9 @@ Platform assumptions, to verify on bench or edge:
    - `HARD_CAP` and `HARD_HEAVY_CAP` stay the literals the cost guard reads (workers/proxy/src/capacity.ts:12-14).
 
 7. **The Worker routes by placement and names the outcomes.**
-   - `viaOrgExecutor` (workers/proxy/src/index.ts:309-332) derives the stub from `executorName(tenant.orgId, tenant.placement)` and pins with the placement.
+   - `viaOrgExecutor` (workers/proxy/src/index.ts:233-263) derives the stub from `executorName(tenant.orgId, tenant.placement)` and pins with the placement.
    - On `EXECUTOR_RELOCATED` it calls `resolveTenant` once more, and retries once if the placement went up. Otherwise it answers 503 `EXECUTOR_START_FAILED`.
-   - A forwarded request whose pin answer says `egressUnreachableRecent` gets the outcome `egress-unreachable` in place of `forwarded`, the way `oom-heavy` does (workers/proxy/src/index.ts:327-330).
+   - A forwarded request whose pin answer says `egressUnreachableRecent` gets the outcome `egress-unreachable` in place of `forwarded`, the way `oom-heavy` does (workers/proxy/src/index.ts:219-226).
    - `AccountEgress.fetch` (workers/proxy/src/egress.ts:151-165):
      - It checks `containerId === ORG_EXECUTOR.idFromName(executorName(orgId, placement)).toString()`.
      - It answers `POST /executor/v1/egress-unreachable` (empty query) itself, before `forwardAccountEgress`, by calling `recordEgressUnreachable` on its own object.

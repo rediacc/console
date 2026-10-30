@@ -15,13 +15,13 @@ THE VERSION ID. `wrangler deploy` output is teed to stdout and the `Current Vers
 
 THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS.
 
-THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the `backend` (`EXECUTOR_BACKEND`), the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
+THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
 
-A ROLLBACK (`--rollback <version-id>`) runs `wrangler rollback <id> --message <m> --yes --config <config>` against the config the target deploys with (`--yes` because wrangler otherwise prompts twice), then the same cross-check (`wrangler deployments list` must name the id at 100%), the same smoke on that id, and the same record with `rolled_back: true`. A cross-check that fails still writes the record and exits 1, because wrangler has already moved the Worker: `version_id` is then the version the listing names live (null when none), never the unconfirmed target, so a later `--smoke-only` smokes what is live; the target stays in `requested_version_id`, beside `smoke_rc` null and the `failure`. The id is lowercased before wrangler, the smoke and the record. The key is `rolled_back`, not `rollback`, because `rollback` already holds the command that reverts this run, which `deploy_record` reads; here that is a rollback to the version that was live before, or the forward-only notice when the same forward-only check a deploy makes (the config's `[[migrations]]` against the previous release's, bench: against its recorded tag) says wrangler would refuse it. The id must be a full version UUID (`wrangler deployments list` prints them), checked before any credential. `backend` is the target version's own `EXECUTOR_BACKEND`, read with the read-only `wrangler versions view <id> --json` (the restored version's `[vars]` are not the config's), and `migration_tag` is carried from the existing record, since a rollback undoes no Durable Object migration and wrangler names no tag per version; either is the string `unknown`, never null, when it cannot be read. Off bench, the forward-only check asks about the live version's release, the `artifacts_version` its record names, exactly as the deploy asks about `--version`. A rollback builds and fetches nothing, so `--version`, `--var`, `--dry-run` and `--smoke-only` are refused beside it: a `--dry-run` would let the release guard (`block_unasked_release`, which admits any `--dry-run` of this module) wave through a stable rollback that then published. Every target may roll back; a stable one is held by that guard's `RELEASE_ASKED` proof exactly as a stable deploy is, because the guard judges this module by its `--target`, not by its verb.
+A ROLLBACK (`--rollback <version-id>`) runs `wrangler rollback <id> --message <m> --yes --config <config>` against the config the target deploys with (`--yes` because wrangler otherwise prompts twice), then the same cross-check (`wrangler deployments list` must name the id at 100%), the same smoke on that id, and the same record with `rolled_back: true`. A cross-check that fails still writes the record and exits 1, because wrangler has already moved the Worker: `version_id` is then the version the listing names live (null when none), never the unconfirmed target, so a later `--smoke-only` smokes what is live; the target stays in `requested_version_id`, beside `smoke_rc` null and the `failure`. The id is lowercased before wrangler, the smoke and the record. The key is `rolled_back`, not `rollback`, because `rollback` already holds the command that reverts this run, which `deploy_record` reads; here that is a rollback to the version that was live before, or the forward-only notice when the same forward-only check a deploy makes (the config's `[[migrations]]` against the previous release's, bench: against its recorded tag) says wrangler would refuse it. The id must be a full version UUID (`wrangler deployments list` prints them), checked before any credential. `migration_tag` is carried from the existing record, since a rollback undoes no Durable Object migration and wrangler names no tag per version; it is the string `unknown`, never null, when it cannot be read. Off bench, the forward-only check asks about the live version's release, the `artifacts_version` its record names, exactly as the deploy asks about `--version`. A rollback builds and fetches nothing, so `--version`, `--var`, `--dry-run` and `--smoke-only` are refused beside it: a `--dry-run` would let the release guard (`block_unasked_release`, which admits any `--dry-run` of this module) wave through a stable rollback that then published. Every target may roll back; a stable one is held by that guard's `RELEASE_ASKED` proof exactly as a stable deploy is, because the guard judges this module by its `--target`, not by its verb.
 
-A VARS OVERRIDE (`--var KEY=VALUE`, repeatable) is bench only, refused on any other target. KEY must already be a `[vars]` key of the config and may be given once, and the config as the overrides leave it must pass the same `config_refusals` the toml does, so an override can change an executor knob (`EXECUTOR_CAP=2`) but never a host or anything else the gate pins (`ACCOUNT_URL`). It reaches wrangler as `wrangler deploy --var KEY:VALUE` (wrangler's own spelling, split at the first colon), so the toml is never rewritten and the override lasts for this deploy only. The record carries `var_overrides` (empty without any), and `backend` names an overridden `EXECUTOR_BACKEND`.
+A VARS OVERRIDE (`--var KEY=VALUE`, repeatable) is bench only, refused on any other target. KEY must already be a `[vars]` key of the config and may be given once, and the config as the overrides leave it must pass the same `config_refusals` the toml does, so an override can change an executor knob (`EXECUTOR_CAP=2`) but never a host or anything else the gate pins (`ACCOUNT_URL`). It reaches wrangler as `wrangler deploy --var KEY:VALUE` (wrangler's own spelling, split at the first colon), so the toml is never rewritten and the override lasts for this deploy only. The record carries `var_overrides` (empty without any).
 """
 
 from __future__ import annotations
@@ -422,16 +422,6 @@ def read_record_field(path: pathlib.Path | None, key: str) -> str | None:
     return str(value) if value else None
 
 
-def config_var(path: pathlib.Path, name: str) -> str | None:
-    """One `[vars]` string of a config file, or None."""
-    try:
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
-        return None
-    value = data.get("vars", {}).get(name)
-    return str(value) if value is not None else None
-
-
 def reexec_argv(argv: list[str], profile: str = BENCH_PROFILE) -> list[str]:
     """This same run under one bws profile (deploy-proxy-bench unless named)."""
     return [
@@ -511,37 +501,6 @@ def newest_deployment_version(text: str) -> str | None:
 
 
 UNKNOWN = "unknown"
-
-
-def versions_view_argv(config: str, version_id: str) -> list[str]:
-    """`wrangler versions view <id> --json`: read-only, the one call that names a version's own bindings."""
-    return [*wrangler.ARGV, "versions", "view", version_id, "--json", "--config", config]
-
-
-def version_plain_var(text: str, name: str) -> str | None:
-    """One `plain_text` binding's value in `wrangler versions view --json` output (`resources.bindings[]`, `{type, name, text}`); None when the text is not that shape or the version carries no such var. Only the named plain_text var is read, never a secret binding."""
-    try:
-        data = json.loads(text)
-    except ValueError:
-        return None
-    resources = data.get("resources") if isinstance(data, dict) else None
-    bindings = resources.get("bindings") if isinstance(resources, dict) else None
-    for binding in bindings if isinstance(bindings, list) else []:
-        if (
-            isinstance(binding, dict)
-            and binding.get("type") == "plain_text"
-            and binding.get("name") == name
-            and isinstance(binding.get("text"), str)
-        ):
-            return str(binding["text"])
-    return None
-
-
-def version_backend(config: str, version_id: str) -> str:
-    """The target version's own EXECUTOR_BACKEND, or "unknown" when wrangler cannot say: a rollback restores that version's vars, not the config's. The output is captured, never echoed."""
-    status, out = _run_capture(versions_view_argv(config, version_id))
-    found = version_plain_var(out, "EXECUTOR_BACKEND") if status == 0 else None
-    return found or UNKNOWN
 
 
 def deployed_version(config: str) -> str | None:
@@ -929,7 +888,6 @@ def run_rollback(
     releases = {} if bench else release_map(record_path)
     os.chdir(worker_dir)
     previous = deployed_version(config)
-    backend = version_backend(config, version_id)
     log.step(
         "Rolling %s back to version %s (config: %s, live: %s)..."
         % (spec.name, version_id, config, previous or "none")
@@ -955,7 +913,6 @@ def run_rollback(
             # The release of the version now live, when an earlier record named it; None says nobody knows, and the next rollback warns.
             "artifacts_version": releases.get(live) if live else None,
             "rollback": revert,
-            "backend": backend,
             "migration_tag": recorded_tag,
             "var_overrides": {},
             **fields,
@@ -1132,9 +1089,6 @@ def main(argv: list[str]) -> int:
                 "artifacts_version": None if bench else args.version,
                 "smoke_rc": smoke_rc,
                 "rollback": rollback,
-                "backend": overrides.get(
-                    "EXECUTOR_BACKEND", config_var(worker_dir.joinpath(config), "EXECUTOR_BACKEND")
-                ),
                 "migration_tag": current_tag,
                 "cold_start_ms": timing.get("cold_start_ms"),
                 "var_overrides": overrides,

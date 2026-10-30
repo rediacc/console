@@ -134,16 +134,6 @@ if args[:3] == ["wrangler", "deployments", "list"]:
         new = {"created_on": "2026-10-25T20:00:00Z", "versions": [{"version_id": listed, "percentage": 100}]}
         print(json.dumps([new, prev]))
     sys.exit(0)
-if args[:3] == ["wrangler", "versions", "view"]:
-    view_rc = int(os.environ.get("FAKE_VIEW_RC", "0"))
-    if view_rc:
-        sys.stderr.write("wrangler: version not found\\n")
-        sys.exit(view_rc)
-    bindings = [{"type": "secret_text", "name": "SOME_SECRET"}]
-    if os.environ.get("FAKE_VIEW_BACKEND", "container"):
-        bindings.append({"type": "plain_text", "name": "EXECUTOR_BACKEND", "text": os.environ.get("FAKE_VIEW_BACKEND", "container")})
-    print(json.dumps({"id": args[3], "resources": {"bindings": bindings}}))
-    sys.exit(0)
 rc = int(os.environ.get("FAKE_NPX_RC", "0"))
 if rc:
     sys.stderr.write("wrangler: deploy failed\\n")
@@ -907,8 +897,7 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
         "smoke_rc": 0,
         "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.edge-us.toml"
         % PREV_ID,
-        "backend": "container",
-        "migration_tag": "v2",
+        "migration_tag": "v3",
         "var_overrides": {},
     }
 
@@ -927,9 +916,10 @@ def _previous_config(
 
 V1 = '[[migrations]]\ntag = "v1"\nnew_sqlite_classes = ["ExecutorContainer"]\n'
 V2 = V1 + '\n[[migrations]]\ntag = "v2"\nnew_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]\n'
+V3 = V2 + '\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]\n'
 
 
-def test_a_v1_to_v2_deploy_is_forward_only(tmp_path: pathlib.Path) -> None:
+def test_a_v1_to_v3_deploy_is_forward_only(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
     previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V1)
@@ -940,19 +930,19 @@ def test_a_v1_to_v2_deploy_is_forward_only(tmp_path: pathlib.Path) -> None:
         FAKE_PREV_CONFIG=previous,
     )
     assert proc.returncode == 0, proc.stderr
-    want = "forward-only: Durable Object class lifecycle change (v2); fix forward"
+    want = "forward-only: Durable Object class lifecycle change (v3); fix forward"
     written = json.loads(record.read_text())
     assert written["rollback"] == want
-    assert written["migration_tag"] == "v2"
+    assert written["migration_tag"] == "v3"
     assert written["previous_version_id"] == PREV_ID
     assert "Rollback: " + want + "\n" in proc.stderr
     assert "wrangler rollback" not in proc.stderr
 
 
-def test_a_v2_to_v2_deploy_writes_the_rollback_command(tmp_path: pathlib.Path) -> None:
+def test_a_v3_to_v3_deploy_writes_the_rollback_command(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
-    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V2)
+    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V3)
     proc, _calls = _run(
         tmp_path,
         root,
@@ -1039,12 +1029,12 @@ def test_bench_is_forward_only_when_its_recorded_migration_tag_differs(
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
     args = ("--target", "bench", "--record", str(record))
-    for recorded, forward in (("v1", True), ("v2", False)):
+    for recorded, forward in (("v1", True), ("v3", False)):
         record.write_text(json.dumps({"migration_tag": recorded}), encoding="utf-8")
         proc, _calls = _run(tmp_path, root, args, drop_env=(), **BENCH_PROFILE_ENV)
         assert proc.returncode == 0, proc.stderr
         written = json.loads(record.read_text())
-        assert written["migration_tag"] == "v2"
+        assert written["migration_tag"] == "v3"
         assert written["rollback"].startswith("forward-only:") is forward
 
 
@@ -1056,6 +1046,10 @@ def test_the_forward_only_rule_compares_whole_migration_lists() -> None:
     assert not port.is_forward_only(v2, v2)
     assert not port.is_forward_only(v2, None)
     assert port.migration_tag(v2) == "v2"
+    v3 = port.config_migrations(V3)
+    assert port.is_forward_only(v3, v2)
+    assert not port.is_forward_only(v3, v3)
+    assert port.migration_tag(v3) == "v3"
     assert port.migration_tag([]) is None
 
 
@@ -1313,8 +1307,6 @@ def _rollback_calls(config: str, host: str, version_id: str) -> str:
     return (
         f"npx\t--no-install\twrangler\tdeployments\tlist\t--json\t--config\t{config}\n"
         "  cwd=proxy\n"
-        f"npx\t--no-install\twrangler\tversions\tview\t{version_id}\t--json\t--config\t{config}\n"
-        "  cwd=proxy\n"
         f"npx\t--no-install\twrangler\trollback\t{version_id}\t--message\t"
         f"{port.ROLLBACK_MESSAGE}\t--yes\t--config\t{config}\n"
         "  cwd=proxy\n"
@@ -1332,7 +1324,7 @@ def test_a_bench_rollback_runs_wrangler_rollback_smokes_and_records(
     """The bench config, `wrangler rollback <id> --message --yes`, the listing cross-check, the smoke on that id, and the same record with `rolled_back: true`. Nothing is built, fetched or staged."""
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
-    record.write_text(json.dumps({"migration_tag": "v2", "version_id": PREV_ID}), encoding="utf-8")
+    record.write_text(json.dumps({"migration_tag": "v3", "version_id": PREV_ID}), encoding="utf-8")
     proc, calls = _run(
         tmp_path,
         root,
@@ -1358,8 +1350,7 @@ def test_a_bench_rollback_runs_wrangler_rollback_smokes_and_records(
         "smoke_rc": 0,
         "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench.toml"
         % PREV_ID,
-        "backend": "container",
-        "migration_tag": "v2",
+        "migration_tag": "v3",
         "var_overrides": {},
     }
     assert "✓ Rolled back rediacc-proxy-bench: version %s.\n" % TO_ID in proc.stderr
@@ -1442,7 +1433,7 @@ def test_a_failed_wrangler_rollback_propagates_and_smokes_nothing(tmp_path: path
         (("--dry-run",), "--rollback refuses --dry-run"),
         (("--smoke-only",), "--rollback refuses --smoke-only"),
         (("--version", VERSION), "--rollback refuses --version"),
-        (("--var", "EXECUTOR_BACKEND=container"), "--rollback refuses --var"),
+        (("--var", "EXECUTOR_CAP=2"), "--rollback refuses --var"),
     ],
     ids=["short-id", "dry-run", "smoke-only", "version", "var"],
 )
@@ -1538,7 +1529,7 @@ def test_var_is_refused_off_bench(
     tmp_path: pathlib.Path, target: str, region: str, dry_run: bool
 ) -> None:
     root = _fixture_root(tmp_path)
-    args = ["--target", target, "--region", region, "--var", "EXECUTOR_BACKEND=durable"]
+    args = ["--target", target, "--region", region, "--var", "EXECUTOR_CAP=2"]
     args += ["--dry-run"] if dry_run else ["--version", VERSION]
     proc, calls = _run(tmp_path, root, tuple(args))
     assert proc.returncode == 1, proc.stderr
@@ -1549,7 +1540,7 @@ def test_var_is_refused_off_bench(
 def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE`, in order, the toml is not touched, and the record names the overrides and the overridden backend."""
+    """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE`, in order, the toml is not touched, and the record names the overrides."""
     root = _fixture_root(tmp_path)
     config = root / "workers" / "proxy" / "wrangler.bench.toml"
     before = config.read_bytes()
@@ -1561,7 +1552,7 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
             "--target",
             "bench",
             "--var",
-            "EXECUTOR_BACKEND=container",
+            "EXECUTOR_HEAVY_CAP=2",
             "--var",
             "EXECUTOR_CAP=2",
             "--record",
@@ -1571,13 +1562,12 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
     )
     assert proc.returncode == 0, proc.stderr
     assert (
-        "npx\t--no-install\twrangler\tdeploy\t--var\tEXECUTOR_BACKEND:container\t"
+        "npx\t--no-install\twrangler\tdeploy\t--var\tEXECUTOR_HEAVY_CAP:2\t"
         "--var\tEXECUTOR_CAP:2\t--config\twrangler.bench.toml\n"
     ) in calls
     assert config.read_bytes() == before, "the toml must never be rewritten"
     data = json.loads(record.read_text())
-    assert data["var_overrides"] == {"EXECUTOR_BACKEND": "container", "EXECUTOR_CAP": "2"}
-    assert data["backend"] == "container", "the record names the overridden backend"
+    assert data["var_overrides"] == {"EXECUTOR_HEAVY_CAP": "2", "EXECUTOR_CAP": "2"}
 
 
 def test_a_colon_in_a_var_value_survives_wranglers_first_colon_split() -> None:
@@ -1593,10 +1583,10 @@ def test_a_colon_in_a_var_value_survives_wranglers_first_colon_split() -> None:
         ),
         ("ENVIRONMENT=production", "vars.ENVIRONMENT is 'production', not 'bench'"),
         ("EXECUTOR_CAP=99", "vars.EXECUTOR_CAP is '99', over the ceiling of 25"),
-        ("EXECUTOR_BACKEND=lambda", "vars.EXECUTOR_BACKEND is 'lambda', not one of"),
+        ("EXECUTOR_HEAVY_CAP=6", "vars.EXECUTOR_HEAVY_CAP is '6', over the ceiling of 5"),
         ("EXECUTOR_CAP=EXECUTOR_TOKEN", "the token comes from the ISSUER binding"),
     ],
-    ids=["account-url", "environment", "cap-over-ceiling", "unknown-backend", "token-text"],
+    ids=["account-url", "environment", "cap-over-ceiling", "heavy-cap-over-ceiling", "token-text"],
 )
 @pytest.mark.parametrize("dry_run", [False, True], ids=["deploy", "dry-run"])
 def test_a_var_the_config_refusals_reject_is_refused_before_anything_runs(
@@ -1649,11 +1639,11 @@ def test_var_reaches_the_bench_dry_run_too(tmp_path: pathlib.Path) -> None:
 @pytest.mark.parametrize(
     ("words", "fragment"),
     [
-        (("EXECUTOR_BACKEND",), "--var 'EXECUTOR_BACKEND' is not KEY=VALUE"),
+        (("EXECUTOR_CAP",), "--var 'EXECUTOR_CAP' is not KEY=VALUE"),
         (("=durable",), "--var '=durable' is not KEY=VALUE"),
         (("1BAD=x",), "--var '1BAD=x' is not KEY=VALUE"),
         (("EXECUTOR:BACKEND=x",), "--var 'EXECUTOR:BACKEND=x' is not KEY=VALUE"),
-        (("EXECUTOR_BAKEND=durable",), "has no [vars] key EXECUTOR_BAKEND"),
+        (("EXECUTOR_BACKEND=durable",), "has no [vars] key EXECUTOR_BACKEND"),
         (("EXECUTOR_CAP=1", "EXECUTOR_CAP=2"), "--var EXECUTOR_CAP is given twice"),
     ],
     ids=["no-equals", "no-key", "digit-key", "colon-key", "unknown-key", "repeated"],
@@ -1699,11 +1689,11 @@ def test_help_names_both_new_options() -> None:
 # ---- review 4a915178: the rollback's revert line, id case and failure record ----
 
 
-@pytest.mark.parametrize(("recorded", "forward"), [("v1", True), ("v2", False)])
+@pytest.mark.parametrize(("recorded", "forward"), [("v1", True), ("v3", False)])
 def test_a_rollback_consults_the_forward_only_check_for_its_revert_line(
     tmp_path: pathlib.Path, recorded: str, forward: bool
 ) -> None:
-    """The same check a deploy makes: bench's config is at v2, so a record at v1 makes the revert forward-only and a record at v2 leaves the plain command (review 4a915178.2)."""
+    """The same check a deploy makes: bench's config is at v3, so a record at v1 makes the revert forward-only and a record at v3 leaves the plain command (review 4a915178.2)."""
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
     record.write_text(json.dumps({"migration_tag": recorded}), encoding="utf-8")
@@ -1718,7 +1708,7 @@ def test_a_rollback_consults_the_forward_only_check_for_its_revert_line(
     assert proc.returncode == 0, proc.stderr
     written = json.loads(record.read_text())
     if forward:
-        want = "forward-only: Durable Object class lifecycle change (v2); fix forward"
+        want = "forward-only: Durable Object class lifecycle change (v3); fix forward"
         assert written["rollback"] == want
         assert "Rollback: %s\n" % want in proc.stderr
     else:
@@ -1737,9 +1727,9 @@ def test_the_shared_forward_only_check_reads_the_previous_release_off_bench(
     state = port.forward_only_state(
         root, worker, "wrangler.edge-us.toml", bench=False, record_path=None, version=None
     )
-    assert state == (True, "v2")
-    assert port.revert_line("c", PREV_ID, True, "v2").startswith("forward-only:")
-    assert port.revert_line("c", None, True, "v2").startswith("none:")
+    assert state == (True, "v3")
+    assert port.revert_line("c", PREV_ID, True, "v3").startswith("forward-only:")
+    assert port.revert_line("c", None, True, "v3").startswith("none:")
 
 
 UPPER_ID = "ABCDEF01-2345-4678-9ABC-DEF012345678"
@@ -1834,7 +1824,7 @@ def test_an_edge_rollback_asks_the_forward_only_question_about_the_live_release(
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
     record.write_text(
-        json.dumps({"artifacts_version": VERSION, "migration_tag": "v2"}), encoding="utf-8"
+        json.dumps({"artifacts_version": VERSION, "migration_tag": "v3"}), encoding="utf-8"
     )
     previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V1)
     proc, _calls = _run(
@@ -1846,7 +1836,7 @@ def test_an_edge_rollback_asks_the_forward_only_question_about_the_live_release(
         FAKE_PREV_CONFIG=previous,
     )
     assert proc.returncode == 0, proc.stderr
-    want = "forward-only: Durable Object class lifecycle change (v2); fix forward"
+    want = "forward-only: Durable Object class lifecycle change (v3); fix forward"
     assert json.loads(record.read_text())["rollback"] == want
 
 
@@ -1863,20 +1853,9 @@ def test_an_edge_rollback_with_no_recorded_release_says_so(tmp_path: pathlib.Pat
     assert "no record names the release of the live" in proc.stderr
 
 
-@pytest.mark.parametrize(
-    ("view_backend", "view_rc", "backend"),
-    [
-        ("container", "0", "container"),
-        ("durable", "0", "durable"),
-        ("container", "1", "unknown"),
-        ("", "0", "unknown"),
-    ],
-    ids=["container", "durable", "view-fails", "no-backend-var"],
-)
-def test_a_rollback_records_the_target_versions_own_backend(
-    tmp_path: pathlib.Path, view_backend: str, view_rc: str, backend: str
+def test_a_rollback_with_no_earlier_record_records_the_migration_tag_as_unknown(
+    tmp_path: pathlib.Path,
 ) -> None:
-    """The drill rolled bench back to a container version and recorded backend null: the backend is the target version's own, read with `wrangler versions view --json`, and "unknown" when it cannot be read."""
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
     proc, _calls = _run(
@@ -1886,39 +1865,11 @@ def test_a_rollback_records_the_target_versions_own_backend(
         FAKE_LISTED_ID=TO_ID,
         FAKE_READY_VERSION=TO_ID,
         REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
-        FAKE_VIEW_BACKEND=view_backend,
-        FAKE_VIEW_RC=view_rc,
     )
     assert proc.returncode == 0, proc.stderr
     written = json.loads(record.read_text())
-    assert written["backend"] == backend
+    assert "backend" not in written
     assert written["migration_tag"] == "unknown", "no earlier record: unknown, never null"
-    assert "SOME_SECRET" not in proc.stdout + proc.stderr
-
-
-def test_the_versions_view_reader_takes_only_the_named_plain_text_var() -> None:
-    view = {
-        "resources": {
-            "bindings": [
-                {"type": "secret_text", "name": "EXECUTOR_BACKEND", "text": "s3cret"},
-                {"type": "plain_text", "name": "EXECUTOR_BACKEND", "text": "container"},
-            ]
-        }
-    }
-    assert port.version_plain_var(json.dumps(view), "EXECUTOR_BACKEND") == "container"
-    assert port.version_plain_var(json.dumps(view), "EXECUTOR_CAP") is None
-    assert port.version_plain_var("not json", "EXECUTOR_BACKEND") is None
-    assert port.versions_view_argv("c.toml", TO_ID) == [
-        "npx",
-        "--no-install",
-        "wrangler",
-        "versions",
-        "view",
-        TO_ID,
-        "--json",
-        "--config",
-        "c.toml",
-    ]
 
 
 def test_two_consecutive_rollbacks_both_know_the_live_release(tmp_path: pathlib.Path) -> None:
@@ -1931,7 +1882,7 @@ def test_two_consecutive_rollbacks_both_know_the_live_release(tmp_path: pathlib.
                 "version_id": NEW_ID,
                 "artifacts_version": "1.2.4",
                 "release_by_version": {TO_ID: VERSION},
-                "migration_tag": "v2",
+                "migration_tag": "v3",
             }
         ),
         encoding="utf-8",

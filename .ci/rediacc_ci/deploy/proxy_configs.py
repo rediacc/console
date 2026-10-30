@@ -3,7 +3,7 @@
 
 WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the six deployable targets, `eu`, `us`, `asia` (production) and `edge-eu`, `edge-us`, `edge-asia` (edge). Each names `rediacc-proxy-<r>` or `edge-rediacc-proxy-<r>` (regions.json `proxyWorkerName` / `edgeProxyWorkerName`), routes the custom domain `proxy.<domain>` or `proxy.<edgeDomain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
 
-WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the legacy `ExecutorContainer` entry at its budget beside the `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings, the migration list v1, v2 (and v3), the `EXECUTOR_BACKEND` / `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (a backend in {container, durable}, caps at most 25 and 5), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
+WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the one `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings (`ORG_EXECUTOR`, `EXECUTOR_CAPACITY`), the migration list v1, v2, v3 (v3 deletes the retired `ExecutorContainer` class), the `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (caps at most 25 and 5; an `EXECUTOR_BACKEND` var is refused as one no config may carry), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
 
 USAGE.
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the six configs
@@ -48,31 +48,27 @@ CHANNELS = (PRODUCTION, EDGE)
 
 MAIN = "src/index.ts"
 VERSION_BINDING = "CF_VERSION_METADATA"
-MAX_INSTANCES = 25
 # The stub issuer Worker check:ci-proxy-wrangler-dev-e2e runs beside the dev Worker.
 DEV_ISSUER_SERVICE = "rediacc-executor-issuer-dev"
 DEV_ACCOUNT_URL = "http://127.0.0.1:9"
+# The class migration v1 created and v3 deletes; no config binds or exports it any more.
 CONTAINER_CLASS = "ExecutorContainer"
 DURABLE_CLASS = "OrgExecutor"
 CAPACITY_CLASS = "ExecutorCapacity"
 SCHEDULING_POLICY = "durable_object"
 DURABLE_IMAGE_KEY = "executor"
 DURABLE_IMAGE = {"dockerfile": "./Dockerfile", "build_context": "../.."}
-BACKENDS = ("container", "durable")
 # The ceilings the Worker enforces in src/capacity.ts (HARD_CAP, HARD_HEAVY_CAP); a var above either is refused here too.
 MAX_EXECUTOR_CAP = 25
 MAX_EXECUTOR_HEAVY_CAP = 5
 ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
-# Per target, the three vars that route and bound the durable backend (PLAN-executor-durable-object-policy.md Design item 2). The backend flips one target at a time by editing BACKEND_BY_TARGET and regenerating; the caps are decimal strings the Worker parses.
-BACKEND_BY_TARGET: dict[str, str] = {
-    **dict.fromkeys(("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "dev"), "container"),
-    "bench": "durable",
-}
-CAP_BY_TARGET: dict[str, str] = dict.fromkeys(BACKEND_BY_TARGET, "25")
-HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(BACKEND_BY_TARGET, "5")
-EXECUTOR_VARS = ("EXECUTOR_BACKEND", "EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
+# Per target, the two vars that bound the executor (PLAN-executor-durable-object-policy.md Design item 2): the caps are decimal strings the Worker parses.
+TARGET_KEYS = ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "dev")
+CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "25")
+HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
+EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
 # The WK_PROXY_*_HOST value for each (region, channel); --check holds each equal to proxy.<domain> from regions.json.
@@ -127,7 +123,6 @@ class Target:
     services: tuple[tuple[str, str, str], ...]
     destinations: tuple[str, str] | None
     version_metadata: bool
-    max_instances: int
     generated: bool
     own_tokens: frozenset[str]
     executor_vars: tuple[tuple[str, str], ...] = ()
@@ -153,9 +148,8 @@ def _region_tokens(regions: list[dict]) -> frozenset[str]:
 
 
 def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
-    """The durable-backend vars a target's config carries, from the three per-target tables."""
+    """The executor cap vars a target's config carries, from the two per-target tables."""
     return (
-        ("EXECUTOR_BACKEND", BACKEND_BY_TARGET[key]),
         ("EXECUTOR_CAP", CAP_BY_TARGET[key]),
         ("EXECUTOR_HEAVY_CAP", HEAVY_CAP_BY_TARGET[key]),
     )
@@ -197,7 +191,6 @@ def targets(regions: list[dict]) -> dict[str, Target]:
                 ),
                 destinations=("otlp-%s-logs" % rid, "otlp-%s-traces" % rid),
                 version_metadata=True,
-                max_instances=MAX_INSTANCES,
                 generated=True,
                 own_tokens=frozenset({rid, EDGE} if edge else {rid}),
                 executor_vars=executor_vars(key),
@@ -215,7 +208,6 @@ def targets(regions: list[dict]) -> dict[str, Target]:
         ),
         destinations=("otlp-bench-logs", "otlp-bench-traces"),
         version_metadata=True,
-        max_instances=MAX_INSTANCES,
         generated=False,
         own_tokens=frozenset({"bench"}),
         executor_vars=executor_vars("bench"),
@@ -230,7 +222,6 @@ def targets(regions: list[dict]) -> dict[str, Target]:
         services=((ISSUER_BINDING[0], DEV_ISSUER_SERVICE, ISSUER_BINDING[1]),),
         destinations=None,
         version_metadata=True,
-        max_instances=MAX_INSTANCES,
         generated=False,
         own_tokens=frozenset({"dev"}),
         executor_vars=executor_vars("dev"),
@@ -278,9 +269,6 @@ def _pattern(entry) -> str:
 
 def _executor_var_refusals(variables: dict) -> list[str]:
     out: list[str] = []
-    backend = variables.get("EXECUTOR_BACKEND")
-    if backend not in BACKENDS:
-        out.append("vars.EXECUTOR_BACKEND is %r, not one of %s" % (backend, "/".join(BACKENDS)))
     for name, ceiling in (
         ("EXECUTOR_CAP", MAX_EXECUTOR_CAP),
         ("EXECUTOR_HEAVY_CAP", MAX_EXECUTOR_HEAVY_CAP),
@@ -293,34 +281,21 @@ def _executor_var_refusals(variables: dict) -> list[str]:
     return out
 
 
-def _executor_refusals(config: dict, target: Target) -> list[str]:
-    """The container, Durable Object and migration blocks: the legacy and durable entries together, or the durable entry alone once Phase 3 retires the legacy class."""
+def _executor_refusals(config: dict) -> list[str]:
+    """The container, Durable Object and migration blocks: the one `OrgExecutor` entry, the two bindings, and v1, v2, v3."""
     out: list[str] = []
     raw = config.get("containers")
-    # A non-table element of an inline `containers = [...]` array stays in the count, so it matches neither class and refuses.
+    # A non-table element of an inline `containers = [...]` array stays in the count, so it matches no entry and refuses.
     containers = raw if isinstance(raw, list) else []
-    tables = [c for c in containers if isinstance(c, dict)]
-    legacy = [c for c in tables if c.get("class_name") == CONTAINER_CLASS]
-    durable = [c for c in tables if c.get("class_name") == DURABLE_CLASS]
-    if len(containers) != len(legacy) + len(durable) or len(durable) != 1 or len(legacy) > 1:
+    durable = [c for c in containers if isinstance(c, dict) and c.get("class_name") == DURABLE_CLASS]
+    if len(containers) != 1 or len(durable) != 1:
         out.append(
-            "[[containers]] is %r, not the %s entry beside at most one %s entry"
+            "[[containers]] is %r, not exactly the one %s entry"
             % (
                 [c.get("class_name") if isinstance(c, dict) else c for c in containers],
                 DURABLE_CLASS,
-                CONTAINER_CLASS,
             )
         )
-    for entry in legacy:
-        for ckey, cvalue in (
-            ("image", "./Dockerfile"),
-            ("image_build_context", "../.."),
-            ("max_instances", target.max_instances),
-        ):
-            if entry.get(ckey) != cvalue:
-                out.append("[[containers]] %s is %r, not %r" % (ckey, entry.get(ckey), cvalue))
-        if "scheduling_policy" in entry:
-            out.append("[[containers]] %s names a scheduling_policy" % CONTAINER_CLASS)
     for entry in durable:
         if entry.get("scheduling_policy") != SCHEDULING_POLICY:
             out.append(
@@ -347,28 +322,17 @@ def _executor_refusals(config: dict, target: Target) -> list[str]:
         {"name": "ORG_EXECUTOR", "class_name": DURABLE_CLASS},
         {"name": "EXECUTOR_CAPACITY", "class_name": CAPACITY_CLASS},
     ]
-    legacy_binding = {"name": "EXECUTOR", "class_name": CONTAINER_CLASS}
-    allowed = ([legacy_binding, *wanted], wanted)
-    if bindings not in allowed or (bindings == wanted and legacy):
-        out.append(
-            "[[durable_objects.bindings]] is %r, not %s"
-            % (bindings, " or ".join(repr(a) for a in allowed))
-        )
-    if (bindings == allowed[0]) != bool(legacy):
-        out.append(
-            "the EXECUTOR binding and the %s entry must stand or go together" % CONTAINER_CLASS
-        )
+    if bindings != wanted:
+        out.append("[[durable_objects.bindings]] is %r, not %r" % (bindings, wanted))
 
-    v1 = {"tag": "v1", "new_sqlite_classes": [CONTAINER_CLASS]}
-    v2 = {"tag": "v2", "new_sqlite_classes": [DURABLE_CLASS, CAPACITY_CLASS]}
-    v3 = {"tag": "v3", "deleted_classes": [CONTAINER_CLASS]}
+    wanted_migrations = [
+        {"tag": "v1", "new_sqlite_classes": [CONTAINER_CLASS]},
+        {"tag": "v2", "new_sqlite_classes": [DURABLE_CLASS, CAPACITY_CLASS]},
+        {"tag": "v3", "deleted_classes": [CONTAINER_CLASS]},
+    ]
     migrations = config.get("migrations")
-    if migrations not in ([v1, v2], [v1, v2, v3]):
-        out.append("[[migrations]] is %r, not v1, v2 (and v3)" % (migrations,))
-    elif (migrations == [v1, v2, v3]) == bool(legacy):
-        out.append(
-            "the v3 migration and the %s entry cannot both stand or both go" % CONTAINER_CLASS
-        )
+    if migrations != wanted_migrations:
+        out.append("[[migrations]] is %r, not %r" % (migrations, wanted_migrations))
     return out
 
 
@@ -464,7 +428,7 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
             % (config.get("version_metadata"), VERSION_BINDING)
         )
 
-    out.extend(_executor_refusals(config, target))
+    out.extend(_executor_refusals(config))
 
     observability = config.get("observability")
     if target.destinations is None:

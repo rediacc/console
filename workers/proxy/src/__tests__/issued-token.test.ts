@@ -173,7 +173,6 @@ describe('a 401 on a bearer route', () => {
         Promise.resolve(new Response('{}', { status: refused.has(current) ? 401 : 200 })),
     } as unknown as Fetcher;
     const env = {
-      EXECUTOR: null as never,
       ACCOUNT_URL: 'https://account.test',
       ACCOUNT: account,
       ISSUER: issuer.binding,
@@ -214,7 +213,6 @@ describe('a 401 on a bearer route', () => {
       },
     } as unknown as Fetcher;
     const env = {
-      EXECUTOR: null as never,
       ACCOUNT_URL: 'https://account.test',
       ACCOUNT: account,
       ISSUER: issuer.binding,

@@ -3,18 +3,15 @@
 
 WHY THIS EXISTS. The proxy Worker (`workers/proxy`) runs its executor in Cloudflare Containers, billed on provisioned memory while an instance is awake. The one real cost risk, measured in agent/plans/PLAN-cloudflare-proxy.md section 4, is instances pinned awake: 20 `basic` instances 24/7 is about $150/month, 2 is about $15. Two settings bound it. They were lowered on purpose (box A1, 5f9a354ea and 3b96d5133); the instance cap was then raised to 25 per target by operator ruling ASKED:2026-10-26T15:26Z, because one container per org makes demand the sizing rule and `sleepAfter` keeps idle orgs from billing:
 
-  * `max_instances` on every `[[containers]]` entry of every `workers/proxy/wrangler*.toml`;
+  * the executor cap: `[vars] EXECUTOR_CAP` and `EXECUTOR_HEAVY_CAP` of every `workers/proxy/wrangler*.toml`, and `HARD_CAP` / `HARD_HEAVY_CAP` in `workers/proxy/src/capacity.ts`;
   * `sleepAfter` on every container class the config names, in `workers/proxy/src/**`,
-    the idle time before an instance sleeps. `@cloudflare/containers` defaults it to
-    `'10m'`, so a class that drops the line silently quintuples the idle bill.
+    the idle time before an instance sleeps, so a class that drops the line has no budgeted idle bill.
 
 Every config is held to the same budget, the bench Worker (operator order 2026-10-24) included. What a config may NAME (its own region, channel, services, routes) is `rediacc_ci.deploy.proxy_configs.config_refusals`, gated separately by `check:ci-proxy-configs`; this gate counts cost only. `wrangler.template.toml` is the generator's input with `@@...@@` placeholders, not a deployable config, so the scan skips it.
 
-Nothing else noticed a raise: a reviewer reads `max_instances = 20` as a capacity tweak. This is missing test 9 of the plan (box A5).
+Nothing else noticed a raise: a reviewer reads `EXECUTOR_CAP = "30"` as a capacity tweak. This is missing test 9 of the plan (box A5).
 
-THE RULE. Every `[[containers]]` entry names `max_instances`, an integer at or under MAX_INSTANCES_BUDGET (absent means the platform default, which is not a budget). Every container class it names is defined under `workers/proxy/src/` and sets `sleepAfter` in its own body, and EVERY `sleepAfter` assignment in that source, the class field or any override, is a literal the library parses (`'<n>s|m|h'`, or a number of seconds) at or under SLEEP_AFTER_BUDGET_S. A value this gate cannot read (a variable, a call) is a finding, never a pass: an unknown idle time is an unchecked one.
-
-THE DURABLE ENTRY (PLAN-executor-durable-object-policy.md Design item 7, box G1). A `[[containers]]` entry with `scheduling_policy = "durable_object"` (the OrgExecutor) carries neither `max_instances` (it caps nothing under that policy) nor `instance_type`. Its cap moves into code: every config with one carries `[vars] EXECUTOR_CAP` and `EXECUTOR_HEAVY_CAP` as decimal strings at or under MAX_INSTANCES_BUDGET and HEAVY_BUDGET, `workers/proxy/src/capacity.ts` defines `HARD_CAP` and `HARD_HEAVY_CAP` as integer literals at or under the same budgets, and every `instance:` value in the source is one of the allowed literals (`'lite'`, `'standard-1'`, or the one custom object in ALLOWED_CUSTOM_INSTANCE). A config's instance count is its ROUTED backend's cap (`max_instances` of the default entry when `EXECUTOR_BACKEND = "container"`, `EXECUTOR_CAP` when `"durable"`), and its worst-case dollar line is `(cap - heavy) * LIGHT_MONTHLY_USD + heavy * HEAVY_MONTHLY_USD`, at most MAX_CONFIG_MONTHLY_USD per config and MAX_TOTAL_MONTHLY_USD for the deployable set.
+THE RULE. Every `workers/proxy/wrangler*.toml` (the template excepted) declares exactly one `[[containers]]` entry, the `OrgExecutor` of `scheduling_policy = "durable_object"` (PLAN-executor-durable-object-policy.md Design item 7, boxes G1 and C1): the `Container` class and its default-policy entry are retired by migration v3, so a default-policy entry is a finding. The entry carries neither `max_instances` (it caps nothing under that policy) nor `instance_type`. Its cap lives in code: every config carries `[vars] EXECUTOR_CAP` and `EXECUTOR_HEAVY_CAP` as decimal strings at or under MAX_INSTANCES_BUDGET and HEAVY_BUDGET, `workers/proxy/src/capacity.ts` defines `HARD_CAP` and `HARD_HEAVY_CAP` as integer literals at or under the same budgets, and every `instance:` value in the source is one of the allowed literals (`'lite'`, `'standard-1'`, or the one custom object in ALLOWED_CUSTOM_INSTANCE). Every container class a config names is defined under `workers/proxy/src/` and sets `sleepAfter` in its own body, and EVERY `sleepAfter` assignment in that source, the class field or any override, is a literal (`'<n>s|m|h'`, or a number of seconds) at or under SLEEP_AFTER_BUDGET_S. A value this gate cannot read (a variable, a call) is a finding, never a pass: an unknown idle time is an unchecked one. A config's instance count is its `EXECUTOR_CAP`, and its worst-case dollar line is `(cap - heavy) * LIGHT_MONTHLY_USD + heavy * HEAVY_MONTHLY_USD`, at most MAX_CONFIG_MONTHLY_USD per config and MAX_TOTAL_MONTHLY_USD for the deployable set.
 
 RAISING THE BUDGET is a decision, not a fix: change the constant below in the same commit as the section 4 pricing that justifies it.
 
@@ -65,9 +62,6 @@ DECIMAL_RE = re.compile(r"^\d+$")
 INSTANCE_RE = re.compile(r"\binstance\s*:\s*")
 INT_LITERAL_RE = re.compile(r"^\d+$")
 
-# `@cloudflare/containers` lib/container.js: the idle timeout a class gets when it sets none.
-LIBRARY_DEFAULT_SLEEP_AFTER = "10m"
-
 PROXY_REL = ("workers", "proxy")
 CONFIG_GLOB = "wrangler*.toml"
 BENCH_CONFIG = "wrangler.bench.toml"
@@ -84,7 +78,7 @@ TEST_PARTS = ("__tests__",)
 
 # `sleepAfter = '2m'` (class field), `this.sleepAfter = 300`, `{ sleepAfter: "5m" }`. The value is everything up to the end of the statement or property, so a non-literal is captured whole and refused rather than skipped.
 SLEEP_AFTER_RE = re.compile(r"\bsleepAfter\s*[:=](?!=)\s*([^;,\n}]+)")
-# The library's own grammar (lib/helpers.js parseTimeExpression): `^(\d+)([smh])$` for a string, seconds for a number.
+# The grammar the executor's idle timer reads (org-executor-support.ts, the `sleepAfter` literal): `^(\d+)([smh])$` for a string, seconds for a number.
 DURATION_RE = re.compile(r"^(\d+)([smh])$")
 NUMBER_RE = re.compile(r"^\d+(?:\.\d+)?$")
 UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600}
@@ -92,7 +86,7 @@ MAX_INSTANCES_LINE_RE = re.compile(r"^\s*max_instances\s*=", re.MULTILINE)
 
 
 def parse_duration(raw: str) -> int | float | None:
-    """Seconds for a literal `@cloudflare/containers` accepts, else None (unreadable, so unchecked)."""
+    """Seconds for a literal the idle timer accepts, else None (unreadable, so unchecked)."""
     value = raw.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"`":
         match = DURATION_RE.match(value[1:-1])
@@ -127,7 +121,7 @@ def class_body(text: str, name: str) -> tuple[int, str] | None:
 def container_findings(
     wrangler_text: str, rel: str = "workers/proxy/wrangler.toml"
 ) -> tuple[list[dict], list[str]]:
-    """The `[[containers]]` entries and the max_instances findings for them."""
+    """The `[[containers]]` entries and the findings for them: one `durable_object` entry, no `max_instances`, no `instance_type`."""
     config = tomllib.loads(wrangler_text)
     containers = config.get("containers") or []
     lines = [
@@ -157,34 +151,22 @@ def container_findings(
                     "`instance:` size." % (rel, name, DURABLE_POLICY)
                 )
             continue
-        if policy != "default":
+        if policy == "default":
             findings.append(
-                "%s: [[containers]] %s has scheduling_policy = %r, which this gate does not know, "
-                "so its cost is unchecked. Use 'default' or %r."
-                % (rel, name, policy, DURABLE_POLICY)
+                "%s: [[containers]] %s uses the default scheduling policy. The `Container` class "
+                "is retired (migration v3), so the only entry is the OrgExecutor of "
+                "scheduling_policy = %r." % (rel, name, DURABLE_POLICY)
             )
             continue
-        if not has_max:
-            findings.append(
-                "%s: [[containers]] %s sets no max_instances, so the platform default applies "
-                "instead of the budget of %d. Add `max_instances = %d`."
-                % (rel, name, MAX_INSTANCES_BUDGET, MAX_INSTANCES_BUDGET)
-            )
-            continue
-        value = entry["max_instances"]
-        if not isinstance(value, int) or isinstance(value, bool):
-            findings.append(
-                "%s: [[containers]] %s max_instances = %r is not an integer; the budget is %d."
-                % (where, name, value, MAX_INSTANCES_BUDGET)
-            )
-        elif value > MAX_INSTANCES_BUDGET:
-            findings.append(
-                "%s: [[containers]] %s max_instances = %d is over the budget of %d "
-                "(PLAN-cloudflare-proxy.md section 4: each awake basic instance is about $7.50/month). "
-                "Lower it, or raise MAX_INSTANCES_BUDGET in .ci/scripts/quality/check_proxy_cost_guard.py "
-                "together with the pricing that justifies it."
-                % (where, name, value, MAX_INSTANCES_BUDGET)
-            )
+        findings.append(
+            "%s: [[containers]] %s has scheduling_policy = %r, which this gate does not know, "
+            "so its cost is unchecked. Use %r." % (rel, name, policy, DURABLE_POLICY)
+        )
+    if len(containers) > 1:
+        findings.append(
+            "%s: %d [[containers]] entries; the one entry is the OrgExecutor of "
+            "scheduling_policy = %r." % (rel, len(containers), DURABLE_POLICY)
+        )
     return containers, findings
 
 
@@ -226,15 +208,9 @@ def sleep_after_findings(sources: dict[str, str], class_names: list[str]) -> tup
         for rel, (offset, body) in hits:
             if SLEEP_AFTER_RE.search(body) is None:
                 findings.append(
-                    "%s:%d: class %s sets no sleepAfter, so @cloudflare/containers applies its "
-                    "default of '%s', over the budget of %ds. Add `sleepAfter = '2m';` to the class."
-                    % (
-                        rel,
-                        line_of(sources[rel], offset),
-                        name,
-                        LIBRARY_DEFAULT_SLEEP_AFTER,
-                        SLEEP_AFTER_BUDGET_S,
-                    )
+                    "%s:%d: class %s sets no sleepAfter, so its idle time has no budgeted value "
+                    "(at most %ds). Add `sleepAfter = '2m';` to the class."
+                    % (rel, line_of(sources[rel], offset), name, SLEEP_AFTER_BUDGET_S)
                 )
     return judged, findings
 
@@ -290,30 +266,14 @@ def vars_findings(config: dict, rel: str) -> tuple[int, int, list[str]]:
 
 
 def routed_count(containers: list[dict], config: dict, rel: str) -> tuple[int, int, list[str]]:
-    """`(instances, heavy, findings)` of the ROUTED backend: the default entries' max_instances under EXECUTOR_BACKEND = container, EXECUTOR_CAP under durable. A config with no durable entry is its default entries' sum, as before."""
-    legacy = sum(
-        c["max_instances"]
-        for c in containers
-        if not is_durable(c) and is_int(c.get("max_instances"))
-    )
+    """`(instances, heavy, findings)` of a config: its `[vars]` caps. A config with no durable entry has none to count; `container_findings` has already refused it."""
     if not any(is_durable(c) for c in containers):
-        return legacy, 0, []
-    cap, heavy, findings = vars_findings(config, rel)
-    has_legacy = any(not is_durable(c) for c in containers)
-    backend = (config.get("vars") or {}).get("EXECUTOR_BACKEND")
-    if not has_legacy or backend == "durable":
-        return cap, heavy, findings
-    if backend != "container":
-        findings.append(
-            "%s: [vars] EXECUTOR_BACKEND = %r with both backends configured, so the routed "
-            'backend, and with it the instance count, is unchecked. Use "container" or '
-            '"durable".' % (rel, backend)
-        )
-    return legacy, 0, findings
+        return 0, 0, []
+    return vars_findings(config, rel)
 
 
 def monthly_usd(instances: int, heavy: int, durable: bool) -> float:
-    """Worst-case dollars, every instance awake 30 days. A config with a durable entry is priced on its own cap whichever backend is routed, since the flip is one var."""
+    """Worst-case dollars, every instance awake 30 days."""
     if not durable:
         return instances * LIGHT_MONTHLY_USD
     return (instances - heavy) * LIGHT_MONTHLY_USD + heavy * HEAVY_MONTHLY_USD
@@ -466,7 +426,7 @@ def read_sources(root: pathlib.Path) -> dict[str, str]:
 
 
 def total_findings(counts: dict[str, int]) -> list[str]:
-    """The deployable-set rule over `{config name: summed max_instances}`; the dev config is not in `counts`."""
+    """The deployable-set rule over `{config name: EXECUTOR_CAP}`; the dev config is not in `counts`."""
     findings: list[str] = []
     if len(counts) > MAX_DEPLOYABLE_CONFIGS:
         findings.append(
@@ -477,8 +437,8 @@ def total_findings(counts: dict[str, int]) -> list[str]:
     total = sum(counts.values())
     if total > MAX_TOTAL_INSTANCES:
         findings.append(
-            "workers/proxy: the deployable configs total max_instances = %d, over the limit of %d "
-            "(operator ruling ASKED:2026-10-26T15:26Z: 7 x 25 at most)."
+            "workers/proxy: the deployable configs total an executor cap of %d, over the limit of "
+            "%d (operator ruling ASKED:2026-10-26T15:26Z: 7 x 25 at most)."
             % (total, MAX_TOTAL_INSTANCES)
         )
     return findings
@@ -523,21 +483,11 @@ def check(root: pathlib.Path) -> int:
         findings += these_findings
         durable = any(is_durable(c) for c in these)
         any_durable = any_durable or durable
-        routed, heavy, routed_findings = routed_count(these, tomllib.loads(text), rel)
-        instances = routed
+        instances, heavy, routed_findings = routed_count(these, tomllib.loads(text), rel)
         findings += routed_findings
-        if durable:
-            # The flip between backends is one var, so price the durable cap whichever is routed.
-            instances, heavy, _ = vars_findings(tomllib.loads(text), rel)
         dollars[wrangler.name] = monthly_usd(instances, heavy, durable)
         if wrangler.name != DEV_CONFIG:
-            counts[wrangler.name] = routed
-    for name, config_total in sorted(counts.items()):
-        if config_total > MAX_INSTANCES_BUDGET:
-            findings.append(
-                "workers/proxy/%s: its [[containers]] entries total max_instances = %d, over the "
-                "per-config budget of %d." % (name, config_total, MAX_INSTANCES_BUDGET)
-            )
+            counts[wrangler.name] = instances
     findings += total_findings(counts)
     findings += dollar_findings(dollars, list(counts))
     sources = read_sources(root)
@@ -566,7 +516,7 @@ def check(root: pathlib.Path) -> int:
         )
         return 1
     print(
-        "proxy cost guard: OK, %d container(s) at max_instances <= %d in %d config(s) "
+        "proxy cost guard: OK, %d container(s) at an executor cap <= %d in %d config(s) "
         "(%d deployable, %d instance(s) in total, at most %d), "
         "%d sleepAfter assignment(s) <= %ds, %d instance size(s) in the allowlist, "
         "worst case $%.2f/month (limit $%d), across %d source file(s)."
@@ -610,14 +560,15 @@ def selftest() -> bool:
     control("'1h' is 3600s", parse_duration("'1h'") == 3600)
     control("a variable is unreadable", parse_duration("IDLE") is None)
     control("'2 m' is not the library grammar", parse_duration("'2 m'") is None)
-    control("max_instances = 2 is within budget", not container_findings(SELFTEST_TOML % "2")[1])
-    control("max_instances = 26 fires", len(container_findings(SELFTEST_TOML % "26")[1]) == 1)
-    control('max_instances = "2" fires', len(container_findings(SELFTEST_TOML % '"2"')[1]) == 1)
     control(
-        "an absent max_instances fires",
+        "a default-policy entry fires (the Container class is retired)",
+        len(container_findings(SELFTEST_TOML % "2")[1]) == 1,
+    )
+    control(
+        "a default-policy entry with no max_instances fires",
         len(container_findings('[[containers]]\nclass_name = "C"\n')[1]) == 1,
     )
-    ok_src = {"s.ts": "export class C extends Container {\n  sleepAfter = '2m';\n}\n"}
+    ok_src = {"s.ts": "export class C {\n  sleepAfter = '2m';\n}\n"}
     control(
         "sleepAfter '2m' in the class is within budget", not sleep_after_findings(ok_src, ["C"])[1]
     )
@@ -626,7 +577,7 @@ def selftest() -> bool:
         len(sleep_after_findings({"s.ts": "class C {\n  sleepAfter = '10m';\n}\n"}, ["C"])[1]) == 1,
     )
     control(
-        "a class with no sleepAfter fires (library default)",
+        "a class with no sleepAfter fires",
         len(sleep_after_findings({"s.ts": "class C {\n  x = 1;\n}\n"}, ["C"])[1]) == 1,
     )
     control(
@@ -676,6 +627,10 @@ def selftest() -> bool:
         "an unknown scheduling_policy fires",
         len(container_findings(SELFTEST_TOML % "2" + 'scheduling_policy = "x"\n')[1]) == 1,
     )
+    control(
+        "a second entry beside the durable one fires",
+        len(container_findings(durable % "" + durable % "")[1]) == 1,
+    )
     good_vars = {"vars": {"EXECUTOR_CAP": "25", "EXECUTOR_HEAVY_CAP": "5"}}
     control("caps of 25 and 5 are clean", not vars_findings(good_vars, "c")[2])
     control(
@@ -693,17 +648,10 @@ def selftest() -> bool:
         len(vars_findings({"vars": {"EXECUTOR_CAP": 25, "EXECUTOR_HEAVY_CAP": "5"}}, "c")[2]) == 1,
     )
     control("absent cap vars fire", len(vars_findings({}, "c")[2]) == 2)
-    both: list[dict] = [
-        {"class_name": "A", "max_instances": 25},
-        {"class_name": "O", "scheduling_policy": DURABLE_POLICY},
-    ]
-    routed = {
-        "vars": {"EXECUTOR_BACKEND": "container", "EXECUTOR_CAP": "10", "EXECUTOR_HEAVY_CAP": "1"}
-    }
-    control("container routing counts max_instances", routed_count(both, routed, "c")[0] == 25)
-    durable_routed = {"vars": {**routed["vars"], "EXECUTOR_BACKEND": "durable"}}
-    control("durable routing counts EXECUTOR_CAP", routed_count(both, durable_routed, "c")[0] == 10)
-    control("an unreadable backend fires", len(routed_count(both, good_vars, "c")[2]) == 1)
+    one: list[dict] = [{"class_name": "O", "scheduling_policy": DURABLE_POLICY}]
+    capped = {"vars": {"EXECUTOR_CAP": "10", "EXECUTOR_HEAVY_CAP": "1"}}
+    control("a durable entry counts EXECUTOR_CAP", routed_count(one, capped, "c")[0] == 10)
+    control("a config with no durable entry counts nothing", routed_count([], capped, "c") == (0, 0, []))
     control(
         "the worst case per target is about $281 and within the limit",
         280 < monthly_usd(25, 5, True) < 282

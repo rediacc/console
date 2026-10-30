@@ -4,18 +4,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@cloudflare/containers', () => ({
-  ContainerProxy: class {},
-  Container: class {
-    static outboundByHost: unknown;
-    constructor(
-      readonly ctx: unknown,
-      readonly env: unknown
-    ) {}
-  },
-  getContainer: () => ({ fetch: () => Promise.resolve(new Response('container')) }),
-}));
-
 import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
 import { COORDINATOR_TIMEOUT_MS } from '../org-executor-support';
@@ -62,7 +50,6 @@ function account(status = 200): { binding: Fetcher; seen: Request[] } {
 
 function env(i: Counting, a: { binding: Fetcher }, extra: Partial<Env> = {}): Env {
   return {
-    EXECUTOR: null as never,
     ACCOUNT_URL,
     ACCOUNT: a.binding,
     ISSUER: i.binding,
