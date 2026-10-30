@@ -223,3 +223,31 @@ describe('generateClusterTfJson', () => {
     expect(tf).toMatchSnapshot();
   });
 });
+
+describe('a mapping with requiredEnvAttrs on the cluster path', () => {
+  const envMapping: ProviderMapping = {
+    ...linodeMapping,
+    requiredEnvAttrs: { project_id: 'TEST_CLUSTER_PROJECT_ID' },
+  };
+
+  it('wires the env value into every member as a number', () => {
+    process.env.TEST_CLUSTER_PROJECT_ID = '4242';
+    try {
+      const tf = generateClusterTfJson({ ...twoPoolSpec, mapping: envMapping }) as {
+        resource: Record<string, Record<string, Record<string, unknown>>>;
+      };
+      const members = Object.values(tf.resource[envMapping.resource] ?? {});
+      expect(members.length).toBeGreaterThan(0);
+      for (const m of members) expect(m.project_id).toBe(4242);
+    } finally {
+      delete process.env.TEST_CLUSTER_PROJECT_ID;
+    }
+  });
+
+  it('refuses to generate when the variable is unset', () => {
+    delete process.env.TEST_CLUSTER_PROJECT_ID;
+    expect(() => generateClusterTfJson({ ...twoPoolSpec, mapping: envMapping })).toThrow(
+      /TEST_CLUSTER_PROJECT_ID/
+    );
+  });
+});
