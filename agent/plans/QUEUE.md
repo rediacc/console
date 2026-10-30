@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 16 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1388 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1390 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:ab7fe1e7e8ca55226, worker:a2a94e49869c3092f.
-- Leased items: 3: #5bfe0775 (worker:a2a94e49869c3092f, d778be9d), #a150016d (worker:queue, d778be9d), #d43b0a18 (worker:ab7fe1e7e8ca55226, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a734037c5eb0d7535, worker:ad38502e4360d054d.
+- Leased items: 3: #304fd258 (worker:ad38502e4360d054d, d778be9d), #6d2022b2 (worker:a734037c5eb0d7535, d778be9d), #a150016d (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 4 of 41 plans done, 571 of 741 boxes done (77%).
+Promoted: 4 of 42 plans done, 571 of 754 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -125,6 +125,7 @@ Promoted: 4 of 41 plans done, 571 of 741 boxes done (77%).
 | 39 | PLAN-cli-tofu-toolchain.md | 9/10 | 1 open |
 | 40 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 41 | PLAN-settings-set-verb.md | 0/4 | 4 open |
+| 42 | PLAN-free-license.md | 0/13 | 13 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -168,6 +169,7 @@ Promoted: 4 of 41 plans done, 571 of 741 boxes done (77%).
 39. agent/plans/PLAN-cli-tofu-toolchain.md -- operator 2026-10-29 ASKED (Install command + doctor, Pin provider hashes, PATH-only fallback): rdc tools install tofu with baked checksums, doctor Tools section, provider lock hashes, shared plugin cache
 40. agent/plans/PLAN-backup-download-from-store.md -- operator 2026-10-29 "Go: implement": rdc backup download --store from the R2 chunk store with no machine, a backup:restore token scope, renet backup fetch-image, darwin and windows hole punching
 41. agent/plans/PLAN-settings-set-verb.md -- operator /ask 2026-10-30 "Yes, plan it": npm run settings -- set|get|list over a tunables registry, one source per value (the R2 ceiling lived in three places), starting with the spend-guard ceilings
+42. agent/plans/PLAN-free-license.md -- operator /ask 2026-10-30 (rulings R1-R13): licensing always enforced incl. CI (production key in CI, one shared renet artifact), FREE plan (48 h, 3 GB, 8 per IP per 72 h per server, 3 per machine, unlimited renewal, no backups), COMMUNITY licenses again
 
 ## Generated
 
