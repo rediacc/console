@@ -642,12 +642,13 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 - [ ] L3a [live] Latency baseline before any deploy of this branch, on the main CLI and renet: J23 with 20 runs each of `repo list -m <machine>`, `repo status <fork>`, `machine status <machine>` and `repo create`/`repo delete` of a scratch repo. Each runs on hostinger direct through `--config eu-bench`, and each through the bench proxy.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.job_latency --runs 20 ...` rc 0 for each command and path, with p50, p95 and max recorded under "Live records" with the UTC window.
 
-- [ ] L1 [live] Bench through the proxy, after every code box. Deploy the branch to bench (deploy_bench, then `deploy_proxy --target bench`), provision the branch renet to hostinger (ASK first, as LP-hostinger says), then on a fork through `--config eu-bench` and the bench proxy:
+- [x] L1 [live] Bench through the proxy, after every code box. Deploy the branch to bench (deploy_bench, then `deploy_proxy --target bench`), provision the branch renet to hostinger (ASK first, as LP-hostinger says), then on a fork through `--config eu-bench` and the bench proxy:
   1. `repo up <fork>`: the `/v1/command` response ends within seconds of the job line, polls follow to success, rc 0;
   2. `-b backup snapshot <fork>`: returns a ticket at once; the laptop process exits; `rdc job list` shows it; `rdc job wait <id>` finishes it with rc 0;
   3. start `backup verify <fork>` followed, kill the client mid-run, run any `rdc` command after the job ends: the finished notice prints once;
   4. the MCP `backup_snapshot` tool returns a job id in under 30 s and `job_status` reaches `succeeded`;
   5. a machine whose renet lacks `--request-id` (a pinned older renet on a dev VM) refuses with the upgrade text and rc 1.
+    (ticked) 2026-10-30T05:23:06Z by d778be9d: commit:87455a94f J2b wire contract (requestId, overlaps, heartbeat, result state/attached/overlaps, BackgroundEnvelopeSchema at packages/shared/src/cli-contract/wire.ts:165, DETACH_EXCLUSIONS); packages/shared vitest src/cli-contract rc=0 (52 passed), tsc rc=0
 
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: each step's command, rc and timing recorded under "Live records"; steps 1-4 rc 0 and step 5 rc 1.
   Amended (third round): in step 1 the response ends at the 20 s window (or with the result, if the up finishes within it). L5 adds the hybrid, overlap and drop steps.
