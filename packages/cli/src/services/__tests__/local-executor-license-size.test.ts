@@ -197,12 +197,10 @@ function parentRepo(placement?: { datastore: string } | { machine: string }) {
 }
 
 describe('repo-license size probe: which datastore it stats', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -230,9 +228,6 @@ describe('repo-license size probe: which datastore it stats', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   it('stats the NAMED datastore the parent is placed on, never the machine default', async () => {
@@ -319,12 +314,10 @@ describe('repo-license size probe: which datastore it stats', () => {
 });
 
 describe('repo-license size probe: a failed stat is not a measurement', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -351,9 +344,6 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   it('says so on stderr when the source image could not be measured for a fork', async () => {

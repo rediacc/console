@@ -199,13 +199,10 @@ function storeReports(licensed: ReturnType<typeof installedLicence>[]) {
 }
 
 describe('backup restore: licensing the target machine', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: MockInstance<typeof outputService.warn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Without this the whole pre-flight early-returns, and every assertion below would pass for a reason that has nothing to do with the fix.
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -247,11 +244,6 @@ describe('backup restore: licensing the target machine', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-    if (savedSkipActivation === undefined) {
-      delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-    } else {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   // T1, the required test. Delete the restore arm at the provisionAndVerify seam, or invert its predicate, and this goes red.
@@ -501,16 +493,6 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(2);
     expect(mockIssueRepoLicense.mock.calls[1][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
-  });
-
-  // Every renet build enforces licences (agent/plans/PLAN-production-key-only.md Design 6), so the old activation bypass is gone: skipping issuance would only hand renet a restore it refuses.
-  it('REDIACC_SKIP_MACHINE_ACTIVATION no longer skips licence issuance', async () => {
-    process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
-
-    const result = await localExecutorService.execute(restoreOptions);
-
-    expect(result.success).toBe(true);
-    expect(mockIssueRepoLicense).toHaveBeenCalled();
   });
 });
 

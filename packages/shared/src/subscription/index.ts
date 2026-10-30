@@ -7,7 +7,6 @@
 
 // Constants
 export {
-  COMMUNITY_LEGACY_CUTOFF_ISO,
   comparePlans,
   DELEGATION_CERT_CREATE_RATE_LIMIT,
   DELEGATION_RENEW_PATH,
@@ -23,7 +22,6 @@ export {
   getStorageQuotaBytesForPlan,
   getStripeLookupKey,
   hasFeature,
-  isCommunityUsable,
   isValidPlanCode,
   LICENSE_RENEW_PATH,
   MACHINE_AUTO_RELEASE_HOURS,

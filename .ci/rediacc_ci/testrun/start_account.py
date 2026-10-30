@@ -12,6 +12,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   6. The cookie jar lives in memory; the twin wrote and removed `account-for-e2e-cookies.txt`.
   7. The ED25519 signing pair is taken from the environment when BOTH `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` are set (the twin always minted its own), and the PUBLIC half is published as `ACCOUNT_ED25519_PUBLIC_KEY` next to `REDIACC_ACCOUNT_SERVER`. A renet build has to bake the signer's public key, or every licence this server signs is filed under a fingerprint renet never looks up (`start_backup_plane`). The private half is never printed or written.
   8. `--require-env-pair` refuses to mint: without both halves in the environment the leg fails before anything starts. The CI legs pass it with the PRODUCTION pair mapped from Bitwarden, because they deploy the run's one production-keyed renet (agent/plans/PLAN-free-license.md R2, F2) and a throwaway pair would sign licences that renet refuses at the first repository create, long after this step reported success.
+  9. `ACCOUNT_SERVER_API_KEY` is taken from the environment when set (the twin always minted it), so a caller that drives the server's X-API-Key routes, such as renet's subscription system tests, holds the key without this leg ever printing it.
 """
 
 import contextlib
@@ -248,7 +249,8 @@ def start_server(
         "ACCOUNT_X25519_PRIVATE_KEY": keys["xPriv"],
         "ACCOUNT_X25519_PUBLIC_KEY": keys["xPub"],
         # envSchema requires >= 32 characters for both; random 64-hex satisfies it without inventing a secret.
-        "ACCOUNT_SERVER_API_KEY": secrets.token_hex(32),
+        # Delta 9: a caller that drives the X-API-Key routes (renet's subscription system tests, agent/plans/PLAN-free-license.md F2) supplies its own key in the environment, never printed here.
+        "ACCOUNT_SERVER_API_KEY": os.environ.get("ACCOUNT_SERVER_API_KEY") or secrets.token_hex(32),
         "ACCOUNT_JWT_SECRET": secrets.token_hex(32),
         "ROOT_EMAIL": "root@rediacc.invalid",
         "DATABASE_PATH": str(db_path),

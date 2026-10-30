@@ -15,13 +15,13 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2754,
+ "count": 2753,
  "files": 676,
  "by_rule": {
   "R1": 1504,
   "R11": 142,
   "R14": 1,
-  "R18": 13,
+  "R18": 12,
   "R19": 55,
   "R2": 602,
   "R7": 437
@@ -51,9 +51,6 @@
    "R1": [
     "e5e889d4f2fe355d",
     "eed5959eed0aa435"
-   ],
-   "R18": [
-    "8bb5a32b576a2a01"
    ]
   },
   ".ci/config/prose-style-rules.json": {

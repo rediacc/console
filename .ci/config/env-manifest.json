@@ -50,15 +50,6 @@
     ],
     "packages/cli/src/services/__tests__/account-client.test.ts": [
       "X25519_PUBLIC_KEY"
-    ],
-    "packages/cli/src/services/__tests__/local-executor-license-size.test.ts": [
-      "REDIACC_SKIP_MACHINE_ACTIVATION"
-    ],
-    "packages/cli/src/services/__tests__/local-executor-restore-license.test.ts": [
-      "REDIACC_SKIP_MACHINE_ACTIVATION"
-    ],
-    "packages/cli/src/services/__tests__/local-executor.test.ts": [
-      "REDIACC_SKIP_MACHINE_ACTIVATION"
     ]
   },
   "_tombstone_proof_sites_comment": [
@@ -86,7 +77,7 @@
     }
   ],
   "notes": {
-    "RDC_BENCH": "DOCUMENTED DEAD AND STILL READ IN BASH, found 2026-09-09 while building this file. docs/environment-variables.md lists it as deleted, CLAUDE.md and docs/agent-reference/local-env.md both say 'there is no RDC_BENCH', and .ci/scripts/test/test-rdc-sh-env.sh:81 enforces its absence from the wrapper -- but .ci/lib/local-common.sh:810 and .ci/scripts/infra/build-renet.sh:70 both branch on ${RDC_BENCH:-0}, and scripts/ops/deploy-bench.sh:286-287 PRINTS advice telling the operator to run `RDC_BENCH=1 ./rdc.sh ...`, which the wrapper no longer honours. This gate cannot see it: bash ${VAR} is outside the corpus by design. Left in the tombstone shard because that is the documented ruling, with the contradiction recorded here rather than resolved by quietly reclassifying it.",
+    "RDC_BENCH": "Retired: bench is an ordinary named config (`./rdc.sh --config eu-bench`), and docs/environment-variables.md lists the name as deleted. This note once recorded the price of excluding bash ${VAR} from the corpus (.ci/rediacc_ci/quality/env_manifest.py): two shell files, .ci/lib/local-common.sh and .ci/scripts/infra/build-renet.sh, still branched on the name while three documents called it deleted, and this gate could not see them. Both files are gone (re-checked 2026-10-30), so no reader is left.",
     "REDIACC_ENVIRONMENT": "Dead as a name the CLI READS. It still travels as a REMOTE renet environment value, built as a string literal in services/executor/renet-command.ts, which is none of the five source kinds and so does not collide.",
     "REDIACC_CI_ROOT": "The single fixture-pointing override for the whole rediacc_ci package, declared once at .ci/rediacc_ci/paths.py:70 as ROOT_ENV. It is in this manifest only because the os-environ reader parses instead of grepping: `os.environ.get(ROOT_ENV)` is invisible to a regex over the call site, and 54 other gate seams were invisible with it.",
     "X": "A PLACEHOLDER, not a variable. `process.env.X` appears inside a fixture string in scripts/gates/check-gate-cwd-independence.ts:169, which builds a synthetic gate to test its own matcher. It is classified gate-seam because that is literally what it is: a seam in a gate's own fixture. The Python reader no longer produces this class of entry (it parses), but no TypeScript parser is available to a Python gate.",
@@ -1153,7 +1144,6 @@
       "REDIACC_TRANSCRIPT_PATH",
       "RENET_BINARY_PATH",
       "RENET_DATA_DIR",
-      "RENET_EXPECT_NO_ACCOUNT_SERVER",
       "RENET_ROOT",
       "REPOSITORY_NETWORK_MODE",
       "RESULTS_FILE",

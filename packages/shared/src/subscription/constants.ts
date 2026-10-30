@@ -289,37 +289,6 @@ export const SUBSCRIPTION_CONFIG = {
 export const TRIAL_PERIOD_DAYS = 14;
 
 /**
- * Accounts created before this instant keep a usable Community subscription
- * without ever starting a trial (the pre-trial-era free tier). Accounts
- * created after it must start a trial first; their Community access exists
- * only as the fallback after a cancelled or lapsed subscription.
- *
- * Set to the deploy instant of the trial-based model. Bump to the actual
- * deploy timestamp when the account server ships.
- */
-export const COMMUNITY_LEGACY_CUTOFF_ISO = '2026-07-07T00:00:00.000Z';
-
-/**
- * Whether a COMMUNITY subscription may issue licenses / activate machines.
- *
- * Usable when the account predates the trial-era cutoff (grandfathered
- * free tier), or the customer has been through a trial (`trialUsedAt`), or
- * the row is a post-cancellation fallback (`communityFallback`). A fresh
- * post-cutoff signup that never checked out gets neither marker and must
- * start a trial before using the product.
- */
-export function isCommunityUsable(sub: {
-  createdAt: string | Date;
-  metadata?: Record<string, unknown> | null;
-}): boolean {
-  const created = typeof sub.createdAt === 'string' ? sub.createdAt : sub.createdAt.toISOString();
-  if (created < COMMUNITY_LEGACY_CUTOFF_ISO) {
-    return true;
-  }
-  return Boolean(sub.metadata?.trialUsedAt) || sub.metadata?.communityFallback === 'true';
-}
-
-/**
  * All valid plan codes in order from lowest to highest tier.
  */
 export const PLAN_ORDER: readonly PlanCode[] = [

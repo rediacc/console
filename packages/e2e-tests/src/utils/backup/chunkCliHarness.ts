@@ -227,7 +227,7 @@ export const registerMachines = async (cli: CliRunner): Promise<void> => {
  * Create a repository THROUGH THE CLI and prove it came out licensed.
  *
  * The proof is the point. A `repo create` whose license issuance quietly
- * no-opped (what the retired `REDIACC_SKIP_MACHINE_ACTIVATION=1` did) would
+ * no-opped (what the retired activation skip switch did) would
  * still exit 0, and the failure would then surface
  * three tests later as a snapshot refusing on "no license data" — read as a
  * broken uploader. So the license is read back off the MACHINE, where it has to

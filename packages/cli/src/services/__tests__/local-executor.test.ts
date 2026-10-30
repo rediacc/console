@@ -119,11 +119,8 @@ vi.mock('../renet/renet-execution.js', () => ({
 const { localExecutorService } = await import('../executor/local-executor.js');
 
 describe('localExecutorService first-use onboarding', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
       sshPublicKey: 'PUBLIC_KEY',
@@ -161,12 +158,6 @@ describe('localExecutorService first-use onboarding', () => {
       status: { subscriptionId: 'sub_1' },
     });
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
-  });
-
-  afterEach(() => {
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   it('authorizes and retries once on first-use missing-license failures', async () => {
@@ -544,11 +535,8 @@ describe('localExecutorService first-use onboarding', () => {
 });
 
 describe('localExecutorService create/fork licensing flow', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
       sshPublicKey: 'PUBLIC_KEY',
@@ -570,12 +558,6 @@ describe('localExecutorService create/fork licensing flow', () => {
     mockRefreshRepoLicenseIdentity.mockResolvedValue(true);
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
     mockExecStreaming.mockResolvedValue(0);
-  });
-
-  afterEach(() => {
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   const createOptions = {
