@@ -22,7 +22,7 @@ import {
   type StepRunnerDeps,
   type StepRunReport,
 } from './run-job.js';
-import { dueSteps } from './steps.js';
+import { dueSteps, getStepDefinition } from './steps.js';
 import { isTerminalTicketState, type Ticket, type TicketStore } from './ticket-store.js';
 
 /** Opaque to this module: whatever `withConnection` hands to follow and readStatus. */
@@ -44,6 +44,15 @@ export interface JobWaitDeps {
   followProxy?: (ticket: Ticket, signal: AbortSignal) => Promise<JobStatus | undefined>;
   /** Resolve a ticket stuck at `starting` through `job list --request-id`. Absent until renet supports it (J1b). */
   resolveStarting?: (ticket: Ticket) => Promise<string | undefined>;
+  /**
+   * Replay a finished job's whole log from line 0 into `onEvent`. Used when a step that reads the job's output is due
+   * and this observer did not see the whole stream (a ticket finished while away, a follow resumed past line 0).
+   */
+  replay?: (
+    conn: WaitConnection,
+    jobId: string,
+    onEvent: (event: RenetEvent, line?: number) => void
+  ) => Promise<void>;
   /** The step runner. Built live (renet job claim over SSH) only when the ticket owes a step. */
   steps?: StepRunnerDeps;
 }
@@ -187,12 +196,44 @@ async function settleSteps(
   let report = emptyStepReport();
   const latest = store.find(ticket.requestId) ?? ticket;
   const owed = { ...latest, state: job.state };
-  if (dueSteps(owed, job.state, job.markers).length > 0) {
+  const due = dueSteps(owed, job.state, job.markers);
+  if (due.length > 0) {
     const stepDeps = deps.steps ?? (await liveStepRunnerDeps(store));
-    report = await runTicketSteps(store, owed, job, stepDeps);
+    report = await runTicketSteps(store, owed, await withReplayedOutput(owed, job, deps), stepDeps);
   }
   if (outstandingSteps(report).length === 0) store.append('acknowledged', ticket.requestId);
   return report;
+}
+
+/**
+ * The observation, completed with the job's log when a due step reads its output and this observer has none: the
+ * results `repo migrate` prints per phase reach `rdc job wait` this way, long after the attach window closed. A log
+ * that cannot be read leaves the observation as it was, and the step prints nothing rather than failing.
+ */
+async function withReplayedOutput(
+  ticket: Ticket,
+  job: ObservedJob,
+  deps: JobWaitDeps
+): Promise<ObservedJob> {
+  const wantsOutput = dueSteps(ticket, job.state, job.markers).some(
+    (s) => getStepDefinition(s.name)?.needsOutput === true
+  );
+  if (!wantsOutput || job.output || !deps.replay || !ticket.jobId || !ticket.machine) return job;
+  const { replay, withConnection } = deps;
+  const jobId = ticket.jobId;
+  const seen = createStepObservationCollector();
+  try {
+    await withConnection(ticket.machine, (conn) =>
+      replay(conn, jobId, (event) => seen.consume(event))
+    );
+  } catch {
+    return job;
+  }
+  return {
+    ...job,
+    output: seen.output || undefined,
+    markers: job.markers ?? seen.markers,
+  };
 }
 
 function followOverSsh(

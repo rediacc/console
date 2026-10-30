@@ -1865,6 +1865,7 @@
         "deletingSource": "Lähte-image'ide kustutamine masinal {{machine}}...",
         "description": "Migreeri hoidla elavalt ühelt masinalt teisele minimaalse seisakuajaga. Kaheetapiline rsync: mahtülekanne töö ajal, seejärel lühike peatus delta sünkroniseerimiseks. Liigutab kogu hoidla (marsruutimine suunatakse ümber uude asukohta) ning kustutab pärast kolimise õnnestumist lähte-image'id (kasuta --keep-source nende säilitamiseks). Toetab CRIU kontrollpunkti protsesside mäluseisundi migreerimiseks ja sihtmasinate automaatset provisjoneerimist",
         "descriptionShort": "Migreerige hoidla masinate vahel otse",
+        "downtime": "Katkestusaeg: {{duration}}",
         "examples": {
           "basic": "Vii hoidla üle teisele masinale.",
           "strategy": "Vii hoidla üle füüsilise kopeerimise strateegiaga."
@@ -1881,6 +1882,9 @@
         "optionStrategy": "Üleminekul kasutatav plokidelta strateegia: auto, physical või shared",
         "optionTo": "Sihtmasin või -klaster",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
+        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul, allikas jäi tööle",
+        "phase2": "2. faas: üleminek (lühike katkestus)...",
+        "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "phase3": "3. faas: sihtmäel käivitamine...",
         "placementRetryHint": "Marsruutimine osutab juba masinale {{machine}}, seega proovib 'rdc repo up {{name}}' uuesti seal. Lähte-image'id jäeti taastematerjalina alles.",
         "placementUpdated": "Marsruutimine uuendatud: {{name}} asub nüüd masinal {{machine}}",

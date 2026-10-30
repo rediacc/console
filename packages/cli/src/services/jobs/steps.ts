@@ -884,6 +884,16 @@ const DEFINITIONS: StepDefinition[] = [
   },
   boundStep(
     {
+      // `repo migrate`: the per-phase bytes and durations and the downtime window, from the source job's `migrate_result` line.
+      name: 'reportMigrateResult',
+      on: 'success',
+      needsOutput: true,
+      params: [],
+    },
+    () => import('../../commands/repo-migrate.js')
+  ),
+  boundStep(
+    {
       // `repo migrate`: the target up, DNS, the source delete and both unit re-renders, in order, once the source job succeeded.
       name: 'migrateComplete',
       on: 'success',

@@ -1865,6 +1865,7 @@
         "deletingSource": "Suppression des images source sur {{machine}}...",
         "description": "Migrer à chaud un dépôt d'une machine à une autre avec un temps d'arrêt minimal. rsync en deux phases : transfert en masse pendant le fonctionnement, puis brève pause pour la synchronisation delta. Déplace tout le dépôt (le routage est repointé vers le nouvel emplacement) et, une fois le déplacement réussi, supprime les images source (utilisez --keep-source pour les conserver). Prend en charge le checkpoint CRIU pour la migration de l'état mémoire des processus et l'auto-provisionnement des machines cibles",
         "descriptionShort": "Migration en direct d'un dépôt entre machines",
+        "downtime": "Temps d'arrêt : {{duration}}",
         "examples": {
           "basic": "Déplacer un dépôt vers une autre machine.",
           "strategy": "Déplacer un dépôt avec la stratégie de copie physique."
@@ -1881,6 +1882,9 @@
         "optionStrategy": "Stratégie de delta par blocs pour la bascule : auto, physical ou shared",
         "optionTo": "Machine ou cluster de destination",
         "phase1": "Phase 1 : Transfert des données en masse (la source reste en fonctionnement)...",
+        "phase1Stats": "{{transferred}} transférés en {{duration}}, la source est restée en ligne",
+        "phase2": "Phase 2 : Basculement (bref temps d'arrêt)...",
+        "phase2Stats": "Bascule (TEMPS D'ARRÊT) : {{transferred}} en {{duration}}",
         "phase3": "Phase 3 : Démarrage sur la cible...",
         "placementRetryHint": "Le routage pointe déjà vers {{machine}}, donc 'rdc repo up {{name}}' réessaiera là-bas. Les images source ont été conservées comme matériel de récupération.",
         "placementUpdated": "Routage mis à jour : {{name}} se trouve désormais sur {{machine}}",

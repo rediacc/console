@@ -6,12 +6,13 @@
 
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
-import type { JobLogCursor } from '../executor/job-client.js';
+import { JobLogCursor } from '../executor/job-client.js';
 import {
   connectForJobs,
   followJobLogs,
   type JobConnection,
   readJobStatus,
+  replayJobLogs,
 } from '../executor/job-remote.js';
 import type { RenetEvent } from '../executor/types.js';
 import type { NoticeDeps, TicketObservation } from './finished-notice.js';
@@ -58,6 +59,8 @@ export function sshWaitDeps(): JobWaitDeps {
       const c = conn as JobConnection;
       return readJobStatus(c.lease.sftp, c.remoteRenetPath, jobId, machine);
     },
+    replay: (conn, jobId, onEvent) =>
+      replayJobLogs(conn as JobConnection, jobId, { onEvent }, new JobLogCursor(0)),
   };
 }
 

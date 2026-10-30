@@ -1865,6 +1865,7 @@
         "deletingSource": "Eliminando imágenes de origen en {{machine}}...",
         "description": "Migra en vivo un repositorio de una máquina a otra con el mínimo tiempo de inactividad. rsync en dos fases: transferencia masiva mientras se ejecuta, luego una breve pausa para la sincronización delta. Mueve todo el repositorio (el enrutamiento se redirige al nuevo destino) y, una vez que el traslado tiene éxito, elimina las imágenes de origen (use --keep-source para conservarlas). Admite checkpoint de CRIU para la migración del estado de memoria de procesos y el aprovisionamiento automático de máquinas de destino",
         "descriptionShort": "Migración en vivo de un repositorio entre máquinas",
+        "downtime": "Tiempo de inactividad: {{duration}}",
         "examples": {
           "basic": "Mueve un repositorio a otra máquina.",
           "strategy": "Mueve un repositorio usando la estrategia de copia física."
@@ -1881,6 +1882,9 @@
         "optionStrategy": "Estrategia de delta por bloques para el corte: auto, physical o shared",
         "optionTo": "Máquina o clúster de destino",
         "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
+        "phase1Stats": "{{transferred}} transferidos en {{duration}}, el origen siguió en línea",
+        "phase2": "Fase 2: Corte (breve inactividad)...",
+        "phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
         "phase3": "Fase 3: Iniciando en el destino...",
         "placementRetryHint": "El enrutamiento ya apunta a {{machine}}, por lo que 'rdc repo up {{name}}' reintentará allí. Las imágenes de origen se conservaron como material de recuperación.",
         "placementUpdated": "Enrutamiento actualizado: {{name}} ahora reside en {{machine}}",

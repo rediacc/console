@@ -130,7 +130,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-exclusive',
     timeout: '24h',
     box: 'J4',
-    steps: ['migratePlacement', 'migrateComplete'],
+    steps: ['migratePlacement', 'reportMigrateResult', 'migrateComplete'],
     note: 'the source job, then the migrateComplete step runs repository_up on the target and repository_delete on the source (J0b finding 1)',
   },
   'backup snapshot': {

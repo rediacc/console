@@ -1865,6 +1865,7 @@
         "deletingSource": "{{machine}} üzerindeki kaynak imajlar siliniyor...",
         "description": "Bir depoyu minimum kesinti süresiyle bir makineden diğerine canlı olarak taşır. İki aşamalı rsync: çalışırken toplu aktarım, ardından delta senkronizasyonu için kısa bir durdurma. Depoyu bütünüyle taşır (yönlendirme yeni konuma yeniden işaret eder) ve taşıma başarılı olduktan sonra kaynak imajları siler (korumak için --keep-source kullanın). Süreç bellek durumu taşıma için CRIU checkpoint'i ve hedef makinelerin otomatik provizyonlanmasını destekler",
         "descriptionShort": "Makineler arası depo canlı taşıma",
+        "downtime": "Kesinti süresi: {{duration}}",
         "examples": {
           "basic": "Bir depoyu başka bir makineye taşı.",
           "strategy": "Bir depoyu fiziksel kopyalama stratejisiyle taşı."
@@ -1881,6 +1882,9 @@
         "optionStrategy": "Geçiş için blok-delta stratejisi: auto, physical veya shared",
         "optionTo": "Hedef makine veya küme",
         "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
+        "phase1Stats": "{{duration}} içinde {{transferred}} aktarıldı, kaynak çevrimiçi kaldı",
+        "phase2": "Aşama 2: Geçiş (kısa kesinti)...",
+        "phase2Stats": "Geçiş (KESİNTİ): {{duration}} içinde {{transferred}}",
         "phase3": "Aşama 3: Hedefte başlatılıyor...",
         "placementRetryHint": "Yönlendirme zaten {{machine}}'e işaret ediyor, bu yüzden 'rdc repo up {{name}}' orada yeniden denenecek. Kaynak imajlar kurtarma malzemesi olarak korundu.",
         "placementUpdated": "Yönlendirme güncellendi: {{name}} artık {{machine}} üzerinde bulunuyor",

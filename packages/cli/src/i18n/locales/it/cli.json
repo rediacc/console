@@ -1865,6 +1865,7 @@
         "deletingSource": "Eliminazione delle immagini sorgente su {{machine}}...",
         "description": "Migra a caldo un repository da una macchina a un'altra con tempi di inattività minimi. rsync in due fasi: trasferimento massivo durante l'esecuzione, poi una breve pausa per la sincronizzazione delta. Sposta l'intero repository (l'instradamento viene reindirizzato alla nuova destinazione) e, una volta riuscito lo spostamento, elimina le immagini sorgente (usa --keep-source per mantenerle). Supporta il checkpoint CRIU per la migrazione dello stato di memoria dei processi e il provisioning automatico delle macchine di destinazione",
         "descriptionShort": "Migrazione live di un repository tra macchinari",
+        "downtime": "Interruzione: {{duration}}",
         "examples": {
           "basic": "Sposta un repository su un'altra macchina.",
           "strategy": "Sposta un repository usando la strategia di copia fisica."
@@ -1881,6 +1882,9 @@
         "optionStrategy": "Strategia di delta a blocchi per il cutover: auto, physical o shared",
         "optionTo": "Macchina o cluster di destinazione",
         "phase1": "Fase 1: trasferimento dati bulk (la sorgente rimane in esecuzione)...",
+        "phase1Stats": "{{transferred}} trasferiti in {{duration}}, la sorgente è rimasta online",
+        "phase2": "Fase 2: cutover (breve downtime)...",
+        "phase2Stats": "Cutover (FERMO MACCHINA): {{transferred}} in {{duration}}",
         "phase3": "Fase 3: avvio sulla destinazione...",
         "placementRetryHint": "L'instradamento punta già a {{machine}}, quindi 'rdc repo up {{name}}' riproverà lì. Le immagini sorgente sono state mantenute come materiale di recupero.",
         "placementUpdated": "Instradamento aggiornato: {{name}} ora si trova su {{machine}}",

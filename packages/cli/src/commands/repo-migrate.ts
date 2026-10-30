@@ -28,6 +28,7 @@ import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { formatBytes } from '../utils/format.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -324,6 +325,73 @@ async function completeOnTarget(params: {
   outputService.success(t('commands.repo.migrate.complete', { name, from, to }));
 }
 
+/** One transfer of the migrate as renet recorded it in the job's `migrate_result` line. */
+interface MigratePhaseResult {
+  name: string;
+  transferredBytes: number;
+  transferMs: number;
+}
+
+interface MigrateJobResult {
+  phases: MigratePhaseResult[];
+  downtimeMs: number;
+}
+
+/** The `migrate_result` line renet's `repository migrate` prints last: per-phase bytes and time, and the downtime window. */
+export function extractMigrateResult(output: string | undefined): MigrateJobResult | undefined {
+  if (!output) return undefined;
+  for (const rawLine of output.split('\n')) {
+    const start = rawLine.indexOf('{');
+    if (start < 0) continue;
+    try {
+      const parsed = JSON.parse(rawLine.slice(start)) as { migrate_result?: MigrateJobResult };
+      const result = parsed.migrate_result;
+      if (result && Array.isArray(result.phases) && typeof result.downtimeMs === 'number') {
+        return result;
+      }
+    } catch {
+      // Not the result line (log text, a partial line), keep scanning.
+    }
+  }
+  return undefined;
+}
+
+function phaseStatsLine(key: string, phase: MigratePhaseResult | undefined): string | undefined {
+  if (!phase || phase.transferredBytes < 0) return undefined;
+  return `  ${t(key, {
+    transferred: formatBytes(phase.transferredBytes),
+    duration: formatStepDuration(phase.transferMs),
+  })}`;
+}
+
+/**
+ * Print what the migrate job measured: the hot transfer, the cutover transfer and the downtime window. It runs as a
+ * step on the job's success, so the same lines appear when the migrate finished in the foreground and when
+ * `rdc job wait <id>` reads the result later. An observer that has no output prints nothing.
+ */
+export function renderMigrateResult(output: string | undefined): void {
+  const result = extractMigrateResult(output);
+  if (!result) return;
+  const lines = [
+    phaseStatsLine(
+      'commands.repo.migrate.phase1Stats',
+      result.phases.find((p) => p.name === 'bulk')
+    ),
+    `\n${t('commands.repo.migrate.phase2')}`,
+    phaseStatsLine(
+      'commands.repo.migrate.phase2Stats',
+      result.phases.find((p) => p.name === 'cutover')
+    ),
+    `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(result.downtimeMs) })}`,
+  ];
+  for (const line of lines) if (line !== undefined) outputService.info(line);
+}
+
+bindStepHandler('reportMigrateResult', ({ output }) => {
+  renderMigrateResult(output);
+  return Promise.resolve();
+});
+
 bindStepHandler('migrateComplete', async ({ params }) => {
   const text = (key: string) =>
     typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
@@ -425,6 +493,7 @@ async function runMigrateJob(args: {
     },
     [
       planStep('migratePlacement', { repo: name, machine: to }),
+      planStep('reportMigrateResult'),
       planStep('migrateComplete', {
         repo: name,
         ref: repoKey,
