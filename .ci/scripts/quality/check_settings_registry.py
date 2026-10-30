@@ -130,6 +130,9 @@ class Tree:
                 self._text[rel] = (self.root / rel).read_text(encoding="utf-8")
             except OSError:
                 self._text[rel] = None
+            except UnicodeDecodeError as exc:
+                # An unreadable copy is no verdict (exit 2), not a crash: nothing was compared.
+                raise NoVerdictError("%s is not valid UTF-8: %s" % (rel, exc)) from exc
         got = self._text[rel]
         if got is None:
             raise CopyMissError("file missing")

@@ -83,6 +83,17 @@ def test_a_python_copy_out_of_agreement_is_exit_1(tmp_path):
     assert "mod.py#CEILINGS['a']=2001" in result.stderr
 
 
+def test_a_python_copy_that_is_not_utf8_is_no_verdict(tmp_path):
+    """Review 06823e7c.1: an undecodable copy raised UnicodeDecodeError out of the gate (a traceback, exit 1)."""
+    gate = load_gate()
+    root = tree(tmp_path, [gate.fixture_entry()])
+    (root / "mod.py").write_bytes(b"CEILINGS = {'a': 2_000}  # \xff\xfe\n")
+    result = run("--root", str(root))
+    assert result.returncode == 2, result.stderr
+    assert "not valid UTF-8" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
 def test_a_dangling_path_is_exit_1(tmp_path):
     gate = load_gate()
     entry = gate.fixture_entry(copies=[{"file": "conf.json", "json_path": "/limits/missing"}])
