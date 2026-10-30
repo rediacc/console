@@ -890,8 +890,10 @@ def durations(job, p90_minutes=None):
     }
 
 
-def history(fetch, job_name, n=5, workflow_file="ci.yml"):
+def history(fetch, job_name, n=5, workflow_file="ci.yml", passed=None):
     """The last `n` completed runs of one job by display name, newest first.
+
+    A SKIPPED JOB IS NOT A RUN. MEASURED 2026-10-30: the five newest main runs were reruns of 403f47b9 that skipped `CD Preflight`, `Check Release State` and `Finalize Release Sentinel`, so `--history` answered five `skipped` rows with no duration and the jobs' real times were unreadable. Skipped jobs are passed over and counted in `passed["skipped"]` when a dict is given.
 
     NO `status=` FILTER IN THE REQUEST. MEASURED 2026-10-07: `workflows/ci.yml/runs?per_page=20&status=completed` answered `total_count` 46, newest run 2026-10-01 (0930-1), while the unfiltered listing answered 239 with that day's runs first; `&status=success` answered ONE run from 2026-09-29. GitHub serves a status-filtered listing from a stale index (budget_report.py `fetch_runs` measured the same on 2026-09-28), so `--history` answered week-old runs of another branch with no warning. The unfiltered listing is fresh; completion is filtered here instead.
     """
@@ -921,6 +923,10 @@ def history(fetch, job_name, n=5, workflow_file="ci.yml"):
                 break
             continue
         for j in jobs:
+            if j.get("name") == job_name and j.get("conclusion") == "skipped":
+                if passed is not None:
+                    passed["skipped"] = passed.get("skipped", 0) + 1
+                break
             if j.get("name") == job_name:
                 out.append(
                     {

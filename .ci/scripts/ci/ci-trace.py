@@ -1984,9 +1984,18 @@ def _gap_line(g):
 
 
 def verb_history(root, job_name, as_json):
-    rows = D.history(_fetcher(root), job_name)
+    passed = {}
+    rows = D.history(_fetcher(root), job_name, passed=passed)
     p90 = D._p90_table().get(job_name)
-    lines = ["%s: last %d run(s)%s" % (job_name, len(rows), "; p90 %.1fm" % p90 if p90 else "")]
+    lines = [
+        "%s: last %d run(s)%s%s"
+        % (
+            job_name,
+            len(rows),
+            "; p90 %.1fm" % p90 if p90 else "",
+            "; %d skipped run(s) passed over" % passed["skipped"] if passed.get("skipped") else "",
+        )
+    ]
     lines.extend(
         "  %-10s %7s  run %s a%s  %s %s  job %s"
         % (
@@ -2002,7 +2011,7 @@ def verb_history(root, job_name, as_json):
     )
     if not rows:
         lines.append(
-            "  (no completed run of a job with that exact name among the 20 newest Console CI runs)"
+            "  (no completed, non-skipped run of a job with that exact name among the 30 newest Console CI runs)"
         )
     _out(rows, "\n".join(lines), as_json)
     return 0 if rows else EXIT_NO_VERDICT

@@ -715,6 +715,41 @@ def test_history_lists_unfiltered_and_skips_runs_still_in_flight():
     assert "actions/runs/3/jobs" not in fetch.calls
 
 
+def test_history_passes_over_skipped_jobs():
+    """FIRES-if-unfixed: MEASURED 2026-10-30 -- five reruns of 403f47b9 skipped `CD Preflight`, and `--history` answered five `skipped` rows with no duration instead of the job's last real run."""
+    runs = {
+        "workflow_runs": [
+            {"id": i, "head_branch": "main", "head_sha": str(i) * 40, "run_attempt": 1, "status": "completed"}
+            for i in (3, 2, 1)
+        ]
+    }
+    skipped = {"total_count": 1, "jobs": [{"id": 8, "name": "J", "conclusion": "skipped"}]}
+    ran = {
+        "total_count": 1,
+        "jobs": [
+            {
+                "id": 9,
+                "name": "J",
+                "conclusion": "success",
+                "started_at": "2026-10-30T10:00:00Z",
+                "completed_at": "2026-10-30T10:01:30Z",
+            }
+        ],
+    }
+    fetch = FakeFetch(
+        {
+            "actions/workflows/ci.yml/runs": runs,
+            "actions/runs/3/jobs": skipped,
+            "actions/runs/2/jobs": skipped,
+            "actions/runs/1/jobs": ran,
+        }
+    )
+    passed = {}
+    rows = D.history(fetch, "J", passed=passed)
+    assert [(r["run_id"], r["conclusion"], r["s"]) for r in rows] == [(1, "success", 90)]
+    assert passed == {"skipped": 2}
+
+
 # ---- main push run 37394654719 (2026-10-06): the root cause, not the sentinel -----------
 #
 # PR #595 merged as e6fc817f6 on a green PR run; Console CI on main then stopped Validate Promotion twice. Attempt 1: the Watchdog Monitor (gen 6, run 37398501382) cancelled the pipeline on `CI BUDGET VIOLATION: 'Validate Promotion' ran 15.0m (budget 15m)`. Attempt 2 (the failed jobs re-run): GitHub's own `timeout-minutes: 15` killed the job after every step had passed, then CI Complete and Pipeline Sentinel
