@@ -1,26 +1,21 @@
-## SESSION d778be9d 2026-10-30T07:55:56Z
+## SESSION d778be9d 2026-10-30T09:28:07Z
 
-# d778be9d STATE (2026-10-30 ~07:55Z)
+# d778be9d STATE (2026-10-30 ~08:50Z)
 
-Branch 1023-1, nothing pushed (operator: no PR/GitHub work until /pr-babysit, #707f08ca). Turbo on.
+Branch 1023-1, nothing pushed (operator: no PR/GitHub until /pr-babysit, #707f08ca).
 
 ## Big pieces
-PLAN-backup-program (31 open), PLAN-detached-jobs (J16-J19 left), PLAN-executor-durable-object-policy (post-merge), PLAN-backup-toc-exact-opt-in, PLAN-proxy-cd-six-targets, PLAN-haiku-model-routing, PLAN-deletion-budget (draft).
+PLAN-free-license (new, Promoted 42, F2-F8 open), PLAN-production-key-only (N5 partial, N6 docs, L5), PLAN-detached-jobs (J16-J19, migrate per-phase output #006dee30), PLAN-backup-program, PLAN-settings-set-verb (S3/S4).
 
 ## Delegated
-- a2a94e49869c3092f, #5bfe0775: PLAN-production-key-only N3 golden twins; accept pytest test_core_local_common.py + test_private_license_e2e.py rc 0.
-- ab7fe1e7e8ca55226, #d43b0a18: N5 CI legs per /tmp/n5-audit.md; accept check:ci-workflows, actionlint, workflow-env-provision rc 0. MUST land before any push.
+- a3c11db99caa46934, #6d2022b2: e2e suites get real licences (RepositoryMethods licence install, suites 23/29 login, tutorials); accept two suites green locally via e2e-local recipe, e2e tsc rc 0.
 
-## Uncommitted in the tree (commit order once the goldens are green)
-1. Console N3+N4 + regenerated goldens + private/renet pointer (aa872edb) + gen-docs output.
-2. Settings S1+S2 (staged; /tmp/msg-set.txt) with doc-registry; then the package.json settings script line.
-3. Detached-jobs A (/tmp/writer-a-files.txt + 13 locale cli.json).
-Then vm:check, bench redeploy, LP-hostinger sweep (/tmp/lp-sweep-host.sh).
+## Landed today (all local)
+4adaf800 (one licensed renet everywhere: N1-N5 partial, J4, settings S1-S2), 36da81218 (REDIACC_SKIP_MACHINE_ACTIVATION removed), f9018567 (PLAN-free-license), b62e0e89 (cli-tofu L1), dae87b666 (login:bench is the agent's step), 60d229da6 (R2 5 TB). Hostinger runs the enforcing production renet f05fde89 since 06:47Z.
 
-## Facts
-- Hostinger runs the enforcing production-keyed renet sha f05fde896eb705ab since 06:47Z; services restarted.
-- 20 LP-bench ticks f00f85726; eu-bench login is npm run login:bench (dae87b666); R2 ceiling 5 TB (60d229da6).
+## Open findings
+#db647660 deprovision slot-release JSON parse; #2907b17a check_plan_deps vs parse_owns duplicates; #c967e5e1 queued plans.
 
 ## Next action
-1. Commit the detached-jobs A files that do not touch N3/N4 paths after rerunning cli vitest (real work while the golden writer runs).
-2. As each report lands: spot-check, commit in the order above, tick N-boxes, then vm:check and the hostinger sweep.
+1. When the e2e writer reports: spot-check, commit by path, tick.
+2. Start PLAN-free-license writers (F3 account, F4 plan maps, F5 CLI, F2 CI artifact) one per message (guard is blind to same-message spawns), then vm:check and the hostinger LP sweep.
