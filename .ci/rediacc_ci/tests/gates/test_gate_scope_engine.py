@@ -888,3 +888,134 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         "and the same call against the real engine answers normally",
     )
     gate.log_pass("representative deltas classify to their pinned verdicts, as sets")
+
+
+# --- renet gitlink expansion --------------------------------------------------
+
+ALL_VM_KEYS = {
+    "e2e_workers",
+    "e2e_ceph",
+    "e2e_ceph_workers",
+    "e2e_k8s",
+    "e2e_k8s_ceph",
+    "e2e_k8s_multinode",
+    "e2e_migrate",
+    "e2e_backup_browse_at",
+    "fork_isolation",
+}
+
+# Real io against a scratch repo, then the real classify and buildPlan.
+GITLINK_JS = (
+    "const e = require(process.argv[1]);"
+    "const io = e.createRepoIo({repoRoot: process.argv[2], repo: 'x/y'});"
+    "const notes = []; io.setNoteSink((m) => notes.push(m));"
+    "const paths = io.diffPaths(process.argv[3], process.argv[4]);"
+    "const plan = e.buildPlan(e.classify(paths));"
+    "if (notes.some((n) => n.startsWith('renet-gitlink-unexpanded:'))) plan.reasons.push(...notes);"
+    "process.stdout.write(JSON.stringify({paths, notes, plan}));"
+)
+
+
+def _git(cwd: pathlib.Path, *args: str) -> str:
+    result = harness.run(
+        ["git", "-C", str(cwd), "-c", "user.email=t@t", "-c", "user.name=t", *args], timeout=60
+    )
+    if result.rc != 0:
+        raise harness.GateAssertionError("git %s failed: %s" % (" ".join(args), result.err))
+    return result.out.strip()
+
+
+def _scratch(root: pathlib.Path, *, checked_out: bool) -> tuple[str, str, str, str]:
+    """A parent repo whose private/renet gitlink moves from one renet commit to a second that touches only pkg/license. Returns (parent root, parent old, parent new, renet new sha)."""
+    sub = root / "sub"
+    sub.mkdir()
+    _git(sub, "init", "-q")
+    (sub / "pkg" / "license").mkdir(parents=True)
+    (sub / "pkg" / "license" / "store.go").write_text("package license\n")
+    (sub / "README").write_text("x\n")
+    _git(sub, "add", "-A")
+    _git(sub, "commit", "-qm", "one")
+    old = _git(sub, "rev-parse", "HEAD")
+    (sub / "pkg" / "license" / "store.go").write_text("package license // changed\n")
+    _git(sub, "commit", "-qam", "two")
+    new = _git(sub, "rev-parse", "HEAD")
+
+    parent = root / "parent"
+    parent.mkdir()
+    _git(parent, "init", "-q")
+    (parent / "a.txt").write_text("a\n")
+    _git(parent, "add", "a.txt")
+    _git(parent, "update-index", "--add", "--cacheinfo", "160000,%s,private/renet" % old)
+    _git(parent, "commit", "-qm", "p1")
+    p_old = _git(parent, "rev-parse", "HEAD")
+    _git(parent, "update-index", "--cacheinfo", "160000,%s,private/renet" % new)
+    _git(parent, "commit", "-qm", "p2")
+    p_new = _git(parent, "rev-parse", "HEAD")
+    if checked_out:
+        # Move the scratch renet repo into place as the submodule work tree.
+        (parent / "private").mkdir()
+        os.rename(sub, parent / "private" / "renet")
+    return str(parent), p_old, p_new, new
+
+
+def _gitlink_run(parent: str, p_old: str, p_new: str) -> dict:
+    out = node_eval(GITLINK_JS, str(ENGINE), parent, p_old, p_new)
+    return json.loads(out)
+
+
+def test_gitlink_bump_expands_to_the_changed_renet_paths(gate):
+    """A bump whose submodule diff touches only pkg/license selects only the license-area VM jobs, never all nine."""
+    with harness.temp_dir() as tmp:
+        parent, p_old, p_new, _ = _scratch(tmp, checked_out=True)
+        got = _gitlink_run(parent, p_old, p_new)
+    gate.assert_eq(
+        dumps(got["paths"]), '["private/renet/pkg/license/store.go"]', "the gitlink was expanded"
+    )
+    ran = {k for k, j in got["plan"]["jobs"].items() if j["run"] is True}
+    gate.assert_eq(
+        dumps(sorted(ran & ALL_VM_KEYS)),
+        dumps(["e2e_workers", "fork_isolation"]),
+        "only the license-area VM jobs run",
+    )
+    gate.log_pass("a gitlink-only bump touching pkg/license selects only the license-area VM jobs")
+
+
+def test_unreadable_gitlink_falls_back_to_all_vm_jobs_and_says_so(gate):
+    """CONTROL for the test above: with the submodule absent the SAME diff keeps the gitlink and selects all nine."""
+    with harness.temp_dir() as tmp:
+        parent, p_old, p_new, _ = _scratch(tmp, checked_out=False)
+        # Absent submodule: private/renet does not exist at all.
+        absent = _gitlink_run(parent, p_old, p_new)
+        # Empty directory inside the parent work tree: `git -C` would hit the parent repo.
+        (pathlib.Path(parent) / "private" / "renet").mkdir(parents=True)
+        empty = _gitlink_run(parent, p_old, p_new)
+    for label, got in (("absent", absent), ("uninitialised", empty)):
+        gate.assert_eq(dumps(got["paths"]), '["private/renet"]', "%s: gitlink kept" % label)
+        ran = {k for k, j in got["plan"]["jobs"].items() if j["run"] is True}
+        gate.assert_eq(dumps(sorted(ran & ALL_VM_KEYS)), dumps(sorted(ALL_VM_KEYS)), label)
+        gate.assert_contains(
+            dumps(got["plan"]["reasons"]), "renet-gitlink-unexpanded:", "%s: reason line" % label
+        )
+    gate.log_pass("an unreadable gitlink falls back to all nine VM jobs with a stated reason")
+
+
+def test_unfetchable_sha_falls_back_to_all_vm_jobs(gate):
+    """The submodule is checked out but the old SHA is not in it (a shallow fetch): fall back, loudly."""
+    with harness.temp_dir() as tmp:
+        parent, _p_old, _p_new, new = _scratch(tmp, checked_out=True)
+        # Rewrite the parent history so the old gitlink names a SHA the renet repo lacks.
+        bogus = "1" * 40
+        _git(pathlib.Path(parent), "update-index", "--cacheinfo", "160000,%s,private/renet" % bogus)
+        _git(pathlib.Path(parent), "commit", "-qm", "bogus")
+        bogus_commit = _git(pathlib.Path(parent), "rev-parse", "HEAD")
+        _git(pathlib.Path(parent), "update-index", "--cacheinfo", "160000,%s,private/renet" % new)
+        _git(pathlib.Path(parent), "commit", "-qm", "back")
+        back = _git(pathlib.Path(parent), "rev-parse", "HEAD")
+        got = _gitlink_run(parent, bogus_commit, back)
+    gate.assert_eq(dumps(got["paths"]), '["private/renet"]', "gitlink kept")
+    ran = {k for k, j in got["plan"]["jobs"].items() if j["run"] is True}
+    gate.assert_eq(dumps(sorted(ran & ALL_VM_KEYS)), dumps(sorted(ALL_VM_KEYS)), "all nine run")
+    gate.assert_contains(
+        dumps(got["plan"]["reasons"]), "renet-gitlink-unexpanded:", "the plan says why"
+    )
+    gate.log_pass("an unfetchable SHA falls back to all nine VM jobs")

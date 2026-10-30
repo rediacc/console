@@ -274,8 +274,8 @@ function validateJobSurfaces(surfaces, knownModules) {
 }
 validateJobSurfaces(JOB_SURFACES, KNOWN_MODULES);
 
-// --------------------------------------------------------------------------- Renet areas. A renet change used to select all nine VM jobs, because the module is the whole submodule. The areas of proof-tiers.json split it: an EXPANDED renet path (`private/renet/pkg/kube/x.go`) selects only the VM jobs its areas name, while the bare gitlink (`private/renet`, the only form the CI diff carries today, since `git diff-tree` does not
-// descend into a submodule) and a renet runtime path in no area still select every VM job. A test file or doc under renet (the map's `exclude`) selects no VM job: it changes no deployed binary, and the `renet` key, which runs the Go tests, is still selected through the module. Non-VM keys that consume `renet` are untouched.
+// --------------------------------------------------------------------------- Renet areas. A renet change used to select all nine VM jobs, because the module is the whole submodule. The areas of proof-tiers.json split it: an EXPANDED renet path (`private/renet/pkg/kube/x.go`) selects only the VM jobs its areas name, while the bare gitlink (`private/renet`, which the CI diff carries only when the scope engine cannot expand it: expandRenetGitlink in scope-engine.cjs turns a bump into its changed renet paths
+// once ci.yml fetches the submodule's history) and a renet runtime path in no area still select every VM job. A test file or doc under renet (the map's `exclude`) selects no VM job: it changes no deployed binary, and the `renet` key, which runs the Go tests, is still selected through the module. Non-VM keys that consume `renet` are untouched.
 //
 // The glob grammar is the Owns grammar rediacc_ci.proof.surfaces reads (wl_planconc.expand_braces then glob_regex): `{a,b}` expands, `**` spans segments, `*` and `?` stay inside one. A character class is refused here rather than half-supported; .ci/rediacc_ci/tests/proof/test_scope_map_areas.py checks this reading against the Python one on every tracked renet path.
 const RENET_PREFIX = 'private/renet/';

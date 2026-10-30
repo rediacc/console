@@ -369,6 +369,20 @@ jobs:
         # for schedule events.
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_channel_for_event "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
+      # The scope engine expands a private/renet gitlink bump into the renet
+      # paths it changed (expandRenetGitlink in .ci/scripts/ci/scope-engine.cjs),
+      # so a one-area renet change selects only that area's VM jobs. That needs
+      # the submodule's commits and trees here; without them the engine falls
+      # back to the bare gitlink and every VM job, and says so in the plan's
+      # reasons. A failed fetch therefore warns and fails open, it never fails CI.
+      - name: Fetch private/renet history for the scope engine
+        if: github.event_name == 'pull_request'
+        env:
+          RENET_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git -c "url.https://x-access-token:${RENET_TOKEN}@github.com/.insteadOf=https://github.com/" \
+            submodule update --init --filter=blob:none --no-checkout private/renet \
+            || echo "::warning::private/renet history unavailable; the scope engine selects every VM job for a renet bump"
       # LIVE as of D-1: the `run_<key>` outputs this step writes now gate 17
       # jobs. It was shadow-only until the reconciler had a clean run of real
       # PR traffic behind it.
