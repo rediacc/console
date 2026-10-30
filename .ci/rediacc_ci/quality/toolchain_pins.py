@@ -137,14 +137,7 @@ EXEMPT_GLOBS = (
 )
 
 # A1's COINCIDENCES: a line that holds a pin's value only because ANOTHER pin, defined there, happens to carry the same version string. A1 is a literal value scan, so it cannot tell the two apart; each entry names the file, the pin key it would be reported under, and a regex over the one line it excuses, and carries its reason. Every hit is printed, and an entry that excuses nothing is red, so a coincidence that stops being one (either pin moves) is deleted rather than left to excuse a real restatement later.
-A1_COINCIDENCES: tuple[tuple[str, str, str, str], ...] = (
-    (
-        ".ci/breakpoint/versions.sh",
-        "MYPY_VERSION",
-        r'^readonly BREAKPOINT_TMATE_VERSION="',
-        "tmate's own pin (registry entry breakpoint:tmate) in the vendored breakpoint copy, equal to mypy's version string by coincidence",
-    ),
-)
+A1_COINCIDENCES: tuple[tuple[str, str, str, str], ...] = ()
 
 # A3's floor. A pins file that shrank below this is a collapsed corpus, not a clean tree.
 MIN_KEYS = 5

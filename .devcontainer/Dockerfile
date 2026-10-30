@@ -482,8 +482,8 @@ USER root
 # Pinned to an exact release; the values below are whatever the last bump chose.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
-ARG CODEX_VERSION=0.164.0
-ARG GEMINI_CLI_VERSION=0.65.0
+ARG CODEX_VERSION=0.165.0
+ARG GEMINI_CLI_VERSION=0.66.0
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves its whole
@@ -668,7 +668,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Both sides are pinned now: the workflow names a version instead of `@latest`, and
 # this ARG names the same one. They must move together -- a devbox that disagrees
 # with CI is worse than one that is merely behind, because it answers confidently.
-ARG AGENT_BROWSER_VERSION=0.39.4
+ARG AGENT_BROWSER_VERSION=0.40.0
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
