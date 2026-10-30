@@ -21,4 +21,4 @@ Body-Sig: 343d8f757eb9671d
 ### ad3bf83a.1 [low] cmd/renet/ops_selftest.go:361
 Anchor: in-diff
 Claim: The doc block for comprehensiveSelfTestScript (lines 361-364) now sits directly above the new const comprehensiveSelfTestNetworkID, so it and the const's comment merge into one doc comment on the const, and func comprehensiveSelfTestScript at line 368 has no doc comment at all.
-Resolution: open
+Resolution: fixed 5f0bdc67916fcc04028a8d5e0d86c81a2ef77139 | d778be9d 2026-10-30T18:12:33Z
