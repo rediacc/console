@@ -10,12 +10,7 @@ import { generateTfJson } from '../tf-generator.js';
 
 // cherryservers/cherryservers 1.6.1 schema, read offline with:
 //   tofu init && tofu providers schema -json   (main.tf.json requiring cherryservers/cherryservers 1.6.1)
-// cherryservers_server required arguments: plan (string), project_id (number), region (string).
-// Optional: hostname, image, ssh_key_ids (set of string), user_data, tags, cycle, ...
-// Computed: id, state, power_state, pricing, ip_addresses, a SET of objects with
-//   address, address_family (number), cidr, id, type, vlan_id.
-// There is no `primary_ip` attribute (the former mapping), and a set cannot be indexed by path,
-// so the IPv4 output is a for-expression over ip_addresses.
+// cherryservers_server required arguments: plan (string), project_id (number), region (string). Optional: hostname, image, ssh_key_ids (set of string), user_data, tags, cycle, ... Computed: id, state, power_state, pricing, ip_addresses, a SET of objects with address, address_family (number), cidr, id, type, vlan_id. There is no `primary_ip` attribute (the former mapping), and a set cannot be indexed by path, so the IPv4 output is a for-expression over ip_addresses.
 const SERVER_ATTRS = new Set([
   'plan',
   'project_id',

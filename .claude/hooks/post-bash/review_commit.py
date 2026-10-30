@@ -93,10 +93,7 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
             )
             continue
         if not started:
-            # trigger() started nothing: every in-scope commit is covered or has a live reviewer, the command
-            # made no commit (a failed or empty commit), the repository has no branch, or a miss (#52978244).
-            # The HEAD is named so the next miss can be diagnosed from this result: it is the commit made
-            # only when the command made one.
+            # trigger() started nothing: every in-scope commit is covered or has a live reviewer, the command made no commit (a failed or empty commit), the repository has no branch, or a miss (#52978244). The HEAD is named so the next miss can be diagnosed from this result: it is the commit made only when the command made one.
             head = R.git_out(pathlib.Path(repo), "rev-parse", "--short", "HEAD") or "?"
             lines.append(
                 "per-commit review: none due for %s, HEAD %s (covered, no new commit, or a miss: run wl_review.py --check)"

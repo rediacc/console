@@ -111,9 +111,7 @@ async function removeOneStrategy(
 ): Promise<void> {
   const remote = diff.remote;
   if (!remote) return;
-  // Only a timer unit that exists can be disabled: systemctl exits 1 on a missing one, and a strategy
-  // whose units are already gone but whose env file was left behind (hostinger, 2026-10-30) otherwise
-  // aborted the whole schedule before any other strategy's timer was deployed.
+  // Only a timer unit that exists can be disabled: systemctl exits 1 on a missing one, and a strategy whose units are already gone but whose env file was left behind (hostinger, 2026-10-30) otherwise aborted the whole schedule before any other strategy's timer was deployed.
   if (remote.timerFile.exists) {
     await runRemoteCommand(
       sftp,
@@ -122,9 +120,7 @@ async function removeOneStrategy(
       `Failed to disable timer for removed strategy "${diff.name}"`
     );
   } else if (remote.isActiveTimer || remote.isEnabledTimer) {
-    // A timer systemd still runs or links without its unit file cannot be disabled: stop it and drop
-    // the dangling timers.target.wants link, so it never fires again for a strategy that no longer
-    // exists. Best-effort with a warning, so one dangling unit never aborts the rest of the schedule.
+    // A timer systemd still runs or links without its unit file cannot be disabled: stop it and drop the dangling timers.target.wants link, so it never fires again for a strategy that no longer exists. Best-effort with a warning, so one dangling unit never aborts the rest of the schedule.
     const unit = `rediacc-backup-${diff.name}.timer`;
     const exitCode = await sftp.execStreaming(
       // Each step runs whatever the one before did, and the last failing step's own exit code is the
