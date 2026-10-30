@@ -30,11 +30,17 @@ Operator rulings ASKED:2026-10-30 (four answers): Go tests by a path map with a 
 
 ## Boxes
 
-- [ ] M1: `.ci/config/renet-test-map.json` exists with a gate proving every renet Go package is reachable from some glob and every glob's packages match `go list -deps`. Accept: npm run check:ci-renet-test-map rc 0, and a planted unmapped package makes it fail.
-- [ ] M2: ci:quick runs the mapped `go test` for a renet diff and writes a tree-keyed receipt. Accept: a renet-touching ci:quick run lists the packages it tested and the receipt names the tree.
-- [ ] M3: block_renet_untested_push refuses a console or renet-submodule push touching renet without a covering receipt. Accept: its guard test rc 0 with fire cases for both push forms and silent controls.
-- [ ] M4: the Stop hook names the exact renet test command when renet changed since the last receipt. Accept: a wl_renettests unit test fires on a planted untested renet diff and stays silent after a receipt.
-- [ ] V1: proof-tiers.json areas map renet paths to drills and e2e suites, and vm:check --changed runs only the touched areas. Accept: vm:check --changed --dry-run on a pkg/license diff lists the licence leg and not the ceph leg, and on a pkg/kube diff lists the kube suites.
-- [ ] V2: scope-map.cjs selects CI jobs from the same areas. Accept: its tests rc 0, with a one-area diff selecting only that area's jobs.
+- [x] M1: `.ci/config/renet-test-map.json` exists with a gate proving every renet Go package is reachable from some glob and every glob's packages match `go list -deps`. Accept: npm run check:ci-renet-test-map rc 0, and a planted unmapped package makes it fail.
+    (ticked) 2026-10-30T17:01:55Z by d778be9d: commit:94e687110 renet-test-map.json + check:ci-renet-test-map; selftest rc 0, planted unmapped package fails
+- [x] M2: ci:quick runs the mapped `go test` for a renet diff and writes a tree-keyed receipt. Accept: a renet-touching ci:quick run lists the packages it tested and the receipt names the tree.
+    (ticked) 2026-10-30T17:02:23Z by d778be9d: commit:94e687110 real-tree run rc 0 after renet pointer 8e8a0e296, 6295 passed, receipt written
+- [x] M3: block_renet_untested_push refuses a console or renet-submodule push touching renet without a covering receipt. Accept: its guard test rc 0 with fire cases for both push forms and silent controls.
+    (ticked) 2026-10-30T17:01:59Z by d778be9d: commit:94e687110 guard test rc 0, 35 cases, 3 mutants flip
+- [x] M4: the Stop hook names the exact renet test command when renet changed since the last receipt. Accept: a wl_renettests unit test fires on a planted untested renet diff and stays silent after a receipt.
+    (ticked) 2026-10-30T17:02:03Z by d778be9d: commit:94e687110 test_renet_test_map_stop 8 passed; wired in wl_checks, effort renet-tests
+- [x] V1: proof-tiers.json areas map renet paths to drills and e2e suites, and vm:check --changed runs only the touched areas. Accept: vm:check --changed --dry-run on a pkg/license diff lists the licence leg and not the ceph leg, and on a pkg/kube diff lists the kube suites.
+    (ticked) 2026-10-30T17:02:05Z by d778be9d: commit:94e687110 vm:check --dry-run --paths: license store -> licence leg only; kube k3s -> suites 15/16/17/24 owed NOT_VERIFIED
+- [x] V2: scope-map.cjs selects CI jobs from the same areas. Accept: its tests rc 0, with a one-area diff selecting only that area's jobs.
+    (ticked) 2026-10-30T17:02:07Z by d778be9d: commit:94e687110 scope-map area selection; test_scope_map_areas and test_gate_scope_engine pass
 - [x] A1: the renet-dev agent exists and the 12 stale facts are corrected. Accept: grep for nolicense, bin/enforce, RDC_RENET_LICENSE and REDIACC_SKIP_MACHINE_ACTIVATION across .claude/, private/renet/CLAUDE.md and docs/agent-reference/ returns only historical mentions, and check:ci-skill-size rc 0.
     (ticked) 2026-10-30T14:11:43Z by d778be9d: commit:370e7923d (+58bb68b09 renet CLAUDE.md pointer) renet-dev agent, 12 stale facts corrected; check:ci-skill-size rc 0, check:ci-agent-model-roster rc 0
