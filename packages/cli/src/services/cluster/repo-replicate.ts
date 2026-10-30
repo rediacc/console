@@ -296,12 +296,14 @@ async function issueForkLicense(
 ): Promise<void> {
   const datastoreId = await readForkDatastoreId(forkName, machine, input.debug);
   const repo = await configService.getRepository(input.repo);
+  // A grand repo carries no grandGuid (unset or self-referential, see config/resource-state.ts), so it is its own grand and the repo guid is the right value.
   const grandGuid = repo?.grandGuid ?? input.repoGuid;
   const authority = await resolveLicenseAuthority(loginViaDeviceCode);
   const lease = await machineConnections.acquire(machine);
   try {
     const { machine: machineConfig, sshPrivateKey, sftp } = lease;
     if (authority === 'free') {
+      // No datastoreMount: the FREE route takes a fixed 3 GB cap and never sizes the image (FreeLicenseParams has no mount field), unlike the token path's size probe.
       await issueFreeRepoLicense(
         machineConfig,
         sshPrivateKey,

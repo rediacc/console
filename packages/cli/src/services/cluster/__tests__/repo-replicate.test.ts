@@ -258,6 +258,79 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     expect(licence.release).toHaveBeenCalled();
   });
 
+  describe('fork licence authority', () => {
+    function orderedExec(order: string[]) {
+      execMock().mockImplementation(((opts: { functionName: string }) => {
+        order.push(opts.functionName);
+        if (opts.functionName === 'datastore_fork') {
+          return Promise.resolve({ success: true, stdout: '{"fork":{}}' });
+        }
+        if (opts.functionName === 'datastore_list') {
+          return Promise.resolve({
+            success: true,
+            stdout: JSON.stringify([{ name: 'ds-data:set1-r1', datastoreId: 'id-fork-1' }]),
+          });
+        }
+        return Promise.resolve({ success: true });
+      }) as never);
+    }
+    const run = () =>
+      provisionReplicaDatastores({
+        ...base,
+        replicas: 1,
+        nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
+      });
+
+    it('the subscription token path issues with the fork mount, then dispatch proceeds', async () => {
+      vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+      vi.spyOn(configService, 'getRepository').mockResolvedValue({
+        repositoryGuid: 'guid-sqldb',
+        grandGuid: 'grand-sqldb',
+      } as never);
+      licence.authority.mockResolvedValue('token');
+      const order: string[] = [];
+      orderedExec(order);
+      await run();
+      expect(licence.free).not.toHaveBeenCalled();
+      expect(licence.token.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: 'guid-sqldb',
+        grandGuid: 'grand-sqldb',
+        kind: 'fork',
+        datastoreId: 'id-fork-1',
+        datastoreMount: '/mnt/rediacc-ds/ds-data-set1-r1',
+      });
+      expect(order).toContain('datastore_volumes_open');
+      expect(licence.release).toHaveBeenCalled();
+    });
+
+    it('the token path throws before datastore_volumes_open when the account issues nothing', async () => {
+      vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+      vi.spyOn(configService, 'getRepository').mockResolvedValue({
+        repositoryGuid: 'guid-sqldb',
+      } as never);
+      licence.authority.mockResolvedValue('token');
+      licence.token.mockResolvedValue(false);
+      const order: string[] = [];
+      orderedExec(order);
+      await expect(run()).rejects.toThrow(/did not issue a licence/);
+      expect(order).not.toContain('datastore_volumes_open');
+      expect(licence.release).toHaveBeenCalled();
+    });
+
+    it('a grand repo without a grandGuid is its own grand', async () => {
+      vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+      vi.spyOn(configService, 'getRepository').mockResolvedValue({
+        repositoryGuid: 'guid-sqldb',
+      } as never);
+      orderedExec([]);
+      await run();
+      expect(licence.free.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: 'guid-sqldb',
+        grandGuid: 'guid-sqldb',
+      });
+    });
+  });
+
   it('ferries the fork record via datastore_adopt off-control, and skips adopt on the control node (finding #36)', async () => {
     vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
     const exec = execMock();
