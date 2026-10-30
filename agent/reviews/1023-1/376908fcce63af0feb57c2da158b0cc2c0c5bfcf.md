@@ -21,4 +21,4 @@ Body-Sig: 0f6a7cb1009acb67
 ### 376908fc.1 [low] src/services/subscription.service.ts:482
 Anchor: in-diff
 Claim: The reflowed comment line '// an active one that still holds other activations, updatedAt included. Because it runs even when the delete' is about 115 characters, far longer than the surrounding wrapped lines, so the comment block is unevenly wrapped (style only).
-Resolution: open
+Resolution: fixed a1e4d5dad8c8e9f650771861851b375dc6de6ecd | d778be9d 2026-10-30T00:34:06Z

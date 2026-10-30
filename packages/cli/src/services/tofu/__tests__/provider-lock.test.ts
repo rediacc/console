@@ -4,7 +4,7 @@ import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OPENTOFU_PIN } from '../../tools/opentofu-pin.generated.js';
 import { TofuExecutor } from '../executor.js';
 import { PROVIDER_LOCK_HOST, PROVIDER_PINS, type ProviderPin } from '../provider-pins.generated.js';
@@ -14,6 +14,23 @@ import { generateProviderLock, generateTfJson } from '../tf-generator.js';
 const run = promisify(execFile);
 const registry = providerRegistry as Record<string, { version?: string }>;
 const pinned = Object.entries(registry).filter(([source]) => source.includes('/'));
+
+describe('a missing main.tf.json under either engine', () => {
+  it('init refuses it even when the engine is terraform, which writes no lock', async () => {
+    const empty = await mkdtemp(join(tmpdir(), 'tofu-noconfig-'));
+    const spy = vi
+      .spyOn(TofuExecutor.prototype as unknown as { getEngine(): Promise<unknown> }, 'getEngine')
+      .mockResolvedValue({ engine: 'terraform', binary: '/bin/false', version: '1.9.0' });
+    try {
+      await expect(new TofuExecutor(empty, {}).init()).rejects.toThrow(
+        'No tofu configuration (main.tf.json)'
+      );
+    } finally {
+      spy.mockRestore();
+      await rm(empty, { recursive: true, force: true });
+    }
+  });
+});
 
 describe('provider pins', () => {
   it('pins every registry provider at an exact version equal to its lock block', () => {

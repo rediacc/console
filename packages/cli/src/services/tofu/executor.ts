@@ -201,26 +201,26 @@ export class TofuExecutor {
   }
 
   /**
-   * Write `.terraform.lock.hcl` for the pinned providers main.tf.json requires, replacing any lock
-   * already there when one is written, so init refuses a provider package whose hash the pin does not list (from the
+   * Refuse a work dir without main.tf.json under either engine (init exits 0 on an empty directory, so a
+   * provision whose config was never written would otherwise pass it), then, under tofu, write
+   * `.terraform.lock.hcl` for the pinned providers main.tf.json requires, replacing any lock already there
+   * when one is written, so init refuses a provider package whose hash the pin does not list (from the
    * registry and from the shared plugin cache alike). The pins hash the packages registry.opentofu.org
-   * serves, which is where OpenTofu resolves an unqualified source; terraform resolves the same
-   * source against its own registry, so under terraform no lock is written and init locks what it fetches.
-   * With no pinned provider required (or no main.tf.json yet), nothing is written and an existing lock is
-   * left as it is, for tofu to keep or rewrite; a missing main.tf.json is tofu's own diagnostic to give.
+   * serves, which is where OpenTofu resolves an unqualified source; terraform resolves the same source
+   * against its own registry, so under terraform no lock is written and init locks what it fetches. With
+   * no pinned provider required, nothing is written and an existing lock is left for tofu to keep or rewrite.
    */
   private async writeProviderLock(): Promise<void> {
-    if ((await this.getEngine()).engine !== 'tofu') return;
     let raw: string;
     try {
       raw = await readFile(join(this.workDir, 'main.tf.json'), 'utf8');
     } catch (error) {
-      // tofu init succeeds on an empty directory, so a missing config is refused here by name rather than passing init.
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error(t('errors.tofu.noConfig', { path: this.workDir }));
       }
       throw error;
     }
+    if ((await this.getEngine()).engine !== 'tofu') return;
     const config = JSON.parse(raw) as {
       terraform?: { required_providers?: Record<string, { source?: string; version?: string }> };
     };
