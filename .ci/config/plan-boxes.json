@@ -2045,12 +2045,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 0,
+      "open": 2,
+      "done": 8,
       "open_sigs": [
         "44c9713a",
+        "79fbc186"
+      ],
+      "done_sigs": [
         "79e08ae6",
-        "79fbc186",
         "9fc4afe7",
         "a7d5677a",
         "ad92905e",
@@ -2058,8 +2060,7 @@
         "c3c14806",
         "c4a9f579",
         "fcaa098d"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-scope-gate-sort-collation.md": {
       "status": "compacted",

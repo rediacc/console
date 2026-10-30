@@ -878,7 +878,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .hadolint.yaml | 1 | # comment |
 | .shellcheckrc | 2 | # comment |
 | .syncpackrc-reasons.json | 9 | JSON value |
-| agent/ledgers/plan-investigation.jsonl | 2 | inline |
+| agent/ledgers/plan-investigation.jsonl | 3 | inline |
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
 | knip.jsonc | 30 | // comment |
 | package.json | 23 | JSON value |
