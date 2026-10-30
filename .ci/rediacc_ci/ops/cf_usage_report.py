@@ -40,7 +40,7 @@ LOOKBACK_DAYS = 7
 DEFAULT_CEILINGS: dict[str, float] = {
     "workers_requests_month": 20_000_000,
     "workers_cpu_ms_month": 60_000_000,
-    "r2_storage_bytes": 200e9,
+    "r2_storage_bytes": 5e12,
     "r2_class_a_month": 2_000_000,
     "r2_class_b_month": 20_000_000,
     "d1_storage_bytes": 4e9,
