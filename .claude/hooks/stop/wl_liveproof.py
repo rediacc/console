@@ -170,7 +170,8 @@ def run_recorder(argv: Sequence[str], root: pathlib.Path) -> tuple[int, str, str
             timeout=RECORDER_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired as exc:
-        out = exc.stdout if isinstance(exc.stdout, str) else ""
+        raw = exc.stdout or b""
+        out = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw)
         return (
             124,
             out,
@@ -196,10 +197,11 @@ def find_row(root: pathlib.Path, row_id: str) -> dict[str, Any] | None:
 
 
 def evidence(row: dict[str, Any]) -> str:
-    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check (0 when the row carries none, as a VERIFIED row's check passed)."""
+    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check (0 when the row carries none or null); the recorder writes VERIFIED only for a passing check, so a non-zero rc here names a recorder fault rather than hiding it."""
     check_rec = row.get("check") or {}
     check = check_rec.get("id")
-    rc = check_rec.get("rc", 0)
+    rc = check_rec.get("rc")
+    rc = 0 if rc is None else rc
     version = (row.get("deploy") or {}).get("version_id")
     return "live-proof %s %s %s rc=%s v=%s" % (row.get("id"), row.get("target"), check, rc, version)
 
