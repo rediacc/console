@@ -1,19 +1,18 @@
-## SESSION d778be9d 2026-10-30T01:52:56Z
+## SESSION d778be9d 2026-10-30T02:00:47Z
 
-# d778be9d STATE (2026-10-30T02:00Z by date -u, branch 1023-1, operator away until morning, order #d910962b)
+# d778be9d STATE (2026-10-30T02:15Z approx, branch 1023-1, operator away until morning, order #d910962b)
 
 ## Big pieces
-- PR plan set: 51 open boxes classified in agent/d778be9d/planset-survey-20261030.md (copy of /tmp/writers-now/1023-1-planset-20261030.md): ALREADY-DONE 11 (backup-program A4d E1 K11a S1 P1 P3 P4 Q3 Q4 Q5 Q8; P1/P3/P4 by inference only, verify each citation before ticking), LIVE-NOW 22, PR-OR-MERGE 8, OPERATOR 4, LOCAL 2 (backup-program S12, Q16), TIMED 4 (Q12 Q13 Q15 after the 02:00Z timer, S6).
-- LP-bench b00bc9df (token-ip-rebind, telemetry-export, cloudflare-proxy): deploy_bench of this tree running (bbl9zfv1g, log /tmp/deploy-bench2.log), then per plan: PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/<plan>.md --box b00bc9df --target bench --check account-smoke --write, then commit agent/ledgers/live-proof.jsonl and plan-tick.
-- Blocked on the merge (#707f08ca [?]): stable EU deploy, store L2, hardening L2, A1a (#ab9c68b1), and the PR-OR-MERGE boxes.
+- PR plan set survey: agent/d778be9d/planset-survey-20261030.md. Ticked from it (351f594f0): backup-program A4d E1 S1 Q3 Q4 Q5 Q8. Still to verify: K11a (fixture test not at the cited path), P1/P3/P4 (inferred only). LOCAL: S12, Q16. LIVE-NOW: 22 rows. TIMED: Q12 Q13 Q15 after the 02:00Z hostinger run, S6.
+- LP-bench b00bc9df for token-ip-rebind, telemetry-export, cloudflare-proxy: bench deployed (deploy_bench rc=0); live_proof record refused NOT_VERIFIED until a VERIFIED vm:check for head tree 19abba7a08be. vm:check rerunning after resuming rediacc11 (b2dwllc4g, log /tmp/vmcheck-0215.log). Then: PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/<plan>.md --box b00bc9df --target bench --check account-smoke --by d778be9d --write, per plan; commit agent/ledgers/live-proof.jsonl; plan-tick each.
+- Blocked on the merge (#707f08ca [?]): stable EU deploy, store L2, hardening L2, A1a (#ab9c68b1), PR-OR-MERGE boxes.
 - [?] #fd6b526a durable edge rollout (DEFAULT ~03:00Z); [?] #533d7a65 NOT-BEFORE 03:30Z; S6 cron 2026-10-31 08:07 UTC.
-- Review findings settled through dc4fc21bd.
 
 ## Delegated
-- bbl9zfv1g #82ec5326 deploy_bench for LP-bench.
-- a837563d009b77827 #e3ca5e6c worklist.py --live-proof verb (wl_liveproof.py + tests). Accept: its pytest, ruff, verb usage rc non-zero without args.
+- b2dwllc4g #82ec5326 vm:check --changed (then the three LP-bench records).
+- a837563d009b77827 #e3ca5e6c worklist.py --live-proof verb (wl_liveproof.py + tests).
 
 ## Next action
-- On deploy rc=0: record the three LP-bench receipts, commit the ledger, plan-tick each.
-- Verify and tick the 11 ALREADY-DONE boxes (investigate present with two pointers, then plan-tick); writers for S12 and Q16; run LIVE-NOW commands from the survey.
-- After the 02:00Z hostinger run: Q12/Q13/Q15 evidence.
+- vm:check VERIFIED -> record LP-bench x3, commit ledger, tick. If NOT_VERIFIED again, read the log reason.
+- Verb writer report -> spot-check, commit, tick #e3ca5e6c.
+- K11a, P1, P3, P4 verification; writers for S12, Q16; LIVE-NOW rows; #7fc2aaa3 (vm:check resume paused VMs); Q12 after the hostinger run.
