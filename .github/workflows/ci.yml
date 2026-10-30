@@ -789,7 +789,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
@@ -831,6 +830,14 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Start account server
         id: deploy
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
@@ -839,6 +846,12 @@ jobs:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
 
       - name: Verify account server health
         run: curl -sf http://localhost:3000/health
@@ -1553,11 +1566,9 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
@@ -1667,6 +1678,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
       - name: Set preview worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
@@ -1692,6 +1712,13 @@ jobs:
           AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            BWS_ACCOUNT_X25519_PRIVATE_KEY
 
       - name: Deployment summary
         run: |

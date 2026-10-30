@@ -432,7 +432,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -480,6 +479,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -493,6 +500,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -663,7 +676,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -706,6 +718,14 @@ jobs:
       # The Ceph suites drive renet over SSH through RenetFunctionsTestRunner, and the only consumer of the CLI bundle or `rdc` on PATH is CliRunner, which no suite under tests/ceph imports.
       # The E2E Workers jobs keep both steps.
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -719,6 +739,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -830,7 +856,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -873,6 +898,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -886,6 +919,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -1189,7 +1228,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -1228,6 +1266,14 @@ jobs:
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -1241,6 +1287,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -1354,7 +1406,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -1397,6 +1448,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -1410,6 +1469,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -1523,7 +1588,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -1566,6 +1630,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -1579,6 +1651,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -1696,7 +1774,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -1748,6 +1825,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -1772,6 +1857,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -2158,7 +2249,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -2201,6 +2291,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -2214,6 +2312,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Install renet
@@ -2342,7 +2446,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -2385,6 +2488,14 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       # The per-run account server, signing with the PRODUCTION ED25519 pair
       # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
       # it issues verifies under the run's one production-keyed renet, which
@@ -2398,6 +2509,12 @@ jobs:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Install the shared renet
         uses: ./.github/actions/renet-test-binary
       - name: Add renet to PATH
@@ -2562,7 +2679,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -2599,12 +2715,27 @@ jobs:
           key="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
           echo "::add-mask::$key"
           echo "ACCOUNT_SERVER_API_KEY=$key" >> "$GITHUB_ENV"
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        if: ${{ matrix.shard == 1 }}
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Start the per-run account server
         if: ${{ matrix.shard == 1 }}
         env:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Point the subscription tests at the server root
         if: ${{ matrix.shard == 1 }}
         shell: bash
@@ -2926,7 +3057,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
@@ -3000,6 +3130,14 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq stripe=1.52.0
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Run Account Portal E2E tests
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e --shard-manifest .ci/config/shards/test-account-e2e.json --shard "${{ matrix.shard }}/4"
         env:
@@ -3010,6 +3148,12 @@ jobs:
           ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Upload E2E report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()

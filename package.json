@@ -171,6 +171,7 @@
     "check:ci-python-control-plants": ".ci/scripts/quality/check_python_control_plants.py",
     "check:ci-bws-map": ".ci/scripts/quality/check_bws_map.py",
     "check:ci-bws-map-live": ".ci/scripts/quality/check_bws_map_live.py",
+    "check:ci-bws-step-scope": ".ci/scripts/quality/check_bws_step_scope.py",
     "check:ci-retired-terms": ".ci/scripts/quality/check_retired_terms.py",
     "check:ci-backup-credential-isolation": ".ci/scripts/quality/check_backup_credential_isolation.py",
     "check:ci-aws-resolver": ".ci/scripts/quality/check_aws_resolver.py",

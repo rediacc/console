@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-30T22:29:11.161Z",
+  "generatedAt": "2026-10-30T23:14:20.400Z",
   "legs": [
     {
       "index": 1,
@@ -723,6 +723,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_agent_session_archival.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_audit_coverage.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_bash_lib_migration_complete.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_bws_step_scope.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_config_migrations.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_devcontainer_scripts.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_drill_verdicts.py",

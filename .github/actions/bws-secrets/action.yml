@@ -2,6 +2,11 @@ name: Fetch secrets from Bitwarden
 description: >
   Fetches named secrets from Bitwarden Secrets Manager (project ci-shared) and
   exports them as masked environment variables for the rest of the job.
+  A name listed in .ci/config/bws-step-scoped.json (the production signing
+  keys) must instead be STEP-SCOPED: fetched by its own call of this action
+  immediately before its one consumer and blanked immediately after it by
+  ./.github/actions/bws-scrub with `if: always()`, which
+  check:ci-bws-step-scope enforces.
   Wraps bitwarden/sm-action so there is ONE pin site for it, not one per job,
   and so workflows name secrets by NAME rather than by UUID.
 

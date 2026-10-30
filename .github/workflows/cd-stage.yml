@@ -110,8 +110,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            RELEASE_GPG_PASSPHRASE > BWS_RELEASE_GPG_PASSPHRASE
-            RELEASE_GPG_PRIVATE_KEY > BWS_RELEASE_GPG_PRIVATE_KEY
             CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
@@ -155,6 +153,15 @@ jobs:
           # installs and not the other.
           PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            RELEASE_GPG_PASSPHRASE > BWS_RELEASE_GPG_PASSPHRASE
+            RELEASE_GPG_PRIVATE_KEY > BWS_RELEASE_GPG_PRIVATE_KEY
       - name: Build Linux packages
         run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_linux_packages
         env:
@@ -166,6 +173,13 @@ jobs:
           # unsigned package and goes green, which is what it did while the
           # deleted org secret was resolving to the empty string.
           RELEASE_SIGNING_REQUIRED: '1'
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_RELEASE_GPG_PASSPHRASE
+            BWS_RELEASE_GPG_PRIVATE_KEY
 
       # -----------------------------------------------------------------------
       # Step 3: Generate CLI manifest - ONCE
@@ -194,6 +208,16 @@ jobs:
           mkdir -p dist/pages/cli
           cp dist/cli/manifest.json dist/pages/cli/
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        if: inputs.channel != ''
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            RELEASE_GPG_PASSPHRASE > BWS_RELEASE_GPG_PASSPHRASE
+            RELEASE_GPG_PRIVATE_KEY > BWS_RELEASE_GPG_PRIVATE_KEY
       - name: Build package repositories
         # build-pkg-repo.sh hard-exits on an empty --channel, and the nightly
         # (schedule) run derives channel="" on purpose to avoid orphaning ~5 GB
@@ -219,6 +243,13 @@ jobs:
           # unsigned package and goes green, which is what it did while the
           # deleted org secret was resolving to the empty string.
           RELEASE_SIGNING_REQUIRED: '1'
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_RELEASE_GPG_PASSPHRASE
+            BWS_RELEASE_GPG_PRIVATE_KEY
 
       # -----------------------------------------------------------------------
       # Step 5: Stage Docker images (validates existence + retag to channel)

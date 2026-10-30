@@ -3,7 +3,7 @@ Status: executing
 Owner: d778be9d
 Updated: 2026-10-30
 Epic: 9f92c43e (worklist #ad2571af)
-Priority: P1 -- the production licence-signing key (and the X25519 and release GPG private keys) can be read by every step after the fetch in 21 jobs, including third-party actions and test code. Anyone who reads it can mint valid licences.
+Priority: P1 -- the production licence-signing key (and the X25519 and release GPG private keys) can be read by every step after the fetch in 18 jobs (the 17 signing-key jobs, three of them also fetching X25519, plus cd-stage's GPG pair), including third-party actions and test code. Anyone who reads it can mint valid licences.
 Depends-On: no-dep -- the change uses only the existing bws-secrets action, plus a new scrub action and a new gate.
 Owns: .github/actions/bws-scrub/**, .github/actions/bws-secrets/action.yml, .ci/config/bws-step-scoped.json, .ci/scripts/quality/check_bws_step_scope.py, .ci/rediacc_ci/quality/bws_step_scope.py, .ci/rediacc_ci/tests/test_quality_bws_step_scope.py, .github/workflows/{ct-tests,ci,ct-e2e-probe,cd-deploy-worker,cd-deploy-account,ci-ops-test,cd-stage}.yml (only the fetch, consumer and scrub windows), package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml (gate-bind region)
 Concurrency: parallel -- the workflow edits are a few lines next to each consumer. Conflicts with other plans editing ct-tests.yml are textual only.
@@ -31,7 +31,7 @@ Concurrency: parallel -- the workflow edits are a few lines next to each consume
 - There are also 10 to 60 lines of steps between each fetch and its consumer, for example `.github/workflows/ct-tests.yml:437-490`: app-token, docker/login-action, setup-go, setup-workspace and the CLI build.
 - Other private keys exported the same way:
   - ACCOUNT_X25519_PRIVATE_KEY: 3 jobs (`.github/workflows/cd-deploy-worker.yml:67`, `.github/workflows/cd-deploy-account.yml:284`, `.github/workflows/ci.yml:1560`), consumed in the same steps as ED25519.
-  - RELEASE_GPG_PRIVATE_KEY and RELEASE_GPG_PASSPHRASE: `.github/workflows/cd-stage.yml:113-114`, with two consumers at `:162` and `:215` and unrelated steps between them.
+  - RELEASE_GPG_PRIVATE_KEY and RELEASE_GPG_PASSPHRASE: `.github/workflows/cd-stage.yml:113-114`, with two consumer steps (S4 names them by the line numbers of the tree it was written against) and unrelated steps between them.
 - Other high-value names in the same class, counted by `NAME > BWS_` lines:
   - GITHUB_APP_PRIVATE_KEY (63)
   - DOCKERHUB_TOKEN (23)

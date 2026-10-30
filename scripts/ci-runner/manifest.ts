@@ -2139,6 +2139,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-scope-bws-signing-key-to-consuming-step S5. A production signing key named in .ci/config/bws-step-scoped.json is fetched by a dedicated bws-secrets step right before its one consumer and blanked by bws-scrub (if: always()) right after it, so no other step of the job can read it (review 047cc812.1). NO `paths:`: always selected.
+    id: 'check:ci-bws-step-scope',
+    run: 'npm run check:ci-bws-step-scope',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_bws_step_scope.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Bitwarden step-scoped secrets',
+    },
+  },
+  {
     // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
     id: 'check:ci-region-consistency',
     run: 'npm run check:ci-region-consistency',

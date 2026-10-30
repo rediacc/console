@@ -2344,6 +2344,9 @@ jobs:
       - name: Bitwarden secret map
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_bws_map.py
+      - name: Bitwarden step-scoped secrets
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_bws_step_scope.py
       - name: BLOCKER validator — package.json overrides
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-overrides-reasons

@@ -679,6 +679,11 @@
       "CF_GLOBAL_API_KEY",
       "CLOUDFLARE_API_TOKEN"
     ],
+    ".ci/rediacc_ci/ops/apply_cf_waf_rules.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "CLOUDFLARE_API_TOKEN"
+    ],
     ".ci/rediacc_ci/ops/backup_bucket_scope_probe.py": [
       "*name",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
@@ -874,6 +879,11 @@
     ],
     ".ci/rediacc_ci/quality/browser_smoke.py": [
       "REDIACC_SMOKE_NO_DOCKER"
+    ],
+    ".ci/rediacc_ci/quality/bws_step_scope.py": [
+      "BWS_STEP_SCOPED_CONFIG",
+      "BWS_STEP_SCOPE_MIN_WINDOWS",
+      "WORKFLOW_DIR"
     ],
     ".ci/rediacc_ci/quality/ci_job_aggregation.py": [
       "CI_JOB_AGGREGATION_ASSERT",

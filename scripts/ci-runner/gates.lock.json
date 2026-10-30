@@ -2222,6 +2222,20 @@
     }
   },
   {
+    "id": "check:ci-bws-step-scope",
+    "run": "npm run check:ci-bws-step-scope",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bws_step_scope.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Bitwarden step-scoped secrets"
+    }
+  },
+  {
     "id": "check:ci-region-consistency",
     "run": "npm run check:ci-region-consistency",
     "gate": true,
