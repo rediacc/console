@@ -134,6 +134,8 @@ const JobHandleSchema = z.object({
   overlaps: z.array(RenetOverlapSchema).nullable().optional(),
   /** True when the handle is an earlier start's with the same request id: nothing new started. */
   deduped: z.boolean().optional(),
+  /** The network ID this start allocated for a vault with `network_id: "auto"` (section 14). */
+  network_id: z.number().int().positive().optional(),
 });
 
 type JobHandle = z.infer<typeof JobHandleSchema>;
@@ -500,11 +502,36 @@ const OverlapRefusalSchema = z.object({
   overlaps: z.array(RenetOverlapSchema),
 });
 
+/**
+ * What a start refused by its vault's `expect` prints on stdout before exiting
+ * 15 (private/renet/cmd/renet/job_precondition.go PreconditionRefusal).
+ */
+const PreconditionRefusalSchema = z.object({
+  refused: z.literal('precondition'),
+  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted']),
+  state: z.string(),
+  repository: z.string(),
+  repo_guid: z.string(),
+  machine: z.string().optional(),
+  message: z.string(),
+});
+
+type PreconditionRefusal = z.infer<typeof PreconditionRefusalSchema>;
+
+export type { PreconditionRefusal };
+
 /** One line of a `job start --attach` stream, classified. */
 export type AttachLine =
-  | { kind: 'handle'; jobId: string; deduped: boolean; overlaps: JobOverlap[] }
+  | {
+      kind: 'handle';
+      jobId: string;
+      deduped: boolean;
+      overlaps: JobOverlap[];
+      networkId?: number;
+    }
   | { kind: 'status'; status: JobStatus; deduped: boolean; overlaps: JobOverlap[] }
   | { kind: 'refusal'; overlaps: JobOverlap[] }
+  | { kind: 'precondition'; refusal: PreconditionRefusal }
   | { kind: 'event'; event: RenetEvent }
   | { kind: 'raw'; text: string };
 
@@ -530,6 +557,9 @@ export function parseAttachLine(line: string): AttachLine {
       overlaps: OverlapRefusalSchema.parse(obj).overlaps.map(toJobOverlap),
     };
   }
+  if (obj.refused === 'precondition') {
+    return { kind: 'precondition', refusal: PreconditionRefusalSchema.parse(obj) };
+  }
   return { kind: 'event', event: obj as unknown as RenetEvent };
 }
 
@@ -540,6 +570,7 @@ function handleLineOf(obj: Record<string, unknown>): AttachLine {
     jobId: assertJobId(handle.job_id),
     deduped: handle.deduped === true,
     overlaps: (handle.overlaps ?? []).map(toJobOverlap),
+    ...(handle.network_id === undefined ? {} : { networkId: handle.network_id }),
   };
 }
 
@@ -553,10 +584,18 @@ function statusLineOf(obj: Record<string, unknown>): AttachLine {
   };
 }
 
-/** The overlaps of a plain (`-b`) handle. */
-export function handleOverlaps(stdout: string): { deduped: boolean; overlaps: JobOverlap[] } {
+/** The overlaps, dedupe flag and allocated network ID of a plain (`-b`) handle. */
+export function handleOverlaps(stdout: string): {
+  deduped: boolean;
+  overlaps: JobOverlap[];
+  networkId?: number;
+} {
   const handle = JobHandleSchema.parse(JSON.parse(extractJsonObject(stdout)));
-  return { deduped: handle.deduped === true, overlaps: (handle.overlaps ?? []).map(toJobOverlap) };
+  return {
+    deduped: handle.deduped === true,
+    overlaps: (handle.overlaps ?? []).map(toJobOverlap),
+    ...(handle.network_id === undefined ? {} : { networkId: handle.network_id }),
+  };
 }
 
 /** The overlaps of a refusal printed on stdout, or null when the output is no refusal. */
@@ -566,6 +605,17 @@ export function parseOverlapRefusal(stdout: string): JobOverlap[] | null {
     if (!trimmed.startsWith('{')) continue;
     const parsed = parseAttachLine(trimmed);
     if (parsed.kind === 'refusal') return parsed.overlaps;
+  }
+  return null;
+}
+
+/** The precondition refusal printed on stdout, or null when the output is none. */
+export function parsePreconditionRefusal(stdout: string): PreconditionRefusal | null {
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    const parsed = parseAttachLine(trimmed);
+    if (parsed.kind === 'precondition') return parsed.refusal;
   }
   return null;
 }

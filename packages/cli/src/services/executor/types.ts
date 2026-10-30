@@ -53,6 +53,14 @@ export interface RenetEvent {
   data?: unknown;
 }
 
+/**
+ * A start precondition renet checks against the machine before any job or unit
+ * exists (agent/plans/PLAN-detached-jobs.md section 14; private/renet/pkg/jobs
+ * precondition.go). It replaces the client-side `repository_list` probe a
+ * mutating verb used to run first.
+ */
+export type RepoExpectation = 'repo_present' | 'repo_absent' | 'repo_unmounted';
+
 /** A machine referenced by an operation besides the primary target (backup peers). */
 export interface ExtraMachine {
   ip: string;
@@ -188,6 +196,25 @@ export interface ExecuteOptions {
    */
   onJobStarted?: (jobId: string) => void;
   /**
+   * The vault's root `expect` (section 14): renet refuses the start, with no
+   * unit spawned, when the task repository's state on the machine fails it.
+   * Normally unset by the verb: the executor seam stamps the expectation
+   * `resolveRepoRef` recorded for this repository and machine (executor-factory
+   * vault directives). A call that stays on `renet execute` (`runsOutsideJob`)
+   * is checked by the client-side probe instead, because only `job start`
+   * evaluates it.
+   */
+  expect?: RepoExpectation;
+  /**
+   * Ask renet to allocate the task repository's network ID inside `job start`
+   * (`network_id: "auto"`, section 14) instead of the client probing
+   * `network_used` and allocating. Applied only when the vault's repository
+   * entry carries no ID; the IDs the config already holds go along as
+   * `network_id_exclude`. The allocated ID comes back as
+   * `ExecuteResult.networkId` and the seam records it in the config.
+   */
+  networkIdAuto?: boolean;
+  /**
    * Skip the post-success repo-identity license refresh for create/fork.
    * Callers that defer must invoke refreshIdentityFor() themselves once the
    * repository is in its final state (e.g. compound fork --up flows).
@@ -238,6 +265,8 @@ export interface ExecuteResult {
   state?: JobState;
   /** True when the job finished inside the attach window. */
   attached?: boolean;
+  /** The network ID `job start` allocated for a `network_id: "auto"` vault (section 14). */
+  networkId?: number;
   /** The live jobs and scheduled units the start met (section 19). J21 renders them. */
   overlaps?: JobOverlap[];
   /** Step timing from renet (parsed from JSON output) */

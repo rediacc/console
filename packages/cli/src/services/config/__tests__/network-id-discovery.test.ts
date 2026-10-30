@@ -1,7 +1,7 @@
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// PLAN-config-networkid-discovery T3: a synced ID beats discovery, a discovered ID beats allocation, a definite absence allocates above the target machine's used set, an unreachable machine fails closed, and a mismatch adopts the persisted ID.
+// PLAN-config-networkid-discovery T3: a synced ID beats discovery, a discovered ID beats allocation, a definite absence is allocated by renet in the job (network_id auto, PLAN-detached-jobs section 14), an unreachable machine fails closed, and a mismatch adopts the persisted ID.
 
 const GUID = '11111111-1111-1111-1111-111111111111';
 
@@ -9,9 +9,11 @@ const h = vi.hoisted(() => ({
   /** Per-function canned results; a missing entry means the call fails. */
   responses: {} as Record<string, { success: boolean; stdout?: string }>,
   calls: [] as { functionName: string; machineName: string; datastore?: string }[],
+  requestNetworkIdAuto: vi.fn(),
 }));
 
 vi.mock('../../executor/executor-factory.js', () => ({
+  requestNetworkIdAuto: h.requestNetworkIdAuto,
   getExecutor: () => ({
     execute: vi.fn((opts: { functionName: string; machineName: string; datastore?: string }) => {
       h.calls.push({
@@ -36,6 +38,7 @@ function used(ids: number[]): string {
 beforeEach(() => {
   h.responses = {};
   h.calls = [];
+  h.requestNetworkIdAuto.mockClear();
 });
 
 describe('resolveMissingNetworkId', () => {
@@ -47,56 +50,44 @@ describe('resolveMissingNetworkId', () => {
         { name: GUID, network_id: 2880 },
       ]),
     };
-    const allocate = vi.fn();
     const { resolveMissingNetworkId } = await import('../network-id-discovery.js');
     const id = await resolveMissingNetworkId({
       repository: 'y',
       repoGuid: GUID,
       target: { machine: 'm' },
-      allocate,
     });
     expect(id).toBe(2880);
-    expect(allocate).not.toHaveBeenCalled();
     expect(h.calls.map((c) => c.functionName)).toEqual(['repository_list']);
   });
 
-  it('allocates above the target machine used set on a definite absence', async () => {
+  it('hands a definite absence to renet as network_id auto, with no network_used probe', async () => {
     h.responses.repository_list = {
       success: true,
       stdout: listing([{ name: 'other', network_id: 2816 }]),
     };
     h.responses.network_used = { success: true, stdout: used([2816, 2880, 4032]) };
-    const allocate = vi.fn((floor: number[]) => Promise.resolve(Math.max(...floor) + 64));
-    const { resolveMissingNetworkId } = await import('../network-id-discovery.js');
+    const { resolveMissingNetworkId, NETWORK_ID_AUTO } = await import('../network-id-discovery.js');
     const id = await resolveMissingNetworkId({
       repository: 'z',
       repoGuid: GUID,
       target: { machine: 'm' },
-      allocate,
     });
-    expect(allocate).toHaveBeenCalledWith([2816, 2880, 4032]);
-    expect(id).toBe(4096);
-    expect(h.calls.every((c) => c.machineName === 'm')).toBe(true);
+    expect(id).toBe(NETWORK_ID_AUTO);
+    expect(h.calls.map((c) => c.functionName)).toEqual(['repository_list']);
   });
 
-  it('falls back to the listed IDs when the machine has no network_used (rollout skew)', async () => {
-    h.responses.repository_list = {
-      success: true,
-      stdout: listing([{ name: 'other', network_id: 3008 }]),
-    };
-    const allocate = vi.fn(() => Promise.resolve(3072));
-    const { resolveMissingNetworkId } = await import('../network-id-discovery.js');
-    await resolveMissingNetworkId({
-      repository: 'z',
+  it('hands a kubernetes-placed repo to renet without any machine call', async () => {
+    const { resolveMissingNetworkId, NETWORK_ID_AUTO } = await import('../network-id-discovery.js');
+    const id = await resolveMissingNetworkId({
+      repository: 'k',
       repoGuid: GUID,
-      target: { machine: 'm' },
-      allocate,
+      target: { machine: 'cp', kubeCluster: 'c1' },
     });
-    expect(allocate).toHaveBeenCalledWith([3008]);
+    expect(id).toBe(NETWORK_ID_AUTO);
+    expect(h.calls).toEqual([]);
   });
 
   it('fails closed on an unreachable machine and never allocates (N6, D6(a))', async () => {
-    const allocate = vi.fn();
     const { resolveMissingNetworkId, NetworkIdUndiscoverableError } = await import(
       '../network-id-discovery.js'
     );
@@ -105,15 +96,12 @@ describe('resolveMissingNetworkId', () => {
         repository: 'y',
         repoGuid: GUID,
         target: { machine: 'm' },
-        allocate,
       })
     ).rejects.toBeInstanceOf(NetworkIdUndiscoverableError);
-    expect(allocate).not.toHaveBeenCalled();
   });
 
   it('fails closed when the repo is present but its mirror records no ID', async () => {
     h.responses.repository_list = { success: true, stdout: listing([{ name: GUID }]) };
-    const allocate = vi.fn();
     const { resolveMissingNetworkId, NetworkIdUndiscoverableError } = await import(
       '../network-id-discovery.js'
     );
@@ -122,10 +110,8 @@ describe('resolveMissingNetworkId', () => {
         repository: 'y',
         repoGuid: GUID,
         target: { machine: 'm' },
-        allocate,
       })
     ).rejects.toBeInstanceOf(NetworkIdUndiscoverableError);
-    expect(allocate).not.toHaveBeenCalled();
   });
 
   it('probes the named datastore the repo lives on', async () => {
@@ -138,7 +124,6 @@ describe('resolveMissingNetworkId', () => {
       repository: 'y',
       repoGuid: GUID,
       target: { machine: 'm', datastore: `${WK_DATASTORE_PATH}/datastores/fast` },
-      allocate: vi.fn(),
     });
     expect(h.calls[0].datastore).toBe(`${WK_DATASTORE_PATH}/datastores/fast`);
   });
@@ -154,6 +139,30 @@ describe('ensureRepositoryNetworkId', () => {
     const { ensureRepositoryNetworkId } = await import('../network-id-discovery.js');
     expect(await ensureRepositoryNetworkId('y', { machine: 'm' })).toBe(2880);
     expect(h.calls).toEqual([]);
+    keySpy.mockRestore();
+    stateSpy.mockRestore();
+  });
+
+  it('a definite absence asks the next job for network_id auto, returns 0 and records nothing', async () => {
+    h.responses.repository_list = { success: true, stdout: listing([{ name: 'other' }]) };
+    const setRepositories = vi.fn();
+    const { configService } = await import('../config-resources.js');
+    const keySpy = vi.spyOn(configService, 'getRepositoryKey').mockResolvedValue('y:dev');
+    const stateSpy = vi.spyOn(configService, 'getResourceState').mockResolvedValue({
+      getRepositories: () => ({ 'y:dev': { repositoryGuid: GUID } }),
+      setRepositories,
+    } as never);
+    const { ensureRepositoryNetworkId } = await import('../network-id-discovery.js');
+    expect(await ensureRepositoryNetworkId('y:dev', { machine: 'm' })).toBe(0);
+    expect(h.requestNetworkIdAuto).toHaveBeenCalledWith({
+      machine: 'm',
+      aliases: ['y:dev', 'y:dev', GUID],
+      repoGuid: GUID,
+      repoName: 'y',
+      recordAs: 'y:dev',
+    });
+    expect(h.calls.map((c) => c.functionName)).toEqual(['repository_list']);
+    expect(setRepositories).not.toHaveBeenCalled();
     keySpy.mockRestore();
     stateSpy.mockRestore();
   });

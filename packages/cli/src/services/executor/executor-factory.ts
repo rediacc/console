@@ -19,12 +19,14 @@
  * this file is once again about one thing: which executor runs the work.
  */
 
+import { stateMismatch } from '../../utils/cli-exit-error.js';
 import { currentRequestContext } from '../core/request-context.js';
 import { attachWindowMs, clientKindFromEnv, invocationMinter } from '../jobs/attach.js';
 import { createDaemonExecutor } from './daemon/client.js';
+import { runsOutsideJob } from './detached-execution.js';
 import { requestExecutor, tapExecutor } from './event-tap.js';
 import { localExecutorService } from './local-executor.js';
-import type { Executor } from './types.js';
+import type { ExecuteOptions, ExecuteResult, Executor, RepoExpectation } from './types.js';
 
 /**
  * The process default outside a dispatch: the same-host executor daemon, backed
@@ -68,6 +70,163 @@ export function isBackgroundRequested(): boolean {
   return backgroundRequested;
 }
 
+// --- vault directives (agent/plans/PLAN-detached-jobs.md section 14) ---------
+
+/**
+ * What the command layer asked of the NEXT job on one repository and machine:
+ * the start precondition `resolveRepoRef` derived (`expect`) and the network ID
+ * allocation `ensureRepositoryNetworkId` handed to renet (`networkIdAuto`).
+ *
+ * Recorded here rather than threaded through each verb because the probe this
+ * replaces lived in the shared resolution funnel, not in the ~40 verbs that call
+ * it; the seam stamps the directive onto the first call naming that repository
+ * on that machine, in the invoking process, so it crosses the executor daemon's
+ * socket as plain ExecuteOptions. Each directive is spent by one call, which is
+ * what the probe was: one check before the verb's work.
+ */
+interface VaultDirective {
+  machine: string;
+  /** Every spelling a call's `params.repository` may use for the repo: key, `name:tag`, GUID. */
+  aliases: Set<string>;
+  repoGuid: string;
+  /** The family name, for the refusal text of the client-side fallback probe. */
+  repoName: string;
+  expect?: RepoExpectation;
+  networkIdAuto?: boolean;
+  /** The config key the allocated ID is recorded under. */
+  recordAs?: string;
+}
+
+/** Outside a dispatch the process is one invocation; inside one, each request keeps its own list. */
+const processDirectives: VaultDirective[] = [];
+const requestDirectives = new WeakMap<object, VaultDirective[]>();
+
+function directives(): VaultDirective[] {
+  const context = currentRequestContext();
+  if (!context) return processDirectives;
+  let list = requestDirectives.get(context);
+  if (!list) {
+    list = [];
+    requestDirectives.set(context, list);
+  }
+  return list;
+}
+
+function directiveFor(input: {
+  machine: string;
+  aliases: string[];
+  repoGuid: string;
+  repoName: string;
+}): VaultDirective {
+  const list = directives();
+  const aliases = input.aliases.filter((alias) => alias !== '');
+  const found = list.find(
+    (d) => d.machine === input.machine && aliases.some((alias) => d.aliases.has(alias))
+  );
+  if (found) {
+    for (const alias of aliases) found.aliases.add(alias);
+    return found;
+  }
+  const created: VaultDirective = {
+    machine: input.machine,
+    aliases: new Set(aliases),
+    repoGuid: input.repoGuid,
+    repoName: input.repoName,
+  };
+  list.push(created);
+  return created;
+}
+
+/** Record the start precondition of the next job on this repository and machine. */
+export function expectRepoState(input: {
+  machine: string;
+  aliases: string[];
+  repoGuid: string;
+  repoName: string;
+  expect: RepoExpectation;
+}): void {
+  directiveFor(input).expect = input.expect;
+}
+
+/** Ask the next job on this repository and machine to allocate its network ID (`network_id: "auto"`). */
+export function requestNetworkIdAuto(input: {
+  machine: string;
+  aliases: string[];
+  repoGuid: string;
+  repoName: string;
+  recordAs: string;
+}): void {
+  const directive = directiveFor(input);
+  directive.networkIdAuto = true;
+  directive.recordAs = input.recordAs;
+}
+
+/** Test seam: drop every pending directive of this scope. */
+export function resetVaultDirectives(): void {
+  directives().length = 0;
+}
+
+/** Take (and spend) the directive the call names, if any. */
+function claimDirective(options: ExecuteOptions): VaultDirective | undefined {
+  const repo = options.params?.repository;
+  if (typeof repo !== 'string' || repo === '') return undefined;
+  const list = directives();
+  const index = list.findIndex((d) => d.machine === options.machineName && d.aliases.has(repo));
+  if (index === -1) return undefined;
+  return list.splice(index, 1)[0];
+}
+
+/**
+ * Apply a claimed directive. A call that stays on `renet execute` never reaches
+ * `job start`, which is the only place renet evaluates `expect`, so a
+ * `repo_present` there is checked by the client-side presence probe it replaced
+ * (failing open on a probe failure, as before).
+ */
+async function stampDirective(
+  options: ExecuteOptions,
+  directive: VaultDirective | undefined
+): Promise<ExecuteOptions> {
+  if (!directive) return options;
+  const expect = options.expect ?? directive.expect;
+  const outside = runsOutsideJob(options);
+  if (outside && expect === 'repo_present') {
+    await probePresentOutsideJob(options.machineName, directive);
+  }
+  return withDirective(options, outside ? undefined : expect, directive.networkIdAuto);
+}
+
+/** The call's options with the directive's fields added where the caller set none. */
+function withDirective(
+  options: ExecuteOptions,
+  expect: RepoExpectation | undefined,
+  networkIdAuto: boolean | undefined
+): ExecuteOptions {
+  const auto = options.networkIdAuto ?? networkIdAuto;
+  return { ...options, ...(expect ? { expect } : {}), ...(auto ? { networkIdAuto: auto } : {}) };
+}
+
+async function probePresentOutsideJob(machine: string, directive: VaultDirective): Promise<void> {
+  const { probeRepoPresent } = await import('../repo/repo-mount-check.js');
+  if ((await probeRepoPresent(directive.repoGuid, machine)) !== false) return;
+  throw stateMismatch(
+    `config places ${directive.repoName} on ${machine}, ` +
+      `but ${machine} does not have its image. Run "rdc config reconcile", then retry.`
+  );
+}
+
+/** Record the network ID a `network_id: "auto"` start allocated, under the repo it ran for. */
+async function recordAllocatedNetworkId(
+  options: ExecuteOptions,
+  directive: VaultDirective | undefined,
+  result: ExecuteResult
+): Promise<void> {
+  if (result.networkId === undefined) return;
+  const repo = directive?.recordAs ?? options.params?.repository;
+  if (typeof repo !== 'string' || repo === '') return;
+  const { recordNetworkId } = await import('../config/network-id-discovery.js');
+  await recordNetworkId(repo, result.networkId);
+}
+
 /**
  * Stamp every call with its entry point's attach window and its request id
  * (agent/plans/PLAN-detached-jobs.md sections 15 and 17). The window comes from
@@ -82,10 +241,14 @@ export function isBackgroundRequested(): boolean {
  * served by the executor daemon still carries the client's invocation.
  *
  * A caller's explicit numeric window or request id wins; an undefined window means none was chosen.
+ *
+ * The call also takes the vault directives recorded for its repository and
+ * machine (`expect`, `networkIdAuto`, above), and a network ID the start
+ * allocated is written to the config here, in the invoking process that holds it.
  */
 export function attachDecorator(inner: Executor): Executor {
   return {
-    execute(options) {
+    async execute(options) {
       const served = currentRequestContext() !== undefined;
       const window =
         options.attachWindowMs === undefined
@@ -95,11 +258,15 @@ export function attachDecorator(inner: Executor): Executor {
               client: clientKindFromEnv(),
             })
           : options.attachWindowMs;
-      return inner.execute({
-        ...options,
+      const directive = claimDirective(options);
+      const stamped = await stampDirective(options, directive);
+      const result = await inner.execute({
+        ...stamped,
         attachWindowMs: window,
         requestId: options.requestId ?? invocationMinter().next(options.machineName),
       });
+      await recordAllocatedNetworkId(options, directive, result);
+      return result;
     },
   };
 }

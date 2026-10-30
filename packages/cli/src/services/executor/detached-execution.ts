@@ -55,9 +55,11 @@ import {
   JobsUnsupportedError,
   jobStatusToExecuteResult,
   overlapWarningLines,
+  type PreconditionRefusal,
   parseAttachLine,
   parseJobHandle,
   parseOverlapRefusal,
+  parsePreconditionRefusal,
   resumeHint,
 } from './job-client.js';
 import {
@@ -112,6 +114,28 @@ export class JobOverlapRefusedError extends CliExitError {
       }
     );
     this.name = 'JobOverlapRefusedError';
+  }
+}
+
+/**
+ * A start refused by its vault's `expect` (section 14): the machine's state is
+ * not what the command was resolved against, and no unit was spawned. Exit 12,
+ * the code the client-side presence probe this replaces refused with, and for
+ * `repo_present` the same text, so the routing contradiction reads as before.
+ */
+export class JobPreconditionRefusedError extends CliExitError {
+  constructor(
+    readonly refusal: PreconditionRefusal,
+    machineName: string
+  ) {
+    const machine = refusal.machine || machineName;
+    super(
+      ERROR_CODES.STATE_MISMATCH,
+      refusal.expect === 'repo_present'
+        ? `config places ${refusal.repository} on ${machine}, but ${machine} does not have its image. Run "rdc config reconcile", then retry.`
+        : refusal.message
+    );
+    this.name = 'JobPreconditionRefusedError';
   }
 }
 
@@ -182,6 +206,8 @@ interface AttachState {
   overlaps: JobOverlap[];
   deduped: boolean;
   status?: JobStatus;
+  /** The network ID the start allocated for a `network_id: "auto"` vault. */
+  networkId?: number;
 }
 
 type StartOutcome =
@@ -190,6 +216,7 @@ type StartOutcome =
   | { kind: 'dropped'; error: Error }
   | { kind: 'interrupted' }
   | { kind: 'refused'; overlaps: JobOverlap[] }
+  | { kind: 'precondition'; refusal: PreconditionRefusal }
   | { kind: 'unsupported' }
   | { kind: 'failed'; detail: string };
 
@@ -259,9 +286,10 @@ class JobRun {
   }
 
   /** The handle arrived: the job exists. Announce it once, and warn about what it overlaps. */
-  announce(jobId: string, overlaps: JobOverlap[], deduped: boolean): void {
+  announce(jobId: string, overlaps: JobOverlap[], deduped: boolean, networkId?: number): void {
     this.state.overlaps = overlaps;
     this.state.deduped = deduped;
+    if (networkId !== undefined) this.state.networkId = networkId;
     if (this.state.jobId) return;
     this.state.jobId = jobId;
     this.ticket.append('started', { jobId, state: 'running' });
@@ -299,6 +327,9 @@ class JobRun {
       case 'refused':
         this.ticket.append('acknowledged', { state: 'unknown' });
         throw new JobOverlapRefusedError(outcome.overlaps, this.options.machineName);
+      case 'precondition':
+        this.ticket.append('acknowledged', { state: 'unknown' });
+        throw new JobPreconditionRefusedError(outcome.refusal, this.options.machineName);
       case 'unsupported':
         this.ticket.append('acknowledged', { state: 'unknown' });
         throw new JobsUnsupportedError(this.options.machineName, this.verb);
@@ -325,10 +356,11 @@ class JobRun {
     return this.finished(status);
   }
 
-  private base(): Pick<ExecuteResult, 'jobId' | 'requestId' | 'overlaps'> {
+  private base(): Pick<ExecuteResult, 'jobId' | 'requestId' | 'overlaps' | 'networkId'> {
     return {
       ...(this.state.jobId ? { jobId: this.state.jobId } : {}),
       requestId: this.requestId,
+      ...(this.state.networkId === undefined ? {} : { networkId: this.state.networkId }),
       ...(this.state.overlaps.length > 0 ? { overlaps: this.state.overlaps } : {}),
     };
   }
@@ -568,12 +600,12 @@ class AttachReader {
     const line = raw.trim();
     const parsed = line ? parseAttachLine(line) : ({ kind: 'raw', text: '' } as const);
     if (parsed.kind === 'handle') {
-      this.run.announce(parsed.jobId, parsed.overlaps, parsed.deduped);
+      this.run.announce(parsed.jobId, parsed.overlaps, parsed.deduped, parsed.networkId);
     } else if (parsed.kind === 'status') {
       this.run.state.status = parsed.status;
       if (parsed.overlaps.length > 0) this.run.state.overlaps = parsed.overlaps;
       this.trailers += 1;
-    } else if (parsed.kind !== 'refusal') {
+    } else if (parsed.kind !== 'refusal' && parsed.kind !== 'precondition') {
       this.spoolLine(parsed);
     }
   }
@@ -628,10 +660,12 @@ async function startOnce(
   return { kind: 'dropped', error: new Error('job start ended without a status trailer') };
 }
 
-/** A non-zero `job start`: an overlap refusal, an old renet, or a failure. */
+/** A non-zero `job start`: an overlap or precondition refusal, an old renet, or a failure. */
 function classifyFailedStart(reader: AttachReader, run: JobRun): StartOutcome {
   const refusal = parseOverlapRefusal(reader.stdout);
   if (refusal) return { kind: 'refused', overlaps: refusal };
+  const precondition = parsePreconditionRefusal(reader.stdout);
+  if (precondition) return { kind: 'precondition', refusal: precondition };
   if (isJobStartUnsupported(reader.stdout + reader.stderr)) return { kind: 'unsupported' };
   const detail = capReason((reader.stderr || reader.stdout).trim());
   // A renet that started the job and then failed to stream it: the job is running, so reattach rather than fail.
@@ -643,7 +677,7 @@ function classifyFailedStart(reader: AttachReader, run: JobRun): StartOutcome {
 function readPlainHandle(reader: AttachReader, run: JobRun): StartOutcome {
   const handle = parseJobHandle(reader.stdout);
   const extra = handleOverlaps(reader.stdout);
-  run.announce(handle.job_id, extra.overlaps, extra.deduped);
+  run.announce(handle.job_id, extra.overlaps, extra.deduped, extra.networkId);
   return { kind: 'handle' };
 }
 

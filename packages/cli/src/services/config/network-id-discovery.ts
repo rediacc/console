@@ -11,7 +11,7 @@
  */
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
-import { getExecutor } from '../executor/executor-factory.js';
+import { getExecutor, requestNetworkIdAuto } from '../executor/executor-factory.js';
 import type { ExecuteResult } from '../executor/types.js';
 import { probeRepoNetwork } from '../repo/repo-mount-check.js';
 
@@ -119,22 +119,25 @@ export async function allocateNetworkIdWithFloor(floor: number[]): Promise<numbe
   return configService.allocateNetworkId({ floor });
 }
 
+/** A network ID renet allocates inside the repo's next `job start` (`network_id: "auto"`). */
+export const NETWORK_ID_AUTO = 'auto';
+
 /**
  * The resolution order for a record with no ID (plan §2.2, steps 2-4):
- * the machine's persisted ID; else, on a definite absence, a fresh allocation
- * above the machine's used set; else a fail-closed error. A kubernetes-placed
- * repo is invisible to the probe (#92), so it allocates above the machine's
- * used set directly.
+ * the machine's persisted ID; else, on a definite absence, {@link NETWORK_ID_AUTO}:
+ * renet allocates the ID inside the job, above the machine's used set and the
+ * caller's IDs, under its spool lock (agent/plans/PLAN-detached-jobs.md section 14),
+ * which replaces the client's `network_used` probe and allocation; else a
+ * fail-closed error. A kubernetes-placed repo is invisible to the probe (#92),
+ * so it goes to renet's allocation directly.
  */
 export async function resolveMissingNetworkId(input: {
   repository: string;
   repoGuid: string;
   target: NetworkIdTarget;
-  allocate?: (floor: number[]) => Promise<number>;
-}): Promise<number> {
-  const allocate = input.allocate ?? allocateNetworkIdWithFloor;
+}): Promise<number | typeof NETWORK_ID_AUTO> {
   const { target } = input;
-  if (target.kubeCluster !== undefined) return allocate(await targetFloor(target));
+  if (target.kubeCluster !== undefined) return NETWORK_ID_AUTO;
 
   const found = await discoverNetworkId({
     repoGuid: input.repoGuid,
@@ -145,7 +148,7 @@ export async function resolveMissingNetworkId(input: {
   if (found.kind === 'unknown') {
     throw new NetworkIdUndiscoverableError(input.repository, target.machine);
   }
-  return allocate(await targetFloor(target, found.listedIds));
+  return NETWORK_ID_AUTO;
 }
 
 /**
@@ -276,6 +279,11 @@ export function networkIdConflictMessage(
  * A repo's network ID: a synced local ID wins; a record without one asks its machine first, and an
  * unreachable machine fails closed. Lives here rather than on ConfigService so a config-only verb
  * importing the config service never reaches the executor.
+ *
+ * Returns 0 when no ID exists yet (a definite absence, or a kubernetes-placed repo): the repo's next
+ * job on its machine then carries `network_id: "auto"`, renet allocates the ID in `job start`, and
+ * the executor seam records it in the config (executor-factory `requestNetworkIdAuto`). 0 is the
+ * vault's "no ID" value, so nothing downstream reads it as an ID.
  */
 export async function ensureRepositoryNetworkId(
   repoRef: string,
@@ -286,17 +294,28 @@ export async function ensureRepositoryNetworkId(
   if (!key) throw new Error(`Repository "${repoRef}" not found`);
   const repo = (await configService.getResourceState()).getRepositories()[key];
   if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
+  const resolvedTarget = target ?? (await resolveNetworkIdTarget(key));
   const networkId = await resolveMissingNetworkId({
     repository: key,
     repoGuid: repo.repositoryGuid,
-    target: target ?? (await resolveNetworkIdTarget(key)),
+    target: resolvedTarget,
   });
+  if (networkId === NETWORK_ID_AUTO) {
+    requestNetworkIdAuto({
+      machine: resolvedTarget.machine,
+      aliases: [key, repoRef, repo.repositoryGuid],
+      repoGuid: repo.repositoryGuid,
+      repoName: key.split(':')[0],
+      recordAs: key,
+    });
+    return 0;
+  }
   await recordNetworkId(key, networkId);
   return networkId;
 }
 
-/** Write a repo's network ID into the active config's state. */
-async function recordNetworkId(repoKey: string, networkId: number): Promise<void> {
+/** Write a repo's network ID into the active config's state (also the executor seam's record of an ID renet allocated). */
+export async function recordNetworkId(repoKey: string, networkId: number): Promise<void> {
   const { configService } = await import('./config-resources.js');
   const state = await configService.getResourceState();
   const key = (await configService.getRepositoryKey(repoKey)) ?? repoKey;
