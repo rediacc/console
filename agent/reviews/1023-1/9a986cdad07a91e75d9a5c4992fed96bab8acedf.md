@@ -21,4 +21,4 @@ Body-Sig: d99d9d6fd34b99ad
 ### 9a986cda.1 [low] agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md:16
 Anchor: in-diff
 Claim: The commit moves the Workers-branch citation in createBackupPlane from 1152-1158 to 1096-1106 but leaves the doc-comment citation `:1113-1118` and the Node-branch citation `:1169` at their old numbers, so the plan's references into the same function no longer agree with each other; a reviewer can check this by comparing the three ranges in backup-chunk-store.ts.
-Resolution: open
+Resolution: not-a-bug | the plan now cites private/account/src/services/backup-chunk-store.ts:1096 and :1109, which match the code at those lines | d778be9d 2026-10-30T17:46:44Z
