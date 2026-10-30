@@ -1,18 +1,19 @@
-## SESSION d778be9d 2026-10-30T01:46:04Z
+## SESSION d778be9d 2026-10-30T01:52:56Z
 
-# d778be9d STATE (2026-10-30T01:50Z by date -u, branch 1023-1, operator away until morning, order #d910962b)
+# d778be9d STATE (2026-10-30T02:00Z by date -u, branch 1023-1, operator away until morning, order #d910962b)
 
 ## Big pieces
-- Review findings settled through dc4fc21bd (its review in flight). Run wl_review.py --check first after compaction.
-- PR plan set: 51 open boxes in 6 plans; a read-only survey classifies them into LOCAL / ALREADY-DONE / LIVE-NOW / PR-OR-MERGE / TIMED / OPERATOR at /tmp/writers-now/1023-1-planset-20261030.md (agent af7f05d540f1f84fd). Drain LOCAL and ALREADY-DONE first, then LIVE-NOW.
-- Blocked on the PR merge (#707f08ca [?], DEFAULT holds until the operator's /pr-babysit): stable EU deploy, store L2, hardening L2, backup-program A1a (#ab9c68b1).
-- Hostinger nightly-hot first run 2026-10-30 02:00 UTC (12M cap): Q12 checks it (backup status --machine hostinger, backup usage on eu-remote).
-- [?] #fd6b526a durable edge rollout (DEFAULT runs about 03:00Z); #a150016d waits on it. [?] #533d7a65 L0 step 4 NOT-BEFORE 03:30Z. #53b05748 S6 cron 2026-10-31 08:07 UTC.
-- #52978244 review-hook misses instrumented (next miss prints "none due for <repo>, HEAD <sha>").
+- PR plan set: 51 open boxes classified in agent/d778be9d/planset-survey-20261030.md (copy of /tmp/writers-now/1023-1-planset-20261030.md): ALREADY-DONE 11 (backup-program A4d E1 K11a S1 P1 P3 P4 Q3 Q4 Q5 Q8; P1/P3/P4 by inference only, verify each citation before ticking), LIVE-NOW 22, PR-OR-MERGE 8, OPERATOR 4, LOCAL 2 (backup-program S12, Q16), TIMED 4 (Q12 Q13 Q15 after the 02:00Z timer, S6).
+- LP-bench b00bc9df (token-ip-rebind, telemetry-export, cloudflare-proxy): deploy_bench of this tree running (bbl9zfv1g, log /tmp/deploy-bench2.log), then per plan: PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/<plan>.md --box b00bc9df --target bench --check account-smoke --write, then commit agent/ledgers/live-proof.jsonl and plan-tick.
+- Blocked on the merge (#707f08ca [?]): stable EU deploy, store L2, hardening L2, A1a (#ab9c68b1), and the PR-OR-MERGE boxes.
+- [?] #fd6b526a durable edge rollout (DEFAULT ~03:00Z); [?] #533d7a65 NOT-BEFORE 03:30Z; S6 cron 2026-10-31 08:07 UTC.
+- Review findings settled through dc4fc21bd.
 
 ## Delegated
-- af7f05d540f1f84fd: read-only plan-set survey -> /tmp/writers-now/1023-1-planset-20261030.md (no item; output is the file).
+- bbl9zfv1g #82ec5326 deploy_bench for LP-bench.
+- a837563d009b77827 #e3ca5e6c worklist.py --live-proof verb (wl_liveproof.py + tests). Accept: its pytest, ruff, verb usage rc non-zero without args.
 
 ## Next action
-- Read the survey counts; spawn writers for LOCAL boxes (disjoint Owns), tick ALREADY-DONE after checking each citation, run LIVE-NOW commands.
-- After 02:00 UTC run finishes: Q12 evidence.
+- On deploy rc=0: record the three LP-bench receipts, commit the ledger, plan-tick each.
+- Verify and tick the 11 ALREADY-DONE boxes (investigate present with two pointers, then plan-tick); writers for S12 and Q16; run LIVE-NOW commands from the survey.
+- After the 02:00Z hostinger run: Q12/Q13/Q15 evidence.
