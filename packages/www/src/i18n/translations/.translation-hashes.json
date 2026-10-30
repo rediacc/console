@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 5686,
+    "keyCount": 5691,
     "sourceCommit": "aee63ccd11bc025872eb1192b448e790b67f4489"
   },
   "hashes": {
@@ -1070,6 +1070,9 @@
     "pages.pricing.finalCta.buttons.talkToSales": "baa24cd4",
     "pages.pricing.finalCta.description": "69699f31",
     "pages.pricing.finalCta.heading": "d8d2842b",
+    "pages.pricing.freeLicense.cta": "005f049f",
+    "pages.pricing.freeLicense.description": "abda0bbb",
+    "pages.pricing.freeLicense.heading": "37afe79a",
     "pages.pricing.hero.subtitle": "a724b14e",
     "pages.pricing.hero.title": "04885cd8",
     "pages.pricing.meta.description": "03c32708",
@@ -1220,6 +1223,8 @@
     "pages.privacyPolicy.sections.informationWeCollect.subsections.contactFormData.title": "2be60e06",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.cookies.content.0": "1d48b16b",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.cookies.title": "2d3a8ee4",
+    "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.content.0": "e111502c",
+    "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.title": "becd4bcd",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.0": "b880f23f",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.1": "afc06e17",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.title": "72dd3730",

@@ -93,6 +93,21 @@ const faqSchema = faqItems ? {
       </div>
     </section>
 
+    <!-- Free License: one repository, no account (agent/plans/PLAN-free-license.md R4, F6) -->
+    <section id="free-license" class="roi-cta-section section-light">
+      <div class="container">
+        <div class="roi-cta-banner">
+          <div class="roi-cta-text">
+            <h3>{t(`${ns}.freeLicense.heading`)}</h3>
+            <p>{t(`${ns}.freeLicense.description`)}</p>
+          </div>
+          <a href={`/${lang}/install`} class="btn btn-secondary" data-track="cta_click" data-track-label="pricing-free-license">
+            {t(`${ns}.freeLicense.cta`)} &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- ROI Calculator CTA -->
     <section class="roi-cta-section section-light">
       <div class="container">

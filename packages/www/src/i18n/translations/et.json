@@ -1871,6 +1871,11 @@
         "description": "Paigaldus võtab 5 minutit. Alusta 14-päevast tasuta proovi.",
         "heading": "Kaitse infrastruktuuri."
       },
+      "freeLicense": {
+        "cta": "Paigalda Rediacc",
+        "description": "Iga masin saab ilma registreerumata tasuta litsentsi ühele repositooriumile: kuni 3 GB, kehtib 48 tundi ja seda saab tasuta pikendada nii tihti kui vaja. Kui see aegub, töötavad käivitatud repositooriumid edasi; uued repositooriumid ja majutatud varukoopiad vajavad tasulist paketti.",
+        "heading": "Proovi ilma kontota"
+      },
       "hero": {
         "subtitle": "Vali tiimile sobiv plaan. Lihtne hinnakujundus, peidetud kulusid ei ole, tühista iga hetk.",
         "title": "Tegeliku käituse jaoks ehitatud"
@@ -2165,6 +2170,10 @@
                 "Kasutame ühte funktsionaalset küpsist (<code>rediacc_lang</code>), et meeles pidada teie keele-eelistust külastuste vahel. See küpsis on hädavajalik veebisaidi oodatavaks toimimiseks ega jälgi teid ega kogu isikuandmeid. Lisateavet leiate meie <a href=\"cookie-policy\">küpsiste poliitikast</a>."
               ],
               "title": "2.4 Küpsised"
+            },
+            "freeLicenseData": {
+              "content": ["Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, koos taotluses olevate masina- ja repositooriumi identifikaatoritega. Sellest räsist loodud loendur kustutatakse 72 tunni pärast; litsentsikirje säilitab ainult räsi. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."],
+              "title": "2.6 Tasuta litsentsi taotlused"
             },
             "productTelemetry": {
               "content": [

@@ -1871,6 +1871,11 @@
         "description": "Installation en 5 minutes. Essai gratuit de 14 jours.",
         "heading": "Protégez votre infrastructure"
       },
+      "freeLicense": {
+        "cta": "Installer Rediacc",
+        "description": "N'importe quelle machine peut obtenir une licence gratuite pour un dépôt, sans inscription : jusqu'à 3 Go, valable 48 heures et renouvelable gratuitement autant de fois que nécessaire. À son expiration, les dépôts en cours continuent de fonctionner ; les nouveaux dépôts et les sauvegardes hébergées nécessitent une offre payante.",
+        "heading": "Essayez sans compte"
+      },
       "hero": {
         "subtitle": "Le forfait qui vous convient. Tarification simple, pas de frais cachés, annulation libre.",
         "title": "Pensé pour les vrais besoins"
@@ -2161,6 +2166,10 @@
                 "Nous utilisons un seul cookie fonctionnel (<code>rediacc_lang</code>) pour mémoriser votre préférence linguistique. Plus de détails dans notre <a href=\"cookie-policy\">Politique de cookies</a>."
               ],
               "title": "2.4 Cookies"
+            },
+            "freeLicenseData": {
+              "content": ["Lorsqu'une machine demande une licence gratuite sans compte, nous enregistrons un hachage à clé de l'adresse IP à l'origine de la demande (l'adresse IPv4 complète, ou le préfixe /64 d'une adresse IPv6), jamais l'adresse elle-même, avec les identifiants de machine et de dépôt contenus dans la demande. Le compteur établi à partir de ce hachage est supprimé au bout de 72 heures ; l'enregistrement de la licence ne conserve que le hachage. La base juridique est notre intérêt légitime à prévenir les abus d'un service gratuit."],
+              "title": "2.6 Demandes de licence gratuite"
             },
             "productTelemetry": {
               "content": [

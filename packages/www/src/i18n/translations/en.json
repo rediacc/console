@@ -587,6 +587,11 @@
         "description": "Choose the plan that fits the team. Every paid plan starts with a 14-day free trial. No hidden fees.",
         "keywords": "pricing, infrastructure automation, CI/CD pricing, DevOps plans, task execution"
       },
+      "freeLicense": {
+        "cta": "Install Rediacc",
+        "description": "Any machine can take a Free License for one repository, with no sign-up: up to 3 GB, valid for 48 hours and renewable at no cost, as often as needed. When it lapses, running repositories keep working; new repositories and hosted backups need a paid plan.",
+        "heading": "Try it without an account"
+      },
       "hero": {
         "title": "Built for Real Operations",
         "subtitle": "Choose the plan that fits the team. Simple pricing, no hidden fees, cancel anytime."
@@ -1077,6 +1082,10 @@
               "content": [
                 "We use <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>, a privacy-focused, cookieless analytics tool. Plausible does not use cookies, does not collect personal data, and is fully compliant with GDPR, CCPA, and PECR. Analytics data includes page views, referral sources, browser type, and country-level location, all without identifying individual visitors."
               ]
+            },
+            "freeLicenseData": {
+              "content": ["When a machine asks for a Free License without an account, we store a keyed hash of the requesting IP address (the whole IPv4 address, or the /64 prefix of an IPv6 address), never the address itself, together with the machine and repository identifiers the request carries. The counter built from that hash is deleted after 72 hours; the licence record keeps only the hash. The legal basis is our legitimate interest in preventing abuse of a free service."],
+              "title": "2.6 Free License Requests"
             },
             "productTelemetry": {
               "title": "2.5 Product Telemetry Data",

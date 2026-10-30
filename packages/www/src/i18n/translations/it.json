@@ -1873,6 +1873,11 @@
         "description": "Installa in 5 minuti. Avvia 14 giorni di prova gratuita.",
         "heading": "Proteggi l'infrastruttura"
       },
+      "freeLicense": {
+        "cta": "Installa Rediacc",
+        "description": "Qualsiasi macchina può ottenere una licenza gratuita per un repository senza registrarsi: fino a 3 GB, valida 48 ore e rinnovabile gratuitamente tutte le volte che serve. Alla scadenza i repository in esecuzione continuano a funzionare; nuovi repository e backup ospitati richiedono un piano a pagamento.",
+        "heading": "Provalo senza account"
+      },
       "hero": {
         "subtitle": "Il piano giusto per il tuo team. Prezzi chiari, zero sorprese, disdici quando vuoi.",
         "title": "Fatto per il vero lavoro"
@@ -2167,6 +2172,10 @@
                 "Utilizziamo un unico cookie funzionale (<code>rediacc_lang</code>) per memorizzare la vostra preferenza linguistica tra una visita e l'altra. Questo cookie è strettamente necessario al corretto funzionamento del sito web e non vi traccia ne raccoglie dati personali. Per ulteriori dettagli, consultate la nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
               ],
               "title": "2.4 Cookie"
+            },
+            "freeLicenseData": {
+              "content": ["Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, insieme agli identificativi di macchina e repository contenuti nella richiesta. Il contatore basato su quell'hash viene eliminato dopo 72 ore; il record della licenza conserva solo l'hash. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."],
+              "title": "2.6 Richieste di licenza gratuita"
             },
             "productTelemetry": {
               "content": [

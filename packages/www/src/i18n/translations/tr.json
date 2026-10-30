@@ -1864,6 +1864,11 @@
         "description": "5 dakikada kur. 14 günlük denemeyi başlat.",
         "heading": "Altyapıyı Koruma Zamanı"
       },
+      "freeLicense": {
+        "cta": "Rediacc'ı kurun",
+        "description": "Her makine kayıt olmadan tek bir depo için ücretsiz lisans alabilir: 3 GB'a kadar, 48 saat geçerli ve gerektiği kadar ücretsiz yenilenebilir. Süresi dolduğunda çalışan depolar çalışmaya devam eder; yeni depolar ve barındırılan yedekler için ücretli bir plan gerekir.",
+        "heading": "Hesap açmadan deneyin"
+      },
       "hero": {
         "subtitle": "Ekibine uygun planı seç. Basit fiyatlandırma, hiç gizli ücret yok, istediğin zaman iptal et.",
         "title": "Gerçek İşletmeler İçin Tasarlanmış"
@@ -2152,6 +2157,10 @@
                 "Dil tercihinizi hatırlamak için tek bir işlevsel çerez (<code>rediacc_lang</code>) kullanıyoruz. Ayrıntılar için <a href=\"cookie-policy\">Çerez Politikamıza</a> bakın."
               ],
               "title": "2.4 Çerezler"
+            },
+            "freeLicenseData": {
+              "content": ["Bir makine hesap olmadan ücretsiz lisans istediğinde, isteği yapan IP adresinin (IPv4 adresinin tamamı veya IPv6 adresinin /64 öneki) anahtarlı bir özetini, istekteki makine ve depo tanımlayıcılarıyla birlikte saklarız; adresin kendisini asla saklamayız. Bu özetten oluşturulan sayaç 72 saat sonra silinir; lisans kaydında yalnızca özet kalır. Hukuki dayanak, ücretsiz bir hizmetin kötüye kullanılmasını önlemeye yönelik meşru menfaatimizdir."],
+              "title": "2.6 Ücretsiz Lisans Talepleri"
             },
             "productTelemetry": {
               "content": [
