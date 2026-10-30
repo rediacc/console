@@ -1,20 +1,21 @@
-## SESSION d778be9d 2026-10-30T09:58:02Z
+## SESSION d778be9d 2026-10-30T10:25:49Z
 
-# d778be9d STATE (2026-10-30 ~10:00Z, context epoch 100 near compaction)
+# d778be9d STATE (2026-10-30 ~11:25Z, at compaction)
 
-Branch 1023-1, nothing pushed. Operator rulings today: no PR/GitHub until /pr-babysit (merge only, #707f08ca); deploys go via LOCAL scripts to all 7 targets (3 stable + 3 edge + bench, RELEASE_ASKED 2026-10-30T09:56Z, #a98ab330); licensing enforced always incl. CI (production key in CI); Free License rulings R1-R13 in agent/plans/PLAN-free-license.md (offer text WITHOUT "48 h": "log in, or continue with a free licence (up to 3 GB)").
+Branch 1023-1, nothing pushed. Rulings: merge waits for /pr-babysit (#707f08ca); deploys go via LOCAL scripts to all 7 targets (#a98ab330, RELEASE_ASKED 2026-10-30T09:56Z); licensing always on; Free License rulings in PLAN-free-license (offer text without 48 h).
 
 ## Big pieces
-PLAN-free-license (F1 36da81218, F3 account 725b7b7c, F4 e952091b done; F2, F5-F8, L1-L3 open), PLAN-production-key-only (N1-N4 done 4adaf800/aa872edb; N5 rest in F2; N6 docs; L5), PLAN-detached-jobs (J16-J19; migrate per-phase output #006dee30), PLAN-settings-set-verb (S3/S4), PLAN-backup-program.
+PLAN-free-license (F1,F3,F4,F5 committed; F2 uncommitted), PLAN-production-key-only, PLAN-detached-jobs, PLAN-settings-set-verb, PLAN-backup-program.
 
 ## Delegated
-- aa78fbcca071dbd92, #870575a7: PLAN-free-license F5 CLI offer (license-recovery.ts, services/account, backup commands, 13 locales); accept cli vitest src rc 0, tsc rc 0, i18n key usage rc 0; then lead runs i18n:generate-hashes + generate:cli-contract and checks no "48" in the offer strings.
-- a015011aea00ff9ae, #c4720069: F2 CI half (workflows: linux-amd64 renet artifact, start_account with the production key from bws; owns .github/**, start_account.py, secret-supply.json); accept check:ci-workflows/actionlint/workflow-env-provision/secret-supply rc 0.
-- a3c11db99caa46934, #6d2022b2: e2e suites install real licences (RepositoryMethods, chunkCliHarness, tutorials); accept two suites green locally via the e2e-local recipe.
-- queued #39dc6d7c (FREE_LICENSE_HMAC_KEY in bws + secret-supply), brief on the item; starts when the F2 writer frees secret-supply.json.
+- aef90a778a2400346, #a0f32189: 11 e2e suites to GUID names + licence install; accept 07/13b/17 green locally, e2e tsc rc 0.
+- ae0cecd30797f699f, #89f10804: migrate licenses the target (repo-migrate.ts, license-batch.ts); accept cli vitest src rc 0 + repro test.
+
+## Uncommitted, ready (one combined commit; list in /tmp/combo.txt, 36 paths, excluding the two writers' files)
+F2 CI (workflows, .github/actions/renet-test-binary, start_account --require-env-pair, secret-supply e2e-account-server profile, lane-durations p90, check-lane-budget self-test, shards/quality-pytest.json), FREE_LICENSE_HMAC_KEY push wiring (set_account_worker_secrets.py, deploy_bench.py, core/account.py + tests), e2e licence install (licence.ts, RepositoryMethods, suites 04/05/23/29, tutorials; message /tmp/msg-e2e.txt). Gates: secret-supply rc 0, workflows rc 0, lane-budget rc 1 only on (a) quality-branch leg 12.3m > 12m (other sessions' gates) and (b) the "FIRES (live quality-pytest) CAPPED" selftest at scripts/gates/check-lane-budget.ts:~2915 needs a planted non-optimal input instead of the live lane. Fix (b), then gen-docs --write, then commit the combo with a Sampled line.
 
 ## Next action
-1. As each writer reports: spot-check, commit by path (submodules first), tick the plan box.
-2. Start #39dc6d7c; run the full account vitest under low load (F3 owes a clean run).
-3. Then #a98ab330: deploy bench, edge x3, stable x3 via the deploy skill local path; record version ids, smoke rc, rollback, D1 bookmarks; meter reconcile on stable EU.
-4. Then vm:check and the hostinger LP sweep (/tmp/lp-sweep-host.sh, enforcing renet now everywhere).
+1. Fix the check-lane-budget.ts:~2915 control to use a planted input; rerun check:ci-lane-budget; npx tsx scripts/gen/gen-docs.ts --write; commit /tmp/combo.txt paths + doc-registry by path (no push); tick #c4720069, #39dc6d7c, #6d2022b2.
+2. Commit each writer's work as it reports.
+3. Full account vitest on a quiet host (two runs timed out under load).
+4. #a98ab330: deploy bench, edge x3, stable x3 locally; meter reconcile; then vm:check and the hostinger LP sweep.
