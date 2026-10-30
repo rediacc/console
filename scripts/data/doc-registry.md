@@ -222,7 +222,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-no-otlp-creds | build-renet / Assert no OTLP credentials baked into the built binaries | yes | no |
 | check:ci-no-rclone-embedded | build-renet / Assert no rclone payload in the embed lockfile, staged assets or built binaries | yes | no |
 | check:ci-npmrc | quality-code / Block legacy-peer-deps workarounds | yes | no |
-| check:ci-operator-rulings | quality-branch / Operator rulings | yes | no |
+| check:ci-operator-rulings | quality-static / Operator rulings | yes | no |
 | check:ci-override-ranges | quality-security / Override ranges | yes | no |
 | check:ci-overrides-reasons | quality-security / BLOCKER validator — package.json overrides | yes | no |
 | check:ci-package-key-budget | quality-code / Package key budget | yes | no |

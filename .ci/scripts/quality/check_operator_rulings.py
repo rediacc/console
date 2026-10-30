@@ -22,7 +22,6 @@ Exit codes: 0 green, 1 findings, 2 a control failed or bad usage, 77 cannot run.
 step: Operator rulings
 needs: none
 selftest: true
-lane: quality-branch
 why: an operator ruling binds a Stop check through the ledger and a reader through
      agent/RULES.md; the two must never disagree, or the document a session trusts
      says one thing while the hook obeys another.

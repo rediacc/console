@@ -393,6 +393,9 @@ jobs:
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
+      - name: Operator rulings
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_operator_rulings.py
       - name: Pathspec scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_pathspec_scope.py
@@ -677,14 +680,6 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-
-      # Hand-written for the same reason as its neighbours: quality-branch has no
-      # `- id: setup` (invariant 11). No GITHUB_BASE_REF: it compares agent/RULES.md's
-      # generated rulings block with the render of agent/rulings/*.jsonl in the working
-      # tree, so a push and a PR get the same verdict.
-      - name: Operator rulings
-        if: ${{ !cancelled() }}
-        run: npm run check:ci-operator-rulings
 
       # HAND-WRITTEN, like its neighbours, and the reason is invariant 11:
       # quality-branch has no `- id: setup`, so `scripts/gate-bind.ts:289-300` refuses to
