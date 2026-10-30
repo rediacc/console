@@ -221,7 +221,7 @@ async function refusedRepoGuid(options: ExecuteOptions): Promise<string | undefi
   if (typeof options.params?.tag === 'string' && options.params.tag) return undefined;
   if (isValidGuid(name)) return name.toLowerCase();
   try {
-    return (await configService.getRepository(name))?.repositoryGuid || undefined;
+    return (await configService.getRepository(name))?.repositoryGuid?.toLowerCase() || undefined;
   } catch (err) {
     telemetryService.trackError(err, { operation: 'executor.refused_repo_guid' });
     return undefined;
@@ -243,7 +243,10 @@ async function renewWithoutToken(
       sftp,
     });
     const recovered = requiredGuid
-      ? results.some((r) => r.repositoryGuid === requiredGuid && r.outcome === 'renewed')
+      ? results.some(
+          (r) =>
+            r.repositoryGuid.toLowerCase() === requiredGuid.toLowerCase() && r.outcome === 'renewed'
+        )
       : renewed > 0;
     if (recovered) return { kind: 'success' };
   } catch (err) {

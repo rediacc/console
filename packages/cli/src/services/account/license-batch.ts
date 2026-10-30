@@ -142,7 +142,7 @@ function requiredRepoErrorSample(
   failures: { repositoryGuid: string; error: string }[],
   requiredGuid: string
 ): string {
-  const own = failures.find((f) => f.repositoryGuid === requiredGuid);
+  const own = failures.find((f) => f.repositoryGuid.toLowerCase() === requiredGuid.toLowerCase());
   return (own?.error ?? `Repository ${requiredGuid} was not licensed by the account server`).slice(
     0,
     200
@@ -277,7 +277,11 @@ async function runRepoLicenseBatch(
 
   const validCount = issued + refreshed + unchanged;
   const recovered = requiredGuid
-    ? body.results.some((r) => r.repositoryGuid === requiredGuid && r.status !== 'failed')
+    ? body.results.some(
+        (r) =>
+          r.repositoryGuid.toLowerCase() === requiredGuid.toLowerCase() &&
+          (r.status === 'issued' || r.status === 'refreshed' || r.status === 'unchanged')
+      )
     : validCount > 0;
   const recoveryFailureMode: RepoBatchRecoveryFailureMode = recovered
     ? null

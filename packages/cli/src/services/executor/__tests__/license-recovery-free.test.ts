@@ -277,5 +277,14 @@ describe('recovery of a refused repo', () => {
       });
       expect(await recover(UP, 'expired')).toBeNull();
     });
+
+    it('matches the refused repo whatever the GUID casing on either side', async () => {
+      m.getRepository.mockResolvedValue({ repositoryGuid: X.toUpperCase() });
+      m.renew.mockResolvedValue({
+        renewed: 1,
+        results: [{ repositoryGuid: X, outcome: 'renewed' }],
+      });
+      expect(await recover(UP, 'expired')).toBeNull();
+    });
   });
 });
