@@ -310,8 +310,8 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
 
     socket.write(encodeFrame({ type: 'hello', token, identity: deps.identity }));
     // The verb is read HERE, in the process that ran the command: in the daemon the output service names `executor-daemon run`.
-    const verb = options.verb ?? outputService.getCommandName() ?? undefined;
-    const wire = toWireOptions(verb ? { ...options, verb } : options);
+    const verb = options.verb ?? outputService.getCommandName() ?? options.functionName;
+    const wire = toWireOptions({ ...options, verb });
     socket.write(encodeFrame({ type: 'execute', id, options: wire }));
   });
 }
