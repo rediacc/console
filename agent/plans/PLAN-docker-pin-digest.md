@@ -11,8 +11,8 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 ## Context (anchors checked 2026-10-30)
 - The rewrite only ever sees the tag. The registry site for image:proxy-node is `"match": "^FROM (?<value>node:[^@\\s]+)@sha256:[0-9a-f]{64}$"` with role `version` (.ci/config/pins.json:3625). Its name even says "tag only; the digest is pinned beside it" (.ci/config/pins.json:3607). The digest sits outside the named group. scripts/lib/pins/drivers/docker.ts:149-153 calls `planLeafSites(entry, { version: image:tag }, ctx)`, and planLeafSites rewrites only the group of each site it gets (scripts/lib/pins/driver.ts:252-288, `rewriteRegexSite` at :277). No `digest` role exists, and docker.ts never reads a digest. So the old `@sha256:` survives every bump. workers/proxy/Dockerfile:16-18 claims "`npm run pins -- bump image:proxy-node` moves the tag and the digest together", which is false, and still names 26.12.0.
 - No code in scripts/ or .ci/rediacc_ci resolves a registry digest today: a search for Docker-Content-Digest, /manifests/, registry-1 and auth.docker.io finds none. Only an operator hint exists, at scripts/gates/check-unverified-downloads.ts:302. Two code paths already talk to Docker Hub:
-  - the driver, through `Deps.json` (scripts/lib/pins/drivers/shared.ts:61-70, realDeps :77-95; the tag listing is at docker.ts:104-109);
-  - the gate, through an authed `fetch` with a token-then-anonymous retry (scripts/gates/check-docker-image-freshness.ts:265-336). The gate also normalises the repo name (`dockerHubRepo` :256), which repeats docker.ts:103.
+  - the driver, through `Deps.json` (scripts/lib/pins/drivers/shared.ts:61-70, realDeps :77-95; the tag listing is at scripts/lib/pins/drivers/docker.ts:104-109);
+  - the gate, through an authed `fetch` with a token-then-anonymous retry (scripts/gates/check-docker-image-freshness.ts:265-336). The gate also normalises the repo name (`dockerHubRepo` :256), which repeats scripts/lib/pins/drivers/docker.ts:103.
 - Measured: `GET hub.docker.com/v2/repositories/library/node/tags/<tag>` returns a top-level `digest`, which is the multi-arch index digest. For `26.13.0-slim` it is `sha256:e4db4c91...02c39`, the same value `imagetools inspect` gives. For `26.12.0-slim` it is `sha256:e556a144...` (the stale value in the tree). The per-arch digests sit under `images[]` and must not be read.
 - Gates:
   - check:ci-pin-registry is offline: it checks shape and site counts (scripts/gates/check-pin-registry.ts), so it cannot see tag/digest agreement.
@@ -21,7 +21,7 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 - Selftests:
   - scripts/lib/pins/drivers/selftest.ts runs `allCases(mutant)` once clean, then once per T8_MUTANTS entry. Each mutant must turn at least one control red (:956-979).
   - `dockerCases` (:756-) builds a temporary `tree()` with real registry entries (`entry(id)`, :45) and stubs Hub through `deps({ json })`.
-  - The existing mutant `docker-no-drain` (scripts/lib/pins/drivers/shared.ts:38,49; docker.ts:163) is the template.
+  - The existing mutant `docker-no-drain` (scripts/lib/pins/drivers/shared.ts:38,49; scripts/lib/pins/drivers/docker.ts:163) is the template.
   - The mutant list also appears in .ci/rediacc_ci/tests/gates/test_gate_pin_family_drivers.py:14-23.
   - The selftest runs through check:ci-standalone-selftests (scripts/gates/check-standalone-selftests.ts:100).
 - Other digest references in the tree:
@@ -32,7 +32,7 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
   - So workers/proxy/Dockerfile:20 is the only line that carries both a tag and a digest.
 
 ## Decision
-- Add a `digest` site role. image:proxy-node gets a second site on the same line: `^FROM node:[^@\s]+@(?<value>sha256:[0-9a-f]{64})$`. planLeafSites already chains several sites in one file (driver.ts:262 `texts.get(k)`), so the tag and the digest land in one write.
+- Add a `digest` site role. image:proxy-node gets a second site on the same line: `^FROM node:[^@\s]+@(?<value>sha256:[0-9a-f]{64})$`. planLeafSites already chains several sites in one file (scripts/lib/pins/driver.ts:262 `texts.get(k)`), so the tag and the digest land in one write.
 - Create scripts/lib/docker-hub.ts, the single place for this logic:
   - `hubRepo(image)` normalises the repo name;
   - `hubTagUrl(base, repo, tag)` builds the per-tag URL;
@@ -42,7 +42,7 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 - Fold the agreement check into check:ci-docker-image-freshness. A network read in CI fails closed: 429, 5xx, a missing `digest` or a malformed `digest` all count as RED (unknown is never a pass), the same as the gate's listing rule. A digest-only ref with no tag on its line is listed as "untagged, agreement not checkable", with no verdict either way.
 
 ## Boxes
-- [x] D1 Add scripts/lib/docker-hub.ts with `hubRepo`, `hubTagUrl` and `parseTagDigest` as described in the Decision. Replace docker.ts:103 and check-docker-image-freshness.ts:256 with `hubRepo`. Accept: `npx tsc --noEmit -p scripts/tsconfig.json && npm run check:ci-docker-image-freshness`
+- [x] D1 Add scripts/lib/docker-hub.ts with `hubRepo`, `hubTagUrl` and `parseTagDigest` as described in the Decision. Replace scripts/lib/pins/drivers/docker.ts:103 and scripts/gates/check-docker-image-freshness.ts:256 with `hubRepo`. Accept: `npx tsc --noEmit -p scripts/tsconfig.json && npm run check:ci-docker-image-freshness`
     (ticked) 2026-10-30T21:47:32Z by d778be9d: commit:64aa5ed73 scripts/lib/docker-hub.ts:44; npx tsc --noEmit -p scripts/tsconfig.json rc 0; check:ci-docker-image-freshness rc 0
 - [x] D2 Make the docker driver resolve the digest:
   - In `plan`, for each site with role `digest`, call `deps.json(hubTagUrl(...), image)` and pass `{ version, digest }` to planLeafSites. Throw `PlanRefused("<id>: Docker Hub gives no digest for <image>:<tag>; refusing to move the tag without it")` on null or a throw.
@@ -89,7 +89,7 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 - D1, D2, T1 and G1 are implemented and their controls were run red and green.
 - `npx tsc --noEmit -p .` (D1's accept command) type-checks nothing under scripts/: the root tsconfig.json is a solution file with `"files": []`, and a planted type error under scripts/lib drew zero diagnostics. The command that covers these files is `npx tsc --noEmit -p scripts/tsconfig.json`, which reports the same plant and 0 errors on the tree.
 - R1 was first BLOCKED by the Risk named below (the record follows), and then done through R0:
-  - `npm run pins -- bump image:proxy-node --to node:26.13.0-slim@e4db4c914bf8 --major --reason "re-digest: ..." --adopt workers/proxy/Dockerfile` exited 0 and wrote only the digest. `--adopt` names the file's uncommitted tag move (the earlier bump of #d4b2a051) and the comment rewording, which the transaction otherwise refuses as another session's work.
+  - `npm run pins -- bump image:proxy-node --to <the re-digest label: node:26.13.0-slim, an @, and the first 12 hex of the new index digest> --major --reason "re-digest: ..." --adopt workers/proxy/Dockerfile` exited 0 and wrote only the digest. `--adopt` names the file's uncommitted tag move (the earlier bump of #d4b2a051) and the comment rewording, which the transaction otherwise refuses as another session's work.
   - workers/proxy/Dockerfile:20 now pins `sha256:e4db4c91...02c39`, equal to `docker buildx imagetools inspect node:26.13.0-slim`; `npm run check:ci-docker-image-freshness` exited 0 before X1 widened the scan; `npm run pins -- verify` exits 0; `pins -- status image:proxy-node` reads current.
 - The original block: `npm run pins -- bump image:proxy-node --to node:26.13.0-slim --major --reason ...` exits 1 with `REFUSED image:proxy-node: current: current`, and Docker Hub lists no 3-component `-slim` tag newer than 26.13.0 (newest: 26.13.0-slim, 26.12.1-slim, 26.12.0-slim), so no fallback candidate exists. workers/proxy/Dockerfile:20 still pins the 26.12.0 index and check:ci-docker-image-freshness is red on it, as designed. The comment at :17-19 no longer names a version.
 - The same-tag gap is not one-off. Official node patch tags are re-pushed with a new index digest while they are the newest of their line (node:22.12.0-slim, released 2024-12-03, last pushed 2024-12-25; node:20.18.0-slim, released 2024-10-03, last pushed 2024-11-13). So G1 will also turn red when upstream rebuilds a pinned tag, and its only remedy is a same-tag re-digest that the core refuses today. R0 is that path: the driver offers the pinned tag as a re-digest, and the core needs no change.
@@ -103,8 +103,8 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
   - Every newly read FROM line is claimed by a leaf. One is newly stale: `.ci/docker/render/Dockerfile:20 node:24-bookworm-slim -> 26.13-bookworm-slim`, leaf image:ci-node, which `.ci/policy/.pins-upgrade-blocklist` holds with a BLOCKER until 2026-11-14 (node 26 LTS, the CLI SEA build and the workers to validate first). The gate is red on it until the lead decides.
 
 ## Risks
-- `bump --to` may refuse a target equal to the current tag, because the driver's inspect lists only newer tags (docker.ts:122). If so, R1 takes the newest patch, which is a real bump. A same-tag "re-digest" verb is out of scope; file it as a worklist item if it turns out to be needed.
-- On a busy day, Hub rate limits could turn G1 red. That is the intended fail-closed outcome. The existing DOCKERHUB_TOKEN env (check-docker-image-freshness.ts:4) is the mitigation.
+- `bump --to` may refuse a target equal to the current tag, because the driver's inspect lists only newer tags (scripts/lib/pins/drivers/docker.ts:122). If so, R1 takes the newest patch, which is a real bump. A same-tag "re-digest" verb is out of scope; file it as a worklist item if it turns out to be needed.
+- On a busy day, Hub rate limits could turn G1 red. That is the intended fail-closed outcome. The existing DOCKERHUB_TOKEN env (scripts/gates/check-docker-image-freshness.ts:4) is the mitigation.
 
 ### Critical Files for Implementation
 - /home/developer/console/scripts/lib/pins/drivers/docker.ts

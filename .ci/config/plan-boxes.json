@@ -943,9 +943,9 @@
         "4e304e0a",
         "613db632",
         "827ecc2d",
+        "8547e1d0",
         "94f47ede",
         "9933d672",
-        "9d30d422",
         "c1f1de21"
       ]
     },
@@ -2022,6 +2022,27 @@
         "dfd33f28",
         "e89f926a"
       ]
+    },
+    "agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 10,
+      "done": 0,
+      "open_sigs": [
+        "44c9713a",
+        "79e08ae6",
+        "79fbc186",
+        "9fc4afe7",
+        "a7d5677a",
+        "ad92905e",
+        "bd61e91a",
+        "c3c14806",
+        "c4a9f579",
+        "fcaa098d"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-scope-gate-sort-collation.md": {
       "status": "compacted",
