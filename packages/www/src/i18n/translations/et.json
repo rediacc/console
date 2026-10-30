@@ -9401,7 +9401,7 @@
             "<strong>Kogutud teabe kategooriad:</strong> Interneti- või elektroonilise võrgu tegevuse teave (brauseri tüüp, suhtluse andmed, vealogid), seadme tuvastajad (anonümiseeritud), geolokatsiooni andmed (linnatasemel: linn ja piirkond, tuletatud IP-aadressist Cloudflare'i servavõrgus; IP-aadressi ennast ei salvestata ja asukohta säilitatakse 7 päeva)",
             "<strong>Eesmärk:</strong> Teenuse kvaliteedi parandamine ja säilitamine, silumine, jõudluse jälgimine ja turvalisus",
             "<strong>Müük/jagamine:</strong> Me ei müü ega jaga telemetria andmeid CCPA/CPRA tähenduses",
-            "<strong>Õigus loobuda:</strong> Kasutage ülalkirjeldatud tootespetsiifilisi loobumismehhanisme jaotistes 4–7. Austame ka meie veebirakenduses globaalse privaatsusjuhtimise (GPC) signaali."
+            "<strong>Õigus loobuda:</strong> Kasutage ülalkirjeldatud tootespetsiifilisi loobumismehhanisme jaotistes 4 ja 5. Austame ka meie veebirakenduses globaalse privaatsusjuhtimise (GPC) signaali."
           ],
           "title": "9. California elanikud (CCPA/CPRA)"
         },

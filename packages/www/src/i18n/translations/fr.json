@@ -9389,7 +9389,7 @@
             "<strong>Catégories d'informations collectées :</strong> Informations sur l'activité Internet ou du réseau électronique (type de navigateur, données d'interaction, journaux d'erreurs), identifiants d'appareil (anonymisés), données de géolocalisation (à l'échelle de la ville : ville et région, déduites de l'adresse IP sur le réseau edge de Cloudflare ; l'adresse IP elle-même n'est pas stockée et la localisation est conservée 7 jours)",
             "<strong>Objectif :</strong> Amélioration et maintien de la qualité du service, débogage, surveillance des performances et sécurité",
             "<strong>Vente/Partage :</strong> Nous ne vendons ni ne partageons les données de télémétrie au sens défini par la CCPA/CPRA",
-            "<strong>Droit de désinscription :</strong> Utilisez les mécanismes de désinscription spécifiques à chaque produit décrits dans les sections 4 à 7 ci-dessus. Nous honorons également le signal Global Privacy Control (GPC) dans notre Application Web."
+            "<strong>Droit de désinscription :</strong> Utilisez les mécanismes de désinscription spécifiques à chaque produit décrits dans les sections 4 et 5 ci-dessus. Nous honorons également le signal Global Privacy Control (GPC) dans notre Application Web."
           ],
           "title": "9. Résidents de Californie (CCPA/CPRA)"
         },

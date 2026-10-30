@@ -9389,7 +9389,7 @@
             "<strong>Kategorien erfasster Informationen:</strong> Internet- oder elektronische Netzwerkaktivitätsinformationen (Browsertyp, Interaktionsdaten, Fehlerprotokolle), Geräteidentifikatoren (anonymisiert), Geolokalisierungsdaten (auf Stadtebene: Stadt und Region, am Edge von Cloudflare aus der IP-Adresse abgeleitet; die IP-Adresse selbst wird nicht gespeichert, der Standort wird 7 Tage lang aufbewahrt)",
             "<strong>Zweck:</strong> Verbesserung und Aufrechterhaltung der Dienstqualität, Debugging, Leistungsüberwachung und Sicherheit",
             "<strong>Verkauf/Weitergabe:</strong> Wir verkaufen oder teilen keine Telemetriedaten im Sinne des CCPA/CPRA",
-            "<strong>Recht auf Abmeldung:</strong> Verwenden Sie die in den Abschnitten 4–7 oben beschriebenen produktspezifischen Abmeldemechanismen. Wir berücksichtigen auch das Global Privacy Control (GPC)-Signal in unserer Webanwendung."
+            "<strong>Recht auf Abmeldung:</strong> Verwenden Sie die in den Abschnitten 4 und 5 oben beschriebenen produktspezifischen Abmeldemechanismen. Wir berücksichtigen auch das Global Privacy Control (GPC)-Signal in unserer Webanwendung."
           ],
           "title": "9. Einwohner Kaliforniens (CCPA/CPRA)"
         },

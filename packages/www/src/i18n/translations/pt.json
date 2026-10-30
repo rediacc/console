@@ -9409,7 +9409,7 @@
             "<strong>Categorias de informação recolhida:</strong> Informação de atividade de rede eletrónica ou Internet (tipo de browser, dados de interação, registos de erros), identificadores de dispositivos (anonimizados), dados de geolocalização (ao nível da cidade: cidade e região, derivadas do endereço IP no edge da Cloudflare; o próprio endereço IP não é armazenado e a localização é mantida durante 7 dias)",
             "<strong>Finalidade:</strong> Melhoria e manutenção da qualidade do serviço, depuração, monitorização de desempenho e segurança",
             "<strong>Venda/Partilha:</strong> Não vendemos nem partilhamos dados de telemetria conforme definido pela CCPA/CPRA",
-            "<strong>Direito de recusa:</strong> Utilize os mecanismos de recusa específicos de cada produto descritos nas secções 4 a 7 acima. A nossa Aplicação Web também respeita o sinal do Controlo Global de Privacidade (GPC)."
+            "<strong>Direito de recusa:</strong> Utilize os mecanismos de recusa específicos de cada produto descritos nas secções 4 e 5 acima. A nossa Aplicação Web também respeita o sinal do Controlo Global de Privacidade (GPC)."
           ],
           "title": "9. Residentes na Califórnia (CCPA/CPRA)"
         },

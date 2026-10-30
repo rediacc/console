@@ -9385,7 +9385,7 @@
             "<strong>Categorías de información recopilada:</strong> Información de actividad de Internet o red electrónica (tipo de navegador, datos de interacción, registros de errores), identificadores de dispositivo (anonimizados), datos de geolocalización (a nivel de ciudad: ciudad y región, derivados de la dirección IP en el edge de Cloudflare; la propia dirección IP no se almacena y la ubicación se conserva durante 7 días)",
             "<strong>Propósito:</strong> Mejorar y mantener la calidad del servicio, depuración, monitoreo de rendimiento y seguridad",
             "<strong>Venta/Compartición:</strong> No vendemos ni compartimos datos de telemetría según lo definido por la CCPA/CPRA",
-            "<strong>Derecho a darse de baja:</strong> Utilice los mecanismos de exclusión específicos del producto descritos en las secciones 4-7 anteriores. También respetamos la señal de Control Global de Privacidad (GPC) en nuestra aplicación web."
+            "<strong>Derecho a darse de baja:</strong> Utilice los mecanismos de exclusión específicos del producto descritos en las secciones 4 y 5 anteriores. También respetamos la señal de Control Global de Privacidad (GPC) en nuestra aplicación web."
           ],
           "title": "9. Residentes de California (CCPA/CPRA)"
         },
