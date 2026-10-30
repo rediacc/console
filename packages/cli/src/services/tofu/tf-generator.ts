@@ -6,6 +6,7 @@
  */
 
 import type { ProviderMapping } from '../../types/index.js';
+import { PROVIDER_LOCK_HOST, PROVIDER_PINS, type ProviderPin } from './provider-pins.generated.js';
 
 interface TfGenerateOptions {
   machineName: string;
@@ -153,4 +154,46 @@ function buildFirewallRules(
   }
 
   return null;
+}
+
+/** A `terraform.required_providers` entry of a generated config. */
+interface RequiredProvider {
+  source?: string;
+  version?: string;
+}
+
+const LOCK_HEADER =
+  '# This file is maintained automatically by "tofu init".\n# Manual edits may be lost in future updates.\n';
+
+/** The pin of a required provider: its source names a pinned provider and its version is the pinned one, or absent. */
+function pinOf(
+  required: RequiredProvider,
+  pins: Readonly<Record<string, ProviderPin>>
+): ProviderPin | null {
+  if (!required.source) return null;
+  const key = required.source.toLowerCase().replace(`${PROVIDER_LOCK_HOST}/`, '');
+  const pin = Object.entries(pins).find(([source]) => source.toLowerCase() === key)?.[1];
+  if (!pin) return null;
+  return required.version === undefined || required.version === pin.version ? pin : null;
+}
+
+/**
+ * The `.terraform.lock.hcl` text for the pinned providers a config requires, each block as
+ * `tofu providers lock` wrote it (scripts/pins/tofu-provider-pins.ts); null when none is pinned.
+ * A provider whose config asks for a version other than its pin (a custom provider) is left to
+ * tofu, which locks it on init.
+ */
+export function generateProviderLock(
+  requiredProviders: Record<string, RequiredProvider>,
+  pins: Readonly<Record<string, ProviderPin>> = PROVIDER_PINS
+): string | null {
+  const blocks = [
+    ...new Set(
+      Object.values(requiredProviders)
+        .map((r) => pinOf(r, pins)?.lock)
+        .filter((b): b is string => b !== undefined)
+    ),
+  ].sort((a, b) => Number(a > b) - Number(a < b));
+  if (blocks.length === 0) return null;
+  return `${LOCK_HEADER}\n${blocks.map((b) => `${b}\n`).join('\n')}`;
 }

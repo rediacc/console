@@ -9,7 +9,7 @@
 
 import { type ExecFileOptions, execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { chmod, mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCacheDir } from '@rediacc/shared/paths';
 import { compareVersions } from '@rediacc/shared/utils';
@@ -18,6 +18,8 @@ import { writeStderr, writeStdout } from '../core/request-context.js';
 import { tofuInstallPath } from '../tools/install.js';
 import { findOnPath } from '../tools/path-lookup.js';
 import { OPENTOFU_PIN } from '../tools/pins.js';
+import { PROVIDER_PINS, type ProviderPin } from './provider-pins.generated.js';
+import { generateProviderLock } from './tf-generator.js';
 
 export type TofuEngineName = 'tofu' | 'terraform';
 export type TofuSource = 'env' | 'rdc' | 'path';
@@ -159,9 +161,13 @@ interface ExecOptions {
 }
 
 export class TofuExecutor {
-  private binary: string | null = null;
+  private engine: TofuEngine | null = null;
 
-  constructor(private readonly workDir: string) {}
+  constructor(
+    private readonly workDir: string,
+    /** The provider pins whose lock blocks init writes; a test passes its own. */
+    private readonly providerPins: Readonly<Record<string, ProviderPin>> = PROVIDER_PINS
+  ) {}
 
   /**
    * Write main.tf.json to the work directory. The config carries the provider API token and the
@@ -188,9 +194,41 @@ export class TofuExecutor {
     }
   }
 
-  /** Run `tofu init`. */
+  /** Run `tofu init`, after writing the pinned providers' lock file. */
   async init(options?: ExecOptions): Promise<void> {
+    await this.writeProviderLock();
     await this.run(['init', '-input=false'], options);
+  }
+
+  /**
+   * Write `.terraform.lock.hcl` for the pinned providers main.tf.json requires, replacing any lock
+   * already there, so init refuses a provider package whose hash the pin does not list (from the
+   * registry and from the shared plugin cache alike). The pins hash the packages registry.opentofu.org
+   * serves, which is where OpenTofu resolves an unqualified source; terraform resolves the same
+   * source against its own registry, so under terraform no lock is written and init locks what it fetches.
+   */
+  private async writeProviderLock(): Promise<void> {
+    if ((await this.getEngine()).engine !== 'tofu') return;
+    const config = JSON.parse(await readFile(join(this.workDir, 'main.tf.json'), 'utf8')) as {
+      terraform?: { required_providers?: Record<string, { source?: string; version?: string }> };
+    };
+    const lock = generateProviderLock(
+      config.terraform?.required_providers ?? {},
+      this.providerPins
+    );
+    if (lock === null) return;
+    const file = join(this.workDir, '.terraform.lock.hcl');
+    const tmp = join(
+      this.workDir,
+      `.terraform.lock.hcl.${process.pid}.${randomBytes(6).toString('hex')}`
+    );
+    try {
+      await writeFile(tmp, lock, { mode: 0o600, flag: 'wx' });
+      await rename(tmp, file);
+    } catch (error) {
+      await rm(tmp, { force: true });
+      throw error;
+    }
   }
 
   /** Run `tofu apply -auto-approve -input=false`. */
@@ -219,18 +257,26 @@ export class TofuExecutor {
     return this.workDir;
   }
 
-  /** Resolve which binary to use, through the lookup order of {@link resolveTofu}. */
+  /** Resolve which engine to use, through the lookup order of {@link resolveTofu}. */
+  private async getEngine(): Promise<TofuEngine> {
+    this.engine ??= await TofuExecutor.resolveEngine();
+    return this.engine;
+  }
+
   private async getBinary(): Promise<string> {
-    if (this.binary) return this.binary;
-    this.binary = await TofuExecutor.resolveBinary();
-    return this.binary;
+    return (await this.getEngine()).path;
+  }
+
+  /** The engine to run; throws an i18n error naming `rdc tools install tofu`. */
+  private static async resolveEngine(): Promise<TofuEngine> {
+    const result = await resolveTofu();
+    if (!result.ok) throw new Error(describeTofuFailure(result));
+    return result.engine;
   }
 
   /** The absolute path of the engine to run; throws an i18n error naming `rdc tools install tofu`. */
   static async resolveBinary(): Promise<string> {
-    const result = await resolveTofu();
-    if (!result.ok) throw new Error(describeTofuFailure(result));
-    return result.engine.path;
+    return (await TofuExecutor.resolveEngine()).path;
   }
 
   /** Whether a usable tofu or terraform is available. */

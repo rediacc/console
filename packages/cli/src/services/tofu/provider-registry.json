@@ -21,7 +21,7 @@
       "keyResource": "alicloud_ecs_key_pair"
     },
     "tokenAttr": "access_key",
-    "version": "~> 1.230"
+    "version": "1.294.0"
   },
   "anexia-it/anxcloud": {
     "defaults": {
@@ -40,7 +40,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 0.7"
+    "version": "0.12.1"
   },
   "bizflycloud/bizflycloud": {
     "defaults": {
@@ -59,7 +59,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "auth_method",
-    "version": "~> 0.1"
+    "version": "0.3.9"
   },
   "bpg/proxmox": {
     "defaults": {
@@ -78,7 +78,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "api_token",
-    "version": "~> 0.70"
+    "version": "0.118.1"
   },
   "brightbox/brightbox": {
     "defaults": {
@@ -102,7 +102,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "apiclient",
-    "version": "~> 3.0"
+    "version": "3.4.4"
   },
   "cherryservers/cherryservers": {
     "defaults": {
@@ -122,7 +122,7 @@
       "keyResource": "cherryservers_ssh_key"
     },
     "tokenAttr": "api_key",
-    "version": "~> 0.1"
+    "version": "1.6.1"
   },
   "civo/civo": {
     "defaults": {
@@ -147,7 +147,7 @@
       "keyResource": "civo_ssh_key"
     },
     "tokenAttr": "token",
-    "version": "~> 1.1"
+    "version": "1.3.3"
   },
   "cloudscale-ch/cloudscale": {
     "defaults": {
@@ -167,7 +167,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 4.0"
+    "version": "4.4.0"
   },
   "contabo/contabo": {
     "defaults": {
@@ -186,7 +186,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "oauth2_client_id",
-    "version": "~> 0.1"
+    "version": "0.1.44"
   },
   "digitalocean/digitalocean": {
     "defaults": {
@@ -212,7 +212,7 @@
       "keyResource": "digitalocean_ssh_key"
     },
     "tokenAttr": "token",
-    "version": "~> 2.0"
+    "version": "2.106.0"
   },
   "equinix/equinix": {
     "defaults": {
@@ -233,7 +233,7 @@
       "keyResource": "equinix_metal_project_ssh_key"
     },
     "tokenAttr": "auth_token",
-    "version": "~> 2.0"
+    "version": "2.11.0"
   },
   "exoscale/exoscale": {
     "defaults": {
@@ -257,7 +257,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "key",
-    "version": "~> 0.62"
+    "version": "0.76.0"
   },
   "glesys/glesys": {
     "defaults": {
@@ -281,7 +281,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 0.13"
+    "version": "0.18.0"
   },
   "hashicorp/aws": {
     "defaults": {
@@ -305,7 +305,7 @@
       "keyResource": "aws_key_pair"
     },
     "tokenAttr": "region",
-    "version": "~> 5.0"
+    "version": "5.100.0"
   },
   "hashicorp/azurerm": {
     "defaults": {
@@ -324,7 +324,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "features",
-    "version": "~> 4.0"
+    "version": "4.81.0"
   },
   "hashicorp/google": {
     "defaults": {
@@ -348,7 +348,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "project",
-    "version": "~> 6.0"
+    "version": "6.50.0"
   },
   "hetznercloud/hcloud": {
     "defaults": {
@@ -384,7 +384,7 @@
       "keyResource": "hcloud_ssh_key"
     },
     "tokenAttr": "token",
-    "version": "~> 1.49"
+    "version": "1.70.2"
   },
   "huaweicloud/huaweicloud": {
     "defaults": {
@@ -404,7 +404,7 @@
       "keyResource": "huaweicloud_kps_keypair"
     },
     "tokenAttr": "access_key",
-    "version": "~> 1.70"
+    "version": "1.100.0"
   },
   "IBM-Cloud/ibm": {
     "defaults": {
@@ -423,7 +423,7 @@
       "keyResource": "ibm_is_ssh_key"
     },
     "tokenAttr": "ibmcloud_api_key",
-    "version": "~> 1.70"
+    "version": "1.89.0"
   },
   "ionos-cloud/ionoscloud": {
     "defaults": {
@@ -442,7 +442,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 6.0"
+    "version": "6.7.39"
   },
   "Kamatera/kamatera": {
     "defaults": {
@@ -462,7 +462,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "api_client_id",
-    "version": "~> 0.8"
+    "version": "0.9.4"
   },
   "kvm": {
     "engine": "renet-ops",
@@ -512,7 +512,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 3.0",
+    "version": "3.14.1",
     "volume": {
       "attachAttr": "linode_id",
       "labelAttr": "label",
@@ -536,7 +536,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "tenancy_ocid",
-    "version": "~> 6.0"
+    "version": "6.37.0"
   },
   "ovh/ovh": {
     "defaults": {
@@ -553,7 +553,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "application_key",
-    "version": "~> 1.0"
+    "version": "1.8.0"
   },
   "scaleway/scaleway": {
     "defaults": {
@@ -577,7 +577,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "secret_key",
-    "version": "~> 2.0"
+    "version": "2.89.0"
   },
   "serverscom/serverscom": {
     "defaults": {
@@ -597,7 +597,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 0.4"
+    "version": "0.7.0"
   },
   "tencentcloudstack/tencentcloud": {
     "defaults": {
@@ -616,7 +616,7 @@
       "keyResource": "tencentcloud_key_pair"
     },
     "tokenAttr": "secret_id",
-    "version": "~> 1.81"
+    "version": "1.83.38"
   },
   "UpCloudLtd/upcloud": {
     "defaults": {
@@ -636,7 +636,7 @@
       "format": "inline_list"
     },
     "tokenAttr": "username",
-    "version": "~> 5.0"
+    "version": "5.48.0"
   },
   "vultr/vultr": {
     "defaults": {
@@ -662,7 +662,7 @@
       "keyResource": "vultr_ssh_key"
     },
     "tokenAttr": "api_key",
-    "version": "~> 2.0"
+    "version": "2.33.2"
   },
   "yandex-cloud/yandex": {
     "defaults": {
@@ -680,6 +680,6 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 0.130"
+    "version": "0.127.0"
   }
 }
