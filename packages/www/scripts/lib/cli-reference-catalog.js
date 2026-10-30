@@ -395,10 +395,7 @@ export function parseRdcCommand(commandText) {
   while (i < tokens.length) {
     const token = tokens[i];
     const flagName = token.includes('=') ? token.split('=')[0] : token;
-    // A variadic positional swallows dash-prefixed tokens (`rdc repo exec mail ls -la`), but only
-    // those the command does NOT define. A defined flag is still a flag: otherwise
-    // `rdc backup download mail@prod --to /mnt/usb` (variadic `refs` at index 0) read `--to` as a
-    // ref and reported its mandatory option missing.
+    // A variadic positional swallows dash-prefixed tokens (`rdc repo exec mail ls -la`), but only those the command does NOT define. A defined flag is still a flag: otherwise `rdc backup download mail@prod --to /mnt/usb` (variadic `refs` at index 0) read `--to` as a ref and reported its mandatory option missing.
     const canConsumeVariadic =
       variadicIndex !== -1 && positionals >= variadicIndex && !validFlags.has(flagName);
 
