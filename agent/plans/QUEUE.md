@@ -69,10 +69,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 9 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1356 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1360 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:accb385ef9122ad17, worker:a995b2df5cea53f95.
 - Leased items: 1: #a150016d (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 40 plans done, 551 of 720 boxes done (76%).
+Promoted: 3 of 40 plans done, 552 of 720 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -118,7 +118,7 @@ Promoted: 3 of 40 plans done, 551 of 720 boxes done (76%).
 | 32 | PLAN-production-key-only.md | 5/12 | 7 open |
 | 33 | PLAN-detached-jobs.md | 11/39 | 28 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 12/14 | 2 open |
-| 35 | PLAN-backup-meter-orphaned-chunks.md | 3/6 | 3 open |
+| 35 | PLAN-backup-meter-orphaned-chunks.md | 4/6 | 2 open |
 | 36 | PLAN-backup-local-image.md | 7/14 | 7 open |
 | 37 | PLAN-backup-plane-shared-bucket-hardening.md | 4/5 | 1 open |
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 3/10 | 7 open |
