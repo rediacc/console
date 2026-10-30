@@ -320,8 +320,30 @@ def test_evidence_reads_the_check_rc_from_the_row():
         "deploy": {"version_id": "v9"},
     }
     assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=3 v=v9"
-    row["check"] = {"id": "account-smoke"}
-    assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=0 v=v9"
+    for bad in ({"id": "account-smoke"}, {"id": "account-smoke", "rc": None}):
+        row["check"] = bad
+        assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=unknown v=v9"
+
+
+def test_null_check_rc_is_never_a_pass_and_tick_refuses(root, capsys):
+    class NullRc(FakeRecorder):
+        def __call__(self, argv, _root):
+            out = super().__call__(argv, _root)
+            if "--write" in argv:
+                ledger = self.root / LP.LEDGER_REL
+                row = json.loads(ledger.read_text(encoding="utf-8").splitlines()[-1])
+                row["check"]["rc"] = None
+                ledger.write_text(json.dumps(row) + "\n", encoding="utf-8")
+            return out
+
+    sig = _sig(PLAN, "LP-bench")
+    rc, _rec, tick = _run(root, REL, sig, "--write", "--tick", rec=NullRc(root))
+    assert rc == 1
+    assert tick.calls == []
+    err = capsys.readouterr().err
+    assert "account-smoke" in err
+    assert "rc=unknown" in err
+    assert "rc=0 v=" not in err
 
 
 def test_a_recorder_past_its_timeout_is_reported(monkeypatch, tmp_path):

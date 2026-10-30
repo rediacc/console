@@ -197,11 +197,12 @@ def find_row(root: pathlib.Path, row_id: str) -> dict[str, Any] | None:
 
 
 def evidence(row: dict[str, Any]) -> str:
-    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check (0 when the row carries none or null); the recorder writes VERIFIED only for a passing check, so a non-zero rc here names a recorder fault rather than hiding it."""
+    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check; a missing or non-integer rc is written `rc=unknown`, never as a pass, and `--tick` refuses it."""
     check_rec = row.get("check") or {}
     check = check_rec.get("id")
     rc = check_rec.get("rc")
-    rc = 0 if rc is None else rc
+    if isinstance(rc, bool) or not isinstance(rc, int):
+        rc = "unknown"
     version = (row.get("deploy") or {}).get("version_id")
     return "live-proof %s %s %s rc=%s v=%s" % (row.get("id"), row.get("target"), check, rc, version)
 
@@ -326,6 +327,13 @@ def _run(root, me, args, tick, recorder, precheck, lt) -> int:
             1,
         )
     ev = evidence(row)
+    check_rc = (row.get("check") or {}).get("rc")
+    if do_tick and (isinstance(check_rc, bool) or check_rc != 0):
+        raise RefusedError(
+            "receipt %s names check %s with %s, not an integer rc=0; the box stays open and "
+            "is not ticked" % (row["id"], (row.get("check") or {}).get("id"), ev.split(" ")[-2]),
+            1,
+        )
     _say("receipt %s appended to %s: %s" % (row["id"], LEDGER_REL, ev))
     if not do_tick:
         _say(
