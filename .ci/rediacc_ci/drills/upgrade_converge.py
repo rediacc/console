@@ -149,7 +149,8 @@ class ForkRecord(NamedTuple):
 def fork_record(config_doc: Any, parent: str, tag: str) -> ForkRecord | None:
     """Fork `parent:tag` from a config document, None when any field is missing. The guid, credential and grand guid are in `resources.repositories.<parent>.tags.<tag>` (the grand guid falls back to the parent's `latest`), the network id in the state half, `state.repos.<parent>.<tag>.networkId`. Read from the config, not `repo list`: that verb is a renet job and lists no network id for a fork that was never started (measured 2026-10-30)."""
     doc = config_doc if isinstance(config_doc, dict) else {}
-    repos = doc.get("resources", {}).get("repositories", {})
+    resources = doc.get("resources")
+    repos = resources.get("repositories") if isinstance(resources, dict) else None
     entry = repos.get(parent) if isinstance(repos, dict) else None
     tags = entry.get("tags") if isinstance(entry, dict) else None
     if not isinstance(tags, dict):
@@ -157,7 +158,8 @@ def fork_record(config_doc: Any, parent: str, tag: str) -> ForkRecord | None:
     raw_fork, raw_latest = tags.get(tag), tags.get("latest")
     fork: dict[str, Any] = raw_fork if isinstance(raw_fork, dict) else {}
     latest: dict[str, Any] = raw_latest if isinstance(raw_latest, dict) else {}
-    state_repos = doc.get("state", {}).get("repos", {})
+    state = doc.get("state")
+    state_repos = state.get("repos") if isinstance(state, dict) else None
     state_parent = state_repos.get(parent) if isinstance(state_repos, dict) else None
     state_fork = state_parent.get(tag) if isinstance(state_parent, dict) else None
     nid = state_fork.get("networkId") if isinstance(state_fork, dict) else None
@@ -632,7 +634,7 @@ class OldLayoutBringUp:
 
     Since console 87455a94f every CLI machine command is a renet job and the pre-isolation renet predates the job flags, so the CLI cannot drive it. The CLI still owns what only it can do -- the grand and the forks are created and registered (guid, network id, credential) through it while the CURRENT renet is provisioned, and the forks are NOT started. Then the old binary replaces the worker's current renet in place (`install_current_renet_script`, the slot the CLI's own provision used to overwrite) and each fork is started by the old renet's `repository up`, invoked over ssh exactly as its `repository_up` builder composed it, credential on stdin. The daemons that come up are the old binary's, on the flat layout, as under the old `fork --up`.
 
-    The caller's `renetPath` symlink ends on the old binary with its provision cache cleared, so a later CLI provision (a `repo sync upload`) verifies the old binary instead of replacing it, and the upgrade step's flip to the current build is a real binary change.
+    Once the old binary is installed, the caller's `renetPath` symlink ends on it with its provision cache cleared (a failure before the install leaves it on the current build), so a later CLI provision (a `repo sync upload`) verifies the old binary instead of replacing it, and the upgrade step's flip to the current build is a real binary change.
     """
 
     def __init__(
@@ -725,6 +727,10 @@ class OldLayoutBringUp:
             timeout=900,
         )
         if not self.check("upload the pre-isolation renet to the worker", sent.rc == 0, sent):
+            # A partial upload is removed here: only the install script's trap would otherwise clean it, and it never runs.
+            self.ctx.host_run(
+                self.ssh("rm -f %s" % shlex.quote(staged)), env=self.ctx.environ, timeout=60
+            )
             return False
         script = install_current_renet_script(staged)
         res = self.ctx.host_run(
