@@ -424,6 +424,7 @@ export async function refreshReplicaSet(repoKey: string, debug?: boolean): Promi
 
   await dispatch('datastore_snapshot_create', control, { name: set.datastore, snapshot }, debug);
   const one = {
+    repo: set.repo,
     // Storage identity (#93); pre-guid recorded sets fall back to the name.
     repoGuid: set.repoGuid ?? set.repo,
     setName,

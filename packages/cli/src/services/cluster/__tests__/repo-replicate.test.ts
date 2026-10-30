@@ -20,7 +20,40 @@ vi.mock('../../account/license-preflight.js', async (importOriginal) => ({
   assertMachineSlotsAvailable: vi.fn().mockResolvedValue(undefined),
 }));
 
-afterEach(() => vi.restoreAllMocks());
+// The fork licence step: the registry read goes through the executor mock below; issuance and the machine lease are stubbed.
+const licence = vi.hoisted(() => ({
+  free: vi.fn().mockResolvedValue(undefined),
+  token: vi.fn().mockResolvedValue(true),
+  authority: vi.fn().mockResolvedValue('free'),
+  release: vi.fn(),
+}));
+vi.mock('../../account/free-license.js', () => ({
+  issueFreeRepoLicense: licence.free,
+  resolveLicenseAuthority: licence.authority,
+}));
+vi.mock('../../account/license.js', () => ({ refreshRepoLicenseIdentity: licence.token }));
+vi.mock('../../account/subscription-device-auth.js', () => ({
+  authorizeSubscriptionViaDeviceCode: vi.fn(),
+}));
+vi.mock('../../machine/machine-connection.js', () => ({
+  machineConnections: {
+    acquire: vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        machine: { name: 'm' },
+        sshPrivateKey: 'key',
+        sftp: {},
+        release: licence.release,
+      })
+    ),
+  },
+}));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  licence.free.mockClear().mockResolvedValue(undefined);
+  licence.token.mockClear().mockResolvedValue(true);
+  licence.authority.mockClear().mockResolvedValue('free');
+});
 
 const renderInput: ReplicaRenderInput = {
   repo: 'sqldb',
@@ -82,16 +115,24 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
 });
 
 function execMock() {
-  // datastore_fork is captured (--json) so provisionOneReplica can ferry the record to an off-control node via datastore_adopt (finding #36); every other step just needs success.
-  return vi
-    .spyOn(localExecutorService, 'execute')
-    .mockImplementation((opts) =>
-      Promise.resolve(
-        (opts.functionName === 'datastore_fork'
-          ? { success: true, stdout: '{"fork":{"cloneImage":"clone"}}' }
-          : { success: true }) as never
-      )
-    );
+  // datastore_fork is captured (--json) so provisionOneReplica can ferry the record to an off-control node via datastore_adopt (finding #36); datastore_list reports each forked name with id `id-<name>` for the licence step; every other step just needs success.
+  const forked: string[] = [];
+  return vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+    if (opts.functionName === 'datastore_fork') {
+      forked.push(`${opts.params?.parent}:${opts.params?.tag}`);
+      return Promise.resolve({
+        success: true,
+        stdout: '{"fork":{"cloneImage":"clone"}}',
+      } as never);
+    }
+    if (opts.functionName === 'datastore_list') {
+      return Promise.resolve({
+        success: true,
+        stdout: JSON.stringify(forked.map((name) => ({ name, datastoreId: `id-${name}` }))),
+      } as never);
+    }
+    return Promise.resolve({ success: true } as never);
+  });
 }
 
 describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)', () => {
@@ -162,6 +203,59 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       { index: 2, fork: 'ds-data:set1-r2', node: 'n2' },
       { index: 3, fork: 'ds-data:set1-r3', node: 'n1' },
     ]);
+  });
+
+  it('licenses the fork datastore id before datastore_volumes_open, and a failed issuance stops before it', async () => {
+    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+    vi.spyOn(configService, 'getRepository').mockResolvedValue({
+      repositoryGuid: 'guid-sqldb',
+      grandGuid: 'grand-sqldb',
+    } as never);
+    const exec = execMock();
+    const order: string[] = [];
+    exec.mockImplementation(((opts: { functionName: string; params?: Record<string, unknown> }) => {
+      order.push(opts.functionName);
+      if (opts.functionName === 'datastore_fork') {
+        return Promise.resolve({ success: true, stdout: '{"fork":{}}' });
+      }
+      if (opts.functionName === 'datastore_list') {
+        return Promise.resolve({
+          success: true,
+          stdout: JSON.stringify([{ name: 'ds-data:set1-r1', datastoreId: 'id-fork-1' }]),
+        });
+      }
+      return Promise.resolve({ success: true });
+    }) as never);
+    licence.free.mockImplementation(() => {
+      order.push('issue');
+      return Promise.resolve();
+    });
+    await provisionReplicaDatastores({
+      ...base,
+      replicas: 1,
+      nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
+    });
+    expect(licence.free.mock.calls[0][2]).toMatchObject({
+      repositoryGuid: 'guid-sqldb',
+      grandGuid: 'grand-sqldb',
+      kind: 'fork',
+      datastoreId: 'id-fork-1',
+    });
+    expect(order.indexOf('issue')).toBeGreaterThan(-1);
+    expect(order.indexOf('issue')).toBeLessThan(order.indexOf('datastore_volumes_open'));
+
+    // A failed issuance stops before the dispatch.
+    order.length = 0;
+    licence.free.mockRejectedValue(new Error('slot limit'));
+    await expect(
+      provisionReplicaDatastores({
+        ...base,
+        replicas: 1,
+        nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
+      })
+    ).rejects.toThrow(/slot limit/);
+    expect(order).not.toContain('datastore_volumes_open');
+    expect(licence.release).toHaveBeenCalled();
   });
 
   it('ferries the fork record via datastore_adopt off-control, and skips adopt on the control node (finding #36)', async () => {

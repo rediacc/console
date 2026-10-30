@@ -23,6 +23,28 @@ vi.mock('../../config/config-cluster-ops.js', () => ({
   ),
 }));
 
+// The fork licence step issues through the account or the FREE licence on a leased machine; the executor mock below supplies the fork's datastore id.
+vi.mock('../../account/free-license.js', () => ({
+  issueFreeRepoLicense: vi.fn().mockResolvedValue(undefined),
+  resolveLicenseAuthority: vi.fn().mockResolvedValue('free'),
+}));
+vi.mock('../../account/license.js', () => ({
+  refreshRepoLicenseIdentity: vi.fn().mockResolvedValue(true),
+}));
+vi.mock('../../account/subscription-device-auth.js', () => ({
+  authorizeSubscriptionViaDeviceCode: vi.fn(),
+}));
+vi.mock('../../machine/machine-connection.js', () => ({
+  machineConnections: {
+    acquire: vi.fn(() =>
+      Promise.resolve({ machine: {}, sshPrivateKey: 'key', sftp: {}, release: vi.fn() })
+    ),
+  },
+}));
+
+/** Forks the scripted executor has created, so datastore_list can report their ids. */
+const forked: string[] = [];
+
 /** In-memory replica-set state + a scripted executor. */
 let stored: Record<string, ReplicaSet> | undefined;
 
@@ -46,30 +68,35 @@ function mockState(initial?: Record<string, ReplicaSet>): void {
 }
 
 function mockExec() {
-  return vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
-    if (functionName === 'datastore_list') {
-      return Promise.resolve({
-        success: true,
-        stdout: JSON.stringify([
-          { name: 'ds-control-prod', cluster: 'prod' },
-          { name: 'ds-data', cluster: 'prod' },
-          { name: 'ds-data:other-r1', cluster: 'prod', fork: {} },
-          { name: 'default', implicit: true },
-        ]),
-      }) as never;
-    }
-    // datastore_fork is captured (--json) so the record can be adopted onto an off-control replica node before attach (finding #36).
-    if (functionName === 'datastore_fork') {
-      return Promise.resolve({
-        success: true,
-        stdout: '{"fork":{"cloneImage":"clone"}}',
-      }) as never;
-    }
-    return Promise.resolve({ success: true }) as never;
-  });
+  return vi
+    .spyOn(localExecutorService, 'execute')
+    .mockImplementation(({ functionName, params }) => {
+      if (functionName === 'datastore_list') {
+        return Promise.resolve({
+          success: true,
+          stdout: JSON.stringify([
+            ...forked.map((name) => ({ name, datastoreId: `id-${name}` })),
+            { name: 'ds-control-prod', cluster: 'prod' },
+            { name: 'ds-data', cluster: 'prod' },
+            { name: 'ds-data:other-r1', cluster: 'prod', fork: {} },
+            { name: 'default', implicit: true },
+          ]),
+        }) as never;
+      }
+      // datastore_fork is captured (--json) so the record can be adopted onto an off-control replica node before attach (finding #36).
+      if (functionName === 'datastore_fork') {
+        forked.push(`ds-data:${params?.tag}`);
+        return Promise.resolve({
+          success: true,
+          stdout: '{"fork":{"cloneImage":"clone"}}',
+        }) as never;
+      }
+      return Promise.resolve({ success: true }) as never;
+    });
 }
 
 beforeEach(() => {
+  forked.length = 0;
   vi.spyOn(outputService, 'info').mockReturnValue(undefined);
   vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
   vi.spyOn(outputService, 'success').mockReturnValue(undefined);
@@ -117,12 +144,14 @@ describe('replicateRepo (create orchestrator)', () => {
       'datastore_adopt',
       'datastore_attach',
       'datastore_forget',
+      'datastore_list',
       'datastore_volumes_open',
       'kube_node_label',
       'datastore_fork',
       'datastore_adopt',
       'datastore_attach',
       'datastore_forget',
+      'datastore_list',
       'datastore_volumes_open',
       'kube_node_label',
       'kube_apply',
@@ -321,6 +350,7 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
       'datastore_adopt',
       'datastore_attach',
       'datastore_forget',
+      'datastore_list',
       'datastore_volumes_open',
       'kube_node_label',
       'kube_node_label',
@@ -331,6 +361,7 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
       'datastore_adopt',
       'datastore_attach',
       'datastore_forget',
+      'datastore_list',
       'datastore_volumes_open',
       'kube_node_label',
       'datastore_snapshot_delete',
@@ -370,6 +401,12 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
     vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
       if (functionName === 'datastore_detach' && ++detachAttempts < 3) {
         return Promise.resolve({ success: false, error: 'busy' }) as never;
+      }
+      if (functionName === 'datastore_list') {
+        return Promise.resolve({
+          success: true,
+          stdout: JSON.stringify([{ name: 'ds-data:sqldb-replicas-r1', datastoreId: 'id-r1' }]),
+        }) as never;
       }
       if (functionName === 'datastore_fork') {
         return Promise.resolve({ success: true, stdout: '{"fork":{}}' }) as never;
