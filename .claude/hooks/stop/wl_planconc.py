@@ -147,6 +147,9 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
     return out, problems
 
 
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+
+
 def _submodule_roots(root) -> frozenset[str]:
     """The submodule paths `.gitmodules` declares. A bare submodule root in an Owns line names its gitlink (the pointer bump), not every file of the submodule: `private/renet (the gitlink bump only)` widened to `private/renet/**` made a plan claim all of renet and refused every renet writer beside it. A plan that edits files inside the submodule writes `private/renet/` or `private/renet/**`, which still widen (test-plandeps.py pins both overlaps)."""
     try:
@@ -785,7 +788,11 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
             narrow_notes.append(
                 "%s on its live writers' declared Owns `%s`" % (p, ", ".join(theirs))
             )
-        hits = owns_overlap(mine, theirs)
+        # A bare submodule root names its gitlink (the pointer bump). Writers never commit and the lead commits every bump, so two plans sharing only a gitlink cannot collide in the tree; refusing on it made every renet or account plan exclusive of every other (2026-10-30: a production-key-only writer refused detached-jobs, backup-download-from-store and settings writers on `private/renet` / `private/account` alone).
+        gitlinks = _submodule_roots(_REPO_ROOT)
+        hits = [
+            h for h in owns_overlap(mine, theirs) if not (h[0] == h[1] == h[2] and h[2] in gitlinks)
+        ]
         if hits:
             ga, gb, w = hits[0]
             return Verdict(

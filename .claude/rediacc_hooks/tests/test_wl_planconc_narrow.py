@@ -141,3 +141,17 @@ def test_the_roster_backstop_keeps_the_whole_plan_when_one_holder_declares_nothi
     del serving["wx"]
     live["PLAN-b.md"] = ["writer wb (backup-storage)"]
     assert PO.conflicts(serving, live, xi.__getitem__, declared) == []
+
+
+def test_a_shared_bare_gitlink_is_not_an_overlap_but_a_shared_file_still_is():
+    """Red before 2026-10-30: two plans whose only common claim was the `private/renet` gitlink refused each other's writers, though writers never commit and the lead does every pointer bump."""
+    xi = {
+        "PLAN-a.md": X.PlanX("PLAN-a.md", owns=("private/renet", "private/renet/pkg/a/**")),
+        "PLAN-b.md": X.PlanX("PLAN-b.md", owns=("private/renet", "private/renet/pkg/b/**")),
+        "PLAN-c.md": X.PlanX("PLAN-c.md", owns=("private/renet", "private/renet/pkg/a/x.go")),
+    }
+    live = {"PLAN-b.md": ["writer w1"]}
+    assert X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__).allow
+    # Control: a real file under the submodule still collides.
+    live_c = {"PLAN-c.md": ["writer w2"]}
+    assert X.spawn_verdict({"PLAN-a.md"}, live_c, xi.__getitem__).kind == "overlap"
