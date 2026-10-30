@@ -156,6 +156,25 @@ suite('daemon-backed executor', () => {
     expect(events.map((e) => e.msg)).toEqual(['from the daemon executor']);
   });
 
+  it("carries the client's command name across the socket as the verb", async () => {
+    const socketPath = tmpSocket();
+    const daemon = fakeExecutor();
+    await startServer(socketPath, daemon.executor);
+    const client = daemonClient(fallbackExecutor().executor, {
+      socketPath,
+      identity: SERVER_IDENTITY,
+      spawnDaemon: () => {},
+    });
+    const spy = vi.spyOn(outputService, 'getCommandName').mockReturnValue('repo create');
+    try {
+      await client.execute(OPTIONS);
+    } finally {
+      spy.mockRestore();
+    }
+    // The daemon's own output service names `executor-daemon run`; the verb must be the client's.
+    expect(daemon.calls[0].verb).toBe('repo create');
+  });
+
   it('falls back to direct when the token does not match', async () => {
     const socketPath = tmpSocket();
     const daemon = fakeExecutor();

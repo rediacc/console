@@ -67,6 +67,8 @@ export interface ExecuteOptions {
   functionName: string;
   /** Target machine name (must exist in the executor's config) */
   machineName: string;
+  /** The CLI command that asked for this call (`repo create`), named in the job ticket and in a refusal. Unset, the executor reads it from the output service, which inside the executor daemon names the daemon's own `executor-daemon run`, so the daemon client sets it before the call crosses the socket. */
+  verb?: string;
   /**
    * Target a cluster instead of a machine. When set, execution routes to the
    * cluster's control node and KUBECONFIG is injected into the renet env (the

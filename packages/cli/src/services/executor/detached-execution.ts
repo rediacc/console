@@ -237,7 +237,7 @@ class JobRun {
   constructor(readonly options: ExecuteOptions) {
     this.window = options.attachWindowMs;
     this.requestId = options.requestId ?? invocationMinter().next(options.machineName);
-    this.verb = outputService.getCommandName() ?? options.functionName;
+    this.verb = options.verb ?? outputService.getCommandName() ?? options.functionName;
     this.repo = repoOf(options);
     this.render = options.onEvent ?? defaultRenderer(options);
     this.ticket = new CallTicket(

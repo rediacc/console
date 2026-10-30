@@ -360,6 +360,13 @@ describe('refusals make no further call', () => {
     );
   });
 
+  it('names the verb the caller passed, not the process command, in the refusal', async () => {
+    // Inside the executor daemon the output service names `executor-daemon run`; the daemon client carries the caller's verb across the socket.
+    script(answer('', 1, 'Error: unknown flag: --request-id\n'));
+    const result = await run({ verb: 'repo create' });
+    expect(result.error).toContain('cannot run repo create as a job');
+  });
+
   it('refuses a renet with no `job` command the same way', async () => {
     script(answer('', 1, 'Error: unknown command "job" for "renet"\n'));
     const result = await run();
