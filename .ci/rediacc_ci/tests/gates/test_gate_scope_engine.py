@@ -980,6 +980,45 @@ def test_gitlink_bump_expands_to_the_changed_renet_paths(gate):
     gate.log_pass("a gitlink-only bump touching pkg/license selects only the license-area VM jobs")
 
 
+def test_a_renamed_renet_file_selects_the_areas_of_both_names(gate):
+    """Review 3281739d.1: `git diff --name-only` with rename detection reports only the NEW name of a moved file, so a file moved out of pkg/kube would never select the kube jobs. Both names must reach the classifier."""
+    with harness.temp_dir() as tmp:
+        root = pathlib.Path(tmp)
+        sub = root / "sub"
+        (sub / "pkg" / "kube").mkdir(parents=True)
+        _git(sub, "init", "-q")
+        body = "package kube\n" + "// filler line for a confident rename\n" * 40
+        (sub / "pkg" / "kube" / "moved.go").write_text(body)
+        _git(sub, "add", "-A")
+        _git(sub, "commit", "-qm", "one")
+        old = _git(sub, "rev-parse", "HEAD")
+        (sub / "pkg" / "hub").mkdir(parents=True)
+        _git(sub, "mv", "pkg/kube/moved.go", "pkg/hub/moved.go")
+        _git(sub, "commit", "-qm", "two")
+        new = _git(sub, "rev-parse", "HEAD")
+        parent = root / "parent"
+        parent.mkdir()
+        _git(parent, "init", "-q")
+        (parent / "a.txt").write_text("a\n")
+        _git(parent, "add", "a.txt")
+        _git(parent, "update-index", "--add", "--cacheinfo", "160000,%s,private/renet" % old)
+        _git(parent, "commit", "-qm", "p1")
+        p_old = _git(parent, "rev-parse", "HEAD")
+        _git(parent, "update-index", "--cacheinfo", "160000,%s,private/renet" % new)
+        _git(parent, "commit", "-qm", "p2")
+        p_new = _git(parent, "rev-parse", "HEAD")
+        (parent / "private").mkdir()
+        os.rename(sub, parent / "private" / "renet")
+        got = _gitlink_run(str(parent), p_old, p_new)
+    paths = set(got["paths"])
+    gate.assert_eq(
+        dumps(sorted(paths & {"private/renet/pkg/kube/moved.go", "private/renet/pkg/hub/moved.go"})),
+        dumps(["private/renet/pkg/hub/moved.go", "private/renet/pkg/kube/moved.go"]),
+        "both names of the moved file are expanded",
+    )
+    gate.log_pass("a renamed renet file reaches the classifier under its old and its new name")
+
+
 def test_unreadable_gitlink_falls_back_to_all_vm_jobs_and_says_so(gate):
     """CONTROL for the test above: with the submodule absent the SAME diff keeps the gitlink and selects all nine."""
     with harness.temp_dir() as tmp:
