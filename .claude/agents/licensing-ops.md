@@ -46,7 +46,7 @@ the `-` prefix means renewal can never block the backup.
 - Account server TEST_MODE routes: `POST /test/ensure-login`, `POST /test/ensure-subscription`
 accepts optional `maxActivations` (int 1..10000, default 5): seed a cap of 1 to build a reachable slot wall with two machines. It DELETES and recreates the customer's subscription: never call it mid-scenario to "lower" a cap (that orphans issued licenses); a live downgrade goes through `PUT /admin/subscriptions/:id`.
 - The e2e battery: `PYTHONPATH=.ci python3 -m rediacc_ci.private.license_e2e` (24+ scenarios, runs 3x:
-enforcing build must pass, nolicense and wrong-key builds must fail at pinned points). Mint tool `.ci/scripts/private/license-mint/` crafts expired/delegated/forged/ sequence fixtures offline (imports the real pkg/license via replace directive). The battery talks to NO account server; account-chain e2e lives in rediacc_ci.testrun.account_e2e.
+the one enforcing build must pass, and wrong-key builds must fail at pinned points). Mint tool `.ci/scripts/private/license-mint/` crafts expired/delegated/forged/ sequence fixtures offline (imports the real pkg/license via replace directive). The battery talks to NO account server; account-chain e2e lives in rediacc_ci.testrun.account_e2e.
 - Drills: `./run.sh drill universe|transfer|license` (rediacc_ci.drills). license needs ops
 VMs (`./rdc.sh ops up`, basic=2 VMs for legs b-e, full 6 incl. Ceph for leg a) and a dev gateway it restarts itself. Every drill has `--selftest` (plants one failure, must exit non-zero) and `--keep-work` (preserves the temp dir for diagnosis).
 
@@ -55,7 +55,7 @@ VMs (`./rdc.sh ops up`, basic=2 VMs for legs b-e, full 6 incl. Ceph for leg a) a
 - Tier-map totality: `TestTierMapCoversRegistry` (+dispatch tests) in
 private/renet/pkg/functions/; console-side `npm run check:ci-renet-tiers`; the contract generator refuses unmapped names; CI home is ct-tests test-renet.
 - Contract freshness: `check:ci-renet-types` diffs 6 generated files including
-license-tiers.generated.ts. Regen: build renet to a scratch path (`go build -tags nolicense -o /tmp/renet-types ./cmd/renet`, never into `bin/renet`), then `/tmp/renet-types functions generate-types --output <TEMP> --version dev` and copy into `packages/shared/src/renet-contract/data/` (NOT the parent dir: a bare `-o` on the package root sprays 6 strays). Rebuild packages/shared after, or CLI tests read stale dist and lie.
+license-tiers.generated.ts. Regen: build renet to a scratch path with no tags (`go build -o /tmp/renet-types ./cmd/renet`, never into `bin/renet`), then `/tmp/renet-types functions generate-types --output packages/shared/src/renet-contract/data --version $(git describe)` (the `data` directory itself, NOT its parent: a bare `-o` on the package root sprays 6 strays). Steps in `renet-dev.md`. Rebuild packages/shared after, or CLI tests read stale dist and lie.
 - The CLI derives licensed-function knowledge ONLY from LICENSE_TIERS
 (renet-license-contract.ts accessors). `isRepoProvisioningFunction` = repository_ prefix AND tier create MINUS metadata-only verbs (repository_commit_meta). Never hand-list function names again.
 - `npm run ci` is a manifest-driven parallel runner: a new gate needs the npm script
@@ -67,11 +67,8 @@ AND a GateSpec in scripts/ci-runner/manifest.ts or check-ci-parity fails; regist
 ancestry-verified and must be set in the OPERATOR's terminal before the session. Same for REDIACC_ALLOW_GRAND_REPO. Do not try to self-authorize; design flows so the operator runs those legs, and fail with a loud precondition message.
 - The CLI AUTO-CREATES the config named by `REDIACC_CONFIG` on startup of ANY command.
 Exporting REDIACC_CONFIG=<name> before an explicit `rdc config init <name>` makes init die with "already exists" (and the auto-created config gets the PRODUCTION server's E2E key synced in, because a bare config has no accountServer). Order: init first, export after; and any wrapper preflight that invokes the CLI (even `rdc ops status`) counts as "startup".
-- The live drill needs an ENFORCING renet with the dev key baked; the default dev
-build is nolicense (permit-all stub, vacuous drill). `rediacc_ci.drills.license` sets `RDC_RENET_LICENSE=1` for the commands under test and proves the flavor pre-deploy (`verify_renet_flavor`: `go version -m bin/enforce/renet` must NOT show `-tags=nolicense` and MUST show `ProductionPublicKey=` in ldflags). A binary with neither marker is a foreign bare `go build` - enforcing but keyless, fails everything
-as "public key not configured". The build stamp fingerprints the artifact since 2026-08-04, so such an overwrite now triggers a rebuild.
-- `go test -tags nolicense ./...` is a distinct matrix leg: license-gate-fires tests
-must carry `//go:build !nolicense` or that leg is silently red (CI only BUILDS with the tag; test it locally).
+- There is one renet build: licence-enforcing, with the production key baked (renet `aa872ed`; `./build.sh dev` and `./rdc.sh` build it). The live drill runs against it, and `rediacc_ci.drills.license` proves the flavor pre-deploy: `go version -m` of the binary must show `ProductionPublicKey=` in the ldflags. A binary without it is a foreign bare `go build`: enforcing but keyless, it fails everything as "public key not configured". Test mode enforces licensing too (renet `23c0c03b`), so `renet functions once` runs as root (sudo), as the CLI does.
+- `go test ./...` is the one Go test leg; no `nolicense` leg exists.
 - Deploy order (contract C3): account servers first (migration + worker), then renet,
 then CLI. All new payload/request fields are additive; Go ignores unknown JSON keys.
 - dev gateways: tsx does not hot-reload; a long-running gateway serves stale code.

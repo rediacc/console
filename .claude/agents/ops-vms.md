@@ -27,9 +27,7 @@ fails `ops up` before any VM work, with the tsc error buried in the wrapper outp
 commander usage error, not an infrastructure failure. Read the stderr.
 - Once a renet source change exists locally, the next rdc.sh invocation deploys it.
 Never scp/sudo-cp renet binaries yourself; the pre-tool hooks block it anyway.
-- NEVER run a bare `go build -o bin/renet` in private/renet: it produces an
-ENFORCING build with NO key baked (every licensed op fails "public key not configured") and, until the 2026-08-04 stamp fix, the build cache would keep deploying that poisoned binary to every VM. Always build via `./build.sh dev` or just let rdc.sh do it. Diagnose flavor with `go version -m bin/renet`: nolicense builds carry `-tags=nolicense`, enforcing-with-key builds carry
-`ProductionPublicKey=` in ldflags, a binary with NEITHER is the poison.
+- Build flavor, the baked key and the never-bare-`go build -o bin/renet` rule live in `renet-dev.md` (*Build*). A binary is proven with `go version -m bin/renet`, which must show `ProductionPublicKey=`.
 - Any rdc.sh invocation is a full CLI startup: with `REDIACC_CONFIG=<name>` exported it
 AUTO-CREATES that config if missing. Even `rdc ops status` in a preflight counts. Sequence explicit `config init` BEFORE exporting REDIACC_CONFIG.
 
@@ -49,7 +47,7 @@ topology, AND `VM_CEPH_NODES` is load-bearing beyond topology: Ceph provisioning
 for live, 2026-08-04).
 - **`--force` is NOT required, and the old claim here was wrong about the
 mechanism.** This file used to say bare Ceph VMs "are NOT healed by an incremental `ops up`" and prescribed `--force --parallel` to recreate the trio. The observation was real; the cause was not. `ops_up.go:184-190` runs `orchestrateCluster` on every `ops up`, and the Ceph block at `:415-418` depends only on `ProvisionCeph` + `VMCephNodes` -- there is no "VMs already exist, skip
-Ceph" path in the code. What actually happens is that `ProvisionCeph` arrives FALSE: `opsconfig.Load` probes `cwd/../.env` (`config.go:172`), the CLI spawns renet with no cwd so it inherits the console root, and `/home/muhammed/monorepo/.env` carries `PROVISION_CEPH_CLUSTER=false`, which `config.go:541` gives precedence over the `VM_CEPH_NODES` inference.
+Ceph" path in the code. What actually happens is that `ProvisionCeph` arrives FALSE: `opsconfig.Load` probes `cwd/../.env` (`config.go:172`), the CLI spawns renet with no cwd so it inherits the console root, and the parent `.env` of the console checkout carries `PROVISION_CEPH_CLUSTER=false`, which `config.go:541` gives precedence over the `VM_CEPH_NODES` inference.
   So: **always set `PROVISION_CEPH_CLUSTER=1` explicitly** -- a real env var
 outranks that stray parent `.env` -- and do not recreate the VMs. The existing trio already carries its `cephosd` disk (attached at create time, `ops_up.go:294-296`), so `--force` costs ~20 minutes and buys nothing.
 - The standalone bootstrap is `PROVISION_CEPH_CLUSTER=1 VM_BRIDGE='1'

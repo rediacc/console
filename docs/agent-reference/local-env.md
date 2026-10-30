@@ -56,7 +56,7 @@ Bare `./rdc.sh` behaves like an installed `rdc`: the default config `~/.config/r
 there are no `.rdc-dev/` or `.rdc-bench/` token files.
 
 Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev <command>` (or `RDC_DEV=1 ./rdc.sh <command>`). `--dev` reads the gateway port from `.account-state` and the X25519 public key from the running gateway's `/.well-known/server-info`, seeds or patches `~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails fast if `./run.sh account dev` isn't running. Bench is just
-another config now: `./rdc.sh --config eu-bench <command>` replaces the old `RDC_BENCH=1`, and `npm run login:bench` logs it in (docs/agent-reference/bench-login.md). There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build stays `--nolicense` in all wrapper modes; `RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
+another config now: `./rdc.sh --config eu-bench <command>` replaces the old `RDC_BENCH=1`, and `npm run login:bench` logs it in (docs/agent-reference/bench-login.md). There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build is the one licence-enforcing build in every wrapper mode (production key baked, `ACCOUNT_ED25519_PUBLIC_KEY` required).
 
 `npm run vm:check` records the dev gateway it starts in `.ci/cache/vm-check/gateway.json` (port, start time and an account worktree digest) and writes the gateway log to `.ci/cache/vm-check/gateway.log`; the gateway stays running after the run and is reused only while the record matches `.account-state` and the account worktree.
 
@@ -77,7 +77,7 @@ The SEA is injected by `.ci/scripts/build/sea-inject/` (a streaming replacement 
 Moved here from `rdc.sh` on 2026-09-09, where 53 lines of demo runbook sat in the wrapper a developer types to run an ordinary CLI command. **The four commands were re-spelled on the way**: the versions in `rdc.sh` used `--parent`, `--machine` and `--name` flags that the positional-ref reshape removed, so as written they had stopped working. The spellings below are read off the
 live sources: `packages/cli/src/commands/repo-fork.ts:568-572`, `packages/cli/src/commands/vscode.ts:587-589` and `packages/cli/src/commands/repo-create-delete.ts:486-490`.
 
-Install a clean, license-free binary as the system `rdc` (renet built with `-tags nolicense`, no account-server calls), then repoint the PATH symlink once:
+The system `rdc` is the native binary, installed and then repointed through the PATH symlink once:
 
 ```bash
 ./rdc.sh --native
@@ -138,23 +138,16 @@ demo-stackoverflow Postgres DB: top 10 tags by count."
 recovery)."
 
 
-### Reproducing license-flow bugs in dev (`RDC_RENET_LICENSE=1`)
+### Reproducing license-flow bugs in dev
 
-By default `./rdc.sh` rebuilds renet with the `--nolicense` Go build tag (`pkg/license/runtime_nolicense.go` stub) so dev iteration isn't blocked by license enforcement. That's the right default for everyday work, but it also hides license-flow bugs (e.g. rediacc/console#482) because the renet binary deployed to your test machine never returns `LICENSE_REQUIRED` (exit 10), so the
-CLI's recovery framework (`needsLicenseRecovery` in `packages/cli/src/services/executor/local-executor.ts`) never fires.
-
-To reproduce license-enforcement issues locally, set:
+`./rdc.sh` builds the one licence-enforcing renet (`./build.sh dev`, production key baked, no `nolicense` tag and no `bin/enforce/` split since renet `aa872ed`), so a licence-flow bug (e.g. rediacc/console#482) reproduces with no switch: the deployed binary returns `LICENSE_REQUIRED` (exit 10) and the CLI's recovery framework (`needsLicenseRecovery` in `packages/cli/src/services/executor/local-executor.ts`) fires.
 
 ```bash
-RDC_RENET_LICENSE=1 \
 ./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine>
 ./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
 ```
 
-The production ed25519 public key comes from Bitwarden (`.ci/config/bws-secret-map.json`) through `./rdc.sh`, which supplies `ACCOUNT_ED25519_PUBLIC_KEY` to the renet build. No paste and no `ACCOUNT_ED25519_PUBLIC_KEY=` prefix are needed, and a renet build without the key fails instead of baking a wrong one. GitHub secrets are write-only and the account API serves no public URL for the key, so the store is the only source.
-
-`RDC_RENET_LICENSE=1` selects an enforcing build, which lives in `private/renet/bin/enforce/` and never replaces `bin/renet` (the nolicense build). The variable only decides which directory `./rdc.sh` puts on `PATH`, so an invocation without it keeps using the nolicense binary and nothing needs unsetting or rebuilding afterwards. The key is the production ed25519 public key, which matches the account server that issued the licenses on the test machines. The build flow wires it into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as
-`invalid_signature`.
+The production ed25519 public key comes from Bitwarden (`.ci/config/bws-secret-map.json`) through `./rdc.sh`, which supplies `ACCOUNT_ED25519_PUBLIC_KEY` to the renet build. No paste and no `ACCOUNT_ED25519_PUBLIC_KEY=` prefix are needed, and a renet build without the key fails instead of baking a wrong one. GitHub secrets are write-only and the account API serves no public URL for the key, so the store is the only source. The key reaches `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags; the key must match the account server that issued the licenses on the test machines, or prod-signed licenses fail validation as `invalid_signature`. `go version -m private/renet/bin/renet` shows `ProductionPublicKey=` when it is baked.
 
 ## A real passkey provider in the account E2E suite
 
