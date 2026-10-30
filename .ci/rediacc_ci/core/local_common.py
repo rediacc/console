@@ -1504,6 +1504,9 @@ def ensure_renet_built(
     refusal = renet_key_refusal(renet_bin, account_key)
     if refusal is not None:
         log.error("renet key gate refused the build: %s" % refusal)
+        # The refused build overwrote bin/renet, so a stamp left from an earlier good build no longer describes it: drop it, so the docstring's "leaves no stamp" is the code, not just the fingerprint check that would also catch it.
+        with contextlib.suppress(OSError):
+            os.unlink(stamp)
         log.error(
             "A renet that does not bake the account key is never provisioned; rebuild after ./run.sh setup refreshes the key."
         )

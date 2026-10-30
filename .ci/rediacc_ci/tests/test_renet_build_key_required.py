@@ -86,7 +86,14 @@ def test_every_flavor_captures_the_ldflag_before_linking() -> None:
     """A failing `$(...)` inside an argument list does not trip `set -e`; each flavor assigns it first, so the refusal stops the build."""
     text = BUILD_SH.read_text(encoding="utf-8")
     assert ' "$(_account_key_ldflags)"' not in text
-    assert text.count('key_ldflags="$(_account_key_ldflags)"') == 3
+    assert text.count('key_ldflags="$(_account_key_ldflags)"') == 4
+
+
+def test_no_linux_build_passes_an_empty_key() -> None:
+    """Every `_build_linux_arches` call bakes the key; the asset-image build used to pass `""` (review aa872edb.1)."""
+    calls = [line for line in BUILD_SH.read_text(encoding="utf-8").splitlines() if line.strip().startswith("_build_linux_arches ")]
+    assert len(calls) == 4, calls
+    assert all(line.rstrip().endswith('"$key_ldflags"') for line in calls), calls
 
 
 def _dev(

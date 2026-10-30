@@ -541,7 +541,7 @@ def resolve(root, kind, token):
         if token.startswith("agent/"):
             candidates = [token]
         else:
-            # The basename a reader copies from a listing (`PLAN-<slug>.md`) names the same plan as the bare slug; 2026-10-30 `plan:PLAN-backup-download-from-store.md` was refused as "agent/PLAN-PLAN-...md.md does not exist".
+            # The basename a reader copies from a listing (`PLAN-<slug>.md`) names the same plan as the bare slug, so the prefix and suffix are stripped before the folder candidates are built.
             if token.startswith("PLAN-") and token.endswith(".md"):
                 token = token[len("PLAN-") : -len(".md")]
             candidates = [

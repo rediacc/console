@@ -641,3 +641,13 @@ def test_a_live_proof_receipt_id_is_not_an_object_citation_but_a_bare_hex_run_st
     if ("object", "96f7f22b87b4") not in citations("a bare run 96f7f22b87b4 here"):
         gate.log_fail("control: the same 12 hex without the lp- prefix must still be judged")
     gate.log_pass("live-proof receipt ids are exempt only behind their lp- prefix")
+
+
+def test_an_lp_prefixed_sha_that_no_ledger_row_carries_is_still_judged(gate):
+    """Review 5c159bcf.1: the `lp-` prefix alone must not launder a dead commit; only an id that is a row of agent/ledgers/live-proof.jsonl is exempt."""
+    citations = _citations_fn()
+    if ("object", "abcdef012345") not in citations("see commit lp-abcdef012345 for the fix"):
+        gate.log_fail("a dead sha written as lp-<sha> outside the ledger must still be judged")
+    if ("object", "abcdef012345") not in citations("live-proof lp-abcdef012345 bench smoke rc=0"):
+        gate.log_fail("a live-proof line naming an id the ledger lacks must still be judged")
+    gate.log_pass("an lp- prefix exempts only ids the live-proof ledger carries")

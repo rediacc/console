@@ -257,13 +257,12 @@ def _base(surfaces, repo, tip):
 
 
 def _console_changed(root, merge_base, commit):
-    """The console paths a pushed console commit changes since its merge-base, for the map's `console` rows (renet tests that read console files). Empty when the base is unknown."""
+    """The console paths a pushed console commit changes since its merge-base, for the map's `console` rows (renet tests that read console files). None when git cannot say (no base, or the diff failed): unknown is never "no console paths"."""
     if not merge_base:
-        return []
-    out = (
-        commit_policy.git(["diff", "--no-renames", "--name-only", merge_base, commit], cwd=root)
-        or ""
-    )
+        return None
+    out = commit_policy.git(["diff", "--no-renames", "--name-only", merge_base, commit], cwd=root)
+    if out is None:
+        return None
     return [
         line
         for line in out.splitlines()
@@ -271,8 +270,21 @@ def _console_changed(root, merge_base, commit):
     ]
 
 
+def _required(wr, test_map, changed, console_changed, base_label):
+    """The selection for one pushed commit: every package when the renet range or the console paths are unknown, else what the map selects."""
+    if changed is None or console_changed is None:
+        why = (
+            "the renet range is unknown: %s"
+            % (base_label or "a commit is missing from the checkout")
+            if changed is None
+            else "the console diff could not be read, so no console read row can be ruled out"
+        )
+        return {"all": True, "packages": wr.all_packages(test_map), "all_why": [why], "mapped": 0}
+    return wr.required_for(test_map, changed, console_changed=console_changed)
+
+
 def _range(wr, surfaces, root, form, commit):
-    """(renet commit, renet tree or None, changed paths or None, base label, console changed) for one pushed commit; changed is None when the range is unknown. A console push whose renet pointer did not move still reports its console paths, since renet tests read some console files."""
+    """(renet commit, renet tree or None, changed paths or None, base label, console changed or None) for one pushed commit; changed (or console changed) is None when that side is unknown. A console push whose renet pointer did not move (old == new) returns (new, tree, [], label, console), not an empty answer, since renet tests read some console files. Only a commit with no renet pointer at all returns (None, None, [], "", [])."""
     renet = pathlib.Path(root) / RENET
     if form == "renet":
         merge_base, label = _base(surfaces, renet, commit)
@@ -474,18 +486,7 @@ def run(ev):
             renet_commit, tree, changed, base_label, console_changed = _range(
                 WR, surfaces, root, form, commit
             )
-            if changed is None:
-                required = {
-                    "all": True,
-                    "packages": WR.all_packages(test_map),
-                    "all_why": [
-                        "the renet range is unknown: %s"
-                        % (base_label or "a commit is missing from the checkout")
-                    ],
-                    "mapped": 0,
-                }
-            else:
-                required = WR.required_for(test_map, changed, console_changed=console_changed)
+            required = _required(WR, test_map, changed, console_changed, base_label)
             if not required["packages"]:
                 continue
             receipt = WR.read_receipt(tree)

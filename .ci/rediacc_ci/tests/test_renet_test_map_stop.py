@@ -221,3 +221,23 @@ def test_an_outside_go_path_selects_nothing(tmp_path):
     (renet / "tests/system").mkdir(parents=True)
     (renet / "tests/system/a_e2e_test.go").write_text("package system\n", encoding="utf-8")
     assert wr.advisory(root, env) is None
+
+
+def test_an_unreadable_console_diff_selects_every_package_not_none(tmp_path, monkeypatch):
+    """Review 22db9729.4: a failed console `git diff` is unknown, and unknown is every package, never "no console read rows"."""
+    root, _renet, env = _world(tmp_path)
+    (root / "packages" / "shared").mkdir(parents=True)
+    (root / "packages/shared/schema.json").write_text("{}\n", encoding="utf-8")
+    assert wr.console_changed_since(root) == ["packages/shared/schema.json"]
+    real = wr._git
+
+    def failing(cwd, *argv, **kw):
+        if argv[:1] == ("diff",) and str(cwd) == str(root):
+            return None
+        return real(cwd, *argv, **kw)
+
+    monkeypatch.setattr(wr, "_git", failing)
+    assert wr.console_changed_since(root) is None
+    text = wr.advisory(root, env)
+    assert text is not None, "an unreadable console diff silenced the advisory"
+    assert "every package" in text, text

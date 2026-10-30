@@ -21,7 +21,7 @@
       "r2_storage": {
         "limit": 5000000000000,
         "unit": "bytes",
-        "why": "R2 storage, 5 TB (decimal). Operator /ask 2026-10-30 \"let's make it 5TB\": hostinger backups (171 GB stored, 500 GB quota) took the account to 409 GB against the old 200 GB alert."
+        "why": "R2 storage, 5 TB (decimal). Operator /ask 2026-10-30 \"let's make it 5TB\": hostinger backups (171 GB stored, 500 GB quota) took the account to 409 GB against the old 200 GB alert. Spend basis: at the R2 Standard rate of $0.015 per GB-month, a full 5 TB is about $75 a month, against about $2 a month for the retained release folders the old 200 GB figure was sized around."
       },
       "r2_class_a_operations": {
         "limit": 2000000,

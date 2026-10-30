@@ -180,6 +180,27 @@ SESSION_CASES = [
         "gh pr comment 5 -b 'https://claude" + ".com/code/session_abc1'",
         True,
     ),
+    (
+        "a PR comment body piped on stdin (--body-file -)",
+        "cat leak.txt | gh pr comment 5 --body-file -",
+        True,
+    ),
+    (
+        "a PR comment body redirected on stdin",
+        "gh pr comment 5 --body-file - < leak.txt",
+        True,
+    ),
+    ("a commit message piped on stdin (-F -)", "cat leak.txt | %s -F - -- a" % COMMIT, True),
+    (
+        "CONTROL: a clean file piped on stdin",
+        "cat clean.txt | gh pr comment 5 --body-file -",
+        False,
+    ),
+    (
+        "CONTROL: a public claude.com blog slug is not a session link",
+        "gh pr comment 5 -b 'see https://claude" + ".com/blog/share-your-work'",
+        False,
+    ),
     ("CONTROL: git log --grep claude.ai", "git log --grep claude" + ".ai", False),
     ("CONTROL: grep for the trailer", "grep -rn '%s:' ." % SESSION_HEAD, False),
     (

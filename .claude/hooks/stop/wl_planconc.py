@@ -21,6 +21,7 @@ SEALED. Reads no environment variable and imports only the standard library and 
 from __future__ import annotations
 
 import dataclasses
+import os
 import pathlib
 import re
 from typing import Any
@@ -148,6 +149,14 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
 
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+
+
+def _gitmodules_root() -> pathlib.Path:
+    """The checkout whose `.gitmodules` names the gitlinks: the hook's own `CLAUDE_PROJECT_DIR` when it carries one, else the root this file sits in (`parents[3]`). A hook run from a copy or a symlinked path therefore reads the project's list, not the copy's."""
+    project = os.environ.get("CLAUDE_PROJECT_DIR")
+    if project and (pathlib.Path(project) / ".gitmodules").is_file():
+        return pathlib.Path(project)
+    return _REPO_ROOT
 
 
 def _submodule_roots(root) -> frozenset[str]:
@@ -710,10 +719,10 @@ def narrowed_owns(declared, plan_globs) -> tuple[str, ...] | None:
     return None
 
 
-def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
+def spawn_verdict(serving, live, xinfo, declared=None, gitlinks=None) -> Verdict:
     """Section 5a steps 2-6 as one pure decision.
 
-    `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is the spawn's own Owns globs or None. A missing Owns fails closed as `**`.
+    `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is the spawn's own Owns globs or None. A missing Owns fails closed as `**`. `gitlinks` is the set of submodule roots whose bare name in an Owns line is a pointer bump (default: read from `.gitmodules` once per call).
 
     A planless spawn is judged on `declared`. A spawn serving plans is judged on `declared` as written when it declares one, else on the plans' whole Owns; a live plan likewise on `live.owns[plan]` when `live` is a `LivePlans` whose holders all declared one inside the plan's Owns. The mutex rules never narrow the LIVE side: a live exclusive plan refuses a spawn whose files are unknown or overlap the plan's whole Owns, and an exclusive plan cannot start while any other plan is live.
     """
@@ -781,6 +790,8 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
             (),
             "a planless writer spawn declares no `Owns:` line, so its files are not checked against live plans",
         )
+    if gitlinks is None:
+        gitlinks = _submodule_roots(_gitmodules_root())
     for p in sorted(xl):
         whole = _owns_of(xl[p])
         theirs = narrowed_owns(live_owns.get(p), whole) or whole
@@ -789,7 +800,6 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
                 "%s on its live writers' declared Owns `%s`" % (p, ", ".join(theirs))
             )
         # A bare submodule root names its gitlink (the pointer bump). Writers never commit and the lead commits every bump, so two plans sharing only a gitlink cannot collide in the tree; refusing on it made every renet or account plan exclusive of every other (2026-10-30: a production-key-only writer refused detached-jobs, backup-download-from-store and settings writers on `private/renet` / `private/account` alone).
-        gitlinks = _submodule_roots(_REPO_ROOT)
         hits = [
             h for h in owns_overlap(mine, theirs) if not (h[0] == h[1] == h[2] and h[2] in gitlinks)
         ]

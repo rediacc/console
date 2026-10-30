@@ -80,9 +80,7 @@ TRAILER_OR_FOOTER = hookio.rx(
 #
 # THE SAME TWO PATTERNS LIVE IN `.claude/rediacc_hooks/git/githooks.py` (`SESSION_TRAILER`, `SESSION_LINK`), which git loads by file with no package context and so cannot import this module. `test-block_commit_meta.py` asserts the two spellings are identical, so they cannot drift apart.
 SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
-SESSION_LINK = (
-    r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/-]?[A-Za-z0-9]"
-)
+SESSION_LINK = r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/][A-Za-z0-9]"
 SESSION_LEAK = re.compile("%s|%s" % (SESSION_TRAILER, SESSION_LINK), re.IGNORECASE)
 
 # The publishing verbs that do not author a commit, tag or PR description, so the gate above does not see them. A text fallback for the walk, which reads `gh issue` and `gh release` only as operands.
@@ -94,6 +92,19 @@ PUBLISHES_TEXT = hookio.rx(
 CAT_FILE = re.compile(
     r"\$\(\s*(?:cat[ \t]+|<[ \t]*)([^\s)]+)[ \t]*\)|`[ \t]*cat[ \t]+([^\s`]+)[ \t]*`"
 )
+
+# THE FILE A `-` (STDIN) BODY IS FED FROM: `cat leak.txt | gh pr comment 5 --body-file -` and `gh pr comment 5 --body-file - < leak.txt`. The flag names no file (`-`), so the bytes live in the file the pipeline or the redirect names; a command that reads stdin gets those files judged as bodies too (review a86b7a88.2). Over-reads on purpose: every `cat <file>` that opens a pipeline segment and every `< <file>` redirect of the command counts, since a wider read only ever finds MORE session links.
+STDIN_FEEDER = re.compile(
+    r"(?:^|[;&|(]|&&|\|\|)[ \t]*cat[ \t]+([^\s|;&<>()`$\"']+)|(?<![<(])<[ \t]*([^\s|;&<>()`$\"']+)"
+)
+
+
+def _stdin_feeders(cmd, names):
+    """The files `cmd` feeds to stdin (`cat <file> |`, `< <file>`) when one of the body-file `names` is `-`, else []."""
+    if "-" not in names:
+        return []
+    return [(m.group(1) or m.group(2)) for m in STDIN_FEEDER.finditer(cmd)]
+
 
 MESSAGE_SESSION = (
     "❌ BLOCKED: console is a PUBLIC repository. Never put a Claude session link "
@@ -338,7 +349,7 @@ def _api_pr_patch(parsed):
 
 
 def _commit_file_bodies(cmd, root, env):
-    """Every message-file target's bytes, read off disk: `git commit -F`, `git tag -F`, `gh pr ... --body-file`, `gh api ... -F body=@<path>` and `--input <path>`, each in every spelling its tool accepts (`_walked_message_files`). `-F -` (stdin) is skipped: stdin at hook time is the hook's OWN payload, not the commit's, so there is nothing here to read.
+    """Every message-file target's bytes, read off disk: `git commit -F`, `git tag -F`, `gh pr ... --body-file`, `gh api ... -F body=@<path>` and `--input <path>`, each in every spelling its tool accepts (`_walked_message_files`). `-F -` (stdin) is not read as a file: stdin at hook time is the hook's OWN payload, not the commit's. The files the same command pipes or redirects into it are (`_stdin_feeders`).
 
     Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason. `env(name, None)` answers a variable the command does not assign (see `_expand`). A command the walk finds no message-writing call in keeps the text reader, `FILE_ARGS`, which knows the long spellings and a spaced `-F`.
     """
@@ -347,7 +358,7 @@ def _commit_file_bodies(cmd, root, env):
         names.update(shellscan.assignments_before(cmd, verb))
     authors, walked = _walked_message_files(cmd)
     if authors:
-        return _bodies_for(walked, cmd, root, names, env)
+        return _bodies_for(walked + _stdin_feeders(cmd, walked), cmd, root, names, env)
     bodies = []
     written = False
     for pattern, strip in FILE_ARGS:
@@ -490,7 +501,9 @@ def _session_leak(ev, cmd, scan):
     for verb in (*MESSAGE_VERBS, "gh issue", "gh release"):
         assigned.update(shellscan.assignments_before(cmd, verb))
     cats = [(m.group(1) or m.group(2)).strip("'\"") for m in CAT_FILE.finditer(cmd)]
-    bodies, _ = _bodies_for(names_read + cats, cmd, root, assigned, ev.env)
+    bodies, _ = _bodies_for(
+        names_read + cats + _stdin_feeders(cmd, names_read), cmd, root, assigned, ev.env
+    )
     # The inherited value of every `$NAME` the command expands and does not assign itself: `git commit -m "$MSG"` with MSG exported by an earlier command carries MSG's bytes, which are nowhere in `cmd`.
     for match in SHELL_VAR.finditer(cmd):
         key = match.group(2) or match.group(3)

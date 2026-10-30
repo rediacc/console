@@ -290,6 +290,11 @@ def test_every_fleet_ip_is_on_an_ops_vm_network() -> None:
         assert all(re.fullmatch(r"192\.168\.11[12]\.\d+", ip) for ip in fleet.ips), fleet
 
 
+AREA_FIELD = re.compile(
+    r"""["']?\b(areas?|areaNames?|area_names?)\b["']?\s*\??\s*:""", re.IGNORECASE
+)
+
+
 def test_the_renet_test_map_holds_no_second_area_list() -> None:
     """One source of truth for areas: `tiers.vm.areas` in proof-tiers.json. The Go test map (.ci/config/renet-test-map.json) once carried `areaNames` and a per-entry `areas` that had already drifted from it (pkg/hub, pkg/kube, pkg/delta); neither key may return, at any depth, and the gate source declares no area field."""
     if not RENET_TEST_MAP.is_file():
@@ -311,9 +316,17 @@ def test_the_renet_test_map_holds_no_second_area_list() -> None:
     assert not found, "renet-test-map.json carries an area list again: %s" % found[:5]
     assert doc["entries"], "the map has no entries; the pin walked nothing"
     gate = (ROOT / "scripts" / "gates" / "check-renet-test-map.ts").read_text(encoding="utf-8")
-    assert not re.search(r"^\s*(areas|areaNames)\??:", gate, flags=re.MULTILINE), (
-        "check-renet-test-map.ts declares an area field again"
-    )
+    assert not AREA_FIELD.search(gate), "check-renet-test-map.ts declares an area field again"
+    # Anti-vacuity: the gate-source pin fires on line-start, inline, quoted and snake spellings, and not on prose.
+    for planted_src in (
+        "  areas: string[];",
+        "type E = { glob: string; areas?: string[] };",
+        "const e = { 'areaNames': [] };",
+        '{ "areas" : 1 }',
+        "interface M { area_names: string[] }",
+    ):
+        assert AREA_FIELD.search(planted_src), planted_src
+    assert not AREA_FIELD.search("the map holds NO area list; areas live in proof-tiers.json")
     # Anti-vacuity: the pin sees keys when they exist.
     planted = {"entries": [{"glob": "x/**", "areas": ["kube"]}]}
     seen: list[str] = []

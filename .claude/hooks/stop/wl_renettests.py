@@ -179,14 +179,14 @@ def changed_since(renet, base):
 
 
 def console_changed_since(root):
-    """Console paths differing between the merge-base with origin/main and the working files (untracked included); [] when git cannot say, since the renet side then selects every package anyway."""
+    """Console paths differing between the merge-base with origin/main and the working files (untracked included); None when git cannot say, which the caller reads as "every package", since a console read row cannot be ruled out."""
     merge_base = _git(root, "merge-base", "HEAD", "origin/main")
     if not merge_base:
-        return []
+        return None
     diff = _git(root, "diff", "--name-only", merge_base)
     extra = _git(root, "ls-files", "--others", "--exclude-standard")
     if diff is None or extra is None:
-        return []
+        return None
     return sorted({p for p in (diff.split("\n") + extra.split("\n")) if p})
 
 
@@ -230,16 +230,21 @@ def pending(root, env=None):
         return None
     base, _why = renet_base(root)
     changed = changed_since(renet, base) if base else None
-    if changed is None:
+    console = console_changed_since(root)
+    if changed is None or console is None:
         required = {
             "all": True,
             "packages": all_packages(test_map),
-            "all_why": ["the renet base commit is unknown"],
+            "all_why": [
+                "the renet base commit is unknown"
+                if changed is None
+                else "the console diff could not be read"
+            ],
             "mapped": 0,
         }
-        changed = []
+        changed = changed or []
     else:
-        required = required_for(test_map, changed, None, console_changed_since(root))
+        required = required_for(test_map, changed, None, console)
         if not required["packages"]:
             return None
     tree, _dirty = working_tree(renet)

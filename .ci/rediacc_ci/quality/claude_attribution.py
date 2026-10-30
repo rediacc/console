@@ -86,9 +86,7 @@ CLAUDE_PATTERN = re.compile(
 # `test_quality_claude_attribution.py`, and widening it would break that differential for a rule the twin never had. The two halves are the pre-bash guard's own (`.claude/rediacc_hooks/guards/block_commit_meta.py`) and the git hooks' (`githooks.py`), and `test-block_commit_meta.py` fails if the three copies differ. A trailer needs its separator and a link needs an id
 # character, so a PR body that NAMES the rule (`the Claude-Session trailer`, `claude.ai/code/session_<id>`) is not a finding.
 SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
-SESSION_LINK = (
-    r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/-]?[A-Za-z0-9]"
-)
+SESSION_LINK = r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/][A-Za-z0-9]"
 SESSION_PATTERN = re.compile("%s|%s" % (SESSION_TRAILER, SESSION_LINK), re.IGNORECASE)
 
 

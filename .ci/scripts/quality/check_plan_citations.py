@@ -280,7 +280,7 @@ AGENT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])(a[0-9a-f]{16})(?![0-9a-zA-Z])")
 #: AN RDC BACKUP SNAPSHOT ID IS NEVER A GIT OBJECT: renet names a snapshot `<YYYYMMDD>T<HHMMSS>Z-<16 hex>`, and a live record must quote it verbatim so `backup manifests` can find it again. Its 16-hex tail satisfies HEXTOK_RE by shape alone, the UUID tail's class. Measured 2026-10-30: a writer shortened sixteen snapshot ids in three backup plans to 8 hex to get past this gate, destroying the evidence the records exist to keep. Matched only right after the timestamp prefix, so a bare 16-hex run is still judged.
 SNAPSHOT_ID_RE = re.compile(r"\b\d{8}T\d{6}Z-([0-9a-f]{16})\b")
 
-#: A LIVE-PROOF RECEIPT ID IS NEVER A GIT OBJECT: `rediacc_ci.ops.live_proof record` names each ledger row `lp-<12 hex>`, and `worklist.py --live-proof` writes that id into the tick evidence it then hands this gate. Measured 2026-10-30: the verb's own tick for PLAN-token-ip-rebind b00bc9df was refused because `96f7f22b87b4` read as a dead object, so the two tools could never agree. Matched only right after `lp-`.
+#: A LIVE-PROOF RECEIPT ID IS NEVER A GIT OBJECT: `rediacc_ci.ops.live_proof record` names each ledger row `lp-<12 hex>`, and `worklist.py --live-proof` writes that id into the tick evidence it then hands this gate. Measured 2026-10-30: the verb's own tick for PLAN-token-ip-rebind b00bc9df was refused because `96f7f22b87b4` read as a dead object, so the two tools could never agree. Matched only right after `lp-`, AND only when that exact id is a row of `agent/ledgers/live-proof.jsonl` (`_ledger_receipt_ids`): a `lp-` prefix alone would let any dead commit sha through, so an `lp-<12 hex>` that no ledger row carries stays judged as an object (review 5c159bcf.1).
 RECEIPT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])lp-([0-9a-f]{12})(?![0-9a-f])")
 
 #: A STOP-HOOK TICK ID IS NEVER A GIT OBJECT, the fourth instance of the class
@@ -447,6 +447,30 @@ def fence_set(lines):
 # An OPEN plan box is a line the plan-box parser itself reads as unticked (`wl_planrec.BOX_LINE_RE`, bracket `[ ]`, any of its `-`, `*` or `+` bullets), so the exemption covers exactly the lines `check:ci-plan-boxes` keys as boxes and nothing shaped like one elsewhere. A gate named on one is the gate the box promises to build, so it cannot resolve yet: the box text is the durable key `check:ci-plan-boxes` refuses to let a change rewrite, so the name cannot be phrased away either. Ticking the box flips its bracket, which makes the line an addition again, and the gate is judged then, when it must exist.
 
 
+_LEDGER_IDS: dict[str, set[str]] = {}
+
+
+def _ledger_receipt_ids():
+    """The `id` of every row of the committed live-proof ledger (`lp-<12 hex>`), read once; empty when the ledger is absent or unreadable, so an unverifiable id is judged, never exempted."""
+    if "ids" not in _LEDGER_IDS:
+        ids = set()
+        try:
+            lines = (paths.repo_root() / "agent" / "ledgers" / "live-proof.jsonl").read_text(
+                encoding="utf-8"
+            )
+        except OSError:
+            lines = ""
+        for line in lines.splitlines():
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict) and isinstance(row.get("id"), str):
+                ids.add(row["id"])
+        _LEDGER_IDS["ids"] = ids
+    return _LEDGER_IDS["ids"]
+
+
 def citations(text):
     """[(kind, token)] for every pointer on one line, in resolve()'s kinds. A gate named on an open plan box, as the plan-box parser reads one, is not a citation.
 
@@ -473,7 +497,11 @@ def citations(text):
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
     agent_id_spans += [n.span(1) for n in SNAPSHOT_ID_RE.finditer(text or "")]
-    agent_id_spans += [r.span(1) for r in RECEIPT_ID_RE.finditer(text or "")]
+    agent_id_spans += [
+        r.span(1)
+        for r in RECEIPT_ID_RE.finditer(text or "")
+        if "lp-" + r.group(1) in _ledger_receipt_ids()
+    ]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
     tick_id_spans = [t.span(1) for t in TICK_ID_RE.finditer(text or "")]
     tick_id_spans += [t.span(1) for t in MARKER_FILE_RE.finditer(text or "")]

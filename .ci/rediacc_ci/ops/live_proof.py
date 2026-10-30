@@ -17,7 +17,7 @@ Then, in order, each a refusal that stops the run:
 
 A bench-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under the `deploy-bench` Bitwarden profile, as deploy_bench does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
 
-THE eu-bench LOGIN IS THE RECORDER'S OWN STEP (operator order 2026-10-30). An eu-bench rdc step that fails because the login is tied to another network address, or is absent (`login_bench.login_needed`), runs `npm run login:bench` once and retries that step; the log keeps the failed answer, the login and the retry. A login that fails leaves the step FAILED and the message names the remedy. Nobody is asked for an authenticator code.
+THE eu-bench LOGIN IS THE RECORDER'S OWN STEP (operator order 2026-10-30). An eu-bench rdc step that fails because the login is tied to another network address, or is absent (`login_bench.login_needed`), runs `npm run login:bench` once and retries that step; the log keeps the failed answer, the login and the retry. The login runs on a DRY RUN too (no `--write`): a dry run executes the registry steps like a written one, so a needed eu-bench login, with its bench IP-allowlist refresh (`bench_access add-current`), happens on every `record` call; `verify` runs no step and never logs in. A login that fails leaves the step FAILED and the message names the remedy. Nobody is asked for an authenticator code.
 
 VERIFY. `proof.live_tier.validate_row` over every ledger row (or one plan's), with the git checks and the kept-log digest. Exit 0 when every judged row is valid; 1 on any invalid or unparsable row, or when `--plan` finds no row.
 """
@@ -344,8 +344,13 @@ def _stale_text(stale: Any) -> str:
     """The refusal text for a stale_binary answer that is not []: the count and the units when it is a list."""
     if not isinstance(stale, list):
         return f"stale_binary is {json.dumps(stale)}, not []"
+    # An entry with none of unit, exe or pid is named by its own JSON, never by the string "None".
     units = sorted(
-        {str(e.get("unit") or e.get("exe") or e.get("pid")) for e in stale if isinstance(e, dict)}
+        {
+            str(e.get("unit") or e.get("exe") or e.get("pid") or json.dumps(e, sort_keys=True))
+            for e in stale
+            if isinstance(e, dict)
+        }
     )
     return f"stale_binary lists {len(stale)} process(es) still running a replaced renet, not []: {', '.join(units) or json.dumps(stale)}"
 

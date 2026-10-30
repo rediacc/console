@@ -166,3 +166,20 @@ def test_a_refused_build_raises_and_leaves_no_stamp(tmp_path, monkeypatch):
     with pytest.raises(local_common.LocalCommonError):
         local_common.ensure_renet_built(_env(tmp_path))
     assert len(builds) == 2
+
+
+def test_a_refused_rebuild_drops_the_stamp_of_the_earlier_good_build(tmp_path, monkeypatch):
+    """Review 4adaf800.1: the stamp from a good build must not survive a later refused build that overwrote bin/renet."""
+    renet, builds, _ = _fake_build_env(tmp_path, monkeypatch)
+    assert local_common.ensure_renet_built(_env(tmp_path)) is True
+    stamp = renet / "bin" / local_common.RENET_STAMP_NAME
+    assert stamp.is_file()
+    # The key moves, so the stamp no longer matches and a rebuild runs; the gate now refuses it.
+    monkeypatch.setattr(
+        local_common, "renet_key_refusal", lambda _binary, _key: "baked key differs"
+    )
+    other = dict(_env(tmp_path), ACCOUNT_ED25519_PUBLIC_KEY=KEY[::-1])
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(other)
+    assert len(builds) == 2
+    assert not stamp.exists(), "a refused build left the earlier stamp in place"

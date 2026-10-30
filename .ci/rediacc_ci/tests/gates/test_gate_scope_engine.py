@@ -907,12 +907,15 @@ ALL_VM_KEYS = {
 # Real io against a scratch repo, then the real classify and buildPlan.
 GITLINK_JS = (
     "const e = require(process.argv[1]);"
-    "const io = e.createRepoIo({repoRoot: process.argv[2], repo: 'x/y'});"
-    "const notes = []; io.setNoteSink((m) => notes.push(m));"
-    "const paths = io.diffPaths(process.argv[3], process.argv[4]);"
-    "const plan = e.buildPlan(e.classify(paths));"
-    "if (notes.some((n) => n.startsWith('renet-gitlink-unexpanded:'))) plan.reasons.push(...notes);"
-    "process.stdout.write(JSON.stringify({paths, notes, plan}));"
+    "const real = e.createRepoIo({repoRoot: process.argv[2], repo: 'x/y'});"
+    "let paths = null;"
+    # Only the git diff is real io; the run-history side is a legacy test double, so the PRODUCTION resolveBaseline (its notes sink and its copy of the gitlink notes into plan.reasons) is what produces the plan.
+    "const io = {isShallow: () => false, firstParent: () => process.argv[3],"
+    " listCandidates: () => [{sha: process.argv[3], conclusion: 'success', runId: 1,"
+    " plan: {mode: 'full', reconciled: true, base_sha: process.argv[3]}}],"
+    " diffPaths: (a, b) => (paths = real.diffPaths(a, b)), setNoteSink: real.setNoteSink};"
+    "const r = e.resolveBaseline({head: process.argv[4], mergeSha: 'merge'}, io);"
+    "process.stdout.write(JSON.stringify({paths, notes: r.notes, plan: r.plan}));"
 )
 
 
@@ -1012,7 +1015,9 @@ def test_a_renamed_renet_file_selects_the_areas_of_both_names(gate):
         got = _gitlink_run(str(parent), p_old, p_new)
     paths = set(got["paths"])
     gate.assert_eq(
-        dumps(sorted(paths & {"private/renet/pkg/kube/moved.go", "private/renet/pkg/hub/moved.go"})),
+        dumps(
+            sorted(paths & {"private/renet/pkg/kube/moved.go", "private/renet/pkg/hub/moved.go"})
+        ),
         dumps(["private/renet/pkg/hub/moved.go", "private/renet/pkg/kube/moved.go"]),
         "both names of the moved file are expanded",
     )

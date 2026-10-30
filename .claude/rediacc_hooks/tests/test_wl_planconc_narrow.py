@@ -151,7 +151,39 @@ def test_a_shared_bare_gitlink_is_not_an_overlap_but_a_shared_file_still_is():
         "PLAN-c.md": X.PlanX("PLAN-c.md", owns=("private/renet", "private/renet/pkg/a/x.go")),
     }
     live = {"PLAN-b.md": ["writer w1"]}
-    assert X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__).allow
+    # The gitlink set is INJECTED, so the test does not depend on the real .gitmodules (review b9328925.3).
+    gitlinks = frozenset({"private/renet"})
+    assert X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__, gitlinks=gitlinks).allow
     # Control: a real file under the submodule still collides.
     live_c = {"PLAN-c.md": ["writer w2"]}
-    assert X.spawn_verdict({"PLAN-a.md"}, live_c, xi.__getitem__).kind == "overlap"
+    assert (
+        X.spawn_verdict({"PLAN-a.md"}, live_c, xi.__getitem__, gitlinks=gitlinks).kind == "overlap"
+    )
+    # Control: with no gitlink declared, the bare root is an ordinary shared claim and refuses.
+    assert (
+        X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__, gitlinks=frozenset()).kind == "overlap"
+    )
+
+
+def test_the_gitlink_set_is_read_from_the_project_dir_once_per_verdict(tmp_path, monkeypatch):
+    """Review b9328925.1/.2: the default set comes from CLAUDE_PROJECT_DIR's `.gitmodules` (not the hook file's own location), and is read once per spawn_verdict, not once per live plan."""
+    (tmp_path / ".gitmodules").write_text(
+        '[submodule "x"]\n\tpath = vendor/x\n\turl = u\n', encoding="utf-8"
+    )
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    reads = []
+    real = X._submodule_roots
+    monkeypatch.setattr(X, "_submodule_roots", lambda root: reads.append(str(root)) or real(root))
+    xi = {
+        "PLAN-a.md": X.PlanX("PLAN-a.md", owns=("vendor/x", "vendor/x/a/**")),
+        "PLAN-b.md": X.PlanX("PLAN-b.md", owns=("vendor/x", "vendor/x/b/**")),
+        "PLAN-c.md": X.PlanX("PLAN-c.md", owns=("vendor/x", "vendor/x/c/**")),
+    }
+    live = {"PLAN-b.md": ["writer w1"], "PLAN-c.md": ["writer w2"]}
+    assert X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__).allow
+    assert reads == [str(tmp_path)]
+    # Control: pointed at a directory with no .gitmodules, the default is the file's own root, so the fixture's gitlink is no gitlink and the plans collide.
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(empty))
+    assert X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__).kind == "overlap"

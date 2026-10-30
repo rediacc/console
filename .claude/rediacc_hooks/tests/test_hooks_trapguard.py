@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 
 import pytest
+from rediacc_ci.ops import login_bench
 
 from rediacc_hooks.tests import hookblocks, hookcases
 
@@ -758,3 +759,14 @@ def test_verify_rebase_names_every_same_subject_candidate(tmp_path):
     said = _worklist_git(repo, "verify-rebase", str(snap), "main")
     assert "REFUSED" in said, said
     assert "same subject in the new range: %s" % ", ".join(shorts) in said, said
+
+
+def test_the_bench_login_markers_are_the_login_bench_markers():
+    """Review dae87b66.5: the hook cannot import `.ci/`, so it keeps a copy of `login_bench.LOGIN_NEEDED_MARKERS`; the two must stay the same tuple, in order."""
+    spec = importlib.util.spec_from_file_location("trapguard_dispatch_markers", TRAPGUARD)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.BENCH_LOGIN_MARKERS, "the hook's copy is empty; the parity pin compared nothing"
+    assert tuple(module.BENCH_LOGIN_MARKERS) == tuple(login_bench.LOGIN_NEEDED_MARKERS)

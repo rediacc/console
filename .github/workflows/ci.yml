@@ -380,9 +380,16 @@ jobs:
         env:
           RENET_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git -c "url.https://x-access-token:${RENET_TOKEN}@github.com/.insteadOf=https://github.com/" \
-            submodule update --init --filter=blob:none --no-checkout private/renet \
-            || echo "::warning::private/renet history unavailable; the scope engine selects every VM job for a renet bump"
+          # The credential rides GIT_CONFIG_* environment variables, never argv, so it is not in the
+          # runner's process list; git's own output is captured and the token redacted before it is
+          # printed, so a failure line cannot echo the rewritten URL into the log.
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="url.https://x-access-token:${RENET_TOKEN}@github.com/.insteadOf"
+          export GIT_CONFIG_VALUE_0="https://github.com/"
+          if ! out=$(git submodule update --init --filter=blob:none --no-checkout private/renet 2>&1); then
+            printf '%s\n' "${out//${RENET_TOKEN}/***}"
+            echo "::warning::private/renet history unavailable; the scope engine selects every VM job for a renet bump"
+          fi
       # LIVE as of D-1: the `run_<key>` outputs this step writes now gate 17
       # jobs. It was shadow-only until the reconciler had a clean run of real
       # PR traffic behind it.

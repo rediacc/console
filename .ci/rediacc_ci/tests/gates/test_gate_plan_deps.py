@@ -511,11 +511,9 @@ def test_the_gate_and_the_spawn_guard_read_every_owns_line_alike(gate, label, va
         sys.path.pop(0)
     text = _plan().replace("Owns: docs/fixture/**", "Owns: %s" % value)
     header = D.parse_header(text)
-    guard_ok = X.declared_owns("Owns: %s" % value) is not None or value.startswith("none --")
+    guard_ok = X.declared_owns("Owns: %s" % value) is not None
     gate_d13 = any(f.code == D.D_OWNS for f in X.x_findings(header, text))
-    set_x_refuses = any(
-        p.startswith(D.D_OWNS) for p in G.x_problems(_plan(), {"Owns": value})[1]
-    )
+    set_x_refuses = any(p.startswith(D.D_OWNS) for p in G.x_problems(_plan(), {"Owns": value})[1])
     gate.assert_eq(gate_d13, not guard_ok, "%s: D13 mirrors the guard's reading" % label)
     gate.assert_eq(set_x_refuses, gate_d13, "%s: --set-x refuses exactly what D13 flags" % label)
     gate.log_pass("%s: gate, --set-x and guard agree (accepted=%s)" % (label, guard_ok))

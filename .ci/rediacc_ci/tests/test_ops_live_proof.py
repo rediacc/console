@@ -517,6 +517,15 @@ def test_a_stale_binary_answer_that_is_not_empty_refuses(bed: Bed, answer: str) 
     assert bed.fake.ran("hash") == 0
 
 
+def test_a_stale_entry_with_no_identifier_is_named_by_its_json_not_none() -> None:
+    """Review dae87b66.3: an entry with none of unit, exe or pid used to read as the unit `None`."""
+    text = LP._stale_text([{"detail": "x"}])
+    assert "None" not in text, text
+    assert '"detail": "x"' in text, text
+    # Control: an entry that carries a unit is still named by it.
+    assert "renet-a.service" in LP._stale_text([{"unit": "renet-a.service"}])
+
+
 # The CLI's real envelope nests the answer under `data` (.ci/cache/live-proof/lp-4e32f5e0d079.log); reading the top level alone reported "stale_binary is null" for every hostinger run.
 def _envelope(data: dict[str, Any]) -> str:
     return json.dumps({"success": True, "command": "machine status", "data": data}, indent=2)

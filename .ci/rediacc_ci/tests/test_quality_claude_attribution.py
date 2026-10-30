@@ -222,3 +222,21 @@ def test_gh_retry_404_is_not_retried(monkeypatch, capsys) -> None:
     assert len(calls) == 1
     assert naps == []
     assert "HTTP 404" in capsys.readouterr().err
+
+
+def test_a_public_claude_page_slug_is_not_a_session_link_but_real_session_links_are():
+    """Review a86b7a88.1: `[_/-]?` let a dash before any letter match, so `claude.com/blog/share-your-work` was flagged. A real session link has `_` or `/` before its id."""
+    for ok in (
+        "https://claude.com/blog/share-your-work",
+        "https://claude.com/blog/chat-with-claude",
+        "see https://claude.ai/blog/session-notes",
+    ):
+        assert not ca.SESSION_PATTERN.search(ok), ok
+    for bad in (
+        "https://claude.ai/code/session_01AbCdEfGh",
+        "https://claude.ai/chat/1a2b-3c4d",
+        "https://claude.ai/share/abc",
+        "https://claude.ai/artifacts/abc",
+        "https://claude.com/code/session_abc1",
+    ):
+        assert ca.SESSION_PATTERN.search(bad), bad

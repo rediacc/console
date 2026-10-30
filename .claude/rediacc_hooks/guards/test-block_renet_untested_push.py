@@ -368,6 +368,33 @@ for quiet in (DOCS, LICENSE, LICENSE_OK, LICENSE_PARTIAL, UNMAPPED_ALL):
         print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))
         fails += 1
 
+# Review 22db9729.2: a console diff git cannot read is UNKNOWN, which selects every package; it is never "no console paths".
+G.syspath.on_sys_path(G.plan_gate.STOP_DIR)
+_WR = importlib.import_module("wl_renettests")
+_TMAP = _WR.load_map(str(HERE.parents[2]))
+_BASE = G.VM._git(LICENSE, "rev-parse", "HEAD~1")
+_UNREADABLE = G._console_changed(str(LICENSE), _BASE, "f" * 40)
+_READABLE = G._console_changed(str(LICENSE), _BASE, "HEAD")
+_REQ_UNKNOWN = G._required(_WR, _TMAP, [], _UNREADABLE, "base")
+_REQ_KNOWN = G._required(_WR, _TMAP, [], [], "base")
+for label, cond in (
+    ("a failed console diff returns None, not []", _UNREADABLE is None),
+    ("CONTROL: a readable console diff returns a list", isinstance(_READABLE, list)),
+    (
+        "an unknown console diff selects every package",
+        _REQ_UNKNOWN["all"] and _REQ_UNKNOWN["packages"],
+    ),
+    (
+        "CONTROL: a known empty range selects nothing",
+        not _REQ_KNOWN["all"] and not _REQ_KNOWN["packages"],
+    ),
+):
+    if cond:
+        print("unit: %s" % label)
+    else:
+        print("*** FAIL *** unit: %s" % label)
+        fails += 1
+
 print()
 CONTROLS = [("DEFECT", G.DEFECT), *sorted(G.MUTANTS.items())]
 # The case each control must flip, so a control cannot pass on some unrelated refusal.

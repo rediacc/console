@@ -152,6 +152,15 @@ BENCH_REFUSE = [
     ),
 ]
 
+BENCH_REFUSE += [
+    # Review dae87b66.2: a vault word in ANOTHER sentence does not excuse a login ask.
+    (
+        "a login ask beside a seed remark",
+        "Can you log in to eu-bench again? I rotated the seed.",
+        "",
+    ),
+]
+
 BENCH_PASS = [
     (
         "the operator's door: a placeholder value",
@@ -165,6 +174,8 @@ BENCH_PASS = [
     ("a design question about the flow", "Should the bench login flow cover us-bench too?", ""),
     ("another config", "Could you enter the authenticator code for eu-remote?", ""),
     ("a design question about the module", "Should we let login_bench retry a refused code?", ""),
+    # Review dae87b66.1: addressed to the operator, yet the ask is for a code change, not a login.
+    ("a request to fix the login test", "Do you want me to fix the bench login test?", ""),
 ]
 
 

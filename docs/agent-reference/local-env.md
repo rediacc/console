@@ -86,6 +86,8 @@ ln -sf "../share/rediacc/bin/rdc" ~/.local/bin/rdc
 
 After that, `rdc` from any terminal is the binary, with no dev-wrapper output.
 
+The binary enforces licensing like every other build: repo create and fork issue a repository licence, so the demo config needs the account server and a subscription token (`rdc subscription login`).
+
 URL anatomy (`demo-stackoverflow`); forks add the `-fork-<TAG>` infix:
 
 ```
