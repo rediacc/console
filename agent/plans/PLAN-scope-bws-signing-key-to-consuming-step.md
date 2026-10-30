@@ -96,7 +96,7 @@ In scope: ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, RELEASE_GPG_P
 
   Accept: `npm run check:ci-bws-step-scope`
 - [x] S6 Control, using a `WORKFLOW_DIR` fixture seam like the one in `.ci/scripts/quality/check_workflows.py`:
-  - Each of five planted fixtures, one per rule (i) to (v), must turn the gate red and name its rule. One plant is the pre-fix ct-tests.yml:435/493 shape.
+  - Each of five planted fixtures, one per rule (i) to (v), must turn the gate red and name its rule. One plant is the pre-fix .github/workflows/ct-tests.yml:435/493 shape.
   - The fixed fixture must stay green, and so must the real tree.
   - Pytest covers both directions.
     (ticked) 2026-10-30T23:24:05Z by d778be9d: commit:445b83f6 .ci/rediacc_ci/tests/test_quality_bws_step_scope.py:1; selftest 29 controls rc 0; pytest 14 passed; each rule planted into ct-tests.yml fired
