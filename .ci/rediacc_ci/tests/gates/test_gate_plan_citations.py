@@ -631,3 +631,13 @@ def test_a_backup_snapshot_id_is_not_an_object_citation_but_a_bare_hex_run_still
     if ("object", "75f3a8f270363707") not in citations("a bare run 75f3a8f270363707 here"):
         gate.log_fail("control: the same 16 hex without the timestamp prefix must still be judged")
     gate.log_pass("snapshot ids are exempt only behind their timestamp prefix")
+
+
+def test_a_live_proof_receipt_id_is_not_an_object_citation_but_a_bare_hex_run_still_is(gate):
+    """Red before RECEIPT_ID_RE: the evidence worklist.py --live-proof writes (`live-proof lp-<12hex> ...`) was refused by this gate."""
+    citations = _citations_fn()
+    if citations("live-proof lp-96f7f22b87b4 bench account-smoke rc=0"):
+        gate.log_fail("a receipt id after its lp- prefix must not be cited as an object")
+    if ("object", "96f7f22b87b4") not in citations("a bare run 96f7f22b87b4 here"):
+        gate.log_fail("control: the same 12 hex without the lp- prefix must still be judged")
+    gate.log_pass("live-proof receipt ids are exempt only behind their lp- prefix")
