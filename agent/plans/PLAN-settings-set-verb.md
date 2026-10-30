@@ -2,12 +2,12 @@
 
 Status: approved -- operator /ask 2026-10-30T06:40Z: "Yes, plan it" (a settings verb so any session can change tunables safely); PR-TASK 9f92c43e.
 Depends-On: no-dep -- S1 and S2 need nothing outside this plan. S3 edits .ci/rediacc_ci/ops/cf_usage_report.py and its test, which PLAN-cloudflare-spend-guard.md owns (open box T6), so S3 runs only under that plan's writer lease or after T6 closes.
+Owns: agent/plans/PLAN-settings-set-verb.md, scripts/settings/**, scripts/lib/settings/**, .ci/config/settings.json, .ci/config/cf-spend-guard.json, .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/tests/test_ops_cf_usage_report.py, .ci/scripts/quality/check_settings_registry.py, .ci/rediacc_ci/tests/gates/test_gate_settings_registry.py, package.json, .ci/config/gate-costs.json, .ci/config/lane-durations.json, docs/agent-reference/ci-gates.md, .ci/scripts/quality/check_settings_registry.py (new, the settings-registry gate of S4)
 Owner: d778be9d
 Updated: 2026-10-30
 First-Seen: 2026-10-30
 Priority: P2 -- one operator ruling (R2 storage to 5 TB) had to be written into three places by hand on 2026-10-30, and only a test caught a missed copy; every other tunable under .ci/config is hand-edited JSON with no validation at write time
 Concurrency: parallel -- S1 and S2 own new files only; S3 touches the spend-guard files under that plan's lease (Depends-On); S4 follows S3.
-Owns: agent/plans/PLAN-settings-set-verb.md, scripts/settings/**, scripts/lib/settings/**, .ci/config/settings.json, .ci/config/cf-spend-guard.json, .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/tests/test_ops_cf_usage_report.py, .ci/scripts/quality/check_settings_registry.py, .ci/rediacc_ci/tests/gates/test_gate_settings_registry.py, package.json, .ci/config/gate-costs.json, .ci/config/lane-durations.json, docs/agent-reference/ci-gates.md, the new settings-registry gate (created and named in S4)
 
 ## Finding
 
