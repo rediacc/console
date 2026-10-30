@@ -80,7 +80,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 42 plans done, 577 of 754 boxes done (76%).
+Promoted: 6 of 42 plans done, 581 of 754 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -115,7 +115,7 @@ Promoted: 6 of 42 plans done, 577 of 754 boxes done (76%).
 | 29 | PLAN-backup-restore-path.md | 7/10 | 3 open |
 | 30 | PLAN-ssh-key-source-ranges.md | 10/11 | 1 open |
 | 31 | PLAN-repo-docker-storage-prune.md | 11/14 | 3 open |
-| 32 | PLAN-production-key-only.md | 5/19 | 14 open |
+| 32 | PLAN-production-key-only.md | 9/19 | 10 open |
 | 33 | PLAN-detached-jobs.md | 12/39 | 27 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 12/16 | 4 open |
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 4/8 | 4 open |

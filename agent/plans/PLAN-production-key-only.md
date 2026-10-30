@@ -277,17 +277,19 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json, .ci/config/env-manifest.json, scripts/data/doc-registry.md, .ci/scripts/quality/check_no_dev_keys.py (new), .ci/rediacc_ci/quality/no_dev_keys.py (new), .ci/rediacc_ci/tests/gates/test_gate_no_dev_keys.py (new), package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py (line 1158 only). Accept: `npm run check:ci-bws-map`, `check:ci-bws-map-live` and `check:ci-secret-supply` rc 0, and the gate test rc 0.
 
-- [ ] N1 [writer] renet Go: delete the nolicense build. Changes:
+- [x] N1 [writer] renet Go: delete the nolicense build. Changes:
   - Delete private/renet/pkg/license/runtime_nolicense.go. Drop `//go:build !nolicense` from runtime_licensed.go and the license tests (chain_interleave, crosslang_repo_license, renew, runtime_selection).
   - private/renet/pkg/license/preferred.go:17 and pkg/i18n/baseline.json lose "use -tags nolicense". private/renet/cmd/renet/repository_license_status.go:250, :277 and private/renet/cmd/renet/backup_snapshot.go:354 comments lose the stub case.
   - The tests built under `nolicense` (cmd/renet/repository_license_status_test.go, repository_license_status_store_test.go, pkg/functions/datastore_identity_test.go, tiermap_dispatch_test.go, pkg/delta/command_integration_test.go, pkg/daemon/mount_sandbox_linux_test.go, pkg/hostmetrics/host_metrics_reach_test.go, pkg/ebpf/exec_sessions_root_test.go) sign fixture licences with an in-test keypair.
   - private/renet/.ci/scripts/test/run-tests.sh:189, private/renet/.ci/scripts/quality/i18n.sh:55 and private/renet/scripts/ci-test.sh:373 build without the tag.
+    (ticked) 2026-10-30T21:14:23Z by d778be9d: commit:c0e67f9c9 renet carries no nolicense build: git -C private/renet grep -i nolicense prints only TestBrowseAt_NoLicenseExits10; go vet ./... and go test ./... rc 0 (writer a0f8530006c3c7944)
 
   Owns: the private/renet files named above. Accept: `cd private/renet && go vet ./... && go test ./... -count=1` rc 0, and `git -C private/renet grep -n nolicense` prints nothing.
 
-- [ ] N2 [writer] build.sh: one flavor, key required. Changes:
+- [x] N2 [writer] build.sh: one flavor, key required. Changes:
   - private/renet/build.sh: `dev` drops `--license`/`--nolicense` and `RDC_RENET_LICENSE`/`RDC_BENCH` (:800-830), `_dev_out_dir` goes (:788-796), `stage_linux` builds without the tag (:531), `RENET_KEYLESS` goes (:415-430), and the usage line (:899) is rewritten.
   - .github/workflows/ci-build-renet.yml:545 cross-compile check builds without the tag.
+    (ticked) 2026-10-30T21:14:17Z by d778be9d: commit:c0e67f9c9 env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev rc 1 refusing to build without a licence key; test_renet_build_key_required.py and test_private_renet_build_dev_flavor.py pass
 
   Owns: private/renet/build.sh, .github/workflows/ci-build-renet.yml (line 545 only), .ci/rediacc_ci/tests/test_renet_build_key_required.py, .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py. Accept: those pytest files rc 0 (the keyless and `RENET_KEYLESS` cases now refused), and `env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev` rc 1.
 
@@ -299,10 +301,11 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: the console files above and their tests in the header Owns. Accept: `PYTHONPATH=.ci python3 -m pytest` over every test named in Owns rc 0, `npm run check:ci-env-manifest`, `check:ci-python-env-registry`, `check:ci-rdc-sh-env` and `check:ci-workflow-env-provision` rc 0, and `git grep -n -E "nolicense|RDC_RENET_LICENSE|bin/enforce" -- .ci rdc.sh ':!.ci/shadow' ':!.ci/cache'` prints nothing.
 
-- [ ] N4 [writer] CLI. Changes:
+- [x] N4 [writer] CLI. Changes:
   - packages/cli/src/services/renet/renet-execution.ts (:186, :300) and renet-clean-build-fs.ts drop the flavor flag and `bin/enforce`.
   - packages/cli/src/services/executor/license-recovery.ts:285 and :362 lose the nolicense activation bypass.
   - The vitest suites (renet-clean-build, local-executor, local-executor-restore-license) and the two e2e-tests files are updated.
+    (ticked) 2026-10-30T21:14:13Z by d778be9d: commit:c0e67f9c9 no nolicense or bin/enforce under packages/; npx tsc --noEmit -p packages/cli rc 0; npx vitest run src/services (packages/cli) rc 0
 
   Owns: the packages/cli and packages/e2e-tests files in the header Owns. Accept: `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0 and `cd packages/cli && npx vitest run src/services` rc 0.
 
@@ -311,7 +314,8 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: the five workflow files. Accept: `npm run check:ci-workflows` rc 0, `git grep -n -E "nolicense|RENET_KEYLESS" -- .github` prints nothing, and a ct-tests run on the branch is green.
 
-- [ ] N6 [writer] Docs. docs/agent-reference/local-env.md, docs/environment-variables.md, docs/dev-environments.md, docs/agent-reference/release-process.md, private/renet/CLAUDE.md:17 and .claude/agents/licensing-ops.md describe one licensed build, the bws key and the key gate in `./rdc.sh`. doc-registry.md is regenerated by `npx tsx scripts/gen/gen-docs.ts --write` (named for the lead).
+- [x] N6 [writer] Docs. docs/agent-reference/local-env.md, docs/environment-variables.md, docs/dev-environments.md, docs/agent-reference/release-process.md, private/renet/CLAUDE.md:17 and .claude/agents/licensing-ops.md describe one licensed build, the bws key and the key gate in `./rdc.sh`. doc-registry.md is regenerated by `npx tsx scripts/gen/gen-docs.ts --write` (named for the lead).
+    (ticked) 2026-10-30T21:14:20Z by d778be9d: commit:c0e67f9c9 docs/dev-environments.md and docs/environment-variables.md describe the one licensed build (2e8447051); check:ci-prose-style rc 0
 
   Owns: those docs. Accept: `npm run check:ci-prose-style` and `npm run check:ci-doc-region-parity` rc 0.
 
