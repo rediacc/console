@@ -8,7 +8,7 @@
 /**
  * Subscription plan codes.
  */
-export type PlanCode = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
+export type PlanCode = 'FREE' | 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 
 /**
  * Subscription status values.

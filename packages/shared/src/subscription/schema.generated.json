@@ -3,7 +3,7 @@
   "types": {
     "PlanCode": {
       "kind": "enum",
-      "values": ["COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"]
+      "values": ["FREE", "COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"]
     },
     "SubscriptionStatus": {
       "kind": "enum",
@@ -222,6 +222,11 @@
     "schemaVersion": 1,
     "checkInIntervalHours": 24,
     "planResources": {
+      "FREE": {
+        "maxRepositorySizeGb": 3,
+        "maxRepoLicenseIssuancesPerMonth": 0,
+        "storageQuotaBytes": 0
+      },
       "COMMUNITY": {
         "maxRepositorySizeGb": 10,
         "maxRepoLicenseIssuancesPerMonth": 100,
@@ -244,6 +249,18 @@
       }
     },
     "planFeatures": {
+      "FREE": {
+        "permissionGroups": false,
+        "ceph": false,
+        "queuePriority": false,
+        "advancedAnalytics": false,
+        "prioritySupport": false,
+        "auditLog": false,
+        "advancedQueue": false,
+        "customBranding": false,
+        "dedicatedAccount": false,
+        "delegationCerts": false
+      },
       "COMMUNITY": {
         "permissionGroups": false,
         "ceph": false,

@@ -32,6 +32,11 @@ export const PLAN_LIMITS: Record<
     storageQuotaBytes: number;
   }
 > = {
+  FREE: {
+    maxRepositorySizeGb: 3,
+    maxRepoLicenseIssuancesPerMonth: 0,
+    storageQuotaBytes: 0,
+  },
   COMMUNITY: {
     maxRepositorySizeGb: 10,
     maxRepoLicenseIssuancesPerMonth: 100,
@@ -90,6 +95,25 @@ export const PLAN_BACKUP_RETENTION: Record<
   PlanCode,
   { default: BackupRetentionKnobs; limit: BackupRetentionKnobs; allowKeepAll: boolean }
 > = {
+  FREE: {
+    default: {
+      keepLast: 0,
+      keepHourly: 0,
+      keepDaily: 0,
+      keepWeekly: 0,
+      keepMonthly: 0,
+      keepYearly: 0,
+    },
+    limit: {
+      keepLast: 0,
+      keepHourly: 0,
+      keepDaily: 0,
+      keepWeekly: 0,
+      keepMonthly: 0,
+      keepYearly: 0,
+    },
+    allowKeepAll: false,
+  },
   COMMUNITY: {
     default: {
       keepLast: 3,
@@ -182,6 +206,18 @@ export const MACHINE_AUTO_RELEASE_HOURS = MACHINE_AUTO_RELEASE_MS / (60 * 60 * 1
  * Feature availability by plan.
  */
 export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
+  FREE: {
+    permissionGroups: false,
+    ceph: false,
+    queuePriority: false,
+    advancedAnalytics: false,
+    prioritySupport: false,
+    auditLog: false,
+    advancedQueue: false,
+    customBranding: false,
+    dedicatedAccount: false,
+    delegationCerts: false,
+  },
   COMMUNITY: {
     permissionGroups: false,
     ceph: false,
@@ -287,6 +323,7 @@ export function isCommunityUsable(sub: {
  * All valid plan codes in order from lowest to highest tier.
  */
 export const PLAN_ORDER: readonly PlanCode[] = [
+  'FREE',
   'COMMUNITY',
   'PROFESSIONAL',
   'BUSINESS',
@@ -301,6 +338,7 @@ export const PLAN_ORDER: readonly PlanCode[] = [
  * the ENTERPRISE value applies to partner-negotiated subscriptions only.
  */
 export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
+  FREE: 1,
   COMMUNITY: 1,
   PROFESSIONAL: 1,
   BUSINESS: 1,
@@ -312,6 +350,7 @@ export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
  * Used when neither the request nor a per-subscription override specifies a value.
  */
 export const PLAN_DELEGATION_CERT_DEFAULT_DAYS: Record<PlanCode, number> = {
+  FREE: 2,
   COMMUNITY: 15,
   PROFESSIONAL: 60,
   BUSINESS: 90,
@@ -323,6 +362,7 @@ export const PLAN_DELEGATION_CERT_DEFAULT_DAYS: Record<PlanCode, number> = {
  * Bypassed when a subscription has an explicit `delegationCertDefaultDays` override.
  */
 export const PLAN_DELEGATION_CERT_MAX_DAYS: Record<PlanCode, number> = {
+  FREE: 2,
   COMMUNITY: 30,
   PROFESSIONAL: 120,
   BUSINESS: 180,
@@ -494,6 +534,11 @@ export function comparePlans(a: PlanCode, b: PlanCode): number {
  * amounts exist for internal accounting and partner-deal reference.
  */
 export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
+  FREE: {
+    monthlyPriceCents: 0,
+    annualPriceCents: 0,
+    currency: 'usd',
+  },
   COMMUNITY: {
     monthlyPriceCents: 0,
     annualPriceCents: 0,
@@ -520,6 +565,14 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
  * Display metadata by plan.
  */
 export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
+  FREE: {
+    displayName: 'Free License',
+    description: '48-hour renewable licence for one repository of up to 3 GB, no account needed',
+    paid: false,
+    featured: false,
+    selfServe: false,
+    webConsole: false,
+  },
   COMMUNITY: {
     displayName: 'Community',
     description: 'Free fallback plan that keeps one machine running after a cancelled trial',

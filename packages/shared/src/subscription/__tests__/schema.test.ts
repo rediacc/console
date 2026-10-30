@@ -152,15 +152,16 @@ describe('Subscription Schema Constants', () => {
   });
 
   describe('PLAN_ORDER', () => {
-    it('should have exactly 4 plans', () => {
-      expect(PLAN_ORDER).toHaveLength(4);
+    it('should have exactly 5 plans', () => {
+      expect(PLAN_ORDER).toHaveLength(5);
     });
 
     it('should be ordered from lowest to highest tier', () => {
-      expect(PLAN_ORDER[0]).toBe('COMMUNITY');
-      expect(PLAN_ORDER[1]).toBe('PROFESSIONAL');
-      expect(PLAN_ORDER[2]).toBe('BUSINESS');
-      expect(PLAN_ORDER[3]).toBe('ENTERPRISE');
+      expect(PLAN_ORDER[0]).toBe('FREE');
+      expect(PLAN_ORDER[1]).toBe('COMMUNITY');
+      expect(PLAN_ORDER[2]).toBe('PROFESSIONAL');
+      expect(PLAN_ORDER[3]).toBe('BUSINESS');
+      expect(PLAN_ORDER[4]).toBe('ENTERPRISE');
     });
   });
 });
