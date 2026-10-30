@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockInfo,
+  mockPrint,
   mockFetchMachineStatus,
   mockGetMachineContainers,
   mockGetLocalMachine,
@@ -11,6 +12,7 @@ const {
   mockDownloadCertCache,
 } = vi.hoisted(() => ({
   mockInfo: vi.fn(),
+  mockPrint: vi.fn(),
   mockFetchMachineStatus: vi.fn(),
   mockGetMachineContainers: vi.fn(),
   mockGetLocalMachine: vi.fn(),
@@ -23,6 +25,7 @@ const {
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: mockInfo,
+    print: mockPrint,
     warn: vi.fn(),
     error: vi.fn(),
   },
@@ -37,6 +40,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getLocalMachine: mockGetLocalMachine,
     getLocalConfig: vi.fn().mockResolvedValue({}),
+    listRepositories: vi.fn().mockResolvedValue([]),
     getCurrent: mockGetCurrent,
   },
 }));
@@ -57,9 +61,48 @@ vi.mock('@rediacc/shared/services/machine', () => ({
 import { WK_CLOUD_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import {
   postRepoUpTasks,
+  printRepoListTable,
   printResolvedServiceUrls,
   printServiceUrlPattern,
 } from '../repo-batch-utils.js';
+
+describe('printRepoListTable', () => {
+  beforeEach(() => {
+    mockPrint.mockReset();
+  });
+
+  // docker is the repo's daemon answering; running is a container in state running.
+  it('shows a live daemon with zero containers as docker Yes and running No', async () => {
+    await printRepoListTable([
+      {
+        name: 'hermes',
+        guid: '50cf3c1d-e199-4a07-a4d2-f0890b6f9aee',
+        name_source: 'config',
+        mounted: true,
+        docker_running: true,
+        containers_running: false,
+        container_count: 0,
+      },
+    ]);
+    const [rows, format] = mockPrint.mock.calls[0];
+    expect(format).toBe('table');
+    expect(rows[0]).toMatchObject({ docker: 'Yes', running: 'No', containers: 0 });
+  });
+
+  it('shows a repo with a running container as running Yes', async () => {
+    await printRepoListTable([
+      {
+        name: 'mail',
+        guid: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+        name_source: 'config',
+        docker_running: true,
+        containers_running: true,
+        container_count: 2,
+      },
+    ]);
+    expect(mockPrint.mock.calls[0][0][0]).toMatchObject({ docker: 'Yes', running: 'Yes' });
+  });
+});
 
 const LIST_RESULT = { repositories: [], containers: [] };
 

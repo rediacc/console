@@ -99,6 +99,28 @@ describe('unmounted repository reporting', () => {
   });
 });
 
+describe('docker daemon count', () => {
+  // docker_running means the repo's dockerd answers its socket, so a daemon up
+  // with no container still counts. containers_running is a separate field.
+  it('counts a repo whose daemon answers with zero containers', () => {
+    const health = getMachineHealth(
+      machineWith({
+        repositories: [
+          {
+            name: 'hermes',
+            mounted: true,
+            docker_running: true,
+            containers_running: false,
+            container_count: 0,
+          },
+          { name: 'parked', mounted: false, docker_running: false, container_count: 0 },
+        ],
+      })
+    );
+    expect(health.details.repositories.dockerRunning).toBe(1);
+  });
+});
+
 describe('repo license reporting', () => {
   const lic = (status: string, n: number) => Array.from({ length: n }, () => ({ status }));
 

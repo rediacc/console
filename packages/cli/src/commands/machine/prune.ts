@@ -206,6 +206,7 @@ async function cleanupSshArtifacts(machineName: string): Promise<void> {
 interface MountableRepo {
   name: string;
   mounted?: boolean;
+  /** The repository's Docker daemon answers its socket, with or without containers. */
   docker_running?: boolean;
 }
 

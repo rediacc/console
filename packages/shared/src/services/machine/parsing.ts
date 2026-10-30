@@ -69,8 +69,10 @@ export interface DeployedRepo {
   mounted?: boolean;
   /** Whether the repository is accessible */
   accessible?: boolean;
-  /** Whether Docker is running */
+  /** Whether the repository's Docker daemon answers its socket right now */
   docker_running?: boolean;
+  /** Whether at least one container is in state running */
+  containers_running?: boolean;
   /** Number of containers */
   container_count?: number;
   /** Additional properties from vault status */

@@ -199,7 +199,7 @@ rdc machine status server-1
 This provides:
 - Hostname and uptime
 - Memory, disk, and datastore usage
-- Total repositories, mounted count, Docker running count
+- Total repositories, mounted count, Docker daemon running count
 - Detailed per-repository information
 
 Use `--output json` for machine-readable output.

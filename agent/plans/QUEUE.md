@@ -69,7 +69,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 17 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1464 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1465 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
 - Writers: 2 live of writer_cap 25 (session d778be9d): worker:ac86b780dafca84f2, worker:aba794d22abd15a26.
@@ -185,11 +185,11 @@ Promoted: 6 of 42 plans done, 577 of 754 boxes done (76%).
 9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
 10. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
 11. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-12. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-13. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-15. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-16. agent/plans/PLAN-renet-docker-running-semantics.md -- P- (no Priority), executing, not started
+12. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, not started
+13. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+14. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+15. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+16. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 

@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'v2.3.2-232-gb5d6dad';
+export const LIST_TYPES_VERSION = 'v2.3.2-242-g082ae80';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {
@@ -133,8 +133,8 @@ export interface RepositoryInfo {
   accessible: boolean;
   autostart: boolean;
   container_count: number;
+  containers_running: boolean;
   disk_space?: DiskInfo;
-  docker_available: boolean;
   docker_running: boolean;
   external_volume_names: string[];
   external_volumes: number;

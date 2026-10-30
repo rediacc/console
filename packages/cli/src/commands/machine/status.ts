@@ -181,6 +181,7 @@ function getSections(
             size: repo.size_human,
             mounted: repo.mounted ? 'Yes' : 'No',
             docker: repo.docker_running ? 'Yes' : 'No',
+            running: repo.containers_running ? 'Yes' : 'No',
             autostart: repo.autostart ? 'Yes' : 'No',
             containers: repo.container_count,
             disk: repo.disk_space?.use_percent ?? '-',
