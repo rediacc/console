@@ -11,6 +11,7 @@ import contextlib
 import json
 import os
 import pathlib
+import re
 import signal
 import subprocess
 import time
@@ -583,5 +584,5 @@ def test_delta_9_without_a_caller_key_a_fresh_one_is_minted(
 ) -> None:
     monkeypatch.delenv("ACCOUNT_SERVER_API_KEY", raising=False)
     key = _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_SERVER_API_KEY"]
-    assert len(key) == 64
+    assert re.fullmatch(r"[0-9a-f]{64}", key)
     assert key != "k" * 64

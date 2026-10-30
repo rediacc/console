@@ -117,7 +117,7 @@ describe('resolveLicenseAuthority', () => {
     );
   });
 
-  it('the offer names no duration and carries the free size cap in the locale text and the call', async () => {
+  it('the offer names no duration and carries the free size cap in the locale text', async () => {
     const en = (await import('../../../i18n/locales/en/cli.json')).default as {
       errors: { freeLicense: Record<string, string> };
     };

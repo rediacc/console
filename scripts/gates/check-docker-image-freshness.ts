@@ -368,11 +368,35 @@ function gitVisibleImageFiles(): string[] {
     }
     return r.stdout.split('\0');
   };
-  const all = new Set([...ls(['--recurse-submodules']), ...ls(['--others', '--exclude-standard'])]);
-  return [...all]
-    .filter((f) => /(^|\/)(Dockerfile[^/]*|(docker-)?compose[^/]*\.ya?ml)$/.test(f))
-    .filter((f) => existsSync(path.join(ROOT, f)))
-    .sort((a, b) => Number(a > b) - Number(a < b));
+  const isImageFile = (f: string): boolean =>
+    /(^|\/)(Dockerfile[^/]*|(docker-)?compose[^/]*\.ya?ml)$/.test(f);
+  const tracked = ls(['--recurse-submodules']).filter(isImageFile);
+  const untracked = ls(['--others', '--exclude-standard']).filter(isImageFile);
+  const trackedParts = partitionExisting(tracked, (f) => existsSync(path.join(ROOT, f)));
+  if (trackedParts.missing.length > 0) {
+    console.error(
+      `\u2717 ${trackedParts.missing.length} tracked image file(s) are missing from the tree (deleted, or in an uninitialised submodule), so the gate cannot judge them:\n${trackedParts.missing.map((f) => `  ${f}`).join('\n')}`
+    );
+    process.exit(1);
+  }
+  const untrackedParts = partitionExisting(untracked, (f) => existsSync(path.join(ROOT, f)));
+  return [...new Set([...trackedParts.present, ...untrackedParts.present])].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
+}
+
+/**
+ * Splits a file list by presence on disk. Pure: `exists` is injected. A TRACKED file in `missing`
+ * fails the gate; an untracked candidate that vanished is exempt (the caller ignores its `missing`).
+ */
+export function partitionExisting(
+  files: string[],
+  exists: (f: string) => boolean
+): { present: string[]; missing: string[] } {
+  const present: string[] = [];
+  const missing: string[] = [];
+  for (const f of files) (exists(f) ? present : missing).push(f);
+  return { present, missing };
 }
 
 /**
@@ -489,6 +513,17 @@ function selftest(): { bad: number; total: number } {
 
   // THE SHRINK-ONLY COMPOSITION RULE, shared with every other baselined gate here.
   for (const c of sharedSelftestCases()) check(c.name, c.ok);
+
+  // A TRACKED file missing from the tree must be reported, never silently dropped.
+  const planted = partitionExisting(['a/Dockerfile', 'b/Dockerfile'], (f) => f === 'a/Dockerfile');
+  check(
+    'CONTROL: a planted missing tracked path lands in missing, naming it',
+    planted.missing.join(',') === 'b/Dockerfile' && planted.present.join(',') === 'a/Dockerfile'
+  );
+  check(
+    'a present tracked path leaves missing empty',
+    partitionExisting(['a/Dockerfile'], () => true).missing.length === 0
+  );
 
   // THE SEED PATH, and its control. A grow path that admits anything is not a grow path, it is the absence of a gate.
   const seedFilter = (additions: string[], seed?: string): string[] =>
