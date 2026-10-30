@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from '../src/constants';
+import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+
+// renet licenses a repository by its name and the account server signs UUIDs only, so every repository this suite creates or names is a GUID (src/utils/licence.ts).
+const TEST_REPOSITORY_NAME = e2eRepoGuid();
 
 /**
  * Container Operations Tests (11 functions)
@@ -30,7 +34,7 @@ const TEST_PASSWORD = 'testpassword123';
 
 test.describe('Container Operations @bridge', () => {
   let runner: RenetFunctionsTestRunner;
-  const testRepo = `container-ops-${Date.now()}`;
+  const testRepo = e2eRepoGuid();
   const testContainer = `nginx-ops-${Date.now()}`;
   const datastorePath = DEFAULT_DATASTORE_PATH;
   const networkId = DEFAULT_NETWORK_ID;
@@ -245,7 +249,7 @@ test.describe('Container Operations @bridge', () => {
 test.describe
   .serial('Container Lifecycle @bridge @lifecycle', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `container-lifecycle-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const containerName = `nginx-lifecycle-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
@@ -514,7 +518,7 @@ test.describe('Container Error Handling @bridge', () => {
  */
 test.describe('Multiple Container Operations @bridge', () => {
   let runner: RenetFunctionsTestRunner;
-  const repositoryName = `multi-container-${Date.now()}`;
+  const repositoryName = e2eRepoGuid();
   const container1 = `nginx-multi1-${Date.now()}`;
   const container2 = `nginx-multi2-${Date.now()}`;
   const datastorePath = DEFAULT_DATASTORE_PATH;

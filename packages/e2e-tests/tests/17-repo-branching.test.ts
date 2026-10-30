@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -29,9 +30,9 @@ const extractSha = (s: string): string => (/[0-9a-f]{64}/.exec(s) ?? [''])[0];
 test.describe
   .serial('Repository Branching @bridge', () => {
     let runner: RenetFunctionsTestRunner;
-    const repo = `branch-e2e-${stamp}`;
-    const commitGuid = 'c0117777-0000-4000-8000-000000000001';
-    const checkoutFork = `${repo}-co`;
+    const repo = e2eRepoGuid();
+    const commitGuid = e2eRepoGuid();
+    const checkoutFork = e2eRepoGuid();
     const commitMessage = 'phase17 bridge commit';
 
     test.beforeAll(async () => {
@@ -78,9 +79,9 @@ test.describe
 test.describe
   .serial('Immutable forks @bridge', () => {
     let runner: RenetFunctionsTestRunner;
-    const parent = `immut-parent-${stamp}`;
-    const immutable = `immut-${stamp}`;
-    const writable = `immut-writable-${stamp}`;
+    const parent = e2eRepoGuid();
+    const immutable = e2eRepoGuid();
+    const writable = e2eRepoGuid();
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
@@ -116,10 +117,10 @@ test.describe
 test.describe
   .serial('Per-file three-way merge @bridge', () => {
     let runner: RenetFunctionsTestRunner;
-    const work = `tw-work-${stamp}`;
-    const base = `tw-base-${stamp}`; // immutable commit = common ancestor
-    const ours = `tw-ours-${stamp}`;
-    const theirs = `tw-theirs-${stamp}`;
+    const work = e2eRepoGuid();
+    const base = e2eRepoGuid(); // immutable commit = common ancestor
+    const ours = e2eRepoGuid();
+    const theirs = e2eRepoGuid();
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
@@ -166,9 +167,9 @@ test.describe
   .serial('Cross-machine delta @bridge @multi-machine', () => {
     let runner: RenetFunctionsTestRunner;
     let multiMachine = false;
-    const repo = `delta-e2e-${stamp}`;
-    const base1 = `d1-${stamp}`; // retained base after the first push
-    const base2 = `d2-${stamp}`; // retained base after the delta re-push
+    const repo = e2eRepoGuid();
+    const base1 = e2eRepoGuid(); // retained base after the first push
+    const base2 = e2eRepoGuid(); // retained base after the delta re-push
 
     const sha = async (where: 'w1' | 'w2'): Promise<string> => {
       const cmd = `sudo sha256sum "${DS}/repositories/${repo}" | cut -d' ' -f1`;
@@ -241,8 +242,8 @@ test.describe
     // its parent name"; both records must live in the same datastore) with the
     // delta block's mount-free image-sha technique — remounting the swapped grand over two-hop SSH is the flaky path this suite deliberately avoids.
     let runner: RenetFunctionsTestRunner;
-    const grand = `promo-grand-${stamp}`;
-    const fork = `promo-fork-${stamp}`;
+    const grand = e2eRepoGuid();
+    const fork = e2eRepoGuid();
 
     const imageSha = async (name: string): Promise<string> => {
       const r = await runner.executeViaBridge(
@@ -268,6 +269,16 @@ test.describe
 
     test('promote swaps a writable fork data into the grand (same-datastore)', async () => {
       // A WRITABLE fork of the grand (no --immutable), diverged with its own data.
+      const forkLicence = await installRepoLicence(runner.executeViaBridge.bind(runner), {
+        repositoryGuid: fork,
+        kind: 'fork',
+        grandGuid: grand,
+        datastorePath: DS,
+      });
+      expect(
+        runner.isSuccess(forkLicence),
+        `fork licence: ${runner.getCombinedOutput(forkLicence)}`
+      ).toBe(true);
       const forkRes = await runner.executeViaBridge(
         `sudo renet repository fork --name "${grand}" --tag "${fork}" --datastore "${DS}"`
       );

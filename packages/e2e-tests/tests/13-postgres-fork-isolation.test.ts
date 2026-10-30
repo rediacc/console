@@ -6,8 +6,9 @@ import {
   FORK_NETWORK_ID_B,
   TEST_PASSWORD,
 } from '../src/constants';
-import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { log } from '../src/utils/log';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * PostgreSQL Fork Isolation Tests
@@ -38,7 +39,7 @@ import { log } from '../src/utils/log';
 test.describe
   .serial('PostgreSQL Data Persistence @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `postgres-persist-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const containerName = `postgres-persist-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
@@ -179,8 +180,8 @@ test.describe
 test.describe
   .serial('Repository Fork Data Inheritance @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const parentRepoName = `postgres-parent-${Date.now()}`;
-    const forkRepoName = `postgres-fork-${Date.now()}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-parent-${Date.now()}`;
     const forkContainerName = `postgres-fork-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -456,9 +457,9 @@ test.describe
   .serial('Multiple Fork Independence @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `postgres-multi-parent-${timestamp}`;
-    const forkARepoName = `postgres-fork-a-${timestamp}`;
-    const forkBRepoName = `postgres-fork-b-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkARepoName = e2eRepoGuid();
+    const forkBRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-multi-parent-${timestamp}`;
     const forkAContainerName = `postgres-fork-a-${timestamp}`;
     const forkBContainerName = `postgres-fork-b-${timestamp}`;
@@ -666,8 +667,8 @@ test.describe
   .serial('Fork Data Integrity @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `postgres-integrity-parent-${timestamp}`;
-    const forkRepoName = `postgres-integrity-fork-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-integrity-parent-${timestamp}`;
     const forkContainerName = `postgres-integrity-fork-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -784,8 +785,8 @@ test.describe
   .serial('Large Data Volume Fork @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `postgres-bulk-parent-${timestamp}`;
-    const forkRepoName = `postgres-bulk-fork-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-bulk-parent-${timestamp}`;
     const forkContainerName = `postgres-bulk-fork-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -917,7 +918,7 @@ test.describe
 test.describe
   .serial('Service Restart Persistence @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `postgres-restart-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const containerName = `postgres-restart-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;

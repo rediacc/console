@@ -12,6 +12,7 @@ import {
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../src/utils/declaredSkip';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
@@ -223,7 +224,7 @@ test.describe
       test.skip(gate.skip, gate.reason);
 
       let runner: RenetFunctionsTestRunner;
-      const named = `chunk-e2e-${stamp}`;
+      const named = e2eRepoGuid();
 
       /** sha256 of a repository's LUKS image, mount-free (suite 17's technique). */
       const imageSha = async (name: string): Promise<string> => {
@@ -407,10 +408,11 @@ test.describe
           'the dry run left a journal behind'
         ).toMatch(/(^|\D)0(\D|$)/);
         const anchors = await runner.executeViaBridge(
-          `sudo ls -la "${DS}/.chunk-anchors" 2>&1 || true`
+          `sudo ls -A "${DS}/.chunk-anchors" 2>&1 | grep -v '^\\.lock-' || true`
         );
-        expect(runner.getCombinedOutput(anchors), 'the dry run left an anchor behind').toMatch(
-          /no such file|total 0/i
+        // A licensed repository's plan really runs, and taking the staging lock leaves its empty `.lock-<guid>` flock file behind (pkg/prune BackupStagingLockPath). That file is not an anchor: only an entry besides it is.
+        expect(anchors.stdout.trim(), 'the dry run left an anchor behind').toMatch(
+          /^$|no such file/i
         );
       });
 

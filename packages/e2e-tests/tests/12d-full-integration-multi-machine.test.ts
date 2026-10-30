@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
-import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { log } from '../src/utils/log';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Check that the datastore on a VM is initialized, laying it down when it is not.
@@ -43,7 +44,7 @@ async function ensureDatastoreInitialized(
 test.describe
   .serial('Multi-Machine Integration @bridge @multi-machine @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `multi-integration-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const initializedVMs: string[] = [];
     let crossVMSSHAvailable = false;

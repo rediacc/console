@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
+import { installRepoLicence } from '../../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 import type { ExecResult } from '../../src/utils/renet-functions/types';
 
@@ -38,7 +39,8 @@ const KC = `${CTRL_MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
 // The data datastore the kube repo lives on (cluster backref ⇒ KubeRuntime).
 const DATA_DS = 'shopds';
 const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
-const REPO = 'shop';
+// Fixed GUIDs, not names: renet licenses a repository by its name and the account server signs UUIDs only (src/utils/licence.ts). Fixed so an adopted standing repo is found again on the next run. The namespace mirrors the name, and a GUID is a valid namespace label.
+const REPO = '5c0b15a0-1515-4a15-8a15-000000000001';
 const REPO_NET = '2880';
 const NS = REPO; // the repo's namespace mirrors its name
 const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass (static local PV)
@@ -46,7 +48,7 @@ const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass (s
 const CSI_SC = `rediacc-csi-${DATA_DS}`;
 const VSCLASS = 'rediacc-csi';
 const APP_SECRET_VALUE = 's3cr3t-prod';
-const FORK_REPO = `${REPO}-joseph`;
+const FORK_REPO = '5c0b15a0-1515-4a15-8a15-000000000002';
 const FORK_NET = '2944';
 
 // The kube repo's declared app: an annotated ClusterIP Service (routable), a PVC naming the repo's rediacc StorageClass (the F5 hazard guard — a PVC that omits it is silently adopted by stock k3s local-path), and a restricted-PSA-compliant Deployment that writes a marker into the local PV so fork divergence is observable. `scanDeclaredVolumes` reads the PVC to provision the LUKS
@@ -431,6 +433,14 @@ ${dataSource ?? ''}`;
 
       // Author the repo-as-folder: repos/shop/{Rediaccfile, manifests/app.yaml}.
       const repoPath = `${DATA_MOUNT}/repos/${REPO}`;
+      const grandLicence = await installRepoLicence(w1.executeViaBridge.bind(w1), {
+        repositoryGuid: REPO,
+        kind: 'grand',
+        datastorePath: DATA_MOUNT,
+      });
+      expect(grandLicence.code, `grand licence: ${grandLicence.stdout}${grandLicence.stderr}`).toBe(
+        0
+      );
       await w1.executeViaBridge(`sudo mkdir -p ${repoPath}/manifests`);
       await writeFile(`${repoPath}/manifests/app.yaml`, APP_MANIFEST);
       await writeFile(`${repoPath}/Rediaccfile`, REDIACCFILE);
@@ -561,6 +571,15 @@ ${dataSource ?? ''}`;
         expect(seed.code, `seed parent marker: ${seed.stderr}`).toBe(0);
         expect(await marker(NS)).toBe(seeded);
 
+        const forkLicence = await installRepoLicence(w1.executeViaBridge.bind(w1), {
+          repositoryGuid: FORK_REPO,
+          kind: 'fork',
+          grandGuid: REPO,
+          datastorePath: DATA_MOUNT,
+        });
+        expect(forkLicence.code, `fork licence: ${forkLicence.stdout}${forkLicence.stderr}`).toBe(
+          0
+        );
         const fork = await w1.executeViaBridge(
           `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET} --up`
         );

@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import {
-  RenetFunctionsTestRunner,
   type ExecResult,
+  RenetFunctionsTestRunner,
 } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -135,7 +136,7 @@ test.describe
   .serial('Multi-Machine Data Transfer @bridge @multi-machine', () => {
     let runner: RenetFunctionsTestRunner;
     let vm2Runner: RenetFunctionsTestRunner;
-    const testRepo = `multi-test-${Date.now()}`;
+    const testRepo = e2eRepoGuid();
     let crossVMSSHAvailable = false;
 
     test.beforeAll(async () => {
@@ -192,6 +193,16 @@ test.describe
     test('pull repository from VM1 to VM2', async () => {
       test.skip(!crossVMSSHAvailable, 'Cross-VM SSH not available - skipping data transfer tests');
       // Use vm2Runner to pull FROM VM1 TO VM2 This tests pulling from source machine (VM1) to destination (VM2)
+      // The pull lands on VM2, whose own licence store holds nothing for this repository yet (a licence is bound to the machine that holds it).
+      const licence = await installRepoLicence(vm2Runner.executeViaBridge.bind(vm2Runner), {
+        repositoryGuid: testRepo,
+        kind: 'grand',
+        size: '500M',
+        datastorePath: DEFAULT_DATASTORE_PATH,
+      });
+      expect(runner.isSuccess(licence), `licence on VM2: ${licence.stdout}${licence.stderr}`).toBe(
+        true
+      );
       const result = await vm2Runner.pull(testRepo, runner.getWorkerVM(), DEFAULT_DATASTORE_PATH);
 
       // Always log output for debugging
@@ -283,7 +294,7 @@ test.describe('Parallel Execution Tests @bridge @multi-machine', () => {
           (async () => {
             const result = await runner.executeOnVM(
               vm,
-              `renet functions once --test-mode --function ${func}`
+              `sudo -n renet functions once --test-mode --function ${func}`
             );
             return { vm, func, result };
           })()

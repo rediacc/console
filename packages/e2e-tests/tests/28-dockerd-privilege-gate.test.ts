@@ -6,6 +6,7 @@ import {
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import type { ExecResult } from '../src/utils/renet-functions/types';
 
@@ -75,8 +76,8 @@ test.describe
   .serial('Docker API privilege gate @bridge', () => {
     let runner: RenetFunctionsTestRunner;
     const datastorePath = DEFAULT_DATASTORE_PATH;
-    const repoA = `gate-a-${RUN_ID}`;
-    const repoB = `gate-b-${RUN_ID}`;
+    const repoA = e2eRepoGuid();
+    const repoB = e2eRepoGuid();
     const networkA = DEFAULT_NETWORK_ID;
     const networkB = FORK_NETWORK_ID_A;
     const socketA = repoDockerSocketPath(networkA);

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { e2eRepoGuid } from '../../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Combined topology only: needs a Ceph cluster AND a worker acting as the RBD client that hosts the datastore.
@@ -46,7 +47,7 @@ test.describe
     const dsName = `ceph-ds-${id}`;
     const forkTag = 'fork1';
     const forkRef = `${dsName}:${forkTag}`;
-    const repoName = `ds-repo-${id}`;
+    const repoName = e2eRepoGuid();
     const repoPassword = 'ceph-ds-test-pw';
 
     // Mount points are DERIVED by the datastore layer, not chosen by the caller.

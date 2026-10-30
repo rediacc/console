@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -12,7 +13,7 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
 test.describe
   .serial('Full Repository Workflow @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `full-workflow-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
@@ -136,7 +137,7 @@ test.describe
 test.describe
   .serial('Container Repository Integration @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `container-integration-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const containerName = 'test-nginx';
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
@@ -285,7 +286,7 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
   });
 
   test('should handle sequential operations on nonexistent resources', async () => {
-    const nonexistent = 'nonexistent-resource-xyz';
+    const nonexistent = e2eRepoGuid();
 
     // SEQUENTIAL, as the test's name always claimed: the dark-era body fired all six lifecycle ops in Promise.all — six concurrent operations racing on one resource, whose "tolerant" outcomes were timing artifacts (up passed in a full-suite run and failed in isolation). Sequential ops have deterministic contracts.
     const info = await runner.repositoryInfo(nonexistent, DEFAULT_DATASTORE_PATH);
@@ -309,7 +310,7 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
   test('should recover from failed operation', async () => {
     // Attempt an operation that will fail (mounting nonexistent repository)
     const failResult = await runner.repositoryMount(
-      'likely-nonexistent',
+      e2eRepoGuid(),
       TEST_PASSWORD,
       DEFAULT_DATASTORE_PATH
     );

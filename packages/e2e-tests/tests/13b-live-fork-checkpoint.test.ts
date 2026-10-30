@@ -6,6 +6,7 @@ import {
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -62,10 +63,10 @@ test.describe
   .serial('Live Fork Checkpoint Restore @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `cp-livefork-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
     // In raw renet, `repository fork --tag` takes the fork's FULL image name — "--tag IS its image name; the rdc `name:tag` compositing is a config concern" (suite 17's ledger; the bridge ParamDef describes `tag` as "Fork repository name", and rdc passes the fork's GUID here). The fork's storage therefore lives at repositories/<forkRepoName>, NOT at repositories/<parent>:<tag> —
     // mounting the latter was this suite's original bug: fork exit 0, then "repository storage not found".
-    const forkRepoName = `cpfork-${timestamp}`;
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `cp-counter-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const parentNetworkId = DEFAULT_NETWORK_ID;
@@ -179,6 +180,15 @@ test.describe
 
     test('5. fork the RUNNING parent with --checkpoint', async () => {
       test.skip(!criuAvailable, 'CRIU not available on worker');
+      const licence = await installRepoLicence(runner.executeViaBridge.bind(runner), {
+        repositoryGuid: forkRepoName,
+        kind: 'fork',
+        grandGuid: parentRepoName,
+        datastorePath,
+      });
+      expect(runner.isSuccess(licence), `fork licence: ${runner.getCombinedOutput(licence)}`).toBe(
+        true
+      );
       const result = await runner.executeViaBridge(
         `sudo renet repository fork --name "${parentRepoName}" --tag "${forkRepoName}" --datastore "${datastorePath}" --checkpoint --network-id ${parentNetworkId}`
       );

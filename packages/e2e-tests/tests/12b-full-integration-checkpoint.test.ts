@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -11,7 +12,7 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
 test.describe
   .serial('Checkpoint Workflow @bridge @integration', () => {
     let runner: RenetFunctionsTestRunner;
-    const repositoryName = `checkpoint-workflow-${Date.now()}`;
+    const repositoryName = e2eRepoGuid();
     const checkpoint1 = 'initial-state';
     const checkpoint2 = 'after-changes';
     const datastorePath = DEFAULT_DATASTORE_PATH;
