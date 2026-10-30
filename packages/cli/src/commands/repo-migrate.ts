@@ -337,25 +337,51 @@ interface MigrateJobResult {
   downtimeMs: number;
 }
 
-/** The `migrate_result` line renet's `repository migrate` prints last: per-phase bytes and time, and the downtime window. */
+const MIGRATE_PHASE_NAMES = new Set(['bulk', 'cutover']);
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** A phase entry with a known name and finite numbers. Bytes of -1 (renet could not measure) stay; other negatives do not. */
+function validPhase(raw: unknown): MigratePhaseResult | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined;
+  const { name, transferredBytes, transferMs } = raw as Record<string, unknown>;
+  if (typeof name !== 'string' || !MIGRATE_PHASE_NAMES.has(name)) return undefined;
+  if (!isFiniteNumber(transferredBytes) || !isFiniteNumber(transferMs)) return undefined;
+  if (transferredBytes < -1 || transferMs < 0) return undefined;
+  return { name, transferredBytes, transferMs };
+}
+
+function parseResultLine(rawLine: string): MigrateJobResult | undefined {
+  const start = rawLine.indexOf('{');
+  if (start < 0) return undefined;
+  try {
+    const parsed = JSON.parse(rawLine.slice(start)) as {
+      migrate_result?: { phases?: unknown; downtimeMs?: unknown };
+    };
+    const result = parsed.migrate_result;
+    if (!result || !Array.isArray(result.phases)) return undefined;
+    if (!isFiniteNumber(result.downtimeMs) || result.downtimeMs < 0) return undefined;
+    const phases = result.phases.map(validPhase).filter((p) => p !== undefined);
+    return { phases, downtimeMs: result.downtimeMs };
+  } catch {
+    // Not the result line (log text, a partial line).
+    return undefined;
+  }
+}
+
+/** The `migrate_result` line renet's `repository migrate` prints last: per-phase bytes and time, and the downtime window. Invalid phase entries are dropped. */
 export function extractMigrateResult(output: string | undefined): MigrateJobResult | undefined {
   if (!output) return undefined;
   for (const rawLine of output.split('\n')) {
-    const start = rawLine.indexOf('{');
-    if (start < 0) continue;
-    try {
-      const parsed = JSON.parse(rawLine.slice(start)) as { migrate_result?: MigrateJobResult };
-      const result = parsed.migrate_result;
-      if (result && Array.isArray(result.phases) && typeof result.downtimeMs === 'number') {
-        return result;
-      }
-    } catch {
-      // Not the result line (log text, a partial line), keep scanning.
-    }
+    const result = parseResultLine(rawLine);
+    if (result) return result;
   }
   return undefined;
 }
 
+/** Renet reports -1 when the push could not tell; 0 is a genuine measurement (a cutover with nothing left to send). */
 function phaseStatsLine(key: string, phase: MigratePhaseResult | undefined): string | undefined {
   if (!phase || phase.transferredBytes < 0) return undefined;
   return `  ${t(key, {
@@ -365,26 +391,31 @@ function phaseStatsLine(key: string, phase: MigratePhaseResult | undefined): str
 }
 
 /**
- * Print what the migrate job measured: the hot transfer, the cutover transfer and the downtime window. It runs as a
- * step on the job's success, so the same lines appear when the migrate finished in the foreground and when
- * `rdc job wait <id>` reads the result later. An observer that has no output prints nothing.
+ * Print what the migrate job measured: the hot transfer, the cutover transfer and the downtime window, as a summary
+ * of finished work. renet prints the result after the cutover marker, so it cannot run earlier than the job's success
+ * step. It runs there so the same lines appear when the migrate finished in the foreground and when
+ * `rdc job wait <id>` reads the result later. An observer that has no output prints nothing. A rendering failure
+ * never aborts the migrate: the report is informational and the steps after it switch DNS and delete the source.
  */
 export function renderMigrateResult(output: string | undefined): void {
-  const result = extractMigrateResult(output);
-  if (!result) return;
-  const lines = [
-    phaseStatsLine(
-      'commands.repo.migrate.phase1Stats',
-      result.phases.find((p) => p.name === 'bulk')
-    ),
-    `\n${t('commands.repo.migrate.phase2')}`,
-    phaseStatsLine(
-      'commands.repo.migrate.phase2Stats',
-      result.phases.find((p) => p.name === 'cutover')
-    ),
-    `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(result.downtimeMs) })}`,
-  ];
-  for (const line of lines) if (line !== undefined) outputService.info(line);
+  try {
+    const result = extractMigrateResult(output);
+    if (!result) return;
+    const lines = [
+      phaseStatsLine(
+        'commands.repo.migrate.phase1Stats',
+        result.phases.find((p) => p.name === 'bulk')
+      ),
+      phaseStatsLine(
+        'commands.repo.migrate.phase2Stats',
+        result.phases.find((p) => p.name === 'cutover')
+      ),
+      `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(result.downtimeMs) })}`,
+    ];
+    for (const line of lines) if (line !== undefined) outputService.info(line);
+  } catch {
+    // Omit the lines; the migrate continues.
+  }
 }
 
 bindStepHandler('reportMigrateResult', ({ output }) => {

@@ -1883,7 +1883,6 @@
         "optionTo": "Sihtmasin või -klaster",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
         "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul, allikas jäi tööle",
-        "phase2": "2. faas: üleminek (lühike katkestus)...",
         "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "phase3": "3. faas: sihtmäel käivitamine...",
         "placementRetryHint": "Marsruutimine osutab juba masinale {{machine}}, seega proovib 'rdc repo up {{name}}' uuesti seal. Lähte-image'id jäeti taastematerjalina alles.",

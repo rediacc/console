@@ -1528,7 +1528,6 @@
         "provisioning": "Provisioning target machine {{machine}} via {{provider}}...",
         "phase1": "Phase 1: Transferring bulk data (source stays running)...",
         "phase1Stats": "Transferred {{transferred}} in {{duration}}, source stayed online",
-        "phase2": "Phase 2: Cutover (brief downtime)...",
         "phase2Stats": "Cutover (DOWNTIME): {{transferred}} in {{duration}}",
         "downtime": "Downtime: {{duration}}",
         "phase3": "Phase 3: Starting on target...",

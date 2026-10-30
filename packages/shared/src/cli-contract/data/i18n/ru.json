@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Целевая машина или кластер",
   "commands.repo.migrate.phase1": "Фаза 1: Массовая передача данных (источник продолжает работать)...",
   "commands.repo.migrate.phase1Stats": "Передано {{transferred}} за {{duration}}, источник оставался в работе",
-  "commands.repo.migrate.phase2": "Фаза 2: Переключение (кратковременный простой)...",
   "commands.repo.migrate.phase2Stats": "Переключение (ПРОСТОЙ): {{transferred}} за {{duration}}",
   "commands.repo.migrate.phase3": "Фаза 3: Запуск на целевой машине...",
   "commands.repo.migrate.placementRetryHint": "Маршрутизация уже указывает на {{machine}}, поэтому 'rdc repo up {{name}}' повторит попытку там. Исходные образы были сохранены как материал для восстановления.",

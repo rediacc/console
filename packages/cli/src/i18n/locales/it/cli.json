@@ -1883,7 +1883,6 @@
         "optionTo": "Macchina o cluster di destinazione",
         "phase1": "Fase 1: trasferimento dati bulk (la sorgente rimane in esecuzione)...",
         "phase1Stats": "{{transferred}} trasferiti in {{duration}}, la sorgente è rimasta online",
-        "phase2": "Fase 2: cutover (breve downtime)...",
         "phase2Stats": "Cutover (FERMO MACCHINA): {{transferred}} in {{duration}}",
         "phase3": "Fase 3: avvio sulla destinazione...",
         "placementRetryHint": "L'instradamento punta già a {{machine}}, quindi 'rdc repo up {{name}}' riproverà lì. Le immagini sorgente sono state mantenute come materiale di recupero.",

@@ -59,9 +59,9 @@ describe('renderMigrateResult', () => {
     renderMigrateResult(RESULT_LINE);
     const lines = printed();
     expect(lines[0]).toBe('  Transferred 1.0 GB in 41.0s, source stayed online');
-    expect(lines[1]).toContain('Phase 2: Cutover (brief downtime)...');
-    expect(lines[2]).toBe('  Cutover (DOWNTIME): 50.0 MB in 6.2s');
-    expect(lines[3]).toBe('  Downtime: 9.5s');
+    expect(lines[1]).toBe('  Cutover (DOWNTIME): 50.0 MB in 6.2s');
+    expect(lines[2]).toBe('  Downtime: 9.5s');
+    expect(lines.some((l) => l.includes('...'))).toBe(false);
   });
 
   it('omits a transfer whose bytes renet could not measure, and prints nothing without a result', () => {
@@ -82,6 +82,52 @@ describe('renderMigrateResult', () => {
     info.mockClear();
     renderMigrateResult('no result here');
     expect(info).not.toHaveBeenCalled();
+  });
+});
+
+describe('malformed phase entries', () => {
+  const wrap = (phases: unknown[], downtimeMs: unknown = 1_000) =>
+    JSON.stringify({ migrate_result: { phases, downtimeMs } });
+
+  it('drops entries with missing, null, non-finite, negative or unknown fields', () => {
+    const result = extractMigrateResult(
+      wrap([
+        { name: 'bulk', transferMs: 5 },
+        { name: 'bulk', transferredBytes: null, transferMs: 5 },
+        { name: 'bulk', transferredBytes: 10, transferMs: 'x' },
+        { name: 'cutover', transferredBytes: 10, transferMs: -4 },
+        { name: 'cutover', transferredBytes: -7, transferMs: 4 },
+        { name: 'other', transferredBytes: 10, transferMs: 4 },
+        null,
+        { name: 'cutover', transferredBytes: 10, transferMs: 4 },
+      ])
+    );
+    expect(result?.phases).toEqual([{ name: 'cutover', transferredBytes: 10, transferMs: 4 }]);
+  });
+
+  it('rejects a non-finite or negative downtime', () => {
+    expect(extractMigrateResult(wrap([], null))).toBeUndefined();
+    expect(extractMigrateResult(wrap([], -1))).toBeUndefined();
+  });
+
+  it('renders without throwing and omits the lines of dropped phases', () => {
+    expect(() =>
+      renderMigrateResult(wrap([{ name: 'bulk', transferredBytes: null, transferMs: null }]))
+    ).not.toThrow();
+    expect(printed().some((l) => l.includes('NaN') || l.includes('Transferred'))).toBe(false);
+    expect(printed()).toContain('  Downtime: 1.0s');
+  });
+
+  it('never throws out of the report step when the output sink fails', () => {
+    info.mockImplementation(() => {
+      throw new Error('sink');
+    });
+    expect(() => renderMigrateResult(RESULT_LINE)).not.toThrow();
+  });
+
+  it('prints a genuine zero-byte cutover (renet reports 0 when nothing was left to send, -1 when unmeasured)', () => {
+    renderMigrateResult(wrap([{ name: 'cutover', transferredBytes: 0, transferMs: 300 }]));
+    expect(printed()[0]).toBe('  Cutover (DOWNTIME): 0 B in 300ms');
   });
 });
 

@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Destination machine or cluster",
   "commands.repo.migrate.phase1": "Phase 1: Transferring bulk data (source stays running)...",
   "commands.repo.migrate.phase1Stats": "Transferred {{transferred}} in {{duration}}, source stayed online",
-  "commands.repo.migrate.phase2": "Phase 2: Cutover (brief downtime)...",
   "commands.repo.migrate.phase2Stats": "Cutover (DOWNTIME): {{transferred}} in {{duration}}",
   "commands.repo.migrate.phase3": "Phase 3: Starting on target...",
   "commands.repo.migrate.placementRetryHint": "Routing already points at {{machine}}, so 'rdc repo up {{name}}' will retry there. The source images were kept as recovery material.",

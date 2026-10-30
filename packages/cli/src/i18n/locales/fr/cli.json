@@ -1883,7 +1883,6 @@
         "optionTo": "Machine ou cluster de destination",
         "phase1": "Phase 1 : Transfert des données en masse (la source reste en fonctionnement)...",
         "phase1Stats": "{{transferred}} transférés en {{duration}}, la source est restée en ligne",
-        "phase2": "Phase 2 : Basculement (bref temps d'arrêt)...",
         "phase2Stats": "Bascule (TEMPS D'ARRÊT) : {{transferred}} en {{duration}}",
         "phase3": "Phase 3 : Démarrage sur la cible...",
         "placementRetryHint": "Le routage pointe déjà vers {{machine}}, donc 'rdc repo up {{name}}' réessaiera là-bas. Les images source ont été conservées comme matériel de récupération.",

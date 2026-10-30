@@ -238,7 +238,7 @@ describe('repo migrate — source disposition (R3)', () => {
   });
 });
 
-describe('repo migrate — the target licence (#89f10804)', () => {
+describe('repo migrate: the target licence (#89f10804)', () => {
   it('installs the licence on the TARGET before repository_up runs there', async () => {
     await migrateRepo('shop', { to: 'm2' });
     // Before the fix the target got no licence at all: repository_up on m2 ended in `LICENSE_REQUIRED: missing: no license data`.

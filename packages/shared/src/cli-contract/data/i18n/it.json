@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Macchina o cluster di destinazione",
   "commands.repo.migrate.phase1": "Fase 1: trasferimento dati bulk (la sorgente rimane in esecuzione)...",
   "commands.repo.migrate.phase1Stats": "{{transferred}} trasferiti in {{duration}}, la sorgente è rimasta online",
-  "commands.repo.migrate.phase2": "Fase 2: cutover (breve downtime)...",
   "commands.repo.migrate.phase2Stats": "Cutover (FERMO MACCHINA): {{transferred}} in {{duration}}",
   "commands.repo.migrate.phase3": "Fase 3: avvio sulla destinazione...",
   "commands.repo.migrate.placementRetryHint": "L'instradamento punta già a {{machine}}, quindi 'rdc repo up {{name}}' riproverà lì. Le immagini sorgente sono state mantenute come materiale di recupero.",

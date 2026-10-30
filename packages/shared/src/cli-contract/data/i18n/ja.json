@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "移行先マシンまたはクラスター",
   "commands.repo.migrate.phase1": "フェーズ1: バルクデータを転送中（ソースは実行中）...",
   "commands.repo.migrate.phase1Stats": "{{duration}} で {{transferred}} を転送（ソースは稼働したまま）",
-  "commands.repo.migrate.phase2": "フェーズ2: 切り替え（短時間のダウンタイム）...",
   "commands.repo.migrate.phase2Stats": "カットオーバー（ダウンタイム）: {{duration}} で {{transferred}}",
   "commands.repo.migrate.phase3": "フェーズ3: ターゲットで起動中...",
   "commands.repo.migrate.placementRetryHint": "ルーティングは既に {{machine}} を指しているため、'rdc repo up {{name}}' はそこで再試行されます。ソースイメージは復旧用の資材として保持されました。",

@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Sihtmasin või -klaster",
   "commands.repo.migrate.phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
   "commands.repo.migrate.phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul, allikas jäi tööle",
-  "commands.repo.migrate.phase2": "2. faas: üleminek (lühike katkestus)...",
   "commands.repo.migrate.phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
   "commands.repo.migrate.phase3": "3. faas: sihtmäel käivitamine...",
   "commands.repo.migrate.placementRetryHint": "Marsruutimine osutab juba masinale {{machine}}, seega proovib 'rdc repo up {{name}}' uuesti seal. Lähte-image'id jäeti taastematerjalina alles.",

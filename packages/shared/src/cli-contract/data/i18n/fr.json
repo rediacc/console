@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Machine ou cluster de destination",
   "commands.repo.migrate.phase1": "Phase 1 : Transfert des données en masse (la source reste en fonctionnement)...",
   "commands.repo.migrate.phase1Stats": "{{transferred}} transférés en {{duration}}, la source est restée en ligne",
-  "commands.repo.migrate.phase2": "Phase 2 : Basculement (bref temps d'arrêt)...",
   "commands.repo.migrate.phase2Stats": "Bascule (TEMPS D'ARRÊT) : {{transferred}} en {{duration}}",
   "commands.repo.migrate.phase3": "Phase 3 : Démarrage sur la cible...",
   "commands.repo.migrate.placementRetryHint": "Le routage pointe déjà vers {{machine}}, donc 'rdc repo up {{name}}' réessaiera là-bas. Les images source ont été conservées comme matériel de récupération.",

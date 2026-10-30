@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2281,
-    "sourceCommit": "34484b294f65efa1047dc5182df3be9b9b714201"
+    "keyCount": 2280,
+    "sourceCommit": "4a1899ae4acd95c908a6ea361694ba9b8b040dfe"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1431,7 +1431,6 @@
     "commands.repo.migrate.optionTo": "c5f0570f",
     "commands.repo.migrate.phase1": "119ac161",
     "commands.repo.migrate.phase1Stats": "08f45b70",
-    "commands.repo.migrate.phase2": "d28710b5",
     "commands.repo.migrate.phase2Stats": "90a244b5",
     "commands.repo.migrate.phase3": "eda8888f",
     "commands.repo.migrate.placementRetryHint": "292c331c",

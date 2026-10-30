@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Máquina o clúster de destino",
   "commands.repo.migrate.phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
   "commands.repo.migrate.phase1Stats": "{{transferred}} transferidos en {{duration}}, el origen siguió en línea",
-  "commands.repo.migrate.phase2": "Fase 2: Corte (breve inactividad)...",
   "commands.repo.migrate.phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
   "commands.repo.migrate.phase3": "Fase 3: Iniciando en el destino...",
   "commands.repo.migrate.placementRetryHint": "El enrutamiento ya apunta a {{machine}}, por lo que 'rdc repo up {{name}}' reintentará allí. Las imágenes de origen se conservaron como material de recuperación.",

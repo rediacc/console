@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Zielmaschine oder -cluster",
   "commands.repo.migrate.phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
   "commands.repo.migrate.phase1Stats": "{{transferred}} in {{duration}} übertragen, Quelle blieb online",
-  "commands.repo.migrate.phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
   "commands.repo.migrate.phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
   "commands.repo.migrate.phase3": "Phase 3: Start auf dem Ziel...",
   "commands.repo.migrate.placementRetryHint": "Das Routing zeigt bereits auf {{machine}}, daher wird 'rdc repo up {{name}}' dort erneut versuchen. Die Quell-Images wurden als Wiederherstellungsmaterial behalten.",

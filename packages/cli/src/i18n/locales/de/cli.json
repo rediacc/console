@@ -1883,7 +1883,6 @@
         "optionTo": "Zielmaschine oder -cluster",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
         "phase1Stats": "{{transferred}} in {{duration}} übertragen, Quelle blieb online",
-        "phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
         "phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
         "phase3": "Phase 3: Start auf dem Ziel...",
         "placementRetryHint": "Das Routing zeigt bereits auf {{machine}}, daher wird 'rdc repo up {{name}}' dort erneut versuchen. Die Quell-Images wurden als Wiederherstellungsmaterial behalten.",

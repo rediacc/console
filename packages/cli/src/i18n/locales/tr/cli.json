@@ -1883,7 +1883,6 @@
         "optionTo": "Hedef makine veya küme",
         "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
         "phase1Stats": "{{duration}} içinde {{transferred}} aktarıldı, kaynak çevrimiçi kaldı",
-        "phase2": "Aşama 2: Geçiş (kısa kesinti)...",
         "phase2Stats": "Geçiş (KESİNTİ): {{duration}} içinde {{transferred}}",
         "phase3": "Aşama 3: Hedefte başlatılıyor...",
         "placementRetryHint": "Yönlendirme zaten {{machine}}'e işaret ediyor, bu yüzden 'rdc repo up {{name}}' orada yeniden denenecek. Kaynak imajlar kurtarma malzemesi olarak korundu.",

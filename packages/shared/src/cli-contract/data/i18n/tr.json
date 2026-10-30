@@ -1423,7 +1423,6 @@
   "commands.repo.migrate.optionTo": "Hedef makine veya küme",
   "commands.repo.migrate.phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
   "commands.repo.migrate.phase1Stats": "{{duration}} içinde {{transferred}} aktarıldı, kaynak çevrimiçi kaldı",
-  "commands.repo.migrate.phase2": "Aşama 2: Geçiş (kısa kesinti)...",
   "commands.repo.migrate.phase2Stats": "Geçiş (KESİNTİ): {{duration}} içinde {{transferred}}",
   "commands.repo.migrate.phase3": "Aşama 3: Hedefte başlatılıyor...",
   "commands.repo.migrate.placementRetryHint": "Yönlendirme zaten {{machine}}'e işaret ediyor, bu yüzden 'rdc repo up {{name}}' orada yeniden denenecek. Kaynak imajlar kurtarma malzemesi olarak korundu.",
