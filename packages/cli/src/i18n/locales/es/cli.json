@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "OpenTofu no está instalado. Instálalo con: rdc tools install tofu",
+      "noConfig": "No hay configuración de tofu (main.tf.json) en {{path}}; el paso de aprovisionamiento que la escribe no se ejecutó.",
       "belowFloor": "{{engine}} {{version}} en {{path}} es anterior a la versión mínima {{floor}}. Instala el OpenTofu fijado con: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU apunta a {{path}}, que no se ejecuta como OpenTofu ni como Terraform. Corrígelo o quítalo, o instala el OpenTofu fijado con: rdc tools install tofu"
     }

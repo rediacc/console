@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "OpenTofuがインストールされていません。次のコマンドでインストールしてください: rdc tools install tofu",
+      "noConfig": "{{path}} に tofu の構成 (main.tf.json) がありません。これを書き出すプロビジョニング手順が実行されていません。",
       "belowFloor": "{{path}} の{{engine}} {{version}}は最低バージョン {{floor}} より古いです。次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU は {{path}} を指していますが、OpenTofuとしてもTerraformとしても実行できません。変数を修正または削除するか、次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu"
     }

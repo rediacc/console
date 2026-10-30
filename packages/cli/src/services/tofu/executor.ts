@@ -215,7 +215,10 @@ export class TofuExecutor {
     try {
       raw = await readFile(join(this.workDir, 'main.tf.json'), 'utf8');
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      // tofu init succeeds on an empty directory, so a missing config is refused here by name rather than passing init.
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new Error(t('errors.tofu.noConfig', { path: this.workDir }));
+      }
       throw error;
     }
     const config = JSON.parse(raw) as {

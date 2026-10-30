@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "未安装 OpenTofu。请用以下命令安装：rdc tools install tofu",
+      "noConfig": "{{path}} 中没有 tofu 配置 (main.tf.json)；写入它的配置步骤未运行。",
       "belowFloor": "{{path}} 处的 {{engine}} {{version}} 低于最低版本 {{floor}}。请用以下命令安装固定版本的 OpenTofu：rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU 指向 {{path}}，但它无法作为 OpenTofu 或 Terraform 运行。请修正或删除该变量，或用以下命令安装固定版本的 OpenTofu：rdc tools install tofu"
     }

@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "OpenTofu غير مثبّت. ثبّته بالأمر: rdc tools install tofu",
+      "noConfig": "لا يوجد إعداد tofu (main.tf.json) في {{path}}؛ لم تُنفَّذ خطوة التجهيز التي تكتبه.",
       "belowFloor": "{{engine}} {{version}} في {{path}} أقدم من الحد الأدنى للإصدار {{floor}}. ثبّت إصدار OpenTofu المحدد بالأمر: rdc tools install tofu",
       "overrideUnusable": "يشير REDIACC_TOFU إلى {{path}}، لكنه لا يعمل بوصفه OpenTofu أو Terraform. صحّح المتغير أو احذفه، أو ثبّت إصدار OpenTofu المحدد بالأمر: rdc tools install tofu"
     }

@@ -180,7 +180,7 @@ describe.skipIf(TOFU === null && process.env.CI !== 'true')(
       );
     });
 
-    it('leaves an existing lock and a missing main.tf.json to tofu when no pinned provider applies', async () => {
+    it('leaves an existing lock to tofu when no pinned provider applies, and refuses a missing main.tf.json', async () => {
       const work = join(root, 'nopin');
       await mkdir(work, { recursive: true });
       await writeFile(join(work, '.terraform.lock.hcl'), '# kept\n');
@@ -188,14 +188,12 @@ describe.skipIf(TOFU === null && process.env.CI !== 'true')(
       await exec.writeConfig({ terraform: { required_providers: {} } });
       await exec.init().catch(() => undefined);
       expect(await readFile(join(work, '.terraform.lock.hcl'), 'utf8')).toBe('# kept\n');
-      // No main.tf.json: no ENOENT from the lock step, tofu reports the empty directory itself.
+      // No main.tf.json: init refuses by name, since tofu init would pass on an empty directory.
       const empty = join(root, 'empty');
       await mkdir(empty, { recursive: true });
-      const err = await new TofuExecutor(empty, {}).init().then(
-        () => '',
-        (e: Error) => e.message
+      await expect(new TofuExecutor(empty, {}).init()).rejects.toThrow(
+        'No tofu configuration (main.tf.json)'
       );
-      expect(err).not.toContain('ENOENT');
     });
 
     it('fails init when the pinned lock carries a changed hash', async () => {

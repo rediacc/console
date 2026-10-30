@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "OpenTofu가 설치되어 있지 않습니다. 다음 명령으로 설치하세요: rdc tools install tofu",
+      "noConfig": "{{path}}에 tofu 구성(main.tf.json)이 없습니다. 이를 작성하는 프로비저닝 단계가 실행되지 않았습니다.",
       "belowFloor": "{{path}}의 {{engine}} {{version}}은(는) 최소 버전 {{floor}}보다 오래되었습니다. 다음 명령으로 고정된 OpenTofu를 설치하세요: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU가 {{path}}을(를) 가리키지만 OpenTofu나 Terraform으로 실행되지 않습니다. 변수를 고치거나 지우고, 아니면 다음 명령으로 고정된 OpenTofu를 설치하세요: rdc tools install tofu"
     }

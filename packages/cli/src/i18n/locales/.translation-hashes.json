@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2283,
-    "sourceCommit": "cac18e213cdd0525efe778bc3e407d4842f5b7cd"
+    "keyCount": 2284,
+    "sourceCommit": "e9bd6740ca719867d22edca5fa09dc3705b632cd"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2132,6 +2132,7 @@
     "errors.term.sshCode255": "d4e55f99",
     "errors.term.sshExitCode": "6e05061d",
     "errors.tofu.belowFloor": "2cad673f",
+    "errors.tofu.noConfig": "65d0de2b",
     "errors.tofu.notInstalled": "6e0e3eb0",
     "errors.tofu.overrideUnusable": "6ffd2ccb",
     "errors.unknownCommand": "4f654da5",

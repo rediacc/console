@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "OpenTofu pole paigaldatud. Paigalda see käsuga: rdc tools install tofu",
+      "noConfig": "Kaustas {{path}} pole tofu seadistust (main.tf.json); seda kirjutav ettevalmistuse samm ei käivitunud.",
       "belowFloor": "{{engine}} {{version}} asukohas {{path}} on vanem kui miinimumversioon {{floor}}. Paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU osutab failile {{path}}, mis ei käivitu ei OpenTofu ega Terraformina. Paranda või eemalda muutuja või paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu"
     }

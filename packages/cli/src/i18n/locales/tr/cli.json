@@ -2856,6 +2856,7 @@
     },
     "tofu": {
       "notInstalled": "OpenTofu kurulu değil. Şu komutla kurun: rdc tools install tofu",
+      "noConfig": "{{path}} içinde tofu yapılandırması (main.tf.json) yok; onu yazan hazırlama adımı çalışmadı.",
       "belowFloor": "{{path}} konumundaki {{engine}} {{version}}, en düşük sürüm olan {{floor}} sürümünden eski. Sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU, {{path}} yolunu gösteriyor ancak bu dosya OpenTofu ya da Terraform olarak çalışmıyor. Değişkeni düzeltin veya kaldırın ya da sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu"
     }
