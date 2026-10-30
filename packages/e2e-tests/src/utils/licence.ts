@@ -12,8 +12,9 @@ import type { ExecResult } from './renet-functions/types';
  * repository create`, `fork` and `commit` refuse with exit 10 LICENSE_REQUIRED
  * unless a licence for the new repository's GUID, signed by the key baked into
  * that renet, sits in the machine's licence store. `renet functions once
- * --test-mode` skips only the executor-level tier check; the command it builds
- * is the cmd-layer `renet repository create`, whose own gate still runs. So a
+ * --test-mode` enforces licensing like every other path (renet 23c0c03b removed
+ * its executor tier-check bypass), so every tiered repository function it runs
+ * needs the repo licensed, not only create. So a
  * suite that creates a repository through raw renet needs a licence installed
  * first, exactly as `rdc repo create` does it: ask the account server's
  * `/licenses/activate-repo` for a blob, then file it where renet reads it.
