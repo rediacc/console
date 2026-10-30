@@ -90,8 +90,9 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
     - delete a machine;
     - move A to a phone hotspot and run a command (it must refresh per D4);
     - rotate the CEK from the portal, and check that B reports "stale key, re-enroll".
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:22:13Z by d778be9d: live-proof lp-c0ee207ee706 bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt
 
 ## 0. What each key protects
 

@@ -74,8 +74,9 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 - [ ] C2 [P1] After Phase 2 is green and C1 lands: `EXECUTOR_MODE = "proxy"` and `EXECUTOR_URL = "https://proxy.eu.rediacc.com"` in `workers/account/wrangler.eu.toml` `[vars]`, an eu deploy, and one console command (`machine status hostinger`) run from the portal console end to end; us and asia stay `mock` -- acceptance: this plan records the deploy version, the console run's output matching the local run, and the audit event naming the user
 - [x] P2a [P1] Phase 2 results recorded: the deploy version that carries the service binding, the `EXECUTOR_TOKEN` scopes (`proxy:exec`, `audit:write`) and its IP binding (`cloudflare`, `private/account/src/types/api-token.ts:18,22`), and the rc of every Phase 2 step 1-4 -- acceptance: a "Phase 2 results" section in this plan with those values
     (ticked) 2026-10-24T07:18:38Z by d778be9d: commit:74953c57d Phase 2 results at agent/plans/PLAN-cloudflare-proxy.md:303 (versions with the binding, token 5375a8fe proxy:exec+audit:write bound cloudflare, steps 1-3 rc=0, step 4 fails only at SSH after the fixes)
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:17:33Z by d778be9d: live-proof lp-74bba105dae9 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 The existing boxes above are kept byte for byte, as the box ledger requires. Their state on 2026-10-23: A1-A4, B1-B3, F1, findings (a)-(c), the tsconfig comment, the Worker tests in CI and Operator Phase 1 are done on `origin/main` (commits 3b96d5133, 0868e3a53, 5f9a354ea, bcb0f2d7e), awaiting their ticks. Open: A5, A6, B4, `--region`, the image smoke in CI, B5 (with B5a and B5b), Phase 0, Phase 2 and its step 5, and teardown. Three readings of old boxes under the rulings:
 

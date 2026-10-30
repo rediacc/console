@@ -115,8 +115,9 @@ Live acceptances query through the Grafana datasource proxy, `https://grafana.re
     (ticked) 2026-10-23T12:16:44Z by d778be9d: commit:5c9faef8b docs/observability/dashboards/account-server.md, docs/observability/dashboards/error-observatory.md and docs/observability/dashboards/platform-overview.md name the environment and region variables; docs/observability/runbooks/adding-new-signals.md section 5 A Sender Goes Silent; npm run check:ci-prose-style rc=0
 - [x] T19 [docs] Services table, after PLAN-renet-bridge-leftovers removes the `renet-bridge` row: the account server row names Cloudflare Workers and lists Traces and Logs; rows for `rediacc-proxy`, `rediacc-proxy-executor` and the missing `renet-list` -- Owns: docs/observability/README.md. Accept: `npm run check:ci-prose-style` exits 0 and `grep -nE 'rediacc-proxy-executor|renet-list|Cloudflare Workers' docs/observability/README.md` matches.
     (ticked) 2026-10-25T16:04:50Z by d778be9d: T19: docs/observability/README.md rows landed in commit 7f73f2495 (Cloudflare Workers account row with Traces, Logs; rediacc-proxy, rediacc-proxy-executor and renet-list rows); grep of the Accept pattern matches 4 lines; npm run check:ci-prose-style rc=0
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:18:15Z by d778be9d: live-proof lp-51a8b8c87773 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 ## Probe results (2026-10-25, telemetry writer)
 

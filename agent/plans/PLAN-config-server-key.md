@@ -56,8 +56,9 @@ Design memo: Plan agent aecb122b, 2026-10-27, summarized in the boxes below.
   - Correct `docs/DESIGN-CONFIG-STORAGE.md:989` and the layer-3 section.
   - Accept: the gate rc=0, the account vitest rc=0, and `grep -rn rediacc-config-server-dev-key private/account/src` returns only `config-server-key.ts`.
     (ticked) 2026-10-27T18:22:52Z by d778be9d: commit:a9603a30d (account 35f8262) legacy-server-key.ts and the rewrap tool deleted; openOrgPassphrase refuses an untagged row; check:ci-config-server-key-constant rc=0 and wired; DESIGN-CONFIG-STORAGE.md corrected; account vitest and check:ci-account-server rc=0; grep finds the dev constant only in config-server-key.ts
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:17:22Z by d778be9d: live-proof lp-fdac52e1eb22 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 ## Order
 

@@ -416,8 +416,9 @@ R2's changes:
   No upload runs on production.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: both runs rc 0, with timings, sizes, `literalBytes`, both digests and the load peak recorded under "Live records".
 
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:16:42Z by d778be9d: live-proof lp-a5a6c2416537 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
 

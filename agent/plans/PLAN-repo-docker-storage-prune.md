@@ -121,8 +121,9 @@ On hostinger the repo `hermes` held 277 overlay2 directories, 20.5 GB of them re
 - [ ] R7 [writer] Close: move this plan to agent/plans/_done/, citing the commits of R1-R6 and F1 and the L1 and L2 proof rows. Owns: agent/plans/PLAN-repo-docker-storage-prune.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:18:04Z by d778be9d: live-proof lp-af6920c11252 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 ## Risks
 

@@ -677,8 +677,9 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 - [ ] L4 [live] Spool growth and cleanup on hostinger, after J1c is provisioned: 300 `repo status <fork>` runs, then the spool directory count, `du -sh /var/lib/rediacc/jobs` and `systemctl list-units 'rediacc-job-*' --all --no-legend | wc -l` read over `term connect -c`. The read is repeated after `job gc --older-than 1h` and after one hour of idle followed by one start (the opportunistic GC).
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: the three readings at each point recorded under "Live records"; after the GC pass the loaded-unit count equals the live-job count and no terminal `read` job older than 1 h remains.
 
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:18:38Z by d778be9d: live-proof lp-62b685aab517 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
 

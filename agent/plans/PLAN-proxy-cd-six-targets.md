@@ -348,8 +348,9 @@ Live-Proof: bench -- the console, proxy and api-token routes and migrations unde
     (ticked) 2026-10-26T16:06:55Z by d778be9d: relation sections added at agent/plans/PLAN-cloudflare-proxy.md:397 (C2 closed by L5, the EXECUTOR_TOKEN box superseded by ASKED:2026-10-25T19:08Z, teardown the fallback) and agent/plans/PLAN-telemetry-export.md:184 (T15 closed by L8, T16 proxy-host clause met by T1 and L8, T14 config half subsumed by K1 and G2); grep -n PLAN-proxy-cd-six-targets on both files matches
   
   -- Owns: agent/plans/PLAN-cloudflare-proxy.md, agent/plans/PLAN-telemetry-export.md (those lines only). Accept: `grep -n 'PLAN-proxy-cd-six-targets' agent/plans/PLAN-cloudflare-proxy.md agent/plans/PLAN-telemetry-export.md` matches both files.
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:19:23Z by d778be9d: live-proof lp-e6e4e805656d bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 ### Order and parallel writers
 

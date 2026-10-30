@@ -19,7 +19,7 @@ Worklist #ca9be012 said Workers deploys push only three ACCOUNT_BACKUP_S3_* valu
 ## Design
 
 - Keep ACCOUNT_BACKUP_S3_BUCKET a Worker secret computed by the deploy from regions.json (or wrangler.bench.toml for bench). Rejected: `[vars]` (a second copy of the name, colliding with the existing secret on seven Workers and breaking push_backup_credentials' fixed name set); deriving it in the Worker (a binding does not expose its bucket name at runtime).
-- Worker, fail closed: the Workers branch builds S3PresignGrantMinter only when ENDPOINT, BUCKET, ACCESS_KEY_ID and SECRET_ACCESS_KEY are all non-empty, passed through without `?? ''`; otherwise `{ store, grantMinter: null }`, so the existing warning fires. The Node branch (`:1169`) keeps its behaviour; one shared helper keeps the two branches from drifting. The doc comment at `:1113-1118` follows.
+- Worker, fail closed: the Workers branch builds S3PresignGrantMinter only when ENDPOINT, BUCKET, ACCESS_KEY_ID and SECRET_ACCESS_KEY are all non-empty, passed through without `?? ''`; otherwise `{ store, grantMinter: null }`, so the existing warning fires. The Node branch (`private/account/src/services/backup-chunk-store.ts:1109`) keeps its behaviour; one shared helper keeps the two branches from drifting. The doc comment at `private/account/src/services/backup-chunk-store.ts:1044-1057` follows.
 - Bench: deploy_bench reads the bucket from the BACKUP_BUCKET binding in `workers/account/wrangler.bench.toml` (reusing `push_backup_credentials._config_binding`); the env override and the literal go; an env value that differs from the binding, or a missing binding, is a DeployError before the first remote write.
 - Gate: extend `check:ci-backup-bucket-conformance` (scripts/gates/check-backup-bucket-conformance.ts): a source-shape row refusing a `?? ''` fallback for the bucket in the Workers branch, and a bench row (the binding exists with a non-empty bucket_name; deploy_bench.py quotes no `rediacc-backups-` literal), each with controls that fire on a plant; the floor rises to six regional plus one bench, and the stale `:977-985` cite is fixed.
 
@@ -37,8 +37,9 @@ Worklist #ca9be012 said Workers deploys push only three ACCOUNT_BACKUP_S3_* valu
     (ticked) 2026-10-24T13:53:22Z by d778be9d: d2953620b; npm run check:ci-backup-bucket-conformance rc=0 (7 deployments)
 - [x] B6: docs/backup-storage/07-execution-record.md:325 says deploy_bench pushes four values, the bucket derived from the binding. Accept: `grep -n "pushes four" docs/backup-storage/07-execution-record.md` rc=0
     (ticked) 2026-10-24T13:53:06Z by d778be9d: d2953620b; grep 'pushes four' 07-execution-record.md rc=0 at :325
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:16:22Z by d778be9d: live-proof lp-874bff474678 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 ## Risks
 

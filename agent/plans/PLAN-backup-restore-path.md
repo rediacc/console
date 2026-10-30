@@ -186,8 +186,9 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (private/renet/pkg/
 
   Owns: agent/plans/PLAN-backup-restore-path.md. Accept: the live_proof record rc 0; both restore commands rc 0; the two sha256 values equal; `chunksFetched` below `cellsTotal`; and `--path /no/such/path` rc 19 with `test ! -e /tmp/rdc-restore-path-<stamp>-missing` rc 0 on the machine.
 - [ ] R7 [writer] Close N4b. Tick box N4b in agent/plans/PLAN-backup-program.md, citing R4's and R5's commits and L1's live_proof row, then move this plan to agent/plans/_done/. Owns: agent/plans/PLAN-backup-program.md, agent/plans/PLAN-backup-restore-path.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:17:54Z by d778be9d: live-proof lp-a62ae60f1e46 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
 

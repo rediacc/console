@@ -417,8 +417,9 @@ Each box records:
   - Then run `npx wrangler containers delete <old application id>` per target, with the id read from `wrangler containers list` and recorded by its first 8 characters.
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: seven forward-only rows with smoke rc 0, and `npx wrangler containers list` per account names no `ExecutorContainer` application.
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:22:08Z by d778be9d: live-proof lp-1f0b262ef9bd bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt
 
 ### Deadline
 

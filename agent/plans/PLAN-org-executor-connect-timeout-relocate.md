@@ -189,7 +189,7 @@ Platform assumptions, to verify on bench or edge:
     (ticked) 2026-10-28T07:32:15Z by d778be9d: 2026-10-28 by d778be9d: commit:f49b3faa3; E1 ssh-connect-error and host-key-mismatch vitest rc=0 (22), classifier mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Owns: packages/cli/src/remote/sftp/connect-error.ts, packages/cli/src/remote/sftp/client.ts, packages/cli/src/remote/__tests__/ssh-connect-error.test.ts. Accept: `cd packages/cli && npx vitest run src/remote/__tests__/ssh-connect-error.test.ts src/remote/__tests__/host-key-mismatch.test.ts` rc 0.
-- [x] E2 [writer] The envelope (Design 2). Make the `local-executor.ts:593-601` catch return `exitCode`, `errorCode` and `errorGuidance` from `SshConnectError`, and add its name-keyed entry to `normalizeError`. Tests:
+- [x] E2 [writer] The envelope (Design 2). Make the `packages/cli/src/services/executor/local-executor.ts:593-601` catch return `exitCode`, `errorCode` and `errorGuidance` from `SshConnectError`, and add its name-keyed entry to `normalizeError`. Tests:
   - With `machineConnections.acquireFor` stubbed to reject with an `unreachable` `SshConnectError`, `execute` answers `exitCode: 6, errorCode: 'EGRESS_UNREACHABLE'`, with the message naming host and port.
   - A `refused` error answers `SSH_REFUSED`.
   - A plain `Error` still answers exit 1 with no code.
@@ -319,8 +319,9 @@ Platform assumptions, to verify on bench or edge:
   A third outcome, where org B still fails after a relocation, refutes (P-e). It opens a finding for the `locationHint` follow-up named under Alternatives rejected.
 
   Owns: agent/plans/PLAN-org-executor-connect-timeout-relocate.md. Accept: `cd private/account/e2e && LIVE_CONSOLE_ORIGIN=https://edge-us.rediacc.com npx playwright test 27-90 27-91` rc 0, with org B's placement before and after recorded here.
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:22:10Z by d778be9d: live-proof lp-2cef8fe386d2 bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
 
