@@ -69,18 +69,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 17 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1472 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1474 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a07cc0e4c6d59023c, worker:a45e49855c220bafa, worker:a97635a712a51207c.
-- Leased items: 6: #3927a2de (worker:a45e49855c220bafa, d778be9d), #831b7e48 (worker:bwwxbyfyk, d778be9d), #875872ec (worker:a97635a712a51207c, d778be9d), #a150016d (worker:queue, d778be9d), #b5aac43e (worker:queue, d778be9d), #d4b2a051 (worker:a07cc0e4c6d59023c, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a97635a712a51207c.
+- Leased items: 4: #831b7e48 (worker:bwwxbyfyk, d778be9d), #875872ec (worker:a97635a712a51207c, d778be9d), #a150016d (worker:queue, d778be9d), #b5aac43e (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 42 plans done, 581 of 754 boxes done (77%).
+Promoted: 6 of 42 plans done, 588 of 754 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -124,8 +124,8 @@ Promoted: 6 of 42 plans done, 581 of 754 boxes done (77%).
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
 | 39 | PLAN-cli-tofu-toolchain.md | 9/10 | 1 open |
 | 40 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
-| 41 | PLAN-settings-set-verb.md | 0/4 | 4 open |
-| 42 | PLAN-free-license.md | 0/13 | 13 open |
+| 41 | PLAN-settings-set-verb.md | 3/4 | 1 open |
+| 42 | PLAN-free-license.md | 4/13 | 9 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge

@@ -1071,24 +1071,25 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 0,
+      "open": 9,
+      "done": 4,
       "open_sigs": [
         "006aeadd",
-        "102e71bf",
         "186fb47a",
         "42582499",
-        "438dd5c0",
         "568df0b3",
         "a002e3c9",
         "a543ecc2",
         "b3d026b3",
         "b5bca533",
-        "c5188447",
+        "c5188447"
+      ],
+      "done_sigs": [
+        "102e71bf",
+        "438dd5c0",
         "c6bd4994",
         "ea847388"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-gh-swallow-gates-audit.md": {
       "status": "compacted",
@@ -2057,15 +2058,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 0,
+      "open": 1,
+      "done": 3,
       "open_sigs": [
-        "078f1ed4",
-        "5537ebd2",
-        "9c1373a2",
         "a81690de"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "078f1ed4",
+        "5537ebd2",
+        "9c1373a2"
+      ]
     },
     "agent/plans/PLAN-shell-command-gate-regex-fix.md": {
       "status": "compacted",
