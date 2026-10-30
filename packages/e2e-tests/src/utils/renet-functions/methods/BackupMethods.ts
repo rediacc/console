@@ -1,6 +1,9 @@
 import type { VaultBuilder } from '../../vault/VaultBuilder';
 import type { ExecResult, TestFunctionOptions } from '../types';
 
+/** Size the e2e suites license a pulled repository for (installRepoLicence `size`). */
+const PULL_LICENCE_SIZE = '500M';
+
 /**
  * Backup, checkpoint, and push/pull methods for RenetFunctionsTestRunner.
  */
@@ -32,12 +35,19 @@ export class BackupMethods {
    * Pull repository from a source machine.
    * Uses backup_pull with sourceType=machine.
    */
-  pull(repository: string, sourceMachine: string, datastorePath?: string): Promise<ExecResult> {
+  pull(
+    repository: string,
+    sourceMachine: string,
+    datastorePath?: string,
+    size = PULL_LICENCE_SIZE
+  ): Promise<ExecResult> {
     return this.testFunction({
       function: 'backup_pull',
       repository,
       sourceMachine,
       datastorePath,
+      // The licence pre-flight sizes a repository the destination does not hold yet from this param.
+      size,
       sourceType: 'machine',
     });
   }

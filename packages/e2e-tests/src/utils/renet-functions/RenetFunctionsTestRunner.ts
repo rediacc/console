@@ -117,6 +117,13 @@ const DEFAULT_DATASTORE_PATH = WK_DATASTORE_PATH;
 // Re-export types for backwards compatibility
 export type { ExecResult };
 
+/** Test-mode verbs that open an ssh connection to another VM. */
+const CROSS_VM_FUNCTIONS: ReadonlySet<string> = new Set([
+  'backup_push',
+  'backup_pull',
+  'repository_migrate',
+]);
+
 /**
  * Bridge test runner for executing renet commands on VMs via SSH.
  *
@@ -197,6 +204,20 @@ export class RenetFunctionsTestRunner {
     this.testHelpers = new TestHelpers();
     this.repositoryHelpers = new RepositoryHelpers(this.executeViaBridge.bind(this));
     this.sqlHelpers = new SqlHelpers(this.executeViaBridge.bind(this));
+  }
+
+  /** The ssh user the runner connects as on the bridge and the targets. */
+  private sshUser(): string {
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
+    return user;
+  }
+
+  /** The mesh key renet's `sudo` child must use for cross-VM transfers (root has none of ours). */
+  private sshKeyPath(): string {
+    return `/home/${this.sshUser()}/.ssh/id_rsa`;
   }
 
   /**
@@ -639,11 +660,15 @@ export class RenetFunctionsTestRunner {
     if (opts.checkpointName) {
       flags += ` --checkpoint-name ${opts.checkpointName}`;
     }
+    // The verb runs under `sudo -n`, so renet's inner ssh would otherwise connect as root with
+    // root's keys. Name the bridge's ssh user and its mesh key explicitly.
     if (opts.sourceMachine) {
       flags += ` --source-machine ${opts.sourceMachine}`;
+      flags += ` --source-user ${this.sshUser()} --ssh-key ${this.sshKeyPath()}`;
     }
     if (opts.destMachine) {
       flags += ` --dest-machine ${opts.destMachine}`;
+      flags += ` --dest-user ${this.sshUser()} --ssh-key ${this.sshKeyPath()}`;
     }
 
     return flags;
@@ -819,7 +844,7 @@ export class RenetFunctionsTestRunner {
         opts.timeout
       );
     }
-    let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
+    let cmd = `sudo -n renet functions once --test-mode --debug --function ${opts.function}`;
 
     cmd += this.buildCommonFlags(opts);
     cmd += this.buildCephFlags(opts);
@@ -862,7 +887,7 @@ export class RenetFunctionsTestRunner {
    */
   testFunctionOnMachine(host: string, opts: TestFunctionOptions): Promise<ExecResult> {
     // Always use --debug in e2e tests for full logging visibility
-    let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
+    let cmd = `sudo -n renet functions once --test-mode --debug --function ${opts.function}`;
 
     if (opts.datastorePath) {
       cmd += ` --datastore-path ${opts.datastorePath}`;
@@ -944,6 +969,20 @@ export class RenetFunctionsTestRunner {
   }
 
   /**
+   * Cross-VM verbs run under `sudo -n`, where the invoking user's ssh keys are not discovered:
+   * give the vault an explicit `ssh_key` param (the destination user already rides in extra_machines).
+   */
+  private withCrossVMSSHKey(functionName: string, vaultJSON: string): string {
+    if (!CROSS_VM_FUNCTIONS.has(functionName)) return vaultJSON;
+    const vault = JSON.parse(vaultJSON) as { params?: Record<string, unknown> };
+    const params: Record<string, unknown> = { ssh_key: this.sshKeyPath(), ...vault.params };
+    if (params.dest_machine && !params.dest_user) params.dest_user = this.sshUser();
+    if (params.source_machine && !params.source_user) params.source_user = this.sshUser();
+    vault.params = params;
+    return JSON.stringify(vault);
+  }
+
+  /**
    * Upload vault JSON to the target VM over stdin (it can hold repository credentials, so it never
    * rides in the logged command text) and run the function against it.
    *
@@ -954,7 +993,7 @@ export class RenetFunctionsTestRunner {
     buildVaultJSON: () => string,
     timeout?: number
   ): Promise<ExecResult> {
-    const vaultJSON = buildVaultJSON();
+    const vaultJSON = this.withCrossVMSSHKey(functionName, buildVaultJSON());
     const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
     const uploadResult = await this.executeViaBridge(`umask 077 && cat > ${vaultPath}`, timeout, {
       stdin: vaultJSON,
@@ -966,7 +1005,7 @@ export class RenetFunctionsTestRunner {
 
     try {
       // Execute function with vault file on target VM
-      const cmd = `renet functions once --test-mode --debug --function ${functionName} --vault-file ${vaultPath}`;
+      const cmd = `sudo -n renet functions once --test-mode --debug --function ${functionName} --vault-file ${vaultPath}`;
       return await this.executeViaBridge(cmd, timeout);
     } finally {
       // Cleanup vault file on target VM
