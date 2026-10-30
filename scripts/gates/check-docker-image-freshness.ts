@@ -375,9 +375,18 @@ function gitVisibleImageFiles(): string[] {
   const trackedParts = partitionExisting(tracked, (f) => existsSync(path.join(ROOT, f)));
   if (trackedParts.missing.length > 0) {
     console.error(
-      `\u2717 ${trackedParts.missing.length} tracked image file(s) are missing from the tree (deleted, or in an uninitialised submodule), so the gate cannot judge them:\n${trackedParts.missing.map((f) => `  ${f}`).join('\n')}`
+      `\u2717 ${trackedParts.missing.length} tracked image file(s) are listed by git but missing from the tree, so the gate cannot judge them:\n${trackedParts.missing.map((f) => `  ${f}`).join('\n')}`
     );
     process.exit(1);
+  }
+  // `ls-files --recurse-submodules` lists nothing inside an UNINITIALISED submodule, so its image
+  // files never reach `missing`; name each such submodule as unjudged rather than claim coverage.
+  const uninit = spawnSync('git', ['submodule', 'status'], { cwd: ROOT, encoding: 'utf8' })
+    .stdout.split('\n')
+    .filter((l) => l.startsWith('-'))
+    .map((l) => l.trim().split(/\s+/)[1]);
+  for (const sub of uninit) {
+    console.log(`! ${sub}: uninitialised submodule, its image files are not judged`);
   }
   const untrackedParts = partitionExisting(untracked, (f) => existsSync(path.join(ROOT, f)));
   return [...new Set([...trackedParts.present, ...untrackedParts.present])].sort(
