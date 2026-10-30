@@ -554,3 +554,34 @@ def test_require_env_pair_signs_with_the_env_pair(
     assert (keys["edPriv"], keys["edPub"]) == ("ENV-PRIVATE-SENTINEL", "ENV-PUB")
     # The x25519 pair is not the signing pair and still comes from the generator.
     assert (keys["xPriv"], keys["xPub"]) == ("GEN-XPRIV", "GEN-XPUB")
+
+
+def _captured_server_env(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> dict[str, str]:
+    seen: dict[str, str] = {}
+
+    def fake_popen(_argv, **kwargs):
+        seen.update(kwargs["env"])
+        return object()
+
+    monkeypatch.setattr(sa.subprocess, "Popen", fake_popen)
+    sa.start_server(
+        sa.Options(), tmp_path, tmp_path / "log", tmp_path / "db.sqlite", dict(FAKE_KEYS)
+    )
+    return seen
+
+
+def test_delta_9_a_caller_supplied_api_key_reaches_the_server(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 047cc812.2: renet's subscription system tests send their own X-API-Key, so the server must run with it."""
+    monkeypatch.setenv("ACCOUNT_SERVER_API_KEY", "k" * 64)
+    assert _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_SERVER_API_KEY"] == "k" * 64
+
+
+def test_delta_9_without_a_caller_key_a_fresh_one_is_minted(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("ACCOUNT_SERVER_API_KEY", raising=False)
+    key = _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_SERVER_API_KEY"]
+    assert len(key) == 64
+    assert key != "k" * 64
