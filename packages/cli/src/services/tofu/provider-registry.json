@@ -111,7 +111,7 @@
       "region": "eu_nord_1"
     },
     "imageAttr": "image",
-    "ipv4Output": "coalesce(one([for a in @self.ip_addresses : a.address if a.type == \"primary-ip\" && a.address_family == 4]), [for a in @self.ip_addresses : a.address if a.address_family == 4 && !can(regex(\"^(10\\\\.|192\\\\.168\\\\.|172\\\\.(1[6-9]|2[0-9]|3[01])\\\\.)\", a.address))][0])",
+    "ipv4Output": "coalesce(one([for a in @self.ip_addresses : a.address if a.type == \"primary-ip\" && a.address_family == 4]), [for a in @self.ip_addresses : a.address if a.address_family == 4 && !can(regex(\"^(10\\\\.|192\\\\.168\\\\.|172\\\\.(1[6-9]|2[0-9]|3[01])\\\\.|127\\\\.|169\\\\.254\\\\.|100\\\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\\\.)\", a.address))][0])",
     "labelAttr": "hostname",
     "regionAttr": "region",
     "requiredEnvAttrs": {

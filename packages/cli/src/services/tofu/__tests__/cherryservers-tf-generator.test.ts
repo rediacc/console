@@ -101,12 +101,15 @@ describe.skipIf(!HAVE_TOFU && process.env.CI !== 'true')('cherryservers IPv4 sel
     ).toBe('198.51.100.9');
   });
 
-  it('falls back to the first public IPv4 when no address is typed primary-ip, skipping RFC 1918', () => {
+  it('falls back to the first public IPv4 when no address is typed primary-ip, skipping private, loopback, link-local and CGNAT ranges', () => {
     expect(
       evalIpv4([
         { address: '10.0.0.5', type: 'private', family: 4 },
         { address: '172.20.1.1', type: 'private', family: 4 },
         { address: '192.168.1.2', type: 'private', family: 4 },
+        { address: '127.0.0.1', type: 'loopback', family: 4 },
+        { address: '169.254.0.9', type: 'link-local', family: 4 },
+        { address: '100.64.3.3', type: 'cgnat', family: 4 },
         { address: '2001:db8::1', type: 'public', family: 6 },
         { address: '203.0.113.7', type: 'public', family: 4 },
       ])

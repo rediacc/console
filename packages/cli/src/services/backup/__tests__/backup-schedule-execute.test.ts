@@ -66,6 +66,25 @@ describe('executePlan removals', () => {
     expect(commands.some((c) => c.includes('systemctl disable'))).toBe(false);
   });
 
+  it('drops the dangling enable link of a timer that is only enabled, and a failure there only warns', async () => {
+    const commands: string[] = [];
+    const sftp = {
+      execStreaming: (command: string) => {
+        commands.push(command);
+        return Promise.resolve(command.includes('systemctl stop') ? 5 : 0);
+      },
+    } as unknown as SFTPClient;
+    const diff = removed('linked', false);
+    if (diff.remote) diff.remote.isEnabledTimer = true;
+    await executePlan(sftp, plan([diff]), {});
+    const stop = commands.find((c) => c.includes('systemctl stop rediacc-backup-linked.timer'));
+    expect(stop).toContain(
+      'rm -f /etc/systemd/system/timers.target.wants/rediacc-backup-linked.timer'
+    );
+    // The env file is still removed after the failed stop: the schedule went on.
+    expect(commands.some((c) => c.includes("rm -f '/etc/rediacc/backup-linked.env'"))).toBe(true);
+  });
+
   it('still disables a timer that exists before removing its files', async () => {
     const { sftp, commands } = fakeSftp(new Set(['rediacc-backup-nightly.timer']));
     await executePlan(sftp, plan([removed('nightly', true)]), {});
