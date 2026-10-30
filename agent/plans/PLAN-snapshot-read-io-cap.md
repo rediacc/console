@@ -6,7 +6,7 @@ Priority: P1 -- On hostinger, the production machine, the read and hash phase of
 Depends-On: no-dep -- the code boxes need nothing outside this plan; L1 and L2 run after R1-R4 and C1 land on the branch, on a production-keyed renet on hostinger
 Concurrency: parallel -- R (renet), C (CLI, unit generator, config schema), box I1 (CLI locales) and D (www docs) have disjoint Owns and run at the same time. No compile dependency links them: `executeRepoFunction` takes `params: Record<string, unknown>` (packages/cli/src/utils/repo-executor.ts:79-83), and the CLI tests mock `t`. L1 and L2 run after R and C land on the branch.
 Owns: agent/plans/PLAN-snapshot-read-io-cap.md, private/renet/pkg/chunkstore/hash.go, private/renet/pkg/chunkstore/hash_readcap_test.go, private/renet/pkg/chunkstore/pipeline_linux.go, private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/uploader_readcap_test.go, private/renet/pkg/chunkstore/ratelimit.go, private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go, packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts, packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/__tests__/backup-snapshot-bwlimit.test.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/commands/__tests__/backup-strategy.test.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts, packages/cli/src/i18n/locales/*/cli.json, packages/cli/src/i18n/locales/.translation-hashes.json, packages/www/src/content/docs/*/backup-restore.md
-Live-Proof: hostinger. L1 is a full read-and-hash run with no upload. L2 is a real capped snapshot. Both run under the load and iowait sampler.
+Live-Proof: bench, hostinger -- bench covers the account surface through the shared contract files this plan edits; hostinger covers renet: L1 is a full read-and-hash run with no upload and L2 is a real capped snapshot, both run under the load and iowait sampler.
 Updated: 2026-10-29
 Worklist: #bce6ed12, PR-TASK 9f92c43e
 First-Seen: 2026-10-29
@@ -170,7 +170,7 @@ First-Seen: 2026-10-29
 
 - [x] I1. Add the three new option strings in all 13 CLI locales (ar, de, en, es, et, fr, it, ja, ko, pt, ru, tr, zh).
   - Owns: packages/cli/src/i18n/locales/*/cli.json, packages/cli/src/i18n/locales/.translation-hashes.json
-  - Keys: `commands.backup.snapshot.optionReadBwlimit`, `commands.backup.snapshot.optionHashParallelism`, `commands.backup.strategy.set.optionReadBwlimit`. They sit next to the existing `optionBwlimit` and `optionParallelism` (en/cli.json:1938-1939).
+  - Keys: `commands.backup.snapshot.optionReadBwlimit`, `commands.backup.snapshot.optionHashParallelism`, `commands.backup.strategy.set.optionReadBwlimit`. They sit next to the existing `optionBwlimit` and `optionParallelism` (packages/cli/src/i18n/locales/en/cli.json:1938-1939).
   - Each English value names the default, for example "Read cap for hashing: same units as --bwlimit; default 50M, 0 = unlimited" and "Cells hashed at once (default 1; 0 = one per CPU)".
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders` rc 0.
     (ticked) 2026-10-29T09:53:53Z by d778be9d: commit:9875bdd04
@@ -251,3 +251,9 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
   - Owns: none in the tree.
   - Accept: the seed driver run for that repo rc 0, with the per-sample CPU figures recorded under this box.
 
+
+- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+  Accept: live-proof hostinger renet-live machine=hostinger
+
+- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  Accept: live-proof bench account-smoke

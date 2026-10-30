@@ -13,9 +13,9 @@ Worklist: #9a7c3258, PR-TASK 9f92c43e
 
 ## Finding (read-only investigation, 2026-10-29)
 
-- Lookup: TofuExecutor.resolveBinary tries `tofu version` then `terraform version` on PATH with no version floor (executor.ts:69-79); provisioning calls it first (provision.ts:109, cluster-provision.ts:128).
+- Lookup: TofuExecutor.resolveBinary (packages/cli/src/services/tofu/executor.ts:290) went through `resolveTofu` (packages/cli/src/services/tofu/executor.ts:107), which tries `tofu version` then `terraform version` on PATH; when this plan was written there was no version floor, and `ENGINE_FLOORS` now applies one; provisioning calls it first (packages/cli/src/services/tofu/provision.ts:114, packages/cli/src/services/cluster/cluster-provision.ts:128).
 - No plugin cache: each machine's work dir `<configDir>/tofu/<machine>/` re-downloads its provider on `init`; the 31 providers in provider-registry.json carry only `~>` ranges and no lock hashes.
-- rsync is not embedded locally either (remote/sync/rsync.ts:21-37); the SEA embeds only renet (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). `rdc doctor` exists (commands/doctor.ts:507) but checks neither tofu nor rsync, and its commandExists shells out to `which`, which Windows lacks (doctor.ts:44-50).
+- rsync is not embedded locally either (packages/cli/src/remote/sync/rsync.ts:21-37); the SEA embeds only renet (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). `rdc doctor` exists (packages/cli/src/commands/doctor.ts:558) but checks neither tofu nor rsync, and its commandExists shelled out to `which`, which Windows lacks (the helper is no longer in packages/cli/src/commands/doctor.ts).
 - Pins: `.ci/config/pins.json` leaves model a release-age pin with per-platform sha256 sites (toolchain:shfmt at :1869-1941); no leaf has Windows checksum roles yet, and the pins driver verifies no signatures.
 - The provider token in main.tf.json was world-readable; fixed in 1e9a72f02 (0700 dir, 0600 file).
 
@@ -45,3 +45,6 @@ Worklist: #9a7c3258, PR-TASK 9f92c43e
 - [x] T8 Regenerate the CLI contract and docs for the new verb. Accept: `npm run check:ci-cli-contract`, `npm run check:cli-docs` and `npm run check:i18n` rc 0.
     (ticked) 2026-10-29T17:14:50Z by d778be9d: commit:95a124a7c check:ci-cli-contract rc=0, check:cli-docs rc=0, check:i18n rc=0
 - [ ] L1 [live] On this workstation (no tofu installed): `rdc tools install tofu`, then the approved R2-to-Linode DR proof provisions `dr-mail` with `--no-infra`, and `machine deprovision` removes it. Accept: provision and deprovision rc 0, with the Linode id, region and teardown recorded.
+
+- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  Accept: live-proof bench cli-bench

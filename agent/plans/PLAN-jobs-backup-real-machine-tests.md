@@ -15,7 +15,7 @@ Worklist: PR-TASK 9f92c43e
 
 - The vm:check renet phase (`.ci/rediacc_ci/drills/vm_check.py:269-280`) runs forks, isolation, sync, vscode, sftp, tenant isolation, session teardown, converge preflight and GPU grants. It never calls job, backup, migrate, gc or prune, so a VERIFIED `vm:check --changed` cannot fail on this branch's renet diff. PLAN-detached-jobs J11 and PLAN-backup-local-image V1 still count that receipt as "the VM proof for the renet change".
 - `check:ci-e2e-coverage` reads only RENET_FUNCTIONS (`scripts/gates/check-e2e-coverage.ts:369-385`), not RENET_BRIDGE_FUNCTIONS, where repository_migrate and repository_gc live; its "all enforced functions covered" line says nothing about them.
-- `backup_check_trigger.py:59-70` leaves out pkg/functions/commands/backup*.go, pkg/bwrate/, cmd/renet/repository_{migrate,gc}* and packages/cli/src/services/jobs, and drill legs a-o exercise no read cap, CPU limit, session re-mint, reconcile or local image.
+- `.ci/rediacc_ci/drills/backup_check_trigger.py:59-70` leaves out pkg/functions/commands/backup*.go, pkg/bwrate/, cmd/renet/repository_{migrate,gc}* and packages/cli/src/services/jobs, and drill legs a-o exercise no read cap, CPU limit, session re-mint, reconcile or local image.
 - Proven only with fakes: CPUQuota on a real systemd scope; rsync --bwlimit timing; LUKS export/import, resume and stale-transfer prune; session expiry against the real account (the 1 h TTL is a constant with no seam, and no account test pins an expired row to 401 BACKUP_SESSION_INVALID); overlap exit 15 and request-id dedupe across two real processes; network_id auto under concurrent starts; job claim by two claimants; retention against systemd.
 - Already one-off covered (stay as they are): detached-jobs L1 1d17b634, L4 27123f68, L5 3d256594; read-cap L3 e990ac90; local-image L1 55c84971, L2 339bf791; meter L1 d36ccec3, L2 fd8547ed; backup-program J6 575e0098 (suite 26 is wired in ct-tests.yml and waits for a run id); hardening L1 2a858fea.
 
@@ -39,3 +39,6 @@ Worklist: PR-TASK 9f92c43e
     (ticked) 2026-10-29T23:57:26Z by d778be9d: commit:1ddf33a4f adds suite 32 to the J11 Accept, suite 23 to J4 and J16, suite 26 to V1; check_plan_deps rc=0, check:ci-plan-boxes rc=0. DEPS-WAIVED: X1 only edits Accept text and needs neither J4 nor J16 finished
 - [ ] L1 [live] Bench: deploy the account with the A1/D1 seam and show the TTL seam is refused outside the dev gateway. Accept: the seam request on bench answers a refusal and the normal session mint still works.
 - [ ] M1 (after PLAN-detached-jobs J4 and J16) Suite 23: `repo migrate` on the job path deletes the source only after the target is up; repository_gc keeps a candidate that was mounted between list and delete; the G1 BLOCKERs are removed. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip` rc 0.
+
+- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  Accept: live-proof bench account-smoke

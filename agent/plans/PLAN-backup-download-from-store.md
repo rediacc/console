@@ -14,9 +14,9 @@ Worklist: #b76e7dcb, PR-TASK 9f92c43e
 ## Finding (read-only study, 2026-10-29)
 
 - No machine-free path exists: backup browse, browse-at, backup restore and renet restore/restore-path all run on a machine; `backup verify --store` re-hashes chunks on the server and never rebuilds an image (packages/cli/src/commands/backup-storage.ts:345; private/renet/cmd/renet/backup_restore.go:273).
-- renet's restore engine (pkg/chunkstore download.go, restore.go, manifest.go) builds on every OS and takes the store as a ReadPlane interface (download.go:41-43); renet is cross-compiled for darwin and windows and embedded in those CLI builds (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). On non-Linux, hole punching fails (punch_other.go) and the engine then discards the local file (restore.go:96-108), so an incremental update would re-download everything until darwin and windows punch exist.
-- Sessions are minted only from a licence blob plus a machine id (private/account/src/routes/backups.ts:165-174). Every member CLI login holds `backup:read` (device-code.service.ts:356) and an unscoped token reaches every lineage (routes/backups.ts:105), so a restore session gated on `backup:read` would make any stolen login a bulk-download credential.
-- Chunks are LUKS ciphertext verified by sha256 (restore.go:245-262); the passphrase stays in the config's per-repo credential and never reaches the server. A copy fetched on macOS or Windows cannot be opened there (no cryptsetup); it is an offline archive for `backup upload` or a Linux host.
+- renet's restore engine (pkg/chunkstore download.go, restore.go, manifest.go) builds on every OS and takes the store as a ReadPlane interface (private/renet/pkg/chunkstore/download.go:41-43); renet is cross-compiled for darwin and windows and embedded in those CLI builds (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). On non-Linux, hole punching fails (punch_other.go) and the engine then discards the local file (private/renet/pkg/chunkstore/restore.go:96-108), so an incremental update would re-download everything until darwin and windows punch exist.
+- Sessions are minted only from a licence blob plus a machine id (private/account/src/routes/backups.ts:165-174). Every member CLI login holds `backup:read` (private/account/src/services/device-code.service.ts:356) and an unscoped token reaches every lineage (private/account/src/routes/backups.ts:105), so a restore session gated on `backup:read` would make any stolen login a bulk-download credential.
+- Chunks are LUKS ciphertext verified by sha256 (private/renet/pkg/chunkstore/restore.go:245-262); the passphrase stays in the config's per-repo credential and never reaches the server. A copy fetched on macOS or Windows cannot be opened there (no cryptsetup); it is an offline archive for `backup upload` or a Linux host.
 - A TypeScript reimplementation was rejected: about 700 lines, no hole punching in Node, and it would re-create the stale-bytes trap clearStaleHoles closes.
 
 ## Design
@@ -38,3 +38,9 @@ Worklist: #b76e7dcb, PR-TASK 9f92c43e
 - [x] L1 [live] Bench: mint a restore session with a scoped token, fetch a small lineage, and show the refusals for a member token and an unscoped token. Accept: the fetch rc 0 and both refusals answer 403.
     (ticked) 2026-10-29T22:33:53Z by d778be9d: bench worker 3906a08b: team token with backup:read+backup:restore, rdc backup download hb1023-src --store rc=0, bytesFetched 79691776, image begins with the LUKS magic; member POST /api-tokens with backup:restore 403 INSUFFICIENT_ORG_ROLE, its backup:read token 403 on restore-session; demoted creator token 403 INSUFFICIENT_ORG_ROLE after a 200 control; team-less token row 403 TEAM_SCOPE_REQUIRED; cleaned up. DEPS-WAIVED: the bench proof of the landed route and CLI needs neither the local-image plan nor the hardening L2 stable step
 - [ ] L2 [live] Hostinger lineage, read-only: fetch one seeded repo to a local path, then fetch again and record the bytes fetched by the incremental run. Accept: both runs rc 0, the second fetches only changed cells, and the image sha256 equals the recorded one.
+
+- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  Accept: live-proof bench account-smoke
+
+- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+  Accept: live-proof hostinger renet-live machine=hostinger
