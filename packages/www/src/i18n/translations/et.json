@@ -2171,16 +2171,16 @@
               ],
               "title": "2.4 Küpsised"
             },
-            "freeLicenseData": {
-              "content": ["Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, koos taotluses olevate masina- ja repositooriumi identifikaatoritega. Sellest räsist loodud loendur kustutatakse 72 tunni pärast; litsentsikirje säilitab ainult räsi. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."],
-              "title": "2.6 Tasuta litsentsi taotlused"
-            },
             "productTelemetry": {
               "content": [
                 "Meie tarkvaratooted (CLI ja Renet agent) koguvad kasutustelemetriat, et parandada toodete kvaliteeti, jõudlust ja töökindlust. Telemetriaandmed sisaldavad tehnilist teavet, näiteks rakenduse versiooni, operatsioonisüsteemi, jõudlusmõõdikuid, funktsioonide kasutusmustreid ja veaaruandeid. Isikuandmed muudetakse enne kogumist anonüümseks: e-posti aadressidest jäetakse alles ainult domeen, kasutaja ID-d räsitakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi. Meie veebisaidi ja kontoteenuse telemeetria sisaldab ka linnatasemel asukohta (linn ja piirkond), mis pärineb Cloudflare'i servavõrgust ja mida säilitatakse 7 päeva.",
                 "Telemetria on meie CLI-s vaikimisi lubatud ning seda saab kõigis toodetes keelata. Üksikasjaliku teabe saamiseks selle kohta, mida iga toode kogub ja kuidas loobuda, vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
               ],
               "title": "2.5 Tootetelemetria andmed"
+            },
+            "freeLicenseData": {
+              "content": ["Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, koos taotluses olevate masina- ja repositooriumi identifikaatoritega. Sellest räsist loodud loendur kustutatakse 72 tunni pärast; litsentsikirje säilitab ainult räsi. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."],
+              "title": "2.6 Tasuta litsentsi taotlused"
             }
           },
           "title": "2. Kogutav teave"

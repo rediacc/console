@@ -2173,16 +2173,16 @@
               ],
               "title": "2.4 Cookie"
             },
-            "freeLicenseData": {
-              "content": ["Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, insieme agli identificativi di macchina e repository contenuti nella richiesta. Il contatore basato su quell'hash viene eliminato dopo 72 ore; il record della licenza conserva solo l'hash. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."],
-              "title": "2.6 Richieste di licenza gratuita"
-            },
             "productTelemetry": {
               "content": [
                 "I nostri prodotti software (CLI e Renet Agent) raccolgono telemetria di utilizzo per migliorare la qualità, le prestazioni e l'affidabilità dei prodotti. I dati di telemetria comprendono informazioni tecniche come la versione dell'applicazione, il sistema operativo, le metriche di prestazione, i modelli di utilizzo delle funzionalità e i report di errore. Gli identificativi personali vengono resi anonimi prima della raccolta: gli indirizzi e-mail sono ridotti al solo dominio, gli ID utente vengono sottoposti a hash e troncati, e password o segreti non vengono mai raccolti. La telemetria del nostro sito web e del servizio account include anche la posizione a livello di città (città e regione), rilevata dall'edge di Cloudflare e conservata per 7 giorni.",
                 "La telemetria è abilitata per impostazione predefinita nella CLI e può essere disabilitata in tutti i prodotti. Per informazioni complete su cosa raccoglie ciascun prodotto e su come disattivarla, consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
               ],
               "title": "2.5 Dati di Telemetria del Prodotto"
+            },
+            "freeLicenseData": {
+              "content": ["Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, insieme agli identificativi di macchina e repository contenuti nella richiesta. Il contatore basato su quell'hash viene eliminato dopo 72 ore; il record della licenza conserva solo l'hash. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."],
+              "title": "2.6 Richieste di licenza gratuita"
             }
           },
           "title": "2. Informazioni che Raccogliamo"

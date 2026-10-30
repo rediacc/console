@@ -1083,16 +1083,16 @@
                 "We use <a href=\"https://plausible.io\" target=\"_blank\" rel=\"noopener noreferrer\">Plausible Analytics</a>, a privacy-focused, cookieless analytics tool. Plausible does not use cookies, does not collect personal data, and is fully compliant with GDPR, CCPA, and PECR. Analytics data includes page views, referral sources, browser type, and country-level location, all without identifying individual visitors."
               ]
             },
-            "freeLicenseData": {
-              "content": ["When a machine asks for a Free License without an account, we store a keyed hash of the requesting IP address (the whole IPv4 address, or the /64 prefix of an IPv6 address), never the address itself, together with the machine and repository identifiers the request carries. The counter built from that hash is deleted after 72 hours; the licence record keeps only the hash. The legal basis is our legitimate interest in preventing abuse of a free service."],
-              "title": "2.6 Free License Requests"
-            },
             "productTelemetry": {
               "title": "2.5 Product Telemetry Data",
               "content": [
                 "Our software products (CLI and Renet Agent) collect usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected. Telemetry from our website and account service also includes city-level location (city and region), taken from Cloudflare's edge and kept for 7 days.",
                 "Telemetry is enabled by default in our CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
               ]
+            },
+            "freeLicenseData": {
+              "content": ["When a machine asks for a Free License without an account, we store a keyed hash of the requesting IP address (the whole IPv4 address, or the /64 prefix of an IPv6 address), never the address itself, together with the machine and repository identifiers the request carries. The counter built from that hash is deleted after 72 hours; the licence record keeps only the hash. The legal basis is our legitimate interest in preventing abuse of a free service."],
+              "title": "2.6 Free License Requests"
             },
             "cookies": {
               "title": "2.4 Cookies",

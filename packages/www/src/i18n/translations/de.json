@@ -2167,16 +2167,16 @@
               ],
               "title": "2.4 Cookies"
             },
-            "freeLicenseData": {
-              "content": ["Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, zusammen mit den Maschinen- und Repository-Kennungen aus der Anfrage. Der aus diesem Hash gebildete Zähler wird nach 72 Stunden gelöscht; der Lizenzdatensatz enthält nur den Hash. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."],
-              "title": "2.6 Anfragen nach einer kostenlosen Lizenz"
-            },
             "productTelemetry": {
               "content": [
                 "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst. Die Telemetrie unserer Website und des Kontodienstes enthält außerdem den Standort auf Stadtebene (Stadt und Region). Er stammt vom Edge-Netzwerk von Cloudflare und wird 7 Tage lang gespeichert.",
                 "Telemetrie ist in unserer CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
               ],
               "title": "2.5 Produkttelemetriedaten"
+            },
+            "freeLicenseData": {
+              "content": ["Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, zusammen mit den Maschinen- und Repository-Kennungen aus der Anfrage. Der aus diesem Hash gebildete Zähler wird nach 72 Stunden gelöscht; der Lizenzdatensatz enthält nur den Hash. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."],
+              "title": "2.6 Anfragen nach einer kostenlosen Lizenz"
             }
           },
           "title": "2. Von uns erhobene Daten"

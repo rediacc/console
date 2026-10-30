@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createTranslator } from '../../i18n/utils';
+import { orderedKeys } from '../../utils/legal-order';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import { CONTACT_EMAIL } from '../../config/constants';
 import type { Language } from '../../i18n/types';
@@ -13,7 +14,7 @@ const { t, to } = createTranslator(lang);
 
 const PAGE_KEY = 'pages.cookiePolicy';
 const sections = to(`${PAGE_KEY}.sections` as any) as Record<string, any>;
-const sectionKeys = Object.keys(sections);
+const sectionKeys = orderedKeys(sections);
 
 const relatedPages = [
   { href: `/${lang}/privacy-policy`, label: t('footer.legalLinks.privacyPolicy') },
@@ -65,7 +66,7 @@ const relatedPages = [
                     ))}
                   </ul>
                 )}
-                {section.subsections && Object.keys(section.subsections).map((subKey) => {
+                {section.subsections && orderedKeys(section.subsections).map((subKey) => {
                   const sub = section.subsections[subKey];
                   return (
                     <>

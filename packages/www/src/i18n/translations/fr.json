@@ -2167,16 +2167,16 @@
               ],
               "title": "2.4 Cookies"
             },
-            "freeLicenseData": {
-              "content": ["Lorsqu'une machine demande une licence gratuite sans compte, nous enregistrons un hachage à clé de l'adresse IP à l'origine de la demande (l'adresse IPv4 complète, ou le préfixe /64 d'une adresse IPv6), jamais l'adresse elle-même, avec les identifiants de machine et de dépôt contenus dans la demande. Le compteur établi à partir de ce hachage est supprimé au bout de 72 heures ; l'enregistrement de la licence ne conserve que le hachage. La base juridique est notre intérêt légitime à prévenir les abus d'un service gratuit."],
-              "title": "2.6 Demandes de licence gratuite"
-            },
             "productTelemetry": {
               "content": [
                 "Nos produits logiciels (CLI et Renet Agent) collectent une télémétrie d'utilisation afin d'améliorer la qualité, les performances et la fiabilité des produits. Les données de télémétrie comprennent des informations techniques comme la version de l'application, le système d'exploitation, des métriques de performance, les habitudes d'utilisation des fonctionnalités et des rapports d'erreurs. Les identifiants personnels sont anonymisés avant la collecte : les adresses e-mail sont réduites au seul domaine, les identifiants utilisateur sont hachés et tronqués, et les mots de passe ou secrets ne sont jamais collectés. La télémétrie de notre site web et de notre service de comptes inclut aussi la localisation à l'échelle de la ville (ville et région), fournie par le réseau edge de Cloudflare et conservée pendant 7 jours.",
                 "La télémétrie est activée par défaut dans notre CLI, et peut être désactivée dans tous les produits. Pour plus de détails sur ce que chaque produit collecte et comment vous désinscrire, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
               ],
               "title": "2.5 Données de télémétrie produit"
+            },
+            "freeLicenseData": {
+              "content": ["Lorsqu'une machine demande une licence gratuite sans compte, nous enregistrons un hachage à clé de l'adresse IP à l'origine de la demande (l'adresse IPv4 complète, ou le préfixe /64 d'une adresse IPv6), jamais l'adresse elle-même, avec les identifiants de machine et de dépôt contenus dans la demande. Le compteur établi à partir de ce hachage est supprimé au bout de 72 heures ; l'enregistrement de la licence ne conserve que le hachage. La base juridique est notre intérêt légitime à prévenir les abus d'un service gratuit."],
+              "title": "2.6 Demandes de licence gratuite"
             }
           },
           "title": "2. Informations que nous collectons"

@@ -2165,16 +2165,16 @@
               ],
               "title": "2.4 Cookies"
             },
-            "freeLicenseData": {
-              "content": ["Cuando una máquina solicita una licencia gratuita sin cuenta, almacenamos un hash con clave de la dirección IP solicitante (la dirección IPv4 completa o el prefijo /64 de una dirección IPv6), nunca la dirección en sí, junto con los identificadores de máquina y de repositorio que incluye la solicitud. El contador basado en ese hash se elimina a las 72 horas; el registro de la licencia conserva solo el hash. La base jurídica es nuestro interés legítimo en evitar el abuso de un servicio gratuito."],
-              "title": "2.6 Solicitudes de licencia gratuita"
-            },
             "productTelemetry": {
               "content": [
                 "Nuestros productos de software (CLI y Agente Renet) recopilan telemetría de uso para mejorar la calidad, el rendimiento y la fiabilidad de los productos. Los datos de telemetría incluyen información técnica como la versión de la aplicación, el sistema operativo, métricas de rendimiento, patrones de uso de funciones e informes de errores. Los identificadores personales se anonimizan antes de la recopilación: las direcciones de correo electrónico se reducen al dominio, los ID de usuario se codifican con hash y se truncan, y nunca se recopilan contraseñas ni secretos. La telemetría de nuestro sitio web y del servicio de cuentas también incluye la ubicación a nivel de ciudad (ciudad y región), que proviene del edge de Cloudflare y se conserva durante 7 días.",
                 "La telemetría está habilitada de forma predeterminada en nuestra CLI, y puede deshabilitarse en todos los productos. Para obtener detalles completos sobre lo que recopila cada producto y cómo darse de baja, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
               ],
               "title": "2.5 Datos de telemetría del producto"
+            },
+            "freeLicenseData": {
+              "content": ["Cuando una máquina solicita una licencia gratuita sin cuenta, almacenamos un hash con clave de la dirección IP solicitante (la dirección IPv4 completa o el prefijo /64 de una dirección IPv6), nunca la dirección en sí, junto con los identificadores de máquina y de repositorio que incluye la solicitud. El contador basado en ese hash se elimina a las 72 horas; el registro de la licencia conserva solo el hash. La base jurídica es nuestro interés legítimo en evitar el abuso de un servicio gratuito."],
+              "title": "2.6 Solicitudes de licencia gratuita"
             }
           },
           "title": "2. Información que recopilamos"
