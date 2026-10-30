@@ -301,6 +301,36 @@ def test_default_precheck_wants_an_investigation_row(root):
     assert "--plan-investigate" in msg
 
 
+def test_precheck_passes_with_a_live_investigation_row_and_refuses_a_retro_one(root, monkeypatch):
+    sig = _sig(PLAN, "LP-bench")
+    monkeypatch.setattr(LP.R, "investigation_for", lambda _root, _rel, _sig: {"verdict": "absent"})
+    assert LP.tick_precheck(root, REL, sig, ME) is None
+    # Control: a retro row is not a live investigation, so the precheck refuses again.
+    monkeypatch.setattr(
+        LP.R, "investigation_for", lambda _root, _rel, _sig: {"verdict": "absent", "retro": True}
+    )
+    assert LP.tick_precheck(root, REL, sig, ME)
+
+
+def test_evidence_reads_the_check_rc_from_the_row():
+    row = {
+        "id": "lp-1",
+        "target": "bench",
+        "check": {"id": "account-smoke", "rc": 3},
+        "deploy": {"version_id": "v9"},
+    }
+    assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=3 v=v9"
+    row["check"] = {"id": "account-smoke"}
+    assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=0 v=v9"
+
+
+def test_a_recorder_past_its_timeout_is_reported(monkeypatch, tmp_path):
+    monkeypatch.setattr(LP, "RECORDER_TIMEOUT_S", 1)
+    rc, _out, err = LP.run_recorder([sys.executable, "-c", "import time; time.sleep(5)"], tmp_path)
+    assert rc == 124
+    assert "past 1 s" in err
+
+
 @pytest.mark.parametrize(
     ("args", "needle"),
     [

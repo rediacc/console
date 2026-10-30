@@ -1,8 +1,8 @@
 """`worklist.py --live-proof`: record a live receipt for a plan's LP box and, with `--tick`, close the box in the same run (agent/plans/PLAN-tested-on-bench.md, Design item "Agent verb").
 
-THE ENGINE IS NOT RESTATED HERE. The box's Accept sub-line is parsed by `rediacc_ci.proof.live_tier.accept_of`, the one definition the recorder and `check:ci-plan-live-proof` both read, loaded through `rediacc_hooks/syspath.py` (`import_from_ci`). The run itself is `python3 -m rediacc_ci.ops.live_proof record ...` as a SUBPROCESS, because the recorder re-executes itself under the `deploy-bench` Bitwarden profile and a bench check must not inherit a half-imported hook process. Its rc and stderr are surfaced as they came.
+THE ENGINE IS NOT RESTATED HERE. The box's Accept sub-line is parsed by `rediacc_ci.proof.live_tier.accept_of`, the one definition the recorder and `check:ci-plan-live-proof` both read, loaded through `rediacc_hooks/syspath.py` (`import_from_ci`). The run itself is `python3 -m rediacc_ci.ops.live_proof record ...` as a SUBPROCESS, because the recorder re-executes itself under the `deploy-bench` Bitwarden profile and a bench check must not inherit a half-imported hook process. Its output is captured (the row id is read from it) and re-printed unchanged once it exits, with its rc; a run past RECORDER_TIMEOUT_S is stopped and reported.
 
-THE TICK IS `--plan-tick`'S OWN PATH. `worklist.py` hands `run` a `tick` callable that drives `_plantick_cli` (the dependency gate, `wl_planrec.plan_tick`, the plan plus `.ci/config/plan-boxes.json` written together), so a live-proof tick cannot drift from an ordinary one. It fires only after the recorder exited 0 under `--write` AND the VERIFIED row it named is read back out of `agent/ledgers/live-proof.jsonl` for this plan and box. The evidence line is the plan's: `live-proof <id> <target> <check> rc=0 v=<version>`.
+THE TICK IS `--plan-tick`'S OWN PATH. `worklist.py` hands `run` a `tick` callable that drives `_plantick_cli` (the dependency gate, `wl_planrec.plan_tick`, the plan plus `.ci/config/plan-boxes.json` written together), so a live-proof tick cannot drift from an ordinary one. It fires only after the recorder exited 0 under `--write` AND the VERIFIED row it named is read back out of `agent/ledgers/live-proof.jsonl` for this plan and box. The evidence line is the plan's: `live-proof <id> <target> <check> rc=<the row's check rc> v=<version>`.
 
 NEVER COMMITS. The ledger row, the plan and the box ledger ride one commit, and the success message says so.
 """
@@ -150,14 +150,32 @@ def recorder_argv(
     return argv
 
 
+# A bench or hostinger check takes minutes; one that runs past this is reported, not waited on forever.
+RECORDER_TIMEOUT_S = 1800
+
+
 def run_recorder(argv: Sequence[str], root: pathlib.Path) -> tuple[int, str, str]:
     """(rc, stdout, stderr) of the recorder, run from `root` with `.ci` on PYTHONPATH. Output is captured so the row id can be read; the caller re-prints both streams."""
     env = dict(os.environ)
     ci = str(root / ".ci")
     env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-    proc = subprocess.run(
-        list(argv), cwd=str(root), env=env, capture_output=True, text=True, check=False
-    )
+    try:
+        proc = subprocess.run(
+            list(argv),
+            cwd=str(root),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=RECORDER_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        out = exc.stdout if isinstance(exc.stdout, str) else ""
+        return (
+            124,
+            out,
+            "live-proof: the recorder ran past %d s and was stopped" % RECORDER_TIMEOUT_S,
+        )
     return proc.returncode, proc.stdout, proc.stderr
 
 
@@ -178,10 +196,12 @@ def find_row(root: pathlib.Path, row_id: str) -> dict[str, Any] | None:
 
 
 def evidence(row: dict[str, Any]) -> str:
-    """The plan's evidence line: `live-proof <id> <target> <check> rc=0 v=<version>`."""
-    check = (row.get("check") or {}).get("id")
+    """The plan's evidence line: `live-proof <id> <target> <check> rc=<rc> v=<version>`, the rc read from the row's own check (0 when the row carries none, as a VERIFIED row's check passed)."""
+    check_rec = row.get("check") or {}
+    check = check_rec.get("id")
+    rc = check_rec.get("rc", 0)
     version = (row.get("deploy") or {}).get("version_id")
-    return "live-proof %s %s %s rc=0 v=%s" % (row.get("id"), row.get("target"), check, version)
+    return "live-proof %s %s %s rc=%s v=%s" % (row.get("id"), row.get("target"), check, rc, version)
 
 
 def tick_precheck(root: pathlib.Path, rel: str, sig: str, me: str) -> str | None:
