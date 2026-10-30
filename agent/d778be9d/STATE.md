@@ -19,3 +19,14 @@ F2 CI (workflows, .github/actions/renet-test-binary, start_account --require-env
 2. Commit each writer's work as it reports.
 3. Full account vitest on a quiet host (two runs timed out under load).
 4. #a98ab330: deploy bench, edge x3, stable x3 locally; meter reconcile; then vm:check and the hostinger LP sweep.
+
+## Hard constraint before any push
+#d43b0a18 (PLAN-production-key-only N5, the CI legs: every workflow needs the production key or a per-run account server after the nolicense removal; audit in /tmp/n5-audit.md) is open and MUST land before any push. The branch is unpushed, so a session that resumes from this file pushes only after #d43b0a18 is ticked.
+
+## Open findings
+- #c967e5e1 (open): the writers-now round-3 queue was refused by `block_plan_concurrency`: settings-set-verb behind production-key-only N3/N4 (#5bfe0775), then backup-download-from-store, cli-tofu-toolchain and backup-local-image on files a live writer holds. Re-run `/writers-now` once the holder finishes.
+- #db647660 (closed): the deprovision activation-slot parse bug found by cli-tofu L1, fixed and ticked.
+- #2907b17a (closed): `check_plan_deps.py` now refuses a duplicated Owns glob, ticked.
+
+## Working tree at hand-off
+The uncommitted paths in `git status` belong to whichever writer or session reported them; this file does not list them, and a resuming session commits only paths its own `worklist.py --list --open` items or writer reports name (never by inference). Re-derive the list with `git status --short` against the open items.

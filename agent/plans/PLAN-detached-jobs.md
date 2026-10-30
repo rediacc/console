@@ -648,7 +648,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   3. start `backup verify <fork>` followed, kill the client mid-run, run any `rdc` command after the job ends: the finished notice prints once;
   4. the MCP `backup_snapshot` tool returns a job id in under 30 s and `job_status` reaches `succeeded`;
   5. a machine whose renet lacks `--request-id` (a pinned older renet on a dev VM) refuses with the upgrade text and rc 1.
-    (correction 2026-10-30, 9f92c43e) A tick landed here at 05:23Z by mistake: it was meant for J2b (8ac038c6), and the brief that carried it paired signatures with labels by position. L1 is open again; its bench run has not happened.
+    (correction 2026-10-30, 9f92c43e) A tick landed here at 05:23Z by mistake: it was meant for J2b (8ac038c6), and the brief that carried it paired signatures with labels by position. L1 is open again; its bench run has not happened. The J2b evidence that tick carried (packages/shared `npx vitest run src/cli-contract` rc 0 with 52 passed, `tsc --noEmit` rc 0) is recorded in the message of commit a0685fbd4.
 
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: each step's command, rc and timing recorded under "Live records"; steps 1-4 rc 0 and step 5 rc 1.
   Amended (third round): in step 1 the response ends at the 20 s window (or with the result, if the up finishes within it). L5 adds the hybrid, overlap and drop steps.

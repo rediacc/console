@@ -7,7 +7,7 @@ Owner: d778be9d
 Updated: 2026-10-30
 First-Seen: 2026-10-30
 Priority: P2 -- one operator ruling (R2 storage to 5 TB) had to be written into three places by hand on 2026-10-30, and only a test caught a missed copy; every other tunable under .ci/config is hand-edited JSON with no validation at write time
-Concurrency: parallel -- S1 and S2 own new files only; S3 touches the spend-guard files under that plan's lease (Depends-On); S4 follows S3.
+Concurrency: parallel -- S1 and S2 own new files except one script line each in package.json (S1) and the shared package.json, gate-costs.json and lane-durations.json rows (S4), which PLAN-production-key-only.md also lists in Owns: the two plans edit different lines there and `block_plan_concurrency` serializes the writers on the same file; S3 touches the spend-guard files under that plan's lease (Depends-On); S4 follows S3.
 
 ## Finding
 
@@ -49,8 +49,8 @@ Concurrency: parallel -- S1 and S2 own new files only; S3 touches the spend-guar
 - [ ] S3 [writer] One source for the ceilings. Changes: every `DEFAULT_CEILINGS` key moves into `report` of .ci/config/cf-spend-guard.json; `DEFAULT_CEILINGS` is deleted from .ci/rediacc_ci/ops/cf_usage_report.py and `load_ceilings` raises on a missing key; `test_default_ceilings_agree_with_the_ruled_report_object` is replaced by a test that a missing key raises.
   Owns: .ci/config/cf-spend-guard.json, .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/tests/test_ops_cf_usage_report.py. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_usage_report.py .ci/rediacc_ci/tests/test_ops_cf_notifications.py` rc 0, and `grep -n DEFAULT_CEILINGS .ci/rediacc_ci/ops/cf_usage_report.py` prints nothing.
 
-- [ ] S4 [writer] The registry gate. Changes: .ci/scripts/quality/check_settings_registry.py with the Design 5 rules and their controls, registered in package.json, gate-costs.json and lane-durations.json; one paragraph in docs/agent-reference/ci-gates.md naming `npm run settings -- set` as the way to change a registered tunable.
-  Owns: .ci/scripts/quality/check_settings_registry.py, .ci/rediacc_ci/tests/gates/test_gate_settings_registry.py, package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, docs/agent-reference/ci-gates.md (one paragraph). Accept: `npm run the settings-registry gate` rc 0, the gate test rc 0, and `npm run check:ci-parity` rc 0.
+- [ ] S4 [writer] The registry gate. Changes: .ci/scripts/quality/check_settings_registry.py with the Design 5 rules and their controls, registered as the `check:ci-settings-registry` script in package.json, gate-costs.json and lane-durations.json; one paragraph in docs/agent-reference/ci-gates.md naming `npm run settings -- set` as the way to change a registered tunable.
+  Owns: .ci/scripts/quality/check_settings_registry.py, .ci/rediacc_ci/tests/gates/test_gate_settings_registry.py, package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, docs/agent-reference/ci-gates.md (one paragraph). Accept: `npm run check:ci-settings-registry` rc 0, the gate test rc 0, and `npm run check:ci-parity` rc 0.
 
 ## Alternatives rejected
 
