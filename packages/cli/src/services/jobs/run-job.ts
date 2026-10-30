@@ -158,6 +158,8 @@ function openStepSession(
         state: job.state,
         output: job.output,
         finishedAt: job.finishedAt,
+        ...(job.exitCode === undefined ? {} : { exitCode: job.exitCode }),
+        ...(job.markers === undefined ? {} : { markers: job.markers }),
       });
       return true;
     } catch (error) {
@@ -335,6 +337,38 @@ function requireTicket(store: TicketStore, requestId: string): Ticket {
   return ticket;
 }
 
+/** Run the due steps of a finished call that never became a job: no claim, since no other observer can see it. */
+async function runUnspooledSteps(
+  store: TicketStore,
+  ticket: Ticket,
+  job: ObservedJob,
+  deps: RunJobDeps
+): Promise<StepRunReport> {
+  const report = emptyStepReport();
+  const resolve = deps.steps.resolve ?? resolveStepHandler;
+  for (const step of dueSteps(ticket, job.state, job.markers)) {
+    try {
+      const handler = await resolve(step.name);
+      await handler({
+        jobId: '',
+        machine: ticket.machine ?? '',
+        params: step.params ?? {},
+        state: job.state,
+        output: job.output,
+        finishedAt: job.finishedAt,
+        ...(job.exitCode === undefined ? {} : { exitCode: job.exitCode }),
+        ...(job.markers === undefined ? {} : { markers: job.markers }),
+      });
+      store.append('step-done', ticket.requestId, { step: step.name });
+      report.ran.push(step.name);
+    } catch (error) {
+      deps.steps.warn(errorText(error));
+      report.failed.push(step.name);
+    }
+  }
+  return report;
+}
+
 export async function runJob<R>(
   call: JobCall<R>,
   steps: PlannedStep[],
@@ -381,12 +415,11 @@ export async function runJob<R>(
     exitCode: outcome.job.exitCode,
     finishedAt: outcome.job.finishedAt,
   });
-  const report = await runTicketSteps(
-    store,
-    requireTicket(store, requestId),
-    outcome.job,
-    deps.steps
-  );
+  const finishedTicket = requireTicket(store, requestId);
+  // A call that ran outside a job (a section 24 exemption) has no spool to claim against and no other observer: its steps run here, once.
+  const report = outcome.jobId
+    ? await runTicketSteps(store, finishedTicket, outcome.job, deps.steps)
+    : await runUnspooledSteps(store, finishedTicket, outcome.job, deps);
   // The command reports its own result, so the notice has nothing to announce; a step another observer still holds keeps the ticket visible.
   if (outstandingSteps(report).length === 0) store.append('acknowledged', requestId);
   return {

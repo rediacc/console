@@ -69,6 +69,7 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -125,8 +126,9 @@ jobs:
       - name: Build renet
         if: steps.probe.outputs.exists == 'false'
         env:
-          RENET_KEYLESS: "1"
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+          # The production PUBLIC key: build.sh fails closed without one.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         if: steps.probe.outputs.exists == 'false'
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet

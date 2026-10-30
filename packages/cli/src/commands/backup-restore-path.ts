@@ -10,7 +10,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { bindStepHandler } from '../services/jobs/steps.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { lineageOf, RENET_NO_LISTING_EXIT } from './backup-storage-browse.js';
@@ -163,7 +163,15 @@ export async function runRestorePath(args: {
     repoKey,
     machineName,
     { lineage, at: snapshotId, path, to: to ?? '' },
-    { debug, captureOutput: true },
+    {
+      debug,
+      captureOutput: true,
+      // The record print rides the job's ticket (PLAN-detached-jobs J4): a backgrounded restore-path prints it from `rdc job wait`.
+      job: {
+        verb: 'backup restore',
+        steps: [planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId })],
+      },
+    },
     {
       starting: t('commands.backup.restore.pathStarting', {
         name: repoKey,
@@ -185,8 +193,6 @@ export async function runRestorePath(args: {
     // Any other failure was rendered, with its exit code, by executeRepoFunction.
     return;
   }
-
-  await reportRestorePath(repoKey, result.stdout);
 }
 
 /** Print the restore-path record parsed from the job's stdout. */

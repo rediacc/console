@@ -4,15 +4,19 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
-import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
-import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
-import { bindStepHandler } from '../services/jobs/steps.js';
+import {
+  type CommandJobOutcome,
+  pendingExitCode,
+  runCommandJob,
+} from '../services/jobs/command-job.js';
+import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -212,35 +216,33 @@ function registerBackupRestore(backup: Command): void {
 
         // `--at` selects a point in time, which only the CHUNK store can answer: it addresses a snapshot in a manifest chain, not an artifact on a machine or a storage remote. So the flag routes to `backup_restore` rather than `backup_pull`. It is a route, not a second user-facing command: growing `rdc backup restore-snapshot` beside this one would make the operator choose between
         // two verbs that mean the same thing.
-        const ok = restoreAt
-          ? await runChunkRestore({
-              targetName,
-              targetMachine,
-              datastore,
-              lineage,
-              at: restoreAt,
-              anyStream: options.anyStream ?? false,
-              noSeed: options.seed === false,
-              source: { repoName: ref.name, machine: from },
-              debug: options.debug,
-            })
-          : await runRestorePull({
-              targetName,
-              targetMachine,
-              datastore,
-              sourceType,
-              from,
-              sourceGuid: source.repositoryGuid,
-              debug: options.debug,
-              place: ref.place,
-            });
-        if (!ok) return;
-
-        // G4: the restore registered a new repository on the target machine, so its backup units re-render.
-        await reconcileBackupSchedules(targetMachine);
-
-        if (options.up) {
-          await restoreDeploy(targetName, targetMachine, datastore, options);
+        // The run record, the stats report, the registration rollback, the unit re-render (G4) and the `--up` deploy ride the job's ticket (PLAN-detached-jobs J4), so a backgrounded restore records nothing until it finishes and deploys only a restore that succeeded.
+        const after = restoreTailSteps(targetName, targetMachine, datastore, options);
+        if (restoreAt) {
+          await runChunkRestore({
+            targetName,
+            targetMachine,
+            datastore,
+            lineage,
+            at: restoreAt,
+            anyStream: options.anyStream ?? false,
+            noSeed: options.seed === false,
+            source: { repoName: ref.name, machine: from },
+            debug: options.debug,
+            after,
+          });
+        } else {
+          await runRestorePull({
+            targetName,
+            targetMachine,
+            datastore,
+            sourceType,
+            from,
+            sourceGuid: source.repositoryGuid,
+            debug: options.debug,
+            place: ref.place,
+            after,
+          });
         }
       } catch (error) {
         handleError(error);
@@ -360,29 +362,82 @@ async function runRestorePull(args: {
   sourceGuid: string;
   debug?: boolean;
   place: string;
-}): Promise<boolean> {
+  after: PlannedStep[];
+}): Promise<void> {
   const { targetName, targetMachine, datastore, sourceType, from, sourceGuid, debug, place } = args;
   outputService.info(t('commands.backup.restore.pulling', { name: targetName, place }));
   await deployRepoKeyIfNeeded(targetName, targetMachine);
   // No `at` here. `backup_pull` no longer declares the parameter, and the caller routes `--at` to `backup_restore` before reaching this function. Passing one anyway would fail schema validation, which is the honest outcome: a parameter wired to a verb that refuses it is how the next session concludes the path works.
-  const pull = await getExecutor().execute({
-    functionName: 'backup_pull',
-    machineName: targetMachine,
-    datastore,
-    params: { repository: targetName, sourceType, from, src: sourceGuid },
-    debug,
-  });
-  if (!pull.success) {
-    await configService.removeRepository(compositeKey(targetName, 'latest'));
-    await recordBackupRun(targetName, { kind: 'restore', status: 'failed' });
-    renderLocalExecutionFailure(pull, t('commands.backup.restore.failed', { name: targetName }));
-    return false;
+  const outcome = await runCommandJob(
+    'backup restore',
+    {
+      functionName: 'backup_pull',
+      machineName: targetMachine,
+      datastore,
+      params: { repository: targetName, sourceType, from, src: sourceGuid },
+      debug,
+    },
+    [
+      planStep('recordBackupRun', { repo: targetName, kind: 'restore', status: 'ok' }),
+      planStep('recordBackupRunFailed', { repo: targetName, kind: 'restore' }),
+      ...args.after,
+    ]
+  );
+  settleRestore(outcome, targetName, targetMachine);
+}
+
+/**
+ * The steps every restore route plans after its record: the stats report, the registration
+ * rollback on failure, the backup-unit re-render (G4: the restore registered a new repository on
+ * the target machine) and, with `--up`, the deploy.
+ */
+function restoreTailSteps(
+  targetName: string,
+  targetMachine: string,
+  datastore: string | undefined,
+  options: RestoreOptions
+): PlannedStep[] {
+  return [
+    planStep('reportRestoreStats'),
+    planStep('rollbackRestoreRegistration', { repo: targetName }),
+    planStep('reconcileBackupSchedules', { machine: targetMachine }),
+    ...(options.up
+      ? [
+          planStep('restoreDeploy', {
+            repo: targetName,
+            ...(datastore === undefined ? {} : { datastore }),
+            ...(options.healthWindow === undefined ? {} : { healthWindow: options.healthWindow }),
+            ...(options.healthTimeout === undefined
+              ? {}
+              : { healthTimeout: options.healthTimeout }),
+            debug: options.debug === true,
+          }),
+        ]
+      : []),
+  ];
+}
+
+/** Render a restore job's outcome: the failure, the success line, or nothing for a ticket (the executor printed it). */
+function settleRestore(
+  outcome: CommandJobOutcome,
+  targetName: string,
+  targetMachine: string
+): void {
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
   }
-  await recordBackupRun(targetName, { kind: 'restore', status: 'ok' });
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(
+      outcome.result,
+      t('commands.backup.restore.failed', { name: targetName })
+    );
+    return;
+  }
   outputService.success(
     t('commands.backup.restore.restored', { name: targetName, machine: targetMachine })
   );
-  return true;
 }
 
 /**
@@ -505,7 +560,8 @@ async function readSourceAnchor(
     source.repoName,
     source.machine,
     { level: 'spot' },
-    { debug, captureOutput: true },
+    // A probe: the anchor decides which snapshot `--at` restores, so `--background` must not hand back a ticket here.
+    { debug, captureOutput: true, probe: true },
     {
       starting: t('commands.backup.verify.starting', { name: source.repoName, level: 'spot' }),
       completed: t('commands.backup.verify.completed', { name: source.repoName }),
@@ -550,7 +606,8 @@ async function runChunkRestore(args: {
   noSeed: boolean;
   source: { repoName: string; machine: string };
   debug?: boolean;
-}): Promise<boolean> {
+  after: PlannedStep[];
+}): Promise<void> {
   const { targetName, targetMachine, datastore, lineage, at, anyStream, noSeed, source, debug } =
     args;
   const scope = await streamScopeFor({ at, anyStream, source, debug });
@@ -560,37 +617,30 @@ async function runChunkRestore(args: {
     t('commands.backup.restore.restoringSnapshot', { name: targetName, snapshot: snapshotId })
   );
   await deployRepoKeyIfNeeded(targetName, targetMachine);
-  const restore = await getExecutor().execute({
-    functionName: 'backup_restore',
-    machineName: targetMachine,
-    datastore,
-    params: {
-      repository: targetName,
-      lineage,
-      at: snapshotId,
-      dry_run: false,
-      no_seed: noSeed,
+  const outcome = await runCommandJob(
+    'backup restore',
+    {
+      functionName: 'backup_restore',
+      machineName: targetMachine,
+      datastore,
+      params: {
+        repository: targetName,
+        lineage,
+        at: snapshotId,
+        dry_run: false,
+        no_seed: noSeed,
+      },
+      debug,
+      // The record on stdout carries the restore's measurements; without capture they are dropped.
+      captureOutput: true,
     },
-    debug,
-    // The record on stdout carries the restore's measurements; without capture they are dropped.
-    captureOutput: true,
-  });
-  if (!restore.success) {
-    await configService.removeRepository(compositeKey(targetName, 'latest'));
-    await recordBackupRun(targetName, {
-      kind: 'restore',
-      status: 'failed',
-      snapshotId,
-    });
-    renderLocalExecutionFailure(restore, t('commands.backup.restore.failed', { name: targetName }));
-    return false;
-  }
-  await recordBackupRun(targetName, { kind: 'restore', status: 'ok', snapshotId });
-  outputService.success(
-    t('commands.backup.restore.restored', { name: targetName, machine: targetMachine })
+    [
+      planStep('recordBackupRun', { repo: targetName, kind: 'restore', status: 'ok', snapshotId }),
+      planStep('recordBackupRunFailed', { repo: targetName, kind: 'restore', snapshotId }),
+      ...args.after,
+    ]
   );
-  await reportRestoreStats(parseRestoreStats(restore.stdout));
-  return true;
+  settleRestore(outcome, targetName, targetMachine);
 }
 
 /**
@@ -633,6 +683,16 @@ async function reportRestoreStats(stats: RestoreStats | undefined): Promise<void
 bindStepHandler('reportRestoreStats', ({ output }) =>
   reportRestoreStats(parseRestoreStats(output))
 );
+
+// `--up`: the deploy runs as its own job once the restore job succeeded, from whichever observer sees it finish first.
+bindStepHandler('restoreDeploy', async ({ machine, params }) => {
+  const datastore = typeof params.datastore === 'string' ? params.datastore : undefined;
+  await restoreDeploy(String(params.repo), machine, datastore, {
+    ...(typeof params.healthWindow === 'string' ? { healthWindow: params.healthWindow } : {}),
+    ...(typeof params.healthTimeout === 'string' ? { healthTimeout: params.healthTimeout } : {}),
+    debug: params.debug === true,
+  });
+});
 
 /** Deploy a restored repo (`--up`), rendering the health-gate outcome. */
 async function restoreDeploy(

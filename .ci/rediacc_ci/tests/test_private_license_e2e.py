@@ -102,8 +102,8 @@ if ROLE == "go":
             write_wrapper(out, "mint", {})
         else:
             n = counter("renet-builds")
-            label = "nolicense" if "-tags" in args else ("enforcing" if n == 0 else "wrong-key")
             pub = args[args.index("-ldflags") + 1].split("=", 1)[1]
+            label = "keyless" if pub == "" else ("enforcing" if n == 0 else "wrong-key")
             write_wrapper(out, "renet", {"label": label, "pub": pub})
         sys.exit(0)
     sys.exit(2)
@@ -189,9 +189,6 @@ if ROLE == "renet":
 
     if args[:2] in (["repository", "create"], ["repository", "up"]):
         op = args[1]
-        if label == "nolicense" and bug != "enforce":
-            sys.stderr.write(TAIL[op] + "\n")
-            sys.exit(1)
         blob = load(LIC + "/repos/" + opt("--name"))
         why = "missing" if blob is None else reason(blob, op)
         if why:
@@ -233,24 +230,21 @@ if ROLE == "renet":
         guid = sorted(os.listdir(ds + "/repositories"))[0]
         desc = ds + "/.rediacc/datastore.json"
         ds_id = json.load(open(desc))["datastoreId"] if os.path.exists(desc) else None
-        if label == "nolicense" and bug != "enforce":
+        where = LIC + ("/datastores/%s/repos/%s" % (ds_id, guid) if ds_id else "/repos/" + guid)
+        blob = load(where)
+        status = "missing" if blob is None else reason(blob, "status", ds_id)
+        if blob is not None and not status:
+            o = blob["opts"]
             status = "valid"
-        else:
-            where = LIC + ("/datastores/%s/repos/%s" % (ds_id, guid) if ds_id else "/repos/" + guid)
-            blob = load(where)
-            status = "missing" if blob is None else reason(blob, "status", ds_id)
-            if blob is not None and not status:
-                o = blob["opts"]
-                status = "valid"
-                if "-chain-hash" in o:
-                    state_path = pathlib.Path(LIC + "/chain-state.json")
-                    state = json.loads(state_path.read_text()) if state_path.exists() else {}
-                    seq = int(o.get("-sequence", 1))
-                    if seq < state.get(guid, 0):
-                        status = "sequence_regression"
-                    else:
-                        state[guid] = seq
-                        state_path.write_text(json.dumps(state, sort_keys=True))
+            if "-chain-hash" in o:
+                state_path = pathlib.Path(LIC + "/chain-state.json")
+                state = json.loads(state_path.read_text()) if state_path.exists() else {}
+                seq = int(o.get("-sequence", 1))
+                if seq < state.get(guid, 0):
+                    status = "sequence_regression"
+                else:
+                    state[guid] = seq
+                    state_path.write_text(json.dumps(state, sort_keys=True))
         print(json.dumps([{"repositoryGuid": guid, "status": status}]))
         sys.exit(0)
     sys.exit(2)
@@ -514,7 +508,7 @@ CASES: dict[str, tuple[dict, dict, dict]] = {
         {"env_extra": {"LICENSE_E2E_MASTER_PUB": "PUB-M"}},
     ),
     "enforcing-binary-accepts-a-forged-license": ({"bug": {"enforcing": "accept-forged"}}, {}, {}),
-    "nolicense-control-fails-at-the-wrong-scenario": ({"bug": {"nolicense": "enforce"}}, {}, {}),
+    "keyless-control-fails-at-the-wrong-scenario": ({"bug": {"keyless": "accept-forged"}}, {}, {}),
     "wrong-key-control-fails-at-the-wrong-scenario": (
         {"bug": {"wrong-key": "accept-forged"}},
         {},
@@ -581,7 +575,7 @@ def _port(tmp_path: pathlib.Path, cfg: dict | None = None, **kw) -> dict[str, An
 
 
 def test_the_fakes_are_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if the battery never reached a binary. The call log must show the minter built, three renets built (enforcing, nolicense, wrong-key) and the scenario table driven against each."""
+    """ANTI-VACUITY. Every comparison above is worthless if the battery never reached a binary. The call log must show the minter built, three renets built (enforcing, keyless, wrong-key) and the scenario table driven against each."""
     out = _port(tmp_path)
     assert out["exit"] == 0, out["stderr"]
     calls = out["calls"]
@@ -589,14 +583,15 @@ def test_the_fakes_are_actually_reached(tmp_path):
     assert len(builds) == 4, builds
     assert builds[0].split("\t")[1] == ".ci/scripts/private/license-mint"
     assert all(b.split("\t")[1] == "private/renet" for b in builds[1:])
-    assert "-tags\tnolicense" in builds[2]
-    by_label = dict.fromkeys(("enforcing", "nolicense", "wrong-key"), 0)
+    # The keyless control bakes an empty key: the ldflag ends at its `=` (agent/plans/PLAN-production-key-only.md Design 6).
+    assert builds[2].split("\t")[builds[2].split("\t").index("-ldflags") + 1].endswith("=")
+    by_label = dict.fromkeys(("enforcing", "keyless", "wrong-key"), 0)
     for call in calls:
         if call.startswith("renet\t"):
             by_label[call.split("\t")[1]] += 1
     assert all(n >= 20 for n in by_label.values()), by_label
     assert "Enforcing binary passed every scenario" in out["stderr"]
-    assert "Control OK: nolicense fails the battery at S1" in out["stderr"]
+    assert "Control OK: keyless fails the battery at S2" in out["stderr"]
     assert "Control OK: wrong-key fails the battery at S2" in out["stderr"]
     assert out["stderr"].rstrip().endswith("both controls failed as required")
     assert out["stdout"] == "", "the battery writes nothing to stdout"
@@ -611,10 +606,10 @@ def test_a_control_that_passes_the_battery_fails_the_run(monkeypatch, capsys):
 
 
 def test_a_control_that_fails_for_the_wrong_reason_fails_the_run(tmp_path):
-    """A control must fail at the scenario that detects ITS defect class: a nolicense build that fails elsewhere but passes S1 proves nothing about stubs."""
-    out = _port(tmp_path, {"bug": {"nolicense": "enforce"}})
+    """A control must fail at the scenario that detects ITS defect class: a keyless build that fails elsewhere but passes S2 proves nothing about validation."""
+    out = _port(tmp_path, {"bug": {"keyless": "accept-forged"}})
     assert out["exit"] == 1
-    assert "failed the battery, but S1 passed" in out["stderr"]
+    assert "failed the battery, but S2 passed" in out["stderr"]
 
 
 def test_the_scenario_table_is_complete(tmp_path):

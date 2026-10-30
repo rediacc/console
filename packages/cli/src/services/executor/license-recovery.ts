@@ -282,11 +282,6 @@ export async function ensureRepoLicenseForProvisioning(
   remoteRenetPath: string,
   sftp?: SFTPClient
 ): Promise<void> {
-  // Allow bypassing activation for nolicense/CI builds where no subscription server exists
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') {
-    return;
-  }
-
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     if (isAgentEnvironment()) {
@@ -359,11 +354,6 @@ export async function ensureRepoLicenseForRestore(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<void> {
-  // Allow bypassing activation for nolicense/CI builds where no subscription server exists
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') {
-    return;
-  }
-
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     if (isAgentEnvironment()) {

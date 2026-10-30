@@ -10,7 +10,9 @@ import stat
 
 import pytest
 
-from rediacc_ci.core import bws_env, local_common, renet_flavor
+from rediacc_ci.core import bws_env, local_common
+from rediacc_ci.release import renet_key_gate
+from rediacc_ci.well_known import RENET_REPO
 
 KEY = "ACCOUNT_ED25519_PUBLIC_KEY"
 X_KEY = "ACCOUNT_X25519_PUBLIC_KEY"
@@ -52,8 +54,8 @@ def build(monkeypatch):
 
     def fake_run(argv, *, cwd=None, env=None, **_kwargs):
         seen.append(dict(env or {}))
-        flavor = renet_flavor.flavor_for("0", [argv[-1]])
-        binary = renet_flavor.binary(cwd, flavor, "")
+        assert argv == ["./build.sh", "dev"]
+        binary = os.path.join(cwd, "bin", "renet")
         os.makedirs(os.path.dirname(binary), exist_ok=True)
         with open(binary, "w", encoding="utf-8") as handle:
             handle.write("renet\n")
@@ -64,15 +66,13 @@ def build(monkeypatch):
     monkeypatch.setattr(local_common, "git_tree_fingerprint", lambda *_a, **_k: "fp")
     monkeypatch.setattr(local_common, "renet_head", lambda _d: "")
     monkeypatch.setattr(local_common, "_run", fake_run)
+    # The key gate is driven for real in the renet_key_refusal cases below; here the fake binary has no build info to read.
+    monkeypatch.setattr(local_common, "renet_key_refusal", lambda _binary, _key: None)
     return seen
 
 
 def _env(root, **extra):
-    env = {
-        k: v
-        for k, v in os.environ.items()
-        if k not in (KEY, "RENET_KEYLESS", "GITHUB_ACTIONS", "RDC_RENET_LICENSE")
-    }
+    env = {k: v for k, v in os.environ.items() if k not in (KEY, "RENET_KEYLESS", "GITHUB_ACTIONS")}
     env.update({"LOCAL_ROOT_DIR": str(root), **extra})
     return env
 
@@ -152,24 +152,65 @@ def test_a_stale_cache_with_no_bitwarden_refuses(tmp_path, monkeypatch, build) -
     assert build == []
 
 
-def test_keyless_is_honoured_only_under_github_actions(tmp_path, monkeypatch, build) -> None:
-    root, renet = _root(tmp_path)
-    monkeypatch.setattr(bws_env, "load", _load_forbidden)
-    env = _env(root, RENET_KEYLESS="1", GITHUB_ACTIONS="true")
-    assert local_common.resolve_renet_account_key(str(renet), env) == ""
-    assert local_common.ensure_renet_built(env) is True
-    assert [e[KEY] for e in build] == [""]
-
-
-def test_keyless_outside_ci_is_refused(tmp_path, monkeypatch, build, capsys) -> None:
+@pytest.mark.parametrize(
+    "extra", [{"RENET_KEYLESS": "1", "GITHUB_ACTIONS": "true"}, {"RENET_KEYLESS": "1"}]
+)
+def test_the_retired_keyless_switch_is_ignored(tmp_path, monkeypatch, build, capsys, extra) -> None:
+    """Design 6: there is no keyless path, in CI or anywhere else; RENET_KEYLESS reads as unset and the build is refused naming the fix."""
     root, renet = _root(tmp_path)
     calls: list[list[str]] = []
     monkeypatch.setattr(bws_env, "load", _load_answering(calls, {}))
     with pytest.raises(local_common.LocalCommonError):
-        local_common.resolve_renet_account_key(str(renet), _env(root, RENET_KEYLESS="1"))
+        local_common.resolve_renet_account_key(str(renet), _env(root, **extra))
     assert calls == [[KEY, X_KEY]]
     assert build == []
     assert "./run.sh setup" in capsys.readouterr().err
+
+
+# A syntactically valid ED25519 public key and a second one, fixture only.
+GOOD = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+OTHER = "HxwdHhscGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgE="
+
+
+def _build_info(key=None, tags=""):
+    flag = (
+        ""
+        if key is None
+        else " -X github.com/%s/pkg/license/keys.ProductionPublicKey=%s" % (RENET_REPO, key)
+    )
+    text = 'bin/renet: go1.25\n\tbuild\t-ldflags="-X main.Version=0.0.0-dev%s"\n' % flag
+    if tags:
+        text += "\tbuild\t-tags=%s\n" % tags
+    return text
+
+
+@pytest.mark.parametrize(
+    ("info", "passes"),
+    [
+        pytest.param(_build_info(GOOD), True, id="bakes-the-key"),
+        pytest.param(_build_info(OTHER), False, id="another-key"),
+        pytest.param(_build_info(None), False, id="no-key"),
+        pytest.param(_build_info(GOOD, "nolicense"), False, id="license-checks-compiled-out"),
+    ],
+)
+def test_renet_key_refusal_drives_the_real_gate(monkeypatch, capsys, info, passes) -> None:
+    monkeypatch.setattr(renet_key_gate, "go_version_m", lambda _binary, _run=None: info)
+    refusal = local_common.renet_key_refusal("bin/renet", GOOD)
+    assert (refusal is None) is passes
+    out = capsys.readouterr()
+    # The verdict line goes to stderr, and a key is never printed, only fingerprints.
+    assert out.out == ""
+    assert GOOD not in out.err
+    assert OTHER not in out.err
+    assert ("ok      bin/renet" in out.err) is passes
+
+
+def test_renet_key_refusal_refuses_a_retired_or_malformed_expected_key(monkeypatch) -> None:
+    monkeypatch.setattr(
+        renet_key_gate, "go_version_m", lambda _binary, _run=None: _build_info(GOOD)
+    )
+    assert local_common.renet_key_refusal("bin/renet", "not-a-key") is not None
+    assert local_common.renet_key_refusal("bin/renet", "") is not None
 
 
 @pytest.mark.usefixtures("build")

@@ -162,6 +162,13 @@ export interface ExecuteOptions {
    */
   attachWindowMs?: number;
   /**
+   * A probe whose answer the command needs before it goes on (a read whose
+   * output decides the next call). `--background` does not shorten its window:
+   * a probe that handed back a ticket would answer empty and the command would
+   * fail open on it. The entry point's other windows still apply.
+   */
+  probe?: boolean;
+  /**
    * The job's idempotency key (section 17). Normally unset: the executor mints
    * `<invocation>:<machine>:<seq>` once per call, and a start retried after a
    * dropped answer carries the same id, so renet attaches it to the first job.

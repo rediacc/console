@@ -64,35 +64,10 @@ export function applyPullDeltaParams(
   if (options.strategy) params.strategy = options.strategy;
 }
 
-/**
- * Post-push bookkeeping for a successful machine push: record the retained delta
- * base and, when the pushed object is an immutable commit, reconstruct its state
- * mirror on the target so cross-machine `rdc repo log` works post-push (commit
- * metadata travels in the image but the out-of-volume mirror does not). All
- * best-effort: the push already succeeded, so failures here are non-fatal.
- */
-export async function finalizePush(
-  repo: string,
-  repoConfig: RepositoryConfig,
-  machine: string,
-  params: Record<string, unknown>,
-  retainBase: string | undefined,
-  debug?: boolean
-): Promise<void> {
-  if (retainBase) {
-    const method = params.deltaBase ? 'delta' : 'rsync';
-    await recordPushBase(repo, machine, method, retainBase, new Date().toISOString());
-  }
-  if (repoConfig.immutable) {
-    await syncCommitMetaToTarget(repoConfig, machine, debug);
-  }
-}
-
-/** Reconstruct an immutable commit's mirror on the target (best-effort). */
+/** Reconstruct an immutable commit's mirror on the push target (best-effort): the successor job of an immutable push. */
 async function syncCommitMetaToTarget(
-  repoConfig: RepositoryConfig,
   machine: string,
-  debug?: boolean
+  meta: { commit: string; message?: string; author?: string; parent?: string; grand?: string }
 ): Promise<void> {
   try {
     await getExecutor().execute({
@@ -100,18 +75,32 @@ async function syncCommitMetaToTarget(
       machineName: machine,
       // NO datastore on purpose (#74): `machine` here is the PUSH TARGET, and the image landed wherever that machine's own vault record points. The source repo's named mount is a path on a different host.
       params: {
-        repository: repoConfig.repositoryGuid,
-        ...(repoConfig.commitMessage ? { message: repoConfig.commitMessage } : {}),
-        ...(repoConfig.commitAuthor ? { author: repoConfig.commitAuthor } : {}),
-        ...(repoConfig.commitParent ? { commitParent: repoConfig.commitParent } : {}),
-        ...(repoConfig.grandGuid ? { grandGuid: repoConfig.grandGuid } : {}),
+        repository: meta.commit,
+        ...(meta.message ? { message: meta.message } : {}),
+        ...(meta.author ? { author: meta.author } : {}),
+        ...(meta.parent ? { commitParent: meta.parent } : {}),
+        ...(meta.grand ? { grandGuid: meta.grand } : {}),
       },
-      debug,
     });
   } catch {
     /* best-effort: `repo log` on the target falls back to the GUID-only walk */
   }
 }
+
+bindStepHandler('syncCommitMeta', async ({ params }) => {
+  const opt = (key: string) =>
+    typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
+  const target = opt('target');
+  const commit = opt('commit');
+  if (!target || !commit) throw new Error('step param "target" or "commit" is missing');
+  await syncCommitMetaToTarget(target, {
+    commit,
+    message: opt('message'),
+    author: opt('author'),
+    parent: opt('parent'),
+    grand: opt('grand'),
+  });
+});
 
 /**
  * Record the immutable base retained on `machine` after a successful push, so

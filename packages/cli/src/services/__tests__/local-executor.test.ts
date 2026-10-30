@@ -645,7 +645,7 @@ describe('localExecutorService create/fork licensing flow', () => {
 
   // `rdc repo commit` freezes a working fork into a NEW immutable repo, and renet's cmd layer refuses to start without a licence for that new repo's name (cmd/renet/repository_commit.go's ValidateInstalledRepoLicenseForCreate(scope, commitName)). Against an
   // enforcing binary the CLI never minted one, so commit was broken outright;
-  // dev builds carry --nolicense, which is what hid it.
+  // the license-free dev build of the time is what hid it.
   describe('repo commit pre-issuance', () => {
     const commitGuid = '11111111-2222-4333-8444-555555555555';
     const commitOptions = {

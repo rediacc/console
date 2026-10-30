@@ -21,6 +21,7 @@ import {
 } from '../services/backup/backup-strategy-validate.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
+import { planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { formatBytes } from '../utils/format.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
@@ -415,30 +416,40 @@ function registerBackupVerify(backup: Command): void {
           }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
           const level = options.deep ? 'full' : 'spot';
-          const result = await executeRepoFunction(
+          await executeRepoFunction(
             'backup_verify',
             repoKey,
             machineName,
             { level },
             // captureOutput: the verdict IS the answer here. Without it the step detector drops the verb's JSON and `backup verify` exits 0 with EMPTY stdout whether the anchor verified or mismatched, which is the one thing an operator must be able to tell apart.
-            { debug: options.debug, captureOutput: true },
+            {
+              debug: options.debug,
+              captureOutput: true,
+              // The verdict print and the run record are steps on the job's ticket, so nothing says "verified" before the job has verified anything (PLAN-detached-jobs J4). The verdict is structured data, printed as structured data in every mode. On a failure executeRepoFunction renders the failure (envelope and exit code), and renet's
+              // verdict rides its output tail; printing the verdict too would put a SECOND JSON document on stdout, so no failure step prints.
+              job: {
+                verb: 'backup verify',
+                steps: [
+                  planStep('reportVerifyVerdict', { level }),
+                  planStep('recordBackupRun', {
+                    repo: repoKey,
+                    kind: 'verify',
+                    status: 'verified',
+                  }),
+                  planStep('recordBackupRunFailed', {
+                    repo: repoKey,
+                    kind: 'verify',
+                    status: 'mismatch',
+                  }),
+                ],
+              },
+            },
             {
               starting: t('commands.backup.verify.starting', { name: repoKey, level }),
               completed: t('commands.backup.verify.completed', { name: repoKey }),
               failed: t('commands.backup.verify.failed', { name: repoKey }),
             }
           );
-          if (!result.success) {
-            // executeRepoFunction already rendered the failure (envelope and exit code), and renet's verdict rides its output tail.
-            // Printing the verdict too would put a SECOND JSON document on stdout.
-            await recordBackupRun(repoKey, { kind: 'verify', status: 'mismatch' });
-            return;
-          }
-          // The verdict is structured data, so it is printed as structured data in every mode -- including `table`, where the alternative would be a hand-written English sentence (a new i18n key across 13 locales) that says strictly less than the record itself.
-          const verdict = parseVerifyVerdict(result.stdout) ?? { status: 'verified', level };
-          const format = getOutputFormat();
-          outputService.print(verdict, format === 'table' ? 'json' : format);
-          await recordBackupRun(repoKey, { kind: 'verify', status: 'verified' });
         } catch (error) {
           handleError(error);
         }
@@ -636,26 +647,37 @@ function registerBackupSnapshot(backup: Command): void {
               ...uploadParams,
             },
             // captureOutput: the record carries rehashReason, readCapBps, hashWorkers and the snapshot id, which nothing else exposes; without it the step detector drops the verb's JSON and the run prints nothing.
-            { debug: options.debug, captureOutput: true },
+            {
+              debug: options.debug,
+              captureOutput: true,
+              // A dry run moved nothing, so it must not be recorded as a stored backup: a run history that counts plans as backups would make the next operator believe a snapshot exists that never happened. Exit 16 is the renet verb's quota refusal and it is NOT a plain failure: the operator action is prune or upgrade, never debug, so
+              // the failure step records it as `quota-refused`. The run record rides the job's ticket, so a backgrounded snapshot is recorded when it finishes, not when it starts (PLAN-detached-jobs J4).
+              job: {
+                verb: 'backup snapshot',
+                steps: options.dryRun
+                  ? []
+                  : [
+                      planStep('recordBackupRun', {
+                        repo: repoKey,
+                        kind: 'snapshot',
+                        status: 'stored',
+                      }),
+                      planStep('recordBackupRunFailed', {
+                        repo: repoKey,
+                        kind: 'snapshot',
+                        quotaExit: RENET_QUOTA_REFUSED_EXIT,
+                      }),
+                    ],
+              },
+            },
             {
               starting: t('commands.backup.snapshot.starting', { name: repoKey }),
               completed: t('commands.backup.snapshot.completed', { name: repoKey }),
               failed: t('commands.backup.snapshot.failed', { name: repoKey }),
             }
           );
-          // A dry run moved nothing, so it must not be recorded as a stored backup: a run history that counts plans as backups would make the next operator believe a snapshot exists that never happened. Exit 16 is the renet verb's quota refusal and it is NOT a plain failure: the operator action is prune or upgrade, never debug. Flattening it to 1 (as this did) threw away a
-          // distinction the verb deliberately encodes, and left the quotaRefused message with no call site at all.
+          if (result.state === 'running') return;
           const quotaRefused = result.exitCode === RENET_QUOTA_REFUSED_EXIT;
-          if (!options.dryRun) {
-            // Three outcomes, kept distinct on purpose (see the note above): a quota refusal is not a generic failure.
-            let runStatus = 'failed';
-            if (result.success) {
-              runStatus = 'stored';
-            } else if (quotaRefused) {
-              runStatus = 'quota-refused';
-            }
-            await recordBackupRun(repoKey, { kind: 'snapshot', status: runStatus });
-          }
           if (result.success) printSnapshotRecord(result.stdout);
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));

@@ -267,7 +267,6 @@
     ".ci/rediacc_ci/core/local_common.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "CONSOLE_ROOT_DIR",
-      "GITHUB_ACTIONS",
       "HOME",
       "LANG",
       "LC_ALL",
@@ -276,12 +275,10 @@
       "LOCAL_LIB_DIR",
       "LOCAL_ROOT_DIR",
       "PATH",
-      "RDC_RENET_LICENSE",
       "REDIACC_DOCKER_GROUP_REEXEC",
       "REDIACC_IN_DEVBOX",
       "REDIACC_LANE",
       "REDIACC_NPM_RUNTIME",
-      "RENET_KEYLESS",
       "SCRIPT_ENTRYPOINT",
       "USER",
       "_DEVBOX_DOCKER"
@@ -619,8 +616,7 @@
       "RETRY_REPO"
     ],
     ".ci/rediacc_ci/infra/build_renet.py": [
-      "GITHUB_ENV",
-      "RDC_RENET_LICENSE"
+      "GITHUB_ENV"
     ],
     ".ci/rediacc_ci/infra/ci_start_account.py": [
       "*name",

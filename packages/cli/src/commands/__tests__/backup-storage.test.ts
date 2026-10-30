@@ -124,17 +124,27 @@ describe('backup verify', () => {
     mockResolveRepoRef.mockResolvedValue({ repoKey: 'shop', machineName: 'm1', tag: 'latest' });
   });
 
-  it('maps --deep to level=full and records a verified run on success', async () => {
+  /** The step plan the verify job carries (PLAN-detached-jobs J4): its records and the verdict print run once the job is seen finished. */
+  const plannedSteps = (call: unknown[]) =>
+    (call[4] as { job: { steps: { name: string; params: Record<string, unknown> }[] } }).job.steps;
+
+  it('maps --deep to level=full and plans the verdict and a verified run on the job ticket', async () => {
     mockExecuteRepoFunction.mockResolvedValue({ success: true });
     await run(['verify', 'shop', '--deep']);
 
     const call = mockExecuteRepoFunction.mock.calls[0];
     expect(call[0]).toBe('backup_verify');
     expect(call[3]).toEqual({ level: 'full' });
-    expect(mockRecordBackupRun).toHaveBeenCalledWith('shop', {
-      kind: 'verify',
-      status: 'verified',
-    });
+    const steps = plannedSteps(call);
+    expect(steps.map((s) => s.name)).toEqual([
+      'reportVerifyVerdict',
+      'recordBackupRun',
+      'recordBackupRunFailed',
+    ]);
+    expect(steps[1].params).toEqual({ repo: 'shop', kind: 'verify', status: 'verified' });
+    // Nothing is recorded or printed outside the job's steps.
+    expect(mockRecordBackupRun).not.toHaveBeenCalled();
+    expect(mockPrint).not.toHaveBeenCalled();
     expect(process.exitCode).not.toBe(1);
   });
 
@@ -148,8 +158,10 @@ describe('backup verify', () => {
 
     expect(mockPrint).not.toHaveBeenCalled();
 
-    expect(mockExecuteRepoFunction.mock.calls[0][3]).toEqual({ level: 'spot' });
-    expect(mockRecordBackupRun).toHaveBeenCalledWith('shop', {
+    const call = mockExecuteRepoFunction.mock.calls[0];
+    expect(call[3]).toEqual({ level: 'spot' });
+    expect(plannedSteps(call)[2].params).toEqual({
+      repo: 'shop',
       kind: 'verify',
       status: 'mismatch',
     });

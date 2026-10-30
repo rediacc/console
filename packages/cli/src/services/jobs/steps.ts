@@ -36,6 +36,10 @@ export interface StepContext {
   output?: string;
   /** When the job finished, if it has. */
   finishedAt?: string;
+  /** The job's exit code, when the observer read it. */
+  exitCode?: number;
+  /** The `step_done` names the observer saw in the job's stream; undefined when it saw no stream from the start. */
+  markers?: readonly string[];
 }
 
 export type StepHandler = (ctx: StepContext) => Promise<void>;
@@ -726,15 +730,19 @@ const DEFINITIONS: StepDefinition[] = [
     },
   },
   {
+    // `status` replaces `failed` (backup verify records `mismatch`); `quotaExit` is the exit code that records `quota-refused` (backup snapshot's renet quota refusal).
     name: 'recordBackupRunFailed',
     on: 'failure',
-    params: ['repo', 'kind', 'snapshotId'],
+    params: ['repo', 'kind', 'snapshotId', 'status', 'quotaExit'],
     load: async () => {
       const { recordBackupRun } = await import('../backup/backup-runs-state.js');
       return (ctx) =>
         recordBackupRun(str(ctx.params, 'repo'), {
           kind: backupKind(ctx.params),
-          status: 'failed',
+          status:
+            ctx.exitCode !== undefined && ctx.exitCode === optNum(ctx.params, 'quotaExit')
+              ? 'quota-refused'
+              : (optStr(ctx.params, 'status') ?? 'failed'),
           snapshotId: optStr(ctx.params, 'snapshotId'),
           lastRunAt: ctx.finishedAt,
         });
@@ -874,6 +882,51 @@ const DEFINITIONS: StepDefinition[] = [
       };
     },
   },
+  boundStep(
+    {
+      // `repo migrate`: the target up, DNS, the source delete and both unit re-renders, in order, once the source job succeeded.
+      name: 'migrateComplete',
+      on: 'success',
+      params: ['repo', 'ref', 'source', 'target', 'skipDns', 'keepSource', 'datastore', 'debug'],
+    },
+    () => import('../../commands/repo-migrate.js')
+  ),
+  boundStep(
+    {
+      // `repo fork --checkpoint --up`: the up leg, as its own job once the fork succeeded.
+      name: 'forkUp',
+      on: 'success',
+      params: ['repo', 'grand', 'detach', 'datastore', 'cluster', 'debug'],
+    },
+    () => import('../../commands/repo-fork.js')
+  ),
+  boundStep(
+    {
+      // `repo push` of an immutable commit: the `repository_commit_meta` successor on the target (J0 Surprise 7).
+      name: 'syncCommitMeta',
+      on: 'success',
+      params: ['target', 'commit', 'message', 'author', 'parent', 'grand'],
+    },
+    () => import('../../commands/repo-delta.js')
+  ),
+  boundStep(
+    {
+      // `repo pull --up`: the deploy, as its own job once the pull succeeded.
+      name: 'pullDeploy',
+      on: 'success',
+      params: ['repo', 'datastore', 'debug'],
+    },
+    () => import('../../commands/repo-backup.js')
+  ),
+  boundStep(
+    {
+      // `backup restore --up`: the deploy, as its own job once the restore succeeded.
+      name: 'restoreDeploy',
+      on: 'success',
+      params: ['repo', 'datastore', 'healthWindow', 'healthTimeout', 'debug'],
+    },
+    () => import('../../commands/backup.js')
+  ),
   boundStep(
     { name: 'reportRestorePath', on: 'success', needsOutput: true, params: ['repo', 'snapshot'] },
     () => import('../../commands/backup-restore-path.js')

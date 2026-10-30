@@ -267,18 +267,12 @@ describe('repo fork — orchestration', () => {
     expect(mockEnsureDns).toHaveBeenCalledExactlyOnceWith('app:staging', 'hostinger');
     expect(mockRefreshIdentityFor).toHaveBeenCalledTimes(1);
 
-    // postRepoUpTasks gets the pre-started dns promise + shared lease
-    expect(mockPostRepoUpTasks).toHaveBeenCalledTimes(1);
-    const [repoName, machineName, opts] = mockPostRepoUpTasks.mock.calls[0];
-    expect(repoName).toBe('app:staging');
-    expect(machineName).toBe('hostinger');
-    expect(opts.dnsPromise).toBeInstanceOf(Promise);
-    expect(opts.lease).toBeDefined();
+    // postRepoUpTasks runs as a success step of the fork job (PLAN-detached-jobs J4)
+    expect(mockPostRepoUpTasks).toHaveBeenCalledExactlyOnceWith('app:staging', 'hostinger');
     expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
   });
 
-  it('compound --up falls back to a chained up leg when the remote ignored --up', async () => {
-    // Remote renet predates --up: fork succeeds but no up-phase steps appear
+  it('compound --up is one job even when no up-phase step shows: a renet with jobs has fork --up', async () => {
     mockExecute.mockResolvedValue({
       success: true,
       steps: [{ name: 'cow_clone', duration_ms: 7 }],
@@ -287,39 +281,9 @@ describe('repo fork — orchestration', () => {
 
     await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
 
-    expect(mockExecute).toHaveBeenCalledTimes(2);
-    expect(mockExecute.mock.calls[0][0].functionName).toBe('repository_fork');
-    const upCall = mockExecute.mock.calls[1][0];
-    expect(upCall.functionName).toBe('repository_up');
-    expect(upCall.params).toMatchObject({
-      repository: 'app:staging',
-      mount: true,
-      grand: PARENT.repositoryGuid,
-    });
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockExecute.mock.calls[0][0].params.up).toBe(true);
     expect(mockPostRepoUpTasks).toHaveBeenCalledTimes(1);
-  });
-
-  it('compound --up retries as plain fork when the remote rejects the flag', async () => {
-    mockExecute
-      .mockResolvedValueOnce({
-        success: false,
-        exitCode: 1,
-        error: 'unknown flag: --up',
-        allSteps: [],
-      })
-      .mockResolvedValue({ success: true, steps: [], allSteps: [] });
-
-    await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
-
-    expect(mockExecute).toHaveBeenCalledTimes(3);
-    const [first, second, third] = mockExecute.mock.calls.map((c) => c[0]);
-    expect(first.functionName).toBe('repository_fork');
-    expect(first.params.up).toBe(true);
-    expect(second.functionName).toBe('repository_fork');
-    expect(second.params.up).toBeUndefined();
-    expect(third.functionName).toBe('repository_up');
-    // No rollback: the retry succeeded
-    expect(mockRemoveRepository).not.toHaveBeenCalled();
   });
 
   it('--checkpoint --up uses the legacy two-leg path (no compound params)', async () => {
@@ -338,6 +302,7 @@ describe('repo fork — orchestration', () => {
   });
 
   it('fork failure rolls back the registration and releases the lease', async () => {
+    mockGetRepository.mockImplementation((ref: string) => Promise.resolve(registeredOrParent(ref)));
     mockExecute.mockResolvedValue({
       success: false,
       exitCode: 1,
@@ -354,6 +319,7 @@ describe('repo fork — orchestration', () => {
   });
 
   it('fork failure after the key deploy removes the fork key by its GUID', async () => {
+    mockGetRepository.mockImplementation((ref: string) => Promise.resolve(registeredOrParent(ref)));
     mockExecute.mockResolvedValue({
       success: false,
       exitCode: 1,
@@ -426,14 +392,8 @@ describe('repo fork — datastore declaration (#74)', () => {
 
   it('declares it on the chained up leg too, where the fork is mounted', async () => {
     placedOnDatastore();
-    // Remote renet ignored the compound --up, so the legacy second leg runs.
-    mockExecute.mockResolvedValue({
-      success: true,
-      steps: [{ name: 'cow_clone', duration_ms: 7 }],
-      allSteps: [],
-    });
-
-    await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
+    // --checkpoint keeps the separate up leg, which runs as the forkUp successor step.
+    await handleForkAction('app', 'staging', { machine: 'hostinger', up: true, checkpoint: true });
 
     const upCall = mockExecute.mock.calls[1][0];
     expect(upCall.functionName).toBe('repository_up');
@@ -497,8 +457,7 @@ describe('repo fork — Total-at-end semantics', () => {
     expect(lastWrite).toMatch(/^\nTotal: /);
     // Merged cliSteps from the fork result are rendered as step lines
     expect(out).toContain('Config loaded');
-    // Parallel orchestrated phases carry the ∥ marker
-    expect(out).toMatch(/License identity refreshed \(∥\)/);
+    // The early DNS phase still carries the ∥ marker; the identity refresh is a job step now
     expect(out).toMatch(/DNS records ensured \(∥\)/);
   });
 

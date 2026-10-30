@@ -30,7 +30,7 @@ THE SCENARIOS
   docker    `reexec_with_docker_group` at every early return and at the exec, `ensure_docker_installed` usable, sudo-only, non-Linux, and the full renet-installer path, `_ensure_docker_group` in all four states, `_reset_docker_memo` with the memo set, unset and empty.
             (The twin's reset is a no-op when devbox.sh is NOT loaded, and the port's always drops the memo; the harness loads devbox.sh, the only shape any caller has, so that branch is not compared.)
   lane      `gate_lane_decide` down every rule (inside the box, `REDIACC_LANE` valid and not, the sticky state value present and empty, a running and a stopped container, docker only via sudo), `gate_lane_should_route` at all three answers including a broken mount and the dubious-ownership identity, and `gate_lane_run` passing the routed status through and refusing when nothing runs.
-  renet     `_renet_source_hash` over a tree with every prune and name rule, an empty tree and a missing one, `_renet_artifact_fp`, and `ensure_renet_built` fresh, twice, license and key variations, a failing build, a build with no binary, and a non-Linux cross-compile.
+  renet     `_renet_source_hash` over a tree with every prune and name rule, an empty tree and a missing one, `_renet_artifact_fp`, and `ensure_renet_built` fresh, twice, key variations (shell, cache, no key), a build the key gate refuses, a failing build, a build with no binary, and a non-Linux cross-compile.
 """
 
 from __future__ import annotations
@@ -49,11 +49,15 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci.core import bws_env, local_common
 from rediacc_ci.core.stubfarm import Farm
+from rediacc_ci.well_known import RENET_REPO
 
 if TYPE_CHECKING:  # annotation-only import
     from collections.abc import Mapping
 
 EXIT_CANNOT_RUN = 77
+# Two syntactically valid ED25519 public keys, fixture only: the key gate reads a key's fingerprint, so a placeholder string would be refused before the comparison.
+SHELL_KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+CACHE_KEY = "HxwdHhscGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgE="
 BASE_NAME = "rediacc-lc-actions"
 LOGGED = (
     "python3",
@@ -215,7 +219,7 @@ def fx_renet_env(root: pathlib.Path) -> None:
     """The public-key cache `ensure_renet_built` reads, plus the retired `.env` it must NOT read any more."""
     _write(
         root / "private" / "account" / ".cache" / "public-keys.env",
-        bws_env.PUBLIC_KEY_CACHE_HEADER + "X=1\nACCOUNT_ED25519_PUBLIC_KEY=pubkey-from-cache\r\n",
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "X=1\nACCOUNT_ED25519_PUBLIC_KEY=%s\r\n" % CACHE_KEY,
     )
     _write(root / "private" / "account" / ".env", "ACCOUNT_ED25519_PUBLIC_KEY=stale-dotenv-key\n")
 
@@ -269,7 +273,6 @@ def _renet_build_sh(subdir: str) -> str:
 
 
 RENET_BUILD_SH = _renet_build_sh("bin")
-RENET_BUILD_SH_ENFORCE = _renet_build_sh("bin/enforce")
 MKTEMP_SH = 'd="$STUB_ROOT/mktmp"; mkdir -p "$d"; printf "%s\\n" "$d"'
 GCC_SH = 'out=""; while [ $# -gt 0 ]; do if [ "$1" = -o ]; then out="$2"; fi; shift; done; printf "#!/bin/sh\\nexit 0\\n" > "$out"; chmod +x "$out"'
 
@@ -285,7 +288,20 @@ RUNNING = [
 GO_OLD = row("go", "version", out="go version go1.19.8 linux/amd64\n")
 
 # The key a build case hands ensure_renet_built through its environment, so the case reaches build.sh: a build with no key is refused since agent/plans/PLAN-production-key-only.md K3, and renet-no-key pins that refusal.
-KEYED = {"ACCOUNT_ED25519_PUBLIC_KEY": "shell-key"}
+KEYED = {"ACCOUNT_ED25519_PUBLIC_KEY": SHELL_KEY}
+
+
+def key_gate(key: str) -> dict:
+    """The `go version -m` row the key gate reads after a build (Design 6): build info baking `key`."""
+    return row(
+        "go",
+        "version -m *",
+        out='bin/renet: go1.26.4\n\tbuild\t-ldflags="-X main.Version=0.0.0-dev -X github.com/%s/pkg/license/keys.ProductionPublicKey=%s"\n'
+        % (RENET_REPO, key),
+    )
+
+
+GATE_SHELL = key_gate(SHELL_KEY)
 
 SCENARIOS: dict[str, list[Case]] = {
     "deps": [
@@ -683,7 +699,8 @@ SCENARIOS: dict[str, list[Case]] = {
                 DOCKER_DOWN,
                 row("sudo", "docker version", rc=1),
                 GO_NEW,
-                row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH),
+                row("build.sh", "dev", sh=RENET_BUILD_SH),
+                GATE_SHELL,
                 GROUP_OTHER,
             ],
         ),
@@ -696,7 +713,8 @@ SCENARIOS: dict[str, list[Case]] = {
                 DOCKER_DOWN,
                 row("sudo", "docker version", rc=1),
                 GO_NEW,
-                row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH),
+                row("build.sh", "dev", sh=RENET_BUILD_SH),
+                GATE_SHELL,
                 row("sudo", "*install-docker*", rc=1),
             ],
         ),
@@ -774,55 +792,49 @@ SCENARIOS: dict[str, list[Case]] = {
             "renet-fresh",
             "ensure-renet-built",
             setup=("renet_tree",),
-            rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
+            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH), GATE_SHELL],
             env={**KEYED, "DEBUG": "true"},
             repeat=2,
         ),
         Case(
-            "renet-license-key",
+            "renet-key-from-cache",
             "ensure-renet-built",
             setup=("renet_tree", "renet_env"),
-            rows=[row("build.sh", "dev --license", sh=RENET_BUILD_SH_ENFORCE)],
-            env={"RDC_RENET_LICENSE": "1"},
+            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH), key_gate(CACHE_KEY)],
         ),
         Case(
             "renet-key-from-shell",
             "ensure-renet-built",
             setup=("renet_tree", "renet_env"),
-            rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
-            env={"ACCOUNT_ED25519_PUBLIC_KEY": "shell-key"},
+            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH), GATE_SHELL],
+            env=KEYED,
+        ),
+        # The build bakes another key than the one it was handed: the key gate refuses it and no stamp is written (Design 6).
+        Case(
+            "renet-key-gate-refuses",
+            "ensure-renet-built",
+            setup=("renet_tree",),
+            rows=[row("build.sh", "dev", sh=RENET_BUILD_SH), key_gate(CACHE_KEY)],
+            env=KEYED,
         ),
         Case(
             "renet-build-fails",
             "ensure-renet-built",
             setup=("renet_tree",),
-            rows=[row("build.sh", "dev --nolicense", rc=1, err="asset staging aborted\n")],
+            rows=[row("build.sh", "dev", rc=1, err="asset staging aborted\n")],
             env=KEYED,
         ),
         Case("renet-no-binary", "ensure-renet-built", setup=("renet_tree",), env=KEYED),
         # No key anywhere: not in the environment, no cache, and no Bitwarden token in the sandbox's HOME. The build is refused before build.sh runs (agent/plans/PLAN-production-key-only.md K3).
         Case("renet-no-key", "ensure-renet-built", setup=("renet_tree",)),
-        # RENET_KEYLESS is honoured only under GITHUB_ACTIONS=true: the first case builds keyless, the second is refused like renet-no-key.
-        Case(
-            "renet-keyless-ci",
-            "ensure-renet-built",
-            setup=("renet_tree",),
-            rows=[row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH)],
-            env={"RENET_KEYLESS": "1", "GITHUB_ACTIONS": "true"},
-        ),
-        Case(
-            "renet-keyless-local",
-            "ensure-renet-built",
-            setup=("renet_tree",),
-            env={"RENET_KEYLESS": "1"},
-        ),
         Case(
             "renet-darwin",
             "ensure-renet-built",
             setup=("renet_tree", "renet_env"),
             rows=[
                 row("uname", "-s", out="Darwin\n"),
-                row("build.sh", "dev --nolicense", sh=RENET_BUILD_SH),
+                row("build.sh", "dev", sh=RENET_BUILD_SH),
+                key_gate(CACHE_KEY),
             ],
         ),
         Case(

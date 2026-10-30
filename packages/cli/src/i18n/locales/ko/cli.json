@@ -1861,14 +1861,10 @@
         "resolveOption": "3-way merge의 파일별 충돌 해결: 'ours'는 대상의 버전을 유지하고, 'theirs'는 소스의 버전을 가져옵니다. 전체 이미지 fast-forward(take-theirs)에는 생략하세요."
       },
       "migrate": {
-        "checkpointing": "CRIU 체크포인트 생성 중...",
         "complete": "마이그레이션 완료: {{name}}이 {{from}}에서 {{to}}으로 이동되었습니다",
         "deletingSource": "{{machine}}에서 원본 이미지를 삭제하는 중...",
-        "deltaDone": "델타 동기화 완료",
-        "deltaSync": "델타 동기화 중...",
         "description": "다운타임을 최소화하며 저장소를 한 머신에서 다른 머신으로 라이브 마이그레이션합니다. 2단계 rsync: 실행 중에 대량 전송을 수행한 후, 델타 동기화를 위해 짧게 정지합니다. 저장소 전체를 이동시키며 (라우팅이 새 위치로 재설정됩니다), 이동이 성공하면 원본 이미지를 삭제합니다 (유지하려면 --keep-source 사용). 프로세스 메모리 상태 마이그레이션을 위한 CRIU 체크포인트와 대상 머신 자동 프로비저닝을 지원합니다",
         "descriptionShort": "머신 간 저장소를 라이브 마이그레이션합니다",
-        "downtime": "다운타임: {{duration}}",
         "examples": {
           "basic": "저장소를 다른 머신으로 이동합니다.",
           "strategy": "물리적 복사 전략을 사용하여 저장소를 이동합니다."
@@ -1885,10 +1881,6 @@
         "optionStrategy": "전환을 위한 블록 델타 전략: auto, physical, 또는 shared",
         "optionTo": "대상 머신 또는 클러스터",
         "phase1": "1단계: 대량 데이터 전송 중 (소스 계속 실행 중)...",
-        "phase1Done": "대량 전송 완료",
-        "phase1Stats": "{{duration}} 동안 {{transferred}} 전송 (소스는 온라인 유지)",
-        "phase2": "2단계: 전환 (잠시 다운타임)...",
-        "phase2Stats": "컷오버 (다운타임): {{duration}} 동안 {{transferred}}",
         "phase3": "3단계: 대상에서 시작하는 중...",
         "placementRetryHint": "라우팅이 이미 {{machine}}을(를) 가리키고 있으므로 'rdc repo up {{name}}'이 그곳에서 재시도됩니다. 원본 이미지는 복구 자료로 보존되었습니다.",
         "placementUpdated": "라우팅이 업데이트되었습니다: {{name}}이(가) 이제 {{machine}}에 있습니다",
@@ -1896,13 +1888,9 @@
         "sourceDeleted": "{{name}}의 원본 이미지가 {{machine}}에서 삭제되었습니다",
         "sourceDeleteFailed": "{{machine}}에서 {{name}}의 원본 이미지를 삭제하지 못했습니다: {{error}}. 이동 자체는 이미 성공했습니다. 'rdc machine prune {{machine}}'으로 남은 것을 정리하세요.",
         "sourceRetained": "{{name}}의 원본 이미지를 {{machine}}에 보존했습니다. 어떤 설정 레코드로도 참조할 수 없습니다. reconcile이 이를 미아로 표시합니다.",
-        "sourceStopped": "소스 서비스 중지 완료",
-        "sourceUnmounted": "소스 마운트 해제 완료",
         "startingTarget": "대상에서 서비스를 시작하는 중...",
-        "stoppingSource": "소스 서비스를 중지하는 중...",
         "switchingDns": "DNS 레코드를 전환하는 중...",
-        "targetStarted": "대상 서비스 시작 완료",
-        "unmountingSource": "소스를 마운트 해제하는 중..."
+        "targetStarted": "대상 서비스 시작 완료"
       },
       "mount": {
         "completed": "저장소 마운트 완료",

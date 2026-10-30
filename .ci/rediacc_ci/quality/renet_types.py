@@ -148,14 +148,14 @@ def main(argv: list[str] | None = None) -> int:
         # The caller's `|| exit 0`. A skip, loud on stderr, and never a claim that anything was checked.
         return 0
 
-    # The scanner binary is built into this run's OWN scratch directory, never into `private/renet/bin/renet`. That slot is what `./rdc.sh` builds into and deploys to machines from, and `rediacc_ci.infra.build_renet` skips its rebuild on a matching stamp. A bare `go build -o bin/renet` here planted an ENFORCING binary with NO baked ACCOUNT_ED25519 key, and licence lookups on the fleet failed (2026-10-21). `-tags nolicense` keeps the scratch build independent of any key; the generator only reads the function registry.
+    # The scanner binary is built into this run's OWN scratch directory, never into `private/renet/bin/renet`. That slot is what `./rdc.sh` builds into and deploys to machines from, and `rediacc_ci.infra.build_renet` skips its rebuild on a matching stamp. A bare `go build -o bin/renet` here planted an ENFORCING binary with NO baked ACCOUNT_ED25519 key, and licence lookups on the fleet failed (2026-10-21). The scratch build bakes no key and is never deployed; the generator only reads the function registry.
     temp_dir = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("renet-types-")))
     try:
         scratch_bin = temp_dir / "build" / "renet"
         log.step("Building renet into a scratch directory...")
         try:
             built = subprocess.run(
-                ["go", "build", "-tags", "nolicense", "-o", str(scratch_bin), "./cmd/renet"],
+                ["go", "build", "-o", str(scratch_bin), "./cmd/renet"],
                 cwd=str(renet_dir),
                 check=False,
             )
@@ -202,7 +202,7 @@ def main(argv: list[str] | None = None) -> int:
 
         log.error("Stale types detected: %s" % " ".join(stale))
         log.error("Regenerate:")
-        log.error("  cd private/renet && go build -tags nolicense -o /tmp/renet-types ./cmd/renet")
+        log.error("  cd private/renet && go build -o /tmp/renet-types ./cmd/renet")
         log.error("  /tmp/renet-types functions generate-types \\")
         log.error("    --output ../../packages/shared/src/renet-contract/data --version dev")
         log.error(

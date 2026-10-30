@@ -87,7 +87,6 @@
         "pytest:.ci/rediacc_ci/tests/test_core_lease.py",
         "pytest:.ci/rediacc_ci/tests/test_core_local_common_renet_key.py",
         "pytest:.ci/rediacc_ci/tests/test_core_platform.py",
-        "pytest:.ci/rediacc_ci/tests/test_core_renet_flavor.py",
         "pytest:.ci/rediacc_ci/tests/test_core_review_budget.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_record.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_docker_to_stable_hotfix.py",

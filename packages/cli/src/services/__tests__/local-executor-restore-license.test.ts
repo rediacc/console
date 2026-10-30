@@ -503,14 +503,14 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
-  // The bypass must stay honoured: nolicense/CI builds have no subscription server to mint against.
-  it('honours REDIACC_SKIP_MACHINE_ACTIVATION', async () => {
+  // Every renet build enforces licences (agent/plans/PLAN-production-key-only.md Design 6), so the old activation bypass is gone: skipping issuance would only hand renet a restore it refuses.
+  it('REDIACC_SKIP_MACHINE_ACTIVATION no longer skips licence issuance', async () => {
     process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
 
     const result = await localExecutorService.execute(restoreOptions);
 
     expect(result.success).toBe(true);
-    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+    expect(mockIssueRepoLicense).toHaveBeenCalled();
   });
 });
 

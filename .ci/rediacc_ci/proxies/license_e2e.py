@@ -3,8 +3,8 @@
 Local proxy for CI's licensing battery, `rediacc_ci.private.license_e2e` (run by the License Enforcement job in `ct-tests.yml`), which is outside the parity surface. Wired as the registered gate `check:ci-proxy-license-e2e` (`package.json:387`, `scripts/ci-runner/manifest.ts:7435-7444`, `kind: 'local-only'`) -- the bash proxy is what the gate calls; this port is the parity-verified alternative, not yet
 the call site, same as every other file in this package. NO REDUCTION: unlike every other proxy here, this one runs the subject exactly as CI does, with no flag and no subset -- it needs no VM, no btrfs, no LUKS and no docker (the license gate fires before any storage work) and measured 15.8s on this host. The subject is the Python module `rediacc_ci.private.license_e2e`, run as `python3 -m` with `PYTHONPATH=.ci`; it no longer needs `jq`.
 
-WHAT THIS PROXY ADDS ON TOP OF THE SUBJECT'S OWN EXIT CODE. The subject is a three-run battery: an enforcing binary that must pass every scenario, and two deliberately broken binaries (nolicense, wrong-key) that must FAIL. "exit 0" is therefore a claim about six things, and a battery that silently degraded to running one binary would still exit 0. This proxy reads the summary lines
-back and asserts the shape: the enforcing run recorded assertions and zero failures, the nolicense control really failed, and the wrong-key control really failed. A control that does not fire is the failure this exists for -- it would leave the battery unable to detect the exact defect class it was built for, while still exiting 0.
+WHAT THIS PROXY ADDS ON TOP OF THE SUBJECT'S OWN EXIT CODE. The subject is a three-run battery: an enforcing binary that must pass every scenario, and two deliberately broken binaries (keyless, wrong-key) that must FAIL. "exit 0" is therefore a claim about six things, and a battery that silently degraded to running one binary would still exit 0. This proxy reads the summary lines
+back and asserts the shape: the enforcing run recorded assertions and zero failures, the keyless control really failed, and the wrong-key control really failed. A control that does not fire is the failure this exists for -- it would leave the battery unable to detect the exact defect class it was built for, while still exiting 0.
 
 PRIVILEGE. The subject installs license fixtures under `/var/lib/rediacc/license` via `sudo -n`, backing up and restoring any pre-existing `chain-state.json`. That path is a hardcoded constant in renet
 with no env override, so passwordless sudo is a hard requirement, not a
@@ -24,7 +24,7 @@ from rediacc_ci.core import proxyx
 
 _ENFORCING_PASS_RE = re.compile(r"\[enforcing\].* PASS")
 _ENFORCING_FAIL_RE = re.compile(r"\[enforcing\].* FAIL")
-_NOLICENSE_FAIL_RE = re.compile(r"\[nolicense\].* FAIL")
+_KEYLESS_FAIL_RE = re.compile(r"\[keyless\].* FAIL")
 _WRONGKEY_FAIL_RE = re.compile(r"\[wrong-key\].* FAIL")
 
 
@@ -74,7 +74,7 @@ def run() -> int:
 
     enforcing_pass = _count(_ENFORCING_PASS_RE, both)
     enforcing_fail = _count(_ENFORCING_FAIL_RE, both)
-    nolicense_fail = _count(_NOLICENSE_FAIL_RE, both)
+    keyless_fail = _count(_KEYLESS_FAIL_RE, both)
     wrongkey_fail = _count(_WRONGKEY_FAIL_RE, both)
 
     if enforcing_pass > 0:
@@ -87,12 +87,12 @@ def run() -> int:
             "and its exit code means nothing"
         )
 
-    if nolicense_fail > 0:
-        p.ok(f"the nolicense control FIRED ({nolicense_fail} scenario failures, as required)")
+    if keyless_fail > 0:
+        p.ok(f"the keyless control FIRED ({keyless_fail} scenario failures, as required)")
     else:
         p.bad(
-            "the nolicense control did NOT fire: a build with -tags nolicense accepted "
-            "everything and the battery did not notice, so it cannot detect a stub build"
+            "the keyless control did NOT fire: a binary baked with no public key still "
+            "validated licences, so the battery cannot detect a build that cannot validate"
         )
     if wrongkey_fail > 0:
         p.ok(f"the wrong-key control FIRED ({wrongkey_fail} scenario failures, as required)")

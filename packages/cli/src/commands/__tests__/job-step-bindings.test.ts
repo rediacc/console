@@ -113,17 +113,52 @@ describe('job step bindings', () => {
     vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
 
     const handler = await resolveStepHandler('rollbackFork');
-    await handler(ctx({ state: 'failed', params: { repo: 'app:t1', machine: 'm2', guid: 'g-2' } }));
+    await handler(
+      ctx({ state: 'failed', markers: [], params: { repo: 'app:t1', machine: 'm2', guid: 'g-2' } })
+    );
 
     expect(remove).toHaveBeenCalledWith('app:t1');
     expect(removeRepoKeyIfDeployed).toHaveBeenCalledWith('app:t1', 'm2', 'g-2');
+  });
+
+  it('rollbackFork keeps the registration once the stream showed the fork image was made', async () => {
+    vi.spyOn(configService, 'getRepository').mockResolvedValue({ repositoryGuid: 'g-2' } as never);
+    const remove = vi
+      .spyOn(configService, 'removeRepository')
+      .mockResolvedValue(undefined as never);
+    const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+
+    const handler = await resolveStepHandler('rollbackFork');
+    await handler(
+      ctx({
+        state: 'failed',
+        markers: ['cow_reflink', 'compose_up'],
+        params: { repo: 'app:t1', machine: 'm2', guid: 'g-2' },
+      })
+    );
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(removeRepoKeyIfDeployed).not.toHaveBeenCalled();
+    expect(warn.mock.calls.flat().join(' ')).toContain('rdc repo up app:t1 -m m2');
+  });
+
+  it('rollbackFork keeps the registration when the observer never saw the stream', async () => {
+    const remove = vi
+      .spyOn(configService, 'removeRepository')
+      .mockResolvedValue(undefined as never);
+    vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+
+    const handler = await resolveStepHandler('rollbackFork');
+    await handler(ctx({ state: 'failed', params: { repo: 'app:t1', machine: 'm2', guid: 'g-2' } }));
+
+    expect(remove).not.toHaveBeenCalled();
   });
 
   it('rollbackFork leaves the key alone when the plan carried no machine', async () => {
     vi.spyOn(configService, 'getRepository').mockResolvedValue(undefined as never);
 
     const handler = await resolveStepHandler('rollbackFork');
-    await handler(ctx({ state: 'failed', params: { repo: 'app:t1', guid: 'g-2' } }));
+    await handler(ctx({ state: 'failed', markers: [], params: { repo: 'app:t1', guid: 'g-2' } }));
 
     expect(removeRepoKeyIfDeployed).not.toHaveBeenCalled();
   });
@@ -137,7 +172,7 @@ describe('job step bindings', () => {
       .mockResolvedValue(undefined as never);
 
     const handler = await resolveStepHandler('rollbackFork');
-    await handler(ctx({ state: 'failed', params: { repo: 'app:t1', guid: 'g-2' } }));
+    await handler(ctx({ state: 'failed', markers: [], params: { repo: 'app:t1', guid: 'g-2' } }));
 
     expect(remove).not.toHaveBeenCalled();
   });

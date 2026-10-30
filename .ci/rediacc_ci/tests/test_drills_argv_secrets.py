@@ -75,7 +75,7 @@ def test_license_setup_logs_in_with_the_token_on_stdin(
     lic = license_drill.License(drill, typing.cast("license_drill.Options", opts))
     lic.api_token = API_TOKEN
     lic.server_url = "http://127.0.0.1:1"
-    monkeypatch.setattr(lic, "verify_renet_flavor", lambda: None)
+    monkeypatch.setattr(lic, "verify_renet_key", lambda: None)
     lic.setup_config()
     assert_off_argv(drill, API_TOKEN)
     argv, _env, stdin = login_call(drill)

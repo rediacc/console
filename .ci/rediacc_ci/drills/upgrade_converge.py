@@ -50,7 +50,7 @@ def runtime_stamp_path(network_id: int | str) -> str:
 def build_old_renet_script(src_dir: str, out_binary: str, commit: str) -> str:
     """The shell that materialises a pre-isolation renet source tree at `commit` and builds it, WITHOUT touching private/renet/bin (the CLI uploads what `renetPath` names).
 
-    A `git clone --shared --no-checkout` of private/renet then a detached `checkout` gives the full tree: renet's `.gitattributes` sets `* export-ignore`, so `git archive` exports only LICENSE and is useless here, while a checkout ignores export-ignore. `go build -tags nolicense -o <out> ./cmd/renet` from inside is the old binary (nolicense: U1 is about the runtime layout, not licensing, and the enforcing key is unneeded for a local grand and fork). `commit` is a concrete sha resolved against the submodule before the build, so the shared clone always finds it.
+    A `git clone --shared --no-checkout` of private/renet then a detached `checkout` gives the full tree: renet's `.gitattributes` sets `* export-ignore`, so `git archive` exports only LICENSE and is useless here, while a checkout ignores export-ignore. `go build -tags nolicense -o <out> ./cmd/renet` from inside is the old binary. The tag is honoured only because `PRE_ISOLATION_COMMIT` predates renet aa872edb, which deleted `runtime_nolicense.go` (agent/plans/PLAN-production-key-only.md N1): at that commit the tag still selects the no-licence stub, so the old binary needs no baked key, and U1 tests the runtime layout, not licensing. The current binary it upgrades to is the one licensed build. `commit` is a concrete sha resolved against the submodule before the build, so the shared clone always finds it.
     """
     src = shlex.quote(src_dir)
     out = shlex.quote(out_binary)

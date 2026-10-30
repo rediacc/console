@@ -98,7 +98,13 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-shared',
     timeout: '24h',
     box: 'J4',
-    steps: ['identityRefresh', 'reconcileBackupSchedules', 'rollbackFork'],
+    steps: [
+      'identityRefresh',
+      'reconcileBackupSchedules',
+      'rollbackFork',
+      'forkUp',
+      'postRepoUpTasks',
+    ],
   },
   'repo push': {
     form: 'single',
@@ -106,8 +112,8 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-shared',
     timeout: '24h',
     box: 'J4',
-    steps: ['reportPushStats', 'recordPushBase'],
-    note: 'repository_commit_meta on the target after an immutable push is a successor (J0 Surprise 7)',
+    steps: ['reportPushStats', 'recordPushBase', 'syncCommitMeta'],
+    note: 'repository_commit_meta on the target after an immutable push is the syncCommitMeta successor step (J0 Surprise 7)',
   },
   'repo pull': {
     form: 'successor',
@@ -115,7 +121,8 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-exclusive',
     timeout: '24h',
     box: 'J4',
-    note: '--up records repository_up {mount:true} as the successor',
+    steps: ['pullDeploy'],
+    note: '--up runs repository_up {mount:true} as the pullDeploy successor step',
   },
   'repo migrate': {
     form: 'successor',
@@ -123,8 +130,8 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-exclusive',
     timeout: '24h',
     box: 'J4',
-    steps: ['migratePlacement'],
-    note: 'three jobs under one ticket: the source job, repository_up on the target, then repository_delete on the source (J0b finding 1)',
+    steps: ['migratePlacement', 'migrateComplete'],
+    note: 'the source job, then the migrateComplete step runs repository_up on the target and repository_delete on the source (J0b finding 1)',
   },
   'backup snapshot': {
     form: 'single',
@@ -147,6 +154,7 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
       'reportRestoreStats',
       'rollbackRestoreRegistration',
       'reportRestorePath',
+      'restoreDeploy',
     ],
   },
   'backup verify': {
@@ -808,4 +816,17 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
  * change removes it from BACKGROUND_UNSAFE (packages/cli/src/services/executor/proxy-command.ts); the J22 invariant
  * test refuses a verb in both.
  */
-export const CONVERTED: ReadonlySet<string> = new Set<string>();
+export const CONVERTED: ReadonlySet<string> = new Set<string>([
+  // J4: each runs its main call through runCommandJob, with its follow-up code as ticket steps.
+  'backup restore',
+  'backup snapshot',
+  'backup verify',
+  'repo checkout',
+  'repo commit',
+  'repo down',
+  'repo fork',
+  'repo migrate',
+  'repo pull',
+  'repo push',
+  'repo up',
+]);

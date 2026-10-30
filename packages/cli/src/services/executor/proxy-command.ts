@@ -59,24 +59,11 @@ export function assertProxyCapable(
 }
 
 /**
- * Detachable verbs that `--background` must still refuse locally, with the reason, until agent/plans/PLAN-detached-jobs.md (J2, J3) runs each as one terminal job.
+ * Detachable verbs that `--background` must still refuse locally, with the reason, until agent/plans/PLAN-detached-jobs.md (J4, J22) runs each as one job with its follow-up code on the ticket. A verb leaves this table in the change that adds it to CONVERTED (packages/cli/src/services/jobs/plans.ts).
  *
  * `--background` gives EVERY machine call of the verb a zero attach window, probes included (executor-factory's attachDecorator), so each returns its ticket at once. For these verbs that is unsafe, per the J0 audit in that plan: a later call starts before the earlier job finishes, a probe answers empty and fails open, or a local step records a result that has not happened. `repo migrate -b` deletes the source while its delta push still reads it. The proxy path is unaffected: it detaches and follows each call to completion.
  */
-export const BACKGROUND_UNSAFE: Record<string, string> = {
-  'repo up': 'runs its probe and its DNS, certificate and URL steps before the containers are up',
-  'repo fork':
-    'refreshes the identity and re-renders backup units before the fork exists, and its legacy up leg races the fork',
-  'repo checkout': 'forks through repo fork, which is not safe in the background',
-  'repo commit': 'forks through repo fork, which is not safe in the background',
-  'repo push': 'records a delta base for a push that has not finished',
-  'repo pull': 'starts the --up deploy while the pull is still running',
-  'repo migrate': 'deletes the source while the delta push is still reading it',
-  'backup snapshot': 'records the run as stored when the job starts',
-  'backup restore':
-    'records success when the job starts, races --up, and loses the source anchor --at needs',
-  'backup verify': 'records and prints "verified" before anything is verified',
-};
+export const BACKGROUND_UNSAFE: Record<string, string> = {};
 
 /**
  * Refuse `--background` for a command that cannot become a detached job.

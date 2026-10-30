@@ -72,6 +72,8 @@ async function machineUsedNetworkIds(machine: string): Promise<number[] | undefi
       params: {},
       captureOutput: true,
       quietSpinners: true,
+      // The allocation reads the answer: a ticket would leave the floor empty.
+      probe: true,
     });
   } catch {
     return undefined;

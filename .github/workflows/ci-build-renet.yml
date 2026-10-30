@@ -542,7 +542,7 @@ jobs:
           cd private/renet
           for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
             echo "::group::$t"
-            CGO_ENABLED=0 GOOS="${t%/*}" GOARCH="${t#*/}" go build -tags nolicense -o /dev/null ./cmd/renet/
+            CGO_ENABLED=0 GOOS="${t%/*}" GOARCH="${t#*/}" go build -o /dev/null ./cmd/renet/
             echo "::endgroup::"
           done
 

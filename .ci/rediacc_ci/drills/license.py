@@ -14,7 +14,7 @@ SELFTEST. `--selftest` plants one assertion that cannot pass and stops before an
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_drills_backup_license.py`).
 
-  1. THE GATEWAY DOES NOT INHERIT THE SANDBOX. The bash exported `XDG_CONFIG_HOME`, `REDIACC_CONFIG`, `RDC_RENET_LICENSE` and the rest into its own environment before it restarted the gateway, so the gateway's secret loader looked for the Bitwarden token under the throwaway config home (see `rediacc_ci.drills.lib`). They reach only the `rdc` commands under test here.
+  1. THE GATEWAY DOES NOT INHERIT THE SANDBOX. The bash exported `XDG_CONFIG_HOME`, `REDIACC_CONFIG` and the rest into its own environment before it restarted the gateway, so the gateway's secret loader looked for the Bitwarden token under the throwaway config home (see `rediacc_ci.drills.lib`). They reach only the `rdc` commands under test here.
   2. NO `curl`, `node` AND `uuidgen`. HTTP is `urllib`, JSON expressions are Python, ids are `secrets`/`uuid`; the preflight no longer demands the three tools.
   3. THE MAX SEQUENCE OF AN EMPTY RESULT LIST IS 0. `Math.max(...[])` is `-Infinity`, which the bash then compared against 0 and accepted as a fresh sequence; `renewed_sequence` answers 0 and the assertion fails, as it should.
   4. A FAILED RESTORE OF THE SUBSCRIPTION IS REPORTED. The bash teardown discarded both the output and the exit code of the patch that puts the cap and the status back (`>/dev/null 2>&1 || true`), so a drill that left the subscription suspended said nothing; the failure is a warning naming what was left behind.
@@ -42,8 +42,8 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
-from rediacc_ci.core import renet_flavor
 from rediacc_ci.drills import lib, vm_check, vm_ssh, wire
+from rediacc_ci.release import renet_key_gate
 
 if TYPE_CHECKING:
     import pathlib
@@ -582,8 +582,6 @@ class License:
         (home / "rediacc").mkdir(parents=True, exist_ok=True)
         d.extra_env["XDG_CONFIG_HOME"] = str(home)
         d.extra_env["REDIACC_CONFIG"] = CONFIG_NAME
-        # This drill is ABOUT enforcement, so the renet it deploys must be the license-enforcing flavor with the dev account key baked in: the default dev build is nolicense (a permit-all stub that would make every leg vacuous). The enforcing build lives in its own directory (`bin/enforce/`), so a plain ./rdc.sh from another session builds the nolicense `bin/renet` and never touches it; `setup_config` pins the config to that binary with `--renet-path`.
-        d.extra_env["RDC_RENET_LICENSE"] = "1"
         # See the universe drill: unpinned, a drill measures the json surface while describing the human one.
         d.extra_env["REDIACC_DEFAULT_OUTPUT"] = "table"
 
@@ -635,31 +633,30 @@ class License:
         if not d.account_admin_session(self.email, DRILL_PASSWORD, self.admin_jar):
             raise SystemExit(1)
 
-    def enforce_binary(self) -> str:
-        """The enforcing renet this drill deploys, named by path so no PATH lookup can swap it."""
-        return renet_flavor.binary(str(self.d.root / "private" / "renet"), "enforce")
+    def renet_binary(self) -> str:
+        """The renet this drill deploys, named by path so no PATH lookup can swap it. Every build is the licensed one baking the account key (agent/plans/PLAN-production-key-only.md Design 6)."""
+        return str(self.d.root / "private" / "renet" / "bin" / "renet")
 
-    def verify_renet_flavor(self) -> None:
-        """Prove the flavor BEFORE deploying it. A wrong-flavored renet fails every leg with an error that reads like a licensing bug: an enforcing keyless build refuses everything with "public key not configured", a nolicense build permits everything. All three binaries of `bin/enforce/` are read (the host one and both Linux ones `machine setup` may upload), and `bin/renet`, the nolicense build, never is."""
+    def verify_renet_key(self) -> None:
+        """Prove the binaries bake an account key BEFORE deploying them. A keyless renet fails every leg with an error that reads like a licensing bug ("public key not configured"). All three binaries are read: the host one and both Linux ones `machine setup` may upload."""
         d = self.d
-        d.step("Setup: the local renet build enforces licenses with the dev key")
-        renet_dir = str(d.root / "private" / "renet")
-        binaries = [self.enforce_binary(), *renet_flavor.linux_binaries(renet_dir, "enforce")]
+        d.step("Setup: the local renet build bakes the account key")
+        renet_dir = d.root / "private" / "renet" / "bin"
+        binaries = [
+            self.renet_binary(),
+            *(str(renet_dir / ("renet-linux-%s" % arch)) for arch in ("amd64", "arm64")),
+        ]
         for binary in binaries:
             info = _go_buildinfo(binary)
             if not info:
                 log.error("Cannot read build info from %s (missing or not a Go binary)." % binary)
-                log.error("Build it: RDC_RENET_LICENSE=1 ./rdc.sh --version")
+                log.error("Build it: ./rdc.sh --version")
                 raise SystemExit(1)
-            refusal = renet_flavor.flavor_refusal("enforce", info)
-            if refusal is not None:
-                log.error("The renet at %s is not usable by this drill: %s." % (binary, refusal))
-                log.error("A nolicense build makes every licensing assertion vacuous and a keyless")
-                log.error(
-                    "one fails every validation. Rebuild: RDC_RENET_LICENSE=1 ./rdc.sh --version"
-                )
+            if not renet_key_gate.parse_build_info(info).key:
+                log.error("The renet at %s bakes no account public key, so every" % binary)
+                log.error("validation fails. Rebuild: ./rdc.sh --version (after ./run.sh setup).")
                 raise SystemExit(1)
-        d.note("enforcing build with baked key confirmed (%d binaries)" % len(binaries))
+        d.note("baked account key confirmed (%d binaries)" % len(binaries))
 
     def setup_config(self) -> None:
         d, o = self.d, self.o
@@ -671,10 +668,10 @@ class License:
             "--server",
             self.server_url,
             "--renet-path",
-            self.enforce_binary(),
+            self.renet_binary(),
         )
-        # config init above was the first CLI invocation, so the enforcing build has happened by now; prove its flavor before machine setup deploys it.
-        self.verify_renet_flavor()
+        # config init above was the first CLI invocation, so the build has happened by now; prove its key before machine setup deploys it.
+        self.verify_renet_key()
         # Runs one command against the fresh config before anything else tunnels. It no longer repairs a missing E2E key: `config init` saves the key, and the CLI refuses, by name, a non-production server it holds no key for.
         self.cli("config", "current", "-o", "json")
         self.cli("config", "ssh", "set", "--key", o.ssh_key)

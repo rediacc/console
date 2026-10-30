@@ -44,18 +44,27 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
+/** The scripted answer of one executor call. */
+function scriptedResult(req: { functionName: string; params?: Record<string, unknown> }) {
+  if (req.functionName === 'repository_delete') {
+    h.deletedRepos.push(String(req.params?.repository ?? ''));
+  }
+  if (h.failOn && req.functionName === h.failOn) {
+    return { success: false, error: 'scripted failure' };
+  }
+  // The source job (PLAN-detached-jobs J4) ends with the cutover marker the placement rewrite waits on.
+  if (req.functionName === 'repository_migrate') {
+    return { success: true, stdout: '', steps: [{ name: 'cutover_complete', duration_ms: 1 }] };
+  }
+  // repository_list (assertNotMountedOnTarget) needs parseable stdout.
+  return { success: true, stdout: '[]' };
+}
+
 vi.mock('../executor/executor-factory.js', () => ({
   getExecutor: () => ({
-    execute: vi.fn((req: { functionName: string; params?: Record<string, unknown> }) => {
-      if (req.functionName === 'repository_delete') {
-        h.deletedRepos.push(String(req.params?.repository ?? ''));
-      }
-      if (h.failOn && req.functionName === h.failOn) {
-        return Promise.resolve({ success: false, error: 'scripted failure' });
-      }
-      // repository_list (assertNotMountedOnTarget) needs parseable stdout.
-      return Promise.resolve({ success: true, stdout: '[]' });
-    }),
+    execute: vi.fn((req: { functionName: string; params?: Record<string, unknown> }) =>
+      Promise.resolve(scriptedResult(req))
+    ),
   }),
 }));
 
@@ -151,8 +160,8 @@ describe('repo migrate — placement rewrite (R1)', () => {
     expect(resolved.machine).toBe('m2');
   });
 
-  it('leaves placement on the SOURCE when phase 1 fails (pre-cutover)', async () => {
-    h.failOn = 'backup_push';
+  it('leaves placement on the SOURCE when the source job fails (pre-cutover)', async () => {
+    h.failOn = 'repository_migrate';
     await expect(migrateRepo('shop', { to: 'm2' })).rejects.toThrow();
 
     const declared = h.written ?? { machine: 'm1' };

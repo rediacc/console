@@ -11,7 +11,10 @@ import {
   parseNetworkIdConflict,
 } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
+import type { PlannedStep } from '../services/jobs/steps.js';
 import { stateMismatch } from './cli-exit-error.js';
 import { renderLocalExecutionFailure } from './local-execution-failures.js';
 import { formatStepDuration } from './timeline.js';
@@ -94,6 +97,15 @@ export async function executeRepoFunction(
      * json modes) while renet was reporting {"status":"verified",...}.
      */
     captureOutput?: boolean;
+    /**
+     * The converted command's verb and its client-side steps (PLAN-detached-jobs
+     * section 18). With a verb the call runs through `runCommandJob`: the steps
+     * ride the job's ticket and run once the job is seen finished, here inside
+     * the attach window or later in `rdc job wait` and the notice.
+     */
+    job?: { verb: string; steps: PlannedStep[] };
+    /** A probe the command reads before going on: `--background` leaves it attached (ExecuteOptions.probe). */
+    probe?: boolean;
   },
   messages: RepoFunctionMessages
 ): Promise<ExecuteResult> {
@@ -111,7 +123,7 @@ export async function executeRepoFunction(
 
   outputService.info(messages.starting);
 
-  const result = await getExecutor().execute({
+  const executeOptions = {
     functionName,
     machineName,
     kubeCluster: options.kubeCluster,
@@ -122,7 +134,17 @@ export async function executeRepoFunction(
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
     captureOutput: options.captureOutput,
-  });
+    ...(options.probe ? { probe: true } : {}),
+  };
+  const result = options.job
+    ? (await runCommandJob(options.job.verb, executeOptions, options.job.steps)).result
+    : await getExecutor().execute(executeOptions);
+
+  // The job outlived the attach window: the executor printed its ticket, and nothing has completed yet.
+  if (result.state === 'running') {
+    if (!result.success) setExitCode(result.exitCode);
+    return result;
+  }
 
   if (result.success) {
     renderSuccess(result, messages.completed);

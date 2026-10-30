@@ -1861,14 +1861,10 @@
         "resolveOption": "Dateiweise Konfliktauflösung für einen Three-Way-Merge: 'ours' behält die Version des Ziels, 'theirs' übernimmt die der Quelle. Für ein Fast-Forward des gesamten Images (take-theirs) weglassen."
       },
       "migrate": {
-        "checkpointing": "CRIU-Checkpoint wird erstellt...",
         "complete": "Migration abgeschlossen: {{name}} von {{from}} nach {{to}} verschoben",
         "deletingSource": "Quell-Images auf {{machine}} werden gelöscht...",
-        "deltaDone": "Delta-Sync abgeschlossen",
-        "deltaSync": "Delta wird synchronisiert...",
         "description": "Ein Repository mit minimaler Ausfallzeit live von einer Maschine auf eine andere migrieren. Zweiphasiges rsync: Massentransfer während des laufenden Betriebs, dann kurzer Stopp für die Delta-Synchronisierung. Verschiebt das gesamte Repository (das Routing wird auf das neue Zuhause umgestellt) und löscht nach erfolgreichem Umzug die Quell-Images (mit --keep-source behalten). Unterstützt CRIU-Checkpoints für die Migration des Prozessspeicherzustands und automatische Bereitstellung von Zielmaschinen",
         "descriptionShort": "Live-Migration eines Repositorys zwischen Maschinen",
-        "downtime": "Ausfallzeit: {{duration}}",
         "examples": {
           "basic": "Ein Repository auf eine andere Maschine verschieben.",
           "strategy": "Ein Repository mit der physischen Kopierstrategie verschieben."
@@ -1885,10 +1881,6 @@
         "optionStrategy": "Block-Delta-Strategie für die Umschaltung: auto, physical oder shared",
         "optionTo": "Zielmaschine oder -cluster",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
-        "phase1Done": "Massentransfer abgeschlossen",
-        "phase1Stats": "{{transferred}} in {{duration}} übertragen, Quelle blieb online",
-        "phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
-        "phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
         "phase3": "Phase 3: Start auf dem Ziel...",
         "placementRetryHint": "Das Routing zeigt bereits auf {{machine}}, daher wird 'rdc repo up {{name}}' dort erneut versuchen. Die Quell-Images wurden als Wiederherstellungsmaterial behalten.",
         "placementUpdated": "Routing aktualisiert: {{name}} befindet sich jetzt auf {{machine}}",
@@ -1896,13 +1888,9 @@
         "sourceDeleted": "Quell-Images für {{name}} von {{machine}} gelöscht",
         "sourceDeleteFailed": "Die Quell-Images für {{name}} auf {{machine}} konnten nicht gelöscht werden: {{error}}. Der Umzug war bereits erfolgreich; räumen Sie den Rest mit 'rdc machine prune {{machine}}' auf.",
         "sourceRetained": "Quell-Images für {{name}} auf {{machine}} behalten. Sie sind über keinen Konfigurationseintrag adressierbar; reconcile wird sie als Streufunde markieren.",
-        "sourceStopped": "Quelldienste gestoppt",
-        "sourceUnmounted": "Quelle ausgehängt",
         "startingTarget": "Dienste auf dem Ziel werden gestartet...",
-        "stoppingSource": "Quelldienste werden gestoppt...",
         "switchingDns": "DNS-Einträge werden umgeschaltet...",
-        "targetStarted": "Zieldienste gestartet",
-        "unmountingSource": "Quelle wird ausgehängt..."
+        "targetStarted": "Zieldienste gestartet"
       },
       "mount": {
         "completed": "Repository eingehängt",

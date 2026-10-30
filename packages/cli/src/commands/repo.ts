@@ -5,6 +5,7 @@ import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { parseCapturedJson } from '../services/executor/renet-output.js';
+import { planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -13,7 +14,7 @@ import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { createRepoAdminCommand } from './repo-admin.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
-import { handleDownAll, handleRepoList, handleUpAll, postRepoUpTasks } from './repo-batch-utils.js';
+import { handleDownAll, handleRepoList, handleUpAll } from './repo-batch-utils.js';
 import { registerRepoBranchingCommands } from './repo-branching.js';
 import { registerRepoCanaryCommands } from './repo-canary.js';
 import { registerRepoCatCommand } from './repo-cat.js';
@@ -99,17 +100,24 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
   if (dockerUp) {
     await deployRepoKeyIfNeeded(repoKey, machineName);
   }
+  // The DNS, certificate and URL steps ride the job's ticket and run once the containers are up (PLAN-detached-jobs J4).
   await executeRepoFunction(
     functionName,
     repoKey,
     machineName,
     params,
-    { ...options, kubeCluster },
+    {
+      ...options,
+      kubeCluster,
+      job: {
+        verb: 'repo up',
+        steps: dockerUp
+          ? [planStep('postRepoUpTasks', { repo: repoKey, machine: machineName })]
+          : [],
+      },
+    },
     messages
   );
-  if (dockerUp) {
-    await postRepoUpTasks(repoKey, machineName);
-  }
 }
 
 // executeRepoFunction imported from ../utils/repo-executor.js
@@ -263,7 +271,7 @@ export function registerRepoCommands(program: Command): void {
               repoKey,
               machineName,
               params,
-              { ...options, kubeCluster },
+              { ...options, kubeCluster, job: { verb: 'repo down', steps: [] } },
               {
                 starting: t('commands.repo.down.starting', {
                   repository: ref,

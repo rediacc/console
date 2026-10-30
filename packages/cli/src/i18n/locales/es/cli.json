@@ -1861,14 +1861,10 @@
         "resolveOption": "Resolución de conflictos por archivo para una fusión a tres vías: 'ours' conserva la versión del destino, 'theirs' toma la del origen. Omítelo para un fast-forward de imagen completa (take-theirs)."
       },
       "migrate": {
-        "checkpointing": "Creando checkpoint CRIU...",
         "complete": "Migración completada: {{name}} movido de {{from}} a {{to}}",
         "deletingSource": "Eliminando imágenes de origen en {{machine}}...",
-        "deltaDone": "Sincronización delta completada",
-        "deltaSync": "Sincronizando delta...",
         "description": "Migra en vivo un repositorio de una máquina a otra con el mínimo tiempo de inactividad. rsync en dos fases: transferencia masiva mientras se ejecuta, luego una breve pausa para la sincronización delta. Mueve todo el repositorio (el enrutamiento se redirige al nuevo destino) y, una vez que el traslado tiene éxito, elimina las imágenes de origen (use --keep-source para conservarlas). Admite checkpoint de CRIU para la migración del estado de memoria de procesos y el aprovisionamiento automático de máquinas de destino",
         "descriptionShort": "Migración en vivo de un repositorio entre máquinas",
-        "downtime": "Tiempo de inactividad: {{duration}}",
         "examples": {
           "basic": "Mueve un repositorio a otra máquina.",
           "strategy": "Mueve un repositorio usando la estrategia de copia física."
@@ -1885,10 +1881,6 @@
         "optionStrategy": "Estrategia de delta por bloques para el corte: auto, physical o shared",
         "optionTo": "Máquina o clúster de destino",
         "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
-        "phase1Done": "Transferencia masiva completada",
-        "phase1Stats": "{{transferred}} transferidos en {{duration}}, el origen siguió en línea",
-        "phase2": "Fase 2: Corte (breve inactividad)...",
-        "phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
         "phase3": "Fase 3: Iniciando en el destino...",
         "placementRetryHint": "El enrutamiento ya apunta a {{machine}}, por lo que 'rdc repo up {{name}}' reintentará allí. Las imágenes de origen se conservaron como material de recuperación.",
         "placementUpdated": "Enrutamiento actualizado: {{name}} ahora reside en {{machine}}",
@@ -1896,13 +1888,9 @@
         "sourceDeleted": "Imágenes de origen de {{name}} eliminadas de {{machine}}",
         "sourceDeleteFailed": "No se pudieron eliminar las imágenes de origen de {{name}} en {{machine}}: {{error}}. El traslado ya se completó; limpie lo que queda con 'rdc machine prune {{machine}}'.",
         "sourceRetained": "Se conservaron las imágenes de origen de {{name}} en {{machine}}. No son direccionables por ningún registro de configuración; reconcile las marcará como huérfanas.",
-        "sourceStopped": "Servicios del origen detenidos",
-        "sourceUnmounted": "Origen desmontado",
         "startingTarget": "Iniciando servicios en el destino...",
-        "stoppingSource": "Deteniendo servicios del origen...",
         "switchingDns": "Cambiando registros DNS...",
-        "targetStarted": "Servicios del destino iniciados",
-        "unmountingSource": "Desmontando origen..."
+        "targetStarted": "Servicios del destino iniciados"
       },
       "mount": {
         "completed": "Repositorio montado",

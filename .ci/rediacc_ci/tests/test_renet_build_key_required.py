@@ -1,6 +1,6 @@
 """`private/renet/build.sh key-ldflags`: renet refuses to build without a licence key (PLAN-production-key-only K4, gate G2).
 
-The seam prints exactly the ldflag every build flavor (`dev`, `build`, `stage_linux`) links with, through the same `_account_key_ldflags`. The key comes from `ACCOUNT_ED25519_PUBLIC_KEY` in the environment only: the public-key cache beside it is never read, and the one keyless exception is `RENET_KEYLESS=1` under `GITHUB_ACTIONS=true`. The real build.sh is copied into a temp tree beside a planted cache, so the cache-fallback case is driven against the path the old fallback read. Every key here is an arbitrary value, never a real one.
+The seam prints exactly the ldflag every build flavor (`dev`, `build`, `stage_linux`) links with, through the same `_account_key_ldflags`. The key comes from `ACCOUNT_ED25519_PUBLIC_KEY` in the environment only: the public-key cache beside it is never read, and there is no keyless exception: `RENET_KEYLESS` and `GITHUB_ACTIONS` change nothing (operator 2026-10-30, the nolicense removal). The real build.sh is copied into a temp tree beside a planted cache, so the cache-fallback case is driven against the path the old fallback read. Every key here is an arbitrary value, never a real one.
 """
 
 from __future__ import annotations
@@ -56,26 +56,18 @@ def test_no_env_key_fails_and_the_cache_is_not_read(tmp_path: pathlib.Path) -> N
     assert CACHED not in done.stdout + done.stderr
 
 
-def test_keyless_outside_github_actions_fails(tmp_path: pathlib.Path) -> None:
+def test_renet_keyless_is_refused_everywhere(tmp_path: pathlib.Path) -> None:
+    """The retired CI escape: RENET_KEYLESS=1, even under GITHUB_ACTIONS=true, still fails closed."""
     script = _tree(tmp_path)
-    done = _key_ldflags(script, RENET_KEYLESS="1")
-    assert done.returncode == 1
-    assert done.stdout == ""
-    assert "honoured only in GitHub Actions" in done.stderr
-    # GITHUB_ACTIONS must be exactly "true".
-    assert _key_ldflags(script, RENET_KEYLESS="1", GITHUB_ACTIONS="1").returncode == 1
+    for env in ({"RENET_KEYLESS": "1"}, {"RENET_KEYLESS": "1", "GITHUB_ACTIONS": "true"}, {"GITHUB_ACTIONS": "true"}):
+        done = _key_ldflags(script, **env)
+        assert done.returncode == 1, env
+        assert done.stdout == "", env
+        assert "ACCOUNT_ED25519_PUBLIC_KEY is not set" in done.stderr, env
 
 
-def test_github_actions_alone_does_not_make_a_build_keyless(tmp_path: pathlib.Path) -> None:
-    done = _key_ldflags(_tree(tmp_path), GITHUB_ACTIONS="true")
-    assert done.returncode == 1
-    assert done.stdout == ""
-
-
-def test_keyless_in_github_actions_passes_with_empty_output(tmp_path: pathlib.Path) -> None:
-    done = _key_ldflags(_tree(tmp_path), RENET_KEYLESS="1", GITHUB_ACTIONS="true")
-    assert done.returncode == 0, done.stderr
-    assert done.stdout == ""
+def test_build_sh_names_no_keyless_escape() -> None:
+    assert "RENET_KEYLESS" not in BUILD_SH.read_text(encoding="utf-8")
 
 
 def test_control_an_env_key_is_baked(tmp_path: pathlib.Path) -> None:
@@ -83,17 +75,6 @@ def test_control_an_env_key_is_baked(tmp_path: pathlib.Path) -> None:
     assert done.returncode == 0, done.stderr
     assert done.stdout == f"-X {SYMBOL}{ENV_KEY}"
     assert CACHED not in done.stdout
-
-
-def test_an_env_key_wins_over_renet_keyless(tmp_path: pathlib.Path) -> None:
-    done = _key_ldflags(
-        _tree(tmp_path),
-        ACCOUNT_ED25519_PUBLIC_KEY=ENV_KEY,
-        RENET_KEYLESS="1",
-        GITHUB_ACTIONS="true",
-    )
-    assert done.returncode == 0, done.stderr
-    assert f"keys.ProductionPublicKey={ENV_KEY}" in done.stdout
 
 
 def test_build_sh_names_no_cache_file() -> None:
@@ -126,13 +107,13 @@ def _dev(
     (fake / "go").chmod(0o755)
     (script.parent / "scripts").mkdir(exist_ok=True)
     (script.parent / "scripts" / "pull-with-retry.sh").write_text("", encoding="utf-8")
-    base = {k: v for k, v in os.environ.items() if k not in (*STRIPPED, "RDC_RENET_LICENSE")}
+    base = {k: v for k, v in os.environ.items() if k not in STRIPPED}
     base["PATH"] = f"{fake}{os.pathsep}{base['PATH']}"
     base.update(env)
     stub = (
         'source "$1" || true; set -e; '
         "_embed_assets_or_die() { echo ASSETS >&2; }; embed_proxy() { :; }; ebpf_generate() { :; }; "
-        "dev --nolicense"
+        "dev"
     )
     done = subprocess.run(
         ["bash", "-c", stub, "dev", str(script)],

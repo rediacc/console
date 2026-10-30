@@ -8,9 +8,10 @@ name: Console CT - Tests
 
 on:
   workflow_call:
-    # Every TEST job here builds a nolicense renet from source on-runner
-    # (rediacc_ci.infra.build_renet); console is public, so a prebuilt
-    # nolicense binary must never ship via artifacts. Only the embed-assets
+    # Every TEST job here builds its licensed renet from source on-runner
+    # (rediacc_ci.infra.build_renet), baking the key of the account server it
+    # starts (agent/plans/PLAN-production-key-only.md D6); console is public,
+    # so a dev binary must never ship via artifacts. Only the embed-assets
     # staging is shared, via the renet-embed-assets cache (same key as
     # ci-build-renet.yml), and only the renet-embed-assets job stages it on a
     # miss: every job that restores it needs that job.
@@ -274,6 +275,7 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -311,9 +313,11 @@ jobs:
         id: build-renet
         if: steps.embed-cache.outputs.cache-hit != 'true'
         env:
-          RENET_KEYLESS: "1"
+          # The production PUBLIC key (build.sh fails closed without one); this
+          # job keeps only the staged assets, and the binary never leaves it.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
@@ -450,18 +454,12 @@ jobs:
       # work in between instead of blocking it in the foreground.
       - name: Free Disk Space (start)
         uses: ./.github/actions/free-disk-space
-      # `account: 'true'` was dropped here and in the seven other VM/E2E jobs
-      # below. It made setup-workspace restore or install the THREE account npm
-      # trees (private/account, its web, its e2e), and not one of these suites
-      # ever touches them: packages/e2e-tests contains zero references to
-      # private/account, and so do the .ci scripts these jobs run. So it was
-      # pure setup cost, and worse than cost -- the account cache key hashes
-      # the three account lockfiles, which dragged every account-side
-      # dependency change into the invalidation surface of eight E2E jobs that
-      # cannot be affected by one.
-      #
-      # test-account-e2e keeps it. That job runs rediacc_ci.testrun.account_e2e against
-      # private/account and genuinely needs all three trees.
+      # `account: 'true'` because every VM/E2E job here starts the per-run
+      # account server from private/account before its renet build (D6 of
+      # agent/plans/PLAN-production-key-only.md): there is one licensed renet,
+      # and a repository it creates needs a licence that server signs. The
+      # cost is accepted: the setup cache key hashes the three account
+      # lockfiles, so an account-side dependency change invalidates it.
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'
@@ -472,7 +470,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -485,12 +483,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -703,6 +708,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       # No CLI build or global `rdc` install here (spec W, PLAN-ci-time-budget).
       # The Ceph suites drive renet over SSH through RenetFunctionsTestRunner, and the only consumer of the CLI bundle or `rdc` on PATH is CliRunner, which no suite under tests/ceph imports.
@@ -711,7 +717,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -724,12 +730,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -883,6 +896,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
@@ -891,7 +905,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -904,12 +918,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -1251,6 +1272,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
@@ -1264,11 +1286,18 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
       # The stock image cache E2E Workers saves for this distro
@@ -1416,6 +1445,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
@@ -1424,7 +1454,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -1437,12 +1467,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -1598,6 +1635,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
@@ -1606,7 +1644,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -1619,12 +1657,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -1802,7 +1847,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -1815,12 +1860,30 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build: it mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      #
+      # It is also suite 24's ACCOUNT tier: an account server and a subscription
+      # token, no VMs. Its assertions are all pre-flight refusals
+      # (`assertMachineSlotsAvailable` runs BEFORE anything is provisioned), so
+      # the whole tier costs a server start and spends nothing on the fleet.
+      #
+      # LOUD, NEVER SKIPPED. The script exits non-zero with the server log
+      # attached on every path that does not produce a token, and suite 24's own
+      # `declaredSkip` gate turns an unsatisfied ACCOUNT tier into a RED test
+      # rather than a skip. There is no arrangement here where the tier silently
+      # does not run.
+      - name: Start account server for the cluster-licensing suite
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -1870,19 +1933,6 @@ jobs:
             --vm-ram-ceph "$VM_RAM_CEPH" \
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
-      # Suite 24's ACCOUNT tier: an account server and a subscription token, no
-      # VMs. Its assertions are all pre-flight refusals (`assertMachineSlotsAvailable`
-      # runs BEFORE anything is provisioned), so the whole tier costs a server
-      # start and spends nothing on the fleet.
-      #
-      # LOUD, NEVER SKIPPED. The script exits non-zero with the server log
-      # attached on every path that does not produce a token, and suite 24's own
-      # `declaredSkip` gate turns an unsatisfied ACCOUNT tier into a RED test
-      # rather than a skip. There is no arrangement here where the tier silently
-      # does not run.
-      - name: Start account server for the cluster-licensing suite
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
-
       # --grep-invert excludes suite 24's VM TIER by its describe title, and the
       # reason is not squeamishness about cost:
       #
@@ -1893,9 +1943,8 @@ jobs:
       #     `k8s-multinode-24` runs there is nothing to adopt.
       #   * suite 17 builds it through raw `renet` over the bridge, so no rdc
       #     config ever holds a `clusters` entry for it; `cluster fork mnprod`
-      #     could not resolve it even if the cluster still stood.
-      #   * every renet on this fleet is built --nolicense, so the on-machine
-      #     licence blobs its test 1 asserts on do not exist by construction.
+      #     could not resolve it even if the cluster still stood, and no CLI
+      #     ever issued the on-machine licence blobs its test 1 asserts on.
       #
       # E2E_EXPECT_NO_CLUSTER_VMS is set anyway, and the pair is deliberate:
       # --grep-invert keeps the tier out of the RUN (a declared skip would still
@@ -1907,8 +1956,8 @@ jobs:
           # Lights project `k8s-multinode-24` in playwright.k8s-multinode.config.ts.
           CLUSTER_LICENSING_SUITE: '1'
           E2E_EXPECT_NO_CLUSTER_VMS: >-
-            suite 17 tears its cluster down in its own last test, and this fleet
-            runs --nolicense renet, so there is no licensed cluster to adopt;
+            suite 17 tears its cluster down in its own last test and builds it
+            through raw renet, so there is no licensed cluster to adopt;
             the VM tier is excluded from the run rather than skipped inside it.
         # check-e2e-coverage's registry self-check pairs this `--config` with the
         # runner by reading one logical shell command (backslash continuations
@@ -1986,6 +2035,7 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2031,7 +2081,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -2047,9 +2097,13 @@ jobs:
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
+          # The production PUBLIC key, for this first build only: `ops host
+          # setup` and `ops up` need a renet before the backup plane (and its
+          # per-run key) can exist. The rebuild after the plane bakes the
+          # plane's key, and that is the renet the suites deploy.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -2119,7 +2173,7 @@ jobs:
       # be built with it up front: the plane needs the VMs, and they need renet.
       # The build stamp carries the key's hash, so this really relinks.
       - name: Rebuild renet with the signing key
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Reinstall renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
       - name: Verify renet bakes the signing key
@@ -2256,6 +2310,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
@@ -2264,7 +2319,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -2277,12 +2332,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -2402,7 +2464,6 @@ jobs:
       VM_BRIDGE: '1'
       VM_WORKERS: '11'
       VM_CEPH_NODES: ''
-      REDIACC_SKIP_MACHINE_ACTIVATION: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -2454,6 +2515,7 @@ jobs:
         uses: ./.github/actions/free-disk-space
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
@@ -2462,7 +2524,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -2475,12 +2537,19 @@ jobs:
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -2534,6 +2603,14 @@ jobs:
         run: sudo chown -R "$USER:$USER" "$RUNNER_TEMP/renet"
       - name: Wait for VM SSH readiness
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.wait_for_vm_ssh "${VM_NET_BASE}.1" "${VM_NET_BASE}.11"
+      # Both tests below drive `rdc repo create` on the default config, and the
+      # one licensed renet refuses a repository with no licence (exit 10). So
+      # the CLI logs in to the per-run account server and issues each licence
+      # itself; REDIACC_SKIP_MACHINE_ACTIVATION, which switched issuance off,
+      # is gone from this job. The token rides stdin, never argv.
+      - name: Log the CLI in to the per-run account server
+        shell: bash
+        run: printf '%s' "$E2E_ACCOUNT_API_TOKEN" | rdc subscription login --server "$REDIACC_ACCOUNT_SERVER" --token -
       - name: Run concurrent-fork isolation test
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.concurrent_fork_isolation_test
         env:
@@ -2874,11 +2951,11 @@ jobs:
   # LICENSE ENFORCEMENT: prove a release-shaped renet really refuses unlicensed
   # work and really accepts a valid licence, against a key minted for this run.
   #
-  # Every other leg in this file builds --nolicense, so the only licensing code
-  # CI has ever executed is the stub in runtime_nolicense.go, which returns
-  # success unconditionally for all three validators. renet's unit tests cover
-  # the crypto negatives well but never execute cmd/renet, so nothing proved the
-  # command wiring, the ldflags key injection, or the exit-10 contract.
+  # The other legs bake their own account server's key and exercise the happy
+  # path of licensing; this leg proves the refusals. renet's unit tests cover
+  # the crypto negatives well but never execute cmd/renet, so nothing else
+  # proves the command wiring, the ldflags key injection, or the exit-10
+  # contract against a wrong-key, expired or missing licence.
   #
   # DELIBERATELY UNLIKE ITS SIBLINGS, and each omission was measured:
   #   - no embed-assets cache. pkg/embed/assets is gitignored, and a fresh

@@ -161,6 +161,18 @@ describe('G4 wiring: the repo set changes, the schedule re-renders', () => {
   });
 
   it('migrate reconciles both the target and the source after the cutover', async () => {
+    // The source job (PLAN-detached-jobs J4) ends with the cutover marker the placement rewrite waits on.
+    mockExecute.mockImplementation((options: { functionName: string }) =>
+      Promise.resolve({
+        success: true,
+        stdout: '',
+        allSteps: [],
+        steps:
+          options.functionName === 'repository_migrate'
+            ? [{ name: 'cutover_complete', duration_ms: 1 }]
+            : [],
+      })
+    );
     await migrateRepo('app', { to: 'dst-machine', skipDns: true });
     expect(mockSetRepositoryPlacement).toHaveBeenCalledWith('app', { machine: 'dst-machine' });
     expect(mockReconcile.mock.calls.map((c) => c[0]).sort()).toEqual([
@@ -215,16 +227,12 @@ describe('G4 wiring (source): verbs behind executors and prompts', () => {
     expect(hook).toBeGreaterThan(rename);
   });
 
-  it('restore --as reconciles the target machine after the restore succeeds and before --up', () => {
-    const body = sourceFrom(
-      'backup.ts',
-      'await configService.addRepository(compositeKey(targetName'
-    );
-    const ok = body.indexOf('if (!ok) return;');
-    const hook = body.indexOf('await reconcileBackupSchedules(targetMachine)');
-    const up = body.indexOf('if (options.up)');
-    expect(ok).toBeGreaterThan(-1);
-    expect(hook).toBeGreaterThan(ok);
+  it('restore --as plans the target machine reconcile as a success step, before the --up deploy', () => {
+    // PLAN-detached-jobs J4: the reconcile rides the restore job's ticket as a success step, so it runs once the restore succeeded, and the step order puts it before the deploy.
+    const body = sourceFrom('backup.ts', 'function restoreTailSteps(');
+    const hook = body.indexOf("planStep('reconcileBackupSchedules', { machine: targetMachine })");
+    const up = body.indexOf("planStep('restoreDeploy'");
+    expect(hook).toBeGreaterThan(-1);
     expect(hook).toBeLessThan(up);
   });
 });

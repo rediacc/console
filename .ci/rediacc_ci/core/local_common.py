@@ -63,7 +63,8 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env, devbox, renet_flavor, toolchain
+from rediacc_ci.core import bws_env, devbox, toolchain
+from rediacc_ci.release import renet_key_gate
 from rediacc_ci.well_known import GO_DL_BASE
 
 if TYPE_CHECKING:  # annotation-only import
@@ -1234,13 +1235,10 @@ def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
         return False
     if not ensure_go_installed(env):
         return False
-    flavor = renet_flavor.flavor_for(
-        (os.environ if env is None else env).get("RDC_RENET_LICENSE", "0")
-    )
-    if not ensure_renet_built(env, flavor):
+    if not ensure_renet_built(env):
         return False
     renet_dir = os.path.join(root, "private", "renet")
-    renet = renet_flavor.binary(renet_dir, flavor)
+    renet = os.path.join(renet_dir, "bin", "renet")
     if not (os.path.isfile(renet) and os.access(renet, os.X_OK)):
         log.error("renet was built but %s is not executable" % renet)
         return False
@@ -1250,7 +1248,7 @@ def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
     ensure_docker_group()
     reset_docker_memo()
     with contextlib.suppress(OSError):
-        os.remove(renet_flavor.stamp_path(renet_dir, flavor))
+        os.remove(os.path.join(renet_dir, "bin", RENET_STAMP_NAME))
     log.info("Cleared the renet build stamp so assets get embedded on the next build")
     return True
 
@@ -1342,12 +1340,15 @@ def renet_head(renet_dir: str) -> str:
     return _subst(head.stdout or "") if head.returncode == 0 else ""
 
 
-def renet_stamp_key(source: str, head: str, license_mode: str, account_key: str) -> str:
-    """The digest `ensure_renet_built` stores in the flavor's .renet-build-stamp: the renet source fingerprint, renet's HEAD commit, the license mode and the account key.
+RENET_STAMP_NAME = ".renet-build-stamp"
+
+
+def renet_stamp_key(source: str, head: str, account_key: str) -> str:
+    """The digest `ensure_renet_built` stores in `bin/.renet-build-stamp`: the renet source fingerprint, renet's HEAD commit and the account key.
 
     HEAD is in it because the binary stamps `vcs.revision`, and a rebase-merge leaves the tree byte-identical under a new commit, which the fingerprint alone reads as current. An empty `head` (see `renet_head`) keeps the old key's meaning.
     """
-    text = "src=%s\nlicense=%s\nkey=%s\n" % (source, license_mode, account_key)
+    text = "src=%s\nkey=%s\n" % (source, account_key)
     if head:
         text += "head=%s\n" % head
     return _hex_of(text.encode("utf-8", "surrogateescape"))
@@ -1407,14 +1408,12 @@ def _load_and_cache(key_cache: str, environ: Mapping[str, str]) -> str:
 def resolve_renet_account_key(renet_dir: str, environ: Mapping[str, str]) -> str:
     """The production public key a renet build bakes, or a refusal (agent/plans/PLAN-production-key-only.md Design 1).
 
-    In order: the shell environment; the public-key cache `./run.sh setup` writes (the key is public, and the cache keeps an offline build working); Bitwarden, read with `bws_env.load` under the caller's environment, which also rewrites the cache (whole or not at all, 0644, behind the `cache-to` allowlist); otherwise `LocalCommonError` naming `./run.sh setup`. A key is never invented, and an empty one reaches build.sh only on the keyless CI path: `RENET_KEYLESS=1` under `GITHUB_ACTIONS=true` answers "", `ensure_renet_built` passes it through as `ACCOUNT_ED25519_PUBLIC_KEY=`, and build.sh admits that on the same terms (review 824f3bd7.1); anywhere else `RENET_KEYLESS` is ignored.
+    In order: the shell environment; the public-key cache `./run.sh setup` writes (the key is public, and the cache keeps an offline build working); Bitwarden, read with `bws_env.load` under the caller's environment, which also rewrites the cache (whole or not at all, 0644, behind the `cache-to` allowlist); otherwise `LocalCommonError` naming `./run.sh setup`. A key is never invented and there is no keyless path: build.sh fails closed without one (Design 6).
     A cache without `bws_env.PUBLIC_KEY_CACHE_HEADER` is skipped as stale, so Bitwarden answers instead.
     """
     account_key = environ.get(ACCOUNT_KEY_NAME, "")
     if account_key:
         return account_key
-    if environ.get("RENET_KEYLESS", "") == "1" and environ.get("GITHUB_ACTIONS", "") == "true":
-        return ""
     key_cache = os.path.join(renet_dir, "..", "account", ".cache", "public-keys.env")
     account_key = _cached_account_key(key_cache)
     if account_key:
@@ -1429,28 +1428,36 @@ def resolve_renet_account_key(renet_dir: str, environ: Mapping[str, str]) -> str
     raise LocalCommonError("no %s" % ACCOUNT_KEY_NAME, code=1)
 
 
+def renet_key_refusal(renet_bin: str, account_key: str) -> str | None:
+    """None when `renet_bin` bakes `account_key` and is not a retired-key or license-free build (`release.renet_key_gate`), else the reason. Only fingerprints are printed, never a key, and the gate's verdict line goes to stderr so a caller's stdout stays its own."""
+    try:
+        want = renet_key_gate.expected_fingerprint(account_key)
+    except renet_key_gate.KeyGateError as exc:
+        return str(exc)
+    _flush()
+    with contextlib.redirect_stdout(sys.stderr):
+        passed = renet_key_gate.check_binary(renet_bin, want)
+    return None if passed else "%s does not bake the account key %s" % (renet_bin, want)
+
+
 def ensure_renet_built(
     env: dict[str, str] | None = None,
-    flavor: str | None = None,
     status: list[int] | None = None,
 ) -> bool:
-    """`ensure_renet_built`, `.ci/lib/local-common.sh:759`, with one binary and one stamp per flavor (`renet_flavor`).
+    """`ensure_renet_built`, `.ci/lib/local-common.sh:759`: one licensed renet in `bin/`, keyed from `resolve_renet_account_key`, and checked by `release.renet_key_gate` after every build so a binary that does not bake that key is never handed on (agent/plans/PLAN-production-key-only.md Design 6).
 
-    The flavor comes from `RDC_RENET_LICENSE` unless the caller names it, and `./build.sh dev` gets it as an explicit flag, so a build of one flavor never touches the other's binary or stamp.
-    When build.sh fails the answer is False, and a caller that passes `status` gets build.sh's own exit status appended to it, so a CI wrapper can exit with that status rather than a flat 1 (review 6de769e7.2).
+    When build.sh fails the answer is False, and a caller that passes `status` gets build.sh's own exit status appended to it, so a CI wrapper can exit with that status rather than a flat 1 (review 6de769e7.2). A build the key gate refuses raises `LocalCommonError` and leaves no stamp, so the next run rebuilds.
     """
     environ = os.environ if env is None else env
     root = local_root_dir(env)
     renet_dir = os.path.join(root, "private", "renet")
-    flavor = flavor or renet_flavor.flavor_for(environ.get("RDC_RENET_LICENSE", "0"))
     system = _uname("-s")
     exe = ".exe" if system.startswith(("MINGW", "MSYS", "CYGWIN")) else ""
-    renet_bin = renet_flavor.binary(renet_dir, flavor, exe)
+    renet_bin = os.path.join(renet_dir, "bin", "renet" + exe)
 
     check_go_installed()
 
-    stamp = renet_flavor.stamp_path(renet_dir, flavor)
-    license_mode = flavor
+    stamp = os.path.join(renet_dir, "bin", RENET_STAMP_NAME)
     account_key = resolve_renet_account_key(renet_dir, environ)
 
     fingerprint = git_tree_fingerprint(renet_dir, ["."], env)
@@ -1461,7 +1468,7 @@ def ensure_renet_built(
             raise LocalCommonError("cd %s failed" % renet_dir, code=1)
         source = _subst(computed)
 
-    current = renet_stamp_key(source, renet_head(renet_dir), license_mode, account_key)
+    current = renet_stamp_key(source, renet_head(renet_dir), account_key)
     saved_stamp = _subst(read_stamp_hash(stamp))
     saved_lines = saved_stamp.split("\n")
     saved = saved_lines[0]
@@ -1484,7 +1491,7 @@ def ensure_renet_built(
 
     # The resolved key reaches build.sh through its environment: build.sh reads ACCOUNT_ED25519_PUBLIC_KEY from there only (agent/plans/PLAN-production-key-only.md K4).
     build_env = {**environ, ACCOUNT_KEY_NAME: account_key}
-    rc = _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir, env=build_env)
+    rc = _run(["./build.sh", "dev"], cwd=renet_dir, env=build_env)
     if rc != 0:
         log.error("renet build failed (see the output above)")
         if status is not None:
@@ -1493,6 +1500,14 @@ def ensure_renet_built(
     if not os.path.isfile(renet_bin):
         log.error("Renet build failed: binary not found at %s" % renet_bin)
         raise LocalCommonError("no renet binary", code=1)
+
+    refusal = renet_key_refusal(renet_bin, account_key)
+    if refusal is not None:
+        log.error("renet key gate refused the build: %s" % refusal)
+        log.error(
+            "A renet that does not bake the account key is never provisioned; rebuild after ./run.sh setup refreshes the key."
+        )
+        raise LocalCommonError("renet key gate refused", code=1)
 
     write_stamp_hash(stamp, "%s\nbin=%s" % (current, renet_artifact_fp(renet_bin)))
     log.info("Renet built successfully")

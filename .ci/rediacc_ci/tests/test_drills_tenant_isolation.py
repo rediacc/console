@@ -259,7 +259,8 @@ def test_build_tests_script_builds_every_root_test_outside_bin() -> None:
         )
     assert "/bin/renet" not in script
     tag_set = {t for _l, _b, _p, t, _n in ti.ROOT_TESTS}
-    assert "nolicense ebpf_e2e" in tag_set
+    # One licensed renet build (agent/plans/PLAN-production-key-only.md Design 6): no test binary is built with the retired license-free tag.
+    assert tag_set == {"", "ebpf_e2e"}
 
 
 def test_root_test_script_stages_privately_and_cleans_up() -> None:

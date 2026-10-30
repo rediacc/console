@@ -1861,14 +1861,10 @@
         "resolveOption": "三方合并的逐文件冲突解决方式：'ours' 保留目标的版本，'theirs' 采用源的版本。省略则对整个镜像执行快进（采用 theirs）。"
       },
       "migrate": {
-        "checkpointing": "正在创建 CRIU 检查点...",
         "complete": "迁移完成：{{name}} 已从 {{from}} 移动到 {{to}}",
         "deletingSource": "正在删除 {{machine}} 上的源镜像...",
-        "deltaDone": "差异同步完成",
-        "deltaSync": "正在同步差异数据...",
         "description": "以最短停机时间将仓库从一台机器实时迁移到另一台机器。两阶段 rsync：在运行期间进行批量传输，然后短暂停止以进行增量同步。迁移整个仓库（路由会重新指向新位置），迁移成功后会删除源镜像（使用 --keep-source 可保留它们）。支持用于进程内存状态迁移的 CRIU 检查点，以及目标机器的自动置备",
         "descriptionShort": "在机器之间实时迁移仓库",
-        "downtime": "停机时间：{{duration}}",
         "examples": {
           "basic": "将仓库迁移到另一台机器。",
           "strategy": "使用物理复制策略迁移仓库。"
@@ -1885,10 +1881,6 @@
         "optionStrategy": "切换时的块增量策略：auto、physical 或 shared",
         "optionTo": "目标机器或集群",
         "phase1": "阶段 1：批量传输数据（源继续运行）...",
-        "phase1Done": "批量传输完成",
-        "phase1Stats": "{{duration}} 内传输 {{transferred}}（源端保持在线）",
-        "phase2": "阶段 2：切换（短暂停机）...",
-        "phase2Stats": "切换（停机）：{{duration}} 内传输 {{transferred}}",
         "phase3": "阶段 3：在目标上启动...",
         "placementRetryHint": "路由已指向 {{machine}}，因此 'rdc repo up {{name}}' 将在那里重试。源镜像已作为恢复素材保留。",
         "placementUpdated": "路由已更新：{{name}} 现在位于 {{machine}}",
@@ -1896,13 +1888,9 @@
         "sourceDeleted": "{{name}} 的源镜像已从 {{machine}} 删除",
         "sourceDeleteFailed": "无法删除 {{machine}} 上 {{name}} 的源镜像：{{error}}。迁移本身已经成功；请用 'rdc machine prune {{machine}}' 清理残留。",
         "sourceRetained": "{{name}} 的源镜像已保留在 {{machine}} 上。它们无法通过任何配置记录寻址；reconcile 会将其标记为孤立项。",
-        "sourceStopped": "源服务已停止",
-        "sourceUnmounted": "源已卸载",
         "startingTarget": "正在目标上启动服务...",
-        "stoppingSource": "正在停止源服务...",
         "switchingDns": "正在切换 DNS 记录...",
-        "targetStarted": "目标服务已启动",
-        "unmountingSource": "正在卸载源..."
+        "targetStarted": "目标服务已启动"
       },
       "mount": {
         "completed": "仓库已挂载",

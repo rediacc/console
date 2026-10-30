@@ -1861,14 +1861,10 @@
         "resolveOption": "Failipõhine konfliktide lahendamine kolmepoolsel merge'il: 'ours' säilitab sihtmärgi versiooni, 'theirs' võtab lähtekoodi oma. Jäta välja kogu kujutise fast-forward'i jaoks (take-theirs)."
       },
       "migrate": {
-        "checkpointing": "CRIU kontrollpunkti loomine...",
         "complete": "Migratsioon lõpetatud: {{name}} teisaldati {{from}} asukohast {{to}} asukohta",
         "deletingSource": "Lähte-image'ide kustutamine masinal {{machine}}...",
-        "deltaDone": "Delta sünkroonimine lõpetatud",
-        "deltaSync": "Delta sünkroonimine...",
         "description": "Migreeri hoidla elavalt ühelt masinalt teisele minimaalse seisakuajaga. Kaheetapiline rsync: mahtülekanne töö ajal, seejärel lühike peatus delta sünkroniseerimiseks. Liigutab kogu hoidla (marsruutimine suunatakse ümber uude asukohta) ning kustutab pärast kolimise õnnestumist lähte-image'id (kasuta --keep-source nende säilitamiseks). Toetab CRIU kontrollpunkti protsesside mäluseisundi migreerimiseks ja sihtmasinate automaatset provisjoneerimist",
         "descriptionShort": "Migreerige hoidla masinate vahel otse",
-        "downtime": "Katkestusaeg: {{duration}}",
         "examples": {
           "basic": "Vii hoidla üle teisele masinale.",
           "strategy": "Vii hoidla üle füüsilise kopeerimise strateegiaga."
@@ -1885,10 +1881,6 @@
         "optionStrategy": "Üleminekul kasutatav plokidelta strateegia: auto, physical või shared",
         "optionTo": "Sihtmasin või -klaster",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
-        "phase1Done": "Mahukas ülekanne lõpetatud",
-        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul, allikas jäi tööle",
-        "phase2": "2. faas: üleminek (lühike katkestus)...",
-        "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "phase3": "3. faas: sihtmäel käivitamine...",
         "placementRetryHint": "Marsruutimine osutab juba masinale {{machine}}, seega proovib 'rdc repo up {{name}}' uuesti seal. Lähte-image'id jäeti taastematerjalina alles.",
         "placementUpdated": "Marsruutimine uuendatud: {{name}} asub nüüd masinal {{machine}}",
@@ -1896,13 +1888,9 @@
         "sourceDeleted": "Hoidla {{name}} lähte-image'id kustutati masinalt {{machine}}",
         "sourceDeleteFailed": "Hoidla {{name}} lähte-image'e masinal {{machine}} ei õnnestunud kustutada: {{error}}. Kolimine juba õnnestus; koorista ülejääk käsuga 'rdc machine prune {{machine}}'.",
         "sourceRetained": "Hoidla {{name}} lähte-image'id jäeti masinale {{machine}} alles. Need ei ole ühegi konfiguratsioonikirje kaudu aadresseeritavad; reconcile märgib need hulkurdiks.",
-        "sourceStopped": "Allika teenused peatatud",
-        "sourceUnmounted": "Allikas lahti haagitud",
         "startingTarget": "Teenuste käivitamine sihtmäel...",
-        "stoppingSource": "Allika teenuste peatamine...",
         "switchingDns": "DNS-kirjete vahetamine...",
-        "targetStarted": "Sihtmasina teenused käivitatud",
-        "unmountingSource": "Allika lahtihaakimine..."
+        "targetStarted": "Sihtmasina teenused käivitatud"
       },
       "mount": {
         "completed": "Hoidla ühendatud",

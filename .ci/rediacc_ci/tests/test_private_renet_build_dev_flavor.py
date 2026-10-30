@@ -1,19 +1,20 @@
-"""`build.sh dev` writes each license flavor into its own directory.
+"""`build.sh dev` has one flavor: licence-enforcing, key baked, written to `bin/`.
 
-A nolicense build owns `bin/`, an enforcing one owns `bin/enforce/`, so one never overwrites the other's binaries. The real `build.sh` is copied beside a stub `scripts/pull-with-retry.sh` and sourced; a fake `go` on PATH writes its argv into the `-o` file, so the only "build" is the fake.
+The nolicense build and its `bin/enforce/` split are gone (operator 2026-10-30, agent/plans/PLAN-production-key-only.md N2). The real `build.sh` is copied beside a stub `scripts/pull-with-retry.sh` and sourced; a fake `go` on PATH writes its argv into the `-o` file, so the only "build" is the fake.
 """
 
 from __future__ import annotations
 
 import os
 import pathlib
-import re
 import subprocess
 
 import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 BUILD_SH = REPO / "private" / "renet" / "build.sh"
+# An arbitrary value, never a real key.
+KEY = "dGVzdC1vbmx5LW5vdC1hLWtleQ=="
 
 FAKE_GO = """#!/bin/bash
 out=""
@@ -41,14 +42,12 @@ def _tree(root: pathlib.Path, script: str) -> pathlib.Path:
     return renet
 
 
-def _dev(renet: pathlib.Path, root: pathlib.Path, *args: str, license_env: bool = False):
-    env = {k: v for k, v in os.environ.items() if k != "RDC_RENET_LICENSE"}
+def _dev(renet: pathlib.Path, root: pathlib.Path, *args: str, **extra: str):
+    env = {k: v for k, v in os.environ.items() if k not in ("RDC_RENET_LICENSE", "RENET_KEYLESS")}
     env["PATH"] = f"{root / 'fakebin'}{os.pathsep}{env['PATH']}"
     env["FAKE_GO_LABEL"] = "new"
-    # build.sh refuses a keyless build (PLAN-production-key-only K4); an arbitrary value, never a real key.
-    env["ACCOUNT_ED25519_PUBLIC_KEY"] = "dGVzdC1vbmx5LW5vdC1hLWtleQ=="
-    if license_env:
-        env["RDC_RENET_LICENSE"] = "1"
+    env["ACCOUNT_ED25519_PUBLIC_KEY"] = KEY
+    env.update(extra)
     script = (
         'source "$1" || true; '
         "_embed_assets_or_die() { :; }; embed_proxy() { :; }; ebpf_generate() { :; }; "
@@ -71,15 +70,12 @@ def _seed(directory: pathlib.Path) -> dict[str, bytes]:
     return {name: (directory / name).read_bytes() for name in NAMES}
 
 
-def _read(directory: pathlib.Path) -> dict[str, bytes]:
-    return {name: (directory / name).read_bytes() for name in NAMES}
-
-
-def _assert_fresh(directory: pathlib.Path, nolicense: bool) -> None:
+def _assert_fresh_and_keyed(directory: pathlib.Path) -> None:
     for name in NAMES:
         body = (directory / name).read_text(encoding="utf-8")
         assert body.startswith("new\n"), f"{directory / name} was not rewritten"
-        assert ("-tags nolicense" in body) is nolicense, body
+        assert "-tags" not in body, body
+        assert f"keys.ProductionPublicKey={KEY}" in body, body
     assert not [p for p in directory.iterdir() if ".tmp." in p.name]
 
 
@@ -88,61 +84,43 @@ def tree(tmp_path: pathlib.Path) -> pathlib.Path:
     return _tree(tmp_path, BUILD_SH.read_text(encoding="utf-8"))
 
 
-def test_plain_dev_writes_bin_and_leaves_enforce_alone(
-    tmp_path: pathlib.Path, tree: pathlib.Path
-) -> None:
-    enforce = _seed(tree / "bin" / "enforce")
+def test_dev_writes_bin_keyed_with_no_build_tag(tmp_path: pathlib.Path, tree: pathlib.Path) -> None:
+    _seed(tree / "bin")
     res = _dev(tree, tmp_path)
     assert res.returncode == 0, res.stderr
-    _assert_fresh(tree / "bin", nolicense=True)
-    assert _read(tree / "bin" / "enforce") == enforce
+    _assert_fresh_and_keyed(tree / "bin")
+    assert not (tree / "bin" / "enforce").exists()
 
 
-def _license_scenario(renet: pathlib.Path, root: pathlib.Path, how: str) -> None:
-    plain = _seed(renet / "bin")
-    res = _dev(renet, root, *(["--license"] if how == "flag" else []), license_env=how == "env")
+def test_rdc_renet_license_changes_nothing(tmp_path: pathlib.Path, tree: pathlib.Path) -> None:
+    res = _dev(tree, tmp_path, RDC_RENET_LICENSE="1")
     assert res.returncode == 0, res.stderr
-    _assert_fresh(renet / "bin" / "enforce", nolicense=False)
-    assert _read(renet / "bin") == plain, "plain bin/ untouched"
+    _assert_fresh_and_keyed(tree / "bin")
+    assert not (tree / "bin" / "enforce").exists()
 
 
-@pytest.mark.parametrize("how", ["env", "flag"])
-def test_license_dev_writes_only_enforce(
-    tmp_path: pathlib.Path, tree: pathlib.Path, how: str
-) -> None:
-    _license_scenario(tree, tmp_path, how)
+@pytest.mark.parametrize("flag", ["--nolicense", "--license"])
+def test_retired_flavor_flags_are_refused(tmp_path: pathlib.Path, tree: pathlib.Path, flag: str) -> None:
+    res = _dev(tree, tmp_path, flag)
+    assert res.returncode == 2
+    assert "takes no arguments" in res.stderr
+    assert not (tree / "bin").exists(), "a refused build wrote binaries"
 
 
-def test_env_license_with_nolicense_flag_writes_bin(
-    tmp_path: pathlib.Path, tree: pathlib.Path
-) -> None:
-    enforce = _seed(tree / "bin" / "enforce")
-    res = _dev(tree, tmp_path, "--nolicense", license_env=True)
-    assert res.returncode == 0, res.stderr
-    _assert_fresh(tree / "bin", nolicense=True)
-    assert _read(tree / "bin" / "enforce") == enforce
+def test_build_sh_names_no_nolicense_flavor() -> None:
+    text = BUILD_SH.read_text(encoding="utf-8")
+    for word in ("nolicense", "RDC_RENET_LICENSE", "_dev_out_dir", "bin/enforce"):
+        assert word not in text, word
 
 
-def test_control_collapsed_out_dir_is_caught(tmp_path: pathlib.Path) -> None:
+def test_control_a_planted_tag_is_caught(tmp_path: pathlib.Path) -> None:
+    """Re-plant the retired tag in dev's link line; the freshness assertion must refuse it."""
     source = BUILD_SH.read_text(encoding="utf-8")
-    planted, count = re.subn(
-        r"(_dev_out_dir\(\) \{\n).*?(\n\})",
-        r'\1    echo "$SCRIPT_DIR/bin"\2',
-        source,
-        count=1,
-        flags=re.DOTALL,
-    )
-    assert count == 1
+    anchor = '-ldflags="-X main.Version=$dev_version $key_ldflags" \\\n'
+    assert source.count(anchor) == 1
+    planted = source.replace(anchor, anchor + "        -tags nolicense \\\n")
     renet = _tree(tmp_path, planted)
-    # With one shared directory, an enforcing build lands in bin/ and bin/enforce/ stays empty. The planted build itself must SUCCEED and leave exactly that symptom, so the control fails for the planted cause and not for any build failure (review 7b1bcec4.2).
-    plain = _seed(renet / "bin")
-    res = _dev(renet, tmp_path, "--license")
+    res = _dev(renet, tmp_path)
     assert res.returncode == 0, res.stderr
-    assert not any((renet / "bin" / "enforce" / n).exists() for n in NAMES), (
-        "bin/enforce/ was written"
-    )
-    assert _read(renet / "bin") != plain, "the enforcing build did not land in bin/"
-    _assert_fresh(renet / "bin", nolicense=False)
-    # And the scenario the real tests run refuses this tree, at the plain-bin/ assertion.
-    with pytest.raises((AssertionError, FileNotFoundError)):
-        _license_scenario(_tree(tmp_path / "again", planted), tmp_path / "again", "flag")
+    with pytest.raises(AssertionError):
+        _assert_fresh_and_keyed(renet / "bin")

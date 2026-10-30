@@ -650,8 +650,9 @@ def test_delta_the_gateway_does_not_inherit_the_sandbox_and_the_store_env_reache
         lic = license_drill.License(other, license_drill.Options())
         lic.setup_sandbox()
         assert other.gateway_env().get("XDG_CONFIG_HOME") != other.cli_env()["XDG_CONFIG_HOME"]
+        # One licensed renet build (agent/plans/PLAN-production-key-only.md Design 6): no flavor switch reaches either side.
         assert "RDC_RENET_LICENSE" not in other.gateway_env()
-        assert other.cli_env()["RDC_RENET_LICENSE"] == "1"
+        assert "RDC_RENET_LICENSE" not in other.cli_env()
     finally:
         other.teardown()
 

@@ -1,0 +1,344 @@
+{
+  "$comment": "The tunables registry of `npm run settings` (agent/plans/PLAN-settings-set-verb.md). One entry per tunable: its unit and range, every copy that must hold the same value (the first is the source), where `set --reason` writes the ruling, and the tests `set` runs after writing. Change a registered value with `npm run settings -- set <id> <value> --reason '<why>'`, never by hand.",
+  "settings": [
+    {
+      "id": "cf.workers_requests_month",
+      "unit": "count",
+      "min": 1000000,
+      "max": 10000000000,
+      "why": "Workers requests per billing cycle: the Cloudflare usage alerts on worker_requests and worker_standard_request, and the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/worker_requests/limit"
+        },
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/worker_standard_request/limit"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "workers_requests_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/worker_requests/why",
+          "mode": "replace",
+          "prefix": "Workers requests, "
+        },
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/worker_standard_request/why",
+          "mode": "replace",
+          "prefix": "Workers standard-usage-model requests, "
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.workers_cpu_ms_month",
+      "unit": "ms",
+      "min": 1000000,
+      "max": 100000000000,
+      "why": "Workers CPU milliseconds per billing cycle: the worker_standard_cpu_ms usage alert and the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/worker_standard_cpu_ms/limit"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "workers_cpu_ms_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/worker_standard_cpu_ms/why",
+          "mode": "replace",
+          "prefix": "Workers CPU time, "
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.r2_storage_bytes",
+      "unit": "bytes",
+      "min": 1000000000,
+      "max": 1000000000000000,
+      "why": "R2 storage across the account: the r2_storage usage alert and the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/r2_storage/limit"
+        },
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/r2_storage_bytes"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "r2_storage_bytes"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/r2_storage/why",
+          "mode": "replace",
+          "prefix": "R2 storage, "
+        },
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report_reason",
+          "mode": "segment",
+          "key": "r2_storage_bytes"
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.r2_class_a_month",
+      "unit": "count",
+      "min": 100000,
+      "max": 10000000000,
+      "why": "R2 Class A operations (writes, lists) per billing cycle: the usage alert and the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/r2_class_a_operations/limit"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "r2_class_a_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/r2_class_a_operations/why",
+          "mode": "replace",
+          "prefix": "R2 Class A (writes, lists), "
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.r2_class_b_month",
+      "unit": "count",
+      "min": 100000,
+      "max": 10000000000,
+      "why": "R2 Class B operations (reads) per billing cycle: the usage alert and the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/r2_class_b_operations/limit"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "r2_class_b_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/notifications/products/r2_class_b_operations/why",
+          "mode": "replace",
+          "prefix": "R2 Class B (reads), "
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.d1_storage_bytes",
+      "unit": "bytes",
+      "min": 100000000,
+      "max": 1000000000000,
+      "why": "D1 storage across the account: the weekly report's ceiling (its only copy is the code default until PLAN-settings-set-verb S3 moves it into report).",
+      "copies": [
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "d1_storage_bytes"
+        }
+      ],
+      "reason_paths": [],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.containers_memory_gib_seconds_month",
+      "unit": "count",
+      "min": 100000,
+      "max": 10000000000,
+      "why": "Containers memory GiB-seconds per application per month: the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/containers_memory_gib_seconds_month"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "containers_memory_gib_seconds_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report_reason",
+          "mode": "segment",
+          "key": "containers_memory_gib_seconds_month"
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.containers_vcpu_seconds_month",
+      "unit": "count",
+      "min": 10000,
+      "max": 1000000000,
+      "why": "Containers vCPU-seconds per application per month: the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/containers_vcpu_seconds_month"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "containers_vcpu_seconds_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report_reason",
+          "mode": "segment",
+          "key": "containers_vcpu_seconds_month"
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.containers_total_usd_month",
+      "unit": "usd",
+      "min": 1,
+      "max": 100000,
+      "why": "Estimated Containers spend across every application per month: the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/containers_total_usd_month"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "containers_total_usd_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report_reason",
+          "mode": "segment",
+          "key": "containers_total_usd_month"
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    },
+    {
+      "id": "cf.containers_target_usd_month",
+      "unit": "usd",
+      "min": 1,
+      "max": 10000,
+      "why": "Estimated Containers spend per application (memory plus vCPU) per month: the weekly report's ceiling.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/containers_target_usd_month"
+        },
+        {
+          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
+          "py_dict": "DEFAULT_CEILINGS",
+          "py_key": "containers_target_usd_month"
+        }
+      ],
+      "reason_paths": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report_reason",
+          "mode": "segment",
+          "key": "containers_target_usd_month"
+        }
+      ],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
+    }
+  ]
+}

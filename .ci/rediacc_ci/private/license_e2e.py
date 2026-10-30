@@ -9,7 +9,7 @@ WHY IT NEEDS NO VM, NO BTRFS, NO LUKS, NO DOCKER. The license gate fires before 
 
 WHAT NEEDS PRIVILEGE. Only installing the license files: `license.RepoLicenseDir` (`/var/lib/rediacc/license/repos`) is a hardcoded constant in renet with no env override, so the fixtures go there through `sudo -n` (`rm`, `mkdir`, `cp`, `chmod`, in the argv the bash used). renet itself runs unprivileged except for `repository license-status`, which persists chain state and runs under sudo. A pre-existing `chain-state.json` is backed up and restored, and only the battery's own repo directories are removed.
 
-PROVING THE INSTRUMENT. The battery runs three times against three binaries built from the same source, and the two controls MUST fail: `enforcing` (baked with the ephemeral master key, every scenario passes), `nolicense` (built with `-tags nolicense`, S1 must FAIL) and `wrong-key` (baked with a stranger's public key, S2 must FAIL). A battery that cannot fail would be worthless.
+PROVING THE INSTRUMENT. The battery runs three times against three binaries built from the same source, and the two controls MUST fail: `enforcing` (baked with the ephemeral master key, every scenario passes), `keyless` (built with an empty baked key, the 2026-10-21 defect class, so no licence can validate; S2 must FAIL) and `wrong-key` (baked with a stranger's public key, S2 must FAIL). A battery that cannot fail would be worthless.
 
 ENVIRONMENT. `RENET_SRC` points the battery at another renet checkout (default `private/renet`); `LICENSE_E2E_MASTER_PUB` plus `LICENSE_E2E_MASTER_PRIV` (base64 SPKI/PKCS8) reuse a caller-supplied ephemeral pair; `TMPDIR` places the scratch directory.
 
@@ -79,7 +79,7 @@ RESTORE_SESSION_URL = "http://127.0.0.1:1/licenses/renew"
 PARENT_DS_ID = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa"
 FORK_DS_ID = "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb"
 
-# The attribution line renet logs ONLY after a license validates. Its presence is the positive proof that the real validator ran and succeeded; a nolicense stub never emits it.
+# The attribution line renet logs ONLY after a license validates. Its presence is the positive proof that the real validator ran and succeeded; a build that cannot validate never emits it.
 ATTRIBUTION = "Licensed to: license-e2e@rediacc.invalid"
 # Where an accepted create/up lands instead: the same failure an unlicensed build reaches.
 CREATE_TAIL = "--password-stdin is required"
@@ -852,9 +852,9 @@ class Battery:
         shutil.rmtree(work + "/fp", ignore_errors=True)
         log.info("Ephemeral master key fingerprint: %s" % self.master_key_id)
 
-        log.step("Building renet: enforcing, nolicense twin, wrong-key twin...")
+        log.step("Building renet: enforcing, keyless twin, wrong-key twin...")
         self.build_renet(work + "/renet-enforcing", self.master_pub)
-        self.build_renet(work + "/renet-nolicense", self.master_pub, "-tags", "nolicense")
+        self.build_renet(work + "/renet-keyless", "")
         self.build_renet(work + "/renet-wrongkey", stranger_pub)
 
         self.install_fixtures()
@@ -865,8 +865,8 @@ class Battery:
             return 1
         log.info("Enforcing binary passed every scenario")
 
-        log.step("Proving the instrument: the same battery must FAIL on a nolicense build...")
-        if not self.expect_control_failure(work + "/renet-nolicense", "nolicense", "S1"):
+        log.step("Proving the instrument: the same battery must FAIL on a keyless build...")
+        if not self.expect_control_failure(work + "/renet-keyless", "keyless", "S2"):
             return 1
 
         log.step("Proving the instrument: the same battery must FAIL on a wrongly-baked key...")

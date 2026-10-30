@@ -2,13 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
-import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { CliRunner } from '../../src/utils/CliRunner';
 import {
   announcePrerequisites,
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../../src/utils/declaredSkip';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Suite 24 — the licensing-visible outcomes of the `rdc cluster` verbs (T6).
@@ -61,8 +61,8 @@ import {
  * job supplying no account server collects nothing rather than skipping
  * silently). The VM tier stays declared-skipped there via
  * `E2E_EXPECT_NO_CLUSTER_VMS`: suite 17 tears its cluster down in its own last
- * test, and that fleet runs `--nolicense` renet, so there is no licensed
- * cluster to adopt.
+ * test, and that fleet's repos carry no installed licence, so there is no
+ * licensed cluster to adopt.
  *
  * Argv marked TRANSCRIPT-CONFIRM is the best-derived form from the CLI source
  * and is to be confirmed on the first live run; the assertion SHAPE is final.

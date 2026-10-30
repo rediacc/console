@@ -54,14 +54,14 @@ ROOT_TESTS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
         "RB",
         "renet-cmd.test",
         "./cmd/renet",
-        "nolicense",
+        "",
         ("TestPrivateRepoViewLinux", "TestPrivateRepoViewBackgroundJobOutlivesTheTarget"),
     ),
     (
         "RC",
         "renet-ebpf.test",
         "./pkg/ebpf",
-        "nolicense ebpf_e2e",
+        "ebpf_e2e",
         (
             "TestEBPF_DeepestEntryWins",
             "TestEBPF_RepoDefaultBlocksCrossRepo",

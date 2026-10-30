@@ -470,7 +470,7 @@ def check_c(report: Report, root: str) -> bool:
     return True
 
 
-# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev", ...], ...)` call compared against 0 in an `if`. The argv may carry more elements after "dev" (the per-flavor `renet_flavor.build_flag(flavor)` since the flavor split); a regex that pinned the argv to exactly two elements stopped matching the live call and turned D red on correct code. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
+# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev", ...], ...)` call compared against 0 in an `if`. The argv may carry more elements after "dev" (a flag build.sh grows later); a regex that pinned the argv to exactly two elements once stopped matching the live call and turned D red on correct code. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
 BUILD_CALL = r'_run\(\["\./build\.sh", "dev"(?:, [^\]\n]+)?\][^\n]*\)'
 # Two guarded shapes: the inline `if _run([...]) != 0:`, and the status kept in a name and tested on the next line (`rc = _run([...])` then `if rc != 0:`), which ensure_renet_built uses since it hands build.sh's own status to its caller (review 6de769e7.2).
 BUILD_GUARD_RE = re.compile(
@@ -1064,28 +1064,41 @@ def selftest() -> int:
             encoding="utf-8",
         )
         ctl.truthy("CONTROL: a guarded build passes D", check_d(report, good))
-        flavored = tmpdir / "flavored.py"
-        flavored.write_text(
-            "def ensure_renet_built(env=None, flavor=None):\n"
-            '    if _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir) != 0:\n'
+        named = tmpdir / "named.py"
+        named.write_text(
+            "def ensure_renet_built(env=None, status=None):\n"
+            '    rc = _run(["./build.sh", "dev"], cwd=renet_dir, env=build_env)\n'
+            "    if rc != 0:\n"
             "        return False\n"
             "    return True\n",
             encoding="utf-8",
         )
         ctl.truthy(
-            "CONTROL: a guarded build with a flavor flag after dev passes D",
-            check_d(report, flavored),
+            "CONTROL: the live shape (status kept in a name, tested on the next line) passes D",
+            check_d(report, named),
         )
-        flavored_bad = tmpdir / "flavored-bad.py"
-        flavored_bad.write_text(
-            "def ensure_renet_built(env=None, flavor=None):\n"
-            '    _run(["./build.sh", "dev", renet_flavor.build_flag(flavor)], cwd=renet_dir)\n'
+        extra_arg = tmpdir / "extra-arg.py"
+        extra_arg.write_text(
+            "def ensure_renet_built(env=None):\n"
+            '    if _run(["./build.sh", "dev", "--force"], cwd=renet_dir) != 0:\n'
+            "        return False\n"
+            "    return True\n",
+            encoding="utf-8",
+        )
+        ctl.truthy(
+            "CONTROL: a guarded build with an argument after dev passes D",
+            check_d(report, extra_arg),
+        )
+        named_bad = tmpdir / "named-bad.py"
+        named_bad.write_text(
+            "def ensure_renet_built(env=None, status=None):\n"
+            '    rc = _run(["./build.sh", "dev"], cwd=renet_dir, env=build_env)\n'
             "    return os.path.isfile(renet_bin)\n",
             encoding="utf-8",
         )
         ctl.falsy(
-            "PLANT: the flavored invocation with its exit code unchecked fails D",
-            check_d(report, flavored_bad),
+            "PLANT: the status kept in a name but never tested fails D",
+            check_d(report, named_bad),
         )
         bad = tmpdir / "bad.py"
         bad.write_text(

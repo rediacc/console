@@ -72,6 +72,7 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -121,7 +122,7 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
@@ -137,9 +138,13 @@ jobs:
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
+          # The production PUBLIC key, for this first build only: `ops host
+          # setup` and `ops up` need a renet before the backup plane (and its
+          # per-run key) can exist. The rebuild after the plane bakes the
+          # plane's key, and that is the renet the suites deploy.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
@@ -221,7 +226,7 @@ jobs:
       # be built with it up front: the plane needs the VMs, and they need renet.
       # The build stamp carries the key's hash, so this really relinks.
       - name: Rebuild renet with the signing key
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Reinstall renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
       - name: Verify renet bakes the signing key

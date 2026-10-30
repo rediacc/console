@@ -3,7 +3,10 @@ import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { planStep } from '../services/jobs/steps.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -64,42 +67,46 @@ async function handleCommit(
     const parent = cfg.headCommit ?? '';
     const commitGuid = randomUUID();
 
-    const result: ExecuteResult = await getExecutor().execute({
-      functionName: 'repository_commit',
-      machineName,
-      ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: renet resolves the image from the machine vault, so the datastore the repo is RECORDED on has to be declared or the commit is written against the machine's default.
-      datastore: await recordedDatastoreMount(repoKey),
-      params: {
-        repository: repoKey,
-        tag: commitGuid,
-        message: options.message,
-        ...(options.author ? { author: options.author } : {}),
-        ...(parent ? { commitParent: parent } : {}),
-        network_id: cfg.networkId,
+    // Registering the immutable commit object and advancing the working fork's tip is a step on the job's ticket (PLAN-detached-jobs J4), so a backgrounded commit records nothing until the commit exists.
+    const outcome = await runCommandJob(
+      'repo commit',
+      {
+        functionName: 'repository_commit',
+        machineName,
+        ...(kubeCluster !== undefined && { kubeCluster }),
+        // #74: renet resolves the image from the machine vault, so the datastore the repo is RECORDED on has to be declared or the commit is written against the machine's default.
+        datastore: await recordedDatastoreMount(repoKey),
+        params: {
+          repository: repoKey,
+          tag: commitGuid,
+          message: options.message,
+          ...(options.author ? { author: options.author } : {}),
+          ...(parent ? { commitParent: parent } : {}),
+          network_id: cfg.networkId,
+        },
+        debug: options.debug,
       },
-      debug: options.debug,
-    });
+      [
+        planStep('recordRepoCommit', {
+          repo: repoKey,
+          commit: commitGuid,
+          message: options.message,
+          ...(options.author ? { author: options.author } : {}),
+          ...(parent ? { parent } : {}),
+        }),
+      ]
+    );
+    if (outcome.kind === 'pending') {
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
+      return;
+    }
+    const result: ExecuteResult = outcome.result;
 
     if (!result.success) {
       renderLocalExecutionFailure(result, t('commands.repo.commit.failed'));
       return;
     }
-
-    // Register the immutable commit object and advance the working fork's tip.
-    await configService.addRepository(commitGuid, {
-      repositoryGuid: commitGuid,
-      networkId: cfg.networkId,
-      credential: cfg.credential,
-      grandGuid: cfg.grandGuid ?? cfg.repositoryGuid,
-      parentGuid: cfg.repositoryGuid,
-      immutable: true,
-      commitMessage: options.message,
-      commitAuthor: options.author,
-      commitParent: parent || undefined,
-    });
-    const workingKey = (await configService.getRepositoryKey(repoKey)) ?? repoKey;
-    await configService.addRepository(workingKey, { ...cfg, headCommit: commitGuid });
 
     outputService.success(
       t('commands.repo.commit.completed', {
@@ -172,23 +179,21 @@ async function handleCheckout(
     const { repoKey, machineName, kubeCluster } = await resolveRepoRef(options.from ?? baseName);
     await assertCommandPolicy(CMD.REPO_CHECKOUT, repoKey);
 
+    // The new working fork's tip = the checked-out commit, recorded as a step on the fork job's ticket (PLAN-detached-jobs J4).
     await handleForkAction(commitRef, options.tag, {
       machine: machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
       forkBaseName: baseName,
+      verb: 'repo checkout',
+      extraSteps: [
+        planStep('advanceHeadCommit', {
+          repo: compositeKey(baseName, options.tag),
+          commit: commitCfg.repositoryGuid,
+        }),
+      ],
     });
-
-    // Record the new working fork's tip = the checked-out commit.
-    const newKey = compositeKey(baseName, options.tag);
-    const newCfg = await configService.getRepository(newKey);
-    if (newCfg) {
-      await configService.addRepository(newKey, {
-        ...newCfg,
-        headCommit: commitCfg.repositoryGuid,
-      });
-    }
   } catch (error) {
     handleError(error);
   }

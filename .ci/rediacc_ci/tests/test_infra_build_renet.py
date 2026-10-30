@@ -1,8 +1,8 @@
 """`.ci/rediacc_ci/infra/build_renet.py`, the thin CI wrapper over `local_common.ensure_renet_built`.
 
-The retired shell twin's differential cases pinned the shared-path identity stamp (`bin/.renet-build-identity`), which no longer exists: each flavor now has its own directory and its own stamp (`core.renet_flavor`, PLAN-per-flavor-renet-binary-paths P3). What is pinned here instead is what a CI step reads: the flavor chosen with build.sh's precedence, the `RENET_BINARY=<path>` line, the per-flavor skip, and that a build of one flavor never touches the other's binary.
+What is pinned here is what a CI step reads: the one licensed build in `bin/` (agent/plans/PLAN-production-key-only.md Design 6), the `RENET_BINARY=<path>` line, the stamp skip, and the key gate that refuses a build which does not bake the account key.
 
-Every case runs the COPY of the wrapper inside a fixture tree, with a recording fake `build.sh` that writes into the flavor directory the explicit flag names, and a PATH rebuilt from named tools. `test_the_fake_build_is_actually_reached` is the anti-vacuity control.
+Every case runs the COPY of the wrapper inside a fixture tree, with a recording fake `build.sh` that writes `bin/`, a fake `go` whose `version -m` reports the key the fake binary was built with, and a PATH rebuilt from named tools. `test_the_fake_build_is_actually_reached` is the anti-vacuity control.
 """
 
 import hashlib
@@ -14,27 +14,30 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.infra import build_renet
+from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "build_renet.py"
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/infra/build_renet.py")
 
-# The recording `./build.sh`: logs its argv and cwd, then writes the three binaries of the flavor its flag names (`--license` is `bin/enforce/`, anything else `bin/`), each holding the flavor's name.
+# A syntactically valid ED25519 public key (32 bytes 0x00..0x1f, base64), fixture only.
+KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+OTHER_KEY = "HxwdHhscGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgE="
+
+# The recording `./build.sh`: logs its argv and cwd, then writes the three binaries into `bin/`, each holding the key it was built with (or `unkeyed` when BAKE is false), which the fake `go version -m` reports back.
 FAKE_BUILD_SH = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r
 ROOT = %(root)r
 RC = %(rc)d
+BAKE = %(bake)r
 with pathlib.Path(LOG).open("a", encoding="utf-8") as fh:
     fh.write("\\t".join(["build.sh", os.path.relpath(os.getcwd(), ROOT), *sys.argv[1:]]) + "\\n")
-flavor = "enforce" if "--license" in sys.argv[1:] else "nolicense"
 out = pathlib.Path(os.getcwd()) / "bin"
-if flavor == "enforce":
-    out = out / "enforce"
 out.mkdir(parents=True, exist_ok=True)
+baked = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "") if BAKE else "unkeyed"
 for name in ("renet", "renet-linux-amd64", "renet-linux-arm64"):
-    (out / name).write_text("fake-renet-" + flavor + "\\n", encoding="utf-8")
+    (out / name).write_text("fake-renet " + baked + "\\n", encoding="utf-8")
 if RC < 0:
     os.kill(os.getpid(), -RC)
 sys.exit(RC)
@@ -48,16 +51,26 @@ else:
     sys.exit(1)
 """
 
+# `go version -m <bin>` prints a build line carrying the key ldflag the fake build wrote into the binary; anything else exits 97.
 FAKE_GO = """#!/usr/bin/env python3
-import sys
-sys.exit(97)
+import pathlib, sys
+if sys.argv[1:3] != ["version", "-m"]:
+    sys.exit(97)
+baked = pathlib.Path(sys.argv[3]).read_text(encoding="utf-8").split()[-1]
+flag = "" if baked == "unkeyed" else " -X github.com/%(repo)s/pkg/license/keys.ProductionPublicKey=" + baked
+sys.stdout.write(sys.argv[3] + ": go1.25\\n\\tbuild\\t-ldflags=\\"-X main.Version=0.0.0-dev" + flag + "\\"\\n")
 """
 
 NEEDED = ("python3", "git", "sha256sum", "env", "sh", "bash", "cat", "mkdir", "ls")
 
 
 def _fixture(
-    where: pathlib.Path, *, build_rc: int = 0, go: bool = True, submodule: bool = True
+    where: pathlib.Path,
+    *,
+    build_rc: int = 0,
+    go: bool = True,
+    submodule: bool = True,
+    bake: bool = True,
 ) -> pathlib.Path:
     """A tree shaped like the repository, holding a COPY of the wrapper: it derives the console root from its own location, so the tracked file driven in place would build in the real checkout."""
     root = where.resolve() / "tree"
@@ -69,7 +82,12 @@ def _fixture(
         script = src / "build.sh"
         script.write_text(
             FAKE_BUILD_SH
-            % {"log": str(root.parent / "buildlog.txt"), "root": str(root), "rc": build_rc},
+            % {
+                "log": str(root.parent / "buildlog.txt"),
+                "root": str(root),
+                "rc": build_rc,
+                "bake": bake,
+            },
             encoding="utf-8",
         )
         script.chmod(0o755)
@@ -82,7 +100,7 @@ def _fixture(
     (binder / "uname").write_text(FAKE_UNAME, encoding="utf-8")
     (binder / "uname").chmod(0o755)
     if go:
-        (binder / "go").write_text(FAKE_GO, encoding="utf-8")
+        (binder / "go").write_text(FAKE_GO % {"repo": RENET_REPO}, encoding="utf-8")
         (binder / "go").chmod(0o755)
     return root
 
@@ -93,9 +111,8 @@ def _run(root: pathlib.Path, *argv: str, env_extra: dict[str, str] | None = None
         "HOME": str(root.parent),
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONPATH": str(ROOT / ".ci"),
-        # The CI keyless test build (agent/plans/PLAN-production-key-only.md K3): no account key, admitted only under GITHUB_ACTIONS.
-        "RENET_KEYLESS": "1",
-        "GITHUB_ACTIONS": "true",
+        # The account key is named in the environment, so neither the cache nor Bitwarden is read.
+        "ACCOUNT_ED25519_PUBLIC_KEY": KEY,
         **(env_extra or {}),
     }
     proc = subprocess.run(
@@ -133,77 +150,72 @@ def _bytes(root: pathlib.Path, rel: str) -> bytes:
 def test_the_fake_build_is_actually_reached(tmp_path):
     """ANTI-VACUITY. Every case below is worthless if build.sh never ran."""
     root = _fixture(tmp_path)
-    out = _run(root, "--nolicense")
+    out = _run(root)
     assert out["exit"] == 0, out
     assert out["calls"], "the recording build.sh was never invoked"
     fields = out["calls"][0].split("\t")
     assert fields[1] == "private/renet", "build.sh ran in %r" % fields[1]
-    assert fields[2:] == ["dev", "--nolicense"], "build.sh got %r" % fields[2:]
+    assert fields[2:] == ["dev"], "build.sh got %r" % fields[2:]
     assert out["stdout"] == "RENET_BINARY=<root>/private/renet/bin/renet\n"
+    # The key gate's verdict is on stderr, so stdout stays the one RENET_BINARY line.
+    assert "ok      <root>/private/renet/bin/renet" in out["stderr"]
 
 
-def test_a_license_build_then_a_nolicense_build_leaves_the_enforcing_binary_alone(tmp_path):
+def test_a_retired_flavor_flag_is_dropped_and_builds_the_one_binary(tmp_path):
     root = _fixture(tmp_path)
-    first = _run(root, "--license")
-    assert first["exit"] == 0, first
-    assert first["stdout"] == "RENET_BINARY=<root>/private/renet/bin/enforce/renet\n"
-    enforcing = {n: _bytes(root, "bin/enforce/" + n) for n in ("renet", "renet-linux-amd64")}
-    assert enforcing["renet"] == b"fake-renet-enforce\n"
-    second = _run(root, "--nolicense")
-    assert second["exit"] == 0, second
-    for name, content in enforcing.items():
-        assert _bytes(root, "bin/enforce/" + name) == content, "%s changed" % name
-    assert _bytes(root, "bin/renet") == b"fake-renet-nolicense\n"
-
-
-def test_an_explicit_nolicense_beats_the_license_env(tmp_path):
-    """build.sh's precedence, the opposite of the retired identity stamp: the flag wins over `RDC_RENET_LICENSE=1`."""
-    root = _fixture(tmp_path)
-    out = _run(root, "--nolicense", env_extra={"RDC_RENET_LICENSE": "1"})
+    out = _run(root, "--license", "-v")
     assert out["exit"] == 0, out
+    assert out["calls"][0].split("\t")[2:] == ["dev"]
     assert out["stdout"] == "RENET_BINARY=<root>/private/renet/bin/renet\n"
-    assert out["calls"][0].split("\t")[2:] == ["dev", "--nolicense"]
     assert not (root / "private" / "renet" / "bin" / "enforce").exists()
 
 
-def test_the_license_env_alone_selects_the_enforcing_binary(tmp_path):
+def test_a_build_that_bakes_no_key_is_refused_and_leaves_no_stamp(tmp_path):
+    root = _fixture(tmp_path, bake=False)
+    out = _run(root)
+    assert out["exit"] == 1, out
+    assert "renet key gate refused" in out["stderr"]
+    assert "RENET_BINARY=" not in out["stdout"]
+    assert not (root / "private" / "renet" / "bin" / ".renet-build-stamp").exists()
+
+
+def test_a_build_that_bakes_another_key_is_refused(tmp_path):
     root = _fixture(tmp_path)
-    out = _run(root, env_extra={"RDC_RENET_LICENSE": "1"})
+    assert _run(root)["exit"] == 0
+    # The binary now bakes KEY; a run expecting OTHER_KEY rebuilds (the stamp carries the key) and the gate compares against OTHER_KEY.
+    out = _run(root, env_extra={"ACCOUNT_ED25519_PUBLIC_KEY": OTHER_KEY})
+    assert out["calls"], "a key change did not rebuild"
     assert out["exit"] == 0, out
-    assert out["stdout"] == "RENET_BINARY=<root>/private/renet/bin/enforce/renet\n"
-    assert out["calls"][0].split("\t")[2:] == ["dev", "--license"]
+    # CONTROL: a fake build that ignores the key it was handed is refused.
+    bad = _fixture(_sub(tmp_path, "bad"), bake=False)
+    assert _run(bad, env_extra={"ACCOUNT_ED25519_PUBLIC_KEY": OTHER_KEY})["exit"] == 1
 
 
-def test_a_second_run_skips_on_the_per_flavor_stamp(tmp_path):
+def test_a_second_run_skips_on_the_stamp(tmp_path):
     root = _fixture(tmp_path)
-    assert _run(root, "--nolicense")["exit"] == 0
+    assert _run(root)["exit"] == 0
     stamp = root / "private" / "renet" / "bin" / ".renet-build-stamp"
     assert stamp.is_file()
-    again = _run(root, "--nolicense")
+    again = _run(root)
     assert again["exit"] == 0, again
     assert again["calls"] == [], "a build ran despite a matching stamp: %r" % again["calls"]
     assert again["stdout"] == "RENET_BINARY=<root>/private/renet/bin/renet\n"
-    # CONTROL: the other flavor has no stamp of its own, so it builds.
-    other = _run(root, "--license")
-    assert other["calls"], "the enforcing flavor was skipped on the nolicense stamp"
-    enforce_stamp = root / "private" / "renet" / "bin" / "enforce" / ".renet-build-stamp"
-    assert enforce_stamp.read_text(encoding="utf-8") != stamp.read_text(encoding="utf-8")
 
 
 def test_a_swapped_binary_under_an_unchanged_stamp_is_rebuilt(tmp_path):
     root = _fixture(tmp_path)
-    assert _run(root, "--nolicense")["exit"] == 0
+    assert _run(root)["exit"] == 0
     (root / "private" / "renet" / "bin" / "renet").write_text(
         "swapped-by-hand-xx\n", encoding="utf-8"
     )
-    out = _run(root, "--nolicense")
+    out = _run(root)
     assert out["calls"], "a binary replaced under its stamp was handed back"
-    assert _bytes(root, "bin/renet") == b"fake-renet-nolicense\n"
+    assert _bytes(root, "bin/renet") == ("fake-renet %s\n" % KEY).encode()
 
 
 def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
     root = _fixture(tmp_path, build_rc=3)
-    out = _run(root, "--nolicense")
+    out = _run(root)
     # build.sh's own status, not a flat 1 (review 6de769e7.2).
     assert out["exit"] == 3, out
     assert out["calls"]
@@ -214,14 +226,14 @@ def test_the_stamp_is_not_written_when_the_build_fails(tmp_path):
 def test_a_build_killed_by_a_signal_exits_128_plus_the_signal(tmp_path):
     # A negative subprocess code would exit as 256 - signal (247 for SIGKILL); the shell twin reports 128 + signal (review f57d518c.2).
     root = _fixture(tmp_path, build_rc=-9)
-    out = _run(root, "--nolicense")
+    out = _run(root)
     assert out["exit"] == 137, out
     assert "RENET_BINARY=" not in out["stdout"]
 
 
 def test_a_missing_submodule_names_the_fix(tmp_path):
     root = _fixture(tmp_path, submodule=False)
-    out = _run(root, "--nolicense")
+    out = _run(root)
     assert out["exit"] == 1
     assert "git submodule update --init private/renet" in out["stderr"]
     assert out["calls"] == []
@@ -229,28 +241,19 @@ def test_a_missing_submodule_names_the_fix(tmp_path):
 
 def test_a_missing_go_fails_before_any_build(tmp_path):
     root = _fixture(tmp_path, go=False)
-    out = _run(root, "--nolicense")
+    out = _run(root)
     assert out["exit"] == 1
     assert out["calls"] == []
     assert "Go is not installed" in out["stderr"]
 
 
-def test_github_env_receives_the_flavor_binary(tmp_path):
+def test_github_env_receives_the_binary(tmp_path):
     root = _fixture(tmp_path)
     gh = tmp_path / "github-env"
     gh.write_text("", encoding="utf-8")
-    out = _run(root, "--license", env_extra={"GITHUB_ENV": str(gh)})
+    out = _run(root, env_extra={"GITHUB_ENV": str(gh)})
     assert out["exit"] == 0, out
-    assert (
-        gh.read_text(encoding="utf-8") == "RENET_BINARY=%s/private/renet/bin/enforce/renet\n" % root
-    )
-
-
-def test_build_args_drops_everything_but_the_two_flags():
-    assert build_renet.build_args([]) == []
-    assert build_renet.build_args(["--nolicence"]) == []
-    assert build_renet.build_args(["-v", "--license", "x"]) == ["--license"]
-    assert build_renet.build_args(["--nolicense", "--license"]) == ["--nolicense", "--license"]
+    assert gh.read_text(encoding="utf-8") == "RENET_BINARY=%s/private/renet/bin/renet\n" % root
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +295,6 @@ def test_the_wrapper_writes_the_cache_verdict_on_every_exit(tmp_path, hit, stage
     gh_out.write_text("", encoding="utf-8")
     out = _run(
         root,
-        "--nolicense",
         env_extra={"GITHUB_OUTPUT": str(gh_out), "RENET_EMBED_CACHE_HIT": hit},
     )
     assert (out["exit"] == 0) == (build_rc == 0), out
@@ -302,10 +304,10 @@ def test_the_wrapper_writes_the_cache_verdict_on_every_exit(tmp_path, hit, stage
 def test_a_stale_cache_hit_is_announced_before_the_restage(tmp_path):
     """The PR #591 shape: a HIT that restored the checkout skeleton. build.sh restages (~11 min) and nothing else in the log says why."""
     root = _fixture(_sub(tmp_path, "w"))
-    out = _run(root, "--nolicense", env_extra={"RENET_EMBED_CACHE_HIT": "true"})
+    out = _run(root, env_extra={"RENET_EMBED_CACHE_HIT": "true"})
     assert out["stdout"].startswith("::warning title=Stale renet-embed-assets cache entry::")
     # CONTROL: a hit on a real staging says nothing.
     good = _fixture(_sub(tmp_path, "g"))
     _stage_receipt(good)
-    quiet = _run(good, "--nolicense", env_extra={"RENET_EMBED_CACHE_HIT": "true"})
+    quiet = _run(good, env_extra={"RENET_EMBED_CACHE_HIT": "true"})
     assert "::warning" not in quiet["stdout"]

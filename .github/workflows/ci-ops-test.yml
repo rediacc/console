@@ -40,6 +40,7 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -77,9 +78,11 @@ jobs:
         id: build-renet
         if: steps.embed-cache.outputs.cache-hit != 'true'
         env:
-          RENET_KEYLESS: "1"
+          # The production PUBLIC key (build.sh fails closed without one); this
+          # job keeps only the staged assets, and the binary never leaves it.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
@@ -259,19 +262,26 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The nolicense go build itself stays on-runner:
+      # builder staging. The go build itself stays on-runner:
       # console is public, so dev binaries must never be uploaded as artifacts.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6), started BEFORE the renet build. It mints this run's ED25519 pair
+      # and exports the PUBLIC half as ACCOUNT_ED25519_PUBLIC_KEY, with
+      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV, so the
+      # renet built next bakes the key every licence this server signs is filed
+      # under. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Build renet
         id: build-renet
         env:
-          RENET_KEYLESS: "1"
           RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         # Only a tree this job staged itself and build.sh's receipt vouches for
         # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the

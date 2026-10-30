@@ -59,6 +59,8 @@ async function probeRepoMounted(
     params: {},
     captureOutput: true,
     quietSpinners: true,
+    // A probe: the caller reads the listing, so `--background` must not hand back a ticket here.
+    probe: true,
     debug: options.debug,
   });
 
@@ -132,6 +134,8 @@ export async function probeRepoNetwork(
     params: {},
     captureOutput: true,
     quietSpinners: true,
+    // A probe: the caller reads the listing, so `--background` must not hand back a ticket here.
+    probe: true,
     debug: options.debug,
   });
 

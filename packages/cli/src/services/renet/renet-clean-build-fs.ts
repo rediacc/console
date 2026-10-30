@@ -1,32 +1,31 @@
+import { createHash } from 'node:crypto';
 import * as fsSync from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-/** Marker written last into a finished clean build directory; first line the commit, second `keyed` or `keyless`, third the flavor. */
+/** Marker written last into a finished clean build directory; first line the commit, second the {@link accountKeyId} of the licence public key baked in. */
 export const CLEAN_BUILD_MARKER = '.complete';
 
-export type RenetFlavor = 'nolicense' | 'enforce';
+/** Where `build.sh dev` writes its binaries, relative to the renet checkout: one licensed build, always in `bin/`. */
+export const RENET_BUILD_DIR = 'bin';
 
-/** Where `build.sh dev` writes each flavor, relative to the renet checkout; the same mapping as build.sh's `_dev_out_dir`. */
-export const RENET_FLAVOR_DIRS: Record<RenetFlavor, string> = {
-  nolicense: 'bin',
-  enforce: 'bin/enforce',
-};
+/** The linker symbol build.sh bakes the licence public key into, as `go version -m` prints it. */
+const BAKED_KEY_RE = /\/pkg\/license\/keys\.ProductionPublicKey=([A-Za-z0-9+/=]*)/g;
 
-/** The explicit `build.sh dev` flag of each flavor. */
-export const RENET_FLAVOR_FLAGS: Record<RenetFlavor, string> = {
-  nolicense: '--nolicense',
-  enforce: '--license',
-};
-
-/** The flavor `go version -m` output describes: nolicense when the buildinfo carries `tags=nolicense`, enforce otherwise. */
-export function flavorOfBuildInfo(goVersionM: string): RenetFlavor {
-  return goVersionM.includes('tags=nolicense') ? 'nolicense' : 'enforce';
+/** The licence public key `go version -m` output says the binary bakes; the last one wins, as with the linker. Empty when there is none. */
+export function bakedAccountKey(goVersionM: string): string {
+  const found = [...goVersionM.matchAll(BAKED_KEY_RE)];
+  return found.length > 0 ? found[found.length - 1][1] : '';
 }
 
-/** The cached build directory name of a commit and flavor. */
-export function cleanBuildDirName(commit: string, flavor: RenetFlavor): string {
-  return `${commit}-${flavor}`;
+/** A short digest of a licence public key, for the cache marker: the key itself is public, but there is no reason to copy it around. */
+export function accountKeyId(key: string): string {
+  return createHash('sha256').update(key).digest('hex').slice(0, 16);
+}
+
+/** The cached build directory name of a commit. */
+export function cleanBuildDirName(commit: string): string {
+  return commit;
 }
 const LINUX_ARCHES = ['amd64', 'arm64'] as const;
 
@@ -50,28 +49,26 @@ export function cleanBuildFiles(ext: string): string[] {
   return [`renet${ext}`, ...LINUX_ARCHES.map((arch) => `renet-linux-${arch}`)];
 }
 
-/** The marker body of a finished build: the commit, whether the licence public key was compiled in, and the flavor. */
-export function cleanBuildMarker(commit: string, keyed: boolean, flavor: RenetFlavor): string {
-  return `${commit}\n${keyed ? 'keyed' : 'keyless'}\n${flavor}\n`;
+/** The marker body of a finished build: the commit and the {@link accountKeyId} of the key it bakes. */
+export function cleanBuildMarker(commit: string, keyId: string): string {
+  return `${commit}\n${keyId}\n`;
 }
 
 /**
- * True when `dir` holds a finished build of `commit`. A keyless build (no licence public key at build time) is not reused once the key is available (`keyAvailable`), or every upload at that commit would ship a binary that cannot verify licences.
+ * True when `dir` holds a finished build of `commit` baking the key `keyId` names. A build baked with another key (a rotation, or a cache written before the one-keypair store) is rebuilt, or every upload at that commit would ship a binary that cannot verify licences.
  */
 export function isCompleteCleanBuild(
   dir: string,
   commit: string,
   ext: string,
-  flavor: RenetFlavor,
-  keyAvailable = false
+  keyId: string
 ): boolean {
   try {
-    const [markedCommit, markedKey, markedFlavor] = fsSync
+    const [markedCommit, markedKey] = fsSync
       .readFileSync(path.join(dir, CLEAN_BUILD_MARKER), 'utf-8')
       .trim()
       .split('\n');
-    if (markedCommit !== commit || markedFlavor !== flavor) return false;
-    if (keyAvailable && markedKey !== 'keyed') return false;
+    if (markedCommit !== commit || markedKey !== keyId) return false;
     return cleanBuildFiles(ext).every((name) => fsSync.existsSync(path.join(dir, name)));
   } catch {
     return false;
@@ -122,18 +119,15 @@ export function cleanBuildEnv(top: string): NodeJS.ProcessEnv {
     const key = line?.slice('ACCOUNT_ED25519_PUBLIC_KEY='.length).trim();
     if (key) env.ACCOUNT_ED25519_PUBLIC_KEY = key;
   } catch {
-    // No cache: build.sh builds keyless, as it would in the working tree.
+    // No cache: the caller refuses before build.sh, which fails closed without a key.
   }
   return env;
 }
 
-/** Removes the builds of every other commit; both flavors of `keep` stay. */
+/** Removes every build but `keep`'s, including the per-flavor `<commit>-<flavor>` directories older CLIs wrote. */
 export function pruneOtherCleanBuilds(root: string, keep: string): void {
   for (const name of fsSync.readdirSync(root)) {
-    if (
-      !name.startsWith(`${keep}-`) &&
-      /^[0-9a-f]{40}([0-9a-f]{24})?(-(nolicense|enforce))?$/.test(name)
-    ) {
+    if (name !== keep && /^[0-9a-f]{40}([0-9a-f]{24})?(-[a-z]+)?$/.test(name)) {
       fsSync.rmSync(path.join(root, name), { recursive: true, force: true });
     }
   }

@@ -50,6 +50,15 @@
     ],
     "packages/cli/src/services/__tests__/account-client.test.ts": [
       "X25519_PUBLIC_KEY"
+    ],
+    ".ci/rediacc_ci/tests/test_core_local_common_renet_key.py": [
+      "RENET_KEYLESS"
+    ],
+    ".ci/rediacc_ci/tests/test_renet_build_key_required.py": [
+      "RENET_KEYLESS"
+    ],
+    ".ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py": [
+      "RENET_KEYLESS"
     ]
   },
   "_tombstone_proof_sites_comment": [
@@ -441,7 +450,6 @@
       "PR_NUMBER",
       "PUBLISH_DOCKER_REGISTRY",
       "PUBLISH_STABLE",
-      "RDC_RENET_LICENSE",
       "RECEIPT_LANE",
       "RECEIPT_PATH",
       "REF",
@@ -1356,6 +1364,7 @@
       "REDIACC_SUBSCRIPTION_TOKEN",
       "REDIACC_SUBSCRIPTION_TOKEN_FILE",
       "REDIACC_TEAM",
+      "RENET_KEYLESS",
       "REPO",
       "ROUND",
       "RULESET_REPO",

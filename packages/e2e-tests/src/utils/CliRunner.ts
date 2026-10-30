@@ -76,8 +76,9 @@ export interface CliRunnerOptions {
   /**
    * Keep CLI-side license issuance and recovery ENABLED.
    *
-   * The default sets `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which is right for
-   * every suite that only wants the fleet to work — but it does not merely
+   * The default sets `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which is right only
+   * for a suite that creates no repository through the CLI (the one licensed
+   * renet refuses an unlicensed create with exit 10) — and it does not merely
    * quieten licensing, it removes it: `ensureRepoLicenseForProvisioning`
    * returns immediately (`local-executor.ts:1095-1097`), so no slot is ever
    * claimed, and `needsLicenseRecovery` refuses to act on renet's exit 10
@@ -114,7 +115,7 @@ export class CliRunner {
     const configName = options.configName ?? E2E_CLI_CONFIG;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      // License-less ops VMs (07 §2). CI shells have no agent ancestor, so the REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
+      // Issuance off unless the suite opts in. renet is always licence-enforcing (agent/plans/PLAN-production-key-only.md), so a suite that creates a repository through the CLI opts in with `licensing: true` AND logs this config in to an account server (chunkCliHarness.ts loginCli); without a login, issuance has no server to ask either way. CI shells have no agent ancestor, so the REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
       ...(options.licensing ? {} : { REDIACC_SKIP_MACHINE_ACTIVATION: '1' }),
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',

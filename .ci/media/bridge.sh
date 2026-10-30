@@ -116,10 +116,28 @@ _build_cli_sea_cached() {
     # has no such ceiling, so the bridge now carries the complete k8s stack and a
     # cluster tutorial can be recorded like any other. Per-arch embedding keeps the
     # binary to its own architecture's assets.
+    #
+    # One licensed build (agent/plans/PLAN-production-key-only.md Design 6): the
+    # production PUBLIC key is baked in, resolved the way every console build
+    # resolves it (the shell, then the ./run.sh setup cache, then Bitwarden), and
+    # the key gate refuses a binary that does not carry it. The dev account server
+    # signs with the production key, so the recorded tutorials' licences verify.
+    local account_key
+    account_key="$(PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -c \
+        'import os, sys; from rediacc_ci.core import local_common; sys.stdout.write(local_common.resolve_renet_account_key(sys.argv[1], os.environ))' \
+        "$ROOT_DIR/private/renet")" || {
+        log_error "No ACCOUNT_ED25519_PUBLIC_KEY for the bridge renet (run ./run.sh setup)"
+        exit 1
+    }
     (cd "$ROOT_DIR/private/renet" &&
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-            -tags "nolicense" -ldflags="-s -w -X main.Version=0.0.0-dev" \
+            -ldflags="-s -w -X main.Version=0.0.0-dev -X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=$account_key" \
             -o "$embed_renet" ./cmd/renet)
+    ACCOUNT_ED25519_PUBLIC_KEY="$account_key" PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.release.renet_key_gate "$embed_renet" || {
+        log_error "The bridge renet does not bake the production key: $embed_renet"
+        exit 1
+    }
     PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.build.build_cli_executables --platform linux --arch x64
     [[ -f "$out" ]] || {
         log_error "SEA build did not produce $out"

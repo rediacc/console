@@ -135,7 +135,18 @@ describe('backup restore --path', () => {
     expect(mockAddRepository).not.toHaveBeenCalled();
     expect(mockAllocateNetworkId).not.toHaveBeenCalled();
     expect(mockExecutorExecute).not.toHaveBeenCalled();
-    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    // The record print rides the job's ticket (PLAN-detached-jobs J4): it is a step, not inline output.
+    const options = mockExecuteRepoFunction.mock.calls[0][4] as {
+      job: { verb: string; steps: { name: string; params: Record<string, unknown> }[] };
+    };
+    expect(options.job.verb).toBe('backup restore');
+    expect(options.job.steps).toEqual([
+      expect.objectContaining({
+        name: 'reportRestorePath',
+        params: { repo: 'r', snapshot: SNAPSHOT },
+      }),
+    ]);
+    expect(mockSuccess).not.toHaveBeenCalled();
   });
 
   it('resolves a time to a snapshot id under the source stream scope', async () => {

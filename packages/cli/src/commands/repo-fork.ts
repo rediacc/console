@@ -5,11 +5,12 @@
  * Orchestration for `repo fork --up`:
  * - DNS record creation (pure HTTP) is fired before any SSH work.
  * - The repo SSH key deploys over the shared pooled connection.
- * - The fork leg runs as ONE compound `renet repository fork --up` execute
- *   (params { up, grand, repo_name }); a legacy fork-then-up two-leg path
- *   remains for --checkpoint and for remote renets that predate --up.
- * - License identity refresh, cert-cache sync, and service-URL resolution
- *   run concurrently after the up portion; failures are warn-only.
+ * - The fork leg runs as ONE machine job, a compound `renet repository fork --up`
+ *   (params { up, grand, repo_name }); --checkpoint keeps a separate up leg,
+ *   which runs as a successor step.
+ * - The license identity refresh, the DNS, certificate and URL steps and the
+ *   backup-unit re-render ride the job's ticket (PLAN-detached-jobs J4), so a
+ *   ticket handed back early records nothing before the fork exists.
  * - "Total:" is printed once, at the true end, as wall time since entry.
  */
 import { randomUUID } from 'node:crypto';
@@ -23,14 +24,25 @@ import {
   targetFloor,
 } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import { writeStderr, writeStdout } from '../services/core/request-context.js';
+import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
 import {
   type ExecuteResult,
   getExecutor,
   type RenetEvent,
 } from '../services/executor/executor-factory.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
-import { bindStepHandler } from '../services/jobs/steps.js';
+import type { ExecuteOptions } from '../services/executor/types.js';
+import {
+  type CommandJobOutcome,
+  pendingExitCode,
+  runCommandJob,
+} from '../services/jobs/command-job.js';
+import {
+  bindStepHandler,
+  type PlannedStep,
+  planStep,
+  resolveStepHandler,
+} from '../services/jobs/steps.js';
 import {
   type MachineConnectionLease,
   machineConnections,
@@ -77,16 +89,11 @@ interface ForkActionOptions {
    * GUID-keyed commit still gets a human name (app:rollback, not <guid>:rollback).
    */
   forkBaseName?: string;
+  /** The verb the fork job is recorded under: `repo checkout` forks through here too. */
+  verb?: string;
+  /** Success steps the caller adds to the fork job's ticket (`repo checkout` records the new fork's tip). */
+  extraSteps?: PlannedStep[];
 }
-
-/** Renet step names that only appear when the compound fork ran the up phase. */
-const UP_PHASE_STEP_NAMES = new Set([
-  'luks_mount',
-  'docker_daemon',
-  'compose_up',
-  'service_ready',
-  'thaw_resume',
-]);
 
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
@@ -182,13 +189,24 @@ async function rollbackFork(forkKey: string, keyState: ForkKeyState, guid: strin
   await removeDeployedForkKey(forkKey, keyState);
 }
 
-bindStepHandler('rollbackFork', async ({ params }) => {
+/** The fork image exists once its reflink or clone step completed: a failure after it is an up-phase failure. */
+const FORK_IMAGE_STEPS = ['cow_reflink', 'cow_clone'];
+
+bindStepHandler('rollbackFork', async ({ params, markers }) => {
   const text = (key: string) =>
     typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
   const repo = text('repo');
   const guid = text('guid');
   if (repo === undefined) throw new Error('step param "repo" is missing');
   if (guid === undefined) throw new Error('step param "guid" is missing');
+  // A compound --up failure can happen AFTER the remote fork exists (mount, compose, readiness); rolling back the local registration then would orphan a live remote repo. An observer that did not see the stream from its start cannot tell, so it keeps the registration too.
+  if (markers === undefined || markers.some((m) => FORK_IMAGE_STEPS.includes(m))) {
+    outputService.warn(
+      `Fork "${repo}" may exist on the machine; keeping the local registration. ` +
+        `Retry with: rdc repo up ${repo}${text('machine') ? ` -m ${text('machine')}` : ''}`
+    );
+    return;
+  }
   await rollbackFork(repo, { machine: text('machine'), guid }, guid);
 });
 
@@ -286,13 +304,26 @@ function buildForkParams(plan: ForkPlan, compound: boolean): Record<string, unkn
   };
 }
 
-/** Execute one repository_fork leg, streaming renet steps into renetSteps. */
+/** Run the repository_fork job with its ticket steps, streaming renet steps into renetSteps. */
 function executeForkLeg(
   plan: ForkPlan,
   params: Record<string, unknown>,
+  renetSteps: TimelineStep[],
+  steps: PlannedStep[]
+): Promise<CommandJobOutcome> {
+  return runCommandJob(
+    plan.options.verb ?? 'repo fork',
+    forkLegOptions(plan, params, renetSteps),
+    steps
+  );
+}
+
+function forkLegOptions(
+  plan: ForkPlan,
+  params: Record<string, unknown>,
   renetSteps: TimelineStep[]
-): Promise<ExecuteResult> {
-  return getExecutor().execute({
+): ExecuteOptions {
+  return {
     functionName: 'repository_fork',
     machineName: plan.options.machine,
     ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
@@ -304,19 +335,7 @@ function executeForkLeg(
     quietSpinners: true,
     deferIdentityRefresh: true,
     onEvent: createForkEventHandler(renetSteps),
-  });
-}
-
-/** Whether a failed compound fork indicates the remote renet predates --up. */
-function isUpFlagUnsupported(result: ExecuteResult): boolean {
-  const text = `${result.error ?? ''}\n${result.stderr ?? ''}`;
-  return /unknown (flag|shorthand flag|command)/i.test(text) && text.includes('--up');
-}
-
-/** Whether the compound fork actually ran the up phase remotely. */
-function compoundUpRan(result: ExecuteResult, renetSteps: TimelineStep[]): boolean {
-  const steps = result.steps && result.steps.length > 0 ? result.steps : renetSteps;
-  return steps.some((s) => UP_PHASE_STEP_NAMES.has(s.name));
+  };
 }
 
 /**
@@ -416,29 +435,6 @@ function finishTimeline(
   }
 }
 
-/** Run the fork leg, with compound --up when possible and graceful fallback. */
-async function runForkLeg(
-  plan: ForkPlan,
-  renetSteps: TimelineStep[]
-): Promise<{ result: ExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
-  // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg path remains for --checkpoint (restore-on-first-up semantics).
-  let compound = Boolean(plan.options.up && !plan.options.checkpoint);
-  let forkParams = buildForkParams(plan, compound);
-  let result = await executeForkLeg(plan, forkParams, renetSteps);
-
-  if (compound && !result.success && isUpFlagUnsupported(result)) {
-    // Remote renet predates fork --up: retry as a plain fork; the caller chains the legacy up leg.
-    outputService.warn(
-      `Remote renet does not support fork --up; falling back to fork + up (${plan.forkKey})`
-    );
-    compound = false;
-    forkParams = buildForkParams(plan, compound);
-    result = await executeForkLeg(plan, forkParams, renetSteps);
-  }
-
-  return { result, forkParams, compound };
-}
-
 /**
  * Handle a failed fork leg. A compound --up failure can happen AFTER the
  * remote fork exists (mount, compose, readiness); rolling back the local
@@ -460,11 +456,8 @@ async function handleForkLegFailure(
       `Fork "${forkKey}" was created on the machine but its up phase failed; ` +
         `keeping the local registration. Retry with: rdc repo up ${forkKey} -m ${options.machine}`
     );
-  } else {
-    await configService.removeRepository(forkKey);
-    outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
-    await removeDeployedForkKey(forkKey, plan.keyState);
   }
+  // Otherwise the job's rollbackFork step already dropped the registration and the deployed key.
   renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
   finishTimeline(plan, orchestrated, renetSteps, [result]);
 }
@@ -492,7 +485,46 @@ function retryForkUpOnConflict(
   });
 }
 
-/** Orchestrate fork (+ optional up) over a shared machine connection lease. */
+/**
+ * The fork job's ticket steps (PLAN-detached-jobs J4). On failure the registration is rolled back unless the stream
+ * showed the image was made (the rollbackFork handler reads the markers). On success: the identity refresh, the legacy
+ * up leg as a successor job for `--checkpoint --up`, the DNS, certificate and URL steps after an up, and the backup-unit
+ * re-render (G4: a family-scoped strategy covers the new fork, so the machine's units move with it).
+ */
+function forkSteps(
+  plan: ForkPlan,
+  forkParams: Record<string, unknown>,
+  legacyUp: boolean
+): PlannedStep[] {
+  const { options, forkKey } = plan;
+  return [
+    planStep('rollbackFork', {
+      repo: forkKey,
+      machine: options.machine,
+      guid: plan.repositoryGuid,
+    }),
+    planStep('identityRefresh', { function: 'repository_fork', ...forkParams }),
+    ...(legacyUp
+      ? [
+          planStep('forkUp', {
+            repo: forkKey,
+            grand: plan.grandGuid,
+            detach: options.detach === true,
+            ...(plan.datastoreMount === undefined ? {} : { datastore: plan.datastoreMount }),
+            ...(options.kubeCluster === undefined ? {} : { cluster: options.kubeCluster }),
+            debug: options.debug === true,
+          }),
+        ]
+      : []),
+    ...(options.up
+      ? [planStep('postRepoUpTasks', { repo: forkKey, machine: options.machine })]
+      : []),
+    planStep('reconcileBackupSchedules', { machine: options.machine }),
+    ...(options.extraSteps ?? []),
+  ];
+}
+
+/** Orchestrate the fork job (+ optional up) over a shared machine connection lease. */
 async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const { options, forkKey } = plan;
   const orchestrated: TimelineStep[] = [];
@@ -511,45 +543,70 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
     deployRepoKeyIfNeeded(forkKey, options.machine)
   );
 
-  const { result, forkParams, compound } = await runForkLeg(plan, renetSteps);
-  const retried = result.success
-    ? undefined
-    : await retryForkUpOnConflict(plan, result, renetSteps);
-
-  if (!result.success && !retried?.success) {
-    await handleForkLegFailure(plan, retried ?? result, orchestrated, renetSteps, dnsPromise);
+  // One compound `renet repository fork --up`. `--checkpoint` keeps restore-on-first-up semantics through the separate up leg, a successor step. A renet without `job` is refused before any of this runs, and every renet with `job` has fork --up.
+  const compound = Boolean(options.up && !options.checkpoint);
+  const forkParams = buildForkParams(plan, compound);
+  const outcome = await executeForkLeg(
+    plan,
+    forkParams,
+    renetSteps,
+    forkSteps(plan, forkParams, Boolean(options.up && !compound))
+  );
+  if (outcome.kind === 'pending') {
+    if (dnsPromise !== undefined) await Promise.allSettled([dnsPromise]);
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  const { result } = outcome;
+  if (result.success) {
+    finishTimeline(plan, orchestrated, renetSteps, [result]);
     return;
   }
 
-  // The fork exists from here on, identity refresh can run concurrently
-  // with the up portion and the post-up tasks.
-  const identityPromise = startIdentityRefresh(orchestrated, options, forkParams);
-
-  let upResult = retried;
-  if (options.up && !retried && !(compound && compoundUpRan(result, renetSteps))) {
-    // Legacy/fallback up leg: --checkpoint flows, or a remote renet that silently ignored the compound --up params.
-    upResult = await executeUpLeg(plan, renetSteps);
-    if (!upResult.success)
-      upResult = (await retryForkUpOnConflict(plan, upResult, renetSteps)) ?? upResult;
+  // T3(e): a network-ID refusal at the up phase, after the image was made. The rollback step kept the registration (the stream showed the image), so bring the fork up once more and run the success steps the failed job did not.
+  const retried = await retryForkUpOnConflict(plan, result, renetSteps);
+  if (!retried?.success) {
+    await handleForkLegFailure(plan, retried ?? result, orchestrated, renetSteps, dnsPromise);
+    return;
   }
-
-  if (options.up) {
-    await Promise.allSettled([
-      identityPromise,
-      postRepoUpTasks(forkKey, options.machine, {
-        dnsPromise,
-        lease: plan.lease,
-        steps: orchestrated,
-      }),
-    ]);
-  } else {
-    await identityPromise;
-  }
-
-  finishTimeline(plan, orchestrated, renetSteps, [result, upResult]);
-  // G4: a family-scoped strategy covers the new fork, so the machine's backup units move with it.
+  await Promise.allSettled([
+    startIdentityRefresh(orchestrated, options, forkParams),
+    postRepoUpTasks(forkKey, options.machine, {
+      dnsPromise,
+      lease: plan.lease,
+      steps: orchestrated,
+    }),
+  ]);
+  finishTimeline(plan, orchestrated, renetSteps, [result, retried]);
   await reconcileBackupSchedules(options.machine);
+  for (const step of options.extraSteps ?? []) {
+    const handler = await resolveStepHandler(step.name);
+    await handler({ jobId: '', machine: options.machine, params: step.params, state: 'succeeded' });
+  }
 }
+
+// `--checkpoint --up`: the up leg, as a successor job once the fork job succeeded.
+bindStepHandler('forkUp', async ({ machine, params }) => {
+  const text = (key: string) =>
+    typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
+  const repo = text('repo');
+  if (repo === undefined) throw new Error('step param "repo" is missing');
+  const up = await getExecutor().execute({
+    functionName: 'repository_up',
+    machineName: machine,
+    ...(text('cluster') === undefined ? {} : { kubeCluster: text('cluster') }),
+    ...(text('datastore') === undefined ? {} : { datastore: text('datastore') }),
+    params: {
+      repository: repo,
+      mount: true,
+      ...(text('grand') === undefined ? {} : { grand: text('grand') }),
+      ...(params.detach === true ? { detach: true } : {}),
+    },
+    debug: params.debug === true,
+  });
+  if (!up.success) renderLocalExecutionFailure(up, t('commands.repo.up.failed'));
+});
 
 /** Handle the fork action body. */
 export async function handleForkAction(

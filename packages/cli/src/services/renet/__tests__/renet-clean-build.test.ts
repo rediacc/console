@@ -10,6 +10,7 @@
  * the filesystem is real, under a temp dir.
  */
 
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -43,6 +44,8 @@ vi.mock('../provision-state.js', () => ({
 }));
 
 const SHA = 'a'.repeat(40);
+/** A public key as the cache holds it (base64), fixture only. */
+const KEY = 'Zml4dHVyZS1wdWJsaWMta2V5';
 const OLD_SHA = 'b'.repeat(40);
 const MACHINE = { ip: '10.0.0.5', user: 'root', port: 22 };
 
@@ -64,13 +67,11 @@ interface FakeOptions {
   cloneLeftDirty?: boolean;
   /** Overrides the buildinfo every `go version -m` answers. */
   stamp?: string;
-  /** Flavor of the working-tree binary; the default is nolicense. */
-  workingFlavor?: 'nolicense' | 'enforce';
 }
 
-const nolicenseInfo = (sha = SHA) =>
-  `\tbuild\t-tags=nolicense\n\tbuild\tvcs.revision=${sha}\n\tbuild\tvcs.modified=false\n`;
-const enforceInfo = (sha = SHA) => `\tbuild\tvcs.revision=${sha}\n\tbuild\tvcs.modified=false\n`;
+/** The buildinfo of a build at `sha` baking `key`. */
+const buildInfo = (sha = SHA, key = KEY) =>
+  `\tbuild\t-ldflags="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=${key}"\n\tbuild\tvcs.revision=${sha}\n\tbuild\tvcs.modified=false\n`;
 
 /** The clone stands in for `git clone`: a work dir holding the BPF source the build pins. */
 function fakeClone(work: string): string {
@@ -94,39 +95,32 @@ function fakeGitAnswer(args: string[], cwd: string, opts: FakeOptions): string {
 
 function fakeDeps(opts: FakeOptions = {}) {
   const calls: string[][] = [];
-  const builds: { cwd: string; env: NodeJS.ProcessEnv; sawAsset: boolean; flag: string }[] = [];
-  const buildFlavor = (flag: string) => (flag === '--license' ? 'enforce' : 'nolicense');
+  const builds: { cwd: string; env: NodeJS.ProcessEnv; sawAsset: boolean }[] = [];
   const deps: RenetCleanBuildDeps = {
     git: vi.fn((args: string[], cwd: string) => {
       calls.push(args);
       return fakeGitAnswer(args, cwd, opts);
     }),
-    build: vi.fn((cwd: string, env: NodeJS.ProcessEnv, flag: string) => {
+    build: vi.fn((cwd: string, env: NodeJS.ProcessEnv) => {
       builds.push({
         cwd,
         env,
-        flag,
         sawAsset: fs.existsSync(path.join(cwd, 'pkg', 'embed', 'assets', 'amd64', 'x.zst')),
       });
-      const outDir = path.join(cwd, buildFlavor(flag) === 'enforce' ? 'bin/enforce' : 'bin');
+      const outDir = path.join(cwd, 'bin');
       fs.mkdirSync(outDir, { recursive: true });
       for (const name of ['renet', 'renet-linux-amd64', 'renet-linux-arm64']) {
         fs.writeFileSync(path.join(outDir, name), `built ${name}`);
       }
       return Promise.resolve();
     }),
-    goVersionM: vi.fn((binary: string) => {
-      if (opts.stamp) return opts.stamp;
-      if (binary === workingBinary) {
-        return opts.workingFlavor === 'enforce' ? enforceInfo() : nolicenseInfo();
-      }
-      return binary.includes(`${path.sep}enforce${path.sep}`) ? enforceInfo() : nolicenseInfo();
-    }),
+    goVersionM: vi.fn((_binary: string) => opts.stamp ?? buildInfo()),
   };
   return { deps, calls, builds };
 }
 
 const cacheRoot = () => path.join(superproject, '.ci', 'cache', 'renet-head');
+const keyId = () => createHash('sha256').update(KEY).digest('hex').slice(0, 16);
 
 function load() {
   return import('../renet-execution.js');
@@ -149,7 +143,7 @@ beforeEach(() => {
   fs.mkdirSync(path.join(superproject, 'private', 'account', '.cache'), { recursive: true });
   fs.writeFileSync(
     path.join(superproject, 'private', 'account', '.cache', 'public-keys.env'),
-    'ACCOUNT_ED25519_PUBLIC_KEY=fixture-public-key\n'
+    `ACCOUNT_ED25519_PUBLIC_KEY=${KEY}\n`
   );
 });
 
@@ -201,7 +195,7 @@ describe('selectRenetUploadBinary', () => {
     const { deps, calls, builds } = fakeDeps();
     const selection = await selectRenetUploadBinary(workingBinary, deps);
 
-    const finalDir = path.join(cacheRoot(), `${SHA}-nolicense`);
+    const finalDir = path.join(cacheRoot(), SHA);
     expect(selection).toEqual({
       localBinaryPath: path.join(finalDir, 'renet'),
       cleanCommit: SHA,
@@ -220,10 +214,9 @@ describe('selectRenetUploadBinary', () => {
     expect(builds).toHaveLength(1);
     expect(builds[0].cwd).not.toBe(top);
     expect(builds[0].sawAsset).toBe(true);
-    expect(builds[0].flag).toBe('--nolicense');
-    expect(builds[0].env.ACCOUNT_ED25519_PUBLIC_KEY).toBe('fixture-public-key');
+    expect(builds[0].env.ACCOUNT_ED25519_PUBLIC_KEY).toBe(KEY);
     // The scratch clone is gone; only the per-commit build remains.
-    expect(fs.readdirSync(cacheRoot())).toEqual([`${SHA}-nolicense`]);
+    expect(fs.readdirSync(cacheRoot())).toEqual([SHA]);
     // The working tree's own binary is untouched.
     expect(fs.readFileSync(workingBinary, 'utf-8')).toBe('dirty build');
     expect(mockInfo.mock.calls.flat().join('\n')).toMatch(
@@ -244,11 +237,11 @@ describe('selectRenetUploadBinary', () => {
 
   it('rebuilds over an incomplete cached directory instead of failing the rename', async () => {
     porcelain(' M pkg/list.go\n');
-    const finalDir = path.join(cacheRoot(), `${SHA}-nolicense`);
+    const finalDir = path.join(cacheRoot(), SHA);
     fs.mkdirSync(finalDir, { recursive: true });
     // A finished marker with two binaries missing: not complete, and not empty.
     fs.writeFileSync(path.join(finalDir, 'renet'), 'partial');
-    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\nkeyed\nnolicense\n`);
+    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\n${keyId()}\n`);
     const { selectRenetUploadBinary } = await load();
     const { deps } = fakeDeps();
     await selectRenetUploadBinary(workingBinary, deps);
@@ -258,126 +251,72 @@ describe('selectRenetUploadBinary', () => {
     );
   });
 
-  it('does not reuse a keyless build once the licence key is available', async () => {
+  it('does not reuse a build baked with another key', async () => {
     porcelain(' M pkg/list.go\n');
-    const finalDir = path.join(cacheRoot(), `${SHA}-nolicense`);
+    const finalDir = path.join(cacheRoot(), SHA);
     fs.mkdirSync(finalDir, { recursive: true });
     for (const name of ['renet', 'renet-linux-amd64', 'renet-linux-arm64']) {
-      fs.writeFileSync(path.join(finalDir, name), 'keyless');
+      fs.writeFileSync(path.join(finalDir, name), 'old key');
     }
-    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\nkeyless\nnolicense\n`);
+    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\n0000000000000000\n`);
     const { selectRenetUploadBinary } = await load();
     const { deps } = fakeDeps();
     await selectRenetUploadBinary(workingBinary, deps);
     expect(deps.build).toHaveBeenCalledTimes(1);
     expect(fs.readFileSync(path.join(finalDir, 'renet'), 'utf-8')).toBe('built renet');
-    expect(fs.readFileSync(path.join(finalDir, '.complete'), 'utf-8')).toBe(
-      `${SHA}\nkeyed\nnolicense\n`
-    );
+    expect(fs.readFileSync(path.join(finalDir, '.complete'), 'utf-8')).toBe(`${SHA}\n${keyId()}\n`);
   });
 
-  it('a build of a new commit prunes the previous commit builds of both flavors', async () => {
+  it('a build of a new commit prunes every older build, the per-flavor directories included', async () => {
     porcelain(' M pkg/list.go\n');
-    for (const flavor of ['nolicense', 'enforce']) {
-      fs.mkdirSync(path.join(cacheRoot(), `${OLD_SHA}-${flavor}`), { recursive: true });
+    for (const name of [OLD_SHA, `${OLD_SHA}-enforce`, `${SHA}-enforce`]) {
+      fs.mkdirSync(path.join(cacheRoot(), name), { recursive: true });
     }
     const { selectRenetUploadBinary } = await load();
     await selectRenetUploadBinary(workingBinary, fakeDeps().deps);
-    expect(fs.readdirSync(cacheRoot())).toEqual([`${SHA}-nolicense`]);
-  });
-
-  it('a dirty tree with an enforcing working-tree binary builds with --license', async () => {
-    porcelain(' M pkg/list.go\n');
-    const { selectRenetUploadBinary } = await load();
-    const { deps, builds } = fakeDeps({ workingFlavor: 'enforce' });
-    const selection = await selectRenetUploadBinary(workingBinary, deps);
-    expect(builds.map((b) => b.flag)).toEqual(['--license']);
-    expect(selection.localBinaryPath).toBe(path.join(cacheRoot(), `${SHA}-enforce`, 'renet'));
+    expect(fs.readdirSync(cacheRoot())).toEqual([SHA]);
   });
 });
 
-describe('selectRenetUploadBinary when go cannot read the working-tree binary', () => {
-  function unreadable(deps: RenetCleanBuildDeps): void {
-    const real = deps.goVersionM;
-    deps.goVersionM = vi.fn((binary: string) => {
-      if (binary === workingBinary) throw new Error('spawn go ENOENT');
-      return real(binary);
-    });
-  }
-
-  it('reuses the one complete cached build of the commit instead of failing', async () => {
-    porcelain(' M pkg/list.go\n');
-    const { selectRenetUploadBinary } = await load();
-    await selectRenetUploadBinary(workingBinary, fakeDeps({ workingFlavor: 'enforce' }).deps);
-    const second = fakeDeps();
-    unreadable(second.deps);
-    const selection = await selectRenetUploadBinary(workingBinary, second.deps);
-    expect(selection.localBinaryPath).toBe(path.join(cacheRoot(), `${SHA}-enforce`, 'renet'));
-    expect(second.deps.build).not.toHaveBeenCalled();
-  });
-
-  it('with no cached build, names the binary and the go failure', async () => {
-    porcelain(' M pkg/list.go\n');
-    const { selectRenetUploadBinary } = await load();
-    const { deps } = fakeDeps();
-    unreadable(deps);
-    await expect(selectRenetUploadBinary(workingBinary, deps)).rejects.toThrow(
-      `Cannot read the build flavor of ${workingBinary} with \`go version -m\` (spawn go ENOENT)`
-    );
-    expect(deps.build).not.toHaveBeenCalled();
-  });
-});
-
-describe('buildRenetAtCommit flavors', () => {
-  it('does not reuse a complete nolicense cache for an enforcing request at the same commit', async () => {
-    const { buildRenetAtCommit } = await load();
-    const first = fakeDeps();
-    await buildRenetAtCommit(top, SHA, first.deps, 'nolicense');
-    const second = fakeDeps();
-    const binary = await buildRenetAtCommit(top, SHA, second.deps, 'enforce');
-    expect(second.builds.map((b) => b.flag)).toEqual(['--license']);
-    expect(binary).toBe(path.join(cacheRoot(), `${SHA}-enforce`, 'renet'));
-    expect(fs.readFileSync(binary, 'utf-8')).toBe('built renet');
-  });
-
-  it('keeps both flavors of the current commit when pruning and drops other commits', async () => {
-    fs.mkdirSync(path.join(cacheRoot(), `${OLD_SHA}-enforce`), { recursive: true });
-    fs.mkdirSync(path.join(cacheRoot(), OLD_SHA), { recursive: true });
-    const { buildRenetAtCommit } = await load();
-    await buildRenetAtCommit(top, SHA, fakeDeps().deps, 'nolicense');
-    await buildRenetAtCommit(top, SHA, fakeDeps().deps, 'enforce');
-    expect(fs.readdirSync(cacheRoot()).sort()).toEqual([`${SHA}-enforce`, `${SHA}-nolicense`]);
-  });
-
-  it('an enforcing request reads work/bin/enforce/renet', async () => {
+describe('buildRenetAtCommit', () => {
+  it('runs build.sh dev and reads work/bin/renet', async () => {
     const { buildRenetAtCommit } = await load();
     const { deps } = fakeDeps();
-    await buildRenetAtCommit(top, SHA, deps, 'enforce');
+    await buildRenetAtCommit(top, SHA, deps);
+    expect((deps.build as ReturnType<typeof vi.fn>).mock.calls[0]).toHaveLength(2);
     const read = (deps.goVersionM as ReturnType<typeof vi.fn>).mock.calls.map(
       (c) => c[0] as string
     );
     expect(read).toHaveLength(3);
-    for (const binary of read) expect(binary).toMatch(/work-[^/]+\/bin\/enforce\/renet/);
+    expect(read[0]).toMatch(/work-[^/]+\/bin\/renet$/);
   });
 
-  it('an enforcing request refuses a clone build whose buildinfo says tags=nolicense', async () => {
+  it('refuses before build.sh when no licence public key is available', async () => {
+    fs.rmSync(path.join(superproject, 'private', 'account', '.cache', 'public-keys.env'));
     const { buildRenetAtCommit } = await load();
-    const { deps } = fakeDeps({ stamp: nolicenseInfo() });
-    await expect(buildRenetAtCommit(top, SHA, deps, 'enforce')).rejects.toThrow(
-      /not the enforce flavor/
+    const { deps } = fakeDeps();
+    await expect(buildRenetAtCommit(top, SHA, deps)).rejects.toThrow(/run\.sh setup/);
+    expect(deps.build).not.toHaveBeenCalled();
+  });
+
+  it('refuses a clone build that bakes another key, and caches nothing', async () => {
+    const { buildRenetAtCommit } = await load();
+    const { deps } = fakeDeps({ stamp: buildInfo(SHA, 'b3RoZXIta2V5') });
+    await expect(buildRenetAtCommit(top, SHA, deps)).rejects.toThrow(
+      /does not bake the account public key/
     );
     expect(fs.readdirSync(cacheRoot())).toEqual([]);
   });
 
-  it('the plain flavor passes --nolicense and reads work/bin/renet', async () => {
+  it('refuses a clone build that bakes no key, and never prints the key', async () => {
     const { buildRenetAtCommit } = await load();
-    const { deps, builds } = fakeDeps();
-    await buildRenetAtCommit(top, SHA, deps);
-    expect(builds.map((b) => b.flag)).toEqual(['--nolicense']);
-    const read = (deps.goVersionM as ReturnType<typeof vi.fn>).mock.calls.map(
-      (c) => c[0] as string
-    );
-    expect(read[0]).toMatch(/work-[^/]+\/bin\/renet$/);
+    const { deps } = fakeDeps({
+      stamp: `\tbuild\tvcs.revision=${SHA}\n\tbuild\tvcs.modified=false\n`,
+    });
+    const err = await buildRenetAtCommit(top, SHA, deps).catch((e: unknown) => e as Error);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toMatch(/does not bake the account public key/);
+    expect(err.message).not.toContain(KEY);
   });
 });
 
@@ -385,7 +324,7 @@ describe('buildRenetAtCommit refusals', () => {
   it('refuses a build whose stamp is not the commit, and caches nothing', async () => {
     const { buildRenetAtCommit } = await load();
     const { deps } = fakeDeps({
-      stamp: nolicenseInfo(OLD_SHA),
+      stamp: buildInfo(OLD_SHA),
     });
     await expect(buildRenetAtCommit(top, SHA, deps)).rejects.toThrow(/vcs\.revision=a{40}/);
     expect(fs.readdirSync(cacheRoot())).toEqual([]);
@@ -401,7 +340,7 @@ describe('buildRenetAtCommit refusals', () => {
   it('refuses vcs.modified=true', async () => {
     const { buildRenetAtCommit } = await load();
     const { deps } = fakeDeps({
-      stamp: `\tbuild\t-tags=nolicense\n\tbuild\tvcs.revision=${SHA}\n\tbuild\tvcs.modified=true\n`,
+      stamp: buildInfo(SHA).replace('vcs.modified=false', 'vcs.modified=true'),
     });
     await expect(buildRenetAtCommit(top, SHA, deps)).rejects.toThrow(/vcs\.modified=false/);
   });
@@ -411,18 +350,18 @@ describe('acquireRemoteRenet with a dirty renet tree', () => {
   it('provisions the clean build without the dirty guard and names the uploaded commit', async () => {
     porcelain(' M pkg/list.go\n');
     // Pre-seed the cache so acquireRemoteRenet's real build seam is never reached.
-    const finalDir = path.join(cacheRoot(), `${SHA}-nolicense`);
+    const finalDir = path.join(cacheRoot(), SHA);
     fs.mkdirSync(finalDir, { recursive: true });
     for (const name of ['renet', 'renet-linux-amd64', 'renet-linux-arm64']) {
       fs.writeFileSync(path.join(finalDir, name), 'built');
     }
-    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\nkeyed\nnolicense\n`);
+    fs.writeFileSync(path.join(finalDir, '.complete'), `${SHA}\n${keyId()}\n`);
     const answers: [string, string][] = [
       ['--show-toplevel', `${top}\n`],
       ['--porcelain', ' M pkg/list.go\n'],
       ['--show-superproject-working-tree', `${superproject}\n`],
       ['HEAD', `${SHA}\n`],
-      ['version', nolicenseInfo()],
+      ['version', buildInfo()],
     ];
     mockExecFileSync.mockImplementation((_cmd: string, args: string[]) => {
       const hit = answers.find(([flag]) => args.includes(flag));

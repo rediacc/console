@@ -253,7 +253,7 @@ export function attachDecorator(inner: Executor): Executor {
       const window =
         options.attachWindowMs === undefined
           ? attachWindowMs({
-              background: backgroundRequested && !served,
+              background: backgroundRequested && !served && options.probe !== true,
               served,
               client: clientKindFromEnv(),
             })

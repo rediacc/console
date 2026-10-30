@@ -3,10 +3,14 @@
 A rebase-merge replays renet's commits under new SHAs with byte-identical trees. bin/renet stamps `vcs.revision`, and `npm run vm:check` refuses a binary whose revision is not the checkout (renet-build-mismatch). On 2026-10-23 the stamp held only the tree fingerprint, so `./rdc.sh --version` found it current and never rebuilt, and vm:check refused on every run (c32bb4884efa built, 0a89e786caef checked out).
 """
 
-import pathlib
 import subprocess
 
-from rediacc_ci.core import local_common, renet_flavor
+import pytest
+
+from rediacc_ci.core import local_common
+
+# A syntactically valid ED25519 public key, fixture only.
+KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
 
 
 def _git(cwd, *args):
@@ -33,22 +37,20 @@ def test_two_commits_with_one_tree_share_the_fingerprint_but_not_the_key(tmp_pat
     assert first_fp is not None
     assert first_fp == second_fp
 
-    first = local_common.renet_stamp_key(first_fp, first_head, "nolicense", "")
-    second = local_common.renet_stamp_key(second_fp, second_head, "nolicense", "")
+    first = local_common.renet_stamp_key(first_fp, first_head, "")
+    second = local_common.renet_stamp_key(second_fp, second_head, "")
     assert first != second
 
 
-def test_the_key_still_moves_with_source_license_and_key():
-    base = local_common.renet_stamp_key("src", "abc", "nolicense", "")
-    assert local_common.renet_stamp_key("src2", "abc", "nolicense", "") != base
-    assert local_common.renet_stamp_key("src", "abc", "enforce", "") != base
-    assert local_common.renet_stamp_key("src", "abc", "nolicense", "k") != base
-    assert local_common.renet_stamp_key("src", "abc", "nolicense", "") == base
+def test_the_key_still_moves_with_source_and_key():
+    base = local_common.renet_stamp_key("src", "abc", "")
+    assert local_common.renet_stamp_key("src2", "abc", "") != base
+    assert local_common.renet_stamp_key("src", "abc", "k") != base
+    assert local_common.renet_stamp_key("src", "abc", "") == base
 
 
-def test_an_empty_head_keeps_the_key_the_stamp_held_before():
-    legacy = local_common._hex_of(b"src=s\nlicense=nolicense\nkey=\n")
-    assert local_common.renet_stamp_key("s", "", "nolicense", "") == legacy
+def test_an_empty_head_leaves_the_head_line_out():
+    assert local_common.renet_stamp_key("s", "", "k") == local_common._hex_of(b"src=s\nkey=k\n")
 
 
 def _repo(path):
@@ -86,14 +88,7 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
     binary = renet / "bin" / "renet"
     binary.parent.mkdir()
     binary.write_text("binary")
-    env = {
-        "LOCAL_ROOT_DIR": str(tmp_path),
-        "RDC_RENET_LICENSE": "0",
-        "ACCOUNT_ED25519_PUBLIC_KEY": "",
-        # A keyless build is the CI-only RENET_KEYLESS path since agent/plans/PLAN-production-key-only.md K3; without it the build is refused (or reads Bitwarden).
-        "RENET_KEYLESS": "1",
-        "GITHUB_ACTIONS": "true",
-    }
+    env = {"LOCAL_ROOT_DIR": str(tmp_path), "ACCOUNT_ED25519_PUBLIC_KEY": KEY}
     monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
     builds = []
 
@@ -106,10 +101,10 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
     fingerprint = local_common.git_tree_fingerprint(str(renet), ["."], env)
     assert fingerprint is not None
     source = local_common._subst(fingerprint)
-    key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), "nolicense", "")
-    stamp = renet_flavor.stamp_path(str(renet), "nolicense")
+    key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), KEY)
+    stamp = renet / "bin" / local_common.RENET_STAMP_NAME
     local_common.write_stamp_hash(
-        stamp, "%s\nbin=%s" % (key, local_common.renet_artifact_fp(str(binary)))
+        str(stamp), "%s\nbin=%s" % (key, local_common.renet_artifact_fp(str(binary)))
     )
 
     assert local_common.ensure_renet_built(env) is True
@@ -117,84 +112,57 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
 
     _git(renet, "commit", "-q", "--allow-empty", "-m", "the same tree under a new commit")
     assert local_common.ensure_renet_built(env) is False
-    assert builds == [(["./build.sh", "dev", "--nolicense"], str(renet))]
+    assert builds == [(["./build.sh", "dev"], str(renet))]
 
 
-def _fake_build_env(tmp_path, monkeypatch):
-    """A renet checkout whose `./build.sh dev <flag>` is recorded and writes `<flag>` into the flavor directory build.sh would use."""
+def _fake_build_env(tmp_path, monkeypatch, refusal=None):
+    """A renet checkout whose `./build.sh dev` is recorded and writes `bin/renet`, with the key gate answering `refusal`."""
     renet = tmp_path / "private" / "renet"
     _repo(renet)
     monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
     builds = []
+    gated = []
 
     def fake_run(argv, **_):
-        builds.append(argv[-1])
-        flavor = "enforce" if argv[-1] == "--license" else "nolicense"
-        out = pathlib.Path(renet_flavor.binary(str(renet), flavor))
+        builds.append(argv)
+        out = renet / "bin" / "renet"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(argv[-1])
+        out.write_text("built")
         return 0
 
+    def fake_gate(binary, key):
+        gated.append((binary, key))
+        return refusal
+
     monkeypatch.setattr(local_common, "_run", fake_run)
-    return renet, builds
+    monkeypatch.setattr(local_common, "renet_key_refusal", fake_gate)
+    return renet, builds, gated
 
 
-def _env(tmp_path, license_env):
-    return {
-        "LOCAL_ROOT_DIR": str(tmp_path),
-        "RDC_RENET_LICENSE": license_env,
-        "ACCOUNT_ED25519_PUBLIC_KEY": "",
-        # A keyless build is the CI-only RENET_KEYLESS path since agent/plans/PLAN-production-key-only.md K3; without it the build is refused (or reads Bitwarden).
-        "RENET_KEYLESS": "1",
-        "GITHUB_ACTIONS": "true",
-    }
+def _env(tmp_path):
+    return {"LOCAL_ROOT_DIR": str(tmp_path), "ACCOUNT_ED25519_PUBLIC_KEY": KEY}
 
 
-def _snapshot(renet, flavor):
-    binary = pathlib.Path(renet_flavor.binary(str(renet), flavor))
-    stamp = pathlib.Path(renet_flavor.stamp_path(str(renet), flavor))
-    return (
-        binary.read_text(),
-        binary.stat().st_mtime_ns,
-        stamp.read_text(),
-        stamp.stat().st_mtime_ns,
-    )
+def test_every_build_is_key_gated_and_stamped_in_bin(tmp_path, monkeypatch):
+    renet, builds, gated = _fake_build_env(tmp_path, monkeypatch)
+    assert local_common.ensure_renet_built(_env(tmp_path)) is True
+    assert builds == [["./build.sh", "dev"]]
+    assert gated == [(str(renet / "bin" / "renet"), KEY)]
+    assert (renet / "bin" / local_common.RENET_STAMP_NAME).is_file()
+    assert not (renet / "bin" / "enforce").exists()
+    # The stamp matches now, so neither a build nor the gate runs again.
+    assert local_common.ensure_renet_built(_env(tmp_path)) is True
+    assert len(builds) == 1
+    assert len(gated) == 1
 
 
-def test_a_plain_build_leaves_the_enforcing_binary_and_stamp_untouched(tmp_path, monkeypatch):
-    renet, builds = _fake_build_env(tmp_path, monkeypatch)
-
-    assert local_common.ensure_renet_built(_env(tmp_path, "1")) is True
-    enforcing = _snapshot(renet, "enforce")
-    assert enforcing[0] == "--license"
-
-    assert local_common.ensure_renet_built(_env(tmp_path, "0")) is True
-    assert _snapshot(renet, "enforce") == enforcing
-    assert pathlib.Path(renet_flavor.binary(str(renet), "nolicense")).read_text() == "--nolicense"
-
-    assert local_common.ensure_renet_built(_env(tmp_path, "1")) is True
-    assert builds == ["--license", "--nolicense"]
-
-
-def test_the_sequence_is_red_when_both_flavors_share_one_directory(tmp_path, monkeypatch):
-    """Mutant: with SUBDIR mapping both flavors to bin, the plain build overwrites the enforcing binary, and the third call has to rebuild."""
-    monkeypatch.setitem(renet_flavor.SUBDIR, "enforce", "bin")
-    _renet, builds = _fake_build_env(tmp_path, monkeypatch)
-
-    local_common.ensure_renet_built(_env(tmp_path, "1"))
-    local_common.ensure_renet_built(_env(tmp_path, "0"))
-    local_common.ensure_renet_built(_env(tmp_path, "1"))
-
-    assert builds != ["--license", "--nolicense"]
-
-
-def test_the_flavor_stamps_are_distinct_files(tmp_path, monkeypatch):
-    renet, _ = _fake_build_env(tmp_path, monkeypatch)
-    local_common.ensure_renet_built(_env(tmp_path, "1"))
-    local_common.ensure_renet_built(_env(tmp_path, "0"))
-    plain = renet_flavor.stamp_path(str(renet), "nolicense")
-    enforce = renet_flavor.stamp_path(str(renet), "enforce")
-    assert plain != enforce
-    assert pathlib.Path(plain).is_file()
-    assert pathlib.Path(enforce).is_file()
-    assert not (tmp_path / ".ci" / "cache" / "build-renet.stamp").exists()
+def test_a_refused_build_raises_and_leaves_no_stamp(tmp_path, monkeypatch):
+    renet, builds, _ = _fake_build_env(tmp_path, monkeypatch, refusal="baked key differs")
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(_env(tmp_path))
+    assert builds == [["./build.sh", "dev"]]
+    assert not (renet / "bin" / local_common.RENET_STAMP_NAME).exists()
+    # The next run rebuilds rather than trusting the refused binary.
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(_env(tmp_path))
+    assert len(builds) == 2

@@ -368,7 +368,7 @@ test.describe
       test('6. `backup snapshot --dry-run` plans without a session, and writes no state', async () => {
         // The verb landed on 2026-08-14 (`renet backup snapshot`), and `--dry-run` is "plan only: no session, no grant, no upload" (backup_snapshot.go:128), which is what makes this leg runnable HERE: no account server, no credentials, no bytes.
         //
-        // Two honest outcomes, because the plan needs an installed repository licence before it will look at the image (backup_snapshot.go:216): failed — this fleet's repos carry no licence (the ops fleet runs --nolicense renet). The record must SAY so. stored — a licensed fleet: the plan really ran and reports what WOULD move. Both are asserted specifically. What both must share
+        // Two honest outcomes, because the plan needs an installed repository licence before it will look at the image (backup_snapshot.go:216): failed — this fleet's repos carry no installed licence. The record must SAY so. stored — a licensed fleet: the plan really ran and reports what WOULD move. Both are asserted specifically. What both must share
         // is the part that matters: a dry run moves nothing and leaves nothing behind.
         const result = await runner.executeViaBridge(
           `sudo renet ${chunkVerbs().run} --dry-run --repo "${REPO_GUID}" --datastore "${DS}"`
