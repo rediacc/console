@@ -1523,14 +1523,21 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
+      "open": 14,
       "done": 5,
       "open_sigs": [
+        "0022f78c",
         "03025314",
+        "23378074",
         "30316aea",
         "32036b55",
+        "3be7a7fb",
+        "44b08903",
         "48ac90a9",
+        "6a1ca4a4",
+        "75c73349",
         "7f85bab7",
+        "8d96d3a0",
         "c0e271b1",
         "e1ffe36e"
       ],
@@ -1944,6 +1951,21 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-settings-set-verb.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 4,
+      "done": 0,
+      "open_sigs": [
+        "078f1ed4",
+        "5537ebd2",
+        "9c1373a2",
+        "a81690de"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-shell-command-gate-regex-fix.md": {

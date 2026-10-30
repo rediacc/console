@@ -64,23 +64,23 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-program.md -- 165 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cloudflare-proxy.md -- 25 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-telemetry-export.md -- 15 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-telemetry-export.md -- 16 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1373 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1375 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
   - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 1: #a150016d (worker:queue, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:af64682149e2b6947.
+- Leased items: 2: #a150016d (worker:queue, d778be9d), #f780116b (worker:af64682149e2b6947, d778be9d).
 - Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 4 of 40 plans done, 569 of 730 boxes done (77%).
+Promoted: 4 of 41 plans done, 569 of 741 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -115,7 +115,7 @@ Promoted: 4 of 40 plans done, 569 of 730 boxes done (77%).
 | 29 | PLAN-backup-restore-path.md | 7/10 | 3 open |
 | 30 | PLAN-ssh-key-source-ranges.md | 10/11 | 1 open |
 | 31 | PLAN-repo-docker-storage-prune.md | 11/14 | 3 open |
-| 32 | PLAN-production-key-only.md | 5/12 | 7 open |
+| 32 | PLAN-production-key-only.md | 5/19 | 14 open |
 | 33 | PLAN-detached-jobs.md | 12/39 | 27 open |
 | 34 | PLAN-snapshot-read-io-cap.md | 12/16 | 4 open |
 | 35 | PLAN-backup-meter-orphaned-chunks.md | 4/8 | 4 open |
@@ -124,6 +124,7 @@ Promoted: 4 of 40 plans done, 569 of 730 boxes done (77%).
 | 38 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
 | 39 | PLAN-cli-tofu-toolchain.md | 8/10 | 2 open |
 | 40 | PLAN-backup-download-from-store.md | 4/9 | 5 open |
+| 41 | PLAN-settings-set-verb.md | 0/4 | 4 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
@@ -166,6 +167,7 @@ Promoted: 4 of 40 plans done, 569 of 730 boxes done (77%).
 38. agent/plans/PLAN-jobs-backup-real-machine-tests.md -- operator 2026-10-29 "make a new plan for the missing tests": real-machine e2e for jobs and backup, the two gates that cannot fail on them, the expired-session account pin, drill legs p and q
 39. agent/plans/PLAN-cli-tofu-toolchain.md -- operator 2026-10-29 ASKED (Install command + doctor, Pin provider hashes, PATH-only fallback): rdc tools install tofu with baked checksums, doctor Tools section, provider lock hashes, shared plugin cache
 40. agent/plans/PLAN-backup-download-from-store.md -- operator 2026-10-29 "Go: implement": rdc backup download --store from the R2 chunk store with no machine, a backup:restore token scope, renet backup fetch-image, darwin and windows hole punching
+41. agent/plans/PLAN-settings-set-verb.md -- operator /ask 2026-10-30 "Yes, plan it": npm run settings -- set|get|list over a tunables registry, one source per value (the R2 ceiling lived in three places), starting with the spend-guard ceilings
 
 ## Generated
 
