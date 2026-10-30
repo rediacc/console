@@ -105,9 +105,16 @@ describe('malformed phase entries', () => {
     expect(result?.phases).toEqual([{ name: 'cutover', transferredBytes: 10, transferMs: 4 }]);
   });
 
-  it('rejects a non-finite or negative downtime', () => {
-    expect(extractMigrateResult(wrap([], null))).toBeUndefined();
-    expect(extractMigrateResult(wrap([], -1))).toBeUndefined();
+  it('drops only the downtime when it is non-finite or negative, keeping the phase stats', () => {
+    const bulk = { name: 'bulk', transferredBytes: 2048, transferMs: 1500 };
+    expect(extractMigrateResult(wrap([bulk], null))).toEqual({
+      phases: [bulk],
+      downtimeMs: undefined,
+    });
+    expect(extractMigrateResult(wrap([bulk], -1))?.downtimeMs).toBeUndefined();
+    renderMigrateResult(wrap([bulk], -1));
+    expect(printed().some((l) => l.includes('Transferred'))).toBe(true);
+    expect(printed().some((l) => l.includes('Downtime'))).toBe(false);
   });
 
   it('renders without throwing and omits the lines of dropped phases', () => {

@@ -26,6 +26,7 @@ import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
+import { telemetryService } from '../services/telemetry/telemetry.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatBytes } from '../utils/format.js';
@@ -334,7 +335,8 @@ interface MigratePhaseResult {
 
 interface MigrateJobResult {
   phases: MigratePhaseResult[];
-  downtimeMs: number;
+  /** Undefined when renet's value is missing or invalid; the Downtime line is then omitted, the phase lines still print. */
+  downtimeMs?: number;
 }
 
 const MIGRATE_PHASE_NAMES = new Set(['bulk', 'cutover']);
@@ -362,9 +364,10 @@ function parseResultLine(rawLine: string): MigrateJobResult | undefined {
     };
     const result = parsed.migrate_result;
     if (!result || !Array.isArray(result.phases)) return undefined;
-    if (!isFiniteNumber(result.downtimeMs) || result.downtimeMs < 0) return undefined;
+    const downtimeMs =
+      isFiniteNumber(result.downtimeMs) && result.downtimeMs >= 0 ? result.downtimeMs : undefined;
     const phases = result.phases.map(validPhase).filter((p) => p !== undefined);
-    return { phases, downtimeMs: result.downtimeMs };
+    return { phases, downtimeMs };
   } catch {
     // Not the result line (log text, a partial line).
     return undefined;
@@ -410,11 +413,14 @@ export function renderMigrateResult(output: string | undefined): void {
         'commands.repo.migrate.phase2Stats',
         result.phases.find((p) => p.name === 'cutover')
       ),
-      `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(result.downtimeMs) })}`,
+      result.downtimeMs === undefined
+        ? undefined
+        : `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(result.downtimeMs) })}`,
     ];
     for (const line of lines) if (line !== undefined) outputService.info(line);
-  } catch {
-    // Omit the lines; the migrate continues.
+  } catch (err) {
+    // Omit the lines; the migrate continues. The failure is still recorded, so a broken output sink is not silent.
+    telemetryService.trackError(err, { operation: 'repo.migrate.report_result' });
   }
 }
 
