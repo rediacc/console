@@ -31,7 +31,7 @@ The roster comes from the progress table and the plan files, not from a survey. 
 - **Order of starting**: first one writer per plan in table order (the first third for a split plan), then the second and third thirds in table order. Whatever does not fit in the free slots is queued (step 5), in that same order.
 - **Filling the cap**: when every planned writer fits and slots remain, the largest remaining share above five boxes splits into thirds again, repeated until the slots run out or no share is above five.
 
-Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other), so the guard cannot keep two siblings out of one file. Sibling writers therefore run with `isolation: "worktree"`, each in its own checkout, and never write one tree: the lead copies each accepted report's files and merges by hand any file two siblings both report. Each sibling's brief still names the other siblings' box ranges, so such a file is rare: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
+Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other), so the guard cannot keep two siblings out of one file. Writers run in the main checkout, NOT with `isolation: "worktree"`: a harness worktree is cut from `origin/main` with every submodule uninitialised (measured 2026-10-30: base 403f47b97, 1398 commits behind the live branch, `private/account`, `private/renet` and `private/elite` empty), so a writer there reads stale code and cannot run the submodule tests. Siblings are kept apart by their box ranges instead. Each sibling's brief still names the other siblings' box ranges, so such a file is rare: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
 
 ### 3. The survey, optional and on disk
 
@@ -39,7 +39,7 @@ A survey helps only when it does not hold the writers back. When one is wanted, 
 
 ### 4. Start the writers, all at once
 
-Every writer that fits is started in ONE message with parallel Agent calls, each with `isolation: "worktree"` (step 2). Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
+Every writer that fits is started in ONE message with parallel Agent calls, in the main checkout (step 2 says why not a worktree). Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
 
 Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards and are copied from the plan header:
 
