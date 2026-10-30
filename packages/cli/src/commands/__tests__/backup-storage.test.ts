@@ -7,6 +7,15 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 const mockAccountServerFetch = vi.hoisted(() => vi.fn());
+// These verbs read the hosted backup plane, which needs a login (PLAN-free-license R13); a logged-in operator is the case under test.
+vi.mock('../../services/account/subscription-auth.js', () => ({
+  getSubscriptionTokenState: () => ({
+    kind: 'ready',
+    token: { token: 't' },
+    serverUrl: 'https://acct.example',
+  }),
+  getSubscriptionServerUrl: () => 'https://acct.example',
+}));
 vi.mock('../../services/account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
 }));

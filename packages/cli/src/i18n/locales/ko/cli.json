@@ -2685,6 +2685,14 @@
       "recoveryFailedServerRejected": "계정 서버가 \"{{machine}}\"의 저장소에 대한 라이선스 발급을 거부했습니다. 첫 번째 오류: {{error}}. 자세한 정보는 rdc subscription refresh --repo <repo-ref>를 실행하세요.",
       "recoveryFailedTokenNotReady": "구독 토큰이 준비되지 않았습니다. 실행: rdc subscription login 후 다시 시도하세요."
     },
+    "freeLicense": {
+      "offerPrompt": "이 명령에는 라이선스가 필요한데 로그인되어 있지 않습니다. 로그인할까요, 아니면 무료 라이선스로 계속할까요?",
+      "offerLogin": "계정에 로그인",
+      "offerFree": "무료 라이선스로 계속 (최대 3 GB)",
+      "autoTaken": "로그인되어 있지 않아 무료 라이선스를 사용합니다 (최대 3 GB, 호스팅 백업 없음). 더 많이 쓰려면 계정을 만드세요: {{url}}",
+      "issued": "이 저장소에 무료 라이선스를 설치했습니다 (최대 {{maxGb}} GB).",
+      "noHostedBackup": "무료 라이선스에는 호스팅 백업이 없습니다. 이 저장소를 백업하려면 계정을 만들고 유료 플랜을 선택하세요: {{url}}"
+    },
     "machineNotFound": "머신 \"{{name}}\"을(를) 찾을 수 없습니다",
     "machineRequired": "머신 이름이 필요합니다. --machine <name>을 사용하세요",
     "machineRequiredLocal": "머신 이름이 필요합니다. --machine <name>을 사용하세요",

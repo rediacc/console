@@ -3,6 +3,7 @@ import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
@@ -494,6 +495,8 @@ export async function resolveSnapshotAt(
     throw new ValidationError(t('commands.backup.restore.atUnparsable', { at }));
   }
 
+  // Resolving a time reads the hosted snapshot index, which a Free License (or no login) does not have.
+  assertHostedBackupAccount();
   const result = await accountServerFetch<BackupManifestsResponse>(
     `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
   );

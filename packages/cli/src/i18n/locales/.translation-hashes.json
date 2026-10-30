@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2271,
-    "sourceCommit": "4adaf800b7b2859d06d68a0ab5d0311f16b602b5"
+    "keyCount": 2277,
+    "sourceCommit": "36da81218e1d838de718bcf5e705b15690981008"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2041,6 +2041,12 @@
     "errors.editor.nonzeroExit": "22291935",
     "errors.editor.notFound": "40d10a72",
     "errors.editor.spawnFailed": "4982c53f",
+    "errors.freeLicense.autoTaken": "f5a350f4",
+    "errors.freeLicense.issued": "8e45eb9d",
+    "errors.freeLicense.noHostedBackup": "ca781aac",
+    "errors.freeLicense.offerFree": "a123915e",
+    "errors.freeLicense.offerLogin": "7ae2e813",
+    "errors.freeLicense.offerPrompt": "fe15d97f",
     "errors.invalidFunctionParams": "e00a56a1",
     "errors.invalidKey": "ce3f98e5",
     "errors.license.machineSlotLimit": "4364dd2e",

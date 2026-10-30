@@ -2685,6 +2685,14 @@
       "recoveryFailedServerRejected": "Kontoserver lükkas hoidla litsentsi väljastamise tagasi masinal \"{{machine}}\". Esimene viga: {{error}}. Käivita: rdc subscription refresh --repo <repo-ref> üksikasjade saamiseks.",
       "recoveryFailedTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login, seejärel proovi uuesti."
     },
+    "freeLicense": {
+      "offerPrompt": "See käsk vajab litsentsi, kuid sisselogimist ei leitud. Kas logida sisse või jätkata tasuta litsentsiga?",
+      "offerLogin": "Logi kontole sisse",
+      "offerFree": "Jätka tasuta litsentsiga (kuni 3 GB)",
+      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni 3 GB, ilma majutatud varukoopiateta). Rohkema saamiseks loo konto: {{url}}",
+      "issued": "Selle hoidla tasuta litsents on paigaldatud (kuni {{maxGb}} GB).",
+      "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Selle hoidla varundamiseks loo konto ja vali tasuline pakett: {{url}}"
+    },
     "machineNotFound": "Masina \"{{name}}\" ei leitud",
     "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",
     "machineRequiredLocal": "Masina nimi on nõutud. Kasuta --machine <name>",

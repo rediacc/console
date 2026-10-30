@@ -2685,6 +2685,14 @@
       "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。"
     },
+    "freeLicense": {
+      "offerPrompt": "このコマンドにはライセンスが必要ですが、ログインしていません。ログインしますか、それとも無料ライセンスで続けますか？",
+      "offerLogin": "アカウントにログインする",
+      "offerFree": "無料ライセンスで続ける（最大 3 GB）",
+      "autoTaken": "ログインしていないため、無料ライセンス（最大 3 GB、ホスト型バックアップなし）を使用します。さらに使うにはアカウントを作成してください: {{url}}",
+      "issued": "このリポジトリに無料ライセンスをインストールしました（最大 {{maxGb}} GB）。",
+      "noHostedBackup": "無料ライセンスにはホスト型バックアップが含まれません。このリポジトリをバックアップするには、アカウントを作成して有料プランを選んでください: {{url}}"
+    },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
     "machineRequiredLocal": "マシン名が必要です。--machine <name> を使用してください",

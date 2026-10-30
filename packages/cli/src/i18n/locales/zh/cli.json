@@ -2685,6 +2685,14 @@
       "recoveryFailedServerRejected": "账户服务器拒绝为 \"{{machine}}\" 上的仓库签发许可证。首个错误：{{error}}。请运行：rdc subscription refresh --repo <repo-ref> 获取详情。",
       "recoveryFailedTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login，然后重试。"
     },
+    "freeLicense": {
+      "offerPrompt": "此命令需要许可证，但尚未登录。要登录，还是使用免费许可证继续？",
+      "offerLogin": "登录账户",
+      "offerFree": "使用免费许可证继续（最多 3 GB）",
+      "autoTaken": "未登录，因此使用免费许可证（最多 3 GB，不含托管备份）。创建账户可获得更多：{{url}}",
+      "issued": "已为此仓库安装免费许可证（最多 {{maxGb}} GB）。",
+      "noHostedBackup": "免费许可证不含托管备份。要备份此仓库，请创建账户并选择付费套餐：{{url}}"
+    },
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine <name>",
     "machineRequiredLocal": "需要机器名称。使用 --machine <name>",

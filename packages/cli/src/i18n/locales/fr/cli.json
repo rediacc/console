@@ -2685,6 +2685,14 @@
       "recoveryFailedServerRejected": "Le serveur de compte a refusé l'émission de la licence pour le dépôt sur \"{{machine}}\". Première erreur : {{error}}. Exécutez : rdc subscription refresh --repo <repo-ref> pour plus de détails.",
       "recoveryFailedTokenNotReady": "Votre jeton d'abonnement n'est pas prêt. Exécutez : rdc subscription login, puis réessayez."
     },
+    "freeLicense": {
+      "offerPrompt": "Cette commande nécessite une licence, et aucune connexion n'a été trouvée. Se connecter, ou continuer avec une licence gratuite ?",
+      "offerLogin": "Se connecter à un compte",
+      "offerFree": "Continuer avec une licence gratuite (jusqu'à 3 Go)",
+      "autoTaken": "Aucune connexion trouvée : une licence gratuite est utilisée (jusqu'à 3 Go, sans sauvegardes hébergées). Créez un compte pour aller plus loin : {{url}}",
+      "issued": "Licence gratuite installée pour ce dépôt (jusqu'à {{maxGb}} Go).",
+      "noHostedBackup": "Une licence gratuite n'inclut pas de sauvegardes hébergées. Créez un compte et choisissez une offre payante pour sauvegarder ce dépôt : {{url}}"
+    },
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
     "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",
     "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine <name>",

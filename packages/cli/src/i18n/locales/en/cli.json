@@ -2665,6 +2665,14 @@
       "partialPlacement": "The placement stopped part-way: {{placed}} machine(s) completed ({{placedNames}}) and {{remaining}} were never started ({{remainingNames}}). Nothing was rolled back, so the completed machines keep their repositories and their slots. Free a slot or raise the ceiling, then re-run: {{command}}",
       "nothingProvisioned": "Nothing was provisioned: the repository was not created."
     },
+    "freeLicense": {
+      "offerPrompt": "This command needs a license, and no login was found. Log in, or continue with a free license?",
+      "offerLogin": "Log in to an account",
+      "offerFree": "Continue with a free license (up to 3 GB)",
+      "autoTaken": "No login found, so a free license is used (up to 3 GB, no hosted backups). Create an account for more: {{url}}",
+      "issued": "Free license installed for this repository (up to {{maxGb}} GB).",
+      "noHostedBackup": "A free license has no hosted backups. Create an account and choose a paid plan to back up this repository: {{url}}"
+    },
     "machineNotFound": "Machine \"{{name}}\" not found",
     "machineRequired": "Machine name required. Use --machine <name>",
     "machineRequiredLocal": "Machine name required. Use --machine <name>",

@@ -2685,6 +2685,14 @@
       "recoveryFailedServerRejected": "Der Account-Server hat die Lizenzausstellung für das Repository auf \"{{machine}}\" abgelehnt. Erster Fehler: {{error}}. Ausführen: rdc subscription refresh --repo <repo-ref> für Details.",
       "recoveryFailedTokenNotReady": "Das Subscription-Token ist noch nicht bereit. Ausführen: rdc subscription login, dann erneut versuchen."
     },
+    "freeLicense": {
+      "offerPrompt": "Für diesen Befehl wird eine Lizenz benötigt, aber es ist keine Anmeldung vorhanden. Anmelden oder mit einer kostenlosen Lizenz fortfahren?",
+      "offerLogin": "Bei einem Konto anmelden",
+      "offerFree": "Mit einer kostenlosen Lizenz fortfahren (bis zu 3 GB)",
+      "autoTaken": "Keine Anmeldung gefunden, daher wird eine kostenlose Lizenz verwendet (bis zu 3 GB, ohne gehostete Backups). Mehr gibt es mit einem Konto: {{url}}",
+      "issued": "Kostenlose Lizenz für dieses Repository installiert (bis zu {{maxGb}} GB).",
+      "noHostedBackup": "Eine kostenlose Lizenz enthält keine gehosteten Backups. Legen Sie ein Konto an und wählen Sie einen kostenpflichtigen Plan, um dieses Repository zu sichern: {{url}}"
+    },
     "machineNotFound": "Machine \"{{name}}\" nicht gefunden",
     "machineRequired": "Machine-Name erforderlich. Verwenden Sie --machine <name>",
     "machineRequiredLocal": "Machine-Name erforderlich. Verwenden Sie --machine <name>",

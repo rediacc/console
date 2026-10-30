@@ -9,6 +9,12 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { ValidationError } from '../../utils/errors.js';
 import {
+  issueFreeRepoLicense,
+  type LicenseAuthority,
+  renewInstalledLicenses,
+  resolveLicenseAuthority,
+} from '../account/free-license.js';
+import {
   issueRepoLicense,
   type RepoBatchRecoveryFailureMode,
   refreshRepoLicenseIdentity,
@@ -84,7 +90,7 @@ export async function resolveLicenseFailure(
     );
   }
   try {
-    await maybeOnboardSubscription(failure.reason);
+    await maybeOnboardSubscription(failure.reason, options.functionName);
   } catch (error) {
     return buildRecoveryFailureResult(
       result,
@@ -187,11 +193,35 @@ async function maybeIssueLicense(
     return batchResult;
   }
   if (batchResult.recoveryFailureMode === null) return { kind: 'success' };
+  // No login: the batch needs a token, but an installed blob renews itself through renet's blob-authenticated path, which is how a FREE licence (or any licence on a machine whose operator is not logged in here) is renewed, without limit (PLAN-free-license R6).
+  if (batchResult.recoveryFailureMode === 'token_not_ready') {
+    return renewWithoutToken(machine, sshPrivateKey, remoteRenetPath, sftp);
+  }
   return {
     kind: 'failure',
     failureMode: batchResult.recoveryFailureMode,
     serverErrorSample: batchResult.serverErrorSample,
   };
+}
+
+/** Recovery with no token: renet renews every installed blob now, and any renewal is a success. */
+async function renewWithoutToken(
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+  sshPrivateKey: string,
+  remoteRenetPath: string,
+  sftp: SFTPClient
+): Promise<LicenseIssuanceOutcome> {
+  try {
+    const { renewed } = await renewInstalledLicenses(machine, sshPrivateKey, {
+      force: true,
+      remoteRenetPath,
+      sftp,
+    });
+    if (renewed > 0) return { kind: 'success' };
+  } catch (err) {
+    telemetryService.trackError(err, { operation: 'executor.renew_without_token' });
+  }
+  return { kind: 'failure', failureMode: 'token_not_ready' };
 }
 
 /**
@@ -218,11 +248,15 @@ export async function maybeRefreshRepoLicenses(
 ): Promise<void> {
   // The ENTIRE body is best-effort. This runs on every machine-touching command as a side-effect of doing something else, so nothing in here, token lookup, local state IO, the network call, may surface as a failure of the command the operator actually asked for.
   try {
-    if (getSubscriptionTokenState().kind !== 'ready') return;
-
     if (!(await isRefreshDue(machineName))) return;
     // Marked before the attempt, not after: a refresh that throws must still consume its cooldown slot, or an unreachable machine would be retried on every single command.
     await markRefreshAttempted(machineName);
+
+    // No login: renet's own renewal keeps the installed blobs alive, FREE licences included (they renew without limit, R6). Only due blobs are sent.
+    if (getSubscriptionTokenState().kind !== 'ready') {
+      await renewInstalledLicenses(machine, sshPrivateKey, { remoteRenetPath, sftp });
+      return;
+    }
 
     const result = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath, sftp);
     if (result.invalidSignatureDetected > 0) {
@@ -244,8 +278,12 @@ export async function maybeRefreshRepoLicenses(
   }
 }
 
-async function maybeOnboardSubscription(reason: string): Promise<boolean> {
+async function maybeOnboardSubscription(reason: string, functionName: string): Promise<boolean> {
   if (reason !== 'missing') {
+    return false;
+  }
+  // The single-repo reissue (provisioning, restore) resolves its own authority, where the free licence is offered; logging in here first would pre-empt that offer.
+  if (singleRepoReissueFor(functionName)) {
     return false;
   }
   const tokenState = getSubscriptionTokenState();
@@ -278,16 +316,8 @@ export async function ensureRepoLicenseForProvisioning(
   remoteRenetPath: string,
   sftp?: SFTPClient
 ): Promise<void> {
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    if (isAgentEnvironment()) {
-      throw new ValidationError(t('errors.subscription.tokenRequired'));
-    }
-    await authorizeSubscriptionViaDeviceCode(undefined, {
-      interactive: process.stdin.isTTY && process.stdout.isTTY,
-      announceIntro: true,
-    });
-  }
+  // No login: a human is offered a login or a free licence, an agent or --yes takes the free licence (PLAN-free-license R11).
+  const authority = await resolveLicenseAuthority(loginViaDeviceCode);
 
   const repoLicenseCtx = await resolveRepoLicenseContext(
     options.functionName,
@@ -300,7 +330,8 @@ export async function ensureRepoLicenseForProvisioning(
     throw new Error(t('errors.subscription.activationFailed'));
   }
 
-  const issued = await issueOrExplainSlotLimit(
+  const issued = await issueFor(
+    authority,
     machine,
     sshPrivateKey,
     repoLicenseCtx,
@@ -350,16 +381,8 @@ export async function ensureRepoLicenseForRestore(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<void> {
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    if (isAgentEnvironment()) {
-      throw new ValidationError(t('errors.subscription.tokenRequired'));
-    }
-    await authorizeSubscriptionViaDeviceCode(undefined, {
-      interactive: process.stdin.isTTY && process.stdout.isTTY,
-      announceIntro: true,
-    });
-  }
+  // No login: a human is offered a login or a free licence, an agent or --yes takes the free licence (PLAN-free-license R11).
+  const authority = await resolveLicenseAuthority(loginViaDeviceCode);
 
   const params = options.params ?? {};
   const base = await resolveRestoreLicenseContext(options.machineName, params, sftp, {
@@ -374,7 +397,8 @@ export async function ensureRepoLicenseForRestore(
     return;
   }
 
-  const issued = await issueOrExplainSlotLimit(
+  const issued = await issueFor(
+    authority,
     machine,
     sshPrivateKey,
     {
@@ -387,6 +411,42 @@ export async function ensureRepoLicenseForRestore(
   if (!issued) {
     throw new Error(t('errors.subscription.activationFailed'));
   }
+}
+
+/** The device-code login the licence paths ran before the free licence existed. */
+async function loginViaDeviceCode(): Promise<void> {
+  await authorizeSubscriptionViaDeviceCode(undefined, {
+    interactive: process.stdin.isTTY && process.stdout.isTTY,
+    announceIntro: true,
+  });
+}
+
+/** Issue through the account (`token`) or take a FREE licence (`free`) for the same repo context. */
+async function issueFor(
+  authority: LicenseAuthority,
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+  sshPrivateKey: string,
+  repoLicenseCtx: RepoLicenseContext,
+  remoteRenetPath: string,
+  sftp?: SFTPClient
+): Promise<boolean> {
+  if (authority === 'token') {
+    return issueOrExplainSlotLimit(machine, sshPrivateKey, repoLicenseCtx, remoteRenetPath, sftp);
+  }
+  await issueFreeRepoLicense(
+    machine,
+    sshPrivateKey,
+    {
+      repositoryGuid: repoLicenseCtx.repositoryGuid,
+      grandGuid: repoLicenseCtx.grandGuid,
+      kind: repoLicenseCtx.kind,
+      requestedSizeGb: repoLicenseCtx.requestedSizeGb,
+      datastoreId: repoLicenseCtx.datastoreId,
+    },
+    remoteRenetPath,
+    sftp
+  );
+  return true;
 }
 
 /**

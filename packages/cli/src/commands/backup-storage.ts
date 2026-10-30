@@ -13,6 +13,11 @@ import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import {
+  assertHostedBackupAccount,
+  freeLicenseNoBackupMessage,
+  isFreeLicenseBackupRefusal,
+} from '../services/account/free-license.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import {
   bandwidthToBytesPerSecond,
@@ -87,6 +92,7 @@ function registerBackupUsage(backup: Command): void {
     .description(t('commands.backup.usage.description'))
     .action(async () => {
       try {
+        assertHostedBackupAccount();
         outputService.info(t('commands.backup.usage.fetching'));
         const usage = await accountServerFetch<BackupUsageResponse>(
           '/account/api/v1/backups/usage'
@@ -148,6 +154,7 @@ function registerBackupManifests(backup: Command): void {
         // Scope to one lineage (grand GUID) when a repo is named. Config-local resolution only, the index lives on the server, not on a machine.
         const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
 
+        assertHostedBackupAccount();
         outputService.info(t('commands.backup.manifests.fetching'));
         const query = lineage ? `?lineage=${encodeURIComponent(lineage)}` : '';
         const result = await accountServerFetch<BackupManifestsResponse>(
@@ -356,6 +363,7 @@ export interface StoreVerifyVerdict {
  * (BACKUP_VERIFY_CHUNKS_MAX), so a large lineage is many requests.
  */
 export async function runStoreVerify(lineageGuid: string): Promise<StoreVerifyVerdict> {
+  assertHostedBackupAccount();
   const verdict: StoreVerifyVerdict = { lineageGuid, checked: 0, missing: [], corrupt: [] };
   let after: string | undefined;
   const sent = new Set<string>();
@@ -682,6 +690,9 @@ function registerBackupSnapshot(backup: Command): void {
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
             setExitCode(RENET_QUOTA_REFUSED_EXIT);
+          } else if (!result.success && isFreeLicenseBackupRefusal(result)) {
+            // A Free License has no hosted backup plane (PLAN-free-license R13): the server refused the session, so name the way to one rather than leave the raw refusal as the last word.
+            outputService.warn(freeLicenseNoBackupMessage());
           }
           // Any other failure keeps the exit code executeRepoFunction's renderer set (10 for a license refresh, for one); overwriting it with 1 lost that.
         } catch (error) {

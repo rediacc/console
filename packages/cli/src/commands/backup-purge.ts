@@ -8,6 +8,7 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -128,6 +129,8 @@ async function confirmByName(repoKey: string, snapshots: number, bytes: string):
 
 export async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<void> {
   const { repoKey, lineage } = await resolvePurgeTarget(repoRef);
+  // A Free License (or no login) has no hosted store to purge: say so instead of a token error.
+  assertHostedBackupAccount();
   const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
   const format = getOutputFormat();
 
