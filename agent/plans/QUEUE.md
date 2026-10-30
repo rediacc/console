@@ -189,6 +189,7 @@ Promoted: 5 of 42 plans done, 575 of 754 boxes done (76%).
 13. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 14. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
 15. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+16. agent/plans/PLAN-renet-docker-running-semantics.md -- P- (no Priority), executing, not started
 
 ### Not queued
 

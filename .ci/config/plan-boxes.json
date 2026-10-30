@@ -1757,6 +1757,30 @@
         "ddf1b24c"
       ]
     },
+    "agent/plans/PLAN-renet-docker-running-semantics.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "098555d6",
+        "2d60d810",
+        "36976254",
+        "38554e84",
+        "448f6839",
+        "45fa063c",
+        "68d0cf87",
+        "86b2a452",
+        "96978a13",
+        "b4f5246e",
+        "c562604a",
+        "cb8d7874",
+        "d347a64f"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-renet-executor-tiered-license-check.md": {
       "status": "executing",
       "owner": "d778be9d",

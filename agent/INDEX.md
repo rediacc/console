@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 257 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 258 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -550,6 +550,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 119 | 1 | 15 | 30118 |
 | `agent/plans/PLAN-renet-change-test-triggers.md` | executing | 46 | 0 | 7 | 7865 |
+| `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 56 | 13 | 0 | 13079 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 52 | 1 | 2 | 12099 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 53 | 1 | 2 | 6811 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 99 | 1 | 3 | 11248 |
@@ -722,4 +723,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-257 plan(s), 191 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+258 plan(s), 192 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
