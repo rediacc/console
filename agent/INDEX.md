@@ -476,7 +476,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 262 | 4 | 4 | 33056 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 40 | 3 | 4 | 6520 |
 | `agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | executing | 49 | 0 | 7 | 7408 |
-| `agent/plans/PLAN-backup-program.md` | approved | 569 | 31 | 165 | 149101 |
+| `agent/plans/PLAN-backup-program.md` | approved | 570 | 30 | 166 | 149246 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 202 | 3 | 7 | 35742 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -497,7 +497,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 188 | 1 | 7 | 26384 |
 | `agent/plans/PLAN-config-server-key.md` | approved | 78 | 0 | 7 | 10762 |
-| `agent/plans/PLAN-config-sync-hardening.md` | draft | 482 | 1 | 19 | 60389 |
+| `agent/plans/PLAN-config-sync-hardening.md` | draft | 483 | 0 | 20 | 60602 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 371 | 4 | 17 | 67338 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 92 | 1 | 18 | 33745 |
@@ -585,7 +585,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | proposed | 109 | 8 | 0 | 18747 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 133 | 1 | 6 | 21029 |
-| `agent/plans/PLAN-telemetry-export.md` | approved | 203 | 4 | 16 | 50732 |
+| `agent/plans/PLAN-telemetry-export.md` | approved | 204 | 3 | 17 | 50934 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 320 | 6 | 14 | 45502 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |

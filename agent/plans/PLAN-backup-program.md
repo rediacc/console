@@ -385,7 +385,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-28T14:59:01Z by d778be9d: K9: TestBtrfsLUKS_KeyRotationDedupAndReencryptFullSeed (renet d460d0f) PASS 24.67s as root on a loop-mounted btrfs with cryptsetup, rc=0
 - [ ] K10: Large-repo performance: a nightly VM job seeds 50 GB and runs an incremental against a time and byte budget, recording durationMs. Accept: the first nightly result recorded.
 - [ ] K11: Corruption injection at e2e level: flip a byte in a stored chunk; restore refuses and verify reports it. Accept: suite 26 case.
-- [ ] K11a: A reusable corruption-injection fixture (flip one byte of a stored chunk) for K11 and later suites; CHECKLIST w4 found no such helper. Accept: K11's suite 26 case uses it.
+- [x] K11a: A reusable corruption-injection fixture (flip one byte of a stored chunk) for K11 and later suites; CHECKLIST w4 found no such helper. Accept: K11's suite 26 case uses it.
+    (ticked) 2026-10-30T19:30:56Z by d778be9d: commit:c5f5ee9e1 chunkCorruption.ts fixture used by the K11 case in 26-backup-storage-cli.test.ts
 - [x] K12: A restore scenario in license-e2e. Accept: license-e2e rc=0.
     (ticked) 2026-10-27T02:30:49Z by d778be9d: commit:1a9685e6f S11c and S11d prove a license of the right lineage gets the restore past the license step (licenseFrom recorded, storage session mint failed, no LICENSE_REQUIRED); pytest license-e2e rc=0 (40 passed); check:ci-proxy-license-e2e rc=0 (28 scenarios against the real renet). DEPS-WAIVED: no dependency on the shell-sandbox or account-vm-check plans
 - [x] K13: Cross-region --at: an EU subscription resolves a time even when the CLI's default server is another region. Accept: CLI test, plus a fix if it fails.

@@ -80,7 +80,7 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
     (ticked) 2026-10-03T10:01:39Z by d778be9d: e2d1b04e5: DEVICE_LOCAL_POINTERS six-pointer exclusion list, syncedDocument, stripStateForPush removed, state merge
 - [x] T18 [B] Every command that edits a remote config pushes through `updateSyncedSection` / `RemoteResourceState.updateDocument`, so no edit is reverted by the next pull: `commands/config/field.ts`, `commands/config/edit.ts`, `config-cluster-logic.ts`, `config-datastores.ts`, `config-resources.ts` (non-resource writes), `config-prune.ts`, `commands/update.ts` (`updateChannel`), `commands/subscription.ts` (`accountServer`), `services/account/account-client.ts` (`e2ePublicKey`); plus a gate or test that fails when a new writer of a synced section bypasses the push. Harness scenarios per command start as `it.fails`.
     (ticked) 2026-10-03T10:01:41Z by d778be9d: e2d1b04e5: synced-write.ts updateSyncedConfig, every edit command routed, synced-write-guard.test.ts gate
-- [ ] T15 [lead] Closure:
+- [x] T15 [lead] Closure:
   - H1-H17 are all green, with no `it.fails` left.
   - The mutation controls table (section 4.3) is run and recorded: each named revert turns its named test red.
   - The CI log of the account integration lane lists `config-sync/*.test.ts` with non-zero test counts (testing skill).
@@ -90,6 +90,7 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
     - delete a machine;
     - move A to a phone hotspot and run a command (it must refresh per D4);
     - rotate the CEK from the portal, and check that B reports "stale key, re-enroll".
+    (ticked) 2026-10-30T19:31:32Z by d778be9d: nocommit:operator-deferred hotspot step waived by operator ruling ASKED:2026-10-30T19:29Z (#0fe1788c); eu live run 2026-09-26 plus config-sync harness 113 tests rc 0
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:22:13Z by d778be9d: live-proof lp-c0ee207ee706 bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt
