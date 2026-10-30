@@ -36,6 +36,8 @@ import type { Release } from '../driver.js';
  *   os-ignore-series       a Leap EVR of another Ceph series is taken
  *   ceph-ignore-host       a dated tag of another Ceph patch level is taken
  *   docker-no-drain        a bumped pin stays in the shrink-only baseline
+ *   docker-keep-digest     a bumped tag keeps the digest of the old tag beside it
+ *   docker-skip-redigest   a pinned tag whose served digest moved offers no re-digest
  */
 export const T8_MUTANTS = [
   'actions-skip-sites',
@@ -47,6 +49,8 @@ export const T8_MUTANTS = [
   'os-ignore-series',
   'ceph-ignore-host',
   'docker-no-drain',
+  'docker-keep-digest',
+  'docker-skip-redigest',
 ] as const;
 export type T8Mutant = (typeof T8_MUTANTS)[number];
 

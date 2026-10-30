@@ -40,6 +40,18 @@ import { spawnSync } from 'node:child_process';
  * several FROM images (private/renet/Dockerfile carries debian, ubuntu and golang) is matched
  * by line, never by file, so each finding names its own leaf.
  *
+ * THE DIGEST AGREES WITH THE TAG. A line that pins `<image>:<tag>@sha256:<digest>` names two
+ * things, and only the digest is what a build pulls. `node:26.13.0-slim@<the 26.12.0 index>`
+ * sat in workers/proxy/Dockerfile with every gate green, because the bump moved the tag alone
+ * and nothing compared the two (#d4b2a051). So every such line in a tracked Dockerfile or
+ * compose file (`git ls-files --recurse-submodules`, dot directories included) is checked
+ * against the index digest Docker Hub serves for its tag (scripts/lib/docker-hub.ts). It FAILS
+ * CLOSED: a mismatch is red, and so is a lookup that cannot answer (a 429, a 5xx, a 404, an
+ * answer with no top-level `digest` or a malformed one), because an unchecked digest is not
+ * an agreeing one. A digest with no tag on its line (`COPY --from=<image>@sha256:...`, a compose
+ * `image: <image>@sha256:...`) names nothing to agree with, so it is LISTED every run as
+ * untagged, with no verdict either way; a digest of another registry is listed the same way.
+ *
  * DOCKER_HUB_API_BASE points the tag listings at another host (a stub in the remedy test);
  * set, no credential is sent. DOCKER_FRESHNESS_ROOT points the scan and the baseline at a
  * fixture git tree.
@@ -47,118 +59,13 @@ import { spawnSync } from 'node:child_process';
  * Usage:
  *   npx tsx scripts/gates/check-docker-image-freshness.ts [--selftest] [--json]
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-/**
- * Drop paths git IGNORES, because CI cannot see them and a baseline entry it cannot
- * reproduce is a permanent red.
- *
- * MEASURED, not theorised. `private/growth` is a git repo under `private/` that is NOT a
- * console submodule and IS gitignored, so it exists only on the operator's machine. Its
- * `youtube-transcripts/Dockerfile` pin was genuinely stale locally, went into this
- * baseline, and then failed CI with "1 baselined pin(s) are no longer stale" because CI
- * had never checked the directory out at all. Locally the same gate exited 0. A gate whose
- * verdict depends on files only one machine has is not a gate.
- *
- * `git check-ignore` is the right instrument rather than `git ls-files`: submodule
- * contents like `private/renet/Dockerfile` are absent from the parent's index but ARE
- * checked out in CI, so an ls-files filter would silently drop them. Verified on this
- * tree: check-ignore flags the `private/growth` path and passes both `private/renet` and
- * `packages/json`.
- */
-function gitVisible(paths: string[]): string[] {
-  if (paths.length === 0) return paths;
-
-  // Submodule paths are EXCLUDED FROM THE QUESTION, not answered by it. `git check-ignore` exits 128 with "fatal: Pathspec is in submodule" the moment one appears in its input, and the first version of this function treated 128 as a hard error and returned every path unfiltered. It silently did nothing while the gate still passed locally, which is the exact false-green shape this
-  // gate family exists to prevent. Submodule content IS checked out in CI, so it is visible by definition and never needs the check.
-  const submodules = readGitmodulePaths();
-  const inSubmodule = (rel: string) => submodules.some((s) => rel === s || rel.startsWith(`${s}/`));
-
-  const rels = paths.map((p) => ({ abs: p, rel: path.relative(ROOT, p) }));
-  const askable = rels.filter((r) => !inSubmodule(r.rel));
-  if (askable.length === 0) return paths;
-
-  const res = spawnSync('git', ['check-ignore', '--stdin'], {
-    cwd: ROOT,
-    input: `${askable.map((r) => r.rel).join('\n')}\n`,
-    encoding: 'utf8',
-  });
-  // 0 = some ignored, 1 = none ignored. Anything else means the instrument did not answer,
-  // and a filter that cannot answer must not silently widen scope: refuse loudly instead.
-  if (res.error || (res.status !== 0 && res.status !== 1)) {
-    console.error(
-      `\u2717 git check-ignore could not answer (status ${res.status}): ${res.stderr?.trim()}`
-    );
-    process.exit(1);
-  }
-  const ignored = new Set(
-    res.stdout
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-  );
-  return rels.filter((r) => !ignored.has(r.rel)).map((r) => r.abs);
-}
-
-/**
- * Every `Dockerfile*` in the tree, by a hand-rolled walk rather than `glob`.
- *
- * WHY NOT glob. This used `globSync('<ROOT>/**' + '/Dockerfile*')`, and that ONE call was
- * the entire cost of the gate. Measured on this tree 2026-08-28: 7.3s of user CPU for the
- * glob, against 0.33s for a Docker Hub tag listing and 0.25s for `find` doing the same
- * 30,000-directory walk. That put the gate at ~10s idle and 20-27s under load, past the
- * 20s tier-honesty budget in `scripts/gates/check-gate-manifest.ts`, and it read as a
- * "network-bound gate" when it was never network-bound at all. `ignore` does not help --
- * glob still pattern-matches every entry it walks (measured: 7.1s with the ignore list,
- * 4.9s with none), and most of the 30k directories are under `private/`, which
- * `gitVisible` throws away afterwards anyway.
- *
- * The set produced is IDENTICAL to the glob's, so the gate's coverage is unchanged:
- *   - entries beginning with `.` are skipped, matching glob's `dot: false` default
- *     (which is why `.git` never appeared in the old results either);
- *   - `node_modules` and `dist` are pruned, matching the old `ignore` list;
- *   - symlinked directories are not followed, matching glob's `follow: false` default,
- *     because `Dirent.isDirectory()` is false for a symlink;
- *   - only regular files are returned. The glob would also have returned a DIRECTORY
- *     named `Dockerfile*`, which `readFileSync` then crashes on; there is none today.
- * Sorted, so the `file:line` a finding reports is stable across runs.
- */
-function findDockerfiles(dir: string, out: string[] = []): string[] {
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return out; // unreadable directory: the glob skipped these silently too
-  }
-  for (const e of entries) {
-    if (e.name.startsWith('.')) continue;
-    if (e.isDirectory()) {
-      if (e.name === 'node_modules' || e.name === 'dist') continue;
-      findDockerfiles(path.join(dir, e.name), out);
-    } else if (e.isFile() && e.name.startsWith('Dockerfile')) {
-      out.push(path.join(dir, e.name));
-    }
-  }
-  return out;
-}
-
-/** Submodule paths from .gitmodules, so they can be exempted from check-ignore. */
-function readGitmodulePaths(): string[] {
-  const res = spawnSync('git', ['config', '-f', '.gitmodules', '--get-regexp', 'path'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
-  if (res.error || res.status !== 0) return [];
-  return res.stdout
-    .split('\n')
-    .map((l) => l.trim().split(/\s+/)[1])
-    .filter(Boolean);
-}
-
 import { WK_IMAGE_REGISTRY } from '../../packages/shared/src/config/well-known.generated.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { HUB_DEFAULT_BASE, hubRepo, hubTagUrl, parseTagDigest } from '../lib/docker-hub.js';
 import { loadRegistry, type PinEntry, siteRegex } from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
@@ -180,6 +87,8 @@ export interface Pin {
   line: number;
   /** The FROM line itself, which the leaf's site must match. */
   text: string;
+  /** The `sha256:<hex>` pinned beside the tag (`<image>:<tag>@sha256:...`), when the line carries one. */
+  digest?: string;
 }
 
 /** `FROM [--flag=value ...] <image>:<tag>` pins, ignoring build stages and our own ghcr.io images. A FROM whose image is a variable (`$ARG`) or carries no tag has no literal pin to check and is not returned. */
@@ -187,15 +96,101 @@ export function parsePins(src: string, file: string): Pin[] {
   const out: Pin[] = [];
   src.split('\n').forEach((raw, i) => {
     const m = raw.match(
-      /^\s*FROM\s+(?:--[A-Za-z0-9-]+=\S+\s+)*([A-Za-z0-9._/-]+):([A-Za-z0-9._-]+)/
+      /^\s*FROM\s+(?:--[A-Za-z0-9-]+=\S+\s+)*([A-Za-z0-9._/-]+):([A-Za-z0-9._-]+)(?:@(sha256:[0-9a-f]{64}))?/
     );
     if (!m) return;
-    const [, image, tag] = m;
+    const [, image, tag, digest] = m;
     // Our own published images are not an upstream freshness question; they are outputs.
     if (image.startsWith(`${WK_IMAGE_REGISTRY}/`)) return;
-    out.push({ image, tag, file, line: i + 1, text: raw });
+    out.push({ image, tag, file, line: i + 1, text: raw, ...(digest ? { digest } : {}) });
   });
   return out;
+}
+
+/** One `<image>[:<tag>]@sha256:<hex>` reference in a Dockerfile or compose file. */
+export interface DigestRef {
+  image: string;
+  /** Null when the line names no tag, so there is nothing to agree with. */
+  tag: string | null;
+  digest: string;
+  file: string;
+  line: number;
+  text: string;
+}
+
+const DIGEST_REF =
+  /(?<=^|[\s="'])([A-Za-z0-9._/-]+)(?::([A-Za-z0-9._-]+))?@(sha256:[0-9a-f]{64})\b/g;
+
+/**
+ * Every digest-pinned image reference in `src`, from any instruction (`FROM`, `COPY --from=`,
+ * a compose `image:`), comment lines excepted. The image must start at a word boundary (the
+ * line start, a space, `=` or a quote), so `node:26.13.0-slim@sha256:...` is read as image
+ * `node` with tag `26.13.0-slim`, never as an image named `26.13.0-slim`. Pure.
+ */
+export function digestRefs(src: string, file: string): DigestRef[] {
+  const out: DigestRef[] = [];
+  src.split('\n').forEach((raw, i) => {
+    if (/^\s*#/.test(raw)) return;
+    for (const m of raw.matchAll(DIGEST_REF))
+      out.push({ image: m[1], tag: m[2] ?? null, digest: m[3], file, line: i + 1, text: raw });
+  });
+  return out;
+}
+
+/** What Docker Hub answered for one `<image>:<tag>`: its index digest, or null with the cause. */
+export interface TagAnswer {
+  digest: string | null;
+  why?: string;
+}
+
+/**
+ * The agreement verdicts over `refs`, keyed in `answers` by `<image>:<tag>`. A tagged Docker
+ * Hub reference whose digest differs from the answer is a finding, and so is one with no
+ * answer or a null one (unknown is never agreement). Untagged and other-registry references
+ * are returned as `unjudged`, never judged. `leafOf` names the pins leaf that moves a line,
+ * or null. Pure.
+ */
+export function digestFindings(
+  refs: DigestRef[],
+  answers: Map<string, TagAnswer>,
+  leafOf: (r: DigestRef) => string | null
+): { findings: string[]; agreed: number; unjudged: string[] } {
+  const findings: string[] = [];
+  const unjudged: string[] = [];
+  let agreed = 0;
+  for (const r of refs) {
+    const at = `${r.file}:${r.line}`;
+    if (r.tag === null) {
+      unjudged.push(`${at}  ${r.image}@${r.digest}: untagged, agreement not checkable`);
+      continue;
+    }
+    if (hubRepo(r.image) === null) {
+      unjudged.push(
+        `${at}  ${r.image}:${r.tag}@${r.digest}: not a Docker Hub image, agreement not checked`
+      );
+      continue;
+    }
+    const ref = `${r.image}:${r.tag}`;
+    const a = answers.get(ref);
+    if (a === undefined || a.digest === null) {
+      findings.push(
+        `${at}  ${ref}@${r.digest}: the index digest of ${ref} could NOT be read from Docker Hub (${a?.why ?? 'no lookup was made'}). Unknown is not agreement.`
+      );
+      continue;
+    }
+    if (a.digest === r.digest) {
+      agreed++;
+      continue;
+    }
+    const leaf = leafOf(r);
+    findings.push(
+      `${at}  ${ref}@${r.digest}: Docker Hub serves ${a.digest} for ${ref}, so this line pulls another image than its tag names. ` +
+        (leaf === null
+          ? 'No docker leaf of .ci/config/pins.json claims the line; give the leaf that pins it a site with role digest, then bump it.'
+          : `Move the tag and the digest together: npm run pins -- bump ${leaf} --to ${ref} --major --reason "<why>" (the core refuses a target equal to the pinned tag, so with no newer tag this waits on a re-digest path; never hand-edit the digest).`)
+    );
+  }
+  return { findings, agreed, unjudged };
 }
 
 /** A numeric series, so `3.9-slim` and `3.13-slim` are comparable but `bookworm` is not. */
@@ -253,12 +248,6 @@ export function staleEvidence(tag: string, tags: TagInfo[], now: number, win: nu
   return soaked ? newer.slice(1) : newer;
 }
 
-function dockerHubRepo(image: string): string | null {
-  if (image.includes('.') && !image.startsWith('docker.io/')) return null; // another registry
-  const bare = image.replace(/^docker\.io\//, '');
-  return bare.includes('/') ? bare : `library/${bare}`;
-}
-
 // No repo parameter: Docker Hub login is account-wide, not per-repository. The repo argument this used to take was never read, and this config's policy is to delete an unused parameter rather than underscore it. Memoised for the same reason there is no repo parameter: login is account-wide, so the per-image call site was paying one extra login round-trip PER IMAGE for a value that
 // cannot differ between them. Anonymous runs never noticed; a credentialled CI run did.
 let hubTokenOnce: Promise<string | null> | undefined;
@@ -285,15 +274,18 @@ const lastFailure = new Map<string, string>();
 
 const HUB_BASE = process.env.DOCKER_HUB_API_BASE;
 
-async function listHubTags(repo: string): Promise<TagInfo[] | null> {
+/**
+ * One Docker Hub API read, parsed JSON, or null with its cause recorded in `lastFailure` under
+ * `key`.
+ *
+ * A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL.
+ *
+ * Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows it masked), every one of the five images failed to list, and the same gate had listed them anonymously in earlier runs of this branch. So the token was being rejected and sending it unconditionally turned a working anonymous path into a total failure.
+ *
+ * A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a 401 or 403 the request is retried without it; anything else, 429 included, stays a failure, because a rate limit is genuinely unknown and unknown is never a pass.
+ */
+async function hubGetJson(url: string, key: string): Promise<unknown | null> {
   const token = HUB_BASE ? null : await hubToken();
-  const url = `${HUB_BASE || 'https://hub.docker.com'}/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
-
-  // A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL.
-  //
-  // Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows it masked), every one of the five images failed to list, and the same gate had listed them anonymously in earlier runs of this branch. So the token was being rejected and sending it unconditionally turned a working anonymous path into a total failure.
-  //
-  // A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a 401 or 403 the request is retried without it; anything else, 429 included, stays a failure, because a rate limit is genuinely unknown and unknown is never a pass.
   const attempts: { label: string; headers: Record<string, string> }[] = token
     ? [
         { label: 'token', headers: { Authorization: `Bearer ${token}` } },
@@ -306,12 +298,9 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
     try {
       const r = await fetch(url, { headers: attempt.headers });
       if (r.ok) {
-        const j = (await r.json()) as { results?: { name: string; last_updated?: string }[] };
-        lastFailure.delete(repo);
-        return (j.results ?? []).map((t) => ({
-          name: t.name,
-          pushedMs: t.last_updated ? Date.parse(t.last_updated) : null,
-        }));
+        const j: unknown = await r.json();
+        lastFailure.delete(key);
+        return j;
       }
       why = `HTTP ${r.status} (${attempt.label})`;
       // Only a rejected credential is worth retrying without it.
@@ -321,8 +310,69 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
       break;
     }
   }
-  lastFailure.set(repo, why);
+  lastFailure.set(key, why);
   return null;
+}
+
+async function listHubTags(repo: string): Promise<TagInfo[] | null> {
+  const url = `${HUB_BASE || HUB_DEFAULT_BASE}/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
+  const j = (await hubGetJson(url, repo)) as {
+    results?: { name: string; last_updated?: string }[];
+  } | null;
+  if (j === null) return null;
+  return (j.results ?? []).map((t) => ({
+    name: t.name,
+    pushedMs: t.last_updated ? Date.parse(t.last_updated) : null,
+  }));
+}
+
+/** The index digest Docker Hub serves for `<image>:<tag>`, or a null digest with the cause. */
+async function hubTagDigest(repo: string, tag: string): Promise<TagAnswer> {
+  const key = `${repo}:${tag}`;
+  const j = await hubGetJson(hubTagUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag), key);
+  if (j === null) return { digest: null, why: lastFailure.get(key) ?? 'the lookup failed' };
+  const digest = parseTagDigest(j);
+  return digest === null
+    ? { digest: null, why: 'the answer carries no top-level sha256 index digest' }
+    : { digest };
+}
+
+/**
+ * The Dockerfiles and compose files git can see, which both scans read: every tracked one
+ * (submodules included, dot directories included), plus untracked ones git does not ignore.
+ * Two reads, because `--recurse-submodules` refuses `--others`.
+ *
+ * WHY GIT AND NOT A WALK. A path git IGNORES must stay out, because CI cannot see it and a
+ * baseline entry it cannot reproduce is a permanent red. Measured: `private/growth` is a git
+ * repo under `private/` that is NOT a console submodule and IS gitignored, so it exists only
+ * on the operator's machine; its stale `youtube-transcripts/Dockerfile` pin went into this
+ * baseline and then failed CI with "1 baselined pin(s) are no longer stale". Submodule
+ * contents, by contrast, ARE checked out in CI, and `--recurse-submodules` lists them.
+ *
+ * The walk this replaced (a hand-rolled copy of `glob` with its `dot: false` default) skipped
+ * every directory whose name starts with a dot, so .ci/docker/*, .ci/media/tts and
+ * .devcontainer were never judged, although .ci/config/pins.json claims sites in all of them.
+ */
+function gitVisibleImageFiles(): string[] {
+  const ls = (args: string[]): string[] => {
+    const r = spawnSync('git', ['ls-files', '-z', ...args], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+    });
+    if (r.error || r.status !== 0) {
+      console.error(
+        `\u2717 git ls-files ${args.join(' ')} could not answer (status ${r.status}): ${r.stderr?.trim()}`
+      );
+      process.exit(1);
+    }
+    return r.stdout.split('\0');
+  };
+  const all = new Set([...ls(['--recurse-submodules']), ...ls(['--others', '--exclude-standard'])]);
+  return [...all]
+    .filter((f) => /(^|\/)(Dockerfile[^/]*|(docker-)?compose[^/]*\.ya?ml)$/.test(f))
+    .filter((f) => existsSync(path.join(ROOT, f)))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /**
@@ -479,6 +529,86 @@ function selftest(): { bad: number; total: number } {
       un[1].startsWith('private/renet/Dockerfile:1  alpine:3.20')
   );
 
+  // THE DIGEST AGREES WITH THE TAG (#d4b2a051).
+  const dA = `sha256:${'a'.repeat(64)}`;
+  const dB = `sha256:${'b'.repeat(64)}`;
+  check(
+    'a FROM pinned by tag and digest parses both',
+    parsePins(`FROM node:26.13.0-slim@${dA}\n`, 'D')[0]?.digest === dA &&
+      parsePins(`FROM node:26.13.0-slim@${dA}\n`, 'D')[0]?.tag === '26.13.0-slim'
+  );
+  check(
+    'CONTROL: a FROM with no digest carries none',
+    parsePins('FROM node:26\n', 'D')[0]?.digest === undefined
+  );
+  const refs = [
+    ...digestRefs(
+      `FROM node:26.13.0-slim@${dA}\n# tsl0922/ttyd:1.7.8-alpine@${dB}\nCOPY --from=tsl0922/ttyd@${dB} /usr/bin/ttyd /usr/bin/ttyd\n`,
+      'Dockerfile'
+    ),
+    ...digestRefs(
+      `services:\n  s3:\n    image: rustfs/rustfs@${dA}\n  db:\n    image: "postgres:17@${dB}"\n`,
+      'compose.yml'
+    ),
+  ];
+  check(
+    'digest refs: a tagged FROM is image node with its tag, an untagged COPY --from and compose image have no tag, a quoted compose ref keeps its tag, a comment is skipped',
+    JSON.stringify(refs.map((r) => [r.file, r.line, r.image, r.tag])) ===
+      JSON.stringify([
+        ['Dockerfile', 1, 'node', '26.13.0-slim'],
+        ['Dockerfile', 3, 'tsl0922/ttyd', null],
+        ['compose.yml', 3, 'rustfs/rustfs', null],
+        ['compose.yml', 5, 'postgres', '17'],
+      ])
+  );
+  check(
+    'parseTagDigest reads the top-level index digest',
+    parseTagDigest({ digest: dA, images: [{ digest: dB }] }) === dA
+  );
+  check(
+    'CONTROL: an images[]-only answer, a malformed digest and a non-object all read null',
+    parseTagDigest({ images: [{ digest: dB }] }) === null &&
+      parseTagDigest({ digest: 'sha256:abc' }) === null &&
+      parseTagDigest(null) === null
+  );
+  check(
+    'hubRepo: an official image gains library/, docker.io/ is dropped, another registry is null',
+    hubRepo('node') === 'library/node' &&
+      hubRepo('docker.io/tsl0922/ttyd') === 'tsl0922/ttyd' &&
+      hubRepo('mcr.microsoft.com/x') === null
+  );
+  const proxy = digestRefs(`FROM node:26.13.0-slim@${dA}\n`, 'workers/proxy/Dockerfile');
+  const leafOf = () => 'image:proxy-node';
+  const mismatch = digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dB }]]), leafOf);
+  check(
+    'CONTROL: a digest that differs from the one Hub serves for the tag is a finding naming the bump',
+    mismatch.findings.length === 1 &&
+      mismatch.findings[0].startsWith('workers/proxy/Dockerfile:1') &&
+      mismatch.findings[0].includes('npm run pins -- bump image:proxy-node --to node:26.13.0-slim')
+  );
+  check(
+    'CONTROL: no answer, and a failed lookup, are both findings (unknown is not agreement)',
+    digestFindings(proxy, new Map(), leafOf).findings.length === 1 &&
+      digestFindings(
+        proxy,
+        new Map([['node:26.13.0-slim', { digest: null, why: 'HTTP 429' }]]),
+        leafOf
+      ).findings[0]?.includes('HTTP 429') === true
+  );
+  const agree = digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dA }]]), leafOf);
+  check(
+    'a digest equal to the one Hub serves agrees',
+    agree.findings.length === 0 && agree.agreed === 1
+  );
+  const unj = digestFindings(refs.slice(1, 3), new Map(), leafOf);
+  check(
+    'untagged refs are listed unjudged, never a finding and never agreement',
+    unj.findings.length === 0 &&
+      unj.agreed === 0 &&
+      unj.unjudged.length === 2 &&
+      unj.unjudged.every((u) => u.includes('untagged, agreement not checkable'))
+  );
+
   return { bad, total };
 }
 
@@ -498,9 +628,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const files = gitVisible(findDockerfiles(ROOT).sort((a, b) => Number(a > b) - Number(a < b)));
+  const imageFiles = gitVisibleImageFiles();
   const pins: Pin[] = [];
-  for (const f of files) pins.push(...parsePins(readFileSync(f, 'utf8'), path.relative(ROOT, f)));
+  for (const f of imageFiles.filter((x) => /(^|\/)Dockerfile[^/]*$/.test(x)))
+    pins.push(...parsePins(readFileSync(path.join(ROOT, f), 'utf8'), f));
 
   if (pins.length === 0) {
     console.error(
@@ -536,7 +667,7 @@ async function main(): Promise<void> {
   for (const p of pins) if (!seen.has(`${p.image}:${p.tag}`)) seen.set(`${p.image}:${p.tag}`, p);
 
   for (const p of seen.values()) {
-    const repo = dockerHubRepo(p.image);
+    const repo = hubRepo(p.image);
     if (repo === null) continue; // non-Hub registry (e.g. mcr): not listed here
     const tags = await listHubTags(repo);
     if (tags === null) {
@@ -554,6 +685,32 @@ async function main(): Promise<void> {
     }
   }
 
+  // THE DIGEST AGREES WITH THE TAG, over every tracked Dockerfile and compose file.
+  if (imageFiles.length === 0) {
+    console.error(
+      '✗ zero tracked Dockerfiles or compose files. The digest scan is not seeing the tree; its green would mean nothing.'
+    );
+    process.exit(1);
+  }
+  const refs: DigestRef[] = [];
+  for (const f of imageFiles) refs.push(...digestRefs(readFileSync(path.join(ROOT, f), 'utf8'), f));
+  const answers = new Map<string, TagAnswer>();
+  for (const r of refs) {
+    const repo = hubRepo(r.image);
+    if (r.tag === null || repo === null || answers.has(`${r.image}:${r.tag}`)) continue;
+    answers.set(`${r.image}:${r.tag}`, await hubTagDigest(repo, r.tag));
+  }
+  const digests = digestFindings(refs, answers, (r) =>
+    leafFor({ image: r.image, tag: r.tag ?? '', file: r.file, line: r.line, text: r.text }, entries)
+  );
+  for (const u of digests.unjudged) console.log(`${YELLOW}!${NC} ${u}`);
+  if (digests.findings.length > 0) {
+    console.error(
+      `\n${RED}✗${NC} ${digests.findings.length} digest-pinned line(s) do not agree with the tag they name:\n`
+    );
+    for (const f of digests.findings) console.error(`    ${f}`);
+  }
+
   if (unknown.length > 0) {
     console.error(
       `\n${RED}✗${NC} ${unknown.length} image(s) could NOT be checked. Unknown is not a pass:`
@@ -563,6 +720,7 @@ async function main(): Promise<void> {
     console.error('DOCKERHUB_USERNAME + DOCKERHUB_PASSWORD) so this cannot go vacuous in CI.');
     process.exit(1);
   }
+  if (digests.findings.length > 0) process.exit(1);
   // SHRINK-ONLY BASELINE, the same shape the other debt gates here use. Adding this gate must not turn `npm run ci` red on staleness that predates it, and bumping a base image across a major (ubuntu 24.04 -> 26.10, python 3.9 -> 3.14) is a decision with real blast radius, not a side effect of installing a watchdog. So today's debt is frozen and NEW staleness fails immediately.
   // Drain with --write-baseline as pins move.
   const keyed = staleKeys;
@@ -659,7 +817,8 @@ async function main(): Promise<void> {
   }
   console.log(
     `${GREEN}✓${NC} ${checked} Docker Hub pin(s) checked, ${checked - stale.length} current, ` +
-      `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} literal image:tag FROM line(s) (variable-image FROMs carry no pin), each claimed by a docker leaf.`
+      `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} literal image:tag FROM line(s) (variable-image FROMs carry no pin), each claimed by a docker leaf. ` +
+      `${refs.length} digest-pinned reference(s) in ${imageFiles.length} tracked Dockerfile/compose file(s): ${digests.agreed} agree with Docker Hub, ${digests.unjudged.length} listed unjudged.`
   );
 }
 

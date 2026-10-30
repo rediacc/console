@@ -3603,7 +3603,7 @@
     {
       "id": "image:proxy-node",
       "kind": "leaf",
-      "name": "node image for the proxy worker's runtime stage (tag only; the digest is pinned beside it)",
+      "name": "node image for the proxy worker's runtime stage (the tag and its multi-arch index digest)",
       "driver": "docker",
       "source": {
         "type": "dockerhub",
@@ -3623,6 +3623,13 @@
           "file": "workers/proxy/Dockerfile",
           "role": "version",
           "match": "^FROM (?<value>node:[^@\\s]+)@sha256:[0-9a-f]{64}$",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "workers/proxy/Dockerfile",
+          "role": "digest",
+          "match": "^FROM node:[^@\\s]+@(?<value>sha256:[0-9a-f]{64})$",
           "expect": 1
         }
       ],

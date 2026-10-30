@@ -14,10 +14,10 @@
 # repo root:
 #   docker build -f workers/proxy/Dockerfile .
 
-# Pinned by digest (the multi-arch index of node:26.12.0-slim), so a rebuild of one
+# Pinned by digest (the multi-arch index of the tag beside it), so a rebuild of one
 # release is the same base. `npm run pins -- bump image:proxy-node` moves the tag
-# and the digest together.
-FROM node:26.12.0-slim@sha256:e556a144463cc8dc53afe8de6d2fa0db5c132fd39ffa232c17641bd40df2bf11
+# and the digest together, and check:ci-docker-image-freshness fails when they disagree.
+FROM node:26.13.0-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
 # Drill marker (PLAN-executor-durable-object-policy L0 drill 3, operator ruling 2026-10-29): a label change forces a new image upload.
 LABEL com.rediacc.drill="l0-drill3-20261029"
 

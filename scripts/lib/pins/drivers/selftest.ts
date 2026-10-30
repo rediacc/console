@@ -24,6 +24,7 @@ import { REPO_ROOT } from '../../repo-root.js';
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
 import { type DriverContext, type PinPlan, PlanRefused } from '../driver.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../registry.js';
+import { majorLineOf } from '../status.js';
 import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
@@ -888,6 +889,165 @@ async function dockerCases(
       (fresh.releases[0] as { lineFirstMs?: number | null } | undefined)?.lineFirstMs ===
       NOW - 6 * DAY,
     detail: JSON.stringify(fresh.releases),
+  });
+
+  // THE DIGEST MOVES WITH THE TAG (#d4b2a051): a FROM pinned by tag AND index digest gets both rewritten.
+  const pn = entry('image:proxy-node');
+  const dA = `sha256:${'a'.repeat(64)}`;
+  const dB = `sha256:${'b'.repeat(64)}`;
+  const dC = `sha256:${'c'.repeat(64)}`;
+  const proxyTree = () =>
+    tree({
+      'workers/proxy/Dockerfile': `FROM node:26.12.0-slim AS build\nFROM node:26.12.0-slim@${dA}\nCMD ["node"]\n`,
+      'scripts/data/docker-image-freshness-baseline.json': '[]\n',
+    });
+  const listing = {
+    results: [
+      { name: '26.13.0-slim', last_updated: iso(OLD) },
+      { name: '26.12.0-slim', last_updated: iso(OLD) },
+    ],
+    next: null,
+  };
+  const pnHub =
+    (tagAnswer: () => unknown): ((u: string) => unknown) =>
+    (u) =>
+      u.includes('/tags/26.13.0-slim')
+        ? tagAnswer()
+        : u.includes('/tags/26.12.0-slim')
+          ? { digest: dA, tag_last_pushed: iso(OLD) }
+          : listing;
+  const pc = ctxOf(proxyTree());
+  const pd = dockerDriver(
+    () => deps({ json: pnHub(() => ({ digest: dB, images: [{ digest: dC }] })) }).deps,
+    mutant
+  );
+  const pi = await pd.inspect(pn, pc);
+  const target = pi.releases.find((r) => r.version === 'node:26.13.0-slim');
+  out.push({
+    name: 'docker: CONTROL a pinned tag whose digest matches what Hub serves offers no re-digest, only the newer tag',
+    ok: pi.releases.map((r) => r.version).join(',') === 'node:26.13.0-slim',
+    detail: JSON.stringify(pi.releases),
+  });
+  const pp = target ? await pd.plan(pn, target, pc).catch(() => null) : null;
+  const pw = pp ? (written(pp)['.:workers/proxy/Dockerfile'] ?? '') : '';
+  out.push({
+    name: "docker: a tag+digest FROM moves both: the tag to the target and the digest to Hub's top-level index digest for it, never images[] and never the old one",
+    ok:
+      pw.split('\n')[1] === `FROM node:26.13.0-slim@${dB}` &&
+      pw.split('\n')[0] === 'FROM node:26.12.0-slim AS build' &&
+      (pp?.changes ?? []).some((c) => c.includes('digest')),
+    detail: JSON.stringify({ pw, changes: pp?.changes }),
+  });
+  const noDigest: [string, () => unknown][] = [
+    ['no digest at all', () => ({ name: '26.13.0-slim' })],
+    ['an images[]-only digest', () => ({ images: [{ digest: dC }] })],
+    ['a malformed digest', () => ({ digest: 'sha256:abc' })],
+    [
+      'a failed lookup',
+      () => {
+        throw new Error('HTTP 429');
+      },
+    ],
+  ];
+  for (const [why, answer] of noDigest) {
+    const err = target
+      ? await rejects(
+          dockerDriver(() => deps({ json: pnHub(answer) }).deps, mutant).plan(
+            pn,
+            target,
+            ctxOf(proxyTree())
+          )
+        )
+      : null;
+    out.push({
+      name: `docker: Hub answering ${why} for the target tag refuses the whole plan, naming the tag`,
+      ok: err instanceof PlanRefused && err.message.includes('node:26.13.0-slim'),
+      detail: String(err),
+    });
+  }
+  const versionOnly: PinEntry = { ...pn, sites: pn.sites.filter((x) => x.role === 'version') };
+  const gap = target
+    ? await rejects(
+        dockerDriver(() => deps({ json: pnHub(() => ({ digest: dB })) }).deps, mutant).plan(
+          versionOnly,
+          target,
+          ctxOf(proxyTree())
+        )
+      )
+    : null;
+  out.push({
+    name: 'docker: a version site whose line carries @sha256: in an entry with no digest site is refused, so a registry gap cannot keep the old digest',
+    ok: gap instanceof PlanRefused && gap.message.includes('workers/proxy/Dockerfile:2'),
+    detail: String(gap),
+  });
+
+  // THE RE-DIGEST: the tag is Hub's newest, and Hub re-pushed it, so the digest beside it is stale.
+  const rdTree = () =>
+    tree({
+      'workers/proxy/Dockerfile': `FROM node:26.13.0-slim AS build\nFROM node:26.13.0-slim@${dA}\nCMD ["node"]\n`,
+      'scripts/data/docker-image-freshness-baseline.json': '[\n  "node:26.13.0-slim"\n]\n',
+    });
+  const rdHub =
+    (served: string, pushed = OLD): ((u: string) => unknown) =>
+    (u) =>
+      u.includes('/tags/26.13.0-slim')
+        ? { digest: served, tag_last_pushed: iso(pushed), images: [{ digest: dC }] }
+        : { results: [{ name: '26.13.0-slim', last_updated: iso(pushed) }], next: null };
+  const rdLabel = `node:26.13.0-slim@${'b'.repeat(12)}`;
+  const rc = ctxOf(rdTree());
+  const rd = dockerDriver(() => deps({ json: rdHub(dB) }).deps, mutant);
+  const ri = await rd.inspect(pn, rc);
+  const redig = ri.releases.find((r) => r.version === rdLabel);
+  out.push({
+    name: 'docker: a pinned tag Hub re-pushed with another index digest is offered again as a re-digest, eligible once past the window, on the same major line',
+    ok:
+      ri.current === 'node:26.13.0-slim' &&
+      ri.releases.length === 1 &&
+      redig?.verdict?.eligible === true &&
+      majorLineOf(rdLabel) === 26,
+    detail: JSON.stringify(ri),
+  });
+  const rp = redig ? await rd.plan(pn, redig, rc).catch((e: Error) => e) : null;
+  const rw = rp && !(rp instanceof Error) ? (written(rp)['.:workers/proxy/Dockerfile'] ?? '') : '';
+  out.push({
+    name: 'docker: a re-digest rewrites the digest alone: the tag and every other line unchanged, no version change named, no baseline drain',
+    ok:
+      rw === `FROM node:26.13.0-slim AS build\nFROM node:26.13.0-slim@${dB}\nCMD ["node"]\n` &&
+      !(rp instanceof Error) &&
+      rp?.changes.length === 1 &&
+      rp.changes[0].includes('digest') &&
+      rp.steps.length === 0,
+    detail: JSON.stringify(
+      rp instanceof Error ? String(rp) : { rw, changes: rp?.changes, steps: rp?.steps }
+    ),
+  });
+  const same = await dockerDriver(() => deps({ json: rdHub(dA) }).deps, mutant).inspect(
+    pn,
+    ctxOf(rdTree())
+  );
+  out.push({
+    name: 'docker: CONTROL a pinned tag whose digest matches is current, with no candidate',
+    ok: same.releases.length === 0,
+    detail: JSON.stringify(same.releases),
+  });
+  const again = redig
+    ? await rejects(
+        dockerDriver(() => deps({ json: rdHub(dC) }).deps, mutant).plan(pn, redig, ctxOf(rdTree()))
+      )
+    : null;
+  out.push({
+    name: 'docker: a re-digest label whose digest Hub has since moved again is refused, naming the status command',
+    ok: again instanceof PlanRefused && again.message.includes('pins -- status image:proxy-node'),
+    detail: String(again),
+  });
+  const freshRd = await dockerDriver(() => deps({ json: rdHub(dB, FRESH) }).deps, mutant).inspect(
+    pn,
+    ctxOf(rdTree())
+  );
+  out.push({
+    name: 'docker: a re-push inside the release-age window is offered but not eligible',
+    ok: freshRd.releases.length === 1 && freshRd.releases[0].verdict?.eligible === false,
+    detail: JSON.stringify(freshRd.releases),
   });
   return out;
 }
