@@ -358,11 +358,12 @@ def observe(tag: str, suffix: str, manifest_version: str) -> dict:
             tag, "node", "-e", FAKE_ACCOUNT_JS,
             check=True,
         )  # fmt: skip
-        # The image's own CMD, with the two variables the Worker's executorEnv sets.
+        # The image's own CMD, with the variables OrgExecutor's env sets (workers/proxy/src/org-executor-support.ts): the token, the account server and the one org the executor is pinned to, which the fake account's introspection names.
         _docker(
             "run", "-d", "--name", executor, "--network", net, "--network-alias", "executor",
             "-e", "REDIACC_TOKEN=" + EXECUTOR_TOKEN,
             "-e", "REDIACC_ACCOUNT_SERVER=http://account:%d" % ACCOUNT_PORT,
+            "-e", "REDIACC_EXECUTOR_ORG_ID=org-smoke",
             tag,
             check=True,
         )  # fmt: skip
