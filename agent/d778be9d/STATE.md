@@ -23,7 +23,7 @@ Branch 1023-1 HEAD 1343a2355, past origin/1023-1 ac5eb36f9. main scrubbed (62d59
 
 ## Next action
 1. `worklist.py --review-commit d778be9d` and settle any 1343a235 finding.
-2. #624b71f3 advisories: b9d55bd5.1 (drive the .ci/bootstrap.sh:623 PyYAML mismatch branch in a scratch venv), 11102d7b.1 (this STATE's Standing rules restore what it named; mark fixed).
+2. #624b71f3 advisories: 877b26cd.1 (drive the .ci/bootstrap.sh:623 PyYAML mismatch branch in a scratch venv), 43b75199.1 (this STATE's Standing rules restore what it named; mark fixed).
 3. Rerun `npm run ci:quick` with HEAD frozen; carry or fix the reds.
 4. `npm run vm:check -- --changed` after ci:quick, never beside it.
 5. Push 1023-1 (TURBO_PUSH_REASON ci-cd), submodule PRs on 1023-1, `gh pr create`, `--phase d778be9d babysit --pr <n>`, /pr-babysit.
