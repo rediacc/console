@@ -83,7 +83,7 @@
         "gate-costs:unmeasured:check:actions",
         "gate-costs:unmeasured:check:ci-external-links"
       ],
-      "reason": "The nightly gate-cost capture runs main (403f47b97 in housekeeping runs 40664390037, 40851451175 and 41035785121), where check:actions failed on docker/login-action v4.6.0 and check:ci-external-links on a bench.rediacc.com 403. This branch already fixes both (login-action v4.7.0 in the workflows; bench.rediacc.com allowlisted in scripts/gates/check-external-links.ts:102), and both gates pass on HEAD. Only the first nightly after the merge can measure them, so the two keys are carried until then; refreshing the baseline now would record a red."
+      "reason": "The nightly gate-cost capture runs main (403f47b97 in housekeeping runs 40664390037, 40851451175 and 41035785121), where check:actions failed on docker/login-action v4.6.0 and check:ci-external-links on a 403 from the bench origin. This branch already fixes both (login-action v4.7.0 in the workflows; the bench origin allowlisted in scripts/gates/check-external-links.ts:102), and both gates pass on HEAD. Only the first nightly after the merge can measure them, so the two keys are carried until then; refreshing the baseline now would record a red."
     }
   ]
 }

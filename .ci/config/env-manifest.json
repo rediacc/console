@@ -292,6 +292,7 @@
       "AWS_RETRY_MODE",
       "BACKUP_BUCKET_EDGE",
       "BACKUP_BUCKET_STABLE",
+      "BEFORE_SHA",
       "BINARY_PATH",
       "BRANCH_MAX_AGE_DAYS",
       "BUCKET",

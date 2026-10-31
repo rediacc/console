@@ -348,7 +348,8 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
         run: |
           changed=false
-          if [ "$EVENT_NAME" = push ]; then
+          if [ "$EVENT_NAME" = push ] && [ "${BEFORE_SHA//0/}" = "" ]; then changed=true; echo "a push that creates the branch has no base, so every renet leg runs"
+          elif [ "$EVENT_NAME" = push ]; then
             if git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --filter=blob:none origin "$BEFORE_SHA"; then git diff --quiet "$BEFORE_SHA" HEAD -- private/renet || changed=true
             else changed=true; echo "::warning::push base '$BEFORE_SHA' unavailable, so every renet leg runs"; fi
           fi
