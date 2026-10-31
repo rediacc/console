@@ -1578,6 +1578,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run check:ci-external-links
+      - name: German orthography
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-de-orthography
       - name: i18n value types match English
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_i18n_value_types.py

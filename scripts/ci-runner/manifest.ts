@@ -2139,6 +2139,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // German locale strings use ä/ö/ü/ß, never the ASCII transliterations an earlier run wrote (fuer, ueber, Gewaehr*); an explicit stem list over the five German catalogs (www, cli, account web, account server, renet de.go). Its own step in quality-content, which checks out every submodule (renet's catalog is one of the roots). NO `paths:`: always selected.
+    id: 'check:ci-de-orthography',
+    run: 'npm run check:ci-de-orthography',
+    gate: true,
+    leaves: ['scripts/gates/check-de-orthography.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'German orthography',
+    },
+  },
+  {
     // PLAN-scope-bws-signing-key-to-consuming-step S5. A production signing key named in .ci/config/bws-step-scoped.json is fetched by a dedicated bws-secrets step right before its one consumer and blanked by bws-scrub (if: always()) right after it, so no other step of the job can read it (review 047cc812.1). NO `paths:`: always selected.
     id: 'check:ci-bws-step-scope',
     run: 'npm run check:ci-bws-step-scope',
