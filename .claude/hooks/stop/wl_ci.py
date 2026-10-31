@@ -1432,9 +1432,11 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     c = wl_gh.cache_load(cache_p)
     if c is not None and c.get("sha") == tip:
         # A FINAL cache that holds a failure gets the short TTL: a rerun (watchdog or operator) of that very job lands on the same SHA and the same run, and a 15 minute cache would keep reporting the superseded attempt's red long after the rerun went green.
+        # `info` is a dict for a PR rollup but a plain string for the no-PR and error states ci_rollup also caches ("origin/<ref>"), so only a dict holds contexts.
+        _cached_info = c.get("info")
         red_held = any(
             (x.get("conclusion") or "").upper() in CI_FAIL_CONCLUSIONS
-            for x in (c.get("info") or {}).get("contexts") or []
+            for x in ((_cached_info.get("contexts") if isinstance(_cached_info, dict) else None) or [])
         )
         ttl = CI_CACHE_FINAL_S if c.get("final") and not red_held else CI_CACHE_LIVE_S
         cache = c if wl_gh.cache_fresh(c, ttl, ttl) else None
