@@ -533,6 +533,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ciquick-reds-1023-1.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 9,
+      "open_sigs": [
+        "11388dba",
+        "875f8c76",
+        "d0158f1a"
+      ],
+      "done_sigs": [
+        "4ef94289",
+        "63dff725",
+        "84f9975d",
+        "892f488c",
+        "a205fcc6",
+        "b7770343",
+        "b92c9a48",
+        "ef15247c",
+        "f84c9e2a"
+      ]
+    },
     "agent/plans/PLAN-citation-fragility.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -935,9 +959,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 0,
+      "open": 1,
       "done": 8,
-      "open_sigs": [],
+      "open_sigs": [
+        "11388dba"
+      ],
       "done_sigs": [
         "199f79e5",
         "4e304e0a",
@@ -954,9 +980,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
+      "open": 2,
       "done": 4,
       "open_sigs": [
+        "11388dba",
         "a6974538"
       ],
       "done_sigs": [
@@ -1798,11 +1825,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
+      "open": 4,
       "done": 11,
       "open_sigs": [
         "098555d6",
-        "38554e84"
+        "11388dba",
+        "38554e84",
+        "ef318b56"
       ],
       "done_sigs": [
         "2d60d810",
@@ -1823,10 +1852,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
+      "open": 2,
       "done": 2,
       "open_sigs": [
-        "201f331a"
+        "201f331a",
+        "ef318b56"
       ],
       "done_sigs": [
         "50ce321e",
@@ -2171,9 +2201,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 0,
+      "open": 2,
       "done": 5,
-      "open_sigs": [],
+      "open_sigs": [
+        "11388dba",
+        "ef318b56"
+      ],
       "done_sigs": [
         "426da0f8",
         "5d3f37ce",
