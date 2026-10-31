@@ -34,7 +34,7 @@ import type { JobOverlap, JobState } from '@rediacc/shared/cli-contract/wire';
  * executor), or every config-only command importing the request context would
  * look machine-touching to the plane rule (packages/cli/scripts/lib/plane-rules.ts).
  */
-export interface JobStepPlan {
+interface JobStepPlan {
   name: string;
   on: 'success' | 'failure' | `marker:${string}`;
   params?: Record<string, string | number | boolean>;

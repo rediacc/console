@@ -181,7 +181,7 @@ describe('repo create (one job; rollback, identity refresh and schedules as step
     const handler = await resolveStepHandler('identityRefresh');
     await handler({
       jobId: ticket.jobId ?? 'job-1',
-      machine: ticket.machine,
+      machine: ticket.machine ?? 'm1',
       params: refresh?.params ?? {},
       state: 'succeeded',
     });

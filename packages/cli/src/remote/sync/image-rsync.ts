@@ -32,7 +32,7 @@ export interface ImageRsyncArgsOptions {
 export const RETRYABLE_RSYNC_EXITS: ReadonlySet<number> = new Set([10, 12, 30, 35, 255]);
 
 /** The first rsync that accepts `--sparse` together with `--inplace`. */
-const MIN_RSYNC: readonly [number, number, number] = [3, 1, 3];
+const MIN_RSYNC: readonly [number, number, number] = [3, 1, 3] as const;
 
 export function buildImageRsyncArgs(opts: ImageRsyncArgsOptions): string[] {
   const args = [

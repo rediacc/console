@@ -74,7 +74,7 @@ describe('resolveTofu lookup order', () => {
   });
 
   it('then tofu on PATH', async () => {
-    const { [MANAGED]: _gone, ...rest } = everything;
+    const rest = Object.fromEntries(Object.entries(everything).filter(([k]) => k !== MANAGED));
     const r = await resolveTofu({
       env: {},
       managedPath: MANAGED,
@@ -219,7 +219,7 @@ describe.skipIf(process.platform === 'win32')('TofuExecutor against a fake engin
     const cache = getPluginCacheDir();
     expect(await readFile(record, 'utf8')).toBe(`init ${cache}\n`);
     expect((await stat(cache)).isDirectory()).toBe(true);
-    // The work dir and config keep their modes (1e9a72f02).
+    // The work dir and config keep their modes.
     expect((await stat(work)).mode & 0o777).toBe(0o700);
     expect((await stat(join(work, 'main.tf.json'))).mode & 0o777).toBe(0o600);
   });

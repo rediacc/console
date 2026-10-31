@@ -13,6 +13,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   beginRun,
@@ -135,7 +136,7 @@ function seedState(kind: 'complete' | 'incomplete', withUpload?: boolean, tag = 
       machine: 'hostinger2',
       name: 'mail',
       guid: 'pending-guid',
-      datastore: '/mnt/rediacc',
+      datastore: WK_DATASTORE_PATH,
       startedAt: '2026-10-29T10:06:00Z',
       status: 'staging',
     });
@@ -154,7 +155,7 @@ function deps(over: Partial<UploadDeps> = {}, ready: Partial<ImportReady> = {}):
       events.push(`open:${t.guid}`);
       return Promise.resolve({
         ready: {
-          staging: `/mnt/rediacc/repositories/.restore-${t.guid}`,
+          staging: `${WK_DATASTORE_PATH}/repositories/.restore-${t.guid}`,
           fresh: true,
           seeded: false,
           existingBytes: 0,
@@ -163,7 +164,7 @@ function deps(over: Partial<UploadDeps> = {}, ready: Partial<ImportReady> = {}):
         },
         finalize: (sha) => {
           events.push(`finalize:${sha}`);
-          return Promise.resolve({ path: `/mnt/rediacc/repositories/${t.guid}` });
+          return Promise.resolve({ path: `${WK_DATASTORE_PATH}/repositories/${t.guid}` });
         },
         quit: () => {
           events.push('quit');

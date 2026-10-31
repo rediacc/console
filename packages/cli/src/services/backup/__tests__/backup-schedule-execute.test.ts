@@ -1,3 +1,4 @@
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../../remote/sftp/client.js';
 import { outputService } from '../../core/output.js';
@@ -25,14 +26,14 @@ function removed(name: string, timer: boolean): StrategyDiff {
   const remote: RemoteUnitState = {
     serviceFile: file(`/etc/systemd/system/rediacc-backup-${name}.service`, timer),
     timerFile: file(`/etc/systemd/system/rediacc-backup-${name}.timer`, timer),
-    envFile: file(`/etc/rediacc/backup-${name}.env`, true),
+    envFile: file(`${WK_ETC_DIR}/backup-${name}.env`, true),
     isActiveService: false,
     isActiveAdhoc: false,
     isEnabledTimer: timer,
     isActiveTimer: timer,
     isFailed: false,
   };
-  return { name, action: 'remove', desired: null, remote, changedFiles: [] } as StrategyDiff;
+  return { name, action: 'removed', desired: null, remote, changedFiles: [] };
 }
 
 function plan(toRemove: StrategyDiff[]): ReconcilePlan {
@@ -51,7 +52,7 @@ describe('executePlan removals', () => {
     const { sftp, commands } = fakeSftp(new Set());
     await executePlan(sftp, plan([removed('weekly-cold', false)]), {});
     expect(commands.some((c) => c.includes('systemctl disable'))).toBe(false);
-    expect(commands.some((c) => c.includes("rm -f '/etc/rediacc/backup-weekly-cold.env'"))).toBe(
+    expect(commands.some((c) => c.includes(`rm -f '${WK_ETC_DIR}/backup-weekly-cold.env'`))).toBe(
       true
     );
   });
@@ -94,7 +95,7 @@ describe('executePlan removals', () => {
     expect(stop).toContain('systemctl stop rediacc-backup-linked.timer || rc=$?');
     expect(stop).toContain('exit $rc');
     // The env file is still removed after the failed stop: the schedule went on.
-    expect(commands.some((c) => c.includes("rm -f '/etc/rediacc/backup-linked.env'"))).toBe(true);
+    expect(commands.some((c) => c.includes(`rm -f '${WK_ETC_DIR}/backup-linked.env'`))).toBe(true);
   });
 
   it('still disables a timer that exists before removing its files', async () => {

@@ -102,7 +102,7 @@ export const DATA_TRANSFER_TIMEOUT_MS = 24 * 60 * 60 * 1000;
  * new renet function forces a decision instead of inheriting one silently.
  */
 export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
-  // The data-moving backup functions (commit d6ea91581).
+  // The data-moving backup functions (fix(cli): data-moving backup verbs carry a renet --timeout above the 10-minute default).
   'backup_snapshot',
   'backup_push',
   'backup_pull',

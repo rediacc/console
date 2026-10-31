@@ -26,7 +26,7 @@ import { dueSteps, getStepDefinition } from './steps.js';
 import { isTerminalTicketState, type Ticket, type TicketStore } from './ticket-store.js';
 
 /** Opaque to this module: whatever `withConnection` hands to follow and readStatus. */
-export type WaitConnection = unknown;
+type WaitConnection = unknown;
 
 export interface JobWaitDeps {
   /** Open a read-only connection, run `fn`, release. */
@@ -77,7 +77,7 @@ export interface WaitOptions {
 }
 
 /** The job's exit code: renet's own, else mirrored from the terminal state. */
-export function exitCodeFor(status: Pick<JobStatus, 'state' | 'exit_code'>): number {
+function exitCodeFor(status: Pick<JobStatus, 'state' | 'exit_code'>): number {
   if (status.exit_code !== undefined && status.exit_code !== null) return status.exit_code;
   return status.state === 'succeeded' ? 0 : 1;
 }

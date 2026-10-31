@@ -12,11 +12,11 @@ import { join } from 'node:path';
 const MiB = 1024 * 1024;
 const GiB = 1024 * MiB;
 export const SPACE_MARGIN_MIN = 256 * MiB;
-export const SPARSE_PROBE_BYTES = 64 * MiB;
+const SPARSE_PROBE_BYTES = 64 * MiB;
 /** statfs f_type of a FAT filesystem on Linux (MSDOS_SUPER_MAGIC). */
 export const FAT_FS_TYPE = 0x4d44;
 /** The largest file FAT32 can hold. */
-export const FAT32_MAX_FILE = 4 * GiB - 1;
+const FAT32_MAX_FILE = 4 * GiB - 1;
 
 /** Allocated bytes of a stat result: `blocks * 512`, or the size when blocks are unknown. */
 export function allocatedBytesOf(st: { size: number; blocks?: number }): number {
@@ -79,7 +79,7 @@ export function computeSpaceNeed(input: SpaceNeedInput): number {
   return base + spaceMargin(input.apparent);
 }
 
-export type SpaceRefusal = 'insufficient-space' | 'fat32-file-limit';
+type SpaceRefusal = 'insufficient-space' | 'fat32-file-limit';
 
 export interface SpaceCheck {
   ok: boolean;
@@ -92,7 +92,7 @@ export interface CheckSpaceInput extends SpaceNeedInput {
   dir: string;
 }
 
-export interface StatfsResult {
+interface StatfsResult {
   type: number;
   bsize: number;
   bavail: number;

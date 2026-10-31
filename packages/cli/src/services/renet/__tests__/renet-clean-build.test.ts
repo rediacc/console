@@ -313,8 +313,9 @@ describe('buildRenetAtCommit', () => {
     const { deps } = fakeDeps({
       stamp: `\tbuild\tvcs.revision=${SHA}\n\tbuild\tvcs.modified=false\n`,
     });
-    const err = await buildRenetAtCommit(top, SHA, deps).catch((e: unknown) => e as Error);
-    expect(err).toBeInstanceOf(Error);
+    const err = await buildRenetAtCommit(top, SHA, deps).catch((e: unknown) => e);
+    if (!(err instanceof Error))
+      throw new Error('expected buildRenetAtCommit to reject with an Error');
     expect(err.message).toMatch(/does not bake the account public key/);
     expect(err.message).not.toContain(KEY);
   });

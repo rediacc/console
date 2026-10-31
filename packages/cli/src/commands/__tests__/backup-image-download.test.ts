@@ -13,6 +13,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { localImagePaths, readImageState } from '../../services/backup-image/state.js';
 
@@ -100,19 +101,19 @@ const target: ImageTarget = {
   machine: 'hostinger',
   guid: 'g-1',
   grandGuid: null,
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
 };
 const DIGEST = 'cd'.repeat(32);
 
 let to: string;
 let calls: string[];
 let opened: number;
-let quits: number;
+let quits = 0;
 
 function fakeSession(opts: { pingOk?: boolean; sha?: string } = {}): ExportSession {
   return {
     ready: {
-      snapshot: '/mnt/rediacc/repositories/.snapshot-g-1-x',
+      snapshot: `${WK_DATASTORE_PATH}/repositories/.snapshot-g-1-x`,
       guid: 'g-1',
       takenAt: '2026-10-29T10:00:00Z',
       apparentBytes: 1024,

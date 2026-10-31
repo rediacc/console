@@ -79,7 +79,7 @@ function addTicket(): void {
   store.append('started', 'req-1', { jobId: JOB_ID, via: { kind: 'ssh' } });
 }
 
-describe('rdc job list without -m', () => {
+describe('job list without a machine flag', () => {
   it('prints this config tickets and makes no machine call', async () => {
     addTicket();
     await run('list');

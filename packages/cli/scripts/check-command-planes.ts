@@ -122,13 +122,18 @@ const OVERRIDES = new Map<
     'tools',
     {
       expectMachineTouching: false,
-      // The override excuses exactly this module. Everything else in the graph is still judged against the markers.
-      excusedModules: ['services/tofu/executor'],
+      // The override excuses exactly these modules. Everything else in the graph is still judged against the markers.
+      excusedModules: [
+        'services/tofu/executor',
+        'services/tofu/provider-pins.generated',
+        'services/tofu/tf-generator',
+      ],
       reason:
         'Graph says machine-touching via commands/tools.ts -> services/tofu/executor.ts. tools ' +
         'only uses the executor to resolve and version-check the local OpenTofu binary ' +
         '(resolveTofu); the executor module also runs tofu apply for machine provision, which ' +
-        'is the edge tools never traverses. Drop this override if the binary lookup moves out ' +
+        'is the edge tools never traverses. provider-pins.generated (the pinned provider lock table) and ' +
+        'tf-generator (pure string rendering of the tofu config) are imported by the executor and reach nothing. Drop this override if the binary lookup moves out ' +
         'of executor.ts.',
     },
   ],

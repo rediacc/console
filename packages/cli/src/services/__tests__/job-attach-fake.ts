@@ -15,7 +15,7 @@
  */
 
 /** The handlers `execStreaming` takes, loosely typed as each test's own fake is. */
-export interface FakeHandlers {
+interface FakeHandlers {
   stdin?: string;
   onStdout?: (data: never) => void;
   onStderr?: (data: never) => void;
@@ -23,7 +23,7 @@ export interface FakeHandlers {
 
 export type FakeExec = (command: string, handlers: FakeHandlers) => Promise<number | undefined>;
 
-export const FAKE_JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
+const FAKE_JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
 
 const lines = (text: string): string[] => text.split('\n').filter((line) => line.length > 0);
 
@@ -49,12 +49,7 @@ function spoolEvent(msg: string): Record<string, unknown> {
 }
 
 /** The attach stream renet prints for a job whose run produced this stdout, stderr and exit code. */
-export function attachStream(
-  stdout: string,
-  stderr: string,
-  exitCode: number,
-  fn = 'unknown'
-): string {
+function attachStream(stdout: string, stderr: string, exitCode: number, fn = 'unknown'): string {
   const events = [
     ...lines(stdout).map(spoolEvent),
     ...lines(stderr).map((msg) => ({ type: 'log', level: 'error', msg })),

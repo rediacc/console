@@ -124,7 +124,7 @@ beforeEach(() => {
   setCommandJobDeps({
     executor: () => ({
       execute: (options) => {
-        executed.push(options as Executed);
+        executed.push(options as unknown as Executed);
         return Promise.resolve(answer as never);
       },
     }),

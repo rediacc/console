@@ -30,6 +30,9 @@ import {
 import { join } from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
 
+const STATE_RUNNING = 'running';
+const STATE_UNKNOWN = 'unknown';
+
 /** Schema version written on every line. */
 export const TICKET_SCHEMA_VERSION = 1;
 
@@ -250,14 +253,14 @@ const COPIED_FIELDS = [
 /** Per-kind effect on the folded ticket. Kinds with no entry only copy fields. */
 const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => void>> = {
   started: (t, e) => {
-    if (!isTerminalTicketState(t.state)) t.state = e.state ?? 'running';
+    if (!isTerminalTicketState(t.state)) t.state = e.state ?? STATE_RUNNING;
   },
   seen: (t, e) => {
     t.lastCheckedAt = e.ts;
     if (e.state && !isTerminalTicketState(t.state)) t.state = e.state;
   },
   finished: (t, e) => {
-    t.state = e.state ?? 'unknown';
+    t.state = e.state ?? STATE_UNKNOWN;
     t.exitCode = e.exitCode ?? t.exitCode;
     t.finishedAt = e.finishedAt ?? t.finishedAt;
     t.lastCheckedAt = e.ts;

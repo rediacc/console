@@ -21,13 +21,9 @@ import { REPO_JOB_PLANS } from './plans-repo.js';
 import type { JobPlan } from './plans-types.js';
 
 export {
-  type ConversionBox,
-  type JobForm,
   type JobPlan,
   LOCK_CLASSES,
-  type LockClass,
   TIMEOUT_CLASSES,
-  type TimeoutClass,
 } from './plans-types.js';
 
 export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {

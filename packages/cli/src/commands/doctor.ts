@@ -27,6 +27,8 @@ import { VERSION } from '../version.js';
 import { checkSubscription } from './doctor-subscription.js';
 import { toolSourceLabel } from './tools.js';
 
+const UNKNOWN_VERSION = 'unknown';
+
 export type CheckStatus = 'ok' | 'warn' | 'fail';
 
 export interface CheckResult {
@@ -169,7 +171,7 @@ export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSectio
   const rsyncPath = findRsync(deps.pathLookup);
   if (rsyncPath) {
     const out = (deps.rsyncVersion ?? defaultRsyncVersion)(rsyncPath);
-    const version = out ? (/version\s+(\S+)/.exec(out)?.[1] ?? 'unknown') : 'unknown';
+    const version = out ? (/version\s+(\S+)/.exec(out)?.[1] ?? UNKNOWN_VERSION) : UNKNOWN_VERSION;
     checks.push({ name: rsyncName, value: version, status: 'ok' });
   } else {
     checks.push({

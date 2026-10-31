@@ -52,7 +52,7 @@ import type { RenetEvent } from './types.js';
  * not detach. Reconnecting is cheap and safe: the job runs on the machine
  * either way, so resuming only changes what we can SEE of it.
  */
-export const LOG_RECONNECT_BUDGET_MS = REATTACH_BUDGET_MS;
+const LOG_RECONNECT_BUDGET_MS = REATTACH_BUDGET_MS;
 
 /** Backoff before reconnecting a dropped log tail, capped so it stays responsive. */
 export function logReconnectDelayMs(attempt: number): number {
@@ -77,7 +77,7 @@ export class FollowLostError extends Error {
 }
 
 /** The reconnect clock, seamed so a test can run the 2-minute budget instantly. */
-export interface ReconnectTiming {
+interface ReconnectTiming {
   budgetMs?: number;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;

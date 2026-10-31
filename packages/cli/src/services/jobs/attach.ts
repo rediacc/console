@@ -37,7 +37,13 @@ export const REATTACH_BUDGET_MS = 120_000;
 /** Who starts a job, as renet records it in `origin.client`. */
 export type JobClientKind = 'rdc' | 'proxy' | 'mcp' | 'console' | 'scheduler';
 
-const CLIENT_KINDS: readonly JobClientKind[] = ['rdc', 'proxy', 'mcp', 'console', 'scheduler'];
+const CLIENT_KINDS: readonly JobClientKind[] = [
+  'rdc',
+  'proxy',
+  'mcp',
+  'console',
+  'scheduler',
+] as const;
 
 /** The client kind named by JOB_CLIENT_ENV, else `rdc`. */
 export function clientKindFromEnv(env: NodeJS.ProcessEnv = process.env): JobClientKind {
@@ -46,7 +52,7 @@ export function clientKindFromEnv(env: NodeJS.ProcessEnv = process.env): JobClie
 }
 
 /** JOB_ATTACH_WINDOW_MS, or its test override when set to a non-negative integer. */
-export function jobAttachWindowMs(env: NodeJS.ProcessEnv = process.env): number {
+function jobAttachWindowMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env[JOB_ATTACH_WINDOW_ENV];
   if (raw !== undefined && /^\d+$/.test(raw)) return Number.parseInt(raw, 10);
   return JOB_ATTACH_WINDOW_MS;

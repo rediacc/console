@@ -7,7 +7,9 @@ import { OPENTOFU_PIN } from '../services/tools/pins.js';
 import type { OutputFormat } from '../types/index.js';
 import { handleError } from '../utils/errors.js';
 
-export interface ToolRow {
+const DEFAULT_OUTPUT_FORMAT = 'table';
+
+interface ToolRow {
   tool: string;
   version: string;
   source: string;
@@ -28,7 +30,7 @@ export function toolSourceLabel(source: TofuSource): string {
 }
 
 /** Every tofu/terraform rdc can see: the engine it would run, plus other rdc-managed versions. */
-export async function collectToolRows(): Promise<ToolRow[]> {
+async function collectToolRows(): Promise<ToolRow[]> {
   const rows: ToolRow[] = [];
   const resolved = await resolveTofu();
   // An engine below its floor is still listed (inactive), so the user sees what rdc refused.
@@ -99,7 +101,9 @@ export function registerToolsCommands(program: Command): void {
     .option('--output <format>', t('options.outputFormat'))
     .action(async (options: { output?: string }) => {
       try {
-        const format = (options.output ?? program.opts().output ?? 'table') as OutputFormat;
+        const format = (options.output ??
+          program.opts().output ??
+          DEFAULT_OUTPUT_FORMAT) as OutputFormat;
         const rows = await collectToolRows();
         if (format !== 'table') {
           outputService.print({ pinned: { tofu: OPENTOFU_PIN.version }, tools: rows }, format);

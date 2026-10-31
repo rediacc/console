@@ -7,8 +7,10 @@ import { t } from '../../i18n/index.js';
 import { allocatedBytesOf } from './preflight.js';
 import type { RsyncTransport } from './session.js';
 
+const DEFAULT_SSH_COMMAND = 'ssh';
+
 /** Backoff before the first, second and third in-run retry. */
-export const RETRY_BACKOFF_MS = [10_000, 30_000, 60_000] as const;
+const RETRY_BACKOFF_MS = [10_000, 30_000, 60_000] as const;
 export const DEFAULT_RETRIES = 3;
 export const EXIT_INTERRUPTED = 130;
 
@@ -45,7 +47,7 @@ export function remoteSpec(transport: RsyncTransport | undefined, path: string):
 }
 
 export function sshCommandOf(transport: RsyncTransport | undefined): string {
-  return transport?.sshCommand ?? 'ssh';
+  return transport?.sshCommand ?? DEFAULT_SSH_COMMAND;
 }
 
 export function backoff(attempt: number): number {

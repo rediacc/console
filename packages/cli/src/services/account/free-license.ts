@@ -32,7 +32,7 @@ import { getSubscriptionServerUrl, getSubscriptionTokenState } from './subscript
 
 export const FREE_LICENSE_PATH = '/account/api/v1/licenses/free';
 /** The account server's refusal code when a FREE blob asks for a backup session. */
-export const FREE_LICENSE_NO_BACKUP_CODE = 'FREE_LICENSE_NO_BACKUP';
+const FREE_LICENSE_NO_BACKUP_CODE = 'FREE_LICENSE_NO_BACKUP';
 /** The repository size cap of a FREE licence (R4). */
 export const FREE_LICENSE_MAX_SIZE_GB = 3;
 
@@ -51,7 +51,7 @@ export function resetFreeLicenseStateForTests(): void {
 }
 
 /** The account page a FREE user signs up at: the server's own answer, else the configured server's login page. */
-export function freeLicenseSignupUrl(): string {
+function freeLicenseSignupUrl(): string {
   return serverSignupUrl ?? `${getSubscriptionServerUrl()}/account/login`;
 }
 

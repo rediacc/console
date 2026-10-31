@@ -68,6 +68,9 @@ import { resolveRepoRef } from '../utils/repo-target.js';
 import { resolveLineage } from './backup-storage-browse.js';
 import { postPushDeploy } from './repo-backup.js';
 
+const DEFAULT_SSH_PORT = 22;
+const DEFAULT_IMAGE_TAG = 'latest';
+
 const STDERR_TAIL = 8192;
 
 function sleep(ms: number): Promise<void> {
@@ -144,7 +147,7 @@ async function openHelperSession<S>(
     const machine = lease.machine;
     temp.push(await createTempSSHKeyFile(lease.sshPrivateKey));
     temp.push(await createTempKnownHostsFile(machine.knownHosts));
-    const port = machine.port ?? 22;
+    const port = machine.port ?? DEFAULT_SSH_PORT;
     const sshCommand = await getRsyncSSHCommand(
       `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${temp[1]}" -p ${port} -i "${temp[0]}" ` +
         '-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
@@ -191,7 +194,7 @@ async function listedRepos(): Promise<ListedRepo[]> {
     return {
       key: name,
       family,
-      tag: config.tag ?? keyTag ?? 'latest',
+      tag: config.tag ?? keyTag ?? DEFAULT_IMAGE_TAG,
       guid: config.repositoryGuid,
       grandGuid: config.grandGuid ?? null,
       credential: config.credential,

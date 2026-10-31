@@ -26,10 +26,10 @@ import { pendingStepNames } from './steps.js';
 import { isTerminalTicketState, type Ticket, TicketStore } from './ticket-store.js';
 
 export const NOTICE_MAX_TICKETS = 5;
-export const NOTICE_BUDGET_MS = 2_000;
-export const NOTICE_THROTTLE_MS = 60_000;
+const NOTICE_BUDGET_MS = 2_000;
+const NOTICE_THROTTLE_MS = 60_000;
 /** How long the notice may spend starting steps after the command's own output. */
-export const NOTICE_STEPS_BUDGET_MS = 20_000;
+const NOTICE_STEPS_BUDGET_MS = 20_000;
 
 /** What one status read learned about a ticket. */
 export interface TicketObservation {
@@ -163,7 +163,7 @@ export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 
 }
 
 /** The `pending-only` half: no machine call and no step, only the pending line on stderr. */
-export function printPendingSteps(deps: Pick<NoticeDeps, 'store' | 'write'>): void {
+function printPendingSteps(deps: Pick<NoticeDeps, 'store' | 'write'>): void {
   try {
     for (const ticket of finishedTickets(deps.store)) {
       if (pendingStepNames(ticket).length > 0) deps.write(pendingLine(ticket));
@@ -209,7 +209,7 @@ export async function runNoticeSteps(
   }
 }
 
-export function formatNotice(ticket: Ticket, now: number): string {
+function formatNotice(ticket: Ticket, now: number): string {
   const target = ticket.repo ? `${ticket.repo}@${ticket.machine}` : (ticket.machine ?? '-');
   const what = [ticket.verb ?? ticket.function ?? '-', target].join(' ');
   const params = {

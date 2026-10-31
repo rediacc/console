@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // `repo promote` is machine-first and cannot converge on retry (both images survive the swap, so a re-run would swap the data back). When the config save fails after the machine promote, the error must say so, forbid the re-run and name the manual config fix.
@@ -75,7 +76,7 @@ describe('repo promote after a config save failure', () => {
 
   it('names the manual config fix and forbids a re-run when the save fails (red on old code)', async () => {
     cfg.remove.mockRejectedValue(
-      new RemoteWriteFailedClosedError('rediacc', 'https://eu.rediacc.com', new Error('down'))
+      new RemoteWriteFailedClosedError('rediacc', WK_ACCOUNT_DEFAULT_ORIGIN, new Error('down'))
     );
     await expect(run()).rejects.toMatchObject({
       code: 'NETWORK_ERROR',

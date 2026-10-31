@@ -25,14 +25,14 @@ async function tempDir(): Promise<string> {
 }
 
 const BINARY = Buffer.from('#!/bin/sh\necho "OpenTofu v1.10.6"\n');
-const PLATFORMS: ToolPlatform[] = [
+const PLATFORMS = [
   'linux-amd64',
   'linux-arm64',
   'darwin-amd64',
   'darwin-arm64',
   'windows-amd64',
   'windows-arm64',
-];
+] as const satisfies readonly ToolPlatform[];
 
 function sha(buf: Buffer): string {
   return createHash('sha256').update(buf).digest('hex');

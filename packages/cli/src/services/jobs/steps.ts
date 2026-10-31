@@ -47,6 +47,9 @@ export {
   type StepTrigger,
 } from './steps-support.js';
 
+const STATUS_OK = 'ok';
+const STATUS_FAILED = 'failed';
+
 const STEP_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 /** A param name that looks like a secret; planStep refuses it. */
 export const SECRET_KEY = /secret|vault|password|passwd|token|credential|env|private|key/i;
@@ -79,7 +82,7 @@ const DEFINITIONS: StepDefinition[] = [
       return (ctx) =>
         recordBackupRun(str(ctx.params, 'repo'), {
           kind: backupKind(ctx.params),
-          status: optStr(ctx.params, 'status') ?? 'ok',
+          status: optStr(ctx.params, 'status') ?? STATUS_OK,
           snapshotId: optStr(ctx.params, 'snapshotId'),
           lastRunAt: ctx.finishedAt,
         });
@@ -98,7 +101,7 @@ const DEFINITIONS: StepDefinition[] = [
           status:
             ctx.exitCode !== undefined && ctx.exitCode === optNum(ctx.params, 'quotaExit')
               ? 'quota-refused'
-              : (optStr(ctx.params, 'status') ?? 'failed'),
+              : (optStr(ctx.params, 'status') ?? STATUS_FAILED),
           snapshotId: optStr(ctx.params, 'snapshotId'),
           lastRunAt: ctx.finishedAt,
         });

@@ -5,6 +5,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ProviderMapping } from '../../../types/index.js';
 import { OPENTOFU_PIN } from '../../tools/opentofu-pin.generated.js';
 import { TofuExecutor } from '../executor.js';
 import { PROVIDER_LOCK_HOST, PROVIDER_PINS, type ProviderPin } from '../provider-pins.generated.js';
@@ -52,7 +53,7 @@ describe('provider pins', () => {
   it('generates main.tf.json with the exact pinned version, so init cannot pick another build', () => {
     const tf = generateTfJson({
       machineName: 'm1',
-      mapping: { ...(registry['linode/linode'] as never), source: 'linode/linode' },
+      mapping: { ...registry['linode/linode'], source: 'linode/linode' } as ProviderMapping,
       apiToken: 't',
       sshPublicKey: 'ssh-ed25519 AAAA',
     }) as { terraform: { required_providers: Record<string, { version: string }> } };

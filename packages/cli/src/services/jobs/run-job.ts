@@ -68,14 +68,14 @@ export function configMatches(origin: ConfigIdentity, observer: ConfigIdentity):
 
 // --- the claim seam ----------------------------------------------------------
 
-export type ClaimResultKind = 'claimed' | 'reclaimed' | 'already-claimed' | 'done';
+type ClaimResultKind = 'claimed' | 'reclaimed' | 'already-claimed' | 'done';
 
 export interface ClaimAnswer {
   name: string;
   result: ClaimResultKind;
 }
 
-export interface ClaimRequest {
+interface ClaimRequest {
   machine: string;
   jobId: string;
   steps: string[];
@@ -293,7 +293,7 @@ export function createStepObservationCollector(): {
 // --- runJob ------------------------------------------------------------------
 
 /** What the call's start receives: the request id to dedupe on and the `--steps` plan. */
-export interface JobStartRequest {
+interface JobStartRequest {
   requestId: string;
   /** Empty when the command plans no steps; then `--steps` is omitted. */
   steps: SpoolStep[];
@@ -488,7 +488,7 @@ export function parseClaimOutput(stdout: string): ClaimAnswer[] {
 }
 
 /** The real claim: one SSH exec of `renet job claim` per call, on a pooled connection. */
-export function liveClaimExec(observer: ConfigIdentity): ClaimExec {
+function liveClaimExec(observer: ConfigIdentity): ClaimExec {
   return async (request) => {
     const { connectForJobs } = await import('../executor/job-remote.js');
     const conn = await connectForJobs(request.machine, 'read-only');

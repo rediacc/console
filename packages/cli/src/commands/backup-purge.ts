@@ -127,7 +127,7 @@ async function confirmByName(repoKey: string, snapshots: number, bytes: string):
   return answer === repoKey;
 }
 
-export async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<void> {
+async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<void> {
   const { repoKey, lineage } = await resolvePurgeTarget(repoRef);
   // A Free License (or no login) has no hosted store to purge: say so instead of a token error.
   assertHostedBackupAccount();
@@ -213,6 +213,7 @@ export function registerBackupPurge(backup: Command): void {
     .command('purge')
     .argument('<repo-ref>', t('options.repoRef'))
     .description(t('commands.backup.purge.description'))
+    .summary(t('commands.backup.purge.descriptionShort'))
     .option('--dry-run', t('options.dryRun'))
     .option('-y, --yes', t('options.yes'))
     .action(async (repoRef: string, options: PurgeOptions) => {

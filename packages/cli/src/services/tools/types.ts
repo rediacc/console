@@ -7,7 +7,7 @@ export type ToolPlatform =
   | 'windows-amd64'
   | 'windows-arm64';
 
-export interface ToolAsset {
+interface ToolAsset {
   readonly url: string;
   readonly sha256: string;
 }

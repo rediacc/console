@@ -142,11 +142,9 @@ describe('resolveLicenseAuthority', () => {
     const login = vi.fn();
     await expect(resolveLicenseAuthority(login)).resolves.toBe('free');
     expect(m.askChoice).toHaveBeenCalledTimes(1);
-    const [, choices] = m.askChoice.mock.calls[0] as [string, { value: string }[]];
+    const [, choices] = m.askChoice.mock.calls[0] as [string, { name: string; value: string }[]];
     expect(choices.map((c) => c.value)).toEqual(['login', 'free']);
-    expect((choices as { name: string }[])[1].name).toContain(
-      `"maxGb":${FREE_LICENSE_MAX_SIZE_GB}`
-    );
+    expect(choices[1].name).toContain(`"maxGb":${FREE_LICENSE_MAX_SIZE_GB}`);
     expect(login).not.toHaveBeenCalled();
     // The recovery path re-runs the pre-flight: the choice holds, nothing is asked again.
     await expect(resolveLicenseAuthority(login)).resolves.toBe('free');

@@ -73,6 +73,8 @@ import {
 } from './renet-command.js';
 import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
 
+const UNKNOWN_JOB_ID = '?';
+
 /**
  * The section 24 exemptions that stay on `renet execute`: an interactive exec
  * needs a live TTY, and a log follow never ends on its own. Named, so the rule
@@ -86,14 +88,14 @@ export function runsOutsideJob(options: Pick<ExecuteOptions, 'functionName' | 'p
 }
 
 /** The overlap refusal (section 19): exit 15, the other jobs as structured data. */
-export class JobOverlapRefusedError extends CliExitError {
+class JobOverlapRefusedError extends CliExitError {
   constructor(
     readonly overlaps: JobOverlap[],
     machineName: string
   ) {
     const refusing = overlaps.filter((o) => o.action === 'refuse');
     const first = refusing[0];
-    const holder = first ? `job ${first.jobId ?? first.unit ?? '?'}` : 'another job';
+    const holder = first ? `job ${first.jobId ?? first.unit ?? UNKNOWN_JOB_ID}` : 'another job';
     super(
       ERROR_CODES.BUSY,
       `Refused to start the job on '${machineName}': ${holder} holds the same scope.`,
@@ -117,7 +119,7 @@ export class JobOverlapRefusedError extends CliExitError {
  * the code the client-side presence probe this replaces refused with, and for
  * `repo_present` the same text, so the routing contradiction reads as before.
  */
-export class JobPreconditionRefusedError extends CliExitError {
+class JobPreconditionRefusedError extends CliExitError {
   constructor(
     readonly refusal: PreconditionRefusal,
     machineName: string

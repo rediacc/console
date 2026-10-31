@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // `repo delete` is machine-first. When the config save fails after the machine delete, the error must say so and name the retry; the retry (image now absent) must skip the machine dispatch and finish the config side.
@@ -94,7 +95,7 @@ describe('repo delete converges after a partial failure', () => {
 
   it('names the retry when the config save fails after the machine delete', async () => {
     settle.entry.mockRejectedValue(
-      new RemoteWriteFailedClosedError('rediacc', 'https://eu.rediacc.com', new Error('down'))
+      new RemoteWriteFailedClosedError('rediacc', WK_ACCOUNT_DEFAULT_ORIGIN, new Error('down'))
     );
     await expect(run('mautic:readcap', '-y')).rejects.toMatchObject({
       code: 'NETWORK_ERROR',

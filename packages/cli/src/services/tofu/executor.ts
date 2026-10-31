@@ -27,7 +27,7 @@ export type TofuSource = 'env' | 'rdc' | 'path';
 /**
  * Lowest accepted version per engine. OpenTofu 1.6.0 is its first stable release; Terraform 1.5 is the last MPL line and reads every construct the generators emit (JSON config with `required_providers`).
  */
-export const ENGINE_FLOORS: Record<TofuEngineName, string> = {
+const ENGINE_FLOORS: Record<TofuEngineName, string> = {
   tofu: '1.6.0',
   terraform: '1.5.0',
 };

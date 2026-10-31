@@ -23,22 +23,24 @@ import {
 import { hostname } from 'node:os';
 import { dirname, join } from 'node:path';
 
-export const IMAGE_STATE_SCHEMA = 1;
-export const IMAGE_STATE_KIND = 'rediacc-repo-image';
+const DEFAULT_OUTCOME = 'failed';
+
+const IMAGE_STATE_SCHEMA = 1;
+const IMAGE_STATE_KIND = 'rediacc-repo-image';
 export const HISTORY_LIMIT = 12;
 
-export type ImageStatus = 'incomplete' | 'complete';
-export type RunOutcome = 'complete' | 'failed' | 'interrupted';
+type ImageStatus = 'incomplete' | 'complete';
+type RunOutcome = 'complete' | 'failed' | 'interrupted';
 export type VerifyMode = 'sha256+rsync' | 'rsync';
 
-export interface ImageRepoIdentity {
+interface ImageRepoIdentity {
   name: string;
   tag: string;
   guid: string;
   grandGuid: string | null;
 }
 
-export interface ImageRunBlock {
+interface ImageRunBlock {
   startedAt: string;
   snapshotTakenAt: string;
   snapshotName: string;
@@ -49,7 +51,7 @@ export interface ImageRunBlock {
   lastError: string | null;
 }
 
-export interface ImageCompleteBlock {
+interface ImageCompleteBlock {
   snapshotTakenAt: string;
   finishedAt: string;
   apparentBytes: number;
@@ -69,7 +71,7 @@ export interface ImageUploadRecord {
   status: 'staging' | 'finalized';
 }
 
-export interface ImageHistoryEntry {
+interface ImageHistoryEntry {
   startedAt: string;
   finishedAt: string;
   outcome: RunOutcome;
@@ -133,7 +135,7 @@ export function readImageState(statePath: string): ImageState | null {
 }
 
 /** Copies the known fields only, so a stray field (a credential, say) is never persisted. */
-export function sanitizeImageState(state: ImageState): ImageState {
+function sanitizeImageState(state: ImageState): ImageState {
   const run = state.run;
   const c = state.complete;
   const u = state.upload;
@@ -369,7 +371,7 @@ export function failRun(state: ImageState, input: FailRunInput): ImageState {
     history: pushHistory(state.history, {
       startedAt: state.run.startedAt,
       finishedAt: input.now,
-      outcome: input.outcome ?? 'failed',
+      outcome: input.outcome ?? DEFAULT_OUTCOME,
       literalBytes: input.literalBytes ?? 0,
     }),
   };
@@ -406,7 +408,7 @@ export class ImageLockError extends Error {
   }
 }
 
-export function defaultIsPidAlive(pid: number): boolean {
+function defaultIsPidAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;

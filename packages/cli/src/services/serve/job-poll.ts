@@ -19,16 +19,16 @@ export const DEFAULT_MAX_LINES = 500;
 export const MAX_BODY_BYTES = 256 * 1024;
 
 // Local until the J2 contract types land; the shape is Design 4's body.
-export type JobPollState = 'running' | 'succeeded' | 'failed' | 'cancelled' | (string & {});
+type JobPollState = 'running' | 'succeeded' | 'failed' | 'cancelled' | (string & {});
 
-export interface JobPollStatus {
+interface JobPollStatus {
   state: JobPollState;
   exitCode?: number;
   finishedAt?: string;
   function: string;
 }
 
-export interface JobPollEvent {
+interface JobPollEvent {
   /** Zero-based index of this line in the job's stream. */
   line: number;
   event: unknown;
@@ -194,7 +194,7 @@ class PollPage {
 
 const TERMINAL_STATES = new Set<string>(['succeeded', 'failed', 'cancelled']);
 
-export function isTerminalState(state: string): boolean {
+function isTerminalState(state: string): boolean {
   return TERMINAL_STATES.has(state);
 }
 

@@ -7,7 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { JobWaitDeps } from '../../services/jobs/job-wait.js';
 import { TicketStore } from '../../services/jobs/ticket-store.js';
 import { EXIT_CODES } from '../../types/index.js';
@@ -43,8 +43,21 @@ const { initI18n } = await import('../../i18n/index.js');
 const JOB_ID = 'j1a2b-0123abcd';
 let base: string;
 let store: TicketStore;
-let follow: ReturnType<typeof vi.fn>;
-let readStatus: ReturnType<typeof vi.fn>;
+let follow: Mock<JobWaitDeps['follow']>;
+let readStatus: Mock<JobWaitDeps['readStatus']>;
+
+type JobStatus = Awaited<ReturnType<JobWaitDeps['readStatus']>>;
+
+function jobStatus(over: Partial<JobStatus>): JobStatus {
+  return {
+    job_id: JOB_ID,
+    function: 'repository_up',
+    state: 'succeeded',
+    exit_code: 0,
+    started_at: '2026-10-29T10:00:00Z',
+    ...over,
+  } as JobStatus;
+}
 
 async function run(...args: string[]): Promise<void> {
   const program = new Command();
@@ -60,10 +73,10 @@ beforeEach(async () => {
   base = mkdtempSync(join(tmpdir(), 'rdc-job-wait-'));
   store = new TicketStore('rediacc', base);
   holder.store = store;
-  follow = vi.fn().mockResolvedValue(false);
-  readStatus = vi.fn().mockResolvedValue({ job_id: JOB_ID, state: 'succeeded', exit_code: 0 });
+  follow = vi.fn<JobWaitDeps['follow']>().mockResolvedValue(false);
+  readStatus = vi.fn<JobWaitDeps['readStatus']>().mockResolvedValue(jobStatus({}));
   holder.deps = {
-    withConnection: (_m: string, fn: (c: unknown) => Promise<unknown>) => fn({}),
+    withConnection: <T>(_m: string, fn: (c: unknown) => Promise<T>) => fn({}),
     follow,
     readStatus,
   } satisfies JobWaitDeps;
@@ -89,7 +102,7 @@ describe('rdc job wait', () => {
   });
 
   it('exits with the job exit code and acknowledges the ticket', async () => {
-    readStatus.mockResolvedValue({ job_id: JOB_ID, state: 'failed', exit_code: 9 });
+    readStatus.mockResolvedValue(jobStatus({ state: 'failed', exit_code: 9 }));
     await run('wait', JOB_ID);
     expect(process.exitCode).toBe(9);
     expect(store.pending()).toHaveLength(0);
@@ -97,12 +110,9 @@ describe('rdc job wait', () => {
   });
 
   it('names the failure reason of a job that did not succeed', async () => {
-    readStatus.mockResolvedValue({
-      job_id: JOB_ID,
-      state: 'failed',
-      exit_code: 9,
-      error: 'disk full on /mnt',
-    });
+    readStatus.mockResolvedValue(
+      jobStatus({ state: 'failed', exit_code: 9, error: 'disk full on /mnt' })
+    );
     await run('wait', JOB_ID);
     expect(out.warn.mock.calls.map((c) => String(c[0])).join('\n')).toContain('disk full on /mnt');
   });

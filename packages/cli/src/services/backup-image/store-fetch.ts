@@ -21,7 +21,7 @@ export interface RestoreSession {
 }
 
 /** What renet prints on its single JSON line (the fields this module reads). */
-export interface FetchImageRecord {
+interface FetchImageRecord {
   status: string;
   reason?: string;
   snapshotId?: string;
@@ -75,7 +75,7 @@ interface StatusError {
 }
 
 /** Maps the restore-session refusals to a message that names the cure. */
-export function describeSessionRefusal(error: unknown): Error {
+function describeSessionRefusal(error: unknown): Error {
   const e = error as StatusError | null;
   const status = e?.status;
   const code = e?.code;
@@ -97,7 +97,7 @@ export function describeSessionRefusal(error: unknown): Error {
 }
 
 /** The one JSON line renet prints, or null when stdout carries none. */
-export function parseFetchRecord(stdout: string): FetchImageRecord | null {
+function parseFetchRecord(stdout: string): FetchImageRecord | null {
   const lines = stdout.split(/\r?\n/).filter((l) => l.trim() !== '');
   for (let i = lines.length - 1; i >= 0; i -= 1) {
     try {

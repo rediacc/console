@@ -208,7 +208,7 @@ export async function runChunkRestore(args: {
  * The restore summary (plan L6): what was fetched, reused from a local seed or anchor, and punched
  * out, so a restore that moved little reads as one. Structured formats print the whole record.
  */
-export async function reportRestoreStats(stats: RestoreStats | undefined): Promise<void> {
+async function reportRestoreStats(stats: RestoreStats | undefined): Promise<void> {
   if (!stats) return;
   const format = getOutputFormat();
   if (format !== 'table') {

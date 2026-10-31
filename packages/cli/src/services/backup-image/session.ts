@@ -12,10 +12,12 @@ import { t } from '../../i18n/index.js';
 import type { ExecSessionHandle } from '../../remote/sftp/client.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 
+const DEFAULT_ERROR_TEXT = 'error';
+
 /** Everything a path or argv token handed to a remote shell may contain; anything else is refused, not quoted. */
-export const SAFE_REMOTE_TOKEN = /^[A-Za-z0-9/._-]+$/;
-export const SESSION_IDLE_TIMEOUT = '90s';
-export const SESSION_PING_MS = 20_000;
+const SAFE_REMOTE_TOKEN = /^[A-Za-z0-9/._-]+$/;
+const SESSION_IDLE_TIMEOUT = '90s';
+const SESSION_PING_MS = 20_000;
 const QUIT_WAIT_MS = 10_000;
 
 /** How the client's system rsync reaches the machine: the `-e` command and `user@host`. */
@@ -24,7 +26,7 @@ export interface RsyncTransport {
   userHost: string;
 }
 
-export interface ExportReady {
+interface ExportReady {
   snapshot: string;
   guid: string;
   takenAt: string;
@@ -46,7 +48,7 @@ export interface ExportSession {
   quit(): Promise<void>;
 }
 
-export interface ImportReady {
+interface ImportReady {
   staging: string;
   fresh: boolean;
   seeded: boolean;
@@ -71,7 +73,7 @@ interface ProtocolEvent {
 }
 
 /** Refused before it reaches a remote shell: see SAFE_REMOTE_TOKEN. */
-export function assertSafeRemoteToken(value: string, what: string): string {
+function assertSafeRemoteToken(value: string, what: string): string {
   if (!SAFE_REMOTE_TOKEN.test(value) || value.split('/').includes('..')) {
     throw new Error(
       t('errors.backupImage.unsafeRemoteValue', { what, value: JSON.stringify(value) })
@@ -93,7 +95,7 @@ function parseEvent(line: string): ProtocolEvent | null {
  * The request/response core shared by both helpers. Requests are serialised: the helper answers
  * strictly in order, and the keepalive ping skips a beat while a request is in flight.
  */
-export class HelperProtocol {
+class HelperProtocol {
   private chain: Promise<unknown> = Promise.resolve();
   /** Requests in flight; the keepalive skips a beat while one is. */
   private inFlight = 0;
@@ -139,7 +141,7 @@ export class HelperProtocol {
         this.handle.write(line);
         const ev = await this.nextEvent();
         if (!ev) throw new Error(t('errors.backupImage.sessionClosed'));
-        if (ev.event === 'error') throw new Error(ev.error ?? 'error');
+        if (ev.event === 'error') throw new Error(ev.error ?? DEFAULT_ERROR_TEXT);
         if (ev.event !== expect) {
           throw new Error(
             t('errors.backupImage.unexpectedEvent', { event: ev.event, expected: expect })

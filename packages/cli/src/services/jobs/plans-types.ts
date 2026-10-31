@@ -9,11 +9,11 @@ export const LOCK_CLASSES = [
   'control',
   'read',
 ] as const;
-export type LockClass = (typeof LOCK_CLASSES)[number];
+type LockClass = (typeof LOCK_CLASSES)[number];
 
 /** Section 20's two timeout classes. */
 export const TIMEOUT_CLASSES = ['10m', '24h'] as const;
-export type TimeoutClass = (typeof TIMEOUT_CLASSES)[number];
+type TimeoutClass = (typeof TIMEOUT_CLASSES)[number];
 
 /**
  * The single-job form (J0b column 3).
@@ -24,9 +24,9 @@ export type TimeoutClass = (typeof TIMEOUT_CLASSES)[number];
  * - `compound`: several calls, as one compound function or a chain under one ticket.
  * - `successor`: one job, then a successor job recorded on the ticket.
  */
-export type JobForm = 'single' | 'precondition' | 'command-kind' | 'compound' | 'successor';
+type JobForm = 'single' | 'precondition' | 'command-kind' | 'compound' | 'successor';
 
-export type ConversionBox = 'J4' | 'J16' | 'J17' | 'J18' | 'J19' | 'J20';
+type ConversionBox = 'J4' | 'J16' | 'J17' | 'J18' | 'J19' | 'J20';
 
 export interface JobPlan {
   form: JobForm;

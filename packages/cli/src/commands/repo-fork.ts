@@ -58,6 +58,8 @@ import { assertMachineExists } from './_validate.js';
 import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
 import { createForkEventHandler, finishTimeline } from './repo-fork-timeline.js';
 
+const DEFAULT_VERB = 'repo fork';
+
 interface ForkActionOptions {
   machine: string;
   /**
@@ -111,7 +113,7 @@ async function rollbackFork(forkKey: string, keyState: ForkKeyState, guid: strin
 }
 
 /** The fork image exists once its reflink or clone step completed: a failure after it is an up-phase failure. */
-const FORK_IMAGE_STEPS = ['cow_reflink', 'cow_clone'];
+const FORK_IMAGE_STEPS = ['cow_reflink', 'cow_clone'] as const;
 
 bindStepHandler('rollbackFork', async ({ params, markers }) => {
   const text = (key: string) =>
@@ -121,7 +123,10 @@ bindStepHandler('rollbackFork', async ({ params, markers }) => {
   if (repo === undefined) throw new Error('step param "repo" is missing');
   if (guid === undefined) throw new Error('step param "guid" is missing');
   // A compound --up failure can happen AFTER the remote fork exists (mount, compose, readiness); rolling back the local registration then would orphan a live remote repo. An observer that did not see the stream from its start cannot tell, so it keeps the registration too.
-  if (markers === undefined || markers.some((m) => FORK_IMAGE_STEPS.includes(m))) {
+  if (
+    markers === undefined ||
+    markers.some((m) => (FORK_IMAGE_STEPS as readonly string[]).includes(m))
+  ) {
     outputService.warn(
       `Fork "${repo}" may exist on the machine; keeping the local registration. ` +
         `Retry with: rdc repo up ${repo}${text('machine') ? ` -m ${text('machine')}` : ''}`
@@ -233,7 +238,7 @@ function executeForkLeg(
   steps: PlannedStep[]
 ): Promise<CommandJobOutcome> {
   return runCommandJob(
-    plan.options.verb ?? 'repo fork',
+    plan.options.verb ?? DEFAULT_VERB,
     forkLegOptions(plan, params, renetSteps),
     steps
   );

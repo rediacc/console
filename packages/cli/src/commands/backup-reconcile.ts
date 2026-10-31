@@ -55,7 +55,7 @@ interface ReconcileOptions {
  * `driftBytes` includes skipped lineages, so it counts only when none was skipped:
  * with a skip it cannot be told apart from the skipped lineage's own drift.
  */
-export function hasDrift(res: ReconcileResponse): boolean {
+function hasDrift(res: ReconcileResponse): boolean {
   const judged = res.lineages.filter((l) => !l.skipped);
   const aggregateDrift = judged.length === res.lineages.length && res.driftBytes !== 0;
   return (

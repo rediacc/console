@@ -43,20 +43,13 @@ import {
   sshCommandOf,
 } from './transfer-common.js';
 
-export {
-  DEFAULT_RETRIES,
-  EXIT_INTERRUPTED,
-  RETRY_BACKOFF_MS,
-  type RsyncOutcome,
-  type RsyncRequest,
-} from './transfer-common.js';
+export { DEFAULT_RETRIES } from './transfer-common.js';
 export {
   type ImportTarget,
   type RegisterEntry,
   runUpload,
   type SourceRepo,
   type UploadDeps,
-  type UploadOptions,
 } from './upload.js';
 
 export interface ImageTarget {

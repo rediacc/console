@@ -33,6 +33,11 @@ import { type JobOutputCollector } from './job-output-collector.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
+const UNKNOWN_JOB_ID = '?';
+const DEFAULT_WORK_LABEL = 'work';
+const DEFAULT_JOB_STATE = 'running';
+const UNKNOWN_ORIGIN = 'unknown';
+
 export { createJobOutputCollector, type JobOutputCollector } from './job-output-collector.js';
 
 /**
@@ -102,7 +107,7 @@ function compact<T extends Record<string, unknown>>(obj: T): T {
 }
 
 /** Map renet's overlap entry onto the wire's JobOverlap (section 19). */
-export function toJobOverlap(o: RenetOverlap): JobOverlap {
+function toJobOverlap(o: RenetOverlap): JobOverlap {
   const origin = o.origin
     ? compact({
         client: o.origin.client,
@@ -255,7 +260,7 @@ export function isJobStartUnsupported(output: string): boolean {
  * synchronous fallback: every renet call runs as a job, and `machine setup`
  * uploads the binary that can.
  */
-export function jobsUnsupportedMessage(machineName: string, verb: string): string {
+function jobsUnsupportedMessage(machineName: string, verb: string): string {
   return (
     `renet on '${machineName}' is older than this CLI and cannot run ${verb} as a job. ` +
     `Upgrade it: rdc machine setup ${machineName}`
@@ -358,19 +363,19 @@ export function overlapWarningLines(overlap: JobOverlap): string[] {
 
 /** "job <id> (<function> on <repo>) is running, started <ts>". */
 function overlapSubject(overlap: JobOverlap): string {
-  const what = overlap.unit ?? `job ${overlap.jobId ?? '?'}`;
-  const doing = overlap.function ?? overlap.command ?? 'work';
+  const what = overlap.unit ?? `job ${overlap.jobId ?? UNKNOWN_JOB_ID}`;
+  const doing = overlap.function ?? overlap.command ?? DEFAULT_WORK_LABEL;
   const scope = overlap.repo ?? overlap.repoGuid;
   const on = scope ? ` on ${scope}` : '';
   const started = overlap.startedAt ? `, started ${overlap.startedAt}` : '';
-  return `${what} (${doing}${on}) is ${overlap.state ?? 'running'}${started}`;
+  return `${what} (${doing}${on}) is ${overlap.state ?? DEFAULT_JOB_STATE}${started}`;
 }
 
 /** "started by <user> via <client> (config <name>)", or the older-renet fallback. */
 function originLabel(origin: JobOverlap['origin']): string {
   if (!origin) return 'started by: unknown (older renet)';
   const config = origin.config?.name ? ` (config ${origin.config.name})` : '';
-  return `started by ${origin.sshUser ?? 'unknown'} via ${origin.client ?? 'unknown'}${config}`;
+  return `started by ${origin.sshUser ?? UNKNOWN_ORIGIN} via ${origin.client ?? UNKNOWN_ORIGIN}${config}`;
 }
 
 /** Parse `renet job start --json` output into a validated handle. */
@@ -578,7 +583,9 @@ function handleLineOf(obj: Record<string, unknown>): AttachLine {
 }
 
 function statusLineOf(obj: Record<string, unknown>): AttachLine {
-  const { type: _type, deduped, overlaps, ...status } = JobStatusTrailerSchema.parse(obj);
+  const { deduped, overlaps } = JobStatusTrailerSchema.parse(obj);
+  // The status schema strips the trailer-only keys (`type`, `deduped`, `overlaps`).
+  const status = JobStatusSchema.parse(obj);
   return {
     kind: 'status',
     status,

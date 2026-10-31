@@ -7,6 +7,7 @@
  * which machine, not the command's output.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
@@ -46,8 +47,9 @@ vi.mock('../machine/machine-connection.js', () => ({
     }),
   },
 }));
-vi.mock('../account/license-machine.js', () => ({
-  DEFAULT_DATASTORE: '/mnt/rediacc',
+vi.mock('../account/license-machine.js', async () => ({
+  DEFAULT_DATASTORE: (await import('@rediacc/shared/config/well-known.generated'))
+    .WK_DATASTORE_PATH,
   scanRemoteRepoLicenses: vi.fn(() =>
     h.scanError ? Promise.reject(h.scanError) : Promise.resolve(h.scan)
   ),
@@ -78,7 +80,7 @@ beforeEach(() => {
     {
       repositoryGuid: GUID,
       requestedSizeGb: 2,
-      datastorePath: '/mnt/rediacc',
+      datastorePath: WK_DATASTORE_PATH,
       storageFingerprint: 'fp',
     },
   ];
@@ -148,7 +150,7 @@ describe('ensureTargetRepoLicense', () => {
     const [, , params] = vi.mocked(issueFreeRepoLicense).mock.calls[0];
     expect(params).toMatchObject({ repositoryGuid: GUID, requestedSizeGb: undefined });
     const [ctx] = vi.mocked(restoreLicenseAlreadyInstalled).mock.calls[0];
-    expect(ctx.datastoreMount).toBe('/mnt/rediacc');
+    expect(ctx.datastoreMount).toBe(WK_DATASTORE_PATH);
   });
 
   it('falls back when the target renet rejects a scan flag', async () => {

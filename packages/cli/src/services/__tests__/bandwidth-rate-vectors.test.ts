@@ -31,7 +31,7 @@ const OK: [string, number | undefined][] = [
   ['800bps', 100],
 ];
 
-const BAD = ['fast', '100Mb', '6iB', '6Mibit', '-5M', '12.5 MB per second', '1bit', 'M'];
+const BAD = ['fast', '100Mb', '6iB', '6Mibit', '-5M', '12.5 MB per second', '1bit', 'M'] as const;
 
 describe('bandwidth rate grammar (mirrors renet pkg/bwrate)', () => {
   it.each(OK)('%s -> %s bytes/second', (input, want) => {

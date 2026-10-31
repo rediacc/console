@@ -23,7 +23,6 @@ import { fileEntryToFileInfo, statsToFileInfo } from './file-info.js';
 import type { ExecSessionHandle, Ipv6Resolver, SFTPClientConfig } from './types.js';
 
 export {
-  AAAA_LOOKUP_TIMEOUT_MS,
   buildHostKeyMismatchMessage,
   resolveWithin,
 } from './connect-helpers.js';

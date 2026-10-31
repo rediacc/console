@@ -14,10 +14,10 @@ import type { ToolPin, ToolPlatform } from './types.js';
 import { readZipEntry, ZipError } from './zip.js';
 
 export const TOOL_NAMES = ['tofu'] as const;
-export type ToolName = (typeof TOOL_NAMES)[number];
+type ToolName = (typeof TOOL_NAMES)[number];
 
 /** Root of rdc-managed tools: `<stateDir>/tools` (XDG state on Linux, LOCALAPPDATA on Windows). */
-export function getToolsDir(): string {
+function getToolsDir(): string {
   return join(getStateDir(), 'tools');
 }
 
@@ -33,7 +33,7 @@ export function toolPlatform(
 }
 
 /** `tofu` or `tofu.exe`. */
-export function tofuExecutableName(platform: NodeJS.Platform = process.platform): string {
+function tofuExecutableName(platform: NodeJS.Platform = process.platform): string {
   return platform === 'win32' ? 'tofu.exe' : 'tofu';
 }
 

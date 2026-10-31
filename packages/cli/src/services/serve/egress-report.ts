@@ -23,7 +23,7 @@ export interface EgressReportTarget {
 }
 
 /** What the proxy's probe of the target concluded. */
-export type EgressProbeVerdict = 'reachable' | 'target-unreachable' | 'skipped';
+type EgressProbeVerdict = 'reachable' | 'target-unreachable' | 'skipped';
 
 export interface EgressUnreachableAnswer {
   count: number;
@@ -39,7 +39,7 @@ export interface EgressReporterOptions {
   deadlineMs?: number;
 }
 
-const PROBE_VERDICTS: readonly string[] = ['reachable', 'target-unreachable', 'skipped'];
+const PROBE_VERDICTS: readonly string[] = ['reachable', 'target-unreachable', 'skipped'] as const;
 
 /** The proxy's answer. One without `counted` and `probe` (a proxy from before the probe) counted every report, so it reads as counted and reachable. */
 function parseAnswer(value: unknown): EgressUnreachableAnswer | undefined {
