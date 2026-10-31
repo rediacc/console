@@ -216,6 +216,16 @@ SESSION_CASES = [
         "gh pr comment 5 -b 'see https://claude" + ".ai/blog/session-state'",
         False,
     ),
+    (
+        "a hyphen-form code session id with no digit (review 801f5209.3)",
+        "gh pr comment 5 -b 'https://claude" + ".ai/code/session-abcdef'",
+        True,
+    ),
+    (
+        "CONTROL: a blog slug with chat, a hyphen and a digit (review 801f5209.2)",
+        "gh pr comment 5 -b 'see https://claude" + ".com/blog/chat-with-claude-4'",
+        False,
+    ),
     ("CONTROL: git log --grep claude.ai", "git log --grep claude" + ".ai", False),
     ("CONTROL: grep for the trailer", "grep -rn '%s:' ." % SESSION_HEAD, False),
     (

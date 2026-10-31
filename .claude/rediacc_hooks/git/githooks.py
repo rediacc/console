@@ -81,7 +81,7 @@ def _repo() -> str:
 # A CLAUDE SESSION LINK OR SESSION TRAILER (operator incident 2026-10-30, PR-TASK 9f92c43e): console is PUBLIC, and 80 commits carried `Claude-Session: https://claude.ai/code/session_<id>`, four of them pushed. The pre-bash guard `block_commit_meta` refuses it in an agent's own commands; these two hooks refuse it for a commit or a push made any other way. The two patterns are
 # the guard's own (`block_commit_meta.SESSION_TRAILER` / `SESSION_LINK`), copied because this module is loaded by file and cannot import the guard package; `test-block_commit_meta.py` fails if the copies differ. `CLAUDE_FOOTER` is the attribution footer, line-anchored the way the guard anchors it, and narrowed to `[Claude` so an honest "Generated with npm" line is not refused.
 SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
-SESSION_LINK = r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?(?:[_/][A-Za-z0-9]|-[A-Za-z0-9-]*[0-9])"
+SESSION_LINK = r"claude\.(?:ai|com)/(?:code/session[_-][A-Za-z0-9]|(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/][A-Za-z0-9])"
 CLAUDE_FOOTER = r"^[ \t]*(?:[^0-9A-Za-z\s]{0,4}[ \t]*)?Generated with \[?Claude"
 SESSION_LEAK = re.compile(
     "%s|%s|%s" % (SESSION_TRAILER, SESSION_LINK, CLAUDE_FOOTER), re.IGNORECASE | re.MULTILINE

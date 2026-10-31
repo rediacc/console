@@ -75,12 +75,12 @@ TRAILER_OR_FOOTER = hookio.rx(
 # and e9f1d2bae), each a link to a private session. This half is wider than the trailer rule above in two ways, both deliberate. It covers every channel that PUBLISHES text (a PR or issue comment, a review, a release, any `gh api` write), not only the ones that author a commit or a PR description, because a session link in a comment leaks exactly as far. And it reads every
 # place a body can come from: the command itself, the message files, `$(cat <file>)` and `$(< <file>)`, and the inherited value of each `$NAME` the command expands.
 #
-# THE AUDIT SHAPES STAY LEGAL, by the same two rules the trailer above earned. The publish gate: `git log --grep claude.ai`, `grep -rn 'Claude-Session:' .` and `echo` prose publish nothing, so they are never read. The pattern: a trailer needs its separator (`[:=]`), and a link needs an id character right after `session_`, `chat/`, `artifact/` or `share/`, so prose that NAMES the rule
+# THE AUDIT SHAPES STAY LEGAL, by the same two rules the trailer above earned. The publish gate: `git log --grep claude.ai`, `grep -rn 'Claude-Session:' .` and `echo` prose publish nothing, so they are never read. The pattern: a trailer needs its separator (`[:=]`), and a link needs an id character right after `session_`, `chat/`, `artifact/` or `share/`, or after `code/session-` (the code-session path takes either separator), so prose that NAMES the rule
 # (`the Claude-Session trailer`, `claude.ai/code/session_<id>`) passes inside a real commit too. A real link always carries its id, so the id requirement costs nothing. Any spelling with `Session` after a `Claude` word counts (`Claude-Session`, `Claude-Code-Session`, `claude_session`), in any case.
 #
 # THE SAME TWO PATTERNS LIVE IN `.claude/rediacc_hooks/git/githooks.py` (`SESSION_TRAILER`, `SESSION_LINK`), which git loads by file with no package context and so cannot import this module. `test-block_commit_meta.py` asserts the two spellings are identical, so they cannot drift apart.
 SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
-SESSION_LINK = r"claude\.(?:ai|com)/(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?(?:[_/][A-Za-z0-9]|-[A-Za-z0-9-]*[0-9])"
+SESSION_LINK = r"claude\.(?:ai|com)/(?:code/session[_-][A-Za-z0-9]|(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/][A-Za-z0-9])"
 SESSION_LEAK = re.compile("%s|%s" % (SESSION_TRAILER, SESSION_LINK), re.IGNORECASE)
 
 # The publishing verbs that do not author a commit, tag or PR description, so the gate above does not see them. A text fallback for the walk, which reads `gh issue` and `gh release` only as operands.
