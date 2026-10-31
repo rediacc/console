@@ -488,7 +488,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 76 | 3 | 2 | 10341 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
-| `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 42 | 3 | 9 | 10042 |
+| `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 45 | 3 | 9 | 10578 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 53 | 1 | 9 | 10869 |
