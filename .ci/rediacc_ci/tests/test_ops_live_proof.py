@@ -20,6 +20,7 @@ from rediacc_ci.proof import surfaces as S
 from rediacc_ci.proof import vm_tier
 from rediacc_ci.tests.test_proof_surfaces import World, _commit, _write
 from rediacc_ci.tests.test_proof_vm_tier import make as make_vm
+from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -75,7 +76,7 @@ class Fake:
             "hash": LP.Result(0, BIN_SHA + "\n", ""),
             "version": LP.Result(0, "0.0.0-dev\n", ""),
             "deploy_proxy": LP.Result(0, "smoke ok\n", ""),
-            "login": LP.Result(0, "eu-bench is logged in to https://bench.rediacc.com\n", ""),
+            "login": LP.Result(0, "eu-bench is logged in to %s\n" % BENCH_ORIGIN, ""),
         }
         # Per-key answers consumed in order before `answers` applies, for a step that fails once and then passes.
         self.queued: dict[str, list[LP.Result]] = {}

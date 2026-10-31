@@ -8,11 +8,11 @@
     "moment its Worker config exists.",
     "free-license-rate is agent/plans/PLAN-free-license.md R10 and F8: the D1 counter",
     "(8 new FREE licences per IP key per 72 h) is the real bound, and this rule stops a",
-    "flood before it reaches D1."
+    "flood before it reaches D1.",
+    "A zone is named by its zoneId; its display name is the apex domain (WK_APEX_DOMAIN) unless a `name` is given."
   ],
   "zones": [
     {
-      "name": "rediacc.com",
       "zoneId": "9e802649c143c9cefd811d8fd671d31c"
     }
   ],

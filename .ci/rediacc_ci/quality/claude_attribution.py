@@ -411,7 +411,7 @@ def selftest() -> int:
     for body in (
         "the %s trailer is banned" % _session,
         "never paste claude.ai/code/session_<id> links",
-        "see https://claude.com/claude-code",
+        "see %s" % CLAUDE_CODE_URL,
     ):
         ctl.falsy("MIRROR: naming the session rule is NOT a leak: %r" % body[:34], attributed(body))
     ctl.check(

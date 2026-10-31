@@ -375,6 +375,10 @@ jobs:
       # the submodule's commits and trees here; without them the engine falls
       # back to the bare gitlink and every VM job, and says so in the plan's
       # reasons. A failed fetch therefore warns and fails open, it never fails CI.
+      - name: Load well-known
+        if: github.event_name == 'pull_request'
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Fetch private/renet history for the scope engine
         if: github.event_name == 'pull_request'
         env:
@@ -385,7 +389,7 @@ jobs:
           # printed, so a failure line cannot echo the rewritten URL into the log.
           export GIT_CONFIG_COUNT=1
           export GIT_CONFIG_KEY_0="url.https://x-access-token:${RENET_TOKEN}@github.com/.insteadOf"
-          export GIT_CONFIG_VALUE_0="https://github.com/"
+          export GIT_CONFIG_VALUE_0="${{ env.WK_GH_ORIGIN }}/"
           if ! out=$(git submodule update --init --filter=blob:none --no-checkout private/renet 2>&1); then
             printf '%s\n' "${out//${RENET_TOKEN}/***}"
             echo "::warning::private/renet history unavailable; the scope engine selects every VM job for a renet bump"

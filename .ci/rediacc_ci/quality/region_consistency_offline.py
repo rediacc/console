@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci.deploy import account_secrets_local as local_push
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
+from rediacc_ci.well_known import APEX_DOMAIN, BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -38,7 +39,7 @@ REGIONS_REL = "regions.json"
 SUPPLY_REL = ".ci/config/secret-supply.json"
 BENCH_DEPLOY_REL = ".ci/rediacc_ci/ops/deploy_bench.py"
 BENCH = "bench"
-BENCH_DOMAIN = "bench.rediacc.com"
+BENCH_DOMAIN = BENCH_ORIGIN.removeprefix("https://")
 STABLE, EDGE = "stable", "edge"
 BENCH_PROFILE = "deploy-bench"
 CLASSES = ("regions", "account", "proxy", "profile")
@@ -139,7 +140,7 @@ class NoVerdictError(Exception):
 def pattern(channel: str, rid: str, jurisdiction: str | None) -> Target:
     """The target every regions.json row and the bench constants must equal."""
     pre = "edge-" if channel == EDGE else ""
-    domain = BENCH_DOMAIN if channel == BENCH else "%s%s.rediacc.com" % (pre, rid)
+    domain = BENCH_DOMAIN if channel == BENCH else "%s%s.%s" % (pre, rid, APEX_DOMAIN)
     return Target(
         id=BENCH if channel == BENCH else "%s-%s" % (channel, rid),
         channel=channel,
@@ -523,7 +524,11 @@ def _check_bench_profile(t: Target, prof: dict, suffixes: set[str]) -> list[Find
         if n not in specs
     )
     f.extend(
-        Finding(t.id, "profile", "%s binds `%s`, which must be the unaliased production name" % (t.profile, spec))
+        Finding(
+            t.id,
+            "profile",
+            "%s binds `%s`, which must be the unaliased production name" % (t.profile, spec),
+        )
         for spec in specs
         if ">" in spec and spec.split(">")[1] in BENCH_UNALIASED
     )

@@ -1224,7 +1224,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/plan-lifecycle.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/plan-priority-seed-baseline.json` | .ci/config | code: `.ci/scripts/quality/check_plan_record.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_record.py` |
 | `.ci/config/plant-proof-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/plant_proofs.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plant_proofs.py` |
-| `.ci/config/proof-tiers.json` | .ci/config | code: `.ci/scripts/quality/check_plan_live_proof.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_live_proof.py` |
+| `.ci/config/proof-tiers.json` | .ci/config | code: `.ci/rediacc_ci/proof/surfaces.py` | no -- hardcoded in `.ci/rediacc_ci/proof/surfaces.py` |
 | `.ci/config/prose-style-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
 | `.ci/config/prose-style-rules.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
 | `.ci/config/python-env-registry.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |

@@ -26,7 +26,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.well_known import PROXY_BENCH_HOST, PROXY_EDGE_US_HOST, PROXY_US_HOST
+from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST, PROXY_EDGE_US_HOST, PROXY_US_HOST
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -1579,7 +1579,7 @@ def test_a_colon_in_a_var_value_survives_wranglers_first_colon_split() -> None:
     [
         (
             "ACCOUNT_URL=https://evil.example",
-            "vars.ACCOUNT_URL is 'https://evil.example', not 'https://bench.rediacc.com'",
+            "vars.ACCOUNT_URL is 'https://evil.example', not %r" % BENCH_ORIGIN,
         ),
         ("ENVIRONMENT=production", "vars.ENVIRONMENT is 'production', not 'bench'"),
         ("EXECUTOR_CAP=99", "vars.EXECUTOR_CAP is '99', over the ceiling of 25"),
@@ -1887,7 +1887,7 @@ def test_two_consecutive_rollbacks_both_know_the_live_release(tmp_path: pathlib.
         ),
         encoding="utf-8",
     )
-    common = {"FAKE_LISTED_ID": TO_ID, "FAKE_READY_VERSION": TO_ID}
+    common: dict[str, typing.Any] = {"FAKE_LISTED_ID": TO_ID, "FAKE_READY_VERSION": TO_ID}
     args = ("--target", "edge", "--region", "us", "--rollback", TO_ID, "--record", str(record))
     proc, _calls = _run(tmp_path, root, args, **common)
     assert proc.returncode == 0, proc.stderr

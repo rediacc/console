@@ -708,9 +708,14 @@ with tempfile.TemporaryDirectory() as _d:
         True,
     )
     # Review 9450761b.2: `.gitmodules` is read once per call, not once per glob.
-    _reads = []
+    _reads: list[object] = []
     _orig = X._submodule_roots
-    X._submodule_roots = lambda root: (_reads.append(root), _orig(root))[1]
+
+    def _counting_roots(root):
+        _reads.append(root)
+        return _orig(root)
+
+    X._submodule_roots = _counting_roots
     try:
         X.normalize_owns(["sub", "plain", "a", "b", "c"], _d)
     finally:

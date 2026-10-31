@@ -59,7 +59,11 @@ def test_no_env_key_fails_and_the_cache_is_not_read(tmp_path: pathlib.Path) -> N
 def test_renet_keyless_is_refused_everywhere(tmp_path: pathlib.Path) -> None:
     """The retired CI escape: RENET_KEYLESS=1, even under GITHUB_ACTIONS=true, still fails closed."""
     script = _tree(tmp_path)
-    for env in ({"RENET_KEYLESS": "1"}, {"RENET_KEYLESS": "1", "GITHUB_ACTIONS": "true"}, {"GITHUB_ACTIONS": "true"}):
+    for env in (
+        {"RENET_KEYLESS": "1"},
+        {"RENET_KEYLESS": "1", "GITHUB_ACTIONS": "true"},
+        {"GITHUB_ACTIONS": "true"},
+    ):
         done = _key_ldflags(script, **env)
         assert done.returncode == 1, env
         assert done.stdout == "", env
@@ -91,7 +95,11 @@ def test_every_flavor_captures_the_ldflag_before_linking() -> None:
 
 def test_no_linux_build_passes_an_empty_key() -> None:
     """Every `_build_linux_arches` call bakes the key; the asset-image build used to pass `""` (review aa872edb.1)."""
-    calls = [line for line in BUILD_SH.read_text(encoding="utf-8").splitlines() if line.strip().startswith("_build_linux_arches ")]
+    calls = [
+        line
+        for line in BUILD_SH.read_text(encoding="utf-8").splitlines()
+        if line.strip().startswith("_build_linux_arches ")
+    ]
     assert len(calls) == 4, calls
     assert all(line.rstrip().endswith('"$key_ldflags"') for line in calls), calls
 

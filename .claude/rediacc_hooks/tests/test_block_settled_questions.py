@@ -13,6 +13,8 @@ import subprocess
 
 import pytest
 
+from rediacc_hooks.wellknown import BENCH_ORIGIN
+
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 DISPATCH = HOOKS / "dispatch.py"
 STEM = "block_settled_questions"
@@ -146,8 +148,8 @@ BENCH_REFUSE = [
     ("the header carries bench", "Can you log in again from this IP?", "eu-bench login"),
     ("leave to run the script", "May I run npm run login:bench to refresh the login?", ""),
     (
-        "bench.rediacc.com spelled out",
-        "Would you re-authenticate the bench.rediacc.com login for me?",
+        "the bench host spelled out",
+        "Would you re-authenticate the %s login for me?" % BENCH_ORIGIN.removeprefix("https://"),
         "",
     ),
 ]

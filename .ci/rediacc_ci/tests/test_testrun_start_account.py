@@ -529,8 +529,16 @@ def test_delta_require_env_pair_refuses_to_mint(
     for name in present:
         monkeypatch.setenv(name, "HALF-SENTINEL")
     calls: list[str] = []
-    monkeypatch.setattr(sa, "generate_keys", lambda: calls.append("generate") or dict(FAKE_KEYS))
-    monkeypatch.setattr(sa, "start_server", lambda *_a: calls.append("start"))
+
+    def fake_generate_keys() -> dict[str, str]:
+        calls.append("generate")
+        return dict(FAKE_KEYS)
+
+    def fake_start_server(*_a: object) -> None:
+        calls.append("start")
+
+    monkeypatch.setattr(sa, "generate_keys", fake_generate_keys)
+    monkeypatch.setattr(sa, "start_server", fake_start_server)
     monkeypatch.setattr(sa, "healthy", lambda _port: False)
     monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
     gh_env = tmp_path / "env"

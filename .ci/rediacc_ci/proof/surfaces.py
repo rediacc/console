@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
 wl_planconc = importlib.import_module("wl_planconc")
 
+MAP_REL = ".ci/config/proof-tiers.json"
 MAP_PATH = paths.CI_DIR / "config" / "proof-tiers.json"
 MAP_SCHEMA = 1
 RENET_SUBMODULE = "private/renet"

@@ -2712,7 +2712,7 @@ jobs:
         if: ${{ matrix.shard == 1 }}
         shell: bash
         run: |
-          key="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+          key="$(openssl rand -hex 32)"
           echo "::add-mask::$key"
           echo "ACCOUNT_SERVER_API_KEY=$key" >> "$GITHUB_ENV"
       # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this

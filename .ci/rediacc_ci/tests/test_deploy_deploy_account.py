@@ -27,7 +27,7 @@ from rediacc_ci.deploy import deploy_account as port
 from rediacc_ci.ops import portal_captcha as pc
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN
 
 EU_HOST = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
 
@@ -610,7 +610,7 @@ sys.stdout.write(json.dumps({"success": True, "result": [{"id": n} for n in name
 """
 
 
-def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: str):
+def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: typing.Any):
     curl = tmp_path / "new-bin" / "curl"
     curl.parent.mkdir(parents=True, exist_ok=True)
     curl.write_text(FAKE_CURL, encoding="utf-8")
@@ -879,9 +879,9 @@ def test_every_production_and_edge_config_has_a_route_to_smoke() -> None:
         for target in ("production", "edge"):
             name = port.config_name(region, target)
             assert port.route_host(worker / name) == (
-                "%s.rediacc.com" % region
+                "%s.%s" % (region, APEX_DOMAIN)
                 if target == "production"
-                else "edge-%s.rediacc.com" % region
+                else "edge-%s.%s" % (region, APEX_DOMAIN)
             ), name
 
 

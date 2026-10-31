@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.wellknown import BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -24,7 +25,8 @@ ME = "d778be9d"
 ROW_ID = "lp-0123456789ab"
 REL = "agent/plans/PLAN-lp-fixture.md"
 
-PLAN = """# Plan: fixture
+PLAN = (
+    """# Plan: fixture
 
 Status: in-progress
 Owns: packages/x/**
@@ -37,13 +39,15 @@ Owns: packages/x/**
 - [ ] LP-hostinger [live] Fresh hostinger receipt on one machine.
   - Accept: `live-proof hostinger renet-live machine=eu-1`
 - [ ] LP-www [live] A box whose Accept is not a live-proof form.
-  - Accept: `curl -fsS https://bench.rediacc.com/` rc=0
+  - Accept: `curl -fsS %s/` rc=0
 - [ ] LP-cli [live] A box with no Accept line at all.
 - [ ] LP-region [live] A box whose Accept carries an argument the registry does not take.
   - Accept: `live-proof bench account-smoke region=eu`
 - [x] LP-done [live] An already ticked box.
   - Accept: `live-proof bench account-smoke`
 """
+    % BENCH_ORIGIN
+)
 
 
 def _sig(text: str, label: str) -> str:

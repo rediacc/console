@@ -6,7 +6,7 @@
 
 WHY IT EXISTS (agent/plans/PLAN-detached-jobs.md, J23). The budget is p50 plus 500 ms and p95 plus 1 s per short command; L3a measures the baseline and L3b the result with this script.
 
-RUN. Each run is `<rdc> --config <name> [--debug] <rdc args>`, timed with a monotonic clock around the child process. Output: `runs=N p50_ms=X p95_ms=X max_ms=X`, with percentiles by nearest rank. With `--debug` the runs pass `--debug` to rdc, and every `rediacc.job.start_latency_ms` value a run prints (as `name=12.5`, `name: 12.5` or `"name":12.5`, on stdout or stderr) is collected; the line `start_latency_ms samples=N p50_ms=X p95_ms=X max_ms=X` follows. `--out <file>` writes the same numbers and every sample as JSON.
+RUN. Each run is `<rdc> --config <name> [--debug] <arguments>`, timed with a monotonic clock around the child process. Output: `runs=N p50_ms=X p95_ms=X max_ms=X`, with percentiles by nearest rank. With `--debug` the runs pass `--debug` to rdc, and every `rediacc.job.start_latency_ms` value a run prints (as `name=12.5`, `name: 12.5` or `"name":12.5`, on stdout or stderr) is collected; the line `start_latency_ms samples=N p50_ms=X p95_ms=X max_ms=X` follows. `--out <file>` writes the same numbers and every sample as JSON.
 
 COMPARE. `--compare before.json after.json` prints `metric before after delta` for p50, p95 and max wall time (and the start latency when both files carry it), the delta being after minus before.
 

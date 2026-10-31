@@ -170,9 +170,14 @@ def test_the_gitlink_set_is_read_from_the_judged_root_once_per_verdict(tmp_path,
     (tmp_path / ".gitmodules").write_text(
         '[submodule "x"]\n\tpath = vendor/x\n\turl = u\n', encoding="utf-8"
     )
-    reads = []
+    reads: list[str] = []
     real = X._submodule_roots
-    monkeypatch.setattr(X, "_submodule_roots", lambda root: reads.append(str(root)) or real(root))
+
+    def counting_roots(root):
+        reads.append(str(root))
+        return real(root)
+
+    monkeypatch.setattr(X, "_submodule_roots", counting_roots)
     xi = {
         "PLAN-a.md": X.PlanX("PLAN-a.md", owns=("vendor/x", "vendor/x/a/**")),
         "PLAN-b.md": X.PlanX("PLAN-b.md", owns=("vendor/x", "vendor/x/b/**")),

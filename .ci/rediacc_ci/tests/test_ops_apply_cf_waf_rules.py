@@ -10,6 +10,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import apply_cf_waf_rules as w
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN, BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -59,10 +60,12 @@ def test_the_rule_matches_the_plan_numbers() -> None:
 
 def test_hosts_come_from_every_account_worker_config() -> None:
     hosts = w.account_hosts(ROOT)
-    for host in ("bench.rediacc.com", "eu.rediacc.com", "us.rediacc.com", "asia.rediacc.com"):
+    bench = BENCH_ORIGIN.removeprefix("https://")
+    eu = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
+    for host in (bench, eu, "us.%s" % APEX_DOMAIN, "asia.%s" % APEX_DOMAIN):
         assert host in hosts
     for region in ("eu", "us", "asia"):
-        assert "edge-%s.rediacc.com" % region in hosts
+        assert "edge-%s.%s" % (region, APEX_DOMAIN) in hosts
     for host in hosts:
         assert '"%s"' % host in wanted()["expression"]
 

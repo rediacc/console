@@ -100,7 +100,9 @@ def test_rdc_renet_license_changes_nothing(tmp_path: pathlib.Path, tree: pathlib
 
 
 @pytest.mark.parametrize("flag", ["--nolicense", "--license"])
-def test_retired_flavor_flags_are_refused(tmp_path: pathlib.Path, tree: pathlib.Path, flag: str) -> None:
+def test_retired_flavor_flags_are_refused(
+    tmp_path: pathlib.Path, tree: pathlib.Path, flag: str
+) -> None:
     res = _dev(tree, tmp_path, flag)
     assert res.returncode == 2
     assert "takes no arguments" in res.stderr

@@ -728,7 +728,20 @@ report() {
     if pytest="$(resolve_pytest)"; then
         report_row pytest "$PYTEST_VERSION" "$pytest"
     else
-        report_row pytest "$PYTEST_VERSION" "${YELLOW}ABSENT${NC}"
+        # A pytest at another version is reported as that, so "ABSENT" never hides a stale install.
+        local other="" candidate other_version
+        for candidate in "${PYTEST_BIN:-}" "$(command -v pytest 2>/dev/null || true)" "$TOOL_BIN_DIR/pytest"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+                other="$candidate"
+                break
+            fi
+        done
+        if [ -n "$other" ]; then
+            other_version="$(toolchain_probe_version pytest "$other" 2>/dev/null || true)"
+            report_row pytest "$PYTEST_VERSION" "${YELLOW}ABSENT${NC} (pytest ${other_version:-of unknown version} found at $other, pin is $PYTEST_VERSION)"
+        else
+            report_row pytest "$PYTEST_VERSION" "${YELLOW}ABSENT${NC}"
+        fi
         rc=1
     fi
     # ITS OWN ROW, because "pytest: ok" says nothing about whether the suite can

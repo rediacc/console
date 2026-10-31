@@ -363,10 +363,6 @@
     "LINODE_API_TOKEN": {
       "kind": "no-github-twin",
       "reason": "The Linode API token for `rdc machine provision` and `machine provider add --token-env` on an operator workstation, bound only by `bws_env exec --profile cloud-provision` (.ci/config/secret-supply.json); no workflow provisions cloud machines, so no GitHub secret of that name exists to shadow."
-    },
-    "FREE_LICENSE_HMAC_KEY": {
-      "kind": "no-github-twin",
-      "reason": "The free-licence HMAC key (PLAN-free-license F2), bound by `bws_env exec --profile account-dev` and the local rediacc_ci.deploy.set_account_worker_secrets and rediacc_ci.ops.deploy_bench pushes (.ci/config/secret-supply.json consumers); CI's drills leg mints a throwaway key instead, so no workflow requests it and no GitHub secret of that name exists to shadow."
     }
   },
   "no_fetch_jobs": {}

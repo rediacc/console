@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.core import curl_stdin
-from rediacc_ci.well_known import CF_API_BASE
+from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -173,7 +173,7 @@ def apply_zone(
     zone: dict, wanted: list[dict], transport: Transport | None, dry_run: bool
 ) -> list[str]:
     """Reconcile one zone; returns the printed lines."""
-    name = zone["name"]
+    name = zone.get("name", APEX_DOMAIN)
     base = "%s/zones/%s/rulesets" % (CF_API_BASE, zone["zoneId"])
     lines: list[str] = []
     if transport is None:

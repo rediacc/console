@@ -719,7 +719,13 @@ def test_history_passes_over_skipped_jobs():
     """FIRES-if-unfixed: MEASURED 2026-10-30 -- five reruns of 403f47b9 skipped `CD Preflight`, and `--history` answered five `skipped` rows with no duration instead of the job's last real run."""
     runs = {
         "workflow_runs": [
-            {"id": i, "head_branch": "main", "head_sha": str(i) * 40, "run_attempt": 1, "status": "completed"}
+            {
+                "id": i,
+                "head_branch": "main",
+                "head_sha": str(i) * 40,
+                "run_attempt": 1,
+                "status": "completed",
+            }
             for i in (3, 2, 1)
         ]
     }
@@ -744,7 +750,7 @@ def test_history_passes_over_skipped_jobs():
             "actions/runs/1/jobs": ran,
         }
     )
-    passed = {}
+    passed: dict[str, int] = {}
     rows = D.history(fetch, "J", passed=passed)
     assert [(r["run_id"], r["conclusion"], r["s"]) for r in rows] == [(1, "success", 90)]
     assert passed == {"skipped": 2}

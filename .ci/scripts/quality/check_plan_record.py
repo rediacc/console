@@ -2534,7 +2534,7 @@ def selftest():
         xref(
             "R9 Supersedes: a pointer that does not resolve is a finding",
             "# t\nSupersedes: `agent/PLAN-no-such-plan-zzz.md`.\n",
-            "does not exist",
+            "no plan file at",
         )
         # THE CONTINUATION LINE, which is not a nicety: the only real `Supersedes:` user in this tree puts its sole resolvable pointer on the SECOND line, and a line-at-a-time reader reports it as naming nothing.
         xref(
@@ -2567,7 +2567,7 @@ def selftest():
         xref(
             "R9 Related: a pointer it DOES carry must resolve",
             "# t\nRelated: `agent/PLAN-no-such-plan-zzz.md`.\n",
-            "does not exist",
+            "no plan file at",
         )
 
         # -- the block reader, both directions ---------------------------------

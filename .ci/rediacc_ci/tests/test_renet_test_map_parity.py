@@ -19,7 +19,7 @@ GATE = "scripts/gates/check-renet-test-map.ts"
 
 
 def _corpus(test_map):
-    cases = [
+    cases: list[tuple[list[str], list[str]]] = [
         ([e["glob"][:-3] + "/zz_parity.go"], [])
         for e in test_map["entries"]
         if e["glob"].endswith("/**")
@@ -106,7 +106,9 @@ def test_the_always_set_rides_every_mapped_selection():
 def test_a_console_only_change_selects_the_packages_that_read_it():
     """Each console row's file selects exactly its packages (no always set), and a renet change beside it adds both."""
     test_map = wr.load_map(paths.from_root())
-    assert test_map["console"], "the map names no console read; renet tests that read console files go unselected"
+    assert test_map["console"], (
+        "the map names no console read; renet tests that read console files go unselected"
+    )
     for row in test_map["console"]:
         alone = wr.required_for(test_map, [], None, [row["glob"]])
         assert alone["packages"] == sorted(row["packages"]), row["glob"]

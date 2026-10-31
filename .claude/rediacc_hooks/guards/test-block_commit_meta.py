@@ -25,6 +25,16 @@ DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_commit_meta"
 GUARD = HERE / ("%s.py" % STEM)
 
+# The claude-code product URL, read from .ci/config/well-known.env by the CI reader, loaded by file (check:ci-literal-sources forbids spelling it).
+_WK = importlib.util.spec_from_file_location(
+    "well_known_for_commit_meta", CLAUDE_DIR.parent / ".ci" / "rediacc_ci" / "well_known.py"
+)
+if _WK is None or _WK.loader is None:
+    raise SystemExit("%s: .ci/rediacc_ci/well_known.py is missing" % __file__)
+_WK_MOD = importlib.util.module_from_spec(_WK)
+_WK.loader.exec_module(_WK_MOD)
+CLAUDE_CODE_URL = _WK_MOD.CLAUDE_CODE_URL
+
 # Assembled, so no source line here is itself a trailer or a footer.
 TRAILER = "Co-" + "Authored-By: Bot <bot@example.invalid>"
 COMMIT = "git " + "commit"
@@ -251,7 +261,7 @@ SESSION_CASES = [
     ),
     (
         "CONTROL: the claude-code product link is not a session",
-        "gh pr comment 5 -b 'see https://claude.com/claude-code'",
+        "gh pr comment 5 -b 'see %s'" % CLAUDE_CODE_URL,
         False,
     ),
     ("CONTROL: a clean -F file", "%s -F clean.txt -- a" % COMMIT, False),
@@ -324,6 +334,8 @@ print(
 _spec = importlib.util.spec_from_file_location(
     "githooks_commit_meta_under_test", CLAUDE_DIR / "rediacc_hooks" / "git" / "githooks.py"
 )
+if _spec is None or _spec.loader is None:
+    raise SystemExit("%s: cannot load githooks.py" % __file__)
 GH = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = GH
 _spec.loader.exec_module(GH)
@@ -409,7 +421,7 @@ git("add", "a")
     "fix: x\n\n%s: %s\n" % (SESSION_HEAD, SESSION_URL), encoding="utf-8"
 )
 (WORK / "footer-commit.txt").write_text(
-    "fix: x\n\n\U0001f916 " + "Generated" + " with [Claude Code](https://claude.com/claude-code)\n",
+    "fix: x\n\n\U0001f916 " + "Generated" + " with [Claude Code](%s)\n" % CLAUDE_CODE_URL,
     encoding="utf-8",
 )
 p = git("commit", "-q", "-F", str(WORK / "leak-commit.txt"), check=False)

@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import pytest
 
 from rediacc_ci.ops import portal_captcha as pc
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN, BENCH_ORIGIN
 
 REGIONS = pc.portal_health.load_regions()
 _BY_ID = {region["id"]: region for region in REGIONS}
@@ -165,7 +165,7 @@ def test_zero_hosts_is_red():
 
 def test_the_default_hosts_are_the_six_stable_and_edge_hosts():
     assert sorted(pc.default_hosts()) == sorted(
-        "%s%s.rediacc.com" % (prefix, region)
+        "%s%s.%s" % (prefix, region, APEX_DOMAIN)
         for prefix in ("", "edge-")
         for region in ("eu", "us", "asia")
     )

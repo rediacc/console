@@ -43,6 +43,7 @@ import json
 import re
 
 from rediacc_hooks import hookio
+from rediacc_hooks.wellknown import BENCH_ORIGIN
 
 CHAIN = "pre-ask"
 ORDER = 3
@@ -228,12 +229,13 @@ mention branching, or a factual question about a merge -- rephrase it as the
 question it actually is, and this hook will pass it.
 """
 
-BENCH_LOGIN_MESSAGE = """BLOCKED: logging eu-bench in is the agent's own step, never the operator's
+BENCH_LOGIN_MESSAGE = (
+    """BLOCKED: logging eu-bench in is the agent's own step, never the operator's
 (operator order 2026-10-30), so it is not a question.
 
   Run:   npm run login:bench
   then rerun the command that failed. It logs the eu-bench config in to
-  https://bench.rediacc.com headlessly with the operator's bench account (the
+  %s headlessly with the operator's bench account (the
   bench-login bws profile derives the authenticator code), refreshes the bench
   IP allowlist, and is safe to repeat. Two TOTP logins inside one 30 s window
   collide, so a second one waits for the next window.
@@ -246,6 +248,8 @@ The operator's door is only the vault itself: a value still holding
 PLACEHOLDER-operator-fills, or a dead bws machine token. Name that, with the
 entry login_bench printed, and the question passes.
 """
+    % BENCH_ORIGIN
+)
 
 PUSH_MESSAGE = """BLOCKED: when to push, and when to open the PR, is decided by the hooks, so it is
 never a question for the operator (ruling ASKED:2026-10-08T10:25Z: "It should not

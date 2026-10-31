@@ -1984,7 +1984,7 @@ def _gap_line(g):
 
 
 def verb_history(root, job_name, as_json):
-    passed = {}
+    passed: dict[str, int] = {}
     rows = D.history(_fetcher(root), job_name, passed=passed)
     p90 = D._p90_table().get(job_name)
     lines = [

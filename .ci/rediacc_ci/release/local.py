@@ -2084,6 +2084,7 @@ def assist_fetch(
             raise AssistError("no %s/.complete after %ds" % (prefix, int(timeout)))
         time.sleep(poll)
     dist = clone / "dist" / "cli"
+    # tree-write: safe --root is the release clone under .ci/cache/release (the assist step runs `_assist fetch` in it); no gate invokes _assist
     dist.mkdir(parents=True, exist_ok=True)
     got = _aws(
         [
@@ -2203,8 +2204,11 @@ def assist_main(argv: list[str]) -> int:
     parser.add_argument("--sha", default="")
     parser.add_argument("--since", default="")
     parser.add_argument("--timeout", type=float, default=3600.0)
+    parser.add_argument(
+        "--root", default=".", help="the release clone (default: the working directory)"
+    )
     args = parser.parse_args(argv)
-    clone = pathlib.Path.cwd()
+    clone = pathlib.Path(args.root)
     try:
         if args.verb == "stage-in":
             print(assist_stage_in(args.version, clone), file=sys.stderr)
