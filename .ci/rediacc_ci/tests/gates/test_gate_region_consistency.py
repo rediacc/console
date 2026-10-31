@@ -125,12 +125,12 @@ PLANTS = [
         'service = "rediacc-account-asia"\nentrypoint = "ExecutorIssuer"',
         "edge-asia   proxy",
     ),
-    # The last name of the us-edge profile is the one line carrying it without a trailing comma (mirror-config-store's copy has one).
+    # The us-edge profile is the one place its config server key sits directly above FREE_LICENSE_HMAC_KEY.
     (
         "profile",
         ".ci/config/secret-supply.json",
-        '        "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE"\n',
-        '        "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE"\n',
+        '        "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE",\n        "FREE_LICENSE_HMAC_KEY"\n',
+        '        "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE",\n        "FREE_LICENSE_HMAC_KEY"\n',
         "edge-us     profile",
     ),
     (

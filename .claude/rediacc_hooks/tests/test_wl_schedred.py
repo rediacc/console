@@ -210,6 +210,7 @@ def test_discovery_pins_this_repos_scheduled_workflows():
         "promote-stable",
         "ci-obs-mirror",
         "ci-vm-bake",
+        "ct-backup-perf",
         "pins-soaked",
         "cf-usage-report",
         "telemetry-probe",
