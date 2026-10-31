@@ -1031,7 +1031,13 @@ class BareHostDevbox(driver.GoldenHostDevbox):
 # The words `up` adds to `docker run` only where the host has the thing, as the contiguous runs the argv carries them in. 993 is the stub farm's `stat -c %g /dev/kvm`.
 HOST_ONLY_RUNS = (
     ["-v", "/var/run/docker.sock:/var/run/docker.sock"],
-    ["-v", driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores:" + devbox.DEVBOX_CORE_LEASE_DEST],
+    [
+        "--mount",
+        "type=bind,src="
+        + driver.GOLDEN_RUNTIME_DIR
+        + "/rediacc-cores,dst="
+        + devbox.DEVBOX_CORE_LEASE_DEST,
+    ],
     ["--device", "/dev/kvm"],
     ["--device", "/dev/net/tun"],
     ["--group-add", "993", "--cap-add", "NET_ADMIN", "--cap-add", "SYS_ADMIN"],

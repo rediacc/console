@@ -1904,7 +1904,8 @@ class Devbox:
         status, lease_src = self.sub(self.core_lease_src)
         self.checked(status)
         if lease_src and self.lease_dir_ready(lease_src):
-            binds += ["-v", "%s:%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
+            # --mount, not -v: on a boot-time restart (unless-stopped) the engine would recreate a missing -v source as root inside /run/user/<uid>, and every host run then met a root-owned pool; --mount refuses a missing source instead.
+            binds += ["--mount", "type=bind,src=%s,dst=%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
             lease_env = ["-e", "REDIACC_CORE_LEASE_DIR=%s" % DEVBOX_CORE_LEASE_DEST]
 
         status, slug = self.sub(self.slug)
