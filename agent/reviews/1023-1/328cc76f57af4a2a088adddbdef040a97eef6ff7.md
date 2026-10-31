@@ -21,9 +21,9 @@ Body-Sig: 79702fd28124f06c
 ### 328cc76f.1 [medium] conftest.py:28
 Anchor: in-diff
 Claim: The rebind plugin and its only control test are deleted on the strength of pytest 9.2.0 binding fixtures to every collector, but this diff adds no pytest pin. If CI installs an older pytest, `gates/x.py tests/y.py gates/z.py` orders fail with "fixture 'gate' not found" and no test in the tree catches it, since the selftest at check_pytest.py:650 checks only path strings.
-Resolution: open
+Resolution: not-a-bug | .devcontainer/toolchain.env:104 pins PYTEST_VERSION=9.2.0, and .ci/bootstrap.sh resolve_pytest accepts only a pytest at that pin (check_pytest exits 77 otherwise), so no older pytest can run the suite locally or in CI | d778be9d 2026-10-31T12:59:00Z
 
 ### 328cc76f.2 [low] .ci/rediacc_ci/tests/test_ops_cf_family.py:787
 Anchor: in-diff
 Claim: The hint_delta mapping rewrites the port's `--config eu-bench repo create` hint back to the retired bash's `--config bench repo create` before comparing, so test_deploy_bench_matches_bash passes for any port hint that appears once; the corrected config name is never asserted directly.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/tests/test_ops_cf_family.py:787 the delta mapping requires each declared port line to appear exactly once before it maps it back, so a wrong or missing eu-bench hint fails the test; the port's own wording is asserted by that once-check | d778be9d 2026-10-31T12:59:00Z
