@@ -137,7 +137,11 @@ def test_the_suites_own_interpreter_imports_the_pinned_yaml():
     The parser module still takes no dependency; this pins the environment, so a bootstrap that drops `--with PyYAML` or drifts off the pin fails here rather than as 36 unrelated import errors.
     """
     pin = None
-    for line in (pathlib.Path(__file__).resolve().parents[3] / ".devcontainer" / "toolchain.env").read_text().splitlines():
+    for line in (
+        (pathlib.Path(__file__).resolve().parents[3] / ".devcontainer" / "toolchain.env")
+        .read_text()
+        .splitlines()
+    ):
         if line.startswith("PYYAML_VERSION="):
             pin = line.split("=", 1)[1].strip()
     assert pin, "PYYAML_VERSION is missing from .devcontainer/toolchain.env"
