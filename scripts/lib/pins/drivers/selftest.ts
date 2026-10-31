@@ -1379,7 +1379,26 @@ async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; de
       detail: JSON.stringify({ nestedOn, nestedOff }),
     },
     {
-      name: 'npm override: a major run keeps the notes of the moves it keeps, not the note of a move its own plan already makes',
+      name: 'npm override: a major run that already moves vite drops the vite override move and its note, and an in-range run keeps both',
+      ok: (() => {
+        const majorMove = {
+          ...inRangeStep,
+          packages: [{ name: 'vite', current: '8.3.4', latest: '9.0.0' }],
+        };
+        const dropped = keptMoves([majorMove], viteOv);
+        const kept = keptMoves([inRangeStep], viteOv);
+        return (
+          dropped.moves.length === 0 &&
+          dropped.notes.length === 0 &&
+          kept.moves.length === 1 &&
+          kept.notes.length === 1 &&
+          kept.notes[0] === viteOv.notes[0]
+        );
+      })(),
+      detail: JSON.stringify({ notes: viteOv.notes }),
+    },
+    {
+      name: 'npm override: of two moves where the plan already makes one, exactly the kept move and its own note survive (an all-notes keptMoves fails this)',
       ok: (() => {
         // Two moves, two notes (one per move, in order); the plan already makes the first.
         const mv = (name: string) => ({
@@ -1402,7 +1421,11 @@ async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; de
           !assertion(buggyNotes)
         );
       })(),
-      detail: JSON.stringify({ notes: viteOv.notes }),
+      detail: JSON.stringify({
+        moves: ['alpha', 'beta'],
+        notes: ['note-alpha', 'note-beta'],
+        planned: 'alpha',
+      }),
     },
     {
       name: 'npm override: a package deferred in two projects is counted once, matching the one name listed',

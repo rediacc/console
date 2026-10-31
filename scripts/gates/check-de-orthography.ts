@@ -189,18 +189,23 @@ export interface Finding {
 
 /** Remove the parts of a value that are not German prose. */
 export function proseOf(value: string): string {
+  // In an ICU message any word or =N before a single-brace slot is a select or plural key
+  // ("male {fuer}", "one {fuer}", "=0 {fuer}"), so that slot is a one-word BRANCH: prose.
+  const icu = /,\s*(?:select|plural|selectordinal)\s*,/.test(value);
+  const slot = icu
+    ? /(?<!(?:\b\w+|=\d+)\s*)\{[^{}\s]*\}/g
+    : /(?<!(?:\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g;
   return (
     value
       .replace(/\{\{[^}]*\}\}/g, ' ')
-      // A single-brace slot is a placeholder ("{name}"), but the same shape right after an
-      // ICU selector ("one {fuer}", "=0 {fuer}") is a one-word plural/select BRANCH: prose.
-      .replace(/(?<!(?:\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g, ' ')
+      // Outside ICU a single-brace slot is a placeholder ("{name}"), except after a plural key.
+      .replace(slot, ' ')
       .replace(/<[^>]*>/g, ' ')
       .replace(/https?:\/\/\S+/g, ' ')
       .replace(/`[^`]*`/g, ' ')
-      // No space in the flag class: "5 % fuer alle" is a percent sign and a word, not a
-      // directive. The verb letter must not run into more letters ("%fuer" is not "%f").
-      .replace(/%[-+#0-9.*]*[a-zA-Z](?![A-Za-z])/g, ' ')
+      // The verb letter must not run into more letters, so "5 % fuer alle" stays prose while
+      // Go's space flag ("% d", "% x") is still a directive.
+      .replace(/%[-+# 0-9.*]*[a-zA-Z](?![A-Za-z])/g, ' ')
       // Identifier-shaped tokens: snake_case keys, paths, dotted names, flags. A single
       // slash between words ("fuer/gegen") is prose and stays; a path has two, or a root.
       .replace(/\S*_\S*/g, ' ')
@@ -434,6 +439,16 @@ function controls(): ControlCase[] {
     'a one-word ICU branch is prose: "one {fuer}" fires',
     words('{n, plural, one {fuer} other {x}}'),
     ['fuer']
+  );
+  eq(
+    'a one-word ICU select branch is prose: "male {fuer}" fires (review d2bb2559.1)',
+    words('{g, select, male {fuer} other {x}}'),
+    ['fuer']
+  );
+  eq(
+    'CONTROL: Go\'s space flag is still a directive: "% d Kopien" stays green (review d2bb2559.2)',
+    words('% d Kopien'),
+    []
   );
   eq(
     'a single-brace placeholder is still skipped: "{fuer}" stays green',

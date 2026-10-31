@@ -433,7 +433,9 @@ export function uninitialisedSubmodules(out: string): string[] {
   const paths: string[] = [];
   for (const line of out.split('\n')) {
     if (line.trim() === '' || !line.startsWith('-')) continue;
-    const m = /^-[0-9a-f]{40}\s+(\S+)/.exec(line);
+    // A SHA-1 (40) or SHA-256 (64) object name; the path runs to the end of the line, or to the
+    // ` (<describe>)` git appends, so a path with a space is named whole.
+    const m = /^-(?:[0-9a-f]{64}|[0-9a-f]{40}) (.+?)(?: \([^()]*\))?$/.exec(line);
     if (!m) throw new Error(`unparseable \`git submodule status\` line: ${JSON.stringify(line)}`);
     paths.push(m[1]);
   }
@@ -518,6 +520,14 @@ function selftest(): { bad: number; total: number } {
     })()
   );
   check('CONTROL: empty output names nothing', uninitialisedSubmodules('').length === 0);
+  check(
+    'a path with a space is named whole, without the describe suffix (review d8a578fc.1)',
+    uninitialisedSubmodules(`-${sha} private/my repo (v1.2-3-gabc)\n`).join() === 'private/my repo'
+  );
+  check(
+    'a SHA-256 object name parses (review d8a578fc.2)',
+    uninitialisedSubmodules(`-${'a'.repeat(64)} private/three\n`).join() === 'private/three'
+  );
   check('CONTROL: a newer minor in the same shape is newer', isNewer('3.9-slim', '3.13-slim'));
   check('CONTROL: a newer major is newer', isNewer('22-slim', '24-slim'));
   check('a DIFFERENT shape is not comparable', !isNewer('3.9-slim', '3.13-alpine'));
