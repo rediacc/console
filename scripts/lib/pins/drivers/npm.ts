@@ -710,9 +710,19 @@ export function keptMoves(
   };
 }
 
+/** The unique deferred package names (one package deferred in two projects counts once). */
+function uniqueDeferred(tooNew: ReadonlyArray<{ pkg: { name: string } }>): string[] {
+  return [...new Set(tooNew.map((t) => t.pkg.name))];
+}
+
+/** How many distinct packages are deferred: the same dedupe deferredNames lists. */
+export function deferredCount(tooNew: ReadonlyArray<{ pkg: { name: string } }>): number {
+  return uniqueDeferred(tooNew).length;
+}
+
 /** The deferred packages by name, the first five and a count of the rest. */
 export function deferredNames(tooNew: ReadonlyArray<{ pkg: { name: string } }>): string {
-  const all = [...new Set(tooNew.map((t) => t.pkg.name))];
+  const all = uniqueDeferred(tooNew);
   return `${all.slice(0, 5).join(', ')}${all.length > 5 ? ` and ${all.length - 5} more` : ''}`;
 }
 
@@ -753,7 +763,7 @@ export function inRangePlan(
     ctx,
     `${base.manifests.length} manifests`,
     {
-      version: `${label}${base.tooNew.length > 0 ? `; ${base.tooNew.length} deferred package(s) left (${deferredNames(base.tooNew)})` : ''}`,
+      version: `${label}${base.tooNew.length > 0 ? `; ${deferredCount(base.tooNew)} deferred package(s) left (${deferredNames(base.tooNew)})` : ''}`,
       publishedMs: null,
     },
     { ...base, steps: [...base.steps, ...moves] },

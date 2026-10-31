@@ -30,6 +30,7 @@ import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
 import { gomodDriver } from './gomod.js';
 import {
+  deferredCount,
   deferredNames,
   inRangePlan,
   inRangeReleases,
@@ -1380,21 +1381,38 @@ async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; de
     {
       name: 'npm override: a major run keeps the notes of the moves it keeps, not the note of a move its own plan already makes',
       ok: (() => {
-        const majorMove = {
+        // Two moves, two notes (one per move, in order); the plan already makes the first.
+        const mv = (name: string) => ({
           ...inRangeStep,
-          packages: [{ name: 'vite', current: '8.3.4', latest: '9.0.0' }],
+          packages: [{ name, current: '1.0.0', latest: '1.1.0' }],
+        });
+        const two: OverrideJudgement = {
+          moves: [mv('alpha'), mv('beta')],
+          deferred: [],
+          notes: ['note-alpha', 'note-beta'],
         };
-        const dropped = keptMoves([majorMove], viteOv);
-        const kept = keptMoves([inRangeStep], viteOv);
+        const kept = keptMoves([mv('alpha')], two);
+        // The buggy variant returns every note; it must fail the assertion below.
+        const buggyNotes = two.notes;
+        const assertion = (notes: string[]) => notes.length === 1 && notes[0] === 'note-beta';
         return (
-          dropped.moves.length === 0 &&
-          dropped.notes.length === 0 &&
           kept.moves.length === 1 &&
-          kept.notes.length === 1 &&
-          kept.notes[0] === viteOv.notes[0]
+          kept.moves[0].packages[0].name === 'beta' &&
+          assertion(kept.notes) &&
+          !assertion(buggyNotes)
         );
       })(),
       detail: JSON.stringify({ notes: viteOv.notes }),
+    },
+    {
+      name: 'npm override: a package deferred in two projects is counted once, matching the one name listed',
+      ok: (() => {
+        const t = [
+          { pkg: { name: 'dup' }, manifest: 'a/package.json' },
+          { pkg: { name: 'dup' }, manifest: 'b/package.json' },
+        ];
+        return deferredCount(t) === 1 && deferredNames(t) === 'dup' && t.length === 2;
+      })(),
     },
     {
       name: 'npm override: a package check-deps already moves in the same project is not planned a second time',
