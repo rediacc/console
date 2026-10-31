@@ -175,7 +175,7 @@ Promoted: 6 of 42 plans done, 591 of 754 boxes done (78%).
 
 <!-- queue:generated:begin -->
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
-2. agent/plans/PLAN-ciquick-reds-1023-1.md -- P1, executing, in progress (5 of 12 boxes ticked)
+2. agent/plans/PLAN-ciquick-reds-1023-1.md -- P1, executing, in progress (8 of 12 boxes ticked)
 3. agent/plans/PLAN-docker-pin-digest.md -- P1, executing, in progress (8 of 9 boxes ticked)
 4. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, in progress (4 of 6 boxes ticked)
 5. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
