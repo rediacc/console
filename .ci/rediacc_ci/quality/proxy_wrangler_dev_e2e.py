@@ -463,7 +463,8 @@ class FakeAccount:
         if self.plant == "inactive-all":
             return {"refused": "route-refused"}
         if bearer == self.caller_token or self.plant == "active-all":
-            return {"orgId": CALLER_ORG}
+            # placement is required since E7: resolveTenant answers 503 for a route without one.
+            return {"orgId": CALLER_ORG, "placement": 0}
         return {"refused": "route-refused"}
 
     @property
@@ -615,7 +616,7 @@ def _fake_account_controls(check: Checker) -> None:
         )
         check(
             "fake account: route() answers the caller's org and refuses a stranger",
-            fake.route(tokens["caller"]) == {"orgId": CALLER_ORG}
+            fake.route(tokens["caller"]) == {"orgId": CALLER_ORG, "placement": 0}
             and "refused" in fake.route(tokens["stranger"]),
         )
         _post(fake.url + "/stub/route", {"bearer": tokens["stranger"]})
@@ -963,6 +964,9 @@ def cannot_run(root: pathlib.Path) -> str | None:
     """Why this host cannot run the gate, with the fix, or None."""
     if shutil.which("docker") is None or _docker("version").returncode != 0:
         return "docker is not available here (no `docker` on PATH, or its daemon does not answer `docker version`); start docker, then rerun"
+    # Docker Desktop's host-gateway (192.168.65.254) cannot reach workerd's egress listener, which falls back to loopback, so every interceptOutboundHttp call fails with "fetch failed" (measured 2026-10-31: the egress sidecar logs `dialing gateway: dial tcp 192.168.65.254:<port>: connect: connection refused`). CI's Linux runners bind it on the docker0 bridge.
+    if _docker("info", "--format", "{{.OperatingSystem}}").stdout.strip() == "Docker Desktop":
+        return "Docker Desktop's host-gateway cannot reach workerd's egress listener, so the container's intercepted egress never arrives; run the gate on a native-Linux docker host (CI does)"
     wrangler = root.joinpath(*WORKER_DIR, *WRANGLER_BIN)
     if not wrangler.exists():
         return "%s is missing; run `cd workers/proxy && npm ci`" % wrangler.relative_to(root)
