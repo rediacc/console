@@ -2060,7 +2060,7 @@ Check VS Code installation and configuration
 
 ### rdc tools install <tool>
 
-Download the OpenTofu release pinned in this rdc build, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.
+Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.
 
 **Options:**
 
