@@ -565,6 +565,7 @@
         "packages/cli/src/commands/datastore.ts",
         "packages/cli/src/commands/repo.ts",
         "packages/cli/src/commands/repo-create-delete.ts",
+        "packages/cli/src/commands/repo-create-delete-teardown.ts",
         "packages/cli/src/commands/repo-trim.ts",
         "packages/cli/src/commands/mcp/tool-factory.ts",
         "packages/cli/src/commands/mcp/__tests__/argv-acceptance.test.ts"
@@ -668,6 +669,7 @@
         "packages/cli/src/cli.ts",
         "packages/cli/src/commands/backup-ops.ts",
         "packages/cli/src/commands/backup-storage.ts",
+        "packages/cli/src/commands/backup-storage-snapshot.ts",
         "packages/cli/src/commands/backup-strategy.ts",
         "packages/cli/src/commands/backup.ts",
         "packages/cli/src/commands/cluster/declare.ts",
@@ -690,6 +692,7 @@
         "packages/cli/src/commands/repo-container.ts",
         "packages/cli/src/commands/repo-extended.ts",
         "packages/cli/src/commands/repo-fork.ts",
+        "packages/cli/src/commands/repo-fork-timeline.ts",
         "packages/cli/src/commands/repo-maintenance.ts",
         "packages/cli/src/commands/storage-endpoints.ts",
         "packages/cli/src/commands/term.ts",

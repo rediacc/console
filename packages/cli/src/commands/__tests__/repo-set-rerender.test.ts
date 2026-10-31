@@ -222,7 +222,7 @@ describe('G4 wiring (source): verbs behind executors and prompts', () => {
   });
 
   it('delete reconciles the machine after the config entry settles', () => {
-    const body = sourceFrom('repo-create-delete.ts', 'async function handleDeleteSuccess');
+    const body = sourceFrom('repo-create-delete-teardown.ts', 'async function handleDeleteSuccess');
     const settle = body.indexOf('await settleConfigEntry(');
     const hook = body.indexOf('await reconcileBackupSchedules(machineName)');
     expect(settle).toBeGreaterThan(-1);
