@@ -183,7 +183,7 @@ def _owned_dir(path: str) -> bool:
 
 
 def _foreign_owned(path: pathlib.Path) -> bool:
-    """True when `path` exists and another user owns it; False when it is absent or this user's."""
+    """True when `path` (followed through a symlink) exists and another user owns it; False when it is this user's or cannot be stat'ed at all, which leaves the refusal to Pool.ensure."""
     try:
         return path.stat().st_uid != os.getuid()
     except OSError:
@@ -200,7 +200,7 @@ def lease_dir(environ: Mapping[str, str] | None = None) -> pathlib.Path:
     for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
         if runtime and _owned_dir(runtime):
             pool = pathlib.Path(runtime) / "rediacc-cores"
-            # A pool ANOTHER user owns inside this user's runtime dir is skipped, not refused: a container restarted at boot can have its missing bind source recreated as root by the engine. Anything this user owns (even a non-directory) is still returned and judged by Pool.ensure.
+            # A pool ANOTHER user owns inside this user's runtime dir is skipped, not refused: a container restarted at boot can have its missing bind source recreated as root by the engine. A symlink is judged by its target; anything else this user owns (even a non-directory) is still returned and judged by Pool.ensure.
             if _foreign_owned(pool):
                 continue
             return pool
