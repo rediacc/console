@@ -381,10 +381,26 @@ function gitVisibleImageFiles(): string[] {
   }
   // `ls-files --recurse-submodules` lists nothing inside an UNINITIALISED submodule, so its image
   // files never reach `missing`; name each such submodule as unjudged rather than claim coverage.
-  const uninit = spawnSync('git', ['submodule', 'status'], { cwd: ROOT, encoding: 'utf8' })
-    .stdout.split('\n')
-    .filter((l) => l.startsWith('-'))
-    .map((l) => l.trim().split(/\s+/)[1]);
+  const subStatus = spawnSync('git', ['submodule', 'status', '--recursive'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (subStatus.error || subStatus.status !== 0 || typeof subStatus.stdout !== 'string') {
+    const why = subStatus.error
+      ? `could not start git: ${subStatus.error.message}`
+      : `exit ${subStatus.status}: ${(subStatus.stderr ?? '').toString().trim() || 'no output'}`;
+    console.error(
+      `\u2717 \`git submodule status --recursive\` failed (${why}), so the gate cannot tell which submodules are uninitialised and refuses a verdict; fix git or the checkout and re-run.`
+    );
+    process.exit(1);
+  }
+  let uninit: string[];
+  try {
+    uninit = uninitialisedSubmodules(subStatus.stdout);
+  } catch (e) {
+    console.error(`\u2717 ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(1);
+  }
   for (const sub of uninit) {
     console.log(`! ${sub}: uninitialised submodule, its image files are not judged`);
   }
@@ -406,6 +422,22 @@ export function partitionExisting(
   const missing: string[] = [];
   for (const f of files) (exists(f) ? present : missing).push(f);
   return { present, missing };
+}
+
+/**
+ * The paths of UNINITIALISED submodules in `git submodule status --recursive` output (lines
+ * starting with `-`); initialised (` `), modified (`+`) and conflicted (`U`) lines are not named.
+ * A line that cannot be parsed throws, so a format change is loud rather than silently empty. Pure.
+ */
+export function uninitialisedSubmodules(out: string): string[] {
+  const paths: string[] = [];
+  for (const line of out.split('\n')) {
+    if (line.trim() === '' || !line.startsWith('-')) continue;
+    const m = /^-[0-9a-f]{40}\s+(\S+)/.exec(line);
+    if (!m) throw new Error(`unparseable \`git submodule status\` line: ${JSON.stringify(line)}`);
+    paths.push(m[1]);
+  }
+  return paths;
 }
 
 /**
@@ -463,6 +495,29 @@ function selftest(): { bad: number; total: number } {
     'our OWN ghcr images are not treated as upstream pins',
     !pins.some((p) => p.image.includes('rediacc'))
   );
+  const sha = 'a'.repeat(40);
+  const subOut = `-${sha} private/one\n ${sha} private/two (v1)\n+${sha} private/three\n`;
+  check(
+    'CONTROL: an uninitialised submodule (- line) is named, an initialised (space) or modified (+) one is not',
+    uninitialisedSubmodules(subOut).join() === 'private/one'
+  );
+  check(
+    'CONTROL: a nested uninitialised submodule line (recursive output) is named by its full path',
+    uninitialisedSubmodules(` ${sha} private/two\n-${sha} private/two/nested\n`).join() ===
+      'private/two/nested'
+  );
+  check(
+    'CONTROL: a malformed - line is refused, not skipped',
+    (() => {
+      try {
+        uninitialisedSubmodules('-garbage\n');
+        return false;
+      } catch {
+        return true;
+      }
+    })()
+  );
+  check('CONTROL: empty output names nothing', uninitialisedSubmodules('').length === 0);
   check('CONTROL: a newer minor in the same shape is newer', isNewer('3.9-slim', '3.13-slim'));
   check('CONTROL: a newer major is newer', isNewer('22-slim', '24-slim'));
   check('a DIFFERENT shape is not comparable', !isNewer('3.9-slim', '3.13-alpine'));
