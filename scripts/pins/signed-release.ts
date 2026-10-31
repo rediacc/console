@@ -380,8 +380,18 @@ export async function verifySignedRelease(
     throw new PlanRefused(
       `${id} ${version}: the signed ${sub(spec.sums)} did not verify, so no checksum of this release is taken:\n  - ${problems.join('\n  - ')}`
     );
-  return { digests: signedDigests(files.sums, assets, apiDigests, mutant), files };
+  // The signature and certificate are recorded with a final newline: both are read trimmed and cosign accepts the form, and the repository's editorconfig gate refuses a text file without one. SHA256SUMS stays byte for byte, since the signature is over those exact bytes.
+  const recorded: SignedFiles = {
+    sums: files.sums,
+    sig: withFinalNewline(files.sig),
+    pem: withFinalNewline(files.pem),
+  };
+  return { digests: signedDigests(files.sums, assets, apiDigests, mutant), files: recorded };
 }
+
+/** `text` with exactly one final newline appended when it has none. */
+export const withFinalNewline = (text: string): string =>
+  text.endsWith('\n') ? text : `${text}\n`;
 
 /** The recorded files of `spec`, read from `root`; null when any is absent. */
 export function readEvidence(root: string, spec: SignedRelease): SignedFiles | null {

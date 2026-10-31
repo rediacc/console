@@ -173,6 +173,8 @@ const UNTRANSLATED_BASE_PATTERNS = [
 const CLI_EXTRA_UNTRANSLATED_PATTERNS = [
   '^[A-Za-z]+\\d+$',
   '^(Docker|Renet|Go|Node\\.js|Status|Version|Machines|Configuration)$',
+  // Product names that no locale translates: the doctor check labels for OpenTofu and rsync.
+  '^(OpenTofu|rsync)$',
   '^rdc\\s',
   '^(Installation|Description|Note|Error|Reference|Infrastructure)$',
   '^(Rename|Create|Delete|Show)\\s',

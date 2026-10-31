@@ -34,7 +34,7 @@ First-Seen: 2026-10-29
   - `--verify` replaces `--partial` with `--checksum --ignore-times` (:184-188).
 - **SFTP fallback.** `executeSyncWithSftpFallback` switches to SFTP when rsync is missing (packages/cli/src/commands/repo-sync.ts:278-305, `isRsyncNotFoundError` at packages/cli/src/commands/repo-sync-helpers.ts:259). The SFTP path has no resume and no delta (packages/cli/src/remote/sync/sftp-fallback.ts).
 - **SSH plumbing.**
-  - `execStreaming` ends the channel's stdin at once (packages/cli/src/remote/sftp/client.ts:549-596), so no exec channel stays open with stdin today.
+  - `execStreaming` ends the channel's stdin at once (packages/cli/src/remote/sftp/exec.ts:57-80), so no exec channel stays open with stdin today.
   - repo sync builds a temporary key file and known_hosts for the system `ssh` that rsync uses (packages/cli/src/commands/repo-sync.ts:247-263).
 - **Privilege.** The machine's SSH user has `NOPASSWD: ALL` (private/renet/cmd/renet/setup_command.go:854). The sandbox gateway governs repo keys only: a repo key's transfer is confined to the repo's mount (private/renet/cmd/renet/sandbox_gateway_transfer.go:17-28). The image under `repositories/` is outside every mount, so the download and the upload use the machine key with `sudo -n`, the same access `renet execute` already has.
 - **Prune.** The `.snapshot-*` and `.restore-*` scans treat an entry as in use while any process holds `.lock-<guid>` in either mode (`repoLockHeld` and `isSnapshotInUse`, private/renet/pkg/prune/datastore.go:60-116; `isRestoreStagingInUse` :212-219; scans :652-669). Prune runs only when asked, through `rdc machine prune` (packages/cli/src/commands/machine/prune.ts:382) and `repository_prune` (private/renet/cmd/renet/repository_prune.go:56).
@@ -367,7 +367,7 @@ R2's changes:
   Owns: packages/cli/src/services/backup-image/__tests__/converge.test.ts (new), packages/cli/src/remote/sync/__tests__/image-rsync.test.ts (new), packages/cli/src/commands/__tests__/backup-image-download.test.ts (new), packages/cli/src/commands/__tests__/backup-image-upload.test.ts (new). Accept: `cd packages/cli && npx vitest run src/services/backup-image/__tests__/converge.test.ts src/remote/sync/__tests__/image-rsync.test.ts src/commands/__tests__/backup-image-download.test.ts src/commands/__tests__/backup-image-upload.test.ts` rc 1 recorded before C1 and rc 0 after C1.
 
 - [x] C1 [writer] CLI verbs. Follows R1, X1, S1 and T1.
-  - `rdc backup download` and `rdc backup upload` in packages/cli/src/commands/backup-image.ts (new), registered from `registerBackupCommands` (packages/cli/src/commands/backup.ts:654-665).
+  - `rdc backup download` and `rdc backup upload` in packages/cli/src/commands/backup-image.ts (new), registered from `registerBackupCommands` (packages/cli/src/commands/backup.ts:443-456).
   - `SFTPClient.execSession`.
   - The session client (session.ts) and the transfer loop with retries and verification (transfer.ts).
   - `buildImageRsyncArgs`, `parseRsyncStats` and `assertRsyncCapable` in image-rsync.ts.

@@ -2593,6 +2593,18 @@
     }
   },
   {
+    "id": "settings",
+    "run": "npm run settings",
+    "gate": false,
+    "leaves": [
+      "scripts/settings/settings.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a writer, not a validation. CI judges the registry through check:ci-settings-registry and the verb through its --selftest run by check:ci-standalone-selftests; a quality step here would claim CI changes tunables on behalf of the author."
+    }
+  },
+  {
     "id": "vm:check",
     "run": "npm run vm:check",
     "gate": false,

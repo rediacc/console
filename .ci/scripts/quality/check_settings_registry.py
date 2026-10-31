@@ -35,6 +35,10 @@ import json
 import pathlib
 import sys
 import tempfile
+from typing import TypeGuard
+
+import _cipath
+from rediacc_ci.controls import plant
 
 REGISTRY_REL = ".ci/config/settings.json"
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
@@ -50,7 +54,7 @@ class CopyMissError(Exception):
     """One copy does not resolve; the message names why."""
 
 
-def is_number(value: object) -> bool:
+def is_number(value: object) -> TypeGuard[int | float]:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
@@ -82,13 +86,15 @@ def py_dict_value(text: str, name: str, key: str) -> object:
         raise CopyMissError("does not parse as Python: %s" % exc) from exc
     for node in tree.body:
         target = None
+        value: ast.expr | None = None
         if isinstance(node, ast.Assign) and len(node.targets) == 1:
             target = node.targets[0]
+            value = node.value
         elif isinstance(node, ast.AnnAssign):
             target = node.target
+            value = node.value
         if not (isinstance(target, ast.Name) and target.id == name):
             continue
-        value = node.value
         if not isinstance(value, ast.Dict):
             raise CopyMissError("%s is not a dict literal" % name)
         hits = [
@@ -201,16 +207,24 @@ def entry_findings(
     if entry.get("unit") not in UNITS:
         out.append("%s: unit %r is not one of %s" % (sid, entry.get("unit"), ", ".join(UNITS)))
     lo, hi = entry.get("min"), entry.get("max")
-    if not (is_number(lo) and is_number(hi) and lo <= hi):
+    bounds: tuple[float, float] | None = None
+    if (
+        isinstance(lo, (int, float))
+        and isinstance(hi, (int, float))
+        and not isinstance(lo, bool)
+        and not isinstance(hi, bool)
+        and lo <= hi
+    ):
+        bounds = (lo, hi)
+    else:
         out.append("%s: needs numeric min <= max (got %r, %r)" % (sid, lo, hi))
-        lo = hi = None
     if not isinstance(entry.get("why"), str) or not entry["why"]:
         out.append("%s: needs a why" % sid)
     copies = entry.get("copies")
     if not isinstance(copies, list) or not copies:
         out.append("%s: needs at least one copy" % sid)
         copies = []
-    values: list[tuple[str, object]] = []
+    values: list[tuple[str, int | float]] = []
     for i, copy in enumerate(copies):
         if not isinstance(copy, dict):
             out.append("%s copies[%d]: not an object" % (sid, i))
@@ -232,12 +246,12 @@ def entry_findings(
             "%s: copies disagree: %s; %s"
             % (sid, ", ".join("%s=%r" % (label, v) for label, v in values), FIX)
         )
-    if values and lo is not None and hi is not None and len(values) == len(copies):
+    if values and bounds is not None and len(values) == len(copies):
         source = values[0][1]
-        if not lo <= source <= hi:
+        if not bounds[0] <= source <= bounds[1]:
             out.append(
                 "%s: %r is outside the registered range [%r, %r]; bring it back in range with `npm run settings -- set`, or widen min/max in %s if the ruling moved"
-                % (sid, source, lo, hi, REGISTRY_REL)
+                % (sid, source, bounds[0], bounds[1], REGISTRY_REL)
             )
     for i, reason in enumerate(entry.get("reason_paths") or []):
         if (
@@ -369,7 +383,7 @@ def selftest_cases() -> list[tuple[str, int, int, str]]:
         (
             "a Python copy planted out of agreement is red",
             1,
-            *run_case([fixture_entry()], py=FIXTURE_PY.replace("2_000", "2_500")),
+            *run_case([fixture_entry()], py=plant(FIXTURE_PY, "2_000", "2_500")),
         ),
         (
             "a dangling json_path is red",
@@ -395,7 +409,7 @@ def selftest_cases() -> list[tuple[str, int, int, str]]:
         (
             "a value outside [min, max] at every copy is red",
             1,
-            *run_case([fixture_entry()], out_of_range, FIXTURE_PY.replace("2_000", "9_000")),
+            *run_case([fixture_entry()], out_of_range, plant(FIXTURE_PY, "2_000", "9_000")),
         ),
         ("a copy holding a string is red", 1, *run_case([fixture_entry()], non_number)),
         (

@@ -6,7 +6,7 @@ Updated: 2026-10-31
 Epic: 9f92c43e (worklist #ff741c9a)
 Priority: P1 -- check:ci-max-lines is red on 1023-1, which blocks ci:quick and the push
 Concurrency: parallel -- four writers own disjoint file groups (S1-S4)
-Live-Proof: bench -- the CLI is the surface; the split changes no behaviour, and the vm:check run before the push drives the CLI against real machines
+Live-Proof: bench, hostinger -- the CLI is the surface, and its remote paths (packages/cli/src/remote/sftp/**) admit hostinger as well; the split changes no behaviour, and the vm:check run before the push drives the CLI against real machines
 Owns: agent/plans/PLAN-split-cli-files-over-512-line-budget.md, packages/cli/src/commands/backup-image*.ts, packages/cli/src/commands/backup-storage*.ts, packages/cli/src/commands/backup.ts, packages/cli/src/commands/backup-*.ts, packages/cli/src/commands/doctor*.ts, packages/cli/src/commands/repo-create-delete*.ts, packages/cli/src/commands/repo-fork*.ts, packages/cli/src/remote/sftp/**, packages/cli/src/services/backup-image/**, packages/cli/src/services/executor/**, packages/cli/src/services/jobs/**, packages/cli/src/**/__tests__/** (import paths only)
 
 ## Context
@@ -26,3 +26,9 @@ Split each file by responsibility into sibling modules: no behaviour change, no 
     (ticked) 2026-10-31T00:53:57Z by d778be9d: commit:8a25a038 packages/cli/src/services/jobs/steps-support.ts:1; split in 8a25a038; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 - [x] V1 The gate is green and the CLI suite passes. Accept: `npm run check:ci-max-lines` rc 0; `cd packages/cli && npx vitest run src` rc 0; `npx tsc --noEmit -p packages/cli/tsconfig.json` rc 0
     (ticked) 2026-10-31T00:54:00Z by d778be9d: commit:ad6234cb scripts/gates/check-max-lines.ts:1; split in ad6234cb; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
+
+- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  Accept: live-proof bench cli-bench
+
+- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+  Accept: live-proof hostinger renet-live machine=hostinger

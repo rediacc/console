@@ -2503,6 +2503,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // THE SETTINGS COMMAND, registered for the reason pins is: a hand-written package.json key counts against check:ci-package-key-budget, which refuses growth, and `npm run settings` is an operator verb that belongs to the registry rather than beside it. gate:false because its set verb WRITES every registered copy of a tunable; the scheduler never runs it.
+    id: 'settings',
+    run: 'npm run settings',
+    gate: false,
+    leaves: ['scripts/settings/settings.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: a writer, not a validation. CI judges the registry through check:ci-settings-registry and the verb through its --selftest run by check:ci-standalone-selftests; a quality step here would claim CI changes tunables on behalf of the author.',
+    },
+  },
+  {
     // THE VM CHECK, registered for the reason pins is: a hand-written package.json key counts against check:ci-package-key-budget. gate:false because it forks repos on the ops VMs, and may boot or tear down a fleet; the scheduler never runs it, and the push guard reads its receipt instead.
     id: 'vm:check',
     run: 'npm run vm:check',

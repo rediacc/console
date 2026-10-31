@@ -71,6 +71,11 @@ import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+/**
+ * Anti-vacuity floor over the whole corpus read from the real tree. The www catalog alone holds about 5,700 German strings, so 2,000 survives real churn and any one private root being absent locally, while a collapsed reader (a changed key shape, a wrong directory) falls far below it and is refused instead of reported clean. Fixture trees under --root are small by design and are exempt.
+ */
+export const MIN_GERMAN_STRINGS = 2000;
+
 export type Layout = 'flat' | 'dir' | 'go';
 export interface GermanRoot {
   /** Repo-relative path: the de.json file, the de/ directory, or the de.go file. */
@@ -485,6 +490,13 @@ function main(argv: string[]): number {
 
   if (strings === 0) {
     console.error('✗ NO VERDICT: zero German strings were read across every root.');
+    return 2;
+  }
+
+  if (base === REPO_ROOT && strings < MIN_GERMAN_STRINGS) {
+    console.error(
+      `✗ VACUOUS: only ${strings} German strings were read from the real tree, floor ${MIN_GERMAN_STRINGS}; the catalog reader has collapsed, and a clean verdict over it would mean nothing.`
+    );
     return 2;
   }
 

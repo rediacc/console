@@ -87,6 +87,17 @@
       ]
     },
     {
+      "id": "settings-cli",
+      "paths": ["scripts/settings/**"],
+      "home": "scripts/settings",
+      "stays": true,
+      "why": "The `npm run settings` entry point (list, get, set over the tunables registry in .ci/config/settings.json). It is an operator command rather than a gate body or a shared module, so neither the gates rule nor the lib rule describes it; the registry, copy and unit libraries it calls live under scripts/lib/settings.",
+      "breaksIfMoved": [
+        "package.json: the `settings` script runs `tsx scripts/settings/settings.ts`, and the manifest entry `settings` in scripts/ci-runner/manifest.ts names the same path as its leaf.",
+        "scripts/gates/check-standalone-selftests.ts SELFTESTS names the file by this path to run its --selftest."
+      ]
+    },
+    {
       "id": "devbox-rotation",
       "paths": ["scripts/dev/bws-rotate.py"],
       "home": "scripts/dev",

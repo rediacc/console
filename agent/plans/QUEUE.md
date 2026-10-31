@@ -175,29 +175,29 @@ Promoted: 6 of 42 plans done, 591 of 754 boxes done (78%).
 
 <!-- queue:generated:begin -->
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
-2. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, in progress (4 of 5 boxes ticked)
-3. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-4. agent/plans/PLAN-renet-executor-tiered-license-check.md -- P1, executing, in progress (2 of 3 boxes ticked)
-5. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, in progress (8 of 10 boxes ticked)
-6. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-7. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-8. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, in progress (11 of 13 boxes ticked)
-9. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (13 of 14 boxes ticked)
-10. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-11. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-12. agent/plans/PLAN-ciquick-reds-1023-1.md -- P1, executing, not started
-13. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-14. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-15. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-16. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-17. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-18. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-19. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+2. agent/plans/PLAN-ciquick-reds-1023-1.md -- P1, executing, in progress (5 of 12 boxes ticked)
+3. agent/plans/PLAN-docker-pin-digest.md -- P1, executing, in progress (8 of 9 boxes ticked)
+4. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, in progress (4 of 6 boxes ticked)
+5. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
+6. agent/plans/PLAN-renet-executor-tiered-license-check.md -- P1, executing, in progress (2 of 4 boxes ticked)
+7. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, in progress (8 of 10 boxes ticked)
+8. agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- P1, executing, in progress (5 of 7 boxes ticked)
+9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+10. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+11. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, in progress (11 of 15 boxes ticked)
+12. agent/plans/PLAN-retired-terms-submodule-scan.md -- P2, executing, in progress (13 of 14 boxes ticked)
+13. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+14. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+15. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+16. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+18. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+19. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+21. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
 - agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md -- all boxes ticked: close it
-- agent/plans/PLAN-docker-pin-digest.md -- all boxes ticked: close it
 - agent/plans/PLAN-renet-change-test-triggers.md -- all boxes ticked: close it
-- agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- all boxes ticked: close it
 <!-- queue:generated:end -->

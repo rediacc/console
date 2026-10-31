@@ -6,6 +6,7 @@ Epic: 9f92c43e (worklist #d4b2a051)
 Priority: P1 -- workers/proxy/Dockerfile's FROM line says node 26.13.0, but its digest pulls 26.12.0. Pins bump and every gate stayed green. Any other digest-pinned leaf would drift the same way, without a sound.
 Depends-On: no-dep -- the driver, its selftest, the registry entry and the gate all change inside this plan
 Owns: agent/plans/PLAN-docker-pin-digest.md, scripts/lib/pins/drivers/docker.ts, scripts/lib/pins/drivers/shared.ts (T8_MUTANTS only), scripts/lib/pins/drivers/selftest.ts (dockerCases only), scripts/lib/docker-hub.ts (new), scripts/gates/check-docker-image-freshness.ts, .ci/config/pins.json (the image:proxy-node entry only), .ci/rediacc_ci/tests/gates/test_gate_pin_family_drivers.py (MUTANTS only), workers/proxy/Dockerfile
+Live-Proof: bench -- workers/proxy/Dockerfile builds the proxy worker image, which deploys to bench first; the pins driver itself is local tooling
 Concurrency: parallel -- no other plan owns these files. Inside the plan the order is D1 then D2 then G1 then R0 then R1, then X1. S1 can run at any time.
 
 ## Context (anchors checked 2026-10-30)
@@ -112,3 +113,6 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 - /home/developer/console/scripts/gates/check-docker-image-freshness.ts
 - /home/developer/console/.ci/config/pins.json
 - /home/developer/console/scripts/lib/pins/driver.ts
+
+- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  Accept: live-proof bench proxy-ready

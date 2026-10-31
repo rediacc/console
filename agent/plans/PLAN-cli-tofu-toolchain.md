@@ -1,6 +1,6 @@
 # PLAN: rdc installs a pinned, checksum-verified OpenTofu itself (rdc tools install tofu), doctor reports missing local tools, and cloud providers are pinned by hash
 
-Status: approved -- operator 2026-10-29 "we must also think about other machines (customers') so maybe rdc doctor warn or maybe rdc install local may install?"; ASKED answers: Install command + doctor, Pin provider hashes, PATH-only fallback (worklist #9a7c3258)
+Status: approved -- operator 2026-10-29 "we must also think about other machines (customers') so maybe the doctor warn or maybe an install-local step may install?"; ASKED answers: Install command + doctor, Pin provider hashes, PATH-only fallback (worklist #9a7c3258)
 Depends-On: no-dep -- the CLI tools service, the pins leaf and doctor need nothing outside this plan
 Owner: d778be9d
 Priority: P1 -- `rdc machine provision` fails on every host without tofu ("Neither OpenTofu (tofu) nor Terraform (terraform) is installed", packages/cli/src/services/tofu/executor.ts:69-79), which blocked the R2-to-Linode DR proof on 2026-10-29; customers on Linux, macOS and Windows hit the same wall with an unpinned manual install
@@ -15,7 +15,7 @@ Worklist: #9a7c3258, PR-TASK 9f92c43e
 
 - Lookup: TofuExecutor.resolveBinary (packages/cli/src/services/tofu/executor.ts:290) went through `resolveTofu` (packages/cli/src/services/tofu/executor.ts:107), which tries `tofu version` then `terraform version` on PATH; when this plan was written there was no version floor, and `ENGINE_FLOORS` now applies one; provisioning calls it first (packages/cli/src/services/tofu/provision.ts:114, packages/cli/src/services/cluster/cluster-provision.ts:128).
 - No plugin cache: each machine's work dir `<configDir>/tofu/<machine>/` re-downloads its provider on `init`; the 31 providers in provider-registry.json carry only `~>` ranges and no lock hashes.
-- rsync is not embedded locally either (packages/cli/src/remote/sync/rsync.ts:21-37); the SEA embeds only renet (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). `rdc doctor` exists (packages/cli/src/commands/doctor.ts:558) but checks neither tofu nor rsync, and its commandExists shelled out to `which`, which Windows lacks (the helper is no longer in packages/cli/src/commands/doctor.ts).
+- rsync is not embedded locally either (packages/cli/src/remote/sync/rsync.ts:21-37); the SEA embeds only renet (.ci/rediacc_ci/build/prepare_cli_assets.py:128-140). `rdc doctor` exists (packages/cli/src/commands/doctor.ts:427) but checks neither tofu nor rsync, and its commandExists shelled out to `which`, which Windows lacks (the helper is no longer in packages/cli/src/commands/doctor.ts).
 - Pins: `.ci/config/pins.json` leaves model a release-age pin with per-platform sha256 sites (toolchain:shfmt at :1869-1941); no leaf has Windows checksum roles yet, and the pins driver verifies no signatures.
 - The provider token in main.tf.json was world-readable; fixed in 6d69542a5 (0700 dir, 0600 file).
 

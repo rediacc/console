@@ -17,6 +17,12 @@ import type { GateSpec } from './manifest';
 export const GATE_TIMEOUT_FLOOR_MS = 300_000;
 /** Headroom over the slowest measurement: load and a cold cache only ever add time. */
 export const GATE_TIMEOUT_FACTOR = 4;
+/**
+ * Gates whose real wall sits near the floor and whose measurements understate it, with the lowest kill timer each may get. check:ci-plan-implementation walks 168 open plan boxes and needs 174 s unloaded (296.6 s measured in CI on a loaded runner), so the 300 s floor killed it under load on 2026-10-31; 900 s is five times the unloaded wall.
+ */
+export const GATE_TIMEOUT_MIN_BY_ID: Readonly<Record<string, number>> = {
+  'check:ci-plan-implementation': 900_000,
+};
 /** A gate declared `slow` with no measurement anywhere. */
 export const GATE_TIMEOUT_UNMEASURED_SLOW_MS = 1_800_000;
 /** SIGTERM to the gate's process group, then SIGKILL after this; the runner settles the gate after twice this even when a descendant that left the group still holds its pipes. */
@@ -26,14 +32,18 @@ export const KILL_GRACE_MS = 5_000;
  * The kill timer for one gate, in ms. `measuredMs` is the slowest measurement known of it, undefined when there is none; `overrideMs` is `--gate-timeout`, which wins outright.
  */
 export function gateTimeoutMs(
-  spec: Pick<GateSpec, 'slow'>,
+  spec: Pick<GateSpec, 'slow'> & { id?: string },
   measuredMs: number | undefined,
   overrideMs?: number
 ): number {
   if (overrideMs !== undefined) return overrideMs;
+  const own = (spec.id !== undefined ? GATE_TIMEOUT_MIN_BY_ID[spec.id] : undefined) ?? 0;
   if (measuredMs === undefined || !Number.isFinite(measuredMs) || measuredMs <= 0)
-    return spec.slow === true ? GATE_TIMEOUT_UNMEASURED_SLOW_MS : GATE_TIMEOUT_FLOOR_MS;
-  return Math.max(GATE_TIMEOUT_FLOOR_MS, Math.ceil(GATE_TIMEOUT_FACTOR * measuredMs));
+    return Math.max(
+      own,
+      spec.slow === true ? GATE_TIMEOUT_UNMEASURED_SLOW_MS : GATE_TIMEOUT_FLOOR_MS
+    );
+  return Math.max(own, GATE_TIMEOUT_FLOOR_MS, Math.ceil(GATE_TIMEOUT_FACTOR * measuredMs));
 }
 
 /** The slowest of several measurements of one gate, ignoring absent and non-positive ones; undefined when none is usable. */
@@ -61,6 +71,16 @@ export function gateTimeoutSelftest(): number {
       '--gate-timeout wins over a measurement',
       gateTimeoutMs({ slow: true }, 529_200, 1_000),
       1_000,
+    ],
+    [
+      'a gate with its own minimum is held to it over a small measurement',
+      gateTimeoutMs({ id: 'check:ci-plan-implementation' }, 71_200),
+      900_000,
+    ],
+    [
+      'CONTROL: an id without a minimum still gets the floor',
+      gateTimeoutMs({ id: 'check:other' }, 71_200),
+      GATE_TIMEOUT_FLOOR_MS,
     ],
     ['a zero measurement counts as none', gateTimeoutMs({}, 0), GATE_TIMEOUT_FLOOR_MS],
     ['the slowest measurement is the max', slowestMeasurement(3, undefined, 7, 0) ?? -1, 7],

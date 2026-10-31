@@ -206,7 +206,7 @@ Most of this exists already, and A1 pins it with tests:
 - [x] C1 [writer, CLI] `rdc backup reconcile`.
   Changes:
   - New packages/cli/src/commands/backup-reconcile.ts implementing D5. The repo-ref resolves through `resolveLineage`. Table output shows ledger, observed, referenced and unreferenced per lineage; `-o json` prints the response.
-  - One registration line in `registerBackupStorageCommands` (packages/cli/src/commands/backup-storage.ts:531-539).
+  - One registration line in `registerBackupStorageCommands` (packages/cli/src/commands/backup-storage.ts:460-469).
   - i18n keys under `commands.backup.reconcile.*` in every locale, under the leases named in Concurrency.
   - Regenerate the CLI contract and docs data.
     (ticked) 2026-10-29T10:23:34Z by d778be9d: commit:0b94ef82b

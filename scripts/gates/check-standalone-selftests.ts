@@ -114,6 +114,8 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   'scripts/lib/entry-point-selftest.ts': { args: [] },
   // retryUpstream (scripts/lib/upstream.ts) keeps its retry note on stderr, so a --json stdout stays parseable.
   'scripts/__tests__/upstream-retry-note.control.ts': { args: [] },
+  // the settings verb (scripts/settings/settings.ts): its controls for range, peer-dirty files, restore-on-failure and unit parsing.
+  'scripts/settings/settings.ts': { args: ['--selftest'] },
 };
 
 /** Where the table and the tree disagree over the pins selftests. */
