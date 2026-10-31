@@ -2166,6 +2166,22 @@
         "ae0adefa"
       ]
     },
+    "agent/plans/PLAN-split-cli-files-over-512-line-budget.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "426da0f8",
+        "5d3f37ce",
+        "b8ea74a1",
+        "cf5a3321",
+        "da8d7bc9"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ssh-key-source-ranges.md": {
       "status": "executing",
       "owner": "d778be9d",
