@@ -47,3 +47,8 @@
 # constraint that justified pinning the 1.x LINE (not a specific patch
 # version) still holds and stays documented in the override's BLOCKER
 # comment in package.json.
+
+# BLOCKER: rimraf 6.1.3, the newest release, declares glob ^13.0.3, and glob's only patched line is 14.0.2+ (GHSA-3g3m-2fjr-6pw4 covers glob <=14.0.1); forcing glob 14 under rimraf is refused by check:ci-override-ranges. Dev-only (rimraf cleans build output). Remove when rimraf accepts glob 14.
+1244013
+# BLOCKER: the same rimraf 6.1.3 edge: its glob 13 pulls minimatch ^10.2.2, and minimatch's only patched line is 11.0.1+ (GHSA-g3hv-75wg-m249 covers minimatch <11.0.1). Dev-only. Remove when rimraf accepts glob 14.
+1244012
