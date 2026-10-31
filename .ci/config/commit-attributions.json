@@ -7,7 +7,7 @@
   ],
   "attributions": [
     {
-      "sha": "6fa15a210781516989e051d7ffbe5aabf3746c82",
+      "sha": "e215279790bcb32a9b601c3d4b52361605c5c5bb",
       "epic": "9f92c43e",
       "reason": "Pins bump commit drafted by `npm run pins -- bump`, which omits the PR-TASK trailer when the branch snapshot names several epics and no --task is passed (scripts/pins/pins.ts:892); it sits between two 9f92c43e commits of the ci-green run, and the no-amend rule forbids rewriting it."
     }

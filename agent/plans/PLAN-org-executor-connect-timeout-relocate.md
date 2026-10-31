@@ -186,7 +186,7 @@ Platform assumptions, to verify on bench or edge:
   - A real connect to a closed loopback port gives `refused`.
   - A real loopback listener that accepts and never sends a banner, with `timeout: 300`, gives `handshake-timeout`.
   - A mutant classifier that ignores `tcpConnected` turns the handshake case red.
-    (ticked) 2026-10-28T07:32:15Z by d778be9d: 2026-10-28 by d778be9d: commit:636cda1ce; E1 ssh-connect-error and host-key-mismatch vitest rc=0 (22), classifier mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
+    (ticked) 2026-10-28T07:32:15Z by d778be9d: 2026-10-28 by d778be9d: commit:a0769e236; E1 ssh-connect-error and host-key-mismatch vitest rc=0 (22), classifier mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Owns: packages/cli/src/remote/sftp/connect-error.ts, packages/cli/src/remote/sftp/client.ts, packages/cli/src/remote/__tests__/ssh-connect-error.test.ts. Accept: `cd packages/cli && npx vitest run src/remote/__tests__/ssh-connect-error.test.ts src/remote/__tests__/host-key-mismatch.test.ts` rc 0.
 - [x] E2 [writer] The envelope (Design 2). Make the `packages/cli/src/services/executor/local-executor.ts:593-601` catch return `exitCode`, `errorCode` and `errorGuidance` from `SshConnectError`, and add its name-keyed entry to `normalizeError`. Tests:
@@ -194,7 +194,7 @@ Platform assumptions, to verify on bench or edge:
   - A `refused` error answers `SSH_REFUSED`.
   - A plain `Error` still answers exit 1 with no code.
   - `normalizeError` maps the raw throw to `NETWORK_ERROR`, `retryable: true`.
-    (ticked) 2026-10-28T07:15:13Z by d778be9d: 2026-10-28 by d778be9d: commit:636cda1ce; cd packages/cli && npx vitest run src/services/executor/__tests__/local-executor-connect-error.test.ts rc=0
+    (ticked) 2026-10-28T07:15:13Z by d778be9d: 2026-10-28 by d778be9d: commit:a0769e236; cd packages/cli && npx vitest run src/services/executor/__tests__/local-executor-connect-error.test.ts rc=0
 
   Owns: packages/cli/src/services/executor/local-executor.ts, packages/cli/src/utils/errors.ts, packages/cli/src/services/executor/__tests__/local-executor-connect-error.test.ts. Accept: `cd packages/cli && npx vitest run src/services/executor/__tests__/local-executor-connect-error.test.ts` rc 0.
 - [x] E3 [writer] The report (Design 3). Add egress-report.ts and the `reportEgressUnreachable` dep in deps.ts (container mode only), and have server.ts await it before the result line and set `errorGuidance` from its answer. Tests, with a fake fetch:
@@ -202,7 +202,7 @@ Platform assumptions, to verify on bench or edge:
   - A result with `SSH_REFUSED`, `SSH_AUTH_FAILED` or no code sends nothing.
   - A report that hangs past 5 s still writes the result line.
   - A mutant that reports on any failed result turns the refused case red.
-    (ticked) 2026-10-28T07:15:15Z by d778be9d: 2026-10-28 by d778be9d: commit:636cda1ce; cd packages/cli && npx vitest run src/services/serve/__tests__/egress-report.test.ts src/services/serve/__tests__/container-config.test.ts rc=0 (29); report-filter mutant turned the three sends-nothing cases red
+    (ticked) 2026-10-28T07:15:15Z by d778be9d: 2026-10-28 by d778be9d: commit:a0769e236; cd packages/cli && npx vitest run src/services/serve/__tests__/egress-report.test.ts src/services/serve/__tests__/container-config.test.ts rc=0 (29); report-filter mutant turned the three sends-nothing cases red
 
   Owns: packages/cli/src/services/serve/egress-report.ts, packages/cli/src/services/serve/server.ts, packages/cli/src/services/serve/deps.ts, packages/cli/src/services/serve/__tests__/egress-report.test.ts. Accept: `cd packages/cli && npx vitest run src/services/serve/__tests__/egress-report.test.ts src/services/serve/__tests__/container-config.test.ts` rc 0.
 - [x] E4 [writer] The account side (Design 4). Make these changes:
@@ -212,7 +212,7 @@ Platform assumptions, to verify on bench or edge:
   - `relocate` with the compare-and-set and `RELOCATE_MIN_INTERVAL_MS = 1_800_000`;
   - `relocateExecutorPlacement` in entry/cloudflare.ts;
   - the `relocate` method and its doc sentence on the `ExecutorIssuer` entrypoint.
-    (ticked) 2026-10-28T07:32:22Z by d778be9d: 2026-10-28 by d778be9d: commit:dd71d009d; E4 account f195a55 and efb5eaf; executor-issuer-route, executor-issuer-relocate, executor-multi-org, executor-issuer vitest rc=0. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
+    (ticked) 2026-10-28T07:32:22Z by d778be9d: 2026-10-28 by d778be9d: commit:a63d3f32e; E4 account f195a55 and efb5eaf; executor-issuer-route, executor-issuer-relocate, executor-multi-org, executor-issuer vitest rc=0. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Commit in private/account and bump the pointer. Tests:
   - `route` answers `placement: 0` for a fresh org and 1 after one `relocate`.
@@ -223,12 +223,12 @@ Platform assumptions, to verify on bench or edge:
   - A mutant without the `executor_placement = ?` guard turns the stale case red.
 
   Owns: private/account, private/account/drizzle/0068_executor_placement.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/src/services/executor-issuer.service.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/executor-issuer-route.test.ts, private/account/tests/integration/executor-issuer-relocate.test.ts, workers/account/src/index.ts. Accept: `cd private/account && npx vitest run tests/integration/executor-issuer-route.test.ts tests/integration/executor-issuer-relocate.test.ts tests/integration/executor-multi-org.test.ts` rc 0.
-    (review note 2026-10-29, 9f92c43e) The tick cites dd71d009d, the final console pointer bump. E4 is account-side work in the private/account submodule (the two account commits the tick names); the console gitlink moved to the first of them in a446c4ef5 and to the second in dd71d009d, so both console commits carry E4.
+    (review note 2026-10-29, 9f92c43e) The tick cites a63d3f32e, the final console pointer bump. E4 is account-side work in the private/account submodule (the two account commits the tick names); the console gitlink moved to the first of them in 32593f865 and to the second in a63d3f32e, so both console commits carry E4.
 - [x] E5 [writer] Placement helpers and lease keys (Design 4 proxy half, Design 6). Add src/placement.ts. Rekey `ExecutorCapacity` by executor name under `capacity:v2`, and keep the cap and sub-cap semantics. Tests:
   - placement.test.ts: `executorName('org-a', 0)` is `org-a:p0`; `placementOf` refuses -1, 1.5, `'1'` and undefined.
   - capacity.test.ts (existing cases rekeyed): `org-a:p0` and `org-a:p1` hold two slots; `release('org-a:p0')` leaves `org-a:p1` held.
   - A mutant that keys by the org prefix turns the second case red.
-    (ticked) 2026-10-28T07:32:29Z by d778be9d: 2026-10-28 by d778be9d: commit:a446c4ef5; E5 placement and capacity vitest rc=0 (45), test:unit rc=0, prefix-key mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
+    (ticked) 2026-10-28T07:32:29Z by d778be9d: 2026-10-28 by d778be9d: commit:32593f865; E5 placement and capacity vitest rc=0 (45), test:unit rc=0, prefix-key mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Owns: workers/proxy/src/placement.ts, workers/proxy/src/capacity.ts, workers/proxy/src/__tests__/placement.test.ts, workers/proxy/src/__tests__/capacity.test.ts. Accept: `cd workers/proxy && npm run typecheck && npx vitest run src/__tests__/placement.test.ts src/__tests__/capacity.test.ts` rc 0.
 - [x] E6 [writer] OrgExecutor relocation (Design 5), after E5. Make these changes:
@@ -238,7 +238,7 @@ Platform assumptions, to verify on bench or edge:
   - the `retired` state with the `EXECUTOR_RELOCATED` refusal, `holdLease` refusing to re-acquire, and the drain releasing `executorName(...)`;
   - `egressUnreachableRecent` on the pin answer;
   - `ISSUER` on the env.
-    (ticked) 2026-10-28T07:32:33Z by d778be9d: 2026-10-28 by d778be9d: commit:34f35e2c0; E6 org-executor vitest rc=0 (53), test:unit 244 rc=0, threshold-4 mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
+    (ticked) 2026-10-28T07:32:33Z by d778be9d: 2026-10-28 by d778be9d: commit:1cef28ab6; E6 org-executor vitest rc=0 (53), test:unit 244 rc=0, threshold-4 mutant red. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Tests in the existing harness (org-executor.test.ts), adding a `FakeIssuer` whose `relocate` answers are set per test:
   - Three reports within 10 minutes call `relocate('org-a', 0)` exactly once. The next `pin('org-a', 0, 'light')` answers `EXECUTOR_RELOCATED`. With a stream open, the container is destroyed only after it closes, and `release('org-a:p0')` is recorded.
@@ -256,7 +256,7 @@ Platform assumptions, to verify on bench or edge:
   - `viaOrgExecutor` with the once-only re-route;
   - the `egress-unreachable` outcome on forward;
   - the `AccountEgress` placement check and local report route with its span outcome.
-    (ticked) 2026-10-28T07:32:36Z by d778be9d: 2026-10-28 by d778be9d: commit:dd71d009d; E7 npm run typecheck and test:unit rc=0 (261), executorName mutant fails the re-route case. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
+    (ticked) 2026-10-28T07:32:36Z by d778be9d: 2026-10-28 by d778be9d: commit:a63d3f32e; E7 npm run typecheck and test:unit rc=0 (261), executorName mutant fails the re-route case. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Tests:
   - tenant-routing.test.ts: a route answering `placement: 1` reaches the stub named `org-a:p1`.
@@ -272,7 +272,7 @@ Platform assumptions, to verify on bench or edge:
   - the outcome row with `egress-unreachable`, `relocated` and `refused:route-placement-missing`;
   - a "Relocation" paragraph covering the threshold, the window, the 30-minute budget, D1 `executor_placement`, the retired object's drain, and the legacy backend's no-relocation behaviour;
   - the log lines.
-    (ticked) 2026-10-28T07:32:41Z by d778be9d: 2026-10-28 by d778be9d: commit:dd71d009d; E8 grep egress-unreachable and executor_placement in docs/observability/signals/proxy.md rc=0, prose check clean. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
+    (ticked) 2026-10-28T07:32:41Z by d778be9d: 2026-10-28 by d778be9d: commit:a63d3f32e; E8 grep egress-unreachable and executor_placement in docs/observability/signals/proxy.md rc=0, prose check clean. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Owns: docs/observability/signals/proxy.md. Accept: `grep -n "egress-unreachable" docs/observability/signals/proxy.md` rc 0 and `grep -n "executor_placement" docs/observability/signals/proxy.md` rc 0.
 - [ ] E9 [live] Bench, the Live-Proof run, after E1-E8 and PLAN-executor-durable-object-policy L0. Steps:

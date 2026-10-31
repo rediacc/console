@@ -16,8 +16,8 @@ There are two account keypairs today. Production is one keypair, the same for al
 ## Finding 2026-10-30: a nolicense dev build reached production hostinger
 
 - `private/renet/build.sh dev` builds `-tags nolicense` unless `RDC_RENET_LICENSE=1` or `--license` (private/renet/build.sh:800-830). `_dev_out_dir` sends nolicense to `bin/` and enforcing builds to `bin/enforce/` (:788-796). `stage_linux` stages nolicense assets too (:521, :531). agent/plans/PLAN-per-flavor-renet-binary-paths.md:20 and :55 record the same split.
-- The console mirrors it: `.ci/rediacc_ci/core/renet_flavor.py` (removed in 992946b4e) mapped nolicense to `bin/` and enforce to `bin/enforce/`; rdc.sh:97 picks the directory from `RDC_RENET_LICENSE`; `.ci/rediacc_ci/core/local_common.py:1238` and :1445 read the same variable; `.ci/rediacc_ci/infra/build_renet.py:38-39` forwards `--nolicense`/`--license`, and the CI test legs call it with `--nolicense` (.github/workflows/ci-vm-bake.yml:129, .github/workflows/ci-ops-test.yml:82 and :274, .github/workflows/ct-e2e-probe.yml:134 and :234, .github/workflows/ct-backup-perf.yml:142 and :224, .github/workflows/ct-tests.yml:316 and every later leg).
-- In Go, `//go:build nolicense` compiles the validators out: `runtime_nolicense.go` (removed in 992946b4e) stubbed them, private/renet/pkg/license/runtime_licensed.go:1 and five `_test.go` files carry `!nolicense`, and private/renet/pkg/license/preferred.go:13-17 tells the user to "use -tags nolicense".
+- The console mirrors it: `.ci/rediacc_ci/core/renet_flavor.py` (removed in cde90383a) mapped nolicense to `bin/` and enforce to `bin/enforce/`; rdc.sh:97 picks the directory from `RDC_RENET_LICENSE`; `.ci/rediacc_ci/core/local_common.py:1238` and :1445 read the same variable; `.ci/rediacc_ci/infra/build_renet.py:38-39` forwards `--nolicense`/`--license`, and the CI test legs call it with `--nolicense` (.github/workflows/ci-vm-bake.yml:129, .github/workflows/ci-ops-test.yml:82 and :274, .github/workflows/ct-e2e-probe.yml:134 and :234, .github/workflows/ct-backup-perf.yml:142 and :224, .github/workflows/ct-tests.yml:316 and every later leg).
+- In Go, `//go:build nolicense` compiles the validators out: `runtime_nolicense.go` (removed in cde90383a) stubbed them, private/renet/pkg/license/runtime_licensed.go:1 and five `_test.go` files carry `!nolicense`, and private/renet/pkg/license/preferred.go:13-17 tells the user to "use -tags nolicense".
 - The incident: a plain `./rdc.sh --config eu-remote machine setup hostinger` uploaded the nolicense dev build to production hostinger. Its `/usr/lib/rediacc/renet/current/renet` has sha `sha256:f56e1ef1a638d33d`, equal to `private/renet/bin/renet`, installed 2026-10-30 00:49:30 UTC. Under bws profile deploy-bench, `python3 -m rediacc_ci.release.renet_key_gate private/renet/bin/renet` prints "REFUSED ... tags=nolicense (baked fingerprint:fb37f1ae16f8b7c0)", while `private/renet/bin/enforce/renet` passes.
 - Operator 2026-10-30T06:50Z: remove the nolicense mode entirely and always bake the production key from bws, local development included ("makes code cleaner, avoids confusion").
 
@@ -51,7 +51,7 @@ There are two account keypairs today. Production is one keypair, the same for al
 ### private/renet/build.sh fallback
 - `_account_key_ldflags` (:409-446) takes env first, then the cache. It warns "baking the cached DEV key" (:429-434) and returns 0 with no key at all (:437-445).
 - Every flavor goes through it: stage_linux :521, build :557, dev :840.
-- A keyless binary is not harmless even under `-tags nolicense`. preferred.go is untagged (:12-15), and `LoadPreferredRepoLicense` returns errNoPublicKey when the key is empty (:21-23, :38-42). private/renet/cmd/renet/backup_snapshot.go:437-440 then rejects. The nolicense stubs cover only the validate calls (`runtime_nolicense.go`, removed in 992946b4e).
+- A keyless binary is not harmless even under `-tags nolicense`. preferred.go is untagged (:12-15), and `LoadPreferredRepoLicense` returns errNoPublicKey when the key is empty (:21-23, :38-42). private/renet/cmd/renet/backup_snapshot.go:437-440 then rejects. The nolicense stubs cover only the validate calls (`runtime_nolicense.go`, removed in cde90383a).
 
 ### private/account
 - The dev gateway gets its keys only through the `account-dev` profile (private/account/CLAUDE.md:62).
@@ -189,7 +189,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - `load`, `exec` and `cache-to` refuse any `__`-prefixed spec.
   - bws-map-refresh drops parked names.
   - check_bws_map gets assertion 16: no mapped or bound name is parked. Its :1392 fixture becomes `AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID`.
-    (ticked) 2026-10-29T09:01:19Z by d778be9d: commit:45680a429
+    (ticked) 2026-10-29T09:01:19Z by d778be9d: commit:894c51716
 
   Tests:
   - `cache-to` refuses `ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY` and writes nothing. Control: the unaliased name is written 0644.
@@ -204,7 +204,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - deploy_bench.py docstring :25.
   - .ci/rediacc_ci/drills/backup_onprem.py:16-17 wording.
   - region_consistency_offline.py `_check_bench_profile` asserts that bench binds exactly the six signing/session store names every regional profile binds, unaliased.
-    (ticked) 2026-10-29T08:07:23Z by d778be9d: commit:f06318ef1 profiles bind the production six; 63 pytest, check:ci-region-consistency and check:ci-secret-supply rc 0
+    (ticked) 2026-10-29T08:07:23Z by d778be9d: commit:621effffe profiles bind the production six; 63 pytest, check:ci-region-consistency and check:ci-secret-supply rc 0
 
   Tests:
   - .ci/rediacc_ci/tests/test_ops_deploy_bench.py:491-498 pins the unaliased six.
@@ -219,7 +219,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - `PUBLIC_KEY_SPECS` becomes the two unsuffixed public names (.ci/rediacc_ci/setup/machine.py:416-421).
   - `ensure_renet_built` resolves env, then cache, then `bws_env.load`, then refuses (.ci/rediacc_ci/core/local_common.py:1369-1379; Design 1). The shadow rows are adjusted.
   - build_server.py docstring :10.
-    (ticked) 2026-10-29T09:01:22Z by d778be9d: commit:098f7203c
+    (ticked) 2026-10-29T09:01:22Z by d778be9d: commit:e9cf55176
 
   Tests:
   - reset never runs `store-from-env` (a recording runner) and still removes the four DB files.
@@ -234,7 +234,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - Add `RENET_KEYLESS: "1"` to each keyless step: .github/workflows/ci-vm-bake.yml:127, .github/workflows/ct-backup-perf.yml:141, .github/workflows/ct-e2e-probe.yml:133 and :232, .github/workflows/ci-ops-test.yml:81 and :272, .github/workflows/ct-tests.yml:315, :491, :729 and every later `infra.build_renet --nolicense` that runs before a plane key exists. The writer audits each one. .github/workflows/ct-backup-perf.yml:223 keeps the plane key.
   - renet_key_gate drops `DEV_KEY_CACHE`, `--dev-cache` and `dev_fingerprint*` and gains `RETIRED_FINGERPRINTS` (D5).
   - .ci/rediacc_ci/release/local.py:1181 drops `dev_cache`.
-    (ticked) 2026-10-29T09:01:24Z by d778be9d: commit:098f7203c
+    (ticked) 2026-10-29T09:01:24Z by d778be9d: commit:e9cf55176
 
   Tests (new test_renet_build_key_required.py driving `bash private/renet/build.sh key-ldflags`):
   - Env unset plus a cache file holding a key gives rc 1 with no output on stdout. This proves no cache fallback.
@@ -250,7 +250,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - private/account/CLAUDE.md:62, :66, :75: the production six, reset is DB-only, bench binds the production six, plus a paragraph stating the Design 2 risk and containment.
   - docs/agent-reference/local-env.md:140-170: the key comes from bws through `./rdc.sh`. No paste and no `ACCOUNT_ED25519_PUBLIC_KEY=` prefix are needed. A build without it fails.
   - private/renet/CLAUDE.md build table: `dev` needs `ACCOUNT_ED25519_PUBLIC_KEY`, and rdc.sh supplies it.
-    (ticked) 2026-10-29T09:01:26Z by d778be9d: commit:c0f02250c
+    (ticked) 2026-10-29T09:01:26Z by d778be9d: commit:afee347f6
 
   Owns: private/account/CLAUDE.md, private/account (gitlink bump only), docs/agent-reference/local-env.md, private/renet/CLAUDE.md. Accept: `npm run check:ci-doc-region-parity` (the doc lint lane that covers these files) rc 0.
 
@@ -282,14 +282,14 @@ There are two account keypairs today. Production is one keypair, the same for al
   - private/renet/pkg/license/preferred.go:17 and pkg/i18n/baseline.json lose "use -tags nolicense". private/renet/cmd/renet/repository_license_status.go:250, :277 and private/renet/cmd/renet/backup_snapshot.go:354 comments lose the stub case.
   - The tests built under `nolicense` (cmd/renet/repository_license_status_test.go, repository_license_status_store_test.go, pkg/functions/datastore_identity_test.go, tiermap_dispatch_test.go, pkg/delta/command_integration_test.go, pkg/daemon/mount_sandbox_linux_test.go, pkg/hostmetrics/host_metrics_reach_test.go, pkg/ebpf/exec_sessions_root_test.go) sign fixture licences with an in-test keypair.
   - private/renet/.ci/scripts/test/run-tests.sh:189, private/renet/.ci/scripts/quality/i18n.sh:55 and private/renet/scripts/ci-test.sh:373 build without the tag.
-    (ticked) 2026-10-30T21:14:23Z by d778be9d: commit:992946b4e renet carries no nolicense build: git -C private/renet grep -i nolicense prints only TestBrowseAt_NoLicenseExits10; go vet ./... and go test ./... rc 0 (writer a0f8530006c3c7944)
+    (ticked) 2026-10-30T21:14:23Z by d778be9d: commit:cde90383a renet carries no nolicense build: git -C private/renet grep -i nolicense prints only TestBrowseAt_NoLicenseExits10; go vet ./... and go test ./... rc 0 (writer a0f8530006c3c7944)
 
   Owns: the private/renet files named above. Accept: `cd private/renet && go vet ./... && go test ./... -count=1` rc 0, and `git -C private/renet grep -n nolicense` prints nothing.
 
 - [x] N2 [writer] build.sh: one flavor, key required. Changes:
   - private/renet/build.sh: `dev` drops `--license`/`--nolicense` and `RDC_RENET_LICENSE`/`RDC_BENCH` (:800-830), `_dev_out_dir` goes (:788-796), `stage_linux` builds without the tag (:531), `RENET_KEYLESS` goes (:415-430), and the usage line (:899) is rewritten.
   - .github/workflows/ci-build-renet.yml:545 cross-compile check builds without the tag.
-    (ticked) 2026-10-30T21:14:17Z by d778be9d: commit:992946b4e env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev rc 1 refusing to build without a licence key; test_renet_build_key_required.py and test_private_renet_build_dev_flavor.py pass
+    (ticked) 2026-10-30T21:14:17Z by d778be9d: commit:cde90383a env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev rc 1 refusing to build without a licence key; test_renet_build_key_required.py and test_private_renet_build_dev_flavor.py pass
 
   Owns: private/renet/build.sh, .github/workflows/ci-build-renet.yml (line 545 only), .ci/rediacc_ci/tests/test_renet_build_key_required.py, .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py. Accept: those pytest files rc 0 (the keyless and `RENET_KEYLESS` cases now refused), and `env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev` rc 1.
 
@@ -305,7 +305,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   - packages/cli/src/services/renet/renet-execution.ts (:186, :300) and renet-clean-build-fs.ts drop the flavor flag and `bin/enforce`.
   - packages/cli/src/services/executor/license-recovery.ts:285 and :362 lose the nolicense activation bypass.
   - The vitest suites (renet-clean-build, local-executor, local-executor-restore-license) and the two e2e-tests files are updated.
-    (ticked) 2026-10-30T21:14:13Z by d778be9d: commit:992946b4e no nolicense or bin/enforce under packages/; npx tsc --noEmit -p packages/cli rc 0; npx vitest run src/services (packages/cli) rc 0
+    (ticked) 2026-10-30T21:14:13Z by d778be9d: commit:cde90383a no nolicense or bin/enforce under packages/; npx tsc --noEmit -p packages/cli rc 0; npx vitest run src/services (packages/cli) rc 0
 
   Owns: the packages/cli and packages/e2e-tests files in the header Owns. Accept: `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0 and `cd packages/cli && npx vitest run src/services` rc 0.
 
@@ -315,7 +315,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   Owns: the five workflow files. Accept: `npm run check:ci-workflows` rc 0, `git grep -n -E "nolicense|RENET_KEYLESS" -- .github` prints nothing, and a ct-tests run on the branch is green.
 
 - [x] N6 [writer] Docs. docs/agent-reference/local-env.md, docs/environment-variables.md, docs/dev-environments.md, docs/agent-reference/release-process.md, private/renet/CLAUDE.md:17 and .claude/agents/licensing-ops.md describe one licensed build, the bws key and the key gate in `./rdc.sh`. doc-registry.md is regenerated by `npx tsx scripts/gen/gen-docs.ts --write` (named for the lead).
-    (ticked) 2026-10-30T21:14:20Z by d778be9d: commit:992946b4e docs/dev-environments.md and docs/environment-variables.md describe the one licensed build (7fd4a643f); check:ci-prose-style rc 0
+    (ticked) 2026-10-30T21:14:20Z by d778be9d: commit:cde90383a docs/dev-environments.md and docs/environment-variables.md describe the one licensed build (6bdc984a5); check:ci-prose-style rc 0
 
   Owns: those docs. Accept: `npm run check:ci-prose-style` and `npm run check:ci-doc-region-parity` rc 0.
 

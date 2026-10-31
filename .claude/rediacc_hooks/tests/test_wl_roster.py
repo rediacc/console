@@ -1449,7 +1449,7 @@ def mutex_world(
 ) -> tuple[str, str]:
     """W1 is a live writer of EXCLUSIVE plan E (its prompt says `Plan: PLAN-e.md`, and it holds a lease on an E item). Two queue leases: the OLDER one serves plan F, which the mutex holds; the newer serves E itself, which it does not.
 
-    F's Owns overlap E's by default, because an exclusive plan is a mutex over ITS files (de2020b16, operator ruling 2026-10-28): it holds an overlapping F and admits a disjoint one, which `f_owns` sets for the twin."""
+    F's Owns overlap E's by default, because an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28): it holds an overlapping F and admits a disjoint one, which `f_owns` sets for the twin."""
     fix.brief_now()
     fix.hand_now()
     e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
@@ -1480,7 +1480,7 @@ def test_q1_a_queued_item_of_a_held_plan_is_skipped_and_the_next_unheld_one_is_n
 
 
 def test_q1d_control_a_disjoint_plan_is_not_held_by_a_live_exclusive_one(wl):
-    """The overlap rule's twin of q1 (de2020b16): the same world with F's Owns disjoint from E's names both queued items and holds neither."""
+    """The overlap rule's twin of q1 (711841c55): the same world with F's Owns disjoint from E's names both queued items and holds neither."""
     mutex_world(wl, f_owns="src/f/**")
     v = verdict(wl)
     assert v["queue_start"] == ["f1000001", "e1000002"], v["queue_start"]
@@ -1560,7 +1560,7 @@ def test_q3_two_live_writers_breaking_a_mutex_are_a_roster_concurrency_block(wl)
 
 
 def test_q3g_a_disjoint_writer_beside_a_live_exclusive_plan_is_not_in_conflict(wl):
-    """The overlap rule's twin of q3 (de2020b16). Two rules, judged per writer: E's writer is a conflict under the mutex-own rule (an exclusive plan cannot start while other plans are live, and F is live); F's writer is judged under the overlap rule (a live exclusive plan refuses only a writer whose files meet its Owns), and with F's Owns disjoint from E's it is not a conflict (review 8959ce94.3)."""
+    """The overlap rule's twin of q3 (711841c55). Two rules, judged per writer: E's writer is a conflict under the mutex-own rule (an exclusive plan cannot start while other plans are live, and F is live); F's writer is judged under the overlap rule (a live exclusive plan refuses only a writer whose files meet its Owns), and with F's Owns disjoint from E's it is not a conflict (review 8959ce94.3)."""
     conflict_world(wl, "f", f_owns="src/f/**")
     v = verdict(wl)
     assert {aid for aid, _plans, _lines in v["plan_conflicts"]} == {W1}, v["plan_conflicts"]

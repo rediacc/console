@@ -17,14 +17,14 @@ Live-Proof: bench, hostinger -- the serve, executor, ticket and step code under 
 Three clients reach a machine for a long verb today, and each one ties the job's life or its bill to the client's connection:
 
 1. **Direct SSH, foreground.** Every covered verb runs `renet execute` under the SSH channel (packages/cli/src/services/executor/local-executor.ts:203-214 picks the foreground path unless `options.detached` is set). renet catches SIGHUP and cancels the operation when the channel drops (private/renet/cmd/renet/execute_command.go:195-212). A laptop that sleeps, or a network change, cancels the work.
-2. **Direct SSH, `-b/--background`.** The global flag (packages/cli/src/cli.ts:198, handled at :232-235) sets a process global that `backgroundDecorator` turns into `{ detached: true, follow: false }` on EVERY machine call the command makes (packages/cli/src/services/executor/executor-factory.ts:80-84), including short probes whose output the command needs. `isBackgroundRequested` (packages/cli/src/services/executor/executor-factory.ts:66) has no reader. Even a following detached run gives up after 5 reconnects (packages/cli/src/services/executor/job-remote.ts:55, :212-240), so a laptop that sleeps longer than about 20 s turns a running job into a failed command. Commit 0dfdd9282 made `-b` refuse the ten verbs it breaks (`BACKGROUND_UNSAFE`, packages/cli/src/services/executor/proxy-command.ts:66-78).
+2. **Direct SSH, `-b/--background`.** The global flag (packages/cli/src/cli.ts:198, handled at :232-235) sets a process global that `backgroundDecorator` turns into `{ detached: true, follow: false }` on EVERY machine call the command makes (packages/cli/src/services/executor/executor-factory.ts:80-84), including short probes whose output the command needs. `isBackgroundRequested` (packages/cli/src/services/executor/executor-factory.ts:66) has no reader. Even a following detached run gives up after 5 reconnects (packages/cli/src/services/executor/job-remote.ts:55, :212-240), so a laptop that sleeps longer than about 20 s turns a running job into a failed command. Commit 21bd4afbe made `-b` refuse the ten verbs it breaks (`BACKGROUND_UNSAFE`, packages/cli/src/services/executor/proxy-command.ts:66-78).
 3. **The proxy (Cloudflare Worker, OrgExecutor Durable Object, executor container).** A served command runs every machine call detached AND followed (packages/cli/src/services/serve/command-dispatch.ts:389-405 hard-codes `follow: true`), and the route streams NDJSON until the job ends (packages/cli/src/services/serve/server.ts:260-263 announces `{kind:'job', jobId}`). The Durable Object counts the open body in flight (workers/proxy/src/org-executor.ts:96, fetch :283-322) and its alarm renews the lease and re-arms while `inFlight > 0` (:327-346), so the container never reaches its `sleepAfter = '2m'` (:89) during a run. agent/plans/PLAN-executor-durable-object-policy.md:151 records the same fact: "long NDJSON streams hold their slot". The web console (private/account/web/src/hooks/useCommand.ts:80) and the CLI proxy client (packages/cli/src/services/executor/proxy-client.ts:157, :387-421, `MAX_REATTACHES = 5`) both hold that stream.
 
 The third-round amendment widens the problem from the long verbs to every machine command. A short `repo create` or `repo delete` interrupted by a train tunnel is as exposed as a long snapshot: the client cannot tell whether it ran, and a manual retry may run it twice.
 
 ### Measured evidence
 
-- **The hostinger seed lost a 10-minute snapshot.** agent/plans/PLAN-backup-program.md:526 records `backup snapshot mautic --bwlimit 100Mbps --parallelism 2` rc=1 after 618 s with `signal: terminated` (go-executor duration_ms=600019). The immediate cause was the 10-minute renet default timeout, fixed by commit 20ed13929 (`resolveRenetTimeoutMs`, a 24 h ceiling for the data-moving backup functions in packages/cli/src/services/executor/renet-command.ts:89-109). That ceiling stays. The run also showed the second exposure: the snapshot ran in the foreground under one SSH channel for 10 minutes, so any client sleep in that window would have cancelled it the same way.
+- **The hostinger seed lost a 10-minute snapshot.** agent/plans/PLAN-backup-program.md:526 records `backup snapshot mautic --bwlimit 100Mbps --parallelism 2` rc=1 after 618 s with `signal: terminated` (go-executor duration_ms=600019). The immediate cause was the 10-minute renet default timeout, fixed by commit ca5b5e032 (`resolveRenetTimeoutMs`, a 24 h ceiling for the data-moving backup functions in packages/cli/src/services/executor/renet-command.ts:89-109). That ceiling stays. The run also showed the second exposure: the snapshot ran in the foreground under one SSH channel for 10 minutes, so any client sleep in that window would have cancelled it the same way.
 - **The Durable Object and container are billed for the held stream.** agent/plans/PLAN-cloudflare-proxy.md:221 states "In-flight streams still keep the instance alive", and :263 that "a long `repo up` stream keeps the container awake correctly". Container memory is billed on provisioned memory while the instance is awake (agent/plans/PLAN-cloudflare-proxy.md:231-242), and the monthly spend report already reads per-application container seconds (.ci/rediacc_ci/ops/cf_usage_report.py:12). No measurement of the per-run Durable Object wall time exists yet: L0 records the baseline before any code lands, and L2 the result.
 - **No measurement exists of the job path's added latency per short command.** L3a records the baseline and L3b the result.
 
@@ -360,7 +360,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
 - [x] J0 [lead] Verb audit, read-only. For each covered verb, list its machine calls in order (function, `captureOutput` or not, terminal or not), every post-job tail with its class (compound in renet, successor, finalizer, delete), and whether `-b` today detaches a probe. Settle `backup run` (Open question 2) and the timeout question of Design 9. Write the table into a new "Verb audit" section of this plan with file:line evidence.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0 and `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
-    (ticked) 2026-10-29T10:19:43Z by d778be9d: commit:0dfdd9282 J0 audit section in the plan; citations and deps gates show no finding
+    (ticked) 2026-10-29T10:19:43Z by d778be9d: commit:21bd4afbe J0 audit section in the plan; citations and deps gates show no finding
 
 - [x] J0b [lead] Machine-plane job audit, read-only: one table row per machine-plane command in packages/shared/src/cli-contract/data/contract.generated.ts (102 at 2026-10-29). That is the nine covered verbs of J0 (re-checked; the detachable set is 9 covered + 75 others = 84), the 75 others listed under "The 84 `detachable` commands" (including machine setup, machine provision, the datastore verbs, the cluster verbs, repo resize, repo gc and repo prune), the five `job *` verbs and the thirteen non-proxyable commands. Columns:
   1. command, and its CLI entry file:line;
@@ -372,7 +372,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   7. retention class (section 22);
   8. `-b` today;
   9. the conversion box (J4, J16-J20).
-    (ticked) 2026-10-29T11:34:34Z by d778be9d: commit:d3f3e15c1
+    (ticked) 2026-10-29T11:34:34Z by d778be9d: commit:700dc8449
 
   It also names every other plan whose Owns cover a converted command file, so the lead can amend the Concurrency line, and confirms or corrects the target-up channel of `repository_migrate` (section 14).
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0, `python3 .ci/scripts/quality/check_plan_deps.py` rc 0, and the row count in the "Machine-plane job audit" section equals the output of `awk -F'"' '/"pathKey"/{p=$4} /^      "plane"/{if($4=="machine")n++} END{print n}' packages/shared/src/cli-contract/data/contract.generated.ts`.
@@ -382,7 +382,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - the request id lands in `jobs.Status` and a lookup by request id returns the existing handle;
   - the logs reader stops after k complete lines and appends the status trailer;
   - help text for both flags.
-    (ticked) 2026-10-29T11:26:20Z by d778be9d: commit:ec4fb0248
+    (ticked) 2026-10-29T11:26:20Z by d778be9d: commit:25063d62d
 
   Tests: a second start with the same request id starts no second unit (fake systemd-run seam) and prints the first handle; `--max-lines 2` on a 5-line spool returns 2 lines and `--with-status` adds exactly one trailer line whose state matches the status file; control: without the flags the output is byte-identical to today's.
 
@@ -397,7 +397,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - `job start --steps <json>` writing `steps.json`, and `job claim --id --steps` with `O_EXCL` claim and done markers (section 18);
   - command-kind jobs `job start --command setup|list-all|backup-unit --args <json>` against a fixed allow-list (section 14);
   - `job list --active` and `job list --request-id`.
-    (ticked) 2026-10-29T11:57:08Z by d778be9d: commit:e8f1debed
+    (ticked) 2026-10-29T11:57:08Z by d778be9d: commit:20c798b18
 
   Tests:
   - two concurrent starts with one request id spawn one unit (fake systemd-run seam, goroutines);
@@ -416,7 +416,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - opportunistic GC in `job start` under the lock, at most hourly, with the retention classes, the count and size cap, and the pending-steps hold (section 22);
   - `stopUnit` on a terminal job at the first status read or GC;
   - `renet list all` gains a `jobs` section: live jobs plus those finished in the last hour, with origin (section 19).
-    (ticked) 2026-10-29T12:17:23Z by d778be9d: commit:2b50d24a2
+    (ticked) 2026-10-29T12:17:23Z by d778be9d: commit:9862575e6
 
   Tests:
   - a spool of 2100 terminal jobs is cut to the cap, oldest first;
@@ -441,7 +441,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - `POST /v1/command` accepts `requestId`;
   - the `job` line gains `overlaps`, a `heartbeat` line kind is added, and the result gains `state: 'running'`, `attached: boolean` and `overlaps`;
   - the `-b` envelope schema `{ jobId, machine, verb, repo, state, follow, overlaps }` is shared by the CLI and MCP.
-    (ticked) 2026-10-30T23:09:53Z by d778be9d: commit:9ec62204 packages/shared/src/cli-contract/__tests__/contract.test.ts:1; J2b already in 456d0bc15; the planted-unknown-key control added; cli-contract 53 passed. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
+    (ticked) 2026-10-30T23:09:53Z by d778be9d: commit:fb517017 packages/shared/src/cli-contract/__tests__/contract.test.ts:1; J2b already in a5f022b2b; the planted-unknown-key control added; cli-contract 53 passed. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
 
   Tests:
   - the contract test pins the detachable set to the J0b table;
@@ -471,7 +471,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - the `expect` precondition in the vault replaces the client-side `repository_list` verifier, and `network_id: "auto"` replaces the `network_used` probe (section 14);
   - the two-way timeout table naming every function in packages/shared/src/renet-contract/data/license-tiers.generated.ts (section 20);
   - the overlap warning on stderr, the BUSY refusal (`busy()`, packages/cli/src/utils/cli-exit-error.ts:71) and `overlaps` in the envelope; the text hint goes to stderr (section 26).
-    (ticked) 2026-10-30T23:09:57Z by d778be9d: commit:9ec62204 packages/cli/src/services/executor/detached-execution.ts:1; J3b already in 456d0bc15 and ebd3baadf; executor and jobs suites 357 passed. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
+    (ticked) 2026-10-30T23:09:57Z by d778be9d: commit:fb517017 packages/cli/src/services/executor/detached-execution.ts:1; J3b already in a5f022b2b and 62a442783; executor and jobs suites 357 passed. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
 
   Tests:
   - `repo list` makes exactly one `job start --attach 0s` exec and no `renet execute` (recording SFTP fake);
@@ -492,7 +492,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Amended (third round): follows J0b, J3b and J15 as well. Finalizers are J15 steps (`runJob` with `on: success|failure`). `repo migrate` uses the `repository_migrate` compound job, which J1b's allow-list or a renet function provides, as J0b decides. `repo up`, `repo down`, `repo checkout`, `repo commit` and `backup restore-path` join this box's verbs, with packages/cli/src/commands/repo.ts, packages/cli/src/commands/repo-branching.ts and packages/cli/src/commands/backup-restore-path.ts added to its Owns.
 
 - [x] J5 [writer] Ticket store, `rdc job list` and `rdc job wait`, the optional `-m`, and the finished notice (Design 6, 7, 8). Adds the en locale keys for these strings.
-    (ticked) 2026-10-29T11:39:12Z by d778be9d: commit:6449f2c95
+    (ticked) 2026-10-29T11:39:12Z by d778be9d: commit:1d01f8ecb
 
   Tests: two processes appending concurrently lose no ticket; the store file is 0600 and its directory 0700; no planted vault or env value appears in the file; `job wait` resumes from `lastSeenLine` and exits with the job's code; the notice prints on stderr only and once per ticket; a `jobs/` file never shows up in `rdc config list`; control: with no tickets the notice makes zero machine calls.
 
@@ -505,7 +505,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   - steps are stored in the spool with `--steps` and claimed with `job claim`, and the ticket mirrors `step-done`;
   - the config gate;
   - triggers from the attach finish, the reattach, `job wait` and the notice (interactive text runs only, 20 s budget; otherwise the "steps pending" line).
-    (ticked) 2026-10-29T12:22:37Z by d778be9d: commit:78e759728
+    (ticked) 2026-10-29T12:22:37Z by d778be9d: commit:868e4cfd4
 
   Tests:
   - two observers in parallel (a `job wait` and a notice) run a success step exactly once;
@@ -617,7 +617,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run check:ci-proxy-cost-guard` rc 0.
   Amended (third round): the reading also covers the 20 s attach window, during which `inFlight` is 1 and the alarm renews as for any request.
     (live record 2026-10-29, d778be9d) J10 reading: workers/proxy/src/org-executor.ts:332 renews only while inFlight > 0, so a request that ends after its 20 s attach window (or with the result) lets inFlight fall to zero between polls and the idle branch applies unchanged; during the window inFlight is 1, as for any request. No change under workers/proxy/src. `npm run check:ci-proxy-cost-guard` rc 0 (16 containers at max_instances <= 25, sleepAfter <= 120 s, worst case 1967.35 USD a month under the 2100 limit).
-    (ticked) 2026-10-29T12:08:29Z by d778be9d: commit:3db0ba568
+    (ticked) 2026-10-29T12:08:29Z by d778be9d: commit:c6e0526e4
     (review note 2026-10-29, 9f92c43e) The tick reading cites workers/proxy/src/org-executor.ts:332 only. The condition on L1 (no poll holding the lease past its body) is not evidenced by this tick and stays owed to L1; until L1 runs, the no-change verdict is the code reading alone.
 
 - [ ] J11 [lead] The VM proof for the renet change: `npm run vm:check -- --changed` VERIFIED on the tree carrying J1 and J3, as the push guard requires for the renet trigger paths.
@@ -625,14 +625,14 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Amended (third round): the tree carries J1b, J1c and J3b as well.
 
 - [x] J12 [writer] Cost measurement module: `.ci/rediacc_ci/ops/proxy_job_cost.py --script <name> --from <ISO> --to <ISO>` prints Durable Object requests and wall time (sum, p50, p99) and container active seconds for one script over a window, importing the GraphQL transport from cf_usage_report rather than copying it. The dataset and field names (`durableObjectsInvocationsAdaptiveGroups` with wall time, `containersMetricsAdaptiveGroups`) are hypotheses to confirm against the live API first (CLAUDE.md rule 3).
-    (ticked) 2026-10-29T11:26:24Z by d778be9d: commit:804169613
+    (ticked) 2026-10-29T11:26:24Z by d778be9d: commit:1f84ba143
 
   Tests: a recorded GraphQL response yields the expected sums; an empty response exits 2, never 0; a GraphQL error exits 2; control: a response with one row prints that row.
 
   Owns: .ci/rediacc_ci/ops/proxy_job_cost.py (new), .ci/rediacc_ci/tests/test_ops_proxy_job_cost.py (new). Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_proxy_job_cost.py` rc 0.
 
 - [x] J23 [writer] Latency measurement script: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.job_latency --rdc <path> --config <name> --runs 20 -- <rdc args>` runs one command N times and prints wall time p50, p95 and max, plus the `rediacc.job.start_latency_ms` attribute when the run prints it under `--debug`. It also compares two result files (`--compare before.json after.json`) and prints the deltas.
-    (ticked) 2026-10-29T11:26:59Z by d778be9d: commit:804169613
+    (ticked) 2026-10-29T11:26:59Z by d778be9d: commit:1f84ba143
 
   Tests: a fake rdc with recorded durations yields the expected percentiles; a non-zero rc in any run exits 2; `--compare` prints the delta; control: one run prints one sample.
 
@@ -650,7 +650,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   3. start `backup verify <fork>` followed, kill the client mid-run, run any `rdc` command after the job ends: the finished notice prints once;
   4. the MCP `backup_snapshot` tool returns a job id in under 30 s and `job_status` reaches `succeeded`;
   5. a machine whose renet lacks `--request-id` (a pinned older renet on a dev VM) refuses with the upgrade text and rc 1.
-    (correction 2026-10-30, 9f92c43e) A tick landed here at 05:23Z by mistake: it was meant for J2b (8ac038c6), and the brief that carried it paired signatures with labels by position. L1 is open again; its bench run has not happened. The J2b evidence that tick carried (packages/shared `npx vitest run src/cli-contract` rc 0 with 52 passed, `tsc --noEmit` rc 0) is recorded in the message of commit 21d28dba0.
+    (correction 2026-10-30, 9f92c43e) A tick landed here at 05:23Z by mistake: it was meant for J2b (8ac038c6), and the brief that carried it paired signatures with labels by position. L1 is open again; its bench run has not happened. The J2b evidence that tick carried (packages/shared `npx vitest run src/cli-contract` rc 0 with 52 passed, `tsc --noEmit` rc 0) is recorded in the message of commit fd05040a2.
 
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: each step's command, rc and timing recorded under "Live records"; steps 1-4 rc 0 and step 5 rc 1.
   Amended (third round): in step 1 the response ends at the 20 s window (or with the result, if the up finishes within it). L5 adds the hybrid, overlap and drop steps.
@@ -667,7 +667,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
 - [x] J24 [lead] Settle the third-round trade-offs the operator has not ruled on (the attach window if L3b breaches its 10 % rule, the `reconcileBackupSchedules` nudge, the origin fields): record each answer under "Operator rulings, fourth round".
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0 and each answer quoted with its date.
-    (ticked) 2026-10-29T12:08:32Z by d778be9d: commit:42d84e900
+    (ticked) 2026-10-29T12:08:32Z by d778be9d: commit:6bebfe367
 
 
 - [ ] L2 [live] Cost after: the L0 commands again on the deployed branch, and the same three metrics over the new window with `PYTHONPATH=.ci python3 -m rediacc_ci.ops.proxy_job_cost --script rediacc-proxy-bench --from <ISO> --to <ISO>`. The expected result is Durable Object wall time per run falling from the run length to the sum of poll durations; the measured before and after go into "Live records" with the ratio.

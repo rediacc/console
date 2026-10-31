@@ -102,7 +102,7 @@ if argv[:3] == ["wrangler", "d1", "export"] and "--remote" in argv:
     print("Upload to https://x.r2.cloudflarestorage.com/abc?sig=SECRET")
     print("The link is valid for one hour")
     print("Done")
-# deploy_bench records the version wrangler printed and the 100% version it lists after the secrets push (deploy_record.worker_version, 263557163); a fake that printed neither failed every full deploy with RecordError.
+# deploy_bench records the version wrangler printed and the 100% version it lists after the secrets push (deploy_record.worker_version, b8601cfde); a fake that printed neither failed every full deploy with RecordError.
 if argv[:2] == ["wrangler", "deploy"]:
     print("Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
 if argv[:3] == ["wrangler", "deployments", "list"]:

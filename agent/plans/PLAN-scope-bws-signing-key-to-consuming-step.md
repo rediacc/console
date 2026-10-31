@@ -68,19 +68,19 @@ In scope: ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, RELEASE_GPG_P
   - Input `names`: one `BWS_[A-Z0-9_]+` per line. Reject a malformed or empty list with `::error::`.
   - Append `NAME=` to GITHUB_ENV for each name. Never echo a value.
   - Update the `.github/actions/bws-secrets/action.yml:3-4` description to point at step-scoped use.
-    (ticked) 2026-10-30T23:23:50Z by d778be9d: commit:eed3a09c .github/actions/bws-scrub/action.yml:1; the scrub refuses an empty or malformed list and writes NAME= only; check:ci-workflows rc 0
+    (ticked) 2026-10-30T23:23:50Z by d778be9d: commit:f39c7fbd .github/actions/bws-scrub/action.yml:1; the scrub refuses an empty or malformed list and writes NAME= only; check:ci-workflows rc 0
 
   Accept: `npm run check:ci-actionlint && npm run check:ci-workflows`
 - [x] S2 Add `.ci/config/bws-step-scoped.json` listing the four in-scope names. Each entry needs a substantive `BLOCKER:`-style reason, following `docs/agent-reference/suppressions.md`.
-    (ticked) 2026-10-30T23:23:53Z by d778be9d: commit:eed3a09c .ci/config/bws-step-scoped.json:1; four names with BLOCKER reasons; check:ci-bws-map rc 0
+    (ticked) 2026-10-30T23:23:53Z by d778be9d: commit:f39c7fbd .ci/config/bws-step-scoped.json:1; four names with BLOCKER reasons; check:ci-bws-map rc 0
 
   Accept: `npm run check:ci-bws-map`
 - [x] S3 Sweep the 17 ED25519 jobs listed in Context. In each: remove the name from the job-start fetch, add the dedicated fetch immediately before the consumer, and add bws-scrub with `if: always()` immediately after it. In the 3 deploy jobs, X25519 moves into the same dedicated fetch.
-    (ticked) 2026-10-30T23:23:56Z by d778be9d: commit:eed3a09c .github/workflows/ct-tests.yml:1; 17 jobs swept, X25519 in the three deploy jobs; check:ci-bws-step-scope rc 0
+    (ticked) 2026-10-30T23:23:56Z by d778be9d: commit:f39c7fbd .github/workflows/ct-tests.yml:1; 17 jobs swept, X25519 in the three deploy jobs; check:ci-bws-step-scope rc 0
 
   Accept: `npm run check:ci-bws-step-scope && npm run check:ci-workflow-env-provision`
 - [x] S4 cd-stage: give each GPG consumer (`.github/workflows/cd-stage.yml:158`, `:197`) its own fetch and scrub pair, so the unrelated steps between them no longer see the keys.
-    (ticked) 2026-10-30T23:23:59Z by d778be9d: commit:eed3a09c .github/workflows/cd-stage.yml:1; two fetch and scrub pairs; check:ci-bws-step-scope rc 0
+    (ticked) 2026-10-30T23:23:59Z by d778be9d: commit:f39c7fbd .github/workflows/cd-stage.yml:1; two fetch and scrub pairs; check:ci-bws-step-scope rc 0
 
   Accept: `npm run check:ci-bws-step-scope`
 - [x] S5 Add the gate `check:ci-bws-step-scope`:
@@ -92,25 +92,25 @@ In scope: ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, RELEASE_GPG_P
     - (iii) no bws-scrub naming it immediately after the last consumer;
     - (iv) a scrub without `if: always()`;
     - (v) any reference to `env.BWS_<name>` after the scrub.
-    (ticked) 2026-10-30T23:24:02Z by d778be9d: commit:eed3a09c .ci/rediacc_ci/quality/bws_step_scope.py:1; five rules, floor and reason checks; red before the sweep (296 problems), green after
+    (ticked) 2026-10-30T23:24:02Z by d778be9d: commit:f39c7fbd .ci/rediacc_ci/quality/bws_step_scope.py:1; five rules, floor and reason checks; red before the sweep (296 problems), green after
 
   Accept: `npm run check:ci-bws-step-scope`
 - [x] S6 Control, using a `WORKFLOW_DIR` fixture seam like the one in `.ci/scripts/quality/check_workflows.py`:
   - Each of five planted fixtures, one per rule (i) to (v), must turn the gate red and name its rule. One plant is the pre-fix .github/workflows/ct-tests.yml:435/493 shape.
   - The fixed fixture must stay green, and so must the real tree.
   - Pytest covers both directions.
-    (ticked) 2026-10-30T23:24:05Z by d778be9d: commit:eed3a09c .ci/rediacc_ci/tests/test_quality_bws_step_scope.py:1; selftest 29 controls rc 0; pytest 14 passed; each rule planted into ct-tests.yml fired
+    (ticked) 2026-10-30T23:24:05Z by d778be9d: commit:f39c7fbd .ci/rediacc_ci/tests/test_quality_bws_step_scope.py:1; selftest 29 controls rc 0; pytest 14 passed; each rule planted into ct-tests.yml fired
 
   Accept: `npm run check:ci-bws-step-scope -- --selftest && .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_quality_bws_step_scope.py`
 - [x] S7 Wiring, per CLAUDE.md:
   - Add `"check:ci-bws-step-scope": ".ci/scripts/quality/check_bws_step_scope.py"` to package.json.
   - Run `npm run gate:bind` to generate the `.github/workflows/ci-quality.yml` step in the gate-bind region (job quality-security).
   - Add the gen-manifest entry in `scripts/ci-runner/manifest.ts`, modelled on check:ci-bws-map at `scripts/ci-runner/manifest.ts:1609`.
-    (ticked) 2026-10-30T23:24:09Z by d778be9d: commit:eed3a09c scripts/ci-runner/manifest.ts:1; manifest, gates.lock, gate-bind step; check:ci-parity, reachability and gate-bind rc 0
+    (ticked) 2026-10-30T23:24:09Z by d778be9d: commit:f39c7fbd scripts/ci-runner/manifest.ts:1; manifest, gates.lock, gate-bind step; check:ci-parity, reachability and gate-bind rc 0
 
   Accept: `npm run check:ci-gen-manifest && npm run check:ci-gate-bind && npm run check:ci-workflow-gates`
 - [x] S8 Open a follow-up worklist item under epic 9f92c43e for the rest of the class listed in Context, starting with GITHUB_APP_PRIVATE_KEY (63 jobs, consumed by app-token straight after the fetch), and for the remaining `/proc` exposure in start_account.
-    (ticked) 2026-10-30T23:24:12Z by d778be9d: commit:eed3a09c .ci/config/bws-step-scoped.json:1; follow-up item #a3910bfd added under epic 9f92c43e
+    (ticked) 2026-10-30T23:24:12Z by d778be9d: commit:f39c7fbd .ci/config/bws-step-scoped.json:1; follow-up item #a3910bfd added under epic 9f92c43e
 
   Accept: `.claude/hooks/stop/worklist.py --list | grep -F bws-step-scope-followup`
 - [ ] S9 Live proof, branch push: on "Console CI" for the PR head, the "Console CT - Tests" legs test-e2e-workers, test-renet-go and test-account-e2e, plus stripe-sandbox and deploy-preview, all pass, and each scrub step shows in the job log.

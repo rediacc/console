@@ -264,7 +264,7 @@ export function builderFanIns(text: string): {
 /**
  * Region-and-channel fan-ins, resolved. The port holds the prefixes in
  * `SUFFIXED_CHANNEL_PREFIXES` and builds `<PREFIX>_<SUFFIX>_<STABLE|EDGE>` (the
- * config server key since dce7b1183, one vault entry per region and channel).
+ * config server key since 9914036ef, one vault entry per region and channel).
  * Expanding over the real regions and both channels gives the names the workflow
  * step must export. The tuple is read in either layout ruff leaves it in: one
  * entry per line, or a one-line `= ("A",)` for a single entry.

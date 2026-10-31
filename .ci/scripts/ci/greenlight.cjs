@@ -80,7 +80,7 @@ const VM_E2E_PATHS = [
   '.github/actions/app-token',
   // Added 25f90b7ac (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which, on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/apt-mirror',
-  // Added e7647063b and eed3a09c4 (PLAN-free-license F2, PLAN-scope-bws-signing-key-to-consuming-step): every leg installs the run's shared renet through renet-test-binary and blanks its step-scoped signing key through bws-scrub, both local composites that resolve from the WORKSPACE. The binary itself is the renet-test-linux-amd64-<sha> artifact ci-build-renet.yml builds, so that recipe is an input to what the legs test. Found by test_gate_greenlight_closure_trace.py.
+  // Added 2fc16b442 and f39c7fbda (PLAN-free-license F2, PLAN-scope-bws-signing-key-to-consuming-step): every leg installs the run's shared renet through renet-test-binary and blanks its step-scoped signing key through bws-scrub, both local composites that resolve from the WORKSPACE. The binary itself is the renet-test-linux-amd64-<sha> artifact ci-build-renet.yml builds, so that recipe is an input to what the legs test. Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/renet-test-binary',
   '.github/actions/bws-scrub',
   '.github/workflows/ci-build-renet.yml',
@@ -220,7 +220,7 @@ const CLOSURES = {
       // that gate
       // exists for.
       '.github/actions/app-token',
-      // Added eed3a09c4: the step-scoped signing-key fetch is followed by this composite. And the legs now start with setup-workspace, whose `npm ci` reads the root manifest, the lockfile and .npmrc. Found by test_gate_greenlight_closure_trace.py.
+      // Added f39c7fbda: the step-scoped signing-key fetch is followed by this composite. And the legs now start with setup-workspace, whose `npm ci` reads the root manifest, the lockfile and .npmrc. Found by test_gate_greenlight_closure_trace.py.
       '.github/actions/bws-scrub',
       '.github/actions/setup-workspace',
       'package.json',
@@ -265,7 +265,7 @@ const CLOSURES = {
       '.github/actions/app-token',
       // Before its 'Setup KVM Host' (25f90b7ac): on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com.
       '.github/actions/apt-mirror',
-      // Added e7647063b and eed3a09c4: the shared renet install and the step-scoped signing-key blanking, both local composites. Found by test_gate_greenlight_closure_trace.py.
+      // Added 2fc16b442 and f39c7fbda: the shared renet install and the step-scoped signing-key blanking, both local composites. Found by test_gate_greenlight_closure_trace.py.
       '.github/actions/renet-test-binary',
       '.github/actions/bws-scrub',
       'package.json',
@@ -334,7 +334,7 @@ const CLOSURES = {
       '.github/actions/setup-workspace',
       // Both jobs mint a submodule-capable token through it before checkout.
       '.github/actions/app-token',
-      // Added eed3a09c4: blanks the step-scoped signing key after its one consuming step. Found by test_gate_greenlight_closure_trace.py.
+      // Added f39c7fbda: blanks the step-scoped signing key after its one consuming step. Found by test_gate_greenlight_closure_trace.py.
       '.github/actions/bws-scrub',
       // package.json defines build:packages (package.json:21); the lockfile is
       // what `npm ci` resolves and what keys the node_modules cache.

@@ -35,7 +35,7 @@ describe('isNoopPush: empty objects (#d00f4c1e)', () => {
     expect(isNoopPush(merged, base)).toBe(false);
   });
 
-  it('an edit that only adds {} inside /access is a push (the binding 737060db8 routed around)', () => {
+  it('an edit that only adds {} inside /access is a push (the binding 08acee9bb routed around)', () => {
     const base = cfg({
       access: { keys: { probe: { publicKey: 'ssh-ed25519 AAAA', machines: {} } } },
     });

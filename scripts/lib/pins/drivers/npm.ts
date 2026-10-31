@@ -38,7 +38,7 @@
  *
  * AN OVERRIDE RANGE THE LOCKFILE DOES NOT MEET IS PART OF THE IN-RANGE RELEASE (worklist
  * #c97a62d9). A hand-raised `overrides` floor on a transitive package (vite >=8.3.1 -> >=8.3.5
- * on 2026-10-31, commit 2a4c4c44) is invisible to check-deps, which judges `npm outdated`'s
+ * on 2026-10-31, commit a96e82a8) is invisible to check-deps, which judges `npm outdated`'s
  * direct dependencies only, so the run refused on eleven unrelated deferrals and the lock was
  * moved by hand. Each project's direct overrides are read against its own lockfile; a copy
  * outside the range is dated against the registry (the target is the release npm itself would

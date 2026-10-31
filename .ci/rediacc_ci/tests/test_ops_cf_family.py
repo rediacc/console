@@ -714,7 +714,7 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["BENCH_ROOT_PASSWORD"] = "bench-root-password-1"
     # PLAN-config-server-key K2: the port reads the bench-only key the deploy-bench profile binds; the retired bash never did, so its env (and every golden key) is unchanged. A fake value, never a real key.
     bound["ACCOUNT_CONFIG_SERVER_KEY"] = "fake-config-server-key-for-tests"
-    # PLAN-free-license F2 (e7647063b): the port pushes the FREE licence HMAC key the account Worker reads; the retired bash never held it. A fake value, never a real key.
+    # PLAN-free-license F2 (2fc16b442): the port pushes the FREE licence HMAC key the account Worker reads; the retired bash never held it. A fake value, never a real key.
     bound["FREE_LICENSE_HMAC_KEY"] = "fake-free-license-hmac-key-for-tests"
     return bound
 
@@ -738,12 +738,12 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
     for raw in h.normalise_calls(calls):
         if raw["tool"] == "sleep":
             continue
-        # DECLARED DELTA (bb78feea5): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
+        # DECLARED DELTA (d08509063): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
         if raw["tool"] == "npx" and raw["argv"][2:5] == ["d1", "time-travel", "info"]:
             continue
         if _is_seed_call(raw):
             continue
-        # DECLARED DELTA (263557163): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
+        # DECLARED DELTA (b8601cfde): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
         if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
             continue
         call = dict(raw)
@@ -774,10 +774,10 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert any(_is_seed_call(c) for c in port_calls)
-    # DECLARED DELTA (263557163): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
+    # DECLARED DELTA (b8601cfde): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
     version_line = "Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d\n"
     assert out_p.count(version_line) == 1
-    # DECLARED DELTA (12000ad33): the closing hint names the eu-bench config and its agent-run login, where the bash named a `bench` config that does not exist. Each port line is asserted once, then mapped back to the bash's.
+    # DECLARED DELTA (dd0c34018): the closing hint names the eu-bench config and its agent-run login, where the bash named a `bench` config that does not exist. Each port line is asserted once, then mapped back to the bash's.
     hint_delta = {
         "  npm run login:bench\n": "  ./rdc.sh --config bench subscription login\n",
         "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
@@ -810,7 +810,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
     bash_lines = _quiet_selfdestruct(err_b)
     assert bash_lines.count(bash_build) == 1
-    # DECLARED DELTAS since the bash was retired (bb78feea5 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none). The live-host line is no delta: both outputs carry it once and it stays in the comparison.
+    # DECLARED DELTAS since the bash was retired (d08509063 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none). The live-host line is no delta: both outputs carry it once and it stays in the comparison.
     all_port_lines = _quiet_selfdestruct(err_p)
     # The delta is asserted before it is filtered, so a port that stops printing the bookmark warning, or drops the live-host line, still fails here.
     assert sum(ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") for ln in all_port_lines) == 1
@@ -822,7 +822,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         for ln in all_port_lines
         if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith(seed_lines)
     ]
-    # DECLARED DELTA (263557163): the port records the live bench version; asserted once, then dropped.
+    # DECLARED DELTA (b8601cfde): the port records the live bench version; asserted once, then dropped.
     recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench.json"
     assert port_lines.count(recorded) == 1
     port_lines.remove(recorded)

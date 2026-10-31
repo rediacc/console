@@ -123,7 +123,7 @@ describe('command plane coverage', () => {
     // 182 -> 176, config 54 -> 50, machine 100 -> 99, other 28 -> 27: `rdc storage` (list, add, remove, import, prune, browse) was deleted with the storage retirement.
     //
     // 176 -> 179, machine 99 -> 100, other 27 -> 29: `machine restart-services` rolls renet daemons on a machine, so it is a machine-plane leaf; `backup retention preview` and `backup snapshots delete` are accountServerFetch calls against the control plane, so `other` like their `retention` siblings.
-    // 179 -> 188, config 50 -> 57, machine 100 -> 101, other 29 -> 30: `config access add|remove|ranges|list` and `machine access set|remove|show` edit only the config (PLAN-ssh-key-source-ranges C1); `machine access push` rewrites the machine's authorized_keys, so it is machine-plane. `subscription proxy-token` (cce2ee68d) mints a token against the account server, so it is `other`; its commit did not update this record.
+    // 179 -> 188, config 50 -> 57, machine 100 -> 101, other 29 -> 30: `config access add|remove|ranges|list` and `machine access set|remove|show` edit only the config (PLAN-ssh-key-source-ranges C1); `machine access push` rewrites the machine's authorized_keys, so it is machine-plane. `subscription proxy-token` (eff7c7dcd) mints a token against the account server, so it is `other`; its commit did not update this record.
     //
     // 188 -> 189, machine 101 -> 102: `repo prune` classifies and reclaims a repository's Docker storage through renet on the machine.
     //

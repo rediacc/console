@@ -161,7 +161,7 @@ OWN_CASES = [
         "T=$(mktemp); cat agent/reviews/x/a.md > $T",
         False,
     ),
-    # #e85553f0: an absolute redirect target is opened where it names, not under the run's directory. The first three were refused (rc 2) at ffa20332c ("redirect into /dev/null"); the refusals were refused there too and stay refused.
+    # #e85553f0: an absolute redirect target is opened where it names, not under the run's directory. The first three were refused (rc 2) at 62ba1d8d2 ("redirect into /dev/null"); the refusals were refused there too and stay refused.
     (
         "a stderr sink under cd into the review directory",
         "cd agent/reviews/1023-1 && for f in 0f6b5915 1ac184a8; do ls $f*.md 2>/dev/null; done",

@@ -501,7 +501,7 @@ def test_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(world):
         "utf-8",
     )
     assert turbo_state(world, ((), 1)).turbo_picks == (rel("c"), rel("d"))
-    # CONTROL: no writer live, so the exclusive plan is the first pick, and c and d join it because their Owns are disjoint from b's (de2020b16: an exclusive plan is a mutex over ITS files).
+    # CONTROL: no writer live, so the exclusive plan is the first pick, and c and d join it because their Owns are disjoint from b's (711841c55: an exclusive plan is a mutex over ITS files).
     assert turbo_state(world, ((), 0)).turbo_picks == (rel("b"), rel("c"), rel("d"))
 
 

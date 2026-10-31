@@ -2,7 +2,7 @@
 /**
  * Gate: German catalog strings carry umlauts and ß, never their ASCII transliterations.
  *
- * WHY THIS EXISTS. Commit 5bafc6a4 restored 638 ASCII transliterations in
+ * WHY THIS EXISTS. Commit d7961888 restored 638 ASCII transliterations in
  * packages/www/src/i18n/translations/de.json ("fuer", "ueber", "koennen",
  * "Gewaehrleistungen", "ausschliesslich", "Groesse"). Every i18n gate passed with them
  * in place: check-locale-de-contamination.ts compares locales for EQUALITY, the

@@ -659,7 +659,7 @@ cases.append(
 
 # THE LOCAL RELEASE ENTRY (agent/plans/PLAN-local-release.md W2-C) is a gate-key row: `npm run release:local` names an npm script, so it lives in NEEDS, and a NEEDS_SCRIPT row would fail the liveness loop above. Both directions of `_is_invoked`, decided in-process so they hold whether or not this host carries aws.
 cases.append((True, ("release:local", "aws") in GUARD.NEEDS, "release:local: the row is in NEEDS"))
-# The module spelling of the same entry (W2-B, f6fc296f2) is a NEEDS_SCRIPT row; the liveness loop above already proves its module file exists. Its key is a PREFIX of `rediacc_ci.release.local_gates`, which runs no aws, so the module is matched whole, never as a substring.
+# The module spelling of the same entry (W2-B, d291e6690) is a NEEDS_SCRIPT row; the liveness loop above already proves its module file exists. Its key is a PREFIX of `rediacc_ci.release.local_gates`, which runs no aws, so the module is matched whole, never as a substring.
 cases.append(
     (
         True,

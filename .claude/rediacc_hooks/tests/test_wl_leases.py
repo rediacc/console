@@ -411,7 +411,7 @@ def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):
 def held_world(fix, f_owns: str = "src/e/golden/**") -> tuple[str, str]:
     """A PEER's fresh lease on an item of EXCLUSIVE plan E (the cross-session holder), and two open items of this session: one on plan F, which E's mutex holds, and one on E itself, which it does not. No writer of this session is live, so every slot is free.
 
-    F's Owns overlap E's by default, since an exclusive plan is a mutex over ITS files (de2020b16, operator ruling 2026-10-28); `f_owns` sets a disjoint F for the twin."""
+    F's Owns overlap E's by default, since an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28); `f_owns` sets a disjoint F for the twin."""
     ready(fix)
     e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
     f = write_plan(fix, "f", owns=f_owns)
@@ -438,7 +438,7 @@ def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):
 
 
 def test_l8d_inverse_a_disjoint_plans_item_is_not_held_and_is_refused(wl):
-    """The overlap rule's twin of l8 (de2020b16): F disjoint from the live exclusive E is startable, so a queue lease beside a free slot is refused."""
+    """The overlap rule's twin of l8 (711841c55): F disjoint from the live exclusive E is startable, so a queue lease beside a free slot is refused."""
     held, _free = held_world(wl, f_owns="src/f/**")
     got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue", "waiting on E")
     assert got.rc != 0, got.out[:300]

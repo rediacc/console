@@ -8,7 +8,7 @@
  * floor below a dependent's range installs a version that dependent never accepted, and
  * neither `npm ls` nor check:ci-lockfile can see it: body-parser 2.4.0 declares
  * qs ^6.16.1 and ran on qs 6.16.0 under the `>=6.16.0` override (review 83dfdb27.1,
- * 2026-10-24; f429180c6 fixed that edge and four more of the class in the root lockfile).
+ * 2026-10-24; af43e8265 fixed that edge and four more of the class in the root lockfile).
  *
  * WHAT IS JUDGED. For every npm project the pins registry's `npm-lockfile` scope names (the
  * same list `npm run pins -- lockfiles` walks, read from .ci/config/pins.json, never a list

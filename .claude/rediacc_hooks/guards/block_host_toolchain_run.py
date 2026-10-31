@@ -84,7 +84,7 @@ NEEDS_SCRIPT = (
     ("upload-r2.sh", "aws"),
     # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` (or the module a `.py` script path names) as the command's target.
     ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
-    # The local release entry run as a module (PLAN-local-release W2-B, f6fc296f2): its prerequisite table names `aws` for both the full and the workers-only run (local.py:82-83), resolved through `awscli`. The npm spelling is the `release:local` row in NEEDS.
+    # The local release entry run as a module (PLAN-local-release W2-B, d291e6690): its prerequisite table names `aws` for both the full and the workers-only run (local.py:82-83), resolved through `awscli`. The npm spelling is the `release:local` row in NEEDS.
     ("rediacc_ci.release.local", "aws"),
     ("rediacc_ci.deploy.write_release_sentinel", "aws"),
     ("rediacc_ci.deploy.delete_r2_channel", "aws"),

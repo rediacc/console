@@ -136,7 +136,7 @@ function route(
   if (url === '/account/api/v1/proxy/introspect') {
     return [200, introspect((JSON.parse(body) as { token?: string }).token)];
   }
-  // The real ingest route parses with this schema and answers 400 otherwise; this suite stayed green while every executor event the real route rejected shipped invalid, until 452518b0c, because the stub took any shape.
+  // The real ingest route parses with this schema and answers 400 otherwise; this suite stayed green while every executor event the real route rejected shipped invalid, until 889309f2a, because the stub took any shape.
   const parsed = AuditEventsRequestSchema.safeParse(JSON.parse(body));
   if (!parsed.success)
     return [400, { error: 'audit payload rejected', issues: parsed.error.issues }];

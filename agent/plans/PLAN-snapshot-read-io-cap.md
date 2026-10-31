@@ -89,7 +89,7 @@ First-Seen: 2026-10-29
     - `TestHashCells_SlicedDigestMatchesWholeCell`: same hashes as `HashCell`, including the short last cell.
     - `TestUpload_ReadCapPacesCellReads`: a fake control plane, with sleep accounted on the fake clock.
   - Accept: `cd /home/developer/console/private/renet && go test ./pkg/chunkstore/ -run 'TestHashCells_(ReadCap|Parallelism|SlicedDigest)|TestUpload_ReadCap' -count=1` rc 0, and `go test ./pkg/chunkstore/ -count=1` rc 0.
-    (ticked) 2026-10-29T09:53:36Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:36Z by d778be9d: commit:638ae49ec
 
 - [x] R2. Add the verb flags and record the values.
   - Owns: private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go
@@ -102,7 +102,7 @@ First-Seen: 2026-10-29
     - `TestBackupSnapshot_ReadKnobDefaults`: with no argv, the values are 50,000,000 and 1. `--read-bwlimit 0` gives unlimited, `--read-bwlimit 400Mbps` gives 50,000,000, and `--read-bwlimit 100Mb` is refused.
     - `TestBackupSnapshot_ReadKnobsReachPlanAndUpload`: `planOptionsFor` and the upload options carry both values.
   - Accept: `cd /home/developer/console/private/renet && go test ./cmd/renet/ -run 'TestBackupSnapshot_(UnitAndHandTypedArgvCarryTheCap|ReadKnob)' -count=1` rc 0.
-    (ticked) 2026-10-29T09:53:39Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:39Z by d778be9d: commit:638ae49ec
 
 - [x] R3. Carry the knobs through the function builder.
   - Owns: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go
@@ -114,13 +114,13 @@ First-Seen: 2026-10-29
     - Both values go into the log fields.
   - Tests: extend the existing file. `read_bwlimit=100Mbps` gives `--read-bwlimit 12500000`. `read_bwlimit=0` gives `--read-bwlimit 0`. Unset gives no flag. `hash_parallelism=-1` is refused. The low-priority prefix stays first.
   - Accept: `cd /home/developer/console/private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1` rc 0.
-    (ticked) 2026-10-29T09:53:41Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:41Z by d778be9d: commit:638ae49ec
 
 - [x] R4. Regenerate the renet contract and run the renet gate.
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts
   - Regenerate with `renet functions generate-types` (the invocation in .ci/rediacc_ci/quality/renet_types.py:174-186), so that `read_bwlimit` and `hash_parallelism` appear next to `parallelism` (packages/shared/src/renet-contract/data/functions.schema.ts:114).
   - Accept: `npm run check:ci-renet-types` rc 0, and `npm run check:ci-renet` rc 0.
-    (ticked) 2026-10-29T09:53:44Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:44Z by d778be9d: commit:638ae49ec
 
 ### C: CLI plus unit generator (writer C)
 
@@ -138,7 +138,7 @@ First-Seen: 2026-10-29
     - Omitting both sends neither param.
     - `--read-bwlimit 100Mb` and `--hash-parallelism -1` are refused before `executeRepoFunction`.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-snapshot-bwlimit.test.ts` rc 0.
-    (ticked) 2026-10-29T09:53:46Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:46Z by d778be9d: commit:638ae49ec
 
 - [x] C2. Add the strategy field and `backup strategy set --read-bwlimit`.
   - Owns: packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/commands/__tests__/backup-strategy.test.ts, packages/cli/src/services/backup/backup-strategy-validate.ts
@@ -153,7 +153,7 @@ First-Seen: 2026-10-29
     - `--destination d --read-bwlimit` is refused, because the read cap is strategy level only.
     - An unparseable value makes the strategy unschedulable.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-strategy.test.ts` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
-    (ticked) 2026-10-29T09:53:48Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:48Z by d778be9d: commit:638ae49ec
 
 - [x] C3. Emit the read cap from the unit generator and the strategy `systemd-run`.
   - Owns: packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts
@@ -164,7 +164,7 @@ First-Seen: 2026-10-29
     - A strategy without one renders no `--read-bwlimit`.
     - `--hash-parallelism` is never rendered.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-schedule-chunkstore.test.ts src/services/__tests__/backup-schedule.test.ts` rc 0.
-    (ticked) 2026-10-29T09:53:51Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:51Z by d778be9d: commit:638ae49ec
 
 ### I: CLI locales (writer I)
 
@@ -173,7 +173,7 @@ First-Seen: 2026-10-29
   - Keys: `commands.backup.snapshot.optionReadBwlimit`, `commands.backup.snapshot.optionHashParallelism`, `commands.backup.strategy.set.optionReadBwlimit`. They sit next to the existing `optionBwlimit` and `optionParallelism` (packages/cli/src/i18n/locales/en/cli.json:1938-1939).
   - Each English value names the default, for example "Read cap for hashing: same units as --bwlimit; default 50M, 0 = unlimited" and "Cells hashed at once (default 1; 0 = one per CPU)".
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders` rc 0.
-    (ticked) 2026-10-29T09:53:53Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:53Z by d778be9d: commit:638ae49ec
 
 ### D: docs (writer D)
 
@@ -184,7 +184,7 @@ First-Seen: 2026-10-29
     - ionice affects only BFQ, so the read cap is what bounds disk load under mq-deadline or none.
   - Add `--read-bwlimit` to the `backup strategy set` option table (en :566-576) in all 13 locales.
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
-    (ticked) 2026-10-29T09:53:55Z by d778be9d: commit:a2d9c297a
+    (ticked) 2026-10-29T09:53:55Z by d778be9d: commit:638ae49ec
 
 ### L: live proof on hostinger (lead)
 
@@ -209,7 +209,7 @@ First-Seen: 2026-10-29
     (live record 2026-10-29, 9f92c43e) L1 run 2 10:51-10:57Z on hostinger (script start 10:51:28Z), script rc=1, NOT PASSED, nothing retuned. Record from `-o json`: imageBytes=8589934592, rehashReason "no journal: first backup of this repo here", readCapBps=50000000, hashWorkers=1, durationMs=148751 (CLI wall 162 s), chunksAsked=1590 chunksUploaded=0. Bounds: verb rc=0 OK; reason/cap/workers OK; peak iowait 15 (bound 15) OK; peak 1-min load 5.88 vs baseline mean 2.66 (n=10, 120 s) + 2.0 = 4.66 FAILED (delta +3.22; peak sample about 109 s into the run, then 5.28, 4.79, 4.66); duration FAILED: minimum 0.9 x 8589934592 / 50e6 = 154.6 s, durationMs 148.75 s (CLI wall 162 s would pass, the record's 148.75 s does not). Possible cause of the duration miss, unverified: 1590 asked cells x 4194304 = 6.67e9 bytes, so a cap over non-hole bytes would take 133 s at 50 MB/s; the min-duration formula uses the full image size. Commands: `readcap.sh` rc=1; inside it `repo fork mautic --tag readcap` rc=0; `backup snapshot mautic:readcap --dry-run -o json` rc=0; `repo delete mautic:readcap -y` rc=0 (no config-save failure this time, no retry needed); `repo list -m hostinger` rc=0 afterwards shows no readcap fork. A first launch of the old script was killed during its baseline wait, before any fork, so hostinger was not touched.
     (live record 2026-10-29, 9f92c43e) L1 run 2 judged under the operator ruling of 2026-10-29 (baseline plus 3.5, data cells only): peak 5.88 is within 2.66 + 3.5 = 6.16, iowait 15 is within 15, readCapBps 50000000 and hashWorkers 1 applied, durationMs 148751 exceeds 0.9 x 1590 x 4194304 / 50000000 = 120 s. PASSED.
     (live record 2026-10-29, 9f92c43e) Both criteria kept on record: under the original box criteria (baseline plus 2.0, imageBytes minimum) run 2 did NOT pass (peak delta +3.22, 148.75 s against 154.6 s). The judge /tmp/scr/readcap_judge.py was updated to the ruled criteria (baseline plus 3.5, chunksAsked x 4 MiB) and re-run on run 2's saved artifacts in /tmp/readcap: `python3 -I /tmp/scr/readcap_judge.py /tmp/readcap 0 162 0 0` rc 0, every condition true. No new hostinger run was needed for the re-judge.
-    (ticked) 2026-10-29T11:16:14Z by d778be9d: commit:db793f1bd
+    (ticked) 2026-10-29T11:16:14Z by d778be9d: commit:96706113b
 
 - [ ] L2. A real capped snapshot of a mid-size repo, under the existing sampler.
   - Owns: none in the tree.
@@ -240,13 +240,13 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
   - Owns: private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_bwlimit_test.go, private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_bwlimit_test.go
   - The backup_snapshot function takes `cpu_limit` (a percent of all cores, 1-100, default 50) and wraps the verb in `systemd-run --scope --quiet -p CPUQuota=<percent x nproc>%` inside the existing nice and ionice prefix. Where systemd-run is absent it falls back to the current prefix and records that in the record (`cpuQuota: null`). The verb records `cpuLimitPercent` and `cpuQuota` in its record.
   - Accept: `cd private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1 && go test ./cmd/renet/ -run TestBackupSnapshot -count=1` rc 0.
-    (ticked) 2026-10-29T12:43:44Z by d778be9d: commit:d27fe489e
+    (ticked) 2026-10-29T12:43:44Z by d778be9d: commit:af3c3c0fc
     (review note 2026-10-29, 9f92c43e) Rerun 2026-10-29 of the Accept commands: `cd private/renet && go test ./pkg/functions/commands/ -run TestBackupSnapshot -count=1` rc=0 and `go test ./cmd/renet/ -run TestBackupSnapshot -count=1` rc=0.
 - [x] C4. CLI: `rdc backup snapshot --cpu-limit <percent>`, a strategy-level `cpuLimit`, and CPUQuota on the scheduled unit and the ad-hoc systemd-run.
   - Owns: packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-strategy.ts, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/i18n/locales/*/cli.json, and their tests
   - The unit carries `CPUQuota=<percent x nproc>%`, with nproc read on the machine at schedule time; the snapshot summary prints the CPU limit.
   - Accept: `cd packages/cli && npx vitest run src/commands/__tests__/backup-snapshot-bwlimit.test.ts src/commands/__tests__/backup-strategy.test.ts src/services/__tests__/backup-schedule-chunkstore.test.ts` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
-    (ticked) 2026-10-29T13:33:02Z by d778be9d: commit:e2dc34fff vitest 148 passed rc=0, tsc rc=0, check:ci-cli-contract rc=0
+    (ticked) 2026-10-29T13:33:02Z by d778be9d: commit:03aeb5213 vitest 148 passed rc=0, tsc rc=0, check:ci-cli-contract rc=0
 - [ ] L3. hostinger: a capped snapshot of one remaining repo shows backup CPU at or below 50 % of all cores in every sample, with the record carrying cpuQuota=400%.
   - Owns: none in the tree.
   - Accept: the seed driver run for that repo rc 0, with the per-sample CPU figures recorded under this box.
