@@ -61,11 +61,30 @@ export type CommandJobOutcome =
     };
 
 /**
+ * The job was dispatched (the executor answered) and a later step of the command failed, a ticket-store write
+ * for one. The job exists on the machine, so a caller must not undo what it registered for it. A rejection that is
+ * not this error means the job never started.
+ */
+export class JobDispatchedError extends Error {
+  constructor(
+    readonly requestId: string | undefined,
+    readonly jobId: string | undefined,
+    readonly cause: unknown
+  ) {
+    super(
+      `the job was dispatched${jobId ? ` (job ${jobId})` : ''}${requestId ? ` (ticket ${requestId})` : ''}, but recording it failed: ${cause instanceof Error ? cause.message : String(cause)}`
+    );
+    this.name = 'JobDispatchedError';
+  }
+}
+
+/**
  * Run `options` as the command's one job, with `steps` on its ticket.
  *
  * A start the executor refuses (an overlap, a failed precondition, an old renet)
  * throws as before; the `starting` record runJob wrote is acknowledged first, so
- * the refusal leaves no ticket for the notice to chase.
+ * the refusal leaves no ticket for the notice to chase. A failure after the executor answered
+ * (the job exists) throws {@link JobDispatchedError} instead.
  */
 export async function runCommandJob(
   verb: string,
@@ -99,14 +118,19 @@ export async function runCommandJob(
       steps: outcome.steps,
     };
   } catch (error) {
-    if (requestId && last === undefined) {
-      try {
-        store.append('acknowledged', requestId, { state: 'unknown' });
-      } catch {
-        // A store that cannot be written never fails the command.
-      }
-    }
+    if (last !== undefined) throw new JobDispatchedError(requestId, last.jobId, error);
+    acknowledgeUnknown(store, requestId);
     throw error;
+  }
+}
+
+/** A refused start leaves no ticket for the notice to chase; a store that cannot be written never fails the command. */
+function acknowledgeUnknown(store: TicketStore, requestId: string | undefined): void {
+  if (!requestId) return;
+  try {
+    store.append('acknowledged', requestId, { state: 'unknown' });
+  } catch {
+    // Left as is.
   }
 }
 

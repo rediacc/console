@@ -457,6 +457,45 @@ describe('repo create network ID: renet allocates inside the job', () => {
     expect(outputService.warn).toHaveBeenCalledWith(expect.stringContaining('was created'));
   });
 
+  it('keeps the registration when the ticket store fails after the job was dispatched', async () => {
+    const { configService } = await import('../../services/config/config-resources.js');
+    vi.mocked(configService.getRepository).mockImplementation(() => {
+      const recorded = addRepository.mock.calls[0]?.[1];
+      return Promise.resolve(recorded as never);
+    });
+    class FailingStore extends TicketStore {
+      override append(
+        ...args: Parameters<TicketStore['append']>
+      ): ReturnType<TicketStore['append']> {
+        if (args[0] === 'finished') throw new Error('disk full');
+        return super.append(...args);
+      }
+    }
+    setCommandJobDeps({ store: () => new FailingStore('test', ticketDir) });
+    const { outputService } = await import('../../services/core/output.js');
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    vi.mocked(configService.getRepository).mockImplementation(() => Promise.resolve(undefined));
+    expect(execute.mock.calls.map((c) => c[0].functionName)).toEqual(['repository_create']);
+    expect(configService.removeRepository).not.toHaveBeenCalled();
+    expect(handleError).not.toHaveBeenCalled();
+    expect(outputService.warn).toHaveBeenCalledWith(
+      expect.stringContaining('its record could not be completed')
+    );
+  });
+
+  it('still rolls the registration back when the start was refused', async () => {
+    const { configService } = await import('../../services/config/config-resources.js');
+    vi.mocked(configService.getRepository).mockImplementation(() => {
+      const recorded = addRepository.mock.calls[0]?.[1];
+      return Promise.resolve(recorded as never);
+    });
+    execute.mockRejectedValueOnce(new Error('overlap'));
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    vi.mocked(configService.getRepository).mockImplementation(() => Promise.resolve(undefined));
+    expect(configService.removeRepository).toHaveBeenCalled();
+    expect(handleError).toHaveBeenCalled();
+  });
+
   it('makes exactly one job for a refused ID, never a retry, with the rollback as its failure step', async () => {
     const refusal = JSON.stringify({ code: 'network_id_in_use', message: 'held', network_id: 42 });
     execute.mockResolvedValueOnce({

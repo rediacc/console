@@ -23,6 +23,7 @@ import { getExecutor, requestNetworkIdAuto } from '../services/executor/executor
 import type { ExecuteOptions } from '../services/executor/types.js';
 import {
   type CommandJobOutcome,
+  JobDispatchedError,
   pendingExitCode,
   runCommandJob,
 } from '../services/jobs/command-job.js';
@@ -122,12 +123,24 @@ async function runCreateJob(
   size: string | undefined,
   options: ExecuteOptions
 ): Promise<void> {
-  // A rejection here means the job did not start, so the caller rolls the registration back.
-  const outcome = await runCommandJob(
-    'repo create',
-    { ...options, deferIdentityRefresh: true },
-    createSteps(name, guid, machine, size)
-  );
+  // A plain rejection here means the job did not start, so the caller rolls the registration back.
+  let outcome: CommandJobOutcome;
+  try {
+    outcome = await runCommandJob(
+      'repo create',
+      { ...options, deferIdentityRefresh: true },
+      createSteps(name, guid, machine, size)
+    );
+  } catch (error) {
+    if (!(error instanceof JobDispatchedError)) throw error;
+    // The job was dispatched and recording it failed: the repo exists on the machine, so the registration stays.
+    const ref = error.requestId ? ` (ticket ${error.requestId})` : '';
+    outputService.warn(
+      `repo create: ${name} was created, but its record could not be completed${ref}: ${error.message}. Run \`rdc repo status ${name}\` to check it and \`rdc job wait\` to settle any open steps.`
+    );
+    setExitCode(1);
+    return;
+  }
   // From here the repo exists on the machine (or the job still runs): nothing below may reach the caller's rollback.
   try {
     settleCreateOutcome(name, outcome);
