@@ -44,9 +44,9 @@
  * outside the range is dated against the registry (the target is the release npm itself would
  * pick under `--before=<release-age cutoff>`), planned as `npm update <name> --before=<cutoff>`
  * with its freshness guard, and folded into the in-range release, so unrelated deferred
- * packages stay deferred and are named in the run's label rather than refusing it. A target
+ * packages stay deferred, counted in the run's label and named in the release reason, rather than refusing it. A target
  * still inside the window refuses every plan of the family (the lock cannot meet its own
- * manifest until it clears), and a range no published release admits is not compared.
+ * manifest until it clears), and a range no published release admits refuses the run, naming the range to correct.
  *
  * `remove <pkg>` and `lockfiles [<dir>]` are the other two plans this module builds.
  */
@@ -694,10 +694,27 @@ export function inRangeReleases(plan: NpmPlanJson, ov: OverrideJudgement): Relea
 }
 
 /** The override moves a plan has not already planned, by (project, package). */
-const newMoves = (steps: InstallStep[], ov: OverrideJudgement): InstallStep[] => {
+const newMoves = (steps: InstallStep[], ov: OverrideJudgement): InstallStep[] =>
+  keptMoves(steps, ov).moves;
+
+/** The moves a plan has not already planned, with the notes of exactly those moves (judgeOverrides pushes one note per move, in order). */
+export function keptMoves(
+  steps: InstallStep[],
+  ov: OverrideJudgement
+): { moves: InstallStep[]; notes: string[] } {
   const planned = new Set(steps.flatMap((s) => s.packages.map((p) => `${s.cwd}\0${p.name}`)));
-  return ov.moves.filter((m) => !planned.has(`${m.cwd}\0${m.packages[0].name}`));
-};
+  const keep = ov.moves.map((m) => !planned.has(`${m.cwd}\0${m.packages[0].name}`));
+  return {
+    moves: ov.moves.filter((_, i) => keep[i]),
+    notes: ov.notes.filter((_, i) => keep[i]),
+  };
+}
+
+/** The deferred packages by name, the first five and a count of the rest. */
+export function deferredNames(tooNew: ReadonlyArray<{ pkg: { name: string } }>): string {
+  const all = [...new Set(tooNew.map((t) => t.pkg.name))];
+  return `${all.slice(0, 5).join(', ')}${all.length > 5 ? ` and ${all.length - 5} more` : ''}`;
+}
 
 /** Refuse any plan while an override target is still inside the window. */
 function refuseDeferredOverrides(entry: PinEntry, ov: OverrideJudgement): void {
@@ -736,7 +753,7 @@ export function inRangePlan(
     ctx,
     `${base.manifests.length} manifests`,
     {
-      version: `${label}${base.tooNew.length > 0 ? `; ${base.tooNew.length} deferred package(s) left` : ''}`,
+      version: `${label}${base.tooNew.length > 0 ? `; ${base.tooNew.length} deferred package(s) left (${deferredNames(base.tooNew)})` : ''}`,
       publishedMs: null,
     },
     { ...base, steps: [...base.steps, ...moves] },
@@ -808,7 +825,7 @@ export const npmDriver: PinDriver = {
     const riders = names(plan.steps).filter((n) => !majors.some((m) => m.pkg.name === n));
     const withRiders = riders.length > 0 ? ` with ${riders.length} in-range package(s)` : '';
     // The override moves ride a major run too: the entry's gates judge the whole tree, and a lock outside its own overrides fails them.
-    const moves = newMoves(plan.steps, ov);
+    const { moves, notes: moveNotes } = keptMoves(plan.steps, ov);
     const withMoves = moves.length > 0 ? ` and ${moves.length} override move(s)` : '';
     return npmPlanOf(
       entry,
@@ -822,7 +839,7 @@ export const npmDriver: PinDriver = {
       },
       { ...plan, steps: [...plan.steps, ...moves] },
       writes,
-      [...changes, ...(moves.length > 0 ? ov.notes : [])]
+      [...changes, ...moveNotes]
     );
   },
 };

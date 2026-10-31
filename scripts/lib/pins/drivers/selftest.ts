@@ -30,9 +30,11 @@ import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
 import { gomodDriver } from './gomod.js';
 import {
+  deferredNames,
   inRangePlan,
   inRangeReleases,
   judgeOverrides,
+  keptMoves,
   type NpmPlanJson,
   type OverrideJudgement,
   overrideDrift,
@@ -1315,7 +1317,10 @@ async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; de
     {
       name: 'npm override: the deferred packages stay deferred and are named in the run label and the release verdict',
       ok:
-        /11 deferred package\(s\) left/.test(vp?.to.version ?? '') &&
+        /11 deferred package\(s\) left \(fresh-0, fresh-1, fresh-2, fresh-3, fresh-4 and 6 more\)/.test(
+          vp?.to.version ?? ''
+        ) &&
+        deferredNames(tooNew.slice(0, 3)) === 'fresh-0, fresh-1, fresh-2' &&
         /11 package\(s\) stay deferred/.test(viteRel[0]?.verdict?.why ?? '') &&
         !viteRuns.some((r) => /fresh-/.test(r)),
       detail: JSON.stringify({ to: vp?.to.version, why: viteRel[0]?.verdict?.why }),
@@ -1371,6 +1376,25 @@ async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; de
         nestedOff[0].name === 'js-yaml' &&
         nestedOff[0].outside.join() === '3.15.2',
       detail: JSON.stringify({ nestedOn, nestedOff }),
+    },
+    {
+      name: 'npm override: a major run keeps the notes of the moves it keeps, not the note of a move its own plan already makes',
+      ok: (() => {
+        const majorMove = {
+          ...inRangeStep,
+          packages: [{ name: 'vite', current: '8.3.4', latest: '9.0.0' }],
+        };
+        const dropped = keptMoves([majorMove], viteOv);
+        const kept = keptMoves([inRangeStep], viteOv);
+        return (
+          dropped.moves.length === 0 &&
+          dropped.notes.length === 0 &&
+          kept.moves.length === 1 &&
+          kept.notes.length === 1 &&
+          kept.notes[0] === viteOv.notes[0]
+        );
+      })(),
+      detail: JSON.stringify({ notes: viteOv.notes }),
     },
     {
       name: 'npm override: a package check-deps already moves in the same project is not planned a second time',
