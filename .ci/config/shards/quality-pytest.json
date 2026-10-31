@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-30T23:14:20.400Z",
+  "generatedAt": "2026-10-31T04:39:48.367Z",
   "legs": [
     {
       "index": 1,
@@ -456,6 +456,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_pack_cli_npm.py",
         "pytest:.ci/rediacc_ci/tests/test_build_pkg_repo.py",
         "pytest:.ci/rediacc_ci/tests/test_build_prepare_cli_assets.py",
+        "pytest:.ci/rediacc_ci/tests/test_check_pytest_stale_junit.py",
         "pytest:.ci/rediacc_ci/tests/test_check_worker_observability_budget.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_ci_complete.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_install_methods_complete.py",

@@ -504,11 +504,8 @@ OWNS_VALUES = (
 @pytest.mark.parametrize(("label", "value"), OWNS_VALUES, ids=[v[0] for v in OWNS_VALUES])
 def test_the_gate_and_the_spawn_guard_read_every_owns_line_alike(gate, label, value):
     """The gate's D13 verdict, `--set-x`'s verdict and wl_planconc's reading of the same line must all agree; the duplicated glob and the comma-in-a-note rows are the two that once diverged."""
-    sys.path.insert(0, str(paths.from_root(".ci", "scripts", "quality")))
-    try:
-        deps_gate = importlib.import_module("check_plan_deps")
-    finally:
-        sys.path.pop(0)
+    paths.on_sys_path(paths.from_root(".ci", "scripts", "quality"))
+    deps_gate = importlib.import_module("check_plan_deps")
     text = _plan().replace("Owns: docs/fixture/**", "Owns: %s" % value)
     header = D.parse_header(text)
     guard_ok = X.declared_owns("Owns: %s" % value) is not None

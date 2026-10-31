@@ -134,6 +134,10 @@
       ],
       "notReaders": [
         {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It imports rediacc_ci.release.local only for its step table (portal_sitekey_guard.py local_step_findings reads step id, argv, binds and env); that import reaches release/local_gates.py and so proof/surfaces.py, which loads .ci/config/proof-tiers.json at import, and the **/*.md the derivation cites there is an entry of that map's exclude list, a glob that drops paths from the vm:check surfaces. The gate's verdict is computed over .github/workflows/cd-deploy-*.yml, the release step table and deploy_account/deploy_bench sources, and no file under agent/reviews/ is read."
+        },
+        {
           "id": "check:ci-gate-manifest",
           "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
         },

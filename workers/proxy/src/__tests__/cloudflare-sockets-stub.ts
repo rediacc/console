@@ -31,6 +31,12 @@ export interface FakeSocket {
   reads: number;
 }
 
+/** The next scripted read; an exhausted script reads as the end of the stream. */
+function nextRead(queue: ScriptedRead[]): ScriptedRead {
+  if (queue.length === 0) return 'end';
+  return queue.shift() as ScriptedRead;
+}
+
 /** A socket whose reads follow `script`, then end. `opened` resolves unless `openedRejects`. */
 export function fakeSocket(script: ScriptedRead[], options: { openedRejects?: boolean } = {}) {
   const state: FakeSocket = {
@@ -43,7 +49,7 @@ export function fakeSocket(script: ScriptedRead[], options: { openedRejects?: bo
   const reader = {
     read: (): Promise<ReadableStreamReadResult<Uint8Array>> => {
       state.reads += 1;
-      const next: ScriptedRead = queue.length > 0 ? (queue.shift() as ScriptedRead) : 'end';
+      const next = nextRead(queue);
       if (next === 'end') return Promise.resolve({ done: true, value: undefined });
       if (next === 'hang') return new Promise(() => undefined);
       if (typeof next === 'object' && 'reject' in next) return Promise.reject(next.reject);

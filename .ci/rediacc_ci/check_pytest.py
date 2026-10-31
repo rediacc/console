@@ -1283,6 +1283,8 @@ def main(argv: list[str]) -> int:
         junit_path = junit_xml_path(root, shard_index=index)
         # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
         (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
+        # A run that dies before pytest writes its junit (the timeout, a crash) must emit no finding: a previous run's file left here would name its failures as this run's.
+        (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
         returncode, out = run_pytest(
             pytest_bin,
             root,
@@ -1342,6 +1344,8 @@ def main(argv: list[str]) -> int:
     junit_path = junit_xml_path(root)
     # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
     (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
+    # STALE JUNIT (2026-10-31): a timed-out ci:quick run emitted 30 `pytest-fail` findings read from a junit.xml written three days earlier, because the killed run never replaced it. The file is removed first, so a run that writes none emits none.
+    (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
     returncode, out = run_pytest(
         pytest_bin,
         root,
