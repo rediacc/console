@@ -4003,7 +4003,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-renet-tiers',
     run: 'npm run check:ci-renet-tiers',
-    slow: true, // 12.2 s alone and 21.2 s under load, measured 2026-10-31
     gate: true,
     leaves: ['.ci/scripts/quality/check_renet_tier_map.py'],
     ci: {

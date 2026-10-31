@@ -4258,7 +4258,6 @@
   {
     "id": "check:ci-renet-tiers",
     "run": "npm run check:ci-renet-tiers",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_renet_tier_map.py"
