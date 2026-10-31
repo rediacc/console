@@ -29,7 +29,17 @@ import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
 import { gomodDriver } from './gomod.js';
-import { stepsOf } from './npm.js';
+import {
+  inRangePlan,
+  inRangeReleases,
+  judgeOverrides,
+  type NpmPlanJson,
+  type OverrideJudgement,
+  overrideDrift,
+  overrideTarget,
+  type Packument,
+  stepsOf,
+} from './npm.js';
 import { osCephHostDriver } from './os.js';
 import { planBiomeSchema } from './pin-manifests.js';
 import { realProviderDriver } from './realprovider.js';
@@ -1110,6 +1120,266 @@ function biomeSchemaCases(): Array<{ name: string; ok: boolean; detail?: string 
   ];
 }
 
+// ---- npm: override ranges the lockfile does not meet (worklist #c97a62d9) ---------------------
+
+async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; detail?: string }>> {
+  // The 2026-10-31 shape: the root vite override floor raised to >=8.3.5 by hand while the lock
+  // holds 8.3.4, eleven unrelated packages inside the window, and gray-matter's nested js-yaml ^3
+  // copy below a top-level js-yaml >=4.3.2 <5 override (the real tree carries both).
+  const ON = Date.parse('2026-10-31T12:00:00Z');
+  const WINDOW = 1440 * 60_000;
+  const CUTOFF = '2026-10-29T23:59:59.999Z';
+  const manifest = (vite: string, scoped = true): string =>
+    `${JSON.stringify(
+      {
+        name: 'fixture',
+        overrides: {
+          vite,
+          'js-yaml': '>=4.3.2 <5.0.0',
+          ...(scoped ? { 'gray-matter': { 'js-yaml': '^3.15.2' } } : {}),
+          zod: '$zod',
+        },
+      },
+      null,
+      2
+    )}\n`;
+  const lock = (vite: string): string =>
+    `${JSON.stringify(
+      {
+        lockfileVersion: 3,
+        packages: {
+          '': { name: 'fixture' },
+          'node_modules/vite': { version: vite },
+          'node_modules/astro/node_modules/vite': { version: vite },
+          'node_modules/js-yaml': { version: '4.3.2' },
+          'node_modules/gray-matter': { version: '4.0.3' },
+          'node_modules/gray-matter/node_modules/js-yaml': { version: '3.15.2' },
+        },
+      },
+      null,
+      2
+    )}\n`;
+  const npmTree = (vite: string, locked: string): string =>
+    tree({
+      '.devcontainer/toolchain.env': 'NPM_VERSION=11.21.0\n',
+      'package.json': manifest(vite),
+      'package-lock.json': lock(locked),
+    });
+  const viteDoc = (fresh855: boolean): Packument => ({
+    versions: { '8.3.4': {}, '8.3.5': {}, '8.3.6': {}, '9.0.0': {}, '8.4.0-beta.1': {} },
+    time: {
+      '8.3.4': '2026-10-10T00:00:00Z',
+      '8.3.5': fresh855 ? '2026-10-30T09:00:00Z' : '2026-10-21T08:00:00Z',
+      '8.3.6': '2026-10-30T10:00:00Z',
+      '9.0.0': '2026-09-01T00:00:00Z',
+      '8.4.0-beta.1': '2026-09-01T00:00:00Z',
+    },
+    'dist-tags': { latest: '8.3.6' },
+  });
+  const asked: string[] = [];
+  const docsOf =
+    (doc: Packument) =>
+    (name: string): Promise<Packument> => {
+      asked.push(name);
+      // js-yaml answers too, so a lost nested-scope skip shows as a named red control (a second move), not as a crash.
+      return name === 'vite'
+        ? Promise.resolve(doc)
+        : name === 'js-yaml'
+          ? Promise.resolve({
+              versions: { '4.3.2': {} },
+              time: { '4.3.2': '2026-09-01T00:00:00Z' },
+              'dist-tags': { latest: '4.3.2' },
+            })
+          : Promise.reject(new Error(`no document for ${name}`));
+    };
+  const tooNew = Array.from({ length: 11 }, (_, i) => ({
+    pkg: { name: `fresh-${i}`, current: '1.0.0', latest: '1.0.1' },
+    manifest: '',
+  }));
+  const basePlan = (steps: NpmPlanJson['steps'] = []): NpmPlanJson => ({
+    nowMs: ON,
+    minReleaseAgeMs: WINDOW,
+    steps,
+    majors: [],
+    tooNew,
+    manifests: ['.'],
+  });
+  const refusal = (f: () => unknown): string | null => {
+    try {
+      f();
+      return null;
+    } catch (err) {
+      return err instanceof PlanRefused ? err.message : `NOT A REFUSAL: ${String(err)}`;
+    }
+  };
+
+  // A: the vite case.
+  const viteRoot = npmTree('>=8.3.5 <9', '8.3.4');
+  const viteOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(viteRoot),
+    ON,
+    WINDOW,
+    docsOf(viteDoc(false))
+  );
+  const viteRel = inRangeReleases(basePlan(), viteOv);
+  let vitePlan: PinPlan | null = null;
+  const viteRefused = refusal(() => {
+    vitePlan = inRangePlan(entry('npm'), ctxOf(viteRoot), basePlan(), viteOv);
+  });
+  const vp = vitePlan as PinPlan | null;
+  const viteRuns = vp?.steps.map((x) => x.run) ?? [];
+
+  // B: the same floor whose only admitted release is inside the window.
+  const freshOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(viteRoot),
+    ON,
+    WINDOW,
+    docsOf({
+      versions: { '8.3.4': {}, '8.3.5': {} },
+      time: { '8.3.4': '2026-10-10T00:00:00Z', '8.3.5': '2026-10-30T09:00:00Z' },
+      'dist-tags': { latest: '8.3.5' },
+    })
+  );
+  const freshRel = inRangeReleases(basePlan(), freshOv);
+  const inRangeStep = {
+    cwd: viteRoot,
+    args: ['update', 'typescript', `--before=${CUTOFF}`],
+    label: 'root',
+    packages: [{ name: 'typescript', current: '6.0.0', latest: '6.0.1' }],
+  };
+  const freshRefused = refusal(() =>
+    inRangePlan(entry('npm'), ctxOf(viteRoot), basePlan(), freshOv)
+  );
+  const freshWithSteps = refusal(() =>
+    inRangePlan(entry('npm'), ctxOf(viteRoot), basePlan([inRangeStep]), freshOv)
+  );
+
+  // C: a lock that meets every override, and only deferrals: the registry is never asked.
+  const metRoot = npmTree('>=8.3.5 <9', '8.3.5');
+  const askedBefore = asked.length;
+  const metOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(metRoot),
+    ON,
+    WINDOW,
+    docsOf(viteDoc(false))
+  );
+  const metRel = inRangeReleases(basePlan(), metOv);
+  const metRefused = refusal(() => inRangePlan(entry('npm'), ctxOf(metRoot), basePlan(), metOv));
+
+  // D: a move check-deps already plans is not planned twice.
+  const dupOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(viteRoot),
+    ON,
+    WINDOW,
+    docsOf(viteDoc(false)),
+    new Set([`${viteRoot}\0vite`])
+  );
+
+  const nestedOn = overrideDrift(manifest('>=8.3.5 <9', true), lock('8.3.5'));
+  const nestedOff = overrideDrift(manifest('>=8.3.5 <9', false), lock('8.3.5'));
+  const cut = Date.parse(CUTOFF);
+  const tagPick = overrideTarget('>=8.3.5 <9', viteDoc(false), Date.parse('2026-10-31T00:00:00Z'));
+  const undated = overrideTarget(
+    '>=8.3.5 <9',
+    { versions: { '8.3.5': {} }, time: {}, 'dist-tags': {} },
+    cut
+  );
+  const noneAdmitted = overrideTarget('>=10', viteDoc(false), cut);
+  const empty: OverrideJudgement = { moves: [], deferred: [], notes: [] };
+  return [
+    {
+      name: 'npm override: a hand-raised transitive floor (vite >=8.3.5, lock 8.3.4) beside eleven deferrals plans npm update vite --before=<cutoff> and its guard, and is not refused',
+      ok:
+        viteRefused === null &&
+        viteOv.moves.length === 1 &&
+        viteOv.deferred.length === 0 &&
+        viteRel.length === 1 &&
+        viteRel[0].version === '1.1' &&
+        viteRel[0].verdict?.eligible === true &&
+        /override range/.test(viteRel[0].verdict.why) &&
+        viteRuns.some(
+          (r) => r === `npx -y npm@11.21.0 update vite --before=${CUTOFF} --loglevel=notice`
+        ) &&
+        viteRuns.some((r) => / guard /.test(r)) &&
+        (vp?.changes.includes('root: vite 8.3.4 -> 8.3.5') ?? false) &&
+        (vp?.changes.some((c) =>
+          /overrides\["vite"\] >=8\.3\.5 <9: the lock holds 8\.3\.4/.test(c)
+        ) ??
+          false),
+      detail: JSON.stringify({ viteRefused, viteOv, viteRel, viteRuns, changes: vp?.changes }),
+    },
+    {
+      name: 'npm override: the deferred packages stay deferred and are named in the run label and the release verdict',
+      ok:
+        /11 deferred package\(s\) left/.test(vp?.to.version ?? '') &&
+        /11 package\(s\) stay deferred/.test(viteRel[0]?.verdict?.why ?? '') &&
+        !viteRuns.some((r) => /fresh-/.test(r)),
+      detail: JSON.stringify({ to: vp?.to.version, why: viteRel[0]?.verdict?.why }),
+    },
+    {
+      name: 'npm override: the target is the release npm picks under --before (8.3.5), never the newer latest tag (8.3.6) inside the window nor the 9.x major the bound excludes',
+      ok:
+        viteOv.moves[0]?.packages[0]?.latest === '8.3.5' &&
+        tagPick.kind === 'target' &&
+        tagPick.version === '8.3.6' &&
+        noneAdmitted.kind === 'none',
+      detail: JSON.stringify({ move: viteOv.moves[0], tagPick, noneAdmitted }),
+    },
+    {
+      name: 'npm override: a target inside the release-age window is refused, alone and beside in-range packages, and the release is not eligible',
+      ok:
+        freshOv.moves.length === 0 &&
+        freshOv.deferred.length === 1 &&
+        freshRel.length === 1 &&
+        freshRel[0].verdict?.eligible === false &&
+        /vite/.test(freshRel[0].verdict.why) &&
+        freshRefused !== null &&
+        /overrides\["vite"\].*inside the release-age window/.test(freshRefused) &&
+        freshWithSteps !== null &&
+        /inside the release-age window/.test(freshWithSteps),
+      detail: JSON.stringify({ freshOv, freshRel, freshRefused, freshWithSteps }),
+    },
+    {
+      name: 'npm override: a release with no publish time is never old enough (fail closed)',
+      ok: undated.kind === 'deferred',
+      detail: JSON.stringify(undated),
+    },
+    {
+      name: 'npm override: CONTROL a lock that meets every override, with only deferrals, still answers the 1.1 deferral as before and asks the registry nothing',
+      ok:
+        metOv.moves.length === 0 &&
+        metOv.deferred.length === 0 &&
+        asked.length === askedBefore &&
+        metRel.length === 1 &&
+        metRel[0].version === '1.1' &&
+        metRel[0].verdict?.eligible === false &&
+        metRel[0].verdict.why ===
+          '11 package(s) newer than the lockfiles, all inside the release-age window' &&
+        metRefused === `npm: nothing past the window to bump` &&
+        inRangeReleases({ ...basePlan(), tooNew: [] }, empty).length === 0,
+      detail: JSON.stringify({ metOv, metRel, metRefused, asked }),
+    },
+    {
+      name: 'npm override: CONTROL a nested copy a scoped override governs (gray-matter js-yaml ^3) is not judged against the top-level range; without the scope it is',
+      ok:
+        nestedOn.length === 0 &&
+        nestedOff.length === 1 &&
+        nestedOff[0].name === 'js-yaml' &&
+        nestedOff[0].outside.join() === '3.15.2',
+      detail: JSON.stringify({ nestedOn, nestedOff }),
+    },
+    {
+      name: 'npm override: a package check-deps already moves in the same project is not planned a second time',
+      ok: dupOv.moves.length === 0 && viteOv.moves.length === 1,
+      detail: JSON.stringify(dupOv),
+    },
+  ];
+}
+
 async function allCases(mutant?: T8Mutant) {
   return [
     ...(await actionsCases(mutant)),
@@ -1119,6 +1389,7 @@ async function allCases(mutant?: T8Mutant) {
     ...(await realProviderCases()),
     ...(await dockerCases(mutant)),
     ...biomeSchemaCases(),
+    ...(await npmOverrideCases()),
   ];
 }
 
