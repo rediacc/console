@@ -22,7 +22,7 @@
   "commands.backup.descriptionShort": "Gérer les sauvegardes",
   "commands.backup.download.argRefs": "Dépôts à copier (name, name:tag, éventuellement @machine)",
   "commands.backup.download.description": "Copie des images de dépôt d'une machine vers un répertoire local ou un disque externe. Chaque exécution prend un instantané neuf, conservé uniquement le temps de la session, met la copie locale à jour sur place par delta rsync, reprend après une interruption et vérifie le résultat par sha256.",
-  "commands.backup.download.descriptionShort": "Copier des images de dépôts vers un répertoire local ou un disque",
+  "commands.backup.download.descriptionShort": "Copier des images de dépôt vers un dossier ou un disque",
   "commands.backup.download.interrupted": "Interrompu ; la prochaine exécution reprend cette copie",
   "commands.backup.download.notUsable": "La copie locale n'est pas utilisable tant qu'une exécution n'est pas terminée.",
   "commands.backup.download.optionAll": "Copier tous les dépôts grand de la machine indiquée par -m",

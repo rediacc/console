@@ -300,7 +300,7 @@
       },
       "download": {
         "description": "Copia le immagini dei repository da una macchina in una directory locale o su un disco esterno. Ogni esecuzione crea un nuovo snapshot che esiste solo finché dura la sessione, aggiorna la copia locale sul posto con il delta di rsync, riprende dopo un'interruzione e verifica il risultato con sha256.",
-        "descriptionShort": "Copia le immagini dei repository in una directory locale o su un disco",
+        "descriptionShort": "Copia immagini dei repository in una cartella o un disco",
         "argRefs": "Repository da copiare (name, name:tag, facoltativamente @machine)",
         "optionTo": "Directory esistente e scrivibile che riceve <machine>/<name>.<tag>.img (non viene mai creata)",
         "optionAll": "Copia tutti i repository grand della macchina indicata con -m",

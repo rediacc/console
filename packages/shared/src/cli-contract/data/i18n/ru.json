@@ -22,7 +22,7 @@
   "commands.backup.descriptionShort": "Управление резервным копированием",
   "commands.backup.download.argRefs": "Репозитории для копирования (name, name:tag, при необходимости @machine)",
   "commands.backup.download.description": "Копирует образы репозиториев с машины в локальный каталог или на внешний диск. Каждый запуск делает свежий снимок, который существует только пока идёт сеанс, обновляет локальную копию на месте с помощью дельты rsync, возобновляется после прерывания и проверяет результат по sha256.",
-  "commands.backup.download.descriptionShort": "Копировать образы репозиториев в локальный каталог или на диск",
+  "commands.backup.download.descriptionShort": "Копировать образы репозиториев в каталог или на диск",
   "commands.backup.download.interrupted": "Прервано; следующий запуск продолжит это копирование",
   "commands.backup.download.notUsable": "Локальной копией нельзя пользоваться, пока запуск не завершится.",
   "commands.backup.download.optionAll": "Скопировать все grand-репозитории машины, указанной в -m",

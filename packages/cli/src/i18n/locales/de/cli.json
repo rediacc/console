@@ -300,7 +300,7 @@
       },
       "download": {
         "description": "Repository-Images von einer Maschine in ein lokales Verzeichnis oder auf ein externes Laufwerk kopieren. Jeder Lauf erstellt einen frischen Snapshot, der nur so lange besteht wie die Sitzung, aktualisiert die lokale Kopie per rsync-Delta an Ort und Stelle, setzt nach einer Unterbrechung fort und prüft das Ergebnis per sha256.",
-        "descriptionShort": "Repository-Images in ein lokales Verzeichnis oder auf ein Laufwerk kopieren",
+        "descriptionShort": "Repository-Images lokal oder auf ein Laufwerk kopieren",
         "argRefs": "Zu kopierende Repositories (name, name:tag, optional @machine)",
         "optionTo": "Vorhandenes, beschreibbares Verzeichnis, das <machine>/<name>.<tag>.img aufnimmt (wird nie angelegt)",
         "optionAll": "Alle Grand-Repositories der mit -m benannten Maschine kopieren",
@@ -341,7 +341,7 @@
       },
       "purge": {
         "description": "Löscht alle gespeicherten Backup-Snapshots eines Repositorys auf einmal aus dem Chunk-Speicher. Das Repository selbst bleibt erhalten.",
-        "descriptionShort": "Alle gespeicherten Backup-Snapshots eines Repositorys löschen",
+        "descriptionShort": "Alle gespeicherten Backup-Snapshots löschen",
         "notFound": "Repository „{{name}}“ ist in dieser Konfiguration nicht vorhanden.",
         "forkRefused": "„{{name}}“ ist ein Fork und teilt seine Backup-Linie mit dem übergeordneten Repository, daher würde das Bereinigen auch dessen Backups löschen. Stattdessen das übergeordnete Repository angeben.",
         "dryRun": "Würde die Backups von „{{name}}“ bereinigen: Linie {{lineage}}, {{count}} Snapshot(s), {{bytes}} in {{chunks}} Chunk(s) gespeichert.",

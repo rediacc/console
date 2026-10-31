@@ -22,7 +22,7 @@
   "commands.backup.descriptionShort": "Gestionar copias de seguridad",
   "commands.backup.download.argRefs": "Repositorios que copiar (name, name:tag, opcionalmente @machine)",
   "commands.backup.download.description": "Copia imágenes de repositorio de una máquina a un directorio local o a una unidad externa. Cada ejecución toma una instantánea nueva que solo existe mientras dura la sesión, actualiza la copia local en el sitio mediante delta de rsync, se reanuda tras una interrupción y verifica el resultado con sha256.",
-  "commands.backup.download.descriptionShort": "Copiar imágenes de repositorios a un directorio local o unidad",
+  "commands.backup.download.descriptionShort": "Copiar imágenes de repositorio a un directorio o unidad",
   "commands.backup.download.interrupted": "Interrumpido; la próxima ejecución reanuda esta copia",
   "commands.backup.download.notUsable": "La copia local no se puede usar hasta que una ejecución termine.",
   "commands.backup.download.optionAll": "Copiar todos los repositorios grand de la máquina indicada con -m",
