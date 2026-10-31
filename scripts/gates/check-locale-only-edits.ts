@@ -133,6 +133,43 @@ function isEmDashRepair(was: string, now: string): boolean {
   return was.includes('\u2014') && !now.includes('\u2014');
 }
 
+/**
+ * True when the edit ONLY restores German umlauts and eszett that an earlier run wrote as ASCII
+ * transliterations (ae, oe, ue, ss): "Gewaehrleistungen" -> "Gewährleistungen" (found
+ * 2026-10-31 across 94 de keys of the legal pages).
+ *
+ * Like the reference-marker repair, the fix is a locale-only edit with no English change, and
+ * the gate's remedy cannot apply inside a PR, so without an exemption the correct spelling is
+ * unshippable. NARROW BY CONSTRUCTION: transliterate the NEW value back (ä->ae, ö->oe, ü->ue,
+ * ß->ss; a capital becomes AE/OE/UE when the next letter is upper case, else Ae/Oe/Ue) and the
+ * result must equal the OLD value exactly. No other byte may move, so no wording, number or
+ * fact can pass through here.
+ */
+export function isDiacriticRepair(was: string, now: string): boolean {
+  if (was === now || !/[äöüÄÖÜß]/.test(now)) return false;
+  const lower: Record<string, string> = { ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss' };
+  const upper: Record<string, string> = { Ä: 'A', Ö: 'O', Ü: 'U' };
+  // Walk both values together: every character is either unchanged, or an umlaut / eszett in
+  // NOW standing where OLD has its transliteration. A value that already mixed both is fine.
+  let j = 0;
+  for (let i = 0; i < now.length; i++) {
+    const c = now[i];
+    if (was[j] === c) {
+      j += 1;
+      continue;
+    }
+    let translit: string | undefined;
+    if (c in lower) translit = lower[c];
+    else if (c in upper) {
+      const next = now[i + 1] ?? '';
+      translit = upper[c] + (next !== next.toLowerCase() ? 'E' : 'e');
+    }
+    if (translit === undefined || was.slice(j, j + translit.length) !== translit) return false;
+    j += translit.length;
+  }
+  return j === was.length;
+}
+
 /** A superscript reference marker, `[1]`, `[12]`, with any space in front of it. */
 const REF_MARKER = /\s*\[\d+\]/g;
 
@@ -499,6 +536,7 @@ export interface LocaleScan {
   findings: string[];
   emDashRepairs: string[];
   refMarkerRepairs: string[];
+  diacriticRepairs: string[];
   sentinelRepairs: string[];
   englishRestores: string[];
   checkedKeys: number;
@@ -518,6 +556,7 @@ export function scanLocale(
     findings: [],
     emDashRepairs: [],
     refMarkerRepairs: [],
+    diacriticRepairs: [],
     sentinelRepairs: [],
     englishRestores: [],
     checkedKeys: 0,
@@ -550,6 +589,11 @@ export function scanLocale(
 
     if (isRestoredToEnglish(now[key], enBase[key], enNow[key])) {
       out.englishRestores.push(`  ${loc}  ${key}`);
+      continue;
+    }
+
+    if (isDiacriticRepair(was[key], now[key])) {
+      out.diacriticRepairs.push(`  ${loc}  ${key}`);
       continue;
     }
 
@@ -631,8 +675,53 @@ const LEDGER_PROBES: {
   },
 ];
 
+const DIACRITIC_CONTROLS: { name: string; was: string; now: string; want: boolean }[] = [
+  {
+    name: 'diacritic: Gewaehrleistungen -> Gewährleistungen is a repair',
+    was: 'Keine Gewaehrleistungen fuer Ausfaelle.',
+    now: 'Keine Gewährleistungen für Ausfälle.',
+    want: true,
+  },
+  {
+    name: 'diacritic: ausschliesslich and Groesse (ß, ö) are a repair',
+    was: 'ausschliesslich die Groesse',
+    now: 'ausschließlich die Größe',
+    want: true,
+  },
+  {
+    name: 'diacritic: ALL-CAPS AE -> Ä is a repair',
+    was: 'GEWAEHRLEISTUNG',
+    now: 'GEWÄHRLEISTUNG',
+    want: true,
+  },
+  {
+    name: 'CONTROL diacritic: a word changed beside the umlaut is not a repair',
+    was: 'Keine Gewaehrleistungen fuer Ausfaelle.',
+    now: 'Keine Garantien für Ausfälle.',
+    want: false,
+  },
+  {
+    name: 'CONTROL diacritic: a number changed beside the umlaut is not a repair',
+    was: 'fuer 30 Tage',
+    now: 'für 60 Tage',
+    want: false,
+  },
+  {
+    name: 'CONTROL diacritic: an unchanged value is not a repair',
+    was: 'für alle',
+    now: 'für alle',
+    want: false,
+  },
+];
+
 function selftest(): number {
   let bad = 0;
+  for (const c of DIACRITIC_CONTROLS) {
+    const got = isDiacriticRepair(c.was, c.now);
+    const ok = got === c.want;
+    if (!ok) bad++;
+    process.stdout.write(`  ${ok ? 'PASS' : 'FAIL'}  ${c.name}\n`);
+  }
   for (const c of REF_MARKER_CONTROLS) {
     const got = isRefMarkerRepair(c.was, c.now, c.en);
     const ok = got === c.want;
@@ -828,6 +917,7 @@ function main(argv: string[]): number {
   const findings: string[] = [];
   const emDashRepairs: string[] = [];
   const refMarkerRepairs: string[] = [];
+  const diacriticRepairs: string[] = [];
   const sentinelRepairs: string[] = [];
   const englishRestores: string[] = [];
   let checkedKeys = 0;
@@ -842,6 +932,7 @@ function main(argv: string[]): number {
     findings.push(...r.findings);
     emDashRepairs.push(...r.emDashRepairs);
     refMarkerRepairs.push(...r.refMarkerRepairs);
+    diacriticRepairs.push(...r.diacriticRepairs);
     sentinelRepairs.push(...r.sentinelRepairs);
     englishRestores.push(...r.englishRestores);
     checkedKeys += r.checkedKeys;
@@ -854,6 +945,15 @@ function main(argv: string[]): number {
         'reference-marker repairs\n(a locale-only `[n]` that English does not carry was ' +
         'removed, and nothing else changed):\n' +
         `${refMarkerRepairs.join('\n')}\n\n`
+    );
+  }
+
+  if (diacriticRepairs.length > 0) {
+    process.stdout.write(
+      `check-locale-only-edits: ${diacriticRepairs.length} locale value(s) exempted as ` +
+        'diacritic repairs\n(ASCII transliterations ae/oe/ue/ss restored to ä/ö/ü/ß, and nothing ' +
+        'else changed):\n' +
+        `${diacriticRepairs.join('\n')}\n\n`
     );
   }
 
