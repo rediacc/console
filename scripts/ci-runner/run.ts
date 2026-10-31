@@ -3216,8 +3216,8 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   );
   const findings: Record<string, string[] | null> = { ...(prior.findings ?? {}) };
   // Each merged gate's verdict moves with its exit code, so `failed` and `blocked` stay the sets of gates with verdict fail and blocked (the push guard refuses a receipt where they differ, 2026-10-31).
-  const gates: Record<string, ReceiptGate> = { ...((prior as Receipt).gates ?? {}) };
-  const blocked = ((prior as Receipt).blocked ?? []).filter((id) => !run.ids.includes(id));
+  const gates: Record<string, ReceiptGate> = { ...((prior as Partial<Receipt>).gates ?? {}) };
+  const blocked = ((prior as Partial<Receipt>).blocked ?? []).filter((id) => !run.ids.includes(id));
   for (const id of run.ids) {
     const status = run.results.find((r) => r.id === id)?.status;
     if (gates[id])
