@@ -27,9 +27,4 @@
 # @types/node major must match Node engine version (24.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 24
 
-# glob 14 / minimatch 11 travel together (glob 14 is built on minimatch 11)
-glob  # BLOCKER: glob 14 returns arrays from GlobWalker#walk, resolves leading-slash ignore patterns from the root, renames isRegExp/testRegExp, and the root override would force it on every transitive consumer; each consumer needs an audit first (worklist item for the audit)
-minimatch  # BLOCKER: minimatch 11 replaces RegExp with a Matcher for magic pattern parts and drops the debug option; it moves with glob 14, whose consumer audit is still open
 
-# oxc-parser is a 0.x AST library read by our own gates
-oxc-parser  # BLOCKER: 0.156 is a breaking 0.x minor for the AST shapes that scripts/lib/rule-host.ts, scripts/lib/tree-write-sites.ts, check-control-in-string.ts and check-max-lines.ts walk; their visitors need a pass against the new node types before the move

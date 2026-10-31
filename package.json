@@ -457,11 +457,11 @@
     "@humanwhocodes/momoa": "^3.3.13",
     "@types/node": "^24.19.0",
     "@types/proper-lockfile": "^4.1.4",
-    "glob": "^13.0.6",
+    "glob": "^14.0.3",
     "knip": "^6.38.0",
     "lockfile-lint": "^5.0.1",
-    "minimatch": "^10.2.6",
-    "oxc-parser": "^0.155.0",
+    "minimatch": "^11.0.3",
+    "oxc-parser": "^0.156.0",
     "syncpack": "^15.3.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
@@ -471,7 +471,6 @@
   },
   "overrides": {
     "body-parser": "2.4.0",
-    "glob": "^13.0.6",
     "rimraf": "^6.0.0",
     "rollup": "^4.59.0",
     "fast-xml-parser": "5.11.2",
@@ -500,7 +499,6 @@
   },
   "_overridesReasons": {
     "body-parser": "BLOCKER: force 2.4.0 to clear GHSA-27r3-jxmh-p828 (DoS via trailing bytes after a compressed request body; vulnerable >=2.0.0 <2.4.0) on top of GHSA-v422-hmwv-36x6 (an invalid limit value silently disabling body-size enforcement, fixed in 2.3.0). express@5 declares body-parser ^2.2.1, which 2.4.0 satisfies, and the lockfile does not move on its own. 2.4.0 (published 2026-10-22) had aged past minimum-release-age when the scheduled audit on main went red (run 40066114421).",
-    "glob": "BLOCKER: force glob ^13 everywhere to avoid the deprecated transitive glob <9 chain pulled in via older tooling paths (^11 until 2026-10-01; 12 and 13 changed only the CLI, which moved to glob-bin and nothing here runs, so the API every consumer calls is unchanged)",
     "rimraf": "BLOCKER: force rimraf ^6 to avoid unmaintained v2/v3 transitive chains still referenced by older build tooling",
     "rollup": "BLOCKER: pin rollup ^4.59 to ensure all workspaces resolve the same native binary set and avoid platform-specific optional-dep drift",
     "fast-xml-parser": "BLOCKER: pin 5.11.2 (raised from 5.8.0 for @astrojs/rss 4.0.19, then from 5.10.1 for deps freshness, then from 5.11.0 and 5.11.1 for the same reason; now 5.11.2) to carry the CDATA/comment injection fix (GHSA-gh4j-gqv2-49f6) plus the entity-expansion limit family; without the pin transitive consumers drift below the fixed range",
