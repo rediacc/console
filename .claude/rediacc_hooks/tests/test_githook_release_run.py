@@ -245,6 +245,7 @@ class World:
     ) -> subprocess.CompletedProcess:
         self.n += 1
         console = console or self.console
+        _settle(console)
         stdin = stdin or "refs/heads/main %s refs/heads/main %s\n" % (self.oid, ZERO)
         conf = {
             "mode": "push",
@@ -290,6 +291,21 @@ def _need_proc() -> None:
             "no root-installed python3 here (tried the runner's %s and /usr/bin/python3), so the admitted direction cannot be exercised; install the system python3"
             % sys.executable
         )
+
+
+def _settle(console: pathlib.Path) -> None:
+    """Sleep until nothing under the console's `.ci/rediacc_ci` changed within `SETTLE_S`, by the ctime the reader judges. The shared console outlives one test, and under a loaded full run a directory there changed 0.27 s before the next entry started (ci:quick 2026-10-31, three times)."""
+    pkg = console / ".ci" / "rediacc_ci"
+    if not pkg.is_dir():
+        return
+    newest = max(
+        os.lstat(os.path.join(folder, name)).st_ctime
+        for folder, dirs, files in os.walk(pkg)
+        for name in [".", *dirs, *files]
+    )
+    wait = newest + RR.SETTLE_S + 0.2 - time.time()
+    if wait > 0:
+        time.sleep(wait)
 
 
 @pytest.fixture(scope="module")
