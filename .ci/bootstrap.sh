@@ -612,15 +612,15 @@ install_xdist() {
     # PyYAML rides the same environment: the workflow-parsing gates and the port tests run their
     # subprocesses with this interpreter, and a rebuilt environment without it reds them all as
     # "PyYAML is not importable" (2026-10-31, after the pytest 9.2.0 refresh).
-    "$TOOL_DIR/pytest/bin/python" -c 'import yaml' 2>/dev/null || {
-        echo "${RED}bootstrap${NC}: uv reported success but the pytest environment cannot import yaml" >&2
+    [ "$("$TOOL_DIR/pytest/bin/python" -c 'import yaml; print(yaml.__version__)' 2>/dev/null)" = "$PYYAML_VERSION" ] || {
+        echo "${RED}bootstrap${NC}: uv reported success but the pytest environment does not import PyYAML ${PYYAML_VERSION}" >&2
         return 1
     }
     # The port tests run their subprocesses with the REAL path of this interpreter (the base
     # CPython uv chose, not the venv), so the base needs PyYAML too.
     local base
     base="$(readlink -f "$TOOL_DIR/pytest/bin/python")"
-    "$base" -c 'import yaml' 2>/dev/null || "$uv" pip install --quiet --python "$base" --break-system-packages "PyYAML==${PYYAML_VERSION}" || {
+    [ "$("$base" -c 'import yaml; print(yaml.__version__)' 2>/dev/null)" = "$PYYAML_VERSION" ] || "$uv" pip install --quiet --python "$base" --break-system-packages "PyYAML==${PYYAML_VERSION}" || {
         echo "${RED}bootstrap${NC}: could not install PyYAML into the base interpreter $base" >&2
         return 1
     }
