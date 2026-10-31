@@ -502,13 +502,15 @@ function main(argv: string[]): number {
       `  ${f.file}  ${f.key}  "${f.word}" -> "${f.suggestion}"  [${f.stems.join(', ')}]`
     );
   }
-  console.error(
-    '\nGerman catalogs are de-DE: write ä, ö, ü and ß, never ae, oe, ue or ss.\n' +
-      'Fix the value in the catalog named on each line (renet: edit de.go directly).\n' +
-      'If a word is a legitimate spelling the list does not know, narrow the stem in\n' +
-      'TRANSLITERATIONS (scripts/gates/check-de-orthography.ts) and add the word to the\n' +
-      'must-not-fire control; never exempt a catalog key.'
-  );
+  const remedy = [
+    '',
+    'German catalogs are de-DE: write ä, ö, ü and ß, never ae, oe, ue or ss.',
+    'Fix the value in the catalog named on each line (renet: edit de.go directly).',
+    'If a word is a legitimate spelling the list does not know, narrow the stem in',
+    'TRANSLITERATIONS (scripts/gates/check-de-orthography.ts) and add the word to the',
+    'must-not-fire control; never exempt a catalog key.',
+  ];
+  console.error(remedy.join('\n'));
   return 1;
 }
 
