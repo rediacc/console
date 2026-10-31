@@ -230,6 +230,7 @@ def test_a_public_claude_page_slug_is_not_a_session_link_but_real_session_links_
         "https://claude.com/blog/share-your-work",
         "https://claude.com/blog/chat-with-claude",
         "see https://claude.ai/blog/session-notes",
+        "https://claude.com/claude-code",
     ):
         assert not ca.SESSION_PATTERN.search(ok), ok
     for bad in (
@@ -238,5 +239,8 @@ def test_a_public_claude_page_slug_is_not_a_session_link_but_real_session_links_
         "https://claude.ai/share/abc",
         "https://claude.ai/artifacts/abc",
         "https://claude.com/code/session_abc1",
+        "https://claude.ai/share-3f2a",
+        "https://claude.ai/chat-abc1",
+        "https://claude.ai/code/sessions-abc1",
     ):
         assert ca.SESSION_PATTERN.search(bad), bad

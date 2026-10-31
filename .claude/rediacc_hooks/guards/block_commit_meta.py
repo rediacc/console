@@ -80,7 +80,7 @@ TRAILER_OR_FOOTER = hookio.rx(
 #
 # THE SAME TWO PATTERNS LIVE IN `.claude/rediacc_hooks/git/githooks.py` (`SESSION_TRAILER`, `SESSION_LINK`), which git loads by file with no package context and so cannot import this module. `test-block_commit_meta.py` asserts the two spellings are identical, so they cannot drift apart.
 SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
-SESSION_LINK = r"claude\.(?:ai|com)/(?:code/session[_-][A-Za-z0-9]|(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?[_/][A-Za-z0-9])"
+SESSION_LINK = r"claude\.(?:ai|com)/(?:code/sessions?[_-][A-Za-z0-9]|(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?(?:[_/]|-(?=[A-Za-z0-9]*[0-9]))[A-Za-z0-9])"
 SESSION_LEAK = re.compile("%s|%s" % (SESSION_TRAILER, SESSION_LINK), re.IGNORECASE)
 
 # The publishing verbs that do not author a commit, tag or PR description, so the gate above does not see them. A text fallback for the walk, which reads `gh issue` and `gh release` only as operands.

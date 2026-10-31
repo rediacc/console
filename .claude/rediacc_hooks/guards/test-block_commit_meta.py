@@ -212,6 +212,26 @@ SESSION_CASES = [
         False,
     ),
     (
+        "a share-<id> link (review e7915725.1)",
+        "gh pr comment 5 -b 'https://claude" + ".ai/share-3f2a'",
+        True,
+    ),
+    (
+        "a chat-<id> link (review e7915725.1)",
+        "gh pr comment 5 -b 'https://claude" + ".ai/chat-abc1'",
+        True,
+    ),
+    (
+        "a code/sessions-<id> link (review e7915725.2)",
+        "gh pr comment 5 -b 'https://claude" + ".ai/code/sessions-abc1'",
+        True,
+    ),
+    (
+        "CONTROL: claude.com/claude-code is not a session link",
+        "gh pr comment 5 -b 'see https://claude" + ".com/claude-code'",
+        False,
+    ),
+    (
         "a hyphen-form session link (review 28139d6b.2)",
         "gh pr comment 5 -b 'https://claude" + ".ai/code/session-abc1'",
         True,
