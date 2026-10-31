@@ -227,7 +227,9 @@ export async function registerNewRepo(
     ...extra,
   });
   // In auto mode renet allocates the ID inside the job, so none is returned here.
-  return networkId === undefined ? { repositoryGuid } : { repositoryGuid, networkId };
+  return networkId === undefined || networkId <= 0
+    ? { repositoryGuid }
+    : { repositoryGuid, networkId };
 }
 
 /** `repo create <name> --machine <m>`: a docker repo on the machine's default datastore. */

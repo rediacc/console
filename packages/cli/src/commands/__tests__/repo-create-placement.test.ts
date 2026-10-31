@@ -500,9 +500,12 @@ describe('repo create network ID: renet allocates inside the job', () => {
     } as never);
     const { outputService } = await import('../../services/core/output.js');
     await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    expect(renderLocalExecutionFailure).toHaveBeenCalled();
     expect(outputService.warn).not.toHaveBeenCalledWith(
       expect.stringContaining('finishing it failed')
     );
+    // The render error is not swallowed: it reaches the command's error handler (review 3efef34f.3).
+    expect(handleError).toHaveBeenCalled();
   });
 
   it('still rolls the registration back when the start was refused', async () => {
