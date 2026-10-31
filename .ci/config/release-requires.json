@@ -13,8 +13,8 @@
         "commit": "aaf3c25140c72b7baae8094edb1cf27b0c6beeb3"
       },
       "cli_commits": [
-        "2c3324a444d393350f52f65ea92ea67cd5383574",
-        "95bcc8dad4458eaaddec9d71864acdf7ea3ec5d7"
+        "54ea0d10033f2f7ce61ed24013f00100051ff57a",
+        "5af77726511b91803c19d6d38b8a7d45c5a80145"
       ],
       "why": "private/account/src/routes/configs.ts refuses a config pull that sends no usable x-config-envelope header against a v3 store (426), so a CLI that predates the header, rdc config pull and the serve executor's pull alike, stops reading its configs once this account code is live."
     }

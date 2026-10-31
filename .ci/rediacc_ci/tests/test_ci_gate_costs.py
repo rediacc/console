@@ -344,6 +344,21 @@ def test_refresh_preserves_comment_and_refuses_without_captures(tmp_path: Path):
     assert json.loads(target.read_text(encoding="utf-8"))["$comment"] == ["kept"]
 
 
+def test_refresh_dry_run_stdout_is_the_payload_alone(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The summary line once led stdout, so `--refresh --dry-run > f.json` wrote a file no JSON reader could open. The summary goes to stderr; the file is left untouched."""
+    write_lock(tmp_path, ["g"])
+    target = tmp_path / "gate-costs.json"
+    target.write_text(json.dumps({"$comment": ["kept"]}), encoding="utf-8")
+    collect = _collect([capture([gate("g", 1, 1)])])
+    assert gc.refresh(target, "o/r", tmp_path, dry_run=True, collect=collect) == 0
+    out, err = capsys.readouterr()
+    assert json.loads(out)["gates"].keys() == {"g"}
+    assert "gate(s) measured" in err
+    assert json.loads(target.read_text(encoding="utf-8")) == {"$comment": ["kept"]}
+
+
 # --------------------------------------------------------------------------- collect_captures ---------------------------------------------------------------------------
 
 

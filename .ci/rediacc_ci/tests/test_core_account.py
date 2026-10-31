@@ -119,6 +119,8 @@ def drive(side: str, scenario: str) -> tuple[int, str, str]:
                 ["shadow", scenario],
                 _retired,
                 port=lambda: _run_driver("new", scenario),
+                # The memo makes WHICHEVER test drives a scenario first the caller of record, and xdist's loadgroup does not keep file order, so a label taken from the running test keyed the golden by run order (22 misses under -n 4). The explicit label is the one the golden was recorded under; the content hash is unchanged.
+                label="test_the_port_matches_the_live_twin[%s]" % scenario,
             )
         else:
             _CACHE[key] = _run_driver(side, scenario)
@@ -1178,6 +1180,8 @@ def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
                 ["lifecycle", scenario],
                 _retired,
                 port=lambda: _run_lifecycle("new", scenario),
+                # Explicit for the reason `drive` gives: the golden key must not depend on which test ran first.
+                label="test_the_lifecycle_port_matches_the_live_twin[%s]" % scenario,
             )
         else:
             _LIFECYCLE_CACHE[key] = _run_lifecycle(side, scenario)

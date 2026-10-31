@@ -315,7 +315,6 @@
         "pytest:.ci/rediacc_ci/tests/test_proof_vm_tier.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_go_unit.py",
         "pytest:.ci/rediacc_ci/tests/test_prsignals_pins.py",
-        "pytest:.ci/rediacc_ci/tests/test_pytest_conftest_rebind.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_tmp.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_account_portal.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_content_quality.py",

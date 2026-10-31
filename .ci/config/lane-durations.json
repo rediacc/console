@@ -930,7 +930,6 @@
     "pytest:.claude/rediacc_hooks/tests/test_wl_epic_render.py": 8180.3,
     "pytest:.claude/rediacc_hooks/tests/test_wl_gh.py": 1086.0,
     "pytest:.ci/rediacc_ci/tests/test_ci_capture_gate_costs.py": 3772.6,
-    "pytest:.ci/rediacc_ci/tests/test_pytest_conftest_rebind.py": 2206.0,
     "github.com/rediacc/renet/pkg/infra/aptsources": 24.0,
     "pytest:.ci/rediacc_ci/tests/test_bench_captcha_switch.py": 11.0,
     "pytest:.ci/rediacc_ci/tests/gates/test_gate_model_invocation_agreement.py": 5213.0,

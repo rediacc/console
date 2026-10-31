@@ -779,7 +779,7 @@ REAL_FINDINGS = {
         "lane-durations:drift:leg-sum:test-account-e2e-leg-2/4",
         "lane-durations:unpriced-unit:%s" % LICENSE_E2E,
     ],
-    "after-1dd250d87": [
+    "after-ebae07c7e": [
         "lane-durations:drift:unit:%s" % CLEANUP_VERSIONS,
         "lane-durations:drift:unit:tutorial:delta-transfer",
     ],
@@ -926,7 +926,7 @@ def _retired_reds(name: str) -> dict[str, str]:
 
 
 @pytest.mark.parametrize(
-    ("name", "retired"), [("morning", 26), ("run-38409515814", 17), ("after-1dd250d87", 14)]
+    ("name", "retired"), [("morning", 26), ("run-38409515814", 17), ("after-ebae07c7e", 14)]
 )
 def test_the_three_reds_of_2026_10_13_replayed(name, retired, tmp_path, capsys):
     """Each window is one real red, whole. The retired rule reports the count the day's logs show (17 on run 38409515814, 14 one run after ebae07c7e). Under the rule none of those units is a finding, and what is left is `REAL_FINDINGS`, each of which the controls below take apart."""
@@ -969,7 +969,7 @@ def test_what_the_three_reds_were_made_of():
     counts = [sum(len(per_run) for per_run in samples[u]) for u in slower]
     assert max(counts) == 2
     assert counts.count(1) == 11
-    after = _retired_reds("after-1dd250d87")
+    after = _retired_reds("after-ebae07c7e")
     assert sum(1 for side in after.values() if side == "faster") == 12
     # 25 of the morning's 26 were a speedup read from ONE cancelled run.
     morning = _retired_reds("morning")
@@ -1187,7 +1187,7 @@ def _refreshed(
     return br.refreshed_units(table, measured, unit_stats)
 
 
-@pytest.mark.parametrize("name", ["morning", "run-38409515814", "after-1dd250d87"])
+@pytest.mark.parametrize("name", ["morning", "run-38409515814", "after-ebae07c7e"])
 def test_a_check_after_a_refresh_on_the_same_sample_is_green(name, tmp_path):
     """The property that ends the refresh-then-red loop: the table a refresh writes from a sample has no unit, leg or unpriced finding on that sample. Driven through the real refresh and the real check over each of the three real windows."""
     window = DRIFT_FIXTURE["windows"][name]

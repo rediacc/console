@@ -548,7 +548,9 @@ def refresh(
             " (%s)" % ", ".join(carried) if carried else "",
             len(captures),
             baseline["source"]["cores"],
-        )
+        ),
+        # stderr, so `--refresh --dry-run` stdout is the payload alone and parses as JSON.
+        file=sys.stderr,
     )
     if dry_run:
         print(payload)

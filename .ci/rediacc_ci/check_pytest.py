@@ -652,7 +652,7 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         ["a/b.py", "c.py"],
     )
     c.check(
-        "shard_file_relpaths keeps manifest order: an interleaved gates/ file keeps its conftest fixtures through rediacc_ci.pytest_conftest_rebind (#6b5becd7), not through reordering",
+        "shard_file_relpaths keeps manifest order: an interleaved gates/ file keeps its conftest fixtures, since pytest 9.2.0 binds them for every collector of a directory (#6b5becd7), not through reordering",
         shard_file_relpaths(["pytest:t/gates/x.py", "pytest:t/y.py", "pytest:t/gates/z.py"]),
         ["t/gates/x.py", "t/y.py", "t/gates/z.py"],
     )
@@ -1156,7 +1156,7 @@ def shard_file_relpaths(ids: list[str]) -> list[str]:
                 "shard id %r is not a quality-pytest unit (want 'pytest:<relpath>')" % uid
             )
         out.append(uid[len("pytest:") :])
-    # Manifest order, interleaved directories included. The `fixture 'gate' not found` this once reordered around (#ebb52614: gates/x, tests/y, gates/z) is pytest 9 binding a conftest's fixtures to the FIRST collector of its directory only; rediacc_ci.pytest_conftest_rebind (root conftest.py) binds them to every collector, so any order works (#6b5becd7).
+    # Manifest order, interleaved directories included. The `fixture 'gate' not found` this once reordered around (#ebb52614: gates/x, tests/y, gates/z) was pytest before 9.2.0 binding a conftest's fixtures to the FIRST collector of its directory only; 9.2.0 binds them to every collector, so any order works (#6b5becd7).
     return out
 
 

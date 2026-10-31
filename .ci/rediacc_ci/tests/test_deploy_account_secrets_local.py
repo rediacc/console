@@ -126,12 +126,14 @@ def test_profile_binds_every_variable_the_push_reads():
 
 
 @pytest.mark.parametrize("target", ["stable", "edge"])
-def test_dry_run_prints_the_30_names_and_no_value(target, capsys):
+def test_dry_run_prints_the_31_names_and_no_value(target, capsys):
     rc = local.run(["--region", "eu", "--target", target, "--dry-run"])
     out = capsys.readouterr().out
     assert rc == 0
-    assert "30 Worker key(s) pushed:" in out
+    # 31 since PLAN-free-license F2 (e7647063b) added FREE_LICENSE_HMAC_KEY, which the account Worker reads.
+    assert "31 Worker key(s) pushed:" in out
     assert "  ACCOUNT_CONFIG_SERVER_KEY\n" in out
+    assert "  FREE_LICENSE_HMAC_KEY\n" in out
     for key, _v, _s in pusher.KEYS:
         assert "  %s\n" % key in out
     assert "rediacc-backups-eu" in out
