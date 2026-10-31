@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # npm-before`, passed by every build site as a build-arg). A global install resolves live, with
 # no lockfile, so --before holds it to versions at least one window old; an empty value fails
 # the build rather than installing unwindowed.
-ARG AGENT_BROWSER_VERSION=0.40.0
+ARG AGENT_BROWSER_VERSION=0.41.0
 ARG NPM_BEFORE
 RUN : "${NPM_BEFORE:?NPM_BEFORE is empty; build with --build-arg NPM_BEFORE set to the output of: PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before}" \
     && npm install -g --allow-scripts=agent-browser agent-browser@${AGENT_BROWSER_VERSION} \
