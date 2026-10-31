@@ -2166,7 +2166,9 @@
               "title": "2.5 Ürün Telemetri Verileri"
             },
             "freeLicenseData": {
-              "content": ["Bir makine hesap olmadan ücretsiz lisans istediğinde, isteği yapan IP adresinin (IPv4 adresinin tamamı veya IPv6 adresinin /64 öneki) anahtarlı bir özetini saklarız; adresin kendisini asla saklamayız. Özet yalnızca adrese özgü sayaçta tutulur ve 72 saat sonra silinir. Lisans kaydında istekteki makine ve depo tanımlayıcıları bulunur, IP verisi bulunmaz. Hukuki dayanak, ücretsiz bir hizmetin kötüye kullanılmasını önlemeye yönelik meşru menfaatimizdir."],
+              "content": [
+                "Bir makine hesap olmadan ücretsiz lisans istediğinde, isteği yapan IP adresinin (IPv4 adresinin tamamı veya IPv6 adresinin /64 öneki) anahtarlı bir özetini saklarız; adresin kendisini asla saklamayız. Özet yalnızca adrese özgü sayaçta tutulur ve 72 saat sonra silinir. Lisans kaydında istekteki makine ve depo tanımlayıcıları bulunur, IP verisi bulunmaz. Hukuki dayanak, ücretsiz bir hizmetin kötüye kullanılmasını önlemeye yönelik meşru menfaatimizdir."
+              ],
               "title": "2.6 Ücretsiz Lisans Talepleri"
             }
           },

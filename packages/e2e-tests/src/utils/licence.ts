@@ -45,7 +45,12 @@ const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const LOCAL_PLAN = 'PROFESSIONAL';
 const LOCAL_EMAIL = 'e2e-bridge-licence@rediacc.io';
 const LOCAL_LOGIN_PHRASE = 'E2eBridgeLicence123!';
-const LOCAL_TOKEN_SCOPES = ['license:read', 'license:activate', 'subscription:read', 'backup:read'] as const;
+const LOCAL_TOKEN_SCOPES = [
+  'license:read',
+  'license:activate',
+  'subscription:read',
+  'backup:read',
+] as const;
 
 /** The runner's bridge executor (RenetFunctionsTestRunner.executeViaBridge). */
 export type BridgeExec = (

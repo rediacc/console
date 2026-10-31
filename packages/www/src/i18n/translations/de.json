@@ -2175,7 +2175,9 @@
               "title": "2.5 Produkttelemetriedaten"
             },
             "freeLicenseData": {
-              "content": ["Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, und zwar nur im Zähler je Adresse, wo er nach 72 Stunden gelöscht wird. Der Lizenzdatensatz enthält die Maschinen- und Repository-Kennungen aus der Anfrage und keine IP-Daten. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."],
+              "content": [
+                "Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, und zwar nur im Zähler je Adresse, wo er nach 72 Stunden gelöscht wird. Der Lizenzdatensatz enthält die Maschinen- und Repository-Kennungen aus der Anfrage und keine IP-Daten. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."
+              ],
               "title": "2.6 Anfragen nach einer kostenlosen Lizenz"
             }
           },

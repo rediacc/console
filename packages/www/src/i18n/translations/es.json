@@ -2173,7 +2173,9 @@
               "title": "2.5 Datos de telemetría del producto"
             },
             "freeLicenseData": {
-              "content": ["Cuando una máquina solicita una licencia gratuita sin cuenta, almacenamos un hash con clave de la dirección IP solicitante (la dirección IPv4 completa o el prefijo /64 de una dirección IPv6), nunca la dirección en sí, y solo en el contador de cada dirección, donde se elimina a las 72 horas. El registro de la licencia contiene los identificadores de máquina y de repositorio que incluye la solicitud y ningún dato de IP. La base jurídica es nuestro interés legítimo en evitar el abuso de un servicio gratuito."],
+              "content": [
+                "Cuando una máquina solicita una licencia gratuita sin cuenta, almacenamos un hash con clave de la dirección IP solicitante (la dirección IPv4 completa o el prefijo /64 de una dirección IPv6), nunca la dirección en sí, y solo en el contador de cada dirección, donde se elimina a las 72 horas. El registro de la licencia contiene los identificadores de máquina y de repositorio que incluye la solicitud y ningún dato de IP. La base jurídica es nuestro interés legítimo en evitar el abuso de un servicio gratuito."
+              ],
               "title": "2.6 Solicitudes de licencia gratuita"
             }
           },

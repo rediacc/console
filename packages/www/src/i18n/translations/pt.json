@@ -2185,7 +2185,9 @@
               "title": "2.5 Dados de Telemetria do Produto"
             },
             "freeLicenseData": {
-              "content": ["Quando uma máquina pede uma licença gratuita sem conta, guardamos um hash com chave do endereço IP de origem (o endereço IPv4 completo ou o prefixo /64 de um endereço IPv6), nunca o endereço em si, e apenas no contador de cada endereço, onde é eliminado ao fim de 72 horas. O registo da licença contém os identificadores de máquina e de repositório incluídos no pedido e nenhum dado de IP. A base legal é o nosso interesse legítimo em evitar o abuso de um serviço gratuito."],
+              "content": [
+                "Quando uma máquina pede uma licença gratuita sem conta, guardamos um hash com chave do endereço IP de origem (o endereço IPv4 completo ou o prefixo /64 de um endereço IPv6), nunca o endereço em si, e apenas no contador de cada endereço, onde é eliminado ao fim de 72 horas. O registo da licença contém os identificadores de máquina e de repositório incluídos no pedido e nenhum dado de IP. A base legal é o nosso interesse legítimo em evitar o abuso de um serviço gratuito."
+              ],
               "title": "2.6 Pedidos de licença gratuita"
             }
           },

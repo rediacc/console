@@ -2175,7 +2175,9 @@
               "title": "2.5 Données de télémétrie produit"
             },
             "freeLicenseData": {
-              "content": ["Lorsqu'une machine demande une licence gratuite sans compte, nous enregistrons un hachage à clé de l'adresse IP à l'origine de la demande (l'adresse IPv4 complète, ou le préfixe /64 d'une adresse IPv6), jamais l'adresse elle-même, et uniquement dans le compteur propre à chaque adresse, où il est supprimé au bout de 72 heures. L'enregistrement de la licence contient les identifiants de machine et de dépôt fournis dans la demande, et aucune donnée IP. La base juridique est notre intérêt légitime à prévenir les abus d'un service gratuit."],
+              "content": [
+                "Lorsqu'une machine demande une licence gratuite sans compte, nous enregistrons un hachage à clé de l'adresse IP à l'origine de la demande (l'adresse IPv4 complète, ou le préfixe /64 d'une adresse IPv6), jamais l'adresse elle-même, et uniquement dans le compteur propre à chaque adresse, où il est supprimé au bout de 72 heures. L'enregistrement de la licence contient les identifiants de machine et de dépôt fournis dans la demande, et aucune donnée IP. La base juridique est notre intérêt légitime à prévenir les abus d'un service gratuit."
+              ],
               "title": "2.6 Demandes de licence gratuite"
             }
           },

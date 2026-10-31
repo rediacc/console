@@ -2181,7 +2181,9 @@
               "title": "2.5 Dati di Telemetria del Prodotto"
             },
             "freeLicenseData": {
-              "content": ["Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, e solo nel contatore del singolo indirizzo, dove viene eliminato dopo 72 ore. Il record della licenza contiene gli identificativi di macchina e repository presenti nella richiesta e nessun dato IP. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."],
+              "content": [
+                "Quando una macchina richiede una licenza gratuita senza account, memorizziamo un hash con chiave dell'indirizzo IP richiedente (l'intero indirizzo IPv4 o il prefisso /64 di un indirizzo IPv6), mai l'indirizzo stesso, e solo nel contatore del singolo indirizzo, dove viene eliminato dopo 72 ore. Il record della licenza contiene gli identificativi di macchina e repository presenti nella richiesta e nessun dato IP. La base giuridica è il nostro legittimo interesse a prevenire l'abuso di un servizio gratuito."
+              ],
               "title": "2.6 Richieste di licenza gratuita"
             }
           },

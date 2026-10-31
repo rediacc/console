@@ -2179,7 +2179,9 @@
               "title": "2.5 Tootetelemetria andmed"
             },
             "freeLicenseData": {
-              "content": ["Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, ja ainult aadressipõhises loenduris, kust see kustutatakse 72 tunni pärast. Litsentsikirje sisaldab taotluses olevaid masina- ja repositooriumi identifikaatoreid ega sisalda IP-andmeid. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."],
+              "content": [
+                "Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, ja ainult aadressipõhises loenduris, kust see kustutatakse 72 tunni pärast. Litsentsikirje sisaldab taotluses olevaid masina- ja repositooriumi identifikaatoreid ega sisalda IP-andmeid. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."
+              ],
               "title": "2.6 Tasuta litsentsi taotlused"
             }
           },

@@ -1091,7 +1091,9 @@
               ]
             },
             "freeLicenseData": {
-              "content": ["When a machine asks for a Free License without an account, we store a keyed hash of the requesting IP address (the whole IPv4 address, or the /64 prefix of an IPv6 address), never the address itself, and only in the per-address counter, where it is deleted after 72 hours. The licence record holds the machine and repository identifiers the request carries and no IP data. The legal basis is our legitimate interest in preventing abuse of a free service."],
+              "content": [
+                "When a machine asks for a Free License without an account, we store a keyed hash of the requesting IP address (the whole IPv4 address, or the /64 prefix of an IPv6 address), never the address itself, and only in the per-address counter, where it is deleted after 72 hours. The licence record holds the machine and repository identifiers the request carries and no IP data. The legal basis is our legitimate interest in preventing abuse of a free service."
+              ],
               "title": "2.6 Free License Requests"
             },
             "cookies": {
