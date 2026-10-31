@@ -67,6 +67,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type ControlCase, runControls } from '../lib/controls.js';
 import { exitWithMainIfEntryPoint } from '../lib/entry-point.js';
+import { reportFindings } from '../lib/findings-report.js';
 import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -191,17 +192,23 @@ export function proseOf(value: string): string {
   return (
     value
       .replace(/\{\{[^}]*\}\}/g, ' ')
-      .replace(/\{[^{}\s]*\}/g, ' ')
+      // A single-brace slot is a placeholder ("{name}"), but the same shape right after an
+      // ICU selector ("one {fuer}", "=0 {fuer}") is a one-word plural/select BRANCH: prose.
+      .replace(/(?<!(?:\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g, ' ')
       .replace(/<[^>]*>/g, ' ')
       .replace(/https?:\/\/\S+/g, ' ')
       .replace(/`[^`]*`/g, ' ')
-      .replace(/%[-+# 0-9.*]*[a-zA-Z]/g, ' ')
+      // No space in the flag class: "5 % fuer alle" is a percent sign and a word, not a
+      // directive. The verb letter must not run into more letters ("%fuer" is not "%f").
+      .replace(/%[-+#0-9.*]*[a-zA-Z](?![A-Za-z])/g, ' ')
       // Identifier-shaped tokens: snake_case keys, paths, dotted names, flags. A single
       // slash between words ("fuer/gegen") is prose and stays; a path has two, or a root.
       .replace(/\S*_\S*/g, ' ')
       .replace(/\S*\/\S*\/\S*/g, ' ')
       .replace(/(^|\s)[.~]?\/\S*/g, ' ')
-      .replace(/\b[A-Za-z]+(?:\.[A-Za-z]+)+\b/g, ' ')
+      // Every segment starts lower case: "machine.name", "config.json". A capital after the
+      // dot ("Hallo.Fuer alle") is a sentence with a missing space, and stays scanned.
+      .replace(/\b[a-z][A-Za-z0-9]*(?:\.[a-z][A-Za-z0-9]*)+\b/g, ' ')
       // A flag starts at whitespace. Unanchored, this pattern ate the tail of every
       // hyphenated compound ("Probe-Laeufen", "fstab-Aenderung") and hid it from the scan.
       .replace(/(^|\s)--?[A-Za-z][\w-]*/g, ' ')
@@ -251,8 +258,42 @@ function goUnquote(body: string): string {
   return JSON.parse(`"${body.replace(/\\x([0-9a-fA-F]{2})/g, '\\u00$1')}"`) as string;
 }
 
-const SET_STRING =
-  /message\.SetString\(\s*\w+\s*,\s*"((?:[^"\\]|\\.)*)"\s*,\s*"((?:[^"\\]|\\.)*)"\s*\)/g;
+/** A Go string literal: interpreted ("...", groups 1) or raw (`...`, group 2). */
+const GO_LIT = '(?:"((?:[^"\\\\]|\\\\.)*)"|`([^`]*)`)';
+/** Tag is a bare identifier or a dotted one (language.German). */
+const SET_STRING = new RegExp(
+  `message\\.SetString\\(\\s*[\\w.]+\\s*,\\s*${GO_LIT}\\s*,\\s*${GO_LIT}\\s*\\)`,
+  'g'
+);
+const SET_STRING_CALL = /message\.SetString\(/g;
+
+/**
+ * Read every SetString pair of a de.go text. Refuses (NoVerdict, VACUOUS-style) when the
+ * file holds more `message.SetString(` call sites than the pattern matched: a call in a
+ * shape the pattern does not know is an unread string, and a green over it means nothing.
+ */
+export function readGoCatalog(text: string, label: string): Record<string, string> {
+  const flat: Record<string, string> = {};
+  let matched = 0;
+  for (const m of text.matchAll(SET_STRING)) {
+    matched += 1;
+    try {
+      const key = m[1] !== undefined ? goUnquote(m[1]) : m[2];
+      flat[key] = m[3] !== undefined ? goUnquote(m[3]) : m[4];
+    } catch (e) {
+      throw new NoVerdict(
+        `${label}: cannot decode the literal for ${m[1] ?? m[2]}: ${(e as Error).message}`
+      );
+    }
+  }
+  const calls = [...text.matchAll(SET_STRING_CALL)].length;
+  if (calls > matched) {
+    throw new NoVerdict(
+      `VACUOUS: ${label} has ${calls} message.SetString( call sites but only ${matched} were read; ${calls - matched} are in a shape this gate does not parse, so their German is unread. Teach SET_STRING the new shape.`
+    );
+  }
+  return flat;
+}
 
 /** Thrown when a catalog exists but cannot be read; main() turns it into exit 2. */
 export class NoVerdict extends Error {}
@@ -272,17 +313,7 @@ export function readRoot(abs: string, layout: Layout): Record<string, Record<str
   };
   if (layout === 'flat') return { [abs]: parseJson(abs) };
   if (layout === 'go') {
-    const flat: Record<string, string> = {};
-    for (const m of fs.readFileSync(abs, 'utf8').matchAll(SET_STRING)) {
-      try {
-        flat[goUnquote(m[1])] = goUnquote(m[2]);
-      } catch (e) {
-        throw new NoVerdict(
-          `${abs}: cannot decode the literal for ${m[1]}: ${(e as Error).message}`
-        );
-      }
-    }
-    return { [abs]: flat };
+    return { [abs]: readGoCatalog(fs.readFileSync(abs, 'utf8'), abs) };
   }
   const out: Record<string, Record<string, string>> = {};
   for (const name of fs.readdirSync(abs).sort()) {
@@ -387,6 +418,55 @@ function controls(): ControlCase[] {
     'Laeufen',
   ]);
   eq('a command-line flag is skipped: "--fuer-alle" stays green', words('mit --fuer-alle'), []);
+
+  // REVIEW d0f72ae5: each control below fails against the rule it replaced.
+  eq(
+    'a percent sign then a word is not a directive: "5 % fuer alle" fires',
+    words('5 % fuer alle'),
+    ['fuer']
+  );
+  eq(
+    'a real directive is still skipped: "%s fuer" and "%.12s" leave only the word',
+    words('%s fuer %.12s'),
+    ['fuer']
+  );
+  eq(
+    'a one-word ICU branch is prose: "one {fuer}" fires',
+    words('{n, plural, one {fuer} other {x}}'),
+    ['fuer']
+  );
+  eq(
+    'a single-brace placeholder is still skipped: "{fuer}" stays green',
+    words('Hallo {fuer} ok'),
+    []
+  );
+  eq('a missing space after a period is prose: "Hallo.Fuer alle" fires', words('Hallo.Fuer alle'), [
+    'Fuer',
+  ]);
+  eq(
+    'a lower case dotted name is still skipped: "machine.fuer" stays green',
+    words('see machine.fuer ok'),
+    []
+  );
+  {
+    const body = (rows: string): Record<string, string> => readGoCatalog(rows, 'fixture');
+    eq(
+      'SetString accepts a dotted tag and a backtick raw literal',
+      body('message.SetString(language.German, "k", `Schluessel ungueltig`)\n'),
+      { k: 'Schluessel ungueltig' }
+    );
+    let refusal = '';
+    try {
+      body('message.SetString(tag, "k", "ok")\nmessage.SetString(tag, key, "x")\n');
+    } catch (e) {
+      refusal = e instanceof NoVerdict ? e.message : '';
+    }
+    eq(
+      'a SetString call the pattern cannot read is refused as VACUOUS',
+      refusal.startsWith('VACUOUS:'),
+      true
+    );
+  }
 
   // CORPUS: the reader and the empty-corpus verdict, on a temporary tree.
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'de-ortho-'));
@@ -508,22 +588,21 @@ function main(argv: string[]): number {
     return 0;
   }
 
-  console.error(`✗ ${findings.length} transliterated German word(s) across ${strings} strings:\n`);
-  for (const f of findings) {
-    console.error(
-      `  ${f.file}  ${f.key}  "${f.word}" -> "${f.suggestion}"  [${f.stems.join(', ')}]`
-    );
-  }
-  const remedy = [
-    '',
-    'German catalogs are de-DE: write ä, ö, ü and ß, never ae, oe, ue or ss.',
-    'Fix the value in the catalog named on each line (renet: edit de.go directly).',
-    'If a word is a legitimate spelling the list does not know, narrow the stem in',
-    'TRANSLITERATIONS (scripts/gates/check-de-orthography.ts) and add the word to the',
-    'must-not-fire control; never exempt a catalog key.',
-  ];
-  console.error(remedy.join('\n'));
-  return 1;
+  return reportFindings({
+    header: `✗ ${findings.length} transliterated German word(s) across ${strings} strings:\n`,
+    items: findings,
+    limit: Infinity,
+    indent: '  ',
+    format: (f) => `${f.file}  ${f.key}  "${f.word}" -> "${f.suggestion}"  [${f.stems.join(', ')}]`,
+    remedy: [
+      '',
+      'German catalogs are de-DE: write ä, ö, ü and ß, never ae, oe, ue or ss.',
+      'Fix the value in the catalog named on each line (renet: edit de.go directly).',
+      'If a word is a legitimate spelling the list does not know, narrow the stem in',
+      'TRANSLITERATIONS (scripts/gates/check-de-orthography.ts) and add the word to the',
+      'must-not-fire control; never exempt a catalog key.',
+    ],
+  });
 }
 
 exitWithMainIfEntryPoint(import.meta.filename, main);
