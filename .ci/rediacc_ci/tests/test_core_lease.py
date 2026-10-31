@@ -641,6 +641,10 @@ def test_a_runtime_pool_owned_by_another_user_is_skipped(tmp_path: pathlib.Path)
     (run / "rediacc-cores").symlink_to("/")
     chosen = core_lease.lease_dir({"XDG_RUNTIME_DIR": str(run)})
     assert chosen != run / "rediacc-cores"
+    # This user's own non-directory is still chosen (Pool.ensure judges it), not skipped.
+    (run / "rediacc-cores").unlink()
+    (run / "rediacc-cores").write_text("", encoding="utf-8")
+    assert core_lease.lease_dir({"XDG_RUNTIME_DIR": str(run)}) == run / "rediacc-cores"
     # CONTROL: the same runtime dir with no foreign pool in it is chosen.
     (run / "rediacc-cores").unlink()
     assert core_lease.lease_dir({"XDG_RUNTIME_DIR": str(run)}) == run / "rediacc-cores"

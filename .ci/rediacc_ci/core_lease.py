@@ -182,6 +182,14 @@ def _owned_dir(path: str) -> bool:
     return os.path.isdir(path) and st.st_uid == os.getuid()
 
 
+def _foreign_owned(path: pathlib.Path) -> bool:
+    """True when `path` exists and another user owns it; False when it is absent or this user's."""
+    try:
+        return path.stat().st_uid != os.getuid()
+    except OSError:
+        return False
+
+
 def lease_dir(environ: Mapping[str, str] | None = None) -> pathlib.Path:
     """Where the pool lives; the order and its reasons are in the module docstring."""
     env = os.environ if environ is None else environ
@@ -192,9 +200,10 @@ def lease_dir(environ: Mapping[str, str] | None = None) -> pathlib.Path:
     for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
         if runtime and _owned_dir(runtime):
             pool = pathlib.Path(runtime) / "rediacc-cores"
-            # A pool another user made inside this user's runtime dir is skipped, not refused: Docker recreates a missing bind source as root when it restarts the devbox at boot, before this user's session exists (2026-10-31).
-            if not pool.exists() or _owned_dir(str(pool)):
-                return pool
+            # A pool ANOTHER user owns inside this user's runtime dir is skipped, not refused: a container restarted at boot can have its missing bind source recreated as root by the engine. Anything this user owns (even a non-directory) is still returned and judged by Pool.ensure.
+            if _foreign_owned(pool):
+                continue
+            return pool
     # The literal /tmp on purpose, never $TMPDIR (module docstring, item 4); the owner check in Pool.ensure covers what S108 warns about.
     return pathlib.Path("/tmp") / ("rediacc-cores-%d" % uid)
 
