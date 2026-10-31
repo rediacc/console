@@ -8,7 +8,7 @@ Date: 2026-09-24
 Priority: P3 -- seed: Status draft, 16 open box(es)
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: .claude/hooks/stop/*.py, agent/RULES.md, .ci/scripts/quality/check_operator_rulings.py, .claude/rediacc_hooks/tests/*.py
-Revalidated: 2026-10-24 @ daab83af1f31
+Revalidated: 2026-10-24 @ 8640655646b7
 
 <!-- preflight:begin -->
 ```text

@@ -6,7 +6,7 @@ Owner: d778be9d
 Priority: P1 -- the operator's operating model for every PR after #591
 Concurrency: parallel -- writers with disjoint file ownership per box group
 Owns: .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, .claude/rediacc_hooks/guards/block_git_force_push.py, .claude/rediacc_hooks/guards/block_second_branch.py, .claude/rediacc_hooks/guards/block_second_open_pr.py, .claude/rediacc_hooks/git/githooks.py, .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md, .github/workflows/promote-stable.yml, .ci/rediacc_ci/release/check_soak_period.py
-Revalidated: 2026-10-23 @ daab83af1f31
+Revalidated: 2026-10-23 @ 8640655646b7
 
 <!-- preflight:begin -->
 ```text
@@ -76,8 +76,8 @@ dependencies: 1
 
 ### Releases
 - [x] R1 Find and fix the root cause of the scheduled Console CI on main failing every night since 2026-09-25 (trace each night's first real failure with ci-trace once PLAN-ci-verdict B lands; raw reads until then), so the nightly waiver can fire.
-    (preflight) 2026-10-23 partial: R1 root cause found and fixed in code: OBS rebuilds the openSUSE Ceph package past the pin; private/renet 7070d28 bumps the pin to .105 and e28e2f8df/f8d184807 add the scheduled auto-bump. Remaining: one green scheduled Console CI run on main after the merge (#753d4fdc)
-    (ticked) 2026-10-24T12:40:02Z by d778be9d: found and fixed on 1023-1 (investigation row 270c47ad7): the nightly on main 403f47b9 failed from six classes, not one: npm audit (83dfdb272, c9d5c7d1b, a54cd111e), OBS ceph rebuild (renet eb66a5d via 5f39f337c), pin freshness, deps freshness and plan housekeeping (already fixed on the branch), shard receipts (follows Code 3); the scheduled reader that hid them fixed in e9054dfa0..ce8c3fe1c. The first green scheduled run after the merge is still to come and is tracked by #cba857c9 (the nightly waiver cannot fire before it)
+    (preflight) 2026-10-23 partial: R1 root cause found and fixed in code: OBS rebuilds the openSUSE Ceph package past the pin; private/renet 7070d28 bumps the pin to .105 and 47331b40d/06bcc3c30 add the scheduled auto-bump. Remaining: one green scheduled Console CI run on main after the merge (#753d4fdc)
+    (ticked) 2026-10-24T12:40:02Z by d778be9d: found and fixed on 1023-1 (investigation row c04b5a55d): the nightly on main 403f47b9 failed from six classes, not one: npm audit (542381de4, f429180c6, d58f5264a), OBS ceph rebuild (renet eb66a5d via 0f7e9a733), pin freshness, deps freshness and plan housekeeping (already fixed on the branch), shard receipts (follows Code 3); the scheduled reader that hid them fixed in 7fb415049..5e01feba5. The first green scheduled run after the merge is still to come and is tracked by #cba857c9 (the nightly waiver cannot fire before it)
 - [x] R2 Soak starvation: `check_soak_period` promotes the NEWEST edge release that is at least SOAK_DAYS old (walking back from the newest), not only the newest one; red-first test with three edges (1, 4, 9 days old -> the 9-day one promotes; 1 and 4 alone -> nothing).
     (ticked) 2026-10-02T09:40:59Z by d778be9d: commit:a004eb7d5 check_soak_period promotes the newest soaked edge (walk-back), red-first test with 1/4/9-day edges; R2 channel-snapshot limit is #51ea3682
 - [x] R3 Release on every merge that changes the product: skill and doc text stops suggesting a hand-applied `bump-none` (pr-merge, pr-babysitter, release-process.md, ci-gates.md). The bump is decided once at a green head by Console CI's `pr-labels` job from the per-commit reviews: `bump-major`/`bump-minor` from the highest verdict, no label for a patch, and `bump-none` only when every commit's review says `none` (operator rulings 2026-10-02, #e1e9edf7). Verify dispatch_release's fail-open path on a real merge (M7).

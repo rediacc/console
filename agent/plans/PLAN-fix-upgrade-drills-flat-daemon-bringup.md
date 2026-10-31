@@ -12,7 +12,7 @@ Worklist: #96386e54, PR-TASK 9f92c43e
 
 ## Finding
 
-U1 (`.ci/rediacc_ci/drills/upgrade_converge.py:320-330`) and U2 (`.ci/rediacc_ci/drills/converge_preflight.py:369-374`) drive the current CLI against a renet built from `0c3a88a^` to get daemons on the pre-isolation layout. Since console 92d8b95dd every machine command runs as a renet job with no synchronous fallback (`packages/cli/src/services/executor/detached-execution.ts:304`), and the old renet predates the job flags, so "create grand under old renet" fails in every vm:check run since 2026-10-29.
+U1 (`.ci/rediacc_ci/drills/upgrade_converge.py:320-330`) and U2 (`.ci/rediacc_ci/drills/converge_preflight.py:369-374`) drive the current CLI against a renet built from `0c3a88a^` to get daemons on the pre-isolation layout. Since console 456d0bc15 every machine command runs as a renet job with no synchronous fallback (`packages/cli/src/services/executor/detached-execution.ts:304`), and the old renet predates the job flags, so "create grand under old renet" fails in every vm:check run since 2026-10-29.
 
 ## Design
 
@@ -24,7 +24,7 @@ Chosen: candidate (b), the old renet's own `repository up` invoked over ssh, wit
 
 Three things the first live runs corrected (2026-10-30): the fork ids come from the config (`resources.repositories.<parent>.tags.<tag>` and `state.repos.<parent>.<tag>.networkId`, `fork_record`), because `repo list` names no network id for a fork that was never started; the install takes the provisioner lock as the ssh user and runs only `install`/`mv` under sudo, because with `fs.protected_regular=2` root cannot open the user-owned `/tmp/.rdc-renet-provision.lock` (rc 66); and each teardown points the symlink back at the current build first, since the deletes are renet jobs. Live proof: `npm run vm:check -- --only U1,U2`, run vmc-10300306-0daa49, 54 assertions, 0 failed, teardown clean (NOT_VERIFIED by design for an `--only` run).
 
-Why not (a): a second CLI from `92d8b95dd^` needs its own bundle build through `prepare-cli` and node_modules, and drifts from the config schema the current CLI writes. Why not (c): (b) works without either. The one difference from the pre-92d8b95dd flow is the grand, whose daemon now starts under the current renet; U1 and U2 assert only on the forks.
+Why not (a): a second CLI from `456d0bc15^` needs its own bundle build through `prepare-cli` and node_modules, and drifts from the config schema the current CLI writes. Why not (c): (b) works without either. The one difference from the pre-456d0bc15 flow is the grand, whose daemon now starts under the current renet; U1 and U2 assert only on the forks.
 
 Found on the way and fixed: both teardowns left the CLI's `<cfg>.json.bak` copy in ~/.config/rediacc (36 u1-/u2- copies on 2026-10-30, each carrying the gateway E2E key, repo credentials and ssh keys); `config_files` now names it. U2 wrote its config with write-then-chmod; it is now created 0600 from the first byte, as U1's is. The unit tests live at `.ci/rediacc_ci/tests/test_drills_upgrade_converge.py` (the `tests/drills/**` glob in Owns names no existing path).
 

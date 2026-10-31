@@ -21,7 +21,10 @@ export const GATE_TIMEOUT_FACTOR = 4;
  * Gates whose real wall sits near the floor and whose measurements understate it, with the lowest kill timer each may get. check:ci-plan-implementation walks 168 open plan boxes and needs 174 s unloaded (296.6 s measured in CI on a loaded runner), so the 300 s floor killed it under load on 2026-10-31; 900 s is five times the unloaded wall.
  */
 export const GATE_TIMEOUT_MIN_BY_ID: Readonly<Record<string, number>> = {
-  'check:ci-plan-implementation': 900_000,
+  // 898.5 s under a full ci:quick on 2026-10-31, against the earlier 900 s floor.
+  'check:ci-plan-implementation': 1_500_000,
+  // 153.7 s alone and killed at its 305.7 s timer twice under a full ci:quick on 2026-10-31.
+  'check:ci-plan-citations': 900_000,
 };
 /** A gate declared `slow` with no measurement anywhere. */
 export const GATE_TIMEOUT_UNMEASURED_SLOW_MS = 1_800_000;
@@ -75,7 +78,7 @@ export function gateTimeoutSelftest(): number {
     [
       'a gate with its own minimum is held to it over a small measurement',
       gateTimeoutMs({ id: 'check:ci-plan-implementation' }, 71_200),
-      900_000,
+      1_500_000,
     ],
     [
       'CONTROL: an id without a minimum still gets the floor',

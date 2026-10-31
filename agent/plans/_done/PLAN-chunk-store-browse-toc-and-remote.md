@@ -1,6 +1,6 @@
 # PLAN: chunk-store browse, Stage 2 (encrypted TOC writer) and Stage 3 (remote `--at` browse)
 
-Status: done -- every box ticked by 2026-10-21 (the last, Stage-3 tests, in d96400c32) and merged with PR #601 on 2026-10-23; validated 2026-10-23 against renet, account and console main (ListEntries, FilterEntries, IndexKey, PutIndex/GetIndex/FetchIndex, backup_browse_at, has_index, rdc backup browse --at). Closed rather than folded into PLAN-backup-program Phase O, operator /ask 2026-10-23 ("Close into _done, tick A2")
+Status: done -- every box ticked by 2026-10-21 (the last, Stage-3 tests, in 829d003d1) and merged with PR #601 on 2026-10-23; validated 2026-10-23 against renet, account and console main (ListEntries, FilterEntries, IndexKey, PutIndex/GetIndex/FetchIndex, backup_browse_at, has_index, rdc backup browse --at). Closed rather than folded into PLAN-backup-program Phase O, operator /ask 2026-10-23 ("Close into _done, tick A2")
 First-Seen: 2026-10-21
 Depends-On: no-dep -- cites only finished plans: PLAN-chunk-store-browse-DECISION.md, PLAN-chunk-store-browse-server.md, PLAN-backup-quota-delta-gc.md
 Owner: d778be9d
@@ -130,7 +130,7 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 - [x] Account server: nullable `indexKey` (or `hasIndex`) column on `backup_manifests` (migration mirroring `manifestKey`'s shape); commit route accepts and stores it; `listManifests`/`GET /backups/manifests` and `mintReadGrant`/`POST /read-grants` surface it (`hasIndex` on list, `indexKeys` map on read-grant).
     (ticked) 2026-10-20T14:42:40Z by d778be9d: commit:623f07340 account 966b3f5 has_index, grant fields, GC
 - [x] Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed).
-  - (correction 2026-10-20, review 4e43289d) as landed: Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed). Renet legs (round trip, no key, failed put, aad) are on renet fe9ce67; the `GET /backups/manifests` `hasIndex:false` listing leg is served by the account commit 9e323c432 (has_index column) and has no test of its own yet.
+  - (correction 2026-10-20, review 4e43289d) as landed: Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed). Renet legs (round trip, no key, failed put, aad) are on renet fe9ce67; the `GET /backups/manifests` `hasIndex:false` listing leg is served by the account commit 623f07340 (has_index column) and has no test of its own yet.
     (ticked) 2026-10-20T14:42:43Z by d778be9d: commit:64547bb24 renet fe9ce67 round trip, both grant kinds
 
 **Stage 3 -- remote `--at` browse (depends on Stage 2):**

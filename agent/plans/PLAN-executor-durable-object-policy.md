@@ -24,7 +24,7 @@ Live-Proof: bench -- the executor issuer in private/account/src, workers/account
 
 ## Context
 
-### Verified state (2026-10-26, console 1023-1 at a5cd6256c plus its working tree)
+### Verified state (2026-10-26, console 1023-1 at c9f2c37da plus its working tree)
 
 1. **The freeze date.** https://blog.cloudflare.com/faster-agent-sandboxes/ (2026-09-30) says: "We'll maintain the `Container` class and legacy `Sandbox` class through December 31, 2026. Existing deployments keep running after that date, but the classes won't get updates". The same post reports that "median startup fell from just over four seconds to 648 milliseconds" under the new policy. It also says the Durable Object "can update the Container's Outbound Request Handler to inject newly granted credentials". The deadline is therefore about updates, not shutdown: a missed date leaves the executor running on an unpatched base class.
 2. **What the policy is.** https://developers.cloudflare.com/containers/configuration/scheduling-policy/ says:

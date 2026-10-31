@@ -802,8 +802,8 @@ The read-only survey found the `production` tag and the GitHub "Latest" badge st
 - Before: `refs/tags/production` -> commit `6779389a98fe40e6b6863af908e58ac0a2a32147` (v2.2.0); Latest = v2.2.0.
 - Command: `PYTHONPATH=.ci python3 -m rediacc_ci.release.mark_production 2.4.0`, with the operator's stored `gh` login (scopes include `workflow`), no token on argv.
 - Changes: moves `production` to v2.4.0's commit and sets `--latest` on the v2.4.0 Release.
-- Rollback (written before the run): `gh api --method PATCH repos/rediacc/console/git/refs/tags/production -f sha=1861b272673c49fe3ae794622f9cdfd57bd24978 -F force=true` and `gh release edit v2.2.0 --repo rediacc/console --latest`.
-- Result: rc=0. stdout `https://github.com/rediacc/console/releases/tag/v2.4.0`; stderr `v2.4.0 is a published release`, `moved the 'production' tag to v2.4.0 (daab83af1f314fe4452205114c026bc8f8f66141)`, `marked v2.4.0 as the latest GitHub Release`.
+- Rollback (written before the run): `gh api --method PATCH repos/rediacc/console/git/refs/tags/production -f sha=6779389a98fe40e6b6863af908e58ac0a2a32147 -F force=true` and `gh release edit v2.2.0 --repo rediacc/console --latest`.
+- Result: rc=0. stdout `https://github.com/rediacc/console/releases/tag/v2.4.0`; stderr `v2.4.0 is a published release`, `moved the 'production' tag to v2.4.0 (8640655646b75954d224de1e0cb977fa4dcfd100)`, `marked v2.4.0 as the latest GitHub Release`.
 - Verified: `refs/tags/production` -> commit 864065564 (= v2.4.0's commit); `gh release list` shows `v2.4.0 Latest`.
 
 ### promote-r2-to-stable-hotfix, Template C

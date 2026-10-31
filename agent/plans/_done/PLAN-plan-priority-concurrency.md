@@ -78,7 +78,7 @@ B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, 
   - docs/agent-reference/plan-records.md header table;
   - pr-babysitter.md :147;
   - `npm run gen:docs`; the full hook suite; the `ci-plan-*` family of gates.
-    (ticked) 2026-10-04T01:23:50Z by d778be9d: commit:672973467 header lines documented in CLAUDE.md, agent/README.md, pr-babysitter.md; ci-plan-* rc 0; hook suite clean after 6f7ae1781
+    (ticked) 2026-10-04T01:23:50Z by d778be9d: commit:422727c6f header lines documented in CLAUDE.md, agent/README.md, pr-babysitter.md; ci-plan-* rc 0; hook suite clean after 6f7ae1781
 
 ## 0. Facts established
 

@@ -6,7 +6,7 @@ Owner: d778be9d
 Priority: P1 -- operator-requested 2026-10-02; queued in QUEUE.md Promoted right after PLAN-plan-per-pr-loop
 Concurrency: parallel -- at most 4 writers, disjoint file ownership per box (see Tasks)
 Owns: .claude/hooks/stop/wl_planpreflight.py, .claude/hooks/stop/wl_plandeps.py, .claude/hooks/stop/test-plandeps.py, .claude/hooks/stop/wl_planrec.py, .claude/hooks/stop/test-planrec.py, .claude/hooks/stop/test-planenforce.py, .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/rediacc_hooks/tests/test_wl_plan_preflight.py, .claude/rediacc_hooks/tests/test_wl_identity.py, .ci/scripts/quality/check_plan_citations.py, .ci/rediacc_ci/tests/gates/test_gate_plan_citations.py, .ci/scripts/quality/check_plan_implementation.py, .ci/config/plan-implementation.json, .claude/agents/pr-babysitter.md, .claude/commands/pr-merge.md, .claude/commands/pr-babysit.md
-Revalidated: 2026-10-23 @ daab83af1f31
+Revalidated: 2026-10-23 @ 8640655646b7
 
 <!-- preflight:begin -->
 ```text

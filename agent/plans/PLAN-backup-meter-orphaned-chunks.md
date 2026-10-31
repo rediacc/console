@@ -13,7 +13,7 @@ Worklist: #3b154ea0, PR-TASK 9f92c43e
 
 ## Finding (measured 2026-10-29 on hostinger against R2 bucket rediacc-backups-eu)
 
-- `backup snapshot mautic` was killed at 600 s by renet's then-default execute timeout (fixed in ebcc4ded5, "data-moving backup verbs carry a renet --timeout above the 10-minute default"). By then it had uploaded about 1568 chunks (about 6.58 GB) and committed no manifest.
+- `backup snapshot mautic` was killed at 600 s by renet's then-default execute timeout (fixed in 20ed13929, "data-moving backup verbs carry a renet --timeout above the 10-minute default"). By then it had uploaded about 1568 chunks (about 6.58 GB) and committed no manifest.
 - The retry committed snapshot 20261029T090224Z (mautic retry). It uploaded 45 new chunks (188,743,680 bytes = 45 x 4 MiB) and found the rest already present.
 - Afterwards:
   - `rdc backup usage` reads 6,685,720,576 bytes and 1594 chunks;

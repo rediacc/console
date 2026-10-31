@@ -50,7 +50,7 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
   - Also refuse a version site whose text has `@sha256:` when the entry has no digest site.
   - Add the `digest` site to image:proxy-node in .ci/config/pins.json and drop "tag only" from its name.
   - Accept: `npx tsx scripts/lib/pins/drivers/selftest.ts && npm run check:ci-pin-registry && npm run pins -- plan image:proxy-node`. The plan output must show both `version` and `digest` changes.
-    (ticked) 2026-10-30T21:47:42Z by d778be9d: commit:64aa5ed73 scripts/lib/pins/drivers/docker.ts:19; selftest rc 0; check:ci-pin-registry rc 0; the plan on a 26.12.0 scratch tree shows version and digest changes
+    (ticked) 2026-10-30T21:47:42Z by d778be9d: commit:55328d805 scripts/lib/pins/drivers/docker.ts:19; selftest rc 0; check:ci-pin-registry rc 0; the plan on a 26.12.0 scratch tree shows version and digest changes
 - [x] T1 Add the mutant `docker-keep-digest` to T8_MUTANTS (scripts/lib/pins/drivers/shared.ts:28-50, plus a doc line) and to the MUTANTS tuple in test_gate_pin_family_drivers.py. In docker.ts the mutant supplies the old digest instead of the resolved one. Add three new dockerCases controls using `entry('image:proxy-node')`:
   - (a) A tree holds `FROM node:26.12.0-slim@sha256:<a*64>`, and a Hub stub answers the listing plus `/tags/26.13.0-slim` → `{digest: "sha256:<b*64>"}`. The plan must write exactly `FROM node:26.13.0-slim@sha256:<b*64>`.
   - (b) A stub with no `digest`, or with an `images[]`-only digest, must give a `PlanRefused` that names the tag.

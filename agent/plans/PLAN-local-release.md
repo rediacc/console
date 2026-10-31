@@ -63,7 +63,7 @@ Design inputs, summarized below with file:line:
   - Remove the keyless cross-build from the cached path.
   - Owns: renet_key_gate.py with its test, and extract_renet_from_image.py.
   - Accept: the pytest rc=0, with fixtures for an empty key, the DEV key and the production key.
-    (ticked) 2026-10-27T08:24:23Z by d778be9d: a0e9c10d1: .ci/rediacc_ci/release/renet_key_gate.py plus the keyed cached cross build and ci-build-renet.yml; pytest rc=0 (81); live run refused all 9 local binaries as DEV key
+    (ticked) 2026-10-27T08:24:23Z by d778be9d: da2f612ee: .ci/rediacc_ci/release/renet_key_gate.py plus the keyed cached cross build and ci-build-renet.yml; pytest rc=0 (81); live run refused all 9 local binaries as DEV key
 
 ### Wave 2 (after W1)
 
@@ -185,7 +185,7 @@ Design inputs, summarized below with file:line:
   - The console's homebrew gitlink bump is dropped. The tap repository still receives its formula commit, admitted by W1-D.
   - Owns: advance_contract_floor.py, update_homebrew_tap.py and their tests.
   - Accept: pytest rc=0, and no code path pushes console `main`.
-    (ticked) 2026-10-27T10:01:44Z by d778be9d: 2fd593392: advance_contract_floor writes the floor in the working tree, update_homebrew_tap pushes only the tap, cd_preflight warns on lag; pytest rc=0 (111)
+    (ticked) 2026-10-27T10:01:44Z by d778be9d: 3fe12cc12: advance_contract_floor writes the floor in the working tree, update_homebrew_tap pushes only the tap, cd_preflight warns on lag; pytest rc=0 (111)
 - [x] W3-D [writer] Docs.
   - CLAUDE.md, under Release Channels and the CI/CD Pipeline, says:
     - CI validates and `release:local` publishes;

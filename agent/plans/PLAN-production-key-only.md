@@ -17,7 +17,7 @@ There are two account keypairs today. Production is one keypair, the same for al
 
 - `private/renet/build.sh dev` builds `-tags nolicense` unless `RDC_RENET_LICENSE=1` or `--license` (private/renet/build.sh:800-830). `_dev_out_dir` sends nolicense to `bin/` and enforcing builds to `bin/enforce/` (:788-796). `stage_linux` stages nolicense assets too (:521, :531). agent/plans/PLAN-per-flavor-renet-binary-paths.md:20 and :55 record the same split.
 - The console mirrors it: `.ci/rediacc_ci/core/renet_flavor.py` (removed in 992946b4e) mapped nolicense to `bin/` and enforce to `bin/enforce/`; rdc.sh:97 picks the directory from `RDC_RENET_LICENSE`; `.ci/rediacc_ci/core/local_common.py:1238` and :1445 read the same variable; `.ci/rediacc_ci/infra/build_renet.py:38-39` forwards `--nolicense`/`--license`, and the CI test legs call it with `--nolicense` (.github/workflows/ci-vm-bake.yml:129, .github/workflows/ci-ops-test.yml:82 and :274, .github/workflows/ct-e2e-probe.yml:134 and :234, .github/workflows/ct-backup-perf.yml:142 and :224, .github/workflows/ct-tests.yml:316 and every later leg).
-- In Go, `//go:build nolicense` compiles the validators out: `runtime_nolicense.go` (removed in c0e67f9c9) stubbed them, private/renet/pkg/license/runtime_licensed.go:1 and five `_test.go` files carry `!nolicense`, and private/renet/pkg/license/preferred.go:13-17 tells the user to "use -tags nolicense".
+- In Go, `//go:build nolicense` compiles the validators out: `runtime_nolicense.go` (removed in 992946b4e) stubbed them, private/renet/pkg/license/runtime_licensed.go:1 and five `_test.go` files carry `!nolicense`, and private/renet/pkg/license/preferred.go:13-17 tells the user to "use -tags nolicense".
 - The incident: a plain `./rdc.sh --config eu-remote machine setup hostinger` uploaded the nolicense dev build to production hostinger. Its `/usr/lib/rediacc/renet/current/renet` has sha `sha256:f56e1ef1a638d33d`, equal to `private/renet/bin/renet`, installed 2026-10-30 00:49:30 UTC. Under bws profile deploy-bench, `python3 -m rediacc_ci.release.renet_key_gate private/renet/bin/renet` prints "REFUSED ... tags=nolicense (baked fingerprint:fb37f1ae16f8b7c0)", while `private/renet/bin/enforce/renet` passes.
 - Operator 2026-10-30T06:50Z: remove the nolicense mode entirely and always bake the production key from bws, local development included ("makes code cleaner, avoids confusion").
 
@@ -51,7 +51,7 @@ There are two account keypairs today. Production is one keypair, the same for al
 ### private/renet/build.sh fallback
 - `_account_key_ldflags` (:409-446) takes env first, then the cache. It warns "baking the cached DEV key" (:429-434) and returns 0 with no key at all (:437-445).
 - Every flavor goes through it: stage_linux :521, build :557, dev :840.
-- A keyless binary is not harmless even under `-tags nolicense`. preferred.go is untagged (:12-15), and `LoadPreferredRepoLicense` returns errNoPublicKey when the key is empty (:21-23, :38-42). private/renet/cmd/renet/backup_snapshot.go:437-440 then rejects. The nolicense stubs cover only the validate calls (`runtime_nolicense.go`, removed in c0e67f9c9).
+- A keyless binary is not harmless even under `-tags nolicense`. preferred.go is untagged (:12-15), and `LoadPreferredRepoLicense` returns errNoPublicKey when the key is empty (:21-23, :38-42). private/renet/cmd/renet/backup_snapshot.go:437-440 then rejects. The nolicense stubs cover only the validate calls (`runtime_nolicense.go`, removed in 992946b4e).
 
 ### private/account
 - The dev gateway gets its keys only through the `account-dev` profile (private/account/CLAUDE.md:62).
@@ -282,14 +282,14 @@ There are two account keypairs today. Production is one keypair, the same for al
   - private/renet/pkg/license/preferred.go:17 and pkg/i18n/baseline.json lose "use -tags nolicense". private/renet/cmd/renet/repository_license_status.go:250, :277 and private/renet/cmd/renet/backup_snapshot.go:354 comments lose the stub case.
   - The tests built under `nolicense` (cmd/renet/repository_license_status_test.go, repository_license_status_store_test.go, pkg/functions/datastore_identity_test.go, tiermap_dispatch_test.go, pkg/delta/command_integration_test.go, pkg/daemon/mount_sandbox_linux_test.go, pkg/hostmetrics/host_metrics_reach_test.go, pkg/ebpf/exec_sessions_root_test.go) sign fixture licences with an in-test keypair.
   - private/renet/.ci/scripts/test/run-tests.sh:189, private/renet/.ci/scripts/quality/i18n.sh:55 and private/renet/scripts/ci-test.sh:373 build without the tag.
-    (ticked) 2026-10-30T21:14:23Z by d778be9d: commit:c0e67f9c9 renet carries no nolicense build: git -C private/renet grep -i nolicense prints only TestBrowseAt_NoLicenseExits10; go vet ./... and go test ./... rc 0 (writer a0f8530006c3c7944)
+    (ticked) 2026-10-30T21:14:23Z by d778be9d: commit:992946b4e renet carries no nolicense build: git -C private/renet grep -i nolicense prints only TestBrowseAt_NoLicenseExits10; go vet ./... and go test ./... rc 0 (writer a0f8530006c3c7944)
 
   Owns: the private/renet files named above. Accept: `cd private/renet && go vet ./... && go test ./... -count=1` rc 0, and `git -C private/renet grep -n nolicense` prints nothing.
 
 - [x] N2 [writer] build.sh: one flavor, key required. Changes:
   - private/renet/build.sh: `dev` drops `--license`/`--nolicense` and `RDC_RENET_LICENSE`/`RDC_BENCH` (:800-830), `_dev_out_dir` goes (:788-796), `stage_linux` builds without the tag (:531), `RENET_KEYLESS` goes (:415-430), and the usage line (:899) is rewritten.
   - .github/workflows/ci-build-renet.yml:545 cross-compile check builds without the tag.
-    (ticked) 2026-10-30T21:14:17Z by d778be9d: commit:c0e67f9c9 env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev rc 1 refusing to build without a licence key; test_renet_build_key_required.py and test_private_renet_build_dev_flavor.py pass
+    (ticked) 2026-10-30T21:14:17Z by d778be9d: commit:992946b4e env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev rc 1 refusing to build without a licence key; test_renet_build_key_required.py and test_private_renet_build_dev_flavor.py pass
 
   Owns: private/renet/build.sh, .github/workflows/ci-build-renet.yml (line 545 only), .ci/rediacc_ci/tests/test_renet_build_key_required.py, .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py. Accept: those pytest files rc 0 (the keyless and `RENET_KEYLESS` cases now refused), and `env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev` rc 1.
 

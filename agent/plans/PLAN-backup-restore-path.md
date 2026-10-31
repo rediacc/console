@@ -13,7 +13,7 @@ Worklist: #9169af71, PR-TASK 9f92c43e
 
 ## Problem
 
-Box N4b (agent/plans/PLAN-backup-program.md:407) asks for `rdc backup restore <ref> --at <snapshot> --path <file-or-dir> [--to <dir>]`. The command must restore one file or one directory tree from a chunk-store snapshot without a full image restore. It fetches only the chunks that cover the path, writes byte-identical content and keeps mode and mtime. A missing path, or a snapshot with no table of contents, is refused with a named error and nothing is written. Today nothing in the stack can do this, for five reasons, each checked against the tree at ac6a26fd3.
+Box N4b (agent/plans/PLAN-backup-program.md:407) asks for `rdc backup restore <ref> --at <snapshot> --path <file-or-dir> [--to <dir>]`. The command must restore one file or one directory tree from a chunk-store snapshot without a full image restore. It fetches only the chunks that cover the path, writes byte-identical content and keeps mode and mtime. A missing path, or a snapshot with no table of contents, is refused with a named error and nothing is written. Today nothing in the stack can do this, for five reasons, each checked against the tree at ec5632942.
 
 - **The sealed table of contents has no positions.** The listing `backup snapshot` seals is a `repodiff.BrowseResult` (private/renet/pkg/repodiff/types.go:141). Its entries are `BrowseEntry` (private/renet/pkg/repodiff/types.go:114) with Path, Type, Size, Mode, ModTime and Target, and nothing else. No entry says where its bytes live in the image, so a reader holding the listing still cannot tell which cells to fetch.
 - **Some listings can never carry positions.** `snapshotTOCListing` (private/renet/cmd/renet/backup_snapshot_toc.go, the function after `sealSnapshotTOC`) lists the STAGED reflink when the autostart keyfile opens it. For a password-only repository it falls back to the LIVE canonical mount and stamps `ListingSource: live-mount` (private/renet/cmd/renet/backup_snapshot_toc.go:33-45, and `ListLiveMount` in pkg/repodiff/mountset.go). Extents on the live mount describe the live image, not the staged copy that was uploaded. Their offsets can be wrong for the snapshot by whatever moved in between, so a live-mount listing must never be used to address cells.
@@ -123,7 +123,7 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (private/renet/pkg/
   - A staged listing opened from the seal carries extents and the offset.
   - A live-mount listing carries neither.
   - An offset failure still seals a listing, without positions.
-    (ticked) 2026-10-28T10:58:57Z by d778be9d: commit:7c5a73bb3 (renet 18ecc8b) + perf 27326b22a (renet 7c3cf0a); go test ./cmd/renet/ -run 'TestSnapshotTOC|TestBrowseAt' rc=0
+    (ticked) 2026-10-28T10:58:57Z by d778be9d: commit:8f941d547 (renet 18ecc8b) + perf 4ba4d0ab5 (renet 7c3cf0a); go test ./cmd/renet/ -run 'TestSnapshotTOC|TestBrowseAt' rc=0
 
   In backup_browse_at_test.go: browse-at JSON never contains the extents key or the offset key, even when the sealed listing has them.
 
@@ -139,7 +139,7 @@ Two more facts shape the design. `luks.Device.GetDataOffset` (private/renet/pkg/
 
   Owns: private/renet/pkg/chunkstore/download.go, private/renet/pkg/chunkstore/restore.go, private/renet/pkg/chunkstore/restore_ranges_test.go, private/renet/pkg/i18n/locales/**. Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestRestore' -count=1` rc 0.
 - [x] R4 [writer] The engine, the verb and the function (Design 3 and 4). Add pkg/restorepath (plan.go, restorepath_linux.go, restorepath_other.go). Add cmd/renet/backup_restore_path.go with the `openSnapshotListing` factoring in backup_browse_at.go, the `backup_restore_path` FunctionDef, the TierNone tiermap row, the AddCommand and help line in cmd/renet/backup.go, and the i18n keys in every renet locale. Regenerate the renet contract.
-    (ticked) 2026-10-28T12:06:32Z by d778be9d: commit:4261d5c09 (renet d7be08f, 2397a83, 79ee03c); sudo go test ./pkg/restorepath/... ./cmd/renet/ -run 'TestRestorePath|TestPlan|TestBackupRestorePath' rc=0 no SKIP; renet_types rc=0
+    (ticked) 2026-10-28T12:06:32Z by d778be9d: commit:7203d0229 (renet d7be08f, 2397a83, 79ee03c); sudo go test ./pkg/restorepath/... ./cmd/renet/ -run 'TestRestorePath|TestPlan|TestBackupRestorePath' rc=0 no SKIP; renet_types rc=0
 
   Tests in pkg/restorepath/plan_test.go (pure):
   - A file path selects one entry.
