@@ -179,9 +179,10 @@ describe('repo create (one job; rollback, identity refresh and schedules as step
     // The observer that sees the job finish runs the step from the ticket's recorded params.
     const refresh = ticket.steps.find((s) => s.name === 'identityRefresh');
     const handler = await resolveStepHandler('identityRefresh');
+    expect(ticket.machine).toBe('m1');
     await handler({
       jobId: ticket.jobId ?? 'job-1',
-      machine: ticket.machine ?? 'm1',
+      machine: ticket.machine as string,
       params: refresh?.params ?? {},
       state: 'succeeded',
     });

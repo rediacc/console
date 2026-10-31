@@ -481,6 +481,28 @@ describe('repo create network ID: renet allocates inside the job', () => {
     expect(outputService.warn).toHaveBeenCalledWith(
       expect.stringContaining('its record could not be completed')
     );
+    // The ticket id is printed once: JobDispatchedError's message already carries it (review 220611ec.1).
+    const message = String(vi.mocked(outputService.warn).mock.calls.at(-1)?.[0]);
+    expect(message.match(/ticket /g) ?? []).toHaveLength(1);
+  });
+
+  it('does not report a failed job as created when rendering its failure throws', async () => {
+    const { renderLocalExecutionFailure } = await import('../../utils/local-execution-failures.js');
+    vi.mocked(renderLocalExecutionFailure).mockImplementationOnce(() => {
+      throw new Error('render broke');
+    });
+    execute.mockResolvedValueOnce({
+      success: false,
+      allSteps: [],
+      exitCode: 1,
+      state: 'failed',
+      jobId: 'j-2',
+    } as never);
+    const { outputService } = await import('../../services/core/output.js');
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    expect(outputService.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('finishing it failed')
+    );
   });
 
   it('still rolls the registration back when the start was refused', async () => {

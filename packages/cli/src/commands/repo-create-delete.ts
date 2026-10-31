@@ -103,11 +103,16 @@ async function runCreateJob(
   } catch (error) {
     if (!(error instanceof JobDispatchedError)) throw error;
     // The job was dispatched and recording it failed: the repo exists on the machine, so the registration stays.
-    const ref = error.requestId ? ` (ticket ${error.requestId})` : '';
+    // error.message already names the job and the ticket, so nothing is repeated here.
     outputService.warn(
-      `repo create: ${name} was created, but its record could not be completed${ref}: ${error.message}. Run \`rdc repo status ${name}\` to check it and \`rdc job wait\` to settle any open steps.`
+      `repo create: ${name} was created, but its record could not be completed: ${error.message}. Run \`rdc repo status ${name}\` to check it and \`rdc job wait\` to settle any open steps.`
     );
     setExitCode(1);
+    return;
+  }
+  // A failed job renders outside the finishing guard: its rendering is the failure report, not a post-create step.
+  if (outcome.kind !== 'pending' && !outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, t('commands.repo.create.failed'));
     return;
   }
   // From here the repo exists on the machine (or the job still runs): nothing below may reach the caller's rollback.
@@ -121,7 +126,7 @@ async function runCreateJob(
   }
 }
 
-/** Render the finished or pending create, and name the success-side steps that did not finish. */
+/** Render the pending or succeeded create, and name the success-side steps that did not finish. */
 function settleCreateOutcome(name: string, outcome: CommandJobOutcome): void {
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
@@ -129,20 +134,16 @@ function settleCreateOutcome(name: string, outcome: CommandJobOutcome): void {
     return;
   }
   const { result } = outcome;
-  if (result.success) {
-    if (result.allSteps && result.allSteps.length > 0) {
-      renderTimelineTotal(result.allSteps);
-    } else {
-      outputService.success(t('commands.repo.create.completed'));
-    }
-    const unfinished = outstandingSteps(outcome.steps);
-    if (unfinished.length > 0) {
-      outputService.warn(
-        `repo create: ${name} was created, but the step(s) ${unfinished.join(', ')} did not finish; rdc job wait settles them.`
-      );
-    }
+  if (result.allSteps && result.allSteps.length > 0) {
+    renderTimelineTotal(result.allSteps);
   } else {
-    renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
+    outputService.success(t('commands.repo.create.completed'));
+  }
+  const unfinished = outstandingSteps(outcome.steps);
+  if (unfinished.length > 0) {
+    outputService.warn(
+      `repo create: ${name} was created, but the step(s) ${unfinished.join(', ')} did not finish; rdc job wait settles them.`
+    );
   }
 }
 
@@ -221,7 +222,7 @@ export async function registerNewRepo(
     repositoryGuid,
     tag: 'latest',
     credential: generateCredential(),
-    ...(networkId === undefined ? {} : { networkId }),
+    ...(networkId === undefined || networkId <= 0 ? {} : { networkId }),
     placement,
     ...extra,
   });

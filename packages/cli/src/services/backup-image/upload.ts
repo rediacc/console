@@ -161,7 +161,6 @@ interface UploadPlan {
   pending: ImageUploadRecord | null;
 }
 
-/** Every refusal that needs no machine: the image, its state, the source identity, the name. */
 /** The image's state: `complete`, or absent only when `--from-repo` names the identity. */
 function readUsableState(o: UploadOptions, statePath: string): ImageState | null {
   if (!existsSync(o.image) || !statSync(o.image).isFile()) {
@@ -177,6 +176,7 @@ function readUsableState(o: UploadOptions, statePath: string): ImageState | null
   return state;
 }
 
+/** Every refusal that needs no machine: the image, its state, the source identity, the name. */
 function planUpload(o: UploadOptions, d: UploadDeps): UploadPlan {
   const { state: statePath, lock } = siblingPaths(o.image);
   const state = readUsableState(o, statePath);

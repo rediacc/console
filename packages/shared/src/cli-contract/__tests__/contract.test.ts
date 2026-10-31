@@ -395,6 +395,7 @@ describe('CLI contract', () => {
     ) => Array<readonly [string, string]>;
     const proxy = tableKeys('PROXY_EXCLUSIONS');
     const detach = tableKeys('DETACH_EXCLUSIONS');
+    expect(Object.keys(proxy).length).toBeGreaterThan(0);
     expect(Object.keys(detach).length).toBeGreaterThan(0);
     const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
     expect(generatorStale(proxy, detach, live)).toEqual([]);
