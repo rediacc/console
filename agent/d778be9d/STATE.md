@@ -1,21 +1,24 @@
-## SESSION d778be9d 2026-10-31T01:00:15Z
+## SESSION d778be9d 2026-10-31T11:47:16Z
 
-Branch 1023-1, 2026-10-31 ~02:20Z. Nothing pushed, turbo on, no PR. Promoted 6/42 plans, 591/754 boxes. Context epoch 102 handed off at 93%.
+# STATE d778be9d (2026-10-31, epoch 103)
+Branch 1023-1 HEAD 877b26cd, local commits after the republished origin/1023-1 d4cd94bd4. Operator chose "Open the PR and babysit" (ASKED:2026-10-31T08:2xZ). No PR yet.
 
-Rules: no Claude-Session trailer or claude.ai link anywhere, not even quoted in a message (the guard refuses it); messages end at `PR-TASK: 9f92c43e`; message file in its own call; literal pathspecs; >20 files needs "Sampled N files read: ...". Generated files are judged on the COMMIT tree; with other uncommitted inputs, generate in a scratch clone. Triaged plans use exactly the triaged path. pytest via `.ci/cache/toolchain/uv-tools/bin/pytest <path> -n 0`.
-
-This context landed: CLI splits (ad6234cb and three before; check:ci-max-lines green), German orthography gate (d0f72ae5, a5047279; renet catalog 655945b), npm majors (e694607e), vite floor (2c8452ba), review findings settled.
+## Done
+- main scrubbed: origin/main 62d59ac3b, 12 tags moved; no session link on any public ref. 1023-1 rebuilt on it (map /tmp/scrub/map-branch-now.txt) and pushed.
+- renet d943546, account 83910e2, elite 41b961f pushed on 1023-1; pointer commit 3e9e73b1.
+- .git/shallow removed (backup /tmp/scrub/git-shallow.bak); 42 stale worktrees removed, 138 unique files archived in ~/console-worktree-archive-20261031.
+- Fixes: f3a526ba, 16dbb438, 366f2f0d, 04de20ce, 268f6919, 877b26cd. Reviews clean.
 
 ## Delegated
-- ac4bc652dd0572bb6 | #c97a62d9 | scripts/lib/pins/drivers/npm.ts, npm-steps.ts, selftest.ts (npm cases), scripts/pins/pins.ts (flag only), docs/agent-reference/ci-gates.md (pins paragraph) | accept: npx tsx scripts/lib/pins/drivers/selftest.ts rc 0, npm run check:ci-standalone-selftests rc 0, npx tsc --noEmit -p scripts/tsconfig.json rc 0, fail-before proof per control
-
-## Next action
-1. When ac4bc652dd0572bb6 reports: rerun its accept commands, commit its files by path, tick #c97a62d9.
-2. python3 .claude/hooks/stop/wl_review.py --check; settle any open finding (fixed <sha> or not-a-bug <path:line>); worklist.py --review-commit d778be9d.
-3. Tick #d43b0a18 (PLAN-production-key-only N5 CI legs) or record why not.
-4. #831b7e48: npm run ci:quick with no commits during it, then npm run vm:check -- --changed, then the guarded `git push --force-with-lease origin 1023-1` (#8515da02).
-5. [?] #707f08ca #a98ab330 #53b05748 not before 2026-10-31T06:00Z.
+- af23b1c937e0a3a77 | #8cc42204 | owns .ci/rediacc_ci/**, .ci/lib/**, .ci/config/{carried-reds,gate-costs,lane-durations,release-*}.json, .ci/scripts/**, .claude/rediacc_hooks/tests/**, scripts/ops/** | accept: test_core_account, test_ops_cf_family, test_ops_units, test_ci_budget_report, test_gate_greenlight_closure_trace, test_pytest_conftest_rebind, test_deploy_account_secrets_local, test_release_order, test_ci_freshness pass with PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <file> -n 0.
 
 ## Big pieces
-- PLAN-detached-jobs J16 rest and J17-J19: need a command-kind executor path.
-- #a3910bfd: the rest of the CI secret class plus the account server's /proc environment.
+- PLAN-backup-program (29 open), PLAN-detached-jobs (25 open), PLAN-free-license (9 open): remaining boxes need the PR, CI, hostinger or bench runs.
+
+## Next action
+1. Run `npm run ci:quick` on a still tree as soon as the writer's files are committed; fix or carry each red.
+2. Spot-check and commit af23b1c937e0a3a77's output by path (PR-TASK 9f92c43e).
+3. `npm run vm:check -- --changed`.
+4. Push 1023-1 with TURBO_PUSH_REASON ci-cd (A1a needs the preview run), `gh pr create`, `--phase d778be9d babysit --pr <n>`, /pr-babysit.
+5. Then hostinger boxes and bench N4b/T9.
+Operator-only: revoke the two leaked claude.ai sessions.
