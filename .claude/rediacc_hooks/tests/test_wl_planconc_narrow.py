@@ -165,7 +165,7 @@ def test_a_shared_bare_gitlink_is_not_an_overlap_but_a_shared_file_still_is():
     )
 
 
-def test_the_gitlink_set_is_read_from_the_project_dir_once_per_verdict(tmp_path, monkeypatch):
+def test_the_gitlink_set_is_read_from_the_judged_root_once_per_verdict(tmp_path, monkeypatch):
     """Review b9328925.1/.2: the default set comes from the judged checkout's `.gitmodules` (the `root` the guard passes, not the hook file's own location), and is read once per spawn_verdict, not once per live plan."""
     (tmp_path / ".gitmodules").write_text(
         '[submodule "x"]\n\tpath = vendor/x\n\turl = u\n', encoding="utf-8"

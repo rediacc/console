@@ -182,7 +182,7 @@ BENCH_NAMED = r"(^|[^a-z0-9_-])(eu-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|
 BENCH_LOGIN_ASK = (
     r"totp|authenticator|2fa|two-factor|one-time (pass)?code|verification code|"
     r"(6|six)-digit|(^|[^a-z])otp([^a-z]|$)|"
-    r"(log|sign) (it |eu-bench |bench )?(back )?in([^a-z]|$)|"
+    r"(log|sign) (it |eu-bench |bench )?(back )?in(to)?([^a-z]|$)|"
     r"login(?![ _-]?(test|tests|flow|flows|script|scripts|module|tool|helper|logic|function|handler|bug|doc|docs|code path)([^a-z]|$))|re-?auth"
 )
 # Addressed to the operator, or asking leave: without it "Is the bench TOTP derivation RFC 6238?" is a fact question and "Should the bench login flow support us-bench?" a design one, and both pass.

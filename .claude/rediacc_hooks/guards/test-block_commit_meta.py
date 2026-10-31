@@ -201,6 +201,21 @@ SESSION_CASES = [
         "gh pr comment 5 -b 'see https://claude" + ".com/blog/share-your-work'",
         False,
     ),
+    (
+        "a hyphen-form session link (review 28139d6b.2)",
+        "gh pr comment 5 -b 'https://claude" + ".ai/code/session-abc1'",
+        True,
+    ),
+    (
+        "an underscore-form session link (review 28139d6b.2)",
+        "gh pr comment 5 -b 'https://claude" + ".ai/code/session_abc1'",
+        True,
+    ),
+    (
+        "CONTROL: a claude.ai blog slug naming session state",
+        "gh pr comment 5 -b 'see https://claude" + ".ai/blog/session-state'",
+        False,
+    ),
     ("CONTROL: git log --grep claude.ai", "git log --grep claude" + ".ai", False),
     ("CONTROL: grep for the trailer", "grep -rn '%s:' ." % SESSION_HEAD, False),
     (

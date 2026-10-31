@@ -161,7 +161,15 @@ BENCH_REFUSE += [
     ),
 ]
 
+BENCH_REFUSE += [
+    # Review 28139d6b.1: "into" and "sign" spellings are the same login ask.
+    ("log into spelling", "Can you log into eu-bench again?", ""),
+    ("sign into spelling", "Please sign into bench for me.", ""),
+]
+
 BENCH_PASS = [
+    # Review 28139d6b.1 control: a login ask with no bench named is not this rule's concern.
+    ("log into a non-bench service", "Can you log into the staging DB?", ""),
     (
         "the operator's door: a placeholder value",
         (

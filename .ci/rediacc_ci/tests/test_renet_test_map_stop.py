@@ -241,3 +241,15 @@ def test_an_unreadable_console_diff_selects_every_package_not_none(tmp_path, mon
     text = wr.advisory(root, env)
     assert text is not None, "an unreadable console diff silenced the advisory"
     assert "every package" in text, text
+
+
+def test_a_missing_merge_base_selects_every_package_not_none(tmp_path):
+    """Review 28139d6b.5: with no origin/main the console merge-base is absent, which is unknown, and unknown is every package."""
+    root, renet, env = _world(tmp_path)
+    (renet / "README.md").write_text("renet changed\n", encoding="utf-8")
+    assert wr.advisory(root, env) is None, "control: a docs-only change with origin/main present"
+    _git(root, "update-ref", "-d", "refs/remotes/origin/main")
+    assert wr.console_changed_since(root) is None
+    text = wr.advisory(root, env)
+    assert text is not None, "a missing merge-base silenced the advisory"
+    assert "every package" in text, text
