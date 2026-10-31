@@ -2004,8 +2004,8 @@
     "refreshed_at": "2026-10-20T18:11:20Z",
     "jobs": {
       "Validate Promotion": {
-        "observed_max_seconds": 473,
-        "samples": 3
+        "observed_max_seconds": 344,
+        "samples": 1
       },
       "Stage Artifacts": {
         "observed_max_seconds": 668,

@@ -32,21 +32,58 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
+        "P-A1:agent/plans/PLAN-backup-download-from-store.md",
+        "P-A1:agent/plans/PLAN-backup-local-image.md",
+        "P-A1:agent/plans/PLAN-backup-meter-orphaned-chunks.md",
+        "P-A1:agent/plans/PLAN-backup-plane-shared-bucket-hardening.md",
         "P-A1:agent/plans/PLAN-backup-program.md",
+        "P-A1:agent/plans/PLAN-backup-restore-path.md",
+        "P-A1:agent/plans/PLAN-ciquick-reds-1023-1.md",
+        "P-A1:agent/plans/PLAN-cli-tofu-toolchain.md",
         "P-A1:agent/plans/PLAN-cloudflare-proxy.md",
         "P-A1:agent/plans/PLAN-cloudflare-spend-guard.md",
         "P-A1:agent/plans/PLAN-config-networkid-discovery.md",
         "P-A1:agent/plans/PLAN-console-executor-multi-org.md",
+        "P-A1:agent/plans/PLAN-converge-preflight-and-repo-recovery.md",
+        "P-A1:agent/plans/PLAN-detached-jobs.md",
+        "P-A1:agent/plans/PLAN-docker-pin-digest.md",
+        "P-A1:agent/plans/PLAN-drop-free-license-ip-prefix-hash.md",
         "P-A1:agent/plans/PLAN-executor-durable-object-policy.md",
+        "P-A1:agent/plans/PLAN-free-license.md",
         "P-A1:agent/plans/PLAN-gpu-device-grants.md",
+        "P-A1:agent/plans/PLAN-jobs-backup-real-machine-tests.md",
+        "P-A1:agent/plans/PLAN-local-release.md",
+        "P-A1:agent/plans/PLAN-org-executor-connect-timeout-relocate.md",
         "P-A1:agent/plans/PLAN-plan-preflight.md",
+        "P-A1:agent/plans/PLAN-production-key-only.md",
         "P-A1:agent/plans/PLAN-proxy-cd-six-targets.md",
+        "P-A1:agent/plans/PLAN-renet-bridge-leftovers.md",
+        "P-A1:agent/plans/PLAN-renet-docker-running-semantics.md",
+        "P-A1:agent/plans/PLAN-renet-executor-tiered-license-check.md",
+        "P-A1:agent/plans/PLAN-renet-fetch-retries.md",
+        "P-A1:agent/plans/PLAN-renet-run-docker-sock-isolation.md",
         "P-A1:agent/plans/PLAN-renet-runtime-converge.md",
+        "P-A1:agent/plans/PLAN-repo-docker-storage-prune.md",
+        "P-A1:agent/plans/PLAN-retired-terms-submodule-scan.md",
         "P-A1:agent/plans/PLAN-sandbox-tenant-separation.md",
+        "P-A1:agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md",
+        "P-A1:agent/plans/PLAN-settings-set-verb.md",
+        "P-A1:agent/plans/PLAN-snapshot-read-io-cap.md",
+        "P-A1:agent/plans/PLAN-split-cli-files-over-512-line-budget.md",
+        "P-A1:agent/plans/PLAN-ssh-key-source-ranges.md",
         "P-A1:agent/plans/PLAN-sync-remote-file-ownership.md",
-        "P-A1:agent/plans/PLAN-telemetry-export.md"
+        "P-A1:agent/plans/PLAN-telemetry-export.md",
+        "P-A1:agent/plans/PLAN-tested-on-bench.md"
       ],
-      "reason": "P-A1 is a merge-time condition, and a local ci:quick run has no PR body, so it cannot see the Operational-Reason line the 1023-1 PR carries, which check:ci-plan-implementation admits in CI (operator ruling 2026-10-02; push and babysit authorised ASKED:2026-10-27T05:00Z). Each named plan still has open boxes of two kinds: live or post-merge runs that close only after the push or the merge (edge and stable rollout, the first CD run, scheduled runs on main, hostinger steps behind the eu-remote re-bind), and implementation boxes queued in this PR's turbo batch. CI still judges every key; this entry is removed before the merge."
+      "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, of two kinds. Live or post-merge runs close only after the push or the merge (edge and stable rollout, the first CD run, scheduled runs on main, hostinger and bench receipts), and implementation boxes are queued in this branch's turbo batch. The operator chose a backup push with no PR (ASKED:2026-10-31T06:05Z), so this push carries no Operational-Reason line; CI still judges every key, and this entry is removed before the merge."
+    },
+    {
+      "gate": "check:ci-budget-freshness",
+      "findings": [
+        "gate-costs:unmeasured:check:actions",
+        "gate-costs:unmeasured:check:ci-external-links"
+      ],
+      "reason": "The nightly gate-cost capture runs main (403f47b97 in housekeeping runs 40664390037, 40851451175 and 41035785121), where check:actions failed on docker/login-action v4.6.0 and check:ci-external-links on a bench.rediacc.com 403. This branch already fixes both (login-action v4.7.0 in the workflows; bench.rediacc.com allowlisted in scripts/gates/check-external-links.ts:102), and both gates pass on HEAD. Only the first nightly after the merge can measure them, so the two keys are carried until then; refreshing the baseline now would record a red."
     }
   ]
 }
