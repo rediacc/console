@@ -1,16 +1,19 @@
-## SESSION d778be9d 2026-10-31T00:45:19Z
+## SESSION d778be9d 2026-10-31T01:00:15Z
 
-Branch 1023-1, 2026-10-31 ~01:50Z. Nothing pushed, turbo on, no PR. Promoted 6/42 plans, 591/754 boxes.
+Branch 1023-1, 2026-10-31 ~02:20Z. Nothing pushed, turbo on, no PR. Promoted 6/42 plans, 591/754 boxes. Context epoch 102 handed off at 93%.
 
-Rules: no Claude-Session trailer or claude.ai link ever, including a quoted example in a message (the guard refuses it); messages end at `PR-TASK: 9f92c43e`; message file in its own call; literal pathspecs; >20 files needs "Sampled N files read: ...". Generated files are judged on the COMMIT tree: with other uncommitted inputs, generate in a scratch clone (clone --shared, checkout HEAD, copy the unit's files, `ln -sfn` node_modules). A triaged plan must use exactly the triaged path. pytest via `.ci/cache/toolchain/uv-tools/bin/pytest <path> -n 0`, never `-p no:cacheprovider`.
+Rules: no Claude-Session trailer or claude.ai link anywhere, not even quoted in a message (the guard refuses it); messages end at `PR-TASK: 9f92c43e`; message file in its own call; literal pathspecs; >20 files needs "Sampled N files read: ...". Generated files are judged on the COMMIT tree; with other uncommitted inputs, generate in a scratch clone. Triaged plans use exactly the triaged path. pytest via `.ci/cache/toolchain/uv-tools/bin/pytest <path> -n 0`.
 
-Landed since the last STATE: glob 14 / minimatch 11 / oxc-parser 0.156 (e694607e), vite floor (2c8452ba), German diacritics + locale-only exemption (bcf0bb08), repo create JobDispatchedError (220611ec), session-link guard (801f5209, e7915725), Free License card COMMUNITY-only (account), CLI splits S2 S3 S4 (2270ce5e, 486bad68, 8a25a038).
+This context landed: CLI splits (ad6234cb and three before; check:ci-max-lines green), German orthography gate (d0f72ae5, a5047279; renet catalog 655945b), npm majors (e694607e), vite floor (2c8452ba), review findings settled.
+
+## Delegated
+- ac4bc652dd0572bb6 | #c97a62d9 | scripts/lib/pins/drivers/npm.ts, npm-steps.ts, selftest.ts (npm cases), scripts/pins/pins.ts (flag only), docs/agent-reference/ci-gates.md (pins paragraph) | accept: npx tsx scripts/lib/pins/drivers/selftest.ts rc 0, npm run check:ci-standalone-selftests rc 0, npx tsc --noEmit -p scripts/tsconfig.json rc 0, fail-before proof per control
 
 ## Next action
-1. When the S1 split writer a2ea7f30f5dadb5f7 (#669ef90f, packages/cli/src/commands) reports: rerun `cd packages/cli && npx vitest run src && npx tsc --noEmit -p tsconfig.json` and `npm run check:ci-max-lines`, commit S1, tick the split plan's boxes (S1-S4, V1).
-2. When the German orthography gate writer aa10d346780602f90 (#b2d8fa29) reports: wire it (package.json, manifest.ts, gen-gates-lock, gate-bind, gen-docs, shard if pytest), commit.
-3. When the pins override writer ac4bc652dd0572bb6 (#c97a62d9) reports: verify the npm driver selftest, commit.
-4. Then settle any open per-commit findings (python3 .claude/hooks/stop/wl_review.py --check), tick #d43b0a18, run npm run ci:quick with no commits during it, npm run vm:check -- --changed, and the guarded lease push (#831b7e48, #8515da02).
+1. When ac4bc652dd0572bb6 reports: rerun its accept commands, commit its files by path, tick #c97a62d9.
+2. python3 .claude/hooks/stop/wl_review.py --check; settle any open finding (fixed <sha> or not-a-bug <path:line>); worklist.py --review-commit d778be9d.
+3. Tick #d43b0a18 (PLAN-production-key-only N5 CI legs) or record why not.
+4. #831b7e48: npm run ci:quick with no commits during it, then npm run vm:check -- --changed, then the guarded `git push --force-with-lease origin 1023-1` (#8515da02).
 5. [?] #707f08ca #a98ab330 #53b05748 not before 2026-10-31T06:00Z.
 
 ## Big pieces
