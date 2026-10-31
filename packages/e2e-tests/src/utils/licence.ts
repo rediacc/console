@@ -45,7 +45,7 @@ const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const LOCAL_PLAN = 'PROFESSIONAL';
 const LOCAL_EMAIL = 'e2e-bridge-licence@rediacc.io';
 const LOCAL_LOGIN_PHRASE = 'E2eBridgeLicence123!';
-const LOCAL_TOKEN_SCOPES = ['license:read', 'license:activate', 'subscription:read', 'backup:read'];
+const LOCAL_TOKEN_SCOPES = ['license:read', 'license:activate', 'subscription:read', 'backup:read'] as const;
 
 /** The runner's bridge executor (RenetFunctionsTestRunner.executeViaBridge). */
 export type BridgeExec = (
@@ -58,14 +58,14 @@ export type BridgeExec = (
 export const e2eRepoGuid = (): string => randomUUID();
 
 /** Whether a repository name can carry a licence (the account server signs UUIDs only). */
-export const isRepoGuid = (name: string): boolean => GUID_PATTERN.test(name);
+const isRepoGuid = (name: string): boolean => GUID_PATTERN.test(name);
 
 /** The account server licences come from, read at call time (global setup may set it). */
-export const accountServer = (): string =>
+const accountServer = (): string =>
   (process.env.REDIACC_ACCOUNT_SERVER ?? '').trim().replace(/\/+$/, '');
 
 /** The API token licences are issued under, read at call time. */
-export const accountToken = (): string => (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
+const accountToken = (): string => (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
 
 export interface RepoLicenceRequest {
   /** The repository's renet name, which must be a GUID. */

@@ -67,7 +67,7 @@ const MAX_ADDRESSES = 4;
 /** The most the probe reads before it decides. */
 const MAX_READ_BYTES = 256;
 /** Every SSH server opens with this (RFC 4253 section 4.2). */
-const SSH_PREFIX = [0x53, 0x53, 0x48, 0x2d];
+const SSH_PREFIX = [0x53, 0x53, 0x48, 0x2d] as const;
 /** SMTP: never probed, so a report cannot point the Worker at a mail server. */
 const SMTP_PORT = 25;
 

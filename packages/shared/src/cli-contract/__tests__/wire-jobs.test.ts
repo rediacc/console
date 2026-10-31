@@ -24,13 +24,17 @@ const overlap = {
   attach: 'rdc job logs j18f2a-0123abcd -m prod-1 --follow',
 } as const;
 
+/** A copy of `value` without `key`, for the refusal cases that need a missing field. */
+const omitKey = <T extends object>(value: T, key: keyof T) =>
+  Object.fromEntries(Object.entries(value).filter(([k]) => k !== key));
+
 describe('JobOverlapSchema', () => {
   it('round-trips an overlap entry', () => {
     expect(JobOverlapSchema.parse(overlap)).toEqual(overlap);
   });
 
   it('refuses an entry that names no job', () => {
-    const { jobId: _drop, ...noJob } = overlap;
+    const noJob = omitKey(overlap, 'jobId');
     expect(JobOverlapSchema.safeParse(noJob).success).toBe(false);
   });
 
@@ -77,7 +81,7 @@ describe('StreamLineSchema job lines', () => {
   });
 
   it('refuses a result whose overlap names no job', () => {
-    const { jobId: _drop, ...noJob } = overlap;
+    const noJob = omitKey(overlap, 'jobId');
     const parsed = StreamLineSchema.safeParse({
       kind: 'result',
       result: { success: false, exitCode: 15, durationMs: 1, overlaps: [noJob] },
@@ -124,7 +128,7 @@ describe('JobPollResponseSchema', () => {
   });
 
   it('refuses a body without nextLine', () => {
-    const { nextLine: _drop, ...noNext } = sample;
+    const noNext = omitKey(sample, 'nextLine');
     expect(JobPollResponseSchema.safeParse(noNext).success).toBe(false);
   });
 });

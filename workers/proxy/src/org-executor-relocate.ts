@@ -104,9 +104,9 @@ export function recentCount(stored: number[], now: number): number {
 }
 
 /** A probe verdict is reused for this long per host and port. */
-export const PROBE_CACHE_MS = 60_000;
+const PROBE_CACHE_MS = 60_000;
 /** At most this many probes run per instance inside UNREACHABLE_WINDOW_MS; past it a report is `skipped` and does not count. */
-export const PROBE_CAP = 6;
+const PROBE_CAP = 6;
 
 /**
  * The count gate of `recordEgressUnreachable` (operator ruling ASKED:2026-10-29T05:18Z): a report counts toward relocation only when the Worker itself reaches the reported machine's SSH banner, so a machine that is down or has a closed port never moves the executor. Verdicts are cached per host and port for PROBE_CACHE_MS, and probes are capped at PROBE_CAP per window, so a container cannot drive the Worker into a probe storm. In memory only: a restarted instance starts with an empty cache, which costs at most one probe more.

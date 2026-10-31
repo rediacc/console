@@ -43,7 +43,7 @@ export function fakeSocket(script: ScriptedRead[], options: { openedRejects?: bo
   const reader = {
     read: (): Promise<ReadableStreamReadResult<Uint8Array>> => {
       state.reads += 1;
-      const next = queue.shift() ?? 'end';
+      const next: ScriptedRead = queue.length > 0 ? (queue.shift() as ScriptedRead) : 'end';
       if (next === 'end') return Promise.resolve({ done: true, value: undefined });
       if (next === 'hang') return new Promise(() => undefined);
       if (typeof next === 'object' && 'reject' in next) return Promise.reject(next.reject);

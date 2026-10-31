@@ -55,6 +55,7 @@ const repoEventTypes = [
   'cli.repo.list',
   'cli.repo.log',
   'cli.repo.merge',
+  'cli.repo.migrate',
   'cli.repo.mismatch',
   'cli.repo.mount',
   'cli.repo.ownership',

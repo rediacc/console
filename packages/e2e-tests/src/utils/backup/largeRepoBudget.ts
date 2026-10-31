@@ -13,13 +13,13 @@ export const GIB = 1024 * MIB;
 export const METADATA_CELL_SLACK = 32;
 
 /** The incremental may take at most this fraction of the seed's time. */
-export const INCR_TIME_RATIO = 0.1;
+const INCR_TIME_RATIO = 0.1;
 
 /** Absolute cap on the incremental, so a slow seed cannot loosen the ratio. */
 export const INCR_TIME_CAP_MS = 180_000;
 
 /** The seed must have uploaded at least this fraction of the bytes it wrote. */
-export const SEED_UPLOAD_FLOOR = 0.98;
+const SEED_UPLOAD_FLOOR = 0.98;
 
 export interface SnapshotMeasure {
   durationMs: number;

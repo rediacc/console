@@ -70,7 +70,9 @@ describe('buildPasswordVault', () => {
 
   // The old flag path emitted `--password` with no `--repository`; the vault path has no slot for a credential without a repository, so the call is refused instead of sending a vault that cannot unlock anything.
   it('refuses a password without a repository', () => {
-    const { repository: _repository, ...withoutRepository } = opts;
+    const withoutRepository = Object.fromEntries(
+      Object.entries(opts).filter(([k]) => k !== 'repository')
+    ) as typeof opts;
     expect(() => buildPasswordVault(withoutRepository, '2816')).toThrow(
       'needs both password and repository'
     );

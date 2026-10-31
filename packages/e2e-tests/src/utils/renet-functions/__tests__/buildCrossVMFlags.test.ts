@@ -25,7 +25,7 @@ describe('RenetFunctionsTestRunner.buildCrossVMFlags', () => {
 
   it('gives other verbs the machine flags and neither user nor key', () => {
     const flags = crossVMFlags()({
-      function: 'datastore_init',
+      function: 'backup_list',
       sourceMachine: 'a',
       destMachine: 'b',
     });

@@ -37,7 +37,7 @@ describe('orderedKeys', () => {
     'termsOfService',
     'refundPolicy',
     'telemetryPolicy',
-  ];
+  ] as const;
   type Titled = Record<string, { title: string; subsections?: Record<string, { title: string }> }>;
 
   it('covers all 13 locales', () => {
