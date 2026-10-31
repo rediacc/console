@@ -227,7 +227,8 @@ def test_fake_account_serves_the_stub_issuer() -> None:
     t = gate.mint_tokens()
     with gate.FakeAccount(t["executor"], t["caller"]) as fake:
         assert gate._post(fake.url + "/stub/route", {"bearer": t["caller"]}) == {
-            "orgId": gate.CALLER_ORG
+            "orgId": gate.CALLER_ORG,
+            "placement": 0,
         }
         assert "refused" in gate._post(fake.url + "/stub/route", {"bearer": t["stranger"]})
         gate._post(fake.url + "/stub/issue", {"orgId": gate.CALLER_ORG})
