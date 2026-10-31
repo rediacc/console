@@ -189,12 +189,15 @@ export interface Finding {
 
 /** Remove the parts of a value that are not German prose. */
 export function proseOf(value: string): string {
-  // A single-brace slot is a one-word BRANCH (prose) when a select or plural key stands
-  // before it, and the key itself follows the selector (", select,") or the previous branch's
-  // closing brace: "male {fuer}", "one {fuer}", "=0 {fuer}". Anywhere else, "Hallo {name}"
-  // included, the slot is a placeholder.
-  const slot =
-    /(?<!(?:(?:,\s*(?:select|plural|selectordinal)\s*,|\})\s*(?:\w+|=\d+)|\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g;
+  // A single-brace slot is a one-word BRANCH (prose) after a plural key ("one {fuer}",
+  // "=0 {fuer}"). In an ICU message a select key is a branch too, when it follows the selector
+  // (", select,") or the previous branch's closing brace ("male {fuer}", "female {fuer}").
+  // Anywhere else the slot is a placeholder: "Hallo {name}", and outside ICU also
+  // "{count} Dateien {name}".
+  const icu = /,\s*(?:select|plural|selectordinal)\s*,/.test(value);
+  const slot = icu
+    ? /(?<!(?:(?:,\s*(?:select|plural|selectordinal)\s*,|\})\s*(?:\w+|=\d+)|\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g
+    : /(?<!(?:\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g;
   return (
     value
       .replace(/\{\{[^}]*\}\}/g, ' ')
@@ -448,6 +451,11 @@ function controls(): ControlCase[] {
   eq(
     'CONTROL: a placeholder after a word in an ICU message stays skipped: "Hallo {fuer}, {n, plural, ...}" (review 34ac220b.1)',
     words('Hallo {fuer}, {n, plural, one {x} other {y}}'),
+    []
+  );
+  eq(
+    'CONTROL: outside ICU a placeholder after "} word" stays skipped: "{count} Dateien {fuer}" (review b7ee56a2.1)',
+    words('{count} Dateien {fuer}'),
     []
   );
   eq(
