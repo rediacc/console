@@ -16,7 +16,7 @@ WHERE THE POOL LIVES, and why it is never `.ci/cache`. `.ci/cache` is per checko
 3. `/run/user/<uid>/rediacc-cores`, when that exists and is this user's: it is what `XDG_RUNTIME_DIR` names on a systemd host, named directly so a process whose environment lost the variable still joins the same pool;
 4. `/tmp/rediacc-cores-<uid>`, the literal /tmp and NOT `$TMPDIR`, because runtmp and the test fixtures redirect `TMPDIR` per run, and a pool keyed on it would split into one pool per run, each believing it owns every core.
 
-A lease directory owned by another user is refused (exit 69), never shared: its tokens would be someone else's to forge.
+A lease directory owned by another user is refused (exit 69), never shared: its tokens would be someone else's to forge. Items 2 and 3 skip a `rediacc-cores` that exists and is another user's, so a root-owned pool Docker left behind at boot (the devbox bind source) falls through to item 4 instead of refusing every run.
 
 THE POOL SIZE is `$REDIACC_CORE_LEASE_TOKENS` when set to a positive integer (the tests use 4), else `available_cores()`.
 
@@ -191,7 +191,10 @@ def lease_dir(environ: Mapping[str, str] | None = None) -> pathlib.Path:
     uid = os.getuid()
     for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
         if runtime and _owned_dir(runtime):
-            return pathlib.Path(runtime) / "rediacc-cores"
+            pool = pathlib.Path(runtime) / "rediacc-cores"
+            # A pool another user made inside this user's runtime dir is skipped, not refused: Docker recreates a missing bind source as root when it restarts the devbox at boot, before this user's session exists (2026-10-31).
+            if not pool.exists() or _owned_dir(str(pool)):
+                return pool
     # The literal /tmp on purpose, never $TMPDIR (module docstring, item 4); the owner check in Pool.ensure covers what S108 warns about.
     return pathlib.Path("/tmp") / ("rediacc-cores-%d" % uid)
 

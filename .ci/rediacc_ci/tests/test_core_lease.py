@@ -632,6 +632,20 @@ def test_a_lease_dir_owned_by_another_user_is_refused(tmp_path: pathlib.Path) ->
     assert core_lease.DIR_ENV in out.stderr
 
 
+def test_a_runtime_pool_owned_by_another_user_is_skipped(tmp_path: pathlib.Path) -> None:
+    """Docker recreates the devbox's missing bind source `/run/user/<uid>/rediacc-cores` as root at boot; that pool is passed over, never chosen and refused."""
+    if pathlib.Path("/").stat().st_uid == os.getuid():
+        pytest.skip("running as the owner of /, so / is not another user's directory here")
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "rediacc-cores").symlink_to("/")
+    chosen = core_lease.lease_dir({"XDG_RUNTIME_DIR": str(run)})
+    assert chosen != run / "rediacc-cores"
+    # CONTROL: the same runtime dir with no foreign pool in it is chosen.
+    (run / "rediacc-cores").unlink()
+    assert core_lease.lease_dir({"XDG_RUNTIME_DIR": str(run)}) == run / "rediacc-cores"
+
+
 def test_status_judges_liveness_only_inside_its_own_pid_namespace(tmp_path: pathlib.Path) -> None:
     """A live holder in this namespace is alive; the same sidecar stamped with another namespace (the devbox versus the host, sharing the directory through a bind mount) is reported as unknown, never as gone."""
     lease = Lease(MODULE, tmp_path / "pool")
