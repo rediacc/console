@@ -1,24 +1,30 @@
-## SESSION d778be9d 2026-10-31T11:47:16Z
+## SESSION d778be9d 2026-10-31T15:38:14Z
 
-# STATE d778be9d (2026-10-31, epoch 103)
-Branch 1023-1 HEAD 877b26cd, local commits after the republished origin/1023-1 d4cd94bd4. Operator chose "Open the PR and babysit" (ASKED:2026-10-31T08:2xZ). No PR yet.
+Branch 1023-1 HEAD 0c11012fb, past origin/1023-1 d4cd94bd4. main scrubbed (62d59ac3b). No PR yet; operator chose "Open the PR and babysit" (ASKED:2026-10-31T08:2xZ). Effort set to quiet at the operator's word (2026-10-31T14:18Z). Weekly usage 93%. The machine restarted for a system update; hibernate was cancelled.
 
-## Done
-- main scrubbed: origin/main 62d59ac3b, 12 tags moved; no session link on any public ref. 1023-1 rebuilt on it (map /tmp/scrub/map-branch-now.txt) and pushed.
-- renet d943546, account 83910e2, elite 41b961f pushed on 1023-1; pointer commit 3e9e73b1.
-- .git/shallow removed (backup /tmp/scrub/git-shallow.bak); 42 stale worktrees removed, 138 unique files archived in ~/console-worktree-archive-20261031.
-- Fixes: f3a526ba, 16dbb438, 366f2f0d, 04de20ce, 268f6919, 877b26cd. Reviews clean.
+## Standing rules
+- Never a Claude-Session trailer or claude.ai link in commits, tags, PR bodies or comments (console is public); messages end at PR-TASK, no Co-Authored-By.
+- Commit by literal pathspec; above 20 files add "Sampled N files read ..." plus a Proof line.
+- Write the commit message file in one call and commit in another, because the prose guard reads the file before the command runs.
+- pytest: .ci/cache/toolchain/uv-tools/bin/pytest -q <ids> from the repo root; never vitest from the root.
+- No commit while ci:quick runs: a moved HEAD voids the receipt (it happened on run bkgtbxyrz).
 
 ## Delegated
-- af23b1c937e0a3a77 | #8cc42204 | owns .ci/rediacc_ci/**, .ci/lib/**, .ci/config/{carried-reds,gate-costs,lane-durations,release-*}.json, .ci/scripts/**, .claude/rediacc_hooks/tests/**, scripts/ops/** | accept: test_core_account, test_ops_cf_family, test_ops_units, test_ci_budget_report, test_gate_greenlight_closure_trace, test_pytest_conftest_rebind, test_deploy_account_secrets_local, test_release_order, test_ci_freshness pass with PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <file> -n 0.
+- none live.
+
+## Last ci:quick (bkgtbxyrz, /tmp/ciquick9.out, on 0257e387, void: HEAD moved)
+- check:ci-python-lint: fixed in 0c11012fb (ruff format).
+- check:ci-embed-asset-freshness: rsync timeouts (network), rerun.
+- check:ci-plan-implementation: carried by plan.
+- check:ci-pytest: only test_proxies_unit_tests e2e-unit, which passes alone (172/172); a load flake under VMs and memory pressure.
 
 ## Big pieces
-- PLAN-backup-program (29 open), PLAN-detached-jobs (25 open), PLAN-free-license (9 open): remaining boxes need the PR, CI, hostinger or bench runs.
+- PLAN-backup-program (29 open), PLAN-detached-jobs (25), PLAN-free-license (9), PLAN-production-key-only (10): need the PR, CI, hostinger or bench.
 
 ## Next action
-1. Run `npm run ci:quick` on a still tree as soon as the writer's files are committed; fix or carry each red.
-2. Spot-check and commit af23b1c937e0a3a77's output by path (PR-TASK 9f92c43e).
-3. `npm run vm:check -- --changed`.
-4. Push 1023-1 with TURBO_PUSH_REASON ci-cd (A1a needs the preview run), `gh pr create`, `--phase d778be9d babysit --pr <n>`, /pr-babysit.
-5. Then hostinger boxes and bench N4b/T9.
+1. `worklist.py --review-commit d778be9d` and settle any 0c11012f finding.
+2. #624b71f3 advisories: 877b26cd.1 (drive the .ci/bootstrap.sh:623 PyYAML mismatch branch in a scratch venv), 43b75199.1 (this STATE's Standing rules restore what it named; mark fixed).
+3. Rerun `npm run ci:quick` with HEAD frozen; carry or fix the reds.
+4. `npm run vm:check -- --changed` after ci:quick, never beside it.
+5. Push 1023-1 (TURBO_PUSH_REASON ci-cd), submodule PRs on 1023-1, `gh pr create`, `--phase d778be9d babysit --pr <n>`, /pr-babysit.
 Operator-only: revoke the two leaked claude.ai sessions.
