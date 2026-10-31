@@ -196,8 +196,7 @@ def test_no_dockerd_prints_nopid(tmp_path: pathlib.Path) -> None:
     not os.access("/proc/1/ns/mnt", os.R_OK),
     reason=(
         "CANNOT RUN (1 of 1 requirement(s) missing): a readable /proc/1/ns/mnt. "
-        "A non-root user cannot read pid 1's namespace link once pid 1 is root's "
-        "(WSL with systemd after a restart, 2026-10-31)."
+        "A non-root user cannot read pid 1's namespace link when pid 1 is root's."
     ),
 )
 def test_a_dockerd_in_the_host_namespace_is_refused(tmp_path: pathlib.Path) -> None:
