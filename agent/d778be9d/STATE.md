@@ -1,18 +1,18 @@
-## SESSION d778be9d 2026-10-30T23:55:01Z
+## SESSION d778be9d 2026-10-31T00:45:19Z
 
-Branch 1023-1, 2026-10-31 ~01:15Z. Nothing pushed, turbo on, no PR. Promoted 6/42 plans, 591/754 boxes.
+Branch 1023-1, 2026-10-31 ~01:50Z. Nothing pushed, turbo on, no PR. Promoted 6/42 plans, 591/754 boxes.
 
-Rules: no Claude-Session trailer or claude.ai link ever (public repo); messages end at `PR-TASK: 9f92c43e`; message file in its own call; literal pathspecs; >20 files needs "Sampled N files read: ...". Generated files are judged on the COMMIT tree: with other uncommitted inputs, generate in a scratch clone (clone --shared, checkout HEAD, copy the unit's files, `ln -sfn` node_modules, gen-docs / plan-record there, copy outputs back). A triaged plan must use exactly the triaged path. pytest via `.ci/cache/toolchain/uv-tools/bin/pytest <path> -n 0`, never `-p no:cacheprovider`.
+Rules: no Claude-Session trailer or claude.ai link ever, including a quoted example in a message (the guard refuses it); messages end at `PR-TASK: 9f92c43e`; message file in its own call; literal pathspecs; >20 files needs "Sampled N files read: ...". Generated files are judged on the COMMIT tree: with other uncommitted inputs, generate in a scratch clone (clone --shared, checkout HEAD, copy the unit's files, `ln -sfn` node_modules). A triaged plan must use exactly the triaged path. pytest via `.ci/cache/toolchain/uv-tools/bin/pytest <path> -n 0`, never `-p no:cacheprovider`.
 
-Landed since the last STATE: N1 pins complete locally (pytest 785f1118, npm trees 241d7cd7; glob 14 / minimatch 11 / oxc-parser 0.156 held, audit #18720d75); review-fix rounds (3decc360 repo create, 0145827 renet system test, 02ac4e89 freshness gate and tests, 78732fad plan paths, account card test and spelling); about 60 review findings settled.
+Landed since the last STATE: glob 14 / minimatch 11 / oxc-parser 0.156 (e694607e), vite floor (2c8452ba), German diacritics + locale-only exemption (bcf0bb08), repo create JobDispatchedError (220611ec), session-link guard (801f5209, e7915725), Free License card COMMUNITY-only (account), CLI splits S2 S3 S4 (2270ce5e, 486bad68, 8a25a038).
 
 ## Next action
-1. Read the hook-fix writer a2961c1e64d049810 (#1cae9535: findings 28139d6b.1 .2 .5, c9e86b6a.1), verify, commit, mark them; then python3 .claude/hooks/stop/wl_review.py --check until clean.
-2. #0819d732 German ToS transliterations; #dd528d36 repo create post-dispatch rollback (command-job.ts); #18720d75 glob/minimatch/oxc-parser audit.
-3. #d43b0a18 (PLAN-production-key-only N5 CI legs) must be ticked before the push in step 4.
-4. #831b7e48: npm run ci:quick with no commits during it, then npm run vm:check -- --changed, then the guarded lease push (#8515da02).
+1. When the S1 split writer a2ea7f30f5dadb5f7 (#669ef90f, packages/cli/src/commands) reports: rerun `cd packages/cli && npx vitest run src && npx tsc --noEmit -p tsconfig.json` and `npm run check:ci-max-lines`, commit S1, tick the split plan's boxes (S1-S4, V1).
+2. When the German orthography gate writer aa10d346780602f90 (#b2d8fa29) reports: wire it (package.json, manifest.ts, gen-gates-lock, gate-bind, gen-docs, shard if pytest), commit.
+3. When the pins override writer ac4bc652dd0572bb6 (#c97a62d9) reports: verify the npm driver selftest, commit.
+4. Then settle any open per-commit findings (python3 .claude/hooks/stop/wl_review.py --check), tick #d43b0a18, run npm run ci:quick with no commits during it, npm run vm:check -- --changed, and the guarded lease push (#831b7e48, #8515da02).
 5. [?] #707f08ca #a98ab330 #53b05748 not before 2026-10-31T06:00Z.
 
 ## Big pieces
-- PLAN-detached-jobs J16 rest and J17-J19: need a command-kind executor path before the remaining verbs convert.
-- PLAN-scope-bws-signing-key follow-up #a3910bfd: the rest of the secret class plus the account server's /proc environment.
+- PLAN-detached-jobs J16 rest and J17-J19: need a command-kind executor path.
+- #a3910bfd: the rest of the CI secret class plus the account server's /proc environment.
