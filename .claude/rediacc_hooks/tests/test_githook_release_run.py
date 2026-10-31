@@ -298,11 +298,13 @@ def _settle(console: pathlib.Path) -> None:
     pkg = console / ".ci" / "rediacc_ci"
     if not pkg.is_dir():
         return
-    newest = max(
-        os.lstat(os.path.join(folder, name)).st_ctime
-        for folder, dirs, files in os.walk(pkg)
-        for name in [".", *dirs, *files]
-    )
+    newest = 0.0
+    for folder, dirs, files in os.walk(pkg):
+        for name in [".", *dirs, *files]:
+            try:
+                newest = max(newest, os.lstat(os.path.join(folder, name)).st_ctime)
+            except FileNotFoundError:
+                continue
     wait = newest + RR.SETTLE_S + 0.2 - time.time()
     if wait > 0:
         time.sleep(wait)
