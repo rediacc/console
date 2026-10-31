@@ -1344,7 +1344,7 @@ def main(argv: list[str]) -> int:
     junit_path = junit_xml_path(root)
     # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
     (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
-    # STALE JUNIT (2026-10-31): a timed-out ci:quick run emitted 30 `pytest-fail` findings read from a junit.xml written three days earlier, because the killed run never replaced it. The file is removed first, so a run that writes none emits none.
+    # A run that writes no junit (a timeout, a crash) emits no finding: a junit left by an earlier run would name its failures as this run's, so the file is removed first.
     (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
     returncode, out = run_pytest(
         pytest_bin,

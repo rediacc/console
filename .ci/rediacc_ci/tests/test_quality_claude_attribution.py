@@ -20,7 +20,7 @@ from rediacc_ci.core import gh_retry as core_retry
 from rediacc_ci.core import ghx
 from rediacc_ci.quality import claude_attribution as ca
 from rediacc_ci.tests import frozen
-from rediacc_ci.well_known import OPERATOR_EMAIL
+from rediacc_ci.well_known import CLAUDE_CODE_URL, OPERATOR_EMAIL
 
 SLUG = "claude-attribution"
 TRAILER = "Co-" + "Authored-By"
@@ -230,7 +230,7 @@ def test_a_public_claude_page_slug_is_not_a_session_link_but_real_session_links_
         "https://claude.com/blog/share-your-work",
         "https://claude.com/blog/chat-with-claude",
         "see https://claude.ai/blog/session-notes",
-        "https://claude.com/claude-code",
+        CLAUDE_CODE_URL,
     ):
         assert not ca.SESSION_PATTERN.search(ok), ok
     for bad in (

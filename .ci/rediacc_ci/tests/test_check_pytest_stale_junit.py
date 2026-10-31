@@ -2,7 +2,7 @@
 
 On 2026-10-31 a `ci:quick` run hit the whole-corpus timeout, so pytest was killed before it wrote `.ci/cache/quality-pytest/junit.xml`, and the gate emitted 30 `::finding::pytest-fail:` keys read from the junit an earlier run had left there three days before. Those named tests passed when they were run alone. `main()` now removes the junit before pytest runs.
 
-THE PLANTED DEFECT: delete the junit `unlink(missing_ok=True)` line before the unsharded `run_pytest` call, and the first test below reds with the stale key. The second test is the control: a junit the run itself writes still yields its finding, so the first test cannot pass just because findings went away.
+THE PLANTED DEFECT: delete the junit `unlink(missing_ok=True)` line before the unsharded `run_pytest` call, and the first test below reds with the stale key; delete the one before the sharded call, and the sharded test reds the same way. The second test is the control: a junit the run itself writes still yields its finding, so the first test cannot pass just because findings went away.
 """
 
 import pathlib
@@ -64,3 +64,23 @@ def test_control_a_junit_this_run_writes_still_yields_its_finding(gate) -> None:
     monkeypatch.setattr(check_pytest, "run_pytest", writes_junit)
     assert check_pytest.main([]) == check_pytest.EXIT_FAIL
     assert emitted == ["pytest-fail:%s" % FRESH_NODE]
+
+
+def test_a_timed_out_shard_leg_emits_no_finding_from_an_earlier_leg_junit(gate) -> None:
+    """The sharded path (`--shard-manifest`/`--shard`) keeps its own `junit-shard-<N>.xml`; a leg killed before writing it must not read the one an earlier run left."""
+    monkeypatch, junit_path, emitted = gate
+    root = junit_path.parent.parent.parent.parent
+    manifest = root / "manifest.json"
+    manifest.write_text(
+        '{"lane": "quality-pytest", "of": 1, "legs": [{"index": 1, "ids": ["pytest:t/test_one.py"]}]}',
+        encoding="utf-8",
+    )
+    leg_junit = check_pytest.junit_xml_path(root, shard_index=1)
+    leg_junit.write_text(_junit(STALE_NODE), encoding="utf-8")
+    monkeypatch.setattr(
+        check_pytest,
+        "run_pytest",
+        lambda *_a, **_k: (1, "check_pytest: the suite did not finish within 1s.\n"),
+    )
+    check_pytest.main(["--shard-manifest", str(manifest), "--shard", "1/1"])
+    assert emitted == []

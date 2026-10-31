@@ -189,12 +189,12 @@ export interface Finding {
 
 /** Remove the parts of a value that are not German prose. */
 export function proseOf(value: string): string {
-  // In an ICU message any word or =N before a single-brace slot is a select or plural key
-  // ("male {fuer}", "one {fuer}", "=0 {fuer}"), so that slot is a one-word BRANCH: prose.
-  const icu = /,\s*(?:select|plural|selectordinal)\s*,/.test(value);
-  const slot = icu
-    ? /(?<!(?:\b\w+|=\d+)\s*)\{[^{}\s]*\}/g
-    : /(?<!(?:\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g;
+  // A single-brace slot is a one-word BRANCH (prose) when a select or plural key stands
+  // before it, and the key itself follows the selector (", select,") or the previous branch's
+  // closing brace: "male {fuer}", "one {fuer}", "=0 {fuer}". Anywhere else, "Hallo {name}"
+  // included, the slot is a placeholder.
+  const slot =
+    /(?<!(?:(?:,\s*(?:select|plural|selectordinal)\s*,|\})\s*(?:\w+|=\d+)|\b(?:zero|one|two|few|many|other)|=\d+)\s*)\{[^{}\s]*\}/g;
   return (
     value
       .replace(/\{\{[^}]*\}\}/g, ' ')
@@ -443,6 +443,16 @@ function controls(): ControlCase[] {
   eq(
     'a one-word ICU select branch is prose: "male {fuer}" fires (review d2bb2559.1)',
     words('{g, select, male {fuer} other {x}}'),
+    ['fuer']
+  );
+  eq(
+    'CONTROL: a placeholder after a word in an ICU message stays skipped: "Hallo {fuer}, {n, plural, ...}" (review 34ac220b.1)',
+    words('Hallo {fuer}, {n, plural, one {x} other {y}}'),
+    []
+  );
+  eq(
+    'a later select branch after a closing brace is prose: "female {fuer}" fires',
+    words('{g, select, male {x} female {fuer} other {y}}'),
     ['fuer']
   );
   eq(
