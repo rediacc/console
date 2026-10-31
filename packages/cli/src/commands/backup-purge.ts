@@ -212,8 +212,8 @@ export function registerBackupPurge(backup: Command): void {
   backup
     .command('purge')
     .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.purge.description'))
     .summary(t('commands.backup.purge.descriptionShort'))
+    .description(t('commands.backup.purge.description'))
     .option('--dry-run', t('options.dryRun'))
     .option('-y, --yes', t('options.yes'))
     .action(async (repoRef: string, options: PurgeOptions) => {

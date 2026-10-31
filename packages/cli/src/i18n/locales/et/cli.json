@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "Kopeerib hoidlate tõmmised masinast kohalikku kataloogi või välisele kettale. Iga käivitus teeb värske hetktõmmise, mida hoitakse vaid seansi kestel, uuendab kohalikku koopiat kohapeal rsync-i deltaga, jätkab pärast katkestust ja kontrollib tulemust sha256-ga.",
+        "descriptionShort": "Kopeeri hoidlate imagid kohalikku kataloogi või draivi",
         "argRefs": "Kopeeritavad hoidlad (name, name:tag, soovi korral @machine)",
         "optionTo": "Olemasolev kirjutatav kataloog, mis võtab vastu faili <machine>/<name>.<tag>.img (seda ei looda kunagi)",
         "optionAll": "Kopeeri kõik valikuga -m nimetatud masina grand-hoidlad",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "Saadab kohaliku hoidla tõmmise, mille tegi 'rdc backup download', masinasse ja registreerib selle uue hoidlana. Edastus jätkub pärast katkestust ning masin kontrollib sha256 ja LUKS-i päist enne tõmmise paigutamist.",
+        "descriptionShort": "Saada allalaaditud hoidla imagi masinasse",
         "argImage": "Kohalik tõmmisefail (<name>.<tag>.img) ja selle kõrval olev .state.json",
         "optionTo": "Masin, mis tõmmise vastu võtab",
         "optionAs": "Uue hoidla nimi (vaikimisi: tõmmise hoidla nimi)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "Kustutab hoidla kõik salvestatud varunduse hetktõmmised tükihoidlast korraga. Hoidla ise jääb alles.",
+        "descriptionShort": "Kustuta hoidla kõik salvestatud varukoopia hetktõmmised",
         "notFound": "Hoidlat \"{{name}}\" selles konfiguratsioonis ei ole.",
         "forkRefused": "\"{{name}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et puhastus kustutaks ka lähtehoidla varukoopiad. Anna selle asemel lähtehoidla nimi.",
         "dryRun": "Puhastataks hoidla \"{{name}}\" varukoopiad: liin {{lineage}}, {{count}} hetktõmmist, {{bytes}} salvestatud {{chunks}} tükis.",
@@ -2497,7 +2500,7 @@
       "description": "Haldab kohalikke tööriistu, mida rdc selles masinas käivitab. `rdc tools install tofu` laadib alla kinnitatud OpenTofu väljalaske, võrdleb enne lahtipakkimist selle SHA-256 väärtust rdc-sse sisseehitatud kontrollsummaga ja paigutab binaarfaili rdc tööriistade kataloogi. `rdc tools list` näitab iga tööriista koos versiooni ja leiukohaga.",
       "install": {
         "descriptionShort": "Paigalda kinnitatud ja kontrollsummaga kontrollitud tööriist",
-        "description": "Laadib alla selles rdc järgus kinnitatud OpenTofu väljalaske, kontrollib selle SHA-256 kontrollsummat ja paigaldab selle rdc tööriistade kataloogi. Kui kontrollsumma ei klapi, kustutatakse allalaaditud fail ja midagi ei paigaldata. Terraformi ei paigaldata kunagi; kui see on juba PATH-is olemas, kasutatakse seda nii, nagu see on.",
+        "description": "Laadib alla selles CLI-s kinnitatud OpenTofu väljalaske, kontrollib selle SHA-256 kontrollsummat ja paigaldab selle rdc tööriistade kataloogi. Kui kontrollsumma ei klapi, kustutatakse allalaaditud fail ja midagi ei paigaldata. Terraformi ei paigaldata kunagi; kui see on juba PATH-is olemas, kasutatakse seda nii, nagu see on.",
         "argTool": "Paigaldatav tööriist (tofu)",
         "optionForce": "Paigalda uuesti ka siis, kui kinnitatud versioon on juba olemas",
         "downloading": "OpenTofu {{version}} allalaadimine platvormile {{platform}}...",

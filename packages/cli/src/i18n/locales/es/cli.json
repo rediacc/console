@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "Copia imágenes de repositorio de una máquina a un directorio local o a una unidad externa. Cada ejecución toma una instantánea nueva que solo existe mientras dura la sesión, actualiza la copia local en el sitio mediante delta de rsync, se reanuda tras una interrupción y verifica el resultado con sha256.",
+        "descriptionShort": "Copiar imágenes de repositorios a un directorio local o unidad",
         "argRefs": "Repositorios que copiar (name, name:tag, opcionalmente @machine)",
         "optionTo": "Directorio existente y con permiso de escritura que recibe <machine>/<name>.<tag>.img (nunca se crea)",
         "optionAll": "Copiar todos los repositorios grand de la máquina indicada con -m",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "Envía a una máquina una imagen de repositorio local, creada con 'rdc backup download', y la registra como repositorio nuevo. La transferencia se reanuda tras una interrupción, y la máquina comprueba el sha256 y la cabecera LUKS antes de colocar la imagen.",
+        "descriptionShort": "Enviar a una máquina una imagen de repositorio descargada",
         "argImage": "Archivo de imagen local (<name>.<tag>.img) con su .state.json al lado",
         "optionTo": "Máquina que recibe la imagen",
         "optionAs": "Nombre del repositorio nuevo (por defecto: el nombre de repositorio de la imagen)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "Borra de una vez todas las instantáneas de copia guardadas de un repositorio del almacén de fragmentos. El repositorio se conserva.",
+        "descriptionShort": "Eliminar todos los snapshots de backup de un repositorio",
         "notFound": "El repositorio \"{{name}}\" no está en esta configuración.",
         "forkRefused": "\"{{name}}\" es un fork y comparte su linaje de copias con el repositorio padre, así que la purga borraría también las copias del padre. Indica el repositorio padre.",
         "dryRun": "Se purgarían las copias de \"{{name}}\": linaje {{lineage}}, {{count}} instantánea(s), {{bytes}} guardados en {{chunks}} fragmento(s).",
@@ -2497,7 +2500,7 @@
       "description": "Gestiona las herramientas locales que rdc ejecuta en esta máquina. `rdc tools install tofu` descarga la versión fijada de OpenTofu, comprueba su SHA-256 con la suma integrada en rdc antes de extraerla y deja el binario en el directorio de herramientas de rdc. `rdc tools list` muestra cada herramienta con su versión y dónde se encontró.",
       "install": {
         "descriptionShort": "Instalar una herramienta fijada y verificada por suma de comprobación",
-        "description": "Descarga la versión de OpenTofu fijada en esta compilación de rdc, verifica su suma SHA-256 y la instala en el directorio de herramientas de rdc. Si la suma no coincide, se borra la descarga y no se instala nada. Terraform nunca se instala; si ya hay uno en el PATH, se usa tal cual.",
+        "description": "Descarga la versión de OpenTofu fijada en esta CLI, verifica su suma SHA-256 y la instala en el directorio de herramientas de rdc. Si la suma no coincide, se borra la descarga y no se instala nada. Terraform nunca se instala; si ya hay uno en el PATH, se usa tal cual.",
         "argTool": "Herramienta que instalar (tofu)",
         "optionForce": "Reinstalar aunque la versión fijada ya esté presente",
         "downloading": "Descargando OpenTofu {{version}} para {{platform}}...",

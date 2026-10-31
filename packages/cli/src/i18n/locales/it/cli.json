@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "Copia le immagini dei repository da una macchina in una directory locale o su un disco esterno. Ogni esecuzione crea un nuovo snapshot che esiste solo finché dura la sessione, aggiorna la copia locale sul posto con il delta di rsync, riprende dopo un'interruzione e verifica il risultato con sha256.",
+        "descriptionShort": "Copia le immagini dei repository in una directory locale o su un disco",
         "argRefs": "Repository da copiare (name, name:tag, facoltativamente @machine)",
         "optionTo": "Directory esistente e scrivibile che riceve <machine>/<name>.<tag>.img (non viene mai creata)",
         "optionAll": "Copia tutti i repository grand della macchina indicata con -m",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "Invia a una macchina un'immagine di repository locale, creata da 'rdc backup download', e la registra come nuovo repository. Il trasferimento riprende dopo un'interruzione, e la macchina controlla lo sha256 e l'header LUKS prima di collocare l'immagine.",
+        "descriptionShort": "Invia a una macchina un'immagine di repository scaricata",
         "argImage": "File immagine locale (<name>.<tag>.img) con il suo .state.json accanto",
         "optionTo": "Macchina che riceve l'immagine",
         "optionAs": "Nome del nuovo repository (predefinito: il nome del repository dell'immagine)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "Elimina in un colpo solo tutti gli snapshot di backup archiviati di un repository dall'archivio a chunk. Il repository resta intatto.",
+        "descriptionShort": "Elimina tutti gli snapshot di backup di un repository",
         "notFound": "Il repository \"{{name}}\" non è presente in questa configurazione.",
         "forkRefused": "\"{{name}}\" è un fork e condivide la linea di backup con il genitore, quindi la purga eliminerebbe anche i backup del genitore. Indica invece il repository genitore.",
         "dryRun": "Verrebbero eliminati i backup di \"{{name}}\": linea {{lineage}}, {{count}} snapshot, {{bytes}} archiviati in {{chunks}} chunk.",
@@ -2497,7 +2500,7 @@
       "description": "Gestisce gli strumenti locali che rdc esegue su questa macchina. `rdc tools install tofu` scarica la release di OpenTofu fissata, ne confronta lo SHA-256 con il checksum integrato in rdc prima di estrarla e colloca il binario nella directory degli strumenti di rdc. `rdc tools list` mostra ogni strumento con la sua versione e dove è stato trovato.",
       "install": {
         "descriptionShort": "Installa uno strumento fissato e verificato tramite checksum",
-        "description": "Scarica la release di OpenTofu fissata in questa build di rdc, ne verifica il checksum SHA-256 e la installa nella directory degli strumenti di rdc. Se il checksum non corrisponde, il download viene eliminato e non si installa nulla. Terraform non viene mai installato; se è già nel PATH, viene usato così com'è.",
+        "description": "Scarica la release di OpenTofu fissata in questa CLI, ne verifica il checksum SHA-256 e la installa nella directory degli strumenti di rdc. Se il checksum non corrisponde, il download viene eliminato e non si installa nulla. Terraform non viene mai installato; se è già nel PATH, viene usato così com'è.",
         "argTool": "Strumento da installare (tofu)",
         "optionForce": "Reinstalla anche se la versione fissata è già presente",
         "downloading": "Download di OpenTofu {{version}} per {{platform}}...",

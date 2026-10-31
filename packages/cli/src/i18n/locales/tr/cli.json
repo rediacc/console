@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "Depo imajlarını bir makineden yerel bir dizine veya harici bir diske kopyalar. Her çalıştırma yalnızca oturum sürdüğü kadar tutulan yeni bir anlık görüntü alır, yerel kopyayı rsync deltasıyla yerinde günceller, kesintiden sonra kaldığı yerden devam eder ve sonucu sha256 ile doğrular.",
+        "descriptionShort": "Depo imajlarını yerel bir dizine veya diske kopyala",
         "argRefs": "Kopyalanacak depolar (name, name:tag, isteğe bağlı @machine)",
         "optionTo": "<machine>/<name>.<tag>.img dosyasını alacak, var olan ve yazılabilir dizin (hiçbir zaman oluşturulmaz)",
         "optionAll": "-m ile belirtilen makinedeki tüm grand depoları kopyala",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "'rdc backup download' ile oluşturulmuş yerel bir depo imajını bir makineye gönderir ve yeni bir depo olarak kaydeder. Aktarım kesintiden sonra kaldığı yerden devam eder; makine imajı yerleştirmeden önce sha256 ve LUKS başlığını denetler.",
+        "descriptionShort": "İndirilen bir depo imajını makineye gönder",
         "argImage": "Yanında .state.json dosyası bulunan yerel imaj dosyası (<name>.<tag>.img)",
         "optionTo": "İmajı alacak makine",
         "optionAs": "Yeni deponun adı (varsayılan: imajın depo adı)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "Bir deponun depolanan tüm yedek anlık görüntülerini parça deposundan tek seferde siler. Deponun kendisi korunur.",
+        "descriptionShort": "Bir deponun saklanan tüm yedek anlık görüntülerini sil",
         "notFound": "\"{{name}}\" deposu bu yapılandırmada yok.",
         "forkRefused": "\"{{name}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; temizlik ana deponun yedeklerini de silerdi. Bunun yerine ana depoyu belirtin.",
         "dryRun": "\"{{name}}\" deposunun yedekleri temizlenecek: soy {{lineage}}, {{count}} anlık görüntü, {{chunks}} parçada {{bytes}} depolanıyor.",
@@ -2497,7 +2500,7 @@
       "description": "rdc'nin bu makinede çalıştırdığı yerel araçları yönetir. `rdc tools install tofu`, sabitlenmiş OpenTofu sürümünü indirir, açmadan önce SHA-256 değerini rdc'ye gömülü sağlama toplamıyla karşılaştırır ve ikili dosyayı rdc'nin araç dizinine yerleştirir. `rdc tools list` her aracı sürümü ve bulunduğu yerle birlikte gösterir.",
       "install": {
         "descriptionShort": "Sabitlenmiş ve sağlama toplamıyla doğrulanmış bir araç kur",
-        "description": "Bu rdc derlemesinde sabitlenmiş OpenTofu sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır.",
+        "description": "Bu CLI'de sabitlenmiş OpenTofu sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır.",
         "argTool": "Kurulacak araç (tofu)",
         "optionForce": "Sabitlenmiş sürüm zaten varsa bile yeniden kur",
         "downloading": "{{platform}} için OpenTofu {{version}} indiriliyor...",

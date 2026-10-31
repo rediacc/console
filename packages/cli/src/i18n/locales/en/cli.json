@@ -2082,6 +2082,7 @@
       },
       "download": {
         "description": "Copy repository images from a machine to a local directory or an external drive. Each run takes a fresh snapshot held only while the session lives, updates the local copy in place by rsync delta, resumes after an interruption, and verifies the result by sha256.",
+        "descriptionShort": "Copy repository images to a local directory or drive",
         "argRefs": "Repositories to copy (name, name:tag, optionally @machine)",
         "optionTo": "Existing, writable directory that receives <machine>/<name>.<tag>.img (never created)",
         "optionAll": "Copy every grand repository placed on the machine named by -m",
@@ -2107,6 +2108,7 @@
       },
       "upload": {
         "description": "Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.",
+        "descriptionShort": "Send a downloaded repository image to a machine",
         "argImage": "Local image file (<name>.<tag>.img) with its .state.json beside it",
         "optionTo": "Machine that receives the image",
         "optionAs": "Name for the new repository (default: the image's repository name)",
@@ -2121,6 +2123,7 @@
       },
       "purge": {
         "description": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
+        "descriptionShort": "Delete every stored backup snapshot of a repository",
         "notFound": "Repository \"{{name}}\" is not in this config.",
         "forkRefused": "\"{{name}}\" is a fork and shares its backup lineage with its parent, so a purge would delete the parent's backups too. Name the parent repository instead.",
         "dryRun": "Would purge the backups of \"{{name}}\": lineage {{lineage}}, {{count}} snapshot(s), {{bytes}} stored in {{chunks}} chunk(s).",
@@ -2516,7 +2519,7 @@
       "description": "Manage the local tools this CLI runs on the workstation. `rdc tools install tofu` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into this CLI before extracting it, and places the binary in the CLI's tools directory. `rdc tools list` shows each tool with its version and where it was found.",
       "install": {
         "descriptionShort": "Install a pinned, checksum-verified tool",
-        "description": "Download the OpenTofu release pinned in this rdc build, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+        "description": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
         "argTool": "Tool to install (tofu)",
         "optionForce": "Reinstall even when the pinned version is already present",
         "downloading": "Downloading OpenTofu {{version}} for {{platform}}...",

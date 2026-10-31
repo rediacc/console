@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "Repository-Images von einer Maschine in ein lokales Verzeichnis oder auf ein externes Laufwerk kopieren. Jeder Lauf erstellt einen frischen Snapshot, der nur so lange besteht wie die Sitzung, aktualisiert die lokale Kopie per rsync-Delta an Ort und Stelle, setzt nach einer Unterbrechung fort und prüft das Ergebnis per sha256.",
+        "descriptionShort": "Repository-Images in ein lokales Verzeichnis oder auf ein Laufwerk kopieren",
         "argRefs": "Zu kopierende Repositories (name, name:tag, optional @machine)",
         "optionTo": "Vorhandenes, beschreibbares Verzeichnis, das <machine>/<name>.<tag>.img aufnimmt (wird nie angelegt)",
         "optionAll": "Alle Grand-Repositories der mit -m benannten Maschine kopieren",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "Ein lokales Repository-Image, das 'rdc backup download' erstellt hat, an eine Maschine senden und als neues Repository registrieren. Die Übertragung wird nach einer Unterbrechung fortgesetzt, und die Maschine prüft sha256 und LUKS-Header, bevor das Image abgelegt wird.",
+        "descriptionShort": "Heruntergeladenes Repository-Image an eine Maschine senden",
         "argImage": "Lokale Image-Datei (<name>.<tag>.img) mit der zugehörigen .state.json daneben",
         "optionTo": "Maschine, die das Image erhält",
         "optionAs": "Name des neuen Repositorys (Standard: Repository-Name des Images)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "Löscht alle gespeicherten Backup-Snapshots eines Repositorys auf einmal aus dem Chunk-Speicher. Das Repository selbst bleibt erhalten.",
+        "descriptionShort": "Alle gespeicherten Backup-Snapshots eines Repositorys löschen",
         "notFound": "Repository „{{name}}“ ist in dieser Konfiguration nicht vorhanden.",
         "forkRefused": "„{{name}}“ ist ein Fork und teilt seine Backup-Linie mit dem übergeordneten Repository, daher würde das Bereinigen auch dessen Backups löschen. Stattdessen das übergeordnete Repository angeben.",
         "dryRun": "Würde die Backups von „{{name}}“ bereinigen: Linie {{lineage}}, {{count}} Snapshot(s), {{bytes}} in {{chunks}} Chunk(s) gespeichert.",
@@ -2497,7 +2500,7 @@
       "description": "Verwaltet die lokalen Werkzeuge, die rdc auf diesem Rechner ausführt. `rdc tools install tofu` lädt das fest hinterlegte OpenTofu-Release herunter, prüft vor dem Entpacken seine SHA-256-Prüfsumme gegen den in rdc eingebauten Wert und legt die Binärdatei im Werkzeugverzeichnis von rdc ab. `rdc tools list` zeigt jedes Werkzeug mit Version und Fundort.",
       "install": {
         "descriptionShort": "Ein fest hinterlegtes, per Prüfsumme verifiziertes Werkzeug installieren",
-        "description": "Lädt das in diesem rdc-Build fest hinterlegte OpenTofu-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. Stimmt die Prüfsumme nicht, wird der Download gelöscht und nichts installiert. Terraform wird nie installiert; ein bereits im PATH vorhandenes wird so verwendet, wie es ist.",
+        "description": "Lädt das in dieser CLI fest hinterlegte OpenTofu-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. Stimmt die Prüfsumme nicht, wird der Download gelöscht und nichts installiert. Terraform wird nie installiert; ein bereits im PATH vorhandenes wird so verwendet, wie es ist.",
         "argTool": "Zu installierendes Werkzeug (tofu)",
         "optionForce": "Neu installieren, auch wenn die hinterlegte Version schon vorhanden ist",
         "downloading": "Lade OpenTofu {{version}} für {{platform}} herunter...",

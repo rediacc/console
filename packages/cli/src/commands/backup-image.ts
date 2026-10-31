@@ -94,8 +94,8 @@ function registerDownload(backup: Command): void {
   backup
     .command('download')
     .argument('[refs...]', t('commands.backup.download.argRefs'))
-    .description(t('commands.backup.download.description'))
     .summary(t('commands.backup.download.descriptionShort'))
+    .description(t('commands.backup.download.description'))
     .requiredOption('--to <dir>', t('commands.backup.download.optionTo'))
     .option('--all', t('commands.backup.download.optionAll'))
     .option('-m, --machine <name>', t('options.machine'))
@@ -157,8 +157,8 @@ function registerUpload(backup: Command): void {
   backup
     .command('upload')
     .argument('<image-file>', t('commands.backup.upload.argImage'))
-    .description(t('commands.backup.upload.description'))
     .summary(t('commands.backup.upload.descriptionShort'))
+    .description(t('commands.backup.upload.description'))
     .requiredOption('--to <machine>', t('commands.backup.upload.optionTo'))
     .option('--as <name>', t('commands.backup.upload.optionAs'))
     .option('--datastore <name>', t('commands.backup.upload.optionDatastore'))

@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "将仓库镜像从机器复制到本地目录或外接驱动器。每次运行都会创建一个仅在会话期间保留的新快照，用 rsync 增量就地更新本地副本，中断后可续传，并通过 sha256 校验结果。",
+        "descriptionShort": "将仓库镜像复制到本地目录或驱动器",
         "argRefs": "要复制的仓库（name、name:tag，可附加 @machine）",
         "optionTo": "接收 <machine>/<name>.<tag>.img 的现有可写目录（不会自动创建）",
         "optionAll": "复制 -m 所指机器上的所有 grand 仓库",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "将 'rdc backup download' 生成的本地仓库镜像发送到机器，并注册为新仓库。传输中断后可续传，机器会在放置镜像之前校验 sha256 和 LUKS 头。",
+        "descriptionShort": "将已下载的仓库镜像发送到机器",
         "argImage": "本地镜像文件（<name>.<tag>.img），其旁边需有 .state.json",
         "optionTo": "接收镜像的机器",
         "optionAs": "新仓库的名称（默认：镜像中的仓库名称）",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "一次性从分块存储中删除仓库所有已存储的备份快照,仓库本身保留。",
+        "descriptionShort": "删除仓库中存储的所有备份快照",
         "notFound": "此配置中没有仓库“{{name}}”。",
         "forkRefused": "“{{name}}”是一个 fork,与其父仓库共用备份谱系,因此清除会连父仓库的备份一起删除。请改为指定父仓库。",
         "dryRun": "将清除“{{name}}”的备份:谱系 {{lineage}},{{count}} 个快照,{{bytes}} 存储在 {{chunks}} 个分块中。",
@@ -2497,7 +2500,7 @@
       "description": "管理 rdc 在本机运行的本地工具。`rdc tools install tofu` 会下载固定版本的 OpenTofu，在解压前将其 SHA-256 与 rdc 内置的校验和比对，然后把二进制文件放入 rdc 的工具目录。`rdc tools list` 显示每个工具的版本及其来源。",
       "install": {
         "descriptionShort": "安装经过校验和验证的固定版本工具",
-        "description": "下载此 rdc 构建中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。",
+        "description": "下载此 CLI 中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。",
         "argTool": "要安装的工具 （tofu）",
         "optionForce": "即使固定版本已存在也重新安装",
         "downloading": "正在下载适用于 {{platform}} 的 OpenTofu {{version}}...",

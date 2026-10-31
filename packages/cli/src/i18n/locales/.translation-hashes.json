@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2280,
+    "keyCount": 2283,
     "sourceCommit": "c5f5ee9e19e534996cf0b7457001eab40d787490"
   },
   "hashes": {
@@ -30,6 +30,7 @@
     "commands.backup.descriptionShort": "2120bd8b",
     "commands.backup.download.argRefs": "115b7fb7",
     "commands.backup.download.description": "72462613",
+    "commands.backup.download.descriptionShort": "b23ebe4c",
     "commands.backup.download.interrupted": "1375712c",
     "commands.backup.download.notUsable": "8fbada23",
     "commands.backup.download.optionAll": "0299608d",
@@ -63,6 +64,7 @@
     "commands.backup.manifests.fetching": "f1015dd7",
     "commands.backup.purge.confirm": "a7e956f1",
     "commands.backup.purge.description": "ad367947",
+    "commands.backup.purge.descriptionShort": "e50c708e",
     "commands.backup.purge.dryRun": "5f48c659",
     "commands.backup.purge.forkRefused": "24fe1559",
     "commands.backup.purge.notFound": "89e2e8dc",
@@ -259,6 +261,7 @@
     "commands.backup.strategy.unbind.unbound": "1fda3d7d",
     "commands.backup.upload.argImage": "2983cd71",
     "commands.backup.upload.description": "a00e21b6",
+    "commands.backup.upload.descriptionShort": "9c1971ae",
     "commands.backup.upload.done": "bc8e3ddf",
     "commands.backup.upload.hashing": "c3e3d0b1",
     "commands.backup.upload.optionAs": "cd1e881d",
@@ -1786,7 +1789,7 @@
     "commands.tools.errors.unsupportedPlatform": "64bce905",
     "commands.tools.install.alreadyInstalled": "41552821",
     "commands.tools.install.argTool": "ca35e281",
-    "commands.tools.install.description": "21f858d6",
+    "commands.tools.install.description": "61fe8328",
     "commands.tools.install.descriptionShort": "0ac49bd8",
     "commands.tools.install.downloading": "e993bd9b",
     "commands.tools.install.installed": "9170698d",

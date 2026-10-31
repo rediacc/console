@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "Copie des images de dépôt d'une machine vers un répertoire local ou un disque externe. Chaque exécution prend un instantané neuf, conservé uniquement le temps de la session, met la copie locale à jour sur place par delta rsync, reprend après une interruption et vérifie le résultat par sha256.",
+        "descriptionShort": "Copier des images de dépôts vers un répertoire local ou un disque",
         "argRefs": "Dépôts à copier (name, name:tag, éventuellement @machine)",
         "optionTo": "Répertoire existant et accessible en écriture qui reçoit <machine>/<name>.<tag>.img (jamais créé)",
         "optionAll": "Copier tous les dépôts grand de la machine indiquée par -m",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "Envoie à une machine une image de dépôt locale, créée par 'rdc backup download', et l'enregistre comme nouveau dépôt. Le transfert reprend après une interruption, et la machine vérifie le sha256 et l'en-tête LUKS avant de placer l'image.",
+        "descriptionShort": "Envoyer une image de dépôt téléchargée vers une machine",
         "argImage": "Fichier image local (<name>.<tag>.img) avec son .state.json à côté",
         "optionTo": "Machine qui reçoit l'image",
         "optionAs": "Nom du nouveau dépôt (par défaut : le nom de dépôt de l'image)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "Supprime d'un coup tous les instantanés de sauvegarde stockés d'un dépôt dans le magasin de blocs. Le dépôt lui-même est conservé.",
+        "descriptionShort": "Supprimer tous les snapshots de sauvegarde d'un dépôt",
         "notFound": "Le dépôt « {{name}} » n'existe pas dans cette configuration.",
         "forkRefused": "« {{name}} » est un fork et partage sa lignée de sauvegardes avec son parent : la purge supprimerait aussi les sauvegardes du parent. Indiquez plutôt le dépôt parent.",
         "dryRun": "Purge prévue des sauvegardes de « {{name}} » : lignée {{lineage}}, {{count}} instantané(s), {{bytes}} stockés dans {{chunks}} bloc(s).",
@@ -2497,7 +2500,7 @@
       "description": "Gère les outils locaux que rdc exécute sur cette machine. `rdc tools install tofu` télécharge la version épinglée d'OpenTofu, vérifie son SHA-256 par rapport à l'empreinte intégrée à rdc avant toute extraction, puis place le binaire dans le répertoire d'outils de rdc. `rdc tools list` affiche chaque outil avec sa version et l'endroit où il a été trouvé.",
       "install": {
         "descriptionShort": "Installer un outil épinglé et vérifié par empreinte",
-        "description": "Télécharge la version d'OpenTofu épinglée dans ce build de rdc, vérifie son empreinte SHA-256 et l'installe dans le répertoire d'outils de rdc. En cas d'empreinte différente, le téléchargement est supprimé et rien n'est installé. Terraform n'est jamais installé ; s'il est déjà dans le PATH, il est utilisé tel quel.",
+        "description": "Télécharge la version d'OpenTofu épinglée dans cette CLI, vérifie son empreinte SHA-256 et l'installe dans le répertoire d'outils de rdc. En cas d'empreinte différente, le téléchargement est supprimé et rien n'est installé. Terraform n'est jamais installé ; s'il est déjà dans le PATH, il est utilisé tel quel.",
         "argTool": "Outil à installer (tofu)",
         "optionForce": "Réinstaller même si la version épinglée est déjà présente",
         "downloading": "Téléchargement d'OpenTofu {{version}} pour {{platform}}...",

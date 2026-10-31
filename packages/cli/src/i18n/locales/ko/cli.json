@@ -300,6 +300,7 @@
       },
       "download": {
         "description": "저장소 이미지를 머신에서 로컬 디렉터리나 외장 드라이브로 복사합니다. 실행할 때마다 세션이 유지되는 동안만 보관되는 새 스냅샷을 만들고, rsync 델타로 로컬 사본을 제자리에서 갱신하며, 중단되면 이어서 진행하고, 결과는 sha256으로 검증합니다.",
+        "descriptionShort": "저장소 이미지를 로컬 디렉터리나 드라이브로 복사",
         "argRefs": "복사할 저장소(name, name:tag, 필요하면 @machine)",
         "optionTo": "<machine>/<name>.<tag>.img를 받을, 이미 있고 쓰기 가능한 디렉터리(직접 만들지 않습니다)",
         "optionAll": "-m으로 지정한 머신의 모든 grand 저장소를 복사",
@@ -325,6 +326,7 @@
       },
       "upload": {
         "description": "'rdc backup download'로 만든 로컬 저장소 이미지를 머신으로 보내 새 저장소로 등록합니다. 전송은 중단 후 이어서 진행할 수 있으며, 머신은 이미지를 배치하기 전에 sha256과 LUKS 헤더를 확인합니다.",
+        "descriptionShort": "내려받은 저장소 이미지를 머신으로 전송",
         "argImage": "로컬 이미지 파일(<name>.<tag>.img). 같은 위치에 .state.json이 있어야 함",
         "optionTo": "이미지를 받을 머신",
         "optionAs": "새 저장소의 이름(기본값: 이미지의 저장소 이름)",
@@ -339,6 +341,7 @@
       },
       "purge": {
         "description": "저장소에 저장된 백업 스냅샷을 청크 저장소에서 한 번에 모두 삭제합니다. 저장소 자체는 유지됩니다.",
+        "descriptionShort": "저장소에 저장된 백업 스냅샷을 모두 삭제",
         "notFound": "저장소 \"{{name}}\"이(가) 이 구성에 없습니다.",
         "forkRefused": "\"{{name}}\"은(는) 포크이며 백업 계보를 부모와 공유하므로 퍼지하면 부모의 백업도 삭제됩니다. 대신 부모 저장소를 지정하세요.",
         "dryRun": "\"{{name}}\"의 백업을 퍼지할 예정입니다: 계보 {{lineage}}, 스냅샷 {{count}}개, 청크 {{chunks}}개에 {{bytes}} 저장됨.",
@@ -2497,7 +2500,7 @@
       "description": "이 머신에서 rdc가 실행하는 로컬 도구를 관리합니다. `rdc tools install tofu`는 고정된 OpenTofu 릴리스를 내려받아 압축을 풀기 전에 rdc에 내장된 체크섬과 SHA-256을 대조한 뒤, 바이너리를 rdc 도구 디렉터리에 둡니다. `rdc tools list`는 각 도구의 버전과 찾은 위치를 보여줍니다.",
       "install": {
         "descriptionShort": "고정되고 체크섬으로 검증된 도구 설치",
-        "description": "이 rdc 빌드에 고정된 OpenTofu 릴리스를 내려받아 SHA-256 체크섬을 검증하고 rdc 도구 디렉터리에 설치합니다. 체크섬이 맞지 않으면 내려받은 파일을 지우고 아무것도 설치하지 않습니다. Terraform은 절대 설치하지 않으며, PATH에 이미 있으면 그대로 사용합니다.",
+        "description": "이 CLI에 고정된 OpenTofu 릴리스를 내려받아 SHA-256 체크섬을 검증하고 rdc 도구 디렉터리에 설치합니다. 체크섬이 맞지 않으면 내려받은 파일을 지우고 아무것도 설치하지 않습니다. Terraform은 절대 설치하지 않으며, PATH에 이미 있으면 그대로 사용합니다.",
         "argTool": "설치할 도구 (tofu)",
         "optionForce": "고정된 버전이 이미 있어도 다시 설치",
         "downloading": "{{platform}}용 OpenTofu {{version}} 내려받는 중...",
