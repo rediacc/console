@@ -1232,6 +1232,9 @@ def dropped_verdict(receipt, tree, trees=None):
         # A RED RE-RUN AT THIS TREE IS A KNOWN FAILURE, NOT AN UNKNOWN ONE, once the merge has also listed it in `failed`: from there `carried_verdict` judges it like any whole-lane failure, so it refuses unless carried-reds.json carries it with a reason. Without this a gate whose host cannot run every case (check:ci-pytest's WSL-only and live-container skips, 2026-10-04) had no path to a push at all.
         if ran_here and gate in (receipt.get("failed") or []):
             continue
+        # A RE-RUN THAT COULD NOT RUN HERE (exit 77, the host lacks what the gate needs, such as a native-Linux docker for check:ci-proxy-wrangler-dev-e2e) is merged into `blocked`, and from there it is judged like a blocked gate of the whole lane: warned on, never counted green.
+        if ran_here and code == COULD_NOT_RUN and gate in (receipt.get("blocked") or []):
+            continue
         reason = entry.get("reason") if isinstance(entry.get("reason"), str) else "(no reason)"
         command = (
             entry.get("run")

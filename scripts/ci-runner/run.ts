@@ -3215,10 +3215,19 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
     (id) => !(id in verified) && !run.ids.includes(id)
   );
   const findings: Record<string, string[] | null> = { ...(prior.findings ?? {}) };
+  // Each merged gate's verdict moves with its exit code, so `failed` and `blocked` stay the sets of gates with verdict fail and blocked (the push guard refuses a receipt where they differ, 2026-10-31).
+  const gates: Record<string, ReceiptGate> = { ...((prior as Receipt).gates ?? {}) };
+  const blocked = ((prior as Receipt).blocked ?? []).filter((id) => !run.ids.includes(id));
   for (const id of run.ids) {
     const status = run.results.find((r) => r.id === id)?.status;
+    if (gates[id])
+      gates[id] = {
+        ...gates[id],
+        verdict: status === 'ok' ? 'ok' : status === 'blocked' ? 'blocked' : 'fail',
+      };
+    if (status === 'blocked') blocked.push(id);
     verified[id] = {
-      exitCode: status === 'ok' ? 0 : 1,
+      exitCode: status === 'ok' ? 0 : status === 'blocked' ? 77 : 1,
       headTree: run.tree,
       finishedAt: run.finishedAt,
       judgedRoot: run.judgedRoot,
@@ -3227,7 +3236,9 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
     delete findings[id];
     if (status === 'fail' && id in run.findings) findings[id] = run.findings[id];
   }
-  const droppedFailed = Object.keys(verified).filter((id) => verified[id].exitCode !== 0);
+  const droppedFailed = Object.keys(verified).filter(
+    (id) => verified[id].exitCode !== 0 && verified[id].exitCode !== 77
+  );
   const failed = [...wholeFailed, ...droppedFailed.filter((id) => !wholeFailed.includes(id))];
   const priorExit = typeof prior.exitCode === 'number' ? prior.exitCode : 1;
   const wholeExit = priorFailedDrop ? (wholeFailed.length > 0 ? priorExit : 0) : priorExit;
@@ -3236,6 +3247,8 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
       ...(prior as Receipt),
       droppedVerified: verified,
       failed,
+      blocked,
+      gates,
       findings,
       exitCode: Math.max(wholeExit, droppedFailed.length > 0 ? 1 : 0),
     },

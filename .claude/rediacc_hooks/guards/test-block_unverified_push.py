@@ -266,6 +266,20 @@ cases.append(
     (0, run(PUSH), "DROPPED: a red re-run listed in failed and carried is judged by the carry")
 )
 uncarry()
+put(
+    droppedTouched=[DROP],
+    droppedVerified=passed_at(CURRENT["tree"], code=77),
+    blocked=[PLAN_RECORD],
+)
+cases.append(
+    (
+        0,
+        run(PUSH),
+        "DROPPED: a could-not-run (77) re-run the merge listed as blocked is judged as blocked",
+    )
+)
+put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=77))
+cases.append((2, run(PUSH), "DROPPED CONTROL: a 77 re-run NOT listed as blocked still refuses"))
 put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=False))
 cases.append((2, run(PUSH), "DROPPED: an exitCode of false is not a pass"))
 put()
