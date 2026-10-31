@@ -2250,7 +2250,7 @@ def test_a_pr_head_holding_a_nul_byte_is_refused_not_a_crash():
     assert "no local or origin/ ref" in err, err
 
 
-# THE DIRECTORY A `cd` SETS IS ITS EXPANDED OPERAND (#d0079b4e). At 9829a0b78 the walk read the operand of `cd` as typed, so after `D=lnk; cd $D` the run's directory was the literal `$D`, and `D=agent/revi; cd ${D}ews/x && tee x.md` was allowed by block_review_file_shell_write (rc 0) with no link at all.
+# THE DIRECTORY A `cd` SETS IS ITS EXPANDED OPERAND (#d0079b4e). At 02e92f189 the walk read the operand of `cd` as typed, so after `D=lnk; cd $D` the run's directory was the literal `$D`, and `D=agent/revi; cd ${D}ews/x && tee x.md` was allowed by block_review_file_shell_write (rc 0) with no link at all.
 # The same sweep found the walk ignoring OLDPWD (`cd -`), the directory stack (`popd`, `pushd` with no operand or `+N`), CDPATH, and the expansion of `env -C`/`sudo -D`/`git -C`. Each row below runs through a real bash in a scratch tree and compares the directory bash ends in (`pwd -P`, the last line printed) with the walk's directory for the same command, resolved on disk by `shellscan.write_directory`.
 # `{P}` is the probe: `pwd -P` for bash, `true` for the walk, so the walk's last run sits exactly where bash prints.
 DIRECTORY_ROWS = (
@@ -2579,11 +2579,11 @@ LAUNCHED_SHAPE_ROWS = [
     ('N=" "; $N node q', None, "names", ["node"]),
     ('N="env node"; $N q', "node", "argv", ["q"]),
     ("N=; $N node q", None, "spans", ["node q"]),
-    # A SPLIT NAME'S PREFIX COMMANDS ARE ITS `via` (review 2e50ca28.1, refuted at d73b26844 and pinned here): the slice is taken over the rewritten words, so `env` and `xargs` that came out of `$N` are named.
+    # A SPLIT NAME'S PREFIX COMMANDS ARE ITS `via` (review 2e50ca28.1, refuted at 04b0ebdf9 and pinned here): the slice is taken over the rewritten words, so `env` and `xargs` that came out of `$N` are named.
     ('N="env node"; $N q', "node", "via", ("env",)),
     ('N="xargs rm"; echo a | $N', "rm", "via", ("xargs",)),
     ('N="sudo xargs rm"; echo a | $N', "rm", "via", ("sudo", "xargs")),
-    # ONE TYPED WORD, ONE SPAN (review 2e50ca28.3): the first field takes `$N`, a later one an empty span at its end, so the text reads `$N` once. At d73b26844 both runs of the first row read `$N q`, and the second row's `$N q`.
+    # ONE TYPED WORD, ONE SPAN (review 2e50ca28.3): the first field takes `$N`, a later one an empty span at its end, so the text reads `$N` once. At 04b0ebdf9 both runs of the first row read `$N q`, and the second row's `$N q`.
     ('N="npx node"; $N q', None, "spans", ["$N q", " q"]),
     ('N="env node"; $N q', None, "spans", [" q"]),
     ('N="bash -e"; $N -c "node q"', None, "spans", ['$N -c "node q"']),
@@ -2829,7 +2829,7 @@ NAME_GUARD_ROWS = (
     ("N=; M=; $N $M env rm .claude/settings.json", 2),
     ('N="env rm"; $N .claude/settings.json', 2),
     ("N=; sudo $N rm .claude/settings.json", 2),
-    # review 2e50ca28.1: xargs out of a split name feeds rm the protected path (refused at d73b26844 too; pinned).
+    # review 2e50ca28.1: xargs out of a split name feeds rm the protected path (refused at 04b0ebdf9 too; pinned).
     ('N="xargs rm"; echo .claude/settings.json | $N', 2),
     ('N="xargs cat"; echo .claude/settings.json | $N', 0),
     ('N=; $N bash -c "cat .claude/settings.json"', 0),
@@ -2871,7 +2871,7 @@ def test_gh_runs_read_the_expanded_command_a7b3a36f():
     assert got == [(cmd, want) for cmd, want in GH_RUN_ROWS]
 
 
-# THE FEED IS EXPANDED ONCE (test_landing feed regression from a7b3a36f6). The expanded fed words appended to `feed` for the over-reading guards were read by `stdin_text` as more stdin, so `M=x; cat <<EOF` with a body `a $M ${M}b` handed over `a x xb\n x xb` where bash prints `a x xb\n`. Each row: (command, run, stdin_text, feed_words, feed). A `$` outside a heredoc leaves stdin_text unknown, as test_landing pins; a quoted heredoc stays literal.
+# THE FEED IS EXPANDED ONCE (test_landing feed regression from 5e00d0768). The expanded fed words appended to `feed` for the over-reading guards were read by `stdin_text` as more stdin, so `M=x; cat <<EOF` with a body `a $M ${M}b` handed over `a x xb\n x xb` where bash prints `a x xb\n`. Each row: (command, run, stdin_text, feed_words, feed). A `$` outside a heredoc leaves stdin_text unknown, as test_landing pins; a quoted heredoc stays literal.
 FEED_ROWS = (
     ("M=x; cat <<EOF\na $M ${M}b\nEOF", "cat", "a x xb\n", ["a", "x", "xb"], "a $M ${M}b\n x xb"),
     ("B=q; xargs node <<EOF\n$B\nEOF", "node", "q\n", ["q"], "$B\n q"),
@@ -2907,7 +2907,7 @@ def test_the_feed_rows_see_the_appended_values_read_as_stdin_a7b3a36f():
     assert _feed_wrong(module), "the feed rows cannot see the expanded values read as stdin"
 
 
-# A REDIRECT TARGET IS READ AS BASH EXPANDS IT (#4deea064). Each row runs in a fresh scratch directory under real bash and names the one file bash creates there (None for none), then `write_targets` must name that file, beside the typed text, and nothing the row lists as not written. At d73b26844 every known row named the typed `$D...` alone. bash expands a redirect like an argument and then needs ONE field, so a value that splits, globs or vanishes is "ambiguous redirect" and the walk keeps the typed word; a group's redirect is opened before its body runs, a command's before its own prefix assignments, and a bare assignment's after them.
+# A REDIRECT TARGET IS READ AS BASH EXPANDS IT (#4deea064). Each row runs in a fresh scratch directory under real bash and names the one file bash creates there (None for none), then `write_targets` must name that file, beside the typed text, and nothing the row lists as not written. At 04b0ebdf9 every known row named the typed `$D...` alone. bash expands a redirect like an argument and then needs ONE field, so a value that splits, globs or vanishes is "ambiguous redirect" and the walk keeps the typed word; a group's redirect is opened before its body runs, a command's before its own prefix assignments, and a bare assignment's after them.
 REDIRECT_ROWS = [
     ("D=a; echo hi > $D.out", "a.out", ["$D.out", "a.out"]),
     ('mkdir a; D=a; echo hi >> "$D/y"', "a/y", ["$D/y", "a/y"]),
@@ -2971,7 +2971,7 @@ def test_a_run_carries_its_expanded_redirects_4deea064():
     ] == ["$D", "m"]
 
 
-# AN IN-PLACE OPTION IS READ AS BASH EXPANDS IT (#4deea064). Each row edits `f` (holding `a`) under real bash; the run is in place exactly when bash changed the file, and then `f` is among the files it rewrites. At d73b26844 the first three read `$F` as the script and answered None.
+# AN IN-PLACE OPTION IS READ AS BASH EXPANDS IT (#4deea064). Each row edits `f` (holding `a`) under real bash; the run is in place exactly when bash changed the file, and then `f` is among the files it rewrites. At 04b0ebdf9 the first three read `$F` as the script and answered None.
 IN_PLACE_ROWS = [
     ("printf 'a\\n' > f; F=-i; sed $F s/a/b/ f", "sed", True),
     ("printf 'a\\n' > f; F=-i.bak; sed $F s/a/b/ f", "sed", True),
@@ -3011,7 +3011,7 @@ def test_an_in_place_option_is_read_as_bash_expands_it_4deea064(bash, tmp_path):
     assert shellscan.in_place_edit(built) == (["s/a/b/"], ["f"])
 
 
-# A COPY CARRIES ITS SOURCE (#3ff3bb16). The scratch directory holds `src.py` (prints 1), `src2.py` and an empty `d/`; each row runs under real bash, which prints what the copied script prints, and `interpreter_program` must read the copy the interpreter runs as that text, or as unjudgeable where the copy's content is not knowable here. At d73b26844 the `file` rows were "unjudgeable" (the content of every copy was unknown) or, for a copy into a directory, `(None, None)`: the landing was never recorded, so the disk was read before the copy ran.
+# A COPY CARRIES ITS SOURCE (#3ff3bb16). The scratch directory holds `src.py` (prints 1), `src2.py` and an empty `d/`; each row runs under real bash, which prints what the copied script prints, and `interpreter_program` must read the copy the interpreter runs as that text, or as unjudgeable where the copy's content is not knowable here. At 04b0ebdf9 the `file` rows were "unjudgeable" (the content of every copy was unknown) or, for a copy into a directory, `(None, None)`: the landing was never recorded, so the disk was read before the copy ran.
 COPY_ROWS = [
     ("cp {T}/src.py {T}/dst.py && python3 {T}/dst.py", "1\n", "file"),
     ("cp {T}/src.py {T}/d/ && python3 {T}/d/src.py", "1\n", "file"),
@@ -3025,7 +3025,7 @@ COPY_ROWS = [
     ("cp -n {T}/src.py {T}/dst.py && python3 {T}/dst.py", "1\n", "unjudgeable"),
     ("cp {T}/src.py {T}/src2.py {T}/d/ && python3 {T}/d/src.py", "1\n", "unjudgeable"),
     ("cp {T}/missing.py {T}/dst.py; python3 {T}/dst.py", "", "unjudgeable"),
-    # Review 0600a464.1: a directory the same command makes is a directory. The first, third and fourth read `n/src.py` from the disk at 2672ed8f6 (`(None, None)`, the copy recorded as a file named `n`), while bash ran the copied script; the second is the control, a destination nothing makes, which is the file.
+    # Review 0600a464.1: a directory the same command makes is a directory. The first, third and fourth read `n/src.py` from the disk at 434eb6c5f (`(None, None)`, the copy recorded as a file named `n`), while bash ran the copied script; the second is the control, a destination nothing makes, which is the file.
     ("mkdir -p {T}/n && cp {T}/src.py {T}/n && python3 {T}/n/src.py", "1\n", "file"),
     ("cp {T}/src.py {T}/n && python3 {T}/n", "1\n", "file"),
     ("install -d {T}/n && cp {T}/src.py {T}/n && python3 {T}/n/src.py", "1\n", "file"),
@@ -3034,7 +3034,7 @@ COPY_ROWS = [
         "1\n",
         "unjudgeable",
     ),
-    # Review 6238f04a.1: only an earlier run that may make or remove the directory leaves the answer unknown. The first two were "unjudgeable" at 8ef785864, any `git` or `rm` with an unexpandable word counting, while neither can make `n` a directory; the last two still may, and stay unjudgeable.
+    # Review 6238f04a.1: only an earlier run that may make or remove the directory leaves the answer unknown. The first two were "unjudgeable" at 6ea3efd3a, any `git` or `rm` with an unexpandable word counting, while neither can make `n` a directory; the last two still may, and stay unjudgeable.
     ('git -C "$X" status 2>/dev/null; cp {T}/src.py {T}/n && python3 {T}/n', "1\n", "file"),
     ('rm -f -- "$X"; cp {T}/src.py {T}/n && python3 {T}/n', "1\n", "file"),
     (
@@ -3094,7 +3094,7 @@ def test_a_copy_carries_its_source_3ff3bb16(bash, tmp_path):
 
 
 # A FILE A TOOL WRITES THROUGH ITS OWN OUTPUT OPTION IS WRITTEN (#63109cf2). The scratch directory holds `src.py` (prints 1), `w.tar` holding `a.py` (prints 4) and an empty `o/`; each row runs under real bash, then the files and directories it made are removed and `w.tar` is rebuilt, so the walk reads the world as it was before the command ran. Every row names the kind the walk must give the script the last `python3` runs:
-# - the first four, a `curl -o`, a `curl -O` and two extractions of w.tar, were `(None, None)` at 8ef785864, the script read as absent while bash ran it, and are "unjudgeable" now;
+# - the first four, a `curl -o`, a `curl -O` and two extractions of w.tar, were `(None, None)` at 6ea3efd3a, the script read as absent while bash ran it, and are "unjudgeable" now;
 # - the fifth (review 6c9f6fd8.1) extracts a.py over an echoed a.py, which bash replaces, so the echoed text is not what runs;
 # - the next two (review c988ab31.1) echo b.py beside an extraction of w.tar, which holds only a.py: bash runs the echoed b.py, and the walk lists w.tar and reads the echoed text, where c988ab31's drop of the whole directory read "unjudgeable";
 # - the next four are extractions whose archive the walk does not list (fed on stdin twice, appended to by an earlier run, written by an earlier copy), so the whole directory is still dropped: bash runs the extracted a.py in the eighth, and in the ninth, tenth and eleventh an echoed or appended b.py, which the walk reads as "unjudgeable" by design;
@@ -3424,7 +3424,7 @@ def test_a_scheme_url_after_an_unknown_long_option_is_a_download_57688c33():
     assert got == rows
 
 
-# THE PLANTS for #4deea064, #3ff3bb16 and review 2e50ca28.1/.3. Each puts one piece back the way it was at d73b26844 (or the way the review feared) in a copy of shellscan loaded from source and must turn at least one row of the tables above.
+# THE PLANTS for #4deea064, #3ff3bb16 and review 2e50ca28.1/.3. Each puts one piece back the way it was at 04b0ebdf9 (or the way the review feared) in a copy of shellscan loaded from source and must turn at least one row of the tables above.
 EXPANDED_WRITE_PLANTS = [
     (
         "a redirect target kept as typed",
@@ -3505,9 +3505,9 @@ def test_each_expanded_write_plant_turns_a_row(bash, tmp_path, label, old, new):
     assert turned, "plant %r turns no row: the tables cannot see it" % label
 
 
-# A VARIABLE ASSIGNED ANY OTHER WAY THAN `NAME=value` IS NOT THE OLD VALUE (#97ed76a7). Each row runs under real bash in a fresh scratch directory and names the files bash creates there; `write_targets` must then name each of them, or the typed word alone where the walk cannot know the value, and never a file bash did not write. The fourth column is what 2672ed8f6 answered, measured: a stale value for most rows (`other.md` after a `for`, a `read` or a `printf -v` that had assigned `src`, `.md` after a `${D:=src}`), and `a.in` for the body of a piped loop whose `read` had assigned `src`.
+# A VARIABLE ASSIGNED ANY OTHER WAY THAN `NAME=value` IS NOT THE OLD VALUE (#97ed76a7). Each row runs under real bash in a fresh scratch directory and names the files bash creates there; `write_targets` must then name each of them, or the typed word alone where the walk cannot know the value, and never a file bash did not write. The fourth column is what 434eb6c5f answered, measured: a stale value for most rows (`other.md` after a `for`, a `read` or a `printf -v` that had assigned `src`, `.md` after a `${D:=src}`), and `a.in` for the body of a piped loop whose `read` had assigned `src`.
 ASSIGN_ROWS = [
-    # (script, the files bash writes, write_targets, what 2672ed8f6 answered where it differs)
+    # (script, the files bash writes, write_targets, what 434eb6c5f answered where it differs)
     (
         "D=other; for D in src; do echo x > $D.md; done",
         ["src.md"],
@@ -3555,7 +3555,7 @@ ASSIGN_ROWS = [
     ("D=1; : ${D:-2} $((D+1)); echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
     ("D=1; read -r E <<< x; printf -v F y; echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
     ("D=1; f() { E=2; }; f; echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
-    # Review 6238f04a.2: only a parameter expansion's subscript and substring offset and length are arithmetic. The first two were `["$a.md"]` at 8ef785864, `a=2` in a default or a trimmed pattern read as an assignment; the last two still assign.
+    # Review 6238f04a.2: only a parameter expansion's subscript and substring offset and length are arithmetic. The first two were `["$a.md"]` at 6ea3efd3a, `a=2` in a default or a trimmed pattern read as an assignment; the last two still assign.
     ("a=1; : ${D:-a=2}; echo x > $a.md", ["1.md"], ["$a.md", "1.md"], ["$a.md"]),
     ("a=1; : ${D#a=2}; echo x > $a.md", ["1.md"], ["$a.md", "1.md"], ["$a.md"]),
     ("D=xyz; a=1; : ${D:a=2}; echo x > $a.md", ["2.md"], ["$a.md"], None),
@@ -3589,7 +3589,7 @@ def test_a_variable_assigned_without_name_equals_value_97ed76a7(bash, tmp_path):
         assert all("$" in t or t in written for t in want), script
 
 
-# A COMPOUND COMMAND'S REDIRECT IS ON THE RUNS INSIDE IT (#97ed76a7). At 2672ed8f6 `{ ...; } > f`, `( ... ) > f`, `done > f`, `fi > f` and `esac > f` were in `write_targets` and on no run, so a reader of `run.writes`/`redirect_targets` (earlier_mutators, `_written_scripts`, wl_roster.bash_write_paths, every guard walking runs) never saw them. A run that changed directory first is left out: bash opened the file where the group started.
+# A COMPOUND COMMAND'S REDIRECT IS ON THE RUNS INSIDE IT (#97ed76a7). At 434eb6c5f `{ ...; } > f`, `( ... ) > f`, `done > f`, `fi > f` and `esac > f` were in `write_targets` and on no run, so a reader of `run.writes`/`redirect_targets` (earlier_mutators, `_written_scripts`, wl_roster.bash_write_paths, every guard walking runs) never saw them. A run that changed directory first is left out: bash opened the file where the group started.
 COMPOUND_ROWS = [
     ("{ echo x; } > g.md", {"echo": ["g.md"]}),
     ("( echo x ) > g.md", {"echo": ["g.md"]}),
@@ -3647,7 +3647,7 @@ def test_function_bodies_and_loops_are_still_walked_97ed76a7():
     assert [r.name for r in shellscan.every_run("D=a; for i in 1 2; do rm $D; D=b; done")] == ["rm"]
 
 
-# THE PLANTS for #97ed76a7. Each puts one piece back the way it was at 2672ed8f6 in a copy of shellscan and must turn at least one row above.
+# THE PLANTS for #97ed76a7. Each puts one piece back the way it was at 434eb6c5f in a copy of shellscan and must turn at least one row above.
 ASSIGN_PLANTS = [
     (
         "a parameter expansion's whole body read as arithmetic (6238f04a.2)",

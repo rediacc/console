@@ -162,7 +162,7 @@ Most of this exists already, and A1 pins it with tests:
     - `sweepExpired` sets `reconcile_due_at` for each expired lease's lineage before deleting it.
   - routes/backups.ts: `POST /reconcile`.
   - src/errors.ts: `BACKUP_RECONCILE_TOO_LARGE`.
-    (ticked) 2026-10-29T10:03:59Z by d778be9d: commit:9b2e84c7e
+    (ticked) 2026-10-29T10:03:59Z by d778be9d: commit:7166f1fca
 
   Tests (new tests/integration/backup-meter-orphaned-chunks.test.ts, in-memory store and SQLite). Each test except the last fails on the current tree:
   - T1 killed then retried, with supersede:
@@ -192,7 +192,7 @@ Most of this exists already, and A1 pins it with tests:
   - uploader.go: before :207 overwrites `opts.Journal.Upload`, capture the prior snapshot id when it differs and is uncommitted. Hand it to the plane through a new optional `SupersedeRecorder` interface, following the `UploadMetricsRecorder` pattern at :55-61.
   - session.go: `MintGrant` (:359) adds `"supersedesSnapshotId"` when set and omits it when empty.
   - Verify that one snapshot per repository per machine is excluded for the whole run. If nothing enforces it, take an exclusive flock beside the journal in journal.go and refuse a second run with a named error.
-    (ticked) 2026-10-29T10:23:31Z by d778be9d: commit:0b94ef82b
+    (ticked) 2026-10-29T10:23:31Z by d778be9d: commit:9eaad1e19
 
   Tests (uploader_test.go, session_test.go, journal_test.go), each failing on the current tree:
   - a journal holding `Upload{SnapshotID:"old", ManifestCommitted:false}` plus a new manifest records `old` on a fake plane;
@@ -209,7 +209,7 @@ Most of this exists already, and A1 pins it with tests:
   - One registration line in `registerBackupStorageCommands` (packages/cli/src/commands/backup-storage.ts:460-469).
   - i18n keys under `commands.backup.reconcile.*` in every locale, under the leases named in Concurrency.
   - Regenerate the CLI contract and docs data.
-    (ticked) 2026-10-29T10:23:34Z by d778be9d: commit:0b94ef82b
+    (ticked) 2026-10-29T10:23:34Z by d778be9d: commit:9eaad1e19
 
   Tests (new packages/cli/src/commands/__tests__/backup-reconcile.test.ts, mocking `accountServerFetch`), each failing today because the command does not exist:
   - the POST body carries the resolved lineage and `dryRun`;

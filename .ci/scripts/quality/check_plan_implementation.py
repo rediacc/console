@@ -156,7 +156,7 @@ def in_scope(ledger_plans, finished_states):
 def clock_key(rel):
     """`P-A1:<rel>`, the key one plan's open boxes are carried under.
 
-    PER PLAN, NEVER OVER THE SET. Until 2026-10-13 P-A1 was one finding naming every plan on the clock, keyed by a hash of that message, so the key belonged to the set. Commit 36a1325fb ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd` although no plan the carry named had changed.
+    PER PLAN, NEVER OVER THE SET. Until 2026-10-13 P-A1 was one finding naming every plan on the clock, keyed by a hash of that message, so the key belonged to the set. Commit 2b147e4a6 ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd` although no plan the carry named had changed.
 
     Keyed by its own path, a plan's key holds while the plan has an open box and goes when the last one closes. A tick therefore removes a carried key or leaves it alone. The one key a tick can add belongs to a plan that was not on the clock before, and a carry is right to refuse that one.
     """
@@ -448,7 +448,7 @@ def moved_to_done(base_plans, head_plans):
 
     It is NOT a false-positive surface, because the date cut still applies downstream: a plan imported with boxes already ticked has `done_commit` dates at or before `baseline_at` and is exempt for the same reason every other pre-landing tick is. What is caught is the case that matters -- a box ticked on this branch AFTER the rule arrived.
 
-    A FOLDER MOVE IS NOT A NEW PLAN. `check:ci-plan-folders --move` relocates a finished plan into `_done/` (or `_removed/`) and leaves a stub at the old path, so the head row sits at a path the base never had while the base row for the same plan sits beside it. Measured on 0930-1 (3490aa3e3): PLAN-b2-emit-matrix had all 13 boxes ticked on main, and after its move 7 of them read as "closed on this branch" with no evidence, 14 false P-A2 findings. The base row is looked up under every plan folder by basename before the plan is treated as new.
+    A FOLDER MOVE IS NOT A NEW PLAN. `check:ci-plan-folders --move` relocates a finished plan into `_done/` (or `_removed/`) and leaves a stub at the old path, so the head row sits at a path the base never had while the base row for the same plan sits beside it. Measured on 0930-1 (59a5fff2c): PLAN-b2-emit-matrix had all 13 boxes ticked on main, and after its move 7 of them read as "closed on this branch" with no evidence, 14 false P-A2 findings. The base row is looked up under every plan folder by basename before the plan is treated as new.
     """
     out: list[Any] = []
     by_name: dict[str, Any] = {}
@@ -1476,7 +1476,7 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
         moved_to_done({}, {"new.md": {"open_sigs": [], "done_sigs": ["bbbbbbbb"]}})
         == [("new.md", "bbbbbbbb")],
     )
-    # A FOLDER MOVE IS NOT A NEW PLAN (3490aa3e3: 14 false P-A2 findings on PLAN-b2-emit-matrix).
+    # A FOLDER MOVE IS NOT A NEW PLAN (59a5fff2c: 14 false P-A2 findings on PLAN-b2-emit-matrix).
     caught(
         "a plan moved into _done/ had its boxes ticked at the base judged as closed on this branch",
         moved_to_done(
@@ -1607,7 +1607,7 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
         )
         is None,
     )
-    # RE-SPELLED CITATIONS (53ae662a4, box V3): a row keyed to the box's pre-rewrite sig still answers for it; a changed TASK does not, and neither does another plan's row.
+    # RE-SPELLED CITATIONS (26577164b, box V3): a row keyed to the box's pre-rewrite sig still answers for it; a changed TASK does not, and neither does another plan's row.
     v3_old = (
         "V3 Stall removal: `Review Complete` leaves the ruleset's required checks (part of M4's single diff); "
         "pr-merge.md:108 and pr-babysitter.md:16,110 drop the claude-reviewed marker and thread preconditions"
@@ -1637,13 +1637,13 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
         "GR0 Precondition: the CI-Complete-only push guard (72eb06b56, f8dcd7973) is on the branch "
         "this plan ships on, and reachable from a remote ref before GR11. Files: none owned"
     )
-    gr0_new = plant(plant(gr0_old, "72eb06b56", "28c1bb4dc"), "f8dcd7973", "2fea9d223")
+    gr0_new = plant(plant(gr0_old, "72eb06b56", "1442ce94c"), "f8dcd7973", "d54b2d279")
     gr0_rows = [{"plan": "agent/plans/PLAN-g.md", "sig": "5186d28c", "box": gr0_old}]
     gr0_map = {
         "72eb06b56": "28" * 20,
-        "28c1bb4dc": "28" * 20,
+        "1442ce94c": "28" * 20,
         "f8dcd7973": "2f" * 20,
-        "2fea9d223": "2f" * 20,
+        "d54b2d279": "2f" * 20,
     }
 
     def gr0_canon_full(token):
@@ -1663,7 +1663,7 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
             "agent/plans/PLAN-g.md",
             "6f6a5f0f",
             (),
-            plant(gr0_new, "28c1bb4dc", "99c1bb4dc"),
+            plant(gr0_new, "1442ce94c", "99c1bb4dc"),
             gr0_canon_full,
         )
         is None,
@@ -2164,9 +2164,9 @@ CITE_LINE_RE = re.compile(r"(\.[A-Za-z0-9]{1,6}):\d+(?:[-,]\d+)*")
 def cite_key(text, canon=None):
     """The box text with every citation reduced to its basename: directory prefixes and line suffixes dropped, markdown emphasis removed, whitespace folded. PURE when `canon` is None.
 
-    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 19c9bb919 replaced GR0's pre-rebase shas (72eb06b56, f8dcd7973) with their rebased successors (28c1bb4dc, 2fea9d223), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
+    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 5159ee73a replaced GR0's pre-rebase shas (72eb06b56, f8dcd7973) with their rebased successors (1442ce94c, d54b2d279), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
 
-    A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 53ae662a4 rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
+    A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 26577164b rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
     """
     t = re.sub(r"[*_`]+", "", str(text or ""))
     t = CITE_LINE_RE.sub(r"\1", CITE_DIR_RE.sub(r"\1", t))

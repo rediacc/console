@@ -139,7 +139,7 @@ DRIFT_THRESHOLD = 0.25
 # None of them changes its answer on a unit that is 25% off in isolation. The smallest leg difference any of them acts on is `REBALANCE_ADVISORY_MIN` in check-lane-budget.ts, half a minute of leg wall, below which a rebalance is not even advised.
 # THE HISTORY THIS REPLACES. A fixed floor of 2 s (2026-10-04), then 5 s (#ce346f22), then the median and max statistics (#d901ba82), then `MIN_FASTER_SAMPLES` (2026-10-13 morning) each answered one day's reds, and the gate still went red four times on branch 1008-1 on 2026-10-13.
 # MEASURED on that branch's seven artifact-bearing runs: two of every five pytest units of 5 to 20 s differ by more than 25% between runs, one of three at 60 s and up, and a whole leg ran 35% slower on one runner (leg 1 of 3: 1773 s against 2388 s of unit time) while the other two legs moved 2.5% and 6.3%.
-# The replay of the three reds found the cause was sample size before it was noise. The slower side fired on ONE run (15 of the 17 findings on run 38409515814 had one or two samples), and the refresh kept every thinly sampled unit that had got faster, which the check then reported as soon as a third sample arrived (12 of the 14 findings after 1dd250d87).
+# The replay of the three reds found the cause was sample size before it was noise. The slower side fired on ONE run (15 of the 17 findings on run 38409515814 had one or two samples), and the refresh kept every thinly sampled unit that had got faster, which the check then reported as soon as a third sample arrived (12 of the 14 findings after ebae07c7e).
 # So the rule has three parts, and the refresh obeys the same three.
 #   1. EVIDENCE. A drift verdict, slower or faster, needs `MIN_DRIFT_RUNS` distinct sampled runs that measured the unit. One run is one runner. A unit below that count is counted, printed as thin and never judged, and a refresh keeps its committed value.
 #   2. PERSISTENCE. Slower needs the median of the window AND each of the newest `MIN_DRIFT_RUNS` runs past the limit, so no single run can produce a finding. Faster needs the slowest sample of the window under the limit, which is every run agreeing.
@@ -2134,7 +2134,7 @@ def refreshed_units(
 ) -> dict[str, float]:
     """The units a refresh writes. A unit the table already prices is rewritten only on the evidence the check judges it on, `MIN_DRIFT_RUNS` sampled runs, in either direction; below that its committed value stays. A unit new to the table is written at any count, because a row from one run beats no row.
 
-    WHY NOT "WRITE WHAT GOT SLOWER". Until 2026-10-13 a thin sample was written when slower and kept when faster. The kept half was reported faster as soon as a third sample arrived (12 of 14 findings one run after 1dd250d87), and the written half put one runner's time in the table for the next window to disagree with (test_regolden_bootstrap.py, 11.0 s from one run, 18.9 s median two runs later).
+    WHY NOT "WRITE WHAT GOT SLOWER". Until 2026-10-13 a thin sample was written when slower and kept when faster. The kept half was reported faster as soon as a third sample arrived (12 of 14 findings one run after ebae07c7e), and the written half put one runner's time in the table for the next window to disagree with (test_regolden_bootstrap.py, 11.0 s from one run, 18.9 s median two runs later).
     """
     units = dict(committed)
     for unit_id, ms in measured.items():

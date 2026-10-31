@@ -2685,7 +2685,7 @@
         "89116574",
         "aab436c1",
         "b50d5e8e",
-        "b66c4ca4"
+        "eb0f89f8"
       ]
     },
     "agent/plans/_done/PLAN-agent-session-archival.md": {
@@ -3914,19 +3914,19 @@
       "done": 13,
       "open_sigs": [],
       "done_sigs": [
+        "316749e0",
         "42bdfd49",
         "48dbaea1",
         "4ef09e93",
         "51be7b74",
-        "590fc803",
-        "6f6a5f0f",
         "8d9436da",
         "96f5fdb2",
         "98ba7397",
-        "b1a91451",
-        "b2544ce3",
+        "c69a7a11",
         "d742e01b",
-        "f273a5bb"
+        "e35361be",
+        "f273a5bb",
+        "f4812e6c"
       ]
     },
     "agent/plans/_done/PLAN-hint-corpus-ci-assertions.md": {

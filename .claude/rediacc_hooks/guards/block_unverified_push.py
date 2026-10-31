@@ -1812,7 +1812,7 @@ def run(ev):
         ev.warn("  CI runs these for real and will fail on them. Carrying is a record of a")
         ev.warn("  deliberate decision, not a way to make CI green.")
     else:
-        # A GREEN RECEIPT STILL MEETS RULE 2. carried_verdict's stale check ran only on a red receipt, so a carried gate that had gone green rode every green push unremarked: on 2026-10-02 the check:ci-external-links carry (95dc0f1f9) passed the push of afe0503db after its gate went green. With nothing failing, every carried entry is stale.
+        # A GREEN RECEIPT STILL MEETS RULE 2. carried_verdict's stale check ran only on a red receipt, so a carried gate that had gone green rode every green push unremarked: on 2026-10-02 the check:ci-external-links carry (fc84526ed) passed the push of b72969998 after its gate went green. With nothing failing, every carried entry is stale.
         refusal, _notes = carried_verdict(receipt, _carried_at_head(root))
         if refusal is not None:
             return _refuse(ev, refusal)

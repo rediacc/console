@@ -2443,7 +2443,7 @@ def test_composite_action_steps_are_read() -> None:
 
 
 def test_the_pre_fix_cf_usage_report_is_refused_and_the_fix_passes() -> None:
-    """THE HISTORICAL CONTROL for 41437ea6f: the file before the fix is red, the file the fix wrote is green."""
+    """THE HISTORICAL CONTROL for 02c32b372: the file before the fix is red, the file the fix wrote is green."""
     path = ".github/workflows/cf-usage-report.yml"
     before = ci_workflow_invariants.analyse_pipefail(yaml_doc(git_blob(PIPEFAIL_FIX + "^", path)))[
         0
@@ -2588,7 +2588,7 @@ def test_a_reusable_workflow_cycle_terminates() -> None:
 
 
 def test_the_pre_fix_obs_ceph_autobump_is_refused_and_the_fix_passes() -> None:
-    """THE HISTORICAL CONTROL for f8d184807: the pre-fix `land` job (cd preset, no ref guard) is red; the fixed file is green with its write job counted."""
+    """THE HISTORICAL CONTROL for 06bcc3c30: the pre-fix `land` job (cd preset, no ref guard) is red; the fixed file is green with its write job counted."""
     path = ".github/workflows/obs-ceph-autobump.yml"
     before = ci_workflow_invariants.analyse_dispatch(yaml_doc(git_blob(DISPATCH_FIX + "^", path)))[
         0

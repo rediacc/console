@@ -28,7 +28,7 @@ def _shared():
 
 
 def _own_cases(shared):
-    """Rows measured at 0600a4642: each refusal was allowed (rc 0), because the redirect target was read as typed (`$F`)."""
+    """Rows measured at e76fe1061: each refusal was allowed (rc 0), because the redirect target was read as typed (`$F`)."""
     marker = "y = 1  %s: F401" % shared.NQ
     return [
         (

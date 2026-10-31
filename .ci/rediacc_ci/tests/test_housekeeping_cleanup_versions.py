@@ -341,7 +341,7 @@ def _run(
     return _mask_result((code, out.encode("utf-8"), err.encode("utf-8"), calls))
 
 
-# THE CONTRACT FLOOR IS THE FIXTURE'S, NEVER THE REPOSITORY'S. Phase 8d prints the floor `rsv.pre_contract_floor` computes, and its ratchet candidate is `<root>/.ci/config/release-contract-floor.txt`. The twin's goldens were recorded while the repository's file read this value; every release advances that file (v1.3.1 -> v1.3.2 with 3ce2c1994 reddened 14 cases on 2026-10-11, as v1.2.21 -> v1.2.22 had on 2026-09-30), so a case that read the real file judged the release chain's progress rather than the port.
+# THE CONTRACT FLOOR IS THE FIXTURE'S, NEVER THE REPOSITORY'S. Phase 8d prints the floor `rsv.pre_contract_floor` computes, and its ratchet candidate is `<root>/.ci/config/release-contract-floor.txt`. The twin's goldens were recorded while the repository's file read this value; every release advances that file (v1.3.1 -> v1.3.2 with c1775da51 reddened 14 cases on 2026-10-11, as v1.2.21 -> v1.2.22 had on 2026-09-30), so a case that read the real file judged the release chain's progress rather than the port.
 # The port runs with `REDIACC_CI_ROOT` at its own fixture directory, which holds its own copy of the file at this value, so the floor comes through the port's real candidate search, from a root the test owns. A case that sets `RSV_FLOOR_FILE` or `RSV_GRANDFATHER_BEFORE` still overrides it, as the library documents.
 FIXTURE_CONTRACT_FLOOR = "v1.3.1"
 

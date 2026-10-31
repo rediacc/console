@@ -1,6 +1,6 @@
 # PLAN: repair the 171 committed prose-style findings that hold check:ci-prose-style red
 
-Status: done -- 2026-10-15, every box ticked (6 of 6); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- 2026-10-15, every box ticked (6 of 6); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 First-Seen: 2026-10-04
 Depends-On: no-dep -- related, not ordered: PLAN-secret-namespace-migration.md and PLAN-ci-watch-enforcement.md are files holding findings it repairs
 Owner: d778be9d

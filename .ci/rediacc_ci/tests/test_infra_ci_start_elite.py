@@ -269,7 +269,7 @@ def _live(
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     # The subject imports `rediacc_ci.infra.ci_env` (W7P5-c); the copy runs by path, so the package comes from this checkout.
     env["PYTHONPATH"] = str(ROOT / ".ci")
-    # A docker-less fixture gets a PATH that really has none: the host's docker would otherwise sit behind the fixture bin and answer `docker-missing-entirely` (the account twin's golden recorded exactly that, 115f8bb0c).
+    # A docker-less fixture gets a PATH that really has none: the host's docker would otherwise sit behind the fixture bin and answer `docker-missing-entirely` (the account twin's golden recorded exactly that, 9e183fe2e).
     rest = (
         env.get("PATH", "")
         if (root / "fxbin" / "docker").exists()

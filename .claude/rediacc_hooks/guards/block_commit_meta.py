@@ -71,7 +71,7 @@ TRAILER_OR_FOOTER = hookio.rx(
     r"Co-Authored-By[{S}]*[:=]|^[{S}]*([^0-9A-Za-z]{0,4}[{S}]*)?Generated with\b"
 )
 
-# A CLAUDE SESSION LINK OR A SESSION TRAILER IN A PUBLIC REPOSITORY (operator incident 2026-10-30, PR-TASK 9f92c43e). The harness's attribution text asks for a `Claude-Session: https://claude.ai/code/session_<id>` trailer on every commit, and console is PUBLIC: 80 commits carried one, four of them reached GitHub (origin/main c0c6bc027 and 8409f791f, and two on the
+# A CLAUDE SESSION LINK OR A SESSION TRAILER IN A PUBLIC REPOSITORY (operator incident 2026-10-30, PR-TASK 9f92c43e). The harness's attribution text asks for a `Claude-Session: https://claude.ai/code/session_<id>` trailer on every commit, and console is PUBLIC: 80 commits carried one, four of them reached GitHub (origin/main c2c94778c and 2cdef1712, and two on the
 # 1023-1 branch), each a link to a private session. This half is wider than the trailer rule above in two ways, both deliberate. It covers every channel that PUBLISHES text (a PR or issue comment, a review, a release, any `gh api` write), not only the ones that author a commit or a PR description, because a session link in a comment leaks exactly as far. And it reads every
 # place a body can come from: the command itself, the message files, `$(cat <file>)` and `$(< <file>)`, and the inherited value of each `$NAME` the command expands.
 #

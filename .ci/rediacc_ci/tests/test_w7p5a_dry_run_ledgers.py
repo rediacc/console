@@ -30,7 +30,7 @@ K = 5
 # A path LEAVES this table in the same change that graduates its row to `status: "ledger"` (the real run happened, so the `dry_run_*` fields go with it); `verify-edge-endpoints`, `verify-stable-endpoints` and `assert-edge-tag-exists` graduated on 2026-09-23 without that edit and left this module red.
 # Every path whose dry-run half has been driven and recorded, and the external tool whose argv the row's `[call]` findings must therefore carry. The tool is the one the path's real-run branch reaches for, so this table is also the check that a ledger recorded the RIGHT script's traffic: `mark-production` agreeing only on `curl` lines would mean the fixture answered a neighbour's probes.
 #
-# Retired 2026-10-08: delete-r2-channel.sh (commit 43f13ce45) and assert-artifact-version.sh (commit 50ebe57f1) were the last two rows, and both twins are deleted after their goldens froze. The ledgers stay under .ci/shadow as records; their status rows left w7p5a-status.json with the twins. A row recorded here again would restore the entries and the sweeps below.
+# Retired 2026-10-08: delete-r2-channel.sh (commit cf878bca0) and assert-artifact-version.sh (commit ebaefca60) were the last two rows, and both twins are deleted after their goldens froze. The ledgers stay under .ci/shadow as records; their status rows left w7p5a-status.json with the twins. A row recorded here again would restore the entries and the sweeps below.
 EXPECTED_DRY_RUN_PATHS: dict[str, tuple[str, ...]] = {}
 
 

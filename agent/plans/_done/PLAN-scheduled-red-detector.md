@@ -1,6 +1,6 @@
 # PLAN: scheduled-workflow reds and PR bot comments reach the agent session
 
-Status: done -- every box ticked; PR #594 merged 2026-10-04 (main 01d3583e1)
+Status: done -- every box ticked; PR #594 merged 2026-10-04 (main 59ba0c756)
 Owner: d778be9d
 First-Seen: 2026-10-04
 Depends-On: no-dep -- builds only on shipped modules (wl_ci, wl_civerdict, ci-trace, sanctioned.py, wl_prreview)
@@ -160,32 +160,32 @@ Worklist: #5f84123a, #768e10e2
 
 ## Tasks
 - [x] T1 `wl_prsignals.py`: copied constants, `classify`, `render`, plus `test_prsignals_pins.py`.
-    (ticked) 2026-10-04T05:36:17Z by d778be9d: commit:680ddc708 wl_prsignals and its pin test built in 680ddc708
+    (ticked) 2026-10-04T05:36:17Z by d778be9d: commit:0eb4d91cb wl_prsignals and its pin test built in 0eb4d91cb
 - [x] T2 `wl_schedred.py`: discovery, the reads with fallback, jobs, the shared cache with TTL and error TTL, the no-origin gate.
-    (ticked) 2026-10-04T05:35:44Z by d778be9d: commit:f6e8ea29d
+    (ticked) 2026-10-04T05:35:44Z by d778be9d: commit:91da1dab7
 - [x] T3 `wl_schedred`: `tracks()`, the claim file, ownership, the tick-evidence rule.
-    (ticked) 2026-10-04T05:35:46Z by d778be9d: commit:f6e8ea29d
+    (ticked) 2026-10-04T05:35:46Z by d778be9d: commit:91da1dab7
 - [x] T4 Message constants in `worklist_messages.py`, plus ARITY rows.
-    (ticked) 2026-10-04T05:35:48Z by d778be9d: commit:f6e8ea29d
+    (ticked) 2026-10-04T05:35:48Z by d778be9d: commit:91da1dab7
 - [x] T5 `ci-trace.py --scheduled [--workflow]`, plus `test_ci_trace_scheduled.py`.
-    (ticked) 2026-10-04T05:35:50Z by d778be9d: commit:680ddc708
+    (ticked) 2026-10-04T05:35:50Z by d778be9d: commit:0eb4d91cb
 - [x] T6 `sanctioned.py` rows and texts, plus guard cases; `check_sanctioned_registry.py` passes.
-    (ticked) 2026-10-04T05:35:51Z by d778be9d: commit:3ffbf2c9d
+    (ticked) 2026-10-04T05:35:51Z by d778be9d: commit:c5de2a574
 - [x] T7 Stop wiring in `wl_checks.py`, T_OWED and `ALWAYS_KEYS`.
-    (ticked) 2026-10-04T05:35:53Z by d778be9d: commit:f6e8ea29d
+    (ticked) 2026-10-04T05:35:53Z by d778be9d: commit:91da1dab7
 - [x] T8 `test_wl_schedred.py` cases, each with its control.
-    (ticked) 2026-10-04T05:35:55Z by d778be9d: commit:f6e8ea29d
+    (ticked) 2026-10-04T05:35:55Z by d778be9d: commit:91da1dab7
 - [x] T9 SessionStart block, plus its case.
-    (ticked) 2026-10-04T05:35:56Z by d778be9d: commit:f6e8ea29d
+    (ticked) 2026-10-04T05:35:56Z by d778be9d: commit:91da1dab7
 - [x] T10 ci-trace `_pr_signals` on every verdict, the throttled in-wait read, the green NEXT, plus `test_ci_trace_pr_signals.py`.
-    (ticked) 2026-10-04T05:36:18Z by d778be9d: commit:680ddc708 PR SIGNALS in ci-trace built in 680ddc708
+    (ticked) 2026-10-04T05:36:18Z by d778be9d: commit:0eb4d91cb PR SIGNALS in ci-trace built in 0eb4d91cb
 - [x] T11 `wl_prreview --wait` attempt-class surfacing, plus tests.
-    (ticked) 2026-10-04T05:36:19Z by d778be9d: commit:c9952740b attempt class in wl_prreview --wait (680ddc708), single Next line c9952740b
+    (ticked) 2026-10-04T05:36:19Z by d778be9d: commit:891b39dd0 attempt class in wl_prreview --wait (0eb4d91cb), single Next line 891b39dd0
 - [x] T12 Docs; regenerate doc-registry.md.
-    (ticked) 2026-10-04T05:36:20Z by d778be9d: commit:761443a4a docs and regenerated doc-registry in 761443a4a, doc-region-parity rc=0
+    (ticked) 2026-10-04T05:36:20Z by d778be9d: commit:af24188f1 docs and regenerated doc-registry in af24188f1, doc-region-parity rc=0
 - [x] T13 Full hook and CI pytest suites and `ci:quick`.
     (ticked) 2026-10-04T06:47:05Z by d778be9d: full pytest 20988 passed + docs_gen 6 passed after commit:860478325; ci:quick 304/306, the 2 remaining fixed by 860478325 and by this tick
 - [x] T14 Live check, read-only: `ci-trace.py --scheduled` against main names the current reds, and one Stop blocks with the `--add` text.
-    (ticked) 2026-10-04T05:36:22Z by d778be9d: commit:680ddc708 live ci-trace.py --scheduled: 5 workflows, RED Console CI 37101760904 and Housekeeping 37111522524
+    (ticked) 2026-10-04T05:36:22Z by d778be9d: commit:0eb4d91cb live ci-trace.py --scheduled: 5 workflows, RED Console CI 37101760904 and Housekeeping 37111522524
 - [x] T15 Track the current reds with `sched:ci` and `sched:housekeeping` items.
-    (ticked) 2026-10-04T05:36:23Z by d778be9d: commit:f6e8ea29d reds tracked as #069cb1d2 (sched:ci run:37101760904) and #5f43e8c8 (sched:housekeeping run:37111522524)
+    (ticked) 2026-10-04T05:36:23Z by d778be9d: commit:91da1dab7 reds tracked as #069cb1d2 (sched:ci run:37101760904) and #5f43e8c8 (sched:housekeeping run:37111522524)

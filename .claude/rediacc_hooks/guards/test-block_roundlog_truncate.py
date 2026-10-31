@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """block_roundlog_truncate: a redirect onto a variable the command assigned is read as bash expands it (#7b3f34ae).
 
-The guard's broad differential is `hookcases.py`; this file pins the redirect-target rows only, in both directions through dispatch.py, then plants the typed-only read in-process and requires it to turn a row. Rows measured at 0600a4642: each refusal was allowed (rc 0), because the redirect target was read as typed (`$L`).
+The guard's broad differential is `hookcases.py`; this file pins the redirect-target rows only, in both directions through dispatch.py, then plants the typed-only read in-process and requires it to turn a row. Rows measured at e76fe1061: each refusal was allowed (rc 0), because the redirect target was read as typed (`$L`).
 
     test-block_roundlog_truncate.py
 """
@@ -34,7 +34,7 @@ CASES = [
     ("truncate through a name holding another file", "L=/tmp/notes.md; echo x > $L", False),
     ("truncate through an unset variable", "echo x > $UNSET_L", False),
     ("redirect bash refuses as ambiguous", 'L="%s %s"; echo x > $L' % (LOG, LOG), False),
-    # #63109cf2: a glob literal puts a log in play only where it can reach a log directory. The first two were refused (rc 2) at 8ef785864, a regex read as a glob meeting the log name while the program writes another file or none; the last three still reach `agent/` and stay refused.
+    # #63109cf2: a glob literal puts a log in play only where it can reach a log directory. The first two were refused (rc 2) at 6ea3efd3a, a regex read as a glob meeting the log name while the program writes another file or none; the last three still reach `agent/` and stay refused.
     (
         "a regex in a program that slices an unrelated file",
         "python3 - <<'PY'\nimport pathlib, re, tempfile\np = pathlib.Path(tempfile.mkdtemp()) / 'out.txt'\ns = 'abc def'\nm = re.search(r'[A-Za-z_][A-Za-z0-9_]*', s)\np.write_text(s[:m.end()])\nPY",

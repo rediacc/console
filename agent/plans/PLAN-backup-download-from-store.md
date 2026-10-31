@@ -28,7 +28,7 @@ Worklist: #b76e7dcb, PR-TASK 9f92c43e
 ## Boxes
 
 - [x] A1 [opus] Account scope and route: the `backup:restore` scope (type union, zod enum, device-code mint policy leaving it out of member logins), the restore-session route with team scoping, unscoped refusal, role check, rate limit, daily budget and audit. Accept: `cd private/account && npx vitest run tests/integration/backup-restore-session.test.ts` rc 0 (team 404, unscoped refused, member without the scope refused, rate limit, the minted session can read grants and cannot write).
-    (ticked) 2026-10-29T20:19:40Z by d778be9d: commit:5a7627336 account eb00657 backup-restore-session vitest 11 passed rc=0, full account 3039 rc=0
+    (ticked) 2026-10-29T20:19:40Z by d778be9d: commit:04ba44c26 account eb00657 backup-restore-session vitest 11 passed rc=0, full account 3039 rc=0
 - [x] A2 Account migration recording the token id and user on the session row. Accept: the migration test and `npx tsc --noEmit` rc 0.
     (ticked) 2026-10-29T20:44:51Z by d778be9d: commit:a0118622e account 3bb35e6 migration 0070, tsc rc=0, migration test in backup-restore-session rc=0. DEPS-WAIVED: the account route and migration stand alone; the prerequisites gate only the CLI download path (C1) and renet fetch
 - [x] R1 [opus] renet `backup fetch-image` with the token ReadPlane, resume by local hash, and a non-Linux rename for placement. Accept: `cd private/renet && go test ./cmd/renet/ -run FetchImage -count=1` rc 0.

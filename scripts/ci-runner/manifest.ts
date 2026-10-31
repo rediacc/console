@@ -63,7 +63,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:deps',
     run: 'npm run check:deps',
-    slow: true, // ~33 s measured 2026-10-06 (17.8 s before 0a65fb00e; 86-155 s until the changelog lookups shared the packument cache)
+    slow: true, // ~33 s measured 2026-10-06 (17.8 s before 8edf49524; 86-155 s until the changelog lookups shared the packument cache)
     gate: true,
     leaves: ['scripts/gates/check-deps.ts'],
     ci: {
@@ -4003,6 +4003,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-renet-tiers',
     run: 'npm run check:ci-renet-tiers',
+    slow: true, // 12.2 s alone and 21.2 s under load, measured 2026-10-31
     gate: true,
     leaves: ['.ci/scripts/quality/check_renet_tier_map.py'],
     ci: {

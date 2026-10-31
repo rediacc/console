@@ -293,7 +293,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-renet | quality-go / Run renet quality | yes | yes |
 | check:ci-renet-govulncheck | quality-go / Renet govulncheck | yes | yes |
 | check:ci-renet-test-map | quality-go / Renet test map and mapped Go tests | yes | no |
-| check:ci-renet-tiers | local-only | yes | no |
+| check:ci-renet-tiers | local-only | yes | yes |
 | check:ci-renet-types | quality-go / Check renet types freshness | yes | no |
 | check:ci-resprofile | quality-branch / Resource profile (previous run's captures) | yes | no |
 | check:ci-retention-knob-parity | quality-code / Retention knob parity | yes | no |

@@ -563,7 +563,7 @@ class Drill:
     def stop_worktree_stack(self) -> None:
         """Stop a dev stack this worktree already runs that this run did not start, so the start below is fresh.
 
-        `./run.sh account dev` reuses a live stack for the worktree (4fb75de47), which would hand this restart the stale server code it exists to replace. Only a recorded stack that answers health is stopped, through the documented `./run.sh account stop`; with no state file, or none healthy, nothing runs.
+        `./run.sh account dev` reuses a live stack for the worktree (1be116389), which would hand this restart the stale server code it exists to replace. Only a recorded stack that answers health is stopped, through the documented `./run.sh account stop`; with no state file, or none healthy, nothing runs.
         """
         if not (self.root / ".account-state").is_file() or not self.gateway_alive():
             return

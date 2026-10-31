@@ -3,7 +3,7 @@
  *
  * `npm run pins -- bump npm` moves a `.syncpackrc.json` versionGroup's `pinVersion` when a member
  * package moves (scripts/lib/deps/pin-sync.ts), but `npm update` never rewrites a declared range,
- * so on 2026-10-19 (394935a1f) the "Pin i18next for CLI" group went to ^26.5.2 while
+ * so on 2026-10-19 (4ba8aab48) the "Pin i18next for CLI" group went to ^26.5.2 while
  * packages/cli/package.json still declared ^26.4.4, and `check:version` (syncpack lint) went red
  * only in the next ci:quick (`DiffersToPin`). This module plans the second half of that move: every
  * manifest the group covers declares the group's new pin.

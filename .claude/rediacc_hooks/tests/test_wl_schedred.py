@@ -799,7 +799,7 @@ def test_no_scheduled_workflow_means_zero_calls(tmp_path, gh):
 
 # --------------------------------------------------------------------------- Console CI's push run on main
 #
-# Run 37394654719 (PR #595's merge, e6fc817f6, 2026-10-06) went red twice on main and no stop said so: every CI read in the hook was scoped to a PR head or a scheduled run. The push read is served here from that run's own recorded answers (the ci_diagnose fixtures), so the root cause the block names is computed by the real diagnosis, not asserted into a stub.
+# Run 37394654719 (PR #595's merge, 185fde683, 2026-10-06) went red twice on main and no stop said so: every CI read in the hook was scoped to a PR head or a scheduled run. The push read is served here from that run's own recorded answers (the ci_diagnose fixtures), so the root cause the block names is computed by the real diagnosis, not asserted into a stub.
 
 DIAG_FIX = wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "tests" / "fixtures" / "ci_diagnose"
 MAIN_RUN = 37394654719
@@ -952,7 +952,7 @@ def push_doc(conclusion="cancelled"):
         ("see run:%d" % MAIN_RUN, True),
         # THE INCIDENT'S OWN ITEM (#17109e43): a release item that names the run in passing does not own its red.
         (
-            "Release of PR #595 (bump-minor): Console CI on main run %d for e6fc817f6, then Release to Edge"
+            "Release of PR #595 (bump-minor): Console CI on main run %d for 185fde683, then Release to Edge"
             % MAIN_RUN,
             False,
         ),
@@ -975,7 +975,7 @@ def test_the_push_red_blocks_the_claimant_and_a_bare_mention_does_not_silence_it
         "id": "17109e43",
         "state": ">",
         "owner": "aaaaaaaa",
-        "text": "Release of PR #595: Console CI on main run %d for e6fc817f6, then Release to Edge"
+        "text": "Release of PR #595: Console CI on main run %d for 185fde683, then Release to Edge"
         % MAIN_RUN,
     }
     got = SR.assess(wlp, [release], "aaaaaaaa-1", push_doc())

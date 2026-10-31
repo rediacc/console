@@ -1,6 +1,6 @@
 """ci-trace.py names a red run's ROOT CAUSE on every read path, not the aggregator that reports it.
 
-Main push run 37394654719 (PR #595's merge e6fc817f6, 2026-10-06) went red twice: Validate Promotion was stopped (the watchdog's 15 min budget in attempt 1, GitHub's `timeout-minutes: 15` in attempt 2), and CI Complete and Pipeline Sentinel failed reporting it. Before this file every reader got it wrong in its own way:
+Main push run 37394654719 (PR #595's merge 185fde683, 2026-10-06) went red twice: Validate Promotion was stopped (the watchdog's 15 min budget in attempt 1, GitHub's `timeout-minutes: 15` in attempt 2), and CI Complete and Pipeline Sentinel failed reporting it. Before this file every reader got it wrong in its own way:
 
 - `--run <id> [--wait]` listed `failed: CI Complete` / `failed: Pipeline Sentinel`, never the cancelled job, and printed its RED verdict on stderr under poll lines on stdout;
 - `--ref main` said the cancelled job was collateral ("watchdog killed the run for the failure above") when the failures were aggregators reporting IT, and its `why:` line pointed at the current branch's PR;
@@ -286,7 +286,7 @@ def _running_snap(ct, monkeypatch, jobs):
         "source": "pr",
         "pr": 596,
         "draft": False,
-        "sha": "00db8bede" + "0" * 31,
+        "sha": "ee7f72ebb" + "0" * 31,
         "rollup": "PENDING",
         "total": len(contexts),
         "contexts": contexts,

@@ -97,7 +97,7 @@ EXIT_NO_VERDICT = 2
 EXIT_HEAD_MOVED = 3
 EXIT_NO_CI = 4
 
-# HOW LONG A --wait GIVES GITHUB TO MOVE THE PR HEAD onto the branch's pushed tip. Right after `git push`, the PR's headRefOid lags the remote ref by seconds, and a verdict read in that window belongs to the OLD head (measured 2026-10-07: PR #599, run 37633980671 on c6cca783 was returned as final seconds after 515d1f901 was pushed).
+# HOW LONG A --wait GIVES GITHUB TO MOVE THE PR HEAD onto the branch's pushed tip. Right after `git push`, the PR's headRefOid lags the remote ref by seconds, and a verdict read in that window belongs to the OLD head (measured 2026-10-07: PR #599, run 37633980671 on c6cca783 was returned as final seconds after 63bcdb604 was pushed).
 HEAD_LAG_S = int(os.environ.get("CI_TRACE_HEAD_LAG_S", "120"))
 HEAD_LAG_POLL_S = int(os.environ.get("CI_TRACE_HEAD_LAG_POLL_S", "5"))
 

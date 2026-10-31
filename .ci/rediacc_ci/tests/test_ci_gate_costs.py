@@ -446,7 +446,7 @@ def test_validate_capture(tmp_path: Path):
 
 # --------------------------------------------------------------------------- diff-sampled (slow) gates ---------------------------------------------------------------------------
 #
-# FIRES-if-unfixed, MEASURED 2026-10-07. The capture is `run.ts --quick`, which runs every fast gate and ONLY the slow gates the captured commit's diff touches (run.ts quickDiffAdmit; capture 37294996911 reads "--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)"). check:ci-format-scope (slow) entered the baseline from capture 37192382851, whose diff touched it, and every PR went red with "has a baseline but no capture measured it (absent in the newest)" once that capture left the window. 365933af3 was the same red for check:ci-proxy-rdc-update.
+# FIRES-if-unfixed, MEASURED 2026-10-07. The capture is `run.ts --quick`, which runs every fast gate and ONLY the slow gates the captured commit's diff touches (run.ts quickDiffAdmit; capture 37294996911 reads "--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)"). check:ci-format-scope (slow) entered the baseline from capture 37192382851, whose diff touched it, and every PR went red with "has a baseline but no capture measured it (absent in the newest)" once that capture left the window. a33693828 was the same red for check:ci-proxy-rdc-update.
 
 
 def test_sampled_gates_are_the_slow_fixpoint_over_needs():

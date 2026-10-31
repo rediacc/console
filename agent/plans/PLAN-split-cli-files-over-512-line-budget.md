@@ -17,15 +17,15 @@ Split each file by responsibility into sibling modules: no behaviour change, no 
 
 ## Boxes
 - [x] S1 commands: backup-image.ts, backup-storage.ts, backup.ts, doctor.ts, repo-create-delete.ts, repo-fork.ts each under 512. Accept: `npm run check:ci-max-lines` lists none of them; `cd packages/cli && npx vitest run src/commands && npx tsc --noEmit -p tsconfig.json`
-    (ticked) 2026-10-31T00:53:44Z by d778be9d: commit:ad6234cb packages/cli/src/commands/repo-create-delete-teardown.ts:1; split in ad6234cb; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
+    (ticked) 2026-10-31T00:53:44Z by d778be9d: commit:8b4b7251 packages/cli/src/commands/repo-create-delete-teardown.ts:1; split in 8b4b7251; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 - [x] S2 remote and backup-image: remote/sftp/client.ts and services/backup-image/transfer.ts under 512. Accept: `npm run check:ci-max-lines` lists neither; `cd packages/cli && npx vitest run src/remote src/services/backup-image`
-    (ticked) 2026-10-31T00:53:49Z by d778be9d: commit:2270ce5e packages/cli/src/services/backup-image/upload.ts:1; split in 2270ce5e; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
+    (ticked) 2026-10-31T00:53:49Z by d778be9d: commit:0bc4d585 packages/cli/src/services/backup-image/upload.ts:1; split in 0bc4d585; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 - [x] S3 executor: detached-execution.ts, job-client.ts, license-recovery.ts, local-executor.ts under 512. Accept: `npm run check:ci-max-lines` lists none; `cd packages/cli && npx vitest run src/services/executor`
-    (ticked) 2026-10-31T00:53:53Z by d778be9d: commit:486bad68 packages/cli/src/services/executor/detached-attach.ts:1; split in 486bad68; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
+    (ticked) 2026-10-31T00:53:53Z by d778be9d: commit:5ee5d8a6 packages/cli/src/services/executor/detached-attach.ts:1; split in 5ee5d8a6; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 - [x] S4 jobs: plans.ts and steps.ts under 512. Accept: `npm run check:ci-max-lines` lists neither; `cd packages/cli && npx vitest run src/services/jobs src/commands/__tests__/repo-set-rerender.test.ts src/commands/__tests__/job-plan-repo.test.ts`
-    (ticked) 2026-10-31T00:53:57Z by d778be9d: commit:8a25a038 packages/cli/src/services/jobs/steps-support.ts:1; split in 8a25a038; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
+    (ticked) 2026-10-31T00:53:57Z by d778be9d: commit:3e4fe14c packages/cli/src/services/jobs/steps-support.ts:1; split in 3e4fe14c; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 - [x] V1 The gate is green and the CLI suite passes. Accept: `npm run check:ci-max-lines` rc 0; `cd packages/cli && npx vitest run src` rc 0; `npx tsc --noEmit -p packages/cli/tsconfig.json` rc 0
-    (ticked) 2026-10-31T00:54:00Z by d778be9d: commit:ad6234cb scripts/gates/check-max-lines.ts:1; split in ad6234cb; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
+    (ticked) 2026-10-31T00:54:00Z by d778be9d: commit:8b4b7251 scripts/gates/check-max-lines.ts:1; split in 8b4b7251; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench cli-bench

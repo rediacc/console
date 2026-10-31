@@ -231,7 +231,7 @@ def _side_commit(root: pathlib.Path, branch: str) -> str:
 def _spelled(sha: str, *, forced: bool = False) -> str:
     """How a plan cites `sha`: its nine-character abbreviation, or `commit:<abbrev>` when the abbreviation is all digits or `forced`.
 
-    The extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). About 1 in 69 abbreviations is all digits and the fixture's sha moves with the clock, so a draw that lands there needs the `commit:` spelling (PR 600 run on 078a550ad drew one and the gate answered VACUOUS INPUT).
+    The extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). About 1 in 69 abbreviations is all digits and the fixture's sha moves with the clock, so a draw that lands there needs the `commit:` spelling (PR 600 run on 7e0a61520 drew one and the gate answered VACUOUS INPUT).
     """
     short = sha[:9]
     return "commit:%s" % short if forced or short.isdigit() else short

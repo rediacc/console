@@ -501,7 +501,7 @@ def resolve(root, kind, token):
         got = _git_out(root, "rev-parse", "--verify", "--quiet", token + "^{commit}")
         if not got:
             return False, "no such commit"
-        # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cfea06ead); restated here, not imported, because this directory must not import from `.ci/`.
+        # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cd8b0cdc8); restated here, not imported, because this directory must not import from `.ci/`.
         # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (same rule as check_plan_citations.commit_is_reachable, 2026-10-08).
         if not any(
             _git_ok(root, "merge-base", "--is-ancestor", got, ref)
@@ -877,7 +877,7 @@ def attested_at(ledger, rel, sig):
 def done_commit(history, rel, sig):
     """The commit that ticked `sig` for `rel` and kept it ticked: the first commit of the LATEST unbroken run of ledgers in `history` (oldest first) that attest it, or "" when the newest ledger does not.
 
-    A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (65d4eefe2), reopened (a1efe7747) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
+    A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (2553ca19a), reopened (43a2e6b9c) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
     """
     start = ""
     for commit, doc in history:

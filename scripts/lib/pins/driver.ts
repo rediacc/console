@@ -132,7 +132,7 @@ export interface PinDriver {
  *   shared-message every repository's draft carries the whole run's subject, release lines,
  *                  sites and commands, not only its own
  *   no-manifest-pin a moved syncpack pin group leaves the manifests it covers on the old range
- *                  (the sync before 2026-10-19, 394935a1f)
+ *                  (the sync before 2026-10-19, 4ba8aab48)
  *   no-version-gate a plan that writes a manifest or .syncpackrc.json runs only its entry's own
  *                  gates, without check:version (the gate list before 2026-10-19)
  *   breaking-is-minor a release a driver marks breaking (a Go minor line) is judged by its

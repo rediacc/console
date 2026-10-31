@@ -355,7 +355,7 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
     top = commit_policy.toplevel(root)
     if not repo or not top or os.path.realpath(repo) != os.path.realpath(top):
         return "only the console checkout's own main has the fallback"
-    # THE BRANCH COMES FROM THE PUSHED SOURCE, NEVER FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although every condition held for PR #599's head 1861b2726. What moves `main` is the commit the refspec names, so that commit, and the PR whose head it is, are the whole question.
+    # THE BRANCH COMES FROM THE PUSHED SOURCE, NEVER FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although every condition held for PR #599's head 6779389a9. What moves `main` is the commit the refspec names, so that commit, and the PR whose head it is, are the whole question.
     named = _source_branch(src)
     if named is None and not SHA.match(src):
         return (

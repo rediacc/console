@@ -174,7 +174,7 @@ SCRIPT_BINDS = (
     "devbox-bws.sh:/etc/profile.d/zz-devbox-bws.sh",
 )
 
-# `DEVBOX_CORE_LEASE_DEST`, `.ci/lib/devbox.sh` (commit 606f7daac): where the host's core lease pool is bound inside the container.
+# `DEVBOX_CORE_LEASE_DEST`, `.ci/lib/devbox.sh` (commit c09452412): where the host's core lease pool is bound inside the container.
 DEVBOX_CORE_LEASE_DEST = "/run/rediacc-cores"
 # `devbox_home_binds`, `.ci/lib/devbox.sh:478-490`: host files bound by NAME into the container user's home, "<path relative to $HOME>:<mode>" (mode empty for read-write). Credentials and agent config are named rather than the whole $HOME: ~/.ssh and cloud credentials stay out of the container.
 # .config/rediacc/bws-access-token is the console's own bootstrap credential. Its directory is the rdc CLI's READ-WRITE state, so the FILE is bound read-only on top of that directory bind (listed after it): a CLI or E2E run in the container can neither delete nor rewrite it.
@@ -1467,7 +1467,7 @@ class Devbox:
         return os.path.isdir(path)
 
     def core_lease_src(self, *_argv: str) -> int:
-        """`devbox_core_lease_src`, `.ci/lib/devbox.sh` (commit 606f7daac): the host directory of the machine-wide core lease pool, `/run/user/<uid>/rediacc-cores`.
+        """`devbox_core_lease_src`, `.ci/lib/devbox.sh` (commit c09452412): the host directory of the machine-wide core lease pool, `/run/user/<uid>/rediacc-cores`.
 
         Printed only when `/run/user/<uid>` is a directory this user owns (a systemd host); nothing otherwise. Status 0 on every path.
         """

@@ -1,5 +1,5 @@
 # PLAN: read-only rdc verbs never provision renet
-Status: done -- 2026-10-15, every box ticked (23 of 23); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: executing -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- 2026-10-15, every box ticked (23 of 23); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: executing -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 First-Seen: 2026-10-04
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d

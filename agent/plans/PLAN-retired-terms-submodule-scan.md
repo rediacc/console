@@ -32,17 +32,17 @@ Worklist: #2f9533de. Retirement context: agent/plans/PLAN-backup-program.md phas
 - [x] X1: Pattern corrections in `.ci/config/retired-terms.json` (rclone and edge-rediacc-configs, plus the new must_not_match texts) and a `_comment` covering `file_baseline`, `file_exclusions` and the marker. Accept: `.ci/scripts/quality/check_retired_terms.py --selftest` rc=0
     (ticked) 2026-10-24T13:52:25Z by d778be9d: X1 landed in aa78e9680; check_retired_terms.py --selftest rc=0 (60 controls) on this tree
 - [x] X2: File enumeration in `retired_terms.py`: gitx.submodules, require_submodule, `git -C <sm> ls-files -z`, the NOT CHECKED line, CI fail-closed, the zero-declared and zero-files floors, the file half skipped under `--owner`, with selftest controls. Accept: `.ci/scripts/quality/check_retired_terms.py --selftest` rc=0
-    (ticked) 2026-10-24T13:52:46Z by d778be9d: landed in aa78e9680; check_retired_terms.py --selftest rc=0 (60 controls)
+    (ticked) 2026-10-24T13:52:46Z by d778be9d: landed in 64c99d907; check_retired_terms.py --selftest rc=0 (60 controls)
 - [x] X3: The marker parser and its four refusals, with selftest PLANT and CONTROL entries both ways. Accept: `.ci/scripts/quality/check_retired_terms.py --selftest` rc=0
-    (ticked) 2026-10-24T13:52:47Z by d778be9d: landed in aa78e9680; check_retired_terms.py --selftest rc=0 (60 controls)
+    (ticked) 2026-10-24T13:52:47Z by d778be9d: landed in 64c99d907; check_retired_terms.py --selftest rc=0 (60 controls)
 - [x] X4: `baseline_pairs` and `plan_verdict` generalised to `file_baseline` (count-keyed) and `file_exclusions` (BLOCKER plus liveness); `write_baseline` lowers and removes only, refusing while a submodule is NOT CHECKED. Accept: `.ci/scripts/quality/check_retired_terms.py --selftest` rc=0
-    (ticked) 2026-10-24T13:52:49Z by d778be9d: landed in aa78e9680; check_retired_terms.py --selftest rc=0 (60 controls)
+    (ticked) 2026-10-24T13:52:49Z by d778be9d: landed in 64c99d907; check_retired_terms.py --selftest rc=0 (60 controls)
 - [x] X5: pytest controls in `test_gate_retired_terms.py` over a fixture submodule: a planted term FIRES as NEW; a clean submodule is silent; a marked line with a reason is silent; a marker with no reason, a low-effort reason, a dead marker and an unknown-term marker are refused; a baselined path is held, a count rise is NEW and a fall is STALE; an excluded prefix is silent and a dead exclusion is rc 2; a baseline entry without BLOCKER is rc 2; a declared but absent submodule is NOT CHECKED rc 0 locally and rc 2 under CI=true; zero `.gitmodules` entries is rc 2; the drain never raises a count. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_retired_terms.py -q` rc=0
-    (ticked) 2026-10-24T13:53:19Z by d778be9d: landed in aa78e9680; pytest test_gate_retired_terms.py rc=0 (32 passed)
+    (ticked) 2026-10-24T13:53:19Z by d778be9d: landed in 64c99d907; pytest test_gate_retired_terms.py rc=0 (32 passed)
 - [x] X6: renet fixes (CLAUDE.md, docs/datastore/README.md, zot.go, backup_stderr_test.go), committed in renet first. Accept: `! git -C private/renet grep -nI -E '(^|[^a-z])rclone|Rclone|RCLONE' -- CLAUDE.md docs/datastore/README.md pkg/kube/registry/zot.go cmd/renet/backup_stderr_test.go` rc=0 and `npm run check:ci-renet` rc=0
     (ticked) 2026-10-24T13:54:39Z by d778be9d: renet 6e85b02 under d2953620b; git grep for rclone in the four files rc=0 (no hits), npm run check:ci-renet rc=0
 - [x] X7: account: fix private/account/web/src/lib/resource-pages.ts:99 and mark private/account/web/src/hooks/__tests__/usePickerOptions.test.tsx:159 and private/account/web/src/lib/__tests__/resource-options.test.ts:198. Accept: the account web vitest lane for those files rc=0
-    (ticked) 2026-10-24T13:53:20Z by d778be9d: account 2cf3374 under d2953620b; vitest usePickerOptions.test.tsx and resource-options.test.ts rc=0 (31 passed)
+    (ticked) 2026-10-24T13:53:20Z by d778be9d: account 2cf3374 under 69e799037; vitest usePickerOptions.test.tsx and resource-options.test.ts rc=0 (31 passed)
 - [x] X8: renet markers on the history lines private/renet/build.sh:215, private/renet/cmd/renet/backup_snapshot.go:231, private/renet/cmd/renet/backup_snapshot_cold.go:41, private/renet/cmd/renet/coldlock_invariant_test.go:100, private/renet/pkg/infra/aptretry/aptretry.go:4, each under the golangci `lll` limit. Accept: `npm run check:ci-renet` rc=0
     (ticked) 2026-10-24T13:54:40Z by d778be9d: renet 6e85b02 under d2953620b; markers replaced by term-free wording this session; npm run check:ci-renet rc=0
 - [x] X9: elite markers `retired-term-ok(BACKUP_S3_pre-rename): <reason>` on private/elite/docker-compose.yml:43 and :44. Accept: `docker compose -f private/elite/docker-compose.yml config -q` rc=0
@@ -50,9 +50,9 @@ Worklist: #2f9533de. Retirement context: agent/plans/PLAN-backup-program.md phas
 - [x] X10: Bump the submodule pointers, then hand-seed `file_baseline` (counts against the bumped pointers, one BLOCKER per entry naming its H box) and the drizzle `file_exclusions` entry. Accept: `.ci/scripts/quality/check_retired_terms.py` rc=0 showing `4 submodule(s) declared, 4 checked out` and no NEW or STALE line
     (ticked) 2026-10-24T13:52:53Z by d778be9d: d2953620b; check_retired_terms.py rc=0, 4 submodule(s) declared, 4 checked out, 0 new, 0 stale
 - [x] X11: Wiring: header `lane: quality-security`, `needs: submodules`; `npm run gate:bind`; the manifest job; `npm run gen:gates-lock`; `npx tsx scripts/gen/gen-docs.ts --write`. Accept: `npm run check:ci-gate-bind && npm run check:ci-gates-lock && npm run check:ci-gen-manifest && npm run check:ci-lane-budget && npm run check:ci-retired-terms` rc=0
-    (ticked) 2026-10-24T13:53:20Z by d778be9d: landed in aa78e9680; check:ci-gate-bind, gates-lock, gen-manifest, lane-budget, retired-terms all rc=0
+    (ticked) 2026-10-24T13:53:20Z by d778be9d: landed in 64c99d907; check:ci-gate-bind, gates-lock, gen-manifest, lane-budget, retired-terms all rc=0
 - [x] X12: The module docstring (.ci/rediacc_ci/quality/retired_terms.py:1-54) and the header `why:` describe the file subject, the marker, file_baseline and exclusions. Accept: `npm run check:ci-retired-terms && PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_retired_terms.py -q` rc=0
-    (ticked) 2026-10-24T13:53:21Z by d778be9d: landed in aa78e9680; check:ci-retired-terms rc=0 and test_gate_retired_terms.py rc=0 (32 passed)
+    (ticked) 2026-10-24T13:53:21Z by d778be9d: landed in 64c99d907; check:ci-retired-terms rc=0 and test_gate_retired_terms.py rc=0 (32 passed)
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:19:12Z by d778be9d: live-proof lp-fc4aa471d9a4 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981

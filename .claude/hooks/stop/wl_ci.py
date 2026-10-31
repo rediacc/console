@@ -1189,7 +1189,7 @@ FIX_PAPERWORK_PREFIXES = ("agent/",)
 def fix_in_flight(root, ref, tip, live_bg):
     """{commits, files, task, head} when a fix for the red on `tip` is on its way to the PR, else None.
 
-    THE DEFECT (operator, 2026-10-22). PR #601 run 39685278337 was red on 997fcb58. The fix was committed locally (fb87c54b6 and four follow-ups) and ci:quick plus the three slow gates were running in the background to admit the push, yet the hook said "CI IS RED ... AND NOTHING IS WATCHING IT" twice. Something was: the push pipeline, whose push re-runs every failing job. All three facts below are local and mechanical, so none of them is the session's word for it:
+    THE DEFECT (operator, 2026-10-22). PR #601 run 39685278337 was red on 997fcb58. The fix was committed locally (09705087f and four follow-ups) and ci:quick plus the three slow gates were running in the background to admit the push, yet the hook said "CI IS RED ... AND NOTHING IS WATCHING IT" twice. Something was: the push pipeline, whose push re-runs every failing job. All three facts below are local and mechanical, so none of them is the session's word for it:
 
       1. the checkout is on `ref` and the pushed head `tip` is a strict ancestor of HEAD (the unpushed commits sit on top of the red head);
       2. at least one unpushed commit changes a path outside FIX_PAPERWORK_PREFIXES (a review record or STATE.md is not a fix);
@@ -1436,7 +1436,9 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
         _cached_info = c.get("info")
         red_held = any(
             (x.get("conclusion") or "").upper() in CI_FAIL_CONCLUSIONS
-            for x in ((_cached_info.get("contexts") if isinstance(_cached_info, dict) else None) or [])
+            for x in (
+                (_cached_info.get("contexts") if isinstance(_cached_info, dict) else None) or []
+            )
         )
         ttl = CI_CACHE_FINAL_S if c.get("final") and not red_held else CI_CACHE_LIVE_S
         cache = c if wl_gh.cache_fresh(c, ttl, ttl) else None

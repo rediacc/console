@@ -1,15 +1,15 @@
 # PLAN: the ci-scope-mirrors gate, a gate that keeps CLAUDE.md's PR-scope rules and their hand-written mirrors in agreement
 
-Status: done -- 2026-10-20, every box ticked (11 of 11), merged to main with PR #600 (d35df2ab1)
+Status: done -- 2026-10-20, every box ticked (11 of 11), merged to main with PR #600 (52a24264c)
 Depends-On: no-dep -- agent/plans/PLAN-turbo-local-first.md (all boxes ticked) wrote the latest hand-mirrored sentence this gate protects
 Owner: d778be9d
 First-Seen: 2026-10-08
-Priority: P1 -- drift is live now (findings F1-F8 below); 45d6c7ef4 had to copy one sentence into five files by hand, and nothing checks that the copies agree
+Priority: P1 -- drift is live now (findings F1-F8 below); 9ef3ab0b4 had to copy one sentence into five files by hand, and nothing checks that the copies agree
 Concurrency: parallel -- the files under Owns; block_plan_concurrency refuses a writer that overlaps them
 Owns: .ci/rediacc_ci/quality/scope_mirrors.py, .ci/scripts/quality/check_scope_mirrors.py, .ci/rediacc_ci/tests/test_quality_scope_mirrors.py, .ci/rediacc_ci/tests/gates/test_gate_scope_mirrors.py, .ci/config/scope-mirrors.json, .ci/config/scope-mirrors-baseline.json, CLAUDE.md, .claude/output-styles/standing-orders.md, .claude/skills/pr-epics/SKILL.md, .claude/skills/pr-epics/trailers.md, .claude/commands/pr-babysit.md, .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md, .claude/rediacc_hooks/guards/block_settled_questions.py, .claude/rediacc_hooks/tests/goldens/block_settled_questions.jsonl, agent/plans/QUEUE.md, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .github/workflows/ci-quality.yml, .ci/config/shards/quality-content.json, docs/agent-reference/ci-gates.md, docs/agent-reference/TRAPS.md
 Worklist: #e70faed1
 
-The line citations below were read on 2026-10-08 at f2e8a7a2b. The design is a hypothesis about code nobody has run yet (rule 3). The writers re-check each citation, and the gate's first live run (SM4) replaces the predicted findings with measured ones.
+The line citations below were read on 2026-10-08 at 162bc9200. The design is a hypothesis about code nobody has run yet (rule 3). The writers re-check each citation, and the gate's first live run (SM4) replaces the predicted findings with measured ones.
 
 ## Why
 
@@ -20,7 +20,7 @@ CLAUDE.md is the only place the PR-scope rules are written down. At least seven 
 - merge condition: `CLAUDE.md:24-25`
 - one plan per PR, the plan set, a queued plan starting only when the hook names it, an epic carrying its plan, the queue switches: all in `CLAUDE.md:61`
 
-Commit 45d6c7ef4 shows the drift class. It added one sentence (turbo batch-end) to `CLAUDE.md:22` and copied it by hand into six places:
+Commit 9ef3ab0b4 shows the drift class. It added one sentence (turbo batch-end) to `CLAUDE.md:22` and copied it by hand into six places:
 
 - `.claude/output-styles/standing-orders.md:13` (verbatim)
 - `.claude/skills/pr-epics/trailers.md:37` (verbatim)
@@ -190,30 +190,30 @@ W-gate and the lead's CLAUDE.md anchoring run in parallel; the D1 grammar is the
 ## Tasks
 
 - [x] **SM1 (W-gate): gate module, entry point and selftest, controls first.** Write the selftest cases and run them against a stub `check()` that returns `[]`. They must FAIL first, which proves the controls can fail. Then implement C0-C10, `--repin`, `--write-baseline`/`--first-seed` and `--root`. Fixture: a mini CLAUDE.md with 2 clauses, a registry, a verbatim mirror, a terms mirror and a `py:MESSAGE` mirror. Accept: `.ci/scripts/quality/check_scope_mirrors.py --selftest` rc 0.
-    (ticked) 2026-10-08T22:17:04Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed
+    (ticked) 2026-10-08T22:17:04Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed
 - [x] **SM2 (W-gate): unit tests in `.ci/rediacc_ci/tests/test_quality_scope_mirrors.py`.** Normalization, the anchor parser (backtick and fence controls), the ellipsis split and the `ast` constant reader. Accept: pytest rc 0.
-    (ticked) 2026-10-08T22:17:37Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:37Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM3 (lead): canonical anchors and registry.** Wrap the ten D2 spans in CLAUDE.md. Write `.ci/config/scope-mirrors.json` from D3, then `--repin --all` (expected to be refused until SM5). Run the gate on the real tree and record its full findings list in this plan under `## First run`, with stdout and stderr read separately. Accept: C1, C3, C4 and C10 green; the remaining reds match F1-F8 or are added to the list.
-    (ticked) 2026-10-08T22:17:39Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:39Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM4 (lead): reconcile the predictions.** Each of F1-F8 is either confirmed by a finding line or struck with the reason. Any finding not predicted is added as F9 and up.
-    (ticked) 2026-10-08T22:17:41Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:41Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM5a (W-prose): mirror anchors and fixes.** F1, F2, F3 and F8, plus a `TURBO_PUSH_REASON='red-fix: ...'` clause in `.claude/agents/pr-babysitter.md:101` (F6). Add `<!-- scope: ... -->` anchors per the D3 map. Accept: the gate reports no C4, C5, C6 or C10 finding on these files.
   - Amended 2026-10-09 (review 41346c12.3): the Accept result is shown by the clean run itself. `npm run check:ci-scope-mirrors` on the live tree at 434b2b4e8 exits 0 with "0 baselined" and no finding line, which means no C4, C5, C6 or C10 finding on any mirror, these files included; F1, F2, F3 and F8 were each replayed on a `--root` copy at rc 1 before their fix.)
-    (ticked) 2026-10-08T22:17:43Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:43Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM5b (lead): canonical corrections.**
     - F5: add `turbo_push`, `plan_concurrency` and `backup_push_h` to `CLAUDE.md:61`.
     - F6: rewrite `CLAUDE.md:22` sentence 2 to name `TURBO_PUSH_REASON` and the four kinds, keeping "only a backup push opens no PR".
     - F7: `CLAUDE.md:24` names the `Operational-Reason:` exception.
     - Log F6 and F7 as DECISIONS in the round log for post-hoc veto: each documents operator-ordered code that already exists, not a new rule.
     - Then fix the mirror wording SM5a could not have known in advance, and `--repin --all`.
-    (ticked) 2026-10-08T22:17:45Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:45Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 
   Accept: gate rc 0.
 - [x] **SM5c (lead): F4.** Fix the quote in `.claude/rediacc_hooks/guards/block_settled_questions.py:119-120` with an ellipsis. Run `regolden.py guards --reason "scope-mirrors F4: quote ellipsis"`. Accept: `pytest .claude/rediacc_hooks/tests/test_guards_differential.py -k block_settled` rc 0, and gate C7 green.
-    (ticked) 2026-10-08T22:17:47Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:47Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM6 (W-gate): gate test `.ci/rediacc_ci/tests/gates/test_gate_scope_mirrors.py`.** Copy the real CLAUDE.md, the mirrors, the registry and the baseline into a tmp root (no write to a tracked file: `.ci/scripts/quality/check_gate_test_real_file_plants.py`), then run the entry point with `--root`. Controls:
     - **T1 untouched:** rc 0, and the printed counts are at or above the floors.
-    - **T2 the 45d6c7ef4 miss, replayed:** delete the turbo sentence from the tmp `trailers.md` only. Expect rc 1 with a finding naming `.claude/skills/pr-epics/trailers.md` and `pr.turbo-batch-end`, and NO finding naming `standing-orders.md`, `pr-babysitter.md` or `pr-merge.md` (an untouched mirror stays silent).
+    - **T2 the 9ef3ab0b4 miss, replayed:** delete the turbo sentence from the tmp `trailers.md` only. Expect rc 1 with a finding naming `.claude/skills/pr-epics/trailers.md` and `pr.turbo-batch-end`, and NO finding naming `standing-orders.md`, `pr-babysitter.md` or `pr-merge.md` (an untouched mirror stays silent).
     - **T3 canonical edited, mirrors not:** append a clause to the tmp CLAUDE.md `pr.plan-set` span. Expect rc 1, C2 naming the clause, and zero C5/C6 lines.
     - **T4 terms drift:** remove `Operational-Reason:` from the tmp `.claude/agents/pr-babysitter.md:96` span. Expect rc 1 with C6 naming that file only.
     - **T5 quote drift:** change one word inside a tmp `MESSAGE` quote. Expect C7. With the change written as `...`, expect silence.
@@ -223,28 +223,28 @@ W-gate and the lead's CLAUDE.md anchoring run in parallel; the D1 grammar is the
     - **T9 repin refuses while T2's plant is in place;** after the plant is reverted, repin is allowed.
     - **T10 baseline:** a growth write is refused; a drain is allowed.
   - Amended 2026-10-09 (review 41346c12.2): `.ci/rediacc_ci/tests/gates/test_gate_scope_mirrors.py` holds T1-T10 plus the empty-tree case, 11 tests, each plant on a temp copy; all pass in the 39-test run. With the gate's C5 and C9 checks disabled, all 11 go red. Since b8c817aca, T1 holds each floor equal to its measured count.)
-    (ticked) 2026-10-08T22:17:49Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:49Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 - [x] **SM7 (lead): wiring.**
     1. package.json: `"the ci-scope-mirrors gate": ".ci/scripts/quality/check_scope_mirrors.py"` (the bare path, per `scripts/gate-bind.ts` header lines 5-8).
     2. A `scripts/ci-runner/manifest.ts` entry: `gate: true`, leaves set to the entry point, `ci.step` equal to the header step, job `quality-content`, no `paths`.
     3. `npm run gate:bind -- --dry-run`, read the diff, then `--write`. The step lands in the quality-content region at `.github/workflows/ci-quality.yml:1404`.
     4. `npm run gen:gates-lock`, then `npx tsx scripts/gen/gen-docs.ts --write`.
-    (ticked) 2026-10-08T22:17:51Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:51Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 
   Accept: `npm run check:ci-parity`, `npm run check:ci-gate-bind`, `npm run check:ci-gates-lock`, `.ci/scripts/quality/check_gate_reachability_coverage.py`, and `npm run ci -- --quick --list | grep scope-mirrors` all rc 0 or hit.
 - [x] **SM8 (lead): documentation.**
     - `docs/agent-reference/ci-gates.md` gets a quick-fix row: "C2 red: edit the mirrors it lists, then `--repin <id>`; never repin first".
     - A TRAPS entry "a rule mirrored by hand drifts in the copy nobody re-reads", with `Trap-Id: hand-mirrored-rule-drift` and `Enforced-By: gate:the ci-scope-mirrors gate`, so `check:ci-trap-registry` F4/F5 prove the gate is live.
-    (ticked) 2026-10-08T22:17:52Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:52Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 
   Accept: both gates rc 0.
 - [x] **SM9: live plant proof on the real tree, two passes in one script (TRAPS `mutation-needs-both-directions`, `docs/agent-reference/TRAPS.md:230`).** Pass 1: `npm run the ci-scope-mirrors gate` rc 0 on the clean tree. Pass 2: the T2 plant applied to a copy with `--root` gives rc 1, and the stderr line names the trailers mirror. Tick with both exit codes.
   - Amended 2026-10-09 (review 41346c12.1): pass 1 on the clean tree exits 0; pass 2, the T2 plant on a `--root` copy, exits 1 with the stderr line `✗ C5 .claude/skills/pr-epics/trailers.md:37 [pr.turbo-batch-end] verbatim mirror no longer contains the canonical text of CLAUDE.md:22`.)
-    (ticked) 2026-10-08T22:17:54Z by d778be9d: commit:434b2b4e8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
+    (ticked) 2026-10-08T22:17:54Z by d778be9d: commit:77e969dc8 check:ci-scope-mirrors rc=0 (65 controls, 10 clauses, 31 mirror checks); pytest 39 passed; SM9 live plant rc 1
 
 ## First run
 
-Measured 2026-10-08 in a scratch clone of 66b8c1073. Stdout and stderr were read separately on every run.
+Measured 2026-10-08 in a scratch clone of 956c6cfd3. Stdout and stderr were read separately on every run.
 
 **Run 0: CLAUDE.md anchored, registry unpinned, mirrors untouched.** rc 1, 72 findings. Every one of the 31 registered mirror spans was C4, because no mirror was anchored yet. Each of the ten clauses was C2 (unpinned). C7 at `.claude/rediacc_hooks/guards/block_settled_questions.py:174` was F4. C9 named every unanchored restatement, plus the side hits listed as F9 and F10 below.
 

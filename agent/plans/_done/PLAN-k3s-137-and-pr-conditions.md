@@ -11,7 +11,7 @@ Worklist: #9b4e7449
 
 ## Why
 
-`.ci/policy/.embed-assets-upgrade-blocklist` (lines 15-28 at 1861b2726, before 7f9c30578 lifted the hold) held k3s at 1.36.4+k3s1 with "REVISIT WHEN PR #589 MERGES". PR #589 merged 2026-09-22T08:22:16Z.
+`.ci/policy/.embed-assets-upgrade-blocklist` (lines 15-28 at 6779389a9, before f0354ce23 lifted the hold) held k3s at 1.36.4+k3s1 with "REVISIT WHEN PR #589 MERGES". PR #589 merged 2026-09-22T08:22:16Z.
 
 The list parser (`.ci/rediacc_ci/core/allowlist.py` `parse_text` ~300-321) uses only the `# BLOCKER:` line as the reason, so the condition never reaches a checker. The liveness probes ask only whether the entry still exists (`scripts/gates/check-suppression-liveness.ts:339-348`).
 
@@ -27,7 +27,7 @@ The version lives in these places:
 - Dockerfile `K3S_VERSION`, at 333 and 353;
 - `K3S_SHA256_AMD64` (334) and `K3S_SHA256_ARM64` (354);
 - `private/renet/pkg/embed/embed.go:61` `AssetK3sVersion`, which `private/renet/pkg/kube/distro/k3s.go:229,265,407` read;
-- `embed-assets.lock.json`: version 142, upstreamSourceUrl 148, plannedMirrorUrl 149, and the arches url+sha256 at 160-161 and 165-166. check:ci-embed-arch-parity cross-checks the arches (c807ddbbb).
+- `embed-assets.lock.json`: version 142, upstreamSourceUrl 148, plannedMirrorUrl 149, and the arches url+sha256 at 160-161 and 165-166. check:ci-embed-arch-parity cross-checks the arches (10679ea46).
 - The generated credits: `credits_data.go` and `third-party-credits.json`, via `npx tsx scripts/gen/generate-embed-credits.ts`.
 - The blocklist block, which is deleted.
 
@@ -95,13 +95,13 @@ Both get their own worklist item.
 - [x] A: k3s 1.37.1 in the Dockerfile, embed.go, the lockfile and the credits; hold deleted; embed gates, renet tests and check:ci-renet green
     (ticked) 2026-10-08T10:15:17Z by d778be9d: commit:7f9c30578 k3s 1.37.1+k3s1 in the Dockerfile, private/renet/pkg/embed/embed.go:61, lockfile and credits; hold deleted; embed freshness, arch-parity and credits gates rc0
 - [x] B: `allowlist.py conditions`, the `pr-conditions` probe and the merged-PR file; corpus red/green, mutant and loose-wording controls
-    (ticked) 2026-10-08T10:15:20Z by d778be9d: commit:fec6008c2 parse_conditions at .ci/rediacc_ci/core/allowlist.py:445, the pr-conditions probe and .ci/config/merged-prs.json
+    (ticked) 2026-10-08T10:15:20Z by d778be9d: commit:87ff68b45 parse_conditions at .ci/rediacc_ci/core/allowlist.py:445, the pr-conditions probe and .ci/config/merged-prs.json
 - [x] B: `check-pr-condition-ledger.ts` online gate with its fixture cases; wired by the lead
-    (ticked) 2026-10-08T10:15:25Z by d778be9d: commit:fec6008c2 scripts/gates/check-pr-condition-ledger.ts wired; selftest 25 controls; its pytest assertion fixed in commit:1364da26c
+    (ticked) 2026-10-08T10:15:25Z by d778be9d: commit:87ff68b45 scripts/gates/check-pr-condition-ledger.ts wired; selftest 25 controls; its pytest assertion fixed in commit:8f8aaaa84
 - [x] Sweep: worklist items for the two go-deps tag holds
     (ticked) 2026-10-08T10:15:29Z by d778be9d: commit:d93a1be4c kubelet hold lifted (renet 1dbe423); the grpc and go-landlock holds stay valid
 - [x] CI: E2E K8s, K8s Ceph and K8s Multinode SUCCEEDED on the branch head (not skipped); in-place upgrade of a 1.36 data dir checked by hand or recorded as a gap
-    (ticked) 2026-10-13T19:51:43Z by d778be9d: commit:d462ca9af PR 600 run 38451759370 on eced71537: E2E K8s 115487816638, K8s Ceph 115487816554, K8s Multinode 115487816657 success, 0 skipped; in-place 1.36 upgrade is the recorded gap (plan line 42)
+    (ticked) 2026-10-13T19:51:43Z by d778be9d: commit:33373f934 PR 600 run 38451759370 on b6a60de8c: E2E K8s 115487816638, K8s Ceph 115487816554, K8s Multinode 115487816657 success, 0 skipped; in-place 1.36 upgrade is the recorded gap (plan line 42)
 
 ## Risks
 

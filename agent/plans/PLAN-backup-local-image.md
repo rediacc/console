@@ -280,7 +280,7 @@ R2's changes:
   - export: lock, checkpoint, snapshot, ready line, `sha256` with hole skipping and the read cap, cleanup on every exit path.
   - import: exclusive lock, staging create, resume or seed, space check, `finalize` (hash, `verifyRepositoryIntegrity`, owner and mode, rename), `discard`.
   - Help strings use `i18n.T` keys only if the renet extract baseline test demands them, which brings the locale files into this box.
-    (ticked) 2026-10-29T12:43:48Z by d778be9d: commit:0bd4b43fc
+    (ticked) 2026-10-29T12:43:48Z by d778be9d: commit:d27fe489e
 
   Tests:
   - export against a temp datastore with a fake snapshotter seam prints one parseable ready line and leaves no `.snapshot-*` after each of EOF, `quit`, SIGHUP and a 1-second idle timeout;
@@ -299,7 +299,7 @@ R2's changes:
   - `scanPool` counts `.snapshot-*` and `.restore-*` with the active and stale split and the pinned bytes, under the renamed fields in private/renet/pkg/list/types.go.
   - The CLI side: `renderPoolSummary` reads the renamed fields with the same i18n parameters, and the prune parser gains `pull-staging`.
   - The lead regenerates packages/shared/src/renet-contract/data/list-types.generated.ts with the command its header names (`./build.sh deploy prep`) after the writer's edit.
-    (ticked) 2026-10-29T14:57:15Z by d778be9d: commit:f6ac2a130 go test pkg/list pkg/prune rc=0, machine-status-pool and datastore-prune-pull-staging vitest rc=0
+    (ticked) 2026-10-29T14:57:15Z by d778be9d: commit:37409a6a3 go test pkg/list pkg/prune rc=0, machine-status-pool and datastore-prune-pull-staging vitest rc=0
 
   Tests:
   - a held `.lock-<guid>` with no image is NOT listed and an unheld one is;
@@ -317,7 +317,7 @@ R2's changes:
   - Add `getRsyncVersionText()`, which runs `rsync --version` once and caches the result.
   - Add a comment at the `--verify` branch stating that `--inplace` implies `--partial`.
   - No behaviour change to repo sync.
-    (ticked) 2026-10-29T12:48:21Z by d778be9d: commit:18af37474
+    (ticked) 2026-10-29T12:48:21Z by d778be9d: commit:8667995e2
 
   Tests: every real-run argv from `buildRsyncArgs`, with and without `verify`, contains `--inplace`, and a dry run contains neither `--inplace` nor `--partial`. Control: a planted `verify` branch that also drops `--inplace` reds the test.
 
@@ -326,7 +326,7 @@ R2's changes:
 - [x] S1 [writer] State file and preflight (Design 4, 5). Both are pure modules with no i18n; C1 renders their results.
   - state.ts: `localImagePaths(dir, machine, name, tag)`, `readImageState`, `writeImageState` (atomic), `beginRun`, `completeRun`, `failRun`, `recordUpload`, `acquireLocalLock` and `releaseLocalLock`.
   - preflight.ts: `probeSparse(dir)`, `computeSpaceNeed({ apparent, allocated, localExists, localAllocated, sparse })`, `checkSpace(...)` returning `{ ok, need, free, reason? }`, and the FAT32 rule.
-    (ticked) 2026-10-29T12:48:24Z by d778be9d: commit:18af37474
+    (ticked) 2026-10-29T12:48:24Z by d778be9d: commit:8667995e2
 
   Tests:
   - a write interrupted between the temp write and the rename leaves the previous state readable;
@@ -362,7 +362,7 @@ R2's changes:
     - a resume reuses the pending GUID;
     - `--sparse` is sent only when `fresh`.
   - Control: each file is red on the tree before C1, recorded under "Live records".
-    (ticked) 2026-10-29T14:57:18Z by d778be9d: commit:3122331e8 T1 rc 1 before C1 (33 failed) and rc 0 after (34 passed)
+    (ticked) 2026-10-29T14:57:18Z by d778be9d: commit:abc14e4ea T1 rc 1 before C1 (33 failed) and rc 0 after (34 passed)
 
   Owns: packages/cli/src/services/backup-image/__tests__/converge.test.ts (new), packages/cli/src/remote/sync/__tests__/image-rsync.test.ts (new), packages/cli/src/commands/__tests__/backup-image-download.test.ts (new), packages/cli/src/commands/__tests__/backup-image-upload.test.ts (new). Accept: `cd packages/cli && npx vitest run src/services/backup-image/__tests__/converge.test.ts src/remote/sync/__tests__/image-rsync.test.ts src/commands/__tests__/backup-image-download.test.ts src/commands/__tests__/backup-image-upload.test.ts` rc 1 recorded before C1 and rc 0 after C1.
 
@@ -375,13 +375,13 @@ R2's changes:
   - `restoredIdentity` exported.
   - The en keys for every new string, plus the reworded `storageHealthPoolSnapshots` (packages/cli/src/i18n/locales/en/cli.json:905).
   - The lead regenerates the contract with `npm run generate:cli-contract -w @rediacc/cli` after the writer's edit.
-    (ticked) 2026-10-29T14:57:21Z by d778be9d: commit:3122331e8 T1 34 passed, full CLI vitest 4153 passed rc=0, tsc rc=0
+    (ticked) 2026-10-29T14:57:21Z by d778be9d: commit:abc14e4ea T1 34 passed, full CLI vitest 4153 passed rc=0, tsc rc=0
 
   Owns: packages/cli/src/commands/backup-image.ts (new), packages/cli/src/services/backup-image/session.ts (new), packages/cli/src/services/backup-image/transfer.ts (new), packages/cli/src/remote/sync/image-rsync.ts (new), packages/cli/src/remote/sftp/client.ts (one execSession method only), packages/cli/src/commands/backup.ts (one register call and the restoredIdentity export only), packages/cli/scripts/generate-cli-contract.ts (two PROXY_EXCLUSIONS entries only), packages/cli/src/config/command-metadata.ts (two mcpExcludeReason entries only), packages/cli/src/utils/command-policy.ts (two CMD entries only), packages/shared/src/cli-contract/data/contract.generated.ts (regenerated only), packages/cli/src/i18n/locales/en/cli.json. Accept: the T1 command above rc 0, `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0, and `npm run check:ci-i18n-cli-key-usage` rc 0.
 
 - [x] I1 [writer] i18n in the 12 derived CLI locales. Follows C1. The new en keys and the reworded pool line are naturalized per docs/i18n/CONVENTIONS.md.
   Owns: packages/cli/src/i18n/locales/*/cli.json (non-en). Accept: `npm run check:i18n` rc 0.
-    (ticked) 2026-10-29T14:57:23Z by d778be9d: commit:3122331e8 check:i18n rc=0, check:i18n:hashes rc=0
+    (ticked) 2026-10-29T14:57:23Z by d778be9d: commit:abc14e4ea check:i18n rc=0, check:i18n:hashes rc=0
 
 - [x] D1 [writer] Docs. Follows C1.
   - A new page, backup-download.md, in English first, then translated into the 12 other languages. It covers:
@@ -394,7 +394,7 @@ R2's changes:
     - upload, and finding stale snapshots with `machine status` and `machine prune`.
   - The lead regenerates cli-application.md with `npm run generate:cli-docs -w @rediacc/www`.
   Owns: packages/www/src/content/docs/*/backup-download.md (new), packages/www/src/content/docs/*/cli-application.md (regenerated only). Accept: `npm run check:i18n` rc 0.
-    (ticked) 2026-10-30T22:53:37Z by d778be9d: commit:8fd4b0569 packages/www/src/content/docs/en/backup-download.md:1; 13 locale pages; check:i18n rc 0
+    (ticked) 2026-10-30T22:53:37Z by d778be9d: commit:ad0e10abc packages/www/src/content/docs/en/backup-download.md:1; 13 locale pages; check:i18n rc 0
 
 - [ ] V1 [lead] The VM proof for the renet change. `npm run vm:check -- --changed` must report VERIFIED on the tree carrying R1 and R2, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt, and `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --test 26-backup-storage-cli --fail-on-skip` rc 0 (PLAN-jobs-backup-real-machine-tests E2).

@@ -25,15 +25,15 @@ Design inputs, summarized below with file:line:
   - The reader tries the per-tree copy `.ci/cache/receipts/<headTree>.json` (`scripts/ci-runner/run.ts:3246-3250`) before the latest file.
   - Owns: block_unverified_push.py and test-block_unverified_push.py.
   - Accept: `python3 .claude/rediacc_hooks/run_tests.py -k unverified_push` rc=0 with the goldens unchanged, and `receipt_refusal` is None only on the push-green fixture.
-    (ticked) 2026-10-27T09:31:13Z by d778be9d: 163c32f9d, 5429d7175, 96b512e49: receipt_refusal and read_receipt in .claude/rediacc_hooks/guards/block_unverified_push.py; run_tests.py -k unverified_push rc=0 (1515, goldens unchanged)
+    (ticked) 2026-10-27T09:31:13Z by d778be9d: 8cb449533, bd28a8d0c, 1250b7ab8: receipt_refusal and read_receipt in .claude/rediacc_hooks/guards/block_unverified_push.py; run_tests.py -k unverified_push rc=0 (1515, goldens unchanged)
 - [x] W1-B [writer] `vm:check --base <ref>`.
   - On `main`, `--changed` diffs against origin/main, which is HEAD, so it checks nothing and writes no receipt (`.ci/rediacc_ci/drills/vm_check.py:28`, the `--changed` trigger module (`vm_check_trigger.py`, lines 275-310 of the release-cache copy)).
   - Add `--base`, recorded in the receipt as `trigger.base`.
   - Owns: vm_check.py and test_drills_vm_check.py.
   - Accept: the pytest rc=0, and a receipt written with `--base v2.4.0` names the ref.
-    (ticked) 2026-10-27T07:39:43Z by d778be9d: 0f5cfa3c9: vm_check.py --changed --base <ref>, trigger.base in the receipt; pytest test_drills_vm_check.py rc=0 (252) with the main plus --base v2.4.0 case
+    (ticked) 2026-10-27T07:39:43Z by d778be9d: deac2254d: vm_check.py --changed --base <ref>, trigger.base in the receipt; pytest test_drills_vm_check.py rc=0 (252) with the main plus --base v2.4.0 case
 - [x] W1-C [writer] Order declaration.
-  - Add `.ci/config/release-requires.json`. Its first entry is R1-config-envelope: since account aaf3c251, with cli_commits 2c3324a44 and 95bcc8dad.
+  - Add `.ci/config/release-requires.json`. Its first entry is R1-config-envelope: since account aaf3c251, with cli_commits 54ea0d100 and 5af777265.
   - Add `rediacc_ci.release.order.account_refusal(channel, account_pointer)`:
     - An entry is active when `since` is an ancestor of the account pointer.
     - The channel's published CLI counts only when its R2 manifest version V has both the sentinel `cli/v<V>/.released` and the tag `v<V>`.
@@ -41,7 +41,7 @@ Design inputs, summarized below with file:line:
   - Correct `ENVELOPE_MIN_RDC` at `private/account/src/routes/configs.ts:145`. It names the version that writes v3, not the first one that sends the header. Set it from the release that ships the header.
   - Owns: release-requires.json, order.py and test_release_order.py.
   - Accept: the pytest rc=0, and R1 is active for the current account pointer and reports `cli-behind` against v2.4.0.
-    (ticked) 2026-10-27T07:53:15Z by d778be9d: 524b36b9e: .ci/config/release-requires.json R1-config-envelope and rediacc_ci.release.order; pytest test_release_order.py rc=0 (14); live edge read rc=1 "cli-behind: R1-config-envelope needs 2c3324a44, 95bcc8dad in a released CLI on edge; published v2.4.0 lacks them"
+    (ticked) 2026-10-27T07:53:15Z by d778be9d: 102b22ae3: .ci/config/release-requires.json R1-config-envelope and rediacc_ci.release.order; pytest test_release_order.py rc=0 (14); live edge read rc=1 "cli-behind: R1-config-envelope needs 54ea0d100, 5af777265 in a released CLI on edge; published v2.4.0 lacks them"
 - [x] W1-D [writer] Release-run admission at the git layer.
   - The entry writes `.ci/cache/release/run-<id>.json` holding `{pid, pid_start, cmdline, tree, version, channel, pushes:[{toplevel, remote_ref, oid}]}` and exports `REDIACC_RELEASE_RUN`.
   - The `githooks.py` pre_push (:318-329) admits a pushed line only when all three hold:
@@ -51,7 +51,7 @@ Design inputs, summarized below with file:line:
   - `.claude/rediacc_hooks/guards/block_git_hook_bypass.py:11` refuses `REDIACC_RELEASE_RUN` set by an agent, as it already refuses `COMMIT_POLICY_OK`.
   - Owns: githooks.py, test_githook_release_run.py, block_git_hook_bypass.py and test-block_git_hook_bypass.py.
   - Accept: `run_tests.py -k "githook_release_run or git_hook_bypass"` rc=0, and a forged record, a wrong tree or an unlisted ref is refused.
-    (ticked) 2026-10-27T08:03:42Z by d778be9d: 875b03844: .claude/rediacc_hooks/git/release_run.py and githooks.py pre_push admission plus block_git_hook_bypass; run_tests.py -k "githook_release_run or git_hook_bypass" rc=0 (23), with planted failures turning each check red
+    (ticked) 2026-10-27T08:03:42Z by d778be9d: 2b689b553: .claude/rediacc_hooks/git/release_run.py and githooks.py pre_push admission plus block_git_hook_bypass; run_tests.py -k "githook_release_run or git_hook_bypass" rc=0 (23), with planted failures turning each check red
 - [x] W1-E [writer] Renet key gate.
   - Today no release step refuses a renet built without the production key:
     - `private/renet/build.sh:414-444` falls back to the DEV key with only a warning.
@@ -79,7 +79,7 @@ Design inputs, summarized below with file:line:
   - For stable, factor a pure `select()` out of `check_soak_period.main` (:101). It needs the tag, the sentinel and an edge record `release-records/v<V>/edge.json` with smoke rc 0, aged at least SOAK_DAYS. `--force` skips the age only with a proven ASKED minute.
   - Owns: local_gates.py, check_soak_period.py and test_release_*.py for both.
   - Accept: pytest rc=0 over every case in the Tests section.
-    (ticked) 2026-10-27T09:13:08Z by d778be9d: 3332bed60: .ci/rediacc_ci/release/local_gates.py and check_soak_period select(); pytest rc=0 (79); live run names ci-quick, vm-check, backup, origin-main and lock refusals
+    (ticked) 2026-10-27T09:13:08Z by d778be9d: a4d71a891: .ci/rediacc_ci/release/local_gates.py and check_soak_period select(); pytest rc=0 (79); live run names ci-quick, vm-check, backup, origin-main and lock refusals
 - [x] W2-B [writer] The entry, `rediacc_ci.release.local`, plus `"release:local"` in package.json. It is one declarative `STEPS` table, in this order:
   1. Version: `resolve_version --bump-type`, from the labels since the last tag.
   2. Gates: W2-A.
@@ -101,7 +101,7 @@ Design inputs, summarized below with file:line:
   9. Smoke: `verify_edge_endpoints`, plus the Linux install quick check in local docker.
   10. Tag and release: `tag_submodules`, `update_homebrew_tap`, `advance_contract_floor` and `create_github_release`.
   11. The release record, written to R2.
-    (ticked) 2026-10-27T10:15:13Z by d778be9d: 7c25d047b: .ci/rediacc_ci/release/local.py and the release:local script; pytest test_release_local.py rc=0 (31); npm run release:local -- --channel edge --dry-run prints 105 steps then refuses ci-quick, vm-check, backup, origin-main
+    (ticked) 2026-10-27T10:15:13Z by d778be9d: f6fc296f2: .ci/rediacc_ci/release/local.py and the release:local script; pytest test_release_local.py rc=0 (31); npm run release:local -- --channel edge --dry-run prints 105 steps then refuses ci-quick, vm-check, backup, origin-main
 
   - `--channel stable` runs the promote-stable steps instead:
     - `promote_r2_to_stable`;
@@ -128,13 +128,13 @@ Design inputs, summarized below with file:line:
   - Add a `("release:local","aws")` prerequisite row to `.claude/rediacc_hooks/guards/block_host_toolchain_run.py:84-103`.
   - Owns: block_unasked_release.py, test-block_unasked_release.py and block_host_toolchain_run.py.
   - Accept: `run_tests.py -k unasked_release` rc=0; `--dry-run` passes; a raw `wrangler deploy` is refused.
-    (ticked) 2026-10-27T09:13:10Z by d778be9d: 2e939f2ab: .claude/rediacc_hooks/guards/block_unasked_release.py; test-block_unasked_release.py rc=0 (147 cases); run_tests -k "unasked_release or host_toolchain" rc=0 (314)
+    (ticked) 2026-10-27T09:13:10Z by d778be9d: f2ce96bf6: .claude/rediacc_hooks/guards/block_unasked_release.py; test-block_unasked_release.py rc=0 (147 cases); run_tests -k "unasked_release or host_toolchain" rc=0 (314)
 - [x] W2-D [writer] Durable deploy records.
   - `deploy_record.after --sink r2` (`.ci/rediacc_ci/deploy/deploy_record.py:665`) writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through `write_once_guard`. Today the record is a 3-day artifact (`.github/workflows/cd-deploy-account.yml:676`).
   - Add a www record (the version id before and after, the `wrangler rollback` command and the smoke rc) to `deploy_www.py` and `deploy_edge.py`, and put the account smoke rc into the account record.
   - Owns: deploy_record.py, deploy_www.py, deploy_edge.py and test_deploy_*.py.
   - Accept: pytest rc=0, and a www record carries the version id, the rollback command and the smoke rc.
-    (ticked) 2026-10-27T08:24:25Z by d778be9d: a364733cc: deploy_record after --sink r2 write-once records and the www record in deploy_www.py and deploy_edge.py; pytest rc=0 (73)
+    (ticked) 2026-10-27T08:24:25Z by d778be9d: 09b9a9de1: deploy_record after --sink r2 write-once records and the www record in deploy_www.py and deploy_edge.py; pytest rc=0 (73)
 - [x] W2-E [writer] The tag module, `rediacc_ci.release.tag`.
   - Lift it from the inline bash at `.github/workflows/cd-v2.yml:256-272`. It creates `v<V>` idempotently and refuses on an unknown `ls-remote` result.
   - Add the `release-local` bws profile to `.ci/config/secret-supply.json`. It binds:
@@ -149,7 +149,7 @@ Design inputs, summarized below with file:line:
   - A GHCR token, and a GitHub token for the tag and the Release, are written into the store by the session through `bws_env store-from-env`.
   - Owns: tag.py, test_release_tag.py and the secret-supply profile.
   - Accept: pytest rc=0, and `npm run check:ci-secret-supply` rc=0.
-    (ticked) 2026-10-27T08:05:24Z by d778be9d: bc4b577c9: .ci/rediacc_ci/release/tag.py and the release-local profile in .ci/config/secret-supply.json; pytest test_release_tag.py rc=0 (7); npm run check:ci-secret-supply rc=0; AWS_SES_ACCESS_KEY_ID/SECRET exist only as regional pairs, left to W2-B
+    (ticked) 2026-10-27T08:05:24Z by d778be9d: 2a48be52c: .ci/rediacc_ci/release/tag.py and the release-local profile in .ci/config/secret-supply.json; pytest test_release_tag.py rc=0 (7); npm run check:ci-secret-supply rc=0; AWS_SES_ACCESS_KEY_ID/SECRET exist only as regional pairs, left to W2-B
 
 ### Wave 3 (one clean break, after W2)
 
@@ -166,7 +166,7 @@ Design inputs, summarized below with file:line:
   - The `push: main` CI run on the released SHA stays as the after-the-fact check, and the entry records its run id in the release record.
   - Owns: the listed workflows.
   - Accept: actionlint is clean, and `npm run check:ci-workflows` and `npm run check:ci-workflow-invariants` exit rc=0.
-    (ticked) 2026-10-27T10:19:52Z by d778be9d: 46e754823: .github/workflows/local-release-assist.yml (scope narrowed by the ASKED:2026-10-27T09:45Z ruling, which keeps cd-v2 and promote-stable); check:ci-workflows, check:ci-actionlint, check:ci-parity, check:ci-workflow-invariants rc=0
+    (ticked) 2026-10-27T10:19:52Z by d778be9d: 7dca9af05: .github/workflows/local-release-assist.yml (scope narrowed by the ASKED:2026-10-27T09:45Z ruling, which keeps cd-v2 and promote-stable); check:ci-workflows, check:ci-actionlint, check:ci-parity, check:ci-workflow-invariants rc=0
 - [x] W3-B [writer] Invariants and dead modules.
   - Port the release-order phase of `ci_workflow_invariants.py` (:33-60, :357-560) to check the W2-B `STEPS` table.
   - Delete these modules and their tests:
@@ -179,7 +179,7 @@ Design inputs, summarized below with file:line:
     - `promote_r2_to_stable_hotfix` and `promote_docker_to_stable_hotfix`.
   - Owns: ci_workflow_invariants.py and its test, plus the deleted modules.
   - Accept: `npm run check:ci-pytest` rc=0, and the dead-python gate is green.
-    (ticked) 2026-10-27T11:18:59Z by d778be9d: 983fd1cfc: ci_workflow_invariants.py STEPS phase beside the kept CD phase (ruling ASKED:2026-10-27T09:45Z), no module deleted since cd-v2 still calls all eight; check:ci-workflow-invariants rc=0; pytest rc=0 (501)
+    (ticked) 2026-10-27T11:18:59Z by d778be9d: e2e29ce03: ci_workflow_invariants.py STEPS phase beside the kept CD phase (ruling ASKED:2026-10-27T09:45Z), no module deleted since cd-v2 still calls all eight; check:ci-workflow-invariants rc=0; pytest rc=0 (501)
 - [x] W3-C [writer] Release state moves off `main`.
   - The contract floor becomes an ordinary commit in the next PR. `cd_preflight --checks c` warns when it lags.
   - The console's homebrew gitlink bump is dropped. The tap repository still receives its formula commit, admitted by W1-D.
@@ -199,7 +199,7 @@ Design inputs, summarized below with file:line:
   - The job-graph region, regenerated.
   - Owns: the listed docs.
   - Accept: `npx tsx scripts/gen/gen-docs.ts --write` leaves no diff, and `check:ci-doc-region-parity` and `check:ci-prose-style` exit rc=0.
-    (ticked) 2026-10-27T10:15:15Z by d778be9d: 98d80629b: CLAUDE.md, release-process.md, ci-gates.md, versioning.md, deploy SKILL.md, pr-merge.md to the 2026-10-27T09:45Z rulings; check:ci-prose-style, check:ci-doc-region-parity, check:cli-examples rc=0
+    (ticked) 2026-10-27T10:15:15Z by d778be9d: 619522c47: CLAUDE.md, release-process.md, ci-gates.md, versioning.md, deploy SKILL.md, pr-merge.md to the 2026-10-27T09:45Z rulings; check:ci-prose-style, check:ci-doc-region-parity, check:cli-examples rc=0
 
 ### Live
 

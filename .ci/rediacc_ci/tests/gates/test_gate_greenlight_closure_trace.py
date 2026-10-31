@@ -184,7 +184,7 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
     # THE CONTROL. Delete ONE required entry from a copy of the table and the identical checker must go red, naming that key and that path. Two mutations, because they fail through different limbs: a path deletion exercises the coverage walk, and an emptied submodule list exercises the checkout implication.
     table = table_json(gate, tmp_path)
 
-    # Mutation 1: e2e_workers loses the shard manifest its final step hands the runner (`--shard-manifest`). It was run-e2e.sh until 3ed5836f7 made that step `python3 -m rediacc_ci.testrun.e2e`, which the `.ci/rediacc_ci` directory entry covers, so deleting the bash twin no longer uncovers anything.
+    # Mutation 1: e2e_workers loses the shard manifest its final step hands the runner (`--shard-manifest`). It was run-e2e.sh until 27055771d made that step `python3 -m rediacc_ci.testrun.e2e`, which the `.ci/rediacc_ci` directory entry covers, so deleting the bash twin no longer uncovers anything.
     mutant = tmp_path / "mutant-path.json"
     mutate_table(
         gate,

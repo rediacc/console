@@ -1,6 +1,6 @@
 # PLAN: retire the bash hook oracles, transform the remaining bash into Python
 
-Status: done -- 2026-10-20, every box ticked (15 of 15), merged to main with PR #600 (d35df2ab1)
+Status: done -- 2026-10-20, every box ticked (15 of 15), merged to main with PR #600 (52a24264c)
 First-Seen: 2026-10-11
 Depends-On: no-dep -- related, not ordered: its G1 closes box W1P6 of PLAN-tooling-transformation.md and supersedes that plan's 2026-09-21 oracle ruling
 Owner: d778be9d
@@ -23,26 +23,26 @@ Owns: .ci/config/language-policy-baseline.json
 - [x] A5 Phase A acceptance: full .claude hook suite, DEFECT control over all guards, language-policy, hook-integrity, docs-gen and dead-python gates, the live chain on real commands, wall time measured before and after
     (ticked) 2026-10-08T23:06:15Z by d778be9d: commit:9c6175791 -- hook suite 10956 passed in 290.5s on a clone; its 14 failures are clone-only (submodule symlink and missing private/account, detached HEAD) and the 3 files re-run 520 + 543 passed in the live tree; DEFECT control 69 passed; bash_semantics 257, golden_drift 3, docs_gen 7 passed; check:ci-language-policy, -hook-integrity, -dead-python, -guard-mention-anchoring rc=0; live chain-head: git worktree add BLOCKED rc=2, ls rc=0; guard differential 65.8s against 294.65s before
 - [x] B0 Inventory every tracked .sh into agent/plans/PLAN-retire-bash-oracles.inventory.tsv; close the 15 unclassified C/D files, re-check group D DELETE verdicts against naming tests, re-judge the media/breakpoint/tutorials tree exemptions file by file
-    (ticked) 2026-10-08T12:56:00Z by d778be9d: commit:a577aa05a agent/plans/PLAN-retire-bash-oracles.inventory.tsv holds one row per tracked .sh, 190 of 190 (plus 35 GONE); exempt trees re-judged per file; the DELETE verdict rechecked; check:ci-language-policy rc=0
+    (ticked) 2026-10-08T12:56:00Z by d778be9d: commit:b5ba8d8e1 agent/plans/PLAN-retire-bash-oracles.inventory.tsv holds one row per tracked .sh, 190 of 190 (plus 35 GONE); exempt trees re-judged per file; the DELETE verdict rechecked; check:ci-language-policy rc=0
 - [x] B1 Cut over the CUTOVER-READY live twins (assert-job-succeeded, detect-pointer-bump, initialize, then lib/common.sh and its 181+ source sites); retire run-legacy.sh as its verb table empties
-    (ticked) 2026-10-08T19:34:43Z by d778be9d: commit:389b4135a common.sh deleted with its sourcers (also 6eb239b4d, 3bfab056e); check:ci-language-policy rc=0, .ci suite 13333 passed
+    (ticked) 2026-10-08T19:34:43Z by d778be9d: commit:55699d010 common.sh deleted with its sourcers (also bde8f5138, 17ffc1b81); check:ci-language-policy rc=0, .ci suite 13333 passed
 - [x] B2 Port groups C and D-port in dependency order under rule T, each with a differential for right behaviour and intentional deltas for wrong behaviour, wired in the same change
-    (ticked) 2026-10-08T22:36:31Z by d778be9d: commit:08bde4c6f commit:a72984c47 commit:f36f3bbbf commit:05e9225bb -- no PORT row left without a port (section 12); check:ci-language-policy STRICT rc=0, 80 bash files all allowlisted
+    (ticked) 2026-10-08T22:36:31Z by d778be9d: commit:5808b5a90 commit:48cb54c75 commit:fa8ac42ed commit:8b12ce5ec -- no PORT row left without a port (section 12); check:ci-language-policy STRICT rc=0, 80 bash files all allowlisted
 - [x] B3 Golden-then-delete every twinned bash file (groups A and B after cutover), draining its bashFiles line, with the same regolden verb as A2
-    (ticked) 2026-10-08T22:36:34Z by d778be9d: commit:08bde4c6f commit:a72984c47 commit:f36f3bbbf commit:05e9225bb -- frozen goldens first, then deletion; check:ci-dead-bash, -language-policy, -bash-lib-ported rc=0
+    (ticked) 2026-10-08T22:36:34Z by d778be9d: commit:5808b5a90 commit:48cb54c75 commit:fa8ac42ed commit:8b12ce5ec -- frozen goldens first, then deletion; check:ci-dead-bash, -language-policy, -bash-lib-ported rc=0
 - [x] B4 Rule-T fixes in the .ci ports: the 24 plan-named reproduced behaviours, the sweep's 8-13 bugs, and the promote retry gap #4175e786
-    (ticked) 2026-10-04T17:20:45Z by d778be9d: commit:d2c44c127 landed in e07adce45 and d2c44c127; the full .ci suite re-covers those tests
+    (ticked) 2026-10-04T17:20:45Z by d778be9d: commit:079237098 landed in c4368c0bd and 079237098; the full .ci suite re-covers those tests
 - [x] B5 Port the out-of-policy scripts (drills, ops, worktree, eslint-heap, json generator, backup-storage); prove the drills with a live run on the ops VMs
-  - Amended 2026-10-08 (reviews 48e04cab.2 and 48e04cab.3): "the ops VMs" and "the local fleet" are the same machines (`./rdc.sh ops up` provisions them); the license drill ran there on the basic fleet, where legs needing .12 or Ceph are refused honestly, as 57eb32e04 records. "selftests rc 1" is the expected result, not a failure: every drill `--selftest` plants one assertion that cannot pass and MUST exit non-zero (`.ci/rediacc_ci/drills/lib.py`, PROVE THE INSTRUMENT).)
-  - Amended 2026-10-09 (reviews 2cedd2cc.2 and 2cedd2cc.3): the tick names two runs. "license 44/44 (legs a-f)" is the full-fleet run that 68c262cbc and 48e04cabd record, with every leg run and passed; the basic-fleet run in 57eb32e04 is a separate one, where the preflight refused the legs needing .12 or Ceph by name, so they never ran and are not counted in any pass total (leg f 5/5 there). The selftest rule is shown, not only asserted: `./run.sh drill license --legs f --selftest` exits 1 with "1 assertions: 0 passed, 1 failed" and "selftest fired as designed".)
-    (ticked) 2026-10-08T19:52:42Z by d778be9d: commit:57eb32e04 live drills all green (universe 42/42, transfer 33/33, backup 86/86, license 44/44, backup_roundtrip 8/8), selftests rc 1, drill-verdicts rc=0
+  - Amended 2026-10-08 (reviews 48e04cab.2 and 48e04cab.3): "the ops VMs" and "the local fleet" are the same machines (`./rdc.sh ops up` provisions them); the license drill ran there on the basic fleet, where legs needing .12 or Ceph are refused honestly, as de03ab50b records. "selftests rc 1" is the expected result, not a failure: every drill `--selftest` plants one assertion that cannot pass and MUST exit non-zero (`.ci/rediacc_ci/drills/lib.py`, PROVE THE INSTRUMENT).)
+  - Amended 2026-10-09 (reviews 2cedd2cc.2 and 2cedd2cc.3): the tick names two runs. "license 44/44 (legs a-f)" is the full-fleet run that 01c49a450 and 9dc950376 record, with every leg run and passed; the basic-fleet run in de03ab50b is a separate one, where the preflight refused the legs needing .12 or Ceph by name, so they never ran and are not counted in any pass total (leg f 5/5 there). The selftest rule is shown, not only asserted: `./run.sh drill license --legs f --selftest` exits 1 with "1 assertions: 0 passed, 1 failed" and "selftest fired as designed".)
+    (ticked) 2026-10-08T19:52:42Z by d778be9d: commit:de03ab50b live drills all green (universe 42/42, transfer 33/33, backup 86/86, license 44/44, backup_roundtrip 8/8), selftests rc 1, drill-verdicts rc=0
 - [x] G1 Empty and delete .ci/config/language-policy-baseline.json (closes PLAN-tooling-transformation W1P6, ed0c365d); every remaining allowlist entry carries a BLOCKER reason
-    (ticked) 2026-10-08T22:36:36Z by d778be9d: commit:05e9225bb -- baseline deleted; check:ci-language-policy STRICT rc=0 (80 bash files, all allowlisted); suppression-liveness rc=0; plants rc=1
+    (ticked) 2026-10-08T22:36:36Z by d778be9d: commit:8b12ce5ec -- baseline deleted; check:ci-language-policy STRICT rc=0 (80 bash files, all allowlisted); suppression-liveness rc=0; plants rc=1
 - [x] G2 Fix check:ci-bash-lib-ported (add log.py to its module list, recognise class methods), port its 8 real gaps, retire it with the last library
   - Amended 2026-10-09 (review 80544cbd.1): "retire it with the last library" has not come due. The last library is `.ci/scripts/lib/toolchain.sh`, which operator ruling D9 keeps ("Keep the gate for toolchain (Recommended)", ASKED:2026-10-08T19:13Z), so the gate stays alive to guard it. The box closes on the fix and the 0-gap port, and the retirement is owed only when toolchain.sh goes.)
-    (ticked) 2026-10-08T22:36:39Z by d778be9d: commit:05e9225bb commit:08bde4c6f -- check:ci-bash-lib-ported rc=0 (1 library, 17 functions); retirement waits on toolchain.sh, kept by operator D9 ASKED:2026-10-08T19:13Z
+    (ticked) 2026-10-08T22:36:39Z by d778be9d: commit:8b12ce5ec commit:5808b5a90 -- check:ci-bash-lib-ported rc=0 (1 library, 17 functions); retirement waits on toolchain.sh, kept by operator D9 ASKED:2026-10-08T19:13Z
 - [x] G3 Regenerate gates.lock.json, the gen-docs regions, gate-bind steps and the registries; correct the TRAPS.md and CLAUDE.md prose that calls the oracles the spec
-    (ticked) 2026-10-08T22:36:42Z by d778be9d: commit:05e9225bb -- check:ci-gates-lock, -gate-bind, -prose-style rc=0; breakpoint-blocker.sh repointed with its MANIFEST regenerated, check:ci-breakpoint-drift rc=0
+    (ticked) 2026-10-08T22:36:42Z by d778be9d: commit:8b12ce5ec -- check:ci-gates-lock, -gate-bind, -prose-style rc=0; breakpoint-blocker.sh repointed with its MANIFEST regenerated, check:ci-breakpoint-drift rc=0
 
 ## 0. Rulings this plan executes, and the one it supersedes
 
@@ -348,9 +348,9 @@ This plan is ready to run, but read section 2 first. Twelve rows of the section 
   - `.ci` side: `.ci/rediacc_ci/tests/test_twin_goldens.py`.
   - Hook side: `.claude/rediacc_hooks/tests/test_golden_drift.py`.
 - **Switching a test to port-vs-golden.** Replace `old = diff.bash_streams("bash %s" % TWIN, ...)` with `old = diff.twin_call(TWIN, ["bash"], lambda: diff.bash_streams(...), work=(repo.parent,))`.
-  - Worked example: commit 0866fa941, in `test_release_check_existing_release.py`.
+  - Worked example: commit 6d4535997, in `test_release_check_existing_release.py`.
   - Tests that read `TWIN.read_text()` must be deleted or salvaged into plain assertions, using the rules in `agent/plans/PLAN-deletion-budget.md:145-152` (DB16).
-- **Reference commits.** 6eb239b4d (14 twins), 50dd86fb0 (15) and 0866fa941 (12). Each one in the same change:
+- **Reference commits.** bde8f5138 (14 twins), e040863ab (15) and 6d4535997 (12). Each one in the same change:
   - drains `language-policy-baseline.json`;
   - lowers the shfmt floor (`.ci/rediacc_ci/security/shfmt.py:97`, now `"167"`);
   - drains the `.dead-bash-allowlist`, em-dash, shell-declared-commands, python-types and secret-supply entries.
@@ -361,7 +361,7 @@ This plan is ready to run, but read section 2 first. Twelve rows of the section 
   - Deleting the file switches the gate to STRICT mode (`:748-768`), which is G1 with no further code change.
 - **Hidden dependency.** That gate shells out to `.ci/scripts/lib/blocker-validator.sh` (`:251-300`). It has to be repointed to `rediacc_ci.core.blocker_validator` before that library can go.
 - **Already frozen.** 26 twins have goldens, and every `twin_blob` matches the file today (checked with `git hash-object`). They are 14 of the `release/*.sh`, 9 deploy scripts, `build-cli`, `build-pkg-repo` and `test-media-r2`.
-- **Why they were not deleted.** 0866fa941 says: "Every .ci/scripts/release/*.sh stays on disk ... those ports wait for the operator's real cd-v2, promote-stable and backfill-release-sentinel runs (operator rule, 2026-10-01)". `agent/plans/PLAN-deletion-budget.md:143` repeats the rule.
+- **Why they were not deleted.** 6d4535997 says: "Every .ci/scripts/release/*.sh stays on disk ... those ports wait for the operator's real cd-v2, promote-stable and backfill-release-sentinel runs (operator rule, 2026-10-01)". `agent/plans/PLAN-deletion-budget.md:143` repeats the rule.
 
 ### 2. Inventory corrections that change the work
 
@@ -459,13 +459,13 @@ The lead's final check is `npm run ci`, plus `check:ci-{language-policy,dead-bas
 
 ### 5. What needs real machines
 
-- **B5 drills.** The ports exist (50dd86fb0), but the live run on the ops VMs is still owed. It is operator-run.
+- **B5 drills.** The ports exist (e040863ab), but the live run on the ops VMs is still owed. It is operator-run.
 - **W9.** The renet sudo suites and `license-e2e` cannot run locally (they need `private/renet`, sudo and `/var/lib/rediacc`). They are proven by a dispatched full-suite ct-tests run (`ct-tests.yml` License Enforcement job, `inputs.full_suite == 'true'`) on GitHub-hosted runners, not on the ops VMs.
 - **W4, W5, W6 and W7 touch production paths.** These are cd-deploy-worker, cd-v2, promote-stable, cd-stage and backfill. They are the 19 operator-run rows of `agent/plans/PLAN-w7p5a-real-run-dispatch.md:76`. Deleting the twins does not change what runs (the modules already run), but W4 and W7 change live code paths. Their proof is the next real edge deploy and release, with a rollback step named first.
 
 ### 6. Operator decisions, with a recommended default for each
 
-- **D1. Lift the 2026-10-01 hold on the release twins?** Default: yes. v1.3.2's CD already ran the Python modules (3ce2c1994, 82700f4a0). The 13 blocklist entries go in L1 together with their `w7p5a-status.json` rows.
+- **D1. Lift the 2026-10-01 hold on the release twins?** Default: yes. v1.3.2's CD already ran the Python modules (c1775da51, a822cbe30). The 13 blocklist entries go in L1 together with their `w7p5a-status.json` rows.
 - **D2. `toolchain.sh`.** Default: KEEP-BASH, with the BLOCKER "sourced by bootstrap.sh before the Python toolchain exists". Moves the 4 `ci-quality.yml` sites and the `setup-node-npm` site to `python3 -m rediacc_ci.core.toolchain`.
 - **D3. `common.sh`.** Default: delete in wave 3 (W11). This costs a new `gh-retry` verb and edits to 3 KEEP-BASH files, plus churn across 57 test files that reference it.
 - **D4. Elite trio.** Default: keep 3-line exec shims, allowlisted with "path contract of the vendored breakpoint tree". Do not edit the drift-locked breakpoint tree.
@@ -768,9 +768,9 @@ Every count below was measured on this tree with W11-B uncommitted. The B5 ports
 | `deploy/upload-media-to-r2.sh` | KEEP-BASH, `file:` (two effective lines) | Cross-repo caller `private/growth/video_pipeline/publish.py`. That repo is a separate gitignored GitLab repo (`.gitignore:81`), so this PR cannot change it. Its local caller is `packages/www/scripts/publish-tutorial-video-to-r2.ts:28`. |
 | `infra/ci-{pull-images,start-elite,stop-elite}.sh` | KEEP, `shim:` | One-line `exec python3 -m rediacc_ci.infra.*` shims (W11-C, 1baf0b358). They are a path contract for the drift-locked breakpoint tree (section 10, row 2). |
 | `lib/toolchain.sh` | KEEP-BASH, `file:` (D2) | `.ci/bootstrap.sh:87` sources it before Python exists. |
-| `lib/blocker-validator.sh` | Not ported away yet | Nothing in production runs it any more: since ec431be68 `check_language_policy` validates in process. It survives only because tests read it: `.ci/rediacc_ci/tests/test_core_allowlist.py:126,153,680`, `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py:40,452-472`, `.ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:71`, `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py:37`, `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py:50`, `test_blocker_implementations.py`, plus the two gate twins. |
+| `lib/blocker-validator.sh` | Not ported away yet | Nothing in production runs it any more: since f52ab06c6 `check_language_policy` validates in process. It survives only because tests read it: `.ci/rediacc_ci/tests/test_core_allowlist.py:126,153,680`, `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py:40,452-472`, `.ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:71`, `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py:37`, `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py:50`, `test_blocker_implementations.py`, plus the two gate twins. |
 | `lib/emit-advisory.sh` | Not ported away yet | Its only real sourcer is `blocker-validator.sh`. The W7 note (0c05c1622) says the breakpoint tree sources it; that is wrong. `.ci/breakpoint/lib/breakpoint-blocker.sh:6` only mentions it in a comment. |
-| `test/gates/test-blocker-golden-corpus.sh` | Twin with a port and a golden (ec431be68) | Also read as data by `.ci/rediacc_ci/quality/vendored_blocker_derivation.py:66` (`CORPUS_REL`) and `.ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:70`. Run by `scripts/ci-runner/manifest.ts:5169-5173`. |
+| `test/gates/test-blocker-golden-corpus.sh` | Twin with a port and a golden (f52ab06c6) | Also read as data by `.ci/rediacc_ci/quality/vendored_blocker_derivation.py:66` (`CORPUS_REL`) and `.ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:70`. Run by `scripts/ci-runner/manifest.ts:5169-5173`. |
 | `test/gates/test-runner-advice.sh` | Twin with a port and a golden | Read by `.ci/rediacc_ci/tests/gates/test_gate_plant_proofs.py:47` (`DEBT_SUBJECT`) and `.ci/config/plant-proof-baseline.json`. Run by `scripts/ci-runner/manifest.ts:5195-5200`. |
 | `test/gates/test-media-r2.sh` | Twin with a port and a golden | Run by `.ci/rediacc_ci/tests/gates/test_gate_media_docs.py:59` and `scripts/ci-runner/manifest.ts:5182`. It is the only remaining sourcer of `.ci/media/verify.sh` (`verify.sh`), so deleting it leaves `verify.sh` dead. |
 | `test/lib/test-helpers.sh` | Library kept for its sourcers | Sourced by `test-toolchain.sh`, `media/verify.sh` and the two gate twins. `gates/test_gate_media_helpers.py` uses it as its subject. |
@@ -781,19 +781,19 @@ Every count below was measured on this tree with W11-B uncommitted. The B5 ports
   - **Left:** the full run listed in 12.4 step 2, after W11-B commits.
   - **"Before" wall time:** 294.65 s (plan section 1). `.ci/rediacc_ci/check_pytest.py:110` already notes that the same fixture "is 233s of test time now".
 - **B1 (cutover).**
-  - `assert-job-succeeded`, `detect-pointer-bump` and `initialize`: deleted in 6eb239b4d.
-  - `run-legacy.sh`: deleted in 3bfab056e.
+  - `assert-job-succeeded`, `detect-pointer-bump` and `initialize`: deleted in bde8f5138.
+  - `run-legacy.sh`: deleted in 17ffc1b81.
   - `common.sh`: W11-B, uncommitted. The only `source …lib/common.sh` lines left are frozen heredoc keys inside the `twin_streams` goldens (`.ci/rediacc_ci/tests/test_drills_lib.py:87`, `.ci/rediacc_ci/tests/test_quality_release_state.py:133,198`, `.ci/rediacc_ci/tests/test_quality_renet_types.py:114`).
   - **Left:** commit W11-B plus the integration writer's output. Then the box ticks.
 - **B2 (port groups C and D-port).** Every PORT row in the inventory is GONE except three, and those three already have ports, so the remaining work is B3's. **Left:** none beyond B3, so B2 ticks with B3.
 - **B3 (golden-then-delete).** **Left:** units U1, U2 and U3 below. The shimmed trio is closed by the `SHIMMED_TWINS` carve-out.
 - **B5 (out-of-policy scripts).** Every port is done:
-  - drills and ops: 50dd86fb0 and 882658c69;
-  - `worktree.sh`: ec17cce72;
-  - eslint-heap, the json generator and test-templates, backup-storage and page density: 7c9e38822.
+  - drills and ops: e040863ab and 363a35892;
+  - `worktree.sh`: 7d9a84d5e;
+  - eslint-heap, the json generator and test-templates, backup-storage and page density: caedf8145.
   - No `scripts/drills`, `scripts/ops/*.sh` or `packages/json/*.sh` remain.
-  - **Live proof so far:** the license drill ran live on the Ceph fleet on 2026-10-01, with all legs a-f and port 43/43 (47085176d, worklist #87037302). But `drills/license.py` changed after that run (68c262cbc, 1b5757eab, 15bf298bd, 532b17721), so the proof is stale.
-  - `backup_roundtrip.py` and `backup_local_plane.py` (7c9e38822) have never run live.
+  - **Live proof so far:** the license drill ran live on the Ceph fleet on 2026-10-01, with all legs a-f and port 43/43 (e95c87fbb, worklist #87037302). But `drills/license.py` changed after that run (01c49a450, c8090ed13, 7a671850b, 93a75af5d), so the proof is stale.
+  - `backup_roundtrip.py` and `backup_local_plane.py` (caedf8145) have never run live.
   - CI's `ct-tests.yml` `test-drills` job (`:2837`, full-suite only) covers universe, transfer and backup (`:2880-2952`).
   - **Left:** one live run, in 12.2.
 - **G1 (delete the baseline).** **Left:**
@@ -856,7 +856,7 @@ The integration writer owns `.ci/**`, `scripts/**` (except doc-registry), `packa
 - **Freeze first, while all four exist:**
   - `PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden .ci/scripts/lib/blocker-validator.sh .ci/scripts/lib/emit-advisory.sh --source bash --reason "B3 freeze (section 12)"`
   - Check `git diff --stat`: only `lib.blocker-validator.jsonl` and `lib.emit-advisory.jsonl` should be new. `modules_naming` matches by basename (`regolden.py`), so use `-k` if other modules get pulled in.
-  - Confirm `test_twin_goldens.py` passes for the two gate-twin goldens frozen in ec431be68.
+  - Confirm `test_twin_goldens.py` passes for the two gate-twin goldens frozen in f52ab06c6.
 - **Retarget:**
   - `.ci/rediacc_ci/quality/vendored_blocker_derivation.py:66,237,479,505`: read the corpus from the Python port's table in `gates/test_gate_blocker_golden_corpus.py` or its golden.
   - `.ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:70-71`: make the pilot pair `core.blocker_validator` or `core.allowlist` against `scripts/lib/blocker-validator.ts`.
@@ -905,7 +905,7 @@ The integration writer owns `.ci/**`, `scripts/**` (except doc-registry), `packa
 
 ### 12.4 Order for the lead
 
-1. **Now:** start U0 in the background. When the integration writer reports, commit W11-B plus its output, then `--plan-investigate` and `--plan-tick` B1 citing that commit and 6eb239b4d / 3bfab056e. Run `/ask` for D8 and D9.
+1. **Now:** start U0 in the background. When the integration writer reports, commit W11-B plus its output, then `--plan-investigate` and `--plan-tick` B1 citing that commit and bde8f5138 / 17ffc1b81. Run `/ask` for D8 and D9.
 2. **A5:** run the following, then tick A5 with the before and after times.
    - `pytest -q -n 16 .claude/rediacc_hooks/tests`
    - `test_guards_differential.py::test_the_differential_can_fail` (`:1112`), `test_bash_semantics.py`, `test_golden_drift.py`

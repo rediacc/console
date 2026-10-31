@@ -195,7 +195,7 @@ EDGE_CASES = [
         "the JSDoc writer shelling out with an md glob",
         "node -e \"const lines = ['/**', ' * Entities.', ' */']; require('child_process').execSync('cp /dev/null agent/*.md');\"",
     ),
-    # Review db54423c.1: an allowlist of expanders misses every library that expands a glob or runs a shell (shelljs, Open3, python `sh`, zx, execa, globby), and every directory listing filtered by a pattern. Each of these was refused before db54423cf, passed at it, and is refused again: only a program provably inert lets a glob literal pass.
+    # Review db54423c.1: an allowlist of expanders misses every library that expands a glob or runs a shell (shelljs, Open3, python `sh`, zx, execa, globby), and every directory listing filtered by a pattern. Each of these was refused before 81822af65, passed at it, and is refused again: only a program provably inert lets a glob literal pass.
     ("shelljs rm on an md glob", "node -e \"require('shelljs').rm('agent/*.md')\""),
     ("shelljs cp onto an md glob", "node -e \"require('shelljs').cp('/dev/null', 'agent/*.md')\""),
     (
@@ -328,7 +328,7 @@ EDGE_CASES = [
     ),
     ("shutil.copy onto the log", "python3 -c \"shutil.copy('a.md','agent/pr-babysit-0831-1.md')\""),
     ("os.replace onto the log", "python3 -c \"os.replace('a.md','agent/pr-babysit-0831-1.md')\""),
-    # Review 4b3f59b5.1, judged per write: every row of the first block was allowed at 8abc48a14 with the log handed. The first three name another file somewhere (that used to clear the whole program); the rest write, remove or truncate through a spelling the write test did not know, or hand the log where the handed words were not read.
+    # Review 4b3f59b5.1, judged per write: every row of the first block was allowed at d15fe3f5b with the log handed. The first three name another file somewhere (that used to clear the whole program); the rest write, remove or truncate through a spelling the write test did not know, or hand the log where the handed words were not read.
     (
         "a named md file read beside a write to argv",
         "python3 -c \"import sys; print(open('README.md').read()); open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md",
@@ -467,7 +467,7 @@ EDGE_CASES = [
         "node writing a named file from the handed log",
         "node -e \"const fs=require('fs'); const o='out.json'; fs.writeFileSync(o, fs.readFileSync(process.argv[1]))\" agent/pr-babysit-0831-1.md",
     ),
-    # Review 8b651626.1: perl's `open` puts the HANDLE first, and the handle was read as the path, so every perl write to a named file was refused beside a handed log. The first six rows were refused at 13505e0b4 or pin the perl read and append beside them; the rest are the controls of the two residuals closed below.
+    # Review 8b651626.1: perl's `open` puts the HANDLE first, and the handle was read as the path, so every perl write to a named file was refused beside a handed log. The first six rows were refused at f087a1b96 or pin the perl read and append beside them; the rest are the controls of the two residuals closed below.
     (
         "perl writing a named file beside the handed log",
         'perl -e \'open(my $f, ">", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md',
@@ -508,7 +508,7 @@ EDGE_CASES = [
         "a Python open on an upper-case name bound to a named file",
         "python3 -c \"import sys; F='out.txt'; open(F, 'w').write(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md",
     ),
-    # The perl forms that DO reach the log, and two residuals of the previous round taken one step: `Path.replace` and `Path.rename` on a receiver that is provably a path (their argument is replaced too), and a writer reached through a literal name (`__import__('os')`, `getattr(os, 'rem' + 'ove')`). Every python row here was allowed at 13505e0b4.
+    # The perl forms that DO reach the log, and two residuals of the previous round taken one step: `Path.replace` and `Path.rename` on a receiver that is provably a path (their argument is replaced too), and a writer reached through a literal name (`__import__('os')`, `getattr(os, 'rem' + 'ove')`). Every python row here was allowed at f087a1b96.
     (
         "perl three-argument open onto the log by name",
         'perl -e \'open(my $f, ">", "agent/pr-babysit-0831-1.md")\'',
@@ -565,7 +565,7 @@ EDGE_CASES = [
         "a Python open on an upper-case name bound to argv",
         "python3 -c \"import sys; F=sys.argv[1]; open(F, 'w').write('')\" agent/pr-babysit-0831-1.md",
     ),
-    # Round 12, the burden inverted (reviews 97a72d29.1/.2): with a log in play a program must be one this guard can FOLLOW. The first three rows are the two reviewed shapes, allowed at 97a72d29c; every python row after them was allowed there too unless its neighbour in rounds 10 and 11 says otherwise, and the `getattr`/`__import__` row above this block is the one allow row the rule turned into a refusal.
+    # Round 12, the burden inverted (reviews 97a72d29.1/.2): with a log in play a program must be one this guard can FOLLOW. The first three rows are the two reviewed shapes, allowed at ca2f75c43; every python row after them was allowed there too unless its neighbour in rounds 10 and 11 says otherwise, and the `getattr`/`__import__` row above this block is the one allow row the rule turned into a refusal.
     (
         "a name bound to a string and then to a Path of argv",
         "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\np = 'x'\np = Path(sys.argv[1])\np.replace('/tmp/x')\nPY",
@@ -872,7 +872,7 @@ EDGE_CASES = [
         "perl: a two-argument open of a file named w is a read",
         "perl -e 'open(FH, \"w\"); print <FH>' agent/pr-babysit-0831-1.md",
     ),
-    # Reviews 801bbb46.1/.2: a quote or a `#` that is not a string or a comment in the language must not blank what follows it. Every row was allowed at 801bbb462, the unlink or delete hidden behind the shape its label names (`_extent_unknown`).
+    # Reviews 801bbb46.1/.2: a quote or a `#` that is not a string or a comment in the language must not blank what follows it. Every row was allowed at ba0bd0df9, the unlink or delete hidden behind the shape its label names (`_extent_unknown`).
     (
         "perl: the list separator variable is not a string opener",
         'perl -e \'local $" = ","; my $c = \\&CORE::unlink; $c->($ARGV[0])\' agent/pr-babysit-0831-1.md',
@@ -926,7 +926,7 @@ EDGE_CASES = [
         "ruby: a plain read of the handed log",
         'ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md',
     ),
-    # Reviews 012e1b7b.1/.2/.3: `_extent_unknown` was a delimiter LIST with holes. It is the rule now (any non-word, non-space delimiter after a quote-like word; `<<` then optional space then a quote or identifier). The first three rows are the reviewed holes, allowed at 012e1b7b2; the rest are siblings.
+    # Reviews 012e1b7b.1/.2/.3: `_extent_unknown` was a delimiter LIST with holes. It is the rule now (any non-word, non-space delimiter after a quote-like word; `<<` then optional space then a quote or identifier). The first three rows are the reviewed holes, allowed at cc5dbd0a3; the rest are siblings.
     (
         "ruby: percent on a dash delimiter",
         'ruby -e \'x = %-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md',
@@ -1118,7 +1118,7 @@ def _word_could_name_log(word):
     return False
 
 
-# A PROGRAM IS INERT ONLY WHEN IT IS PROVABLY SO (review db54423c.1). The first version of this arm (db54423cf) listed the things that EXPAND a glob literal and let a program holding none of them pass, and every library it did not list became a bypass: shelljs `rm('agent/*.md')`, ruby `Open3`, python `sh`, zx, execa, globby, and a directory listing filtered by the literal as a pattern. The direction is now the other one: a glob literal puts a log in play UNLESS every module the program imports is on a short inert list and its text holds none of the constructs below.
+# A PROGRAM IS INERT ONLY WHEN IT IS PROVABLY SO (review db54423c.1). The first version of this arm (81822af65) listed the things that EXPAND a glob literal and let a program holding none of them pass, and every library it did not list became a bypass: shelljs `rm('agent/*.md')`, ruby `Open3`, python `sh`, zx, execa, globby, and a directory listing filtered by the literal as a pattern. The direction is now the other one: a glob literal puts a log in play UNLESS every module the program imports is on a short inert list and its text holds none of the constructs below.
 # The modules whose import alone cannot expand a glob or run a shell: what they offer that could (`os.system`, `fs.globSync`, `Path.glob`, `os.listdir`) is named by a construct below, so the call still makes the program live.
 _INERT_MODULES = {
     "python": frozenset(
@@ -2652,7 +2652,7 @@ def run(ev):
         for run_ in shellscan.every_run(cmd):
             code, kind = shellscan.interpreter_program(run_, cmd, cwd)
             family = WT._interpreter_name(run_.name)
-            # `ruby -i` rewrites every file it is handed, whatever the program says (measured allowed at 97a72d29c: `ruby -i -pe '$_.upcase!' <log>`). perl's `-i` is `shellscan.in_place_edit`'s, read with the verbs above.
+            # `ruby -i` rewrites every file it is handed, whatever the program says (measured allowed at ca2f75c43: `ruby -i -pe '$_.upcase!' <log>`). perl's `-i` is `shellscan.in_place_edit`'s, read with the verbs above.
             if family == "ruby" and _ruby_in_place(run_) and _handed_a_log(run_, code, kind, cwd):
                 truncating = True
                 break

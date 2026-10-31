@@ -1,6 +1,6 @@
 # PLAN: the server relay is the only way config keys reach the CLI (`rdc config remote enable`, `rdc config rotate-cek`)
 
-Status: done -- all 11 boxes ticked (T10, T11 in 74d5e395e and ee1430cfb); hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- all 11 boxes ticked (T10, T11 in 99d5dfebc and feeb11305); hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-app-wide-org-selection.md -- its uncommitted working-tree edits touch the same files: `private/account/src/routes/device-codes.ts` (the approve route's org id), `private/account/web/src/auth/ProtectedRoute.tsx`, `private/account/e2e/src/utils/config-store-helpers.ts` and `private/account/e2e/tests/20-config-storage/20-11-prf-provider-matrix.test.ts` (`git -C private/account status`, 2026-09-25). Also PLAN-config-passkey-optional.md, which is `approved` with T1-T4 open, yet its code looks landed (`02cb4bf`, `a11c397`, `af08d91`). The lead should confirm and close it before T5 deletes `DeviceConfigSetup.tsx`, which that plan edits.
@@ -84,7 +84,7 @@ T1 freezes the contract. The submodule PR (A and B) lands first, then the consol
 - [x] T9 [C] CLI tests and mutation controls (section 7.1). Add the shared known-answer test.
     (ticked) 2026-10-03T09:42:41Z by d778be9d: 15da8633f: config-remote-relay.test.ts, config-remote-prereq.test.ts, spinner-ctrl-c.test.ts; shared known-answer test handoff-pairing.test.ts
 - [x] T10 [C] CLI i18n in 13 locales, `generate:cli-contract`, the www docs in 13 locales, the design docs and the skill doc (section 8).
-    (ticked) 2026-10-23T18:06:30Z by d778be9d: console 093711b47 (www docs 13 locales, DESIGN-CONFIG-STORAGE.md, 03-cli-contracts.md, skill doc) and 15da8633f (CLI i18n 13 locales, cli-contract); validate-translation-freshness rc=0
+    (ticked) 2026-10-23T18:06:30Z by d778be9d: console 27e4a0ddf (www docs 13 locales, DESIGN-CONFIG-STORAGE.md, 03-cli-contracts.md, skill doc) and 15da8633f (CLI i18n 13 locales, cli-contract); validate-translation-freshness rc=0
 - [x] T11 [lead] Closure: the removal sweep in section 9 returns nothing. Deploy the account server (eu) before the CLI release. Then do a live smoke of the operator's exact case: CLI in WSL, browser on Windows, `./rdc.sh config remote enable` for both a fresh store and an existing one, plus `config rotate-cek`.
     (ticked) 2026-10-23T18:42:45Z by d778be9d: narrowed section-9 sweeps rc=1 (empty); eu deployed (edge bab1c235, stable f93672cb, rollback in /home/developer/persist-deploy-rollback.txt); live smoke vs https://eu.rediacc.com: remote enable fresh + existing, rotate-cek, re-enroll all rc=0 (browser in WSLg, Turnstile headed)
 

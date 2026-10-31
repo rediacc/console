@@ -128,7 +128,7 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 - [x] `backup_snapshot.go` / `pipeline_linux.go`: best-effort mount+walk+encrypt+`PutIndex` step, strictly non-blocking on failure, recording success/failure in the commit call.
     (ticked) 2026-10-20T14:42:38Z by d778be9d: commit:64547bb24 renet 467013f + 8f6b965
 - [x] Account server: nullable `indexKey` (or `hasIndex`) column on `backup_manifests` (migration mirroring `manifestKey`'s shape); commit route accepts and stores it; `listManifests`/`GET /backups/manifests` and `mintReadGrant`/`POST /read-grants` surface it (`hasIndex` on list, `indexKeys` map on read-grant).
-    (ticked) 2026-10-20T14:42:40Z by d778be9d: commit:9e323c432 account 966b3f5 has_index, grant fields, GC
+    (ticked) 2026-10-20T14:42:40Z by d778be9d: commit:623f07340 account 966b3f5 has_index, grant fields, GC
 - [x] Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed).
   - (correction 2026-10-20, review 4e43289d) as landed: Stage-2 tests: TOC round-trips through `PutIndex`/`GetIndex`+decrypt for a fixture repo; `hasIndex:false` path when mount/key unavailable; snapshot-without-key regression control (backup still succeeds, still listed). Renet legs (round trip, no key, failed put, aad) are on renet fe9ce67; the `GET /backups/manifests` `hasIndex:false` listing leg is served by the account commit 9e323c432 (has_index column) and has no test of its own yet.
     (ticked) 2026-10-20T14:42:43Z by d778be9d: commit:64547bb24 renet fe9ce67 round trip, both grant kinds
@@ -142,7 +142,7 @@ Stage 3 depends on Stage 2's TOC object existing, so Stage 2 must land, be teste
 - [x] i18n: every new user-facing string in both new Go and TS surfaces, matching Stage 1's convention.
     (ticked) 2026-10-20T14:42:50Z by d778be9d: commit:548129481 CLI keys x13; renet 17aedbd 51 keys x13 pinned by 64547bb24
 - [x] Stage-3 tests: end-to-end round trip cross-checked against Stage 1's local `Browse` of the same content; tampered/wrong-key fail-closed negative; `hasIndex:false` honest refusal; Stage-1 regression control (no-`--at` path unchanged, zero new server calls).
-    (ticked) 2026-10-21T07:48:51Z by d778be9d: commit:d96400c32 suite 25 13/13 and suite 26 18/18 on the local KVM fleet; each of the four clauses has a passing test
+    (ticked) 2026-10-21T07:48:51Z by d778be9d: commit:829d003d1 suite 25 13/13 and suite 26 18/18 on the local KVM fleet; each of the four clauses has a passing test
 - [x] CI registration: suite 25/26, `.e2e-coverage-allowlist`, command-plane/command-tree/i18n gates.
     (ticked) 2026-10-20T14:42:52Z by d778be9d: commit:548129481 allowlist, command-tree, cli-contract, i18n gates rc 0
 

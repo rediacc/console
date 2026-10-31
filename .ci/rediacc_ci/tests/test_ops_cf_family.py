@@ -315,7 +315,7 @@ def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
     rc_b, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["--bogus"], env)
     rc_p, _, err_p = world.port("rediacc_ci.ops.backup_d1", ["--bogus"], env)
     assert rc_b == rc_p == 1
-    # ONE DECLARED DELTA: the usage line names the module the way it is run now. The bash script it named was deleted (882658c69), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
+    # ONE DECLARED DELTA: the usage line names the module the way it is run now. The bash script it named was deleted (363a35892), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     usage_bash = "Usage: backup-d1.sh "
     usage_port = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 "
     assert usage_bash in h.strip(err_b), err_b
@@ -732,12 +732,12 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
     for raw in h.normalise_calls(calls):
         if raw["tool"] == "sleep":
             continue
-        # DECLARED DELTA (b7d7bdfe0): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
+        # DECLARED DELTA (bb78feea5): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
         if raw["tool"] == "npx" and raw["argv"][2:5] == ["d1", "time-travel", "info"]:
             continue
         if _is_seed_call(raw):
             continue
-        # DECLARED DELTA (c7233ce09): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
+        # DECLARED DELTA (263557163): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
         if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
             continue
         call = dict(raw)
@@ -770,7 +770,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert any(_is_seed_call(c) for c in port_calls)
-    # DECLARED DELTA (c7233ce09): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
+    # DECLARED DELTA (263557163): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
     version_line = "Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d\n"
     assert out_p.count(version_line) == 1
     assert out_b == out_p.replace(version_line, "", 1)
@@ -796,7 +796,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
     bash_lines = _quiet_selfdestruct(err_b)
     assert bash_lines.count(bash_build) == 1
-    # DECLARED DELTAS since the bash was retired (b7d7bdfe0 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none). The live-host line is no delta: both outputs carry it once and it stays in the comparison.
+    # DECLARED DELTAS since the bash was retired (bb78feea5 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none). The live-host line is no delta: both outputs carry it once and it stays in the comparison.
     all_port_lines = _quiet_selfdestruct(err_p)
     # The delta is asserted before it is filtered, so a port that stops printing the bookmark warning, or drops the live-host line, still fails here.
     assert sum(ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") for ln in all_port_lines) == 1
@@ -808,7 +808,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         for ln in all_port_lines
         if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith(seed_lines)
     ]
-    # DECLARED DELTA (c7233ce09): the port records the live bench version; asserted once, then dropped.
+    # DECLARED DELTA (263557163): the port records the live bench version; asserted once, then dropped.
     recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench.json"
     assert port_lines.count(recorded) == 1
     port_lines.remove(recorded)

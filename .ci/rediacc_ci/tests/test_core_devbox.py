@@ -431,7 +431,7 @@ TWIN_BIND_SPELLING = "/.ci/lib/../../.devcontainer/"
 PORT_BIND_SPELLING = "/.devcontainer/"
 
 
-# The twin pinned the proxy image at `traefik:v3.6`; the port reads `DEVBOX_PROXY_IMAGE`, which moves with the product proxy's pin (e52a9d8f0). The frozen transcripts keep the old tag, so every comparison folds it to the port's rather than re-recording a golden whose D12 spelling must stay.
+# The twin pinned the proxy image at `traefik:v3.6`; the port reads `DEVBOX_PROXY_IMAGE`, which moves with the product proxy's pin (dbc31f959). The frozen transcripts keep the old tag, so every comparison folds it to the port's rather than re-recording a golden whose D12 spelling must stay.
 TWIN_PROXY_IMAGE = '"traefik:v3.6"'
 
 

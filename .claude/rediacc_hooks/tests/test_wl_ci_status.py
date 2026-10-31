@@ -594,7 +594,10 @@ def test_130b_a_cached_string_info_is_not_a_lookup_failure(wl):
     ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
     tip = wl.git("rev-parse", "refs/remotes/origin/pub").stdout.strip()
     wl.stem(".cistate-deadbeef").write_text(
-        json.dumps({"sha": tip, "state": "no-pr", "info": "origin/pub", "at": time.time(), "final": False}) + "\n",
+        json.dumps(
+            {"sha": tip, "state": "no-pr", "info": "origin/pub", "at": time.time(), "final": False}
+        )
+        + "\n",
         encoding="utf-8",
     )
     cichk(wl, "a cached string info reads as the cached state", "no", "PR CI-status lookup failed")

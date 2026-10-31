@@ -659,7 +659,7 @@ cases.append(
 
 # THE LOCAL RELEASE ENTRY (agent/plans/PLAN-local-release.md W2-C) is a gate-key row: `npm run release:local` names an npm script, so it lives in NEEDS, and a NEEDS_SCRIPT row would fail the liveness loop above. Both directions of `_is_invoked`, decided in-process so they hold whether or not this host carries aws.
 cases.append((True, ("release:local", "aws") in GUARD.NEEDS, "release:local: the row is in NEEDS"))
-# The module spelling of the same entry (W2-B, 7c25d047b) is a NEEDS_SCRIPT row; the liveness loop above already proves its module file exists. Its key is a PREFIX of `rediacc_ci.release.local_gates`, which runs no aws, so the module is matched whole, never as a substring.
+# The module spelling of the same entry (W2-B, f6fc296f2) is a NEEDS_SCRIPT row; the liveness loop above already proves its module file exists. Its key is a PREFIX of `rediacc_ci.release.local_gates`, which runs no aws, so the module is matched whole, never as a substring.
 cases.append(
     (
         True,
@@ -718,7 +718,7 @@ cases.extend(
 )
 
 # THE OTHER DIRECTION (review 276a69db.1): every runnable module under .ci/rediacc_ci that puts `aws` at the head of an argv has its row, so a new aws-calling port cannot ship without the routing. A module counts as runnable when it carries `if __name__ == "__main__"`. The exemptions are named, each with its reason.
-# TWO ARGV HEADS COUNT. Since 73e2c8217 every aws call site writes `awscli.AWS` (which is "aws") as argv[0] and execs through `rediacc_ci.core.awscli`, and check:ci-aws-resolver refuses a literal "aws" head, so a scan for the literal alone found 2 modules and neither was a port. No module imports `AWS` from awscli by name, so the attribute spelling is the whole new form.
+# TWO ARGV HEADS COUNT. Since e7e2ceec1 every aws call site writes `awscli.AWS` (which is "aws") as argv[0] and execs through `rediacc_ci.core.awscli`, and check:ci-aws-resolver refuses a literal "aws" head, so a scan for the literal alone found 2 modules and neither was a port. No module imports `AWS` from awscli by name, so the attribute spelling is the whole new form.
 _AWS_ARGV = re.compile(r"""[\[(]\s*(?:["']aws["']|awscli\.AWS)\s*[,\]]""")
 _AWS_EXEMPT = {
     # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.

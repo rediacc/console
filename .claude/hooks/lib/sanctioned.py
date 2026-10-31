@@ -351,7 +351,7 @@ CI_READ_VERBS = [
             "`CI Verdict` and `Publish CI Verdict`; the tracer applies the GREEN rule, and its `--json` "
             "carries the published CI Verdict when one matches the run"
         ),
-        "example": "gh api repos/o/r/commits/a7f30558/check-runs --jq '.check_runs[].name'",
+        "example": "gh api repos/o/r/commits/1e7caef2/check-runs --jq '.check_runs[].name'",
         "counter": "gh api repos/o/r/issues/591/comments",
     },
     {

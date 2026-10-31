@@ -418,7 +418,7 @@ cases.append(
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ok"))
 cases.append((2, run(PUSH), "CONTROL: the same carried gate recorded as ok is stale"))
 
-# The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of afe0503db unremarked.
+# The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of b72969998 unremarked.
 put(exitCode=0)
 carry(keyed(K1))
 cases.append(

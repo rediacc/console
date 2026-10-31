@@ -145,7 +145,7 @@ def _sleeps(cmd, cwd=None):
     # The 2026-08-25 ruling: every heredoc body, whatever reads it, nested in a payload or not.
     for body in shellscan.heredoc_bodies(cmd):
         found.extend(_arith(m) for m in _TEXT_SLEEP.findall(body))
-    # A PROGRAM'S TEXT IS READ THE WAY A HEREDOC BODY IS (#78afdc0b): `python3 -c 'os.system("<pause> 900")'` and the same line in a script run by path stall the session exactly as the heredoc form, which was the only one refused (rc 0 against rc 2 at c5c3036c3).
+    # A PROGRAM'S TEXT IS READ THE WAY A HEREDOC BODY IS (#78afdc0b): `python3 -c 'os.system("<pause> 900")'` and the same line in a script run by path stall the session exactly as the heredoc form, which was the only one refused (rc 0 against rc 2 at c72518af1).
     for text in _program_texts(cmd, cwd):
         found.extend(_arith(m) for m in _TEXT_SLEEP.findall(text))
     return found

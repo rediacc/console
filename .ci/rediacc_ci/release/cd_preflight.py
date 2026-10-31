@@ -69,7 +69,7 @@ FAILING = (DRIFT, UNCHECKED)
 
 PHASES = ("pr", "cd")
 
-# Validate Promotion: 1,123 objects took 11.2-14.6 min on main (4c8669b29), so 75 objects/min is the measured lower bound (1,123 objects in 14.6 min is 77/min); the watchdog cap is 20 min (`JOB_BUDGET_CAPS`, `validate-promote`).
+# Validate Promotion: 1,123 objects took 11.2-14.6 min on main (6f17924d1), so 75 objects/min is the measured lower bound (1,123 objects in 14.6 min is 77/min); the watchdog cap is 20 min (`JOB_BUDGET_CAPS`, `validate-promote`).
 PROMOTION_CHANNEL = "edge"
 PROMOTION_RATE_PER_MIN = 75
 PROMOTION_CAP_MIN = 20.0

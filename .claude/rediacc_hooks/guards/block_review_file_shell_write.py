@@ -32,7 +32,7 @@ REVIEW_TEXT = "agent/reviews/"
 REVIEW_LITERAL = re.compile(r"['\"](?![A-Za-z][A-Za-z0-9+.-]*://)(?:[^'\"\s]*/)?agent/reviews/")
 REVIEW_WORD = re.compile(r"(\A|/)agent/reviews(/|\Z)")
 SANCTIONED = ("wl_review.py", "worklist.py")
-# Every interpreter `shellscan.interpreter_program` reads (#a2599946): this guard listed python, node, perl and ruby alone, so `deno eval`, `bun -e`, `tsx -e` and `deno run - <<EOF` wrote a review file unread (rc 0, 2026-10-15 at bd4ead963).
+# Every interpreter `shellscan.interpreter_program` reads (#a2599946): this guard listed python, node, perl and ruby alone, so `deno eval`, `bun -e`, `tsx -e` and `deno run - <<EOF` wrote a review file unread (rc 0, 2026-10-15 at 2f3430b60).
 INTERPRETERS = shellscan.INTERPRETER_NAMES
 # Code that opens a file for writing, replaces or removes one. `.open('w')` is pathlib's spelling, whose mode is the FIRST argument (e30f1ad1.1).
 WRITE_CODE = re.compile(

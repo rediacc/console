@@ -69,7 +69,7 @@ THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a f
 THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). Every gate that asks a host outside the repository (`UPSTREAM_GATES`: the four pin freshness gates, actions, external links, DKIM, Go dependencies and npm dependencies) is hard on a pull request, on the nightly and on a dispatch.
 `analyse_upstream_gates` refuses: a gate with no step; an `if:` other than the lane guard plus the label hold (a gate-bind shard conjunct `matrix.shard == N` is allowed, since it cannot tell one cadence from another); a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
 
-THE WORKFLOW-ESTATE PINS (2026-10-23) ride the same phase and read EVERY workflow and composite action (`estate_files`, the set `check:ci-workflows` walks): `pipe-no-pipefail` refuses a `run:` that pipes with no pipefail in force (commit 41437ea6f), and `dispatch-write-off-default-branch` refuses a write-capable job in a `workflow_dispatch` workflow without `DEFAULT_BRANCH_GUARD` as a top-level `&&` conjunct of its `if:` (commit f8d184807). Zero files or zero run steps is red. The comment block above `PIPEFAIL_KINDS` carries the rules.
+THE WORKFLOW-ESTATE PINS (2026-10-23) ride the same phase and read EVERY workflow and composite action (`estate_files`, the set `check:ci-workflows` walks): `pipe-no-pipefail` refuses a `run:` that pipes with no pipefail in force (commit 02c32b372), and `dispatch-write-off-default-branch` refuses a write-capable job in a `workflow_dispatch` workflow without `DEFAULT_BRANCH_GUARD` as a top-level `&&` conjunct of its `if:` (commit 06bcc3c30). Zero files or zero run steps is red. The comment block above `PIPEFAIL_KINDS` carries the rules.
 
 WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
 and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
@@ -1732,8 +1732,8 @@ def _pins_soaked_phase(pins_file: str) -> tuple[list[str], list[str]]:
 
 # THE WORKFLOW-ESTATE PINS (2026-10-23, asked for by the Stop hook's regression judge). Two fixes landed that day that no check could catch, so both are pinned here over EVERY workflow and composite action, not one named file:
 #
-#   * `pipe-no-pipefail` (commit 41437ea6f). A `run:` with no explicit `shell:` runs under `bash -e {0}`, which has NO pipefail, so `report | tee -a "$GITHUB_STEP_SUMMARY"` took tee's exit 0 and a failing report passed green. A run that contains a shell pipe must run under the bare `shell: bash` (GitHub expands it to `bash --noprofile --norc -eo pipefail {0}`), under a custom shell line naming pipefail, or `set -o pipefail` (any `set` spelling carrying it) on or before the pipe's line. Every pipe counts, not only a final `tee`: `cmd | tail` and `cmd | grep` lose the exit code the same way.
-#   * `dispatch-write-off-default-branch` (commit f8d184807). `workflow_dispatch` runs the file from the branch the dispatcher selects, so a write-capable job in a dispatchable workflow runs unreviewed code with a write credential unless its `if:` carries `DEFAULT_BRANCH_GUARD` as a top-level conjunct. Write-capable means: a step minting the app-token action with any preset outside `READ_PRESETS` (the same action path and `preset:` key the pins-soaked rules read; an absent preset is the action's `readonly` default, an expression preset is not provably read-only), an effective `contents: write` (or `write-all`) at job or workflow level, or a call to a local reusable workflow holding such a job.
+#   * `pipe-no-pipefail` (commit 02c32b372). A `run:` with no explicit `shell:` runs under `bash -e {0}`, which has NO pipefail, so `report | tee -a "$GITHUB_STEP_SUMMARY"` took tee's exit 0 and a failing report passed green. A run that contains a shell pipe must run under the bare `shell: bash` (GitHub expands it to `bash --noprofile --norc -eo pipefail {0}`), under a custom shell line naming pipefail, or `set -o pipefail` (any `set` spelling carrying it) on or before the pipe's line. Every pipe counts, not only a final `tee`: `cmd | tail` and `cmd | grep` lose the exit code the same way.
+#   * `dispatch-write-off-default-branch` (commit 06bcc3c30). `workflow_dispatch` runs the file from the branch the dispatcher selects, so a write-capable job in a dispatchable workflow runs unreviewed code with a write credential unless its `if:` carries `DEFAULT_BRANCH_GUARD` as a top-level conjunct. Write-capable means: a step minting the app-token action with any preset outside `READ_PRESETS` (the same action path and `preset:` key the pins-soaked rules read; an absent preset is the action's `readonly` default, an expression preset is not provably read-only), an effective `contents: write` (or `write-all`) at job or workflow level, or a call to a local reusable workflow holding such a job.
 PIPEFAIL_KINDS = ("pipe-no-pipefail", "estate-no-files", "estate-no-runs")
 DISPATCH_KINDS = ("dispatch-write-off-default-branch",)
 DEFAULT_BRANCH_GUARD = (
@@ -2106,7 +2106,7 @@ def estate_message_for(kind: str, name: str, path: str) -> str | None:
         return (
             "INVARIANT-FAIL: pipe-no-pipefail: %s: %s. Without pipefail the step takes the LAST "
             "command's exit code, so a failing producer piped into tee/tail/grep ends green "
-            "(commit 41437ea6f). Fix: add `shell: bash` to the step (GitHub runs it as "
+            "(commit 02c32b372). Fix: add `shell: bash` to the step (GitHub runs it as "
             "`bash -eo pipefail`), or put `set -o pipefail` before the pipe." % (path, name)
         )
     if kind == "dispatch-write-off-default-branch":
@@ -2114,7 +2114,7 @@ def estate_message_for(kind: str, name: str, path: str) -> str | None:
             "INVARIANT-FAIL: dispatch-write-off-default-branch: %s: %s is write-capable in a "
             "workflow_dispatch workflow, and dispatch runs the file from whichever branch the "
             "dispatcher selects, so unreviewed code would hold the write credential (commit "
-            "f8d184807). Fix: make `%s` a top-level `&&` conjunct of the job's `if:`."
+            "06bcc3c30). Fix: make `%s` a top-level `&&` conjunct of the job's `if:`."
             % (path, name, DEFAULT_BRANCH_GUARD)
         )
     if kind == "estate-no-files":

@@ -1,6 +1,6 @@
 """`check:ci-plan-implementation` P-A1: one finding key per plan on the clock, never one over the set.
 
-THE DEFECT THIS PINS (worklist #08d1e96f, 2026-10-13). P-A1 was a single finding listing every plan on the clock, keyed by a hash of that message. Commit 36a1325fb ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd`. No plan the carry in `.ci/config/carried-reds.json` named had changed, and the push guard refused the push all the same.
+THE DEFECT THIS PINS (worklist #08d1e96f, 2026-10-13). P-A1 was a single finding listing every plan on the clock, keyed by a hash of that message. Commit 2b147e4a6 ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd`. No plan the carry in `.ci/config/carried-reds.json` named had changed, and the push guard refused the push all the same.
 
 WHAT MOVED THE OLD KEY, MEASURED. Not a count: `log.finding_key` masks digits, so a tick that left its plan open kept the old key (the second case below passes on the old code too, and stays as the control). The old key moved whenever the SET of plans changed, by a plan leaving the clock or joining it. The third and fourth cases are the ones the old code fails.
 
@@ -94,7 +94,7 @@ def test_closing_a_plans_last_open_box_removes_exactly_its_key(gate):
 
 
 def test_a_third_plan_joining_the_clock_adds_exactly_one_key(gate):
-    """The 36a1325fb shape: the branch ticks one box of a queued plan, which puts it on the clock with its other box still open."""
+    """The 2b147e4a6 shape: the branch ticks one box of a queued plan, which puts it on the clock with its other box still open."""
     joined = dict(TWO, **{THIRD: _row(["t2"], ["t1"])})
     before, after = _keys(gate, BASE, TWO), _keys(gate, BASE, joined)
     assert after - before == {"P-A1:" + THIRD}

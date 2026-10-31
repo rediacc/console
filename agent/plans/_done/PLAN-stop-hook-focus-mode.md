@@ -1,6 +1,6 @@
 # PLAN: stop-hook focus mode, a wind-down stand-down for /pr-babysit and /pr-merge
 
-Status: done -- 2026-10-15, every box ticked (8 of 8); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- 2026-10-15, every box ticked (8 of 8); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-stop-hook-cap-saturated-wait.md

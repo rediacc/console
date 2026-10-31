@@ -1,6 +1,6 @@
 """Refuse an Edit, Write or MultiEdit that empties or restores a protected hook file, and any NotebookEdit of one: the edit-tool half of `block_protected_files`.
 
-WHY (worklist #6378e10e). `block_protected_files` refuses `rm`, `git restore` and `git checkout` of `.claude/settings.json` and `scripts/pre-commit-check.sh`, and it is a pre-bash guard, so the edit tools reached the same two outcomes unrefused: a Write of an empty `.claude/settings.json` unwires every hook as surely as an `rm` (rc 0 through the pre-edit chain at c5c3036c3), and a Write of the file's HEAD text
+WHY (worklist #6378e10e). `block_protected_files` refuses `rm`, `git restore` and `git checkout` of `.claude/settings.json` and `scripts/pre-commit-check.sh`, and it is a pre-bash guard, so the edit tools reached the same two outcomes unrefused: a Write of an empty `.claude/settings.json` unwires every hook as surely as an `rm` (rc 0 through the pre-edit chain at c72518af1), and a Write of the file's HEAD text
 discards every uncommitted change to it, which is what `git restore` does and why it is refused.
 
 THE SAME ACTS, NOT EVERY EDIT. The shell half refuses deleting and restoring, never changing: `sed -i` on `.claude/settings.json` passes it, and so does a hook-wiring Edit here. Hook wiring is ordinary work (18 commits touched `.claude/settings.json` between 2026-09-01 and 2026-10-14), and the operator chose a warning over a refusal for hook changes on 2026-08-25 (`warn_hook_change`). So the result of the call is judged, the way `block_user_only_command` judges it:

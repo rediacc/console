@@ -468,7 +468,7 @@ def unfinished_why(root, graph, rel):
         return "the file cannot be read"
     finished = status in PF.FINISHED_STATES or status == D.REMOVED_STATUS
     if not counts[0] and counts[1] and not finished:
-        # Every box ticked under a live Status is RF's subject: it is closed, never promoted. Counting it here would refuse on main and on the PR that ticks its last box, the two places RF deliberately only warns, and the repair would insert a finished plan into the list (2026-10-23 replay of daab83af1: PLAN-chunk-store-browse-toc-and-remote, 11 of 11 ticked, `Status: proposed`).
+        # Every box ticked under a live Status is RF's subject: it is closed, never promoted. Counting it here would refuse on main and on the PR that ticks its last box, the two places RF deliberately only warns, and the repair would insert a finished plan into the list (2026-10-23 replay of 864065564: PLAN-chunk-store-browse-toc-and-remote, 11 of 11 ticked, `Status: proposed`).
         return ""
     if counts[0] or not finished:
         return f"Status {status or '(none)'}, {counts[0]} open box(es)"

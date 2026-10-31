@@ -1,6 +1,6 @@
 # PLAN: make the config sync loop (pull, push, encrypt, decrypt) safe, and prove it with a real round-trip harness
 
-Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-token-ip-rebind.md -- T11 (config token refresh) reuses the login token's TOTP rebind from that plan (`packages/cli/src/services/account/account-client.ts`, `token-ip-rebind.ts`). PLAN-config-handoff-relay-only.md -- both plans edit `packages/cli/src/commands/config-remote*.ts` and `packages/cli/src/i18n/locales/*/cli.json`, so T6, T11 and T12 wait for its console commit. T0-T5 and T7-T10 can start now.

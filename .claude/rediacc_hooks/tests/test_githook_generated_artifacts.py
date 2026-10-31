@@ -1,6 +1,6 @@
 """The git-level `pre-commit` check of the generated artifacts declared in `.ci/config/generated-artifacts.json` (`.claude/rediacc_hooks/git/artifacts.py`, called from `githooks.pre_commit`).
 
-WHY IT EXISTS. Three stale generated files on 2026-10-13, each found late: the CLI contract after 8dbb6066e (40 minutes, a pre-push run), `agent/plans/QUEUE.md` (PR 600's CI, run 38381096702), and a gen-docs region, the one case caught at the commit. The registry makes the third the rule, and a rule that selects commits by declared globs and judges them with a declared checker has three ways to pass without running: the glob never matches, the checker never fails, or the hook never calls it. `check:ci-generated-artifacts` covers the first. This file covers the other two, with REAL git.
+WHY IT EXISTS. Three stale generated files on 2026-10-13, each found late: the CLI contract after 76e708dae (40 minutes, a pre-push run), `agent/plans/QUEUE.md` (PR 600's CI, run 38381096702), and a gen-docs region, the one case caught at the commit. The registry makes the third the rule, and a rule that selects commits by declared globs and judges them with a declared checker has three ways to pass without running: the glob never matches, the checker never fails, or the hook never calls it. `check:ci-generated-artifacts` covers the first. This file covers the other two, with REAL git.
 
 TWO HALVES.
 

@@ -6,7 +6,7 @@
                                                                           never fails itself, writes rc=<n> to $GITHUB_OUTPUT instead
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs merge      quick.json plus rotation.json (when ROTATION_RC=0) -> gate-costs.json
 
-PORTED FROM `.ci/scripts/ci/capture-gate-costs.sh` (784c0c80e), which is deleted: Ruling 7 (2026-09-06) admits no new bash under .ci, and the twin also leaned on `timeout(1)`, which the minimal CI image does not carry. Behaviour is the twin's, phase for phase; the one deliberate difference is that the bound is enforced here with a subprocess timeout and `os.killpg` instead of `timeout --kill-after=30s`.
+PORTED FROM `.ci/scripts/ci/capture-gate-costs.sh` (18d2dc9ab), which is deleted: Ruling 7 (2026-09-06) admits no new bash under .ci, and the twin also leaned on `timeout(1)`, which the minimal CI image does not carry. Behaviour is the twin's, phase for phase; the one deliberate difference is that the bound is enforced here with a subprocess timeout and `os.killpg` instead of `timeout --kill-after=30s`.
 
 THE BOUND, EXACTLY AS `timeout` DREW IT. The runner starts in its own process group; at the bound the whole group gets SIGTERM (run.ts's own handler then names the gates still running and kills their groups, scripts/ci-runner/run.ts installSignalHandlers), and SIGKILL `KILL_AFTER_S` (30 s) later if it is still alive. The phase sees 124 when SIGTERM ended it and 137 when SIGKILL had to, which are `timeout`'s own two answers, so "hung" still means rc 124 or 137.
 

@@ -177,7 +177,7 @@ export function inlineMountState(evalInPage) {
 /**
  * Press the docs poster, then wait until the player it builds is ready (`waitForPlayerReady`).
  *
- * THE PRESS IS THE MOUNT (4bc0f5141, 2026-10-08): a docs tutorial page server-renders a poster
+ * THE PRESS IS THE MOUNT (de781f0ac, 2026-10-08): a docs tutorial page server-renders a poster
  * and a play control with `data-click-to-load="inline"`, and tutorial-video-hydrate.ts builds the
  * player in place on the first press and starts it. Until then the page holds no `.tvp-root` at
  * all. This gate kept waiting for a player that mounts on load: CI run 38389205702 (job

@@ -1089,7 +1089,7 @@ STATIC: list[Case] = [
         bash_json("rm .claude/s[[:bogus:]]ttings.json"),
         "protected-files: an unknown POSIX class fails safe toward the protected file",
     ),
-    # Found on b922f15cb by this writer's own cleanup command: a `?` inside `${T:?}` was read as a glob, and a word whose root is unevaluated was resolved under the run's directory, so the documented safe idiom was refused from the project root. Both controls were refused (rc 2); the refusals stay refused.
+    # Found on 2e8dfd963 by this writer's own cleanup command: a `?` inside `${T:?}` was read as a glob, and a word whose root is unevaluated was resolved under the run's directory, so the documented safe idiom was refused from the project root. Both controls were refused (rc 2); the refusals stay refused.
     case(
         "check 0 guards/block_protected_files.py",
         bash_json('rm -rf "${T:?}"'),
@@ -1657,7 +1657,7 @@ STATIC: list[Case] = [
         bash_json("perl -e 'print qw(never run git worktree add here)'"),
         "worktree-add CONTROL: a qw() sentence is not a command (fa5d11be.4)",
     ),
-    # #78afdc0b: the program text is `shellscan.interpreter_program`'s reading, so a script run BY PATH is read and python's option parse is the shared one. Each deny row was allowed (rc 0) at c5c3036c3; the scripts on disk are in test_hooks_fixtures.py.
+    # #78afdc0b: the program text is `shellscan.interpreter_program`'s reading, so a script run BY PATH is read and python's option parse is the shared one. Each deny row was allowed (rc 0) at c72518af1; the scripts on disk are in test_hooks_fixtures.py.
     case(
         "check 2 guards/block_worktree_add.py",
         bash_json(
@@ -1681,14 +1681,14 @@ STATIC: list[Case] = [
         ),
         "worktree-add CONTROL: a written script printing a sentence (#78afdc0b)",
     ),
-    # c02612863 refuses an untracked script naming the phrase whatever it does with the words, so the sentence that names `worktree add` is no longer a control.
+    # 33f26fa7c refuses an untracked script naming the phrase whatever it does with the words, so the sentence that names `worktree add` is no longer a control.
     case(
         "check 2 guards/block_worktree_add.py",
         bash_json(
             "printf '%s\\n' 'print(\"never run git worktree add here\")' > /tmp/wt-78afdc0b.py; "
             "python3 /tmp/wt-78afdc0b.py"
         ),
-        "worktree-add: a written script naming the phrase is refused for its text (c02612863)",
+        "worktree-add: a written script naming the phrase is refused for its text (33f26fa7c)",
     ),
     case(
         "check 2 guards/block_worktree_add.py",
@@ -2436,7 +2436,7 @@ STATIC: list[Case] = [
         ),
         "review-file-shell-write CONTROL: awk with an alternation and its own assignments, run inside the directory",
     ),
-    # Review 660ec7a0.1: an awk program that redirects a print names its target without a literal, so every operand is a landing. The three refusals were allowed at 660ec7a04.
+    # Review 660ec7a0.1: an awk program that redirects a print names its target without a literal, so every operand is a landing. The three refusals were allowed at cc5c597a8.
     case(
         "check 2 guards/block_review_file_shell_write.py",
         bash_json("awk 'BEGIN{print \"x\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
@@ -4552,7 +4552,7 @@ STATIC: list[Case] = [
         bash_json("ls agent/pr-babysit-*.md"),
         "roundlog-truncate CONTROL: listing a log glob is a read",
     ),
-    # #6378e10e: perl edits in place too (allowed at fc3f376a8 while only sed was asked).
+    # #6378e10e: perl edits in place too (allowed at 553038bdb while only sed was asked).
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json("perl -pi -e 's/a/b/' agent/pr-babysit-0831-1.md"),
@@ -4563,7 +4563,7 @@ STATIC: list[Case] = [
         bash_json("perl -pe 's/a/b/' agent/pr-babysit-0831-1.md"),
         "roundlog-truncate CONTROL: perl -pe only prints the log",
     ),
-    # Review 9ed30a8a.3: the prefilter meets the round-log pattern itself, not three sample names, and a relative glob in an unknown directory that could name a log counts as one (both allowed at fc3f376a8).
+    # Review 9ed30a8a.3: the prefilter meets the round-log pattern itself, not three sample names, and a relative glob in an unknown directory that could name a log counts as one (both allowed at 553038bdb).
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json('cd "$D" && echo pr-babysit-a*.md | xargs cp /tmp/x.md'),
@@ -4579,7 +4579,7 @@ STATIC: list[Case] = [
         bash_json('cd "$D" && truncate -s 0 *.txt'),
         "roundlog-truncate CONTROL: a txt glob cannot be a log",
     ),
-    # #e5b0540a, live false positive reported by w2: a `*` in Python code passed the whole-command prefilter and the program's write through a variable failed closed (all three refused at 82d323de1).
+    # #e5b0540a, live false positive reported by w2: a `*` in Python code passed the whole-command prefilter and the program's write through a variable failed closed (all three refused at 677f3ca25).
     case(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json(
@@ -4614,7 +4614,7 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate: a program building the log name in an f-string",
     ),
-    # Review 1d4e1754.1: a program HANDED the log (an argument, the environment, stdin) names no path in its text, and all three were allowed at 0067b4c27.
+    # Review 1d4e1754.1: a program HANDED the log (an argument, the environment, stdin) names no path in its text, and all three were allowed at 50fcf7c7f.
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json(
@@ -4650,7 +4650,7 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate CONTROL: a writer handed another file after the log was only read",
     ),
-    # Review 4b3f59b5.1: the program arm is judged per write. Each deny row was allowed at 8abc48a14 with the log handed.
+    # Review 4b3f59b5.1: the program arm is judged per write. Each deny row was allowed at d15fe3f5b with the log handed.
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json(
@@ -4752,7 +4752,7 @@ STATIC: list[Case] = [
         bash_json("python3 -c \"p=2*3; open('n.txt','w').write(str(p))\""),
         "roundlog-truncate CONTROL: a star in inline code beside a named write",
     ),
-    # Review 8b651626.1: a perl open's path is its third argument, not its handle. The controls were refused at 13505e0b4; the python deny rows were allowed.
+    # Review 8b651626.1: a perl open's path is its third argument, not its handle. The controls were refused at f087a1b96; the python deny rows were allowed.
     case(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json('perl -e \'open(my $f, ">", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md'),
@@ -4813,7 +4813,7 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate: getattr on os with a concatenated literal name",
     ),
-    # Reviews 97a72d29.1/.2: with a log in play the program must be one the guard can follow. The deny rows were allowed at 97a72d29c; the BOUNDARY rows are the same programs with no log in play.
+    # Reviews 97a72d29.1/.2: with a log in play the program must be one the guard can follow. The deny rows were allowed at ca2f75c43; the BOUNDARY rows are the same programs with no log in play.
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json(
@@ -4983,7 +4983,7 @@ STATIC: list[Case] = [
         bash_json('ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md'),
         "roundlog-truncate CONTROL: ruby: a plain read of the handed log",
     ),
-    # Reviews 012e1b7b.1/.2/.3: the quote-like extent rule, not a delimiter list. The deny rows were allowed at 012e1b7b2.
+    # Reviews 012e1b7b.1/.2/.3: the quote-like extent rule, not a delimiter list. The deny rows were allowed at cc5dbd0a3.
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json(
@@ -5012,7 +5012,7 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate: ruby: a typed percent on a dash delimiter",
     ),
-    # Review a52292e4.4: the four rows of the round above that had only a golden record. Reviews a52292e4.1/.2: a quote-like word after an operator, and one with a space before its slash; allowed at a52292e48.
+    # Review a52292e4.4: the four rows of the round above that had only a golden record. Reviews a52292e4.1/.2: a quote-like word after an operator, and one with a space before its slash; allowed at d0452ef0b.
     case(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json(

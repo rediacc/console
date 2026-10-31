@@ -1449,7 +1449,7 @@ def mutex_world(
 ) -> tuple[str, str]:
     """W1 is a live writer of EXCLUSIVE plan E (its prompt says `Plan: PLAN-e.md`, and it holds a lease on an E item). Two queue leases: the OLDER one serves plan F, which the mutex holds; the newer serves E itself, which it does not.
 
-    F's Owns overlap E's by default, because an exclusive plan is a mutex over ITS files (dfb34f9d6, operator ruling 2026-10-28): it holds an overlapping F and admits a disjoint one, which `f_owns` sets for the twin."""
+    F's Owns overlap E's by default, because an exclusive plan is a mutex over ITS files (de2020b16, operator ruling 2026-10-28): it holds an overlapping F and admits a disjoint one, which `f_owns` sets for the twin."""
     fix.brief_now()
     fix.hand_now()
     e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
@@ -1480,7 +1480,7 @@ def test_q1_a_queued_item_of_a_held_plan_is_skipped_and_the_next_unheld_one_is_n
 
 
 def test_q1d_control_a_disjoint_plan_is_not_held_by_a_live_exclusive_one(wl):
-    """The overlap rule's twin of q1 (dfb34f9d6): the same world with F's Owns disjoint from E's names both queued items and holds neither."""
+    """The overlap rule's twin of q1 (de2020b16): the same world with F's Owns disjoint from E's names both queued items and holds neither."""
     mutex_world(wl, f_owns="src/f/**")
     v = verdict(wl)
     assert v["queue_start"] == ["f1000001", "e1000002"], v["queue_start"]
@@ -1560,7 +1560,7 @@ def test_q3_two_live_writers_breaking_a_mutex_are_a_roster_concurrency_block(wl)
 
 
 def test_q3g_a_disjoint_writer_beside_a_live_exclusive_plan_is_not_in_conflict(wl):
-    """The overlap rule's twin of q3 (dfb34f9d6). Two rules, judged per writer: E's writer is a conflict under the mutex-own rule (an exclusive plan cannot start while other plans are live, and F is live); F's writer is judged under the overlap rule (a live exclusive plan refuses only a writer whose files meet its Owns), and with F's Owns disjoint from E's it is not a conflict (review 8959ce94.3)."""
+    """The overlap rule's twin of q3 (de2020b16). Two rules, judged per writer: E's writer is a conflict under the mutex-own rule (an exclusive plan cannot start while other plans are live, and F is live); F's writer is judged under the overlap rule (a live exclusive plan refuses only a writer whose files meet its Owns), and with F's Owns disjoint from E's it is not a conflict (review 8959ce94.3)."""
     conflict_world(wl, "f", f_owns="src/f/**")
     v = verdict(wl)
     assert {aid for aid, _plans, _lines in v["plan_conflicts"]} == {W1}, v["plan_conflicts"]
@@ -1718,7 +1718,7 @@ def test_r11_an_in_place_edit_is_read_by_the_guards_parse(tmp_path, cmd, want):
     assert json.loads(proc.stdout) == want, cmd
 
 
-# #97ed76a7: a redirect target is read as bash expands it (`shellscan`'s `xwrites`), joined to the directory its run executes in. Each row names a path that must be among the answer and one that must not. The second and third answered `["other/a.md"]` at 2672ed8f6, a file bash never writes (`for` and `read` assign `src`), and the last `["g.md"]`: a group's redirect sat on no run, so its `cd` was lost.
+# #97ed76a7: a redirect target is read as bash expands it (`shellscan`'s `xwrites`), joined to the directory its run executes in. Each row names a path that must be among the answer and one that must not. The second and third answered `["other/a.md"]` at 434eb6c5f, a file bash never writes (`for` and `read` assign `src`), and the last `["g.md"]`: a group's redirect sat on no run, so its `cd` was lost.
 EXPANDED_REDIRECT_CASES = [
     ("cd agent && D=plans; echo x > $D/a.md", "agent/plans/a.md", "plans/a.md"),
     ("D=other; for D in src; do echo x > $D/a.md; done", "src/a.md", "other/a.md"),
@@ -1727,7 +1727,7 @@ EXPANDED_REDIRECT_CASES = [
     ("cd docs && { echo x; } > g.md", "docs/g.md", "g.md"),
 ]
 
-# #b53f586d: a `for` variable is read once per word its loop walks. Each row answered `[]` at 6238f04a6 (the `cd` row `["docs"]`), while bash 5.3 writes every listed path; a word naming no loop variable keeps its literal-directory reading.
+# #b53f586d: a `for` variable is read once per word its loop walks. Each row answered `[]` at af677c6a9 (the `cd` row `["docs"]`), while bash 5.3 writes every listed path; a word naming no loop variable keeps its literal-directory reading.
 LOOP_VALUE_CASES = [
     ("D=other; for D in src; do echo x > $D/a.md; done", ["src/a.md"]),
     ('for f in docs/a.md docs/b.md; do rm "$f"; done', ["docs/a.md", "docs/b.md"]),
@@ -1751,7 +1751,7 @@ def test_b53f586d_a_loop_variable_is_each_word_it_walks(tmp_path, cmd, want):
 
 _D65 = " ".join("d%02d" % i for i in range(65))
 _F65 = " ".join("f%02d" % i for i in range(65))
-# 8ef78586.2: past the 64-combination cap the first loop variable is still read once per value. The first two rows answered `[]` at 8ef785864 (the target cut to the root), the third `["docs"]`, while bash 5.3 writes under every `dNN`; the last is a control under the cap.
+# 8ef78586.2: past the 64-combination cap the first loop variable is still read once per value. The first two rows answered `[]` at 6ea3efd3a (the target cut to the root), the third `["docs"]`, while bash 5.3 writes under every `dNN`; the last is a control under the cap.
 LOOP_CAP_CASES = [
     (
         "for D in %s; do for f in a b; do echo > $D/$f; done; done" % _D65,
@@ -1799,7 +1799,7 @@ def test_97ed76a7_a_redirect_lands_where_bash_writes_it(tmp_path, cmd, landing, 
     assert not_landing not in got, (cmd, got)
 
 
-# #78afdc0b: a Python run's program is `shellscan.interpreter_program`'s reading, the one the guards share. The private reader took a bare `-c` only and added every heredoc in the command to every Python run: a script run BY PATH was never read, `-Ic` was missed, and a heredoc written to a notes file counted as the program of an unrelated script. Each row marked `was` answered that at c5c3036c3.
+# #78afdc0b: a Python run's program is `shellscan.interpreter_program`'s reading, the one the guards share. The private reader took a bare `-c` only and added every heredoc in the command to every Python run: a script run BY PATH was never read, `-Ic` was missed, and a heredoc written to a notes file counted as the program of an unrelated script. Each row marked `was` answered that at c72518af1.
 PROGRAM_CASES = [
     # (command, the paths written, what the private reader answered)
     ("python3 scratch/writes.py", ["docs/out.md"], []),

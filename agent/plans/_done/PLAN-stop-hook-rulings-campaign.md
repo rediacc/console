@@ -1,5 +1,5 @@
 # PLAN: stop-hook rulings campaign (sections 2-6 split from PLAN-stop-hook-overhaul.md)
-Status: done -- all 17 boxes ticked (the 14 open ones landed in f8840f98f, controls 47 passed); sections 2+3 and 5 APPROVED by operator ruling on #373907ed (2026-09-23T14:31Z); section 4 declined and moved to PLAN-stop-hook-plan-agent-check-declined.md; section 6 not named in that ruling and stays a proposal. Not adopted by any session, so its boxes are advisory until one adopts it. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- all 17 boxes ticked (the 14 open ones landed in 82e82d11c, controls 47 passed); sections 2+3 and 5 APPROVED by operator ruling on #373907ed (2026-09-23T14:31Z); section 4 declined and moved to PLAN-stop-hook-plan-agent-check-declined.md; section 6 not named in that ruling and stays a proposal. Not adopted by any session, so its boxes are advisory until one adopts it. -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Depends-On: no-dep -- split out of PLAN-stop-hook-overhaul.md, which keeps only section 1 and 7-9; neither waits on the other
 Correction, 2026-09-24: this header used to say #373907ed PARKED sections 2 to 6. That was the question's DEFAULT, not the answer. Not adopted by any session, so its boxes are an advisory, never a block.
 First-Seen: 2026-09-17
@@ -32,27 +32,27 @@ The freshness asymmetry is half the answer (`.claude/hooks/stop/wl_store.py:116`
       merge-conflict argument at `.claude/hooks/stop/wl_reggate.py:114`. Row shape:
       `{ev, id, at, by, check, subject, sig, verdict, text}`; a reversal is a second `revoke`
       row. **There is no delete path**, which is what makes a silent drop impossible.
-    (ticked) 2026-10-23T23:35:14Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_ruling.py:261; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:14Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_ruling.py:261; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Add `"rulings"` to `AGENT_RESERVED_DIRS` at `.claude/hooks/stop/wl_store.py:289`.
-    (ticked) 2026-10-23T23:35:16Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_store.py:186; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:16Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_store.py:186; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Add a `worklist.py --rule <prefix> <check-key> <subject> '<text>' [--until <ISO>]` verb
       using the flock/tempfile/`os.replace` discipline at `.claude/hooks/stop/worklist.py:1469`.
       It appends the row AND rewrites a generated `## Rulings (machine-checked)` section in
       `agent/RULES.md`.
-    (ticked) 2026-10-23T23:35:18Z by d778be9d: commit:f8840f98f .claude/hooks/stop/worklist.py:2329; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:18Z by d778be9d: commit:82e82d11c .claude/hooks/stop/worklist.py:2329; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Add `.ci/scripts/quality/check_operator_rulings.py` asserting byte-equality between the
       rendered section and the ledger -- the anti-lying-cache discipline
       `.claude/hooks/stop/wl_planindex.py:25` already states. Wire a new gate registered as `ci-operator-rulings`.
-    (ticked) 2026-10-23T23:35:20Z by d778be9d: commit:f8840f98f .ci/scripts/quality/check_operator_rulings.py:1; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:20Z by d778be9d: commit:82e82d11c .ci/scripts/quality/check_operator_rulings.py:1; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Add `.claude/hooks/stop/wl_ruling.py` exposing `settled(root, check_key, subject_sig)`,
       globbing ALL sessions' ledgers. Any error returns `None`, restoring today's behaviour.
-    (ticked) 2026-10-23T23:35:21Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_ruling.py:183; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:21Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_ruling.py:183; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] CONTROL, new `.claude/rediacc_hooks/tests/test_wl_rulings.py` (a new pytest module, collected automatically; was
       the retired `test-worklist-v5.sh` CASE_FILES list): moved pointer blocks; a ruling silences the
       next stop; a DIFFERENT sha blocks again (keyed on subject, not a global mute); a
       wholesale `--state` rewrite leaves it silent; a FRESH session id leaves it silent
       (the cross-session property today's mechanism lacks); `--revoke` blocks again.
-    (ticked) 2026-10-23T23:35:23Z by d778be9d: commit:f8840f98f .claude/rediacc_hooks/tests/test_wl_rulings.py:103; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:23Z by d778be9d: commit:82e82d11c .claude/rediacc_hooks/tests/test_wl_rulings.py:103; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 
 ## 3. Idempotence: how a check knows nothing has changed
 
@@ -68,21 +68,21 @@ That is the three-identical-stops mechanism exactly.
       `wl_ruling.settled`, then `state_doc["vsig"][key]`, and **suppress before appending** so
       a ruled-on or unchanged subject never reaches `violations`. Register the stamp in the
       existing `display_latch` dict at `.claude/hooks/stop/wl_checks.py:3653`.
-    (ticked) 2026-10-23T23:35:25Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_checks.py:3828; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:25Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_checks.py:3828; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Rewrite the submodule site at `.claude/hooks/stop/wl_checks.py:4155-4200` onto it.
-    (ticked) 2026-10-23T23:35:26Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_checks.py:4435; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:26Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_checks.py:4435; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Delete `submodule_decision_recorded` (`.claude/hooks/stop/wl_checks.py:1737-1802`) and
       `SUBMODULE_DECIDED_LATCH_MIN` (`.claude/hooks/stop/wl_checks.py:1724`).
       `SUBMODULE_LATCH_MIN` (`.claude/hooks/stop/wl_checks.py:1717`) survives as `latch_min`.
-    (ticked) 2026-10-23T23:35:28Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_checks.py:1186; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:28Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_checks.py:1186; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Report `state_doc["vsuppressed"]` in `worklist.py --doctor`, one line per key. Silence
       needs a denominator or a ruling can quietly mute a real signal.
-    (ticked) 2026-10-23T23:35:30Z by d778be9d: commit:f8840f98f .claude/hooks/stop/worklist.py:2297; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:30Z by d778be9d: commit:82e82d11c .claude/hooks/stop/worklist.py:2297; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] CONTROL in `.claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py`: three stops
       with the same moved pointer and a higher-priority violation winning rotation every time
       must yield exactly ONE block -- **write it to fail against current HEAD**; changing the
       sha between stops must block; `--doctor` must report a non-zero suppression count.
-    (ticked) 2026-10-23T23:35:32Z by d778be9d: commit:f8840f98f .claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py:402; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:32Z by d778be9d: commit:82e82d11c .claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py:402; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 
 ## 4. Moved
 
@@ -103,16 +103,16 @@ Declined by the operator's ruling on #373907ed; its five boxes live unchanged in
 - [x] Add an `unfocused` verdict to `agent_state_shape` (`.claude/hooks/stop/wl_store.py:2420`)
       -- the one choke point BOTH write paths share -- requiring a `## Big pieces` section
       exactly as `## Next action` is required.
-    (ticked) 2026-10-23T23:35:34Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_store.py:2600; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:34Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_store.py:2600; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] Add a rotating `bigpieces` drift check comparing the section against the census. This is
       what survives a wholesale rewrite: the rewrite is FORCED to re-derive, and a drift check
       on a derived field cannot be satisfied by remembering.
-    (ticked) 2026-10-23T23:35:36Z by d778be9d: commit:f8840f98f .claude/hooks/stop/wl_checks.py:1077; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:36Z by d778be9d: commit:82e82d11c .claude/hooks/stop/wl_checks.py:1077; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
 - [x] CONTROL across `.claude/rediacc_hooks/tests/test_wl_state_document.py` and
       `.claude/hooks/stop/worklist-cases/16-triage-and-plans.sh`: a body without the section is
       refused by BOTH write paths; with it, accepted; a section naming a finished plan fires
       the drift check; a section agreeing with the census is silent.
-    (ticked) 2026-10-23T23:35:39Z by d778be9d: commit:f8840f98f .claude/rediacc_hooks/tests/test_wl_state_document.py:586; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
+    (ticked) 2026-10-23T23:35:39Z by d778be9d: commit:82e82d11c .claude/rediacc_hooks/tests/test_wl_state_document.py:586; pytest test_wl_rulings, test_wl_drift_loops_freshness, test_wl_state_document 47 passed; check:ci-operator-rulings rc=0
     Evidence added 2026-10-24 (review cc581e80.3): `.claude/hooks/stop/worklist-cases/16-triage-and-plans.sh` is no longer in the tree (the shell cases were ported to pytest), so that half has no shell run to cite; the pytest half was re-run: `.claude/rediacc_hooks/tests/test_wl_state_document.py` with `test_wl_triage_and_plans.py`, 30 passed, rc 0.
 
 ## 6. Cron: NO

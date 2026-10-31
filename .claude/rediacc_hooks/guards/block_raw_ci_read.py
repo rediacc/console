@@ -65,7 +65,7 @@ EDGE_CASES = [
         "gh api 'repos/o/r/actions/workflows/ci.yml/runs?branch=0930-1'",
     ),
     ("check-run annotations", "gh api repos/o/r/check-runs/104569/annotations"),
-    ("commit check-runs", "gh api repos/o/r/commits/a7f30558/check-runs"),
+    ("commit check-runs", "gh api repos/o/r/commits/1e7caef2/check-runs"),
     (
         "graphql rollup",
         (

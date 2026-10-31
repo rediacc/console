@@ -70,8 +70,8 @@ def test_declaration_names_r1_with_full_shas():
         assert len(sha) == 40
         assert int(sha, 16) >= 0
     assert SINCE.startswith("aaf3c251")
-    assert CLI_A.startswith("2c3324a44")
-    assert CLI_B.startswith("95bcc8dad")
+    assert CLI_A.startswith("54ea0d100")
+    assert CLI_B.startswith("5af777265")
 
 
 def test_inactive_entry_admits_without_reading_the_manifest():

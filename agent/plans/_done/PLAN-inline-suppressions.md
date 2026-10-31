@@ -266,15 +266,15 @@ The golangci half belongs to WD:
 - [x] WA1: F811/F401 fixture move.
   - New `.claude/rediacc_hooks/tests/conftest.py` with `wl` and `sc`; 55 test modules lose their import and parameter markers.
   - Acceptance: `ruff check --no-cache .claude/rediacc_hooks/tests` rc 0; `python3 -m pytest .claude/rediacc_hooks/tests -q` green, with the same count as before; a hand-picked file-order run (the #6b5becd7 shape) is green.
-    (ticked) 2026-10-14T11:00:22Z by d778be9d: commit:f73354b34 through commit:ffdc82825: conftest.py carries wl and sc; ruff check rc=0; the moved modules run 398 and 490 passed in their two batches
+    (ticked) 2026-10-14T11:00:22Z by d778be9d: commit:acbfa7820 through commit:44dc25f91: conftest.py carries wl and sc; ruff check rc=0; the moved modules run 398 and 490 passed in their two batches
 - [x] WA2: the rest of `.claude`.
   - E402 hops (stop test scripts, post-bash and guard harnesses through `_hookpath`), PLC0415 in tests and harnesses, DTZ, E731, B010, ARG, S112, A002, PLW0603, and the 13 `type: ignore`.
   - Acceptance: `npm run check:ci-python-lint` and `npm run check:ci-python-types` rc 0; `npm run check:ci-pytest` green; `npm run check:ci-hook-integrity` rc 0; `npm run check:ci-inline-suppressions -- --count .claude` reports 0.
-    (ticked) 2026-10-14T11:00:24Z by d778be9d: commit:4a0e4d57b commit:2ee2d7713 commit:8c6576789 commit:02b8b9f5f: check_inline_suppressions.py --count .claude reports 0 markers in 350 files; python-lint, python-types and hook-integrity rc=0
+    (ticked) 2026-10-14T11:00:24Z by d778be9d: commit:a494c7afc commit:13fc2c349 commit:727f46339 commit:622d3d8e1: check_inline_suppressions.py --count .claude reports 0 markers in 350 files; python-lint, python-types and hook-integrity rc=0
 - [x] WB1: `.ci` mechanical fixes.
   - F811 plant, F401, E402 (pythonpath and `_stoppath`), N818, N802, E731, ARG001/002, PLW0603, S101, SIM115, DTZ, B010, B023, A002, singles, and the S105 renames.
   - Acceptance: python-lint and python-types rc 0; `npm run check:ci-pytest` green.
-    (ticked) 2026-10-14T12:08:45Z by d778be9d: commit:3573afd17 through commit:fa983477c with the suprb5 28-41 series: python-lint and python-types rc=0 (0 new), check_inline_suppressions.py --count .ci reports 0 markers in 1255 files
+    (ticked) 2026-10-14T12:08:45Z by d778be9d: commit:de78b5174 through commit:dbc2463f4 with the suprb5 28-41 series: python-lint and python-types rc=0 (0 new), check_inline_suppressions.py --count .ci reports 0 markers in 1255 files
 - [x] WB2: `.ci` judgement work.
   - Hoist PLC0415, proving each kept-lazy import with a failing `python3 -c 'import X'` or an optional dependency.
   - Narrow BLE001.
@@ -282,11 +282,11 @@ The golangci half belongs to WD:
   - Fix the 126 `type: ignore`; the types baseline must not grow.
   - Hand the lead a list of every leftover (file, code, verified reason).
   - Acceptance: `npm run check:ci-python-types` rc 0 with the baseline unchanged or smaller; `npm run check:ci-pytest` green; the per-path count over `.ci` and `conftest.py` is no more than the handed-over list.
-    (ticked) 2026-10-14T12:08:48Z by d778be9d: commit:dee5310da (exec_replace), commit:1bf85a711 (https funnel, redirect check in 19fb3dae7), commit:26bbd72a7 (xml funnel), commit:fa983477c (hoists, BLE001): python-types baseline 648 findings, 0 new, 0 grown; the touched modules tests 521 and 148 passed
+    (ticked) 2026-10-14T12:08:48Z by d778be9d: commit:42aaed77c (exec_replace), commit:78d4464d5 (https funnel, redirect check in fbaeeb596), commit:61b2c30fe (xml funnel), commit:dbc2463f4 (hoists, BLE001): python-types baseline 648 findings, 0 new, 0 grown; the touched modules tests 521 and 148 passed
 - [x] WC1: e2e.
   - Add the `log.ts` logger; fix require-await, constants.ts and the deprecated members; remove the dead e2e paths from biome.json overrides #18 and #19.
   - Acceptance: `npm run check:lint` (the tooling shard then) rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; `npx tsc --noEmit -p packages/e2e-tests` rc 0; `--count packages/e2e-tests` reports 0.
-    (ticked) 2026-10-13T19:40:08Z by d778be9d: commit:6ca434160 e2e markers drained (a9ffe368e bdaa4fa05 481d05411 6ca434160); grep finds 0 marker-bearing files under packages/e2e-tests; the tooling lint shard rc=0 in pre-push run 27
+    (ticked) 2026-10-13T19:40:08Z by d778be9d: commit:24700adad e2e markers drained (6ac6f1ca0 2b58ed344 2f24c5053 24700adad); grep finds 0 marker-bearing files under packages/e2e-tests; the tooling lint shard rc=0 in pre-push run 27
 - [x] WC2: account.
   - i18n the 5 pages across every locale in `private/account/web/src/i18n/locales/`, and fix `private/account/web/src/pages/ConfigMembers.tsx:95`.
   - Acceptance: `npm run check:lint` (the account shard then) rc 0; `cd private/account && npm run typecheck:web` rc 0; the account i18n gate rc 0; `--count private/account` reports 0. This is an account submodule PR.
@@ -304,12 +304,12 @@ The golangci half belongs to WD:
 - [x] P2 lead: residual config.
   - Add WB's handed-over entries and the three helper entries with BLOCKERs, and strip the last inline markers through RUF100 in the same commit.
   - Acceptance: python-lint rc 0, including liveness; `npm run check:ci-suppression-liveness` rc 0; `npm run check:ci-inline-suppressions -- --count .ci` and `-- --count conftest.py` report 0.
-    (ticked) 2026-10-14T12:08:51Z by d778be9d: commit:3573afd17 and commit:d2ba79652: the leftovers are pyproject per-file-ignores with BLOCKER reasons, check:ci-python-lint (liveness) and check:ci-suppression-liveness rc=0, --count .ci and --count conftest.py both 0
+    (ticked) 2026-10-14T12:08:51Z by d778be9d: commit:de78b5174 and commit:a82f2fb5c: the leftovers are pyproject per-file-ignores with BLOCKER reasons, check:ci-python-lint (liveness) and check:ci-suppression-liveness rc=0, --count .ci and --count conftest.py both 0
 - [x] F lead: close the gate.
   - Write `.ci/config/inline-suppressions-baseline.json` at zero, and switch `check:ci-inline-suppressions` to "no baseline allowed": a present baseline file is itself a failure.
   - Lift the "20 files still carry eslint-disable tokens" BLOCKER on the stale-directive gate (`scripts/ci-runner/manifest.ts`, `scripts/ci-runner/gates.lock.json`), since its reason is now false. Delete `ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES` and the rule-141 ignores. These files are in `PLAN-biome-only-lint` Owns, so coordinate.
   - Acceptance: `npm run check:ci-inline-suppressions` rc 0 with "0 markers, no baseline"; `npm run check:ci-source-rules` rc 0; `npm run check:ci-suppression-liveness` rc 0; a planted `# noqa: F401` in a scratch copy is refused by both the gate and the pre-edit guard.
-    (ticked) 2026-10-14T15:33:03Z by d778be9d: commit:5ffd3a312 and commit:d099ac8fe with commit:61528a65c: check:ci-inline-suppressions rc=0 with 0 markers and no baseline (a baseline file or a planted noqa F401 is refused), check:ci-source-rules rc=0 with the rule-141 ignores and ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES gone, check:ci-suppression-liveness rc=0
+    (ticked) 2026-10-14T15:33:03Z by d778be9d: commit:f320d07d5 and commit:3bbecab99 with commit:0cd8b76b6: check:ci-inline-suppressions rc=0 with 0 markers and no baseline (a baseline file or a planted noqa F401 is refused), check:ci-source-rules rc=0 with the rule-141 ignores and ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES gone, check:ci-suppression-liveness rc=0
 
 ## Risks
 

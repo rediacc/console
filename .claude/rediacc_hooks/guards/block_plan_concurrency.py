@@ -51,7 +51,7 @@ _PLAN = "# PLAN: %s\n\nStatus: in-progress\nOwner: %s\nDepends-On: no-dep -- a f
 def _conc_world(_unused):
     """WORLD/tree (a plan tree: E exclusive, F parallel with Owns inside E's) and WORLD/store (a peer's fresh lease on an E-linked item).
 
-    F overlaps E because an exclusive plan is a mutex over ITS files (dfb34f9d6, operator ruling 2026-10-28): a disjoint F would be admitted, and the mutex refusal the DEFECT removes would never be reached."""
+    F overlaps E because an exclusive plan is a mutex over ITS files (de2020b16, operator ruling 2026-10-28): a disjoint F would be admitted, and the mutex refusal the DEFECT removes would never be reached."""
     tree = pathlib.Path(WORLD) / "tree"
     plans = tree / "agent" / "plans"
     plans.mkdir(parents=True, exist_ok=True)

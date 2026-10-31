@@ -929,7 +929,7 @@ def _retired_reds(name: str) -> dict[str, str]:
     ("name", "retired"), [("morning", 26), ("run-38409515814", 17), ("after-1dd250d87", 14)]
 )
 def test_the_three_reds_of_2026_10_13_replayed(name, retired, tmp_path, capsys):
-    """Each window is one real red, whole. The retired rule reports the count the day's logs show (17 on run 38409515814, 14 one run after 1dd250d87). Under the rule none of those units is a finding, and what is left is `REAL_FINDINGS`, each of which the controls below take apart."""
+    """Each window is one real red, whole. The retired rule reports the count the day's logs show (17 on run 38409515814, 14 one run after ebae07c7e). Under the rule none of those units is a finding, and what is left is `REAL_FINDINGS`, each of which the controls below take apart."""
     window = DRIFT_FIXTURE["windows"][name]
     reported = _retired_reds(name)
     assert len(reported) == retired
@@ -978,8 +978,8 @@ def test_what_the_three_reds_were_made_of():
 
 
 def test_control_the_lanes_largest_file_slower_on_two_runs_is_red(tmp_path, capsys):
-    """REAL, and the kind the table is for: test_guards_differential.py, 447 s committed at 1ee6476e3, ran 586 s on run 38389205702 and 598 s on run 38409515814. One run of it is evidence on its way, named and not red; the second run makes it a finding."""
-    was = _table("1ee6476e3")[GUARDS]
+    """REAL, and the kind the table is for: test_guards_differential.py, 447 s committed at a72c3f71c, ran 586 s on run 38389205702 and 598 s on run 38409515814. One run of it is evidence on its way, named and not red; the second run makes it a finding."""
+    was = _table("a72c3f71c")[GUARDS]
     newest, older = _samples(ALL_RUNS)[GUARDS]
     assert (was, older, newest) == (447215.0, [585869], [598158])
     once, shape = br.unit_drift_findings(
@@ -1002,8 +1002,8 @@ def test_control_the_lanes_largest_file_slower_on_two_runs_is_red(tmp_path, caps
     stats = {GUARDS: _runs(newest, older)}
     assert br.check_lane_durations(path, limit=10, compute=_fake_compute(**_measured(stats))) == 1
     assert "2 sampled run(s)" in capsys.readouterr().err
-    # In the day as it went, the table of 1ee6476e3 against every run: this file is among the findings.
-    keys = _judge(_table("1ee6476e3"), _window_stats(ALL_RUNS), tmp_path)
+    # In the day as it went, the table of a72c3f71c against every run: this file is among the findings.
+    keys = _judge(_table("a72c3f71c"), _window_stats(ALL_RUNS), tmp_path)
     assert "lane-durations:drift:unit:%s" % br.key_part(GUARDS) in [_normal(k) for k in keys]
 
 
@@ -1068,7 +1068,7 @@ def test_control_many_small_moves_in_one_leg_are_red_as_the_leg_sum():
 
 
 def test_control_a_real_leg_over_estimated_by_a_third_is_red():
-    """REAL: Account E2E leg 2 of 4 at 1ee6476e3. Two runs agree its 25 units take 339 s against 514 s committed, by their slowest samples. On the newest of those runs alone the same leg is thin, which was the morning's red."""
+    """REAL: Account E2E leg 2 of 4 at a72c3f71c. Two runs agree its 25 units take 339 s against 514 s committed, by their slowest samples. On the newest of those runs alone the same leg is thin, which was the morning's red."""
     window = DRIFT_FIXTURE["windows"]["run-38409515814"]
     leg = "test-account-e2e leg 2/4"
     table = {u: ms for u, ms in _table(window["table"]).items() if DRIFT_LEGS.get(u) == leg}
@@ -1125,8 +1125,8 @@ def test_one_more_run_cannot_make_a_finding_on_its_own():
 
 
 def test_control_a_new_slow_unit_with_no_row_is_red_on_one_run(tmp_path, capsys):
-    """REAL: test_private_license_e2e.py had no row at 1ee6476e3 and ran 173 s on run 38389205702, which the lane budget priced at the 23.4 s lane default. That is a fact about the table, so one run is enough."""
-    assert LICENSE_E2E not in _table("1ee6476e3")
+    """REAL: test_private_license_e2e.py had no row at a72c3f71c and ran 173 s on run 38389205702, which the lane budget priced at the 23.4 s lane default. That is a fact about the table, so one run is enough."""
+    assert LICENSE_E2E not in _table("a72c3f71c")
     stats = {LICENSE_E2E: _runs(*_samples([38389205702])[LICENSE_E2E])}
     assert stats[LICENSE_E2E]["runs"] == 1
     table = _committed(
@@ -1206,8 +1206,8 @@ def test_a_check_after_a_refresh_on_the_same_sample_is_green(name, tmp_path):
 
 
 def test_the_day_replayed_reds_twice_on_real_findings_and_then_holds(tmp_path):
-    """2026-10-13 from the table before the morning fix, one window per artifact-bearing run, refreshing on each red as the session did. The retired rule and refresh gave three reds of 1, 17 and 14 findings (measured with the module as it stood at 9fb286309). The rule gives two, three findings each, all of them moves two runs agree on or a missing row."""
-    table = _table("46be5e863^")
+    """2026-10-13 from the table before the morning fix, one window per artifact-bearing run, refreshing on each red as the session did. The retired rule and refresh gave three reds of 1, 17 and 14 findings (measured with the module as it stood at 25abff96f). The rule gives two, three findings each, all of them moves two runs agree on or a missing row."""
+    table = _table("a80b5663a^")
     reds: list[list[str]] = []
     for position in range(len(ALL_RUNS) - 1, -1, -1):
         unit_stats = _window_stats(ALL_RUNS[position:])

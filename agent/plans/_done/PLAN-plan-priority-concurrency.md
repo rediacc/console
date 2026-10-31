@@ -1,6 +1,6 @@
 # PLAN: plan priority and plan concurrency. Rank ready plans, and let file ownership decide which writers may run side by side
 
-Status: done -- every box ticked; PR #594 merged 2026-10-04 (main 01d3583e1)
+Status: done -- every box ticked; PR #594 merged 2026-10-04 (main 59ba0c756)
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-plan-dependencies.md, PLAN-stop-hook-retro-20260925.md#R20260925.5
@@ -78,7 +78,7 @@ B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, 
   - docs/agent-reference/plan-records.md header table;
   - pr-babysitter.md :147;
   - `npm run gen:docs`; the full hook suite; the `ci-plan-*` family of gates.
-    (ticked) 2026-10-04T01:23:50Z by d778be9d: commit:672973467 header lines documented in CLAUDE.md, agent/README.md, pr-babysitter.md; ci-plan-* rc 0; hook suite clean after ab455657d
+    (ticked) 2026-10-04T01:23:50Z by d778be9d: commit:672973467 header lines documented in CLAUDE.md, agent/README.md, pr-babysitter.md; ci-plan-* rc 0; hook suite clean after 6f7ae1781
 
 ## 0. Facts established
 

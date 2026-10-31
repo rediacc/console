@@ -2892,7 +2892,7 @@ REBASED_COPY_DEPTH = 400
 
 
 def rebased_copy_below(repo, pid, fix):
-    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix 7b6205f59 for e2a16724.1 was refused)."""
+    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix f00dbd623 for e2a16724.1 was refused)."""
     if not pid or pid == "(none)":
         return ""
     rc, out = git(repo, "rev-list", "--no-merges", "-n", str(REBASED_COPY_DEPTH), fix)

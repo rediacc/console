@@ -699,7 +699,7 @@ export function emitReceiptStep(
 }
 
 /**
- * The repository's artifact retention, from the record check:ci-workflows judges every `retention-days` against (operator ruling 2026-10-07, "Keep 3 days"). Read, not restated: a literal here was rewritten to 7 by the next `--write` after 19ec49414 set it to 3 by hand, and check:ci-workflows refused the generated line.
+ * The repository's artifact retention, from the record check:ci-workflows judges every `retention-days` against (operator ruling 2026-10-07, "Keep 3 days"). Read, not restated: a literal here was rewritten to 7 by the next `--write` after 0cba2d0a2 set it to 3 by hand, and check:ci-workflows refused the generated line.
  */
 function retentionDays(): number {
   const days = (JSON.parse(read(RETENTION_RECORD)) as { days?: unknown }).days;

@@ -4342,7 +4342,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _on_loop:
             _pf_rows = [r for r in _pf_rows if r["rel"] in _loop_plans]
         if not _pf_rows:
-            # A finished plan has no row at all, so the empty-text drop below never ran for exactly the plan that had just closed; eaf8611a9 put it there and the stale "29 open box(es), 0 ticked" kept being delivered.
+            # A finished plan has no row at all, so the empty-text drop below never ran for exactly the plan that had just closed; 4d9ea38b0 put it there and the stale "29 open box(es), 0 ticked" kept being delivered.
             outq_drop(state_doc, "plan-tasks")
         if _pf_rows:
             # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic. THE ORDER, distinct from the advisory below and keyed apart from it on purpose: `plan-tasks` must never become a `vadd` (test-planfile.py pins that), because a plan

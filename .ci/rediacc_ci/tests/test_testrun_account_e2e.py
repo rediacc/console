@@ -82,7 +82,7 @@ def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:
         shutil.copy(ts.ROOT / SCRIPT_REL, root / SCRIPT_REL)
     (root / ".ci/config").mkdir(parents=True)
     shutil.copy(ts.ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
-    # common.sh sources the generated projection (410f34073); without it the twin died on its first line.
+    # common.sh sources the generated projection (de630e818); without it the twin died on its first line.
     shutil.copy(
         ts.ROOT / ".ci/config/well-known.generated.sh",
         root / ".ci/config/well-known.generated.sh",

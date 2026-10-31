@@ -195,7 +195,7 @@ SHELL_CASES = [
         "python3 - <<'EOF'\np = '%s'\nopen(p, 'w').write('x')\nEOF" % R,
         True,
     ),
-    # #78afdc0b: a heredoc inside a payload is read from the payload's own text. Its offsets were applied to the command line, so this program read as a fragment of it (rc 0 at c5c3036c3).
+    # #78afdc0b: a heredoc inside a payload is read from the payload's own text. Its offsets were applied to the command line, so this program read as a fragment of it (rc 0 at c72518af1).
     (
         "python heredoc inside sh -c",
         "sh -c \"python3 - <<'E'\nimport pathlib\npathlib.Path('%s').write_text('x')\nE\"" % R,

@@ -296,7 +296,7 @@ def _fake_root(tmp_path: pathlib.Path, run_sh: str) -> pathlib.Path:
         shutil.copy2(ROOT / "scripts/drills/lib.sh", root / "scripts/drills/lib.sh")
     (root / ".ci/config").mkdir(parents=True)
     shutil.copy2(ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
-    # common.sh sources the generated projection (410f34073); without it the twin died on its first line.
+    # common.sh sources the generated projection (de630e818); without it the twin died on its first line.
     shutil.copy2(
         ROOT / ".ci/config/well-known.generated.sh", root / ".ci/config/well-known.generated.sh"
     )
@@ -909,7 +909,7 @@ def test_restart_stops_a_live_worktree_stack_first(
     healthy: bool,
     expect_stop: bool,
 ) -> None:
-    """`./run.sh account dev` reuses a live stack (4fb75de47), so the drill's fresh restart first runs `./run.sh account stop` when this worktree records a healthy stack, and never otherwise (2026-10-24: the full vm:check stopped at account-gateway because the restart was handed the running 4800 stack)."""
+    """`./run.sh account dev` reuses a live stack (1be116389), so the drill's fresh restart first runs `./run.sh account stop` when this worktree records a healthy stack, and never otherwise (2026-10-24: the full vm:check stopped at account-gateway because the restart was handed the running 4800 stack)."""
     calls = tmp_path / "calls"
     run_sh = '#!/bin/bash\necho "$*" >>"%s"\nexit 0\n' % calls
     root = _fake_root(tmp_path, run_sh)

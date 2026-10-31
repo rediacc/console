@@ -1,6 +1,6 @@
 # PLAN: Stop-hook retro, 2026-09-24 (first retro, lead session d778be9d)
 
-Status: done -- 2026-10-20, every box ticked (23 of 23), merged to main with PR #600 (d35df2ab1)
+Status: done -- 2026-10-20, every box ticked (23 of 23), merged to main with PR #600 (52a24264c)
 Depends-On: no-dep -- related, not ordered: PLAN-stop-hook-continuity.md is cited for what it already landed and for the P3.1 retro procedure
 First-Seen: 2026-09-24
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)
@@ -335,7 +335,7 @@ The band-notice docstring rule "It does not instruct" (`.claude/hooks/context/ba
     (ticked) 2026-09-24T16:47:48Z by d778be9d: agent/plans/PLAN-stop-hook-continuity.md:376 box P3.1 points at R.11 to R.13; the exception is documented at .claude/hooks/context/band-notice.py:13
 - [x] **R20260924.15** After R.1 to R.13 land, re-count all seven frictions on the next session's `.blocklog` and record the before and after numbers in this plan's Status.
   - Amended 2026-10-08 (review 67ef3b83.1): the count is on the lead id's own `.blocklog` for 2026-10-05 to 2026-10-08, written after R.10 landed, not on a later session's log; the Status record at the top of this plan says so (the log "belongs to the same lead id, not a fresh session"). A count on a following session's log repeats the same commands after the merge.)
-    (ticked) 2026-10-08T20:03:26Z by d778be9d: commit:507ef45f6 seven frictions re-counted in Status (#2, #3, #7 fixed; #5 share 23% to 14%; #1 not fixed; #4, #6 not countable); re-checked 2026-10-08
+    (ticked) 2026-10-08T20:03:26Z by d778be9d: commit:7f8eccf90 seven frictions re-counted in Status (#2, #3, #7 fixed; #5 share 23% to 14%; #1 not fixed; #4, #6 not countable); re-checked 2026-10-08
 
 ### Critical Files for Implementation
 - /home/developer/console/.claude/hooks/stop/wl_reggate.py

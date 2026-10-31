@@ -758,7 +758,7 @@ def test_history_passes_over_skipped_jobs():
 
 # ---- main push run 37394654719 (2026-10-06): the root cause, not the sentinel -----------
 #
-# PR #595 merged as e6fc817f6 on a green PR run; Console CI on main then stopped Validate Promotion twice. Attempt 1: the Watchdog Monitor (gen 6, run 37398501382) cancelled the pipeline on `CI BUDGET VIOLATION: 'Validate Promotion' ran 15.0m (budget 15m)`. Attempt 2 (the failed jobs re-run): GitHub's own `timeout-minutes: 15` killed the job after every step had passed, then CI Complete and Pipeline Sentinel
+# PR #595 merged as 185fde683 on a green PR run; Console CI on main then stopped Validate Promotion twice. Attempt 1: the Watchdog Monitor (gen 6, run 37398501382) cancelled the pipeline on `CI BUDGET VIOLATION: 'Validate Promotion' ran 15.0m (budget 15m)`. Attempt 2 (the failed jobs re-run): GitHub's own `timeout-minutes: 15` killed the job after every step had passed, then CI Complete and Pipeline Sentinel
 # failed reporting it. `--why` named Pipeline Sentinel, said `-> cancelled`, `category: unknown`, and never mentioned attempt 1. The fixtures are those answers, trimmed to the fields read (steps kept only for the jobs that did not pass).
 
 MAIN_RUN = 37394654719

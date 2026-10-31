@@ -918,7 +918,7 @@ def _watchdog_targets(text: str) -> list[str]:
 
 
 def test_the_watchdog_never_watches_housekeeping(gate):
-    """Housekeeping's gate-costs-capture job is allowed 50 minutes (784c0c80e: bounded quick phase 12 + slow-gate rotation 32; operator ruling 2026-10-07, "Keep 50 min + rotation"), far over the 15-minute per-job budget.
+    """Housekeeping's gate-costs-capture job is allowed 50 minutes (18d2dc9ab: bounded quick phase 12 + slow-gate rotation 32; operator ruling 2026-10-07, "Keep 50 min + rotation"), far over the 15-minute per-job budget.
     It needs no JOB_BUDGET_CAPS entry ONLY because the watchdog never monitors a housekeeping run: the chain is started by ci.yml's CI Watchdog job on ci.yml's own run ($GITHUB_RUN_ID) and re-dispatched by watchdog-monitor.yml on the same target ($TARGET_RUN_ID), and `monitor()` reads and cancels jobs of that target run alone.
     If anything starts the chain from another workflow, or ci.yml calls housekeeping.yml as a reusable workflow (its jobs would then sit inside the monitored run), the 50-minute job falls under the 15-minute budget and this reds."""
     gate.assert_eq(
@@ -952,7 +952,7 @@ def test_the_watchdog_never_watches_housekeeping(gate):
     gate.assert_eq(
         int(timeout.group(1)) if timeout else None,
         50,
-        "gate-costs-capture keeps its ruled 50-minute timeout (784c0c80e)",
+        "gate-costs-capture keeps its ruled 50-minute timeout (18d2dc9ab)",
     )
     gate.log_pass(
         "watchdog starters %s; housekeeping's 50-minute capture sits outside every watched run"

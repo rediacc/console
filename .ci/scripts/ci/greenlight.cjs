@@ -71,14 +71,14 @@ const VM_E2E_PATHS = [
   '.ci/rediacc_ci/infra/wait_for_vm_ssh.py',
   '.ci/rediacc_ci/env/create_e2e_env.py',
   '.ci/rediacc_ci/ci_signal/create_complete.py',
-  // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 3ed5836f7, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
+  // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 27055771d, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
   // Used by ONE leg each and carried by all eight: the two private scripts by fork_isolation. Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing. The concurrent-fork isolation test is `python3 -m rediacc_ci.private.concurrent_fork_isolation_test`, carried by the `.ci/rediacc_ci` entry above; its bash twin was retired under PLAN-retire-bash-oracles B3.
   '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
   // Added 4b5a52d9f (spec W T2.1-T2.3, T2.6): every VM/E2E leg now `uses:` this local composite before its build steps, which resolves from the WORKSPACE exactly like bws-secrets above, so a change to the action does not re-run these legs unless it is in the closure. Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/free-disk-space',
   '.github/actions/setup-workspace',
   '.github/actions/app-token',
-  // Added c883a8653 (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which, on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
+  // Added 25f90b7ac (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which, on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/apt-mirror',
   // `npm ci` resolves the lockfile and reads .npmrc (which turns off lifecycle scripts repo-wide, so it changes what gets installed).
   'package.json',
@@ -253,7 +253,7 @@ const CLOSURES = {
       '.ci/rediacc_ci/infra/verify_ssh.py',
       '.github/actions/setup-workspace',
       '.github/actions/app-token',
-      // Before its 'Setup KVM Host' (c883a8653): on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com.
+      // Before its 'Setup KVM Host' (25f90b7ac): on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com.
       '.github/actions/apt-mirror',
       'package.json',
       'package-lock.json',

@@ -3352,7 +3352,7 @@ const CASES: Record<string, Case> = {
   },
 
   /**
-   * Worklist #3fc8b8cb, the 394935a1f shape: a bump moves i18next 26.4.4 -> 26.5.2, the sync step moves the "Pin i18next" group's pinVersion, and every manifest the group covers must declare the new pin too (npm update never rewrites a range); the plan that declares those writes must run check:version. Mutants: `no-manifest-pin` (the sync leaves the manifests on ^26.4.4, so the "ranges follow" control goes red) and `no-version-gate` (the plan keeps check:deps alone, so the gate-list control goes red).
+   * Worklist #3fc8b8cb, the 4ba8aab48 shape: a bump moves i18next 26.4.4 -> 26.5.2, the sync step moves the "Pin i18next" group's pinVersion, and every manifest the group covers must declare the new pin too (npm update never rewrites a range); the plan that declares those writes must run check:version. Mutants: `no-manifest-pin` (the sync leaves the manifests on ^26.4.4, so the "ranges follow" control goes red) and `no-version-gate` (the plan keeps check:deps alone, so the gate-list control goes red).
    */
   async pinmanifests(m) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));

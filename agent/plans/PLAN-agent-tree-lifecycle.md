@@ -1,6 +1,6 @@
 # PLAN: A permanent shape for agent/ and the repo root, kept true by Python
-Status: mostly-done -- 6 of 7 boxes verified done 2026-09-22 (commits 1ea0c7340, fce51e202). S6: the shadow-ledger half landed in 00e0fea71 (48 inert ledgers dropped; 228 more wait on their docstring citations); the sweeper half is time-gated, NOT-BEFORE 2026-10-31 (terminal_days 40 from the 2026-09-21 move).
-Depends-On: no-dep -- PLAN-tooling-transformation.md#W1P6 is ticked (agent/plans/_done/PLAN-tooling-transformation.md, commit 05e9225bb, 2026-10-08); the one open box S6 waits on its own retention clock (sweeper half, NOT-BEFORE 2026-10-31) and on 228 shadow ledgers' docstring citations (drop half)
+Status: mostly-done -- 6 of 7 boxes verified done 2026-09-22 (commits 1ea0c7340, fce51e202). S6: the shadow-ledger half landed in add036886 (48 inert ledgers dropped; 228 more wait on their docstring citations); the sweeper half is time-gated, NOT-BEFORE 2026-10-31 (terminal_days 40 from the 2026-09-21 move).
+Depends-On: no-dep -- PLAN-tooling-transformation.md#W1P6 is ticked (agent/plans/_done/PLAN-tooling-transformation.md, commit 8b12ce5ec, 2026-10-08); the one open box S6 waits on its own retention clock (sweeper half, NOT-BEFORE 2026-10-31) and on 228 shadow ledgers' docstring citations (drop half)
 First-Seen: 2026-09-21
 Owner: d778be9d
 Priority: P1 -- seed: Status mostly-done, 1 open box(es), a recent operator order

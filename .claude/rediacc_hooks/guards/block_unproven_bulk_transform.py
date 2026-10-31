@@ -71,7 +71,7 @@ MANUAL_PATH = re.compile(
     r"(?:[\w-]{2,}(?:\.[\w-]+)*\.[A-Za-z][A-Za-z0-9]{0,7}|[\w-]\.[A-Za-z][A-Za-z0-9]{1,7})(?![\w])"
 )
 # The unit a claim and its names must share: a paragraph, with each list item its own unit, so a sibling bullet's file name cannot prove a claim that names nothing.
-# A paragraph rather than the sentence because the real follow-up proof df01e0083 says "every changed plan file was sampled and read across both revisions." and names the 40 plan files and the paths in the very next sentence.
+# A paragraph rather than the sentence because the real follow-up proof 30876f48a says "every changed plan file was sampled and read across both revisions." and names the 40 plan files and the paths in the very next sentence.
 UNIT_BREAK = re.compile(r"\n[ \t]*\n|\n(?=[ \t]*(?:[-*+]|\d+[.)])[ \t])")
 
 # WHOSE COUNT IT IS, said in the first line (R20260924.22). The fallback to the staged index is kept, because guessing permissively is how a real bulk commit walks past, but a pathspec commit does not commit the index, so presenting the index count as "this commit's" sent a session hunting for 54 files its 17-file commit never touched (2026-09-24 19:01:33).

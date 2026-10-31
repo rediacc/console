@@ -924,7 +924,7 @@ def selftest(root, drift=False):
             unresolved(root, "object", orphan)[0],
             unresolved(root, "object", orphan)[1],
         )
-        # PRESENCE IS ASKED OF GIT DIRECTLY: wl_planrec.resolve also demands ancestry since c3cd6da14 (#27a05a50), so it answers False for exactly this orphan and can no longer stand in for "the object exists".
+        # PRESENCE IS ASKED OF GIT DIRECTLY: wl_planrec.resolve also demands ancestry since 82db6d6a4 (#27a05a50), so it answers False for exactly this orphan and can no longer stand in for "the object exists".
         ck(
             "CONTROL: and the orphan really IS present, so the finding is about "
             "REACHABILITY and not about a missing object",

@@ -1,6 +1,6 @@
 """How a short sha is WRITTEN into a citation, and how a reader tells a cited sha from a date.
 
-THE DEFECT THIS EXISTS FOR (#0241c97d, after #e9852315 and 63e725da1). Every reader of plan and tick citations (`check_plan_citations.citations`, `wl_planrec.launder`, `plan_lifecycle.unfenced_tokens`) skips an ALL-DIGIT hex token, because `[0-9a-f]{7,40}` also matches a CI run id, a date and an issue number. A sha's 9-character abbreviation is all decimal digits with probability (10/16)^9, about 1 in 69, so a real `commit:<sha9>` citation was invisible that often: never judged, never laundered, never remapped.
+THE DEFECT THIS EXISTS FOR (#0241c97d, after #e9852315 and e35058f8b). Every reader of plan and tick citations (`check_plan_citations.citations`, `wl_planrec.launder`, `plan_lifecycle.unfenced_tokens`) skips an ALL-DIGIT hex token, because `[0-9a-f]{7,40}` also matches a CI run id, a date and an issue number. A sha's 9-character abbreviation is all decimal digits with probability (10/16)^9, about 1 in 69, so a real `commit:<sha9>` citation was invisible that often: never judged, never laundered, never remapped.
 
 TWO HALVES, and both are needed:
 
