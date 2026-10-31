@@ -96,6 +96,14 @@ on:
         type: string
         required: false
         default: ''
+      # J9 (PLAN-backup-program): 'true' when a push moved the private/renet pointer,
+      # decided by ci.yml's initialize job. It runs the two renet jobs (go + integration,
+      # the BTRFS tier is leg 1 of test-renet-go) even without `full_suite`. Any other
+      # value leaves them following `full_suite` and `run_renet` exactly as before.
+      renet_changed:
+        type: string
+        required: false
+        default: 'false'
       run_license_enforcement:
         type: string
         required: false
@@ -2646,7 +2654,7 @@ jobs:
     # scope. Submodules ride the readonly-preset App token.
     permissions:
       contents: read
-    if: inputs.full_suite == 'true' && inputs.run_renet != 'false'
+    if: (inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -2844,7 +2852,7 @@ jobs:
     # scope. Submodules ride the readonly-preset App token.
     permissions:
       contents: read
-    if: inputs.full_suite == 'true' && inputs.run_renet != 'false'
+    if: (inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:

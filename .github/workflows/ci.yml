@@ -254,6 +254,8 @@ jobs:
       run_e2e_backup_browse_at: ${{ steps.scope.outputs.run_e2e_backup_browse_at }}
       run_fork_isolation: ${{ steps.scope.outputs.run_fork_isolation }}
       run_renet: ${{ steps.scope.outputs.run_renet }}
+      # J9: 'true' when this push moved the private/renet pointer; see the step below.
+      renet_changed: ${{ steps.renet-push.outputs.changed }}
       run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
       run_account_e2e: ${{ steps.scope.outputs.run_account_e2e }}
       run_drills: ${{ steps.scope.outputs.run_drills }}
@@ -331,6 +333,26 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+
+      # J9 (PLAN-backup-program): the renet go and integration jobs used to run only
+      # under `full_suite`, so a push to main that moved the private/renet pointer ran
+      # none of them. This decides, on a push, whether the gitlink moved between the
+      # pushed range's base and HEAD. 'true' on a hit and on anything it cannot decide
+      # (no base, unreachable base): fail open, the same direction as the scope engine.
+      # Every other event gets 'false' and the jobs follow `full_suite` as before. A
+      # gitlink diff needs no submodule checkout, only the two commits (fetch-depth 0).
+      - name: Decide whether private/renet changed in the push
+        id: renet-push
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          changed=false
+          if [ "$EVENT_NAME" = push ]; then
+            if git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --filter=blob:none origin "$BEFORE_SHA"; then git diff --quiet "$BEFORE_SHA" HEAD -- private/renet || changed=true
+            else changed=true; echo "::warning::push base '$BEFORE_SHA' unavailable, so every renet leg runs"; fi
+          fi
+          echo "private/renet changed in this push: $changed"; echo "changed=$changed" >> "$GITHUB_OUTPUT"
 
       # Run consolidated initialization script
       - name: Initialize CI
@@ -1254,6 +1276,7 @@ jobs:
       run_e2e_backup_browse_at: ${{ needs.initialize.outputs.run_e2e_backup_browse_at }}
       run_fork_isolation: ${{ needs.initialize.outputs.run_fork_isolation }}
       run_renet: ${{ needs.initialize.outputs.run_renet }}
+      renet_changed: ${{ needs.initialize.outputs.renet_changed }}
       run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}
       run_account_e2e: ${{ needs.initialize.outputs.run_account_e2e }}
       run_drills: ${{ needs.initialize.outputs.run_drills }}

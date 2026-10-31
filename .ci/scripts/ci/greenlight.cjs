@@ -187,7 +187,8 @@ const CLOSURES = {
     paths: VM_E2E_PATHS,
   },
   // ct-tests.yml `test-renet-go` / `test-renet-integration`, gated on
-  // `inputs.full_suite == 'true' && inputs.run_renet != 'false'`.
+  // `(inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true'`
+  // (J9: a push that moves the private/renet pointer runs them too).
   renet: {
     // The API job name is the CALLER's job name plus the callee's, joined by " / ": a live run shows "Tests + Infra / Renet (go, 1/2)". Matching is on the last segment, which is the only part ct-tests.yml controls. Exactness matters here: the same run also carries "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker", and a prefix or substring match would accept either as evidence for a suite neither of them runs.
     //
