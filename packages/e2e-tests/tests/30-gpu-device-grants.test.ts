@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
+import { WK_DATASTORE_PATH, WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -71,7 +71,7 @@ test.describe
 
     test.afterAll(async () => {
       await runner.executeOnWorker(
-        `sudo renet daemon grant --network-id ${NETWORK_ID} --clear; sudo rm -f ${SPEC_PATH}`
+        `sudo renet daemon grant --network-id ${NETWORK_ID} --clear; sudo rm -f ${SPEC_PATH} ${WK_DATASTORE_PATH}/repositories/${REPO}`
       );
     });
 

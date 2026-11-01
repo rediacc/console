@@ -1034,3 +1034,12 @@ def test_an_ssh_failure_with_no_line_still_stops_the_script(monkeypatch):
     with pytest.raises(port._ExitScriptError) as stopped:
         port._first_counter_socket(state)
     assert stopped.value.code == 255
+
+
+def test_a_fragment_of_a_line_still_stops_the_script(monkeypatch):
+    """A connection dropped mid-line leaves head a path with no newline, which is no answer."""
+    monkeypatch.setattr(port, "_pipe2", lambda *_a, **_k: (255, b"/run/net-1/dock"))
+    state = port._State()
+    state.ssh_user, state.vm_ip, state.ssh_key = "u", "h", "k"
+    with pytest.raises(port._ExitScriptError):
+        port._first_counter_socket(state)
