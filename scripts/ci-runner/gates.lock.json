@@ -1414,6 +1414,7 @@
     "id": "check:ci-standalone-selftests",
     "run": "npm run check:ci-standalone-selftests",
     "gate": true,
+    "slow": true,
     "leaves": [
       "scripts/gates/check-standalone-selftests.ts"
     ],
@@ -1913,6 +1914,7 @@
     "id": "check:ci-env-manifest",
     "run": "npm run check:ci-env-manifest",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_env_manifest.py"
     ],
@@ -2412,6 +2414,7 @@
     },
     "run": "npm run check:ci-plan-live-proof",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_plan_live_proof.py"
     ],

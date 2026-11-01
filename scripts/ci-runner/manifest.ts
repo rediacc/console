@@ -1366,6 +1366,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-standalone-selftests',
     run: 'npm run check:ci-standalone-selftests',
     gate: true,
+    slow: true, // 24.5 s CI step p90 (lane-durations refresh 2026-11-01), over the 20 s pre-push ceiling
     leaves: ['scripts/gates/check-standalone-selftests.ts'],
     ci: {
       kind: 'step',
@@ -1835,6 +1836,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-env-manifest',
     run: 'npm run check:ci-env-manifest',
     gate: true,
+    slow: true, // 24.8 s CI step p90 (lane-durations refresh 2026-11-01), over the 20 s pre-push ceiling
     leaves: ['.ci/scripts/quality/check_env_manifest.py'],
     ci: {
       kind: 'step',
@@ -2322,6 +2324,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-live-proof',
     gate: true,
+    slow: true, // 83.2 s CI step p90 (lane-durations refresh 2026-11-01); a9981f7cd halves the patch-id cost (27 s -> 14 s locally), still over the 20 s pre-push ceiling
     leaves: ['.ci/scripts/quality/check_plan_live_proof.py'],
     ci: {
       kind: 'step',
