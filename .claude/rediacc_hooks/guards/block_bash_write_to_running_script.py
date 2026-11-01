@@ -257,8 +257,7 @@ def _kill_stale(paths):
     the Python sweep reports different pids for the same case. Observed exactly that: three processes for one script, two of them from runs that had already finished, and the two sides disagreed on which two they saw.
 
     Only processes running THESE fixture scripts are touched -- nothing else on the machine can match a path under this world -- and each was started with
-    `start_new_session=True`, so it leads its own group and killing the group
-    takes its `sleep` child with it.
+    `start_new_session=True`. A process that leads its group loses the group, and any other loses itself and its direct `sleep` children, read before anything dies.
     """
     import time
 
