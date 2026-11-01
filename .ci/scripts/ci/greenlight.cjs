@@ -223,6 +223,8 @@ const CLOSURES = {
       // Added f39c7fbda: the step-scoped signing-key fetch is followed by this composite. And the legs now start with setup-workspace, whose `npm ci` reads the root manifest, the lockfile and .npmrc. Found by test_gate_greenlight_closure_trace.py.
       '.github/actions/bws-scrub',
       '.github/actions/setup-workspace',
+      // The integration legs install the run's key-gated renet through this composite (PR 602: licensing is enforced in every lane), so an edit to it must re-run them.
+      '.github/actions/renet-test-binary',
       'package.json',
       'package-lock.json',
       '.npmrc',
