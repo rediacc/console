@@ -99,6 +99,18 @@ def _group_of(item: pytest.Item | None) -> str | None:
     return str(name) if name else None
 
 
+# A WRAPPER BECAUSE THE IDS MUST BE STAMPED FOR xdist's OWN pytest_collection_finish AND NOT A MOMENT LONGER: that impl (xdist/remote.py) sends the worker's id strings to the controller, and the scheduler knows nothing else. Only a worker under `--dist loadgroup` has `loadgroup` set (xdist/remote.py setup_config), so a serial run is untouched. Why this exists: the block above xdist_groups.stamp_group_ids.
+@pytest.hookimpl(wrapper=True)
+def pytest_collection_finish(session: pytest.Session):
+    if not session.config.getoption("loadgroup", default=False):
+        return (yield)
+    stamped = xdist_groups.stamp_group_ids(session.items, _group_of)
+    try:
+        return (yield)
+    finally:
+        xdist_groups.unstamp_group_ids(stamped)
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None):
     """Hold the item's group machine-wide (xdist_groups.MachineGroupLock) from the group's first item to its last, so a concurrent run's same group waits instead of colliding on its fixed ports or paths. Released when the next item leaves the group, which also covers a module fixture torn down in the last item's teardown."""
