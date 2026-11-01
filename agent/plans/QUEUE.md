@@ -101,17 +101,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-settings-set-verb.md -- 3 of 4 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/PLAN-free-license.md -- 4 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (2 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1751 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1754 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-- Writers: 1 live of writer_cap 25 (session 45048a90): worker:a198436eaa56384a9.
-- Leased items: 6: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:882109, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
-- Next plan: agent/plans/PLAN-agent-tree-lifecycle.md, Generated entry 1 (no Promoted entry ahead of it has an open box); a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+- Writers: 0 live of writer_cap 25 (session 45048a90).
+- Leased items: 6: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:2114953, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
+- Next plan: agent/plans/PLAN-backup-integrity.md, Promoted entry 43; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 43 plans done, 591 of 811 boxes done (72%).
+Promoted: 6 of 44 plans done, 591 of 863 boxes done (68%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -158,6 +158,7 @@ Promoted: 6 of 43 plans done, 591 of 811 boxes done (72%).
 | 41 | PLAN-settings-set-verb.md | 3/4 | 1 open |
 | 42 | PLAN-free-license.md | 4/13 | 9 open |
 | 43 | PLAN-backup-integrity.md | 0/57 | 57 open |
+| 44 | PLAN-backup-critical-tier.md | 0/52 | 52 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by e989dc4d9 on this branch) and R1 closes on a green scheduled run after the merge
@@ -203,6 +204,7 @@ Promoted: 6 of 43 plans done, 591 of 811 boxes done (72%).
 41. agent/plans/PLAN-settings-set-verb.md -- operator /ask 2026-10-30 "Yes, plan it": npm run settings -- set|get|list over a tunables registry, one source per value (the R2 ceiling lived in three places), starting with the spend-guard ceilings
 42. agent/plans/PLAN-free-license.md -- operator /ask 2026-10-30 (rulings R1-R13): licensing always enforced incl. CI (production key in CI, one shared renet artifact), FREE plan (48 h, 3 GB, 8 per IP per 72 h per server, 3 per machine, unlimited renewal, no backups), COMMUNITY licenses again
 43. agent/plans/PLAN-backup-integrity.md -- operator /ask 2026-11-01: all integrity fixes land in #602
+44. agent/plans/PLAN-backup-critical-tier.md -- operator /ask 2026-11-01: critical-system backups land in #602
 
 ## Generated
 
