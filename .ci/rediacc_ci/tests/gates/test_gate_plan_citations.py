@@ -11,7 +11,10 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -567,6 +570,18 @@ def test_plan_mode_on_the_real_tree_prints_valid_json(gate):
     result = harness.run(
         [sys.executable, str(GATE), "--plan", rel, "--json"], cwd=paths.repo_root()
     )
+    # The gate reads history with GIT_NO_LAZY_FETCH=1 on purpose, so in a `filter: blob:none` checkout (CI's quality-pytest lane) blame cannot reach the blobs of older revisions. That is the checkout, not the gate: it is declared, counted and named by check:ci-pytest.
+    promisor = subprocess.run(
+        ["git", "-C", str(paths.repo_root()), "config", "--get", "remote.origin.promisor"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    if result.rc == 2 and "Cannot read blob" in result.err and promisor == "true":
+        pytest.skip(
+            "CANNOT RUN (1 of 1 requirement(s) missing): the history blobs of %s, which a "
+            "blob:none partial clone omits and the gate never lazy-fetches" % rel
+        )
     if result.rc not in (0, 1):
         gate.log_fail("rc %d: %s" % (result.rc, result.err[-600:]))
     data = _plan_json(gate, result)
