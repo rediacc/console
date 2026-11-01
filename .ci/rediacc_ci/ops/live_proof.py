@@ -44,6 +44,7 @@ from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
 from rediacc_ci.proof import vm_tier
+from rediacc_ci.review import successor as SUCC
 
 if TYPE_CHECKING:
     import pathlib
@@ -584,11 +585,31 @@ def _judge_and_write(run: _Run, root: pathlib.Path, world: World, write: bool) -
 # ----------------------------------------------------------------------------- verify
 
 
+def _base(root: pathlib.Path) -> str:
+    """merge-base(HEAD, origin/main), else main: the start of the branch whose patch-ids map a rewritten head."""
+    git = S.make_git(root)
+    for ref in ("origin/main", "main"):
+        got = (git(["merge-base", "HEAD", ref]) or "").strip()
+        if got:
+            return got
+    return ""
+
+
 def verify(
-    root: pathlib.Path, plan: str | None = None, checks: dict[str, LT.Check] | None = None
+    root: pathlib.Path,
+    plan: str | None = None,
+    checks: dict[str, LT.Check] | None = None,
+    successor_of: Callable[[str], str | None] | None = None,
 ) -> tuple[int, list[str]]:
-    """(exit code, report lines) of `validate_row` over the ledger rows (of `plan` when given)."""
+    """(exit code, report lines) of `validate_row` over the ledger rows (of `plan` when given).
+
+    A head a rebase rewrote is re-resolved through `successor_of`, by default the review-record map `check_plan_live_proof` uses (`rediacc_ci.review.successor`), built on first use.
+    """
     checks = LT.registry() if checks is None else checks
+    if successor_of is None:
+        successor_of = SUCC.lazy_successor_of(
+            str(root), _base(root), importlib.import_module("wl_planrec")
+        )
     lines: list[str] = []
     bad = 0
     judged = 0
@@ -600,7 +621,7 @@ def verify(
         if plan is not None and entry.row.get("plan") != plan:
             continue
         judged += 1
-        problems = LT.validate_row(entry.row, checks=checks, root=root)
+        problems = LT.validate_row(entry.row, checks=checks, root=root, successor_of=successor_of)
         name = f"{entry.row.get('id')} {entry.row.get('plan')} {entry.row.get('target')} {(entry.row.get('check') or {}).get('id')}"
         if problems:
             bad += 1

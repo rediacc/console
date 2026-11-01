@@ -3,7 +3,7 @@
 
 The design is agent/plans/PLAN-tested-on-bench.md (Design items 2, 3 and 7, box V6). The operator asked on 2026-10-27 for a CI rule behind a "tested on bench" box; the rulings of the same day narrowed the live targets to bench and hostinger (`--config eu-bench`), made `Live-Proof: none` pass only under a resolvable ruling, and made LP1 to LP6 red from the landing commit.
 
-NOTHING IS RE-IMPLEMENTED HERE. The header grammar is `wl_plandeps` (`live_proof_findings`, `resolve_live_proof_waiver`), the box parser is `wl_plandeps.plan_boxes` (the Stop hook's `wl_planrec` reader), the surface map is `rediacc_ci.proof.surfaces` (`owns_surfaces`, `inputs`), the registry, the Accept line, the match and the row judge are `rediacc_ci.proof.live_tier`, and the forward-only machinery (`moved_to_done`, `after_baseline`, `lazy_successor_of`) is check_plan_implementation's, imported. This file only composes them into rules.
+NOTHING IS RE-IMPLEMENTED HERE. The header grammar is `wl_plandeps` (`live_proof_findings`, `resolve_live_proof_waiver`), the box parser is `wl_plandeps.plan_boxes` (the Stop hook's `wl_planrec` reader), the surface map is `rediacc_ci.proof.surfaces` (`owns_surfaces`, `inputs`), the registry, the Accept line, the match and the row judge are `rediacc_ci.proof.live_tier`, the forward-only machinery (`moved_to_done`, `after_baseline`) is check_plan_implementation's, imported, and the rebase successor map (`lazy_successor_of`) is `rediacc_ci.review.successor`, the one both gates use. This file only composes them into rules.
 
 WHICH PLANS ARE REQUIRED: a top-level, non-stub plan whose Status is not finished and whose `Owns:` globs hit at least one surface of `.ci/config/proof-tiers.json` (minus its excludes), by `surfaces.owns_surfaces`, the reading the pre-edit guard `block_plan_without_depends` and the recorder share.
 
@@ -98,6 +98,7 @@ try:
     import wl_planfile as PF
     from rediacc_ci.proof import live_tier as LT
     from rediacc_ci.proof import surfaces as S
+    from rediacc_ci.review import successor as SUCC
 except ImportError as _exc:  # pragma: no cover -- a tree without the hook or proof modules
     print(
         "VACUOUS INPUT: cannot import the live-proof modules (%s). The grammar, the surface map "
@@ -817,7 +818,7 @@ class Context:
 def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) -> Oracles:
     root = ctx.root
     checks = ctx.view.checks or LT.registry()
-    successor_of = PI.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
+    successor_of = SUCC.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
 
     def done_commit_of(rel: str, sig: str) -> str:
         def attests(doc: dict[str, Any]) -> bool:
@@ -840,7 +841,7 @@ def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) ->
         return bool(a) and _git(root, "merge-base", "--is-ancestor", a, b) is not None
 
     def validate(row: dict[str, Any]) -> list[str]:
-        return LT.validate_row(row, checks=checks, root=root)
+        return LT.validate_row(row, checks=checks, root=root, successor_of=successor_of)
 
     def judge(row: dict[str, Any], commit: str) -> list[str]:
         return judge_row(

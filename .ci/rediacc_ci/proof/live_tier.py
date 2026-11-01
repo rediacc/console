@@ -24,7 +24,7 @@ from rediacc_ci.proof import surfaces as S
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Collection, Iterable
+    from collections.abc import Callable, Collection, Iterable
 
 SCHEMA = 1
 TIER = "live"
@@ -466,19 +466,45 @@ def _surface_problems(row: dict[str, Any], check: Check | None) -> list[str]:
     return out
 
 
-def _git_problems(row: dict[str, Any], root: pathlib.Path) -> list[str]:
+def _git_problems(
+    row: dict[str, Any],
+    root: pathlib.Path,
+    successor_of: Callable[[str], str | None] | None = None,
+) -> list[str]:
+    """The row's `head` and `tree` resolve, and `inputs` is the digest of that tree for its surfaces.
+
+    A REWRITTEN HEAD IS RE-RESOLVED, NEVER EXCUSED. A rebase or a message scrub replaces the commit a receipt recorded, and in CI's fresh clone the old sha does not exist. `successor_of` (`rediacc_ci.review.successor`, the map the investigation gate uses) names the patch-equal commit that replaced it. A head that resolves no successor is still refused. When the row's tree is gone with it, the inputs digest is recomputed at the SUCCESSOR's tree, so surface code that changed in the rewrite still fails the row.
+    """
     git = S.make_git(root)
-    out = [
-        f"{key} {str(row.get(key))[:12]} does not resolve"
-        for key in ("head", "tree")
-        if git(["cat-file", "-e", str(row.get(key))]) is None
-    ]
+
+    def present(sha: str) -> bool:
+        return bool(sha) and git(["cat-file", "-e", sha]) is not None
+
+    out: list[str] = []
+    head, tree = str(row.get("head")), str(row.get("tree"))
+    successor = ""
+    if not present(head):
+        mapped = successor_of(head) if successor_of is not None else None
+        if mapped and mapped != head and present(mapped):
+            successor = mapped
+        else:
+            out.append(f"head {head[:12]} does not resolve")
+    judged_tree = tree
+    if not present(tree):
+        at = (git(["rev-parse", "--verify", "--quiet", f"{successor}^{{tree}}"]) or "").strip()
+        if successor and at:
+            judged_tree = at
+        else:
+            out.append(f"tree {tree[:12]} does not resolve")
     if out:
         return out
     names = row.get("surfaces")
     known = isinstance(names, list) and names and all(_known_surface(n) for n in names)
-    if known and S.inputs(root, str(row["tree"]), names) != row.get("inputs"):
-        out.append("inputs is not the digest of the row's tree for its surfaces")
+    if known and S.inputs(root, judged_tree, names) != row.get("inputs"):
+        whose = (
+            "the row's tree" if judged_tree == tree else f"head successor {successor[:12]}'s tree"
+        )
+        out.append(f"inputs is not the digest of {whose} for its surfaces")
     return out
 
 
@@ -487,10 +513,11 @@ def validate_row(
     *,
     checks: dict[str, Check] | None = None,
     root: pathlib.Path | None = None,
+    successor_of: Callable[[str], str | None] | None = None,
 ) -> list[str]:
     """Every reason `row` is not a valid VERIFIED live receipt, empty when it is one.
 
-    Without `root` the judge is pure: the envelope, the live body, the id, the registry argv, the deploy identity, the identity rules, the ladder and the secret scan. With `root` it also resolves `head` and `tree`, recomputes the inputs digest at the row's tree, and re-reads `.ci/cache/live-proof/<id>.log` when it is present, refusing a digest that differs from `check.log_sha256`.
+    Without `root` the judge is pure: the envelope, the live body, the id, the registry argv, the deploy identity, the identity rules, the ladder and the secret scan. With `root` it also resolves `head` and `tree`, recomputes the inputs digest at the row's tree, and re-reads `.ci/cache/live-proof/<id>.log` when it is present, refusing a digest that differs from `check.log_sha256`. `successor_of` re-resolves a head a rebase rewrote (see `_git_problems`).
     """
     if not isinstance(row, dict):
         return ["the row is not an object"]
@@ -521,7 +548,7 @@ def validate_row(
     if shapes:
         out.append(f"the row carries a secret shape ({', '.join(shapes)})")
     if root is not None:
-        out.extend(_git_problems(row, root))
+        out.extend(_git_problems(row, root, successor_of))
         out.extend(_log_problems(row, root))
     return out
 

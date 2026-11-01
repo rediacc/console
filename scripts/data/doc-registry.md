@@ -945,7 +945,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
 | .ci/rediacc_ci/quality | 120 | .py 120 |
 | .ci/rediacc_ci/release | 35 | .py 35 |
-| .ci/rediacc_ci/review | 7 | .py 7 |
+| .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |

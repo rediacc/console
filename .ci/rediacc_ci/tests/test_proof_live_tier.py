@@ -15,6 +15,7 @@ import pytest
 from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
+from rediacc_ci.review import successor as SUCC
 from rediacc_ci.tests.test_proof_surfaces import World
 from rediacc_ci.well_known import BENCH_ORIGIN
 
@@ -485,6 +486,78 @@ def test_a_row_whose_inputs_or_head_do_not_resolve_is_refused(world: World) -> N
     unknown["deploy"]["version_id"] = "cli:" + "1" * 40
     _reid(unknown)
     assert any("does not resolve" in p for p in LT.validate_row(unknown, root=world.root))
+
+
+GONE_HEAD = "1" * 40
+GONE_TREE = "2" * 40
+
+
+def _rewritten(row: dict[str, Any], *, tree_gone: bool) -> dict[str, Any]:
+    """`row` as a scrub or rebase leaves it in CI's clone: its recorded head (and maybe its tree) no longer exist."""
+    out = copy.deepcopy(row)
+    out["head"] = GONE_HEAD
+    out["deploy"]["deployed_head"] = GONE_HEAD
+    out["deploy"]["version_id"] = "cli:" + GONE_HEAD
+    if tree_gone:
+        out["tree"] = GONE_TREE
+    _reid(out)
+    return out
+
+
+def _records_map(world: World) -> Callable[[str], str | None]:
+    """The REAL shared successor map (rediacc_ci.review.successor): a review record names the gone head, and HEAD carries its patch-id."""
+    head = _git_head(world)
+    return SUCC.make_successor_of(
+        [{"commit": GONE_HEAD, "parent": "", "patch": "3" * 40}],
+        {"3" * 40: head},
+        lambda c: head if c == head else "",
+        lambda _c: "",
+    )
+
+
+def _git_head(world: World) -> str:
+    return S.make_git(world.root)(["rev-parse", "HEAD"]) or ""
+
+
+@pytest.mark.parametrize("tree_gone", [False, True])
+def test_a_rewritten_head_with_a_patch_equal_successor_passes(
+    world: World, tree_gone: bool
+) -> None:
+    row = _rewritten(_real_row(world), tree_gone=tree_gone)
+    unmapped = LT.validate_row(row, root=world.root)
+    assert f"head {GONE_HEAD[:12]} does not resolve" in unmapped, "the plant must fail unmapped"
+    assert LT.validate_row(row, root=world.root, successor_of=_records_map(world)) == []
+
+
+@pytest.mark.parametrize("tree_gone", [False, True])
+def test_a_rewritten_head_with_no_successor_is_still_refused(world: World, tree_gone: bool) -> None:
+    row = _rewritten(_real_row(world), tree_gone=tree_gone)
+    problems = LT.validate_row(row, root=world.root, successor_of=lambda _s: None)
+    assert f"head {GONE_HEAD[:12]} does not resolve" in problems, problems
+    no_record = SUCC.make_successor_of([], {}, lambda _c: "", lambda _c: "")
+    assert any(
+        "does not resolve" in p
+        for p in LT.validate_row(row, root=world.root, successor_of=no_record)
+    )
+
+
+def test_a_successor_naming_a_missing_commit_is_refused(world: World) -> None:
+    row = _rewritten(_real_row(world), tree_gone=True)
+    problems = LT.validate_row(row, root=world.root, successor_of=lambda _s: "4" * 40)
+    assert f"head {GONE_HEAD[:12]} does not resolve" in problems, problems
+
+
+def test_a_successor_whose_surface_code_changed_fails_the_inputs_digest(world: World) -> None:
+    row = _rewritten(_real_row(world), tree_gone=True)
+    path = world.root / "packages" / "cli" / "src" / "changed.ts"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("export const changed = 1;\n", encoding="utf-8")
+    git = S.make_git(world.root)
+    git(["add", "-A", "--", "packages"])
+    git(["-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "c1"])
+    moved = _git_head(world)
+    problems = LT.validate_row(row, root=world.root, successor_of=lambda _s: moved)
+    assert any("inputs is not the digest of head successor" in p for p in problems), problems
 
 
 # ------------------------------------------------------------------ the ledger and the match
