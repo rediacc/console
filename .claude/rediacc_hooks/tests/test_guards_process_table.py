@@ -93,11 +93,6 @@ def test_the_differential_can_fail(tmp_path, fixture_work, stem):
     gd.assert_defect_is_caught(tmp_path, fixture_work, stem)
 
 
-def _runs(pid):
-    """Whether `pid` is still in the process table, through the seam the guard reads."""
-    return guard.proc.comm(pid) is not None
-
-
 def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_path):
     """A stale script in a group it does not lead takes its own `sleep` child with it, and the rest of that group stays: anything naming a fixture path matches, so the group may be a bystander's."""
     script = tmp_path / "fixture-script.sh"
@@ -121,9 +116,9 @@ def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_p
         assert children, "CONTROL: the fixture script never started its sleep"
         guard._kill_stale((str(script),))
         deadline = time.monotonic() + 5
-        while any(_runs(c) for c in children) and time.monotonic() < deadline:
+        while any(guard.proc.running(c) for c in children) and time.monotonic() < deadline:
             time.sleep(0.02)
-        assert not any(_runs(c) for c in children)
+        assert not any(guard.proc.running(c) for c in children)
         assert bystander.poll() is None, "the group's other member was killed with the script"
     finally:
         bystander.kill()
@@ -136,3 +131,13 @@ def test_ppid_reads_the_parent_on_both_backends(monkeypatch, backend):
     assert guard.proc.ppid(os.getpid()) == os.getppid()
     # CONTROL: a pid nothing runs under answers None, not a parent.
     assert guard.proc.ppid(2**22 + 1) is None
+    assert guard.proc.running(os.getpid())
+    assert not guard.proc.running(2**22 + 1)
+    # A killed child nobody has collected yet is a zombie: in the table, and not running.
+    child = subprocess.Popen(["true"])
+    deadline = time.monotonic() + 5
+    while guard.proc.running(child.pid) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert guard.proc.comm(child.pid) is not None
+    assert not guard.proc.running(child.pid)
+    child.wait()

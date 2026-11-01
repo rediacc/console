@@ -16,6 +16,7 @@ concurrently, its anti-vacuity controls both went red --
 -- and the same test passed in isolation (`-k test_the_differential_can_fail`, 1 passed in 316.07s). Sharing the group serialises them onto one worker, which costs about ten seconds against that file's five minutes.
 """
 
+import contextlib
 import os
 import signal
 import subprocess
@@ -94,13 +95,15 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
     block.done()
 
 
-@pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)
 def _stop_group(fixture):
     """Kill a fixture shell's whole session-led group and collect it. Killing the shell alone orphans its child until that expires, since `bash` here is a wrapper over the real interpreter."""
-    os.killpg(fixture.pid, signal.SIGKILL)
+    # The group is gone already when the fixture's child finished first.
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(fixture.pid, signal.SIGKILL)
     fixture.wait()
 
 
+@pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)
 def test_block_edit_of_running_script(tmp_path):
     block = hookblocks.Block("running-script")
     fixture = tmp_path / "running-fixture.sh"

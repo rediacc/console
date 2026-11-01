@@ -101,6 +101,15 @@ class _ProcBackend:
             # The process exited between the listing and the read. That is the normal case, not an error: a dead process is not running your script.
             return None
 
+    def zombie(self, pid):
+        try:
+            stat = pathlib.Path("/proc/%d/stat" % pid).read_text(
+                encoding="utf-8", errors="surrogateescape"
+            )
+            return stat.rpartition(")")[2].split()[0] == "Z"
+        except (OSError, IndexError):
+            return False
+
     def ppid(self, pid):
         try:
             stat = pathlib.Path("/proc/%d/stat" % pid).read_text(
@@ -165,6 +174,12 @@ class _PsBackend:
         self._table = table
         return table
 
+    def zombie(self, pid):
+        try:
+            return self._run(["ps", "-o", "stat=", "-p", str(pid)]).strip().startswith("Z")
+        except ProcError:
+            return False
+
     def ppid(self, pid):
         # One question, so not part of the cached table: only the kill path of a fixture world asks it.
         try:
@@ -221,6 +236,11 @@ def comm(pid):
 def ppid(pid):
     """The process's parent id, or None when the process is gone."""
     return _backend().ppid(pid)
+
+
+def running(pid):
+    """Whether the process is in the table and not a zombie waiting for its reaper."""
+    return comm(pid) is not None and not _backend().zombie(pid)
 
 
 def children_named(parent, name):
