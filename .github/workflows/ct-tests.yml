@@ -484,6 +484,7 @@ jobs:
       # lockfiles, so an account-side dependency change invalidates it.
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally

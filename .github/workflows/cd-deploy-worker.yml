@@ -251,7 +251,11 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ inputs.target == 'stable'
             && env.BWS_STRIPE_WEBHOOK_SECRET_EU
             || env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_www_worker_secrets
+        # workers/www holds the only node_modules/.bin/wrangler this job installs, and
+        # `npx --no-install wrangler` resolves a local binary only, so the step runs
+        # there (the same failure took Deploy Preview down in run 41348962671).
+        working-directory: workers/www
+        run: PYTHONPATH="$GITHUB_WORKSPACE/.ci" python3 -m rediacc_ci.deploy.set_www_worker_secrets
       - name: Blank the step-scoped signing key(s) for the rest of the job
         if: always()
         uses: ./.github/actions/bws-scrub

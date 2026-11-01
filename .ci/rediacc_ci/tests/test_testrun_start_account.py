@@ -594,3 +594,19 @@ def test_delta_9_without_a_caller_key_a_fresh_one_is_minted(
     key = _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_SERVER_API_KEY"]
     assert re.fullmatch(r"[0-9a-f]{64}", key)
     assert key != "k" * 64
+
+
+def test_delta_10_the_server_always_holds_a_config_server_key(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Run 41348962671, E2E Backup Browse-At: RustFS exports CONFIG_R2_*, and the node entry then refuses to boot without ACCOUNT_CONFIG_SERVER_KEY."""
+    monkeypatch.delenv("ACCOUNT_CONFIG_SERVER_KEY", raising=False)
+    key = _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_CONFIG_SERVER_KEY"]
+    assert re.fullmatch(r"[0-9a-f]{64}", key)
+
+
+def test_delta_10_a_caller_config_server_key_is_kept(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ACCOUNT_CONFIG_SERVER_KEY", "c" * 40)
+    assert _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_CONFIG_SERVER_KEY"] == "c" * 40

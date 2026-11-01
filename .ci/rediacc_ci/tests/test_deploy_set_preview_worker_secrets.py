@@ -469,3 +469,23 @@ def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch)
             assert not any(value in arg for arg in argv), "a secret value is on argv: %r" % argv[0]
     for name, value in sentinels.items():
         assert value in str(calls[-1][1]), "%s never reached wrangler's stdin" % name
+
+
+def test_wrangler_starts_in_the_worker_directory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run 41348962671, Deploy Preview: `npx --no-install wrangler` ran from the repo root, which has no local wrangler, and died on `npx canceled due to missing packages`. Only workers/www is installed by the job."""
+    for name, value in FIXTURE_ENV.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(port.common, "require_cmd", lambda *_a, **_k: "/bin/true")
+    real_run = subprocess.run
+    cwds: dict[str, object] = {}
+
+    def recording_run(argv, **kw):
+        cwds[argv[0]] = kw.get("cwd")
+        if argv[0] == "npx":
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(port.subprocess, "run", recording_run)
+    assert port.main([]) == 0
+    assert cwds["npx"] == port.paths.repo_root() / "workers" / "www"
+    assert (port.paths.repo_root() / "workers" / "www").is_dir()
