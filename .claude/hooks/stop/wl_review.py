@@ -1066,7 +1066,7 @@ def patch_id(repo, sha):
 
 
 def prefetch_diff_blobs(repo, rev_range, *paths):
-    """Fetch the blobs `rev_range`'s diffs read in one request, in a partial clone. CI's pytest job clones with `filter: blob:none`, where `git log -p` fetches them one commit at a time: over 200 s against 16 s for this repo's 1779 commits (measured 2026-11-01). `--raw` names both sides of every change without reading a blob. Mode 160000 is a gitlink, which is a commit of another repository, and naming one fails the whole fetch. Best-effort: on any failure the diffs still fetch lazily."""
+    """Fetch the blobs `rev_range`'s diffs read in one request, in a partial clone. CI's pytest job clones with `filter: blob:none`, where `git log -p` fetches them one commit at a time: over 200 s against 16 s for this repo's 1779 commits (measured 2026-11-01). `--raw` names both sides of every change without reading a blob. Mode 160000 is a gitlink, which is a commit of another repository, and naming one fails the whole fetch. `paths` limits the listing to a pathspec, for a walk over one file's versions. Best-effort: on any failure the diffs still fetch lazily."""
     rc, promisor = git(repo, "config", "--get", "remote.origin.promisor")
     if rc != 0 or promisor.strip() != "true":
         return

@@ -845,3 +845,9 @@ def test_patch_ids_prefetches_a_partial_clone_and_skips_a_gitlink(tmp_path, monk
     run("config", "remote.origin.promisor", "true")
     R.patch_ids(tmp_path, "%s..HEAD" % base)
     assert fetched == [sorted([old, new])]
+    # A pathspec limits the request to that file's versions.
+    fetched.clear()
+    R.prefetch_diff_blobs(tmp_path, "%s..HEAD" % base, "sub")
+    assert fetched == []
+    R.prefetch_diff_blobs(tmp_path, "%s..HEAD" % base, "a.txt")
+    assert fetched == [sorted([old, new])]

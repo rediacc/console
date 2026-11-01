@@ -235,11 +235,6 @@ export class RenetFunctionsTestRunner {
     Promise<ExecResult & { guid: string }>
   >();
 
-  /**
-   * Run a Ceph function, naming a licensed repository when its tier asks for one. One grand
-   * licence per runner covers every call; explicit images stay explicit because the harness
-   * always passes `--image`, so the repository only supplies the licence identity.
-   */
   private async licenseCephRepository(
     datastorePath: string | undefined,
     datastore: string
@@ -259,6 +254,11 @@ export class RenetFunctionsTestRunner {
     return { ...stub, guid };
   }
 
+  /**
+   * Run a Ceph function, naming a licensed repository when its tier asks for one. One grand
+   * licence per runner covers every call; explicit images stay explicit because the harness
+   * always passes `--image`, so the repository only supplies the licence identity.
+   */
   private async cephTestFunction(opts: TestFunctionOptions): Promise<ExecResult> {
     if (opts.repository || !RenetFunctionsTestRunner.LICENSED_CEPH_FUNCTIONS.has(opts.function)) {
       return this.testFunction(opts);
@@ -271,7 +271,10 @@ export class RenetFunctionsTestRunner {
     }
     const licensed = await pending;
     if (licensed.code !== 0) {
-      this.cephLicensedRepositories.delete(datastore);
+      // Only this attempt's entry: another caller may already have started a newer one.
+      if (this.cephLicensedRepositories.get(datastore) === pending) {
+        this.cephLicensedRepositories.delete(datastore);
+      }
       return licensed;
     }
     return this.testFunction({ ...opts, repository: licensed.guid });
