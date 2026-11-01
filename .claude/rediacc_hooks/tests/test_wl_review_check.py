@@ -801,3 +801,47 @@ def test_patch_ids_agrees_on_a_root_commit_under_either_show_root_and_reports_a_
     # CONTROL: with the root diff shown, the value is a real patch-id, not two empty strings agreeing.
     assert R.patch_id(tmp_path, root) != ""
     assert R.patch_ids(tmp_path, "no-such-ref..HEAD") is None
+
+
+def test_patch_ids_prefetches_a_partial_clone_and_skips_a_gitlink(tmp_path, monkeypatch):
+    """In a partial clone the batch names both sides of every change and no gitlink, since a gitlink's commit lives in another repository and naming one fails the whole fetch. Outside a partial clone it fetches nothing."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run("init", "-q", "-b", "main")
+    (tmp_path / "a.txt").write_text("one\n")
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "base")
+    base = run("rev-parse", "HEAD")
+    old = run("rev-parse", "HEAD:a.txt")
+    (tmp_path / "a.txt").write_text("two\n")
+    gitlink = "1" * 40
+    run("update-index", "--add", "--cacheinfo", "160000,%s,sub" % gitlink)
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "change")
+    new = run("rev-parse", "HEAD:a.txt")
+    real_git = R.git
+    fetched = []
+
+    def spy(repo, *args, **kwargs):
+        if "fetch" in args:
+            fetched.append(kwargs["stdin"].split())
+            return 0, ""
+        return real_git(repo, *args, **kwargs)
+
+    monkeypatch.setattr(R, "git", spy)
+    R.patch_ids(tmp_path, "%s..HEAD" % base)
+    assert fetched == [], "CONTROL: a full clone fetches nothing"
+    run("config", "remote.origin.promisor", "true")
+    R.patch_ids(tmp_path, "%s..HEAD" % base)
+    assert fetched == [sorted([old, new])]

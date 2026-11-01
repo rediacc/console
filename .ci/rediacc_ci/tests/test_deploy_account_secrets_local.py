@@ -126,7 +126,9 @@ def test_profile_binds_every_variable_the_push_reads():
 
 
 @pytest.mark.parametrize("target", ["stable", "edge"])
-def test_dry_run_prints_the_31_names_and_no_value(target, capsys):
+def test_dry_run_prints_the_31_names_and_no_value(target, capsys, monkeypatch):
+    # The pin reads workers/account/node_modules, which the quality-pytest job does not install; this case is about the names, and the refusal has its own case.
+    monkeypatch.setattr(local.wrangler_pin, "check", lambda _root: (0, []))
     rc = local.run(["--region", "eu", "--target", target, "--dry-run"])
     out = capsys.readouterr().out
     assert rc == 0
