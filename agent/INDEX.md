@@ -723,3 +723,18 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
 257 plan(s), 193 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+
+## Expired plans
+
+A plan whose retention ran out. The FILE is gone and the full text is the blob below, which is content-addressed and survives the rebase this repository merges with. Revive one with `check_plan_folders.py --plan-revive <path>`.
+
+| Plan | Title | First seen | Expired | Full-Text-Blob |
+|---|---|---|---|---|
+| `agent/plans/_done/PLAN-consolidate-test-scaffolding.md` | Consolidate the duplicated gate-test scaffolding | 2026-09-17 | 2026-11-01 | `0fd1cf4c17978f6358d3d873171473e8bde67429` |
+| `agent/plans/_done/PLAN-hook-inventory-warn-guards.md` | PLAN: warn-* guards are outside the inventory that exists to keep guards alive | 2026-09-17 | 2026-11-01 | `7cba65c24ea65ebe479573d4b15d3ba04980dc4c` |
+| `agent/plans/_done/PLAN-json-prose-scope-audit.md` | PLAN: bring .ci/config and .ci/policy JSON into the prose-style gate's scope | 2026-09-17 | 2026-11-01 | `9295793531d71fd6641318b9053204a7988183df` |
+| `agent/plans/_done/PLAN-local-ci-gate-prerequisites.md` | PLAN: two gates read packages/www/dist and never said so | 2026-09-17 | 2026-11-01 | `4512b1985ad5f9c1f015d7efd17d8adfe4ebeda0` |
+| `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | PLAN: fold a docstring's opening/closing physical line into reflow correctly | 2026-09-20 | 2026-11-01 | `4501f26f58bbd7c1a8b52fa09e36e7fe52e49e0b` |
+| `agent/plans/_done/PLAN-subscription-status-error-swallowing.md` | PLAN: `subscription status` swallows account-server errors and exits 0 silently | 2026-09-17 | 2026-11-01 | `8ed029f8fdf81a64e79f8b2f57e6a946748de9ce` |
+
+6 expired plan(s). The row is the receipt; the blob is the text.

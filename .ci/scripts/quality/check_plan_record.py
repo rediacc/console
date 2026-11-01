@@ -1151,12 +1151,15 @@ def index_problems(root, rows, census="", update=False):
 
     It defaults to "" so the R8 controls below, which run in a fixture whose plan set is not the one being censused, keep comparing exactly what they always compared. Only the real-tree call site at the bottom passes a census.
     """
-    want = R.render_index(rows) + census
     path = pathlib.Path(root) / R.INDEX_REL
     try:
         got = path.read_text(encoding="utf-8")
     except OSError:
         got = ""
+    # THE TOMBSTONE SECTION IS APPEND-ONLY AND OWNED BY THE PLAN SWEEP (check_plan_folders.py `_write_tombstones`): the plans it names have no disk state left, so it is read back from the file and kept, rendered and placed exactly as the sweep writes it. Before 2026-11-01 this render left it out, so every --update deleted the rows the sweep had just minted.
+    stones = PL.render_tombstones(PL.parse_tombstones(got))
+    want = (R.render_index(rows) + census).rstrip("\n")
+    want = (want + "\n" + stones).lstrip("\n") if stones else R.render_index(rows) + census
     if got == want:
         return []
     if update and want:
@@ -2161,6 +2164,25 @@ def selftest():
             index_problems(root, rows) == [],
             f"got {index_problems(root, rows)}",
         )
+        stone = PL.Tombstone(
+            rel="agent/plans/_done/PLAN-gone.md",
+            title="Gone",
+            first_seen="2026-09-01",
+            expired_at="2026-11-01",
+            blob="a" * 40,
+        )
+        R.write_atomic(
+            root / R.INDEX_REL, R.render_index(rows) + "\n" + PL.render_tombstones([stone])
+        )
+        index_problems(root, rows, update=True)
+        kept = (root / R.INDEX_REL).read_text(encoding="utf-8")
+        ck(
+            "R8: --update keeps the sweep's tombstone rows, and the index with them is silent",
+            [t.rel for t in PL.parse_tombstones(kept)] == [stone.rel]
+            and index_problems(root, rows) == [],
+            f"got {kept[-300:]!r}",
+        )
+        R.write_atomic(root / R.INDEX_REL, R.render_index(rows))
         ck(
             "R8: a PRESENT index over ZERO records is reported",
             index_problems(root, []) != [],
