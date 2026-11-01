@@ -435,8 +435,52 @@ def _link_build_products(repo: pathlib.Path) -> None:
             dst.symlink_to(src)
 
 
+def _prefetch_main_plans() -> int:
+    """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
+
+    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs."""
+    listed = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-tree", "-r", "origin/main", "--", "agent/plans"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    oids = [row.split()[2] for row in listed.stdout.splitlines() if len(row.split()) >= 3]
+    if not oids:
+        return 0
+    checked = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        input="\n".join(oids) + "\n",
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    missing = [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
+    if missing:
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPO_ROOT),
+                "fetch",
+                "-q",
+                "--no-tags",
+                "--no-write-fetch-head",
+                "origin",
+                *missing,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=300,
+        )
+    return len(missing)
+
+
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
+    _prefetch_main_plans()
     w = GD.World(tmp_path_factory.mktemp("githook-artifacts"), extra_overlay=_overlay())
     w.build()
     _link_build_products(w.repo)
