@@ -458,23 +458,29 @@ def _prefetch_main_plans() -> int:
     )
     missing = [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
     if missing:
-        subprocess.run(
-            [
-                "git",
-                "-C",
-                str(REPO_ROOT),
-                "fetch",
-                "-q",
-                "--no-tags",
-                "--no-write-fetch-head",
-                "origin",
-                *missing,
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=300,
-        )
+        # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure names them.
+        try:
+            got = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(REPO_ROOT),
+                    "fetch",
+                    "-q",
+                    "--no-tags",
+                    "--no-write-fetch-head",
+                    "origin",
+                    *missing,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=300,
+            )
+            if got.returncode != 0:
+                print("plan blob prefetch failed: %s" % got.stderr.strip(), file=sys.stderr)
+        except subprocess.TimeoutExpired:
+            print("plan blob prefetch timed out", file=sys.stderr)
     return len(missing)
 
 

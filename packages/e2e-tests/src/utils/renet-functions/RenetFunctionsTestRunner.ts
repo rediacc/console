@@ -229,34 +229,51 @@ export class RenetFunctionsTestRunner {
     'ceph_snapshot_unprotect',
   ]);
 
-  private cephLicensedRepository?: Promise<ExecResult & { guid: string }>;
+  /** One licensed repository per datastore; a failed attempt is not kept, so a later call tries again. */
+  private readonly cephLicensedRepositories = new Map<
+    string,
+    Promise<ExecResult & { guid: string }>
+  >();
 
   /**
    * Run a Ceph function, naming a licensed repository when its tier asks for one. One grand
    * licence per runner covers every call; explicit images stay explicit because the harness
    * always passes `--image`, so the repository only supplies the licence identity.
    */
+  private async licenseCephRepository(
+    datastorePath: string | undefined,
+    datastore: string
+  ): Promise<ExecResult & { guid: string }> {
+    const guid = e2eRepoGuid();
+    const licence = await installRepoLicence(this.executeViaBridge.bind(this), {
+      repositoryGuid: guid,
+      kind: 'grand',
+      datastorePath,
+    });
+    if (licence.code !== 0) return { ...licence, guid };
+    // Every tiered Ceph function but ceph_image_create size-checks the repository image before it runs, and the runner cannot know which comes first, so the sparse stand-in is made up front. Never over an existing file: `truncate` would shrink it.
+    const image = `${datastore}/repositories/${guid}`;
+    const stub = await this.executeViaBridge(
+      `sudo mkdir -p ${datastore}/repositories && (sudo test -e ${image} || sudo truncate -s 1G ${image})`
+    );
+    return { ...stub, guid };
+  }
+
   private async cephTestFunction(opts: TestFunctionOptions): Promise<ExecResult> {
     if (opts.repository || !RenetFunctionsTestRunner.LICENSED_CEPH_FUNCTIONS.has(opts.function)) {
       return this.testFunction(opts);
     }
-    this.cephLicensedRepository ??= (async () => {
-      const guid = e2eRepoGuid();
-      const licence = await installRepoLicence(this.executeViaBridge.bind(this), {
-        repositoryGuid: guid,
-        kind: 'grand',
-        datastorePath: opts.datastorePath,
-      });
-      if (licence.code !== 0) return { ...licence, guid };
-      // Only ceph_image_create may name an image that is absent; the other tiered Ceph functions size-check the repository image first, so a sparse stand-in of the licensed size sits where renet looks.
-      const imageDir = `${opts.datastorePath ?? DEFAULT_DATASTORE_PATH}/repositories`;
-      const stub = await this.executeViaBridge(
-        `sudo mkdir -p ${imageDir} && sudo truncate -s 1G ${imageDir}/${guid}`
-      );
-      return { ...stub, guid };
-    })();
-    const licensed = await this.cephLicensedRepository;
-    if (licensed.code !== 0) return licensed;
+    const datastore = opts.datastorePath ?? DEFAULT_DATASTORE_PATH;
+    let pending = this.cephLicensedRepositories.get(datastore);
+    if (pending === undefined) {
+      pending = this.licenseCephRepository(opts.datastorePath, datastore);
+      this.cephLicensedRepositories.set(datastore, pending);
+    }
+    const licensed = await pending;
+    if (licensed.code !== 0) {
+      this.cephLicensedRepositories.delete(datastore);
+      return licensed;
+    }
     return this.testFunction({ ...opts, repository: licensed.guid });
   }
 
