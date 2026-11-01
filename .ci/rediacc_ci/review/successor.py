@@ -95,7 +95,7 @@ def make_successor_of(records, branch_pids, reachable_fn, parent_fn):
 def lazy_successor_of(root, base, planrec):
     """The real `successor_of` for tick_findings, built on first use: a run whose heads were never rewritten pays no `git patch-id` at all.
 
-    THE PATCH-ID IS `wl_review.patch_id`, imported rather than restated, because the records' `Patch-Id:` lines were written by that function and a second spelling of the computation (a different diff command, a different flag) would map nothing and read as a rewritten head with no record.
+    THE PATCH-ID IS `wl_review.patch_ids` (the batched `wl_review.patch_id`), imported rather than restated, because the records' `Patch-Id:` lines were written by that function and a second spelling of the computation (a different diff command, a different flag) would map nothing and read as a rewritten head with no record.
     """
     built = {}
 
@@ -105,9 +105,11 @@ def lazy_successor_of(root, base, planrec):
 
         pids: dict[str, str] = {}
         if base:
+            # One batched pass (`wl_review.patch_ids`), newest first as rev-list orders it, so the first sha seen for a patch-id is kept exactly as the per-commit loop kept it.
             listing = planrec._git_out(root, "rev-list", "--no-merges", "%s..HEAD" % base)
+            by_sha = wl_review.patch_ids(root, "%s..HEAD" % base)
             for sha in listing.split():
-                pid = wl_review.patch_id(root, sha)
+                pid = by_sha.get(sha)
                 if pid:
                     pids.setdefault(pid, sha)
         return make_successor_of(

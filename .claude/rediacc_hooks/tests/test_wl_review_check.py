@@ -735,3 +735,38 @@ def test_module_file_prefers_the_hit_sharing_the_most_directory_components():
     # Root-level files share the empty directory with each other, the unchanged edge.
     tree._files = ["util.py", "pkg/util.py"]
     assert tree.module_file("util", "main.py") == "util.py"
+
+
+def test_patch_ids_batch_equals_patch_id_per_commit(tmp_path):
+    """`patch_ids` is the batched `patch_id`: the records' `Patch-Id:` lines come from the latter, so a different value would map nothing."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run("init", "-q", "-b", "main")
+    (tmp_path / "a.txt").write_text("a\n")
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "base")
+    base = run("rev-parse", "HEAD")
+    for i in range(3):
+        (tmp_path / ("f%d.txt" % i)).write_text("%d\n" % i)
+        run("add", "f%d.txt" % i)
+        run("commit", "-q", "-m", "c%d" % i)
+    run("commit", "-q", "--allow-empty", "-m", "empty")
+    shas = run("rev-list", "%s..HEAD" % base).split()
+    batch = R.patch_ids(tmp_path, "%s..HEAD" % base)
+    assert len(batch) == 3
+    for sha in shas:
+        assert batch.get(sha, "") == R.patch_id(tmp_path, sha)
+    # CONTROL: the empty commit has no diff, so neither form gives it a patch-id.
+    assert R.patch_id(tmp_path, shas[0]) == ""
+    assert shas[0] not in batch

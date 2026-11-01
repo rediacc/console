@@ -1065,6 +1065,20 @@ def patch_id(repo, sha):
     return out.split()[0] if rc == 0 and out.split() else ""
 
 
+def patch_ids(repo, rev_range):
+    """`{sha: patch-id}` for every non-merge commit of `rev_range`, from one `git log -p` piped to one `git patch-id --stable`: the same value `patch_id` gives each commit, without two subprocesses per commit (1759 commits took 19 s one by one, 5 s here). An empty commit has no diff and no entry, as `patch_id` returns "" for it."""
+    rc, log = git(
+        repo, "log", "-p", "--no-merges", "--no-color", "--format=commit %H", rev_range, timeout=120
+    )
+    if rc != 0 or not log.strip():
+        return {}
+    rc, out = git(repo, "patch-id", "--stable", stdin=log, timeout=120)
+    if rc != 0:
+        return {}
+    pairs = (line.split() for line in out.splitlines())
+    return {row[1]: row[0] for row in pairs if len(row) == 2}
+
+
 def uncovered(root, repo, branch, cfg=None, tip="HEAD"):
     """Commits of the branch, newest first, that have no review record (a `.md` file or a ledger line, by sha or patch-id) and no live reviewer.
 
