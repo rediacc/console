@@ -133,6 +133,7 @@ import {
   criticalPath,
   type EventSink,
   type GateTiming,
+  idleCoreMsBetween,
   openEventSink,
   parseCarried,
   type StageStop,
@@ -143,7 +144,7 @@ import {
 } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
-import { predictMakespan, schedulerSelftest } from './sim';
+import { predictMakespan, reclaimLoopSelftest, schedulerSelftest } from './sim';
 import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -1283,7 +1284,10 @@ function readCpuTick(): { tick: CpuTick; cores: number } | undefined {
 }
 
 /** Machine CPU every 500 ms for the life of the pool (PLAN-ci-quick-cpu-scheduling 2.3). Unreferenced, so it can never keep the runner alive. */
-function startCpuSampler(): { stop: () => { ticks: CpuTick[]; cores: number } } {
+function startCpuSampler(): {
+  stop: () => { ticks: CpuTick[]; cores: number };
+  idleCoreMs: (fromMs: number, toMs: number) => number | undefined;
+} {
   const ticks: CpuTick[] = [];
   let cores = 0;
   const take = (): void => {
@@ -1301,6 +1305,7 @@ function startCpuSampler(): { stop: () => { ticks: CpuTick[]; cores: number } } 
       take();
       return { ticks, cores };
     },
+    idleCoreMs: (fromMs, toMs) => idleCoreMsBetween(ticks, cores, fromMs, toMs),
   };
 }
 
@@ -2735,6 +2740,8 @@ async function selftest(): Promise<number> {
       mine === 0,
       `the lone gate's tokens must be released when the pool drains, ${mine} held`
     );
+    // The borrow through the real pool loop, and the reading (both in sim.ts, so they run with the scheduler's other cases).
+    for (const failure of await reclaimLoopSelftest()) require_(false, failure);
   }
 
   // A RETIRED FIELD IS REFUSED BY NAME; a well-formed range is not. 4 assertions.
@@ -4012,6 +4019,9 @@ async function runGraph(
       costs,
       order,
       lease,
+      // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
+      idleCoreMs:
+        opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
       exec: (spec, grant: Grant) =>
         execGate(spec, {
           cwd: REPO_ROOT,

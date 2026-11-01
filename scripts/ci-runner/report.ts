@@ -33,7 +33,36 @@ export interface CpuTick {
 }
 
 /**
- * Where the run's CPU went (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.3). MEASUREMENT ONLY: nothing schedules on it yet. The per-5 s strip is what shows the tail -- the pool full and busy early, then fewer cores as the long gates drain.
+ * Idle core-ms over [fromMs, toMs], from the ticks spanning it at the machine's measured idle share; undefined when no pair of ticks covers it (the sampler has not run long enough, or has stalled), because no reading must never read as idle. iowait is not counted as idle: those cores have work parked on them. Ticks are in time order, and the search runs from the newest since the pool only asks about the last few seconds.
+ */
+export function idleCoreMsBetween(
+  ticks: readonly CpuTick[],
+  cores: number,
+  fromMs: number,
+  toMs: number
+): number | undefined {
+  // The sampler reads every 500 ms; a bucket's edges may sit up to one reading past the ticks that bracket them, and anything later means the sampler stopped.
+  const SLACK_MS = 1000;
+  let end: CpuTick | undefined;
+  let start: CpuTick | undefined;
+  for (let i = ticks.length - 1; i >= 0; i -= 1) {
+    const tick = ticks[i];
+    if (tick === undefined) continue;
+    if (end === undefined && tick.t <= toMs) end = tick;
+    if (tick.t <= fromMs) {
+      start = tick;
+      break;
+    }
+  }
+  if (end === undefined || start === undefined || toMs - end.t > SLACK_MS || end.t <= start.t)
+    return undefined;
+  const total = end.total - start.total;
+  if (total <= 0) return undefined;
+  return ((end.idle - start.idle) / total) * cores * (toMs - fromMs);
+}
+
+/**
+ * Where the run's CPU went (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.3). The footer's figures are measurement only; the one thing that schedules on the ticks is `idleCoreMsBetween`, the reading behind the pool's borrow (pool.ts reclaimableCores). The per-5 s strip is what shows the tail -- the pool full and busy early, then fewer cores as the long gates drain.
  */
 export interface Utilisation {
   /** Logical CPUs the counters cover, which is the whole machine, not the pool's slot count. */
@@ -320,6 +349,16 @@ export function createReporter(opts: ReporterOptions) {
         }
       }
 
+      // THE BORROWS (pool.ts reclaimableCores): the gates that started past the budget, in measured idle, so a run that leaned on it says so.
+      const borrowed = results.filter((r) => r.borrowed !== undefined);
+      if (borrowed.length > 0) {
+        opts.out(
+          `borrowed idle cores: ${borrowed.length} gate(s), ${borrowed.reduce((sum, r) => sum + (r.borrowed ?? 0), 0).toFixed(1)} core(s) in all: ${borrowed
+            .slice(0, 12)
+            .map((r) => r.id)
+            .join(', ')}${borrowed.length > 12 ? ', ...' : ''}\n`
+        );
+      }
       // THE GRANTS (agent/plans/PLAN-prepush-full-cpu.md part 1): every elastic gate with the cores it was told, so a run that starved its widest gate says so in one line.
       const elastic = results.filter((r) => r.elastic === true && r.grantedCores !== undefined);
       if (elastic.length > 0) {
