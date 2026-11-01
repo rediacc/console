@@ -1,6 +1,6 @@
-## SESSION d778be9d 2026-11-01T04:21:58Z
+## SESSION d778be9d 2026-11-01T08:06:35Z
 
-Branch 1023-1 pushed at a9cb574e5; PR rediacc/console#602 (draft) with renet#119, account#100, elite#17 open on 1023-1. Babysit phase set for PR 602. Operator answers: "Open the PR and babysit" (ASKED:2026-10-31T08:2xZ); deploys "now and watch their redeployment after the merge" (ASKED:2026-10-31T16:12Z: release:local needs merged main, bench already deployed e5d169f3); devbox --mount done (d75745be5).
+Branch 1023-1 pushed at f53c5b9bb (local HEAD ahead with the run-41280912249 fixes); PR rediacc/console#602 (draft) with renet#119, account#100, elite#17 open on 1023-1. Babysit phase set for PR 602. Operator answers: "Open the PR and babysit" (ASKED:2026-10-31T08:2xZ); deploys "now and watch their redeployment after the merge" (ASKED:2026-10-31T16:12Z: release:local needs merged main, bench already deployed e5d169f3); devbox --mount done (d75745be5).
 
 ## Standing rules
 - Never a Claude-Session trailer, "Generated with" line or claude.ai link in commits, tags, PR bodies or comments (console is public); messages end at PR-TASK.
@@ -20,7 +20,8 @@ Submodule PR links, bootstrap base PyYAML, epic ledger, settings selftest stub, 
 - PLAN-backup-program, PLAN-detached-jobs, PLAN-free-license, PLAN-production-key-only: open boxes close after merge, on hostinger, or on bench.
 
 ## Next action
-1. Read the CI watch on a9cb574e5 (/tmp/citrace602g.out); fix each red, receipt, push, resync the body.
+1. Read /tmp/legs.out (task bxvpbir92 ran the backup drills, ./rdc.sh ops up two-workers, e2e 11-multi-machine and vm:check --changed --base 24dade4bd); fix any red; rerun ci:quick plus the four --only gates, push renet (git push origin 1023-1:refs/heads/1023-1) and ONLY THEN the console (never in the same batch: #ff44a3a8), resync the PR body, watch CI.
+   Unpushed: renet 497ce40 742b676 ab24ab2; console 7b2ddb088 87e6fcc0a 24f811a4a 8e9dee204 9186200c3.
 2. When CI Complete is green: flip #602 ready, wait for Review Complete (wl_prreview.py --wait), answer it, then /pr-merge (submodules first, pointer bump, console).
 3. After the merge: release:local edge x3 then stable x3 (RELEASE_ASKED=ASKED:2026-10-30T09:56Z), record version ids, smoke rc, rollback and D1 bookmarks; meter reconcile (dry run, apply, usage equals a fresh R2 listing); watch CD's redeploy.
 4. Open findings: #1a64a6a1 (receipt ignores uncommitted ledger events), #4960f2e8 (gen-docs counts review records as suppressions).
