@@ -770,3 +770,34 @@ def test_patch_ids_batch_equals_patch_id_per_commit(tmp_path):
     # CONTROL: the empty commit has no diff, so neither form gives it a patch-id.
     assert R.patch_id(tmp_path, shas[0]) == ""
     assert shas[0] not in batch
+
+
+def test_patch_ids_agrees_on_a_root_commit_under_either_show_root_and_reports_a_failed_call(
+    tmp_path,
+):
+    """`git show` and `git log` both honour log.showRoot, so the batch and the per-commit patch-id of a root commit agree with it on and off; a failed git call is None (a caller falls back), never an empty map that reads as nothing reviewed."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run("init", "-q", "-b", "main")
+    (tmp_path / "a.txt").write_text("a\n")
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "root")
+    root = run("rev-parse", "HEAD")
+    for show_root in ("true", "false"):
+        run("config", "log.showRoot", show_root)
+        assert R.patch_ids(tmp_path, "HEAD").get(root, "") == R.patch_id(tmp_path, root), show_root
+    run("config", "log.showRoot", "true")
+    # CONTROL: with the root diff shown, the value is a real patch-id, not two empty strings agreeing.
+    assert R.patch_id(tmp_path, root) != ""
+    assert R.patch_ids(tmp_path, "no-such-ref..HEAD") is None

@@ -1066,15 +1066,24 @@ def patch_id(repo, sha):
 
 
 def patch_ids(repo, rev_range):
-    """`{sha: patch-id}` for every non-merge commit of `rev_range`, from one `git log -p` piped to one `git patch-id --stable`: the same value `patch_id` gives each commit, without two subprocesses per commit (1759 commits took 19 s one by one, 5 s here). An empty commit has no diff and no entry, as `patch_id` returns "" for it."""
+    """`{sha: patch-id}` for every non-merge commit of `rev_range`, from one `git log -p` piped to one `git patch-id --stable`: the same value `patch_id` gives each commit, without two subprocesses per commit (1759 commits took 19 s one by one, 5 s here). An empty commit has no diff and no entry, as `patch_id` returns "" for it. No `--root`: `git show` honours `log.showRoot` for a root commit, and so does `git log`, so the two agree under either setting. None when either git call fails, so a caller can fall back to `patch_id` per commit rather than read the whole range as unmapped."""
     rc, log = git(
-        repo, "log", "-p", "--no-merges", "--no-color", "--format=commit %H", rev_range, timeout=120
+        repo,
+        "log",
+        "-p",
+        "--no-merges",
+        "--no-color",
+        "--format=commit %H",
+        rev_range,
+        timeout=120,
     )
-    if rc != 0 or not log.strip():
+    if rc != 0:
+        return None
+    if not log.strip():
         return {}
     rc, out = git(repo, "patch-id", "--stable", stdin=log, timeout=120)
     if rc != 0:
-        return {}
+        return None
     pairs = (line.split() for line in out.splitlines())
     return {row[1]: row[0] for row in pairs if len(row) == 2}
 

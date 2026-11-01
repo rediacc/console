@@ -109,7 +109,8 @@ def lazy_successor_of(root, base, planrec):
             listing = planrec._git_out(root, "rev-list", "--no-merges", "%s..HEAD" % base)
             by_sha = wl_review.patch_ids(root, "%s..HEAD" % base)
             for sha in listing.split():
-                pid = by_sha.get(sha)
+                # A failed batch (None) falls back to one call per commit, so a git error costs time, never the map.
+                pid = by_sha.get(sha) if by_sha is not None else wl_review.patch_id(root, sha)
                 if pid:
                     pids.setdefault(pid, sha)
         return make_successor_of(
