@@ -3270,7 +3270,7 @@ _TODAY = {"lane-x": (4, {3: "today3", 4: "today4"})}
 
 def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
     p90, plans = br.prefer_todays_leg(
-        {"Q / X (4/4)": 13.1, "Q / X (3/4)": 12.6}, _mixed_leg_samples(), set(), _TODAY
+        {"Q / X (4/4)": 13.1, "Q / X (3/4)": 12.6}, _mixed_leg_samples(), set(), _TODAY, _PLAN_PATTERNS
     )
     assert p90["Q / X (4/4)"] == br.stats([6.2, 4.9, 4.9])["p90"]
     assert plans["Q / X (4/4)"] == ["today4"]
@@ -3281,12 +3281,12 @@ def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
 
 def test_prefer_todays_leg_leaves_untraced_and_single_plan_names_alone():
     samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 13.0)]}
-    p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 12.3}, samples, set(), _TODAY)
+    p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 12.3}, samples, set(), _TODAY, _PLAN_PATTERNS)
     # CONTROL: one plan only, so nothing is dropped and the slow sample still counts.
     assert p90 == {"Q / X (4/4)": 12.3}
     assert plans == {"Q / X (4/4)": ["today4"]}
     p90, plans = br.prefer_todays_leg(
-        {"Q / X (4/4)": 13.1}, _mixed_leg_samples(), {"Q / X (4/4)"}, _TODAY
+        {"Q / X (4/4)": 13.1}, _mixed_leg_samples(), {"Q / X (4/4)"}, _TODAY, _PLAN_PATTERNS
     )
     # Untraced is the strict side: the full p90 stays and no entry is written.
     assert p90["Q / X (4/4)"] == 13.1
@@ -3295,5 +3295,21 @@ def test_prefer_todays_leg_leaves_untraced_and_single_plan_names_alone():
 
 def test_prefer_todays_leg_refuses_a_leg_count_that_is_not_today_s():
     samples = {"Q / X (4/5)": [("today4", 6.0), ("old4", 14.0)]}
-    p90, _ = br.prefer_todays_leg({"Q / X (4/5)": 13.2}, samples, set(), _TODAY)
+    p90, _ = br.prefer_todays_leg({"Q / X (4/5)": 13.2}, samples, set(), _TODAY, _PLAN_PATTERNS)
     assert p90 == {"Q / X (4/5)": 13.2}
+
+
+def test_prefer_todays_leg_sets_aside_a_leg_with_one_run_of_today_s_plan():
+    """One run is one runner (MIN_DRIFT_RUNS): one sample of today's leg prices nothing, and the retired samples describe another leg, so the name records only the retired hash and the gate sets it aside."""
+    samples = {"Q / X (4/4)": [("today4", 5.0), ("old4", 14.8), ("old4", 13.0)]}
+    p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 14.4}, samples, set(), _TODAY, _PLAN_PATTERNS)
+    assert p90 == {"Q / X (4/4)": br.stats([14.8, 13.0])["p90"]}
+    assert plans == {"Q / X (4/4)": ["old4"]}
+
+
+def test_prefer_todays_leg_matches_only_the_name_s_own_lane():
+    """Another lane's leg 4 with the same hash is not today's leg of this name."""
+    today = {"lane-y": (4, {4: "today4"}), "lane-x": (4, {4: "x4"})}
+    samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 5.0), ("old4", 14.8)]}
+    p90, _ = br.prefer_todays_leg({"Q / X (4/4)": 13.0}, samples, set(), today, _PLAN_PATTERNS)
+    assert p90 == {"Q / X (4/4)": 13.0}

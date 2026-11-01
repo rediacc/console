@@ -1749,6 +1749,7 @@ def compute_lane_durations(
         leg_samples,
         untraced_legs,
         today_leg_hashes(tree_root, patterns),
+        patterns,
     )
     return {
         "jobs": jobs_minutes,
@@ -1774,7 +1775,7 @@ def compute_lane_durations(
     }
 
 
-# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a leg of a lane with a committed shard manifest, the leg contents its sampled jobs ran, read from each run's own head commit, so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
+# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a leg of a lane with a committed shard manifest, the leg contents its sampled jobs ran, read from each run's own head commit (narrowed to today's leg alone when `prefer_todays_leg` prices the name on today's samples), so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
 _LEG_INDEX_RE = re.compile(r"(?:\(|, )(\d+)(?:/(\d+))?\)$")
 SHARDS_DIR_REL = ".ci/config/shards"
 
@@ -1844,39 +1845,47 @@ def prefer_todays_leg(
     samples: Mapping[str, Sequence[tuple[str, float]]],
     untraced: set[str],
     today: Mapping[str, tuple[int | None, Mapping[int, str]]],
+    patterns: Mapping[str, re.Pattern[str]],
 ) -> tuple[dict[str, float], dict[str, list[str]]]:
     """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
 
-    A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now. When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone. MEASURED 2026-11-01: "Account E2E (4/4)" read 13.1m from samples 6.2, 4.9, 14.8 and 4.9, the 14.8 from run 39869882942 under the retired plan, and check-lane-budget.ts counted the mixed entry against today's leg. A name none of whose samples ran today's leg keeps every sample, so the gate's own set-aside (`measuredThisLeg`) still prints it; an untraced name keeps its p90 and gets no entry, the strict side."""
+    A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now. When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone. MEASURED 2026-11-01: "Account E2E (4/4)" read 13.1m from samples 6.2, 4.9, 14.8 and 4.9, the 14.8 from run 39869882942 under the retired plan, and check-lane-budget.ts counted the mixed entry against today's leg. A name none of whose samples ran today's leg keeps every sample, so the gate's own set-aside (`measuredThisLeg`) still prints it; a name with fewer than `MIN_DRIFT_RUNS` samples of today's leg is measured on its retired samples alone and records only their hashes, so it is set aside the same way rather than priced on one run (one run is one runner, the units' evidence rule) or on another plan's numbers. An untraced name keeps its p90 and gets no entry, the strict side."""
     p90 = dict(job_p90_minutes)
     plans = plans_from_samples(samples, untraced)
     for name, rows in samples.items():
         if name in untraced:
             continue
-        hashes = {h for h, _ in rows}
-        current = next((h for h in hashes if _is_today(name, h, today)), None)
+        hashes = sorted({h for h, _ in rows})
+        lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
+        current = next((h for h in hashes if _is_today(name, h, today.get(lane))), None)
         if current is None or len(hashes) == 1:
             continue
-        s = stats([w for h, w in rows if h == current])
+        walls = [w for h, w in rows if h == current]
+        if len(walls) < MIN_DRIFT_RUNS:
+            # Too thin to price today's leg, and the rest describes a leg that no longer ships: the name is measured on the retired samples alone and records only their hashes, so the gate sets it aside until a refresh sees enough runs of today's leg.
+            retired = [(h, w) for h, w in rows if h != current]
+            s = stats([w for _, w in retired])
+            if s is not None:
+                p90[name] = s["p90"]
+                plans[name] = sorted({h for h, _ in retired})
+            continue
+        s = stats(walls)
         if s is not None:
             p90[name] = s["p90"]
             plans[name] = [current]
     return p90, plans
 
 
-def _is_today(name: str, leg_hash: str, today: Mapping[str, tuple[int | None, Mapping[int, str]]]) -> bool:
-    """Whether `leg_hash` is the hash of the leg `name` names in any lane's manifest of today."""
+def _is_today(name: str, leg_hash: str, lane_today: tuple[int | None, Mapping[int, str]] | None) -> bool:
+    """Whether `leg_hash` is the hash of the leg `name` names in its own lane's manifest of today (`lane_today`, None when the lane has none)."""
     leg = _LEG_INDEX_RE.search(name)
-    if leg is None:
+    if leg is None or lane_today is None:
         return False
-    index = int(leg.group(1))
+    of, legs = lane_today
     of_in = leg.group(2)
-    for of, legs in today.values():
-        if of_in is not None and of is not None and int(of_in) != of:
-            continue
-        if legs.get(index) == leg_hash:
-            return True
-    return False
+    if of_in is not None and of is not None and int(of_in) != of:
+        return False
+    return legs.get(int(leg.group(1))) == leg_hash
 
 
 def traced_leg_samples(
