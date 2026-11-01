@@ -150,7 +150,17 @@ test.describe
       ]);
 
       // Create repository before running data transfer tests
-      await runner.repositoryNew(testRepo, '500M', TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
+      const created = await runner.repositoryNew(
+        testRepo,
+        '500M',
+        TEST_PASSWORD,
+        DEFAULT_DATASTORE_PATH
+      );
+      // A licence or create failure must stop here, at its cause, not surface as a stat error in the push test.
+      expect(
+        runner.isSuccess(created),
+        `repositoryNew(${testRepo}) failed with code ${created.code}: ${created.stderr || created.stdout}`
+      ).toBe(true);
 
       // Check if SSH from VM1 to VM2 is working (required for push/pull/deploy)
       try {

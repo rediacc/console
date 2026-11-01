@@ -2047,6 +2047,19 @@ class VmCheck:
                 % (self.opts.parent, self.machine, " ".join(forget_args))
             )
             forget = self.rdc(*forget_args, timeout=600)
+            if forget.rc != 0 and "is ambiguous" in rdc_failure(forget):
+                # Stale `vmc-` fork entries share the base name, so the bare name is refused (measured 2026-11-01). Forget each listed ref by its tag.
+                refs = re.findall(
+                    r"^\s+- (%s:\S+)" % re.escape(self.opts.parent),
+                    rdc_failure(forget),
+                    re.MULTILINE,
+                )
+                for ref in refs:
+                    forget = self.rdc("repo", "delete", ref, "--archive-config", "-y", timeout=600)
+                    if forget.rc != 0:
+                        break
+                else:
+                    forget = self.rdc(*forget_args, timeout=600)
             if forget.rc != 0:
                 raise NotVerifiedError(
                     "parent-grand-missing",
