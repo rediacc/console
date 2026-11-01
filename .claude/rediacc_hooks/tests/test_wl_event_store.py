@@ -594,6 +594,8 @@ DEADCODE_CONSUMERS = (
     wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "ci" / "ci-trace.py",
     wlfix.STOP_DIR.parent / "post-bash" / "review_commit.py",
     wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "plan_gate.py",
+    # `wl_review.patch_ids` is called only from the live-proof successor map, which imports it so a record's `Patch-Id:` has one spelling.
+    wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "review" / "successor.py",
 )
 
 

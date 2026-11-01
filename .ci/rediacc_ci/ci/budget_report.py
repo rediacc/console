@@ -1849,7 +1849,10 @@ def prefer_todays_leg(
 ) -> tuple[dict[str, float], dict[str, list[str]]]:
     """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
 
-    A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now. When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone. MEASURED 2026-11-01: "Account E2E (4/4)" read 13.1m from samples 6.2, 4.9, 14.8 and 4.9, the 14.8 from run 39869882942 under the retired plan, and check-lane-budget.ts counted the mixed entry against today's leg. A name none of whose samples ran today's leg keeps every sample, so the gate's own set-aside (`measuredThisLeg`) still prints it; a name with fewer than `MIN_DRIFT_RUNS` samples of today's leg is measured on its retired samples alone and records only their hashes, so it is set aside the same way rather than priced on one run (one run is one runner, the units' evidence rule) or on another plan's numbers. An untraced name keeps its p90 and gets no entry, the strict side."""
+    A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now.
+    When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone.
+    MEASURED 2026-11-01: "Account E2E (4/4)" read 13.1m from samples 6.2, 4.9, 14.8 and 4.9, the 14.8 from run 39869882942 under the retired plan, and check-lane-budget.ts counted the mixed entry against today's leg.
+    A name none of whose samples ran today's leg keeps every sample, so the gate's own set-aside (`measuredThisLeg`) still prints it; a name with fewer than `MIN_DRIFT_RUNS` samples of today's leg is measured on its retired samples alone and records only their hashes, so it is set aside the same way rather than priced on one run (one run is one runner, the units' evidence rule) or on another plan's numbers. An untraced name keeps its p90 and gets no entry, the strict side."""
     p90 = dict(job_p90_minutes)
     plans = plans_from_samples(samples, untraced)
     for name, rows in samples.items():
