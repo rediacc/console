@@ -1097,6 +1097,11 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dbs) -> dict:
     npx = bin_dir / "npx"
     npx.write_text(FAKE_NPX, encoding="utf-8")
     npx.chmod(npx.stat().st_mode | stat.S_IXUSR)
+    # `wrangler.require` proves a wrangler is reachable (local install or PATH) before it runs npx; the Pytest lane
+    # installs no workers/account node_modules, so the fake bin dir carries the PATH entry the real resolver wants.
+    stub = bin_dir / "wrangler"
+    stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
     r2 = tmp_path / "r2"
     for key, data in BLOBS.items():
         obj = r2 / "eu__rediacc-configs-eu" / key
