@@ -3270,7 +3270,11 @@ _TODAY = {"lane-x": (4, {3: "today3", 4: "today4"})}
 
 def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
     p90, plans = br.prefer_todays_leg(
-        {"Q / X (4/4)": 13.1, "Q / X (3/4)": 12.6}, _mixed_leg_samples(), set(), _TODAY, _PLAN_PATTERNS
+        {"Q / X (4/4)": 13.1, "Q / X (3/4)": 12.6},
+        _mixed_leg_samples(),
+        set(),
+        _TODAY,
+        _PLAN_PATTERNS,
     )
     assert p90["Q / X (4/4)"] == br.stats([6.2, 4.9, 4.9])["p90"]
     assert plans["Q / X (4/4)"] == ["today4"]

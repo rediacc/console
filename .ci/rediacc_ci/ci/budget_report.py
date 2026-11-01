@@ -1876,7 +1876,9 @@ def prefer_todays_leg(
     return p90, plans
 
 
-def _is_today(name: str, leg_hash: str, lane_today: tuple[int | None, Mapping[int, str]] | None) -> bool:
+def _is_today(
+    name: str, leg_hash: str, lane_today: tuple[int | None, Mapping[int, str]] | None
+) -> bool:
     """Whether `leg_hash` is the hash of the leg `name` names in its own lane's manifest of today (`lane_today`, None when the lane has none)."""
     leg = _LEG_INDEX_RE.search(name)
     if leg is None or lane_today is None:
