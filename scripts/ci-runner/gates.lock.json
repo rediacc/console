@@ -4439,6 +4439,7 @@
     "id": "check:ci-renet-test-map",
     "run": "npm run check:ci-renet-test-map",
     "gate": true,
+    "slow": true,
     "leaves": [
       "scripts/gates/check-renet-test-map.ts"
     ],
