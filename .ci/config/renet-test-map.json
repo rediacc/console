@@ -1456,7 +1456,12 @@
       "packages": [
         "pkg/testutil"
       ],
-      "dependents": []
+      "dependents": [
+        "pkg/daemon",
+        "pkg/luks",
+        "pkg/restorepath",
+        "pkg/storage"
+      ]
     },
     {
       "glob": "pkg/thinpool/**",

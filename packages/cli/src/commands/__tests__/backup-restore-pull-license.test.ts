@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 /**
  * `rdc backup restore <src> --as <name>` on the pull route mints a fresh GUID
  * (restoredIdentity), and `backup_pull` is full-tier: renet validates the
@@ -121,7 +122,7 @@ const mockIssueRepo = vi.hoisted(() => vi.fn());
 vi.mock('../../services/account/license.js', () => ({ issueRepoLicense: mockIssueRepo }));
 const mockMeasure = vi.hoisted(() => vi.fn());
 vi.mock('../../services/account/license-machine.js', () => ({
-  DEFAULT_DATASTORE: '/mnt/rediacc',
+  DEFAULT_DATASTORE: WK_DATASTORE_PATH,
   measureRepoSizeGb: mockMeasure,
 }));
 vi.mock('../../services/account/subscription-device-auth.js', () => ({

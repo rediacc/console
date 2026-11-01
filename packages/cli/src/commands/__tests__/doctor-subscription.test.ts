@@ -33,7 +33,7 @@ async function statusRow() {
   return section.checks.find((c) => c.value?.toString().startsWith('PROFESSIONAL'));
 }
 
-describe('rdc doctor subscription status', () => {
+describe('the doctor subscription status check', () => {
   beforeEach(() => {
     report.current = base('ACTIVE');
   });

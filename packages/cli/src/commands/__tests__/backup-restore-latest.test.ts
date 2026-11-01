@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 /**
  * `rdc backup restore <src> --as <name>` with no `--at` on a repo that has a
  * chunk-store lineage restores the NEWEST snapshot. It used to take the
@@ -81,7 +82,7 @@ vi.mock('../../services/executor/repo-license-context.js', () => ({
     repositoryGuid: 'g',
     grandGuid: 'g',
     kind: 'grand',
-    datastoreMount: '/mnt/rediacc',
+    datastoreMount: WK_DATASTORE_PATH,
   }),
   restoreLicenseAlreadyInstalled: vi.fn().mockResolvedValue(true),
 }));

@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 /**
  * `rdc backup restore --datastore <name>` must actually restore INTO that
  * datastore (#74).
@@ -74,7 +75,7 @@ vi.mock('../../services/executor/repo-license-context.js', () => ({
     repositoryGuid: 'g',
     grandGuid: 'g',
     kind: 'grand',
-    datastoreMount: '/mnt/rediacc',
+    datastoreMount: WK_DATASTORE_PATH,
   }),
   restoreLicenseAlreadyInstalled: vi.fn().mockResolvedValue(true),
 }));
