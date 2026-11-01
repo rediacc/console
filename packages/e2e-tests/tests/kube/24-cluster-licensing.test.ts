@@ -149,6 +149,13 @@ const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
  */
 const CLUSTER_OPS_ENV = { REDIACC_ALLOW_CLUSTER_OPS: '*' };
 
+/**
+ * Every assertion here reads the human lines (`Machine slots: 0/5`, the slot-limit message). The CLI
+ * answers JSON on a non-TTY stdout, which a Playwright run always has, and prints those lines only as
+ * a table, so the suite pins the table format the way the drills do. An explicit `-o json` still wins.
+ */
+const TABLE_OUTPUT_ENV = { REDIACC_DEFAULT_OUTPUT: 'table' };
+
 /** The verbatim fragment `errors.agent.clusterOpBlocked` opens with. */
 const POLICY_BLOCKED = 'is blocked in agent mode';
 
@@ -265,7 +272,7 @@ test.describe
         cli = CliRunner.create({
           configName: CFG,
           // Issuance and recovery are always enforced, which is the behaviour under test.
-          env: { ...CLUSTER_OPS_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
+          env: { ...CLUSTER_OPS_ENV, ...TABLE_OUTPUT_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
         });
         await cli.initConfig(SSH_KEY);
         const login = await cli.run([
@@ -444,7 +451,7 @@ test.describe
         await CliRunner.resetConfig(CFG);
         cli = CliRunner.create({
           configName: CFG,
-          env: { ...CLUSTER_OPS_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
+          env: { ...CLUSTER_OPS_ENV, ...TABLE_OUTPUT_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
         });
         await cli.initConfig(SSH_KEY);
         await cli.addMachine(M1, `${NET}.${workers[0]}`, process.env.USER ?? 'root');

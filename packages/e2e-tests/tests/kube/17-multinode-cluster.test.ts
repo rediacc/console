@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { installRepoLicence } from '../../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 import type { ExecResult } from '../../src/utils/renet-functions/types';
 
@@ -41,7 +42,8 @@ const DATA_DS = 'mnshop';
 const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
 // Timestamped per run so parallel/consecutive runs never collide — except under KEEP, where the whole point is finding the SAME pool again next run.
 const POOL = KEEP ? 'mnkeep' : `mn${Date.now().toString(36)}`;
-const REPO = 'shop';
+// A fixed GUID, not a name: renet licenses a repository by its name and the account server signs UUIDs only (src/utils/licence.ts). The namespace mirrors the name, and a GUID is a valid namespace label.
+const REPO = '5c0b15a0-1717-4a17-8a17-000000000001';
 const REPO_NET = '3200';
 const NS = REPO;
 const SC = `rediacc-ds-${DATA_DS}`;
@@ -417,6 +419,15 @@ test.describe
         )
       ).toBe(true);
       await writeRepoFolder();
+      // `repository up` keeps the full licence tier, and the test-mode executor no longer skips it.
+      const grandLicence = await installRepoLicence(w1.executeViaBridge.bind(w1), {
+        repositoryGuid: REPO,
+        kind: 'grand',
+        datastorePath: DATA_MOUNT,
+      });
+      expect(grandLicence.code, `grand licence: ${grandLicence.stdout}${grandLicence.stderr}`).toBe(
+        0
+      );
 
       // repository up (kube arm) — replaces the deleted `kube apply --ceph-pool`
       // + kube_namespace_create: ApplyIsolation → ProvisionVolumes → InjectSecrets

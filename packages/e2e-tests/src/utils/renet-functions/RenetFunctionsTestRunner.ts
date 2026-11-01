@@ -235,18 +235,32 @@ export class RenetFunctionsTestRunner {
     Promise<ExecResult & { guid: string }>
   >();
 
-  private async licenseCephRepository(
+  private licenseCephRepository(
     datastorePath: string | undefined,
     datastore: string
   ): Promise<ExecResult & { guid: string }> {
-    const guid = e2eRepoGuid();
+    // Every tiered Ceph function but ceph_image_create size-checks the repository image before it runs, and the runner cannot know which comes first, so the stand-in image is made up front.
+    return this.licenseRepository(e2eRepoGuid(), { datastorePath, datastore });
+  }
+
+  /**
+   * License a repository GUID on the target and give it a sparse stand-in image, so a tiered
+   * `renet functions once` call naming it passes the executor's licence gate and its image-size
+   * preflight (`<datastore>/repositories/<guid>`). For suites that drive a function against a
+   * network or datastore without ever creating a real repository (GPU grants).
+   */
+  async licenseRepository(
+    guid: string = e2eRepoGuid(),
+    opts: { datastorePath?: string; datastore?: string } = {}
+  ): Promise<ExecResult & { guid: string }> {
+    const datastore = opts.datastore ?? opts.datastorePath ?? DEFAULT_DATASTORE_PATH;
     const licence = await installRepoLicence(this.executeViaBridge.bind(this), {
       repositoryGuid: guid,
       kind: 'grand',
-      datastorePath,
+      datastorePath: opts.datastorePath,
     });
     if (licence.code !== 0) return { ...licence, guid };
-    // Every tiered Ceph function but ceph_image_create size-checks the repository image before it runs, and the runner cannot know which comes first, so the sparse stand-in is made up front. Never over an existing file: `truncate` would shrink it.
+    // Never over an existing file: `truncate` would shrink it.
     const image = `${datastore}/repositories/${guid}`;
     const stub = await this.executeViaBridge(
       `sudo mkdir -p ${datastore}/repositories && (sudo test -e ${image} || sudo truncate -s 1G ${image})`

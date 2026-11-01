@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -28,6 +29,8 @@ const KIND = `${WK_INFRA_DOMAIN}/e2e`;
 const DEVICE = `${KIND}=one`;
 // Every output this suite reads is lowercased (getCombinedOutput), so needles are too.
 const DEVICE_LC = DEVICE.toLowerCase();
+// repository_gpu_grant keeps the operate licence tier, so the call names a licensed repository.
+const REPO = e2eRepoGuid();
 const SPEC_PATH = `/etc/cdi/rediacc-e2e-${RUN_ID}.yaml`;
 const SPEC = [
   'cdiVersion: "0.6.0"',
@@ -52,7 +55,7 @@ test.describe
   .serial('GPU device grants @bridge', () => {
     let runner: RenetFunctionsTestRunner;
     const once = (fn: string, extra = '') =>
-      `sudo renet functions once --test-mode --function ${fn} --network-id ${NETWORK_ID}${extra}`;
+      `sudo renet functions once --test-mode --function ${fn} --network-id ${NETWORK_ID} --repository ${REPO}${extra}`;
     const listCmd = 'sudo renet functions once --test-mode --function machine_gpu_list';
 
     test.beforeAll(async () => {
@@ -62,6 +65,8 @@ test.describe
         `sudo mkdir -p /etc/cdi && echo ${b64} | base64 -d | sudo tee ${SPEC_PATH} >/dev/null`
       );
       expect(runner.isSuccess(written), runner.getCombinedOutput(written)).toBe(true);
+      const licensed = await runner.licenseRepository(REPO);
+      expect(runner.isSuccess(licensed), runner.getCombinedOutput(licensed)).toBe(true);
     });
 
     test.afterAll(async () => {
