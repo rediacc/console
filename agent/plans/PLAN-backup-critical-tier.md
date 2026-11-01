@@ -321,6 +321,8 @@ Break-even: one 4 MiB chunk over a 7-day wait costs about $0.0000137 in storage,
 - **Erasure:** `D` is clamped to 30 days and the `+7` wait applies, so a data-subject erasure finishes inside about 37 days unless a root-only path shortens it (decision O7). Lawyers must confirm the "one month" position.
 - **Quota:** tombstones stay charged, so `D` is not free storage. The churn cap is unaffected.
 
+**Corrections from the 2026-11-01 review.** A bucket lock also has a third type, retain until a date. A lock is removable at once by whoever holds bucket configuration rights, and no compliance mode is documented. The account Worker's `ACCOUNT_BACKUP_S3_*` token can delete, and the deploy credential can replace the Worker, so a vault in the same Cloudflare account does not stop a hostile deploy.
+
 **What this cannot defend against, plainly:**
 - Compromise of the Cloudflare account, R2 credentials or the delete-capable Worker secret, or Cloudflare deleting the bucket.
 - A malicious or compromised Rediacc server, or a direct D1 write.
@@ -417,6 +419,11 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/src/services/notification.service.ts, private/account/src/email/templates/security.ts, private/account/tests/integration/backup-target-alerts.test.ts
   - Tests: a hung run with no report alerts through the dead-man path; a `throttled` run names the cap; a repeat inside 6 hours sends nothing; a recovered stream clears `missed_since`; a stream with no target stays on the daily digest; the preference off suppresses both.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-target-alerts.test.ts tests/integration/backup-alerts.test.ts` rc 0.
+
+- [ ] M10: The age anchor: each stream always keeps one snapshot older than `D`, so a flood of new versions or backed-up ransomware cannot age every good version out inside the window, and routine pruning cannot bypass delayed destruction.
+  - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-age-anchor.test.ts
+  - Tests: a 5-minute flood across a `D=7` window leaves a snapshot older than `D` restorable (the headline control); a stream younger than `D` keeps its oldest; the preview names `age-anchor`; `D=0` keeps no extra snapshot.
+  - Accept: `cd private/account && npx vitest run tests/integration/backup-age-anchor.test.ts` rc 0.
 
 ### Q: account storage, routes and schema (writer Q)
 
@@ -592,6 +599,11 @@ Every J box uses the released `rdc` and its released renet. No original repo is 
 5. J1, then J2 to J6.
 
 No target is enabled before step 4, because the old account's daily sweep would hit the wedge this plan removes, and its quota still charges waiting bytes.
+
+## Operator rulings on the decisions below, 2026-11-01
+
+- O2: waiting above 2 x quota refuses a grant on a stream whose last commit is under 60 minutes old, as recommended.
+- O4: delayed destruction at 7 days ships in this plan, with the age anchor of box M10, and it is described as delayed deletion, never as immutable, until the separate vault plan lands. That vault plan (a dedicated Cloudflare account holding the buckets and the only delete right) is written next and does not ride this PR.
 
 ## Decisions that belong to the operator
 

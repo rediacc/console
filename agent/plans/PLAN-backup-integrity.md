@@ -386,6 +386,11 @@ Every H box uses the released `rdc` and its released renet. Mutating steps run o
 
 **Closes only after the merge:** B1, B2, H1 to H9, LP-bench, LP-hostinger. Everything else closes before it. The PR's merge rule therefore needs an `Operational-Reason:` naming these boxes or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
 
+## Operator rulings on the decisions below, 2026-11-01
+
+- O1: the lead creates the R2 probe bucket through the Cloudflare API with the authorized credentials, and says so if they do not allow it.
+- O2: a restore the passphrase cannot open is refused and the staged file kept, with `--allow-unopenable`, as recommended.
+
 ## Decisions that belong to the operator
 
 - **O1. R2 proof bucket.** Tier D says the operator creates the bucket, and drills refuse a name without probe, test, scratch or bench. Recommended: create `rediacc-backups-probe` in the eu jurisdiction with an expiry lifecycle rule, used by P3 only.
