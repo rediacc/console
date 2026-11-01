@@ -1857,7 +1857,8 @@ def prefer_todays_leg(
             continue
         hashes = sorted({h for h, _ in rows})
         lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
-        current = next((h for h in hashes if _is_today(name, h, today.get(lane))), None)
+        lane_today = today.get(lane) if lane is not None else None
+        current = next((h for h in hashes if _is_today(name, h, lane_today)), None)
         if current is None or len(hashes) == 1:
             continue
         walls = [w for h, w in rows if h == current]

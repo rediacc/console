@@ -3276,7 +3276,9 @@ def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
         _TODAY,
         _PLAN_PATTERNS,
     )
-    assert p90["Q / X (4/4)"] == br.stats([6.2, 4.9, 4.9])["p90"]
+    expected = br.stats([6.2, 4.9, 4.9])
+    assert expected is not None
+    assert p90["Q / X (4/4)"] == expected["p90"]
     assert plans["Q / X (4/4)"] == ["today4"]
     # CONTROL: a leg none of whose samples ran today's leg keeps its p90 and its retired hash, so check-lane-budget.ts still sets it aside and prints it.
     assert p90["Q / X (3/4)"] == 12.6
@@ -3307,7 +3309,9 @@ def test_prefer_todays_leg_sets_aside_a_leg_with_one_run_of_today_s_plan():
     """One run is one runner (MIN_DRIFT_RUNS): one sample of today's leg prices nothing, and the retired samples describe another leg, so the name records only the retired hash and the gate sets it aside."""
     samples = {"Q / X (4/4)": [("today4", 5.0), ("old4", 14.8), ("old4", 13.0)]}
     p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 14.4}, samples, set(), _TODAY, _PLAN_PATTERNS)
-    assert p90 == {"Q / X (4/4)": br.stats([14.8, 13.0])["p90"]}
+    expected = br.stats([14.8, 13.0])
+    assert expected is not None
+    assert p90 == {"Q / X (4/4)": expected["p90"]}
     assert plans == {"Q / X (4/4)": ["old4"]}
 
 
