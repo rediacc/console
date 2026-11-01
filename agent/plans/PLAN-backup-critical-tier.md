@@ -313,7 +313,7 @@ Break-even: one 4 MiB chunk over a 7-day wait costs about $0.0000137 in storage,
 - Each of these sends an immediate notification to the owner and admins, not the daily digest.
 
 **Interplay:**
-- **Routine pruning** continues under the policy in force. "Immutable" therefore means: whatever the policy in force `D` days ago would keep cannot be removed sooner than `D` days.
+- **Routine pruning** continues under the policy in force. Delayed deletion therefore means: whatever the policy in force `D` days ago would keep cannot be removed sooner than `D` days.
 - **Waiting pool:** tombstoned rows are roots, so their chunks stay live and charged until final, and only then go through the 7-day wait. Total delay from delete request to bytes gone is `D + 7`.
 - **Repair (sibling G5):** exempt, since it deletes only an object that a rehash proves corrupt in the same call. It is logged and alerted.
 - **Collapse:** exempt, since it preserves the materialized view; a test holds this, and the sibling's G3 holds the root unchanged.
@@ -322,6 +322,8 @@ Break-even: one 4 MiB chunk over a 7-day wait costs about $0.0000137 in storage,
 - **Quota:** tombstones stay charged, so `D` is not free storage. The churn cap is unaffected.
 
 **Corrections from the 2026-11-01 review.** A bucket lock also has a third type, retain until a date. A lock is removable at once by whoever holds bucket configuration rights, and no compliance mode is documented. The account Worker's `ACCOUNT_BACKUP_S3_*` token can delete, and the deploy credential can replace the Worker, so a vault in the same Cloudflare account does not stop a hostile deploy.
+
+**The age anchor and erasure.** M10's anchor binds routine retention only. A lineage purge or a data-subject erasure removes the anchor too, under the delays above, so the erasure bound stands.
 
 **What this cannot defend against, plainly:**
 - Compromise of the Cloudflare account, R2 credentials or the delete-capable Worker secret, or Cloudflare deleting the bucket.

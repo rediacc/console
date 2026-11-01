@@ -101,7 +101,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-settings-set-verb.md -- 3 of 4 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/PLAN-free-license.md -- 4 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (2 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1754 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1756 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
 - Writers: 0 live of writer_cap 25 (session 45048a90).
 - Leased items: 6: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:2114953, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
