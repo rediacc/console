@@ -19,6 +19,8 @@ const { push, storage, mockService } = vi.hoisted(() => ({
 
 vi.mock('../../adapters/config-file-storage.js', () => ({ configFileStorage: storage }));
 vi.mock('../../services/config/config-resources.js', () => ({ configService: mockService }));
+// `config remote status` asks for the device's secure storage; the host's keyring is not what this test is about, and a CI runner may have none.
+vi.mock('../../utils/secure-storage.js', () => ({ getSecureStorage: () => ({}) }));
 vi.mock('../../services/core/output.js', () => ({
   outputService: { print: vi.fn(), info: vi.fn(), error: vi.fn(), warn: vi.fn(), success: vi.fn() },
 }));
