@@ -256,6 +256,8 @@ jobs:
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'
+      - name: Install the pinned OpenTofu for the CLI tofu tests
+        run: npx tsx packages/cli/scripts/install-pinned-tofu.ts
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
 
   # The ONE job here that stages renet's embed assets on a cache miss; every job
