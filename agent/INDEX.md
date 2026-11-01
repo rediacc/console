@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 727 | 53 | 0 | 90520 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 47 | 4 | 5 | 8795 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 438 | 57 | 0 | 62813 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 455 | 42 | 15 | 66800 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 454 | 5 | 9 | 57248 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 262 | 4 | 4 | 33056 |
@@ -588,7 +588,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
 | `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42868 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
-| `agent/plans/PLAN-stop-hook-retro-20261101.md` | ready | 174 | 4 | 0 | 16155 |
+| `agent/plans/PLAN-stop-hook-retro-20261101.md` | ready | 174 | 4 | 0 | 16563 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | proposed | 109 | 8 | 0 | 18747 |
@@ -726,18 +726,3 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
 260 plan(s), 196 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
-
-## Expired plans
-
-A plan whose retention ran out. The FILE is gone and the full text is the blob below, which is content-addressed and survives the rebase this repository merges with. Revive one with `check_plan_folders.py --plan-revive <path>`.
-
-| Plan | Title | First seen | Expired | Full-Text-Blob |
-|---|---|---|---|---|
-| `agent/plans/_done/PLAN-consolidate-test-scaffolding.md` | Consolidate the duplicated gate-test scaffolding | 2026-09-17 | 2026-11-01 | `0fd1cf4c17978f6358d3d873171473e8bde67429` |
-| `agent/plans/_done/PLAN-hook-inventory-warn-guards.md` | PLAN: warn-* guards are outside the inventory that exists to keep guards alive | 2026-09-17 | 2026-11-01 | `7cba65c24ea65ebe479573d4b15d3ba04980dc4c` |
-| `agent/plans/_done/PLAN-json-prose-scope-audit.md` | PLAN: bring .ci/config and .ci/policy JSON into the prose-style gate's scope | 2026-09-17 | 2026-11-01 | `9295793531d71fd6641318b9053204a7988183df` |
-| `agent/plans/_done/PLAN-local-ci-gate-prerequisites.md` | PLAN: two gates read packages/www/dist and never said so | 2026-09-17 | 2026-11-01 | `4512b1985ad5f9c1f015d7efd17d8adfe4ebeda0` |
-| `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | PLAN: fold a docstring's opening/closing physical line into reflow correctly | 2026-09-20 | 2026-11-01 | `4501f26f58bbd7c1a8b52fa09e36e7fe52e49e0b` |
-| `agent/plans/_done/PLAN-subscription-status-error-swallowing.md` | PLAN: `subscription status` swallows account-server errors and exits 0 silently | 2026-09-17 | 2026-11-01 | `8ed029f8fdf81a64e79f8b2f57e6a946748de9ce` |
-
-6 expired plan(s). The row is the receipt; the blob is the text.

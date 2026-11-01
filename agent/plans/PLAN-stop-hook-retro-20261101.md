@@ -15,9 +15,9 @@ Counts for the window:
   - Each row has `named: []` and `judge: {}`, so there were 0 continue, 0 sweep and 0 proof flags.
 - **Third block not readable:** only the first two blocks are in the transcript range. The `wake-timer` block at 19:54:37Z is after the last record (19:45:02Z), so it has no transcript evidence here and is not analysed. The next band should cover it.
 - **Hint proposals, judge verdicts:** none.
-- **Admissions:** 1 row, `damage-verb`, `ts` 18:24:34Z, sig 380ce0206ba13f32.
-  - **Span:** it quotes "I deleted only `mail-verify`...". The only transcript occurrence is the lead's final message at 17:34:28Z, line 3744, offset 8677663.
-  - **No block, no cost:** that sentence reports the lead cleaning up its own temporary restore repo. The ledger timestamp is 50 minutes after the message, so I could not tie the row to a stop. It is ledger-only, produced by Tier R with no model call, and is not ranked.
+- **Admissions:** 1 row, `damage-verb`, `ts` 18:24:34Z.
+  - **Span:** it quotes the lead reporting the deletion of `mail-verify`. The only transcript occurrence is the lead's final message at 17:34:28Z, line 3744, offset 8677663.
+  - **No block, no cost:** that sentence reports the lead cleaning up its own temporary restore repo. The ledger timestamp is 50 minutes after the message, so the row could not be tied to a stop. It is ledger-only, produced by Tier R with no model call, and is not ranked.
 - **Refused `--tick` calls:** 9 rows in `home_developer_console.tick-refusals-45048a90.jsonl`, 5 `no-evidence` and 4 `no-commit-ref`. They fall on three items:
   - #6c84ff1f: rows at 15:45:56, 15:46:05 and 15:47:21.
   - #6c63dfb8: rows at 16:53:26, 16:53:37, 16:53:38, 16:53:48 and 16:58:33.
@@ -32,14 +32,14 @@ Counts for the window:
   - The lead re-leased it to the live measuring run in one call (line 1813, offset 4778232) and finished its turn 13 s after the block (line 1817, offset 4784501).
   - The block was correct and cost 1 call.
 - **The #6c84ff1f refusals were right in outcome.** The lead tried to tick it as an investigation with no fix. A fix then landed as 6fdce7c9, and the tick with `commit:6fdce7c9` was accepted at 15:58:36Z (line 3115, offset 7259344).
-- **The #51d75260 `no-evidence` row at 16:53:50Z was correct.** It cited `ASKED:2026-11-01T16:13Z`. The AskUserQuestion answers in this range are at 16:42:40, 16:47:36 and 16:51:14 and later (lines 3186, 3220 and 3262), none within 300 s of 16:13. `wl_checks.py:301` (`ASKED_WINDOW_S = 300`) did its job.
+- **The #51d75260 `no-evidence` row at 16:53:50Z was correct.** It cited `ASKED:2026-11-01T16:13Z`. The AskUserQuestion answers in this range are at 16:42:40, 16:47:36 and 16:51:14 and later (lines 3186, 3220 and 3262), none within 300 s of 16:13. `.claude/hooks/stop/wl_checks.py:301` (`ASKED_WINDOW_S = 300`) did its job.
 
 ## Ranking by cost to the session
 
 | Rank | Point | Count in this window | Turns lost | Already fixed by? |
 |---|---|---|---|---|
 | 1 | #1: the two tick gates are serial, and the first refusal does not name the second | 9 refusal rows (5 no-evidence, 4 no-commit-ref) across 3 items, in 7 tool calls | about 4 calls whose main purpose was the retry, 0 blocked stops, and 5 min 19 s from first refusal to tick on #6c63dfb8 | **R20260924.21 held** (the `ASKED:` hint appeared at 16:53:37), but it only helps the first gate |
-| 2 | #2: a decision-only tick has no honest commit reason, so the lead attached an unrelated HEAD | 4 of the 9 rows (16:53:38, 16:53:48, 16:53:50 and 16:58:33), and 2 ticks closed on `commit:<HEAD> decision only` (line 3328) | 2 retries, and the 2 closing ticks cite a commit that holds none of the work | No |
+| 2 | #2: a decision-only tick has no honest commit reason, so the lead attached an unrelated HEAD | 4 of the 9 rows: the no-commit-ref rows at 16:53:38, 16:53:48 and 16:58:33, and the no-evidence row at 16:53:50; and 2 ticks closed on `commit:<HEAD> decision only` (line 3328) | 2 retries, and the 2 closing ticks cite a commit that holds none of the work | No |
 | 3 | #3: `--state` reports one shape verdict per attempt | 4 refusals in 20 s: no-dir, unfocused, bloated by 320 chars, bloated by 4 chars | 4 extra calls, at the moment the context was nearly full | No |
 | 4 | #4: the unread-reports block does not say how to list or mark the reports | 1 block, 4 calls (2 of them dead ends), 27 s | 1 turn | No |
 
@@ -59,9 +59,9 @@ Counts for the window:
 - **The lead's pipes hid the refusal text.** The calls ended in `| tail -1 | cut -c1-60` or `cut -c1-80`, so the lead mostly saw only the last line. In `CLI_TICK_NO_COMMIT_REF` the last line is the usage template `'commit:<sha> <evidence>'`, and the vocabulary sits on line 1 and 2. That is why the same wrong reason was sent again after 5 minutes.
 
 **Root cause.**
-- `.claude/hooks/stop/worklist.py:1518-1530`: the `--tick` arm tests `CK.completion_evidence` first and dies with `M.CLI_TICK_NO_EVIDENCE`. It reaches `commit_ref_problem` (`worklist.py:1269`) only after that gate passes. A refusal therefore reveals one gate at a time.
+- `.claude/hooks/stop/worklist.py:1518-1530`: the `--tick` arm tests `CK.completion_evidence` first and dies with `M.CLI_TICK_NO_EVIDENCE`. It reaches `commit_ref_problem` (`.claude/hooks/stop/worklist.py:1269`) only after that gate passes. A refusal therefore reveals one gate at a time.
 - `.claude/hooks/stop/worklist_messages.py:1653-1667`: `CLI_TICK_NO_EVIDENCE` lists seven accepted evidence shapes and never mentions `commit:` or `nocommit:`.
-- `worklist.py:1256-1262`: `CLI_TICK_NO_COMMIT_REF` puts the reason vocabulary in its first two lines and a bare template on the last line.
+- `.claude/hooks/stop/worklist.py:1256-1262`: `CLI_TICK_NO_COMMIT_REF` puts the reason vocabulary in its first two lines and a bare template on the last line.
 - R20260924.8 and R20260924.21 added the evidence shapes and the ASKED hint, but only to the first gate.
 
 **Fix.**
@@ -76,12 +76,12 @@ Counts for the window:
 - #6c63dfb8 and #51d75260 record operator /ask decisions, and the follow-up work is tracked as #11c0d336. There is nothing to commit for them.
 - None of `no-tracked-change`, `research` and `operator-deferred` describes "the operator decided, the work is tracked elsewhere". The lead tried `nocommit:operator` twice (16:53:48 and 16:58:33), and `nocommit:recorded` once on #51d75260 (line 3298).
 - It closed both at 16:58:45Z (line 3328, offset 7673292) with `commit:$h decision only`, where `$h` is `git rev-parse --short HEAD`. That was the unrelated commit ccb55d69a, "point renet at 43f0795".
-- The commit gate is documented as shape-only (`worklist.py:1250`, "Shape-only beside the door gate"), so a decorative sha passes.
+- The commit gate is documented as shape-only (`.claude/hooks/stop/worklist.py:1250`, "Shape-only beside the door gate"), so a decorative sha passes.
 - The evidence for these ticks, a verified `ASKED:` minute, is already stronger than the commit reference.
 
 **Root cause.**
-- `worklist.py:1254`: `NOCOMMIT_REASONS` has three entries and none covers an operator ruling.
-- `worklist.py:1281-1285` (`commit_ref_problem`): a named `door:` stands in for the commit reference, but a verified `ASKED:` does not, although `wl_checks._asked_in_transcript` (`wl_checks.py:363`) already verifies it.
+- `.claude/hooks/stop/worklist.py:1254`: `NOCOMMIT_REASONS` has three entries and none covers an operator ruling.
+- `.claude/hooks/stop/worklist.py:1281-1285` (`commit_ref_problem`): a named `door:` stands in for the commit reference, but a verified `ASKED:` does not, although `wl_checks._asked_in_transcript` (`.claude/hooks/stop/wl_checks.py:363`) already verifies it.
 
 **Fix.** Let an `ASKED:` that `_asked_in_transcript` verifies stand in for the commit reference, the way a named door does. A malformed or unmatched ASKED still fails the evidence gate as before. Do not add a free-text reason.
 
@@ -103,14 +103,14 @@ The write was accepted at 19:40:54 (line 4356, offset 10487797). The body had th
 **Fix.**
 - Add `agent_state_problems(body)` that returns every failing verdict.
 - Have `--state` print all of them, with the number of characters over the cap.
-- Keep `agent_state_shape` returning the first verdict, because `wl_store.py:2805` and the guard use it.
-- Leave the no-dir refusal as it is. `--state` NEVER creating the directory is a deliberate rule (`worklist_messages.py:938`), but the refusal can sit in the same list.
+- Keep `agent_state_shape` returning the first verdict, because `.claude/hooks/stop/wl_store.py:2805` and the guard use it.
+- Leave the no-dir refusal as it is. `--state` NEVER creating the directory is a deliberate rule (`.claude/hooks/stop/worklist_messages.py:938`), but the refusal can sit in the same list.
 
 ## 4. The unread-reports block does not say how to list or mark the reports
 
 **What happened.**
 - At 13:23:51Z the Stop hook blocked on 18 unread reports (line 1262, offset 3782580). All 18 were captured by the predecessor session d778be9d, 3.4 to 18.6 h before the stop. The report store shows 1201 of the 1211 reports on branch 1023-1 since 2026-10-23 are d778be9d's.
-- All 18 were under the 24 h `_foreign_and_stale` cut (`wl_report.py:317`), so the block was correct. Opening a session on a predecessor's unread reports is the documented design.
+- All 18 were under the 24 h `_foreign_and_stale` cut (`.claude/hooks/stop/wl_report.py:317`), so the block was correct. Opening a session on a predecessor's unread reports is the documented design.
 - The cost was in finding the commands:
   - Line 1274 (offset 3808518): `wl_report.py --help` answered `unknown mode --help`.
   - Line 1280 (offset 3839096): `wl_report.py --unread` answered `unknown mode --unread`.
@@ -119,14 +119,14 @@ The write was accepted at 19:40:54 (line 4356, offset 10487797). The body had th
 - The lead read 3 of the 18 bodies, `head -25` each, and judged the others from their one-line titles (its message at line 1299, offset 3871255). That took 27 s and 4 calls.
 
 **Root cause.**
-- `worklist_messages.py:606-614` (`N_UNREAD_REPORTS`) gives `--show <id>` and `--read <me> <id>...` but not the listing command.
-- `wl_checks.py:5158` writes `(%d older not shown)` with no command. The sibling text at `wl_report.py:691` does say `--list --unread for all`.
-- `wl_report.py:1233` answers an unknown mode with one line and no usage. The usage line (`wl_report.py:1029-1038`) prints only when there are no arguments.
-- `worklist.py:3282-3291` already has a `--reports` shortcut that lists unread reports, and the message never names it.
+- `.claude/hooks/stop/worklist_messages.py:606-614` (`N_UNREAD_REPORTS`) gives `--show <id>` and `--read <me> <id>...` but not the listing command.
+- `.claude/hooks/stop/wl_checks.py:5158` writes `(%d older not shown)` with no command. The sibling text at `.claude/hooks/stop/wl_report.py:691` does say `--list --unread for all`.
+- `.claude/hooks/stop/wl_report.py:1233` answers an unknown mode with one line and no usage. The usage line (`.claude/hooks/stop/wl_report.py:1029-1038`) prints only when there are no arguments.
+- `.claude/hooks/stop/worklist.py:3282-3291` already has a `--reports` shortcut that lists unread reports, and the message never names it.
 
 **Fix.**
 - Add `list unread: worklist.py --reports` to `N_UNREAD_REPORTS`.
-- Add the same command to the `older not shown` line at `wl_checks.py:5158`.
+- Add the same command to the `older not shown` line at `.claude/hooks/stop/wl_checks.py:5158`.
 - Make an unknown mode in `wl_report.py` print the usage line.
 
 ## Decisions
@@ -134,7 +134,7 @@ The write was accepted at 19:40:54 (line 4356, offset 10487797). The body had th
 - **R20261101.1 (both gates in one refusal).**
   - DEFAULT: both gates are evaluated and named together, and the final line carries both forms.
   - WHY: 9 ticks were refused on 3 items. The hook behaved as designed on every one, but each refusal showed only the next gate.
-  - HOW: restructure the `worklist.py:1518-1530` block, and edit the two messages in `worklist_messages.py` and `worklist.py:1256`.
+  - HOW: restructure the `.claude/hooks/stop/worklist.py:1518-1530` block, and edit the two messages in `worklist_messages.py` and `.claude/hooks/stop/worklist.py:1256`.
 - **R20261101.2 (verified ASKED stands in for the commit reference).**
   - DEFAULT: it stands in, but only for ASKED text that `_asked_in_transcript` verifies.
   - WHY: otherwise a decision-only tick must cite an unrelated commit, which is worse evidence than the operator's answer. Adding a reason such as `nocommit:decision` would accept free assertion, so it is not proposed.

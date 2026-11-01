@@ -50,6 +50,8 @@ Each finding below was checked against the code on 2026-11-01. F1 to F13 are the
 | `proven` | `rdc backup check` test-open and one-file restore, or restore test | the passphrase opens real content |
 | `failed` | spot, deep or store failure | do not rely on it |
 
+A `failed` verdict sticks until a passing check that read what it was about: `full` or `deep` clears `spot`, `full` and `deep`; `store` clears those and `store`; `test-open` clears `test-open`; `restore-test` clears anything; `spot` clears nothing, since it samples other cells. `verificationClearsFailure` (private/account/src/services/backup-gc.service.ts) holds the table, and a new snapshot starts `unverified`. A machine session records only `spot`, `full` or `deep`.
+
 Retention keeps, per stream, the positional floor plus the newest `verified` and the newest `proven` that are not `failed`. That adds at most two snapshots per stream. Attestation can only keep more data, never less, so a machine session's report cannot cause loss, and the kept bytes stay billed.
 
 ### D-wire. Wire shapes, fixed here
@@ -161,30 +163,36 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### A: account core (writer A)
 
-- [ ] A1: Migration 0073 and schema: `backup_manifests` gains `verification_state` (NOT NULL default `unverified`), `verification_level`, `verified_at`, `luks_uuid`, `luks_key_digest`, `cells_root`, `index_regressed`; `backup_sessions` gains `repository_guid`; `backup_lineage_usage` gains `store_verify_cursor`, `store_verify_started_at`, `store_verify_failures`, `sample_cursor`; a new table `backup_stream_status` holds stream id, last run at, status and reason, next expected at, last verify at and status. None of these writes moves the lineage `updatedAt` chunk GC compares.
+- [x] A1: Migration 0073 and schema: `backup_manifests` gains `verification_state` (NOT NULL default `unverified`), `verification_level`, `verified_at`, `luks_uuid`, `luks_key_digest`, `cells_root`, `index_regressed`; `backup_sessions` gains `repository_guid`; `backup_lineage_usage` gains `store_verify_cursor`, `store_verify_started_at`, `store_verify_failures`, `sample_cursor`; a new table `backup_stream_status` holds stream id, last run at, status and reason, next expected at, last verify at and status. None of these writes moves the lineage `updatedAt` chunk GC compares.
   - Owns: private/account/drizzle/0073_backup_integrity.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/tests/integration/backup-integrity-schema.test.ts
   - Test: `backup-integrity-schema.test.ts` applies every migration and asserts the columns and the default on a row inserted before 0073.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-integrity-schema.test.ts && npm run typecheck` rc 0. The clone check runs in CD (`rediacc_ci.deploy.test_d1_migrations`); P4 records it.
-- [ ] A2: Bind session, stream and manifest at commit (F2), per D-identity.
+    (ticked) 2026-11-01T21:46:28Z by 45048a90: commit:private/account 239521c and 7aaddb9. Each new test recorded rc 1 before its fix in the writer report; the lead reran account vitest, 3212 of 3212 rc=0.
+- [x] A2: Bind session, stream and manifest at commit (F2), per D-identity.
   - Owns: private/account/src/dto/backup.dto.ts, private/account/src/errors.ts, private/account/src/services/backup-storage.service.ts, private/account/src/routes/backups.ts, private/account/tests/integration/backup-commit-binding.test.ts
   - Tests: another repository's guid on `/streams`; a commit naming another machine's stream; a manifest whose `imageBytes` differs from `totalBytes`; a changed LUKS digest refused and then accepted with `identityChangeAccepted`, with the accepted case requiring no parent; `previous` returned; `chunksAlreadyPresent` above 0 sets `reconcile_due_at`.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-commit-binding.test.ts tests/integration/backup-storage.test.ts tests/integration/backup-lifecycle.test.ts` rc 0.
-- [ ] A3: Reports and verification routes (F1, F9), and `hasIndex` flip detection at commit, comparing with the stream's previous row. The commit response carries `indexRegressed`.
+    (ticked) 2026-11-01T21:46:31Z by 45048a90: commit:private/account 239521c and 7aaddb9. Each new test recorded rc 1 before its fix in the writer report; the lead reran account vitest, 3212 of 3212 rc=0.
+- [x] A3: Reports and verification routes (F1, F9), and `hasIndex` flip detection at commit, comparing with the stream's previous row. The commit response carries `indexRegressed`.
   - Owns: as A2, plus private/account/tests/integration/backup-reports.test.ts
   - Tests: a report naming another stream refused; `failed` then `verified` state moves; a restore session refused; a flip logs `backup_index_regressed` and sets the column, with a control that 0 to 0 does not.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-reports.test.ts` rc 0.
-- [ ] A4: Repair route per D-repair and D-wire, delegating to G5's `repairChunks`.
+    (ticked) 2026-11-01T21:46:34Z by 45048a90: commit:private/account 239521c and 7aaddb9. Each new test recorded rc 1 before its fix in the writer report; the lead reran account vitest, 3212 of 3212 rc=0.
+- [x] A4: Repair route per D-repair and D-wire, delegating to G5's `repairChunks`.
   - Owns: private/account/src/routes/backups.ts, private/account/tests/integration/backup-repair-route.test.ts
   - Tests: scope refusal for a read token, 404 outside team scope, `dryRun` writes nothing.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-repair-route.test.ts` rc 0.
-- [ ] A5: The envelope refusal tells the truth (F13): a request with no header says this rdc predates `x-config-envelope`, which first ships in the release after 2.4.0, and it stops citing the 1.4.0 write version. The status and code stay the same, and no server compatibility is added.
+    (ticked) 2026-11-01T21:46:36Z by 45048a90: commit:private/account 239521c and 7aaddb9. Each new test recorded rc 1 before its fix in the writer report; the lead reran account vitest, 3212 of 3212 rc=0.
+- [x] A5: The envelope refusal tells the truth (F13): a request with no header says this rdc predates `x-config-envelope`, which first ships in the release after 2.4.0, and it stops citing the 1.4.0 write version. The status and code stay the same, and no server compatibility is added.
   - Owns: private/account/src/routes/configs.ts, private/account/tests/integration/config-envelope-message.test.ts
   - Test: the header-less message names the header and 2.4.0; the below-version message still reads `this rdc reads up to v<n>`.
   - Accept: `cd private/account && npx vitest run tests/integration/config-envelope-message.test.ts` rc 0.
-- [ ] A6: Store conformance preflight (F4): `checkStoreConformance` probes a private key under the plane's own prefix through the presigned path renet uses: a duplicate create-only PUT must answer 412, a wrong checksum must be refused, then the probe deletes its key. It runs at on-prem boot and once per deployment on the first grant, and the result is cached. The behaviour on failure follows decision O4.
+    (ticked) 2026-11-01T21:46:39Z by 45048a90: commit:private/account 239521c and 7aaddb9. Each new test recorded rc 1 before its fix in the writer report; the lead reran account vitest, 3212 of 3212 rc=0.
+- [x] A6: Store conformance preflight (F4): `checkStoreConformance` probes a private key under the plane's own prefix through the presigned path renet uses: a duplicate create-only PUT must answer 412, a wrong checksum must be refused, then the probe deletes its key. It runs at on-prem boot and once per deployment on the first grant, and the result is cached. The behaviour on failure follows decision O4.
   - Owns: private/account/src/services/backup-store-conformance.ts, private/account/src/entry/on-premise.ts, private/account/src/services/backup-storage.service.ts, private/account/tests/integration/backup-store-conformance.test.ts
   - Tests: a fake store ignoring If-None-Match, a fake store ignoring the checksum, a conforming store; the probe key never remains.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-store-conformance.test.ts` rc 0.
+    (ticked) 2026-11-01T21:46:41Z by 45048a90: commit:private/account 239521c and 7aaddb9. Each new test recorded rc 1 before its fix in the writer report; the lead reran account vitest, 3212 of 3212 rc=0.
 
 ### G: account GC and alerts (writer G)
 
@@ -211,46 +219,55 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### K: renet chunkstore (writer K)
 
-- [ ] K1: 409 is a retryable conflict and 412 means exists, for every object kind (F4). `Put` reports created or already-present, `ChunksUploaded` and `BytesUploaded` count only created objects, and `ChunksAlreadyPresent` travels on the commit. The comments at private/renet/pkg/chunkstore/grants.go:389, :429-437, :605 and the retry note are rewritten: the conditional-write claim names the proof that actually ran.
+- [x] K1: 409 is a retryable conflict and 412 means exists, for every object kind (F4). `Put` reports created or already-present, `ChunksUploaded` and `BytesUploaded` count only created objects, and `ChunksAlreadyPresent` travels on the commit. The comments at private/renet/pkg/chunkstore/grants.go:389, :429-437, :605 and the retry note are rewritten: the conditional-write claim names the proof that actually ran.
   - Owns: private/renet/pkg/chunkstore/grants.go, private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/session.go, private/renet/pkg/chunkstore/createonly_put_test.go, private/renet/pkg/chunkstore/put_retry_test.go
   - Tests: `TestPut_409ThenCreatedRetriesAndUploads`, `TestPut_409ExhaustedFails`, `TestPut_412ChunkIsPresentNotUploaded`, `TestPut_412ManifestStaysFatal`, `TestUpload_AddedBytesExcludeAlreadyPresent`.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestPut_|TestUpload_AddedBytes' -count=1` rc 0, and `go test ./pkg/chunkstore/ -count=1` rc 0.
-- [ ] K2: Random spot cells per run (F7): `VerifyAnchor` picks 8 non-zero cells with crypto/rand from `CellHashes` at each call. `BuildSpotSample` and the `SpotSample` journal field are removed, with no reader kept. A test seam fixes the source.
+    (ticked) 2026-11-01T21:45:00Z by 45048a90: commit:private/renet 9101f6b. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] K2: Random spot cells per run (F7): `VerifyAnchor` picks 8 non-zero cells with crypto/rand from `CellHashes` at each call. `BuildSpotSample` and the `SpotSample` journal field are removed, with no reader kept. A test seam fixes the source.
   - Owns: private/renet/pkg/chunkstore/anchor.go, private/renet/pkg/chunkstore/journal.go, private/renet/pkg/chunkstore/anchor_test.go, private/renet/pkg/chunkstore/journal_test.go
   - Tests: `TestVerifyAnchor_SingleBadCellFoundAcrossRuns` (one bad cell of 64, found within a bounded number of runs at a fixed seed; the deterministic sampler never finds it); `TestVerifyAnchor_PicksDifferentCellsPerRun`.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestVerifyAnchor_' -count=1` rc 0, and `go test ./pkg/chunkstore/ ./cmd/renet/ -count=1` rc 0.
-- [ ] K3: Merkle root per D-root: `CellsRoot(cells, cellBytes, imageBytes)`, the additive manifest field, computation at snapshot over the resolved inventory, and a comparison in restore that fails on a mismatch and reports an absent root plainly. Vectors at `pkg/chunkstore/testdata/cells_root_vectors.json`.
+    (ticked) 2026-11-01T21:45:03Z by 45048a90: commit:private/renet 9101f6b. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] K3: Merkle root per D-root: `CellsRoot(cells, cellBytes, imageBytes)`, the additive manifest field, computation at snapshot over the resolved inventory, and a comparison in restore that fails on a mismatch and reports an absent root plainly. Vectors at `pkg/chunkstore/testdata/cells_root_vectors.json`.
   - Owns: private/renet/pkg/chunkstore/manifest.go, private/renet/pkg/chunkstore/cellsroot.go, private/renet/pkg/chunkstore/cellsroot_test.go, private/renet/pkg/chunkstore/testdata/cells_root_vectors.json, private/renet/pkg/chunkstore/restore.go
   - Tests: domain separation (a zero leaf differs from any hash leaf; index moves change the root; an internal node cannot pose as a leaf); known answers; a v1 manifest with no root decodes and reports absent; a restore over a swapped chain member fails.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'CellsRoot|TestRestore_CellsRoot' -count=1` rc 0.
-- [ ] K4: Salvage and repair upload per D-repair: `RestoreOptions.Salvage` continues past a bad or absent chunk and returns bad cells with byte ranges; `RepairUpload(anchor, hashes, grants)` re-reads, re-hashes and PUTs, and returns unrepairable hashes.
+    (ticked) 2026-11-01T21:45:06Z by 45048a90: commit:private/renet 9101f6b. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] K4: Salvage and repair upload per D-repair: `RestoreOptions.Salvage` continues past a bad or absent chunk and returns bad cells with byte ranges; `RepairUpload(anchor, hashes, grants)` re-reads, re-hashes and PUTs, and returns unrepairable hashes.
   - Owns: private/renet/pkg/chunkstore/download.go, private/renet/pkg/chunkstore/restore.go, private/renet/pkg/chunkstore/repair.go, private/renet/pkg/chunkstore/repair_test.go, private/renet/pkg/chunkstore/restore_test.go
   - Tests: one corrupt cell, default still aborts; salvage returns the cell, its range and a hole; salvage writes no anchor; a re-read whose hash disagrees is not uploaded.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestRestore_Salvage|TestRepairUpload' -count=1` rc 0.
-- [ ] K5: Identity on the anchor (F2): `AnchorRecord` gains `LuksUUID` and `LuksKeyDigest`, and `CompareImageIdentity(prev, cur)` returns one named verdict. `RecordRestoredAnchor` records the restored image's identity. The manifest carries the same two fields for the server.
+    (ticked) 2026-11-01T21:45:09Z by 45048a90: commit:private/renet 9101f6b. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] K5: Identity on the anchor (F2): `AnchorRecord` gains `LuksUUID` and `LuksKeyDigest`, and `CompareImageIdentity(prev, cur)` returns one named verdict. `RecordRestoredAnchor` records the restored image's identity. The manifest carries the same two fields for the server.
   - Owns: private/renet/pkg/chunkstore/journal.go, private/renet/pkg/chunkstore/luksid.go, private/renet/pkg/chunkstore/luksid_test.go, private/renet/pkg/chunkstore/restore_anchor_linux.go, private/renet/pkg/chunkstore/manifest.go
   - Tests: every verdict (same; UUID moved; digest moved; shrink; growth; unreadable; no baseline); a restored anchor carries the restored identity.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'CompareImageIdentity|RecordRestoredAnchor' -count=1` rc 0.
+    (ticked) 2026-11-01T21:45:12Z by 45048a90: commit:private/renet 9101f6b. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
 
 K1 and K4 both touch `uploader.go` or `restore.go` only where stated, and writer K sequences its own boxes.
 
 ### L: renet LUKS and mount (writer L)
 
-- [ ] L1: `Device.TestPassphrase(ctx, password)` uses `cryptsetup open --test-passphrase` with no mapping. `Repository.ValidatePassword` uses it whether or not the device is open.
+- [x] L1: `Device.TestPassphrase(ctx, password)` uses `cryptsetup open --test-passphrase` with no mapping. `Repository.ValidatePassword` uses it whether or not the device is open.
   - Owns: private/renet/pkg/luks/luks.go, private/renet/pkg/luks/luks_passphrase_test.go, private/renet/pkg/repository/mount.go, private/renet/pkg/repository/mount_password_test.go
   - Tests: a fake cryptsetup asserts the arguments and that the secret travels on stdin, never argv; `TestValidatePassword_OpenDeviceWrongPasswordRefused`.
   - Accept: `cd private/renet && go test ./pkg/luks/ ./pkg/repository/ -run 'TestPassphrase|TestValidatePassword' -count=1` rc 0.
-- [ ] L2: Only a proven password writes a key (F5): `provisionTOCPublicKey` at all three sites checks `have == want` first, which costs no KDF, and otherwise proves the password through L1. An unproven password writes nothing and logs a warning that names the repository. A replacement after proof logs a warning. `WriteTOCPublicKey` becomes `InstallTOCPublicKey(datastore, guid, pubLine, replace)`, used by V5 too. `KeyfileStore.Refresh` proves the password first and installs the new keyfile by temp file and rename only after the slot accepts it.
+    (ticked) 2026-11-01T21:45:15Z by 45048a90: commit:private/renet b1895f2. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] L2: Only a proven password writes a key (F5): `provisionTOCPublicKey` at all three sites checks `have == want` first, which costs no KDF, and otherwise proves the password through L1. An unproven password writes nothing and logs a warning that names the repository. A replacement after proof logs a warning. `WriteTOCPublicKey` becomes `InstallTOCPublicKey(datastore, guid, pubLine, replace)`, used by V5 too. `KeyfileStore.Refresh` proves the password first and installs the new keyfile by temp file and rename only after the slot accepts it.
   - Owns: private/renet/pkg/orchestration/workflows.go, private/renet/pkg/orchestration/workflows_tockey_test.go, private/renet/pkg/credentials/tocpub.go, private/renet/pkg/credentials/tocpub_test.go, private/renet/pkg/credentials/keyfile.go, private/renet/pkg/credentials/keyfile_test.go
   - Tests: `TestMountWithDocker_AlreadyMountedWrongPasswordKeepsTOCKey` (the headline control), a right password on a missing key installs, `TestRefresh_WrongPasswordLeavesKeyfile`.
   - Accept: `cd private/renet && go test ./pkg/orchestration/ ./pkg/credentials/ -run 'TOCKey|TOCPublic|TestRefresh' -count=1` rc 0.
-- [ ] L3: Identity checks fail closed (F2): one helper built on `ReadLUKSIdentity` replaces the cryptsetup read at private/renet/cmd/renet/repository_limits.go:134 and private/renet/pkg/functions/executor_local.go:617-625. A licence naming a UUID with no readable header is a mismatch. A licence naming none, on a plain image, passes.
+    (ticked) 2026-11-01T21:45:17Z by 45048a90: commit:private/renet b1895f2. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] L3: Identity checks fail closed (F2): one helper built on `ReadLUKSIdentity` replaces the cryptsetup read at private/renet/cmd/renet/repository_limits.go:134 and private/renet/pkg/functions/executor_local.go:617-625. A licence naming a UUID with no readable header is a mismatch. A licence naming none, on a plain image, passes.
   - Owns: private/renet/cmd/renet/repository_limits.go, private/renet/cmd/renet/repository_limits_identity_test.go, private/renet/pkg/functions/executor_local.go, private/renet/pkg/functions/executor_local_identity_test.go
   - Tests: an unreadable header with a licensed UUID refuses at both sites; a matching UUID passes; a plain image with no licensed UUID passes.
   - Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/functions/ -run 'Identity' -count=1` rc 0.
-- [ ] L4: TOC key vectors (F6): a generated, committed `testdata/toc_key_vectors.json` covering generated-shape passphrases, a non-ASCII passphrase and two lineages, with a Go test holding `DeriveKeyPair` and `MarshalPublicKey` to it.
+    (ticked) 2026-11-01T21:45:20Z by 45048a90: commit:private/renet b1895f2. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
+- [x] L4: TOC key vectors (F6): a generated, committed `testdata/toc_key_vectors.json` covering generated-shape passphrases, a non-ASCII passphrase and two lineages, with a Go test holding `DeriveKeyPair` and `MarshalPublicKey` to it.
   - Owns: private/renet/pkg/chunkstore/toccrypt/toccrypt_test.go, private/renet/pkg/chunkstore/toccrypt/testdata/toc_key_vectors.json
   - Accept: `cd private/renet && go test ./pkg/chunkstore/toccrypt/ -count=1` rc 0.
+    (ticked) 2026-11-01T21:45:23Z by 45048a90: commit:private/renet b1895f2. Each new test recorded rc 1 before its fix in the writer report, and the lead reran the suite rc=0: account vitest 3212 of 3212; renet go test -race over the touched packages.
 
 ### V: renet verbs and functions (writer V)
 

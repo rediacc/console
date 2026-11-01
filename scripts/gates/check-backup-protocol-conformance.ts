@@ -82,7 +82,7 @@ const LEGS: Leg[] = [
     requestSchema: 'backupStreamRequest',
     responseSchema: 'backupStreamResponse',
     requestKeys: ['repositoryGuid', 'lineageGuid'],
-    responseKeys: ['streamId'],
+    responseKeys: ['streamId', 'previous'],
   },
   {
     path: '/exists',
@@ -158,7 +158,18 @@ const LEGS: Leg[] = [
     requestSchema: 'backupCommitRequest',
     responseSchema: 'backupCommitResponse',
     // hasIndex is the client's claim that the listing object is stored; the server refuses it when the object is absent.
-    requestKeys: ['snapshotId', 'lineageGuid', 'streamId', 'cellSizeBytes', 'hasIndex'],
+    requestKeys: [
+      'snapshotId',
+      'lineageGuid',
+      'streamId',
+      'cellSizeBytes',
+      'hasIndex',
+      'cellsRoot',
+      'luksUuid',
+      'luksKeyDigest',
+      'identityChangeAccepted',
+      'chunksAlreadyPresent',
+    ],
     responseKeys: [],
   },
 ];
