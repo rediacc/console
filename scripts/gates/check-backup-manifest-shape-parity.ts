@@ -66,6 +66,11 @@ const METADATA: Record<string, string> = {
   cellBytes: 'grid geometry',
   imageBytes: 'grid geometry',
   createdAt: 'timestamp',
+  cellsRoot:
+    'Merkle root over the resolved inventory; a digest of the cell hashes, not an object key, so no stored chunk lives under it',
+  luksUuid: 'identity of the LUKS container, read back to detect a replaced image; names no chunk',
+  luksKeyDigest:
+    'digest of the LUKS key material for the same identity check; it keys no stored object',
   parent:
     'parent SNAPSHOT id, not a chunk hash; the parent manifest is itself indexed, which is why no parent-chain walk is needed',
 };

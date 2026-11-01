@@ -121,6 +121,7 @@ export const REGISTRY: GateMutation[] = [
       'private/account/src/routes/backups.ts',
       'private/account/src/dto/backup.dto.ts',
       'private/renet/pkg/chunkstore/session.go',
+      'private/renet/pkg/chunkstore/repair.go',
     ],
     file: 'private/renet/pkg/chunkstore/session.go',
     find: 'Existing []string `json:"existing"`',

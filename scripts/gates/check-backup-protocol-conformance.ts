@@ -46,6 +46,7 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const ROUTES_TS = 'private/account/src/routes/backups.ts';
 const DTO_TS = 'private/account/src/dto/backup.dto.ts';
 const CLIENT_GO = 'private/renet/pkg/chunkstore/session.go';
+const REPAIR_GO = 'private/renet/pkg/chunkstore/repair.go';
 
 interface Leg {
   /** Route path as mounted in the account's backups router. */
@@ -72,6 +73,12 @@ interface Leg {
    * must hold `path` itself.
    */
   clientCall?: RegExp;
+  /**
+   * A second proof for a leg only one caller makes: the pattern must appear, comments
+   * dropped, in `file`, so a helper or a log string that merely holds the path cannot
+   * stand in for the code that sends the request.
+   */
+  callerCall?: { file: string; pattern: RegExp };
 }
 
 /** The protocol, declared once. Both sides are checked against THIS. */
@@ -187,6 +194,8 @@ const LEGS: Leg[] = [
     requestKeys: [],
     responseKeys: ['released'],
     clientCall: /"\/leases\/"\s*\+[^\n]*\+\s*"\/release"/,
+    // The request reaches the server through ReleaseLease, which RepairUpload calls on its way out.
+    callerCall: { file: REPAIR_GO, pattern: /\breleaser\.ReleaseLease\(/ },
   },
 ];
 
@@ -350,17 +359,39 @@ function declaredKeys(schemaBody: string): Set<string> {
   return keys;
 }
 
-function checkLegs(legs: Leg[], routes: string, dto: string, client: string): string[] {
+/** Whether the client holds the leg's call, comments dropped. */
+function clientCalls(leg: Leg, client: string): boolean {
+  return leg.clientCall
+    ? leg.clientCall.test(stripGoComments(client))
+    : client.includes(`"${leg.path}"`);
+}
+
+/** Whether the leg's second proof is present: true when the leg declares none. */
+function callerCalls(leg: Leg, sources: Record<string, string>): boolean {
+  if (!leg.callerCall) return true;
+  return leg.callerCall.pattern.test(stripGoComments(sources[leg.callerCall.file] ?? ''));
+}
+
+function checkLegs(
+  legs: Leg[],
+  routes: string,
+  dto: string,
+  client: string,
+  sources: Record<string, string> = {}
+): string[] {
   const problems: string[] = [];
   for (const leg of legs) {
     if (!routes.includes(`'${leg.path}'`)) {
       problems.push(`    ${leg.path}\n      declared here but ${ROUTES_TS} mounts no such route.`);
     }
-    const called = leg.clientCall
-      ? leg.clientCall.test(stripGoComments(client))
-      : client.includes(`"${leg.path}"`);
-    if (!called) {
+    if (!clientCalls(leg, client)) {
       problems.push(`    ${leg.path}\n      declared here but ${CLIENT_GO} never calls it.`);
+    }
+    if (!callerCalls(leg, sources) && leg.callerCall) {
+      problems.push(
+        `    ${leg.path}\n      ${leg.callerCall.file} no longer calls ${leg.callerCall.pattern}, ` +
+          'so nothing sends this request.'
+      );
     }
     const accepted = leg.requestSchema === null ? [] : zodKeys(dto, leg.requestSchema);
     if (accepted === null) {
@@ -562,6 +593,39 @@ if (!bodylessKey.some((p) => p.includes('"bodyKey"'))) {
   process.exit(1);
 }
 
+/**
+ * Sixth control, on the REAL release leg rather than a synthetic one: its own patterns
+ * must accept the code that sends the request and refuse a comment, a log string and a
+ * lookalike. A regex nobody exercised can match nothing, or everything, and stay green.
+ */
+const releaseLeg = LEGS.find((leg) => leg.path === '/leases/:snapshotId/release');
+if (!releaseLeg?.clientCall || !releaseLeg.callerCall) {
+  console.error('✗ release-leg control: the leg lost its clientCall or callerCall proof.');
+  process.exit(1);
+}
+const releaseSend = 'c.endpoint("/leases/"+url.PathEscape(snapshotID)+"/release")';
+const releaseCaller = 'released, err := releaser.ReleaseLease(ctx, snapshotID)';
+const releaseSources = (text: string) => ({ [releaseLeg.callerCall?.file ?? '']: text });
+if (!clientCalls(releaseLeg, releaseSend) || !callerCalls(releaseLeg, releaseSources(releaseCaller))) {
+  console.error('✗ release-leg control over-fired: the real call shapes were not recognised.');
+  process.exit(1);
+}
+for (const decoy of [
+  `// ${releaseCaller}`,
+  'log.Printf("ReleaseLease failed")',
+  'func (c *X) ReleaseLease(ctx context.Context) {}',
+  'releaseLease(ctx, snapshotID)',
+]) {
+  if (callerCalls(releaseLeg, releaseSources(decoy))) {
+    console.error(`✗ release-leg control did not fire: ${decoy} counted as the call.`);
+    process.exit(1);
+  }
+}
+if (clientCalls(releaseLeg, `// ${releaseSend}`) || clientCalls(releaseLeg, 'log("/release")')) {
+  console.error('✗ release-leg control did not fire: a comment or log string counted as the send.');
+  process.exit(1);
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);
@@ -572,7 +636,7 @@ if (routes.length === 0 || dto.length === 0 || client.length === 0) {
   process.exit(1);
 }
 
-const problems = checkLegs(LEGS, routes, dto, client);
+const problems = checkLegs(LEGS, routes, dto, client, { [REPAIR_GO]: read(REPAIR_GO) });
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {
   problems.push(`    auth\n      ${ROUTES_TS} no longer reads ${SESSION_HEADER}.`);
