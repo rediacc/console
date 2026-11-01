@@ -560,6 +560,20 @@ def resolve(root, kind, token):
                 rel = "%s/PLAN-%s.md" % (d, slug)
                 if (pathlib.Path(root) / rel).is_file():
                     return True, rel
+        # A SWEPT PLAN RESOLVES TO ITS TOMBSTONE. The retention sweep deletes a terminal plan and keeps a row under `## Expired plans` in agent/INDEX.md naming the blob of its full text (rediacc_ci.quality.plan_lifecycle), which is the record a citation of it now points at; check:ci-plan-folders F7 accepts the same row.
+        index = pathlib.Path(root) / INDEX_REL
+        try:
+            text = index.read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        expired = text.split("## Expired plans", 1)[1] if "## Expired plans" in text else ""
+        for rel in candidates:
+            if re.search(
+                r"^\|[ \t]*`%s`[ \t]*\|.*`[0-9a-f]{40}`[ \t]*\|[ \t]*$" % re.escape(rel),
+                expired,
+                re.MULTILINE,
+            ):
+                return True, "tombstone in %s" % INDEX_REL
         return False, "no plan file at %s" % ", ".join(candidates)
     if kind == "trap":
         ids = _trap_ids(root)

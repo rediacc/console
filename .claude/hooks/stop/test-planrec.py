@@ -345,6 +345,26 @@ control(
     "agent/plans/PLAN-nope.md" in R.resolve(ROOT, "plan", "PLAN-nope.md")[1],
     True,
 )
+_idx = ROOT / R.INDEX_REL
+_idx_before = _idx.read_text(encoding="utf-8") if _idx.exists() else None
+_idx.parent.mkdir(parents=True, exist_ok=True)
+_idx.write_text(
+    "## Expired plans\n\n| Plan | Title | First seen | Expired | Full-Text-Blob |\n|---|---|---|---|---|\n"
+    "| `agent/plans/_done/PLAN-swept.md` | Swept | 2026-09-01 | 2026-11-01 | `%s` |\n" % ("a" * 40),
+    encoding="utf-8",
+)
+truthy(
+    "resolve plan: a swept plan resolves to its tombstone row",
+    R.resolve(ROOT, "plan", "agent/plans/_done/PLAN-swept.md")[0],
+)
+falsy(
+    "resolve plan CONTROL: a plan with neither a file nor a tombstone still misses",
+    R.resolve(ROOT, "plan", "agent/plans/_done/PLAN-never.md")[0],
+)
+if _idx_before is None:
+    _idx.unlink()
+else:
+    _idx.write_text(_idx_before, encoding="utf-8")
 truthy("resolve trap: a Trap-Id in TRAPS.md", R.resolve(ROOT, "trap", "a-real-trap-id")[0])
 falsy("resolve trap: an invented one", R.resolve(ROOT, "trap", "not-a-trap-id")[0])
 Tally.count += 1
