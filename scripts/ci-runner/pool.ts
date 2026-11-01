@@ -1332,12 +1332,7 @@ export async function runPool(
         borrowable:
           reading === undefined
             ? undefined
-            : reclaimableCores(
-                now,
-                reading,
-                [...borrows.values()],
-                view?.runs ?? 1
-              ),
+            : reclaimableCores(now, reading, [...borrows.values()], view?.runs ?? 1),
         leaseFree: finite(view?.free),
         leaseShare: finite(view?.share),
         leaseTotal: finite(view?.total),

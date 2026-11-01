@@ -94,12 +94,8 @@ def test_the_differential_can_fail(tmp_path, fixture_work, stem):
 
 
 def _runs(pid):
-    """Whether `pid` still runs: a killed process stays a zombie until its reaper gets to it."""
-    try:
-        with open("/proc/%s/stat" % pid, encoding="utf-8") as handle:
-            return handle.read().rpartition(")")[2].split()[0] != "Z"
-    except OSError:
-        return False
+    """Whether `pid` is still in the process table, through the seam the guard reads."""
+    return guard.proc.comm(pid) is not None
 
 
 def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_path):
@@ -120,7 +116,7 @@ def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_p
         deadline = time.monotonic() + 10
         while not children and time.monotonic() < deadline:
             scripts = [p for p in guard.proc.pids() if str(script) in (guard.proc.cmdline(p) or "")]
-            children = [c for p in scripts for c in guard._sleep_children(p)]
+            children = [c for p in scripts for c in guard.proc.children_named(p, "sleep")]
             time.sleep(0.02)
         assert children, "CONTROL: the fixture script never started its sleep"
         guard._kill_stale((str(script),))
@@ -132,3 +128,11 @@ def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_p
     finally:
         bystander.kill()
         bystander.wait()
+
+
+@pytest.mark.parametrize("backend", ["proc", "ps"])
+def test_ppid_reads_the_parent_on_both_backends(monkeypatch, backend):
+    monkeypatch.setenv(guard.proc.BACKEND_ENV, backend)
+    assert guard.proc.ppid(os.getpid()) == os.getppid()
+    # CONTROL: a pid nothing runs under answers None, not a parent.
+    assert guard.proc.ppid(2**22 + 1) is None

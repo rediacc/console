@@ -101,6 +101,16 @@ class _ProcBackend:
             # The process exited between the listing and the read. That is the normal case, not an error: a dead process is not running your script.
             return None
 
+    def ppid(self, pid):
+        try:
+            stat = pathlib.Path("/proc/%d/stat" % pid).read_text(
+                encoding="utf-8", errors="surrogateescape"
+            )
+            # The fields after the parenthesised comm, which may itself hold spaces: state, then ppid.
+            return int(stat.rpartition(")")[2].split()[1])
+        except (OSError, ValueError, IndexError):
+            return None
+
     def argv(self, pid):
         try:
             raw = pathlib.Path("/proc/%d/cmdline" % pid).read_bytes()
@@ -155,6 +165,15 @@ class _PsBackend:
         self._table = table
         return table
 
+    def ppid(self, pid):
+        # One question, so not part of the cached table: only the kill path of a fixture world asks it.
+        try:
+            out = self._run(["ps", "-o", "ppid=", "-p", str(pid)]).strip()
+        except ProcError:
+            # `ps -p` exits 1 for a pid that is gone, the same answer as every other question here.
+            return None
+        return int(out) if out.isdigit() else None
+
     @staticmethod
     def _run(argv):
         try:
@@ -197,6 +216,16 @@ def pids():
 def comm(pid):
     """`ps -o comm= -p <pid>`, or None when the process is gone."""
     return _backend().comm(pid)
+
+
+def ppid(pid):
+    """The process's parent id, or None when the process is gone."""
+    return _backend().ppid(pid)
+
+
+def children_named(parent, name):
+    """The pids of `parent`'s direct children whose comm is `name`."""
+    return [pid for pid in pids() if ppid(pid) == parent and comm(pid) == name]
 
 
 def argv(pid):

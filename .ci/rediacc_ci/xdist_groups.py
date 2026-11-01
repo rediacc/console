@@ -47,6 +47,7 @@ import pathlib
 import secrets
 import socket
 import time
+from typing import Any
 
 from rediacc_ci import core_lease, paths
 
@@ -251,9 +252,9 @@ def group_lock_dir() -> pathlib.Path:
 # THE STAMP LIVES ONLY FOR THE MOMENT THE IDS ARE SENT. The controller matches a finished item by its index, so nothing later needs the suffix, and every report carries the id it was given: pytest 9.2's junit parses a report's id back into its parts, which would print a parametrised test as `t[x]@g]`, and that name would become the finding key on a red. Taking it off again gives a test the same name under xdist as in a serial run.
 
 
-def stamp_group_ids(items: list, group_of) -> list[tuple[object, object]]:
+def stamp_group_ids(items: list, group_of) -> list[tuple[Any, Any]]:
     """Give every grouped item the `@<group>` node id `--dist loadgroup` schedules on, returning `(item, its id before)` for `unstamp_group_ids`. `group_of(item)` is the caller's reader, the same one that takes the machine-wide lock, so the schedule and the lock cannot disagree."""
-    stamped: list[tuple[object, object]] = []
+    stamped: list[tuple[Any, Any]] = []
     for item in items:
         group = group_of(item)
         if group is None:
@@ -271,7 +272,7 @@ def stamp_group_ids(items: list, group_of) -> list[tuple[object, object]]:
     return stamped
 
 
-def unstamp_group_ids(stamped: list[tuple[object, object]]) -> None:
+def unstamp_group_ids(stamped: list[tuple[Any, Any]]) -> None:
     """Put back the ids `stamp_group_ids` replaced."""
     for item, before in stamped:
         item._id = before
