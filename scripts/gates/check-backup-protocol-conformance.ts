@@ -50,8 +50,8 @@ const CLIENT_GO = 'private/renet/pkg/chunkstore/session.go';
 interface Leg {
   /** Route path as mounted in the account's backups router. */
   path: string;
-  /** Zod request schema name in backup.dto.ts. */
-  requestSchema: string;
+  /** Zod request schema name in backup.dto.ts; null for a route that takes no body. */
+  requestSchema: string | null;
   /**
    * Zod response schema name in backup.dto.ts. Until 2026-08-14 this did not
    * exist and `responseKeys` was checked against the Go client ONLY, while the
@@ -65,6 +65,13 @@ interface Leg {
   requestKeys: string[];
   /** Response keys renet must read and the account must declare. */
   responseKeys: string[];
+  /**
+   * How the client spells a parameterised path, which it composes and so can never
+   * hold as one literal. Matched against the client with comments dropped, so prose
+   * that mentions the route cannot stand in for the call. Absent means the client
+   * must hold `path` itself.
+   */
+  clientCall?: RegExp;
 }
 
 /** The protocol, declared once. Both sides are checked against THIS. */
@@ -172,6 +179,15 @@ const LEGS: Leg[] = [
     ],
     responseKeys: [],
   },
+  {
+    // Ends a repair's lease, which nothing else ends before its TTL: until then the lineage's GC is suspended and the next repair is refused. No body; the snapshot id is the path parameter. A client that stopped calling it fails nothing at run time, since a failed release only warns, so this leg is what notices.
+    path: '/leases/:snapshotId/release',
+    requestSchema: null,
+    responseSchema: 'backupLeaseReleaseResponse',
+    requestKeys: [],
+    responseKeys: ['released'],
+    clientCall: /"\/leases\/"\s*\+[^\n]*\+\s*"\/release"/,
+  },
 ];
 
 /** The session header the account authenticates with. */
@@ -182,7 +198,10 @@ const SESSION_HEADER = 'X-Backup-Session';
  * a revert, and each one was individually fatal.
  */
 const RETIRED: { needle: string; why: string }[] = [
-  { needle: '/chunks/exists', why: 'route does not exist; the account mounts /exists' },
+  {
+    needle: '/chunks/exists',
+    why: 'route does not exist; the account mounts /exists',
+  },
   {
     needle: '/manifests"',
     why: 'commit posts a field set to /commit, not a document to /manifests',
@@ -337,10 +356,13 @@ function checkLegs(legs: Leg[], routes: string, dto: string, client: string): st
     if (!routes.includes(`'${leg.path}'`)) {
       problems.push(`    ${leg.path}\n      declared here but ${ROUTES_TS} mounts no such route.`);
     }
-    if (!client.includes(`"${leg.path}"`)) {
+    const called = leg.clientCall
+      ? leg.clientCall.test(stripGoComments(client))
+      : client.includes(`"${leg.path}"`);
+    if (!called) {
       problems.push(`    ${leg.path}\n      declared here but ${CLIENT_GO} never calls it.`);
     }
-    const accepted = zodKeys(dto, leg.requestSchema);
+    const accepted = leg.requestSchema === null ? [] : zodKeys(dto, leg.requestSchema);
     if (accepted === null) {
       problems.push(
         `    ${leg.path}\n      request schema ${leg.requestSchema} not found in ${DTO_TS}.`
@@ -350,7 +372,7 @@ function checkLegs(legs: Leg[], routes: string, dto: string, client: string): st
         if (!accepted.includes(key)) {
           problems.push(
             `    ${leg.path} request key "${key}"\n` +
-              `      the client sends it, but ${leg.requestSchema} does not accept it,\n` +
+              `      the client sends it, but ${leg.requestSchema ?? 'this bodyless route'} does not accept it,\n` +
               `      so the route answers 400. Accepted: ${accepted.join(', ')}`
           );
         }
@@ -496,6 +518,47 @@ if (splitKeys === null || splitKeys.join(',') !== 'onlyKey') {
   console.error(
     `✗ split-chain control did not fire: a schema declared as z\\n.object({...}) read as [${splitKeys}], expected [onlyKey].`
   );
+  process.exit(1);
+}
+
+/**
+ * Fifth control, for a parameterised route with no body. The call has to be found
+ * in code (a comment naming it is the same as no call), a bodyless route must not
+ * report a missing request schema, and a key declared on one must still be reported.
+ */
+const PARAM_CALL = /"\/control\/"\s*\+[^\n]*\+\s*"\/go"/;
+const CONTROL_PARAM: Leg = {
+  path: '/control/:id/go',
+  requestSchema: null,
+  responseSchema: null,
+  requestKeys: [],
+  responseKeys: [],
+  clientCall: PARAM_CALL,
+};
+const paramRoute = `'/control/:id/go'`;
+const paramCall = 'c.endpoint("/control/" + id + "/go")';
+if (checkLegs([CONTROL_PARAM], paramRoute, '', paramCall).length !== 0) {
+  console.error(
+    '✗ parameterised control over-fired: a bodyless route whose call exists was reported.'
+  );
+  process.exit(1);
+}
+if (checkLegs([CONTROL_PARAM], paramRoute, '', `// ${paramCall}`).length === 0) {
+  console.error('✗ parameterised control did not fire: a comment stood in for the client call.');
+  process.exit(1);
+}
+if (checkLegs([CONTROL_PARAM], '', '', paramCall).length === 0) {
+  console.error('✗ parameterised control did not fire: a route nobody mounts went unreported.');
+  process.exit(1);
+}
+const bodylessKey = checkLegs(
+  [{ ...CONTROL_PARAM, requestKeys: ['bodyKey'] }],
+  paramRoute,
+  '',
+  `${paramCall} "bodyKey"`
+);
+if (!bodylessKey.some((p) => p.includes('"bodyKey"'))) {
+  console.error('✗ parameterised control did not fire: a bodyless route took a request key.');
   process.exit(1);
 }
 
