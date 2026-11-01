@@ -1158,8 +1158,10 @@ def index_problems(root, rows, census="", update=False):
         got = ""
     # THE TOMBSTONE SECTION IS APPEND-ONLY AND OWNED BY THE PLAN SWEEP (check_plan_folders.py `_write_tombstones`): the plans it names have no disk state left, so it is read back from the file and kept, rendered and placed exactly as the sweep writes it. Before 2026-11-01 this render left it out, so every --update deleted the rows the sweep had just minted.
     stones = PL.render_tombstones(PL.parse_tombstones(got))
-    want = (R.render_index(rows) + census).rstrip("\n")
-    want = (want + "\n" + stones).lstrip("\n") if stones else R.render_index(rows) + census
+    want = R.render_index(rows) + census
+    # Only beside an index: with no records and no census the zero-records branch below must still refuse to rewrite a committed file.
+    if want and stones:
+        want = want.rstrip("\n") + "\n" + stones
     if got == want:
         return []
     if update and want:
