@@ -384,7 +384,8 @@ async function runRestorePull(args: {
     });
   } catch (error) {
     // Nothing ran yet, so the job's rollback step never will: drop the registration here, or a retry meets target-exists.
-    await configService.removeRepository(compositeKey(targetName, 'latest'));
+    // A failing cleanup must not hide the deploy or licence error the user needs to see.
+    await configService.removeRepository(compositeKey(targetName, 'latest')).catch(() => undefined);
     throw error;
   }
   // No `at` here. `backup_pull` no longer declares the parameter, and the caller routes `--at` to `backup_restore` before reaching this function. Passing one anyway would fail schema validation, which is the honest outcome: a parameter wired to a verb that refuses it is how the next session concludes the path works.
@@ -467,7 +468,15 @@ async function sourceImageSizeGb(source: {
   guid: string;
   placement?: Placement;
 }): Promise<number> {
-  const lease = await machineConnections.acquire(source.machine);
+  let lease: Awaited<ReturnType<typeof machineConnections.acquire>>;
+  try {
+    lease = await machineConnections.acquire(source.machine);
+  } catch {
+    outputService.warn(
+      `Could not reach ${source.machine} to size the source image; requesting the 1 GB floor.`
+    );
+    return 1;
+  }
   try {
     const placed =
       source.placement && 'datastore' in source.placement
@@ -477,6 +486,11 @@ async function sourceImageSizeGb(source: {
       placed,
       lease.machine.datastore ?? DEFAULT_DATASTORE,
     ]);
+  } catch {
+    outputService.warn(
+      `Could not measure the source image on ${source.machine}; requesting the 1 GB floor.`
+    );
+    return 1;
   } finally {
     lease.release();
   }
