@@ -424,6 +424,10 @@ def test_the_real_registry_names_exactly_the_two_live_artifacts():
     ) in lane.producers, (
         "job_max_seconds has its own producer (check_job_timeout_headroom.py RETIRED INTO)"
     )
+    assert lane.producers[-1] == ("python3", "-m", "rediacc_ci.ci.budget_report", "--refresh"), (
+        "budget_report --refresh must write last: its sample is the one budget_report --check "
+        "judges, so a producer after it would leave numbers the next check calls drift"
+    )
 
 
 # --------------------------------------------------------------------------- T9: the wiring pins ---------------------------------------------------------------------------
