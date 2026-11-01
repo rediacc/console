@@ -390,7 +390,8 @@ def main(argv=None):
     if stale is not None:
         problems.append(
             "the baseline itself is stale (%s), so these numbers no longer describe\n"
-            "  reality. Refresh it: PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh .ci/config/lane-durations.json"
+            "  reality. Refresh it: PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness"
+            " --refresh .ci/config/lane-durations.json"
             % (
                 "refreshed_at is missing or unparseable"
                 if stale < 0
