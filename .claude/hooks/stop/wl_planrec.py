@@ -101,6 +101,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import importlib
 import json
 import os
 import pathlib
@@ -852,6 +853,8 @@ def ledger_history(root, ledger_rel=LEDGER_REL):
     Taking the newest would record the most recent regeneration of the ledger, which is a date with no meaning: the ledger is rewritten wholesale by `--update`, so every sig in it appears in every later commit.
     """
     out = []
+    # One request for every version the walk below reads, in a partial clone (`wl_review.prefetch_diff_blobs`).
+    importlib.import_module("wl_review").prefetch_diff_blobs(root, "HEAD", ledger_rel)
     log = _git_out(root, "log", "--reverse", "--format=%H", "--", ledger_rel)
     for sha in (log or "").split():
         raw = _git_out(root, "show", "%s:%s" % (sha, ledger_rel))

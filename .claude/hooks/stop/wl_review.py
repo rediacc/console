@@ -1065,13 +1065,22 @@ def patch_id(repo, sha):
     return out.split()[0] if rc == 0 and out.split() else ""
 
 
-def _prefetch_diff_blobs(repo, rev_range):
+def prefetch_diff_blobs(repo, rev_range, *paths):
     """Fetch the blobs `rev_range`'s diffs read in one request, in a partial clone. CI's pytest job clones with `filter: blob:none`, where `git log -p` fetches them one commit at a time: over 200 s against 16 s for this repo's 1779 commits (measured 2026-11-01). `--raw` names both sides of every change without reading a blob. Mode 160000 is a gitlink, which is a commit of another repository, and naming one fails the whole fetch. Best-effort: on any failure the diffs still fetch lazily."""
     rc, promisor = git(repo, "config", "--get", "remote.origin.promisor")
     if rc != 0 or promisor.strip() != "true":
         return
+    pathspec = ("--", *paths) if paths else ()
     rc, raw = git(
-        repo, "log", "--raw", "--no-renames", "--no-abbrev", "--no-merges", "--format=", rev_range
+        repo,
+        "log",
+        "--raw",
+        "--no-renames",
+        "--no-abbrev",
+        "--no-merges",
+        "--format=",
+        rev_range,
+        *pathspec,
     )
     if rc != 0:
         return
@@ -1105,7 +1114,7 @@ def _prefetch_diff_blobs(repo, rev_range):
 
 def patch_ids(repo, rev_range):
     """`{sha: patch-id}` for every non-merge commit of `rev_range`, from one `git log -p` piped to one `git patch-id --stable`: the same value `patch_id` gives each commit, without two subprocesses per commit (1759 commits took 19 s one by one, 5 s here). An empty commit has no diff and no entry, as `patch_id` returns "" for it. No `--root`: `git show` honours `log.showRoot` for a root commit, and so does `git log`, so the two agree under either setting. None when either git call fails, so a caller can fall back to `patch_id` per commit rather than read the whole range as unmapped."""
-    _prefetch_diff_blobs(repo, rev_range)
+    prefetch_diff_blobs(repo, rev_range)
     rc, log = git(
         repo,
         "log",

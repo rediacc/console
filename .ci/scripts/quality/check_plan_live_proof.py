@@ -760,6 +760,8 @@ def boxes_at(root: pathlib.Path, rev: str | None) -> dict[str, Any] | None:
 
 def branch_history(root: pathlib.Path, base: str) -> list[tuple[str, dict[str, Any]]]:
     out = []
+    # One request for every version the walk below reads: in CI's `filter: blob:none` clone each `git show` was a fetch of its own, 249 of them, which outlived the test's limit.
+    importlib.import_module("wl_review").prefetch_diff_blobs(root, "%s..HEAD" % base, BOXES_REL)
     listing = _git(root, "log", "--reverse", "--format=%H", "%s..HEAD" % base, "--", BOXES_REL)
     for sha in (listing or "").split():
         plans = boxes_at(root, sha)
