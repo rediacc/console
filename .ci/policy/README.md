@@ -91,7 +91,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
 | `.language-policy-allowlist` | name per line | 39 | 40 | both |
-| `.pins-upgrade-blocklist` | name per line | 4 | 5 | both |
+| `.pins-upgrade-blocklist` | name per line | 5 | 6 | both |
 | `.plan-housekeeping-allowlist` | name per line | 2 | 3 | both |
 | `.profiler-coverage-allowlist` | name per line | 62 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |

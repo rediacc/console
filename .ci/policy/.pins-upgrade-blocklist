@@ -27,3 +27,5 @@ ci-node  # BLOCKER: the node images track the active LTS line 24; node 26 become
 node-alpine  # BLOCKER: the node images track the active LTS line 24; node 26 becomes LTS in late October 2026, and the move needs the CLI SEA build and the workers validated on 26, which the operator schedules (expires 2026-11-14)
 
 renet-ubuntu  # BLOCKER: renet's runtime base tracks Ubuntu LTS 24.04; a 26.x base needs a renet rebuild and the KVM e2e distro matrix before it moves, which the operator schedules (expires 2026-11-14)
+
+cuda  # BLOCKER: BLOCKER: the narration image runs VoxCPM2 and Qwen3-ASR on a WSL GPU host, and a CUDA 13.4 runtime base needs a GPU build plus narration smoke run that no unattended session can do; the 13.0.1 base stays until the operator schedules it (expires 2026-11-14)
