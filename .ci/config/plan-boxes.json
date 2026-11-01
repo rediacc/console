@@ -3372,21 +3372,6 @@
         "e8152c55"
       ]
     },
-    "agent/plans/_done/PLAN-consolidate-test-scaffolding.md": {
-      "status": "done",
-      "owner": "8f55d4f0",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 4,
-      "open_sigs": [],
-      "done_sigs": [
-        "558935a5",
-        "9986c208",
-        "afb9b239",
-        "b30a696d"
-      ]
-    },
     "agent/plans/_done/PLAN-defer-settle-classifier.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3951,16 +3936,6 @@
         "cdf8ba85"
       ]
     },
-    "agent/plans/_done/PLAN-hook-inventory-warn-guards.md": {
-      "status": "landed",
-      "owner": "9d92d9b6",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 0,
-      "open_sigs": [],
-      "done_sigs": []
-    },
     "agent/plans/_done/PLAN-inline-suppressions.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3981,26 +3956,6 @@
         "d34570c5",
         "dc1c77bb",
         "f2cabb45"
-      ]
-    },
-    "agent/plans/_done/PLAN-json-prose-scope-audit.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
-      "done_sigs": [
-        "0de49d9a",
-        "16db0c52",
-        "1fa5f3c9",
-        "455ccded",
-        "6eb2db7c",
-        "75c4689e",
-        "7ec60cf9",
-        "aa657997",
-        "cc62b267"
       ]
     },
     "agent/plans/_done/PLAN-k3s-137-and-pr-conditions.md": {
@@ -4038,16 +3993,6 @@
         "c5fee6fc",
         "f2666cc1"
       ]
-    },
-    "agent/plans/_done/PLAN-local-ci-gate-prerequisites.md": {
-      "status": "landed",
-      "owner": "9d92d9b6",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 0,
-      "open_sigs": [],
-      "done_sigs": []
     },
     "agent/plans/_done/PLAN-locale-techdiff-resync.md": {
       "status": "done",
@@ -4577,26 +4522,6 @@
         "f48c9f93",
         "f8126cb5",
         "f951d924"
-      ]
-    },
-    "agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
-      "done_sigs": [
-        "09b48ce9",
-        "10c79bdb",
-        "114fff4a",
-        "14ec8ceb",
-        "1bf57814",
-        "3487968a",
-        "8aaf4384",
-        "930f003b",
-        "9f2c95b0"
       ]
     },
     "agent/plans/_done/PLAN-remove-cross-session-messaging.md": {
@@ -5230,22 +5155,6 @@
         "bf1dacc2",
         "db9249f9",
         "e1648399"
-      ]
-    },
-    "agent/plans/_done/PLAN-subscription-status-error-swallowing.md": {
-      "status": "done",
-      "owner": "9d92d9b6",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-21",
-      "open": 0,
-      "done": 5,
-      "open_sigs": [],
-      "done_sigs": [
-        "527d86e8",
-        "94f5ba98",
-        "b99de4fa",
-        "c1090b6e",
-        "fd69f02d"
       ]
     },
     "agent/plans/_done/PLAN-sweep-obligation-carry-forward.md": {
