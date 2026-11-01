@@ -92,7 +92,7 @@
     "the vm_bake_key/vm_bake_image and renet_pkg_matrix pytest units, the renet pkg/infra aptretry, pkgset and cephpkg go units, 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' (seeded 2026-09-29, PLAN-renet-ceph-gpu-non-apt P6),",
     "and 'E2E Backup Browse-At' (seeded 9.0 at PLAN-e2e-browse-at-ci B6, 2026-10-21; measured 7.0, job 119710934780 at 7m00s). The seed derivations are in git history before commit 9c568c99e."
   ],
-  "refreshed_at": "2026-11-01T11:35:39Z",
+  "refreshed_at": "2026-11-01T12:55:47Z",
   "concurrency": 20,
   "jobs": {
     "quality-pytest": 1.3,
@@ -1384,7 +1384,7 @@
     "Tests + Infra / Account E2E (1/4)": 8.3,
     "Tests + Infra / Renet (integration, 2/3)": 6.4,
     "Tests + Infra / Renet (go, 1/2)": 3.9,
-    "Tests + Infra / Account E2E (4/4)": 13.1,
+    "Tests + Infra / Account E2E (4/4)": 6.2,
     "Tests + Infra / Account E2E (3/4)": 12.6,
     "Tests + Infra / Account E2E (2/4)": 8.2,
     "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)": 8.4,
@@ -1481,12 +1481,12 @@
     "Quality / Secure Storage (keyctl)": 0.6,
     "Quality / Secure Storage (keychain)": 1.1,
     "Quality / Secure Storage (dpapi)": 2.5,
-    "Quality / Pytest (1/4)": 11.5,
+    "Quality / Pytest (1/4)": 10.8,
     "E2E Dependency Probe / Renet embed assets": 0.4,
     "Quality / Pytest (2/4)": 10.8,
     "Quality / Pytest (4/4)": 9.8,
     "E2E Dependency Probe / E2E Probe / List Files": 0.3,
-    "Quality / Pytest (3/4)": 13.3,
+    "Quality / Pytest (3/4)": 13.5,
     "E2E Dependency Probe / E2E Probe (04-repository-lifecycle.test.ts)": 7.9,
     "E2E Dependency Probe / E2E Probe (03-datastore-lifecycle.test.ts)": 5.7,
     "E2E Dependency Probe / E2E Probe (02-machine-setup.test.ts)": 6.3,
@@ -1537,8 +1537,7 @@
       "42ebc09a297a0b3a"
     ],
     "Quality / Pytest (1/4)": [
-      "00e03752102d3e91",
-      "b51372117f5a53e3"
+      "00e03752102d3e91"
     ],
     "Quality / Pytest (2/3)": [
       "45ac414b27d4e720"
@@ -1550,9 +1549,7 @@
       "7a8c164bdbfc0bb0"
     ],
     "Quality / Pytest (3/4)": [
-      "1a97dec5c2af7939",
-      "c0b0342cc52e7362",
-      "f3ab866453e76991"
+      "c0b0342cc52e7362"
     ],
     "Quality / Pytest (4/4)": [
       "85c1039572047d67"
@@ -1567,7 +1564,6 @@
       "7bbcb1e639863197"
     ],
     "Tests + Infra / Account E2E (4/4)": [
-      "4008f45254c4c054",
       "50b698b666e85662"
     ],
     "Tests + Infra / E2E Workers (debian-13, 1/8)": [
@@ -2025,7 +2021,7 @@
     "check:ci-proxy-image-smoke": 28.4
   },
   "job_max_seconds": {
-    "refreshed_at": "2026-11-01T11:35:03Z",
+    "refreshed_at": "2026-11-01T12:55:20Z",
     "jobs": {
       "Validate Promotion": {
         "observed_max_seconds": 344,

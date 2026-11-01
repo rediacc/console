@@ -3255,3 +3255,45 @@ def test_fetch_jobs_refuses_a_broken_or_short_page(monkeypatch):
     )
     with pytest.raises(br.ghx.GhBadOutputError, match="short at 1 of 141"):
         br.fetch_jobs("o/r", 1)
+
+
+def _mixed_leg_samples() -> dict[str, list[tuple[str, float]]]:
+    # 2026-11-01's shape: three samples of today's leg 4 and one 14.8m sample of the retired plan.
+    return {
+        "Q / X (4/4)": [("today4", 6.2), ("old4", 14.8), ("today4", 4.9), ("today4", 4.9)],
+        "Q / X (3/4)": [("old3", 12.6)],
+    }
+
+
+_TODAY = {"lane-x": (4, {3: "today3", 4: "today4"})}
+
+
+def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
+    p90, plans = br.prefer_todays_leg(
+        {"Q / X (4/4)": 13.1, "Q / X (3/4)": 12.6}, _mixed_leg_samples(), set(), _TODAY
+    )
+    assert p90["Q / X (4/4)"] == br.stats([6.2, 4.9, 4.9])["p90"]
+    assert plans["Q / X (4/4)"] == ["today4"]
+    # CONTROL: a leg none of whose samples ran today's leg keeps its p90 and its retired hash, so check-lane-budget.ts still sets it aside and prints it.
+    assert p90["Q / X (3/4)"] == 12.6
+    assert plans["Q / X (3/4)"] == ["old3"]
+
+
+def test_prefer_todays_leg_leaves_untraced_and_single_plan_names_alone():
+    samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 13.0)]}
+    p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 12.3}, samples, set(), _TODAY)
+    # CONTROL: one plan only, so nothing is dropped and the slow sample still counts.
+    assert p90 == {"Q / X (4/4)": 12.3}
+    assert plans == {"Q / X (4/4)": ["today4"]}
+    p90, plans = br.prefer_todays_leg(
+        {"Q / X (4/4)": 13.1}, _mixed_leg_samples(), {"Q / X (4/4)"}, _TODAY
+    )
+    # Untraced is the strict side: the full p90 stays and no entry is written.
+    assert p90["Q / X (4/4)"] == 13.1
+    assert "Q / X (4/4)" not in plans
+
+
+def test_prefer_todays_leg_refuses_a_leg_count_that_is_not_today_s():
+    samples = {"Q / X (4/5)": [("today4", 6.0), ("old4", 14.0)]}
+    p90, _ = br.prefer_todays_leg({"Q / X (4/5)": 13.2}, samples, set(), _TODAY)
+    assert p90 == {"Q / X (4/5)": 13.2}

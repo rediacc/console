@@ -1738,6 +1738,18 @@ def compute_lane_durations(
                 "samples": len(wall_minutes),
             }
 
+    leg_samples, untraced_legs = traced_leg_samples(
+        pr_runs,
+        pr_jobs_by_run,
+        patterns,
+        lambda sha, rel: _git_show(tree_root, sha, rel),
+    )
+    job_p90_minutes, leg_plans = prefer_todays_leg(
+        job_p90_minutes,
+        leg_samples,
+        untraced_legs,
+        today_leg_hashes(tree_root, patterns),
+    )
     return {
         "jobs": jobs_minutes,
         "units": units_ms,
@@ -1757,13 +1769,8 @@ def compute_lane_durations(
         "stale_sample": stale_sample_findings(pr_runs),
         # Which PR runs the numbers came from, so a refresh names its sample rather than only its size.
         "sampled_runs": [_run_summary(run) for run in pr_runs],
-        # The leg contents each measured leg ran; see `job_p90_plans`.
-        "job_p90_plans": job_p90_plans(
-            pr_runs,
-            pr_jobs_by_run,
-            patterns,
-            lambda sha, rel: _git_show(tree_root, sha, rel),
-        ),
+        # The leg contents each measured leg ran; see `job_p90_plans` and `prefer_todays_leg`.
+        "job_p90_plans": leg_plans,
     }
 
 
@@ -1795,17 +1802,101 @@ def job_p90_plans(
     patterns: Mapping[str, re.Pattern[str]],
     show: Callable[[str, str], str | None],
 ) -> dict[str, list[str]]:
-    """`{display name: sorted leg_plan_hash values}` for every leg of a manifest lane that a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
+    """`{display name: sorted leg_plan_hash values}` for every leg of a manifest lane that a sampled job measured; `traced_leg_samples` holds the rule. A name with an untraced sample gets no entry."""
+    samples, untraced = traced_leg_samples(pr_runs, pr_jobs_by_run, patterns, show)
+    return plans_from_samples(samples, untraced)
+
+
+def plans_from_samples(
+    samples: Mapping[str, Sequence[tuple[str, float]]], untraced: set[str]
+) -> dict[str, list[str]]:
+    """The `job_p90_plans` shape of `traced_leg_samples`' result: each traced name's distinct leg hashes, sorted."""
+    return {
+        name: sorted({h for h, _ in rows})
+        for name, rows in sorted(samples.items())
+        if name not in untraced
+    }
+
+
+def today_leg_hashes(
+    tree_root: Path, patterns: Mapping[str, re.Pattern[str]]
+) -> dict[str, tuple[int | None, dict[int, str]]]:
+    """`{lane: (leg count, {leg index: leg_plan_hash})}` from the shard manifests in the working tree, the legs that ship today. A lane with no readable manifest is absent."""
+    out: dict[str, tuple[int | None, dict[int, str]]] = {}
+    for lane in patterns:
+        path = tree_root / SHARDS_DIR_REL / ("%s.json" % lane)
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        legs = {
+            lg["index"]: leg_plan_hash(lg.get("ids") or [])
+            for lg in manifest.get("legs") or []
+            if isinstance(lg, dict) and isinstance(lg.get("index"), int)
+        }
+        of = manifest.get("of")
+        out[lane] = (of if isinstance(of, int) else None, legs)
+    return out
+
+
+def prefer_todays_leg(
+    job_p90_minutes: Mapping[str, float],
+    samples: Mapping[str, Sequence[tuple[str, float]]],
+    untraced: set[str],
+    today: Mapping[str, tuple[int | None, Mapping[int, str]]],
+) -> tuple[dict[str, float], dict[str, list[str]]]:
+    """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
+
+    A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now. When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone. MEASURED 2026-11-01: "Account E2E (4/4)" read 13.1m from samples 6.2, 4.9, 14.8 and 4.9, the 14.8 from run 39869882942 under the retired plan, and check-lane-budget.ts counted the mixed entry against today's leg. A name none of whose samples ran today's leg keeps every sample, so the gate's own set-aside (`measuredThisLeg`) still prints it; an untraced name keeps its p90 and gets no entry, the strict side."""
+    p90 = dict(job_p90_minutes)
+    plans = plans_from_samples(samples, untraced)
+    for name, rows in samples.items():
+        if name in untraced:
+            continue
+        hashes = {h for h, _ in rows}
+        current = next((h for h in hashes if _is_today(name, h, today)), None)
+        if current is None or len(hashes) == 1:
+            continue
+        s = stats([w for h, w in rows if h == current])
+        if s is not None:
+            p90[name] = s["p90"]
+            plans[name] = [current]
+    return p90, plans
+
+
+def _is_today(name: str, leg_hash: str, today: Mapping[str, tuple[int | None, Mapping[int, str]]]) -> bool:
+    """Whether `leg_hash` is the hash of the leg `name` names in any lane's manifest of today."""
+    leg = _LEG_INDEX_RE.search(name)
+    if leg is None:
+        return False
+    index = int(leg.group(1))
+    of_in = leg.group(2)
+    for of, legs in today.values():
+        if of_in is not None and of is not None and int(of_in) != of:
+            continue
+        if legs.get(index) == leg_hash:
+            return True
+    return False
+
+
+def traced_leg_samples(
+    pr_runs: Sequence[dict[str, Any]],
+    pr_jobs_by_run: Sequence[Sequence[dict[str, Any]]],
+    patterns: Mapping[str, re.Pattern[str]],
+    show: Callable[[str, str], str | None],
+) -> tuple[dict[str, list[tuple[str, float]]], set[str]]:
+    """`({display name: [(leg_plan_hash, wall minutes)]}, untraced names)` for every leg of a manifest lane that a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
 
     A name ANY of whose samples cannot be traced (no head_sha, no manifest at that commit, a leg count or index the manifest does not hold) gets NO entry, and the gate counts a name with no entry against today's leg. Unknown is the strict direction here, never the lenient one."""
-    out: dict[str, set[str]] = {}
+    out: dict[str, list[tuple[str, float]]] = {}
     untraced: set[str] = set()
     manifests: dict[tuple[str, str], dict[str, Any] | None] = {}
     for run, jobs in zip(pr_runs, pr_jobs_by_run, strict=False):
         sha = run.get("head_sha")
         for job in jobs:
             name = job.get("name") or ""
-            if job_wall_minutes(job) is None:
+            wall = job_wall_minutes(job)
+            if wall is None:
                 continue
             lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
             if lane is None:
@@ -1836,8 +1927,8 @@ def job_p90_plans(
             if (of_in is not None and int(of_in) != manifest.get("of")) or len(legs) != 1:
                 untraced.add(name)
                 continue
-            out.setdefault(name, set()).add(leg_plan_hash(legs[0].get("ids") or []))
-    return {name: sorted(hashes) for name, hashes in sorted(out.items()) if name not in untraced}
+            out.setdefault(name, []).append((leg_plan_hash(legs[0].get("ids") or []), wall))
+    return out, untraced
 
 
 def merged_job_p90_plans(
