@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -562,6 +563,26 @@ def test_plan_mode_refuses_a_plan_it_cannot_see(gate, tmp_path):
     gate.log_pass("a missing or out-of-scope plan is a refusal, not an empty report")
 
 
+def _absent_from_partial_clone(blob: str) -> bool:
+    """True only when this checkout is a promisor (partial) clone AND the named blob is truly not in it, read with lazy fetch off, so a gate that merely prints the message cannot earn the skip."""
+    root = str(paths.repo_root())
+    promisor = subprocess.run(
+        ["git", "-C", root, "config", "--get", "remote.origin.promisor"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    if promisor != "true":
+        return False
+    present = subprocess.run(
+        ["git", "-C", root, "cat-file", "-e", blob],
+        capture_output=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    return present.returncode != 0
+
+
 def test_plan_mode_on_the_real_tree_prints_valid_json(gate):
     """The box's acceptance, on this repository: the command prints one JSON object in the contract's shape."""
     rel = "agent/plans/PLAN-plan-per-pr-loop.md"
@@ -571,13 +592,8 @@ def test_plan_mode_on_the_real_tree_prints_valid_json(gate):
         [sys.executable, str(GATE), "--plan", rel, "--json"], cwd=paths.repo_root()
     )
     # The gate reads history with GIT_NO_LAZY_FETCH=1 on purpose, so in a `filter: blob:none` checkout (CI's quality-pytest lane) blame cannot reach the blobs of older revisions. That is the checkout, not the gate: it is declared, counted and named by check:ci-pytest.
-    promisor = subprocess.run(
-        ["git", "-C", str(paths.repo_root()), "config", "--get", "remote.origin.promisor"],
-        capture_output=True,
-        text=True,
-        check=False,
-    ).stdout.strip()
-    if result.rc == 2 and "Cannot read blob" in result.err and promisor == "true":
+    missing = re.search(r"Cannot read blob ([0-9a-f]{7,40})", result.err)
+    if result.rc == 2 and missing and _absent_from_partial_clone(missing.group(1)):
         pytest.skip(
             "CANNOT RUN (1 of 1 requirement(s) missing): the history blobs of %s, which a "
             "blob:none partial clone omits and the gate never lazy-fetches" % rel
