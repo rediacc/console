@@ -235,6 +235,21 @@ def _hold_world_lock(world):
     _LOCK_FDS.append(fd)
 
 
+def _sleep_children(parent):
+    """The pids of `sleep` processes whose parent is `parent`, read from /proc; empty where /proc has no such file."""
+    found = []
+    for pid in proc.pids():
+        try:
+            with open("/proc/%s/stat" % pid, encoding="utf-8") as handle:
+                # The fields after the parenthesised comm, which may itself hold spaces: state, then ppid.
+                ppid = int(handle.read().rpartition(")")[2].split()[1])
+        except (OSError, ValueError, IndexError):
+            continue
+        if ppid == parent and proc.comm(pid) == "sleep":
+            found.append(pid)
+    return found
+
+
 def _kill_stale(paths):
     """Kill any leftover fixture shells from an EARLIER run before spawning.
 
@@ -251,11 +266,17 @@ def _kill_stale(paths):
         stale = [p for p in proc.pids() if any(t in (proc.cmdline(p) or "") for t in paths)]
         if not stale:
             return
+        # The children are read before anything dies. The bashcov-sup wrapper matches too and comes first in `stale`; killing it takes its script with it, and the script's child is then reparented, out of reach (measured 2026-11-01, about three orphans per run). Only a script's own child goes: a group the script does not lead may hold an unrelated process, since anything naming a fixture path matches `stale`.
+        children = [c for pid in stale for c in _sleep_children(pid)]
+        for pid in children:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                continue
         for pid in stale:
             try:
-                # A fixture in another session owns its whole group even when it does not lead it: the bashcov-sup wrapper re-execs the script under a group of its own, and killing the script alone left its `sleep` child orphaned (measured 2026-11-01, about three per run).
-                if os.getpgid(pid) == pid or os.getsid(pid) != os.getsid(0):
-                    os.killpg(os.getpgid(pid), signal.SIGKILL)
+                if os.getpgid(pid) == pid:
+                    os.killpg(pid, signal.SIGKILL)
                 else:
                     os.kill(pid, signal.SIGKILL)
             except OSError:

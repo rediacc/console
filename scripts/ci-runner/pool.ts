@@ -231,7 +231,7 @@ function withOrder(
   };
 }
 
-/** What the lease reports before a pass. Every field is Infinity when nothing is leased. */
+/** What the lease reports before a pass. `free`, `share` and `total` are Infinity when nothing is leased, and `runs` is absent. */
 export interface LeaseView {
   /** Cores the pool may still start on beyond `inUse`: the broker's free tokens plus the slack of tokens this run already holds. */
   free: number;

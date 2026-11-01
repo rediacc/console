@@ -4263,7 +4263,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docs render parity',
     },
   },
-  // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a proxy (an inline English string is invisible to it) and cannot replace the gate above. >>> gen-manifest: region 31
+  // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a proxy (an inline English string is invisible to it) and cannot replace the gate above.
   // >>> gen-manifest: region 38
   {
     id: 'check:ci-page-locale-imports',
