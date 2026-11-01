@@ -55,32 +55,63 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
-- Phase: build.
-- Branch: 1023-1, no PR yet.
-- Plans on the PR (10):
-  - agent/plans/PLAN-plan-per-pr-loop.md -- 16 of 16 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/_done/PLAN-pins-command.md -- 13 of 13 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 10 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/_done/PLAN-stop-hook-rulings-campaign.md -- 17 of 17 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 167 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-agent-tree-lifecycle.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-telemetry-export.md -- 17 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (3 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1586 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+- Phase: babysit on PR #602 (branch 1023-1, session d778be9d, since 2026-11-01T00:45:41Z).
+- Branch: 1023-1, PR #602 open.
+- Plans on the PR (42):
+  - agent/plans/PLAN-plan-per-pr-loop.md -- 16 of 16 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 167 of 196 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 30 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-telemetry-export.md -- 17 of 20 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-renet-bridge-leftovers.md -- 15 of 16 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-config-sync-hardening.md -- 20 of 20 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 15 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-w7p5a-real-run-dispatch.md -- 10 of 10 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- 7 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-plan-preflight.md -- 8 of 9 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-renet-run-docker-sock-isolation.md -- 3 of 4 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-config-networkid-discovery.md -- 7 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-renet-fetch-retries.md -- 2 of 3 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-cloudflare-spend-guard.md -- 8 of 10 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-renet-runtime-converge.md -- 4 of 5 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-sandbox-tenant-separation.md -- 6 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-converge-preflight-and-repo-recovery.md -- 18 of 19 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-gpu-device-grants.md -- 12 of 14 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 35 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-console-executor-multi-org.md -- 17 of 21 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-executor-durable-object-policy.md -- 15 of 22 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-local-release.md -- 14 of 16 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-config-server-key.md -- 7 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-tested-on-bench.md -- 14 of 20 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-per-flavor-renet-binary-paths.md -- 8 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-org-executor-connect-timeout-relocate.md -- 9 of 12 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-backup-restore-path.md -- 7 of 10 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-ssh-key-source-ranges.md -- 10 of 11 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-repo-docker-storage-prune.md -- 11 of 14 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-production-key-only.md -- 9 of 19 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-detached-jobs.md -- 14 of 39 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-snapshot-read-io-cap.md -- 12 of 16 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-backup-meter-orphaned-chunks.md -- 4 of 8 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-backup-local-image.md -- 9 of 14 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 4 of 7 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-jobs-backup-real-machine-tests.md -- 3 of 11 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-cli-tofu-toolchain.md -- 9 of 10 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-backup-download-from-store.md -- 5 of 9 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-settings-set-verb.md -- 3 of 4 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+  - agent/plans/PLAN-free-license.md -- 4 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
+- Work outside the PR's plans (2 epic(s)):
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1751 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-  - epic 9ba16177, plan agent/plans/PLAN-renet-bridge-leftovers.md, outside the set, 5 commit(s) on the branch, 0 open item(s): renet bridge and middleware leftovers removed
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 2: #831b7e48 (worker:bkgtbxyrz, d778be9d), #a150016d (worker:queue, d778be9d).
-- Next plan: agent/plans/PLAN-renet-bridge-leftovers.md, Promoted entry 6; starts after this branch's PR merges.
+- Writers: 1 live of writer_cap 25 (session 45048a90): worker:a198436eaa56384a9.
+- Leased items: 6: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:882109, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
+- Next plan: agent/plans/PLAN-agent-tree-lifecycle.md, Generated entry 1 (no Promoted entry ahead of it has an open box); a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 42 plans done, 591 of 754 boxes done (78%).
+Promoted: 6 of 43 plans done, 591 of 811 boxes done (72%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -126,6 +157,7 @@ Promoted: 6 of 42 plans done, 591 of 754 boxes done (78%).
 | 40 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 41 | PLAN-settings-set-verb.md | 3/4 | 1 open |
 | 42 | PLAN-free-license.md | 4/13 | 9 open |
+| 43 | PLAN-backup-integrity.md | 0/57 | 57 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by e989dc4d9 on this branch) and R1 closes on a green scheduled run after the merge
@@ -170,6 +202,7 @@ Promoted: 6 of 42 plans done, 591 of 754 boxes done (78%).
 40. agent/plans/PLAN-backup-download-from-store.md -- operator 2026-10-29 "Go: implement": rdc backup download --store from the R2 chunk store with no machine, a backup:restore token scope, renet backup fetch-image, darwin and windows hole punching
 41. agent/plans/PLAN-settings-set-verb.md -- operator /ask 2026-10-30 "Yes, plan it": npm run settings -- set|get|list over a tunables registry, one source per value (the R2 ceiling lived in three places), starting with the spend-guard ceilings
 42. agent/plans/PLAN-free-license.md -- operator /ask 2026-10-30 (rulings R1-R13): licensing always enforced incl. CI (production key in CI, one shared renet artifact), FREE plan (48 h, 3 GB, 8 per IP per 72 h per server, 3 per machine, unlimited renewal, no backups), COMMUNITY licenses again
+43. agent/plans/PLAN-backup-integrity.md -- operator /ask 2026-11-01: all integrity fixes land in #602
 
 ## Generated
 
