@@ -21,4 +21,4 @@ Body-Sig: 6cd4bafba0c344e4
 ### ae97deb8.1 [low] agent/plans/PLAN-backup-critical-tier.md:326
 Anchor: in-diff
 Claim: The new paragraph says the erasure bound stands but gives no bound and no cross-reference to O7; the figure (about 37 days) appears only in the Erasure bullet at line 322, so the commit message's goal of stating the erasure bound in M10's context is only partly met.
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-backup-critical-tier.md:326 states the age anchor binds routine retention only, and a lineage purge or data-subject erasure removes the anchor too, so the erasure bound stands. | 45048a90 2026-11-01T20:09:06Z
