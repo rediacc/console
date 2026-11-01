@@ -620,7 +620,8 @@ install_xdist() {
     # CPython uv chose, not the venv), so the base needs PyYAML too.
     local base
     base="$(readlink -f "$TOOL_DIR/pytest/bin/python")"
-    [ "$("$base" -c 'import yaml; print(yaml.__version__)' 2>/dev/null)" = "$PYYAML_VERSION" ] || "$uv" pip install --quiet --python "$base" --break-system-packages "PyYAML==${PYYAML_VERSION}" || {
+    # Importable is enough there: a system interpreter (CI's /usr/bin/python3.12) often ships its own PyYAML and is not writable, so the pin is enforced in the venv above and only a base with no yaml at all gets one installed.
+    "$base" -c 'import yaml' 2>/dev/null || "$uv" pip install --quiet --python "$base" --break-system-packages "PyYAML==${PYYAML_VERSION}" || {
         echo "${RED}bootstrap${NC}: could not install PyYAML into the base interpreter $base" >&2
         return 1
     }
