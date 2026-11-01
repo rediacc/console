@@ -2324,7 +2324,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-live-proof',
     gate: true,
-    slow: true, // 83.2 s CI step p90 (lane-durations refresh 2026-11-01); a9981f7cd halves the patch-id cost (27 s -> 14 s locally), still over the 20 s pre-push ceiling
+    slow: true, // 83.2 s CI step p90 (lane-durations refresh 2026-11-01); the tier is judged on the CI step, and a9981f7cd halving the local run (27 s -> 14 s) projects that step to about 40 s, still over the 20 s ceiling
     leaves: ['.ci/scripts/quality/check_plan_live_proof.py'],
     ci: {
       kind: 'step',
