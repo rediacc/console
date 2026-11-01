@@ -354,7 +354,7 @@ export function createCli(): Command {
 
       // A command that reported failure through setExitCode() returns normally and reaches this hook, so its span takes that exit status rather than an unconditional success (inside a dispatch the code lives on the request, on a laptop on process.exitCode).
       const requested = currentRequestContext()?.exitCode ?? process.exitCode;
-      const exitCode = typeof requested === 'number' ? requested : 0;
+      const exitCode = Number(requested ?? 0) || 0;
       telemetryService.endCommand(
         commandName,
         exitCode === 0
