@@ -2485,6 +2485,21 @@
         "d54e3a5b"
       ]
     },
+    "agent/plans/PLAN-stop-hook-retro-20261101.md": {
+      "status": "ready",
+      "owner": "45048a90",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 4,
+      "done": 0,
+      "open_sigs": [
+        "7e9b923d",
+        "9ebeab9c",
+        "a8063221",
+        "fa7056ab"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
       "owner": "unowned",
