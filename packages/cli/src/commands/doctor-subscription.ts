@@ -21,13 +21,14 @@ function getInactiveStatusHint(status: string): string {
 }
 
 function checkSubscriptionStatus(checks: CheckResult[], report: LicenseReport): void {
-  const status = report.status as SubscriptionStatus;
+  // The report can carry the status in either case (the account server answers `active`); the shared predicates compare the upper-case enum.
+  const status = String(report.status ?? '').toUpperCase() as SubscriptionStatus;
   if (!isSubscriptionActive(status)) {
     checks.push({
       name: t('commands.doctor.checks.subscriptionStatus'),
-      value: `${report.planCode} (${report.status})`,
+      value: `${report.planCode} (${status})`,
       status: 'fail',
-      hint: getInactiveStatusHint(report.status),
+      hint: getInactiveStatusHint(status),
     });
     return;
   }
