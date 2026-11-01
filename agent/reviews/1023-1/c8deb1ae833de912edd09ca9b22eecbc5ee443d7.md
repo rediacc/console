@@ -21,4 +21,4 @@ Body-Sig: d0a586318d670182
 ### c8deb1ae.1 [medium] packages/cli/src/cli.ts:357
 Anchor: in-diff
 Claim: `typeof requested === 'number' ? requested : 0` maps any non-number exit code to 0, so if process.exitCode holds a string such as '1' (allowed by Node's exitCode type), a failing command on a laptop still ends its span as success, the same OK-where-ERROR bug this commit fixes.
-Resolution: open
+Resolution: fixed dd55298f0b4f8cbccc673b5a63135b9b88ad7b2c | d778be9d 2026-11-01T03:39:55Z
