@@ -66,6 +66,22 @@ def _stub_extra(step_id: str) -> Any:
 STUB_EXTRA = {step_id: _stub_extra(step_id) for step_id in EXTRA_IDS}
 
 
+def e2e_output(**statuses: str) -> str:
+    """An e2e run's stdout as TextFileReporter logs it: one line per finished test, then the summary path and the skip sentinel. With no argument, two passed tests."""
+    tests = statuses or {"reachable": "passed", "push_pull": "passed"}
+    lines = [
+        "[2026-11-01T08:42:%02d.000Z] 11-multi-machine.test.ts > Multi-Machine > %s (0.3s, %s)"
+        % (n, title, status)
+        for n, (title, status) in enumerate(tests.items())
+    ]
+    skipped = sum(1 for s in tests.values() if s == "skipped")
+    lines += [
+        "[TextFileReporter] Summary: /repo/packages/e2e-tests/reports/bridge-logs/summary.txt",
+        "[TextFileReporter] E2E_SKIPPED=%d" % skipped,
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def drill_passed(name: str, count: int = 12) -> tuple[int, str]:
     """A drill's real PASSED tail, colour escapes included (lib.Drill.summary on a tty)."""
     return (
@@ -274,6 +290,10 @@ class World(vm_check.Host):
         # The private/account checkout: initialized or not, and its HEAD.
         self.account_checked_out = over.pop("account_checked_out", True)
         self.account_checkout = over.pop("account_checkout", APTR)
+        # The external legs' `bash -c` commands: the first scripted (rc, stdout) whose key is a substring of the command answers it; an unscripted `create_e2e_env` exits 0 and an unscripted e2e run passes two tests. `e2e_resets` plants an e2e global setup that recreates the worker, taking every repo with it.
+        self.external: dict[str, tuple[int, str]] = dict(over.pop("external", {}))
+        self.e2e_resets = over.pop("e2e_resets", False)
+        self.bash_cmds: list[str] = []
         assert not over, over
         self.store = root / "remote-store"
         self.mnt = root / "mnt"
@@ -359,6 +379,8 @@ class World(vm_check.Host):
             return vm_check.Result(255, "", "unexpected probe")
         if argv[0] == "sftp":
             return self._sftp(argv)
+        if argv[:2] == ["bash", "-c"]:
+            return self._bash(argv[2])
         if argv[0] == self.rdc_path:
             return self._rdc(argv[1:], env or {})
         return vm_check.Result(127, "", "unknown command %s" % argv[0])
@@ -403,7 +425,14 @@ class World(vm_check.Host):
                 return vm_check.Result(
                     self.ops_up_rc, "", "booting\nlibvirt: domain failed to start"
                 )
-            self.running = [BRIDGE, WORKER]
+            # `--basic` is the bridge and worker .11; otherwise VM_WORKERS (renet's default "11 12") and VM_CEPH_NODES. Without --force a running VM is left alone, so the set only grows.
+            if "--basic" in args:
+                ids = ["11"]
+            else:
+                ids = (env.get("VM_WORKERS") or "11 12").split()
+                ids += (env.get("VM_CEPH_NODES") or "").split()
+            wanted = [BRIDGE, *("%s.%s" % (NET, i) for i in ids)]
+            self.running = [*self.running, *(ip for ip in wanted if ip not in self.running)]
             self.vm_net_addr = self.vm_net_after_up
             return ok
         if head == ("ops", "down"):
@@ -561,6 +590,19 @@ class World(vm_check.Host):
                 self._write_alias(alias, env)
             return vm_check.Result(0, "%s%s/mnt/rediacc/mounts/x\n" % (vm_check.URI_PREFIX, alias))
         return ok
+
+    def _bash(self, command: str) -> vm_check.Result:
+        self.bash_cmds.append(command)
+        for key, (rc, out) in self.external.items():
+            if key in command:
+                return vm_check.Result(rc, out, "", 1000)
+        if "rediacc_ci.env.create_e2e_env" in command:
+            return vm_check.Result(0, "", "-> Creating E2E test environment\n", 100)
+        if "rediacc_ci.testrun.e2e" in command:
+            if self.e2e_resets:
+                self.repos.clear()
+            return vm_check.Result(0, e2e_output(), "", 90000)
+        return vm_check.Result(127, "", "unscripted bash command: %s" % command)
 
     def _repo_data(self) -> list[dict[str, str]]:
         return [
@@ -3465,3 +3507,250 @@ def test_p1_reads_the_one_bin_renet(tmp_path: pathlib.Path) -> None:
     read = [c[3] for c in world.calls if c[:3] == ["go", "version", "-m"]]
     assert read, "P1 never read the binary's build info"
     assert all(p.endswith("/private/renet/bin/renet") for p in read), read
+
+
+# ----------------------------------------------------------------------------- external area legs
+
+
+def run_areas(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    world: World,
+    areas: set[str],
+) -> tuple[int, str, dict[str, Any]]:
+    """A run on `world` whose trigger is set by hand: the renet side required, the account side not, and `areas` touched (the fake root is no git repository, so no diff names them)."""
+
+    def trigger(self: vm_check.VmCheck) -> bool:
+        self.areas = frozenset(areas)
+        self.phases[vm_check.SIDE_ACCOUNT]["required"] = False
+        self.trigger_info = {
+            "base": "origin/main",
+            "via": "test",
+            "hits": ["private/renet/x.go"],
+            "sides": ["renet"],
+            "areas": [a for a in vm_check.trigger.AREAS if a in areas],
+        }
+        return True
+
+    monkeypatch.setattr(vm_check.VmCheck, "_evaluate_trigger", trigger)
+    return run_check(tmp_path, world, "--changed")
+
+
+def _leg(receipt: dict[str, Any], area: str, leg_id: str) -> dict[str, Any]:
+    return next(leg for leg in receipt["areas"][area]["legs"] if leg["id"] == leg_id)
+
+
+def _call_index(world: World, pred: Any) -> int:
+    return next(i for i, c in enumerate(world.calls) if pred(c))
+
+
+TWO_WORKERS = [BRIDGE, WORKER, NET + ".12"]
+
+
+def test_an_external_leg_is_run_and_its_pass_credits_the_area(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The multi-vm leg's two-worker fleet is not up (only .1 and .11 run): the check brings it up with the recipe's `./rdc.sh ops up`, writes the e2e env, runs suite 11 after the base battery and after its own forks are gone, and the pass makes the run VERIFIED."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "ok", leg
+    assert "2 test(s) passed" in leg["detail"]
+    row = _rows(receipt, "X.multi-machine-11")[0]
+    assert row["verdict"] == "ok"
+    assert row["log"].endswith(".log")
+    # The fleet came up with the recipe's topology: a full `ops up` (no --basic), and .12 now runs.
+    ups = [c for c in world.rdc_calls() if c[:2] == ["ops", "up"]]
+    assert ups == [["ops", "up"]], ups
+    assert set(TWO_WORKERS) <= set(receipt["fleet"]["ips"])
+    # Both commands ran, the env first, from the console root.
+    assert len(world.bash_cmds) == 2
+    assert "rediacc_ci.env.create_e2e_env" in world.bash_cmds[0]
+    assert '--vm-workers "11 12"' in world.bash_cmds[0]
+    assert "--test 11-multi-machine --fail-on-skip" in world.bash_cmds[1]
+    assert all(c.startswith("cd %s && " % shlex.quote(str(world.root))) for c in world.bash_cmds)
+    # After the whole battery, and after this run's forks were deleted.
+    first_bash = _call_index(world, lambda c: c[:2] == ["bash", "-c"])
+    last_delete = max(
+        i
+        for i, c in enumerate(world.calls)
+        if c[0] == world.rdc_path and c[1:3] == ["repo", "delete"]
+    )
+    assert last_delete < first_bash
+    ids = _ids(receipt)
+    assert ids.index("X.multi-machine-11") > max(ids.index(s) for s in V_STEPS)
+    assert world.forks_left() == []
+    # The suite never sees the minted token or the dev-config switch.
+    bash_envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[:2] == ["bash", "-c"]]
+    assert bash_envs
+    assert all(not set(DRILL_ENV_SCRUB) & set(e) for e in bash_envs)
+    # A0 ran for the leg's licensing even though the account side is not required.
+    assert "A0" in ids
+    assert _rows(receipt, "XR")[0]["verdict"] == "ok"
+    assert receipt["status"] == receipt_mod.VERIFIED
+
+
+def test_a_failing_external_leg_fails_the_area_and_names_the_test(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failing = e2e_output(reachable="passed", push_pull="failed")
+    world = make_world(tmp_path, running=TWO_WORKERS, external={"11-multi-machine": (1, failing)})
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_FAILED, out
+    assert receipt["status"] == receipt_mod.FAILED
+    assert "X.multi-machine-11" in receipt["reason"]["detail"]
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "failed", leg
+    assert "1 of 2 test(s) failed" in leg["detail"]
+    assert "--test 11-multi-machine" in leg["detail"]
+    row = _rows(receipt, "X.multi-machine-11")[0]
+    assert row["verdict"] == "FAIL"
+    assert any("push_pull" in f for f in row["failedAssertions"])
+    # A fleet already up is reused, never started again.
+    assert not [c for c in world.rdc_calls() if c[:2] == ["ops", "up"]]
+
+
+def test_a_fleet_that_cannot_be_brought_up_is_a_real_not_verified(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The base fleet runs, so only the leg's `ops up` is tried, and it fails: the leg is NOT_VERIFIED naming the command and its error, the suite never runs, and nothing is skipped quietly."""
+    world = make_world(tmp_path, ops_up_rc=1)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "area-not-verified"
+    assert "multi-vm/multi-machine-11" in receipt["reason"]["detail"]
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified", leg
+    assert "the fleet could not be brought up" in leg["detail"]
+    assert "./rdc.sh ops up rc=1" in leg["detail"]
+    assert "domain failed to start" in leg["detail"]
+    assert world.bash_cmds == []
+    assert receipt["phases"]["renet"]["ran"] is True
+
+
+def test_a_fleet_whose_recipe_is_not_runnable_is_not_verified_and_the_other_leg_still_runs(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The migrate area: cli-migrate-23 runs on the two workers; dual-group-18's second-group recipe is prose, so it is NOT_VERIFIED, saying why, never skipped."""
+    world = make_world(tmp_path, running=TWO_WORKERS)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"migrate"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert _leg(receipt, "migrate", "cli-migrate-23")["status"] == "ok"
+    dual = _leg(receipt, "migrate", "dual-group-18")
+    assert dual["status"] == "not-verified", dual
+    assert "not the machine-runnable shape" in dual["detail"]
+    assert "migrate/dual-group-18" in receipt["reason"]["detail"]
+    assert "migrate/cli-migrate-23" not in receipt["reason"]["detail"]
+
+
+def test_an_e2e_setup_that_resets_the_worker_gets_the_parent_grand_recreated(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(tmp_path, running=TWO_WORKERS, e2e_resets=True)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    restore = _rows(receipt, "XR")
+    assert len(restore) == 1, restore
+    assert restore[0]["verdict"] == "ok", restore
+    assert "created" in restore[0]["desc"]
+    assert PARENT in world.repos
+    first_bash = _call_index(world, lambda c: c[:2] == ["bash", "-c"])
+    create = _call_index(world, lambda c: c[0] == world.rdc_path and c[1:3] == ["repo", "create"])
+    assert create > first_bash
+    # The worker's host keys are pinned again before the grand is looked for: a reset recreates the VM.
+    assert [c for c in world.calls[first_bash:create] if c[1:3] == ["machine", "scan-keys"]]
+
+
+def test_an_e2e_run_that_passed_no_test_is_not_verified(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(
+        tmp_path, running=TWO_WORKERS, external={"11-multi-machine": (0, "Running 0 tests\n")}
+    )
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified"
+    assert "no test reported passed" in leg["detail"]
+
+
+def test_a_failed_env_write_is_not_verified_and_the_suite_never_runs(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(
+        tmp_path, running=TWO_WORKERS, external={"create_e2e_env": (1, "budget exceeded\n")}
+    )
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified"
+    assert "setup command 1 of 2 failed" in leg["detail"]
+    assert len(world.bash_cmds) == 1
+
+
+def test_a_battery_failure_skips_the_external_legs(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(tmp_path, running=TWO_WORKERS, ro_breach=True)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_FAILED, out
+    assert world.bash_cmds == []
+    assert "external leg(s) not run: the base battery already failed" in out
+    assert _leg(receipt, "multi-vm", "multi-machine-11")["status"] == "not-run"
+
+
+@pytest.mark.parametrize(
+    ("up", "want"),
+    [
+        ("./rdc.sh ops up --basic", ({}, ["ops", "up", "--basic"])),
+        ("./rdc.sh ops up", ({}, ["ops", "up"])),
+        (
+            "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up",
+            ({"VM_WORKERS": "11 12", "VM_CEPH_NODES": "21 22 23"}, ["ops", "up"]),
+        ),
+        ("./rdc.sh ops up --os ubuntu-24.04", ({}, ["ops", "up", "--os", "ubuntu-24.04"])),
+        ("./rdc.sh ops up --basic, then group B as ct-tests.yml does", None),
+        ("private/renet/bin/renet ops up --force", None),
+        ("./rdc.sh ops down", None),
+        ("./rdc.sh ops up --os", None),
+        ("./rdc.sh ops up; rm -rf /", None),
+        ("VM_WORKERS='11 ./rdc.sh ops up", None),
+    ],
+)
+def test_fleet_up_plan_admits_only_the_runnable_shape(up: str, want: Any) -> None:
+    fleet = vm_check.trigger.Fleet("f", (BRIDGE,), up)
+    assert vm_check.fleet_up_plan(fleet) == want
+
+
+def test_every_mapped_fleet_but_second_group_is_runnable() -> None:
+    """The live map: the one fleet vm:check cannot bring up is named here, so a new prose recipe is noticed."""
+    unrunnable = sorted(
+        name for name, f in vm_check.trigger.MAP.fleets.items() if vm_check.fleet_up_plan(f) is None
+    )
+    assert unrunnable == ["second-group"]
+
+
+def test_classify_e2e_reads_the_last_attempt_and_refuses_an_empty_or_setup_failed_run() -> None:
+    result = vm_check.Result
+    # A retried test that passed on its second attempt: rc 0 and the last line wins.
+    retried = e2e_output(flaky="failed") + e2e_output(flaky="passed")
+    assert vm_check.classify_e2e(result(0, retried))[0] == "ok"
+    # A global setup that threw: rc 1 and no test line at all.
+    outcome, detail, _ = vm_check.classify_e2e(result(1, "Setup failed: Error: VM reset failed\n"))
+    assert outcome == "not-verified"
+    assert "stopped before its tests" in detail
+    # The zero-skip gate: rc 1 with a skipped test and no failed one.
+    outcome, detail, _ = vm_check.classify_e2e(result(1, e2e_output(a="passed", b="skipped")))
+    assert outcome == "not-verified"
+    assert "1 test(s) skipped under --fail-on-skip" in detail
+    # A timed-out test is a failure, whatever the exit code says.
+    outcome, _detail, failed = vm_check.classify_e2e(
+        result(0, e2e_output(a="passed", b="timedOut"))
+    )
+    assert outcome == "failed"
+    assert failed
+    assert failed[0].endswith("> b")
+    # Colour escapes do not hide a result line.
+    coloured = "\x1b[32m" + e2e_output() + "\x1b[0m"
+    assert vm_check.classify_e2e(result(0, coloured))[0] == "ok"

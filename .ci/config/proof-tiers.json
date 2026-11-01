@@ -92,8 +92,8 @@
       "areas_about": [
         "agent/plans/PLAN-renet-change-test-triggers.md Design item 3, the one area map.",
         "An area names renet globs (inside the renet surface), the legs that prove a change there, the e2e suites that exercise it and the CI VM jobs that run them.",
-        "vm:check computes the touched areas from the same diff as its sides; it RUNS a `vmcheck` leg (step ids of its own battery on its worker fleet), JUDGES a `receipt` leg by the named receipt, and never runs an `external` leg (an e2e suite or drill whose fleet vm:check does not own, or whose global setup resets the fleet).",
-        "Each leg not proven makes the run NOT_VERIFIED `area-not-verified`, naming its fleet and its exact commands. A renet runtime path in no area gets the renet base battery alone.",
+        "vm:check computes the touched areas from the same diff as its sides; it RUNS a `vmcheck` leg (step ids of its own battery on its worker fleet), JUDGES a `receipt` leg by the named receipt, and RUNS an `external` leg (an e2e suite on a fleet of its own) after the base battery: it tears its forks down, reuses the fleet when every ip runs or brings it up from `up` (only the `[VAR=value ...] ./rdc.sh ops up [flags]` shape is runnable; a prose recipe is NOT_VERIFIED), runs `cmd` from the console root, judges the last command by its exit code and per-test results, and recreates the vmcheck-base grand when the suite's setup removed it.",
+        "A failed test of an external leg makes the run FAILED; any other leg not proven makes it NOT_VERIFIED `area-not-verified`, naming its fleet and its exact commands. A renet runtime path in no area gets the renet base battery alone.",
         ".ci/scripts/ci/scope-map.cjs reads `globs`, `ci_jobs` and the top-level `exclude`: an expanded renet path selects only its areas' VM jobs, and the bare gitlink or a renet path in no area selects them all.",
         "The `exclude` list (test files, docs) is the VM tier's: a test-only renet change needs no VM proof and no CI VM job, and its Go tests are the renet test map's receipt (.ci/config/renet-test-map.json), not this file's."
       ],

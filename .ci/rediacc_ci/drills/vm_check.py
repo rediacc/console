@@ -4,7 +4,7 @@
     npm run vm:check -- [--changed] --dry-run [--paths <path>[,...]]
     ./run.sh drill vmcheck [same flags]
 
-AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg is never run here, because an e2e suite's global setup can reset the fleet and each suite needs its own `.env`. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg's fleet, whether `ops status` showed it running, how to bring it up and the exact commands. A renet path in no area gets the base battery alone.
+AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
 
 `--dry-run` prints the plan (the hits, the phases and their steps, each area's legs, suites and CI jobs, and the best verdict the run could reach) and touches nothing; `--paths` replaces the diff with the given console-relative paths, to ask what a change WOULD select.
 
@@ -22,7 +22,8 @@ PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.pr
   A2  account only, against the worker: A2.1 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill and the failed assertions by number and description (the row's `failedAssertions`, and the head of its evidence); rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, 0 assertions, or rc 0 with no summary line at all is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys `bin/renet` to the worker, and P5 re-uploads that same binary before the V-steps; there is one licensed build, so neither rebuilds it.
   P5  renet only. The parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
   V1.1-V1.7  renet only: two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
-  T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, the purge of the deleted forks' licence state (`lib.purge_license_state_script` through `term connect <worker> -c`, which first proves renet no longer lists the guid: renet keeps a deleted repo's blobs and `license renew` retries every one), `ops down` only for a fleet this run started, then the lock. The P5 sweep purges the licence state of the stale forks it deletes the same way. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them. A gateway A0 started is detached and stays up.
+  X   the external legs and XR, described under AREAS; they run after V1.7, U1 and the extra steps, or after A2 when the renet side is not required.
+  T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks (unless X already tore them down), a `repo list` proving neither tag remains, the purge of the deleted forks' licence state (`lib.purge_license_state_script` through `term connect <worker> -c`, which first proves renet no longer lists the guid: renet keeps a deleted repo's blobs and `license renew` retries every one), `ops down` only for a fleet this run started, then the lock. The P5 sweep purges the licence state of the stale forks it deletes the same way. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them. A gateway A0 started is detached and stays up.
 
 THE RULES. Every VM action goes through `./rdc.sh`. Nothing here sets or clears REDIACC_AGENT, CLAUDECODE or REDIACC_ALLOW_*: a verb the CLI's agent guard refuses ends the run NOT_VERIFIED `agent-policy-refused` with the refusal's first line. The one guard variable set is REDIACC_SKIP_FILE_WRITE_GUARD=1, and only on the child of a V1.3 write row: the CLI's file-write guard (packages/cli/src/utils/repo-context-guard.ts) refuses `echo x > f` through `term connect` in an agent session with "File write detected", and that variable is its documented usability override (docs/environment-variables.md), not a security boundary. The raw `ssh` probes and the `sftp -b` leg are built from the constants below, the leg under `-F` with a config built from the alias block `vscode connect` wrote. Nothing is uploaded with scp. Suites and drills run under this process's environment with DRILL_ENV_SCRUB removed, never under `child_env()`, so a declared keyring skip (DRILL_EXPECT_NO_KEYRING) cannot turn into a pass and the minted token never reaches a drill.
 
@@ -294,12 +295,95 @@ LEG_OK = "ok"
 LEG_FAILED = "failed"
 LEG_NOT_RUN = "not-run"
 LEG_NOT_VERIFIED = "not-verified"
-# Why vm:check never runs an `external` leg itself, said once wherever one is reported.
-EXTERNAL_WHY = (
-    "vm:check does not run e2e suites or other-fleet drills: their global setup can reset the fleet"
-    " (renet datastore init --force deletes the vmcheck-base grand and every repo on it) and each"
-    " needs packages/e2e-tests/.env written for its own topology"
+# An `external` leg's ledger row is `X.<leg id>`; `judge_leg` reads it back by that id.
+EXTERNAL_ROW = "X."
+# The row that proves the parent grand is still on the worker after the external legs (an e2e global setup may have reset the fleet).
+RESTORE_ROW = "XR"
+# A row's `outcome` when the leg could not be judged (its fleet would not come up, its setup failed, or it ran no test): NOT_VERIFIED, never a failed assertion.
+OUTCOME_NOT_VERIFIED = "not-verified"
+EXTERNAL_TIMEOUT_S = 5400
+FLEET_UP_TIMEOUT_S = 1800
+# The flags a fleet's `up` recipe may pass to `./rdc.sh ops up` (packages/cli/src/commands/ops/up.ts); `--os` takes a value.
+OPS_UP_FLAGS = frozenset(("--basic", "--parallel", "--lite", "--skip-orchestration", "--force"))
+OPS_UP_VALUE_FLAGS = frozenset(("--os", "--backend"))
+ENV_ASSIGNMENT = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$", re.DOTALL)
+# One finished test as TextFileReporter logs it (`[<iso>] <title path> (<s>s, <status>)`); a retried test logs once per attempt and the last line wins.
+E2E_TEST_LINE = re.compile(
+    r"^\[\d{4}-\d\d-\d\dT[^\]]+\] (?P<title>.+) \(\d+(?:\.\d+)?s, (?P<status>passed|failed|timedOut|skipped|interrupted)\)\s*$",
+    re.MULTILINE,
 )
+E2E_SUMMARY_LINE = re.compile(r"\[TextFileReporter\] Summary: (\S+)")
+E2E_BAD = ("failed", "timedOut", "interrupted")
+E2E_OK = "ok"
+E2E_FAILED = "failed"
+E2E_NOT_VERIFIED = "not-verified"
+
+
+def fleet_up_plan(fleet: trigger.Fleet) -> tuple[dict[str, str], list[str]] | None:
+    """(environment, `./rdc.sh` argv) of a fleet's `up` recipe, or None when the recipe is not the machine-runnable shape `[VAR=value ...] ./rdc.sh ops up [flags]` (the second-group fleet's two-step prose recipe is not)."""
+    try:
+        words = shlex.split(fleet.up)
+    except ValueError:
+        return None
+    env: dict[str, str] = {}
+    while words and ENV_ASSIGNMENT.match(words[0]):
+        match = ENV_ASSIGNMENT.match(words.pop(0))
+        if match is None:
+            return None
+        env[match.group(1)] = match.group(2)
+    if words[:3] != ["./rdc.sh", "ops", "up"]:
+        return None
+    args = words[1:]
+    rest = words[3:]
+    while rest:
+        flag = rest.pop(0)
+        if flag in OPS_UP_VALUE_FLAGS and rest and not rest[0].startswith("-"):
+            rest.pop(0)
+        elif flag not in OPS_UP_FLAGS:
+            return None
+    return env, args
+
+
+def classify_e2e(res: Result) -> tuple[str, str, list[str]]:
+    """(outcome, detail, failed test titles) of an e2e run (`rediacc_ci.testrun.e2e`), from its exit code and the per-test lines TextFileReporter logs. A failed, timed out or interrupted test is a failure. A non-zero exit with no failed test (a global setup that threw, the zero-skip gate, a missing sentinel) could not be judged, and neither could an exit 0 that reported no passed test."""
+    text = ANSI_ESCAPE.sub("", res.out + "\n" + res.err)
+    final: dict[str, str] = {}
+    for match in E2E_TEST_LINE.finditer(text):
+        final[match.group("title")] = match.group("status")
+    passed = [t for t, s in final.items() if s == "passed"]
+    bad = [t for t, s in final.items() if s in E2E_BAD]
+    skipped = [t for t, s in final.items() if s == "skipped"]
+    summary = E2E_SUMMARY_LINE.search(text)
+    where = " (summary %s)" % summary.group(1) if summary else ""
+    if bad:
+        return (
+            E2E_FAILED,
+            "%d of %d test(s) failed%s: %s" % (len(bad), len(final), where, "; ".join(bad[:3])),
+            bad,
+        )
+    if res.rc != 0:
+        if skipped or "Zero-skip gate" in text:
+            why = "%d test(s) skipped under --fail-on-skip" % len(skipped) if skipped else ""
+            why = why or "the zero-skip gate refused the run"
+        else:
+            why = "no test reported a failure, so the run stopped before its tests"
+        return (
+            E2E_NOT_VERIFIED,
+            "rc=%d, %s%s: %s" % (res.rc, why, where, last_lines(text) or "no output"),
+            [],
+        )
+    if not passed:
+        return (
+            E2E_NOT_VERIFIED,
+            "rc=0 but no test reported passed%s, so nothing was judged" % where,
+            [],
+        )
+    return (
+        E2E_OK,
+        "%d test(s) passed%s%s"
+        % (len(passed), ", %d skipped" % len(skipped) if skipped else "", where),
+        [],
+    )
 
 
 def area_steps(areas: Collection[str]) -> frozenset[str]:
@@ -340,13 +424,32 @@ def external_detail(leg: trigger.Leg, running: Collection[str] | None) -> str:
     )
 
 
+def external_row(leg: trigger.Leg) -> str:
+    return EXTERNAL_ROW + leg.id
+
+
 def judge_leg(
     leg: trigger.Leg,
     rows: Sequence[Mapping[str, Any]],
     receipt_fn: Callable[[str], tuple[bool, str]],
     running: Collection[str] | None,
 ) -> tuple[str, str]:
-    """(status, detail) of one area leg after a run. A `vmcheck` leg is ok only when each of its steps recorded a row and every such row is ok; a `receipt` leg is ok only when `receipt_fn` admits the tree; an `external` leg is never ok here, since vm:check never runs it."""
+    """(status, detail) of one area leg after a run. A `vmcheck` leg is ok only when each of its steps recorded a row and every such row is ok; a `receipt` leg is ok only when `receipt_fn` admits the tree; an `external` leg is judged by the `X.<leg id>` row its run recorded (`VmCheck._external_legs`): ok, failed (a test failed), not-verified (its fleet, setup or test count could not be judged) or not-run (no row: the run stopped before the external legs)."""
+    if leg.kind == trigger.LEG_EXTERNAL:
+        mine = [r for r in rows if r.get("id") == external_row(leg)]
+        if not mine:
+            return LEG_NOT_RUN, "no %s row: the run stopped before the external legs; %s" % (
+                external_row(leg),
+                external_detail(leg, running),
+            )
+        row = mine[-1]
+        said = "; ".join(str(x) for x in (row.get("desc"), row.get("evidence")) if x)
+        if row.get("verdict") == "ok":
+            return LEG_OK, said
+        said += "; rerun: %s" % " && ".join(leg.cmd)
+        if row.get("outcome") == OUTCOME_NOT_VERIFIED:
+            return LEG_NOT_VERIFIED, said
+        return LEG_FAILED, said
     if leg.kind == trigger.LEG_VMCHECK:
         mine = [r for r in rows if r.get("id") in leg.steps]
         seen = {r["id"] for r in mine}
@@ -361,7 +464,18 @@ def judge_leg(
         if ok:
             return LEG_OK, message
         return LEG_NOT_VERIFIED, "%s; produce it with: %s" % (message, " && ".join(leg.cmd))
-    return LEG_NOT_RUN, external_detail(leg, running)
+    raise ValueError("leg %s has an unknown kind %r" % (leg.id, leg.kind))
+
+
+def external_legs(areas: Collection[str]) -> list[tuple[str, trigger.Leg]]:
+    """(area, leg) of every `external` leg of `areas`, in map order."""
+    return [
+        (name, leg)
+        for name in trigger.AREAS
+        if name in areas
+        for leg in trigger.MAP.areas[name].legs
+        if leg.kind == trigger.LEG_EXTERNAL
+    ]
 
 
 def judge_areas(
@@ -1097,6 +1211,9 @@ class VmCheck:
         self.leftovers: list[str] = []
         # Licence state a P5 sweep could not purge: carried into the T row like a teardown purge, so the run cannot reach VERIFIED over a dead blob.
         self.sweep_leftovers: list[str] = []
+        # True once this run's forks and VS Code connection were torn down ahead of the external legs (`_release_forks`), whose e2e setup may recreate the VMs; T then only adds `release_leftovers`.
+        self.forks_released = False
+        self.release_leftovers: list[str] = []
         # Run state
         self.token: str | None = None
         self.account_server = ""
@@ -1536,6 +1653,11 @@ class VmCheck:
         if self.opts.only:
             self._steps_only()
             return
+        self._battery()
+        self._external_legs()
+
+    def _battery(self) -> None:
+        """The base battery: A1, the infra chain, A0, A2 and the renet phase, as the required sides and the touched areas' `vmcheck` legs ask."""
         renet = self.phases[SIDE_RENET]["required"]
         account = self.phases[SIDE_ACCOUNT]["required"]
         self.say(
@@ -1558,7 +1680,8 @@ class VmCheck:
             return
         self.p0_lock()
         self.p1_renet()
-        if account or "A0" in wanted:
+        # An external leg's e2e global setup licenses its repositories on the local dev gateway (packages/e2e-tests/src/utils/licence.ts ensureAccountToken reads .account-state), so A0 runs for it too, and before P4: a restart rotates the dev passwords the minted token depends on.
+        if account or "A0" in wanted or external_legs(self.areas):
             self.a0_gateway()
         # P4 before P2: the account decides which config the fleet, machine and key steps read and write.
         self.p4_account()
@@ -1624,6 +1747,177 @@ class VmCheck:
         for step_id, _deps, _fn in EXTRA_RENET_STEPS:
             if self._only_wants(step_id):
                 self.extra_fns[step_id](self)
+
+    # ------------------------------------------------------------------ X: the external legs
+
+    def _external_legs(self) -> None:
+        """Run every `external` leg of the touched areas, after the base battery and under the same fleet lock: tear this run's forks down first (an e2e global setup may recreate the VMs), bring each leg's fleet up (or reuse it when every ip already runs), run the leg's commands from the console root, record one `X.<leg id>` row, then prove the parent grand is still on the worker and recreate it when it is not. A run whose battery already has a finding skips them: its verdict cannot become VERIFIED, and an e2e run costs minutes to an hour."""
+        legs = external_legs(self.areas)
+        if not legs:
+            return
+        if self.failures:
+            self.say(
+                "vm:check: %d external leg(s) not run: the base battery already failed (%s)"
+                % (len(legs), self.failures[0])
+            )
+            return
+        self.say(
+            "vm:check: external legs run here, after the base battery: %s"
+            % ", ".join("%s/%s" % (area, leg.id) for area, leg in legs)
+        )
+        self.release_leftovers = self._release_forks()
+        ran_any = False
+        for area, leg in legs:
+            ran_any = self._run_external_leg(area, leg) or ran_any
+        if ran_any:
+            self._restore_parent()
+
+    def _ensure_fleet(self, fleet: trigger.Fleet) -> tuple[str, str]:
+        """("", how) when every ip of `fleet` runs, reusing it or bringing it up with its `up` recipe; (why, "") when it cannot be had. Ops VMs are development-only, so bringing a fleet up is never an operator's step; `ops up` without `--force` leaves a running VM alone (renet skipRunningVM), so a superset topology only adds VMs. A fleet this check brings up is left up for the next run, unless the base fleet was cold, whose `ops down` in T takes everything down."""
+        plan = fleet_up_plan(fleet)
+        env = plan[0] if plan is not None else {}
+        status = self.rdc("ops", "status", "-o", "json", extra_env=env)
+        if status.rc != 0:
+            return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
+        running = lib.running_ips(status.out)
+        if set(fleet.ips) <= set(running):
+            self.ips = running
+            return "", "fleet %s reused (%s running)" % (fleet.name, " ".join(fleet.ips))
+        missing = [ip for ip in fleet.ips if ip not in running]
+        if plan is None:
+            return (
+                "fleet %s needs %s, which do not run, and its up recipe is not the machine-runnable"
+                " shape `[VAR=value ...] ./rdc.sh ops up [flags]`, so vm:check cannot bring it up: %s"
+                % (fleet.name, " ".join(missing), fleet.up),
+                "",
+            )
+        args = list(plan[1])
+        image = self.opts.os_image or self.environ.get("VM_IMAGE") or ""
+        if image and "--os" not in args:
+            args += ["--os", image]
+        spelled = " ".join(
+            ["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args]
+        )
+        self.say("        fleet %s: %s not running; %s" % (fleet.name, " ".join(missing), spelled))
+        res = self.rdc(*args, timeout=FLEET_UP_TIMEOUT_S, extra_env=env)
+        if res.rc != 0:
+            return "%s rc=%d after %d s: %s" % (
+                spelled,
+                res.rc,
+                res.ms // 1000,
+                rdc_failure(res),
+            ), ""
+        running = lib.running_ips(self.rdc("ops", "status", "-o", "json", extra_env=env).out)
+        still = [ip for ip in fleet.ips if ip not in running]
+        if still:
+            return "%s exited 0 but %s still do not run" % (spelled, " ".join(still)), ""
+        self.ips = running
+        return "", "fleet %s brought up with %s in %d s" % (fleet.name, spelled, res.ms // 1000)
+
+    def _run_external_leg(self, area: str, leg: trigger.Leg) -> bool:
+        """One external leg: its fleet, then each of its commands in order through `bash -c` from the console root, under the suites' scrubbed environment (no minted token, no RDC_DEV: the e2e setup finds the dev gateway through .account-state itself). Every command before the last must exit 0; the last is the e2e run, judged by `classify_e2e`. Returns True when any command ran (the fleet may since have been reset)."""
+        row = external_row(leg)
+        fleet = trigger.MAP.fleets[leg.fleet]
+        what = "%s/%s on fleet %s" % (area, leg.id, fleet.name)
+        why, how = self._ensure_fleet(fleet)
+        if why:
+            self.record(row, "%s: the fleet could not be brought up" % what, False, evidence=why)
+            self.steps[-1]["outcome"] = OUTCOME_NOT_VERIFIED
+            return False
+        self.say("        %s; running %s" % (how, leg.id))
+        env = self.drill_env()
+        root = shlex.quote(str(self.root))
+        total_ms = 0
+        res = Result(0)
+        for index, line in enumerate(leg.cmd):
+            argv = ["bash", "-c", "cd %s && %s" % (root, line)]
+            res = self.host.run(argv, env=env, timeout=EXTERNAL_TIMEOUT_S)
+            total_ms += res.ms
+            kept = self.keep_log(row, "%s-%d" % (leg.id, index + 1), argv, res)
+            where = " (full output: %s)" % kept if kept else ""
+            if index < len(leg.cmd) - 1:
+                if res.rc != 0:
+                    self.record(
+                        row,
+                        "%s: setup command %d of %d failed" % (what, index + 1, len(leg.cmd)),
+                        False,
+                        res,
+                        "%s rc=%d: %s%s" % (line, res.rc, last_lines(res.text()), where),
+                        log_path=kept,
+                    )
+                    self.steps[-1]["outcome"] = OUTCOME_NOT_VERIFIED
+                    return True
+                continue
+            outcome, detail, failed = classify_e2e(res)
+            desc = "%s (%d s): %s" % (what, total_ms // 1000, outcome)
+            if outcome == E2E_NOT_VERIFIED:
+                self.record(row, desc, False, res, detail + where, log_path=kept)
+                self.steps[-1]["outcome"] = OUTCOME_NOT_VERIFIED
+            else:
+                ok = outcome == E2E_OK
+                self.check(
+                    row,
+                    desc,
+                    ok,
+                    res,
+                    detail if ok else detail + where,
+                    log_path=kept,
+                    failed=failed,
+                )
+                if not ok:
+                    for title in failed:
+                        self.say("          FAIL %s" % title)
+            if kept and outcome != E2E_OK:
+                self.say("          full output: %s" % kept)
+        return True
+
+    def _restore_parent(self) -> None:
+        """After the external legs: re-pin the worker's host keys (a reset recreates the VM), then prove the parent grand is still listed, recreating it with `_create_grand` when an e2e setup removed it, so the next run finds it. A grand that cannot be had is a T leftover, which keeps the run from VERIFIED."""
+        self.rdc("machine", "scan-keys", self.machine, refuse=False)
+        res, entries = self.repo_list()
+        if res.rc != 0:
+            note = "parent grand %s unconfirmed after the external legs (repo list rc=%d: %s)" % (
+                self.opts.parent,
+                res.rc,
+                rdc_failure(res),
+            )
+            self.record(RESTORE_ROW, note, False, res)
+            self.sweep_leftovers.append(note)
+            return
+        names = [str(e.get("name", "")) for e in entries]
+        if self.opts.parent in names:
+            self.record(
+                RESTORE_ROW,
+                "parent grand %s still on %s after the external legs"
+                % (self.opts.parent, self.machine),
+                True,
+            )
+            return
+        ip = self._machine_ip()
+        if not is_ops_vm_ip(ip):
+            note = "parent grand %s gone from %s (%s, not an ops VM) after the external legs" % (
+                self.opts.parent,
+                self.machine,
+                ip or "address unknown",
+            )
+            self.record(RESTORE_ROW, note, False)
+            self.sweep_leftovers.append(note)
+            return
+        self.say(
+            "        the external legs left no grand %s on %s; recreating it for the next run"
+            % (self.opts.parent, self.machine)
+        )
+        try:
+            self._create_grand(
+                ip, sorted(n for n in names if n and ":" not in n), [], "", step_id=RESTORE_ROW
+            )
+        except NotVerifiedError as exc:
+            note = "parent grand %s not recreated after the external legs: %s" % (
+                self.opts.parent,
+                exc.detail,
+            )
+            self.record(RESTORE_ROW, note, False)
+            self.sweep_leftovers.append(note)
 
     # ------------------------------------------------------------------ P
 
@@ -2020,7 +2314,12 @@ class VmCheck:
         return self.machine_ip
 
     def _create_grand(
-        self, ip: str, grands: Sequence[str], swept: Sequence[str], sweep: str
+        self,
+        ip: str,
+        grands: Sequence[str],
+        swept: Sequence[str],
+        sweep: str,
+        step_id: str = "P5",
     ) -> None:
         """Create the missing parent grand on an ops VM worker, under P4's credential; the ops VMs are development-only (operator ruling 2026-10-15), so this is never an operator's step."""
         args = ("repo", "create", self.opts.parent, "-m", self.machine, "--size", GRAND_SIZE)
@@ -2119,7 +2418,7 @@ class VmCheck:
             )
         self.grand_created = True
         self.record(
-            "P5",
+            step_id,
             "parent grand %s created on %s (ops VM %s) under %s; %d stale fork(s) swept"
             % (self.opts.parent, self.machine, ip, credential, len(swept)),
             True,
@@ -2893,6 +3192,19 @@ class VmCheck:
         return None
 
     def _teardown_steps(self) -> list[str]:
+        leftovers: list[str] = list(self.release_leftovers)
+        leftovers.extend(self._release_forks())
+        if self.fleet_mode == COLD and self.fleet_started:
+            res = self.rdc("ops", "down", refuse=False, timeout=600)
+            if res.rc != 0:
+                leftovers.append("cold fleet still up (ops down rc=%d)" % res.rc)
+        return leftovers
+
+    def _release_forks(self) -> list[str]:
+        """Tear down this run's VS Code connection and forks and purge the forks' licence state; the leftover lines. Runs once: ahead of the external legs, or in T."""
+        if self.forks_released:
+            return []
+        self.forks_released = True
         leftovers: list[str] = []
         revive_failure = self._revive_gateway_for_teardown()
         if revive_failure:
@@ -2937,10 +3249,6 @@ class VmCheck:
             leftover = self.purge_licences(gone, "this run's forks")
             if leftover:
                 leftovers.append(leftover)
-        if self.fleet_mode == COLD and self.fleet_started:
-            res = self.rdc("ops", "down", refuse=False, timeout=600)
-            if res.rc != 0:
-                leftovers.append("cold fleet still up (ops down rc=%d)" % res.rc)
         return leftovers
 
     # ------------------------------------------------------------------ summary and receipt
@@ -2971,8 +3279,7 @@ class VmCheck:
                     receipt_mod.NOT_VERIFIED,
                     {
                         "class": "area-not-verified",
-                        "detail": "%d area leg(s) not proven (%s): %s"
-                        % (len(short), EXTERNAL_WHY, "; ".join(short)),
+                        "detail": "%d area leg(s) not proven: %s" % (len(short), "; ".join(short)),
                     },
                 )
         if self.opts.only and status == receipt_mod.VERIFIED:
@@ -3179,10 +3486,16 @@ def plan_lines(changed: trigger.Changed | None, sides: Collection[str]) -> list[
                 owed.append(
                     "%s/%s (unless the %s receipt admits the tree)" % (name, leg.id, leg.receipt)
                 )
+            elif fleet_up_plan(trigger.MAP.fleets[leg.fleet]) is not None:
+                lines.append(
+                    "    leg %s RUNS after the base battery on its own fleet: %s; %s"
+                    % (leg.id, leg.what, external_detail(leg, None))
+                )
             else:
                 lines.append(
-                    "    leg %s NOT RUN, reported NOT_VERIFIED: %s; %s"
-                    % (leg.id, leg.what, external_detail(leg, None))
+                    "    leg %s CANNOT RUN here (fleet %s's up recipe is not machine-runnable),"
+                    " reported NOT_VERIFIED: %s; %s"
+                    % (leg.id, leg.fleet, leg.what, external_detail(leg, None))
                 )
                 owed.append("%s/%s" % (name, leg.id))
         lines.extend("    suite %s" % suite for suite in area.suites)

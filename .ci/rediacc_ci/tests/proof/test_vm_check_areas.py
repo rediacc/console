@@ -76,7 +76,7 @@ def test_a_license_path_plans_the_license_leg_and_no_ceph_leg() -> None:
     assert "best verdict: VERIFIED" in out
 
 
-def test_a_kube_path_plans_the_kube_suites_and_owes_their_legs() -> None:
+def test_a_kube_path_plans_the_kube_suites_and_runs_their_legs() -> None:
     rc, out = dry(["--paths", "private/renet/pkg/kube/distro/k3s.go"])
     assert rc == 0, out
     for suite in (
@@ -86,8 +86,9 @@ def test_a_kube_path_plans_the_kube_suites_and_owes_their_legs() -> None:
     ):
         assert "suite %s" % suite in out
     assert "--config playwright.k8s.config.ts --fail-on-skip" in out
-    assert "leg k8s-15 NOT RUN, reported NOT_VERIFIED" in out
-    assert "NOT_VERIFIED area-not-verified, owed kube/k8s-15" in out
+    assert "leg k8s-15 RUNS after the base battery on its own fleet" in out
+    assert "leg k8s-multinode-17-24 RUNS after the base battery on its own fleet" in out
+    assert "best verdict: VERIFIED" in out
     assert "area license" not in out
     assert "ci jobs: e2e_k8s, e2e_k8s_ceph, e2e_k8s_multinode" in out
 
@@ -199,7 +200,7 @@ def test_changed_dry_run_on_a_kube_diff_lists_the_kube_suites(console: Console) 
     rc, out = dry(["--changed"], root=console.root)
     assert rc == 0, out
     assert "suite packages/e2e-tests/tests/kube/15-k8s-repo.test.ts" in out
-    assert "leg k8s-multinode-17-24 NOT RUN" in out
+    assert "leg k8s-multinode-17-24 RUNS after the base battery" in out
     assert "area license" not in out
 
 
@@ -249,21 +250,31 @@ def test_a_receipt_leg_follows_its_receipt() -> None:
     assert "./run.sh drill backup" in detail
 
 
+def test_an_external_leg_with_no_row_did_not_run_and_names_its_fleet() -> None:
+    status, detail = vm_check.judge_leg(K8S, [], lambda _n: (True, "x"), None)
+    assert status == "not-run"
+    assert "no X.k8s-15 row" in detail
+    assert "fleet worker (192.168.111.1 192.168.111.11) unknown;" in detail
+    assert "playwright.k8s.config.ts" in detail
+
+
 @pytest.mark.parametrize(
-    ("running", "state"),
+    ("row", "status"),
     [
-        (None, "unknown"),
-        (["192.168.111.1", "192.168.111.11"], "running"),
-        (["192.168.111.1"], "not running"),
+        ({"id": "X.k8s-15", "verdict": "ok", "desc": "3 passed"}, "ok"),
+        ({"id": "X.k8s-15", "verdict": "FAIL", "desc": "1 failed"}, "failed"),
+        (
+            {"id": "X.k8s-15", "verdict": "FAIL", "desc": "fleet", "outcome": "not-verified"},
+            "not-verified",
+        ),
     ],
 )
-def test_an_external_leg_is_never_ok_and_names_its_fleet(
-    running: list[str] | None, state: str
-) -> None:
-    status, detail = vm_check.judge_leg(K8S, [], lambda _n: (True, "x"), running)
-    assert status == "not-run"
-    assert "fleet worker (192.168.111.1 192.168.111.11) %s;" % state in detail
-    assert "playwright.k8s.config.ts" in detail
+def test_an_external_leg_follows_its_row(row: dict[str, Any], status: str) -> None:
+    got, detail = vm_check.judge_leg(K8S, [row], _no_receipt, None)
+    assert got == status
+    assert row["desc"] in detail
+    # A leg that is not ok still names the commands that reproduce it.
+    assert ("playwright.k8s.config.ts" in detail) == (status != "ok")
 
 
 # ----------------------------------------------------------------------------- whole runs on the fake host
@@ -341,21 +352,20 @@ def test_a_license_change_runs_the_license_drill_without_the_account_phase(
     assert "area license/license-drill ok" in out
 
 
-def test_a_kube_change_is_not_verified_and_names_the_commands(
+def test_a_kube_change_runs_its_legs_on_their_fleets(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    rc, out, doc, _world = run_with_areas(tmp_path, monkeypatch, {"kube"}, account_required=False)
-    assert rc == vm_check.EXIT_NOT_VERIFIED, out
-    assert doc["status"] == receipt_mod.NOT_VERIFIED
-    assert doc["reason"]["class"] == "area-not-verified"
-    assert "kube/k8s-15" in doc["reason"]["detail"]
-    assert "playwright.k8s.config.ts" in doc["reason"]["detail"]
-    # The base battery still ran green: the area is the only reason.
-    assert doc["phases"]["renet"]["ran"] is True
+    """The kube legs run after the base battery: k8s-15 on the worker fleet already up, the two k3s-ceph legs after one `ops up` with the recipe's topology, which leaves the VMs it added running for the next leg."""
+    rc, out, doc, world = run_with_areas(tmp_path, monkeypatch, {"kube"}, account_required=False)
+    assert rc == vm_check.EXIT_VERIFIED, out
     legs = {leg["id"]: leg for leg in doc["areas"]["kube"]["legs"]}
-    # P2 read the fleet, so the worker fleet is judged running and the Ceph one not.
-    assert "fleet worker (192.168.111.1 192.168.111.11) running" in legs["k8s-15"]["detail"]
-    assert "not running" in legs["k8s-ceph-16"]["detail"]
+    assert {leg["status"] for leg in legs.values()} == {"ok"}, legs
+    ups = [(c, e) for c, e in zip(world.calls, world.envs, strict=True) if c[1:3] == ["ops", "up"]]
+    assert len(ups) == 1, ups
+    assert ups[0][1]["VM_CEPH_NODES"] == "21 22 23"
+    assert "--config playwright.k8s.config.ts" in world.bash_cmds[1]
+    assert any("CLUSTER_LICENSING_SUITE=1" in c for c in world.bash_cmds)
+    assert doc["phases"]["renet"]["ran"] is True
     assert "A2.3" not in _step_ids(doc)
 
 

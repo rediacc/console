@@ -86,7 +86,7 @@ Read CI results at **JOB level**, never run level: a `cancelled` job did not run
 
 ## vm:check
 
-The push proof for VM-facing changes is documented once, in `ops-vms.md` (*vm:check*). `npm run vm:check -- --changed` runs the areas a diff touches; `.ci/config/proof-tiers.json` is the table.
+The push proof for VM-facing changes is documented once, in `ops-vms.md` (*vm:check*). `npm run vm:check -- --changed` runs the areas a diff touches, the e2e suites of their `external` legs included, so a suite an area names is never a manual step before a push; `.ci/config/proof-tiers.json` is the table.
 
 ## Standing rules
 
