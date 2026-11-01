@@ -263,6 +263,7 @@ export async function openLease(opts: OpenLeaseOptions): Promise<RunnerLease> {
         return {
           free: free + Math.max(0, tokens.length - inUse),
           share: Math.ceil(total / runs),
+          runs,
           total,
         };
       } catch (e) {

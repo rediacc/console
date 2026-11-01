@@ -239,6 +239,8 @@ export interface LeaseView {
   share: number;
   /** Tokens in the machine-wide pool. */
   total: number;
+  /** Live runs on the lease, as the broker counts them; absent when nothing is leased. `share` is a ceil, so it cannot be divided back into this. */
+  runs?: number;
 }
 
 /**
@@ -1334,10 +1336,7 @@ export async function runPool(
                 now,
                 reading,
                 [...borrows.values()],
-                // The share is ceil(total / live runs), so this reads the live runs back out of the lease's view.
-                view !== undefined && finite(view.share) !== undefined
-                  ? Math.round(view.total / view.share)
-                  : 1
+                view?.runs ?? 1
               ),
         leaseFree: finite(view?.free),
         leaseShare: finite(view?.share),

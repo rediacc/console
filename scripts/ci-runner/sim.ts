@@ -1441,11 +1441,13 @@ export async function reclaimLoopSelftest(): Promise<string[]> {
 
 if (isEntryPoint(import.meta.filename)) {
   const { failures, assertions, table } = schedulerSelftest();
-  const loop = await reclaimLoopSelftest();
-  for (const row of table) process.stdout.write(`${row}\n`);
-  for (const f of [...failures, ...loop]) process.stderr.write(`FAIL: ${f}\n`);
-  process.stdout.write(
-    `sim: ${assertions - failures.length}/${assertions} assertions hold, pool loop ${loop.length === 0 ? 'holds' : 'FAILS'}\n`
-  );
-  process.exitCode = failures.length + loop.length > 0 ? 1 : 0;
+  // A promise chain, not a top-level await: run.ts imports this file, and a scratch tree with no `"type": "module"` loads it as CJS, where esbuild refuses a top-level await.
+  void reclaimLoopSelftest().then((loop) => {
+    for (const row of table) process.stdout.write(`${row}\n`);
+    for (const f of [...failures, ...loop]) process.stderr.write(`FAIL: ${f}\n`);
+    process.stdout.write(
+      `sim: ${assertions - failures.length}/${assertions} assertions hold, pool loop ${loop.length === 0 ? 'holds' : 'FAILS'}\n`
+    );
+    process.exitCode = failures.length + loop.length > 0 ? 1 : 0;
+  });
 }

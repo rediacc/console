@@ -253,8 +253,9 @@ def _kill_stale(paths):
             return
         for pid in stale:
             try:
-                if os.getpgid(pid) == pid:
-                    os.killpg(pid, signal.SIGKILL)
+                # A fixture in another session owns its whole group even when it does not lead it: the bashcov-sup wrapper re-execs the script under a group of its own, and killing the script alone left its `sleep` child orphaned (measured 2026-11-01, about three per run).
+                if os.getpgid(pid) == pid or os.getsid(pid) != os.getsid(0):
+                    os.killpg(os.getpgid(pid), signal.SIGKILL)
                 else:
                     os.kill(pid, signal.SIGKILL)
             except OSError:
