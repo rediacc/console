@@ -58,6 +58,26 @@ vi.mock('../repo-backup-list.js', () => ({
     .mockResolvedValue([{ name: 'src', repositoryGuid: 'guid-src', tag: 'latest' }]),
   renderBackupList: vi.fn(),
 }));
+// The pull route installs the minted GUID's licence first (ensureRestorePullLicense); here one is already installed, so it is skipped. backup-restore-pull-license.test.ts covers issuance.
+vi.mock('../../services/machine/machine-connection.js', () => ({
+  machineConnections: {
+    acquire: vi.fn().mockResolvedValue({
+      sftp: {},
+      machine: { ip: '10.0.0.1', user: 'u' },
+      sshPrivateKey: 'k',
+      release: vi.fn(),
+    }),
+  },
+}));
+vi.mock('../../services/executor/repo-license-context.js', () => ({
+  resolveRestoreLicenseContext: vi.fn().mockResolvedValue({
+    repositoryGuid: 'g',
+    grandGuid: 'g',
+    kind: 'grand',
+    datastoreMount: '/mnt/rediacc',
+  }),
+  restoreLicenseAlreadyInstalled: vi.fn().mockResolvedValue(true),
+}));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
 }));
