@@ -2716,6 +2716,7 @@ jobs:
         if: ${{ matrix.shard == 1 }}
         with:
           account: 'true'
+          build-packages: 'true'
       - name: Mint the account server API key
         if: ${{ matrix.shard == 1 }}
         shell: bash
