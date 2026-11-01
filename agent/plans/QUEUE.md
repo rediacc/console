@@ -101,10 +101,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-settings-set-verb.md -- 3 of 4 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/PLAN-free-license.md -- 4 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (2 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1766 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1770 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-- Writers: 3 live of writer_cap 25 (session 45048a90): worker:ad0fb877c06bfa7d1, worker:a87403969868167f3, worker:a06f560534656cedf.
-- Leased items: 8: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:2462036, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #9dddde60 (worker:a06f560534656cedf, 45048a90), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #d57483e9 (worker:ad0fb877c06bfa7d1, 45048a90), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
+- Writers: 0 live of writer_cap 25 (session 45048a90).
+- Leased items: 6: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:2462036, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
 - Next plan: agent/plans/PLAN-backup-integrity.md, Promoted entry 43; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
@@ -226,11 +226,11 @@ Promoted: 6 of 44 plans done, 618 of 864 boxes done (71%).
 15. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
 16. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
 17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-18. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-19. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-21. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-22. agent/plans/PLAN-stop-hook-retro-20261101.md -- P- (no Priority), ready, not started
+18. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
+19. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+20. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+21. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+22. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 

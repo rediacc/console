@@ -1391,6 +1391,7 @@
     ],
     ".ci/rediacc_ci/testrun/start_account.py": [
       "ACCOUNT_API_PORT",
+      "ACCOUNT_CONFIG_SERVER_KEY",
       "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_SERVER_API_KEY",

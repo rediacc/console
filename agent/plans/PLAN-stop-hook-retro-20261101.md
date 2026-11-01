@@ -1,6 +1,10 @@
 # PLAN: Stop-hook retro, 2026-11-01 (band late, covers early #b4940dfa; lead session 45048a90)
 
 Status: ready
+Depends-On: no-dep -- cites no other plan
+Priority: P2 -- refusal wording that cost calls, no wrong block
+Concurrency: parallel -- touches only the stop hook's refusal text
+Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_report.py, .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py, .claude/rediacc_hooks/tests/test_wl_state_document.py, .claude/rediacc_hooks/tests/test_wl_report_inbox.py
 First-Seen: 2026-11-01
 Owner: 45048a90 (adopted from retro retro-late 20261101)
 Updated: 2026-11-01
@@ -31,7 +35,7 @@ Counts for the window:
   - It named #cfed8c4a, leased to worker a40d8d8be3b7bba0d, which had finished and reported.
   - The lead re-leased it to the live measuring run in one call (line 1813, offset 4778232) and finished its turn 13 s after the block (line 1817, offset 4784501).
   - The block was correct and cost 1 call.
-- **The #6c84ff1f refusals were right in outcome.** The lead tried to tick it as an investigation with no fix. A fix then landed as 6fdce7c9, and the tick with `commit:6fdce7c9` was accepted at 15:58:36Z (line 3115, offset 7259344).
+- **The #6c84ff1f refusals were right in outcome.** The lead tried to tick it as an investigation with no fix. A fix then landed in private/renet, and the tick naming that commit was accepted at 15:58:36Z (line 3115, offset 7259344).
 - **The #51d75260 `no-evidence` row at 16:53:50Z was correct.** It cited `ASKED:2026-11-01T16:13Z`. The AskUserQuestion answers in this range are at 16:42:40, 16:47:36 and 16:51:14 and later (lines 3186, 3220 and 3262), none within 300 s of 16:13. `.claude/hooks/stop/wl_checks.py:301` (`ASKED_WINDOW_S = 300`) did its job.
 
 ## Ranking by cost to the session
