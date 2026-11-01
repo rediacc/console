@@ -2853,7 +2853,7 @@ jobs:
     # scope. Submodules ride the readonly-preset App token.
     permissions:
       contents: read
-    if: (inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true'
+    if: ((inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true') && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -2883,6 +2883,7 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2899,6 +2900,48 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+
+      # `account: 'true'` because this leg starts the per-run account server from
+      # private/account: the integration tests create repositories through raw
+      # renet, and the one licensed renet refuses a create without a licence
+      # that server signs (agent/plans/PLAN-free-license.md R2).
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
+
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+      # The per-run account server, signing with the PRODUCTION ED25519 pair from
+      # Bitwarden, so every licence it issues verifies under the production-keyed
+      # renet installed below. It exports the public half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the private half reaches this
+      # step's environment only, and with --require-env-pair start_account
+      # refuses to mint a throwaway pair.
+      - name: Start the per-run account server
+        env:
+          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
+      # The run's one licence-enforcing renet from Build (Renet), key-gated, in
+      # place of the bare `go build` ci-test.sh used to do (that build baked no
+      # key and read every licence as missing). RENET_BINARY rides into
+      # ci-test.sh, which installs it as the binary the tests drive.
+      - name: Install the shared renet
+        uses: ./.github/actions/renet-test-binary
 
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
@@ -2925,8 +2968,9 @@ jobs:
             '.legs[] | select(.index == $idx) | .ids | map(sub("^renet-integration:"; "")) | join(" ")' \
             .ci/config/shards/test-renet-integration.json)
           echo "Shard ${{ matrix.shard }}/3 files: $FILES"
-          # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it.
-          sudo env PYTHONPATH=.ci "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" python3 -m rediacc_ci.private.renet_integration --no-cleanup
+          # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it. RENET_BINARY is the shared licence-enforcing renet that ci-test.sh installs instead of building. REDIACC_ACCOUNT_SERVER, E2E_ACCOUNT_API_TOKEN and ACCOUNT_ED25519_PUBLIC_KEY are what tests/conftest.py needs to license each repository a test creates.
+          # The account token and keys ride through --preserve-env, never as VAR=value on the command line, so no secret reaches argv.
+          sudo --preserve-env=RENET_BINARY,REDIACC_ACCOUNT_SERVER,E2E_ACCOUNT_API_TOKEN,ACCOUNT_ED25519_PUBLIC_KEY env PYTHONPATH=.ci "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" python3 -m rediacc_ci.private.renet_integration --no-cleanup
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
