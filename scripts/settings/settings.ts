@@ -771,7 +771,52 @@ function treeCases(m: Mutant | null): ControlCase[] {
   return cases;
 }
 
+/**
+ * The fixture's one test is a single JSON assertion, so a host with no pytest (the CI Code lane
+ * bootstraps none) runs it through this stub, handed to the resolver as $PYTEST_BIN: the verb's
+ * own ladder is exercised unchanged, only the binary differs. A host that resolves a real pytest
+ * keeps it, so the nested-ini argv check above still runs there. Returns the stub's dir, or null.
+ */
+function stubPytestIfAbsent(): string | null {
+  if (resolvePytest() !== null) return null;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'settings-pytest-stub-'));
+  const bin = path.join(dir, 'pytest');
+  fs.writeFileSync(
+    bin,
+    `#!/usr/bin/env python3
+import json, pathlib, sys
+if sys.argv[1:] != ["-q", "tests/test_fx.py"]:
+    print("stub pytest: unexpected argv %r" % sys.argv[1:], file=sys.stderr)
+    sys.exit(4)
+d = json.loads(pathlib.Path(".ci/config/cf-spend-guard.json").read_text())
+if d["notifications"]["products"]["r2_storage"]["limit"] == 4000000000000:
+    print("FAILED tests/test_fx.py::test_r2_ceiling_is_not_the_poisoned_value")
+    sys.exit(1)
+print("1 passed")
+`,
+    { mode: 0o755 }
+  );
+  process.env.PYTEST_BIN = bin;
+  pytestBin = undefined;
+  if (resolvePytest() !== bin) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    delete process.env.PYTEST_BIN;
+    pytestBin = undefined;
+    return null;
+  }
+  return dir;
+}
+
 function selftest(): number {
+  const stubDir = stubPytestIfAbsent();
+  try {
+    return runSelftest();
+  } finally {
+    if (stubDir) fs.rmSync(stubDir, { recursive: true, force: true });
+  }
+}
+
+function runSelftest(): number {
   const quiet = { log: () => {}, err: () => {} };
   console.log('controls:');
   const rc = summarizeControls([...unitCases(), ...registryCases(), ...treeCases(null)]);
