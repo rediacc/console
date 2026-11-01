@@ -94,7 +94,8 @@ test.describe('Ceph Image Operations @bridge @ceph', () => {
   test.skip(!hasCeph, 'Ceph not configured (VM_CEPH_NODES empty)');
   let runner: RenetFunctionsTestRunner;
   const testPool = 'rediacc_rbd_pool';
-  const testImage = `test-image-${Date.now()}`;
+  // Keyed by the parent (Playwright runner) pid, which a worker restart after a failure keeps, so later tests still name the image the create test made.
+  const testImage = `test-image-${process.ppid}`;
 
   test.beforeAll(() => {
     runner = RenetFunctionsTestRunner.forCeph();

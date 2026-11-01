@@ -9,6 +9,7 @@ import {
   FORK_NETWORK_ID_B,
   RENET_SETUP_TIMEOUT_MS,
 } from '../../constants';
+import { e2eRepoGuid, installRepoLicence } from '../licence';
 import { log } from '../log';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
 import type { VaultBuilder } from '../vault/VaultBuilder';
@@ -193,7 +194,7 @@ export class RenetFunctionsTestRunner {
       this.testFunction.bind(this),
       this.executeViaBridge.bind(this)
     );
-    this.cephMethods = new CephMethods(this.testFunction.bind(this));
+    this.cephMethods = new CephMethods(this.cephTestFunction.bind(this));
     this.containerMethods = new ContainerMethods(this.testFunction.bind(this));
     this.daemonMethods = new DaemonMethods(this.testFunction.bind(this));
     this.backupMethods = new BackupMethods(
@@ -205,6 +206,58 @@ export class RenetFunctionsTestRunner {
     this.testHelpers = new TestHelpers();
     this.repositoryHelpers = new RepositoryHelpers(this.executeViaBridge.bind(this));
     this.sqlHelpers = new SqlHelpers(this.executeViaBridge.bind(this));
+  }
+
+  /**
+   * The Ceph functions that keep a repository licence tier (renet tiermap.go): called with no
+   * repository they refuse with LICENSE_REQUIRED, while the build-out functions (pool, cluster,
+   * client config) need none.
+   */
+  private static readonly LICENSED_CEPH_FUNCTIONS = new Set([
+    'ceph_client_mount',
+    'ceph_clone_create',
+    'ceph_clone_flatten',
+    'ceph_clone_image',
+    'ceph_clone_mount',
+    'ceph_image_create',
+    'ceph_image_format',
+    'ceph_image_map',
+    'ceph_image_resize',
+    'ceph_snapshot_create',
+    'ceph_snapshot_protect',
+    'ceph_snapshot_rollback',
+    'ceph_snapshot_unprotect',
+  ]);
+
+  private cephLicensedRepository?: Promise<ExecResult & { guid: string }>;
+
+  /**
+   * Run a Ceph function, naming a licensed repository when its tier asks for one. One grand
+   * licence per runner covers every call; explicit images stay explicit because the harness
+   * always passes `--image`, so the repository only supplies the licence identity.
+   */
+  private async cephTestFunction(opts: TestFunctionOptions): Promise<ExecResult> {
+    if (opts.repository || !RenetFunctionsTestRunner.LICENSED_CEPH_FUNCTIONS.has(opts.function)) {
+      return this.testFunction(opts);
+    }
+    this.cephLicensedRepository ??= (async () => {
+      const guid = e2eRepoGuid();
+      const licence = await installRepoLicence(this.executeViaBridge.bind(this), {
+        repositoryGuid: guid,
+        kind: 'grand',
+        datastorePath: opts.datastorePath,
+      });
+      if (licence.code !== 0) return { ...licence, guid };
+      // Only ceph_image_create may name an image that is absent; the other tiered Ceph functions size-check the repository image first, so a sparse stand-in of the licensed size sits where renet looks.
+      const imageDir = `${opts.datastorePath ?? DEFAULT_DATASTORE_PATH}/repositories`;
+      const stub = await this.executeViaBridge(
+        `sudo mkdir -p ${imageDir} && sudo truncate -s 1G ${imageDir}/${guid}`
+      );
+      return { ...stub, guid };
+    })();
+    const licensed = await this.cephLicensedRepository;
+    if (licensed.code !== 0) return licensed;
+    return this.testFunction({ ...opts, repository: licensed.guid });
   }
 
   /** The ssh user the runner connects as on the bridge and the targets. */
