@@ -613,7 +613,7 @@ Reset a repository's stored-bytes ledger to what the store actually holds (never
 
 ### rdc backup repair <repo-ref>
 
-Find chunks the store lost or holds wrong, delete the bad ones on the server and re-upload them from this machine's anchor
+Re-upload chunks the store lost or holds wrong, from this machine's anchor
 
 **Options:**
 
@@ -624,7 +624,7 @@ Find chunks the store lost or holds wrong, delete the bad ones on the server and
 
 ### rdc backup check <repo-ref>
 
-Prove a stored snapshot opens with the passphrase: browse its listing, restore one file and compare it with the listed size
+Prove a stored snapshot opens with the passphrase by restoring one file
 
 **Options:**
 

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2320,
-    "sourceCommit": "b9beaaa0869aa8ed4d4fa80cbd2cd16a752c3581"
+    "keyCount": 2318,
+    "sourceCommit": "29c70f4c7806f8cbbe681e7ebdfdc2923ddd465f"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -26,7 +26,7 @@
     "commands.backup.cancel.cancelling": "c23e3e18",
     "commands.backup.cancel.description": "f2ca37c4",
     "commands.backup.cancel.notRunning": "c342c1f5",
-    "commands.backup.check.description": "10a47b1e",
+    "commands.backup.check.description": "ce2878df",
     "commands.backup.check.needsCredential": "d1432057",
     "commands.backup.check.noIndex": "40bd5fe7",
     "commands.backup.check.noSnapshot": "9bd98829",
@@ -103,7 +103,7 @@
     "commands.backup.reconcile.summary": "ff18d0bc",
     "commands.backup.reconcile.truncated": "28cad1d4",
     "commands.backup.repair.affected": "0ff7db15",
-    "commands.backup.repair.description": "46e3b431",
+    "commands.backup.repair.description": "84e052e3",
     "commands.backup.repair.dryRunDamage": "02693c2e",
     "commands.backup.repair.optionDryRun": "86e0c5f3",
     "commands.backup.restore.atNoSnapshot": "85ca1bc7",
@@ -275,8 +275,6 @@
     "commands.backup.strategy.set.retentionPushFailed": "282db790",
     "commands.backup.strategy.set.saved": "d837b30f",
     "commands.backup.strategy.show.description": "4b9d342d",
-    "commands.backup.strategy.show.destinationsHeader": "3836dea0",
-    "commands.backup.strategy.show.noDestinations": "90799d3d",
     "commands.backup.strategy.show.notConfigured": "a13d88bf",
     "commands.backup.strategy.show.notFound": "df870398",
     "commands.backup.strategy.unbind.description": "71eb1d5a",

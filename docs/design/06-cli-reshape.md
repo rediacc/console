@@ -44,7 +44,7 @@ rdc repo:       create up down status list delete fork push pull migrate promote
                 gpu {grant revoke}
 rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
-rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile
+rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile  check  repair  toc-key {sync}
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
@@ -56,7 +56,7 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Nineteen differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last ten are later additions.
+Twenty differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last ten are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -74,6 +74,7 @@ Nineteen differences. The first six are deliberate and each is traceable to a ru
 | `machine` with no `converge` | `machine converge` | PLAN-renet-runtime-converge: restarts every repository daemon still on an older runtime layout, one repository at a time, so a renet upgrade moves them onto the current one. The CLI runs it after a renet upload; the verb previews the plan (`--dry-run`) or resumes a failed pass. |
 | `machine` and `repo` with no `gpu` | `machine gpu list` + `repo gpu {grant revoke}` | PLAN-gpu-device-grants C1/C2: `machine gpu list` reads a machine's GPUs, CDI devices and the repositories each device is granted to; `repo gpu grant\|revoke` hand a repository a CDI device (or take it back) and mirror the grant into the config. All three run on the machine, so they are machine-plane and proxy-capable. |
 | `backup retention {set clear}` | `backup retention {set clear preview}` + `backup snapshots delete` | The backup-storage retention work: `retention preview` reads what the next sweep would delete and the space it frees without deleting anything, and `snapshots delete` is the manual single-snapshot delete that runs the same prune as the sweep. Both postdate this transcript. |
+| `backup` with no integrity verbs | `backup {check repair}` + `backup toc-key sync` | PLAN-backup-integrity: `check` proves a snapshot opens with the passphrase, `repair` re-uploads a corrupt chunk from the machine's anchor, and `toc-key sync` installs the browse-listing public key. |
 | `machine` with no `restart-services` | `machine restart-services` | PLAN-renet-runtime-converge: restarts the renet daemons that still run a replaced binary, one unit at a time, each confirmed live on the installed binary before the next, and with `--include-docker` also each repository's supervisor. This transcript postdates it. |
 | `config` with no `access` | `config access {add remove ranges list}` | PLAN-ssh-key-source-ranges: the config-wide registry of SSH keys and their allowed IPv4 and IPv6 source ranges. `add --hosted-executor` attaches the ranges of the hosted executor; `ranges` edits a key's ranges and `list` reads them. |
 | `machine` with no `access` | `machine access {set remove show push}` | PLAN-ssh-key-source-ranges: assigns a key to a machine with per-machine range overrides, shows the access lines in effect, and `push` writes them to the machine (`--dry-run` previews; a push that would lock out the current session is refused). All four run on the machine side or edit the config, so they are machine-plane. |
