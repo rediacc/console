@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Kuva varundussettrateegia üksikasjad",
-          "destinationsHeader": "  Sihtkohad:",
-          "noDestinations": "  Sihtkohad: (puuduvad)",
           "notConfigured": "Varundusstrateegiad ei ole seadistatud",
           "notFound": "Varundusstrateegiat \"{{name}}\" ei leitud"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "Hoidla \"{{name}}\" puhastus ei lõppenud {{rounds}} vooruga. Jätkamiseks käivita puhastus uuesti."
       },
       "check": {
-        "description": "Tõendab, et salvestatud hetktõmmis avaneb parooliga: sirvib selle loendit, taastab ühe faili ja võrdleb seda loendis oleva suurusega",
+        "description": "Tõendab, et hetktõmmis avaneb parooliga, taastades ühe faili",
         "needsCredential": "Selles konfiguratsioonis pole {{name}} jaoks mandaati, seega ei saa selle loendit avada.",
         "noIndex": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud loendit, seega ei saa seda nii kontrollida. See pole tõendatud.",
         "noSnapshot": "Hoidlal {{name}} pole kontrollimiseks salvestatud hetktõmmist.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Hetktõmmised, mis viitavad neile tükkidele: {{snapshots}}",
-        "description": "Leiab tükid, mille salvestus on kaotanud või mida see hoiab valesti, kustutab halvad serveris ja laeb need uuesti üles selle masina ankrust",
+        "description": "Laeb salvestuses kadunud või valed tükid uuesti üles selle masina ankrust",
         "dryRunDamage": "Leiti {{count}} kahjustatud tükki; proovikäivitus ei muutnud midagi.",
         "optionDryRun": "Teatab, mis kustutataks ja uuesti üles laaditaks; ei muuda midagi"
       },

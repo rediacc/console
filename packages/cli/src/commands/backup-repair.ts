@@ -27,6 +27,8 @@ import { runStoreVerify } from './backup-store-verify.js';
 /** The route's cap per call (BACKUP_REPAIR_HASHES_MAX on the account): each hash is a whole-object read there. */
 const REPAIR_BATCH = 200;
 
+const REASON_NO_RECORD = 'the machine returned no readable repair record';
+
 interface ServerRepairAnswer {
   deleted: string[];
   stillGood: string[];
@@ -35,7 +37,7 @@ interface ServerRepairAnswer {
 }
 
 /** The one document the verb prints. */
-export interface RepairReport {
+interface RepairReport {
   repo: string;
   lineage: string;
   /** `clean` (nothing to do), `dry-run`, or the machine's verdict: `repaired`, `partial`, `failed`. */
@@ -58,7 +60,12 @@ async function askServer(
   hashes: string[],
   dryRun: boolean
 ): Promise<ServerRepairAnswer> {
-  const total: ServerRepairAnswer = { deleted: [], stillGood: [], absent: [], affectedSnapshots: [] };
+  const total: ServerRepairAnswer = {
+    deleted: [],
+    stillGood: [],
+    absent: [],
+    affectedSnapshots: [],
+  };
   for (let i = 0; i < hashes.length; i += REPAIR_BATCH) {
     const answer = await accountServerFetch<ServerRepairAnswer>(
       '/account/api/v1/backups/chunks/repair',
@@ -91,7 +98,7 @@ async function reuploadFromAnchor(
   });
   const record = parseRepairRecord(result.stdout);
   if (!record) {
-    return { status: 'failed', reason: result.error ?? 'the machine returned no readable repair record' };
+    return { status: 'failed', reason: result.error ?? REASON_NO_RECORD };
   }
   // The verb exits non-zero unless every hash went back; the exit code outranks a record that says otherwise.
   if (!result.success && record.status === 'repaired') {
@@ -101,7 +108,7 @@ async function reuploadFromAnchor(
 }
 
 /** Run the repair for one repository. */
-export async function runBackupRepair(
+async function runBackupRepair(
   repoRef: string,
   options: { dryRun?: boolean; debug?: boolean }
 ): Promise<RepairReport> {
@@ -142,6 +149,26 @@ export async function runBackupRepair(
   };
 }
 
+/** Print the one document, then the warnings, and set the exit code: anything short of a complete repair fails. */
+function renderReport(report: RepairReport): void {
+  const format = getOutputFormat();
+  outputService.print(report, format === 'table' ? 'json' : format);
+  if (report.status === 'clean') return;
+  if (report.status === 'dry-run') {
+    outputService.warn(
+      t('commands.backup.repair.dryRunDamage', {
+        count: report.missing.length + report.corrupt.length,
+      })
+    );
+  }
+  if (report.affectedSnapshots.length > 0 && report.status !== 'repaired') {
+    outputService.warn(
+      t('commands.backup.repair.affected', { snapshots: report.affectedSnapshots.join(', ') })
+    );
+  }
+  if (report.status !== 'repaired') setExitCode(1);
+}
+
 export function registerBackupRepair(backup: Command): void {
   backup
     .command('repair')
@@ -151,20 +178,7 @@ export function registerBackupRepair(backup: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (repoRef: string, options: { dryRun?: boolean; debug?: boolean }) => {
       try {
-        const report = await runBackupRepair(repoRef, options);
-        const format = getOutputFormat();
-        outputService.print(report, format === 'table' ? 'json' : format);
-        if (report.status === 'clean') return;
-        if (report.status === 'dry-run') {
-          outputService.warn(t('commands.backup.repair.dryRunDamage', { count: report.missing.length + report.corrupt.length }));
-        }
-        if (report.affectedSnapshots.length > 0 && report.status !== 'repaired') {
-          outputService.warn(
-            t('commands.backup.repair.affected', { snapshots: report.affectedSnapshots.join(', ') })
-          );
-        }
-        // Anything short of a complete repair, and a dry run that found damage, is a failing check.
-        if (report.status !== 'repaired') setExitCode(1);
+        renderReport(await runBackupRepair(repoRef, options));
       } catch (error) {
         handleError(error);
       }

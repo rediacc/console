@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { deriveTocPublicKeyLine } from '@rediacc/shared/backup/toc-key';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -51,7 +52,7 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
   machineConnections: {
     acquire: vi.fn().mockResolvedValue({
       sftp: { execStreaming: mocks.execStreaming },
-      machine: { datastore: '/mnt/rediacc' },
+      machine: { datastore: WK_DATASTORE_PATH },
       release: vi.fn(),
     }),
   },
@@ -70,34 +71,45 @@ interface Call {
 }
 const calls: Call[] = [];
 
+function installOutcome(current: string | null, sent: string, replace: boolean): string {
+  if (current === null) return 'installed';
+  if (current === sent) return 'unchanged';
+  return replace ? 'replaced' : 'differs';
+}
+
+/** What the machine answers to `toc-key install`, mutating what it holds like renet does. */
+function installAnswer(
+  state: { current: string | null },
+  command: string
+): { code: number; record: object } {
+  const sent = /--public-key '([^']+)'/.exec(command)?.[1] ?? '';
+  const outcome = installOutcome(state.current, sent, command.includes('--replace'));
+  if (outcome === 'installed' || outcome === 'replaced') state.current = sent;
+  return { code: outcome === 'differs' ? 1 : 0, record: { action: 'install', outcome } };
+}
+
+function statusAnswer(state: { current: string | null }): { code: number; record: object } {
+  return {
+    code: 0,
+    record: {
+      action: 'status',
+      outcome: state.current === null ? 'absent' : 'present',
+      publicKey: state.current ?? undefined,
+    },
+  };
+}
+
 /** A machine holding `stored` (or nothing), answering like renet's toc-key verb. */
 function machine(stored: string | null) {
-  let current = stored;
+  const state = { current: stored };
   mocks.execStreaming.mockImplementation(
     (command: string, opts: { stdin?: string; onStdout: (d: Buffer) => void }) => {
       calls.push({ command, stdin: opts.stdin });
-      const emit = (code: number, record: object) => {
-        opts.onStdout(Buffer.from(`${JSON.stringify({ guid: G, ...record })}\n`));
-        return Promise.resolve(code);
-      };
-      if (command.includes('toc-key status')) {
-        return emit(0, {
-          action: 'status',
-          outcome: current === null ? 'absent' : 'present',
-          publicKey: current ?? undefined,
-        });
-      }
-      const sent = /--public-key '([^']+)'/.exec(command)?.[1] ?? '';
-      if (current === null) {
-        current = sent;
-        return emit(0, { action: 'install', outcome: 'installed' });
-      }
-      if (current === sent) return emit(0, { action: 'install', outcome: 'unchanged' });
-      if (command.includes('--replace')) {
-        current = sent;
-        return emit(0, { action: 'install', outcome: 'replaced' });
-      }
-      return emit(1, { action: 'install', outcome: 'differs' });
+      const answer = command.includes('toc-key status')
+        ? statusAnswer(state)
+        : installAnswer(state, command);
+      opts.onStdout(Buffer.from(`${JSON.stringify({ guid: G, ...answer.record })}\n`));
+      return Promise.resolve(answer.code);
     }
   );
 }

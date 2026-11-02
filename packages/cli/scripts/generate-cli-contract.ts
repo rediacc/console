@@ -93,6 +93,8 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   // ── The operator's credential ─────────────────────────────────────────
   'backup check':
     'reads a listing and restores a file with the repository credential, which stays where the config lives',
+  'backup repair':
+    "Deletes bad chunks on the account with the caller's backup:manage token, then re-uploads from the machine; a remote executor holds neither the token nor the caller's config. Run it without --proxy.",
   'backup toc-key sync':
     'derives the public key from the repository credential, which stays where the config lives',
 

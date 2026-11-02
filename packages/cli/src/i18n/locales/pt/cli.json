@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Mostrar os detalhes de uma estratégia de cópia de segurança",
-          "destinationsHeader": "  Destinos:",
-          "noDestinations": "  Destinos: (nenhum)",
           "notConfigured": "Nenhuma estratégia de cópia de segurança configurada",
           "notFound": "Estratégia de cópia de segurança \"{{name}}\" não encontrada"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "A limpeza de \"{{name}}\" não terminou após {{rounds}} rodadas. Executar a limpeza de novo para continuar."
       },
       "check": {
-        "description": "Comprova que um snapshot armazenado abre com a frase secreta: percorre a sua listagem, restaura um ficheiro e compara-o com o tamanho listado",
+        "description": "Comprova que um snapshot abre com a frase secreta restaurando um ficheiro",
         "needsCredential": "{{name}} não tem credencial nesta configuração, por isso a sua listagem não pode ser aberta.",
         "noIndex": "O snapshot {{snapshot}} de {{name}} não tem listagem armazenada e não pode ser verificado assim. Não está comprovado.",
         "noSnapshot": "{{name}} não tem nenhum snapshot armazenado para verificar.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Snapshots que contêm estes chunks: {{snapshots}}",
-        "description": "Encontra chunks que o armazenamento perdeu ou guarda errados, apaga os maus no servidor e volta a enviá-los a partir da âncora desta máquina",
+        "description": "Reenviar a partir da âncora desta máquina os chunks perdidos ou errados",
         "dryRunDamage": "{{count}} chunk(s) danificado(s) encontrado(s); uma simulação não alterou nada.",
         "optionDryRun": "Indica o que seria apagado e reenviado; não altera nada"
       },

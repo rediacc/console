@@ -7,7 +7,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "17c269cc15a5ad9c"
+sourceHash: "25885f2d388aa233"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2508,6 +2508,8 @@ rdc backup restore <artifact-ref> [options]
 | `--at <time>` | {{t:cli.commands.backup.restore.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--any-stream` | {{t:cli.commands.backup.restore.optionAnyStream}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--no-seed` | {{t:cli.commands.backup.restore.optionNoSeed}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--allow-unopenable` | {{t:cli.commands.backup.restore.optionAllowUnopenable}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--salvage` | {{t:cli.commands.backup.restore.optionSalvage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--path <file-or-dir>` | {{t:cli.commands.backup.restore.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--to <dir>` | {{t:cli.commands.backup.restore.optionTo}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.backup.restore.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2612,6 +2614,7 @@ rdc backup snapshot <repo-ref> [options]
 | `--reseed` | {{t:cli.commands.backup.snapshot.optionReseed}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dry-run` | {{t:cli.commands.backup.snapshot.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cold` | {{t:cli.commands.backup.snapshot.optionCold}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--accept-identity-change` | {{t:cli.commands.backup.snapshot.optionAcceptIdentityChange}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <rate>` | {{t:cli.commands.backup.snapshot.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--parallelism <n>` | {{t:cli.commands.backup.snapshot.optionParallelism}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--read-bwlimit <rate>` | {{t:cli.commands.backup.snapshot.optionReadBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2762,6 +2765,7 @@ rdc backup verify <repo-ref> [options]
 |------|-------------|----------|---------|
 | `--deep` | {{t:cli.commands.backup.verify.optionDeep}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--store` | {{t:cli.commands.backup.verify.optionStore}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--restore-test` | {{t:cli.commands.backup.verify.optionRestoreTest}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2839,6 +2843,45 @@ rdc backup purge <repo-ref> [options]
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-backup-check"></a>
+### 8.19 check
+
+{{t:cli.commands.backup.check.description}}
+
+```bash
+rdc backup check <repo-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--path <file>` | {{t:cli.commands.backup.check.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-repair"></a>
+### 8.20 repair
+
+{{t:cli.commands.backup.repair.description}}
+
+```bash
+rdc backup repair <repo-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.backup.repair.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-toc-key"></a>
+### 8.21 toc-key
+
+{{t:cli.commands.backup.tocKey.description}}
+
+```bash
+rdc backup toc-key
+```
 
 ---
 

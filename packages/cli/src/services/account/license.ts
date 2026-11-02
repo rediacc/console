@@ -239,7 +239,7 @@ async function readRepoLicenseInputs(
 }
 
 /** The machine's license scan answered but did not list this repository, so its identity cannot be read. */
-export class RepoIdentityUnreadableError extends Error {
+class RepoIdentityUnreadableError extends Error {
   constructor(readonly repositoryGuid: string) {
     super(
       `Repository ${repositoryGuid} was not issued a license: the machine could not read its LUKS header, so the identity to bind the license to is unknown (an unbound license would be accepted for any image). Check the image with "rdc machine status" and "renet repository license-scan" on the machine.`

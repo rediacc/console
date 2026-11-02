@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Mostra i dettagli della strategia di backup",
-          "destinationsHeader": "  Destinazioni:",
-          "noDestinations": "  Destinazioni: (nessuna)",
           "notConfigured": "Nessuna strategia di backup configurata",
           "notFound": "Strategia di backup \"{{name}}\" non trovata"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "L'eliminazione di \"{{name}}\" non è terminata dopo {{rounds}} passaggi. Eseguire di nuovo il comando per continuare."
       },
       "check": {
-        "description": "Verifica che uno snapshot archiviato si apra con la passphrase: sfoglia il suo listing, ripristina un file e lo confronta con la dimensione elencata",
+        "description": "Verifica che uno snapshot si apra con la passphrase ripristinando un file",
         "needsCredential": "{{name}} non ha credenziali in questa configurazione, quindi il suo listing non può essere aperto.",
         "noIndex": "Lo snapshot {{snapshot}} di {{name}} non ha un listing archiviato e non può essere controllato così. Non è dimostrato.",
         "noSnapshot": "{{name}} non ha nessuno snapshot archiviato da controllare.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Snapshot che contengono questi chunk: {{snapshots}}",
-        "description": "Trova i chunk persi o errati nello store, elimina quelli cattivi sul server e li ricarica dall'ancora di questa macchina",
+        "description": "Ricarica dall'ancora di questa macchina i chunk persi o errati nello store",
         "dryRunDamage": "Trovati {{count}} chunk danneggiati; una simulazione non ha cambiato nulla.",
         "optionDryRun": "Mostra cosa verrebbe eliminato e ricaricato; non modifica nulla"
       },

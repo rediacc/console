@@ -123,11 +123,7 @@ interface SnapshotRecord {
  * Whether the run was refused because the image is not the one this repository backed up before: renet's own
  * `identity-changed` status, or the account's `licence-uuid-mismatch` refusal of the commit.
  */
-function isIdentityRefusal(result: {
-  stdout?: string;
-  stderr?: string;
-  error?: string;
-}): boolean {
+function isIdentityRefusal(result: { stdout?: string; stderr?: string; error?: string }): boolean {
   const record = parseVerifyVerdict(result.stdout) as SnapshotRecord | undefined;
   if (record?.status === 'identity-changed') return true;
   return [record?.reason, result.error, result.stderr].some((text) =>
@@ -195,10 +191,7 @@ export function registerBackupSnapshot(backup: Command): void {
     .option('--reseed', t('commands.backup.snapshot.optionReseed'))
     .option('--dry-run', t('commands.backup.snapshot.optionDryRun'))
     .option('--cold', t('commands.backup.snapshot.optionCold'))
-    .option(
-      '--accept-identity-change',
-      t('commands.backup.snapshot.optionAcceptIdentityChange')
-    )
+    .option('--accept-identity-change', t('commands.backup.snapshot.optionAcceptIdentityChange'))
     .option('--bwlimit <rate>', t('commands.backup.snapshot.optionBwlimit'))
     .option('--parallelism <n>', t('commands.backup.snapshot.optionParallelism'))
     .option('--read-bwlimit <rate>', t('commands.backup.snapshot.optionReadBwlimit'))

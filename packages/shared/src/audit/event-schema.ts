@@ -74,12 +74,17 @@ const repoEventTypes = [
 ] as const;
 
 const backupEventTypes = [
+  // Chunk-store reads and the restore-test legs: `backup check` browses a stored listing and restores one path, `backup verify --restore-test` compares a copy, and `backup repair` re-uploads chunks. Each reaches the machine through a literal functionName, so each records.
+  'cli.backup.browse_at',
+  'cli.backup.compare',
   'cli.backup.delete',
   'cli.backup.list',
   'cli.backup.pull',
   'cli.backup.push',
+  'cli.backup.repair',
   // `backup_restore` is the chunk-store restore verb. It is deliberately TierNone while `backup_pull` is TierRepoLicenseFull, but the tier says nothing about auditability: it mutates a repo, so it records like the rest.
   'cli.backup.restore',
+  'cli.backup.restore_path',
 ] as const;
 
 // Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes through a `dispatch(functionName, …)` helper rather than a `functionName: '…'` literal, so check_audit_coverage.py — which greps for the literal — cannot see most of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting event types absent from this union, which makes

@@ -61,22 +61,25 @@ beforeEach(() => {
 const printedRows = (): Record<string, unknown>[] => mocks.print.mock.calls.at(-1)?.[0];
 
 describe('backup strategy list', () => {
-  it.each(['json', 'yaml', 'table'])('prints rows on stdout through print in %s', async (format) => {
-    mocks.format.value = format;
-    await run(['list']);
-    expect(mocks.print).toHaveBeenCalledTimes(1);
-    expect(mocks.print.mock.calls[0][1]).toBe(format);
-    expect(printedRows()).toEqual([
-      {
-        name: 'nightly',
-        schedule: '0 2 * * *',
-        mode: 'full',
-        destinations: 1,
-        enabled: true,
-        machines: 'm1',
-      },
-    ]);
-  });
+  it.each(['json', 'yaml', 'table'])(
+    'prints rows on stdout through print in %s',
+    async (format) => {
+      mocks.format.value = format;
+      await run(['list']);
+      expect(mocks.print).toHaveBeenCalledTimes(1);
+      expect(mocks.print.mock.calls[0][1]).toBe(format);
+      expect(printedRows()).toEqual([
+        {
+          name: 'nightly',
+          schedule: '0 2 * * *',
+          mode: 'full',
+          destinations: 1,
+          enabled: true,
+          machines: 'm1',
+        },
+      ]);
+    }
+  );
 
   it('an empty list is [] under json, not prose on stderr alone', async () => {
     mocks.strategies = {};

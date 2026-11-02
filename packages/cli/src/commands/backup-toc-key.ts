@@ -27,7 +27,12 @@ import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 
 /** Outcomes that leave the machine without the key this credential derives. */
-const FAILING = new Set<TocKeyResult['outcome']>(['differs', 'no-credential', 'refused', 'unreadable']);
+const FAILING = new Set<TocKeyResult['outcome']>([
+  'differs',
+  'no-credential',
+  'refused',
+  'unreadable',
+]);
 
 function execTransport(sftp: {
   execStreaming(
@@ -80,9 +85,7 @@ async function runTocKeySync(
 }
 
 export function registerBackupTocKey(backup: Command): void {
-  const tocKey = backup
-    .command('toc-key')
-    .description(t('commands.backup.tocKey.description'));
+  const tocKey = backup.command('toc-key').description(t('commands.backup.tocKey.description'));
   tocKey
     .command('sync')
     .argument('<repo-ref>', t('options.repoRef'))

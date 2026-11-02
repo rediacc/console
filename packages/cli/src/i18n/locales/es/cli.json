@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Mostrar detalles de la estrategia de respaldo",
-          "destinationsHeader": "  Destinos:",
-          "noDestinations": "  Destinos: (ninguno)",
           "notConfigured": "No hay estrategias de respaldo configuradas",
           "notFound": "Estrategia de respaldo \"{{name}}\" no encontrada"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "La purga de \"{{name}}\" no terminó tras {{rounds}} rondas. Ejecutar la purga de nuevo para continuar."
       },
       "check": {
-        "description": "Comprueba que un snapshot almacenado se abre con la frase de contraseña: recorre su listado, restaura un archivo y lo compara con el tamaño listado",
+        "description": "Comprueba que un snapshot se abre con la frase de contraseña restaurando un archivo",
         "needsCredential": "{{name}} no tiene credencial en esta configuración, así que no se puede abrir su listado.",
         "noIndex": "El snapshot {{snapshot}} de {{name}} no tiene listado almacenado y no se puede comprobar así. No está probado.",
         "noSnapshot": "{{name}} no tiene ningún snapshot almacenado que comprobar.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Snapshots que contienen estos chunks: {{snapshots}}",
-        "description": "Busca chunks que el almacén perdió o guarda mal, borra los malos en el servidor y los vuelve a subir desde el ancla de esta máquina",
+        "description": "Volver a subir desde el ancla de esta máquina los chunks perdidos o erróneos",
         "dryRunDamage": "Se encontraron {{count}} chunk(s) dañado(s); una simulación no cambió nada.",
         "optionDryRun": "Indica qué se borraría y volvería a subir; no cambia nada"
       },

@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",
-          "destinationsHeader": "  Hedefler:",
-          "noDestinations": "  Hedefler: (yok)",
           "notConfigured": "Yapılandırılmış yedekleme stratejisi yok",
           "notFound": "Yedekleme stratejisi \"{{name}}\" bulunamadı"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "\"{{name}}\" temizliği {{rounds}} turda bitmedi. Devam etmek için temizliği yeniden çalıştırın."
       },
       "check": {
-        "description": "Saklanan bir anlık görüntünün parola ile açıldığını kanıtlar: listesine göz atar, bir dosyayı geri yükler ve listelenen boyutla karşılaştırır",
+        "description": "Bir dosyayı geri yükleyerek anlık görüntünün parola ile açıldığını kanıtlar",
         "needsCredential": "{{name}} için bu yapılandırmada kimlik bilgisi yok, bu yüzden listesi açılamaz.",
         "noIndex": "{{name}} deposunun {{snapshot}} anlık görüntüsünün saklanmış listesi yok, bu yolla denetlenemez. Kanıtlanmış değil.",
         "noSnapshot": "{{name}} için denetlenecek saklanmış anlık görüntü yok.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Bu parçaları içeren anlık görüntüler: {{snapshots}}",
-        "description": "Depolamanın kaybettiği veya yanlış tuttuğu parçaları bulur, kötü olanları sunucuda siler ve bu makinenin çapasından yeniden yükler",
+        "description": "Depoda kaybolan veya yanlış olan parçaları bu makinenin çapasından yeniden yükler",
         "dryRunDamage": "{{count}} hasarlı parça bulundu; deneme çalıştırması hiçbir şeyi değiştirmedi.",
         "optionDryRun": "Nelerin silinip yeniden yükleneceğini bildirir; hiçbir şeyi değiştirmez"
       },

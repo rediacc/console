@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -49,9 +50,8 @@ vi.mock('../../services/core/request-context.js', async () => ({
 }));
 vi.mock('../../services/backup/backup-runs-state.js', () => ({ recordBackupRun: vi.fn() }));
 vi.mock('../../utils/errors.js', async () => {
-  const actual = await vi.importActual<typeof import('../../utils/errors.js')>(
-    '../../utils/errors.js'
-  );
+  const actual =
+    await vi.importActual<typeof import('../../utils/errors.js')>('../../utils/errors.js');
   return {
     ...actual,
     getOutputFormat: () => mocks.format.value,
@@ -89,7 +89,7 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
   machineConnections: {
     acquire: vi.fn().mockResolvedValue({
       sftp: { exec: mocks.sftpExec },
-      machine: { datastore: '/mnt/rediacc' },
+      machine: { datastore: WK_DATASTORE_PATH },
       release: vi.fn(),
     }),
   },
@@ -149,9 +149,15 @@ function script(answers: {
 }) {
   mocks.execute.mockImplementation((req: ExecCall) => {
     if (req.functionName === 'backup_restore')
-      return Promise.resolve({ exitCode: 0, ...(answers.restore ?? { success: true, stdout: restoreRecord() }) });
+      return Promise.resolve({
+        exitCode: 0,
+        ...(answers.restore ?? { success: true, stdout: restoreRecord() }),
+      });
     if (req.functionName === 'backup_compare')
-      return Promise.resolve({ exitCode: 0, ...(answers.compare ?? { success: true, stdout: compareRecord() }) });
+      return Promise.resolve({
+        exitCode: 0,
+        ...(answers.compare ?? { success: true, stdout: compareRecord() }),
+      });
     if (req.functionName === 'repository_delete')
       return Promise.resolve({ exitCode: 0, ...(answers.del ?? { success: true }) });
     return Promise.reject(new Error(`unexpected ${req.functionName}`));
@@ -202,7 +208,10 @@ describe('backup verify --restore-test', () => {
 
     const post = mocks.fetch.mock.calls.find((c) => String(c[0]).includes('/verification'));
     expect(post?.[0]).toContain(`/snapshots/${SNAP}/verification`);
-    expect(post?.[1]).toEqual({ method: 'POST', body: { level: 'restore-test', status: 'proven' } });
+    expect(post?.[1]).toEqual({
+      method: 'POST',
+      body: { level: 'restore-test', status: 'proven' },
+    });
     expect(printed()).toMatchObject({ status: 'proven', verificationState: 'proven' });
     expect(mocks.setExitCode).not.toHaveBeenCalled();
   });
@@ -234,7 +243,12 @@ describe('backup verify --restore-test', () => {
   });
 
   it('an anchor that moved since the restore is not a verdict on the snapshot: failed locally, nothing recorded', async () => {
-    script({ compare: { success: true, stdout: compareRecord({ anchorSnapshotId: '20261102T030000Z-aaaaaaaaaaaaaaaa' }) } });
+    script({
+      compare: {
+        success: true,
+        stdout: compareRecord({ anchorSnapshotId: '20261102T030000Z-aaaaaaaaaaaaaaaa' }),
+      },
+    });
     await run(['verify', 'shop', '--restore-test']);
     expect(printed()).toMatchObject({ status: 'failed' });
     expect(mocks.setExitCode).toHaveBeenCalledWith(1);

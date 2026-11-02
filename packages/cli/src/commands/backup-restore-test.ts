@@ -38,10 +38,10 @@ import { postVerification, type VerificationAnswer } from './backup-verification
 import { resolveRepoRef } from '../utils/repo-target.js';
 
 /** The copy needs the image plus headroom for the staging file's metadata and the filesystem. */
-export const RESTORE_TEST_SPACE_FACTOR = 1.2;
+const SPACE_FACTOR = 1.2;
 
 /** The one document the verb prints. */
-export interface RestoreTestResult {
+interface RestoreTestResult {
   repo: string;
   snapshotId: string;
   copy: string;
@@ -66,9 +66,7 @@ async function datastoreFreeBytes(machineName: string): Promise<number | undefin
   const lease = await machineConnections.acquire(machineName);
   try {
     const datastore = lease.machine.datastore ?? DEFAULT_DATASTORE;
-    const out = await lease.sftp.exec(
-      `df -B1 --output=avail ${shellQuote(datastore)} | tail -n 1`
-    );
+    const out = await lease.sftp.exec(`df -B1 --output=avail ${shellQuote(datastore)} | tail -n 1`);
     const free = out.trim();
     return /^\d+$/.test(free) ? Number(free) : undefined;
   } finally {
@@ -122,6 +120,9 @@ async function deleteCopy(
   return 'failed';
 }
 
+const REASON_RESTORE_FAILED = 'the restore of the copy failed';
+const REASON_COMPARE_UNREADABLE = 'unreadable compare record';
+
 interface Verdict {
   status: 'proven' | 'failed';
   reason?: string;
@@ -152,7 +153,7 @@ async function restoreAndCompare(args: {
   if (!restore.success) {
     return {
       status: 'failed',
-      reason: record?.reason ?? restore.error ?? 'the restore of the copy failed',
+      reason: record?.reason ?? restore.error ?? REASON_RESTORE_FAILED,
       passphraseCheck: record?.passphraseCheck,
       postFailed: false,
     };
@@ -167,7 +168,12 @@ async function restoreAndCompare(args: {
   const verdict = parseCompareRecord(compare.stdout);
   const passphraseCheck = record?.passphraseCheck;
   if (!verdict) {
-    return { status: 'failed', reason: compare.error ?? 'unreadable compare record', passphraseCheck, postFailed: false };
+    return {
+      status: 'failed',
+      reason: compare.error ?? REASON_COMPARE_UNREADABLE,
+      passphraseCheck,
+      postFailed: false,
+    };
   }
   if (verdict.anchorSnapshotId !== snapshotId) {
     return {
@@ -179,7 +185,13 @@ async function restoreAndCompare(args: {
     };
   }
   if (verdict.status !== 'identical') {
-    return { status: 'failed', reason: verdict.reason, passphraseCheck, compare: verdict, postFailed: verdict.status === 'different' };
+    return {
+      status: 'failed',
+      reason: verdict.reason,
+      passphraseCheck,
+      compare: verdict,
+      postFailed: verdict.status === 'different',
+    };
   }
   if (passphraseCheck !== 'opened') {
     return {
@@ -193,13 +205,26 @@ async function restoreAndCompare(args: {
   return { status: 'proven', passphraseCheck, compare: verdict, postFailed: false };
 }
 
-/** Run the restore test for one repository and print its verdict. Exit 1 unless proven. */
-export async function runRestoreTest(repoRef: string): Promise<void> {
+const SPACE_UNKNOWN = '?';
+const STATE_UNRECORDED = 'unrecorded';
+
+interface RestoreTestPlan {
+  repoKey: string;
+  machineName: string;
+  lineage: string;
+  snapshotId: string;
+  source: SourceRepo & { credential: string };
+}
+
+/** Every refusal that can be made before a copy is registered: credential, anchor and room. */
+async function planRestoreTest(repoRef: string): Promise<RestoreTestPlan> {
   const { repoKey, machineName } = await resolveRepoRef(repoRef);
   const source = (await configService.getRepository(repoKey)) as SourceRepo | undefined;
   if (!source) throw new ValidationError(`Repository "${repoKey}" not found in this config.`);
   if (!source.credential) {
-    throw new ValidationError(t('commands.backup.verify.restoreTestNeedsCredential', { name: repoKey }));
+    throw new ValidationError(
+      t('commands.backup.verify.restoreTestNeedsCredential', { name: repoKey })
+    );
   }
   const lineage = lineageOf(source);
   const snapshotId = await readSourceAnchor({ repoName: repoKey, machine: machineName });
@@ -208,70 +233,101 @@ export async function runRestoreTest(repoRef: string): Promise<void> {
   }
   const imageBytes = await indexedImageBytes(lineage, snapshotId);
   const free = await datastoreFreeBytes(machineName);
-  if (imageBytes === undefined || free === undefined || free < imageBytes * RESTORE_TEST_SPACE_FACTOR) {
+  if (imageBytes === undefined || free === undefined || free < imageBytes * SPACE_FACTOR) {
     throw new ValidationError(
       t('commands.backup.verify.restoreTestNoSpace', {
         snapshot: snapshotId,
-        need: imageBytes === undefined ? '?' : Math.ceil(imageBytes * RESTORE_TEST_SPACE_FACTOR),
-        free: free ?? '?',
+        need: imageBytes === undefined ? SPACE_UNKNOWN : Math.ceil(imageBytes * SPACE_FACTOR),
+        free: free ?? SPACE_UNKNOWN,
       })
     );
   }
+  return {
+    repoKey,
+    machineName,
+    lineage,
+    snapshotId,
+    source: { ...source, credential: source.credential },
+  };
+}
 
+/** Register the throwaway copy under a fresh GUID, never the source's. */
+async function registerCopy(plan: RestoreTestPlan): Promise<{ name: string; guid: string }> {
   const name = copyName();
   assertResourceName(name);
-  const copyGuid = randomUUID();
-  if (copyGuid === source.repositoryGuid) throw new Error('restore-test: the copy collides with the source');
+  const guid = randomUUID();
+  if (guid === plan.source.repositoryGuid)
+    throw new Error('restore-test: the copy collides with the source');
   await configService.addRepository(compositeKey(name, 'latest'), {
-    repositoryGuid: copyGuid,
-    grandGuid: lineage,
+    repositoryGuid: guid,
+    grandGuid: plan.lineage,
     tag: 'latest',
-    credential: source.credential,
+    credential: plan.source.credential,
     networkId: await configService.allocateNetworkId({
-      floor: await targetFloor({ machine: machineName }),
+      floor: await targetFloor({ machine: plan.machineName }),
     }),
-    placement: { machine: machineName },
+    placement: { machine: plan.machineName },
   });
+  return { name, guid };
+}
+
+/** The server's answer is the verdict: a `proven` post can come back `failed` while a failure on the snapshot still stands. */
+function buildResult(
+  plan: RestoreTestPlan,
+  copy: { name: string; guid: string },
+  verdict: Verdict,
+  held: string | undefined,
+  cleanup: 'deleted' | 'failed'
+): RestoreTestResult {
+  const proven = verdict.status === 'proven' && held === 'proven';
+  return {
+    repo: plan.repoKey,
+    snapshotId: plan.snapshotId,
+    copy: copy.name,
+    copyGuid: copy.guid,
+    status: proven ? 'proven' : 'failed',
+    ...(proven
+      ? {}
+      : {
+          reason: verdict.reason ?? `the server holds this snapshot as ${held ?? STATE_UNRECORDED}`,
+        }),
+    ...(verdict.passphraseCheck && { passphraseCheck: verdict.passphraseCheck }),
+    ...(verdict.compare && { compare: verdict.compare }),
+    ...(held && { verificationState: held }),
+    cleanup,
+  };
+}
+
+/** Run the restore test for one repository and print its verdict. Exit 1 unless proven. */
+export async function runRestoreTest(repoRef: string): Promise<void> {
+  const plan = await planRestoreTest(repoRef);
+  const copy = await registerCopy(plan);
 
   let verdict: Verdict;
   let answer: VerificationAnswer | undefined;
   let cleanup: 'deleted' | 'failed';
   try {
     verdict = await restoreAndCompare({
-      copy: name,
-      machine: machineName,
-      lineage,
-      snapshotId,
-      sourceGuid: source.repositoryGuid,
+      copy: copy.name,
+      machine: plan.machineName,
+      lineage: plan.lineage,
+      snapshotId: plan.snapshotId,
+      sourceGuid: plan.source.repositoryGuid,
     });
     if (verdict.status === 'proven' || verdict.postFailed) {
-      answer = await postVerification(snapshotId, 'restore-test', verdict.status);
+      answer = await postVerification(plan.snapshotId, 'restore-test', verdict.status);
     }
   } finally {
     cleanup = await deleteCopy(
-      name,
-      machineName,
-      { key: repoKey, guid: source.repositoryGuid },
-      copyGuid
+      copy.name,
+      plan.machineName,
+      { key: plan.repoKey, guid: plan.source.repositoryGuid },
+      copy.guid
     );
   }
 
-  // The server's answer is the verdict: a `proven` post can come back `failed` while a failure on the snapshot still stands.
-  const held = answer?.verificationState;
-  const proven = verdict.status === 'proven' && held === 'proven';
-  const result: RestoreTestResult = {
-    repo: repoKey,
-    snapshotId,
-    copy: name,
-    copyGuid,
-    status: proven ? 'proven' : 'failed',
-    ...(proven ? {} : { reason: verdict.reason ?? `the server holds this snapshot as ${held ?? 'unrecorded'}` }),
-    ...(verdict.passphraseCheck && { passphraseCheck: verdict.passphraseCheck }),
-    ...(verdict.compare && { compare: verdict.compare }),
-    ...(held && { verificationState: held }),
-    cleanup,
-  };
+  const result = buildResult(plan, copy, verdict, answer?.verificationState, cleanup);
   const format = getOutputFormat();
   outputService.print(result, format === 'table' ? 'json' : format);
-  if (!proven) setExitCode(1);
+  if (result.status !== 'proven') setExitCode(1);
 }

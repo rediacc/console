@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Backup-Strategie-Details anzeigen",
-          "destinationsHeader": "  Ziele:",
-          "noDestinations": "  Ziele: (keine)",
           "notConfigured": "Keine Backup-Strategien konfiguriert",
           "notFound": "Backup-Strategie \"{{name}}\" nicht gefunden"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "Die Bereinigung von „{{name}}“ war nach {{rounds}} Durchgängen nicht abgeschlossen. Den Befehl erneut ausführen, um fortzufahren."
       },
       "check": {
-        "description": "Beweist, dass sich ein gespeicherter Snapshot mit der Passphrase öffnen lässt: Listing durchsuchen, eine Datei wiederherstellen und mit der gelisteten Größe vergleichen",
+        "description": "Beweist per Wiederherstellung einer Datei, dass sich ein Snapshot mit der Passphrase öffnen lässt",
         "needsCredential": "{{name}} hat in dieser Konfiguration keine Zugangsdaten, daher lässt sich das Listing nicht öffnen.",
         "noIndex": "Snapshot {{snapshot}} von {{name}} hat kein gespeichertes Listing und lässt sich so nicht prüfen. Er gilt nicht als bewiesen.",
         "noSnapshot": "{{name}} hat keinen gespeicherten Snapshot zum Prüfen.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Snapshots, die diese Chunks enthalten: {{snapshots}}",
-        "description": "Findet Chunks, die der Speicher verloren hat oder falsch hält, löscht die defekten auf dem Server und lädt sie aus dem Anker dieser Maschine erneut hoch",
+        "description": "Verlorene oder falsche Chunks aus dem Anker dieser Maschine erneut hochladen",
         "dryRunDamage": "{{count}} beschädigte(r) Chunk(s) gefunden; ein Probelauf hat nichts geändert.",
         "optionDryRun": "Zeigt, was gelöscht und erneut hochgeladen würde; ändert nichts"
       },

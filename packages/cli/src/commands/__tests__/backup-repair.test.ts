@@ -71,6 +71,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
 import { registerBackupRepair } from '../backup-repair.js';
 
 const H = (c: string) => c.repeat(64);
+const byText = (a: string, b: string) => a.localeCompare(b);
 
 /** The server's chunk-verify pages: one page carrying `missing` and `corrupt`. */
 function verifyPage(missing: string[], corrupt: string[]) {
@@ -82,8 +83,12 @@ function verifyPage(missing: string[], corrupt: string[]) {
 
 const repairCalls = () =>
   mocks.fetch.mock.calls.filter((c) => String(c[0]).endsWith('/backups/chunks/repair'));
-const repairBodies = () => repairCalls().map((c) => c[1].body as { hashes: string[]; dryRun: boolean });
-const machineCalls = () => mocks.execute.mock.calls.map((c) => c[0] as { functionName: string; params: Record<string, string> });
+const repairBodies = () =>
+  repairCalls().map((c) => c[1].body as { hashes: string[]; dryRun: boolean });
+const machineCalls = () =>
+  mocks.execute.mock.calls.map(
+    (c) => c[0] as { functionName: string; params: Record<string, string> }
+  );
 
 async function run(args: string[]): Promise<void> {
   const program = new Command().exitOverride();
@@ -162,7 +167,7 @@ describe('backup repair', () => {
     const call = machineCalls()[0];
     expect(call.functionName).toBe('backup_repair');
     expect(call.params.repository).toBe('shop');
-    expect(call.params.hashes.split(/[\s,]+/).sort()).toEqual([H('a'), H('b')].sort());
+    expect(call.params.hashes.split(/[\s,]+/).sort(byText)).toEqual([H('a'), H('b')].sort(byText));
     expect(printed()).toMatchObject({ status: 'repaired' });
     expect(mocks.setExitCode).not.toHaveBeenCalled();
   });
@@ -282,7 +287,10 @@ describe('a salvage that placed a damaged image', () => {
     const base = { jobId: 'j', machine: 'm1', params: { repo: 'copy' }, state: 'failed' as const };
     await rollback({ ...base, output: damaged });
     expect(mocks.removeRepository).not.toHaveBeenCalled();
-    await rollback({ ...base, output: JSON.stringify({ cellsTotal: 1, chunksFetched: 0, status: 'failed' }) });
+    await rollback({
+      ...base,
+      output: JSON.stringify({ cellsTotal: 1, chunksFetched: 0, status: 'failed' }),
+    });
     expect(mocks.removeRepository).toHaveBeenCalledTimes(1);
     await rollback({ ...base, output: undefined });
     expect(mocks.removeRepository).toHaveBeenCalledTimes(2);

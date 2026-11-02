@@ -521,7 +521,9 @@ export function registerBackupStrategyCommands(backup: Command): void {
         if (strategy) {
           const found = await configService.getBackupStrategy(strategy);
           if (!found) {
-            throw new ValidationError(t('commands.backup.strategy.show.notFound', { name: strategy }));
+            throw new ValidationError(
+              t('commands.backup.strategy.show.notFound', { name: strategy })
+            );
           }
           outputService.print([strategyRow(strategy, found)], getOutputFormat());
           return;

@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -67,7 +68,7 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
   machineConnections: {
     acquire: vi.fn().mockResolvedValue({
       sftp: { exec: mocks.sftpExec },
-      machine: { datastore: '/mnt/rediacc' },
+      machine: { datastore: WK_DATASTORE_PATH },
       release: vi.fn(),
     }),
   },
@@ -125,7 +126,8 @@ async function run(args: string[]): Promise<void> {
 const printed = (): Record<string, unknown> => mocks.print.mock.calls.at(-1)?.[0];
 const verificationPosts = () =>
   mocks.fetch.mock.calls.filter((c) => String(c[0]).includes('/verification'));
-const rmCommands = () => mocks.sftpExec.mock.calls.map((c) => String(c[0])).filter((c) => c.includes('rm '));
+const rmCommands = () =>
+  mocks.sftpExec.mock.calls.map((c) => String(c[0])).filter((c) => c.includes('rm '));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -141,8 +143,18 @@ beforeEach(() => {
       ? Promise.resolve({ snapshotId: SNAP, verificationState: 'proven' })
       : Promise.resolve({
           manifests: [
-            { snapshotId: OLDER, lineageGuid: 'lineage-1', createdAt: '2026-10-31T03:00:00Z', hasIndex: true },
-            { snapshotId: SNAP, lineageGuid: 'lineage-1', createdAt: '2026-11-01T03:00:00Z', hasIndex: true },
+            {
+              snapshotId: OLDER,
+              lineageGuid: 'lineage-1',
+              createdAt: '2026-10-31T03:00:00Z',
+              hasIndex: true,
+            },
+            {
+              snapshotId: SNAP,
+              lineageGuid: 'lineage-1',
+              createdAt: '2026-11-01T03:00:00Z',
+              hasIndex: true,
+            },
           ],
         })
   );
@@ -171,7 +183,10 @@ describe('backup check', () => {
 
   it('--path names the file, and the browse is scoped to it', async () => {
     script({
-      browse: { success: true, stdout: listing([{ path: 'big.bin', type: 'file', size: 5_000_000 }]) },
+      browse: {
+        success: true,
+        stdout: listing([{ path: 'big.bin', type: 'file', size: 5_000_000 }]),
+      },
       restore: { success: true, stdout: restorePath(5_000_000) },
     });
     await run(['check', 'shop', '--path', '/big.bin']);
@@ -193,7 +208,14 @@ describe('backup check', () => {
       url.includes('/verification')
         ? Promise.resolve({ snapshotId: SNAP, verificationState: 'failed' })
         : Promise.resolve({
-            manifests: [{ snapshotId: SNAP, lineageGuid: 'lineage-1', createdAt: '2026-11-01T03:00:00Z', hasIndex: true }],
+            manifests: [
+              {
+                snapshotId: SNAP,
+                lineageGuid: 'lineage-1',
+                createdAt: '2026-11-01T03:00:00Z',
+                hasIndex: true,
+              },
+            ],
           })
     );
     await run(['check', 'shop']);
@@ -203,7 +225,14 @@ describe('backup check', () => {
 
   it('a snapshot with no index is reported plainly, is not proven, and posts nothing', async () => {
     mocks.fetch.mockResolvedValue({
-      manifests: [{ snapshotId: SNAP, lineageGuid: 'lineage-1', createdAt: '2026-11-01T03:00:00Z', hasIndex: false }],
+      manifests: [
+        {
+          snapshotId: SNAP,
+          lineageGuid: 'lineage-1',
+          createdAt: '2026-11-01T03:00:00Z',
+          hasIndex: false,
+        },
+      ],
     });
     await run(['check', 'shop']);
     expect(printed()).toMatchObject({ status: 'no-index', snapshotId: SNAP });
@@ -236,7 +265,7 @@ describe('backup check', () => {
 
     it('is unique, under the datastore restores, and deleted by exactly that path', async () => {
       await run(['check', 'shop']);
-      expect(scratchOf()).toMatch(/^\/mnt\/rediacc\/restores\/check-[0-9a-f]{8}$/);
+      expect(scratchOf()).toMatch(new RegExp(`^${WK_DATASTORE_PATH}/restores/check-[0-9a-f]{8}$`));
       const rm = rmCommands();
       expect(rm).toHaveLength(1);
       expect(rm[0]).toContain(scratchOf());

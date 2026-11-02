@@ -2036,8 +2036,6 @@
         },
         "show": {
           "description": "Show backup strategy details",
-          "destinationsHeader": "  Destinations:",
-          "noDestinations": "  Destinations: (none)",
           "notConfigured": "No backup strategies configured",
           "notFound": "Backup strategy \"{{name}}\" not found"
         }
@@ -2159,7 +2157,7 @@
         "tooManyRounds": "Purging \"{{name}}\" did not finish after {{rounds}} rounds. Run the purge again to continue."
       },
       "check": {
-        "description": "Prove a stored snapshot opens with the passphrase: browse its listing, restore one file and compare it with the listed size",
+        "description": "Prove a stored snapshot opens with the passphrase by restoring one file",
         "needsCredential": "{{name}} has no credential in this config, so its listing cannot be opened.",
         "noIndex": "Snapshot {{snapshot}} of {{name}} has no stored listing, so it cannot be checked this way. It is not proven.",
         "noSnapshot": "{{name}} has no stored snapshot to check.",
@@ -2168,7 +2166,7 @@
       },
       "repair": {
         "affected": "Snapshots that name these chunks: {{snapshots}}",
-        "description": "Find chunks the store lost or holds wrong, delete the bad ones on the server and re-upload them from this machine's anchor",
+        "description": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
         "dryRunDamage": "{{count}} damaged chunk(s) found; a dry run changed nothing.",
         "optionDryRun": "Report what would be deleted and re-uploaded; change nothing"
       },

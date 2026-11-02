@@ -227,7 +227,12 @@ describe('backup snapshot --accept-identity-change', () => {
     ['an identity-changed record', { stdout: JSON.stringify({ status: 'identity-changed' }) }],
     [
       'a commit the account refused as licence-uuid-mismatch',
-      { stdout: JSON.stringify({ status: 'failed', reason: 'commit refused: licence-uuid-mismatch' }) },
+      {
+        stdout: JSON.stringify({
+          status: 'failed',
+          reason: 'commit refused: licence-uuid-mismatch',
+        }),
+      },
     ],
     ['a refusal that only the error text carries', { stdout: '', error: 'licence-uuid-mismatch' }],
   ])('renders %s as a failure that names the flag', async (_name, answer) => {

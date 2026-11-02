@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "Afficher les détails de la stratégie de sauvegarde",
-          "destinationsHeader": "  Destinations :",
-          "noDestinations": "  Destinations : (aucune)",
           "notConfigured": "Aucune stratégie de sauvegarde configurée",
           "notFound": "Stratégie de sauvegarde \"{{name}}\" introuvable"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "La purge de « {{name}} » n'est pas terminée après {{rounds}} passes. Relancer la purge pour continuer."
       },
       "check": {
-        "description": "Prouve qu'un snapshot stocké s'ouvre avec la phrase secrète : parcourt son listing, restaure un fichier et le compare à la taille listée",
+        "description": "Prouve qu'un snapshot s'ouvre avec la phrase secrète en restaurant un fichier",
         "needsCredential": "{{name}} n'a aucun identifiant dans cette configuration, son listing ne peut donc pas être ouvert.",
         "noIndex": "Le snapshot {{snapshot}} de {{name}} n'a pas de listing stocké et ne peut pas être vérifié ainsi. Il n'est pas prouvé.",
         "noSnapshot": "{{name}} n'a aucun snapshot stocké à vérifier.",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "Snapshots qui référencent ces chunks : {{snapshots}}",
-        "description": "Trouve les chunks perdus ou erronés dans le stockage, supprime les mauvais sur le serveur et les renvoie depuis l'ancre de cette machine",
+        "description": "Renvoyer depuis l'ancre de cette machine les chunks perdus ou erronés du stockage",
         "dryRunDamage": "{{count}} chunk(s) endommagé(s) trouvé(s) ; une simulation n'a rien modifié.",
         "optionDryRun": "Indique ce qui serait supprimé et renvoyé ; ne modifie rien"
       },

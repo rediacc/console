@@ -26,10 +26,10 @@ const MONTH_NAMES = [
   'oct',
   'nov',
   'dec',
-];
-const DOW_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+] as const;
+const DOW_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
-function atom(raw: string, names: string[], nameBase: number): number {
+function atom(raw: string, names: readonly string[], nameBase: number): number {
   const named = names.indexOf(raw.toLowerCase());
   if (named !== -1) return named + nameBase;
   const n = Number(raw);
@@ -40,7 +40,7 @@ function atom(raw: string, names: string[], nameBase: number): number {
 interface FieldSpec {
   min: number;
   max: number;
-  names?: string[];
+  names?: readonly string[];
   nameBase?: number;
 }
 

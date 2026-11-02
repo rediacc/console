@@ -252,13 +252,12 @@ describe('verify.deepSchedule is refused at bind time when it is not a cron', ()
   const base = { destinations: [], schedule: '0 * * * *' };
 
   it('names the bad cron and accepts a five-field one', () => {
-    expect(
-      strategyUnschedulableReason({ ...base, verify: { deepSchedule: 'nightly' } })
-    ).toMatch(/Invalid cron expression: "nightly"/);
+    expect(strategyUnschedulableReason({ ...base, verify: { deepSchedule: 'nightly' } })).toMatch(
+      /Invalid cron expression: "nightly"/
+    );
     expect(
       strategyUnschedulableReason({ ...base, verify: { deepSchedule: '30 4 * * 6' } })
     ).toBeUndefined();
     expect(strategyUnschedulableReason({ ...base, verify: {} })).toBeUndefined();
   });
 });
-

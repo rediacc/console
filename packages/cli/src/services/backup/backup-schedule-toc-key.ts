@@ -30,7 +30,7 @@ export interface TocKeyTarget {
   datastore: string;
 }
 
-export type TocKeyOutcome =
+type TocKeyOutcome =
   | 'installed'
   | 'replaced'
   | 'unchanged'

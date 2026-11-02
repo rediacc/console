@@ -184,7 +184,9 @@ export function applyStaleness(
   const failedVerifies = extra.failedVerifies ?? [];
   if (failedVerifies.length > 0) {
     const named = failedVerifies.map((f) => `${f.name ?? f.guid} (${f.status})`).join(', ');
-    issues.push(`${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`);
+    issues.push(
+      `${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`
+    );
     exitCode = Math.max(exitCode, 1);
   }
   // Raised from 0 only by these checks, so the shared verdict's message moves with it.

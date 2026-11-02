@@ -34,6 +34,8 @@ export const JOB_PLANS: Readonly<Record<string, JobPlan>> = {
 const SPOOL = 'drives the job spool itself (section 24)';
 const INTERACTIVE = 'interactive: needs the local terminal (section 24)';
 const LOCAL_SYNC = 'client rsync between the local filesystem and the machine (section 24)';
+const OPERATOR_CREDENTIAL =
+  'several renet calls driven from the operator side with a credential or token the config holds, so there is no single machine job (section 24)';
 const NO_RENET =
   'makes no renet call, so there is nothing to run as a job (section 24 not-proxyable row)';
 
@@ -47,6 +49,9 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'job wait': SPOOL,
   'backup download': LOCAL_SYNC,
   'backup upload': LOCAL_SYNC,
+  'backup check': OPERATOR_CREDENTIAL,
+  'backup repair': OPERATOR_CREDENTIAL,
+  'backup toc-key sync': OPERATOR_CREDENTIAL,
   'repo sync download': LOCAL_SYNC,
   'repo sync status': LOCAL_SYNC,
   'repo sync upload': LOCAL_SYNC,

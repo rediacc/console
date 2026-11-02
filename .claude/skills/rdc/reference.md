@@ -524,6 +524,7 @@ Verify a repository's backup anchor against the chunk store
 
 - `--deep`: Re-hash every recorded cell (full verification) instead of a sampled check
 - `--store`: Have the server re-hash every stored chunk of this repository and name any missing or corrupt one
+- `--restore-test`: Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -551,6 +552,7 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 - `--reseed`: Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)
 - `--dry-run`: Plan only: no upload. Reports what would move
 - `--cold`: Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run
+- `--accept-identity-change`: Take this image as the new baseline when its LUKS identity changed or it shrank; uploads a full snapshot
 - `--bwlimit <rate>`: Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--parallelism <n>`: Number of chunks uploaded at once (default 4)
 - `--read-bwlimit <rate>`: Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited
@@ -606,6 +608,39 @@ Reset a repository's stored-bytes ledger to what the store actually holds (never
 
 - `--dry-run`: Report the figures without changing the ledger
 - `--check`: Dry run that exits 1 when the ledger differs from the store
+
+> MCP tool
+
+### rdc backup repair <repo-ref>
+
+Find chunks the store lost or holds wrong, delete the bad ones on the server and re-upload them from this machine's anchor
+
+**Options:**
+
+- `--dry-run`: Report what would be deleted and re-uploaded; change nothing
+- `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc backup check <repo-ref>
+
+Prove a stored snapshot opens with the passphrase: browse its listing, restore one file and compare it with the listed size
+
+**Options:**
+
+- `--path <file>`: The file to restore and compare (default: the smallest non-empty file)
+- `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc backup toc-key sync <repo-ref>
+
+Install the repository's listing key on its machine, or replace a different one
+
+**Options:**
+
+- `--replace`: Replace a different key already on the machine (sends the passphrase to prove it)
+- `--dry-run`: Report what would be done; touch nothing
 
 > MCP tool
 
@@ -671,6 +706,8 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
 - `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
 - `--no-seed`: Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)
+- `--allow-unopenable`: Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)
+- `--salvage`: Continue past lost or corrupt chunks and leave their cells as holes (needs --as)
 - `--path <file-or-dir>`: Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)
 - `--to <dir>`: Directory to place the restored path under (default: the machine's restores folder for the snapshot)
 - `--up`: Deploy the restored repository after the transfer

@@ -49,6 +49,8 @@ export {
 
 const STATUS_OK = 'ok';
 const STATUS_FAILED = 'failed';
+/** A verify whose verdict could not be read: the job exited, but nothing says what it proved. */
+const STATUS_UNKNOWN = 'unknown';
 
 const STEP_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 /** A param name that looks like a secret; planStep refuses it. */
@@ -145,9 +147,7 @@ const DEFINITIONS: StepDefinition[] = [
     () => import('../../commands/repo-fork.js')
   ),
   {
-    // A failed restore drops the registration it made for the target (packages/cli/src/commands/backup.ts).
-    // A salvage that placed a damaged image also fails the job, but its image is on the machine: the
-    // registration stays, or the placed copy would be an orphan no verb can name.
+    // A failed restore drops the registration it made for the target (packages/cli/src/commands/backup.ts). A salvage that placed a damaged image also fails the job, but its image is on the machine, so the registration stays or the placed copy would be an orphan no verb can name.
     name: 'rollbackRestoreRegistration',
     on: 'failure',
     needsOutput: true,
@@ -235,17 +235,22 @@ const DEFINITIONS: StepDefinition[] = [
     needsOutput: true,
     params: ['repo', 'level'],
     load: async () => {
-      const [{ parseVerifyVerdict }, { outputService }, { getOutputFormat }, { setExitCode }, { t }] =
-        await Promise.all([
-          import('../../commands/backup-storage-parser.js'),
-          import('../core/output.js'),
-          import('../../utils/errors.js'),
-          import('../core/request-context.js'),
-          import('../../i18n/index.js'),
-        ]);
+      const [
+        { parseVerifyVerdict },
+        { outputService },
+        { getOutputFormat },
+        { setExitCode },
+        { t },
+      ] = await Promise.all([
+        import('../../commands/backup-storage-parser.js'),
+        import('../core/output.js'),
+        import('../../utils/errors.js'),
+        import('../core/request-context.js'),
+        import('../../i18n/index.js'),
+      ]);
       return (ctx) => {
         const parsed = parseVerifyVerdict(ctx.output);
-        const verdict = parsed ?? { status: 'unknown', level: optStr(ctx.params, 'level') };
+        const verdict = parsed ?? { status: STATUS_UNKNOWN, level: optStr(ctx.params, 'level') };
         const format = getOutputFormat();
         outputService.print(verdict, format === 'table' ? 'json' : format);
         if (!parsed) {
@@ -274,7 +279,7 @@ const DEFINITIONS: StepDefinition[] = [
       return (ctx) =>
         recordBackupRun(str(ctx.params, 'repo'), {
           kind: 'verify',
-          status: parseVerifyVerdict(ctx.output)?.status ?? 'unknown',
+          status: parseVerifyVerdict(ctx.output)?.status ?? STATUS_UNKNOWN,
           lastRunAt: ctx.finishedAt,
         });
     },

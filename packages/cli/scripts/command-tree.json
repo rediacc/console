@@ -1491,6 +1491,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--restore-test",
+              "descriptionKey": "commands.backup.verify.optionRestoreTest",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1571,6 +1577,12 @@
             {
               "flags": "--cold",
               "descriptionKey": "commands.backup.snapshot.optionCold",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--accept-identity-change",
+              "descriptionKey": "commands.backup.snapshot.optionAcceptIdentityChange",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1782,6 +1794,95 @@
             }
           ],
           "subcommands": []
+        },
+        {
+          "name": "repair",
+          "descriptionKey": "commands.backup.repair.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.backup.repair.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "check",
+          "descriptionKey": "commands.backup.check.description",
+          "options": [
+            {
+              "flags": "--path <file>",
+              "descriptionKey": "commands.backup.check.optionPath",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "toc-key",
+          "descriptionKey": "commands.backup.tocKey.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "sync",
+              "descriptionKey": "commands.backup.tocKey.syncDescription",
+              "options": [
+                {
+                  "flags": "--replace",
+                  "descriptionKey": "commands.backup.tocKey.optionReplace",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.backup.tocKey.optionDryRun",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "repo-ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
         },
         {
           "name": "list",
@@ -2003,6 +2104,18 @@
             {
               "flags": "--no-seed",
               "descriptionKey": "commands.backup.restore.optionNoSeed",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--allow-unopenable",
+              "descriptionKey": "commands.backup.restore.optionAllowUnopenable",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--salvage",
+              "descriptionKey": "commands.backup.restore.optionSalvage",
               "mandatory": false,
               "defaultValue": null
             },

@@ -83,9 +83,14 @@ describe('applyStaleness with failed verifies', () => {
 
 describe('machine status json', () => {
   it('carries the failed verifies beside the staleness findings', () => {
-    const doc = statusJsonDocument({}, undefined, (g) => g, null, [], [
-      { guid: 'g1', status: 'failed', verifiedAt: 'x' },
-    ]);
+    const doc = statusJsonDocument(
+      {},
+      undefined,
+      (g) => g,
+      null,
+      [],
+      [{ guid: 'g1', status: 'failed', verifiedAt: 'x' }]
+    );
     expect(doc.verify_failures).toEqual([{ guid: 'g1', status: 'failed', verifiedAt: 'x' }]);
   });
 });

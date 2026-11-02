@@ -188,7 +188,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.backup.check.description",
-      "label": "Prove a stored snapshot opens with the passphrase: browse its listing, restore one file and compare it with the listed size",
+      "label": "Prove a stored snapshot opens with the passphrase by restoring one file",
       "options": [
         {
           "flags": "--path <file>",
@@ -671,7 +671,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.backup.repair.description",
-      "label": "Find chunks the store lost or holds wrong, delete the bad ones on the server and re-upload them from this machine's anchor",
+      "label": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
       "options": [
         {
           "flags": "--dry-run",
@@ -712,8 +712,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": true,
-      "detachable": true,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Deletes bad chunks on the account with the caller's backup:manage token, then re-uploads from the machine; a remote executor holds neither the token nor the caller's config. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,

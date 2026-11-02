@@ -80,7 +80,9 @@ describe('recordVerifyVerdict (success outcome)', () => {
 describe('recordVerifyVerdictFailed (failure outcome)', () => {
   it('records the verdict status, mismatch', async () => {
     const run = await resolveStepHandler('recordVerifyVerdictFailed');
-    await run(ctx({ state: 'failed', exitCode: 1, output: '{"status":"mismatch","level":"full"}' }));
+    await run(
+      ctx({ state: 'failed', exitCode: 1, output: '{"status":"mismatch","level":"full"}' })
+    );
     expect(recorded()).toEqual(['mismatch']);
   });
 

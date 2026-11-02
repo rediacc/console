@@ -161,7 +161,7 @@ export interface RestoreStats {
 }
 
 /** One cell a `--salvage` restore left as a hole. */
-export interface SalvageBadCell {
+interface SalvageBadCell {
   cell: number;
   offset: number;
   length: number;
@@ -212,29 +212,41 @@ export interface CompareRecord {
   differingCells?: number[];
 }
 
-/** The LAST compare record in the verb's captured stdout; undefined when none is readable. */
-export function parseCompareRecord(stdout: string | undefined): CompareRecord | undefined {
-  if (!stdout) return undefined;
-  let found: CompareRecord | undefined;
-  for (const raw of stdout.split('\n')) {
+/** The object a candidate line parses to, or undefined for anything else (a partial line, a scalar). */
+function parseObject(candidate: string): object | undefined {
+  try {
+    const parsed: unknown = JSON.parse(candidate);
+    return parsed !== null && typeof parsed === 'object' ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The LAST JSON object in captured stdout that `accept` takes, bare or inside a log line; undefined when none is. */
+function lastRecord<T>(
+  stdout: string | undefined,
+  accept: (parsed: object) => boolean
+): T | undefined {
+  let found: T | undefined;
+  for (const raw of (stdout ?? '').split('\n')) {
     for (const candidate of browseJsonCandidates(raw.trim())) {
-      try {
-        const parsed: unknown = JSON.parse(candidate);
-        if (
-          parsed !== null &&
-          typeof parsed === 'object' &&
-          'against' in parsed &&
-          'status' in parsed &&
-          ['identical', 'different', 'failed'].includes(String((parsed as { status: unknown }).status))
-        ) {
-          found = parsed as CompareRecord;
-        }
-      } catch {
-        // Not JSON, or a partial line: keep scanning.
-      }
+      const parsed = parseObject(candidate);
+      if (parsed && accept(parsed)) found = parsed as T;
     }
   }
   return found;
+}
+
+/** True when the object carries every named key and its `status` is one of `statuses`. */
+function hasStatus(parsed: object, keys: string[], statuses: string[]): boolean {
+  const record = parsed as Record<string, unknown>;
+  return keys.every((k) => k in record) && statuses.includes(String(record.status));
+}
+
+export function parseCompareRecord(stdout: string | undefined): CompareRecord | undefined {
+  return lastRecord<CompareRecord>(stdout, (p) =>
+    hasStatus(p, ['against', 'status'], ['identical', 'different', 'failed'])
+  );
 }
 
 /** What `renet backup repair` prints: what went back, what the store already held, what this machine cannot supply. */
@@ -249,27 +261,8 @@ export interface RepairRecord {
   bytesUploaded?: number;
 }
 
-/** The LAST repair record in the verb's captured stdout; undefined when none is readable. */
 export function parseRepairRecord(stdout: string | undefined): RepairRecord | undefined {
-  if (!stdout) return undefined;
-  let found: RepairRecord | undefined;
-  for (const raw of stdout.split('\n')) {
-    for (const candidate of browseJsonCandidates(raw.trim())) {
-      try {
-        const parsed: unknown = JSON.parse(candidate);
-        if (
-          parsed !== null &&
-          typeof parsed === 'object' &&
-          'guid' in parsed &&
-          'status' in parsed &&
-          ['repaired', 'partial', 'failed'].includes(String((parsed as { status: unknown }).status))
-        ) {
-          found = parsed as RepairRecord;
-        }
-      } catch {
-        // Not JSON, or a partial line: keep scanning.
-      }
-    }
-  }
-  return found;
+  return lastRecord<RepairRecord>(stdout, (p) =>
+    hasStatus(p, ['guid', 'status'], ['repaired', 'partial', 'failed'])
+  );
 }

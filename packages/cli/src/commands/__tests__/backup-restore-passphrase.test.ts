@@ -59,14 +59,19 @@ describe('restore records: the passphrase check is rendered in every format', ()
     });
   }
 
-  it.each(['json', 'yaml'])('%s prints the whole record, passphraseCheck included', async (format) => {
-    await report(restoreRecord({ passphraseCheck: 'not-available' }), format);
-    expect(printed()).toMatchObject({ passphraseCheck: 'not-available' });
-  });
+  it.each(['json', 'yaml'])(
+    '%s prints the whole record, passphraseCheck included',
+    async (format) => {
+      await report(restoreRecord({ passphraseCheck: 'not-available' }), format);
+      expect(printed()).toMatchObject({ passphraseCheck: 'not-available' });
+    }
+  );
 
   it('table says plainly that an image with no passphrase was not test-opened', async () => {
     await report(restoreRecord({ passphraseCheck: 'not-available' }), 'table');
-    const said = [...mocks.warn.mock.calls, ...mocks.info.mock.calls].map((c) => String(c[0])).join('\n');
+    const said = [...mocks.warn.mock.calls, ...mocks.info.mock.calls]
+      .map((c) => String(c[0]))
+      .join('\n');
     expect(said).toContain('commands.backup.restore.passphraseNotChecked');
   });
 
@@ -78,7 +83,12 @@ describe('restore records: the passphrase check is rendered in every format', ()
   });
 
   it('a refused passphrase on a placed image is a warning that carries the reason', async () => {
-    await report(restoreRecord({ passphraseCheck: 'refused', reason: 'no key slot matched' }), 'table');
-    expect(mocks.warn.mock.calls.map((c) => String(c[0])).join('\n')).toContain('no key slot matched');
+    await report(
+      restoreRecord({ passphraseCheck: 'refused', reason: 'no key slot matched' }),
+      'table'
+    );
+    expect(mocks.warn.mock.calls.map((c) => String(c[0])).join('\n')).toContain(
+      'no key slot matched'
+    );
   });
 });

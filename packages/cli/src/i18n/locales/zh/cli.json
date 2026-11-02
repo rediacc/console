@@ -247,8 +247,6 @@
         },
         "show": {
           "description": "显示备份策略详情",
-          "destinationsHeader": "  目标:",
-          "noDestinations": "  目标: (无)",
           "notConfigured": "未配置备份策略",
           "notFound": "备份策略 \"{{name}}\" 未找到"
         },
@@ -375,7 +373,7 @@
         "tooManyRounds": "“{{name}}”的清除在 {{rounds}} 轮后仍未完成。再次运行即可继续。"
       },
       "check": {
-        "description": "证明已存储的快照可以用口令打开:浏览其列表,恢复一个文件,并与列出的大小比较",
+        "description": "通过恢复一个文件,证明已存储的快照可以用口令打开",
         "needsCredential": "此配置中没有 {{name}} 的凭据,因此无法打开其列表。",
         "noIndex": "{{name}} 的快照 {{snapshot}} 没有已存储的列表,无法用这种方式检查。它未获证明。",
         "noSnapshot": "{{name}} 没有可检查的已存储快照。",
@@ -384,7 +382,7 @@
       },
       "repair": {
         "affected": "引用这些数据块的快照:{{snapshots}}",
-        "description": "找出存储丢失或保存有误的数据块,在服务器上删除损坏的块,并从本机的锚点重新上传",
+        "description": "从本机的锚点重新上传存储丢失或有误的数据块",
         "dryRunDamage": "发现 {{count}} 个损坏的数据块;试运行未更改任何内容。",
         "optionDryRun": "报告将被删除并重新上传的内容;不做任何更改"
       },
