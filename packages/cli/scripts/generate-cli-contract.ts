@@ -90,6 +90,12 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   'backup upload':
     'Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.',
 
+  // ── The operator's credential ─────────────────────────────────────────
+  'backup check':
+    'reads a listing and restores a file with the repository credential, which stays where the config lives',
+  'backup toc-key sync':
+    'derives the public key from the repository credential, which stays where the config lives',
+
   // ── Local effect ──────────────────────────────────────────────────────
   'machine infra cert pull':
     "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",

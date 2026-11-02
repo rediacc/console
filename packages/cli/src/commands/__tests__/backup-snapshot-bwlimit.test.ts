@@ -208,3 +208,52 @@ describe('the snapshot summary prints the CPU limit', () => {
     vi.doUnmock('../../utils/errors.js');
   });
 });
+
+describe('backup snapshot --accept-identity-change', () => {
+  beforeEach(() => {
+    mockExecute.mockReset();
+    mockExecute.mockResolvedValue({ success: true, exitCode: 0, stdout: '' });
+  });
+
+  it('sends accept_identity_change true when the flag is given, and omits it otherwise', async () => {
+    await snapshot(['--accept-identity-change']);
+    expect(sentParams()).toMatchObject({ accept_identity_change: true });
+    mockExecute.mockClear();
+    await snapshot([]);
+    expect(sentParams()).not.toHaveProperty('accept_identity_change');
+  });
+
+  it.each([
+    ['an identity-changed record', { stdout: JSON.stringify({ status: 'identity-changed' }) }],
+    [
+      'a commit the account refused as licence-uuid-mismatch',
+      { stdout: JSON.stringify({ status: 'failed', reason: 'commit refused: licence-uuid-mismatch' }) },
+    ],
+    ['a refusal that only the error text carries', { stdout: '', error: 'licence-uuid-mismatch' }],
+  ])('renders %s as a failure that names the flag', async (_name, answer) => {
+    const { outputService } = await import('../../services/core/output.js');
+    const { setExitCode } = await import('../../services/core/request-context.js');
+    mockExecute.mockResolvedValue({ success: false, exitCode: 1, ...answer });
+    vi.mocked(outputService.warn).mockClear();
+    vi.mocked(setExitCode).mockClear();
+    await snapshot([]);
+    const said = vi.mocked(outputService.warn).mock.calls.map((c) => String(c[0]));
+    expect(said).toContain('commands.backup.snapshot.identityChanged');
+    // The renet exit code stands; the CLI adds the explanation, not a different code.
+    expect(setExitCode).not.toHaveBeenCalled();
+  });
+
+  it('says nothing about the flag for an ordinary failure', async () => {
+    const { outputService } = await import('../../services/core/output.js');
+    mockExecute.mockResolvedValue({
+      success: false,
+      exitCode: 1,
+      stdout: JSON.stringify({ status: 'failed', reason: 'disk full' }),
+    });
+    vi.mocked(outputService.warn).mockClear();
+    await snapshot([]);
+    expect(vi.mocked(outputService.warn).mock.calls.map((c) => String(c[0]))).not.toContain(
+      'commands.backup.snapshot.identityChanged'
+    );
+  });
+});

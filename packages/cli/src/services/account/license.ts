@@ -2,6 +2,7 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import { outputService } from '../core/output.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
 import {
@@ -214,24 +215,37 @@ async function readRepoLicenseInputs(
   datastorePath?: string;
   requestedSizeGb?: number;
 }> {
+  let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>> | undefined;
   try {
-    const scanned = await scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath);
-    const entry = scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
-    if (entry) {
-      return {
-        luksUuid: entry.luksUuid,
-        storageFingerprint: entry.storageFingerprint,
-        datastoreId: entry.datastoreId,
-        // The mount the machine itself reports for this repo. Better than anything the client can derive, and it is the datastore the size probe below must measure when the scan could not price the repo.
-        datastorePath: entry.datastorePath,
-        requestedSizeGb: entry.requestedSizeGb,
-      };
-    }
+    scanned = await scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath);
   } catch {
     // An older renet, or a scan that cannot read a datastore, must not stop a
     // reissue: an unproven license still beats no license.
   }
-  return {};
+  if (!scanned) return {};
+  const entry = scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
+  if (!entry) {
+    // The scan answered and this repository is not in it. renet's scan is fail-closed: an image whose LUKS header cannot be read gets no entry rather than a fingerprint minted in place of its UUID. Issuing from here would bind the licence to no identity at all, so refuse.
+    throw new RepoIdentityUnreadableError(repositoryGuid);
+  }
+  return {
+    luksUuid: entry.luksUuid,
+    storageFingerprint: entry.storageFingerprint,
+    datastoreId: entry.datastoreId,
+    // The mount the machine itself reports for this repo. Better than anything the client can derive, and it is the datastore the size probe below must measure when the scan could not price the repo.
+    datastorePath: entry.datastorePath,
+    requestedSizeGb: entry.requestedSizeGb,
+  };
+}
+
+/** The machine's license scan answered but did not list this repository, so its identity cannot be read. */
+export class RepoIdentityUnreadableError extends Error {
+  constructor(readonly repositoryGuid: string) {
+    super(
+      `Repository ${repositoryGuid} was not issued a license: the machine could not read its LUKS header, so the identity to bind the license to is unknown (an unbound license would be accepted for any image). Check the image with "rdc machine status" and "renet repository license-scan" on the machine.`
+    );
+    this.name = 'RepoIdentityUnreadableError';
+  }
 }
 
 export function refreshRepoLicenseIdentity(
@@ -277,12 +291,19 @@ export function refreshRepoLicenseIdentity(
     async (sftp) => {
       // The PRIMARY datastore for the scan below, not the repo's home: the scan command passes --all-datastores, so it walks every attached named datastore too and reports each repo tagged with its own datastorePath. That is why the scan half of this function was never the bug.
       const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-      const scanned = await readRepoLicenseInputs(
-        sftp,
-        datastore,
-        params.repositoryGuid,
-        remoteRenetPath
-      );
+      let scanned: Awaited<ReturnType<typeof readRepoLicenseInputs>>;
+      try {
+        scanned = await readRepoLicenseInputs(
+          sftp,
+          datastore,
+          params.repositoryGuid,
+          remoteRenetPath
+        );
+      } catch (error) {
+        if (!(error instanceof RepoIdentityUnreadableError)) throw error;
+        outputService.warn(error.message);
+        return false;
+      }
       const { datastoreMount, ...issueParams } = params;
       const requestedSizeGb =
         params.requestedSizeGb ??

@@ -108,7 +108,7 @@ describe('creating a destination an operator can actually schedule', () => {
       '/usr/bin/renet'
     );
     expect(commands).toEqual([
-      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --parallelism 2`,
+      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --parallelism 2 --expected-interval 3600s`,
     ]);
     // No credential reaches the unit: the machine authenticates with its licence blob and the server hands back a short-lived grant.
     expect(envVars).toEqual({});
@@ -247,3 +247,18 @@ describe('strategy CPU ceiling (--cpu-limit)', () => {
     }
   });
 });
+
+describe('verify.deepSchedule is refused at bind time when it is not a cron', () => {
+  const base = { destinations: [], schedule: '0 * * * *' };
+
+  it('names the bad cron and accepts a five-field one', () => {
+    expect(
+      strategyUnschedulableReason({ ...base, verify: { deepSchedule: 'nightly' } })
+    ).toMatch(/Invalid cron expression: "nightly"/);
+    expect(
+      strategyUnschedulableReason({ ...base, verify: { deepSchedule: '30 4 * * 6' } })
+    ).toBeUndefined();
+    expect(strategyUnschedulableReason({ ...base, verify: {} })).toBeUndefined();
+  });
+});
+

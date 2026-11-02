@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "La instantánea {{snapshot}} de {{name}} no tiene listado de archivos guardado, así que no se puede restaurar una ruta. Restaura todo el repositorio con rdc backup restore --at y luego copia la ruta.",
         "pathNoListingLiveMount": "La instantánea {{snapshot}} de {{name}} solo tiene un listado leído del montaje en vivo, que no ubica los archivos con exactitud. Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta.",
         "pathNoListingNoPositions": "El listado de la instantánea {{snapshot}} de {{name}} no incluye posiciones de archivos (es anterior a la restauración de rutas). Haz una instantánea nueva, o restaura todo el repositorio con rdc backup restore --at y copia la ruta.",
-        "snapshotIndexUnreadable": "No se pudo leer el índice de instantáneas de {{name}} ({{reason}}), así que la restauración trae el artefacto de la máquina. Usa --at para restaurar una instantánea del almacén de fragmentos."
+        "snapshotIndexUnreadable": "No se pudo leer el índice de instantáneas de {{name}} ({{reason}}), así que la restauración trae el artefacto de la máquina. Usa --at para restaurar una instantánea del almacén de fragmentos.",
+        "optionAllowUnopenable": "Colocar la imagen aunque la frase de contraseña del repositorio no la abra (un snapshot anterior a un cambio de frase)",
+        "optionSalvage": "Continuar pese a chunks perdidos o dañados y dejar sus celdas como huecos (requiere --as)",
+        "passphraseNotChecked": "La imagen restaurada no se abrió como prueba, así que puede que no se desbloquee: {{reason}}",
+        "passphraseOpened": "La imagen restaurada se abre con la frase de contraseña del repositorio.",
+        "passphraseRefusedPlaced": "La frase de contraseña del repositorio no abrió la imagen restaurada: {{reason}}",
+        "salvageDamaged": "El rescate colocó una imagen con {{count}} hueco(s) donde los chunks almacenados se perdieron o estaban dañados.",
+        "salvageHeaderHit": "Hay un hueco en la cabecera LUKS, así que puede que la imagen no se abra en absoluto.",
+        "salvageHole": "  hueco en los bytes {{offset}} a {{end}}: {{reason}}",
+        "salvageNeedsAs": "--salvage requiere --as <nuevo nombre>: una imagen dañada nunca se coloca bajo un nombre existente.",
+        "salvageNeedsSnapshot": "--salvage requiere un snapshot del chunk store desde el que restaurar.",
+        "salvageWholeImage": "--salvage restaura una imagen completa; no se puede combinar con --path ni --to."
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "Tope de CPU de este snapshot: porcentaje de todos los núcleos, 1-100 (50 por defecto; 100 = sin tope)",
         "cpuLimitInvalid": "--cpu-limit debe ser un entero de 1 a 100 (porcentaje de todos los núcleos), recibido: \"{{value}}\".",
         "cpuLimit": "Límite de CPU: {{percent}} % de todos los núcleos (CPUQuota={{quota}})",
-        "cpuLimitUnenforced": "Límite de CPU: {{percent}} % solicitado, no aplicado en esta máquina"
+        "cpuLimitUnenforced": "Límite de CPU: {{percent}} % solicitado, no aplicado en esta máquina",
+        "identityChanged": "{{name}} no es la imagen de la que se hizo copia de este repositorio. Si el cambio es intencionado, vuelve a ejecutar con --accept-identity-change.",
+        "optionAcceptIdentityChange": "Tomar esta imagen como nueva referencia cuando su identidad LUKS cambió o se redujo; sube un snapshot completo"
       },
       "status": {
         "description": "Mostrar estado de respaldo y estado del temporizador en una máquina remota"
@@ -287,7 +300,15 @@
         "optionDeep": "Recalcular el hash de cada celda registrada (verificación completa) en lugar de una comprobación muestreada",
         "optionStore": "Hacer que el servidor recalcule el hash de cada fragmento almacenado de este repositorio y señale los que falten o estén dañados",
         "starting": "Verificando la copia de seguridad de {{name}} ({{level}})...",
-        "storeEmpty": "El almacén no tiene fragmentos de {{name}}, así que no se verificó nada."
+        "storeEmpty": "El almacén no tiene fragmentos de {{name}}, así que no se verificó nada.",
+        "deepStoreExclusive": "--deep comprueba la copia de la máquina y --store los chunks almacenados; ejecútalos como dos comandos.",
+        "optionRestoreTest": "Restaurar el snapshot del ancla con un nombre desechable directamente desde el almacén, compararlo con el ancla, registrar el resultado y borrar la copia",
+        "restoreTestCleanupFailed": "No se pudo borrar la copia de la prueba de restauración {{copy}} en {{machine}}. Elimínala con: rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test no se puede combinar con --deep ni --store.",
+        "restoreTestNeedsCredential": "{{name}} no tiene credencial en esta configuración, así que una copia restaurada no se podría abrir como prueba.",
+        "restoreTestNoAnchor": "{{name}} no tiene ancla de copia de seguridad en su máquina que restaurar. Haz primero un snapshot.",
+        "restoreTestNoSpace": "No hay espacio suficiente para la prueba de restauración de {{snapshot}}: necesita {{need}} bytes libres y el datastore tiene {{free}}.",
+        "verdictUnreadable": "La verificación de {{name}} no imprimió un veredicto legible, así que no se probó nada."
       },
       "snapshots": {
         "description": "Gestionar las instantáneas almacenadas",
@@ -352,6 +373,26 @@
         "usageUnavailable": "Purgado, pero no se pudo leer el uso después de la purga: {{error}}",
         "progress": "Purgando \"{{name}}\": ronda {{round}}, {{chunks}} objeto(s) eliminado(s) hasta ahora ({{bytes}}).",
         "tooManyRounds": "La purga de \"{{name}}\" no terminó tras {{rounds}} rondas. Ejecutar la purga de nuevo para continuar."
+      },
+      "check": {
+        "description": "Comprueba que un snapshot almacenado se abre con la frase de contraseña: recorre su listado, restaura un archivo y lo compara con el tamaño listado",
+        "needsCredential": "{{name}} no tiene credencial en esta configuración, así que no se puede abrir su listado.",
+        "noIndex": "El snapshot {{snapshot}} de {{name}} no tiene listado almacenado y no se puede comprobar así. No está probado.",
+        "noSnapshot": "{{name}} no tiene ningún snapshot almacenado que comprobar.",
+        "optionPath": "El archivo que se restaura y compara (por defecto: el archivo no vacío más pequeño)",
+        "scratchLeft": "No se pudo eliminar el directorio temporal {{path}} en {{machine}}."
+      },
+      "repair": {
+        "affected": "Snapshots que contienen estos chunks: {{snapshots}}",
+        "description": "Busca chunks que el almacén perdió o guarda mal, borra los malos en el servidor y los vuelve a subir desde el ancla de esta máquina",
+        "dryRunDamage": "Se encontraron {{count}} chunk(s) dañado(s); una simulación no cambió nada.",
+        "optionDryRun": "Indica qué se borraría y volvería a subir; no cambia nada"
+      },
+      "tocKey": {
+        "description": "Gestionar la clave del listado de exploración de un repositorio",
+        "optionDryRun": "Indica qué se haría; no toca nada",
+        "optionReplace": "Reemplazar una clave distinta que ya está en la máquina (envía la frase de contraseña como prueba)",
+        "syncDescription": "Instalar la clave de listado del repositorio en su máquina, o reemplazar una distinta"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "Copias de seguridad atrasadas",
         "staleBackupWarning": "La última copia de seguridad de {{count}} repositorio(s) es anterior al doble del intervalo de su programación.",
         "runningJobsRow": "{{id}} {{state}}: {{verb}} en {{repo}}, iniciado {{startedAt}} por {{origin}}. Para seguirlo: {{attach}}",
-        "runningJobsSection": "Trabajos (en curso o terminados en la última hora)"
+        "runningJobsSection": "Trabajos (en curso o terminados en la última hora)",
+        "verifyFailureSection": "Verificaciones de copia fallidas",
+        "verifyFailureWarning": "{{count}} repositorio(s) fallaron su última verificación de copia."
       },
       "gpu": {
         "descriptionShort": "Inspeccionar las GPU y las concesiones de dispositivos de una máquina",

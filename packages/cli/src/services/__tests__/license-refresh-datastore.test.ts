@@ -193,7 +193,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
 
   it("falls back to the caller's recorded placement when the scan cannot answer", async () => {
     // Empty scan: no licence installed yet. This is the `rdc subscription refresh --repo` first-issuance shape, and the only thing that knows where the repo lives is the placement the caller recorded.
-    const { sftp, exec } = createSftp([], { [NAMED_MOUNT]: SEVEN_GIB });
+    const { sftp, exec } = createSftp([scanEntry({})], { [NAMED_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
       machine,
@@ -209,7 +209,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
 
   // CONTROL, direction 2: no placement and no scan answer must leave the machine default in place. A fix that hard-coded a named mount fails here.
   it('keeps the machine default when neither the scan nor the caller names a datastore', async () => {
-    const { sftp, exec } = createSftp([], { [DEFAULT_MOUNT]: SEVEN_GIB });
+    const { sftp, exec } = createSftp([scanEntry({})], { [DEFAULT_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
       machine,
@@ -225,7 +225,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
 
   // CONTROL, direction 3: the machine's own datastore override still wins over the compiled-in default.
   it("honours the machine's datastore override", async () => {
-    const { sftp, exec } = createSftp([], { '/srv/pool': SEVEN_GIB });
+    const { sftp, exec } = createSftp([scanEntry({})], { '/srv/pool': SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
       { ...machine, datastore: '/srv/pool' },
@@ -276,7 +276,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
   });
 
   it('never forwards the client-side mount hint to the account server', async () => {
-    const { sftp } = createSftp([], { [NAMED_MOUNT]: SEVEN_GIB });
+    const { sftp } = createSftp([scanEntry({})], { [NAMED_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
       machine,
@@ -307,7 +307,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
 
   it('says so, and floors, when no candidate mount could be measured', async () => {
     // No image anywhere: every probe answers the sentinel.
-    const { sftp } = createSftp([]);
+    const { sftp } = createSftp([scanEntry({})]);
 
     await refreshRepoLicenseIdentity(
       machine,
@@ -326,7 +326,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
 
   // The sentinel is what makes this expressible: under `else echo 0` a missing image and a real zero were the same bytes. A real zero is a MEASUREMENT, so it floors to 1 GB and says nothing.
   it('treats a genuine zero-byte image as measured, not as a failed probe', async () => {
-    const { sftp } = createSftp([], { [NAMED_MOUNT]: 0 });
+    const { sftp } = createSftp([scanEntry({})], { [NAMED_MOUNT]: 0 });
 
     await refreshRepoLicenseIdentity(
       machine,
@@ -341,7 +341,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
   });
 
   it('rounds a partial gigabyte up rather than down', async () => {
-    const { sftp } = createSftp([], { [NAMED_MOUNT]: 3 * 1024 * 1024 * 1024 + 1 });
+    const { sftp } = createSftp([scanEntry({})], { [NAMED_MOUNT]: 3 * 1024 * 1024 * 1024 + 1 });
 
     await refreshRepoLicenseIdentity(
       machine,

@@ -105,6 +105,10 @@ export interface RestoreOptions {
   anyStream?: boolean;
   /** Commander stores `--no-seed` as `seed: false` (true when the flag is absent). */
   seed?: boolean;
+  /** Place an image the repository passphrase did not open. */
+  allowUnopenable?: boolean;
+  /** Continue past lost or corrupt chunks, leaving holes; needs `--as`. */
+  salvage?: boolean;
   up?: boolean;
   healthWindow?: string;
   healthTimeout?: string;
@@ -159,6 +163,8 @@ function registerBackupRestore(backup: Command): void {
     .option('--at <time>', t('commands.backup.restore.optionAt'))
     .option('--any-stream', t('commands.backup.restore.optionAnyStream'))
     .option('--no-seed', t('commands.backup.restore.optionNoSeed'))
+    .option('--allow-unopenable', t('commands.backup.restore.optionAllowUnopenable'))
+    .option('--salvage', t('commands.backup.restore.optionSalvage'))
     .option('--path <file-or-dir>', t('commands.backup.restore.optionPath'))
     .option('--to <dir>', t('commands.backup.restore.optionTo'))
     .option('--up', t('commands.backup.restore.optionUp'))
@@ -169,6 +175,7 @@ function registerBackupRestore(backup: Command): void {
     .action(async (artifactRef: string, options: RestoreOptions) => {
       try {
         assertRestorePathFlags(options);
+        assertRestoreRepairFlags(options);
         // One path out of a snapshot: no target record, network id or credential copy, so it branches before resolveRestoreTarget.
         if (isPathRoute(options) && options.path !== undefined && options.at) {
           await restorePathRoute(artifactRef, { ...options, path: options.path, at: options.at });
@@ -190,6 +197,10 @@ function registerBackupRestore(backup: Command): void {
         // Only a snapshot restore has seeds to skip; refuse before the target is registered rather than ignore the flag.
         if (options.seed === false && !restoreAt) {
           throw new ValidationError(t('commands.backup.restore.noSeedNeedsSnapshot'));
+        }
+        // Salvage is a chunk-store behaviour: the pull route has no chunks to lose.
+        if (options.salvage && !restoreAt) {
+          throw new ValidationError(t('commands.backup.restore.salvageNeedsSnapshot'));
         }
 
         // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped, the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
@@ -230,6 +241,8 @@ function registerBackupRestore(backup: Command): void {
             at: restoreAt,
             anyStream: options.anyStream ?? false,
             noSeed: options.seed === false,
+            allowUnopenable: options.allowUnopenable,
+            salvage: options.salvage,
             source: { repoName: ref.name, machine: from },
             debug: options.debug,
             after,
@@ -246,6 +259,7 @@ function registerBackupRestore(backup: Command): void {
             sourcePlacement: source.placement,
             debug: options.debug,
             place: ref.place,
+            allowUnopenable: options.allowUnopenable,
             after,
           });
         }
@@ -253,6 +267,19 @@ function registerBackupRestore(backup: Command): void {
         handleError(error);
       }
     });
+}
+
+/**
+ * Flag rules the salvage and unopenable options add. Salvage writes holes where chunks were lost,
+ * so it only ever lands in a NEW repository (`--as`), never over a name that may hold a good image,
+ * and it restores a whole image, not one path.
+ */
+export function assertRestoreRepairFlags(options: RestoreOptions): void {
+  if (!options.salvage) return;
+  if (!options.as) throw new ValidationError(t('commands.backup.restore.salvageNeedsAs'));
+  if (options.path !== undefined || options.to !== undefined) {
+    throw new ValidationError(t('commands.backup.restore.salvageWholeImage'));
+  }
 }
 
 /** `restore --at <t> --path <p>`: resolve the ref's repo and machine, then hand off to `runRestorePath`. */
@@ -369,6 +396,7 @@ async function runRestorePull(args: {
   sourcePlacement?: Placement;
   debug?: boolean;
   place: string;
+  allowUnopenable?: boolean;
   after: PlannedStep[];
 }): Promise<void> {
   const { targetName, targetMachine, datastore, sourceType, from, sourceGuid, debug, place } = args;
@@ -395,7 +423,13 @@ async function runRestorePull(args: {
       functionName: 'backup_pull',
       machineName: targetMachine,
       datastore,
-      params: { repository: targetName, sourceType, from, src: sourceGuid },
+      params: {
+        repository: targetName,
+        sourceType,
+        from,
+        src: sourceGuid,
+        ...(args.allowUnopenable ? { allow_unopenable: true } : {}),
+      },
       debug,
     },
     [
@@ -509,6 +543,7 @@ function restoreTailSteps(
 ): PlannedStep[] {
   return [
     planStep('reportRestoreStats'),
+    planStep('reportRestoreDamage'),
     planStep('rollbackRestoreRegistration', { repo: targetName }),
     planStep('reconcileBackupSchedules', { machine: targetMachine }),
     ...(options.up

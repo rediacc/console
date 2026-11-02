@@ -200,9 +200,12 @@ async function runRepoLicenseBatch(
     scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath).catch(() => []),
   ]);
 
-  // Only machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
+  // `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
+  // machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
   const forceReissueGuids = new Set(
-    licenseStatuses.filter((s) => s.status === 'machine_mismatch').map((s) => s.repositoryGuid)
+    licenseStatuses
+      .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
+      .map((s) => s.repositoryGuid)
   );
 
   const repoByGuid = new Map(

@@ -218,6 +218,40 @@ describe('license sharedSftp plumb-through', () => {
     });
   });
 
+  // renet's license scan is fail-closed: an image whose LUKS header cannot be read gets NO entry (never a fingerprint minted in place of its UUID). The reissue used to treat "no entry" as "no identity to bind" and issued an unbound licence; it now refuses, naming the repository and the cause.
+  describe('a scan that answers without this repository', () => {
+    it('refuses the reissue, names the repository and the cause, and asks the account for nothing', async () => {
+      const { sftp, spies } = createSharedSftp();
+      spies.exec.mockImplementation((command: string) => {
+        if (command.includes('machine-id')) return Promise.resolve(`${MACHINE_ID}\n`);
+        if (command.includes('license-scan')) {
+          return Promise.resolve(
+            JSON.stringify([{ repositoryGuid: 'someone-else', requestedSizeGb: 5 }])
+          );
+        }
+        return Promise.resolve('');
+      });
+      const { outputService } = await import('../core/output.js');
+      const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
+
+      const result = await refreshRepoLicenseIdentity(
+        machine,
+        'dummy-key',
+        { repositoryGuid: REPO_GUID, kind: 'grand', requestedSizeGb: 5 },
+        '/usr/bin/renet',
+        sftp
+      );
+
+      expect(result).toBe(false);
+      expect(mockAccountServerFetch).not.toHaveBeenCalled();
+      expect(spies.execStreaming).not.toHaveBeenCalled();
+      const said = warn.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(said).toContain(REPO_GUID);
+      expect(said).toMatch(/header|identity/i);
+      warn.mockRestore();
+    });
+  });
+
   it('readMachineActivationStatus prefers the provided sharedSftp and leaves its lifecycle alone', async () => {
     const { sftp, spies } = createSharedSftp();
     mockAccountServerFetch.mockResolvedValueOnce({

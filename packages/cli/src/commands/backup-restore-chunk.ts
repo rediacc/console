@@ -112,7 +112,7 @@ function ownStreamOf(
  * no committed snapshot, its verify fails, or the verdict cannot be read;
  * the streamUnknown refusal names both causes.
  */
-async function readSourceAnchor(
+export async function readSourceAnchor(
   source: { repoName: string; machine: string },
   debug?: boolean
 ): Promise<string | undefined> {
@@ -165,6 +165,10 @@ export async function runChunkRestore(args: {
   at: string;
   anyStream: boolean;
   noSeed: boolean;
+  /** Place an image the repository passphrase did not open (renet keeps the staged copy otherwise). */
+  allowUnopenable?: boolean;
+  /** Continue past lost or corrupt chunks, leaving their cells as holes; only into a new name. */
+  salvage?: boolean;
   source: { repoName: string; machine: string };
   debug?: boolean;
   after: PlannedStep[];
@@ -190,6 +194,8 @@ export async function runChunkRestore(args: {
         at: snapshotId,
         dry_run: false,
         no_seed: noSeed,
+        ...(args.allowUnopenable ? { allow_unopenable: true } : {}),
+        ...(args.salvage ? { salvage: true } : {}),
       },
       debug,
       // The record on stdout carries the restore's measurements; without capture they are dropped.
@@ -241,9 +247,67 @@ async function reportRestoreStats(stats: RestoreStats | undefined): Promise<void
   }
 }
 
-bindStepHandler('reportRestoreStats', ({ output }) =>
-  reportRestoreStats(parseRestoreStats(output))
-);
+/**
+ * What the test-open of the placed image found, said plainly in every format (stderr for the
+ * warnings, so a JSON document on stdout stays one document). An image nobody tried to open is the
+ * case that must not read as success: it may not unlock until the right passphrase is found.
+ */
+function reportPassphraseCheck(stats: RestoreStats | undefined): void {
+  if (!stats) return;
+  switch (stats.passphraseCheck) {
+    case 'opened':
+      if (getOutputFormat() === 'table') {
+        outputService.info(t('commands.backup.restore.passphraseOpened'));
+      }
+      return;
+    case 'refused':
+      outputService.warn(
+        t('commands.backup.restore.passphraseRefusedPlaced', { reason: stats.reason ?? '-' })
+      );
+      return;
+    default:
+      outputService.warn(
+        t('commands.backup.restore.passphraseNotChecked', { reason: stats.reason ?? '-' })
+      );
+  }
+}
+
+/** A `--salvage` restore that placed an image with holes: every hole by byte range, and the warning that the image may not open. */
+function reportRestoreDamage(stats: RestoreStats | undefined): void {
+  if (stats?.status !== 'restored-damaged') return;
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(stats, format);
+  }
+  const cells = stats.badCells ?? [];
+  outputService.warn(t('commands.backup.restore.salvageDamaged', { count: cells.length }));
+  if (format === 'table') {
+    for (const cell of cells) {
+      outputService.warn(
+        t('commands.backup.restore.salvageHole', {
+          offset: cell.offset,
+          end: cell.offset + cell.length,
+          reason: cell.reason ?? '-',
+        })
+      );
+    }
+  }
+  if (cells.some((c) => c.inLuksHeader)) {
+    outputService.warn(t('commands.backup.restore.salvageHeaderHit'));
+  }
+}
+
+bindStepHandler('reportRestoreStats', async ({ output }) => {
+  const stats = parseRestoreStats(output);
+  await reportRestoreStats(stats);
+  reportPassphraseCheck(stats);
+});
+
+// A salvage that placed a damaged image fails the job on purpose; this is the one place its holes are reported.
+bindStepHandler('reportRestoreDamage', ({ output }) => {
+  reportRestoreDamage(parseRestoreStats(output));
+  return Promise.resolve();
+});
 
 // `--up`: the deploy runs as its own job once the restore job succeeded, from whichever observer sees it finish first.
 bindStepHandler('restoreDeploy', async ({ machine, params }) => {

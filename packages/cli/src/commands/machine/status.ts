@@ -19,7 +19,11 @@ import {
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import type { RuntimeRepoLicenseStatus } from '../../services/account/license.js';
-import type { StaleBackupRepo } from '../../services/backup/backup-schedule-coverage.js';
+import {
+  type FailedVerifyRepo,
+  failedVerifyRepos,
+  type StaleBackupRepo,
+} from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import type { RenetProcess } from '../../services/renet/renet-daemons.js';
@@ -641,6 +645,7 @@ async function gatherStatus(
   licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
   staleBinary: RenetProcess[] | null;
   staleBackups: StaleBackupRepo[];
+  failedVerifies: FailedVerifyRepo[];
 }> {
   const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
     '../../services/machine/machine-status.js'
@@ -670,6 +675,7 @@ async function gatherStatus(
     licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
     staleBinary,
     staleBackups: await fetchStaleBackups(machineName, listResult),
+    failedVerifies: failedVerifyRepos(listResult.backup_coverage),
   };
 }
 
@@ -724,11 +730,24 @@ export function staleBackupRows(
   }));
 }
 
+/** Table rows for the failed-verify section. */
+export function verifyFailureRows(
+  failed: FailedVerifyRepo[],
+  resolve: (guid: string) => string
+): Record<string, unknown>[] {
+  return failed.map((f) => ({
+    repository: resolve(f.guid),
+    verdict: f.status,
+    verifiedAt: f.verifiedAt ?? '-',
+  }));
+}
+
 /** The staleness sections and their warnings, printed after the main tables. */
 function renderStaleness(
   staleBinary: RenetProcess[] | null,
   staleBackups: StaleBackupRepo[],
-  resolve: (guid: string) => string
+  resolve: (guid: string) => string,
+  failedVerifies: FailedVerifyRepo[] = []
 ): void {
   if (staleBinary && staleBinary.length > 0) {
     outputService.info(`\n${t('commands.machine.status.staleBinarySection')}`);
@@ -742,6 +761,13 @@ function renderStaleness(
     writeStdout(`${outputService.formatTable(staleBackupRows(staleBackups, resolve))}\n`);
     outputService.warn(
       t('commands.machine.status.staleBackupWarning', { count: staleBackups.length })
+    );
+  }
+  if (failedVerifies.length > 0) {
+    outputService.info(`\n${t('commands.machine.status.verifyFailureSection')}`);
+    writeStdout(`${outputService.formatTable(verifyFailureRows(failedVerifies, resolve))}\n`);
+    outputService.warn(
+      t('commands.machine.status.verifyFailureWarning', { count: failedVerifies.length })
     );
   }
 }
@@ -798,13 +824,15 @@ export function statusJsonDocument(
   jobs: JobInfo[] | undefined,
   resolve: (guid: string) => string,
   staleBinary: RenetProcess[] | null,
-  staleBackups: StaleBackupRepo[]
+  staleBackups: StaleBackupRepo[],
+  failedVerifies: FailedVerifyRepo[] = []
 ): Record<string, unknown> {
   return {
     ...enriched,
     jobs: enrichJobs(jobs, resolve),
     stale_binary: staleBinary,
     backup_staleness: staleBackups,
+    verify_failures: failedVerifies,
   };
 }
 
@@ -842,8 +870,15 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         const sections = collectSections(options);
 
-        const { listResult, guidMap, machineConfig, licenseDetail, staleBinary, staleBackups } =
-          await gatherStatus(machineName, sections, options.debug);
+        const {
+          listResult,
+          guidMap,
+          machineConfig,
+          licenseDetail,
+          staleBinary,
+          staleBackups,
+          failedVerifies,
+        } = await gatherStatus(machineName, sections, options.debug);
 
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
@@ -879,7 +914,14 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             machineName
           );
           outputService.print(
-            statusJsonDocument(enriched, listResult.jobs, resolve, staleBinary, staleBackups),
+            statusJsonDocument(
+              enriched,
+              listResult.jobs,
+              resolve,
+              staleBinary,
+              staleBackups,
+              failedVerifies
+            ),
             format
           );
         } else {
@@ -893,7 +935,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             machineName
           );
           renderBlockedBackupAlerts(licenseDetail);
-          renderStaleness(staleBinary, staleBackups, resolve);
+          renderStaleness(staleBinary, staleBackups, resolve, failedVerifies);
           renderRunningJobs(listResult.jobs, resolve);
         }
 

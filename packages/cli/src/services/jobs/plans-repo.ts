@@ -79,6 +79,7 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
       'recordBackupRun',
       'recordBackupRunFailed',
       'reportRestoreStats',
+      'reportRestoreDamage',
       'rollbackRestoreRegistration',
       'reportRestorePath',
       'restoreDeploy',
@@ -90,7 +91,7 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-shared',
     timeout: '24h',
     box: 'J4',
-    steps: ['reportVerifyVerdict', 'recordBackupRun', 'recordBackupRunFailed'],
+    steps: ['reportVerifyVerdict', 'recordVerifyVerdict', 'recordVerifyVerdictFailed'],
   },
 
   // J16: repo verbs outside J4.

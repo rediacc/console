@@ -135,8 +135,9 @@ describe('command plane coverage', () => {
     // 193 -> 195, other 31 -> 33: `tools install` and `tools list` (PLAN-cli-tofu-toolchain T3) install and list local binaries on the workstation, never a machine.
     //
     // 195 -> 196, other 33 -> 34: `backup purge` (PLAN-backup-download-from-store) deletes a lineage through accountServerFetch, so `other` like `backup snapshots delete`.
-    expect(COMMANDS.length).toBe(196);
-    expect(counts).toEqual({ config: 57, machine: 105, other: 34 });
+    // 196 -> 199, machine 105 -> 108: `backup repair`, `backup check` and `backup toc-key sync` (PLAN-backup-integrity) drive a machine.
+    expect(COMMANDS.length).toBe(199);
+    expect(counts).toEqual({ config: 57, machine: 108, other: 34 });
   });
 
   it('records the interactive commands', () => {
@@ -187,7 +188,8 @@ describe('command plane coverage', () => {
     // 97 -> 98: `repo prune` is machine-plane and non-interactive (the `--offline` confirmation is a plain prompt, skipped by -y).
     // 98 -> 99: `job wait` (PLAN-detached-jobs J5) is machine-plane and non-interactive, like `job logs --follow`.
     // 99 -> 101: `backup download` and `backup upload` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local.
-    expect(machineNonInteractive.length).toBe(101);
+    // 101 -> 104: `backup repair`, `backup check` and `backup toc-key sync` are machine-plane and non-interactive.
+    expect(machineNonInteractive.length).toBe(104);
   });
 
   it('plane and interactive entries all point at real commands', () => {

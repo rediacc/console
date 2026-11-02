@@ -170,3 +170,31 @@ export function machineStaleBackups(
     return [];
   }
 }
+
+/** One repo whose most recent `backup verify` did not come back clean. */
+export interface FailedVerifyRepo {
+  guid: string;
+  name?: string;
+  /** renet's verdict for that run: `mismatch`, `failed`, or whatever it recorded. */
+  status: string;
+  verifiedAt?: string;
+}
+
+/**
+ * Repos whose last recorded verify is anything but `verified`, from renet's backup_coverage. A repo
+ * with no recorded verify is not listed: it has no verdict, and a repo with no backup records none.
+ */
+export function failedVerifyRepos(coverage: BackupCoverage | undefined): FailedVerifyRepo[] {
+  const failed: FailedVerifyRepo[] = [];
+  for (const repo of coverage?.repos ?? []) {
+    const status = repo.last_verify_status;
+    if (!status || status === 'verified') continue;
+    failed.push({
+      guid: repo.guid,
+      ...(repo.name && { name: repo.name }),
+      status,
+      ...(repo.last_verify_at && { verifiedAt: repo.last_verify_at }),
+    });
+  }
+  return failed;
+}

@@ -87,7 +87,13 @@ describe('machine status running jobs', () => {
 
   it('the printed JSON document always carries a jobs key, empty when renet reports none', () => {
     const doc = statusJsonDocument({ machine: 'hostinger' }, undefined, resolve, null, []);
-    expect(Object.keys(doc)).toEqual(['machine', 'jobs', 'stale_binary', 'backup_staleness']);
+    expect(Object.keys(doc)).toEqual([
+      'machine',
+      'jobs',
+      'stale_binary',
+      'backup_staleness',
+      'verify_failures',
+    ]);
     expect(doc.jobs).toEqual([]);
     const withJob = statusJsonDocument({ machine: 'hostinger' }, [live], resolve, null, []);
     expect(withJob.jobs).toEqual([{ ...live, repository: 'mail' }]);

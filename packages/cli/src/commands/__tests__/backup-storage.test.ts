@@ -147,10 +147,11 @@ describe('backup verify', () => {
     const steps = plannedSteps(call);
     expect(steps.map((s) => s.name)).toEqual([
       'reportVerifyVerdict',
-      'recordBackupRun',
-      'recordBackupRunFailed',
+      'recordVerifyVerdict',
+      'recordVerifyVerdictFailed',
     ]);
-    expect(steps[1].params).toEqual({ repo: 'shop', kind: 'verify', status: 'verified' });
+    // The recorded status comes from renet's verdict at step time, so no literal status rides the plan.
+    expect(steps[1].params).toEqual({ repo: 'shop' });
     // Nothing is recorded or printed outside the job's steps.
     expect(mockRecordBackupRun).not.toHaveBeenCalled();
     expect(mockPrint).not.toHaveBeenCalled();
@@ -169,12 +170,16 @@ describe('backup verify', () => {
 
     const call = mockExecuteRepoFunction.mock.calls[0];
     expect(call[3]).toEqual({ level: 'spot' });
-    expect(plannedSteps(call)[2].params).toEqual({
-      repo: 'shop',
-      kind: 'verify',
-      status: 'mismatch',
-    });
+    expect(plannedSteps(call)[2].params).toEqual({ repo: 'shop' });
     expect(process.exitCode).toBe(1);
+  });
+
+  it('refuses --deep with --store by name, before any work', async () => {
+    await expect(run(['verify', 'shop', '--deep', '--store'])).rejects.toThrow(
+      'commands.backup.verify.deepStoreExclusive'
+    );
+    expect(mockExecuteRepoFunction).not.toHaveBeenCalled();
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 });
 

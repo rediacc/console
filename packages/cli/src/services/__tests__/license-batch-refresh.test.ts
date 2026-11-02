@@ -274,6 +274,29 @@ describe('refreshRepoLicensesBatch', () => {
     expect(repo.currentHardExpiresAt).toBeUndefined();
   });
 
+  it('forces re-issuance for identity_mismatch (dates omitted), so an accepted new image is licensed at once', async () => {
+    // After `backup snapshot --accept-identity-change` the image's UUID differs from the licence's. On an unexpired licence the account answers `unchanged` to a plain refresh, leaving the repository unmountable until the refresh window; only a forced GUID is reissued.
+    seedSingleRepoWithStatus('identity_mismatch');
+
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: REPO_GUID,
+          status: 'refreshed',
+          license: { payload: 'new-a', signature: 'new-b', publicKeyId: VALID_KEY_ID },
+        },
+      ],
+    });
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    expect(result.invalidSignatureDetected).toBe(1);
+    expect(result.refreshed).toBe(1);
+    const repo = mockAccountServerFetch.mock.calls[0][1].body.repos[0];
+    expect(repo.currentRefreshRecommendedAt).toBeUndefined();
+    expect(repo.currentHardExpiresAt).toBeUndefined();
+  });
+
   it('gracefully degrades when license-status command fails', async () => {
     // Override: license-status throws (e.g., old renet binary)
     mockExec.mockReset();

@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "L'instantané {{snapshot}} de {{name}} n'a pas de liste de fichiers enregistrée, la restauration d'un chemin est donc impossible. Restaurez tout le dépôt avec rdc backup restore --at, puis copiez le chemin.",
         "pathNoListingLiveMount": "L'instantané {{snapshot}} de {{name}} n'a qu'une liste lue sur le montage actif, qui ne localise pas les fichiers avec exactitude. Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin.",
         "pathNoListingNoPositions": "La liste de l'instantané {{snapshot}} de {{name}} ne contient pas la position des fichiers (elle précède la restauration de chemin). Faites un nouvel instantané, ou restaurez tout le dépôt avec rdc backup restore --at puis copiez le chemin.",
-        "snapshotIndexUnreadable": "Impossible de lire l'index des instantanés de {{name}} ({{reason}}) : la restauration récupère donc l'artefact de la machine. Ajoutez --at pour restaurer un instantané du magasin de blocs."
+        "snapshotIndexUnreadable": "Impossible de lire l'index des instantanés de {{name}} ({{reason}}) : la restauration récupère donc l'artefact de la machine. Ajoutez --at pour restaurer un instantané du magasin de blocs.",
+        "optionAllowUnopenable": "Placer l'image même si la phrase secrète du dépôt ne l'ouvre pas (snapshot antérieur à un changement de phrase secrète)",
+        "optionSalvage": "Continuer malgré les chunks perdus ou corrompus et laisser leurs cellules comme des trous (nécessite --as)",
+        "passphraseNotChecked": "L'image restaurée n'a pas été ouverte pour test, elle ne se déverrouillera peut-être pas : {{reason}}",
+        "passphraseOpened": "L'image restaurée s'ouvre avec la phrase secrète du dépôt.",
+        "passphraseRefusedPlaced": "La phrase secrète du dépôt n'a pas ouvert l'image restaurée : {{reason}}",
+        "salvageDamaged": "Le sauvetage a placé une image avec {{count}} trou(s) là où des chunks stockés étaient perdus ou corrompus.",
+        "salvageHeaderHit": "Un trou se trouve dans l'en-tête LUKS, l'image risque donc de ne plus s'ouvrir du tout.",
+        "salvageHole": "  trou aux octets {{offset}} à {{end}} : {{reason}}",
+        "salvageNeedsAs": "--salvage nécessite --as <nouveau nom> : une image endommagée n'est jamais placée sous un nom existant.",
+        "salvageNeedsSnapshot": "--salvage nécessite un snapshot du chunk store à restaurer.",
+        "salvageWholeImage": "--salvage restaure une image entière ; il ne peut pas être combiné avec --path ou --to."
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "Plafond CPU de ce snapshot : pourcentage de l'ensemble des cœurs, 1-100 (50 par défaut ; 100 = aucun plafond)",
         "cpuLimitInvalid": "--cpu-limit doit être un entier de 1 à 100 (pourcentage de l'ensemble des cœurs), reçu : \"{{value}}\".",
         "cpuLimit": "Limite CPU : {{percent}} % de l'ensemble des cœurs (CPUQuota={{quota}})",
-        "cpuLimitUnenforced": "Limite CPU : {{percent}} % demandé, non appliqué sur cette machine"
+        "cpuLimitUnenforced": "Limite CPU : {{percent}} % demandé, non appliqué sur cette machine",
+        "identityChanged": "{{name}} n'est pas l'image dont ce dépôt a été sauvegardé. Si le changement est voulu, relancez avec --accept-identity-change.",
+        "optionAcceptIdentityChange": "Prendre cette image comme nouvelle référence quand son identité LUKS a changé ou qu'elle a rétréci ; envoie un snapshot complet"
       },
       "status": {
         "description": "Afficher l'état de sauvegarde et l'état du minuteur sur une machine distante"
@@ -287,7 +300,15 @@
         "optionDeep": "Recalculer le hachage de chaque cellule enregistrée (vérification complète) plutôt qu'un contrôle par échantillonnage",
         "optionStore": "Faire recalculer par le serveur le hachage de chaque bloc stocké de ce dépôt et signaler les blocs manquants ou corrompus",
         "starting": "Vérification de la sauvegarde de {{name}} ({{level}})...",
-        "storeEmpty": "Le stockage ne contient aucun bloc pour {{name}} : rien n'a donc été vérifié."
+        "storeEmpty": "Le stockage ne contient aucun bloc pour {{name}} : rien n'a donc été vérifié.",
+        "deepStoreExclusive": "--deep vérifie la copie de la machine et --store les chunks stockés ; lancez-les en deux commandes.",
+        "optionRestoreTest": "Restaurer le snapshot de l'ancre sous un nom jetable directement depuis le stockage, le comparer à l'ancre, enregistrer le résultat et supprimer la copie",
+        "restoreTestCleanupFailed": "La copie du test de restauration {{copy}} n'a pas pu être supprimée de {{machine}}. Supprimez-la avec : rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test ne peut pas être combiné avec --deep ou --store.",
+        "restoreTestNeedsCredential": "{{name}} n'a aucun identifiant dans cette configuration, une copie restaurée ne pourrait donc pas être ouverte pour test.",
+        "restoreTestNoAnchor": "{{name}} n'a aucune ancre de sauvegarde sur sa machine à restaurer. Prenez d'abord un snapshot.",
+        "restoreTestNoSpace": "Pas assez d'espace pour le test de restauration de {{snapshot}} : il faut {{need}} octets libres et le datastore en a {{free}}.",
+        "verdictUnreadable": "La vérification de {{name}} n'a affiché aucun verdict lisible, rien n'a donc été prouvé."
       },
       "snapshots": {
         "description": "Gérer les instantanés stockés",
@@ -352,6 +373,26 @@
         "usageUnavailable": "Purge effectuée, mais l'utilisation après la purge n'a pas pu être lue : {{error}}",
         "progress": "Purge de « {{name}} » : passe {{round}}, {{chunks}} objet(s) supprimé(s) jusqu'ici ({{bytes}}).",
         "tooManyRounds": "La purge de « {{name}} » n'est pas terminée après {{rounds}} passes. Relancer la purge pour continuer."
+      },
+      "check": {
+        "description": "Prouve qu'un snapshot stocké s'ouvre avec la phrase secrète : parcourt son listing, restaure un fichier et le compare à la taille listée",
+        "needsCredential": "{{name}} n'a aucun identifiant dans cette configuration, son listing ne peut donc pas être ouvert.",
+        "noIndex": "Le snapshot {{snapshot}} de {{name}} n'a pas de listing stocké et ne peut pas être vérifié ainsi. Il n'est pas prouvé.",
+        "noSnapshot": "{{name}} n'a aucun snapshot stocké à vérifier.",
+        "optionPath": "Le fichier à restaurer et comparer (par défaut : le plus petit fichier non vide)",
+        "scratchLeft": "Le répertoire temporaire {{path}} n'a pas pu être supprimé sur {{machine}}."
+      },
+      "repair": {
+        "affected": "Snapshots qui référencent ces chunks : {{snapshots}}",
+        "description": "Trouve les chunks perdus ou erronés dans le stockage, supprime les mauvais sur le serveur et les renvoie depuis l'ancre de cette machine",
+        "dryRunDamage": "{{count}} chunk(s) endommagé(s) trouvé(s) ; une simulation n'a rien modifié.",
+        "optionDryRun": "Indique ce qui serait supprimé et renvoyé ; ne modifie rien"
+      },
+      "tocKey": {
+        "description": "Gérer la clé de listing de navigation d'un dépôt",
+        "optionDryRun": "Indique ce qui serait fait ; ne touche à rien",
+        "optionReplace": "Remplacer une clé différente déjà présente sur la machine (envoie la phrase secrète comme preuve)",
+        "syncDescription": "Installer la clé de listing du dépôt sur sa machine, ou en remplacer une différente"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "Sauvegardes en retard",
         "staleBackupWarning": "La dernière sauvegarde de {{count}} dépôt(s) remonte à plus de deux fois l'intervalle de leur planification.",
         "runningJobsRow": "{{id}} {{state}} : {{verb}} sur {{repo}}, lancée {{startedAt}} par {{origin}}. Pour la suivre : {{attach}}",
-        "runningJobsSection": "Tâches (en cours ou terminées depuis moins d'une heure)"
+        "runningJobsSection": "Tâches (en cours ou terminées depuis moins d'une heure)",
+        "verifyFailureSection": "Vérifications de sauvegarde échouées",
+        "verifyFailureWarning": "{{count}} dépôt(s) ont échoué à leur dernière vérification de sauvegarde."
       },
       "gpu": {
         "descriptionShort": "Inspecter les GPU et les autorisations de périphériques d'une machine",

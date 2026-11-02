@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "{{name}} deposunun {{snapshot}} anlık görüntüsünde kayıtlı dosya listesi yok, bu yüzden yol geri yüklenemez. Tüm depoyu rdc backup restore --at ile geri yükleyip yolu oradan kopyalayın.",
         "pathNoListingLiveMount": "{{name}} deposunun {{snapshot}} anlık görüntüsünde yalnızca çalışan bağlantı noktasından okunmuş bir liste var ve bu liste dosyaları tam olarak konumlandıramaz. Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın.",
         "pathNoListingNoPositions": "{{name}} deposunun {{snapshot}} anlık görüntüsündeki listede dosya konumları yok (yol geri yüklemesinden önce alınmış). Yeni bir anlık görüntü alın ya da tüm depoyu rdc backup restore --at ile geri yükleyip yolu kopyalayın.",
-        "snapshotIndexUnreadable": "{{name}} için anlık görüntü dizini okunamadı ({{reason}}), bu yüzden geri yükleme makinedeki yapıtı çekiyor. Parça deposundaki bir anlık görüntüyü geri yüklemek için --at verin."
+        "snapshotIndexUnreadable": "{{name}} için anlık görüntü dizini okunamadı ({{reason}}), bu yüzden geri yükleme makinedeki yapıtı çekiyor. Parça deposundaki bir anlık görüntüyü geri yüklemek için --at verin.",
+        "optionAllowUnopenable": "Depo parolası açmasa bile imajı yerleştir (parola değişiminden önceki bir anlık görüntü)",
+        "optionSalvage": "Kayıp veya bozuk parçaları aşıp devam et ve hücrelerini boşluk olarak bırak (--as gerekir)",
+        "passphraseNotChecked": "Geri yüklenen imaj deneme amaçlı açılmadı, bu yüzden kilidi açılmayabilir: {{reason}}",
+        "passphraseOpened": "Geri yüklenen imaj depo parolasıyla açılıyor.",
+        "passphraseRefusedPlaced": "Depo parolası geri yüklenen imajı açmadı: {{reason}}",
+        "salvageDamaged": "Kurtarma, saklanan parçaların kaybolduğu veya bozulduğu yerlerde {{count}} boşluklu bir imaj yerleştirdi.",
+        "salvageHeaderHit": "Bir boşluk LUKS başlığında, bu yüzden imaj hiç açılmayabilir.",
+        "salvageHole": "  boşluk: {{offset}} ile {{end}} arası baytlar: {{reason}}",
+        "salvageNeedsAs": "--salvage için --as <yeni ad> gerekir: hasarlı imaj hiçbir zaman var olan bir adın altına yerleştirilmez.",
+        "salvageNeedsSnapshot": "--salvage için geri yüklenecek bir parça deposu anlık görüntüsü gerekir.",
+        "salvageWholeImage": "--salvage imajın tamamını geri yükler; --path veya --to ile birlikte kullanılamaz."
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "Bu anlık görüntü için CPU üst sınırı: tüm çekirdeklerin yüzdesi, 1-100 (varsayılan 50; 100 = sınır yok)",
         "cpuLimitInvalid": "--cpu-limit 1 ile 100 arasında bir tam sayı olmalıdır (tüm çekirdeklerin yüzdesi), alınan: \"{{value}}\".",
         "cpuLimit": "CPU sınırı: tüm çekirdeklerin %{{percent}} kadarı (CPUQuota={{quota}})",
-        "cpuLimitUnenforced": "CPU sınırı: %{{percent}} istendi, bu makinede uygulanmadı"
+        "cpuLimitUnenforced": "CPU sınırı: %{{percent}} istendi, bu makinede uygulanmadı",
+        "identityChanged": "{{name}}, bu deponun yedeğinin alındığı imaj değil. Değişiklik isteniyorsa --accept-identity-change ile yeniden çalıştırın.",
+        "optionAcceptIdentityChange": "LUKS kimliği değiştiğinde veya imaj küçüldüğünde bu imajı yeni temel kabul et; tam bir anlık görüntü yükler"
       },
       "status": {
         "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster"
@@ -287,7 +300,15 @@
         "optionDeep": "Örneklemeli kontrol yerine kayıtlı her hücreyi yeniden özetle (tam doğrulama)",
         "optionStore": "Sunucunun bu deponun saklanan her parçasını yeniden özetlemesini ve eksik ya da bozuk olanları adıyla bildirmesini sağla",
         "starting": "{{name}} için yedek doğrulanıyor ({{level}})...",
-        "storeEmpty": "Depoda {{name}} için hiç parça yok, bu yüzden hiçbir şey doğrulanmadı."
+        "storeEmpty": "Depoda {{name}} için hiç parça yok, bu yüzden hiçbir şey doğrulanmadı.",
+        "deepStoreExclusive": "--deep makinedeki kopyayı, --store ise saklanan parçaları denetler; ikisini ayrı komutlar olarak çalıştırın.",
+        "optionRestoreTest": "Çapa anlık görüntüsünü tek kullanımlık bir adla doğrudan depolamadan geri yükle, çapayla karşılaştır, sonucu kaydet ve kopyayı sil",
+        "restoreTestCleanupFailed": "{{copy}} geri yükleme testi kopyası {{machine}} üzerinden silinemedi. Şununla kaldırın: rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test, --deep veya --store ile birlikte kullanılamaz.",
+        "restoreTestNeedsCredential": "{{name}} için bu yapılandırmada kimlik bilgisi yok, bu yüzden geri yüklenen kopya deneme amaçlı açılamazdı.",
+        "restoreTestNoAnchor": "{{name}} için makinesinde geri yüklenecek yedek çapası yok. Önce bir anlık görüntü alın.",
+        "restoreTestNoSpace": "{{snapshot}} geri yükleme testi için yeterli yer yok: {{need}} bayt boş alan gerekiyor, veri deposunda {{free}} var.",
+        "verdictUnreadable": "{{name}} doğrulaması okunabilir bir sonuç yazdırmadı, bu yüzden hiçbir şey kanıtlanmadı."
       },
       "snapshots": {
         "description": "Saklanan anlık görüntüleri yönet",
@@ -352,6 +373,26 @@
         "usageUnavailable": "Temizleme tamamlandı ancak temizlemeden sonraki kullanım okunamadı: {{error}}",
         "progress": "\"{{name}}\" temizleniyor: {{round}}. tur, şimdiye kadar {{chunks}} nesne silindi ({{bytes}}).",
         "tooManyRounds": "\"{{name}}\" temizliği {{rounds}} turda bitmedi. Devam etmek için temizliği yeniden çalıştırın."
+      },
+      "check": {
+        "description": "Saklanan bir anlık görüntünün parola ile açıldığını kanıtlar: listesine göz atar, bir dosyayı geri yükler ve listelenen boyutla karşılaştırır",
+        "needsCredential": "{{name}} için bu yapılandırmada kimlik bilgisi yok, bu yüzden listesi açılamaz.",
+        "noIndex": "{{name}} deposunun {{snapshot}} anlık görüntüsünün saklanmış listesi yok, bu yolla denetlenemez. Kanıtlanmış değil.",
+        "noSnapshot": "{{name}} için denetlenecek saklanmış anlık görüntü yok.",
+        "optionPath": "Geri yüklenip karşılaştırılacak dosya (varsayılan: boş olmayan en küçük dosya)",
+        "scratchLeft": "{{path}} geçici dizini {{machine}} üzerinde silinemedi."
+      },
+      "repair": {
+        "affected": "Bu parçaları içeren anlık görüntüler: {{snapshots}}",
+        "description": "Depolamanın kaybettiği veya yanlış tuttuğu parçaları bulur, kötü olanları sunucuda siler ve bu makinenin çapasından yeniden yükler",
+        "dryRunDamage": "{{count}} hasarlı parça bulundu; deneme çalıştırması hiçbir şeyi değiştirmedi.",
+        "optionDryRun": "Nelerin silinip yeniden yükleneceğini bildirir; hiçbir şeyi değiştirmez"
+      },
+      "tocKey": {
+        "description": "Bir deponun gözatma listesi anahtarını yönetir",
+        "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
+        "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)",
+        "syncDescription": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "Gecikmiş Yedekler",
         "staleBackupWarning": "{{count}} deponun son yedeği, zamanlama aralığının iki katından daha eski.",
         "runningJobsRow": "{{id}} {{state}}: {{repo}} üzerinde {{verb}}, {{startedAt}} tarihinde {{origin}} tarafından başlatıldı. İzlemek için: {{attach}}",
-        "runningJobsSection": "İşler (çalışan veya son bir saat içinde biten)"
+        "runningJobsSection": "İşler (çalışan veya son bir saat içinde biten)",
+        "verifyFailureSection": "Başarısız yedek doğrulamaları",
+        "verifyFailureWarning": "{{count}} depo son yedek doğrulamasında başarısız oldu."
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",

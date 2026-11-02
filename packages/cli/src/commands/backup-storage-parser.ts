@@ -150,6 +150,24 @@ export interface RestoreStats {
   seedGuid?: string;
   seedsSkipped?: string[];
   seedProbeBytes?: number;
+  /** `restored`, `restored-damaged` or `failed`, as the record's status carries it. */
+  status?: string;
+  /** Why a restore failed or was placed with a caveat; for a failure it names a kept staged copy. */
+  reason?: string;
+  /** Whether a test-open proved the image opens: `opened`, `refused`, or `not-available`. */
+  passphraseCheck?: 'opened' | 'refused' | 'not-available';
+  /** A salvage restore's holes, by byte range. */
+  badCells?: SalvageBadCell[];
+}
+
+/** One cell a `--salvage` restore left as a hole. */
+export interface SalvageBadCell {
+  cell: number;
+  offset: number;
+  length: number;
+  hash?: string;
+  reason?: string;
+  inLuksHeader?: boolean;
 }
 
 function isRestoreRecord(parsed: unknown): parsed is RestoreStats {
@@ -174,6 +192,80 @@ export function parseRestoreStats(stdout: string | undefined): RestoreStats | un
       try {
         const parsed: unknown = JSON.parse(candidate);
         if (isRestoreRecord(parsed)) found = parsed;
+      } catch {
+        // Not JSON, or a partial line: keep scanning.
+      }
+    }
+  }
+  return found;
+}
+
+/** What `renet backup compare` prints: a restored copy held to the source's anchor. */
+export interface CompareRecord {
+  status: 'identical' | 'different' | 'failed';
+  reason?: string;
+  /** The snapshot the anchor holds NOW; the copy is only comparable when it was restored from this one. */
+  anchorSnapshotId?: string;
+  imageBytes?: number;
+  cellsRoot?: string;
+  anchorCellsRoot?: string;
+  differingCells?: number[];
+}
+
+/** The LAST compare record in the verb's captured stdout; undefined when none is readable. */
+export function parseCompareRecord(stdout: string | undefined): CompareRecord | undefined {
+  if (!stdout) return undefined;
+  let found: CompareRecord | undefined;
+  for (const raw of stdout.split('\n')) {
+    for (const candidate of browseJsonCandidates(raw.trim())) {
+      try {
+        const parsed: unknown = JSON.parse(candidate);
+        if (
+          parsed !== null &&
+          typeof parsed === 'object' &&
+          'against' in parsed &&
+          'status' in parsed &&
+          ['identical', 'different', 'failed'].includes(String((parsed as { status: unknown }).status))
+        ) {
+          found = parsed as CompareRecord;
+        }
+      } catch {
+        // Not JSON, or a partial line: keep scanning.
+      }
+    }
+  }
+  return found;
+}
+
+/** What `renet backup repair` prints: what went back, what the store already held, what this machine cannot supply. */
+export interface RepairRecord {
+  status: 'repaired' | 'partial' | 'failed';
+  reason?: string;
+  snapshotId?: string;
+  uploaded?: string[];
+  /** The store answered 412: an object is still at the key, and it may be the bad one. */
+  alreadyPresent?: string[];
+  unrepairable?: { hash: string; reason: string }[];
+  bytesUploaded?: number;
+}
+
+/** The LAST repair record in the verb's captured stdout; undefined when none is readable. */
+export function parseRepairRecord(stdout: string | undefined): RepairRecord | undefined {
+  if (!stdout) return undefined;
+  let found: RepairRecord | undefined;
+  for (const raw of stdout.split('\n')) {
+    for (const candidate of browseJsonCandidates(raw.trim())) {
+      try {
+        const parsed: unknown = JSON.parse(candidate);
+        if (
+          parsed !== null &&
+          typeof parsed === 'object' &&
+          'guid' in parsed &&
+          'status' in parsed &&
+          ['repaired', 'partial', 'failed'].includes(String((parsed as { status: unknown }).status))
+        ) {
+          found = parsed as RepairRecord;
+        }
       } catch {
         // Not JSON, or a partial line: keep scanning.
       }

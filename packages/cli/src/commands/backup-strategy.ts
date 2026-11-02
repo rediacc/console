@@ -24,7 +24,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
 import { BackupDestinationSchema, parseConfig } from '../utils/config-schema.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 
 function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
   if (enable) return true;
@@ -331,27 +331,6 @@ async function strategyBindings(): Promise<Map<string, string[]>> {
   return bindings;
 }
 
-function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
-  const mode = strategy.mode ?? BACKUP_DEFAULTS.MODE;
-  outputService.info(`Strategy: ${name}`);
-  outputService.info(`  Schedule: ${strategy.schedule}`);
-  outputService.info(`  Mode: ${mode}`);
-  outputService.info(`  Enabled: ${strategy.enabled !== false}`);
-  if (strategy.bandwidthLimit) outputService.info(`  Bandwidth limit: ${strategy.bandwidthLimit}`);
-  if (strategy.readBandwidthLimit) {
-    outputService.info(`  Read bandwidth limit: ${strategy.readBandwidthLimit}`);
-  }
-  if (strategy.cpuLimit !== undefined) {
-    outputService.info(`  CPU limit: ${strategy.cpuLimit}% of all cores`);
-  }
-  if (strategy.include) outputService.info(`  Include: ${strategy.include.join(', ')}`);
-  if (strategy.exclude) outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
-  if (strategy.retention) {
-    outputService.info(`  Retention: ${formatRetention(strategy.retention)}`);
-  }
-  displayStrategyDestinations(strategy);
-}
-
 function formatRetention(retention: NonNullable<BackupStrategyConfig['retention']>): string {
   const parts: [string, number | undefined][] = [
     ['last', retention.keepLast],
@@ -367,29 +346,26 @@ function formatRetention(retention: NonNullable<BackupStrategyConfig['retention'
     .join(',');
 }
 
-/**
- * Render a strategy's destination list. Split out of `displayStrategy` only to
- * keep both under the sonarjs cognitive-complexity ceiling; the output is
- * byte-identical to when this was inline.
- */
-function displayStrategyDestinations(strategy: BackupStrategyConfig): void {
-  if (strategy.destinations.length === 0) {
-    outputService.info(t('commands.backup.strategy.show.noDestinations'));
-    return;
-  }
-  outputService.info(t('commands.backup.strategy.show.destinationsHeader'));
-  for (const dest of strategy.destinations) {
-    outputService.info(destinationLine(strategy, dest));
-  }
+/** One destination as a cell: its name, with a marker when it is switched off. */
+function destinationCell(dest: BackupStrategyDestination): string {
+  return dest.enabled === false ? `${dest.name} (disabled)` : dest.name;
 }
 
-/** One rendered destination line, marker included. Split out for the same
- *  cognitive-complexity ceiling as above. */
-function destinationLine(strategy: BackupStrategyConfig, dest: BackupStrategyDestination): string {
-  const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit ?? '-';
-  const enabled = dest.enabled !== false;
-  const target = `hosted-service${dest.endpoint ? `  endpoint=${dest.endpoint}` : ''}`;
-  return `    ${dest.name}  ${target}  bwlimit=${bwlimit}  enabled=${enabled}`;
+/** One strategy as a row of `show`: the same fields in every format, so a script and a person read one document. */
+function strategyRow(name: string, strategy: BackupStrategyConfig): Record<string, unknown> {
+  return {
+    name,
+    schedule: strategy.schedule,
+    mode: strategy.mode ?? BACKUP_DEFAULTS.MODE,
+    enabled: strategy.enabled !== false,
+    bandwidthLimit: strategy.bandwidthLimit ?? '-',
+    readBandwidthLimit: strategy.readBandwidthLimit ?? '-',
+    cpuLimit: strategy.cpuLimit ?? '-',
+    include: strategy.include?.join(',') ?? '-',
+    exclude: strategy.exclude?.join(',') ?? '-',
+    retention: strategy.retention ? formatRetention(strategy.retention) : '-',
+    destinations: strategy.destinations.map(destinationCell).join(', ') || '-',
+  };
 }
 
 /** Register the `backup strategy` subgroup (named backup strategy records). */
@@ -514,23 +490,23 @@ export function registerBackupStrategyCommands(backup: Command): void {
       try {
         const strategies = await configService.listBackupStrategies();
         const names = Object.keys(strategies);
-        if (names.length === 0) {
-          outputService.info(t('commands.backup.strategy.show.notConfigured'));
-          return;
-        }
         // A strategy is only ever deployed to machines that bind it, so a listing without bindings cannot answer "why did this not run?".
         const boundTo = await strategyBindings();
-        for (const name of names) {
+        const rows = names.map((name) => {
           const s = strategies[name];
-          const mode = s.mode ?? BACKUP_DEFAULTS.MODE;
-          const destCount = s.destinations.length;
-          const enabled = s.enabled !== false;
           const machines = boundTo.get(name);
-          const bound = machines?.length ? machines.join(',') : '-';
-          outputService.info(
-            `  ${name}  schedule=${s.schedule}  mode=${mode}  destinations=${destCount}  enabled=${enabled}  machines=${bound}`
-          );
-        }
+          return {
+            name,
+            schedule: s.schedule,
+            mode: s.mode ?? BACKUP_DEFAULTS.MODE,
+            destinations: s.destinations.length,
+            enabled: s.enabled !== false,
+            machines: machines?.length ? machines.join(',') : '-',
+          };
+        });
+        // Rows go to stdout in every format (an empty list is `[]` under -o json); the notice is prose on stderr.
+        outputService.print(rows, getOutputFormat());
+        if (rows.length === 0) outputService.info(t('commands.backup.strategy.show.notConfigured'));
       } catch (error) {
         handleError(error);
       }
@@ -545,22 +521,15 @@ export function registerBackupStrategyCommands(backup: Command): void {
         if (strategy) {
           const found = await configService.getBackupStrategy(strategy);
           if (!found) {
-            outputService.info(t('commands.backup.strategy.show.notFound', { name: strategy }));
-            return;
+            throw new ValidationError(t('commands.backup.strategy.show.notFound', { name: strategy }));
           }
-          displayStrategy(strategy, found);
+          outputService.print([strategyRow(strategy, found)], getOutputFormat());
           return;
         }
         const strategies = await configService.listBackupStrategies();
-        const names = Object.keys(strategies);
-        if (names.length === 0) {
-          outputService.info(t('commands.backup.strategy.show.notConfigured'));
-          return;
-        }
-        for (const name of names) {
-          displayStrategy(name, strategies[name]);
-          outputService.info('');
-        }
+        const rows = Object.entries(strategies).map(([name, s]) => strategyRow(name, s));
+        outputService.print(rows, getOutputFormat());
+        if (rows.length === 0) outputService.info(t('commands.backup.strategy.show.notConfigured'));
       } catch (error) {
         handleError(error);
       }

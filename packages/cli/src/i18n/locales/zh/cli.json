@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "{{name}} 的快照 {{snapshot}} 没有保存文件列表，因此无法恢复路径。请先用 rdc backup restore --at 恢复整个仓库，再把该路径复制出来。",
         "pathNoListingLiveMount": "{{name}} 的快照 {{snapshot}} 只有从运行中挂载读取的列表，无法精确定位文件。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。",
         "pathNoListingNoPositions": "{{name}} 的快照 {{snapshot}} 的列表不含文件位置（它早于路径恢复功能）。请重新创建快照，或先用 rdc backup restore --at 恢复整个仓库再复制该路径。",
-        "snapshotIndexUnreadable": "无法读取 {{name}} 的快照索引（{{reason}}），因此将从机器上拉取制品进行恢复。如需从块存储恢复快照，请传入 --at。"
+        "snapshotIndexUnreadable": "无法读取 {{name}} 的快照索引（{{reason}}），因此将从机器上拉取制品进行恢复。如需从块存储恢复快照，请传入 --at。",
+        "optionAllowUnopenable": "即使仓库口令无法打开镜像也照常放置(口令更改之前的快照)",
+        "optionSalvage": "跳过丢失或损坏的数据块继续,其单元保留为空洞(需要 --as)",
+        "passphraseNotChecked": "恢复的镜像未经试打开,可能无法解锁:{{reason}}",
+        "passphraseOpened": "恢复的镜像可以用仓库口令打开。",
+        "passphraseRefusedPlaced": "仓库口令未能打开恢复的镜像:{{reason}}",
+        "salvageDamaged": "抢救已放置一个镜像,其中有 {{count}} 处空洞,对应已存储数据块丢失或损坏的位置。",
+        "salvageHeaderHit": "有空洞位于 LUKS 头部,镜像可能完全无法打开。",
+        "salvageHole": "  空洞位于字节 {{offset}} 至 {{end}}:{{reason}}",
+        "salvageNeedsAs": "--salvage 需要 --as <新名称>:损坏的镜像绝不会放在已有名称之下。",
+        "salvageNeedsSnapshot": "--salvage 需要一个数据块存储快照作为恢复来源。",
+        "salvageWholeImage": "--salvage 恢复整个镜像,不能与 --path 或 --to 同时使用。"
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "此快照的 CPU 上限：占全部核心的百分比，1-100（默认 50；100 = 不设上限）",
         "cpuLimitInvalid": "--cpu-limit 必须是 1 到 100 的整数（占全部核心的百分比），收到：\"{{value}}\"。",
         "cpuLimit": "CPU 限制：占全部核心的 {{percent}}%（CPUQuota={{quota}}）",
-        "cpuLimitUnenforced": "CPU 限制：已请求 {{percent}}%，但在此机器上未生效"
+        "cpuLimitUnenforced": "CPU 限制：已请求 {{percent}}%，但在此机器上未生效",
+        "identityChanged": "{{name}} 不是此仓库备份所用的镜像。如果更改是有意的,请加上 --accept-identity-change 重新运行。",
+        "optionAcceptIdentityChange": "当镜像的 LUKS 标识变化或镜像缩小时,将其作为新基线;上传完整快照"
       },
       "status": {
         "description": "显示远程机器上的备份状态和定时器状态"
@@ -287,7 +300,15 @@
         "optionDeep": "对每个已记录的单元重新计算哈希（完整验证），而不是抽样检查",
         "optionStore": "让服务器对此仓库已存储的每个块重新计算哈希，并指出缺失或损坏的块",
         "starting": "正在验证 {{name}} 的备份（{{level}}）...",
-        "storeEmpty": "存储中没有 {{name}} 的任何块，因此未验证任何内容。"
+        "storeEmpty": "存储中没有 {{name}} 的任何块，因此未验证任何内容。",
+        "deepStoreExclusive": "--deep 检查机器上的副本,--store 检查已存储的数据块;请分成两条命令运行。",
+        "optionRestoreTest": "以一次性名称直接从存储中恢复锚点快照,与锚点比较,记录结果并删除副本",
+        "restoreTestCleanupFailed": "无法从 {{machine}} 删除恢复测试副本 {{copy}}。请用以下命令移除:rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test 不能与 --deep 或 --store 同时使用。",
+        "restoreTestNeedsCredential": "此配置中没有 {{name}} 的凭据,因此无法试打开恢复的副本。",
+        "restoreTestNoAnchor": "{{name}} 在其机器上没有可恢复的备份锚点。请先创建快照。",
+        "restoreTestNoSpace": "空间不足,无法对 {{snapshot}} 进行恢复测试:需要 {{need}} 字节可用空间,数据存储只有 {{free}}。",
+        "verdictUnreadable": "{{name}} 的验证没有输出可读的结论,因此未能证明任何内容。"
       },
       "snapshots": {
         "description": "管理已存储的快照",
@@ -352,6 +373,26 @@
         "usageUnavailable": "清除已完成,但无法读取清除后的用量:{{error}}",
         "progress": "正在清除“{{name}}”:第 {{round}} 轮,已删除 {{chunks}} 个对象({{bytes}})。",
         "tooManyRounds": "“{{name}}”的清除在 {{rounds}} 轮后仍未完成。再次运行即可继续。"
+      },
+      "check": {
+        "description": "证明已存储的快照可以用口令打开:浏览其列表,恢复一个文件,并与列出的大小比较",
+        "needsCredential": "此配置中没有 {{name}} 的凭据,因此无法打开其列表。",
+        "noIndex": "{{name}} 的快照 {{snapshot}} 没有已存储的列表,无法用这种方式检查。它未获证明。",
+        "noSnapshot": "{{name}} 没有可检查的已存储快照。",
+        "optionPath": "要恢复并比较的文件(默认:最小的非空文件)",
+        "scratchLeft": "无法在 {{machine}} 上删除临时目录 {{path}}。"
+      },
+      "repair": {
+        "affected": "引用这些数据块的快照:{{snapshots}}",
+        "description": "找出存储丢失或保存有误的数据块,在服务器上删除损坏的块,并从本机的锚点重新上传",
+        "dryRunDamage": "发现 {{count}} 个损坏的数据块;试运行未更改任何内容。",
+        "optionDryRun": "报告将被删除并重新上传的内容;不做任何更改"
+      },
+      "tocKey": {
+        "description": "管理仓库的浏览列表密钥",
+        "optionDryRun": "报告将要执行的操作;不触碰任何内容",
+        "optionReplace": "替换机器上已有的不同密钥(会发送口令作为证明)",
+        "syncDescription": "在仓库所在机器上安装其列表密钥,或替换不同的密钥"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "滞后的备份",
         "staleBackupWarning": "有 {{count}} 个仓库距上次备份已超过其计划间隔的两倍。",
         "runningJobsRow": "{{id}} {{state}}:{{repo}} 上的 {{verb}},由 {{origin}} 于 {{startedAt}} 启动。跟踪:{{attach}}",
-        "runningJobsSection": "作业(运行中或最近一小时内结束)"
+        "runningJobsSection": "作业(运行中或最近一小时内结束)",
+        "verifyFailureSection": "失败的备份验证",
+        "verifyFailureWarning": "{{count}} 个仓库的上次备份验证失败。"
       },
       "gpu": {
         "descriptionShort": "查看机器的 GPU 和设备授权",

@@ -183,6 +183,18 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Deletes every stored snapshot of a repository at once; a wrong call ' +
       'discards all of its backups.',
   },
+  // Opts IN as a write: it asks the server to delete a corrupt chunk and re-uploads from the machine's anchor.
+  'backup repair': {
+    mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
+  },
+  // Opts IN as a write: it restores one file to scratch and records the verdict on the server.
+  'backup check': {
+    mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
+  },
+  // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin.
+  'backup toc-key sync': {
+    mcp: { destructive: false, idempotent: true, timeout: 'write', excludeOptions: ['debug'] },
+  },
   'backup verify': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },

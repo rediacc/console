@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud faililoendit, seega tee taastamine ei ole võimalik. Taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee sealt välja.",
         "pathNoListingLiveMount": "Hoidla {{name}} hetktõmmisel {{snapshot}} on ainult töötavast haakest loetud loend, mis ei leia faile täpselt üles. Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja.",
         "pathNoListingNoPositions": "Hoidla {{name}} hetktõmmise {{snapshot}} loendis pole failide asukohti (see on tee taastamisest vanem). Tee uus hetktõmmis või taasta kogu hoidla käsuga rdc backup restore --at ja kopeeri tee välja.",
-        "snapshotIndexUnreadable": "{{name}} hetktõmmiste indeksit ei õnnestunud lugeda ({{reason}}), seega tõmbab taastamine masina artefakti. Tükihoidla hetktõmmise taastamiseks lisa --at."
+        "snapshotIndexUnreadable": "{{name}} hetktõmmiste indeksit ei õnnestunud lugeda ({{reason}}), seega tõmbab taastamine masina artefakti. Tükihoidla hetktõmmise taastamiseks lisa --at.",
+        "optionAllowUnopenable": "Paiguta kujutis ka siis, kui hoidla parool seda ei ava (hetktõmmis enne parooli vahetust)",
+        "optionSalvage": "Jätka üle kadunud või rikutud tükkide ja jäta nende lahtrid aukudeks (vajab --as)",
+        "passphraseNotChecked": "Taastatud kujutist ei avatud proovimiseks, seega ei pruugi see lukust avaneda: {{reason}}",
+        "passphraseOpened": "Taastatud kujutis avaneb hoidla parooliga.",
+        "passphraseRefusedPlaced": "Hoidla parool ei avanud taastatud kujutist: {{reason}}",
+        "salvageDamaged": "Päästmine paigutas kujutise, kus on {{count}} auku kohtades, kus salvestatud tükid olid kadunud või rikutud.",
+        "salvageHeaderHit": "Auk asub LUKS-i päises, seega ei pruugi kujutis üldse avaneda.",
+        "salvageHole": "  auk baitidel {{offset}} kuni {{end}}: {{reason}}",
+        "salvageNeedsAs": "--salvage vajab --as <uus nimi>: kahjustatud kujutist ei paigutata kunagi olemasoleva nime alla.",
+        "salvageNeedsSnapshot": "--salvage vajab taastamiseks tükihoidla hetktõmmist.",
+        "salvageWholeImage": "--salvage taastab terve kujutise; seda ei saa kombineerida valikutega --path ega --to."
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "Selle hetktõmmise protsessori ülempiir: protsent kõigist tuumadest, 1-100 (vaikimisi 50; 100 = ülempiiri pole)",
         "cpuLimitInvalid": "--cpu-limit peab olema täisarv vahemikus 1 kuni 100 (protsent kõigist tuumadest), saadud: \"{{value}}\".",
         "cpuLimit": "Protsessori piirang: {{percent}}% kõigist tuumadest (CPUQuota={{quota}})",
-        "cpuLimitUnenforced": "Protsessori piirang: taotletud {{percent}}%, sellel masinal ei rakendata"
+        "cpuLimitUnenforced": "Protsessori piirang: taotletud {{percent}}%, sellel masinal ei rakendata",
+        "identityChanged": "{{name}} pole kujutis, millest see hoidla varundati. Kui muudatus on kavatsetud, käivita uuesti valikuga --accept-identity-change.",
+        "optionAcceptIdentityChange": "Võta see kujutis uueks aluseks, kui selle LUKS-i identiteet muutus või see vähenes; laadib üles täieliku hetktõmmise"
       },
       "status": {
         "description": "Näitab varukoopia olekut ja taimeri olekut kaugmasinal"
@@ -287,7 +300,15 @@
         "optionDeep": "Räsi uuesti iga salvestatud rakk (täielik kinnitamine) valimipõhise kontrolli asemel",
         "optionStore": "Lase serveril räsida uuesti selle hoidla iga salvestatud tükk ja nimetada puuduvad või rikutud tükid",
         "starting": "Varukoopia kinnitamine hoidlale {{name}} ({{level}})...",
-        "storeEmpty": "Hoidlas pole {{name}} jaoks ühtegi tükki, seega ei kontrollitud midagi."
+        "storeEmpty": "Hoidlas pole {{name}} jaoks ühtegi tükki, seega ei kontrollitud midagi.",
+        "deepStoreExclusive": "--deep kontrollib masina koopiat ja --store salvestatud tükke; käivita need kahe käsuna.",
+        "optionRestoreTest": "Taasta ankru hetktõmmis ühekordse nime all otse salvestusest, võrdle seda ankruga, salvesta tulemus ja kustuta koopia",
+        "restoreTestCleanupFailed": "Taastamistesti koopiat {{copy}} ei õnnestunud masinast {{machine}} kustutada. Eemalda see käsuga: rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test ei saa kombineerida valikutega --deep ega --store.",
+        "restoreTestNeedsCredential": "Selles konfiguratsioonis pole {{name}} jaoks mandaati, seega ei saaks taastatud koopiat proovimiseks avada.",
+        "restoreTestNoAnchor": "Hoidlal {{name}} pole masinas taastamiseks varundusankrut. Tee esmalt hetktõmmis.",
+        "restoreTestNoSpace": "Hetktõmmise {{snapshot}} taastamistesti jaoks pole piisavalt ruumi: vaja on {{need}} baiti vaba ruumi, andmehoidlas on {{free}}.",
+        "verdictUnreadable": "Hoidla {{name}} kontroll ei printinud loetavat otsust, seega ei tõendatud midagi."
       },
       "snapshots": {
         "description": "Halda salvestatud hetktõmmiseid",
@@ -352,6 +373,26 @@
         "usageUnavailable": "Puhastus tehtud, kuid pärast puhastust kasutust ei õnnestunud lugeda: {{error}}",
         "progress": "Hoidla \"{{name}}\" puhastamine: {{round}}. voor, seni kustutatud {{chunks}} objekti ({{bytes}}).",
         "tooManyRounds": "Hoidla \"{{name}}\" puhastus ei lõppenud {{rounds}} vooruga. Jätkamiseks käivita puhastus uuesti."
+      },
+      "check": {
+        "description": "Tõendab, et salvestatud hetktõmmis avaneb parooliga: sirvib selle loendit, taastab ühe faili ja võrdleb seda loendis oleva suurusega",
+        "needsCredential": "Selles konfiguratsioonis pole {{name}} jaoks mandaati, seega ei saa selle loendit avada.",
+        "noIndex": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud loendit, seega ei saa seda nii kontrollida. See pole tõendatud.",
+        "noSnapshot": "Hoidlal {{name}} pole kontrollimiseks salvestatud hetktõmmist.",
+        "optionPath": "Taastatav ja võrreldav fail (vaikimisi: väikseim tühi mitte olev fail)",
+        "scratchLeft": "Ajutist kataloogi {{path}} ei õnnestunud masinas {{machine}} eemaldada."
+      },
+      "repair": {
+        "affected": "Hetktõmmised, mis viitavad neile tükkidele: {{snapshots}}",
+        "description": "Leiab tükid, mille salvestus on kaotanud või mida see hoiab valesti, kustutab halvad serveris ja laeb need uuesti üles selle masina ankrust",
+        "dryRunDamage": "Leiti {{count}} kahjustatud tükki; proovikäivitus ei muutnud midagi.",
+        "optionDryRun": "Teatab, mis kustutataks ja uuesti üles laaditaks; ei muuda midagi"
+      },
+      "tocKey": {
+        "description": "Halda hoidla sirvimisloendi võtit",
+        "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
+        "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)",
+        "syncDescription": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "Hilinenud varukoopiad",
         "staleBackupWarning": "{{count}} hoidla viimasest varukoopiast on möödas üle kahe ajakava intervalli.",
         "runningJobsRow": "{{id}} {{state}}: {{verb}} hoidlas {{repo}}, käivitatud {{startedAt}}, käivitaja {{origin}}. Jälgimiseks: {{attach}}",
-        "runningJobsSection": "Tööd (käimas või viimase tunni jooksul lõppenud)"
+        "runningJobsSection": "Tööd (käimas või viimase tunni jooksul lõppenud)",
+        "verifyFailureSection": "Ebaõnnestunud varunduskontrollid",
+        "verifyFailureWarning": "{{count}} hoidlat ebaõnnestus viimases varunduskontrollis."
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",

@@ -108,6 +108,8 @@ interface SnapshotRecord {
   snapshotId?: string;
   imageBytes?: number;
   rehashReason?: string;
+  /** Why a run failed or was refused; a refused commit names the account's reason here. */
+  reason?: string;
   readCapBps?: number;
   hashWorkers?: number;
   cpuLimitPercent?: number;
@@ -115,6 +117,22 @@ interface SnapshotRecord {
   chunksUploaded?: number;
   bytesUploaded?: number;
   durationMs?: number;
+}
+
+/**
+ * Whether the run was refused because the image is not the one this repository backed up before: renet's own
+ * `identity-changed` status, or the account's `licence-uuid-mismatch` refusal of the commit.
+ */
+function isIdentityRefusal(result: {
+  stdout?: string;
+  stderr?: string;
+  error?: string;
+}): boolean {
+  const record = parseVerifyVerdict(result.stdout) as SnapshotRecord | undefined;
+  if (record?.status === 'identity-changed') return true;
+  return [record?.reason, result.error, result.stderr].some((text) =>
+    text?.includes('licence-uuid-mismatch')
+  );
 }
 
 /** Print the record renet emitted: the object under json, a short summary in a table. A missing record prints nothing, so a successful run never turns into a crash. */
@@ -177,6 +195,10 @@ export function registerBackupSnapshot(backup: Command): void {
     .option('--reseed', t('commands.backup.snapshot.optionReseed'))
     .option('--dry-run', t('commands.backup.snapshot.optionDryRun'))
     .option('--cold', t('commands.backup.snapshot.optionCold'))
+    .option(
+      '--accept-identity-change',
+      t('commands.backup.snapshot.optionAcceptIdentityChange')
+    )
     .option('--bwlimit <rate>', t('commands.backup.snapshot.optionBwlimit'))
     .option('--parallelism <n>', t('commands.backup.snapshot.optionParallelism'))
     .option('--read-bwlimit <rate>', t('commands.backup.snapshot.optionReadBwlimit'))
@@ -190,6 +212,7 @@ export function registerBackupSnapshot(backup: Command): void {
           reseed?: boolean;
           dryRun?: boolean;
           cold?: boolean;
+          acceptIdentityChange?: boolean;
           bwlimit?: string;
           parallelism?: string;
           readBwlimit?: string;
@@ -210,6 +233,8 @@ export function registerBackupSnapshot(backup: Command): void {
               dry_run: options.dryRun ?? false,
               // Without this the cold path was reachable only from a scheduled unit or by SSH-ing to the machine: the generator emits --cold, but an operator wanting one application-consistent snapshot before a risky change had no supported route to it.
               cold: options.cold ?? false,
+              // Only an explicit flag carries it: a scheduled unit never does, so an image that was replaced is refused every night until an operator decides.
+              ...(options.acceptIdentityChange ? { accept_identity_change: true } : {}),
               ...uploadParams,
             },
             // captureOutput: the record carries rehashReason, readCapBps, hashWorkers and the snapshot id, which nothing else exposes; without it the step detector drops the verb's JSON and the run prints nothing.
@@ -248,6 +273,8 @@ export function registerBackupSnapshot(backup: Command): void {
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
             setExitCode(RENET_QUOTA_REFUSED_EXIT);
+          } else if (!result.success && isIdentityRefusal(result)) {
+            outputService.warn(t('commands.backup.snapshot.identityChanged', { name: repoKey }));
           } else if (!result.success && isFreeLicenseBackupRefusal(result)) {
             // A Free License has no hosted backup plane (PLAN-free-license R13): the server refused the session, so name the way to one rather than leave the raw refusal as the last word.
             outputService.warn(freeLicenseNoBackupMessage());

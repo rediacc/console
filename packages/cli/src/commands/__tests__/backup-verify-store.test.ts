@@ -28,9 +28,15 @@ vi.mock('../../services/core/output.js', () => ({
     print: mockPrint,
   },
 }));
-vi.mock('../../services/core/request-context.js', () => ({ setExitCode: mockSetExitCode }));
+vi.mock('../../services/core/request-context.js', async () => ({
+  ...(await vi.importActual<typeof import('../../services/core/request-context.js')>(
+    '../../services/core/request-context.js'
+  )),
+  setExitCode: mockSetExitCode,
+}));
 vi.mock('../../services/backup/backup-runs-state.js', () => ({ recordBackupRun: mockRecord }));
-vi.mock('../../utils/errors.js', () => ({
+vi.mock('../../utils/errors.js', async () => ({
+  ...(await vi.importActual<typeof import('../../utils/errors.js')>('../../utils/errors.js')),
   getOutputFormat: () => 'json',
   handleError: (error: unknown) => {
     throw error;

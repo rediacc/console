@@ -183,6 +183,10 @@ export function strategyUnschedulableReason(
 ): string | undefined {
   const reason =
     invalidCronReason(strategy.schedule) ??
+    // The full-verify timer's cron is rendered at deploy time; a bad one is refused where the operator binds, not there.
+    (strategy.verify?.deepSchedule === undefined
+      ? undefined
+      : invalidCronReason(strategy.verify.deepSchedule)) ??
     repoScheduleReason(strategy) ??
     destinationsReason(destinations);
   if (reason) return reason;

@@ -5,7 +5,11 @@ import {
 } from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import type { StaleBackupRepo } from '../../services/backup/backup-schedule-coverage.js';
+import type {
+  FailedVerifyRepo,
+  StaleBackupRepo,
+} from '../../services/backup/backup-schedule-coverage.js';
+import { failedVerifyRepos } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
@@ -149,6 +153,8 @@ function displayHealthReport(health: MachineHealthResult, name: string): void {
 export interface HealthStaleness {
   staleBinary: RenetProcess[] | null;
   staleBackups: StaleBackupRepo[];
+  /** Repos whose last `backup verify` mismatched or failed (backup_coverage). */
+  failedVerifies?: FailedVerifyRepo[];
 }
 
 /**
@@ -173,6 +179,12 @@ export function applyStaleness(
     issues.push(
       `${extra.staleBackups.length} repository(ies) last backed up more than twice their schedule interval ago`
     );
+    exitCode = Math.max(exitCode, 1);
+  }
+  const failedVerifies = extra.failedVerifies ?? [];
+  if (failedVerifies.length > 0) {
+    const named = failedVerifies.map((f) => `${f.name ?? f.guid} (${f.status})`).join(', ');
+    issues.push(`${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`);
     exitCode = Math.max(exitCode, 1);
   }
   // Raised from 0 only by these checks, so the shared verdict's message moves with it.
@@ -211,11 +223,21 @@ export function registerHealthCommand(machine: Command, program: Command): void 
           fetchStaleBinaries(name),
           listResult ? fetchStaleBackups(name, listResult) : Promise.resolve([]),
         ]);
-        const health = applyStaleness(getMachineHealth(machine), { staleBinary, staleBackups });
+        const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
+        const health = applyStaleness(getMachineHealth(machine), {
+          staleBinary,
+          staleBackups,
+          failedVerifies,
+        });
 
         if (format === 'json') {
           outputService.print(
-            { ...health, stale_binary: staleBinary, backup_staleness: staleBackups },
+            {
+              ...health,
+              stale_binary: staleBinary,
+              backup_staleness: staleBackups,
+              verify_failures: failedVerifies,
+            },
             format
           );
         } else {

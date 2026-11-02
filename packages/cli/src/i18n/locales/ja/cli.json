@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "{{name}} のスナップショット {{snapshot}} には保存済みのファイル一覧がないため、パスの復元はできません。rdc backup restore --at でリポジトリ全体を復元し、そこからパスをコピーしてください。",
         "pathNoListingLiveMount": "{{name}} のスナップショット {{snapshot}} にあるのは稼働中のマウントから読み取った一覧だけで、ファイルの位置を正確に特定できません。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。",
         "pathNoListingNoPositions": "{{name}} のスナップショット {{snapshot}} の一覧にはファイルの位置情報がありません（パスの復元に対応する前のものです）。新しいスナップショットを取得するか、rdc backup restore --at でリポジトリ全体を復元してパスをコピーしてください。",
-        "snapshotIndexUnreadable": "{{name}} のスナップショット索引を読み取れなかったため（{{reason}}）、マシン上のアーティファクトから復元します。チャンクストアのスナップショットを復元するには --at を指定してください。"
+        "snapshotIndexUnreadable": "{{name}} のスナップショット索引を読み取れなかったため（{{reason}}）、マシン上のアーティファクトから復元します。チャンクストアのスナップショットを復元するには --at を指定してください。",
+        "optionAllowUnopenable": "リポジトリのパスフレーズで開けなくてもイメージを配置します(パスフレーズ変更前のスナップショット)",
+        "optionSalvage": "失われた、または破損したチャンクを越えて続行し、そのセルを空きとして残します(--as が必要)",
+        "passphraseNotChecked": "復元したイメージは試験的に開かれていないため、ロック解除できない可能性があります: {{reason}}",
+        "passphraseOpened": "復元したイメージはリポジトリのパスフレーズで開きます。",
+        "passphraseRefusedPlaced": "リポジトリのパスフレーズでは復元したイメージを開けませんでした: {{reason}}",
+        "salvageDamaged": "サルベージにより、保存済みチャンクが失われた、または破損していた箇所に {{count}} 個の空きがあるイメージを配置しました。",
+        "salvageHeaderHit": "空きが LUKS ヘッダー内にあるため、イメージがまったく開けない可能性があります。",
+        "salvageHole": "  空き: バイト {{offset}} から {{end}}: {{reason}}",
+        "salvageNeedsAs": "--salvage には --as <新しい名前> が必要です。破損したイメージを既存の名前で配置することはありません。",
+        "salvageNeedsSnapshot": "--salvage には復元元のチャンクストアのスナップショットが必要です。",
+        "salvageWholeImage": "--salvage はイメージ全体を復元します。--path や --to とは併用できません。"
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "このスナップショットの CPU 上限: 全コアに対する割合、1-100（既定 50、100 = 上限なし）",
         "cpuLimitInvalid": "--cpu-limit は 1 から 100 の整数（全コアに対する割合）で指定してください。受け取った値: \"{{value}}\"。",
         "cpuLimit": "CPU 上限: 全コアの {{percent}}%（CPUQuota={{quota}}）",
-        "cpuLimitUnenforced": "CPU 上限: {{percent}}% を要求しましたが、このマシンでは適用されません"
+        "cpuLimitUnenforced": "CPU 上限: {{percent}}% を要求しましたが、このマシンでは適用されません",
+        "identityChanged": "{{name}} は、このリポジトリがバックアップされたイメージではありません。意図した変更であれば、--accept-identity-change を付けて再実行してください。",
+        "optionAcceptIdentityChange": "LUKS の識別情報が変わった、または縮小した場合に、このイメージを新しい基準として採用します。完全なスナップショットをアップロードします"
       },
       "status": {
         "description": "リモートマシンのバックアップ状態とタイマー状態を表示"
@@ -287,7 +300,15 @@
         "optionDeep": "サンプリングによるチェックの代わりに、記録済みの全セルを再ハッシュする（完全な検証）",
         "optionStore": "このリポジトリの保存済みチャンクをすべてサーバー側で再ハッシュし、欠落または破損したチャンクを示す",
         "starting": "{{name}} のバックアップを検証中（{{level}}）...",
-        "storeEmpty": "ストアに {{name}} のチャンクが1つもないため、何も検証されていません。"
+        "storeEmpty": "ストアに {{name}} のチャンクが1つもないため、何も検証されていません。",
+        "deepStoreExclusive": "--deep はマシン上のコピーを、--store は保存済みチャンクを確認します。2つのコマンドとして実行してください。",
+        "optionRestoreTest": "アンカーのスナップショットを使い捨ての名前でストアから直接復元し、アンカーと比較し、結果を記録してコピーを削除します",
+        "restoreTestCleanupFailed": "復元テストのコピー {{copy}} を {{machine}} から削除できませんでした。次で削除してください: rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test は --deep や --store と併用できません。",
+        "restoreTestNeedsCredential": "この設定に {{name}} の認証情報がないため、復元したコピーを試験的に開けません。",
+        "restoreTestNoAnchor": "{{name}} には、復元できるバックアップのアンカーがマシン上にありません。先にスナップショットを作成してください。",
+        "restoreTestNoSpace": "{{snapshot}} の復元テストに必要な空き容量がありません。{{need}} バイトの空きが必要ですが、データストアには {{free}} しかありません。",
+        "verdictUnreadable": "{{name}} の検証は読み取れる判定を出力しなかったため、何も証明されていません。"
       },
       "snapshots": {
         "description": "保存済みスナップショットを管理します",
@@ -352,6 +373,26 @@
         "usageUnavailable": "パージは完了しましたが、パージ後の使用量を読み取れませんでした: {{error}}",
         "progress": "「{{name}}」をパージ中: {{round}} 回目、これまでに {{chunks}} 個のオブジェクトを削除しました({{bytes}})。",
         "tooManyRounds": "「{{name}}」のパージは {{rounds}} 回で完了しませんでした。続行するにはもう一度実行してください。"
+      },
+      "check": {
+        "description": "保存済みスナップショットがパスフレーズで開くことを証明します。一覧を参照し、1つのファイルを復元して、一覧のサイズと比較します",
+        "needsCredential": "この設定に {{name}} の認証情報がないため、一覧を開けません。",
+        "noIndex": "{{name}} のスナップショット {{snapshot}} には保存済みの一覧がなく、この方法では確認できません。証明されていません。",
+        "noSnapshot": "{{name}} には確認できる保存済みスナップショットがありません。",
+        "optionPath": "復元して比較するファイル(既定: 空でない最小のファイル)",
+        "scratchLeft": "一時ディレクトリ {{path}} を {{machine}} で削除できませんでした。"
+      },
+      "repair": {
+        "affected": "これらのチャンクを参照するスナップショット: {{snapshots}}",
+        "description": "ストアが失った、または誤って保持しているチャンクを見つけ、不良分をサーバー上で削除し、このマシンのアンカーから再アップロードします",
+        "dryRunDamage": "破損したチャンクが {{count}} 個見つかりました。ドライランでは何も変更していません。",
+        "optionDryRun": "削除・再アップロードされる内容を表示し、何も変更しません"
+      },
+      "tocKey": {
+        "description": "リポジトリの参照一覧キーを管理します",
+        "optionDryRun": "実行される内容を表示し、何にも触れません",
+        "optionReplace": "マシンにすでにある別のキーを置き換えます(証明のためパスフレーズを送信します)",
+        "syncDescription": "リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "遅れているバックアップ",
         "staleBackupWarning": "{{count}} 個のリポジトリで、最後のバックアップからスケジュール間隔の 2 倍以上が経過しています。",
         "runningJobsRow": "{{id}} {{state}}: {{repo}} の {{verb}}、{{startedAt}} に {{origin}} が開始。追跡するには: {{attach}}",
-        "runningJobsSection": "ジョブ(実行中、または直近1時間以内に終了)"
+        "runningJobsSection": "ジョブ(実行中、または直近1時間以内に終了)",
+        "verifyFailureSection": "失敗したバックアップ検証",
+        "verifyFailureWarning": "{{count}} 個のリポジトリが直近のバックアップ検証に失敗しました。"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",

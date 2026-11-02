@@ -18,15 +18,19 @@ import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { planStep } from '../services/jobs/steps.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
+import { registerBackupCheck } from './backup-check.js';
 import { registerBackupReconcile } from './backup-reconcile.js';
+import { registerBackupRepair } from './backup-repair.js';
 import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
 import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
 import { isLiveMountListing, parseBrowseResult } from './backup-storage-parser.js';
+import { registerBackupTocKey } from './backup-toc-key.js';
 import { registerBackupSnapshot } from './backup-storage-snapshot.js';
+import { runStoreVerify } from './backup-store-verify.js';
 
 /** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
@@ -326,54 +330,6 @@ function registerBackupBrowse(backup: Command): void {
     );
 }
 
-/** POST /backups/verify, level `chunks`: one capped page of the lineage's re-hashed chunks. */
-interface BackupChunkVerifyResponse {
-  subscriptionId: string;
-  chunks: {
-    lineageGuid: string;
-    checked: number;
-    missing: string[];
-    corrupt: string[];
-    nextAfter: string | null;
-  };
-}
-
-/** The `backup verify --store` verdict: every referenced chunk of the lineage, re-hashed by the server. */
-export interface StoreVerifyVerdict {
-  lineageGuid: string;
-  checked: number;
-  missing: string[];
-  corrupt: string[];
-}
-
-/**
- * Walk the server's chunk verify for one lineage, page by page, until the
- * cursor runs out. Each page re-hashes at most the server's cap
- * (BACKUP_VERIFY_CHUNKS_MAX), so a large lineage is many requests.
- */
-export async function runStoreVerify(lineageGuid: string): Promise<StoreVerifyVerdict> {
-  assertHostedBackupAccount();
-  const verdict: StoreVerifyVerdict = { lineageGuid, checked: 0, missing: [], corrupt: [] };
-  let after: string | undefined;
-  const sent = new Set<string>();
-  for (;;) {
-    const page = await accountServerFetch<BackupChunkVerifyResponse>(
-      '/account/api/v1/backups/verify',
-      { method: 'POST', body: { lineageGuid, level: 'chunks', after } }
-    );
-    verdict.checked += page.chunks.checked;
-    verdict.missing.push(...page.chunks.missing);
-    verdict.corrupt.push(...page.chunks.corrupt);
-    if (!page.chunks.nextAfter) return verdict;
-    // A cursor already sent, the last one or any earlier (A, B, A), would loop forever on a misbehaving server.
-    if (sent.has(page.chunks.nextAfter) || page.chunks.nextAfter === after) {
-      throw new Error(`backup verify --store: the server repeated cursor ${page.chunks.nextAfter}`);
-    }
-    after = page.chunks.nextAfter;
-    sent.add(after);
-  }
-}
-
 /**
  * `backup verify <repo> [--deep] [--store]`. Without `--store`, executor-side
  * anchor verification on the machine. With `--store`, the server re-downloads
@@ -387,10 +343,27 @@ function registerBackupVerify(backup: Command): void {
     .description(t('commands.backup.verify.description'))
     .option('--deep', t('commands.backup.verify.optionDeep'))
     .option('--store', t('commands.backup.verify.optionStore'))
+    .option('--restore-test', t('commands.backup.verify.optionRestoreTest'))
     .option('--debug', t('options.debug'))
     .action(
-      async (repoRef: string, options: { deep?: boolean; store?: boolean; debug?: boolean }) => {
+      async (
+        repoRef: string,
+        options: { deep?: boolean; store?: boolean; restoreTest?: boolean; debug?: boolean }
+      ) => {
         try {
+          // A restore test is its own check, with its own verdict on the snapshot; mixing it with the anchor or store checks would blur which verdict was printed.
+          if (options.restoreTest) {
+            if (options.deep || options.store) {
+              throw new ValidationError(t('commands.backup.verify.restoreTestExclusive'));
+            }
+            const { runRestoreTest } = await import('./backup-restore-test.js');
+            await runRestoreTest(repoRef);
+            return;
+          }
+          // `--deep` re-hashes the machine's cells and `--store` re-hashes the server's chunks: two different checks, and one of them would be dropped silently.
+          if (options.deep && options.store) {
+            throw new ValidationError(t('commands.backup.verify.deepStoreExclusive'));
+          }
           if (options.store) {
             const { repoKey } = await resolveRepoRefLocal(repoRef);
             const verdict = await runStoreVerify(await resolveLineage(repoRef));
@@ -427,17 +400,10 @@ function registerBackupVerify(backup: Command): void {
               job: {
                 verb: 'backup verify',
                 steps: [
-                  planStep('reportVerifyVerdict', { level }),
-                  planStep('recordBackupRun', {
-                    repo: repoKey,
-                    kind: 'verify',
-                    status: 'verified',
-                  }),
-                  planStep('recordBackupRunFailed', {
-                    repo: repoKey,
-                    kind: 'verify',
-                    status: 'mismatch',
-                  }),
+                  planStep('reportVerifyVerdict', { repo: repoKey, level }),
+                  // The status is read from renet's verdict on both outcomes, so a `no-backup` run never records `verified`.
+                  planStep('recordVerifyVerdict', { repo: repoKey }),
+                  planStep('recordVerifyVerdictFailed', { repo: repoKey }),
                 ],
               },
             },
@@ -455,6 +421,7 @@ function registerBackupVerify(backup: Command): void {
 }
 
 export { snapshotUploadParams } from './backup-storage-snapshot.js';
+export { runStoreVerify, type StoreVerifyVerdict } from './backup-store-verify.js';
 
 /** Register the chunk-store backup reads + verification under `rdc backup`. */
 export function registerBackupStorageCommands(backup: Command): void {
@@ -466,4 +433,7 @@ export function registerBackupStorageCommands(backup: Command): void {
   registerBackupRetention(backup);
   registerBackupSnapshots(backup);
   registerBackupReconcile(backup);
+  registerBackupRepair(backup);
+  registerBackupCheck(backup);
+  registerBackupTocKey(backup);
 }

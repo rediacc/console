@@ -181,6 +181,66 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "check"
+      ],
+      "pathKey": "backup check",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.check.description",
+      "label": "Prove a stored snapshot opens with the passphrase: browse its listing, restore one file and compare it with the listed size",
+      "options": [
+        {
+          "flags": "--path <file>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.check.optionPath",
+          "label": "The file to restore and compare (default: the smallest non-empty file)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "reads a listing and restores a file with the repository credential, which stays where the config lives",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "download"
       ],
       "pathKey": "backup download",
@@ -604,6 +664,64 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "repair"
+      ],
+      "pathKey": "backup repair",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.repair.description",
+      "label": "Find chunks the store lost or holds wrong, delete the bad ones on the server and re-upload them from this machine's anchor",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.repair.optionDryRun",
+          "label": "Report what would be deleted and re-uploaded; change nothing"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "restore"
       ],
       "pathKey": "backup restore",
@@ -685,6 +803,28 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.restore.optionNoSeed",
           "label": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)"
+        },
+        {
+          "flags": "--allow-unopenable",
+          "long": "allow-unopenable",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionAllowUnopenable",
+          "label": "Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)"
+        },
+        {
+          "flags": "--salvage",
+          "long": "salvage",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionSalvage",
+          "label": "Continue past lost or corrupt chunks and leave their cells as holes (needs --as)"
         },
         {
           "flags": "--path <file-or-dir>",
@@ -1256,6 +1396,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.snapshot.optionCold",
           "label": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run"
+        },
+        {
+          "flags": "--accept-identity-change",
+          "long": "accept-identity-change",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionAcceptIdentityChange",
+          "label": "Take this image as the new baseline when its LUKS identity changed or it shrank; uploads a full snapshot"
         },
         {
           "flags": "--bwlimit <rate>",
@@ -1866,6 +2017,66 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "toc-key",
+        "sync"
+      ],
+      "pathKey": "backup toc-key sync",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.tocKey.syncDescription",
+      "label": "Install the repository's listing key on its machine, or replace a different one",
+      "options": [
+        {
+          "flags": "--replace",
+          "long": "replace",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.tocKey.optionReplace",
+          "label": "Replace a different key already on the machine (sends the passphrase to prove it)"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.tocKey.optionDryRun",
+          "label": "Report what would be done; touch nothing"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "derives the public key from the repository credential, which stays where the config lives",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "upload"
       ],
       "pathKey": "backup upload",
@@ -2064,6 +2275,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.verify.optionStore",
           "label": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one"
+        },
+        {
+          "flags": "--restore-test",
+          "long": "restore-test",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.verify.optionRestoreTest",
+          "label": "Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy"
         },
         {
           "flags": "--debug",

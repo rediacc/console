@@ -96,7 +96,18 @@
         "pathNoListingAbsent": "Snapshot {{snapshot}} von {{name}} hat keine gespeicherte Dateiliste, daher ist keine Pfad-Wiederherstellung möglich. Stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
         "pathNoListingLiveMount": "Snapshot {{snapshot}} von {{name}} hat nur eine Dateiliste vom laufenden Mount, die Dateien nicht exakt verortet. Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
         "pathNoListingNoPositions": "Die Dateiliste von Snapshot {{snapshot}} von {{name}} enthält keine Dateipositionen (sie stammt aus der Zeit vor der Pfad-Wiederherstellung). Erstelle einen neuen Snapshot oder stelle das ganze Repository mit rdc backup restore --at wieder her und kopiere den Pfad heraus.",
-        "snapshotIndexUnreadable": "Der Snapshot-Index für {{name}} konnte nicht gelesen werden ({{reason}}), daher holt die Wiederherstellung das Artefakt der Maschine. Mit --at wird ein Snapshot aus dem Chunk-Speicher wiederhergestellt."
+        "snapshotIndexUnreadable": "Der Snapshot-Index für {{name}} konnte nicht gelesen werden ({{reason}}), daher holt die Wiederherstellung das Artefakt der Maschine. Mit --at wird ein Snapshot aus dem Chunk-Speicher wiederhergestellt.",
+        "optionAllowUnopenable": "Das Image auch platzieren, wenn die Passphrase des Repositorys es nicht öffnet (ein Snapshot aus der Zeit vor einer Passphrase-Änderung)",
+        "optionSalvage": "Über verlorene oder beschädigte Chunks hinweg fortfahren und deren Zellen als Lücken belassen (benötigt --as)",
+        "passphraseNotChecked": "Das wiederhergestellte Image wurde nicht testweise geöffnet und lässt sich möglicherweise nicht entsperren: {{reason}}",
+        "passphraseOpened": "Das wiederhergestellte Image lässt sich mit der Passphrase des Repositorys öffnen.",
+        "passphraseRefusedPlaced": "Die Passphrase des Repositorys hat das wiederhergestellte Image nicht geöffnet: {{reason}}",
+        "salvageDamaged": "Salvage hat ein Image mit {{count}} Lücke(n) platziert, wo gespeicherte Chunks verloren oder beschädigt waren.",
+        "salvageHeaderHit": "Eine Lücke liegt im LUKS-Header, das Image lässt sich daher womöglich gar nicht öffnen.",
+        "salvageHole": "  Lücke bei Byte {{offset}} bis {{end}}: {{reason}}",
+        "salvageNeedsAs": "--salvage benötigt --as <neuer Name>: Ein beschädigtes Image wird nie unter einem vorhandenen Namen platziert.",
+        "salvageNeedsSnapshot": "--salvage benötigt einen Chunk-Store-Snapshot als Quelle.",
+        "salvageWholeImage": "--salvage stellt ein ganzes Image wieder her; es lässt sich nicht mit --path oder --to kombinieren."
       },
       "retention": {
         "clear": {
@@ -173,7 +184,9 @@
         "optionCpuLimit": "CPU-Obergrenze für diesen Snapshot: Prozent aller Kerne, 1-100 (Standard 50; 100 = keine Obergrenze)",
         "cpuLimitInvalid": "--cpu-limit muss eine ganze Zahl von 1 bis 100 sein (Prozent aller Kerne), erhalten: \"{{value}}\".",
         "cpuLimit": "CPU-Limit: {{percent}} % aller Kerne (CPUQuota={{quota}})",
-        "cpuLimitUnenforced": "CPU-Limit: {{percent}} % angefordert, auf diesem Rechner nicht durchgesetzt"
+        "cpuLimitUnenforced": "CPU-Limit: {{percent}} % angefordert, auf diesem Rechner nicht durchgesetzt",
+        "identityChanged": "{{name}} ist nicht das Image, von dem dieses Repository gesichert wurde. Ist die Änderung beabsichtigt, erneut mit --accept-identity-change ausführen.",
+        "optionAcceptIdentityChange": "Dieses Image als neue Basis übernehmen, wenn sich seine LUKS-Identität geändert hat oder es geschrumpft ist; lädt einen vollständigen Snapshot hoch"
       },
       "status": {
         "description": "Backup-Status und Timer-Zustand auf einem Remote-Rechner anzeigen"
@@ -287,7 +300,15 @@
         "optionDeep": "Jede erfasste Zelle neu hashen (vollständige Verifizierung) statt einer stichprobenartigen Prüfung",
         "optionStore": "Jeden gespeicherten Chunk dieses Repositorys auf dem Server neu hashen lassen und fehlende oder beschädigte benennen",
         "starting": "Backup für {{name}} wird verifiziert ({{level}})...",
-        "storeEmpty": "Der Speicher enthält keine Chunks für {{name}}, daher wurde nichts verifiziert."
+        "storeEmpty": "Der Speicher enthält keine Chunks für {{name}}, daher wurde nichts verifiziert.",
+        "deepStoreExclusive": "--deep prüft die Kopie auf der Maschine, --store die gespeicherten Chunks; führe beides als zwei Befehle aus.",
+        "optionRestoreTest": "Den Anker-Snapshot unter einem Wegwerfnamen direkt aus dem Speicher wiederherstellen, mit dem Anker vergleichen, das Ergebnis erfassen und die Kopie löschen",
+        "restoreTestCleanupFailed": "Die Restore-Test-Kopie {{copy}} konnte auf {{machine}} nicht gelöscht werden. Entfernen mit: rdc repo delete {{copy}}",
+        "restoreTestExclusive": "--restore-test lässt sich nicht mit --deep oder --store kombinieren.",
+        "restoreTestNeedsCredential": "{{name}} hat in dieser Konfiguration keine Zugangsdaten, daher ließe sich eine wiederhergestellte Kopie nicht testweise öffnen.",
+        "restoreTestNoAnchor": "{{name}} hat auf seiner Maschine keinen Backup-Anker zum Wiederherstellen. Erstelle zuerst einen Snapshot.",
+        "restoreTestNoSpace": "Nicht genug Platz für den Restore-Test von {{snapshot}}: Es werden {{need}} Byte frei benötigt, der Datastore hat {{free}}.",
+        "verdictUnreadable": "Die Verifizierung von {{name}} hat kein lesbares Ergebnis ausgegeben, daher wurde nichts bewiesen."
       },
       "snapshots": {
         "description": "Gespeicherte Snapshots verwalten",
@@ -352,6 +373,26 @@
         "usageUnavailable": "Bereinigt, aber die Belegung nach der Bereinigung konnte nicht gelesen werden: {{error}}",
         "progress": "Bereinigung von „{{name}}“: Durchgang {{round}}, bisher {{chunks}} Objekt(e) gelöscht ({{bytes}}).",
         "tooManyRounds": "Die Bereinigung von „{{name}}“ war nach {{rounds}} Durchgängen nicht abgeschlossen. Den Befehl erneut ausführen, um fortzufahren."
+      },
+      "check": {
+        "description": "Beweist, dass sich ein gespeicherter Snapshot mit der Passphrase öffnen lässt: Listing durchsuchen, eine Datei wiederherstellen und mit der gelisteten Größe vergleichen",
+        "needsCredential": "{{name}} hat in dieser Konfiguration keine Zugangsdaten, daher lässt sich das Listing nicht öffnen.",
+        "noIndex": "Snapshot {{snapshot}} von {{name}} hat kein gespeichertes Listing und lässt sich so nicht prüfen. Er gilt nicht als bewiesen.",
+        "noSnapshot": "{{name}} hat keinen gespeicherten Snapshot zum Prüfen.",
+        "optionPath": "Die Datei, die wiederhergestellt und verglichen wird (Standard: die kleinste nicht leere Datei)",
+        "scratchLeft": "Das Arbeitsverzeichnis {{path}} konnte auf {{machine}} nicht entfernt werden."
+      },
+      "repair": {
+        "affected": "Snapshots, die diese Chunks enthalten: {{snapshots}}",
+        "description": "Findet Chunks, die der Speicher verloren hat oder falsch hält, löscht die defekten auf dem Server und lädt sie aus dem Anker dieser Maschine erneut hoch",
+        "dryRunDamage": "{{count}} beschädigte(r) Chunk(s) gefunden; ein Probelauf hat nichts geändert.",
+        "optionDryRun": "Zeigt, was gelöscht und erneut hochgeladen würde; ändert nichts"
+      },
+      "tocKey": {
+        "description": "Schlüssel für das Durchsuchen-Listing eines Repositorys verwalten",
+        "optionDryRun": "Zeigt, was getan würde; berührt nichts",
+        "optionReplace": "Einen abweichenden Schlüssel auf der Maschine ersetzen (sendet zum Nachweis die Passphrase)",
+        "syncDescription": "Den Listing-Schlüssel des Repositorys auf seiner Maschine installieren oder einen abweichenden ersetzen"
       }
     },
     "cluster": {
@@ -1421,7 +1462,9 @@
         "staleBackupSection": "Überfällige Backups",
         "staleBackupWarning": "Das letzte Backup von {{count}} Repository(s) liegt mehr als doppelt so lange zurück wie das Intervall ihres Zeitplans.",
         "runningJobsRow": "{{id}} {{state}}: {{verb}} auf {{repo}}, gestartet {{startedAt}} von {{origin}}. Verfolgen: {{attach}}",
-        "runningJobsSection": "Jobs (laufend oder in der letzten Stunde beendet)"
+        "runningJobsSection": "Jobs (laufend oder in der letzten Stunde beendet)",
+        "verifyFailureSection": "Fehlgeschlagene Backup-Verifizierungen",
+        "verifyFailureWarning": "{{count}} Repository(s) haben ihre letzte Backup-Verifizierung nicht bestanden."
       },
       "gpu": {
         "descriptionShort": "GPUs und Geräte-Freigaben einer Maschine anzeigen",

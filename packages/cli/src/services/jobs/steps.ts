@@ -146,15 +146,20 @@ const DEFINITIONS: StepDefinition[] = [
   ),
   {
     // A failed restore drops the registration it made for the target (packages/cli/src/commands/backup.ts).
+    // A salvage that placed a damaged image also fails the job, but its image is on the machine: the
+    // registration stays, or the placed copy would be an orphan no verb can name.
     name: 'rollbackRestoreRegistration',
     on: 'failure',
+    needsOutput: true,
     params: ['repo'],
     load: async () => {
-      const [{ configService }, { compositeKey }] = await Promise.all([
+      const [{ configService }, { compositeKey }, { parseRestoreStats }] = await Promise.all([
         import('../config/config-resources.js'),
         import('../../utils/config-schema.js'),
+        import('../../commands/backup-storage-parser.js'),
       ]);
       return async (ctx) => {
+        if (parseRestoreStats(ctx.output)?.status === 'restored-damaged') return;
         await configService.removeRepository(compositeKey(str(ctx.params, 'repo'), 'latest'));
       };
     },
@@ -218,27 +223,79 @@ const DEFINITIONS: StepDefinition[] = [
     { name: 'reportRestoreStats', on: 'success', needsOutput: true, params: [] },
     () => import('../../commands/backup.js')
   ),
+  boundStep(
+    { name: 'reportRestoreDamage', on: 'failure', needsOutput: true, params: [] },
+    () => import('../../commands/backup.js')
+  ),
   {
     // The verdict is printed as structured data in every mode, as `backup verify` does today.
+    // A verdict that cannot be read is status `unknown`, never `verified`: the job exited 0, but nothing says what it proved.
     name: 'reportVerifyVerdict',
     on: 'success',
     needsOutput: true,
-    params: ['level'],
+    params: ['repo', 'level'],
     load: async () => {
-      const [{ parseVerifyVerdict }, { outputService }, { getOutputFormat }] = await Promise.all([
-        import('../../commands/backup-storage-parser.js'),
-        import('../core/output.js'),
-        import('../../utils/errors.js'),
-      ]);
+      const [{ parseVerifyVerdict }, { outputService }, { getOutputFormat }, { setExitCode }, { t }] =
+        await Promise.all([
+          import('../../commands/backup-storage-parser.js'),
+          import('../core/output.js'),
+          import('../../utils/errors.js'),
+          import('../core/request-context.js'),
+          import('../../i18n/index.js'),
+        ]);
       return (ctx) => {
-        const verdict = parseVerifyVerdict(ctx.output) ?? {
-          status: 'verified',
-          level: optStr(ctx.params, 'level'),
-        };
+        const parsed = parseVerifyVerdict(ctx.output);
+        const verdict = parsed ?? { status: 'unknown', level: optStr(ctx.params, 'level') };
         const format = getOutputFormat();
         outputService.print(verdict, format === 'table' ? 'json' : format);
+        if (!parsed) {
+          outputService.error(
+            t('commands.backup.verify.verdictUnreadable', {
+              name: optStr(ctx.params, 'repo') ?? ctx.machine,
+            })
+          );
+          setExitCode(1);
+        }
         return Promise.resolve();
       };
+    },
+  },
+  {
+    // Records the verdict's own status on a job that exited 0: an enumerated run with no backup is informational and must not read `verified`.
+    name: 'recordVerifyVerdict',
+    on: 'success',
+    needsOutput: true,
+    params: ['repo'],
+    load: async () => {
+      const [{ recordBackupRun }, { parseVerifyVerdict }] = await Promise.all([
+        import('../backup/backup-runs-state.js'),
+        import('../../commands/backup-storage-parser.js'),
+      ]);
+      return (ctx) =>
+        recordBackupRun(str(ctx.params, 'repo'), {
+          kind: 'verify',
+          status: parseVerifyVerdict(ctx.output)?.status ?? 'unknown',
+          lastRunAt: ctx.finishedAt,
+        });
+    },
+  },
+  {
+    // The failed counterpart: renet's verdict rides the output tail (`mismatch`, `failed`, `no-backup`), and a failed job with no readable verdict is `failed`.
+    name: 'recordVerifyVerdictFailed',
+    on: 'failure',
+    needsOutput: true,
+    params: ['repo'],
+    load: async () => {
+      const [{ recordBackupRun }, { parseVerifyVerdict }] = await Promise.all([
+        import('../backup/backup-runs-state.js'),
+        import('../../commands/backup-storage-parser.js'),
+      ]);
+      return (ctx) =>
+        recordBackupRun(str(ctx.params, 'repo'), {
+          kind: 'verify',
+          status: parseVerifyVerdict(ctx.output)?.status ?? STATUS_FAILED,
+          lastRunAt: ctx.finishedAt,
+        });
     },
   },
   boundStep(
