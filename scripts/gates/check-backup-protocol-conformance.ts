@@ -76,9 +76,10 @@ interface Leg {
   /**
    * A second proof for a leg only one caller makes: the pattern must appear, comments
    * dropped, in `file`, so a helper or a log string that merely holds the path cannot
-   * stand in for the code that sends the request.
+   * stand in for the code that sends the request. `within` narrows it to the body of that Go function, or of a
+   * function it defers, so a call in an unused helper does not count.
    */
-  callerCall?: { file: string; pattern: RegExp };
+  callerCall?: { file: string; pattern: RegExp; within?: string };
 }
 
 /** The protocol, declared once. Both sides are checked against THIS. */
@@ -194,8 +195,8 @@ const LEGS: Leg[] = [
     requestKeys: [],
     responseKeys: ['released'],
     clientCall: /"\/leases\/"\s*\+[^\n]*\+\s*"\/release"/,
-    // The request reaches the server through ReleaseLease, which RepairUpload calls on its way out.
-    callerCall: { file: REPAIR_GO, pattern: /\breleaser\.ReleaseLease\(/ },
+    // The request reaches the server through ReleaseLease, which RepairUpload defers on its way out.
+    callerCall: { file: REPAIR_GO, pattern: /\breleaser\.ReleaseLease\(/, within: 'RepairUpload' },
   },
 ];
 
@@ -369,7 +370,31 @@ function clientCalls(leg: Leg, client: string): boolean {
 /** Whether the leg's second proof is present: true when the leg declares none. */
 function callerCalls(leg: Leg, sources: Record<string, string>): boolean {
   if (!leg.callerCall) return true;
-  return leg.callerCall.pattern.test(stripGoComments(sources[leg.callerCall.file] ?? ''));
+  const source = stripGoComments(sources[leg.callerCall.file] ?? '');
+  const { pattern, within } = leg.callerCall;
+  if (within === undefined) return pattern.test(source);
+  const body = goFuncBody(source, within);
+  if (body === null) return false;
+  if (pattern.test(body)) return true;
+  for (const m of body.matchAll(/\bdefer\s+([A-Za-z_]\w*)\(/g)) {
+    const deferred = goFuncBody(source, m[1]);
+    if (deferred !== null && pattern.test(deferred)) return true;
+  }
+  return false;
+}
+
+/** The text between the braces of a top-level Go function (or method) by name, or null when it is not defined. */
+function goFuncBody(source: string, name: string): string | null {
+  const head = new RegExp(`^func\\s+(?:\\([^)]*\\)\\s*)?${name}\\(`, 'm').exec(source);
+  if (!head) return null;
+  const open = source.indexOf('{', head.index);
+  if (open === -1) return null;
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === '{') depth++;
+    else if (source[i] === '}' && --depth === 0) return source.slice(open + 1, i);
+  }
+  return null;
 }
 
 function checkLegs(
@@ -604,7 +629,8 @@ if (!releaseLeg?.clientCall || !releaseLeg.callerCall) {
   process.exit(1);
 }
 const releaseSend = 'c.endpoint("/leases/"+url.PathEscape(snapshotID)+"/release")';
-const releaseCaller = 'released, err := releaser.ReleaseLease(ctx, snapshotID)';
+const releaseCaller =
+  'func RepairUpload() {\n\tdefer release()\n}\nfunc release() {\n\treleased, err := releaser.ReleaseLease(ctx, snapshotID)\n}';
 const releaseSources = (text: string) => ({ [releaseLeg.callerCall?.file ?? '']: text });
 if (
   !clientCalls(releaseLeg, releaseSend) ||
@@ -614,10 +640,12 @@ if (
   process.exit(1);
 }
 for (const decoy of [
-  `// ${releaseCaller}`,
+  `// ${releaseCaller}`.replace(/\n/g, '\n// '),
   'log.Printf("ReleaseLease failed")',
   'func (c *X) ReleaseLease(ctx context.Context) {}',
   'releaseLease(ctx, snapshotID)',
+  // The call sits in a helper RepairUpload neither calls directly nor defers.
+  'func RepairUpload() {\n\tdefer other()\n}\nfunc unused() {\n\treleaser.ReleaseLease(ctx, id)\n}',
 ]) {
   if (callerCalls(releaseLeg, releaseSources(decoy))) {
     console.error(`✗ release-leg control did not fire: ${decoy} counted as the call.`);

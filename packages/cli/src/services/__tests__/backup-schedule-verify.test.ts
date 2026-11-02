@@ -253,8 +253,15 @@ describe('cronMaxGapSeconds', () => {
     ['0 3 * * 1', 604800],
     ['0 3 * * 1-5', 259200],
     ['0 3 1 * *', 31 * 86400],
+    // Jan 1 to Jul 1 is 182 days in 2024, but Jul 1 to the next Jan 1 is 184.
+    ['0 3 1 1,7 *', 184 * 86400],
   ])('%s has a longest gap of %i seconds', (cron, seconds) => {
     expect(cronMaxGapSeconds(cron)).toBe(seconds);
+  });
+
+  it('a day-of-month that starts with a star is unrestricted, so the day-of-week still narrows it', () => {
+    // Treated as restricted, `*/2` OR Monday would fire at least every second day.
+    expect(cronMaxGapSeconds('0 3 */2 * 1')).toBeGreaterThanOrEqual(7 * 86400);
   });
 
   it('is independent of the clock, since the unit text is hashed', () => {

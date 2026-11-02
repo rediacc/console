@@ -57,6 +57,12 @@ vi.mock('../telemetry/telemetry.js', () => ({
 function createSharedSftp() {
   const exec = vi.fn((command: string) => {
     if (command.includes('luksUUID')) return Promise.resolve('luks-uuid-0001\n');
+    if (command.includes('license-scan'))
+      return Promise.resolve(
+        JSON.stringify([
+          { repositoryGuid: REPO_GUID, luksUuid: 'luks-uuid-0001', requestedSizeGb: 5 },
+        ])
+      );
     if (command.includes('machine-id')) return Promise.resolve(`${MACHINE_ID}\n`);
     return Promise.resolve('');
   });
@@ -80,6 +86,12 @@ describe('license sharedSftp plumb-through', () => {
     vi.clearAllMocks();
     mockExec.mockImplementation((command: string) => {
       if (command.includes('luksUUID')) return Promise.resolve('luks-uuid-0001\n');
+      if (command.includes('license-scan'))
+        return Promise.resolve(
+          JSON.stringify([
+            { repositoryGuid: REPO_GUID, luksUuid: 'luks-uuid-0001', requestedSizeGb: 5 },
+          ])
+        );
       if (command.includes('machine-id')) return Promise.resolve(`${MACHINE_ID}\n`);
       return Promise.resolve('');
     });
@@ -151,7 +163,7 @@ describe('license sharedSftp plumb-through', () => {
       });
     });
 
-    it("falls back to the caller's identity when the scan cannot answer", async () => {
+    it("falls back to the caller's identity when the scan lists the repo with no datastore", async () => {
       const { sftp, spies } = createSharedSftp();
 
       const result = await refreshRepoLicenseIdentity(
@@ -248,6 +260,35 @@ describe('license sharedSftp plumb-through', () => {
       const said = warn.mock.calls.map((c) => String(c[0])).join('\n');
       expect(said).toContain(REPO_GUID);
       expect(said).toMatch(/header|identity/i);
+      warn.mockRestore();
+    });
+  });
+
+  describe('a scan that throws', () => {
+    it('refuses the reissue like a scan with no entry, and asks the account for nothing', async () => {
+      const { sftp, spies } = createSharedSftp();
+      spies.exec.mockImplementation((command: string) => {
+        if (command.includes('machine-id')) return Promise.resolve(`${MACHINE_ID}\n`);
+        if (command.includes('license-scan')) return Promise.resolve('not json');
+        return Promise.resolve('');
+      });
+      const { outputService } = await import('../core/output.js');
+      const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
+
+      const result = await refreshRepoLicenseIdentity(
+        machine,
+        'dummy-key',
+        { repositoryGuid: REPO_GUID, kind: 'grand', requestedSizeGb: 5 },
+        '/usr/bin/renet',
+        sftp
+      );
+
+      expect(result).toBe(false);
+      expect(mockAccountServerFetch).not.toHaveBeenCalled();
+      expect(spies.execStreaming).not.toHaveBeenCalled();
+      const said = warn.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(said).toContain(REPO_GUID);
+      expect(said).toContain('license scan itself failed');
       warn.mockRestore();
     });
   });

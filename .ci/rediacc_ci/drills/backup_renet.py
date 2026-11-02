@@ -61,10 +61,13 @@ def swap_image_command(datastore: str, guid: str) -> str:
 
 def unswap_image_command(datastore: str, guid: str) -> str:
     image = "%s/repositories/%s" % (datastore, guid)
-    return "sudo -n sh -c 'mv -f %(image)s%(aside)s %(image)s'" % {
-        "image": image,
-        "aside": IMAGE_ASIDE,
-    }
+    return (
+        "sudo -n sh -c 'if [ -e %(image)s%(aside)s ]; then mv -f %(image)s%(aside)s %(image)s; fi'"
+        % {
+            "image": image,
+            "aside": IMAGE_ASIDE,
+        }
+    )
 
 
 def journal_aside_command(guid: str) -> str:
@@ -261,8 +264,9 @@ class RenetLegs:
     def leg_p(self) -> None:
         d, r = self.d, self.rt
         d.step("Leg p (renet): a swapped image and a wrong passphrase, on real renet")
-        r.run_vm(swap_image_command(r.datastore, self.src))
         try:
+            # Inside the try: a swap that fails after its mv leaves the original at the aside name, and only the finally puts it back.
+            r.run_vm(swap_image_command(r.datastore, self.src))
             self.refused_swap("journal-anchor", "a replaced image")
             # The server's previous row is what survives a lost journal; without it this run would be a new baseline.
             r.run_vm(journal_aside_command(self.src))

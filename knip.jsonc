@@ -230,8 +230,6 @@
     "workers/proxy": {
       "project": [
         "src/**/*.ts"
-      ],
-      "ignoreDependencies": [
       ]
     },
     "workers/www": {

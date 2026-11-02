@@ -29,6 +29,7 @@ import hashlib
 import http.client
 import http.server
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -431,6 +432,11 @@ class OnPrem:
             "True",
             str("duplicate PUT 412" in preflight_line(self.log_text())),
             "and its line names the 412",
+        )
+        d.assert_equal(
+            "True",
+            str(re.search(r"wrong checksum 4\d\d\b", preflight_line(self.log_text())) is not None),
+            "and its line names the refused checksum",
         )
 
     def fake_store_row(self, enforce_checksum: bool, want: str, desc: str) -> None:

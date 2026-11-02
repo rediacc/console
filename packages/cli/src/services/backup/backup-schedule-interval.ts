@@ -106,8 +106,9 @@ export function cronMaxGapSeconds(cron: string): number {
     months: expandField(monF, { min: 1, max: 12, names: MONTH_NAMES, nameBase: 1 }),
     doms: expandField(domF, { min: 1, max: 31 }),
     dows: new Set([...expandField(dowF, { min: 0, max: 7, names: DOW_NAMES })].map((d) => d % 7)),
-    domRestricted: domF !== '*',
-    dowRestricted: dowF !== '*',
+    // Vixie cron: a field that starts with a star (`*`, `*/2`) is unrestricted for the day-of-month/day-of-week rule.
+    domRestricted: !domF.startsWith('*'),
+    dowRestricted: !dowF.startsWith('*'),
   };
 
   return longestGap(fireTimes(rule, hours, minutes));
@@ -125,7 +126,8 @@ function fireTimes(rule: DayRule, hours: number[], minutes: number[]): number[] 
 
 function longestGap(times: number[]): number {
   if (times.length < 2) return REFERENCE_DAYS * DAY;
-  let longest = 0;
+  // The year repeats, so the last firing is followed by the first one of the next year.
+  let longest = times[0] + REFERENCE_DAYS * DAY - times[times.length - 1];
   for (let i = 1; i < times.length; i++) longest = Math.max(longest, times[i] - times[i - 1]);
   return longest;
 }

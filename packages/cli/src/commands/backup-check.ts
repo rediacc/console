@@ -26,9 +26,9 @@ import { getOutputFormat, handleError, ValidationError } from '../utils/errors.j
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { shellQuote } from '../utils/shell-quote.js';
+import type { BackupManifestsResponse } from './backup-storage.js';
 import { lineageOf, RENET_NO_LISTING_EXIT } from './backup-storage-browse.js';
 import { type BrowseListing, parseBrowseResult } from './backup-storage-parser.js';
-import type { BackupManifestsResponse } from './backup-storage.js';
 import { postVerification, type VerificationAnswer } from './backup-verification.js';
 
 /** The document the verb prints. */
@@ -90,16 +90,18 @@ async function removeScratch(
       `backup check refuses to delete "${scratch}": it is not its own scratch directory`
     );
   }
-  const lease = await machineConnections.acquire(machineName);
+  let lease: Awaited<ReturnType<typeof machineConnections.acquire>> | undefined;
   try {
+    lease = await machineConnections.acquire(machineName);
     await lease.sftp.exec(`sudo rm -rf -- ${shellQuote(scratch)}`);
   } catch {
+    // A cleanup that cannot connect must not swallow the verdict of the restore that already ran.
     outputService.warn(
       t('commands.backup.check.scratchLeft', { path: scratch, machine: machineName })
     );
     setExitCode(1);
   } finally {
-    lease.release();
+    lease?.release();
   }
 }
 
@@ -119,6 +121,7 @@ async function newestSnapshot(
 const REASON_NO_INDEX = 'no stored listing';
 const REASON_BROWSE_FAILED = 'the listing could not be opened with the passphrase';
 const REASON_RESTORE_FAILED = 'the file could not be restored';
+const REASON_NO_BYTE_COUNT = 'the restore succeeded but reported no byte count to compare';
 
 interface CheckTarget {
   repoKey: string;
@@ -126,6 +129,7 @@ interface CheckTarget {
   lineage: string;
   snapshotId: string;
   hasIndex: boolean;
+  /** Resolved after the no-index exits, so a snapshot with no listing never depends on the lookup. */
   datastore: string | undefined;
   debug: boolean | undefined;
 }
@@ -148,7 +152,7 @@ async function resolveTarget(repoRef: string, debug: boolean | undefined): Promi
     lineage,
     snapshotId: snapshot.snapshotId,
     hasIndex: snapshot.hasIndex !== false,
-    datastore: await recordedDatastoreMount(repoKey),
+    datastore: undefined,
     debug,
   };
 }
@@ -218,7 +222,9 @@ async function restoreOneFile(
       probe: true,
     });
     if (!restored.success) return { error: restored.error ?? REASON_RESTORE_FAILED };
-    return { written: parseBytesWritten(restored.stdout) };
+    const written = parseBytesWritten(restored.stdout);
+    if (written === undefined || Number.isNaN(written)) return { error: REASON_NO_BYTE_COUNT };
+    return { written };
   } finally {
     await removeScratch(target.machineName, machineDatastore, scratch);
   }
@@ -280,6 +286,7 @@ async function runBackupCheck(
     return { repo: repoKey, snapshotId, status: 'no-index', reason: REASON_NO_INDEX };
   };
   if (!target.hasIndex) return noIndex();
+  target.datastore = await recordedDatastoreMount(repoKey);
 
   const wantedPath = options.path === undefined ? undefined : normalizePath(options.path);
   const browsed = await browseSnapshot(target, wantedPath ?? '');

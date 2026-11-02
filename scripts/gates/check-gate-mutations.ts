@@ -13,7 +13,7 @@
  * stopped honouring keepWeekly, and a `policy.keepLast` match that survived disabling the
  * slice). Each was found by hand. This gate makes the hand check a standing one.
  *
- * WHAT A REGISTRY ENTRY IS. One per gate: the files the gate reads, and an exact
+ * WHAT A REGISTRY ENTRY IS. One per defect (a gate may have several): the files the gate reads, and an exact
  * find/replace in ONE of them that re-creates the gate's headline defect. Three gate runs
  * (1-3) and one check of the mutant's output (4) decide the verdict, and only one
  * combination is a pass:
@@ -130,6 +130,21 @@ export const REGISTRY: GateMutation[] = [
     defect: 'the /exists client decodes `missing` again, so a nil list reads as "upload nothing"',
   },
   {
+    gate: 'check:ci-backup-protocol-conformance',
+    leaf: 'scripts/gates/check-backup-protocol-conformance.ts',
+    inputs: [
+      'private/account/src/routes/backups.ts',
+      'private/account/src/dto/backup.dto.ts',
+      'private/renet/pkg/chunkstore/session.go',
+      'private/renet/pkg/chunkstore/repair.go',
+    ],
+    file: 'private/renet/pkg/chunkstore/repair.go',
+    find: 'released, err := releaser.ReleaseLease(ctx, snapshotID)',
+    replace: 'released, err := true, error(nil)',
+    expect: 'no longer calls',
+    defect: "a repair stops sending the lease release, so the lineage's GC stays suspended until the TTL",
+  },
+  {
     gate: 'check:ci-backup-manifest-shape-parity',
     leaf: 'scripts/gates/check-backup-manifest-shape-parity.ts',
     inputs: [
@@ -215,8 +230,10 @@ export function registryProblems(registry: GateMutation[], lock: LockEntry[]): s
     out.push('VACUOUS: the registry is empty, so this gate would verify nothing');
   const seen = new Set<string>();
   for (const m of registry) {
-    if (seen.has(m.gate)) out.push(`${m.gate}: registered twice`);
-    seen.add(m.gate);
+    // A gate may carry several mutants, one per defect it must see; the same edit twice is the duplicate.
+    const key = `${m.gate}\0${m.file}\0${m.find}`;
+    if (seen.has(key)) out.push(`${m.gate}: registered twice`);
+    seen.add(key);
     const entry = lock.find((e) => e.id === m.gate);
     if (!entry) {
       out.push(

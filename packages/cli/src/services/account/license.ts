@@ -215,14 +215,16 @@ async function readRepoLicenseInputs(
   datastorePath?: string;
   requestedSizeGb?: number;
 }> {
-  let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>> | undefined;
+  let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>>;
   try {
     scanned = await scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath);
-  } catch {
-    // An older renet, or a scan that cannot read a datastore, must not stop a
-    // reissue: an unproven license still beats no license.
+  } catch (error) {
+    // A scan that throws proves no identity either: issuing from here would bind the licence to nothing, so it refuses on the same path as a scan with no entry.
+    throw new RepoIdentityUnreadableError(
+      repositoryGuid,
+      error instanceof Error ? error.message : String(error)
+    );
   }
-  if (!scanned) return {};
   const entry = scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
   if (!entry) {
     // The scan answered and this repository is not in it. renet's scan is fail-closed: an image whose LUKS header cannot be read gets no entry rather than a fingerprint minted in place of its UUID. Issuing from here would bind the licence to no identity at all, so refuse.
@@ -238,11 +240,15 @@ async function readRepoLicenseInputs(
   };
 }
 
-/** The machine's license scan answered but did not list this repository, so its identity cannot be read. */
+/** The machine's license scan failed, or answered without this repository, so its identity cannot be read. */
 class RepoIdentityUnreadableError extends Error {
-  constructor(readonly repositoryGuid: string) {
+  constructor(
+    readonly repositoryGuid: string,
+    scanFailure?: string
+  ) {
     super(
-      `Repository ${repositoryGuid} was not issued a license: the machine could not read its LUKS header, so the identity to bind the license to is unknown (an unbound license would be accepted for any image). Check the image with "rdc machine status" and "renet repository license-scan" on the machine.`
+      `Repository ${repositoryGuid} was not issued a license: the machine could not read its LUKS header, so the identity to bind the license to is unknown (an unbound license would be accepted for any image). Check the image with "rdc machine status" and "renet repository license-scan" on the machine.` +
+        (scanFailure === undefined ? '' : ` The license scan itself failed: ${scanFailure}`)
     );
     this.name = 'RepoIdentityUnreadableError';
   }
@@ -260,9 +266,10 @@ export function refreshRepoLicenseIdentity(
      * The datastore identity the CALLER already resolved (the placement it just
      * provisioned into). A fallback, not an override: the scan below is the
      * better answer because it reads the repo's actual home. It matters when
-     * the scan cannot answer at all, an older renet, or a datastore it failed
-     * to read, where dropping to no identity would write the reissue to the
-     * unscoped path that renet does not read for a datastore-resident repo.
+     * the scan lists the repo without a datastore identity, where dropping to
+     * none would write the reissue to the unscoped path that renet does not
+     * read for a datastore-resident repo. A scan that fails or omits the repo
+     * refuses the reissue before this is read.
      */
     datastoreId?: string;
     /**

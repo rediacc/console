@@ -142,6 +142,8 @@ def _norm(text: str) -> str:
     text = re.sub(r"\x1b\[[0-9;]*m", "", text)
     text = re.sub(r"/[^\s]*rediacc-drill-[A-Za-z0-9_-]+", "<WORK>", text)
     text = re.sub(r"\(\d+s\)", "(Ns)", text)
+    # The local bucket is renamed on purpose: the twin named the drill's RustFS bucket like production, the port marks it disposable (`backup.LOCAL_BUCKET`).
+    text = text.replace(backup.LOCAL_BUCKET, "rediacc-backups")
     # The tools line differs on purpose (Rule T 1/2: the port needs neither curl nor node).
     text = re.sub(r"   curl [^\n]*\n", "   <TOOLS>\n", text)
     # `--seed-repo` is a port-only flag (Rule T 7), so the usage line the bash twin prints lacks it.
@@ -639,7 +641,7 @@ def test_delta_the_gateway_does_not_inherit_the_sandbox_and_the_store_env_reache
         assert "REDIACC_CONFIG" not in gateway
         assert cli["REDIACC_CONFIG"] == "drill-backup"
         assert gateway["BWS_ACCESS_TOKEN"] == MARKER
-        assert gateway["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups"
+        assert gateway["ACCOUNT_BACKUP_S3_BUCKET"] == backup.LOCAL_BUCKET
         assert gateway["BACKUP_MAINTENANCE_INTERVAL_MS"] == "0"
         assert "ACCOUNT_BACKUP_S3_BUCKET" not in cli
     finally:
@@ -1552,3 +1554,9 @@ def test_the_port_still_lists_legs_n_and_o() -> None:
     """Review dfc10e27.1: the differential strips n and o from the port's lists, so this pins that the port really prints them."""
     assert backup.DEFAULT_LEGS.endswith(",m,n,o,p,q,r,s")
     assert backup.KNOWN_LEGS[-7:] == ["m", "n", "o", "p", "q", "r", "s"]
+
+
+def test_the_local_bucket_default_is_marked_disposable() -> None:
+    assert backup.LOCAL_BUCKET != "rediacc-backups"
+    assert re.search(r"(probe|test|scratch|bench)", backup.LOCAL_BUCKET)
+    assert backup.Options().bucket == backup.LOCAL_BUCKET

@@ -74,6 +74,8 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
   },
 }));
 
+import { machineConnections } from '../../services/machine/machine-connection.js';
+import { recordedDatastoreMount } from '../../utils/repo-executor.js';
 import { registerBackupCheck } from '../backup-check.js';
 
 const SNAP = '20261101T030000Z-0011223344556677';
@@ -319,5 +321,49 @@ describe('backup check', () => {
     expect(calls().some((c) => c.functionName === 'backup_restore_path')).toBe(false);
     expect(verificationPosts()).toHaveLength(0);
     expect(mocks.setExitCode).toHaveBeenCalledWith(1);
+  });
+
+  it('a snapshot with no index never depends on the datastore lookup', async () => {
+    vi.mocked(recordedDatastoreMount).mockRejectedValue(new Error('lookup down'));
+    mocks.fetch.mockResolvedValue({
+      manifests: [
+        {
+          snapshotId: SNAP,
+          lineageGuid: 'lineage-1',
+          createdAt: '2026-11-01T03:00:00Z',
+          hasIndex: false,
+        },
+      ],
+    });
+    try {
+      await run(['check', 'shop']);
+    } finally {
+      vi.mocked(recordedDatastoreMount).mockResolvedValue(undefined);
+    }
+    expect(printed()).toMatchObject({ status: 'no-index' });
+  });
+
+  it('a good restore whose scratch cleanup cannot connect still posts the verdict', async () => {
+    const acquire = vi.mocked(machineConnections.acquire);
+    const lease = await acquire('m1');
+    acquire.mockResolvedValueOnce(lease);
+    acquire.mockRejectedValueOnce(new Error('ssh down'));
+    await run(['check', 'shop']);
+    expect(verificationPosts()).toHaveLength(1);
+    expect(printed()).toMatchObject({ status: 'proven' });
+    expect(mocks.warn.mock.calls.map((c) => String(c[0])).join('\n')).toContain(
+      'commands.backup.check.scratchLeft'
+    );
+    expect(mocks.setExitCode).toHaveBeenCalledWith(1);
+  });
+
+  it('a restore that succeeds without a byte count says so, not that the restore failed', async () => {
+    script({ restore: { success: true, stdout: 'restored' } });
+    await run(['check', 'shop']);
+    expect(printed()).toMatchObject({
+      status: 'failed',
+      reason: 'the restore succeeded but reported no byte count to compare',
+    });
+    expect(verificationPosts()).toHaveLength(0);
   });
 });

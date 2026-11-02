@@ -293,6 +293,10 @@ class BackupDrill(lib.Drill):
         return env
 
 
+# The local RustFS bucket: named like a disposable one (probe), never the production name, because the drill writes and deletes in it.
+LOCAL_BUCKET = "rediacc-backups-drill-probe"
+
+
 class Options:
     def __init__(self) -> None:
         self.restart_gateway = True
@@ -311,7 +315,7 @@ class Options:
         self.rustfs_port = os.environ.get("RUSTFS_PORT") or "9100"
         self.rustfs_key = os.environ.get("CONFIG_R2_ACCESS_KEY_ID") or "configadmin"
         self.rustfs_secret = os.environ.get("CONFIG_R2_SECRET_ACCESS_KEY") or "configadmin"
-        self.bucket = os.environ.get("BACKUP_BUCKET_NAME") or "rediacc-backups"
+        self.bucket = os.environ.get("BACKUP_BUCKET_NAME") or LOCAL_BUCKET
 
     def leg_set(self) -> list[str]:
         return self.legs.split(",")
