@@ -953,7 +953,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
 | .ci/rediacc_ci/tests | 474 | .py 474 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
-| .ci/rediacc_ci/tests/fixtures | 1 | .json 1 |
+| .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |

@@ -590,7 +590,12 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
             return 1
         # A stub left behind would point at nothing, which F5 refuses.
         stub = "agent/plans/" + plan.rel.rsplit("/", 1)[-1]
-        if stub != plan.rel and (root / stub).is_file():
+        stub_path = root / stub
+        if (
+            stub != plan.rel
+            and stub_path.is_file()
+            and PL.looks_like_stub(stub_path.read_text(encoding="utf-8"))
+        ):
             result = gitx.git(["rm", "-q", "--", stub], root=root)
             if not result.ok:
                 print("✗ git rm %s failed: %s" % (stub, result.stderr.strip()), file=sys.stderr)

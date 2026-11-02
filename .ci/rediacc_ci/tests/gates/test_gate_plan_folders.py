@@ -802,6 +802,34 @@ def _stale_pair(tmp_path: pathlib.Path) -> pathlib.Path:
     return root
 
 
+def _swept_with(root_file, gate, tmp_path):
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/_done/PLAN-gone.md": "# PLAN: gone\nStatus: done\nFirst-Seen: 2024-01-01\n",
+            "agent/plans/PLAN-gone.md": root_file,
+        },
+    )
+    _ledger(root, {"agent/plans/_done/PLAN-gone.md": {"moved_at": "2024-02-01"}})
+    gate.assert_exit(0, _gate(root, "--sweep", "--write"), "the sweep runs")
+    return root / "agent/plans/PLAN-gone.md"
+
+
+def test_sweep_write_removes_the_stub_of_the_plan_it_deletes(gate, tmp_path):
+    stub = (
+        "# PLAN: gone (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-gone.md\n\n"
+        "This plan moved to `agent/plans/_done/PLAN-gone.md`.\n"
+    )
+    gate.assert_eq(_swept_with(stub, gate, tmp_path).exists(), False, "a stub to nothing fails F5")
+    gate.log_pass("the sweep takes the stub with the plan")
+
+
+def test_sweep_write_keeps_a_live_plan_that_shares_the_basename(gate, tmp_path):
+    live = "# PLAN: live\nStatus: approved\nFirst-Seen: 2026-11-01\n\n- [ ] A1: work\n"
+    gate.assert_eq(_swept_with(live, gate, tmp_path).exists(), True, "a live plan is not a stub")
+    gate.log_pass("the sweep never deletes a live plan by its basename")
+
+
 def test_sweep_write_keeps_a_stale_backlog_plan_and_asks_the_operator(gate, tmp_path):
     root = _stale_pair(tmp_path)
     result = _gate(root, "--sweep", "--write")

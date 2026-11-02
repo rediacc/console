@@ -1,0 +1,206 @@
+{
+  "$comment": "Known answers for CellsRoot, written by an implementation independent of the Go and TypeScript ones. A cell is the lowercase hex of its hash, or empty for a zero cell; a leaf takes the 32 raw hash bytes. An empty tree is SHA-256 of the empty string, as in RFC 6962.",
+  "vectors": [
+    {
+      "name": "empty image",
+      "cellBytes": 4096,
+      "imageBytes": 0,
+      "cells": [],
+      "root": "8d742bcb1f6a36141e3afb7dac3d2cefa103958ef0944604482cd1602dc9aba0"
+    },
+    {
+      "name": "one cell",
+      "cellBytes": 4096,
+      "imageBytes": 4096,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a"
+      ],
+      "root": "c5287d2050eefb7105a7e5886d0af236039f17fa191172c68dc6e313dfec642c"
+    },
+    {
+      "name": "one zero cell",
+      "cellBytes": 4096,
+      "imageBytes": 4096,
+      "cells": [
+        ""
+      ],
+      "root": "5be39893f598a7a87b72e5d6ea0a69b9310990d25c69432e7c910b42096d0754"
+    },
+    {
+      "name": "two cells",
+      "cellBytes": 4096,
+      "imageBytes": 8192,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986"
+      ],
+      "root": "b19a3b8aada2f98835e96fbae66695e54f8ecda62b81129bb03687dcea58ce2c"
+    },
+    {
+      "name": "two cells swapped",
+      "cellBytes": 4096,
+      "imageBytes": 8192,
+      "cells": [
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a"
+      ],
+      "root": "ab93b46701d9e3c6202c960017eb19d9d0131a1f1f4b4eb86611dc85c94b9eb5"
+    },
+    {
+      "name": "three cells, zero in the middle",
+      "cellBytes": 4096,
+      "imageBytes": 12288,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5"
+      ],
+      "root": "e318d2acb84ae5f037214233ca0d62331689d605209319653210345af227e2b5"
+    },
+    {
+      "name": "short tail",
+      "cellBytes": 4096,
+      "imageBytes": 13312,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71"
+      ],
+      "root": "c7dfef3bbece04d53f092cb957e3809e132c27419bac9ae1522bf491b3d6e1e0"
+    },
+    {
+      "name": "five cells, RFC 6962 split",
+      "cellBytes": 4096,
+      "imageBytes": 20480,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db"
+      ],
+      "root": "288e8dc48d0ac8851fd0622c590456ca79d339d0801ccd44b77043be01921457"
+    },
+    {
+      "name": "seven cells",
+      "cellBytes": 4194304,
+      "imageBytes": 29360128,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "ca358758f6d27e6cf45272937977a748fd88391db679ceda7dc7bf1f005ee879"
+      ],
+      "root": "b2c3401bec9aa91f632ee40f4778d65d61719e389d0cd5fb58fe6132153aea0d"
+    },
+    {
+      "name": "eight cells, a power of two",
+      "cellBytes": 4194304,
+      "imageBytes": 33554432,
+      "cells": [
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "ca358758f6d27e6cf45272937977a748fd88391db679ceda7dc7bf1f005ee879",
+        "beead77994cf573341ec17b58bbf7eb34d2711c993c1d976b128b3188dc1829a"
+      ],
+      "root": "a6ae1447658e813e914fb3fa5c5ea68939e9d0219a1d3dffdf81763e921f886b"
+    },
+    {
+      "name": "nine cells, all zero but one",
+      "cellBytes": 4096,
+      "imageBytes": 36864,
+      "cells": [
+        "",
+        "",
+        "",
+        "",
+        "2b4c342f5433ebe591a1da77e013d1b72475562d48578dca8b84bac6651c3cb9",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "root": "59eb12e6ba5b6cb560c0a38cd1a09d5b8b49b262b6533d1f407031eae9d19f92"
+    },
+    {
+      "name": "sixty-four cells, repeats and zeros",
+      "cellBytes": 65536,
+      "imageBytes": 4193792,
+      "cells": [
+        "",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+        "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+        "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+        "",
+        "e77b9a9ae9e30b0dbdb6f510a264ef9de781501d7b6b92ae89eb059c5ab743db",
+        "67586e98fad27da0b9968bc039a1ef34c939b9b8e523a8bef89d478608c5ecf6",
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+      ],
+      "root": "8d8c7809669b2a82ba2322ed30d7abadda031365209add31a10f7cce43d47acd"
+    }
+  ]
+}

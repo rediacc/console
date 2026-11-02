@@ -6,6 +6,7 @@ import base64
 import hashlib
 import http.client
 import json
+import os
 import pathlib
 import subprocess
 import threading
@@ -18,9 +19,8 @@ from rediacc_ci.drills import backup_onprem as onprem
 from rediacc_ci.drills import backup_renet as renet
 
 ROOT = pathlib.Path(__file__).resolve()
-VECTORS = pathlib.Path(
-    "/home/developer/console/private/renet/pkg/chunkstore/testdata/cells_root_vectors.json"
-)
+# A copy of private/renet/pkg/chunkstore/testdata/cells_root_vectors.json, since the pytest lane may run with no submodule.
+VECTORS = ROOT.parent / "fixtures" / "cells_root_vectors.json"
 
 
 def test_the_drill_root_gives_every_known_answer() -> None:
@@ -156,20 +156,28 @@ def test_the_journal_commands_move_it_aside_and_back(
     assert journal.exists()
 
 
-def test_the_swap_commands_replace_the_image_and_put_it_back(tmp_path: pathlib.Path) -> None:
-    ds = tmp_path
-    (ds / "repositories").mkdir()
+def test_the_swap_commands_replace_the_image_and_put_it_back(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ds = tmp_path / "ds"
+    (ds / "repositories").mkdir(parents=True)
     image = ds / "repositories" / "guid"
     image.write_bytes(b"original")
+    # The swap really runs: only the format step is a stand-in, because this host may have no privilege for it.
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    fake = bin_dir / "cryptsetup"
+    fake.write_text('#!/bin/sh\ncat >/dev/null\nprintf formatted > "$(eval echo \\${$#})"\n')
+    fake.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (bin_dir, os.environ["PATH"]))
     swap = renet.swap_image_command(str(ds), "guid")
     assert "luksFormat" in swap
-    assert (
-        subprocess.run(["sh", "-n", "-c", swap.replace("sudo -n ", "")], check=False).returncode
-        == 0
-    )
+    subprocess.run(["/bin/sh", "-c", swap.replace("sudo -n ", "")], check=True)
+    assert image.read_bytes() == b"formatted"
+    assert (ds / "repositories" / ("guid" + renet.IMAGE_ASIDE)).read_bytes() == b"original"
     subprocess.run(
         ["/bin/sh", "-c", renet.unswap_image_command(str(ds), "guid").replace("sudo -n ", "")],
-        check=False,
+        check=True,
     )
     assert image.read_bytes() == b"original"
 
