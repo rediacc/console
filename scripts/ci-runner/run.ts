@@ -2792,7 +2792,14 @@ async function selftest(): Promise<number> {
       })
     );
     const known = new Set(['g:plan', 'g:tree']);
-    const whole = { schema: SCHEMA, whole: true, headTree: 'T0', advances: [] as Advance[] };
+    const whole = {
+      schema: SCHEMA,
+      whole: true,
+      headTree: 'T0',
+      exitCode: 0,
+      failed: [] as string[],
+      advances: [] as Advance[],
+    };
     const at =
       (paths: string[]) =>
       (from: string, to: string): string[] | undefined =>
@@ -2846,6 +2853,11 @@ async function selftest(): Promise<number> {
         plan({ ...whole, headTree: '' }, ['agent/reviews/x.md']).kind === 'full' &&
         plan(undefined, ['agent/reviews/x.md']).kind === 'full',
       'a narrowed receipt, a receipt naming no tree, and no receipt must each run the whole lane'
+    );
+    require_(
+      plan({ ...whole, exitCode: 1, failed: ['g'] }, ['agent/reviews/x.md']).kind === 'full' &&
+        plan({ ...whole, failed: ['g'] }, ['agent/reviews/x.md']).kind === 'full',
+      'a red receipt must run the lane again, since an advance could only keep it red'
     );
     require_(
       planAdvance({ receipt: whole, headTree: 'T0', policy, diff: at([]), known }).kind === 'full',
@@ -4204,7 +4216,7 @@ type AdvancePlan =
   | { kind: 'full'; why: string };
 
 /**
- * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, and every path that moved lies inside the record set. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole, green and names a tree, HEAD has moved from the end of its chain, and every path that moved lies inside the record set. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
  */
 function planAdvance(input: {
   receipt: unknown;
@@ -4220,6 +4232,8 @@ function planAdvance(input: {
     return { kind: 'full', why: `the receipt is not schema ${SCHEMA}; a whole run writes one` };
   if (typeof r.headTree !== 'string' || r.headTree === '')
     return { kind: 'full', why: 'the receipt vouches for no tree' };
+  if (r.exitCode !== 0 || (r.failed ?? []).length > 0)
+    return { kind: 'full', why: 'the receipt is red, and an advance could only keep it red' };
   const chain = Array.isArray(r.advances) ? r.advances : [];
   const from = chain.length > 0 ? chain[chain.length - 1].to : r.headTree;
   if (input.headTree === '') return { kind: 'full', why: 'HEAD^{tree} is unreadable' };
