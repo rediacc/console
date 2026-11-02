@@ -430,68 +430,81 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### Q: account storage, routes and schema (writer Q)
 
-- [ ] Q1: Migration 0074 and schema per D-wire, with new tables in the scope registry.
+- [x] Q1: Migration 0074 and schema per D-wire, with new tables in the scope registry.
   - Owns: private/account/drizzle/0074_backup_critical_tier.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/tests/integration/backup-critical-schema.test.ts
   - Test: applies every migration and asserts columns and defaults on rows inserted before 0074.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-schema.test.ts && npm run typecheck` rc 0, and `npm run check:ci-account-scope-audit` rc 0 from the console root. The clone check runs in CD; Y3 records it.
-- [ ] Q2: Grants, exists and commit per D-exists and D-ledger: `baseSnapshotId` and `streamId`, sample with no pin, a pending row, waiting rows returned to live in the commit's batch, HEADs of unuploaded delta hashes, `consistency`, and `indexSkipped` read by the sibling's flip detection.
+    (ticked) 2026-11-02T08:35:08Z by 45048a90: commit:private/account d2d3f20 and 7fccc1b. npx vitest run rc=0, 3470 tests, rerun by the lead; each new test recorded rc 1 first, apart from the guards named in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] Q2: Grants, exists and commit per D-exists and D-ledger: `baseSnapshotId` and `streamId`, sample with no pin, a pending row, waiting rows returned to live in the commit's batch, HEADs of unuploaded delta hashes, `consistency`, and `indexSkipped` read by the sibling's flip detection.
   - Owns: private/account/src/dto/backup.dto.ts, private/account/src/errors.ts, private/account/src/services/backup-storage.service.ts, private/account/src/routes/backups.ts, private/account/tests/integration/backup-commit-critical.test.ts
   - Tests: a missing base refuses and leaves the lease live; a reused waiting chunk returns to live exactly once across two commits; a deleted object named by a delta refuses; `indexSkipped: 'interval'` does not set `index_regressed` while an unexplained flip does; a sample writes no pin row.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-commit-critical.test.ts tests/integration/backup-commit-binding.test.ts tests/integration/backup-lifecycle.test.ts` rc 0.
+    (ticked) 2026-11-02T08:35:09Z by 45048a90: commit:private/account d2d3f20 and 7fccc1b. npx vitest run rc=0, 3470 tests, rerun by the lead; each new test recorded rc 1 first, apart from the guards named in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
 - [ ] Q3: Quota per D-ledger, D-lease and D-safeguard: `computeUsed` reads `live` and the newest lease per stream; the churn cap; the usage report; the portal shows both numbers.
   - Owns: private/account/src/services/backup-storage.service.ts, private/account/src/dto/backup.dto.ts, private/account/src/errors.ts, private/account/web/src/api/types.ts, private/account/web/src/pages/BackupStorage.tsx, private/account/tests/integration/backup-quota-live.test.ts
   - Tests: waiting bytes do not count; ten failed runs on one stream count one lease; above the cap a run 5 minutes after its last commit is refused, while one 61 minutes after is allowed, as is a nightly (the headline control); the cap is reported.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-quota-live.test.ts tests/integration/backup-storage.test.ts && npm run typecheck && npm run lint` rc 0, and `npm run check:ci-test-account-web` rc 0.
-- [ ] Q4: Listing per D-listing: the resolve route, pagination, and a read-scoped token staying inside team scope.
+- [x] Q4: Listing per D-listing: the resolve route, pagination, and a read-scoped token staying inside team scope.
   - Owns: private/account/src/services/backup-storage.service.ts, private/account/src/routes/backups.ts, private/account/src/dto/backup.dto.ts, private/account/tests/integration/backup-resolve-at.test.ts
   - Tests: 3,000 rows resolve a time beyond the first 500; stream scope holds; the anchor resolves when older than 500; `needIndex` finds the nearest indexed row; a team token cannot resolve another lineage; a tombstoned row is not selected.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-resolve-at.test.ts tests/integration/backup-team-scope.test.ts` rc 0.
-- [ ] Q5: Routes per D-immutable, using the same owner-or-admin check as the retention writes, and delegating to M8.
+    (ticked) 2026-11-02T08:35:10Z by 45048a90: commit:private/account d2d3f20 and 7fccc1b. npx vitest run rc=0, 3470 tests, rerun by the lead; each new test recorded rc 1 first, apart from the guards named in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] Q5: Routes per D-immutable, using the same owner-or-admin check as the retention writes, and delegating to M8.
   - Owns: private/account/src/routes/backups.ts, private/account/src/services/backup-storage.service.ts, private/account/src/dto/backup.dto.ts, private/account/tests/integration/backup-immutability-routes.test.ts
   - Tests: a read token is refused; 404 outside team scope; values above 30 are refused; undelete after finalization answers plainly.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-immutability-routes.test.ts` rc 0.
-- [ ] Q6: Per-run write count (F25): one coalesced event for a routine run; a deviation still logs in full. The test counts D1 statements for one stored run at N=10 and holds it at or under the target recorded here from the unfixed tree minus the pin and grant event rows.
+    (ticked) 2026-11-02T08:35:11Z by 45048a90: commit:private/account d2d3f20 and 7fccc1b. npx vitest run rc=0, 3470 tests, rerun by the lead; each new test recorded rc 1 first, apart from the guards named in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] Q6: Per-run write count (F25): one coalesced event for a routine run; a deviation still logs in full. The test counts D1 statements for one stored run at N=10 and holds it at or under the target recorded here from the unfixed tree minus the pin and grant event rows.
   - Owns: private/account/src/services/backup-storage.service.ts, private/account/tests/integration/backup-run-writes.test.ts
   - Recorded 2026-11-02: one stored run at N=10, session to report, wrote 13 rows on the unfixed tree (10 the row counter sees, 3 event rows it cannot, since the event log writes through RETURNING). Target 9: minus the session event, the grant event and two lastSeen updates, one on /streams and one on /reports.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-run-writes.test.ts` rc 0.
+    (ticked) 2026-11-02T08:35:12Z by 45048a90: commit:private/account d2d3f20 and 7fccc1b. npx vitest run rc=0, 3470 tests, rerun by the lead; each new test recorded rc 1 first, apart from the guards named in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
 
 ### U: renet chunkstore (writer U)
 
-- [ ] U1: Changed-only asks per D-exists: delta candidates plus sample, the base declared on the grant and commit, and promotion running the full ask (F15). `stats.ChunksAsked` counts asked hashes, and `ChunksSampled` is new.
+- [x] U1: Changed-only asks per D-exists: delta candidates plus sample, the base declared on the grant and commit, and promotion running the full ask (F15). `stats.ChunksAsked` counts asked hashes, and `ChunksSampled` is new.
   - Owns: private/renet/pkg/chunkstore/uploader.go, private/renet/pkg/chunkstore/session.go, private/renet/pkg/chunkstore/uploader_delta_test.go
   - Tests: `TestUpload_AsksOnlyDelta` (N changed of 1,024 asks N plus sample), `TestUpload_SegmentRootAsksOnlyDifference`, `TestUpload_PromotionUploadsWhatIsMissing` (the headline control: a chunk gone from the store is uploaded before the promoted commit), `TestUpload_MissingSampleRunsFullAsk`, `TestUpload_NoAnchorAsksAll`, `TestUpload_ReseedAsksAll`, `TestUpload_ResumeUsesPending`.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestUpload_' -count=1` rc 0, and `go test ./pkg/chunkstore/ -count=1` rc 0.
-- [ ] U2: Geometry per D-cells: `CellBytes` 0 inherits; an explicit change needs `AcceptGridChange`, else a named refusal; a cell-count check; grid.go's comment names `churn-probe`.
+    (ticked) 2026-11-02T08:35:13Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0, rerun by the lead; each behaviour recorded rc 1 first in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] U2: Geometry per D-cells: `CellBytes` 0 inherits; an explicit change needs `AcceptGridChange`, else a named refusal; a cell-count check; grid.go's comment names `churn-probe`.
   - Owns: private/renet/pkg/chunkstore/pipeline_linux.go, private/renet/pkg/chunkstore/grid.go, private/renet/pkg/chunkstore/geometry_test.go
   - Tests: a 1 MiB anchor with no flag stays at 1 MiB; a different explicit value refuses; accepting it emits a full manifest with no parent; above 262,144 cells refuses.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestGeometry' -count=1` rc 0.
-- [ ] U3: Hook seam: `PlanOptions.BeforeReflink` and `AfterReflink` run inside the staging flock and outside the repo lock; `AfterReflink` always runs. Also `Plan.CapturedAt`, and `Journal.Anchor.CapturedAt` for the achieved figure. A new `Consistency` field on the manifest is additive, so `ManifestVersion` stays 1.
+    (ticked) 2026-11-02T08:35:15Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0, rerun by the lead; each behaviour recorded rc 1 first in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] U3: Hook seam: `PlanOptions.BeforeReflink` and `AfterReflink` run inside the staging flock and outside the repo lock; `AfterReflink` always runs. Also `Plan.CapturedAt`, and `Journal.Anchor.CapturedAt` for the achieved figure. A new `Consistency` field on the manifest is additive, so `ManifestVersion` stays 1.
   - Owns: private/renet/pkg/chunkstore/pipeline_linux.go, private/renet/pkg/chunkstore/journal.go, private/renet/pkg/chunkstore/manifest.go, private/renet/pkg/chunkstore/hookseam_linux_test.go
   - Tests: order asserted through a seamed reflink; After runs when the reflink fails; a contended flock calls neither; a v1 manifest with no field decodes.
   - Accept: `cd private/renet && go test ./pkg/chunkstore/ -run 'TestHookSeam' -count=1` rc 0.
+    (ticked) 2026-11-02T08:35:16Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0, rerun by the lead; each behaviour recorded rc 1 first in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
 
 ### W: renet verbs and functions (writer W)
 
-- [ ] W1: `pkg/backuphook` per D-hook: discovery, the built environment, sandbox, cgroup, timeouts, process-group kill, the marker, deadman arming, and `renet backup hook-finish`. `RediaccfileExecutor` gains a clean-environment mode.
+- [x] W1: `pkg/backuphook` per D-hook: discovery, the built environment, sandbox, cgroup, timeouts, process-group kill, the marker, deadman arming, and `renet backup hook-finish`. `RediaccfileExecutor` gains a clean-environment mode.
   - Owns: private/renet/pkg/backuphook/hook.go, private/renet/pkg/backuphook/hook_test.go, private/renet/pkg/orchestration/rediaccfile.go, private/renet/pkg/orchestration/rediaccfile_cleanenv_test.go, private/renet/cmd/renet/backup_hook.go, private/renet/cmd/renet/backup_hook_test.go
   - Tests: unit credentials in the parent environment are absent from a hook (the headline control); an absent function, a timeout, a failing prepare and a hung finish; a sleeping child dies with the group; hook-finish runs only with the marker; docker env set only when a network id exists.
   - Accept: `cd private/renet && go test ./pkg/backuphook/ ./pkg/orchestration/ ./cmd/renet/ -run 'BackupHook|CleanEnv' -count=1` rc 0.
-- [ ] W2: Wire hooks into the hot and cold paths: flags `--hook-timeout`, `--hook-failure`; function params; record fields; commit's `consistency`.
+    (ticked) 2026-11-02T08:35:17Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0 and check:ci-renet rc=0, rerun by the lead; removal controls rc 1 in the writer report. The root legs stay with box Y1. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] W2: Wire hooks into the hot and cold paths: flags `--hook-timeout`, `--hook-failure`; function params; record fields; commit's `consistency`.
   - Owns: private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_hook_test.go, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_snapshot_hook_test.go
   - Tests: every row of the D-hook case table asserts its record; `abort` uploads nothing (the fake plane sees no grant); upload starts only after finish; a cold run marks `not-applicable`.
   - Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/functions/commands/ -run 'SnapshotHook' -count=1` rc 0.
-- [ ] W3: Target behaviour per D-rpo: `--target`, `--deadline`, the tier slot, seed detach, `unchanged`, the achieved figure, and the sibling's report carrying them. `backupstate` counts `unchanged` as a success, and coverage carries the target.
+    (ticked) 2026-11-02T08:35:18Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0 and check:ci-renet rc=0, rerun by the lead; removal controls rc 1 in the writer report. The root legs stay with box Y1. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] W3: Target behaviour per D-rpo: `--target`, `--deadline`, the tier slot, seed detach, `unchanged`, the achieved figure, and the sibling's report carrying them. `backupstate` counts `unchanged` as a success, and coverage carries the target.
   - Owns: private/renet/cmd/renet/backup_snapshot.go, private/renet/cmd/renet/backup_snapshot_target_test.go, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/backupstate/backupstate.go, private/renet/pkg/backupstate/backupstate_test.go, private/renet/pkg/list/types.go, private/renet/pkg/list/list.go
   - Tests: a run past the deadline ends `deadline-exceeded` and abandons staging; a seed with no anchor starts the detached unit and exits `seed-started`; a skip reports `targetMet: false`; a second tier unit waits for the slot and counts the wait; zero changed cells commits nothing and advances `last_success_at`; `ticksMissed` from a fixed clock; no secret in the report.
   - Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/backupstate/ ./pkg/list/ -run 'SnapshotTarget|BackupState|Coverage' -count=1` rc 0.
-- [ ] W4: Index interval per D-listing: `--index-every`, a journal `LastIndexAt`, `indexStatus: 'interval'`, `indexMs`, no live walk on an unsealed run, and `indexSkipped` on commit.
+    (ticked) 2026-11-02T08:35:19Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0 and check:ci-renet rc=0, rerun by the lead; removal controls rc 1 in the writer report. The root legs stay with box Y1. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] W4: Index interval per D-listing: `--index-every`, a journal `LastIndexAt`, `indexStatus: 'interval'`, `indexMs`, no live walk on an unsealed run, and `indexSkipped` on commit.
   - Owns: private/renet/cmd/renet/backup_snapshot_toc.go, private/renet/cmd/renet/backup_snapshot_toc_interval_test.go, private/renet/cmd/renet/backup_snapshot.go, private/renet/pkg/chunkstore/journal.go
   - Tests: sealed once per hour at 5-minute runs on a fake clock; a skipped run never walks; a sibling `no-key` status still warns.
   - Accept: `cd private/renet && go test ./cmd/renet/ -run 'TestSnapshotTOCInterval' -count=1` rc 0. Writer W edits journal.go after U3 lands.
-- [ ] W5: The probe as a product instrument: unhidden; `--repo`, `--forget` removes the base, and function `backup_churn_probe` returns the record; the verb and any test keep the reflink lock rules.
+    (ticked) 2026-11-02T08:35:20Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0 and check:ci-renet rc=0, rerun by the lead; removal controls rc 1 in the writer report. The root legs stay with box Y1. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
+- [x] W5: The probe as a product instrument: unhidden; `--repo`, `--forget` removes the base, and function `backup_churn_probe` returns the record; the verb and any test keep the reflink lock rules.
   - Owns: private/renet/cmd/renet/backup_churn_probe.go, private/renet/cmd/renet/backup_churn_probe_test.go, private/renet/cmd/renet/backup_churn_cells.go, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_churn_probe_test.go
   - Tests: `--forget` removes only that repo's base and meta; the function's argv; a repo under transient state skips.
   - Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/functions/commands/ -run 'ChurnProbe' -count=1` rc 0.
+    (ticked) 2026-11-02T08:35:21Z by 45048a90: commit:private/renet de6b7f4. go test -race ./... rc=0 and check:ci-renet rc=0, rerun by the lead; removal controls rc 1 in the writer report. The root legs stay with box Y1. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
 
 ### E: CLI target and units (writer E)
 
@@ -605,6 +618,8 @@ Every J box uses the released `rdc` and its released renet. No original repo is 
 No target is enabled before step 4, because the old account's daily sweep would hit the wedge this plan removes, and its quota still charges waiting bytes.
 
 ## Operator rulings on the decisions below, 2026-11-01
+
+Rulings of 2026-11-02 (/ask, ASKED:2026-11-02T08:00Z): every recommended option of this plan and the sibling plan stands. `POST /lineages/:guid/orphan` goes through the delayed-deletion window too, in box M8. A repository past 262,144 cells on its existing grid keeps backing up, and its stalled pruning raises an alert, in box M9. The default window stays 0 until box M8 raises it to 7 together with the sweep that finalizes a delay.
 
 - O2: waiting above 2 x quota refuses a grant on a stream whose last commit is under 60 minutes old, as recommended.
 - O4: delayed destruction at 7 days ships in this plan, with the age anchor of box M10, and it is described as delayed deletion, never as immutable, until the separate vault plan lands. That vault plan (a dedicated Cloudflare account holding the buckets and the only delete right) is written next and does not ride this PR.

@@ -103,7 +103,8 @@ const LEGS: Leg[] = [
     path: '/exists',
     requestSchema: 'backupExistsRequest',
     responseSchema: 'backupExistsResponse',
-    requestKeys: ['lineageGuid', 'hashes'],
+    // `purpose` decides whether the answer writes a pin. A spelling the schema does not accept is stripped silently, and every sample then pins.
+    requestKeys: ['lineageGuid', 'hashes', 'purpose'],
     // NOT `missing`. The server reports what it HOLDS; the client computes the
     // complement, so an absent field can never read as "nothing to upload".
     responseKeys: ['existing'],
@@ -122,6 +123,9 @@ const LEGS: Leg[] = [
       'chunkBytes',
       'manifestBytes',
       'indexBytes',
+      // PLAN-backup-critical-tier D-exists and D-lease: the base is what protects a changed-only run's unasked chunks from a prune, so a stripped spelling leaves them unprotected with no error. The stream is what counts one lease per stream, and the server falls back to the session's when it is stripped.
+      'streamId',
+      'baseSnapshotId',
     ],
     // The write grant's own fields (manifestKey, and indexKey/indexPutUrl for the listing object) live in a nested schema this leg's response check does not reach; the listing is pinned where it is read back (/read-grants) and committed (/commit).
     responseKeys: ['grant', 'leaseId'],
@@ -184,6 +188,10 @@ const LEGS: Leg[] = [
       'luksKeyDigest',
       'identityChangeAccepted',
       'chunksAlreadyPresent',
+      // PLAN-backup-critical-tier: the base the commit re-checks, what the run did to the application, and the deliberate skip that keeps an hourly seal from reading as a lost index.
+      'baseSnapshotId',
+      'consistency',
+      'indexSkipped',
     ],
     responseKeys: [],
   },
