@@ -101,17 +101,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-settings-set-verb.md -- 3 of 4 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/PLAN-free-license.md -- 4 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (2 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1801 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1803 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-- Writers: 0 live of writer_cap 25 (session 45048a90).
-- Leased items: 9: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1303916c (worker:bd2ftzpkx, 45048a90), #1bba8c28 (worker:2469829, 45048a90), #399988aa (worker:bd2ftzpkx, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #96129d88 (worker:bd2ftzpkx, 45048a90), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
+- Writers: 2 live of writer_cap 25 (session 45048a90): worker:a4b33443e65c9ca0b, worker:a80d2636dffef7517.
+- Leased items: 10: #016e6e7e (worker:a80d2636dffef7517, 45048a90), #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:2844669, 45048a90), #290480cd (worker:a80d2636dffef7517, 45048a90), #4f5d0456 (worker:a4b33443e65c9ca0b, 45048a90), #72317327 (worker:a4b33443e65c9ca0b, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
 - Next plan: agent/plans/PLAN-backup-integrity.md, Promoted entry 43; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 44 plans done, 642 of 864 boxes done (74%).
+Promoted: 6 of 44 plans done, 651 of 864 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -158,7 +158,7 @@ Promoted: 6 of 44 plans done, 642 of 864 boxes done (74%).
 | 41 | PLAN-settings-set-verb.md | 3/4 | 1 open |
 | 42 | PLAN-free-license.md | 4/13 | 9 open |
 | 43 | PLAN-backup-integrity.md | 37/57 | 20 open |
-| 44 | PLAN-backup-critical-tier.md | 14/53 | 39 open |
+| 44 | PLAN-backup-critical-tier.md | 23/53 | 30 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: last box is R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by e989dc4d9 on this branch) and R1 closes on a green scheduled run after the merge

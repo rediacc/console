@@ -508,43 +508,52 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### E: CLI target and units (writer E)
 
-- [ ] E1: Schema: `repoTargets` replaces `repoSchedules`, with `rpo`, `cellSize`, `indexEvery`, hook fields; `retention.keepWithin`; sensitivity entries; validation including the O6 minimum.
+- [x] E1: Schema: `repoTargets` replaces `repoSchedules`, with `rpo`, `cellSize`, `indexEvery`, hook fields; `retention.keepWithin`; sensitivity entries; validation including the O6 minimum.
   - Owns: packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/shared/src/config-schema/__tests__/retention-policy.test.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/cli/src/services/__tests__/backup-strategy-validate.test.ts
   - Accept: `npx vitest run --root packages/shared src/config-schema/__tests__/retention-policy.test.ts` rc 0, `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-strategy-validate.test.ts` rc 0, and `npm run check:ci-schema-coverage` rc 0.
-- [ ] E2: Rendering per D-rpo: exact-ref resolution, jitter, finite timeouts and flags on the verb, and removal handling.
+    (ticked) 2026-11-02T09:12:34Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] E2: Rendering per D-rpo: exact-ref resolution, jitter, finite timeouts and flags on the verb, and removal handling.
   - Owns: packages/cli/src/services/backup/backup-schedule-targets.ts, packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-schedule-execute.ts, packages/cli/src/services/backup/backup-schedule-reconcile.ts, packages/cli/src/services/__tests__/backup-schedule-targets.test.ts, packages/cli/src/services/__tests__/backup-schedule-renet-contract.test.ts, packages/cli/src/services/__tests__/backup-schedule-rpo.test.ts
   - Tests: `mail` renders one guid while `mail:*` renders the family; the unit text for 5, 15 and 30 minutes; `RuntimeMaxSec` never rendered; a nightly unit unchanged except for its scope excluding the target repo; removing a target returns the repo to the main scope.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-schedule-targets.test.ts src/services/__tests__/backup-schedule-renet-contract.test.ts src/services/__tests__/backup-schedule-rpo.test.ts` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
-- [ ] E3: Verbs: `backup strategy set --rpo`, `--repo-rpo`, `--no-estimate`, and the default window, using `rpo-cost.ts` and the probe.
+    (ticked) 2026-11-02T09:12:35Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] E3: Verbs: `backup strategy set --rpo`, `--repo-rpo`, `--no-estimate`, and the default window, using `rpo-cost.ts` and the probe.
   - Owns: packages/cli/src/commands/backup-strategy.ts, packages/cli/src/commands/__tests__/backup-strategy-rpo.test.ts
   - Tests: refuses without a measurement; prints cost and cap; `--dry-run` writes nothing; a re-seed warning on a cell change; a declared retention is left alone.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-strategy-rpo.test.ts` rc 0.
-- [ ] E4: Coverage and health per D-rpo: seconds replace rounded days, `T + grace`, and missed targets as issues.
+    (ticked) 2026-11-02T09:12:37Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] E4: Coverage and health per D-rpo: seconds replace rounded days, `T + grace`, and missed targets as issues.
   - Owns: packages/cli/src/services/backup/backup-schedule-coverage.ts, packages/cli/src/commands/machine/health.ts, packages/cli/src/commands/machine/status.ts, packages/cli/src/commands/machine/__tests__/health-rpo.test.ts
   - Tests: a 5-minute target at 11 minutes is stale and renders minutes, not `0`; 4 minutes is not stale; `unchanged` is fresh; a hung run shows as missed; a nightly's result is unchanged.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/machine/__tests__/health-rpo.test.ts` rc 0.
+    (ticked) 2026-11-02T09:12:37Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
 
 ### N: CLI restore, retention, usage and estimate (writer N)
 
-- [ ] N1: `--at`, browse and counts per D-listing: every caller from F11 moves to the resolve route or pages, and purge shows the server's count.
+- [x] N1: `--at`, browse and counts per D-listing: every caller from F11 moves to the resolve route or pages, and purge shows the server's count.
   - Owns: packages/cli/src/commands/backup-restore-chunk.ts, packages/cli/src/commands/backup-restore-path.ts, packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-purge.ts, packages/cli/src/commands/backup.ts, packages/cli/src/commands/backup-retention-commands.ts, packages/cli/src/services/executor/repo-license-context.ts, packages/cli/src/commands/__tests__/backup-resolve-at.test.ts
   - Tests: a time older than 500 rows resolves; `streamUnknown` no longer fires for an old anchor; browse with no index states the gap; purge reports the right count.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-resolve-at.test.ts src/commands/__tests__/backup-browse-at.test.ts src/commands/__tests__/backup-purge.test.ts` rc 0.
-- [ ] N2: Retention per D-retention: `within=` in the parser, `--keep-within`, the cadence check, plan defaults and limits in constants (O3), and the preview.
+    (ticked) 2026-11-02T09:12:38Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] N2: Retention per D-retention: `within=` in the parser, `--keep-within`, the cadence check, plan defaults and limits in constants (O3), and the preview.
   - Owns: packages/cli/src/services/backup/backup-retention.ts, packages/cli/src/commands/backup-retention-commands.ts, packages/shared/src/subscription/constants.ts, packages/shared/src/subscription/__tests__/schema.test.ts, packages/cli/src/services/__tests__/backup-retention.test.ts
   - Tests: `within=24h` parses; `within=24` and `within=1x` refuse; above the plan limit refuses by name; a 5-minute cron warns when no knob can use it.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-retention.test.ts` rc 0, and `npx vitest run --root packages/shared src/subscription/__tests__/schema.test.ts` rc 0.
-- [ ] N3: `backup usage` shows live, waiting, cap and throttled state in every format; `backup manifests` shows consistency and tombstones.
+    (ticked) 2026-11-02T09:12:39Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] N3: `backup usage` shows live, waiting, cap and throttled state in every format; `backup manifests` shows consistency and tombstones.
   - Owns: packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/__tests__/backup-usage-pair.test.ts
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-usage-pair.test.ts` rc 0.
-- [ ] N4: `backup immutability show|set`, `backup undelete`, `backup purge --cancel`.
+    (ticked) 2026-11-02T09:12:40Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] N4: `backup immutability show|set`, `backup undelete`, `backup purge --cancel`.
   - Owns: packages/cli/src/commands/backup-immutability.ts, packages/cli/src/commands/backup-purge.ts, packages/cli/src/commands/__tests__/backup-immutability.test.ts
   - Tests: output names when a change takes effect; a delayed delete is reported as delayed, not done.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-immutability.test.ts` rc 0.
-- [ ] N5: `rdc backup churn <repo> --samples <n> --interval <duration>` drives W5, prints the projection and cell recommendation per D-cells and always removes the base; `packages/shared/src/backup/rpo-cost.ts` holds the D-cost formulas.
+    (ticked) 2026-11-02T09:12:41Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
+- [x] N5: `rdc backup churn <repo> --samples <n> --interval <duration>` drives W5, prints the projection and cell recommendation per D-cells and always removes the base; `packages/shared/src/backup/rpo-cost.ts` holds the D-cost formulas.
   - Owns: packages/cli/src/commands/backup-churn.ts, packages/cli/src/commands/__tests__/backup-churn.test.ts, packages/shared/src/backup/rpo-cost.ts, packages/shared/src/backup/__tests__/rpo-cost.test.ts
   - Tests: the D-cost table as known answers; `--forget` is called on failure; a baseline is not read as zero churn.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-churn.test.ts` rc 0, and `npx vitest run --root packages/shared src/backup/__tests__/rpo-cost.test.ts` rc 0.
+    (ticked) 2026-11-02T09:12:42Z by 45048a90: commit:68e6092ca. cd packages/cli && npx vitest run rc=0, rerun by the lead; each new test recorded rc 1 first in the writer report. Mocked executors only. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed; only the sibling's docs and live-proof boxes remain open.
 
 ### T: artifacts, docs and drills (writer T)
 
