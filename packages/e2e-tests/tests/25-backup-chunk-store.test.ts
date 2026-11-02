@@ -360,7 +360,7 @@ test.describe
         expect(runner.getCombinedOutput(result)).toContain('absent');
       });
 
-      test('4c. backup_repair refuses a repository with no anchor, and uploads nothing', async () => {
+      test('4c. backup_repair refuses a repository with no anchor', async () => {
         const result = await backupFunction('backup_repair', { hashes: '0'.repeat(64) });
         expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(false);
         expect(runner.getCombinedOutput(result)).toContain('no backup anchor');

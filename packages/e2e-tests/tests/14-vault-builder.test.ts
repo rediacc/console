@@ -7,7 +7,9 @@ import {
   TEST_TEAM,
   TEST_USER,
 } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../src/utils/renet-functions/types';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
@@ -147,18 +149,38 @@ test.describe('VaultBuilder Structure @bridge @vault', () => {
   });
 });
 
+/**
+ * A repository with no licence is refused with exit 10 (LICENSE_REQUIRED) before any command is built, and that refusal passes a syntax check while running nothing.
+ * Every repository here is licensed first, so a refusal is a failure of the test, and the syntax check then judges a command that really ran.
+ */
+function expectRan(runner: RenetFunctionsTestRunner, result: ExecResult): void {
+  expect(result.code, runner.getCombinedOutput(result)).not.toBe(10);
+  expect(runner.hasValidCommandSyntax(result), runner.getCombinedOutput(result)).toBe(true);
+}
+
+/** License a fresh repository on the runner's target, so the calls below reach the function itself. */
+async function licensedRepository(runner: RenetFunctionsTestRunner): Promise<string> {
+  const guid = e2eRepoGuid();
+  const licensed = await runner.licenseRepository(guid);
+  expect(runner.isSuccess(licensed), runner.getCombinedOutput(licensed)).toBe(true);
+  return guid;
+}
+
 test.describe('VaultBuilder with Renet @bridge @vault', () => {
   let runner: RenetFunctionsTestRunner;
 
-  test.beforeAll(() => {
+  let guid: string;
+
+  test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    guid = await licensedRepository(runner);
   });
 
   test('push with vault should generate valid command', async () => {
     const vault = new VaultBuilder()
       .withFunction('backup_push')
       .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', TEST_REPOSITORY_NAME)
+      .withRepository(guid, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPushParams({
         destinationType: 'machine',
@@ -167,14 +189,14 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
       });
 
     const result = await runner.pushWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
+    expectRan(runner, result);
   });
 
   test('pull with vault should generate valid command', async () => {
     const vault = new VaultBuilder()
       .withFunction('backup_pull')
       .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', TEST_REPOSITORY_NAME)
+      .withRepository(guid, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPullParams({
         sourceType: 'machine',
@@ -182,14 +204,14 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
       });
 
     const result = await runner.pullWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
+    expectRan(runner, result);
   });
 
   test('push with checkpoint flag should work', async () => {
     const vault = new VaultBuilder()
       .withFunction('backup_push')
       .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', TEST_REPOSITORY_NAME)
+      .withRepository(guid, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPushParams({
         destinationType: 'machine',
@@ -197,7 +219,7 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
       });
 
     const result = await runner.pushWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
+    expectRan(runner, result);
     // Checkpoint flag should be processed without errors
   });
 
@@ -205,7 +227,7 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
     const vault = new VaultBuilder()
       .withFunction('backup_pull')
       .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', TEST_REPOSITORY_NAME)
+      .withRepository(guid, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPullParams({
         sourceType: 'machine',
@@ -214,21 +236,24 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
       });
 
     const result = await runner.pullWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
+    expectRan(runner, result);
   });
 });
 
 test.describe('VaultBuilder Push Destination Types @bridge @vault', () => {
   let runner: RenetFunctionsTestRunner;
 
-  test.beforeAll(() => {
+  let guid: string;
+
+  test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    guid = await licensedRepository(runner);
   });
 
   test('push with destinationType=machine should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
-      .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
+      .withRepository(guid, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withDestinationMachine(DEFAULT_WORKER_2_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPushParams({
@@ -237,21 +262,24 @@ test.describe('VaultBuilder Push Destination Types @bridge @vault', () => {
       });
 
     const result = await runner.pushWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
+    expectRan(runner, result);
   });
 });
 
 test.describe('VaultBuilder Pull Source Types @bridge @vault', () => {
   let runner: RenetFunctionsTestRunner;
 
-  test.beforeAll(() => {
+  let guid: string;
+
+  test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    guid = await licensedRepository(runner);
   });
 
   test('pull with sourceType=machine should work', async () => {
     const vault = VaultBuilder.forPull()
       .withTeam(TEST_TEAM)
-      .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
+      .withRepository(guid, TEST_REPOSITORY_NAME)
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withSourceMachine(DEFAULT_WORKER_2_IP, TEST_USER)
       .withPullParams({
@@ -260,6 +288,6 @@ test.describe('VaultBuilder Pull Source Types @bridge @vault', () => {
       });
 
     const result = await runner.pullWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
+    expectRan(runner, result);
   });
 });
