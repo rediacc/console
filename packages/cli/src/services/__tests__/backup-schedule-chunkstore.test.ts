@@ -63,7 +63,9 @@ describe('scheduled backups to the chunk store', () => {
   it('emits a snapshot command instead of silently skipping the destination', () => {
     const { commands } = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET);
     expect(commands).toHaveLength(1);
-    expect(commands[0]).toBe(`${RENET} backup snapshot --datastore ${DATASTORE} --parallelism 2`);
+    expect(commands[0]).toBe(
+      `${RENET} backup snapshot --datastore ${DATASTORE} --parallelism 2 --expected-interval 3600s`
+    );
   });
 
   it('carries NO credentials into the unit or its EnvironmentFile', () => {
@@ -90,13 +92,13 @@ describe('scheduled backups to the chunk store', () => {
       exclude: [],
     });
     expect(inc.commands[0]).toBe(
-      `${RENET} backup snapshot --datastore ${DATASTORE} --repo ${g1} --repo ${g2} --parallelism 2`
+      `${RENET} backup snapshot --datastore ${DATASTORE} --repo ${g1} --repo ${g2} --parallelism 2 --expected-interval 3600s`
     );
     const exc = buildBackupCommands(strategy(), [hosted()], DATASTORE, RENET, {
       exclude: [g1],
     });
     expect(exc.commands[0]).toBe(
-      `${RENET} backup snapshot --datastore ${DATASTORE} --exclude-repo ${g1} --parallelism 2`
+      `${RENET} backup snapshot --datastore ${DATASTORE} --exclude-repo ${g1} --parallelism 2 --expected-interval 3600s`
     );
   });
 
@@ -166,7 +168,9 @@ describe('scheduled backups to the chunk store', () => {
   it('emits --read-bwlimit in bytes/second in the unit and the ad-hoc run only when the strategy sets it', () => {
     const s = strategy({ readBandwidthLimit: '50M' });
     const { serviceContent } = generateServiceUnit('s', s, [hosted()], DATASTORE, RENET);
-    expect(serviceContent).toContain('--parallelism 2 --read-bwlimit 50000000');
+    expect(serviceContent).toContain(
+      '--parallelism 2 --expected-interval 3600s --read-bwlimit 50000000'
+    );
     const { commands } = buildBackupCommands(s, [hosted()], DATASTORE, RENET);
     expect(buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands)).toContain(
       '--read-bwlimit 50000000'

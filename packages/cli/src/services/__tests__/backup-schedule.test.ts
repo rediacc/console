@@ -129,6 +129,58 @@ function healthyTimerRecord(unit: string): string {
   });
 }
 
+/** The two timers a strategy unit renders: its schedule and the daily full verify. */
+function healthyTimers(unitName: string): string {
+  return (
+    healthyTimerRecord(`rediacc-backup-${unitName}.timer`) +
+    healthyTimerRecord(`rediacc-backup-${unitName}.verify.timer`)
+  );
+}
+
+/** Every unit the default strategy renders on the scripted machine, as the machine would hold them. */
+async function fullDesired() {
+  const { computeDesiredUnits } = await import('../backup/backup-schedule-reconcile.js');
+  const { machineUnitSpecs } = await import('../backup/backup-schedule-targets.js');
+  const { sha256Hex } = await import('../backup/backup-schedule-unit-generator.js');
+  const units = computeDesiredUnits(
+    machineUnitSpecs(
+      [{ name: 'hourly-hot', config: DEFAULT_STRATEGY as never }],
+      rdcConfig() as never,
+      'hostinger'
+    ),
+    '/usr/bin/renet',
+    8
+  );
+  const dir = '/etc/systemd/system';
+  const files: { path: string; hash: string; unit: string; kind: 'service' | 'timer' }[] = [];
+  for (const [name, unit] of units) {
+    files.push({
+      path: `${dir}/rediacc-backup-${name}.service`,
+      hash: sha256Hex(unit.serviceContent),
+      unit: name,
+      kind: 'service',
+    });
+    if (unit.timerContent) {
+      files.push({
+        path: `${dir}/rediacc-backup-${name}.timer`,
+        hash: sha256Hex(unit.timerContent),
+        unit: name,
+        kind: 'timer',
+      });
+    }
+  }
+  const find = files.map((f) => `${f.path}\n`).join('');
+  const sha = (override: (f: (typeof files)[number]) => string = (f) => f.hash) =>
+    files.map((f) => `${override(f)}  ${f.path}\n`).join('');
+  const show =
+    [...units.keys()].map((n) => idleServiceRecord(`rediacc-backup-${n}.service`)).join('') +
+    files
+      .filter((f) => f.kind === 'timer')
+      .map((f) => healthyTimerRecord(`rediacc-backup-${f.unit}.timer`))
+      .join('');
+  return { files, find, sha, show };
+}
+
 function notFoundRecord(unit: string): string {
   return showRecord(unit, {
     LoadState: 'not-found',
@@ -136,40 +188,6 @@ function notFoundRecord(unit: string): string {
     SubState: 'dead',
     UnitFileState: '',
   });
-}
-
-/** Compute the exact on-disk content the reconciler would produce for a strategy. */
-async function desiredContentFor(
-  strategyName: string,
-  strategy: import('../../types/index.js').BackupStrategyConfig,
-  destinations: import('../../types/index.js').BackupStrategyDestination[],
-  datastore = WK_DATASTORE_PATH,
-  remoteRenetPath = '/usr/bin/renet'
-) {
-  const { _testing } = await import('../backup/backup-schedule.js');
-  const { serviceContent, envVars } = _testing.generateServiceUnit(
-    strategyName,
-    strategy,
-    destinations,
-    datastore,
-    remoteRenetPath,
-    undefined,
-    // The scripted machine reports eight cores (scriptedExec), so the deployed unit carries CPUQuota=400%.
-    8
-  );
-  const timerContent = _testing.generateTimerUnit(
-    strategyName,
-    _testing.cronToOnCalendar(strategy.schedule)
-  );
-  const envFileContent = _testing.generateEnvFile(envVars);
-  return {
-    serviceContent,
-    timerContent,
-    envFileContent,
-    serviceHash: _testing.sha256Hex(serviceContent),
-    timerHash: _testing.sha256Hex(timerContent),
-    envHash: envFileContent ? _testing.sha256Hex(envFileContent) : null,
-  };
 }
 
 const DEFAULT_LOCAL_CONFIG = {
@@ -783,7 +801,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+        stdout: healthyTimers('hourly-hot'),
       },
     ]);
 
@@ -826,7 +844,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+        stdout: healthyTimers('hourly-hot'),
       },
     ]);
 
@@ -852,7 +870,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+        stdout: healthyTimers('hourly-hot'),
       },
     ]);
 
@@ -863,32 +881,11 @@ describe('pushBackupSchedule (reconcile)', () => {
   });
 
   it('test 2: all hashes match → unchanged, no writes, no daemon-reload', async () => {
-    const desired = await desiredContentFor(
-      'hourly-hot',
-      DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
-      DEFAULT_STRATEGY.destinations
-    );
-
+    const machine = await fullDesired();
     scriptedExec([
-      {
-        match: /find \/etc\/systemd\/system/,
-        stdout:
-          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
-          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n',
-      },
-      {
-        match: 'sha256sum',
-        stdout:
-          `${desired.serviceHash}  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
-          `${desired.timerHash}  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n`,
-      },
-      {
-        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
-        stdout:
-          idleServiceRecord('rediacc-backup-hourly-hot.service') +
-          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
-          healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
-      },
+      { match: /find \/etc\/systemd\/system/, stdout: machine.find },
+      { match: 'sha256sum', stdout: machine.sha() },
+      { match: 'Id,LoadState,ActiveState,SubState,UnitFileState', stdout: machine.show },
     ]);
 
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
@@ -903,36 +900,18 @@ describe('pushBackupSchedule (reconcile)', () => {
   });
 
   it('test 3: schedule changed → only timer staged, service untouched', async () => {
-    const desired = await desiredContentFor(
-      'hourly-hot',
-      DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
-      DEFAULT_STRATEGY.destinations
-    );
-
+    const machine = await fullDesired();
+    const stale = '0'.repeat(64);
     scriptedExec([
-      {
-        match: /find \/etc\/systemd\/system/,
-        stdout:
-          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
-          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n',
-      },
+      { match: /find \/etc\/systemd\/system/, stdout: machine.find },
       {
         match: 'sha256sum',
-        stdout:
-          `${desired.serviceHash}  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
-          `0000000000000000000000000000000000000000000000000000000000000000  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n`,
+        stdout: machine.sha((f) =>
+          f.unit === 'hourly-hot' && f.kind === 'timer' ? stale : f.hash
+        ),
       },
-      {
-        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
-        stdout:
-          idleServiceRecord('rediacc-backup-hourly-hot.service') +
-          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
-          idleServiceRecord('rediacc-backup-hourly-hot.timer'),
-      },
-      {
-        match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
-      },
+      { match: 'Id,LoadState,ActiveState,SubState,UnitFileState', stdout: machine.show },
+      { match: 'Id,LoadState,ActiveState,UnitFileState', stdout: healthyTimers('hourly-hot') },
     ]);
 
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
@@ -942,7 +921,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds).toContain(
       'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.timer.new > /dev/null'
     );
-    expect(cmds.some((c) => c.includes('rediacc-backup-hourly-hot.service.new'))).toBe(false);
+    expect(cmds.filter((c) => c.includes('.service.new'))).toEqual([]);
     expect(cmds).toContain(
       `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.timer.new' '/etc/systemd/system/rediacc-backup-hourly-hot.timer'`
     );
@@ -951,35 +930,24 @@ describe('pushBackupSchedule (reconcile)', () => {
   });
 
   it('test 4: removed strategy → disable --now, then rm on exact paths (no glob)', async () => {
-    const desired = await desiredContentFor(
-      'hourly-hot',
-      DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
-      DEFAULT_STRATEGY.destinations
-    );
-
+    const machine = await fullDesired();
+    const obsolete = [
+      '/etc/systemd/system/rediacc-backup-obsolete.service',
+      '/etc/systemd/system/rediacc-backup-obsolete.timer',
+    ];
     scriptedExec([
-      {
-        match: /find \/etc\/systemd\/system/,
-        stdout:
-          '/etc/systemd/system/rediacc-backup-hourly-hot.service\n' +
-          '/etc/systemd/system/rediacc-backup-hourly-hot.timer\n' +
-          '/etc/systemd/system/rediacc-backup-obsolete.service\n' +
-          '/etc/systemd/system/rediacc-backup-obsolete.timer\n',
-      },
+      { match: /find \/etc\/systemd\/system/, stdout: `${machine.find}${obsolete.join('\n')}\n` },
       {
         match: 'sha256sum',
         stdout:
-          `${desired.serviceHash}  /etc/systemd/system/rediacc-backup-hourly-hot.service\n` +
-          `${desired.timerHash}  /etc/systemd/system/rediacc-backup-hourly-hot.timer\n` +
-          `abc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1  /etc/systemd/system/rediacc-backup-obsolete.service\n` +
-          `def456def456def456def456def456def456def456def456def456def456def4  /etc/systemd/system/rediacc-backup-obsolete.timer\n`,
+          machine.sha() +
+          `abc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1  ${obsolete[0]}\n` +
+          `def456def456def456def456def456def456def456def456def456def456def4  ${obsolete[1]}\n`,
       },
       {
         match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
         stdout:
-          idleServiceRecord('rediacc-backup-hourly-hot.service') +
-          notFoundRecord('rediacc-backup-hourly-hot-adhoc.service') +
-          idleServiceRecord('rediacc-backup-hourly-hot.timer') +
+          machine.show +
           idleServiceRecord('rediacc-backup-obsolete.service') +
           notFoundRecord('rediacc-backup-obsolete-adhoc.service') +
           idleServiceRecord('rediacc-backup-obsolete.timer'),
@@ -1069,7 +1037,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+        stdout: healthyTimers('hourly-hot'),
       },
     ]);
 
@@ -1120,7 +1088,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+        stdout: healthyTimers('hourly-hot'),
       },
     ]);
 
@@ -1187,7 +1155,10 @@ describe('pushBackupSchedule (reconcile)', () => {
       { match: /find \/etc\/systemd\/system/, stdout: '' },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: timers.map((t) => healthyTimerRecord(t)).join(''),
+        stdout: timers
+          .flatMap((t) => [t, t.replace(/\.timer$/, '.verify.timer')])
+          .map((t) => healthyTimerRecord(t))
+          .join(''),
       },
     ]);
   }
@@ -1280,7 +1251,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
       {
         match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+        stdout: healthyTimers('hourly-hot'),
       },
     ]);
     mockGetCurrent.mockResolvedValue(rdcConfig({ mailFork: true }));

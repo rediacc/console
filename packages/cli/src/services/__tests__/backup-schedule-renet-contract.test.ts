@@ -1,6 +1,6 @@
 /**
  * G9 contract: every ExecStart a scheduled backup unit carries must parse against the flag set renet
- * ACTUALLY declares for `backup snapshot`, read from its Go source.
+ * ACTUALLY declares for its subcommand (`backup snapshot`, `backup verify`, `backup report`), read from its Go source.
  *
  * Why the source and not a hand-written list: the unit runs at 03:00 inside a systemd timer, and a
  * flag renet does not know (or a value it refuses) fails there, after `backup schedule` reported
@@ -32,7 +32,12 @@ const RENET_CMD_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../../../private/renet/cmd/renet'
 );
-const SNAPSHOT_GO = path.join(RENET_CMD_DIR, 'backup_snapshot.go');
+const SUBCOMMANDS = {
+  snapshot: { file: 'backup_snapshot.go', cmdVar: 'backupSnapshotCmd' },
+  verify: { file: 'backup_verify.go', cmdVar: 'backupVerifyCmd' },
+  report: { file: 'backup_report.go', cmdVar: 'backupReportCmd' },
+} as const;
+type Subcommand = keyof typeof SUBCOMMANDS;
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type FlagType =
@@ -50,6 +55,8 @@ interface SnapshotFlagSet {
   guidOnly: Set<string>;
 }
 
+type FlagSets = Record<Subcommand, SnapshotFlagSet>;
+
 /** String constants declared across cmd/renet (`FlagDatastore = "datastore"`). */
 function renetStringConstants(): Map<string, string> {
   const consts = new Map<string, string>();
@@ -61,31 +68,50 @@ function renetStringConstants(): Map<string, string> {
   return consts;
 }
 
-/** The flag set `backupSnapshotCmd` registers, and which flags renet holds to GUIDs. */
-function readSnapshotFlagSet(): SnapshotFlagSet {
-  const src = readFileSync(SNAPSHOT_GO, 'utf8');
+/** The flag set one subcommand registers (`cmdVar.Flags().X(...)`, or a `f := cmdVar.Flags()` alias), and which flags renet holds to GUIDs. */
+function readFlagSet(sub: Subcommand): SnapshotFlagSet {
+  const { file, cmdVar } = SUBCOMMANDS[sub];
+  const goFile = path.join(RENET_CMD_DIR, file);
+  const src = readFileSync(goFile, 'utf8');
   const consts = renetStringConstants();
+  // `f := cmdVar.Flags()` followed by `f.String(...)` is the other registration style in cmd/renet.
+  const alias = new RegExp(`(\\w+)\\s*:=\\s*${cmdVar}\\.Flags\\(\\)`).exec(src)?.[1];
+  const receivers = [`${cmdVar}\\.Flags\\(\\)`, ...(alias ? [alias] : [])].join('|');
   const flags = new Map<string, FlagType>();
-  for (const m of src.matchAll(/backupSnapshotCmd\.Flags\(\)\.(\w+)\(\s*("([^"]+)"|(\w+))/g)) {
+  for (const m of src.matchAll(
+    new RegExp(`(?:${receivers})\\.(\\w+)\\(\\s*("([^"]+)"|(\\w+))`, 'g')
+  )) {
+    if (m[1] === 'Var' || m[1] === 'AddCommand') continue;
     const name = m[3] ?? consts.get(m[4]);
-    if (!name) throw new Error(`cannot resolve flag name ${m[4]} in ${SNAPSHOT_GO}`);
+    if (!name) throw new Error(`cannot resolve flag name ${m[4]} in ${goFile}`);
     flags.set(name, m[1] as FlagType);
   }
-  // `Flags().Var(&rateFlag{}, "bwlimit", ...)`: a custom pflag.Value, read as its own type.
+  // `Flags().Var(&rateFlag{...}, "bwlimit", ...)`: a custom pflag.Value, read as its own type.
   for (const m of src.matchAll(
-    /backupSnapshotCmd\.Flags\(\)\.Var\(\s*&rateFlag\{\},\s*"([^"]+)"/g
+    new RegExp(`(?:${receivers})\\.Var\\(\\s*&rateFlag\\{[^}]*\\},\\s*"([^"]+)"`, 'g')
   )) {
     flags.set(m[1], 'Rate');
   }
-  if (flags.size === 0) throw new Error(`no backupSnapshotCmd flags found in ${SNAPSHOT_GO}`);
+  if (flags.size === 0) throw new Error(`no ${cmdVar} flags found in ${goFile}`);
   const guidOnly = new Set([...src.matchAll(/requireRepoGUIDs\(\s*"([\w-]+)"/g)].map((m) => m[1]));
   return { flags, guidOnly };
+}
+
+function readFlagSets(): FlagSets {
+  return {
+    snapshot: readFlagSet('snapshot'),
+    verify: readFlagSet('verify'),
+    report: readFlagSet('report'),
+  };
 }
 
 /** pflag's parse of an Int/Int64 value, or renet's rateFlag parse of a Rate value. */
 function typedValueProblem(name: string, type: FlagType, value: string): string | undefined {
   if ((type === 'Int' || type === 'Int64') && !/^-?\d+$/.test(value)) {
     return `invalid argument "${value}" for --${name}: not an integer`;
+  }
+  if (type === 'Duration' && !/^(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/.test(value)) {
+    return `invalid argument "${value}" for --${name}: not a duration`;
   }
   if (type !== 'Rate') return undefined;
   try {
@@ -140,13 +166,23 @@ function flagTokenProblems(
 }
 
 /** Problems pflag or renet would raise for one ExecStart line; [] when it parses. */
-function snapshotArgvProblems(execStart: string, set: SnapshotFlagSet): string[] {
+function argvProblems(execStart: string, sets: FlagSets): string[] {
   const tokens = execStart.trim().split(/\s+/);
-  if (tokens[1] !== 'backup' || tokens[2] !== 'snapshot') {
-    return [`not a backup snapshot command: ${execStart}`];
+  const sub = tokens[2] as Subcommand;
+  if (tokens[1] !== 'backup' || !(sub in SUBCOMMANDS)) {
+    return [`not a backup snapshot, verify or report command: ${execStart}`];
   }
+  const set = sets[sub];
   const problems: string[] = [];
   for (let i = 3; i < tokens.length; ) {
+    // The report's --reason is one single-quoted word, which systemd and the shell read as one argument.
+    if (tokens[i] === '--reason') {
+      const quoted = tokens.slice(i + 1).join(' ');
+      if (!/^'[^']*'$/.test(quoted)) {
+        problems.push(`--reason must be one quoted argument, got ${quoted}`);
+      }
+      break;
+    }
     const { problems: found, consumed } = flagTokenProblems(tokens, i, set);
     problems.push(...found);
     i += consumed;
@@ -222,14 +258,22 @@ function generatedExecStarts(): string[] {
 }
 
 describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', () => {
-  const set = readSnapshotFlagSet();
+  const set = readFlagSets();
 
   it('reads the real flag set, including the GUID-only repo flags', () => {
-    expect(set.flags.get('datastore')).toBe('String');
-    expect(set.flags.get('bwlimit')).toBe('Rate');
-    expect(set.flags.get('parallelism')).toBe('Int');
-    expect(set.flags.get('cold')).toBe('Bool');
-    expect(set.guidOnly.has('repo')).toBe(true);
+    expect(set.snapshot.flags.get('datastore')).toBe('String');
+    expect(set.snapshot.flags.get('bwlimit')).toBe('Rate');
+    expect(set.snapshot.flags.get('parallelism')).toBe('Int');
+    expect(set.snapshot.flags.get('cold')).toBe('Bool');
+    expect(set.snapshot.flags.get('expected-interval')).toBe('Duration');
+    expect(set.snapshot.guidOnly.has('repo')).toBe(true);
+    expect(set.verify.flags.get('level')).toBe('String');
+    expect(set.verify.flags.get('next-due')).toBe('String');
+    expect(set.verify.flags.get('read-bwlimit')).toBe('Rate');
+    expect(set.verify.guidOnly.has('exclude-repo')).toBe(true);
+    expect(set.report.flags.get('kind')).toBe('String');
+    expect(set.report.flags.get('reason')).toBe('String');
+    expect(set.report.guidOnly.has('exclude-repo')).toBe(true);
   });
 
   it('every generated ExecStart parses, with no flag or value renet would refuse', () => {
@@ -237,13 +281,32 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     // One unit per strategy per datastore it reaches, plus the per-repo unit; a matrix that rendered nothing would pass vacuously.
     expect(lines.length).toBeGreaterThanOrEqual(Object.keys(MATRIX).length);
     for (const line of lines) {
-      expect({ line, problems: snapshotArgvProblems(line, set) }).toEqual({ line, problems: [] });
+      expect({ line, problems: argvProblems(line, set) }).toEqual({ line, problems: [] });
     }
+  });
+
+  it('renders all three subcommands, and every flag of the verify and report lines is declared (control)', () => {
+    const lines = generatedExecStarts();
+    for (const sub of ['snapshot', 'verify', 'report']) {
+      expect(lines.some((l) => l.split(' ')[2] === sub)).toBe(true);
+    }
+    expect(argvProblems('/r backup verify --level spot --nope', set)).toEqual([
+      'unknown flag: --nope',
+    ]);
+    expect(argvProblems('/r backup report --accept-identity-change', set)).toEqual([
+      'unknown flag: --accept-identity-change',
+    ]);
+    expect(argvProblems('/r backup snapshot --expected-interval soon', set)).toEqual([
+      'invalid argument "soon" for --expected-interval: not a duration',
+    ]);
+    expect(argvProblems('/r backup report --reason unquoted words', set)).toEqual([
+      '--reason must be one quoted argument, got unquoted words',
+    ]);
   });
 
   it('the pre-G1 output, a repo NAME on --repo, is refused (control)', () => {
     expect(
-      snapshotArgvProblems(
+      argvProblems(
         `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --repo mail`,
         set
       )
@@ -252,7 +315,7 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
 
   it('an ambiguous bandwidth limit, a non-integer parallelism and an unknown flag are refused (control)', () => {
     expect(
-      snapshotArgvProblems('/r backup snapshot --bwlimit 100Mb --parallelism two --mode=hot', set)
+      argvProblems('/r backup snapshot --bwlimit 100Mb --parallelism two --mode=hot', set)
     ).toEqual([
       'invalid argument "100Mb" for --bwlimit: not a rate',
       'invalid argument "two" for --parallelism: not an integer',

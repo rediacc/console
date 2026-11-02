@@ -93,6 +93,10 @@
       "types": "./dist/config-schema/*.d.ts",
       "default": "./dist/config-schema/*.js"
     },
+    "./backup/*": {
+      "types": "./dist/backup/*.d.ts",
+      "default": "./dist/backup/*.js"
+    },
     "./ref": {
       "types": "./dist/ref/index.d.ts",
       "default": "./dist/ref/index.js"

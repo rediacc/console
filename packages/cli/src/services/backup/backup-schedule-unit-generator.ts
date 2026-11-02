@@ -14,7 +14,19 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { envFilePath } from './backup-env-file.js';
+import { cronMaxGapSeconds } from './backup-schedule-interval.js';
 import type { UnitScope } from './backup-schedule-targets.js';
+import {
+  ALERT_UNIT_SUFFIX,
+  alertUnitFileName,
+  failureReportCommand,
+  fullVerifyCommand,
+  scopeFlags,
+  spotVerifyCommand,
+  VERIFY_UNIT_SUFFIX,
+  verifyOnCalendar,
+  verifySettings,
+} from './backup-schedule-verify.js';
 import {
   assertStrategySchedulable,
   cpuQuotaValue,
@@ -120,22 +132,21 @@ function buildChunkStoreCommand(
   datastore: string,
   remoteRenetPath: string,
   scope: UnitScope,
-  cpuCount?: number
+  cpuCount: number | undefined,
+  schedule: string
 ): string {
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
   //
   // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be deployed to a machine BEFORE a unit carrying --cold is written to it. An older renet dies at cobra's flag parse, and the failure surfaces as a backup that silently never ran. `backup schedule` seeds the binary first, which is what keeps this in the right order.
   if ((strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold') parts.push('--cold');
-  if (scope.include) {
-    for (const guid of scope.include) parts.push(`--repo ${guid}`);
-  } else {
-    for (const guid of scope.exclude) parts.push(`--exclude-repo ${guid}`);
-  }
+  parts.push(...scopeFlags(scope));
   // The cap is the tightest of the strategy's and its destinations' (effectiveBandwidthLimit), in bytes/second. Parallelism is always pinned: a capped run fanned over renet's default workers only queues them on the one budget.
   const bwlimit = effectiveBandwidthLimit(strategy, destinations);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
   parts.push(`--parallelism ${STRATEGY_UPLOAD_PARALLELISM}`);
+  // Without the cadence nothing sends `nextExpectedAt` with the commit, and the server's dead-man check (a stream whose next run is overdue) stays silent for exactly the machine that stopped running. The longest gap of the unit's own cron is used, so a weekday-only schedule does not alarm over a weekend.
+  parts.push(`--expected-interval ${cronMaxGapSeconds(schedule)}s`);
   // The read cap is strategy level (the read is local, not tied to a destination) and is emitted ONLY when set, so every other unit gets the verb's gentle default and an older renet is not handed a flag it does not know. --hash-parallelism is never emitted: the verb default (1) stands.
   const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
   if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
@@ -174,7 +185,8 @@ export function buildBackupCommands(
   datastore: string,
   remoteRenetPath: string,
   scope: UnitScope = unresolvedScope(strategy),
-  cpuCount?: number
+  cpuCount?: number,
+  schedule: string = strategy.schedule
 ): BackupBuild {
   const envVars: Record<string, string> = {};
 
@@ -182,7 +194,15 @@ export function buildBackupCommands(
   assertStrategySchedulable(strategy, destinations);
   return {
     commands: [
-      buildChunkStoreCommand(strategy, destinations, datastore, remoteRenetPath, scope, cpuCount),
+      buildChunkStoreCommand(
+        strategy,
+        destinations,
+        datastore,
+        remoteRenetPath,
+        scope,
+        cpuCount,
+        schedule
+      ),
     ],
     envVars,
   };
@@ -277,7 +297,8 @@ export function generateServiceUnit(
   datastore: string,
   remoteRenetPath: string,
   scope?: UnitScope,
-  cpuCount?: number
+  cpuCount?: number,
+  schedule: string = strategy.schedule
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
@@ -285,8 +306,14 @@ export function generateServiceUnit(
     datastore,
     remoteRenetPath,
     scope,
-    cpuCount
+    cpuCount,
+    schedule
   );
+  // The spot verify is a second ExecStart of a oneshot unit: systemd runs them in order and stops at the first failure, so a failed snapshot is never verified, and a failed verify fails the unit (and with it OnFailure=). It carries the snapshot's scope; `scope ?? unresolved` already threw above for a name-bearing strategy.
+  const verify = verifySettings(strategy);
+  if (!verify.off && verify.spotAfterRun) {
+    commands.push(spotVerifyCommand(remoteRenetPath, datastore, scope ?? { exclude: [] }));
+  }
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
   const envFileLine =
     Object.keys(envVars).length > 0 ? `EnvironmentFile=${envFilePath(strategyName)}\n` : '';
@@ -305,6 +332,7 @@ export function generateServiceUnit(
   const serviceContent = `[Unit]
 Description=Rediacc Scheduled Backup (${strategyName})
 After=network-online.target
+OnFailure=${alertUnitFileName(strategyName)}
 
 [Service]
 Type=oneshot
@@ -331,5 +359,76 @@ Persistent=true
 
 [Install]
 WantedBy=timers.target
+`;
+}
+
+/** The unit-name keys of the verification units rendered beside a strategy unit. */
+export function verifyUnitName(unitName: string): string {
+  return `${unitName}${VERIFY_UNIT_SUFFIX}`;
+}
+
+export function alertUnitName(unitName: string): string {
+  return `${unitName}${ALERT_UNIT_SUFFIX}`;
+}
+
+/**
+ * The full-verify service the daily timer starts: one repository per run (renet's `--next-due` rotation), under one
+ * core (`CPUQuota=100%`, the measured ceiling of the verb) at the same low priority as a snapshot. It reads local
+ * files only and holds no credential.
+ */
+export function generateVerifyServiceUnit(
+  unitName: string,
+  strategy: BackupStrategyConfig,
+  datastore: string,
+  remoteRenetPath: string,
+  scope: UnitScope
+): string {
+  const key = verifyUnitName(unitName);
+  return `[Unit]
+Description=Rediacc Backup Verify (${unitName})
+After=network-online.target
+OnFailure=${alertUnitFileName(key)}
+
+[Service]
+Type=oneshot
+${LOW_PRIORITY_DIRECTIVES}
+CPUQuota=100%
+TimeoutStartSec=infinity
+TimeoutStopSec=90
+ExecStart=${fullVerifyCommand(remoteRenetPath, datastore, scope, strategy)}
+
+[Install]
+WantedBy=multi-user.target
+`;
+}
+
+/** The daily timer of the verify service. */
+export function generateVerifyTimerUnit(unitName: string, strategy: BackupStrategyConfig): string {
+  return generateTimerUnit(
+    verifyUnitName(unitName),
+    verifyOnCalendar(unitName, verifySettings(strategy), cronToOnCalendar)
+  );
+}
+
+/**
+ * What OnFailure= starts: `renet backup report` for the failed unit's scope. A crash is the case it covers, since the
+ * verbs report their own failures. The reason is fixed text naming the unit; nothing from the config, no environment
+ * file and no credential reaches it. It has no [Install] section and no timer: only OnFailure= starts it.
+ */
+export function generateAlertServiceUnit(
+  failedUnitName: string,
+  datastore: string,
+  remoteRenetPath: string,
+  scope: UnitScope,
+  kind: 'snapshot' | 'verify'
+): string {
+  const failedFile = `rediacc-backup-${failedUnitName}.service`;
+  return `[Unit]
+Description=Rediacc Backup Failure Report (${failedUnitName})
+
+[Service]
+Type=oneshot
+${LOW_PRIORITY_DIRECTIVES}
+ExecStart=${failureReportCommand(remoteRenetPath, datastore, scope, failedFile, kind)}
 `;
 }

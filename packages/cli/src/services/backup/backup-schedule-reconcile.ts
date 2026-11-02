@@ -12,17 +12,24 @@ import { outputService } from '../core/output.js';
 import { generateEnvFile } from './backup-env-file.js';
 import type { ScheduleUnitSpec } from './backup-schedule-targets.js';
 import {
+  alertUnitName,
   cronToOnCalendar,
+  generateAlertServiceUnit,
   generateServiceUnit,
   generateTimerUnit,
+  generateVerifyServiceUnit,
+  generateVerifyTimerUnit,
   sha256Hex,
+  verifyUnitName,
 } from './backup-schedule-unit-generator.js';
+import { verifySettings } from './backup-schedule-verify.js';
 
 // --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
 export interface DesiredUnit {
   strategyName: string;
   serviceContent: string;
+  /** Empty string for a service started only by OnFailure= (the failure report units). */
   timerContent: string;
   /** Empty string when the strategy has no credentials. */
   envFileContent: string;
@@ -264,6 +271,11 @@ export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> 
  * Render every unit the specs ask for. One spec is one (strategy, datastore, cadence, scope) unit; see
  * backup-schedule-targets.ts for how specs come from the config. Synchronous and deterministic: the
  * reconciler diffs the result by hash.
+ *
+ * A spec renders up to four units, all keyed by name so reconcile and removal treat them alike: the snapshot unit
+ * (`<name>`, which ends in a spot verify), its failure report (`<name>.alert`), and, unless the strategy turns
+ * verification off, the daily full-verify service and timer (`<name>.verify`) with its own failure report
+ * (`<name>.verify.alert`). The alert units are timerless services that only OnFailure= starts.
  */
 export function computeDesiredUnits(
   specs: ScheduleUnitSpec[],
@@ -271,6 +283,15 @@ export function computeDesiredUnits(
   cpuCount?: number
 ): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
+  const add = (unit: DesiredUnit): void => {
+    // Two specs rendering to one key would silently keep the second: a unit's scope would vanish with no error.
+    if (result.has(unit.strategyName)) {
+      throw new Error(
+        `The backup schedule renders more than one unit named "${unit.strategyName}"; unit names must be unique.`
+      );
+    }
+    result.set(unit.strategyName, unit);
+  };
   for (const spec of specs) {
     const enabledDests = spec.strategy.destinations.filter((d) => d.enabled !== false);
     if (enabledDests.length === 0) {
@@ -284,14 +305,53 @@ export function computeDesiredUnits(
       spec.datastore.path,
       remoteRenetPath,
       spec.scope,
-      cpuCount
+      cpuCount,
+      spec.schedule
     );
     const timerContent = generateTimerUnit(spec.unitName, cronToOnCalendar(spec.schedule));
-    result.set(spec.unitName, {
+    add({
       strategyName: spec.unitName,
       serviceContent,
       timerContent,
       envFileContent: generateEnvFile(envVars),
+    });
+    add({
+      strategyName: alertUnitName(spec.unitName),
+      serviceContent: generateAlertServiceUnit(
+        spec.unitName,
+        spec.datastore.path,
+        remoteRenetPath,
+        spec.scope,
+        'snapshot'
+      ),
+      timerContent: '',
+      envFileContent: '',
+    });
+    if (verifySettings(spec.strategy).off) continue;
+    const verifyName = verifyUnitName(spec.unitName);
+    add({
+      strategyName: verifyName,
+      serviceContent: generateVerifyServiceUnit(
+        spec.unitName,
+        spec.strategy,
+        spec.datastore.path,
+        remoteRenetPath,
+        spec.scope
+      ),
+      timerContent: generateVerifyTimerUnit(spec.unitName, spec.strategy),
+      envFileContent: '',
+    });
+    add({
+      strategyName: alertUnitName(verifyName),
+      serviceContent: generateAlertServiceUnit(
+        verifyName,
+        spec.datastore.path,
+        remoteRenetPath,
+        spec.scope,
+        'verify'
+      ),
+      timerContent: '',
+      envFileContent: '',
     });
   }
   return result;
@@ -312,13 +372,14 @@ function envDrifted(
 
 function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined): StrategyDiff {
   const desiredServiceHash = sha256Hex(unit.serviceContent);
-  const desiredTimerHash = sha256Hex(unit.timerContent);
+  const hasTimer = unit.timerContent !== '';
+  const desiredTimerHash = hasTimer ? sha256Hex(unit.timerContent) : null;
   const desiredEnvHash = unit.envFileContent ? sha256Hex(unit.envFileContent) : null;
 
   // Treat "no service or timer on remote" as fresh, even if a stale env file happens to exist (reconciler will overwrite it).
   const isFresh = !remote || (!remote.serviceFile.exists && !remote.timerFile.exists);
   if (isFresh) {
-    const changedFiles: ChangedFile[] = ['service', 'timer'];
+    const changedFiles: ChangedFile[] = hasTimer ? ['service', 'timer'] : ['service'];
     if (desiredEnvHash !== null) changedFiles.push('env');
     return {
       name: unit.strategyName,
@@ -331,7 +392,7 @@ function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined)
 
   const changed: ChangedFile[] = [];
   if (remote.serviceFile.sha256 !== desiredServiceHash) changed.push('service');
-  if (remote.timerFile.sha256 !== desiredTimerHash) changed.push('timer');
+  if (hasTimer && remote.timerFile.sha256 !== desiredTimerHash) changed.push('timer');
   if (envDrifted(desiredEnvHash, remote.envFile.exists, remote.envFile.sha256)) {
     changed.push('env');
   }

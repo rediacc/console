@@ -176,6 +176,10 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // hosted-service destination: the endpoint identifies a customer/elite plane (mirror accountServer/releasesUrl → identifier); vaultContent is the credential bag, one container-level secret leaf.
   '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
   '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
+  // Verification switches and a cron; non-sensitive.
+  '/resources/backupStrategies/*/verify/off': { kind: 'public' },
+  '/resources/backupStrategies/*/verify/spotAfterRun': { kind: 'public' },
+  '/resources/backupStrategies/*/verify/deepSchedule': { kind: 'public' },
   // GFS retention knobs (counts; enforced server-side). Non-sensitive policy.
   '/resources/backupStrategies/*/retention/keepLast': { kind: 'public' },
   '/resources/backupStrategies/*/retention/keepHourly': { kind: 'public' },

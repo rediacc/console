@@ -300,14 +300,24 @@ export function coverageByGuid(
   config: RdcConfig,
   machineName: string
 ): Map<string, string[]> {
-  const families = config.resources?.repositories ?? {};
   const result = new Map<string, string[]>();
   for (const spec of specs) {
-    const excluded = new Set(spec.scope.exclude);
-    const guids =
-      spec.scope.include ??
-      guidsOnDatastore(families, machineName, spec.datastore).filter((g) => !excluded.has(g));
-    for (const guid of guids) result.set(guid, [...(result.get(guid) ?? []), spec.schedule]);
+    for (const guid of specRepoGuids(spec, config, machineName)) {
+      result.set(guid, [...(result.get(guid) ?? []), spec.schedule]);
+    }
   }
   return result;
+}
+
+/** GUIDs of every repository one unit covers: its include list, or every placed repository on its datastore minus its exclude list. */
+export function specRepoGuids(
+  spec: ScheduleUnitSpec,
+  config: RdcConfig,
+  machineName: string
+): string[] {
+  if (spec.scope.include) return spec.scope.include;
+  const excluded = new Set(spec.scope.exclude);
+  return guidsOnDatastore(config.resources?.repositories ?? {}, machineName, spec.datastore).filter(
+    (g) => !excluded.has(g)
+  );
 }

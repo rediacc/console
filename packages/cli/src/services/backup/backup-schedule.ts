@@ -22,6 +22,7 @@
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { BackupStrategyConfig } from '../../types/index.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
@@ -58,6 +59,12 @@ import {
   type ScheduledStrategy,
   type ScheduleUnitSpec,
 } from './backup-schedule-targets.js';
+import {
+  syncTocKeys,
+  type TocKeyTransport,
+  tocKeyTargetsFor,
+  tocKeyWarnings,
+} from './backup-schedule-toc-key.js';
 import {
   buildBackupCommands,
   cronToOnCalendar,
@@ -334,6 +341,53 @@ export async function reportBackupScheduleStatus(
   }
 }
 
+function sftpTocKeyTransport(sftp: SFTPClient): TocKeyTransport {
+  return {
+    async run(command, stdin) {
+      let stdout = '';
+      const exitCode = await sftp.execStreaming(command, {
+        ...(stdin === undefined ? {} : { stdin }),
+        onStdout: (data) => {
+          stdout += data.toString();
+        },
+        onStderr: () => {},
+      });
+      return { exitCode, stdout };
+    },
+  };
+}
+
+/**
+ * Install the browse-listing public key of every repository the deploy covers. Best-effort: the schedule is the
+ * deliverable, so a failure here is a warning, never a thrown deploy. A dry run reads and writes nothing.
+ */
+async function installTocKeys(
+  sftp: SFTPClient,
+  machineName: string,
+  specs: ScheduleUnitSpec[],
+  remoteRenetPath: string,
+  options: PushScheduleOptions
+): Promise<void> {
+  try {
+    const config = await configService.getCurrent();
+    if (!config) return;
+    const targets = tocKeyTargetsFor(config, machineName, specs);
+    if (targets.length === 0) return;
+    if (options.dryRun) {
+      outputService.info(
+        `Dry-run: would compare the TOC key of ${targets.length} repositor${targets.length === 1 ? 'y' : 'ies'}; nothing was read or written`
+      );
+      return;
+    }
+    const results = await syncTocKeys(sftpTocKeyTransport(sftp), remoteRenetPath, targets, {});
+    for (const line of tocKeyWarnings(results)) outputService.warn(line);
+  } catch (error) {
+    outputService.warn(
+      `TOC keys were not checked on ${machineName}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
 /**
  * Push backup schedule to a remote machine.
  *
@@ -372,6 +426,7 @@ export async function pushBackupSchedule(
 
   try {
     const cpuCount = await resolveMachineCpuCount(sftp);
+    await installTocKeys(sftp, machineName, specs, remoteRenetPath, options);
     const desired = computeDesiredUnits(specs, remoteRenetPath, cpuCount);
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);

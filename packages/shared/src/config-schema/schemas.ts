@@ -360,6 +360,27 @@ const RetentionPolicySchema = z.object({
 
 const CronSchema = z.string().refine(isValidCron, 'Must be a valid 5-field cron expression');
 
+/**
+ * Verification of a strategy's snapshots, run on the machine by the units `backup schedule` renders.
+ *
+ * - `spotAfterRun` (default true): the snapshot service ends with `backup verify --level spot`.
+ * - `deepSchedule`: cron of the full-verify timer, which rotates one repository per run. Unset means a daily run at a
+ *   time derived from the unit name, so a fleet does not verify in the same minute.
+ * - `off`: renders neither the spot nor the timer. The failure report units stay, since they only speak on failure.
+ *
+ * Strict, because a misspelled key stripped silently would leave verification running when the operator turned it off.
+ */
+const BackupVerifySchema = z
+  .object({
+    off: z.boolean().optional(),
+    spotAfterRun: z.boolean().optional(),
+    deepSchedule: z
+      .string()
+      .refine(isValidCron, 'Must be a valid 5-field cron expression')
+      .optional(),
+  })
+  .strict();
+
 const BackupStrategyConfigSchema = z.object({
   destinations: z.array(BackupDestinationSchema),
   schedule: CronSchema,
@@ -373,6 +394,7 @@ const BackupStrategyConfigSchema = z.object({
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   retention: RetentionPolicySchema.optional(),
+  verify: BackupVerifySchema.optional(),
   /** Per-repo cadence override (G10): repo ref -> cron. The repo gets its own unit on that schedule. */
   repoSchedules: z.record(z.string(), CronSchema).optional(),
 });

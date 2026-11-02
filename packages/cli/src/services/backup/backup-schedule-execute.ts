@@ -243,6 +243,10 @@ async function commitStaged(
   }
 }
 
+function hasTimer(diff: StrategyDiff): boolean {
+  return diff.desired !== null && diff.desired.timerContent !== '';
+}
+
 async function finalizeSystemd(
   sftp: SFTPClient,
   plan: ReconcilePlan,
@@ -258,7 +262,8 @@ async function finalizeSystemd(
   }
 
   const touched = [...plan.toCreate, ...plan.toUpdate];
-  for (const diff of touched) {
+  // A timerless unit (a failure report) is started by OnFailure= alone: there is no timer to enable.
+  for (const diff of touched.filter(hasTimer)) {
     await runRemoteCommand(
       sftp,
       `sudo systemctl enable --now rediacc-backup-${diff.name}.timer`,
@@ -330,7 +335,9 @@ function diagnoseTimer(timer: string, rec: Record<string, string> | undefined): 
 }
 
 export async function verifyPostDeploy(sftp: SFTPClient, plan: ReconcilePlan): Promise<void> {
-  const timers = [...plan.toCreate, ...plan.toUpdate].map((d) => `rediacc-backup-${d.name}.timer`);
+  const timers = [...plan.toCreate, ...plan.toUpdate]
+    .filter(hasTimer)
+    .map((d) => `rediacc-backup-${d.name}.timer`);
   if (timers.length === 0) return;
 
   const cmd = `systemctl show --property=Id,LoadState,ActiveState,UnitFileState ${timers.join(' ')}`;
@@ -396,7 +403,9 @@ export function printDryRunUnitBodies(plan: ReconcilePlan): void {
         .sort();
       outputService.info(keys.map((k) => `${k}=[REDACTED]`).join('\n'));
     }
-    outputService.info(`--- rediacc-backup-${unit.strategyName}.timer ---`);
-    outputService.info(unit.timerContent);
+    if (unit.timerContent) {
+      outputService.info(`--- rediacc-backup-${unit.strategyName}.timer ---`);
+      outputService.info(unit.timerContent);
+    }
   }
 }
