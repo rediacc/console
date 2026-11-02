@@ -1036,8 +1036,8 @@ ADVANCE_POLICY = json.dumps(
 )
 
 
-def test_advance_over_a_red_receipt_exits_nonzero(gate):
-    """#ea5e31cd: an advance never touches `failed` or `exitCode`, so a record-only commit over a red receipt printed a green and exited 0 while the receipt it left stayed red."""
+def test_record_commit_over_a_red_receipt_runs_the_lane(gate):
+    """#ea5e31cd: an advance never touches `failed` or `exitCode`, so a record-only commit over a red receipt printed a green and exited 0 while the receipt it left stayed red. An advance that exits 1 instead can never clear a red from an outside cause, so a red receipt is not advanced: the lane judges the gate again, red when it is still red and green once it is not."""
     gates = [spec("fast:red", '[ -z "$MAKE_RED" ]'), spec("fast:reader", "true")]
     with harness.temp_dir() as work:
         repo = _fixture_repo(
@@ -1055,16 +1055,21 @@ def test_advance_over_a_red_receipt_exits_nonzero(gate):
         (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
         _git(gate, repo, "add", "-A")
         _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
-        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
-        gate.assert_contains(r.out, "ADVANCE", "the record-only commit advanced")
+        r = _quick(
+            gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=red
+        )
+        gate.assert_not_contains(r.out, "ADVANCE", "a red receipt is not advanced")
+        gate.assert_exit(1, r, "a gate still red keeps the run red")
         gate.assert_eq(
-            _receipt(gate, receipt_path).get("failed"), ["fast:red"], "the receipt stays red"
+            _receipt(gate, receipt_path).get("failed"), ["fast:red"], "and the receipt names it"
         )
-        gate.assert_exit(1, r, "an advance over a red receipt exits non-zero")
-        gate.assert_contains(
-            r.out, "still RED", "and it says why its readers passing was not enough"
-        )
-        gate.log_pass("a record-only commit over a red receipt exited 1 and named the red")
+        (repo / "agent" / "reviews" / "c.md").write_text("c\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_exit(0, r, "the outside cause has gone, so the same red clears")
+        gate.assert_eq(_receipt(gate, receipt_path).get("failed"), [], "and the receipt is green")
+        gate.log_pass("a record-only commit over a red receipt judged the gate again")
 
 
 QUICK_CLONE_REL = "scripts/ci-runner/quick-clone.ts"
