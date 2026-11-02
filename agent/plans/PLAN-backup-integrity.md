@@ -311,44 +311,53 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 
 ### C: CLI verbs (writer C)
 
-- [ ] C1: Verify verdicts (F8): an unparseable verdict is status `unknown`, reports failure and sets exit 1. `recordVerifyVerdict` records the status from the verdict on both job outcomes, so `no-backup` never records `verified`. `--deep --store` is refused by name before any work.
+- [x] C1: Verify verdicts (F8): an unparseable verdict is status `unknown`, reports failure and sets exit 1. `recordVerifyVerdict` records the status from the verdict on both job outcomes, so `no-backup` never records `verified`. `--deep --store` is refused by name before any work.
   - Owns: packages/cli/src/services/jobs/steps.ts, packages/cli/src/services/jobs/plans-repo.ts, packages/cli/src/services/jobs/__tests__/steps.test.ts, packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/backup-storage-parser.ts, packages/cli/src/commands/__tests__/backup-storage.test.ts
   - Tests: garbage output, `no-backup`, `mismatch` on failure, `verified`, and `--deep --store`.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/jobs/__tests__/steps.test.ts src/commands/__tests__/backup-storage.test.ts` rc 0.
-- [ ] C2: A failed verify is a health input (F9): `applyStaleness` takes verify failures from `backup_coverage`, adds a named issue and raises the exit code.
+    (ticked) 2026-11-02T03:24:53Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
+- [x] C2: A failed verify is a health input (F9): `applyStaleness` takes verify failures from `backup_coverage`, adds a named issue and raises the exit code.
   - Owns: packages/cli/src/commands/machine/health.ts, packages/cli/src/commands/machine/status.ts, packages/cli/src/services/backup/backup-schedule-coverage.ts, packages/cli/src/commands/machine/__tests__/health-verify.test.ts
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/machine/__tests__/health-verify.test.ts` rc 0.
-- [ ] C3: Restore passes the credential and speaks plainly (F3); `rdc backup verify --restore-test` (F10) restores the anchor's snapshot under a new name with `--no-seed` so bytes really come from the store, after a free-space check of 1.2x the image. It runs V6's compare, reports `proven` or `failed`, and deletes only the copy by its GUID, including after a failure. It refuses the source repo as the copy.
+    (ticked) 2026-11-02T03:24:55Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
+- [x] C3: Restore passes the credential and speaks plainly (F3); `rdc backup verify --restore-test` (F10) restores the anchor's snapshot under a new name with `--no-seed` so bytes really come from the store, after a free-space check of 1.2x the image. It runs V6's compare, reports `proven` or `failed`, and deletes only the copy by its GUID, including after a failure. It refuses the source repo as the copy.
   - Owns: packages/cli/src/commands/backup-restore-chunk.ts, packages/cli/src/commands/backup-restore-test.ts, packages/cli/src/commands/backup-storage.ts, packages/cli/src/commands/__tests__/backup-restore-test.test.ts
   - Tests: the delete call names only the copy's GUID in every path; a mismatch exits 1; `passphraseCheck` is rendered in every format.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-restore-test.test.ts` rc 0.
-- [ ] C4: `rdc backup repair <repo> [--dry-run]` (F11) drives `--store`, then the server delete, then the machine re-upload, and reports unrepairable hashes and affected snapshots; `rdc backup restore --salvage --as <new>`.
+    (ticked) 2026-11-02T03:24:58Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
+- [x] C4: `rdc backup repair <repo> [--dry-run]` (F11) drives `--store`, then the server delete, then the machine re-upload, and reports unrepairable hashes and affected snapshots; `rdc backup restore --salvage --as <new>`.
   - Owns: packages/cli/src/commands/backup-repair.ts, packages/cli/src/commands/backup-restore-chunk.ts, packages/cli/src/commands/__tests__/backup-repair.test.ts
   - Tests: `--dry-run` never deletes; a clean verify calls nothing; an unrepairable hash exits non-zero; `--salvage` without `--as` refused.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-repair.test.ts` rc 0.
-- [ ] C5: `rdc backup check <repo> [--path <file>]` (F12) runs from where the passphrase lives: browse the recent listing with the passphrase, restore one file to a scratch directory, compare it with its listed size, post `proven` or `failed`, delete the scratch only. A snapshot with no index is reported plainly and is not `proven`.
+    (ticked) 2026-11-02T03:25:00Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
+- [x] C5: `rdc backup check <repo> [--path <file>]` (F12) runs from where the passphrase lives: browse the recent listing with the passphrase, restore one file to a scratch directory, compare it with its listed size, post `proven` or `failed`, delete the scratch only. A snapshot with no index is reported plainly and is not `proven`.
   - Owns: packages/cli/src/commands/backup-check.ts, packages/cli/src/commands/__tests__/backup-check.test.ts
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-check.test.ts` rc 0.
-- [ ] C6: `backup strategy list` and `show` print rows on stdout through `outputService.print` in every format (F13); an empty list is `[]` under `-o json`.
+    (ticked) 2026-11-02T03:25:03Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
+- [x] C6: `backup strategy list` and `show` print rows on stdout through `outputService.print` in every format (F13); an empty list is `[]` under `-o json`.
   - Owns: packages/cli/src/commands/backup-strategy.ts, packages/cli/src/commands/__tests__/backup-strategy.test.ts
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-strategy.test.ts` rc 0.
-- [ ] C7: `rdc backup snapshot --accept-identity-change`, rendering `identity-changed` as a failure naming the flag.
+    (ticked) 2026-11-02T03:25:05Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
+- [x] C7: `rdc backup snapshot --accept-identity-change`, rendering `identity-changed` as a failure naming the flag.
   - Owns: packages/cli/src/commands/backup-storage-snapshot.ts, packages/cli/src/commands/__tests__/backup-snapshot-bwlimit.test.ts
   - Accept: `npm run test:unit -w @rediacc/cli -- src/commands/__tests__/backup-snapshot-bwlimit.test.ts` rc 0.
+    (ticked) 2026-11-02T03:25:08Z by 45048a90: commit:f5bc56d80. cd packages/cli && npx vitest run rc=0, 4609 passed; each new test recorded rc 1 first in the writer report. Mocked executors only; the live proof stays with the drills and box H.
 
 ### S: CLI schedule and TOC key (writer S)
 
-- [ ] S1: `packages/shared/src/backup/toc-key.ts`: `deriveTocPublicKeyLine(credential, lineage)` by HKDF-SHA256 (salt lineage, info `rediacc-backup-toc-v1`), X25519, line `rediacc-toc-x25519 <base64>\n`, with no private half returned. The test reads L4's vectors from a committed copy, and a second test fails if the copy differs from private/renet's file.
+- [x] S1: `packages/shared/src/backup/toc-key.ts`: `deriveTocPublicKeyLine(credential, lineage)` by HKDF-SHA256 (salt lineage, info `rediacc-backup-toc-v1`), X25519, line `rediacc-toc-x25519 <base64>\n`, with no private half returned. The test reads L4's vectors from a committed copy, and a second test fails if the copy differs from private/renet's file.
   - Owns: packages/shared/src/backup/toc-key.ts, packages/shared/src/backup/__tests__/toc-key.test.ts, packages/shared/src/backup/__tests__/toc_key_vectors.json
   - Accept: `npx vitest run --root packages/shared src/backup/__tests__/toc-key.test.ts` rc 0.
+    (ticked) 2026-11-02T03:24:48Z by 45048a90: commit:ce8749873. toc-key vectors from renet pass, vitest rc=0; each new test recorded rc 1 first.
 - [ ] S2: Install at schedule deploy (F6): in `pushBackupSchedule`, after renet is provisioned, each repo in scope gets `status`, then a comparison. Missing: install the public half. Equal: silent. Different: a loud warning naming the repo, and no overwrite. Lineage from `grandGuid`, else the repository GUID. A repo with no credential warns. `rdc backup toc-key sync <repo> [--replace]` re-issues on demand, and `--replace` carries the passphrase to L1's proof. A scan after the install reports repositories with a key but neither keyfile nor mount as getting no listing.
   - Owns: packages/cli/src/services/backup/backup-schedule.ts, packages/cli/src/services/backup/backup-toc-key.ts, packages/cli/src/commands/backup-toc-key.ts, packages/cli/src/services/__tests__/backup-toc-key.test.ts
   - Tests: nothing but the public line leaves the CLI on the deploy path, asserted over every transport call; a mismatch never overwrites without `--replace`; a dry run touches nothing.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-toc-key.test.ts` rc 0.
-- [ ] S3: Units (F9, F12): the service runs verify after the snapshot (same scope flags; a failed snapshot stops it), and `OnFailure=rediacc-backup-alert@%n.service` runs `renet backup report`. A new daily verify timer at a staggered offset runs `backup verify --level full --next-due 7d` under `CPUQuota=100%`. A strategy `verify` block (`spotAfterRun`, `deepSchedule`, `off`) goes through schema, sensitivity and validation. Reconcile and removal handle the new units.
+- [x] S3: Units (F9, F12): the service runs verify after the snapshot (same scope flags; a failed snapshot stops it), and `OnFailure=rediacc-backup-alert@%n.service` runs `renet backup report`. A new daily verify timer at a staggered offset runs `backup verify --level full --next-due 7d` under `CPUQuota=100%`. A strategy `verify` block (`spotAfterRun`, `deepSchedule`, `off`) goes through schema, sensitivity and validation. Reconcile and removal handle the new units.
   - Owns: packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-schedule-execute.ts, packages/cli/src/services/backup/backup-schedule-reconcile.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts, packages/cli/src/services/__tests__/backup-schedule.test.ts
   - Tests: rendered unit text for each case; the alert template carries no secret; removing a strategy removes all its units; `off` renders neither.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-schedule-chunkstore.test.ts src/services/__tests__/backup-schedule.test.ts` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
+    (ticked) 2026-11-02T03:24:50Z by 45048a90: commit:ce8749873. backup-schedule-verify vitest rc=0, 26 tests; each new test recorded rc 1 first.
 
 ### D: artifacts, docs and drills (writer D)
 

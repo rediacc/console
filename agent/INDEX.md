@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 728 | 52 | 1 | 90796 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 47 | 4 | 5 | 8795 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 466 | 31 | 26 | 69373 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 475 | 22 | 35 | 71380 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 454 | 5 | 9 | 57248 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 262 | 4 | 4 | 33056 |
@@ -725,13 +725,3 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
 259 plan(s), 195 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
-
-## Expired plans
-
-A plan whose retention ran out. The FILE is gone and the full text is the blob below, which is content-addressed and survives the rebase this repository merges with. Revive one with `check_plan_folders.py --plan-revive <path>`.
-
-| Plan | Title | First seen | Expired | Full-Text-Blob |
-|---|---|---|---|---|
-| `agent/plans/_done/PLAN-ci-stale-plan-citations-repair.md` | PLAN: repair check:ci-plan-citations after the plan-folder move | 2026-09-22 | 2026-11-02 | `f202404dd3f8ad713ca1fd505f4510b0f1f99322` |
-
-1 expired plan(s). The row is the receipt; the blob is the text.

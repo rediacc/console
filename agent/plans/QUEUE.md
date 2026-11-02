@@ -101,17 +101,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-settings-set-verb.md -- 3 of 4 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
   - agent/plans/PLAN-free-license.md -- 4 of 13 boxes ticked, added to the `Plan:` line under `Operational-Reason:`
 - Work outside the PR's plans (2 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1774 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1782 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 6f81c19f, plan agent/plans/PLAN-hostinger-upgrade-followups.md, outside the set, 3 commit(s) on the branch, 0 open item(s): hostinger CVE-response product follow-ups: Traefik v3.7.16, template fixes, /run docker.sock write-up
-- Writers: 0 live of writer_cap 25 (session 45048a90).
-- Leased items: 6: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:2462036, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
+- Writers: 1 live of writer_cap 25 (session 45048a90): worker:adcc929b26a725d91.
+- Leased items: 8: #11c0d336 (worker:a9ddac5f723c6b4b0, 45048a90), #1bba8c28 (worker:943311, 45048a90), #40ee622f (worker:adcc929b26a725d91, 45048a90), #79c13c18 (worker:adcc929b26a725d91, 45048a90), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:2275536, d778be9d), #f5f6ef74 (worker:a9ddac5f723c6b4b0, 45048a90).
 - Next plan: agent/plans/PLAN-backup-integrity.md, Promoted entry 43; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 44 plans done, 618 of 864 boxes done (71%).
+Promoted: 6 of 44 plans done, 627 of 864 boxes done (72%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -157,7 +157,7 @@ Promoted: 6 of 44 plans done, 618 of 864 boxes done (71%).
 | 40 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 41 | PLAN-settings-set-verb.md | 3/4 | 1 open |
 | 42 | PLAN-free-license.md | 4/13 | 9 open |
-| 43 | PLAN-backup-integrity.md | 26/57 | 31 open |
+| 43 | PLAN-backup-integrity.md | 35/57 | 22 open |
 | 44 | PLAN-backup-critical-tier.md | 1/53 | 52 open |
 <!-- queue:progress:end -->
 
