@@ -588,6 +588,13 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         if not result.ok:
             print("✗ git rm %s failed: %s" % (plan.rel, result.stderr.strip()), file=sys.stderr)
             return 1
+        # A stub left behind would point at nothing, which F5 refuses.
+        stub = "agent/plans/" + plan.rel.rsplit("/", 1)[-1]
+        if stub != plan.rel and (root / stub).is_file():
+            result = gitx.git(["rm", "-q", "--", stub], root=root)
+            if not result.ok:
+                print("✗ git rm %s failed: %s" % (stub, result.stderr.strip()), file=sys.stderr)
+                return 1
     _write_tombstones(root, rows)
     print(
         "✓ swept %d terminal plan(s); %d tombstone row(s) in %s"
