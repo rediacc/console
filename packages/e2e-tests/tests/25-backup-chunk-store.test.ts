@@ -372,6 +372,15 @@ test.describe
         expect(runner.getCombinedOutput(result)).not.toContain('identical');
       });
 
+      test('4e. backup_churn_probe --forget on a repository with no base reports it forgotten, not measured', async () => {
+        // The failure path of the churn command calls this to clean up, so a base that is already gone has to be success. A probe that measured instead would have left a reflink base behind, pinning extents.
+        const result = await backupFunction('backup_churn_probe', { forget: 'true' });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
+        const output = runner.getCombinedOutput(result);
+        expect(output).toContain('"status":"forgotten"');
+        expect(output).not.toMatch(/"status":"(failed|baseline|measured)"/);
+      });
+
       test('5. verify is a read: it leaves no anchor and no journal behind', async () => {
         // An anchor or journal conjured by a READ is the state a later incremental would trust — and it would describe a snapshot that was never uploaded. CASE MATTERS HERE. getCombinedOutput() LOWERCASES (TestHelpers.ts:15), so a literal carrying a capital can never match no matter what the machine did. `/No such file/` was exactly that: the anchor directory was correctly absent
         // and the assertion still went red, because only the `total 0` arm was alive. Every matcher in this file is

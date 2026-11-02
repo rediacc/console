@@ -43,7 +43,12 @@
       "manifests": {
         "description": "Elenca i manifest degli snapshot di backup registrati sul server",
         "empty": "Nessun manifest di backup trovato.",
-        "fetching": "Recupero dei manifest di backup..."
+        "fetching": "Recupero dei manifest di backup...",
+        "optionLimit": "Righe per pagina (predefinito e massimo 500)",
+        "optionBefore": "Cursore di pagina di un elenco precedente (nextBefore)",
+        "optionIncludeDeleted": "Includere gli snapshot con eliminazione ritardata in attesa",
+        "limitInvalid": "--limit richiede un numero intero di almeno 1, ricevuto \"{{value}}\"",
+        "more": "Mostrati {{shown}} di {{total}} snapshot. Pagina successiva: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "Non è stato eseguito alcuno snapshot a {{at}} o prima.",
@@ -107,7 +112,8 @@
         "salvageHole": "  buco ai byte da {{offset}} a {{end}}: {{reason}}",
         "salvageNeedsAs": "--salvage richiede --as <nuovo nome>: un'immagine danneggiata non viene mai posizionata sotto un nome esistente.",
         "salvageNeedsSnapshot": "--salvage richiede uno snapshot del chunk store da cui ripristinare.",
-        "salvageWholeImage": "--salvage ripristina un'immagine intera; non si può combinare con --path o --to."
+        "salvageWholeImage": "--salvage ripristina un'immagine intera; non si può combinare con --path o --to.",
+        "atIndexGap": "Lo snapshot {{snapshot}} non ha un elenco archiviato, quindi si legge {{indexed}}, acquisito {{gap}} prima."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "Conserva lo snapshot più recente per ciascuno di questi anni",
         "set": {
           "description": "Indica quanti snapshot conservare. Ogni parametro viene sostituito, non unito.",
-          "success": "Politica di conservazione impostata per {{name}} ({{count}} regola/e). Gli snapshot esclusi vengono eliminati alla prossima pulizia."
+          "success": "Politica di conservazione impostata per {{name}} ({{count}} regola/e). Gli snapshot esclusi vengono eliminati alla prossima pulizia.",
+          "pending": "La modifica conserva meno, quindi attende la finestra di eliminazione ritardata e ha effetto il {{when}} (UTC) per \"{{name}}\". La politica mostrata resta in vigore fino ad allora."
         },
         "effective": "Conservazione in vigore per {{name}}: {{source}}",
         "optionStream": "Applica solo a questo flusso di backup (un id di flusso); senza, vale il valore predefinito dell'intero repository",
         "preview": {
           "description": "Mostra quali snapshot eliminerebbe la prossima pulizia e quanto spazio libererebbe.",
           "nothing": "La prossima pulizia non elimina nulla di {{name}}.",
-          "summary": "La prossima pulizia elimina {{count}} snapshot di {{name}}, ne conserva {{kept}} e libera {{bytes}}."
+          "summary": "La prossima pulizia elimina {{count}} snapshot di {{name}}, ne conserva {{kept}} e libera {{bytes}}.",
+          "reasons": "Mantenuto per: {{reasons}}"
         },
         "seeded": "La conservazione della strategia \"{{strategy}}\" è stata dichiarata per {{count}} repository senza una politica.",
         "seedFailed": "Impossibile dichiarare la conservazione della strategia \"{{strategy}}\" ({{reason}}). Nel frattempo vale il valore predefinito del server.",
@@ -143,7 +151,10 @@
           "plan": "valore del piano",
           "default": "valore del server",
           "orphan": "periodo di un repository orfano"
-        }
+        },
+        "keepWithinInvalid": "--keep-within richiede una durata come 24h o 90m, ricevuto \"{{value}}\"",
+        "optionKeepWithin": "Mantenere ogni snapshot entro questo intervallo dal più recente, ad es. 24h",
+        "pendingClear": "La rimozione della politica di \"{{name}}\" attende la finestra di eliminazione ritardata e ha effetto il {{when}} (UTC). La politica in vigore continua ad applicarsi fino ad allora."
       },
       "run": {
         "description": "Avvia immediatamente un backup su una macchina remota",
@@ -243,7 +254,22 @@
           "retentionPushed": "Conservazione applicata a {{count}} repository.",
           "retentionPushFailed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non è stato possibile applicarla ({{reason}}). Esegui di nuovo il comando quando il server risponde.",
           "optionCpuLimit": "Limite di CPU degli snapshot di questa strategia: percentuale di tutti i core, 1-100 (predefinito 50); none lo rimuove",
-          "cpuLimitStrategyOnly": "--cpu-limit vale per l'intera strategia; rimuovi --destination."
+          "cpuLimitStrategyOnly": "--cpu-limit vale per l'intera strategia; rimuovi --destination.",
+          "optionRpo": "Obiettivo di protezione dichiarato, ad esempio 15m (almeno 5m; none lo rimuove)",
+          "optionRepoRpo": "Obiettivo per repository come <ref>=<durata>, ripetibile (none lo rimuove); name:* è la famiglia",
+          "optionRepoCellSize": "Dimensione di cella per repository come <ref>=<dimensione>, ripetibile. Una modifica reinizializza il repository",
+          "optionNoEstimate": "Saltare la stima di variazione e costo",
+          "optionDryRun": "Mostrare cosa cambierebbe senza scrivere nulla",
+          "rpoInvalid": "{{option}} non valido \"{{value}}\": {{reason}}",
+          "repoOptionInvalid": "{{option}} richiede <ref>=<valore>, ricevuto \"{{value}}\"",
+          "cellSizeInvalid": "La dimensione di cella \"{{value}}\" non è una dimensione come 1M o 4M",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" non ha un obiettivo; impostane prima uno con --repo-rpo {{ref}}=<durata>",
+          "noMeasurement": "Nessuna misura di variazione per {{refs}}. Esegui prima `rdc backup churn <repo>` oppure passa --no-estimate.",
+          "reseedWarning": "Cambiare la dimensione di cella di {{ref}} in {{size}} lo reinizializza: ogni cella viene caricata di nuovo e addebitata, e i fork sulla vecchia griglia non deduplicano più. Un'esecuzione pianificata non adotta mai da sola il cambio di griglia.",
+          "retentionDefaulted": "La strategia \"{{strategy}}\" non ha dichiarato conservazione, quindi ogni snapshot entro {{window}} viene mantenuto (predefinito del piano {{plan}}).",
+          "retentionDefaultNoStorage": "Il piano {{plan}} non include archiviazione di backup nel cloud, quindi non è stata impostata alcuna conservazione predefinita.",
+          "retentionDefaultNoPlan": "Impossibile leggere il piano, quindi non è stata impostata alcuna conservazione predefinita. Dichiarane una con --retention.",
+          "dryRun": "Simulazione: la strategia \"{{strategy}}\" cambierebbe ({{changes}}). Non è stato scritto nulla."
         },
         "show": {
           "description": "Mostra i dettagli della strategia di backup",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "Mostra la quota di storage dei backup, i byte memorizzati e l'utilizzo per repository",
         "empty": "Nessun utilizzo di storage dei backup ancora registrato per repository.",
-        "fetching": "Recupero dell'utilizzo dello storage dei backup..."
+        "fetching": "Recupero dell'utilizzo dello storage dei backup...",
+        "overLimit": "LIMITE SUPERATO",
+        "summary": "Usati {{used}} di {{quota}} (attivi {{live}}, riservati {{leased}}, {{chunks}} chunk) {{over}}",
+        "waiting": "In attesa di eliminazione: {{waiting}} in {{chunks}} chunk, non addebitati. Limite di variazione {{cap}}.",
+        "throttled": "Lo spazio in attesa supera il limite di variazione di {{cap}}: un flusso di backup più rapido di uno all'ora viene rifiutato finché non si svuota."
       },
       "verify": {
         "completed": "Backup verificato per {{name}}",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "Elimina uno snapshot archiviato. I suoi dati esclusivi vengono liberati dalla prossima garbage collection.",
           "notInRepo": "Lo snapshot {{snapshot}} non è nella cronologia archiviata di {{name}}. Per elencarne gli id: rdc backup manifests {{name}}",
-          "success": "Eliminati {{count}} snapshot di {{name}}, incluso {{snapshot}}."
+          "success": "Eliminati {{count}} snapshot di {{name}}, incluso {{snapshot}}.",
+          "delayed": "L'eliminazione dello snapshot {{snapshot}} di \"{{name}}\" è ritardata: è ancora ripristinabile e verrà rimosso il {{when}} (UTC). Annulla con: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "Spazio archiviato per questo repository: prima {{beforeBytes}} in {{beforeChunks}} chunk, dopo {{afterBytes}} in {{afterChunks}} chunk.",
         "usageUnavailable": "Eliminazione completata, ma non è stato possibile leggere l'utilizzo dopo l'eliminazione: {{error}}",
         "progress": "Eliminazione di \"{{name}}\": passaggio {{round}}, finora eliminati {{chunks}} oggetti ({{bytes}}).",
-        "tooManyRounds": "L'eliminazione di \"{{name}}\" non è terminata dopo {{rounds}} passaggi. Eseguire di nuovo il comando per continuare."
+        "tooManyRounds": "L'eliminazione di \"{{name}}\" non è terminata dopo {{rounds}} passaggi. Eseguire di nuovo il comando per continuare.",
+        "optionCancel": "Annullare una rimozione totale ritardata prima che abbia effetto",
+        "cancelExclusive": "--cancel non può essere combinato con --dry-run",
+        "cancelled": "La rimozione totale ritardata di \"{{name}}\" è stata annullata.",
+        "nothingWaiting": "Nessuna rimozione totale di \"{{name}}\" era in attesa.",
+        "delayed": "La rimozione totale di \"{{name}}\" è ritardata: non è stato eliminato nulla e verrà eseguita il {{when}} (UTC). Annullala prima con: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Verifica che uno snapshot si apra con la passphrase ripristinando un file",
@@ -391,6 +427,55 @@
         "optionDryRun": "Mostra cosa verrebbe fatto; non tocca nulla",
         "optionReplace": "Sostituisce una chiave diversa già presente sulla macchina (invia la passphrase come prova)",
         "syncDescription": "Installa la chiave di listing del repository sulla sua macchina, o ne sostituisce una diversa"
+      },
+      "churn": {
+        "description": "Misura quanto cambia l'immagine di un repository tra le esecuzioni, proietta il caricamento per dimensione di cella e ne consiglia una. Durante l'operazione sulla macchina resta una base reflink, che viene sempre rimossa.",
+        "descriptionShort": "Misurare la variazione di un repository e consigliare una dimensione di cella",
+        "optionSamples": "Campioni misurati da raccogliere (predefinito 3)",
+        "optionInterval": "Attesa tra le sonde, ad esempio 10m (predefinito 10m)",
+        "probing": "Sonda su \"{{name}}\" (sonda {{probe}})...",
+        "probed": "Sonda di \"{{name}}\" registrata",
+        "probeFailed": "La sonda di \"{{name}}\" non è riuscita",
+        "forgetting": "Rimozione della base di sonda di \"{{name}}\"...",
+        "forgotten": "La base di sonda di \"{{name}}\" è stata rimossa dalla macchina.",
+        "forgetFailed": "La base di sonda di \"{{name}}\" non è stata rimossa e occupa ancora spazio sulla macchina. Esegui di nuovo rdc backup churn {{name}}; al termine rimuove la base.",
+        "noMeasurement": "Nessuna variazione misurata per \"{{name}}\": una prima sonda fissa solo un riferimento ({{baselines}} riferimento, {{skipped}} saltate). Non viene proiettato nulla.",
+        "samplesInvalid": "--samples richiede un numero intero da 1 a {{max}}, ricevuto \"{{value}}\"",
+        "intervalInvalid": "--interval richiede una durata come 5m o 1h (meno di 24h), ricevuto \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "Dimensione di cella consigliata: {{cell}}. Le scritture sono piccole e sparse e vengono caricati il {{savedPercent}}% di byte in meno rispetto a 4 MiB. Cambiarla reinizializza il repository.",
+          "clustered-large": "Dimensione di cella consigliata: {{cell}}. Le scritture sono grandi e raggruppate, quindi servono molti meno put per gli stessi byte.",
+          "default": "Dimensione di cella consigliata: {{cell}}, quella predefinita. Nessun'altra dimensione fa risparmiare abbastanza.",
+          "idle": "Dimensione di cella consigliata: {{cell}}, quella predefinita. Il repository non è cambiato tra le sonde.",
+          "collapse-cap": "Dimensione di cella consigliata: {{cell}}. 1 MiB farebbe risparmiare il {{savedPercent}}%, ma con quella dimensione l'immagine supererebbe 262.144 celle, oltre le quali la potatura è rinviata."
+        },
+        "estimate": {
+          "target": "{{name}}: {{cells}} cella/e modificata/e per esecuzione, {{runs}} esecuzioni al giorno (calcolato con celle da 4 MiB).",
+          "cost": "Stimati {{total}} al mese: {{classA}} operazioni Class A e {{classB}} Class B, {{storage}} di archiviazione ({{window}} addebitati, {{waiting}} nel periodo di grazia di 7 giorni).",
+          "capHeld": "Lo spazio in attesa si assesta a {{waiting}}, sotto il limite di variazione di {{cap}}.",
+          "capExceeded": "Lo spazio in attesa raggiungerebbe {{waiting}} e supererebbe il limite di variazione di {{cap}} in {{days}} giorno/i: un flusso più rapido di uno all'ora verrebbe rifiutato finché non si svuota."
+        }
+      },
+      "immutability": {
+        "description": "Mostrare o impostare la finestra di eliminazione ritardata dei backup archiviati",
+        "show": {
+          "description": "Mostrare la finestra di eliminazione ritardata in vigore",
+          "window": "Eliminazione ritardata: un'eliminazione, una rimozione totale o una conservazione ridotta attende {{days}} giorno/i e fino ad allora può essere annullata.",
+          "off": "L'eliminazione ritardata è disattivata: le eliminazioni hanno effetto subito."
+        },
+        "set": {
+          "description": "Impostare la finestra di eliminazione ritardata in giorni (da 0 a 30)",
+          "daysArgument": "Giorni di attesa di un'eliminazione prima che abbia effetto (da 0 a 30)",
+          "applied": "La finestra di eliminazione ritardata è ora di {{days}} giorno/i.",
+          "appliedOff": "L'eliminazione ritardata è disattivata.",
+          "invalid": "Una finestra è un numero intero di giorni da 0 a {{max}}, ricevuto \"{{value}}\""
+        },
+        "pending": "La finestra si riduce a {{days}} giorno/i il {{when}} (UTC). Fino ad allora restano in vigore {{current}} giorno/i."
+      },
+      "undelete": {
+        "description": "Annullare l'eliminazione ritardata di uno snapshot prima che abbia effetto",
+        "success": "Lo snapshot {{snapshot}} è mantenuto: la sua eliminazione è stata annullata.",
+        "notWaiting": "Lo snapshot {{snapshot}} non era in attesa di eliminazione."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{verb}} su {{repo}}, avviato {{startedAt}} da {{origin}}. Per seguirlo: {{attach}}",
         "runningJobsSection": "Job (in corso o terminati nell'ultima ora)",
         "verifyFailureSection": "Verifiche di backup fallite",
-        "verifyFailureWarning": "{{count}} repository hanno fallito l'ultima verifica del backup."
+        "verifyFailureWarning": "{{count}} repository hanno fallito l'ultima verifica del backup.",
+        "missedTargetSection": "Repository che hanno mancato l'obiettivo di backup",
+        "missedTargetWarning": "{{count}} repository hanno mancato l'obiettivo di backup nell'ultima esecuzione."
       },
       "gpu": {
         "descriptionShort": "Ispeziona le GPU e le concessioni di dispositivi di una macchina",

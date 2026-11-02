@@ -51,7 +51,8 @@ export async function runBrowseAt(
   const lineage = lineageOf(repo);
   // Dynamic: backup.ts statically imports backup-storage.ts, which imports this file, so a static import back would close a cycle.
   const { resolveSnapshotAt } = await import('./backup.js');
-  const snapshotId = await resolveSnapshotAt(lineage, at);
+  // A listing is read from the snapshot, so a time with no listing falls back to the nearest one that has it.
+  const snapshotId = await resolveSnapshotAt(lineage, at, { anyStream: true }, { indexed: true });
   const result = await executeRepoFunction(
     'backup_browse_at',
     repoKey,

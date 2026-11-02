@@ -43,7 +43,12 @@
       "manifests": {
         "description": "Lister les manifestes d'instantanés de sauvegarde enregistrés sur le serveur",
         "empty": "Aucun manifeste de sauvegarde trouvé.",
-        "fetching": "Récupération des manifestes de sauvegarde..."
+        "fetching": "Récupération des manifestes de sauvegarde...",
+        "optionLimit": "Lignes par page (500 par défaut et au maximum)",
+        "optionBefore": "Curseur de page d'une liste précédente (nextBefore)",
+        "optionIncludeDeleted": "Inclure les instantanés dont la suppression différée est en attente",
+        "limitInvalid": "--limit attend un entier d'au moins 1, reçu \"{{value}}\"",
+        "more": "{{shown}} instantané(s) affiché(s) sur {{total}}. Page suivante : --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "Aucun instantané n'a été pris à la date {{at}} ou avant.",
@@ -107,7 +112,8 @@
         "salvageHole": "  trou aux octets {{offset}} à {{end}} : {{reason}}",
         "salvageNeedsAs": "--salvage nécessite --as <nouveau nom> : une image endommagée n'est jamais placée sous un nom existant.",
         "salvageNeedsSnapshot": "--salvage nécessite un snapshot du chunk store à restaurer.",
-        "salvageWholeImage": "--salvage restaure une image entière ; il ne peut pas être combiné avec --path ou --to."
+        "salvageWholeImage": "--salvage restaure une image entière ; il ne peut pas être combiné avec --path ou --to.",
+        "atIndexGap": "L'instantané {{snapshot}} n'a pas de liste stockée ; {{indexed}} est lu à la place, pris {{gap}} plus tôt."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "Conserver l'instantané le plus récent de chacune de ces années",
         "set": {
           "description": "Indiquez le nombre d'instantanés à conserver. Chaque paramètre est remplacé, jamais fusionné.",
-          "success": "Politique de rétention définie pour {{name}} ({{count}} règle(s)). Les instantanés en dehors sont supprimés au prochain nettoyage."
+          "success": "Politique de rétention définie pour {{name}} ({{count}} règle(s)). Les instantanés en dehors sont supprimés au prochain nettoyage.",
+          "pending": "Le changement conserve moins : il attend la fenêtre de suppression différée et prend effet le {{when}} (UTC) pour \"{{name}}\". La politique affichée reste en vigueur d'ici là."
         },
         "effective": "Rétention en vigueur pour {{name}} : {{source}}",
         "optionStream": "Appliquer à ce seul flux de sauvegarde (un identifiant de flux) ; sans lui, la valeur par défaut de tout le dépôt s'applique",
         "preview": {
           "description": "Affiche les instantanés que le prochain nettoyage supprimerait et l'espace libéré.",
           "nothing": "Le prochain nettoyage ne supprime rien pour {{name}}.",
-          "summary": "Le prochain nettoyage supprime {{count}} instantané(s) de {{name}}, en garde {{kept}} et libère {{bytes}}."
+          "summary": "Le prochain nettoyage supprime {{count}} instantané(s) de {{name}}, en garde {{kept}} et libère {{bytes}}.",
+          "reasons": "Conservé pour : {{reasons}}"
         },
         "seeded": "La rétention de la stratégie « {{strategy}} » a été déclarée pour {{count}} dépôt(s) sans politique.",
         "seedFailed": "Impossible de déclarer la rétention de la stratégie « {{strategy}} » ({{reason}}). La valeur par défaut du serveur s'applique en attendant.",
@@ -143,7 +151,10 @@
           "plan": "valeur du forfait",
           "default": "valeur du serveur",
           "orphan": "délai d'un dépôt orphelin"
-        }
+        },
+        "keepWithinInvalid": "--keep-within attend une durée comme 24h ou 90m, reçu \"{{value}}\"",
+        "optionKeepWithin": "Conserver chaque instantané dans cette durée avant le plus récent, p. ex. 24h",
+        "pendingClear": "Retirer la politique de \"{{name}}\" attend la fenêtre de suppression différée et prend effet le {{when}} (UTC). La politique en vigueur continue de s'appliquer d'ici là."
       },
       "run": {
         "description": "Déclencher une sauvegarde immédiatement sur une machine distante",
@@ -243,7 +254,22 @@
           "retentionPushed": "Rétention appliquée à {{count}} dépôt(s).",
           "retentionPushFailed": "La rétention de la stratégie « {{strategy}} » est enregistrée, mais n'a pas pu être appliquée ({{reason}}). Relancez la commande quand le serveur répond.",
           "optionCpuLimit": "Plafond CPU des snapshots de cette stratégie : pourcentage de l'ensemble des cœurs, 1-100 (50 par défaut) ; none le supprime",
-          "cpuLimitStrategyOnly": "--cpu-limit s'applique à toute la stratégie ; retirez --destination."
+          "cpuLimitStrategyOnly": "--cpu-limit s'applique à toute la stratégie ; retirez --destination.",
+          "optionRpo": "Objectif de protection déclaré, par exemple 15m (au moins 5m ; none le retire)",
+          "optionRepoRpo": "Objectif par dépôt sous la forme <ref>=<durée>, répétable (none le retire) ; name:* désigne la famille",
+          "optionRepoCellSize": "Taille de cellule par dépôt sous la forme <ref>=<taille>, répétable. Un changement réinitialise le dépôt",
+          "optionNoEstimate": "Ignorer l'estimation de variation et de coût",
+          "optionDryRun": "Afficher ce qui changerait sans rien écrire",
+          "rpoInvalid": "{{option}} invalide \"{{value}}\" : {{reason}}",
+          "repoOptionInvalid": "{{option}} attend <ref>=<valeur>, reçu \"{{value}}\"",
+          "cellSizeInvalid": "La taille de cellule \"{{value}}\" n'est pas une taille comme 1M ou 4M",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" n'a pas d'objectif ; définissez-en un d'abord avec --repo-rpo {{ref}}=<durée>",
+          "noMeasurement": "Aucune mesure de variation pour {{refs}}. Lancez d'abord `rdc backup churn <repo>` ou passez --no-estimate.",
+          "reseedWarning": "Changer la taille de cellule de {{ref}} à {{size}} le réinitialise : chaque cellule est renvoyée et facturée, et les forks de l'ancienne grille ne dédupliquent plus. Une exécution planifiée n'adopte jamais seule le changement de grille.",
+          "retentionDefaulted": "La stratégie \"{{strategy}}\" n'a déclaré aucune rétention : chaque instantané dans les {{window}} est donc conservé (défaut du plan {{plan}}).",
+          "retentionDefaultNoStorage": "Le plan {{plan}} n'inclut pas de stockage de sauvegarde cloud : aucune rétention par défaut n'a été définie.",
+          "retentionDefaultNoPlan": "Le plan n'a pas pu être lu : aucune rétention par défaut n'a été définie. Déclarez-en une avec --retention.",
+          "dryRun": "Simulation : la stratégie \"{{strategy}}\" changerait ({{changes}}). Rien n'a été écrit."
         },
         "show": {
           "description": "Afficher les détails de la stratégie de sauvegarde",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "Afficher le quota de stockage des sauvegardes, les octets stockés et l'usage par dépôt",
         "empty": "Aucun usage de stockage de sauvegarde par dépôt encore enregistré.",
-        "fetching": "Récupération de l'usage du stockage des sauvegardes..."
+        "fetching": "Récupération de l'usage du stockage des sauvegardes...",
+        "overLimit": "LIMITE DÉPASSÉE",
+        "summary": "Utilisé {{used}} sur {{quota}} (actif {{live}}, réservé {{leased}}, {{chunks}} chunks) {{over}}",
+        "waiting": "En attente de suppression : {{waiting}} dans {{chunks}} chunk(s), non facturé. Plafond de variation {{cap}}.",
+        "throttled": "Le stockage en attente dépasse le plafond de variation de {{cap}} : un flux de sauvegarde plus rapide qu'une fois par heure est refusé jusqu'à ce qu'il se vide."
       },
       "verify": {
         "completed": "Sauvegarde vérifiée pour {{name}}",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "Supprime un instantané stocké. Ses données exclusives sont libérées au prochain ramasse-miettes.",
           "notInRepo": "L'instantané {{snapshot}} ne figure pas dans l'historique stocké de {{name}}. Pour lister ses identifiants : rdc backup manifests {{name}}",
-          "success": "{{count}} instantané(s) de {{name}} supprimé(s), dont {{snapshot}}."
+          "success": "{{count}} instantané(s) de {{name}} supprimé(s), dont {{snapshot}}.",
+          "delayed": "La suppression de l'instantané {{snapshot}} de \"{{name}}\" est différée : il reste restaurable et sera retiré le {{when}} (UTC). Annulez avec : rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "Stocké pour ce dépôt : {{beforeBytes}} dans {{beforeChunks}} bloc(s) avant, {{afterBytes}} dans {{afterChunks}} bloc(s) après.",
         "usageUnavailable": "Purge effectuée, mais l'utilisation après la purge n'a pas pu être lue : {{error}}",
         "progress": "Purge de « {{name}} » : passe {{round}}, {{chunks}} objet(s) supprimé(s) jusqu'ici ({{bytes}}).",
-        "tooManyRounds": "La purge de « {{name}} » n'est pas terminée après {{rounds}} passes. Relancer la purge pour continuer."
+        "tooManyRounds": "La purge de « {{name}} » n'est pas terminée après {{rounds}} passes. Relancer la purge pour continuer.",
+        "optionCancel": "Annuler une purge différée avant son effet",
+        "cancelExclusive": "--cancel ne peut pas être combiné avec --dry-run",
+        "cancelled": "La purge différée de \"{{name}}\" a été annulée.",
+        "nothingWaiting": "Aucune purge de \"{{name}}\" n'était en attente.",
+        "delayed": "La purge de \"{{name}}\" est différée : rien n'a été supprimé, elle s'exécute le {{when}} (UTC). Annulez-la avant avec : rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Prouve qu'un snapshot s'ouvre avec la phrase secrète en restaurant un fichier",
@@ -391,6 +427,55 @@
         "optionDryRun": "Indique ce qui serait fait ; ne touche à rien",
         "optionReplace": "Remplacer une clé différente déjà présente sur la machine (envoie la phrase secrète comme preuve)",
         "syncDescription": "Installer la clé de listing du dépôt sur sa machine, ou en remplacer une différente"
+      },
+      "churn": {
+        "description": "Mesure la part de l'image d'un dépôt qui change entre deux exécutions, projette l'envoi par taille de cellule et en recommande une. Une base reflink reste sur la machine pendant l'opération et est toujours supprimée.",
+        "descriptionShort": "Mesurer la variation d'un dépôt et recommander une taille de cellule",
+        "optionSamples": "Nombre d'échantillons mesurés (3 par défaut)",
+        "optionInterval": "Attente entre les sondes, par exemple 10m (10m par défaut)",
+        "probing": "Sonde de \"{{name}}\" (sonde {{probe}})...",
+        "probed": "Sonde de \"{{name}}\" enregistrée",
+        "probeFailed": "La sonde de \"{{name}}\" a échoué",
+        "forgetting": "Suppression de la base de sonde de \"{{name}}\"...",
+        "forgotten": "La base de sonde de \"{{name}}\" a été supprimée de la machine.",
+        "forgetFailed": "La base de sonde de \"{{name}}\" n'a pas pu être supprimée et occupe encore de l'espace sur la machine. Relancez rdc backup churn {{name}} ; il supprime la base à la fin.",
+        "noMeasurement": "Aucune variation mesurée pour \"{{name}}\" : une première sonde ne fait que fixer une référence ({{baselines}} référence, {{skipped}} ignorée(s)). Rien n'est projeté.",
+        "samplesInvalid": "--samples attend un entier de 1 à {{max}}, reçu \"{{value}}\"",
+        "intervalInvalid": "--interval attend une durée comme 5m ou 1h (moins de 24h), reçu \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "Taille de cellule recommandée : {{cell}}. Les écritures sont petites et dispersées, et {{savedPercent}} % d'octets en moins sont envoyés par rapport à 4 MiB. La modifier réinitialise le dépôt.",
+          "clustered-large": "Taille de cellule recommandée : {{cell}}. Les écritures sont grandes et groupées, donc il faut bien moins de puts pour les mêmes octets.",
+          "default": "Taille de cellule recommandée : {{cell}}, la valeur par défaut. Aucune autre taille n'économise assez.",
+          "idle": "Taille de cellule recommandée : {{cell}}, la valeur par défaut. Le dépôt n'a pas changé entre les sondes.",
+          "collapse-cap": "Taille de cellule recommandée : {{cell}}. 1 MiB économiserait {{savedPercent}} %, mais l'image dépasserait 262 144 cellules à cette taille, seuil au-delà duquel l'élagage est différé."
+        },
+        "estimate": {
+          "target": "{{name}} : {{cells}} cellule(s) modifiée(s) par exécution, {{runs}} exécutions par jour (calcul avec des cellules de 4 MiB).",
+          "cost": "Estimation de {{total}} par mois : {{classA}} opérations Class A et {{classB}} Class B, {{storage}} de stockage ({{window}} facturé, {{waiting}} dans le délai de grâce de 7 jours).",
+          "capHeld": "Le stockage en attente se stabilise à {{waiting}}, sous le plafond de variation de {{cap}}.",
+          "capExceeded": "Le stockage en attente atteindrait {{waiting}} et dépasserait le plafond de variation de {{cap}} en {{days}} jour(s) : un flux plus rapide qu'une fois par heure serait refusé jusqu'à ce qu'il se vide."
+        }
+      },
+      "immutability": {
+        "description": "Afficher ou définir la fenêtre de suppression différée des sauvegardes stockées",
+        "show": {
+          "description": "Afficher la fenêtre de suppression différée en vigueur",
+          "window": "Suppression différée : une suppression, une purge ou une rétention réduite attend {{days}} jour(s) et peut être annulée d'ici là.",
+          "off": "La suppression différée est désactivée : les suppressions prennent effet aussitôt."
+        },
+        "set": {
+          "description": "Définir la fenêtre de suppression différée en jours (0 à 30)",
+          "daysArgument": "Jours d'attente d'une suppression avant son effet (0 à 30)",
+          "applied": "La fenêtre de suppression différée est maintenant de {{days}} jour(s).",
+          "appliedOff": "La suppression différée est désactivée.",
+          "invalid": "Une fenêtre se compte en jours entiers de 0 à {{max}}, reçu \"{{value}}\""
+        },
+        "pending": "La fenêtre passe à {{days}} jour(s) le {{when}} (UTC). {{current}} jour(s) restent en vigueur d'ici là."
+      },
+      "undelete": {
+        "description": "Annuler la suppression différée d'un instantané avant son effet",
+        "success": "L'instantané {{snapshot}} est conservé : sa suppression a été annulée.",
+        "notWaiting": "L'instantané {{snapshot}} n'attendait pas de suppression."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}} : {{verb}} sur {{repo}}, lancée {{startedAt}} par {{origin}}. Pour la suivre : {{attach}}",
         "runningJobsSection": "Tâches (en cours ou terminées depuis moins d'une heure)",
         "verifyFailureSection": "Vérifications de sauvegarde échouées",
-        "verifyFailureWarning": "{{count}} dépôt(s) ont échoué à leur dernière vérification de sauvegarde."
+        "verifyFailureWarning": "{{count}} dépôt(s) ont échoué à leur dernière vérification de sauvegarde.",
+        "missedTargetSection": "Dépôts qui ont manqué leur objectif de sauvegarde",
+        "missedTargetWarning": "{{count}} dépôt(s) ont manqué leur objectif de sauvegarde lors de la dernière exécution."
       },
       "gpu": {
         "descriptionShort": "Inspecter les GPU et les autorisations de périphériques d'une machine",

@@ -22,6 +22,8 @@ import type { RuntimeRepoLicenseStatus } from '../../services/account/license.js
 import {
   type FailedVerifyRepo,
   failedVerifyRepos,
+  formatSpan,
+  type MissedTargetRepo,
   type StaleBackupRepo,
 } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
@@ -645,6 +647,7 @@ async function gatherStatus(
   licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
   staleBinary: RenetProcess[] | null;
   staleBackups: StaleBackupRepo[];
+  missedTargets: MissedTargetRepo[];
   failedVerifies: FailedVerifyRepo[];
 }> {
   const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
@@ -675,6 +678,7 @@ async function gatherStatus(
     licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
     staleBinary,
     staleBackups: await fetchStaleBackups(machineName, listResult),
+    missedTargets: await fetchMissedTargets(machineName, listResult),
     failedVerifies: failedVerifyRepos(listResult.backup_coverage),
   };
 }
@@ -700,7 +704,21 @@ export async function fetchStaleBinaries(machineName: string): Promise<RenetProc
   }
 }
 
-/** Repos whose last backup is older than 2x the schedule covering them (G7). */
+/** Repos whose latest run missed their declared target and that are not yet stale (D-rpo). */
+export async function fetchMissedTargets(
+  machineName: string,
+  listResult: ListResult
+): Promise<MissedTargetRepo[]> {
+  if (!listResult.backup_coverage) return [];
+  const config = await configService.getCurrent().catch(() => null);
+  if (!config) return [];
+  const { machineBackupTargetStatus } = await import(
+    '../../services/backup/backup-schedule-coverage.js'
+  );
+  return machineBackupTargetStatus(config, machineName, listResult.backup_coverage).missed;
+}
+
+/** Repos whose last backup is older than 2x the schedule covering them (G7), or than T + grace for a declared target. */
 export async function fetchStaleBackups(
   machineName: string,
   listResult: ListResult
@@ -725,8 +743,23 @@ export function staleBackupRows(
   return stale.map((b) => ({
     repository: resolve(b.guid),
     lastBackup: b.lastSuccessAt,
-    ageDays: b.ageDays,
-    scheduleEveryDays: b.intervalDays,
+    age: formatSpan(b.ageSeconds),
+    scheduleEvery: formatSpan(b.intervalSeconds),
+    target: b.targetSeconds === undefined ? '-' : formatSpan(b.targetSeconds),
+  }));
+}
+
+/** Table rows for the missed-target section. */
+export function missedTargetRows(
+  missed: MissedTargetRepo[],
+  resolve: (guid: string) => string
+): Record<string, unknown>[] {
+  return missed.map((m) => ({
+    repository: resolve(m.guid),
+    target: formatSpan(m.targetSeconds),
+    achieved: m.achievedRpoMs === undefined ? '-' : formatSpan(m.achievedRpoMs / 1000),
+    ticksMissed: m.ticksMissed ?? 0,
+    hookFailures: m.hookFailures ?? 0,
   }));
 }
 
@@ -747,7 +780,8 @@ function renderStaleness(
   staleBinary: RenetProcess[] | null,
   staleBackups: StaleBackupRepo[],
   resolve: (guid: string) => string,
-  failedVerifies: FailedVerifyRepo[] = []
+  failedVerifies: FailedVerifyRepo[] = [],
+  missedTargets: MissedTargetRepo[] = []
 ): void {
   if (staleBinary && staleBinary.length > 0) {
     outputService.info(`\n${t('commands.machine.status.staleBinarySection')}`);
@@ -761,6 +795,13 @@ function renderStaleness(
     writeStdout(`${outputService.formatTable(staleBackupRows(staleBackups, resolve))}\n`);
     outputService.warn(
       t('commands.machine.status.staleBackupWarning', { count: staleBackups.length })
+    );
+  }
+  if (missedTargets.length > 0) {
+    outputService.info(`\n${t('commands.machine.status.missedTargetSection')}`);
+    writeStdout(`${outputService.formatTable(missedTargetRows(missedTargets, resolve))}\n`);
+    outputService.warn(
+      t('commands.machine.status.missedTargetWarning', { count: missedTargets.length })
     );
   }
   if (failedVerifies.length > 0) {
@@ -825,7 +866,8 @@ export function statusJsonDocument(
   resolve: (guid: string) => string,
   staleBinary: RenetProcess[] | null,
   staleBackups: StaleBackupRepo[],
-  failedVerifies: FailedVerifyRepo[] = []
+  failedVerifies: FailedVerifyRepo[] = [],
+  missedTargets: MissedTargetRepo[] = []
 ): Record<string, unknown> {
   return {
     ...enriched,
@@ -833,6 +875,7 @@ export function statusJsonDocument(
     stale_binary: staleBinary,
     backup_staleness: staleBackups,
     verify_failures: failedVerifies,
+    target_misses: missedTargets,
   };
 }
 
@@ -877,6 +920,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
           licenseDetail,
           staleBinary,
           staleBackups,
+          missedTargets,
           failedVerifies,
         } = await gatherStatus(machineName, sections, options.debug);
 
@@ -920,7 +964,8 @@ export function registerStatusCommand(machine: Command, program: Command): void 
               resolve,
               staleBinary,
               staleBackups,
-              failedVerifies
+              failedVerifies,
+              missedTargets
             ),
             format
           );
@@ -935,7 +980,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             machineName
           );
           renderBlockedBackupAlerts(licenseDetail);
-          renderStaleness(staleBinary, staleBackups, resolve, failedVerifies);
+          renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
           renderRunningJobs(listResult.jobs, resolve);
         }
 

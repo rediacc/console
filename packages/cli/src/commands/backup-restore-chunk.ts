@@ -15,7 +15,7 @@ import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import type { RestoreOptions } from './backup.js';
-import { type BackupManifestsResponse } from './backup-storage.js';
+import type { BackupManifestEntry } from './backup-storage.js';
 import {
   parseRestoreStats,
   parseVerifyVerdict,
@@ -30,47 +30,88 @@ import {
  */
 const SNAPSHOT_ID_RE = /^\d{8}T\d{6}Z-[0-9a-f]{16}$/;
 
+const RESOLVE_ROUTE = '/account/api/v1/backups/snapshots/resolve';
+
+/** The account answers 404 for "no row matches", which the callers turn into their own refusal. */
+function isNotFound(error: unknown): boolean {
+  return (error as { status?: unknown } | null)?.status === 404;
+}
+
+/** One GET /backups/snapshots/resolve: the row, or undefined for the route's 404. */
+async function fetchResolved(
+  lineage: string,
+  query: Record<string, string | undefined>
+): Promise<BackupManifestEntry | undefined> {
+  const params = new URLSearchParams({ lineage });
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, value);
+  }
+  try {
+    return await accountServerFetch<BackupManifestEntry>(`${RESOLVE_ROUTE}?${params.toString()}`);
+  } catch (error) {
+    if (isNotFound(error)) return undefined;
+    throw error;
+  }
+}
+
+/** A span as an operator reads it: `2h 30m`, `3d 4h`, `45m`. */
+function formatGap(ms: number): string {
+  const minutes = Math.max(0, Math.round(ms / 60_000));
+  if (minutes >= 24 * 60) {
+    return `${Math.floor(minutes / (24 * 60))}d ${Math.floor((minutes % (24 * 60)) / 60)}h`;
+  }
+  if (minutes >= 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  return `${minutes}m`;
+}
+
+/** The instant `--at` names, refused before any call when it is no time or when a time has no stream to resolve in. */
+function parseAtTime(at: string, scope: StreamScope): Date {
+  const when = new Date(at);
+  if (Number.isNaN(when.getTime())) {
+    throw new ValidationError(t('commands.backup.restore.atUnparsable', { at }));
+  }
+  // A time without an anchor would land on any machine's stream.
+  if (!scope.anyStream && !scope.anchorSnapshotId) {
+    throw new ValidationError(t('commands.backup.restore.streamUnknown'));
+  }
+  return when;
+}
+
+/** How `resolveSnapshotAt` is asked for a snapshot a LISTING will be read from (browse, `restore --path`). */
+export interface ResolveOptions {
+  /** Prefer a snapshot with a stored listing: the nearest one at or before the time, with the gap stated. */
+  indexed?: boolean;
+}
+
 /**
- * Turn `--at` into a snapshot id. A time selects the NEWEST snapshot at or
- * before it, which is the only reading that restores a point in time rather
- * than the point after it.
+ * Turn `--at` into a snapshot id. A time selects the NEWEST snapshot at or before it, which is the
+ * only reading that restores a point in time rather than the point after it. The account does the
+ * search (GET /backups/snapshots/resolve, one indexed query), so it holds however long the history
+ * is: the listing is capped at 500 rows a lineage page and a client-side filter loses everything
+ * older.
  *
- * `createdAt` is read from the manifest index rather than parsed out of the
- * snapshot id, even though the id is time-sortable: the id's timestamp is when
- * the id was MINTED, and the manifest commits when the upload finishes, so on a
- * long upload the two differ by the length of the transfer.
+ * `createdAt` decides, not the timestamp parsed out of the snapshot id: the id is minted when the
+ * run starts and the manifest commits when the upload finishes, so on a long upload the two differ
+ * by the length of the transfer.
  */
 export async function resolveSnapshotAt(
   lineage: string,
   at: string,
   // Omitted means every stream: read-only `backup browse --at` calls it this way (plan E4 scopes restore only). `restore --at` always passes a scope.
-  scope: StreamScope = { anyStream: true }
+  scope: StreamScope = { anyStream: true },
+  options: ResolveOptions = {}
 ): Promise<string> {
   if (SNAPSHOT_ID_RE.test(at)) return at;
-
-  const when = new Date(at);
-  if (Number.isNaN(when.getTime())) {
-    throw new ValidationError(t('commands.backup.restore.atUnparsable', { at }));
-  }
+  const when = parseAtTime(at, scope);
 
   // Resolving a time reads the hosted snapshot index, which a Free License (or no login) does not have.
   assertHostedBackupAccount();
-  const result = await accountServerFetch<BackupManifestsResponse>(
-    `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
-  );
-  const streamId = scope.anyStream ? undefined : ownStreamOf(result.manifests, scope);
-  const candidates = result.manifests
-    .filter((m) => streamId === undefined || m.streamId === streamId)
-    .filter((m) => new Date(m.createdAt).getTime() <= when.getTime())
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  // `.at(0)` rather than `[0]`: this repo does not set noUncheckedIndexedAccess,
-  // so `candidates[0]` is TYPED as always-present and eslint then calls the guard
-  // below an unnecessary condition. It is not - an empty candidate list is the normal "no snapshot at or before this time" case, and dropping the guard to satisfy the linter would dereference undefined on the next line.
-  const chosen = candidates.at(0);
-  if (!chosen) {
-    throw new ValidationError(t('commands.backup.restore.atNoSnapshot', { at }));
-  }
+  const stream = scope.anyStream
+    ? { anyStream: '1' }
+    : { anchorSnapshotId: scope.anchorSnapshotId };
+  const whenIso = when.toISOString();
+  const chosen = await fetchResolved(lineage, { ...stream, at: whenIso });
+  if (!chosen) return refuseNoSnapshot(lineage, scope, stream, at);
   outputService.info(
     t('commands.backup.restore.atResolved', {
       at,
@@ -78,7 +119,46 @@ export async function resolveSnapshotAt(
       created: chosen.createdAt,
     })
   );
+  if (options.indexed && !chosen.hasIndex) {
+    return nearestIndexed(lineage, stream, whenIso, chosen);
+  }
   return chosen.snapshotId;
+}
+
+/** One 404 covers two causes the operator must tell apart: no snapshot that early, or an anchor the index does not hold. */
+async function refuseNoSnapshot(
+  lineage: string,
+  scope: StreamScope,
+  stream: Record<string, string | undefined>,
+  at: string
+): Promise<never> {
+  if (!scope.anyStream && !(await fetchResolved(lineage, stream))) {
+    throw new ValidationError(t('commands.backup.restore.streamUnknown'));
+  }
+  throw new ValidationError(t('commands.backup.restore.atNoSnapshot', { at }));
+}
+
+/**
+ * The newest snapshot with a stored listing at or before the time, when the exact one has none.
+ * The gap is said, since a listing from hours earlier is not the state at the asked time. No
+ * indexed snapshot at all keeps the exact one, so the verb reports "no listing" as before.
+ */
+async function nearestIndexed(
+  lineage: string,
+  stream: Record<string, string | undefined>,
+  whenIso: string,
+  exact: BackupManifestEntry
+): Promise<string> {
+  const indexed = await fetchResolved(lineage, { ...stream, at: whenIso, needIndex: '1' });
+  if (!indexed) return exact.snapshotId;
+  outputService.warn(
+    t('commands.backup.restore.atIndexGap', {
+      snapshot: exact.snapshotId,
+      indexed: indexed.snapshotId,
+      gap: formatGap(Date.parse(exact.createdAt) - Date.parse(indexed.createdAt)),
+    })
+  );
+  return indexed.snapshotId;
 }
 
 /**
@@ -93,18 +173,6 @@ export async function resolveSnapshotAt(
 export type StreamScope =
   | { anyStream: true }
   | { anyStream: false; anchorSnapshotId: string | undefined };
-
-function ownStreamOf(
-  manifests: BackupManifestsResponse['manifests'],
-  scope: { anchorSnapshotId: string | undefined }
-): string {
-  const anchor = manifests.find((m) => m.snapshotId === scope.anchorSnapshotId);
-  // A row without a streamId would make the caller's filter match every stream, the widening this scope exists to prevent.
-  if (!anchor?.streamId) {
-    throw new ValidationError(t('commands.backup.restore.streamUnknown'));
-  }
-  return anchor.streamId;
-}
 
 /**
  * The snapshot the SOURCE machine's journal anchors for this repo, read through

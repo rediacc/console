@@ -111,6 +111,8 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'backup_verify',
   'backup_compare',
   'backup_repair',
+  // Takes a reflink of each image under the repo lock and compares extents; sized by the image like the verify.
+  'backup_churn_probe',
   // Health-gated repository lifecycle, and the ones that grow with the image.
   'repository_up',
   'repository_up_all',

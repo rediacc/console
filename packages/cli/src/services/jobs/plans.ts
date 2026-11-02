@@ -50,6 +50,7 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'backup download': LOCAL_SYNC,
   'backup upload': LOCAL_SYNC,
   'backup check': OPERATOR_CREDENTIAL,
+  'backup churn': 'a client-side loop of probes that must forget its base when it ends',
   'backup repair': OPERATOR_CREDENTIAL,
   'backup toc-key sync': OPERATOR_CREDENTIAL,
   'repo sync download': LOCAL_SYNC,

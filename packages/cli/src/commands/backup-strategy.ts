@@ -1,3 +1,4 @@
+import { formatDuration } from '@rediacc/shared/backup/duration';
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
@@ -10,7 +11,14 @@ import {
   retentionCronMismatches,
 } from '../services/backup/backup-retention.js';
 import {
+  defaultKeepWithin,
+  defaultRpoDeps,
+  planRpoChange,
+  type RpoDeps,
+} from '../services/backup/backup-rpo-plan.js';
+import {
   bandwidthToBytesPerSecond,
+  cronFloorReason,
   parseCpuLimitPercent,
   readCapBytesPerSecond,
   strategyUnschedulableReason,
@@ -217,10 +225,17 @@ export async function applyBackupStrategyOptions(
     include?: string;
     exclude?: string;
     retention?: string;
+    rpo?: string;
+    repoRpo?: string[];
+    repoCellSize?: string[];
+    /** `--no-estimate` makes this false; undefined and true both estimate. */
+    estimate?: boolean;
+    dryRun?: boolean;
     enable?: boolean;
     disable?: boolean;
-  }
-): Promise<void> {
+  },
+  deps: RpoDeps = defaultRpoDeps
+): Promise<RetentionFill | undefined> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
   if (targetsDestination && options.readBwlimit !== undefined) {
@@ -242,6 +257,14 @@ export async function applyBackupStrategyOptions(
   await assertKnownRepoNames(update.include);
   await assertKnownRepoNames(update.exclude);
 
+  // A cron under the 5-minute floor is refused where it is typed, not when the unit is rendered.
+  if (options.cron !== undefined) {
+    const floor = cronFloorReason(options.cron, 'Schedule');
+    if (floor) throw new ValidationError(floor);
+  }
+  const fill = await applyTargetOptions(name, options, update, deps);
+  if (options.dryRun) return undefined;
+
   // Order matters: upsertBackupDestination reads the stored strategy to merge destination defaults, so the strategy has to exist before the destination is attached. These cannot run in parallel.
   if (!targetsDestination || Object.keys(update).length > 0) {
     await configService.setBackupStrategy(name, update);
@@ -260,6 +283,88 @@ export async function applyBackupStrategyOptions(
   if (options.retention !== undefined || options.cron !== undefined) {
     await warnRetentionCronMismatch(name);
   }
+  return fill;
+}
+
+/** A retention filled in because a target was declared with none, so the caller pushes it like an explicit one. */
+interface RetentionFill {
+  seconds: number;
+}
+
+/**
+ * The target options of one `strategy set`: fold them into `update`, gate them on the churn estimate,
+ * fill the default window, and report. Throws before anything is written. A dry run goes through all
+ * of it, estimate included, and the caller stops short of the write.
+ */
+async function applyTargetOptions(
+  name: string,
+  options: {
+    rpo?: string;
+    repoRpo?: string[];
+    repoCellSize?: string[];
+    estimate?: boolean;
+    dryRun?: boolean;
+    retention?: string;
+  },
+  update: Partial<BackupStrategyConfig>,
+  deps: RpoDeps
+): Promise<RetentionFill | undefined> {
+  const stored = await configService.getBackupStrategy(name);
+  const change = planRpoChange(stored, options);
+  if (change.asks.length === 0 && change.summary.length === 0) return undefined;
+  Object.assign(update, change.update);
+
+  if (change.asks.length > 0 && options.estimate !== false) {
+    const report = await deps.estimate(change.asks);
+    if (!report) {
+      const refs = change.asks.map((a) => a.ref ?? name).join(', ');
+      throw new ValidationError(t('commands.backup.strategy.set.noMeasurement', { refs }));
+    }
+    for (const line of report.lines) outputService.info(line);
+  }
+  for (const { ref, size } of change.reseeds) {
+    outputService.warn(t('commands.backup.strategy.set.reseedWarning', { ref, size }));
+  }
+
+  let fill: RetentionFill | undefined;
+  if (change.asks.length > 0 && !stored?.retention && options.retention === undefined) {
+    fill = await fillDefaultWindow(name, update, deps);
+  }
+  if (options.dryRun) {
+    outputService.info(
+      t('commands.backup.strategy.set.dryRun', {
+        strategy: name,
+        changes: change.summary.join('; '),
+      })
+    );
+  }
+  return fill;
+}
+
+/** No retention is declared and a target is: keep every snapshot within the plan's default window, and say so. */
+async function fillDefaultWindow(
+  name: string,
+  update: Partial<BackupStrategyConfig>,
+  deps: RpoDeps
+): Promise<RetentionFill | undefined> {
+  const window = defaultKeepWithin(await deps.planCode());
+  if (window.kind === 'window') {
+    update.retention = { keepWithinSeconds: window.seconds };
+    outputService.info(
+      t('commands.backup.strategy.set.retentionDefaulted', {
+        strategy: name,
+        window: formatDuration(window.seconds),
+        plan: window.plan,
+      })
+    );
+    return { seconds: window.seconds };
+  }
+  outputService.warn(
+    window.kind === 'no-storage'
+      ? t('commands.backup.strategy.set.retentionDefaultNoStorage', { plan: window.plan })
+      : t('commands.backup.strategy.set.retentionDefaultNoPlan')
+  );
+  return undefined;
 }
 
 function cadenceLabel(cadence: CronCadence): string {
@@ -334,6 +439,7 @@ async function strategyBindings(): Promise<Map<string, string[]>> {
 function formatRetention(retention: NonNullable<BackupStrategyConfig['retention']>): string {
   const parts: [string, number | undefined][] = [
     ['last', retention.keepLast],
+    ['within', retention.keepWithinSeconds],
     ['hourly', retention.keepHourly],
     ['daily', retention.keepDaily],
     ['weekly', retention.keepWeekly],
@@ -368,6 +474,11 @@ function strategyRow(name: string, strategy: BackupStrategyConfig): Record<strin
   };
 }
 
+/** Commander accumulator for a repeatable option. */
+function collectRepeated(value: string, previous: string[]): string[] {
+  return [...previous, value];
+}
+
 /** Register the `backup strategy` subgroup (named backup strategy records). */
 export function registerBackupStrategyCommands(backup: Command): void {
   const group = backup.command('strategy').description(t('commands.backup.strategy.description'));
@@ -390,13 +501,29 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
     .option('--retention <spec>', t('commands.backup.strategy.set.optionRetention'))
+    .option('--rpo <duration>', t('commands.backup.strategy.set.optionRpo'))
+    .option(
+      '--repo-rpo <ref=duration>',
+      t('commands.backup.strategy.set.optionRepoRpo'),
+      collectRepeated,
+      []
+    )
+    .option(
+      '--repo-cell-size <ref=size>',
+      t('commands.backup.strategy.set.optionRepoCellSize'),
+      collectRepeated,
+      []
+    )
+    .option('--no-estimate', t('commands.backup.strategy.set.optionNoEstimate'))
+    .option('--dry-run', t('commands.backup.strategy.set.optionDryRun'))
     .option('--enable', t('commands.backup.strategy.set.optionEnable'))
     .option('--disable', t('commands.backup.strategy.set.optionDisable'))
     .action(async (strategy: string, options) => {
       try {
-        await applyBackupStrategyOptions(strategy, options);
+        const fill = await applyBackupStrategyOptions(strategy, options);
+        if (options.dryRun) return;
         outputService.success(t('commands.backup.strategy.set.saved'));
-        if (options.retention !== undefined) await applyRetentionNow(strategy);
+        if (options.retention !== undefined || fill) await applyRetentionNow(strategy);
       } catch (error) {
         handleError(error);
       }

@@ -79,6 +79,9 @@ async function run(argv: string[]): Promise<void> {
 }
 
 const SNAPSHOT = '01J0000000000000000000SNAP';
+// Browse reads a stored listing, so it asks for the nearest indexed snapshot (D-listing).
+const ANY = { anyStream: true };
+const INDEXED = { indexed: true };
 
 const listingStdout = JSON.stringify({
   source: 'snapshot',
@@ -155,7 +158,7 @@ describe('backup browse --at', () => {
   it('dispatches backup_browse_at with a snapshot id as given', async () => {
     await run(['browse', 'shop', '--at', SNAPSHOT, '--path', '/app']);
 
-    expect(mockResolveSnapshotAt).toHaveBeenCalledWith('repo-guid', SNAPSHOT);
+    expect(mockResolveSnapshotAt).toHaveBeenCalledWith('repo-guid', SNAPSHOT, ANY, INDEXED);
     expect(mockExecuteRepoFunction).toHaveBeenCalledTimes(1);
     const [fn, repoKey, machine, params, options] = mockExecuteRepoFunction.mock.calls[0];
     expect(fn).toBe('backup_browse_at');
@@ -173,14 +176,19 @@ describe('backup browse --at', () => {
     });
     await run(['browse', 'shop', '--at', SNAPSHOT]);
 
-    expect(mockResolveSnapshotAt).toHaveBeenCalledWith('grand-guid', SNAPSHOT);
+    expect(mockResolveSnapshotAt).toHaveBeenCalledWith('grand-guid', SNAPSHOT, ANY, INDEXED);
     expect(mockExecuteRepoFunction.mock.calls[0][3]).toMatchObject({ lineage: 'grand-guid' });
   });
 
   it('dispatches the snapshot id a time resolves to', async () => {
     await run(['browse', 'shop', '--at', '2026-08-16T00:00:00Z']);
 
-    expect(mockResolveSnapshotAt).toHaveBeenCalledWith('repo-guid', '2026-08-16T00:00:00Z');
+    expect(mockResolveSnapshotAt).toHaveBeenCalledWith(
+      'repo-guid',
+      '2026-08-16T00:00:00Z',
+      ANY,
+      INDEXED
+    );
     expect(mockExecuteRepoFunction.mock.calls[0][3]).toMatchObject({ at: SNAPSHOT });
   });
 

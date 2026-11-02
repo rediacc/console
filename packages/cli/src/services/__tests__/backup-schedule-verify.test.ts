@@ -81,10 +81,12 @@ describe('the snapshot service', () => {
     expect(execLines(hourly)[0]).toContain('--expected-interval 3600s');
   });
 
-  it('a per-repo override unit carries its own cadence', () => {
-    const units = render({ repoSchedules: { gitlab: '*/30 * * * *' } });
+  it('a per-repo target unit states its target and leaves the next-run estimate to renet', () => {
+    const units = render({ repoTargets: { gitlab: { rpo: '30m' } } });
     const override = [...units.entries()].find(([k]) => k.includes('.repo.gitlab'));
-    expect(execLines(override?.[1].serviceContent ?? '')[0]).toContain('--expected-interval 1800s');
+    const line = execLines(override?.[1].serviceContent ?? '')[0];
+    expect(line).toContain('--target 30m --deadline 1h30m');
+    expect(line).not.toContain('--expected-interval');
   });
 });
 

@@ -19,6 +19,7 @@
  * diffs by hash).
  */
 
+import { parseCellSizeBytes, parseDurationSeconds, rpoCron } from '@rediacc/shared/backup/duration';
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { RdcConfig, RepoFamily } from '@rediacc/shared/config-schema';
 import type { BackupStrategyConfig } from '../../types/index.js';
@@ -32,12 +33,27 @@ export interface ScheduleDatastore {
 }
 
 /**
- * A strategy as the scheduler reads it. `repoSchedules` is the per-repo cadence override (a repo ref
- * mapped to its own 5-field cron); the strategy's `schedule` applies to every other repository.
+ * A strategy as the scheduler reads it. `rpo` is the strategy's own declared target; `repoTargets` maps
+ * an EXACT repo ref to a target of its own. The strategy's `schedule` applies to every repository
+ * that has neither.
  */
 export type ScheduledStrategy = BackupStrategyConfig & {
-  repoSchedules?: Record<string, string>;
+  /** The cron of the main unit when the strategy declares no `rpo`. */
+  schedule: string;
 };
+
+/**
+ * What one unit asks of `renet backup snapshot` beyond its scope: the declared target and the per-run
+ * settings. Seconds and bytes throughout; the generator formats them. Absent means the verb's default.
+ */
+export interface UnitRun {
+  /** The protection target, which also decides the timer, the deadline and the start timeout. */
+  rpoSeconds?: number;
+  cellBytes?: number;
+  indexEverySeconds?: number;
+  hookTimeoutSeconds?: number;
+  hookFailure?: 'continue' | 'abort';
+}
 
 /** The repositories one unit covers. */
 export interface UnitScope {
@@ -57,8 +73,10 @@ export interface ScheduleUnitSpec {
   schedule: string;
   datastore: ScheduleDatastore;
   scope: UnitScope;
-  /** The ref of a per-repo override unit; absent for the strategy's main unit. */
+  /** The ref of a per-repo target unit; absent for the strategy's main unit. */
   repoRef?: string;
+  /** The target and run settings of this unit; absent when it asks for nothing beyond its scope. */
+  run?: UnitRun;
 }
 
 type DatastoreMap = NonNullable<NonNullable<RdcConfig['resources']>['datastores']>;
@@ -175,12 +193,40 @@ function unitPart(value: string): string {
 
 interface RepoOverride {
   repo: ResolvedRepo;
-  schedule: string;
+  target: RepoTarget;
+}
+
+type RepoTarget = NonNullable<ScheduledStrategy['repoTargets']>[string];
+
+/**
+ * Resolve one per-repo target ref to the repos it names, EXACTLY. Unlike an include or exclude name,
+ * a bare `mail` is the grand alone and does not pull in `mail:trial`: a target applies to what it
+ * names. `mail:*` asks for the family, one entry per tag. Throws on an unknown family or tag; returns
+ * [] when the family lives on another machine or datastore.
+ */
+function resolveExactRef(
+  ref: string,
+  families: Record<string, RepoFamily>,
+  machineName: string,
+  ds: ScheduleDatastore
+): ResolvedRepo[] {
+  const colon = ref.indexOf(':');
+  const name = colon === -1 ? ref : ref.slice(0, colon);
+  const tag = colon === -1 ? undefined : ref.slice(colon + 1);
+  if (tag === '*') return resolveRef(name, families, machineName, ds);
+  if (!(name in families)) return resolveRef(ref, families, machineName, ds);
+  return resolveRef(`${name}:${tag ?? families[name].grand}`, families, machineName, ds);
+}
+
+/** Exact refs sort before family refs, so a repo named both ways takes its own entry. */
+function targetRefOrder(a: string, b: string): number {
+  const rank = (ref: string): number => (ref.endsWith(':*') ? 1 : 0);
+  return rank(a) - rank(b) || byText(a, b);
 }
 
 /**
- * The per-repo cadence overrides that apply on this datastore: a repo the strategy excludes, or does
- * not include, gets no unit of its own; the first override naming a repo wins.
+ * The per-repo targets that apply on this datastore: a repo the strategy excludes, or does not
+ * include, gets no unit of its own; the first entry naming a repo wins, exact before family.
  */
 function resolveOverrides(
   strategy: ScheduledStrategy,
@@ -190,17 +236,42 @@ function resolveOverrides(
   included: ResolvedRepo[] | undefined,
   excludedGuids: Set<string>
 ): RepoOverride[] {
-  const schedules = strategy.repoSchedules ?? {};
+  const targets = strategy.repoTargets ?? {};
   const inScope = (guid: string): boolean =>
     !excludedGuids.has(guid) && (!included || included.some((r) => r.guid === guid));
   const overrides: RepoOverride[] = [];
-  for (const ref of Object.keys(schedules).sort(byText)) {
-    for (const repo of resolveRef(ref, families, machineName, ds)) {
+  for (const ref of Object.keys(targets).sort(targetRefOrder)) {
+    for (const repo of resolveExactRef(ref, families, machineName, ds)) {
       if (!inScope(repo.guid) || overrides.some((o) => o.repo.guid === repo.guid)) continue;
-      overrides.push({ repo, schedule: schedules[ref] });
+      overrides.push({ repo, target: targets[ref] });
     }
   }
   return overrides;
+}
+
+type RunFields = Pick<ScheduledStrategy, 'rpo' | 'indexEvery' | 'hookTimeout' | 'hookFailure'> & {
+  cellSize?: string;
+};
+
+/** The run settings of a unit from the strategy's fields, with a repo target's own fields taking precedence. Undefined when nothing is set. */
+function runOf(strategy: RunFields, target?: RunFields): UnitRun | undefined {
+  const pick = <K extends keyof RunFields>(key: K): RunFields[K] => target?.[key] ?? strategy[key];
+  const seconds = (value: string | undefined): number | undefined =>
+    value === undefined ? undefined : parseDurationSeconds(value);
+  const cell = pick('cellSize');
+  const run: UnitRun = {
+    rpoSeconds: seconds(pick('rpo')),
+    cellBytes: cell === undefined ? undefined : parseCellSizeBytes(cell),
+    indexEverySeconds: seconds(pick('indexEvery')),
+    hookTimeoutSeconds: seconds(pick('hookTimeout')),
+    hookFailure: pick('hookFailure'),
+  };
+  return Object.values(run).some((v) => v !== undefined) ? run : undefined;
+}
+
+/** The cron a unit's timer runs on: the target's ticks when it has one, else the strategy's own. */
+function scheduleOf(run: UnitRun | undefined, cron: string): string {
+  return run?.rpoSeconds === undefined ? cron : rpoCron(run.rpoSeconds);
 }
 
 /** The main unit's scope, or null when an include list leaves nothing to back up here. */
@@ -218,7 +289,7 @@ function mainScope(
 
 /**
  * The units one strategy needs on one datastore: the main unit (unless its scope resolved to
- * nothing) and one unit per repository with a per-repo cadence override.
+ * nothing) and one unit per repository with a per-repo target.
  *
  * An include list that resolves to no repository on this datastore yields NO main unit. Emitting a
  * unit with no --repo would back up every repository on the datastore, the opposite of what an
@@ -244,14 +315,26 @@ export function strategyUnitSpecs(
 
   const common = { strategyName, strategy, datastore: ds };
   const specs: ScheduleUnitSpec[] = [];
-  if (scope) specs.push({ ...common, unitName: baseName, schedule: strategy.schedule, scope });
-  for (const { repo, schedule } of overrides) {
+  if (scope) {
+    const run = runOf(strategy);
+    specs.push({
+      ...common,
+      unitName: baseName,
+      schedule: scheduleOf(run, strategy.schedule),
+      scope,
+      ...(run && { run }),
+    });
+  }
+  for (const { repo, target } of overrides) {
+    const run = runOf(strategy, target);
     specs.push({
       ...common,
       unitName: `${baseName}.repo.${unitPart(repo.ref)}`,
-      schedule,
+      // A per-repo entry always carries its own rpo (the schema requires it), so this is the target's cron.
+      schedule: scheduleOf(run, strategy.schedule),
       scope: { include: [repo.guid], exclude: [] },
       repoRef: repo.ref,
+      ...(run && { run }),
     });
   }
   return specs;
@@ -305,6 +388,21 @@ export function coverageByGuid(
     for (const guid of specRepoGuids(spec, config, machineName)) {
       result.set(guid, [...(result.get(guid) ?? []), spec.schedule]);
     }
+  }
+  return result;
+}
+
+/** GUIDs of every repository a unit set covers with a declared target, mapped to its length in seconds. A repo has at most one unit, so at most one target. */
+export function targetsByGuid(
+  specs: ScheduleUnitSpec[],
+  config: RdcConfig,
+  machineName: string
+): Map<string, number> {
+  const result = new Map<string, number>();
+  for (const spec of specs) {
+    const seconds = spec.run?.rpoSeconds;
+    if (seconds === undefined) continue;
+    for (const guid of specRepoGuids(spec, config, machineName)) result.set(guid, seconds);
   }
   return result;
 }

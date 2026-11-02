@@ -167,8 +167,18 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/cpuLimit': { kind: 'public' },
   '/resources/backupStrategies/*/include': { kind: 'public' },
   '/resources/backupStrategies/*/exclude': { kind: 'public' },
-  // Per-repo cadence override (G10): repo ref -> cron, scheduling topology like `schedule`.
-  '/resources/backupStrategies/*/repoSchedules/*': { kind: 'public' },
+  // Protection targets: durations, a size and a hook policy; scheduling topology like `schedule`.
+  // Removed key, replaced by repoTargets. The schema refuses any value (z.never), so no content can exist; the pointer stays registered so the coverage walker sees a closed schema.
+  '/resources/backupStrategies/*/repoSchedules': { kind: 'public' },
+  '/resources/backupStrategies/*/rpo': { kind: 'public' },
+  '/resources/backupStrategies/*/indexEvery': { kind: 'public' },
+  '/resources/backupStrategies/*/hookTimeout': { kind: 'public' },
+  '/resources/backupStrategies/*/hookFailure': { kind: 'public' },
+  '/resources/backupStrategies/*/repoTargets/*/rpo': { kind: 'public' },
+  '/resources/backupStrategies/*/repoTargets/*/cellSize': { kind: 'public' },
+  '/resources/backupStrategies/*/repoTargets/*/indexEvery': { kind: 'public' },
+  '/resources/backupStrategies/*/repoTargets/*/hookTimeout': { kind: 'public' },
+  '/resources/backupStrategies/*/repoTargets/*/hookFailure': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/kind': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/name': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
@@ -187,6 +197,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/retention/keepWeekly': { kind: 'public' },
   '/resources/backupStrategies/*/retention/keepMonthly': { kind: 'public' },
   '/resources/backupStrategies/*/retention/keepYearly': { kind: 'public' },
+  '/resources/backupStrategies/*/retention/keepWithinSeconds': { kind: 'public' },
 
   // ── Removed: resources.storages ── The schema refuses any value (z.never), so no content can exist; the pointer stays registered, as a secret, so the coverage walker sees a closed schema and a hand-edited config can never leak credentials through a redaction log.
   '/resources/storages': { kind: 'secret' },

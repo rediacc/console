@@ -136,8 +136,10 @@ describe('command plane coverage', () => {
     //
     // 195 -> 196, other 33 -> 34: `backup purge` (PLAN-backup-download-from-store) deletes a lineage through accountServerFetch, so `other` like `backup snapshots delete`.
     // 196 -> 199, machine 105 -> 108: `backup repair`, `backup check` and `backup toc-key sync` (PLAN-backup-integrity) drive a machine.
-    expect(COMMANDS.length).toBe(199);
-    expect(counts).toEqual({ config: 57, machine: 108, other: 34 });
+    //
+    // 199 -> 203, machine 108 -> 109, other 34 -> 37: `backup immutability show`, `backup immutability set` and `backup undelete` (PLAN-backup-critical-tier N4) are accountServerFetch calls against the control plane, so `other`; `backup churn` (N5) drives the churn probe on a machine and keeps the backup domain's machine plane.
+    expect(COMMANDS.length).toBe(203);
+    expect(counts).toEqual({ config: 57, machine: 109, other: 37 });
   });
 
   it('records the interactive commands', () => {
@@ -189,7 +191,8 @@ describe('command plane coverage', () => {
     // 98 -> 99: `job wait` (PLAN-detached-jobs J5) is machine-plane and non-interactive, like `job logs --follow`.
     // 99 -> 101: `backup download` and `backup upload` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local.
     // 101 -> 104: `backup repair`, `backup check` and `backup toc-key sync` are machine-plane and non-interactive.
-    expect(machineNonInteractive.length).toBe(104);
+    // 104 -> 105: `backup churn` (PLAN-backup-critical-tier N5) is machine-plane and non-interactive; it holds no credential or token, so it needs no PROXY_EXCLUSIONS entry unless the lead rules that a multi-hour verb must stay local.
+    expect(machineNonInteractive.length).toBe(105);
   });
 
   it('plane and interactive entries all point at real commands', () => {

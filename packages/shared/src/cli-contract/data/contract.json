@@ -233,6 +233,73 @@
     {
       "path": [
         "backup",
+        "churn"
+      ],
+      "pathKey": "backup churn",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.churn.description",
+      "label": "Measure how much of a repository image changes between runs, project the upload per cell size and recommend one. A reflink base is kept on the machine while it runs and is always removed.",
+      "options": [
+        {
+          "flags": "--samples <n>",
+          "long": "samples",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.churn.optionSamples",
+          "label": "Measured samples to take (default 3)"
+        },
+        {
+          "flags": "--interval <duration>",
+          "long": "interval",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.churn.optionInterval",
+          "label": "Wait between probes, for example 10m (default 10m)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Waits minutes to hours between probes and holds a reflink base on the machine until it ends; run it from a terminal.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "a client-side loop of probes that can run for hours, and it must forget its base when it ends",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "download"
       ],
       "pathKey": "backup download",
@@ -394,6 +461,68 @@
     {
       "path": [
         "backup",
+        "immutability",
+        "set"
+      ],
+      "pathKey": "backup immutability set",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.immutability.set.description",
+      "label": "Set the delayed-deletion window in days (0 to 30)",
+      "options": [],
+      "positionals": [
+        {
+          "name": "days",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.backup.immutability.set.daysArgument",
+          "label": "Days a delete waits before it takes effect (0 to 30)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Changes how long a delete waits before it takes effect, which is the operator's safety window and not an agent's to move.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "immutability",
+        "show"
+      ],
+      "pathKey": "backup immutability show",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.immutability.show.description",
+      "label": "Show the delayed-deletion window in force",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
         "list"
       ],
       "pathKey": "backup list",
@@ -511,7 +640,41 @@
       "plane": "other",
       "descriptionKey": "commands.backup.manifests.description",
       "label": "List backup snapshot manifests recorded on the server",
-      "options": [],
+      "options": [
+        {
+          "flags": "--limit <n>",
+          "long": "limit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.manifests.optionLimit",
+          "label": "Rows per page (default and maximum 500)"
+        },
+        {
+          "flags": "--before <cursor>",
+          "long": "before",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.manifests.optionBefore",
+          "label": "Page cursor from a previous listing (nextBefore)"
+        },
+        {
+          "flags": "--include-deleted",
+          "long": "include-deleted",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.manifests.optionIncludeDeleted",
+          "label": "Include snapshots whose delayed delete is pending"
+        }
+      ],
       "positionals": [
         {
           "name": "repo-ref",
@@ -570,6 +733,17 @@
           "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--cancel",
+          "long": "cancel",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.purge.optionCancel",
+          "label": "Cancel a delayed purge before it takes effect"
         }
       ],
       "positionals": [
@@ -1149,6 +1323,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.retention.optionKeepYearly",
           "label": "Keep the newest snapshot from each of this many years"
+        },
+        {
+          "flags": "--keep-within <duration>",
+          "long": "keep-within",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepWithin",
+          "label": "Keep every snapshot within this long of the newest, e.g. 24h"
         },
         {
           "flags": "--stream <id>",
@@ -1850,6 +2035,61 @@
           "label": "Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 (\"none\" removes it)"
         },
         {
+          "flags": "--rpo <duration>",
+          "long": "rpo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionRpo",
+          "label": "Declared protection target, for example 15m (at least 5m; none clears it)"
+        },
+        {
+          "flags": "--repo-rpo <ref=duration>",
+          "long": "repo-rpo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionRepoRpo",
+          "label": "Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family"
+        },
+        {
+          "flags": "--repo-cell-size <ref=size>",
+          "long": "repo-cell-size",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionRepoCellSize",
+          "label": "Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository"
+        },
+        {
+          "flags": "--no-estimate",
+          "long": "no-estimate",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionNoEstimate",
+          "label": "Skip the churn and cost estimate"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionDryRun",
+          "label": "Show what would change and write nothing"
+        },
+        {
           "flags": "--enable",
           "long": "enable",
           "valueTaking": false,
@@ -2066,6 +2306,42 @@
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "undelete"
+      ],
+      "pathKey": "backup undelete",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.undelete.description",
+      "label": "Cancel a delayed snapshot delete before it takes effect",
+      "options": [],
+      "positionals": [
+        {
+          "name": "snapshot-id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.backup.snapshots.snapshotIdArgument",
+          "label": "Snapshot id (see rdc backup manifests)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [

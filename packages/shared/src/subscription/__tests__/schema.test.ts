@@ -7,6 +7,8 @@ import {
   getPlanLimits,
   hasFeature,
   isValidPlanCode,
+  keepWithinAbovePlan,
+  PLAN_BACKUP_KEEP_WITHIN,
   PLAN_BACKUP_RETENTION,
   PLAN_FEATURES,
   PLAN_LIMITS,
@@ -299,5 +301,54 @@ describe('PLAN_BACKUP_RETENTION', () => {
       for (const knob of knobs)
         checkKnob(`${plan}.${knob}`, entry.default[knob], entry.limit[knob]);
     }
+  });
+});
+
+describe('PLAN_BACKUP_KEEP_WITHIN (decision O3)', () => {
+  const DAY = 86_400;
+
+  it('keeps every default at or below its limit, and unset where the plan offers none', () => {
+    for (const [plan, entry] of Object.entries(PLAN_BACKUP_KEEP_WITHIN)) {
+      if (entry.defaultSeconds === null) {
+        expect(entry.limitSeconds, `${plan} default unset`).toBe(0);
+      } else {
+        expect(entry.defaultSeconds, plan).toBeLessThanOrEqual(entry.limitSeconds);
+      }
+    }
+  });
+
+  it('states the ruled table', () => {
+    expect(PLAN_BACKUP_KEEP_WITHIN.FREE).toEqual({ defaultSeconds: null, limitSeconds: 0 });
+    expect(PLAN_BACKUP_KEEP_WITHIN.COMMUNITY).toEqual({
+      defaultSeconds: DAY,
+      limitSeconds: DAY,
+    });
+    expect(PLAN_BACKUP_KEEP_WITHIN.PROFESSIONAL).toEqual({
+      defaultSeconds: DAY,
+      limitSeconds: 3 * DAY,
+    });
+    expect(PLAN_BACKUP_KEEP_WITHIN.BUSINESS).toEqual({
+      defaultSeconds: 2 * DAY,
+      limitSeconds: 7 * DAY,
+    });
+    expect(PLAN_BACKUP_KEEP_WITHIN.ENTERPRISE).toEqual({
+      defaultSeconds: 3 * DAY,
+      limitSeconds: 30 * DAY,
+    });
+  });
+
+  it('refuses a window above the plan limit, naming the knob and the limit', () => {
+    expect(keepWithinAbovePlan('COMMUNITY', 2 * DAY)).toEqual({
+      knob: 'keepWithinSeconds',
+      requested: 2 * DAY,
+      limit: DAY,
+    });
+    expect(keepWithinAbovePlan('FREE', 60)).toMatchObject({ limit: 0 });
+    expect(keepWithinAbovePlan('COMMUNITY', DAY)).toBeUndefined();
+    expect(keepWithinAbovePlan('ENTERPRISE', 30 * DAY)).toBeUndefined();
+  });
+
+  it('leaves an unknown plan uncapped, as the other knobs do', () => {
+    expect(keepWithinAbovePlan('LEGACY', 365 * DAY)).toBeUndefined();
   });
 });

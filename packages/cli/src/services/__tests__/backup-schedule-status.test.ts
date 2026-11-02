@@ -186,8 +186,8 @@ describe('staleBackupRepos (G7)', () => {
         guid: GUID_A,
         name: 'mail',
         lastSuccessAt: '2026-10-22T03:00:00Z',
-        ageDays: 3.4,
-        intervalDays: 1,
+        ageSeconds: 291_600,
+        intervalSeconds: 86_400,
       },
     ]);
   });
@@ -257,7 +257,7 @@ describe('machineStaleBackups', () => {
       { repos: [{ guid: GUID_A, age_days: 5, last_success_at: '2026-10-20T03:00:00Z' }] },
       NOW
     );
-    expect(stale.map((s) => [s.guid, s.intervalDays])).toEqual([[GUID_A, 1]]);
+    expect(stale.map((s) => [s.guid, s.intervalSeconds])).toEqual([[GUID_A, 86_400]]);
   });
 
   it('a machine with no bound strategy has no verdict', () => {

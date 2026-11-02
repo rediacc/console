@@ -926,7 +926,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{verb}} on {{repo}}, started {{startedAt}} by {{origin}}. Attach: {{attach}}",
         "runningJobsSection": "Jobs (running or finished in the last hour)",
         "verifyFailureSection": "Failed Backup Verifies",
-        "verifyFailureWarning": "{{count}} repository(ies) failed their last backup verify."
+        "verifyFailureWarning": "{{count}} repository(ies) failed their last backup verify.",
+        "missedTargetSection": "Repositories that missed their backup target",
+        "missedTargetWarning": "{{count}} repository(ies) missed their backup target on the latest run."
       },
       "gpu": {
         "descriptionShort": "Inspect a machine's GPUs and device grants",
@@ -1827,7 +1829,12 @@
       "manifests": {
         "description": "List backup snapshot manifests recorded on the server",
         "fetching": "Fetching backup manifests...",
-        "empty": "No backup manifests found."
+        "empty": "No backup manifests found.",
+        "optionLimit": "Rows per page (default and maximum 500)",
+        "optionBefore": "Page cursor from a previous listing (nextBefore)",
+        "optionIncludeDeleted": "Include snapshots whose delayed delete is pending",
+        "limitInvalid": "--limit takes a whole number of at least 1, got \"{{value}}\"",
+        "more": "Showing {{shown}} of {{total}} snapshots. Next page: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "No snapshot was taken at or before {{at}}.",
@@ -1891,7 +1898,8 @@
         "salvageHole": "  hole at bytes {{offset}} to {{end}}: {{reason}}",
         "salvageNeedsAs": "--salvage needs --as <new name>: a damaged image is never placed under an existing name.",
         "salvageNeedsSnapshot": "--salvage needs a chunk-store snapshot to restore from.",
-        "salvageWholeImage": "--salvage restores a whole image; it cannot be combined with --path or --to."
+        "salvageWholeImage": "--salvage restores a whole image; it cannot be combined with --path or --to.",
+        "atIndexGap": "Snapshot {{snapshot}} has no stored listing, so {{indexed}} is read instead, taken {{gap}} earlier."
       },
       "retention": {
         "clear": {
@@ -1910,14 +1918,16 @@
         "optionKeepYearly": "Keep the newest snapshot from each of this many years",
         "set": {
           "description": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
-          "success": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep."
+          "success": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep.",
+          "pending": "The change keeps less, so it waits out the delayed-deletion window and takes effect on {{when}} (UTC) for \"{{name}}\". The policy shown stays in force until then."
         },
         "effective": "Effective retention for {{name}}: {{source}}",
         "optionStream": "Apply to this backup stream only (a stream id); without it, the repository-wide default",
         "preview": {
           "description": "Show which snapshots the next sweep would delete and the space it would free.",
           "nothing": "The next sweep deletes nothing for {{name}}.",
-          "summary": "The next sweep deletes {{count}} snapshot(s) of {{name}}, keeps {{kept}} and frees {{bytes}}."
+          "summary": "The next sweep deletes {{count}} snapshot(s) of {{name}}, keeps {{kept}} and frees {{bytes}}.",
+          "reasons": "Kept for: {{reasons}}"
         },
         "seeded": "Retention from strategy \"{{strategy}}\" declared for {{count}} repository(ies) that had no policy.",
         "seedFailed": "Could not declare the retention of strategy \"{{strategy}}\" ({{reason}}). The server default applies until it is declared.",
@@ -1927,7 +1937,10 @@
           "plan": "plan default",
           "default": "server default",
           "orphan": "orphaned repository window"
-        }
+        },
+        "keepWithinInvalid": "--keep-within takes a duration such as 24h or 90m, got \"{{value}}\"",
+        "optionKeepWithin": "Keep every snapshot within this long of the newest, e.g. 24h",
+        "pendingClear": "Removing the policy of \"{{name}}\" waits out the delayed-deletion window and takes effect on {{when}} (UTC). The policy in force keeps applying until then."
       },
       "run": {
         "description": "Run a backup now.",
@@ -2008,7 +2021,22 @@
           "retentionPushed": "Retention applied to {{count}} repository(ies).",
           "retentionPushFailed": "Retention is saved for strategy \"{{strategy}}\" but could not be applied ({{reason}}). Run this command again when the server is reachable.",
           "optionCpuLimit": "CPU ceiling for this strategy's snapshots: percent of all cores, 1-100 (default 50); none clears it",
-          "cpuLimitStrategyOnly": "--cpu-limit applies to the whole strategy; drop --destination."
+          "cpuLimitStrategyOnly": "--cpu-limit applies to the whole strategy; drop --destination.",
+          "optionRpo": "Declared protection target, for example 15m (at least 5m; none clears it)",
+          "optionRepoRpo": "Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family",
+          "optionRepoCellSize": "Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository",
+          "optionNoEstimate": "Skip the churn and cost estimate",
+          "optionDryRun": "Show what would change and write nothing",
+          "rpoInvalid": "Invalid {{option}} \"{{value}}\": {{reason}}",
+          "repoOptionInvalid": "{{option}} takes <ref>=<value>, got \"{{value}}\"",
+          "cellSizeInvalid": "Cell size \"{{value}}\" is not a size such as 1M or 4M",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" has no target; set one with --repo-rpo {{ref}}=<duration> first",
+          "noMeasurement": "No churn measurement for {{refs}}. Run `rdc backup churn <repo>` first, or pass --no-estimate.",
+          "reseedWarning": "Changing the cell size of {{ref}} to {{size}} re-seeds it: every cell uploads again and is charged, and forks on the old grid stop deduplicating. A scheduled run never takes the grid change by itself.",
+          "retentionDefaulted": "Strategy \"{{strategy}}\" declared no retention, so every snapshot within {{window}} is kept ({{plan}} plan default).",
+          "retentionDefaultNoStorage": "The {{plan}} plan has no cloud backup storage, so no retention default was set.",
+          "retentionDefaultNoPlan": "The plan could not be read, so no retention default was set. Declare one with --retention.",
+          "dryRun": "Dry run: strategy \"{{strategy}}\" would change ({{changes}}). Nothing was written."
         },
         "bind": {
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",
@@ -2073,7 +2101,11 @@
       "usage": {
         "description": "Show backup storage quota, stored bytes, and per-repo usage",
         "fetching": "Fetching backup storage usage...",
-        "empty": "No per-repo backup storage usage recorded yet."
+        "empty": "No per-repo backup storage usage recorded yet.",
+        "overLimit": "OVER LIMIT",
+        "summary": "Used {{used}} of {{quota}} (live {{live}}, leased {{leased}}, {{chunks}} chunks) {{over}}",
+        "waiting": "Waiting for deletion: {{waiting}} in {{chunks}} chunk(s), not charged. Churn cap {{cap}}.",
+        "throttled": "Waiting storage is above the churn cap of {{cap}}: a backup stream faster than hourly is refused until it drains."
       },
       "verify": {
         "description": "Verify a repository's backup anchor against the chunk store",
@@ -2098,7 +2130,8 @@
         "delete": {
           "description": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
           "notInRepo": "Snapshot {{snapshot}} is not in the stored history of {{name}}. List its ids with: rdc backup manifests {{name}}",
-          "success": "Deleted {{count}} snapshot(s) of {{name}}, including {{snapshot}}."
+          "success": "Deleted {{count}} snapshot(s) of {{name}}, including {{snapshot}}.",
+          "delayed": "The delete of snapshot {{snapshot}} of \"{{name}}\" is delayed: it still restores and is removed on {{when}} (UTC). Cancel with: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -2154,7 +2187,12 @@
         "usageDelta": "Stored for this repository: {{beforeBytes}} in {{beforeChunks}} chunk(s) before, {{afterBytes}} in {{afterChunks}} chunk(s) after.",
         "usageUnavailable": "Purged, but the usage after the purge could not be read: {{error}}",
         "progress": "Purging \"{{name}}\": round {{round}}, {{chunks}} object(s) deleted so far ({{bytes}}).",
-        "tooManyRounds": "Purging \"{{name}}\" did not finish after {{rounds}} rounds. Run the purge again to continue."
+        "tooManyRounds": "Purging \"{{name}}\" did not finish after {{rounds}} rounds. Run the purge again to continue.",
+        "optionCancel": "Cancel a delayed purge before it takes effect",
+        "cancelExclusive": "--cancel cannot be combined with --dry-run",
+        "cancelled": "The delayed purge of \"{{name}}\" was cancelled.",
+        "nothingWaiting": "No purge of \"{{name}}\" was waiting.",
+        "delayed": "The purge of \"{{name}}\" is delayed: nothing was deleted, and it runs on {{when}} (UTC). Cancel it before then with: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Prove a stored snapshot opens with the passphrase by restoring one file",
@@ -2175,6 +2213,55 @@
         "optionDryRun": "Report what would be done; touch nothing",
         "optionReplace": "Replace a different key already on the machine (sends the passphrase to prove it)",
         "syncDescription": "Install the repository's listing key on its machine, or replace a different one"
+      },
+      "churn": {
+        "description": "Measure how much of a repository image changes between runs, project the upload per cell size and recommend one. A reflink base is kept on the machine while it runs and is always removed.",
+        "descriptionShort": "Measure repository churn and recommend a cell size",
+        "optionSamples": "Measured samples to take (default 3)",
+        "optionInterval": "Wait between probes, for example 10m (default 10m)",
+        "probing": "Probing \"{{name}}\" (probe {{probe}})...",
+        "probed": "Probe of \"{{name}}\" recorded",
+        "probeFailed": "Probe of \"{{name}}\" failed",
+        "forgetting": "Removing the probe base of \"{{name}}\"...",
+        "forgotten": "The probe base of \"{{name}}\" was removed from the machine.",
+        "forgetFailed": "The probe base of \"{{name}}\" could not be removed and still pins space on the machine. Run rdc backup churn {{name}} again; it removes the base when it ends.",
+        "noMeasurement": "No churn was measured for \"{{name}}\": a first probe only sets a baseline ({{baselines}} baseline, {{skipped}} skipped). Nothing is projected.",
+        "samplesInvalid": "--samples takes a whole number from 1 to {{max}}, got \"{{value}}\"",
+        "intervalInvalid": "--interval takes a duration such as 5m or 1h (under 24h), got \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "Recommended cell size: {{cell}}. Writes are small and scattered, and it uploads {{savedPercent}}% fewer bytes than 4 MiB. Changing it re-seeds the repository.",
+          "clustered-large": "Recommended cell size: {{cell}}. Writes are large and clustered, so it needs far fewer puts for the same bytes.",
+          "default": "Recommended cell size: {{cell}}, the default. No other size saves enough.",
+          "idle": "Recommended cell size: {{cell}}, the default. The repository did not change between probes.",
+          "collapse-cap": "Recommended cell size: {{cell}}. 1 MiB would save {{savedPercent}}% but the image would pass 262,144 cells at that size, where pruning is deferred."
+        },
+        "estimate": {
+          "target": "{{name}}: {{cells}} changed cell(s) per run, {{runs}} runs a day (priced at 4 MiB cells).",
+          "cost": "Estimated {{total}} a month: {{classA}} Class A and {{classB}} Class B operations, {{storage}} storage ({{window}} charged, {{waiting}} waiting out the 7-day grace).",
+          "capHeld": "Waiting storage settles at {{waiting}}, under the churn cap of {{cap}}.",
+          "capExceeded": "Waiting storage would reach {{waiting}}, past the churn cap of {{cap}} in {{days}} day(s): a stream faster than hourly would be refused until it drains."
+        }
+      },
+      "immutability": {
+        "description": "Show or set the delayed-deletion window of stored backups",
+        "show": {
+          "description": "Show the delayed-deletion window in force",
+          "window": "Delayed deletion: a delete, purge or smaller retention waits {{days}} day(s) and can be undone until then.",
+          "off": "Delayed deletion is off: deletes take effect at once."
+        },
+        "set": {
+          "description": "Set the delayed-deletion window in days (0 to 30)",
+          "daysArgument": "Days a delete waits before it takes effect (0 to 30)",
+          "applied": "The delayed-deletion window is now {{days}} day(s).",
+          "appliedOff": "Delayed deletion is off.",
+          "invalid": "A window is whole days from 0 to {{max}}, got \"{{value}}\""
+        },
+        "pending": "The window shrinks to {{days}} day(s) on {{when}} (UTC). {{current}} day(s) stay in force until then."
+      },
+      "undelete": {
+        "description": "Cancel a delayed snapshot delete before it takes effect",
+        "success": "Snapshot {{snapshot}} is kept: its delete was cancelled.",
+        "notWaiting": "Snapshot {{snapshot}} was not waiting for deletion."
       }
     },
     "sync": {

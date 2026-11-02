@@ -306,9 +306,14 @@ export function computeDesiredUnits(
       remoteRenetPath,
       spec.scope,
       cpuCount,
-      spec.schedule
+      spec.schedule,
+      spec.run
     );
-    const timerContent = generateTimerUnit(spec.unitName, cronToOnCalendar(spec.schedule));
+    const timerContent = generateTimerUnit(
+      spec.unitName,
+      cronToOnCalendar(spec.schedule),
+      spec.run?.rpoSeconds
+    );
     add({
       strategyName: spec.unitName,
       serviceContent,

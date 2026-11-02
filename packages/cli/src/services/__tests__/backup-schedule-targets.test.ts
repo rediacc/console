@@ -192,14 +192,14 @@ describe('per-repo cadence (G10)', () => {
   it('gives an overridden repo its own unit and timer, and takes it out of the main unit', () => {
     const specs = strategyUnitSpecs(
       's',
-      strategy({ repoSchedules: { gitlab: '0 * * * *' } }),
+      strategy({ repoTargets: { gitlab: { rpo: '1h' } } }),
       config,
       'm1',
       implicit
     );
     expect(specs.map((s) => [s.unitName, s.schedule, s.scope])).toEqual([
       ['s', '0 3 * * *', { exclude: [G.gitlab] }],
-      ['s.repo.gitlab.latest', '0 * * * *', { include: [G.gitlab], exclude: [] }],
+      ['s.repo.gitlab.latest', '0 */1 * * *', { include: [G.gitlab], exclude: [] }],
     ]);
     expect(generateTimerUnit(specs[1].unitName, 'x')).toContain(
       'Rediacc Backup Timer (s.repo.gitlab.latest)'
@@ -209,7 +209,7 @@ describe('per-repo cadence (G10)', () => {
   it('with an include list, the override leaves the main unit and no exclude flag is needed', () => {
     const specs = strategyUnitSpecs(
       's',
-      strategy({ include: ['mail', 'gitlab'], repoSchedules: { 'mail:trial': '*/15 * * * *' } }),
+      strategy({ include: ['mail', 'gitlab'], repoTargets: { 'mail:trial': { rpo: '15m' } } }),
       config,
       'm1',
       implicit
@@ -223,7 +223,7 @@ describe('per-repo cadence (G10)', () => {
   it('ignores an override for a repo the strategy excludes or does not include', () => {
     const specs = strategyUnitSpecs(
       's',
-      strategy({ include: ['gitlab'], repoSchedules: { mail: '0 * * * *' } }),
+      strategy({ include: ['gitlab'], repoTargets: { mail: { rpo: '1h' } } }),
       config,
       'm1',
       implicit
@@ -231,17 +231,17 @@ describe('per-repo cadence (G10)', () => {
     expect(specs.map((s) => s.unitName)).toEqual(['s']);
   });
 
-  it('refuses an override whose cron is not 5 fields', () => {
+  it('refuses a per-repo target under 5 minutes', () => {
     const [spec] = strategyUnitSpecs(
       's',
-      strategy({ repoSchedules: { gitlab: 'hourly' } }),
+      strategy({ repoTargets: { gitlab: { rpo: '1m' } } }),
       config,
       'm1',
       implicit
     );
     expect(() =>
       buildBackupCommands(spec.strategy, spec.strategy.destinations, '/d', '/r', spec.scope)
-    ).toThrow(/Per-repo schedule for "gitlab"/);
+    ).toThrow(/Per-repo target for "gitlab"/);
   });
 });
 
@@ -249,14 +249,14 @@ describe('coverageByGuid', () => {
   it('maps each covered GUID to the crons of the units covering it', () => {
     const specs = strategyUnitSpecs(
       's',
-      strategy({ exclude: ['mail:trial'], repoSchedules: { gitlab: '0 * * * *' } }),
+      strategy({ exclude: ['mail:trial'], repoTargets: { gitlab: { rpo: '1h' } } }),
       config,
       'm1',
       implicit
     );
     const cov = coverageByGuid(specs, config, 'm1');
     expect(cov.get(G.mail)).toEqual(['0 3 * * *']);
-    expect(cov.get(G.gitlab)).toEqual(['0 * * * *']);
+    expect(cov.get(G.gitlab)).toEqual(['0 */1 * * *']);
     expect(cov.has(G.mailFork)).toBe(false);
     expect(cov.has(G.elsewhere)).toBe(false);
     expect(cov.has(G.pool)).toBe(false);

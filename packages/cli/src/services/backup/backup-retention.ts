@@ -9,6 +9,7 @@
  * overwrites, because the operator just changed the number on purpose.
  */
 
+import { parseDurationSeconds } from '@rediacc/shared/backup/duration';
 import type { RdcConfig, RepoFamily } from '@rediacc/shared/config-schema';
 import type { BackupStrategyConfig } from '../../types/index.js';
 import { accountServerFetch } from '../account/account-client.js';
@@ -22,6 +23,8 @@ export interface RetentionSpec {
   keepWeekly?: number;
   keepMonthly?: number;
   keepYearly?: number;
+  /** Keep every snapshot within this many seconds of the stream's newest (`within=24h`). */
+  keepWithinSeconds?: number;
 }
 
 type RetentionKnob = keyof RetentionSpec;
@@ -34,13 +37,19 @@ const SPEC_NAMES: Record<string, RetentionKnob> = {
   weekly: 'keepWeekly',
   monthly: 'keepMonthly',
   yearly: 'keepYearly',
+  within: 'keepWithinSeconds',
 };
 
 /** Thrown for a `--retention` value that does not parse; the command turns it into a ValidationError. */
 export class RetentionSpecError extends Error {}
 
+/** A snapshot count: digits only, so `-1`, `1.5` and `1x` are refused. */
+function parseCount(raw: string): number | undefined {
+  return /^\d+$/.test(raw) ? Number(raw) : undefined;
+}
+
 /**
- * Parse `last=7,daily=7,weekly=4,monthly=6`. An empty value or `none` returns undefined, which
+ * Parse `last=7,daily=7,weekly=4,monthly=6,within=24h`. An empty value or `none` returns undefined, which
  * clears the strategy's policy. Any unknown name, repeated name or non-integer count is refused:
  * a policy decides what gets deleted, so a guess is never acceptable.
  */
@@ -49,15 +58,24 @@ export function parseRetentionSpec(raw: string): RetentionSpec | undefined {
   if (trimmed === '' || trimmed.toLowerCase() === 'none') return undefined;
   const spec: RetentionSpec = {};
   for (const part of trimmed.split(',')) {
-    const [name, count, ...rest] = part.split('=').map((s) => s.trim());
-    const knob = SPEC_NAMES[name.toLowerCase()];
-    if (knob === undefined || count === undefined || rest.length > 0 || !/^\d+$/.test(count)) {
-      throw new RetentionSpecError(raw);
-    }
+    const [knob, value] = parseSpecPart(part, raw);
     if (knob in spec) throw new RetentionSpecError(raw);
-    spec[knob] = Number(count);
+    spec[knob] = value;
   }
   return spec;
+}
+
+/** One `name=value` part of a spec: the wire knob and its parsed value, or a refusal. */
+function parseSpecPart(part: string, raw: string): [RetentionKnob, number] {
+  const [name, count, ...rest] = part.split('=').map((s) => s.trim());
+  const knob = SPEC_NAMES[name.toLowerCase()];
+  if (knob === undefined || count === undefined || rest.length > 0) {
+    throw new RetentionSpecError(raw);
+  }
+  // The window carries a unit (`24h`); a bare number is refused, since `within=24` is 24 of what.
+  const value = knob === 'keepWithinSeconds' ? parseDurationSeconds(count) : parseCount(count);
+  if (value === undefined) throw new RetentionSpecError(raw);
+  return [knob, value];
 }
 
 export type CronCadence = 'subdaily' | 'daily' | 'weekly' | 'monthly';
@@ -108,6 +126,21 @@ export function retentionCronMismatches(
   return USELESS_KNOBS[cadence]
     .filter(({ knob }) => (retention[knob] ?? 0) > 0)
     .map(({ flag }) => ({ knob: flag, cadence }));
+}
+
+/**
+ * Whether a cron fires more than once an hour while the policy holds nothing that can keep that
+ * many: bucket knobs (`hourly`, `daily`, ...) keep one snapshot per bucket, so only `last` and
+ * `within` use sub-hourly snapshots, and every other one of them is deleted by the next sweep.
+ */
+export function retentionUnusedByCadence(
+  retention: RetentionSpec | undefined,
+  cron: string
+): boolean {
+  if (!retention) return false;
+  const minute = cron.trim().split(/\s+/)[0];
+  if (minute === undefined || isPlainNumber(minute)) return false;
+  return (retention.keepLast ?? 0) === 0 && (retention.keepWithinSeconds ?? 0) === 0;
 }
 
 /** Whether a repo ref list names `name` (every tag) or `name:tag` exactly. */

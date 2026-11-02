@@ -77,10 +77,16 @@ async function datastoreFreeBytes(machineName: string): Promise<number | undefin
 /** The snapshot's image size, from the account's index; undefined when the index does not hold it. */
 async function indexedImageBytes(lineage: string, snapshotId: string): Promise<number | undefined> {
   assertHostedBackupAccount();
-  const index = await accountServerFetch<BackupManifestsResponse>(
-    `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
-  );
-  return index.manifests.find((m) => m.snapshotId === snapshotId)?.totalBytes;
+  try {
+    const row = await accountServerFetch<BackupManifestsResponse['manifests'][number]>(
+      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}`
+    );
+    return row.totalBytes;
+  } catch (error) {
+    // No such row is an unknown size, which the free-space check refuses; any other failure is its own.
+    if ((error as { status?: unknown } | null)?.status !== 404) throw error;
+    return undefined;
+  }
 }
 
 function copyName(): string {

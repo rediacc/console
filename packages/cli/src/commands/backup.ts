@@ -315,7 +315,9 @@ async function restorePathRoute(
           anyStream: options.anyStream ?? false,
           source: { repoName: repoKey, machine: sourceMachine },
           debug: options.debug,
-        })
+        }),
+        // A path is read from the snapshot's listing, so a time with no listing falls back to the nearest one that has it.
+        { indexed: true }
       ),
   });
 }
@@ -571,7 +573,8 @@ function restoreTailSteps(
 async function lineageHasSnapshots(lineage: string, name: string): Promise<boolean> {
   try {
     const result = await accountServerFetch<BackupManifestsResponse>(
-      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
+      // Whether any row exists: one is enough, and the listing is capped per page.
+      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}&limit=1`
     );
     return result.manifests.length > 0; // a malformed answer throws into the catch
   } catch (error) {

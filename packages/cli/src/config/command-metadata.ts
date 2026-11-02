@@ -183,6 +183,25 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Deletes every stored snapshot of a repository at once; a wrong call ' +
       'discards all of its backups.',
   },
+  // The delayed-deletion window (D-immutable). `show` is a read. `set` changes how long a delete waits, so it opts OUT like a retention mutation: a shortening is itself delayed by the server, but an agent should not move the safety window.
+  'backup immutability show': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'backup immutability set': {
+    mcpExcludeReason:
+      'Changes how long a delete waits before it takes effect, which is the ' +
+      "operator's safety window and not an agent's to move.",
+  },
+  // Cancels a delayed delete: it only keeps data, and repeating it is harmless.
+  'backup undelete': {
+    mcp: { destructive: false, idempotent: true, timeout: 'write' },
+  },
+  // Samples run for minutes to hours, with a reflink base held on the machine until the verb ends, which no MCP timeout covers.
+  'backup churn': {
+    mcpExcludeReason:
+      'Waits minutes to hours between probes and holds a reflink base on the ' +
+      'machine until it ends; run it from a terminal.',
+  },
   // Opts IN as a write: it asks the server to delete a corrupt chunk and re-uploads from the machine's anchor.
   'backup repair': {
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },

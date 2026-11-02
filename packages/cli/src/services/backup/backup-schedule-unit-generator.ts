@@ -10,12 +10,13 @@
  */
 
 import { createHash } from 'node:crypto';
+import { formatDuration } from '@rediacc/shared/backup/duration';
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { envFilePath } from './backup-env-file.js';
 import { cronMaxGapSeconds } from './backup-schedule-interval.js';
-import type { UnitScope } from './backup-schedule-targets.js';
+import type { UnitRun, UnitScope } from './backup-schedule-targets.js';
 import {
   ALERT_UNIT_SUFFIX,
   alertUnitFileName,
@@ -114,6 +115,58 @@ interface BackupBuild {
   envVars: Record<string, string>;
 }
 
+/** The run deadline never drops below this: a repo needs room to hash, upload and commit. */
+const DEADLINE_FLOOR_SECONDS = 600;
+/** ... and never rises above this: a run past two hours is hung, and the next tick should take its place. */
+const DEADLINE_CAP_SECONDS = 7200;
+/** Headroom the systemd backstop adds beyond twice the deadline. */
+const START_TIMEOUT_SLACK_SECONDS = 600;
+/** Cap of the timer's randomized delay. */
+const JITTER_CAP_SECONDS = 60;
+
+/** The run deadline of a target: three times its length, clamped to 10 minutes .. 2 hours (D-rpo). */
+function deadlineSeconds(targetSeconds: number): number {
+  return Math.min(Math.max(3 * targetSeconds, DEADLINE_FLOOR_SECONDS), DEADLINE_CAP_SECONDS);
+}
+
+/** The finite `TimeoutStartSec=` backstop of a target unit: 2 x deadline + 10 minutes. renet ends the run at the deadline itself; this only covers a renet that cannot. */
+function startTimeoutSeconds(targetSeconds: number): number {
+  return 2 * deadlineSeconds(targetSeconds) + START_TIMEOUT_SLACK_SECONDS;
+}
+
+/** The timer's randomized delay: min(T/5, 60s), the same figure renet's nextExpected arithmetic assumes. */
+function jitterSeconds(targetSeconds: number): number {
+  return Math.min(Math.floor(targetSeconds / 5), JITTER_CAP_SECONDS);
+}
+
+/**
+ * The flags a unit's run settings add to the verb. The verb's own defaults stand for anything unset,
+ * and `--cell-bytes` in particular is omitted unless chosen: 0 keeps the repository's recorded grid.
+ * `--accept-grid-change` is never emitted, so a scheduled unit cannot re-seed a repository.
+ *
+ * A target replaces `--expected-interval`: renet derives the next expected run from the target, its
+ * jitter and its grace, which a cron's longest gap cannot express.
+ */
+function runFlags(run: UnitRun | undefined): string[] {
+  if (!run) return [];
+  const flags: string[] = [];
+  if (run.rpoSeconds !== undefined) {
+    flags.push(
+      `--target ${formatDuration(run.rpoSeconds)}`,
+      `--deadline ${formatDuration(deadlineSeconds(run.rpoSeconds))}`
+    );
+  }
+  if (run.hookTimeoutSeconds !== undefined) {
+    flags.push(`--hook-timeout ${formatDuration(run.hookTimeoutSeconds)}`);
+  }
+  if (run.hookFailure !== undefined) flags.push(`--hook-failure ${run.hookFailure}`);
+  if (run.indexEverySeconds !== undefined) {
+    flags.push(`--index-every ${formatDuration(run.indexEverySeconds)}`);
+  }
+  if (run.cellBytes !== undefined) flags.push(`--cell-bytes ${run.cellBytes}`);
+  return flags;
+}
+
 /**
  * The scheduled command for a chunk-store (hosted-service) destination.
  *
@@ -133,7 +186,8 @@ function buildChunkStoreCommand(
   remoteRenetPath: string,
   scope: UnitScope,
   cpuCount: number | undefined,
-  schedule: string
+  schedule: string,
+  run: UnitRun | undefined
 ): string {
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
@@ -146,7 +200,9 @@ function buildChunkStoreCommand(
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
   parts.push(`--parallelism ${STRATEGY_UPLOAD_PARALLELISM}`);
   // Without the cadence nothing sends `nextExpectedAt` with the commit, and the server's dead-man check (a stream whose next run is overdue) stays silent for exactly the machine that stopped running. The longest gap of the unit's own cron is used, so a weekday-only schedule does not alarm over a weekend.
-  parts.push(`--expected-interval ${cronMaxGapSeconds(schedule)}s`);
+  if (run?.rpoSeconds === undefined)
+    parts.push(`--expected-interval ${cronMaxGapSeconds(schedule)}s`);
+  parts.push(...runFlags(run));
   // The read cap is strategy level (the read is local, not tied to a destination) and is emitted ONLY when set, so every other unit gets the verb's gentle default and an older renet is not handed a flag it does not know. --hash-parallelism is never emitted: the verb default (1) stands.
   const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
   if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
@@ -186,7 +242,8 @@ export function buildBackupCommands(
   remoteRenetPath: string,
   scope: UnitScope = unresolvedScope(strategy),
   cpuCount?: number,
-  schedule: string = strategy.schedule
+  schedule: string = strategy.schedule,
+  run?: UnitRun
 ): BackupBuild {
   const envVars: Record<string, string> = {};
 
@@ -201,7 +258,8 @@ export function buildBackupCommands(
         remoteRenetPath,
         scope,
         cpuCount,
-        schedule
+        schedule,
+        run
       ),
     ],
     envVars,
@@ -298,7 +356,8 @@ export function generateServiceUnit(
   remoteRenetPath: string,
   scope?: UnitScope,
   cpuCount?: number,
-  schedule: string = strategy.schedule
+  schedule: string = strategy.schedule,
+  run?: UnitRun
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
@@ -307,7 +366,8 @@ export function generateServiceUnit(
     remoteRenetPath,
     scope,
     cpuCount,
-    schedule
+    schedule,
+    run
   );
   // The spot verify is a second ExecStart of a oneshot unit: systemd runs them in order and stops at the first failure, so a failed snapshot is never verified, and a failed verify fails the unit (and with it OnFailure=). It carries the snapshot's scope; `scope ?? unresolved` already threw above for a name-bearing strategy.
   const verify = verifySettings(strategy);
@@ -322,12 +382,16 @@ export function generateServiceUnit(
   // TimeoutStartSec=infinity: backups can legitimately take > 24 h for a
   // first full seed of a large repo. Any finite cap eventually bites.
   //
+  // A unit with a declared target is the exception: renet ends the run at its deadline and hands a first seed to a detached unit, so the run is bounded, and a finite backstop (2 x deadline + 10 minutes) is what lets a hung run release its slot for the next tick. RuntimeMaxSec= is NOT used: systemd documents it as having no effect on Type=oneshot.
+  //
   // TimeoutStopSec is what systemd allows renet AFTER a SIGTERM before it SIGKILLs, and the two modes need very different budgets:
   //
   // hot (90s): renet aborts the transfer and deletes its datastore snapshot, bounded at 60s renet-side. Without a window systemd would SIGKILL mid-cleanup and orphan the snapshot. cold (960s): a SIGTERM inside the outage window leaves containers STOPPED, and renet's handler must bring every one of them back before it exits. That restart is bounded at 15 min renet-side
   // (coldRestartTimeout), so a 90s window would SIGKILL mid-restart and leave the repositories down, converting a clean shutdown into the exact outage cold mode exists to keep brief. The budget is the renet bound plus a minute of slack.
   //
   // Reconcile repairs a machine left in that state within a tick, but a backstop measured in minutes is not a reason to hand systemd a knife.
+  const startTimeout =
+    run?.rpoSeconds === undefined ? 'infinity' : String(startTimeoutSeconds(run.rpoSeconds));
   const stopTimeout = (strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold' ? 960 : 90;
   const serviceContent = `[Unit]
 Description=Rediacc Scheduled Backup (${strategyName})
@@ -337,7 +401,7 @@ OnFailure=${alertUnitFileName(strategyName)}
 [Service]
 Type=oneshot
 ${LOW_PRIORITY_DIRECTIVES}
-${cpuQuotaDirective(strategy, cpuCount)}TimeoutStartSec=infinity
+${cpuQuotaDirective(strategy, cpuCount)}TimeoutStartSec=${startTimeout}
 TimeoutStopSec=${stopTimeout}
 ${envFileLine}${renewLine}${execLines.join('\n')}
 
@@ -348,14 +412,28 @@ WantedBy=multi-user.target
   return { serviceContent, envVars };
 }
 
-/** Generate systemd timer unit for a backup strategy. */
-export function generateTimerUnit(strategyName: string, onCalendar: string): string {
+/**
+ * Generate systemd timer unit for a backup strategy.
+ *
+ * A target timer adds a stable per-timer offset (`RandomizedDelaySec` with `FixedRandomDelay`), so many
+ * repositories on one machine do not all mint a session in the same second, and `AccuracySec=1s` so
+ * that offset is not blurred by systemd's default one-minute coalescing.
+ */
+export function generateTimerUnit(
+  strategyName: string,
+  onCalendar: string,
+  targetSeconds?: number
+): string {
+  const jitter =
+    targetSeconds === undefined
+      ? ''
+      : `RandomizedDelaySec=${jitterSeconds(targetSeconds)}s\nFixedRandomDelay=true\nAccuracySec=1s\n`;
   return `[Unit]
 Description=Rediacc Backup Timer (${strategyName})
 
 [Timer]
 OnCalendar=${onCalendar}
-Persistent=true
+${jitter}Persistent=true
 
 [Install]
 WantedBy=timers.target

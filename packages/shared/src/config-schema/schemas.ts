@@ -16,6 +16,7 @@
  */
 
 import { z } from 'zod';
+import { parseDurationSeconds, rpoProblem } from '../backup/duration.js';
 import { ValidationError } from '../errors/index.js';
 import { PolicyDocumentSchema } from '../policy/schema.js';
 import { AccessSchema } from './access.js';
@@ -356,6 +357,12 @@ const RetentionPolicySchema = z.object({
   keepWeekly: z.number().int().min(0).optional(),
   keepMonthly: z.number().int().min(0).optional(),
   keepYearly: z.number().int().min(0).optional(),
+  /**
+   * Keep every snapshot within this many seconds of the stream's NEWEST snapshot (not of now, so a
+   * stream whose backups stop deletes nothing). Whole seconds and positive, like the wire field of
+   * the same name; the CLI's `within=24h` parses to it. Adds to what the other knobs keep.
+   */
+  keepWithinSeconds: z.number().int().positive().optional(),
 });
 
 const CronSchema = z.string().refine(isValidCron, 'Must be a valid 5-field cron expression');
@@ -381,6 +388,49 @@ const BackupVerifySchema = z
   })
   .strict();
 
+const DurationSchema = z
+  .string()
+  .refine(
+    (v) => parseDurationSeconds(v) !== undefined,
+    'Must be a duration such as 30s, 15m or 1h'
+  );
+
+/**
+ * The declared protection target: how far behind a repository may fall. At least 5 minutes (decision
+ * O6), and a length the timer can repeat evenly (see rpoProblem).
+ */
+const RpoSchema = DurationSchema.superRefine((value, ctx) => {
+  const seconds = parseDurationSeconds(value);
+  const problem = seconds === undefined ? undefined : rpoProblem(seconds);
+  if (problem) ctx.addIssue({ code: 'custom', message: `Invalid rpo "${value}": ${problem}` });
+});
+
+const HOOK_FAILURE_POLICIES = ['continue', 'abort'] as const;
+
+/**
+ * One repository's own target and the per-repo run settings that ride with it. The repo gets its own
+ * unit, so `rpo` is required; the rest is optional and left to the verb's defaults when absent.
+ * Strict, because a misspelt key stripped silently would leave the repository on a default the
+ * operator believed they had changed.
+ *
+ * - `cellSize`: grid cell size (`1M`, `4M`). A value that differs from the repository's recorded grid
+ *   RE-SEEDS it, so the scheduled verb never carries the consent flag; changing it is an explicit act.
+ * - `indexEvery`: how often the browse index is sealed.
+ * - `hookTimeout` and `hookFailure`: bound and failure policy of the pre-backup hook.
+ */
+const RepoTargetSchema = z
+  .object({
+    rpo: RpoSchema,
+    cellSize: z
+      .string()
+      .regex(/^\d+(\.\d+)?[KMGkmg]$/, 'Must be a size such as 1M or 4M')
+      .optional(),
+    indexEvery: DurationSchema.optional(),
+    hookTimeout: DurationSchema.optional(),
+    hookFailure: z.enum(HOOK_FAILURE_POLICIES).optional(),
+  })
+  .strict();
+
 const BackupStrategyConfigSchema = z.object({
   destinations: z.array(BackupDestinationSchema),
   schedule: CronSchema,
@@ -395,8 +445,22 @@ const BackupStrategyConfigSchema = z.object({
   exclude: z.array(z.string()).optional(),
   retention: RetentionPolicySchema.optional(),
   verify: BackupVerifySchema.optional(),
-  /** Per-repo cadence override (G10): repo ref -> cron. The repo gets its own unit on that schedule. */
-  repoSchedules: z.record(z.string(), CronSchema).optional(),
+  /** The strategy's protection target. When set, the strategy's main unit renders from it instead of `schedule`. */
+  rpo: RpoSchema.optional(),
+  /** Run settings of the main unit; the same meaning as in a per-repo target. */
+  indexEvery: DurationSchema.optional(),
+  hookTimeout: DurationSchema.optional(),
+  hookFailure: z.enum(HOOK_FAILURE_POLICIES).optional(),
+  /**
+   * Per-repo targets: EXACT repo ref (`name:tag`, or a bare `name` for the grand) -> target. The repo
+   * gets its own unit and leaves the main unit's scope. A bare name no longer pulls in its forks
+   * (`mail:*` asks for the family).
+   */
+  repoTargets: z.record(z.string(), RepoTargetSchema).optional(),
+  /** Removed: replaced by `repoTargets`. Declared only so a stale config is refused by name instead of having the override stripped silently. */
+  repoSchedules: z
+    .never({ error: '`repoSchedules` was replaced by `repoTargets` (rpo per repository)' })
+    .optional(),
 });
 
 // =============================================================================

@@ -28,8 +28,8 @@ const hub = {
 const stale = {
   guid: 'a0000000-0000-4000-8000-000000000001',
   lastSuccessAt: '2026-10-20T03:00:00Z',
-  ageDays: 5.4,
-  intervalDays: 1,
+  ageSeconds: 466_560,
+  intervalSeconds: 86_400,
 };
 
 describe('health folds in staleness', () => {
@@ -78,8 +78,9 @@ describe('machine status staleness tables', () => {
       {
         repository: 'mail',
         lastBackup: '2026-10-20T03:00:00Z',
-        ageDays: 5.4,
-        scheduleEveryDays: 1,
+        age: '5.4d',
+        scheduleEvery: '1d',
+        target: '-',
       },
     ]);
   });

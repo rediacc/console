@@ -43,7 +43,12 @@
       "manifests": {
         "description": "Auf dem Server erfasste Backup-Snapshot-Manifeste auflisten",
         "empty": "Keine Backup-Manifeste gefunden.",
-        "fetching": "Backup-Manifeste werden abgerufen..."
+        "fetching": "Backup-Manifeste werden abgerufen...",
+        "optionLimit": "Zeilen pro Seite (Standard und Maximum 500)",
+        "optionBefore": "Seitenmarke aus einer früheren Auflistung (nextBefore)",
+        "optionIncludeDeleted": "Snapshots mit ausstehendem verzögertem Löschen einbeziehen",
+        "limitInvalid": "--limit erwartet eine ganze Zahl ab 1, erhalten: \"{{value}}\"",
+        "more": "{{shown}} von {{total}} Snapshots angezeigt. Nächste Seite: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "Zum oder vor dem Zeitpunkt {{at}} wurde kein Snapshot erstellt.",
@@ -107,7 +112,8 @@
         "salvageHole": "  Lücke bei Byte {{offset}} bis {{end}}: {{reason}}",
         "salvageNeedsAs": "--salvage benötigt --as <neuer Name>: Ein beschädigtes Image wird nie unter einem vorhandenen Namen platziert.",
         "salvageNeedsSnapshot": "--salvage benötigt einen Chunk-Store-Snapshot als Quelle.",
-        "salvageWholeImage": "--salvage stellt ein ganzes Image wieder her; es lässt sich nicht mit --path oder --to kombinieren."
+        "salvageWholeImage": "--salvage stellt ein ganzes Image wieder her; es lässt sich nicht mit --path oder --to kombinieren.",
+        "atIndexGap": "Snapshot {{snapshot}} hat keine gespeicherte Auflistung, daher wird stattdessen {{indexed}} gelesen, {{gap}} früher aufgenommen."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "Den neuesten Snapshot aus jedem dieser Jahre behalten",
         "set": {
           "description": "Legen Sie fest, wie viele Snapshots aufbewahrt werden sollen. Jede Einstellung wird ersetzt, nicht zusammengeführt.",
-          "success": "Aufbewahrungsrichtlinie für {{name}} gesetzt ({{count}} Regel(n)). Snapshots außerhalb davon werden beim nächsten Aufräumlauf gelöscht."
+          "success": "Aufbewahrungsrichtlinie für {{name}} gesetzt ({{count}} Regel(n)). Snapshots außerhalb davon werden beim nächsten Aufräumlauf gelöscht.",
+          "pending": "Die Änderung behält weniger, wartet daher das Löschverzögerungsfenster ab und gilt für \"{{name}}\" ab {{when}} (UTC). Die angezeigte Richtlinie bleibt bis dahin in Kraft."
         },
         "effective": "Wirksame Aufbewahrung für {{name}}: {{source}}",
         "optionStream": "Nur für diesen Backup-Stream (eine Stream-ID); ohne Angabe gilt der Standard für das ganze Repository",
         "preview": {
           "description": "Zeigt, welche Snapshots der nächste Durchlauf löschen würde und wie viel Platz das freigibt.",
           "nothing": "Der nächste Durchlauf löscht für {{name}} nichts.",
-          "summary": "Der nächste Durchlauf löscht {{count}} Snapshot(s) von {{name}}, behält {{kept}} und gibt {{bytes}} frei."
+          "summary": "Der nächste Durchlauf löscht {{count}} Snapshot(s) von {{name}}, behält {{kept}} und gibt {{bytes}} frei.",
+          "reasons": "Behalten wegen: {{reasons}}"
         },
         "seeded": "Die Aufbewahrung der Strategie „{{strategy}}“ wurde für {{count}} Repository(s) ohne eigene Richtlinie festgelegt.",
         "seedFailed": "Die Aufbewahrung der Strategie „{{strategy}}“ konnte nicht festgelegt werden ({{reason}}). Bis dahin gilt der Server-Standard.",
@@ -143,7 +151,10 @@
           "plan": "Standard des Tarifs",
           "default": "Server-Standard",
           "orphan": "Frist für verwaiste Repositorys"
-        }
+        },
+        "keepWithinInvalid": "--keep-within erwartet eine Dauer wie 24h oder 90m, erhalten: \"{{value}}\"",
+        "optionKeepWithin": "Alle Snapshots innerhalb dieser Zeitspanne vor dem neuesten behalten, z. B. 24h",
+        "pendingClear": "Das Entfernen der Richtlinie von \"{{name}}\" wartet das Löschverzögerungsfenster ab und gilt ab {{when}} (UTC). Bis dahin gilt weiter die aktuelle Richtlinie."
       },
       "run": {
         "description": "Backup sofort auf einem Remote-Rechner auslösen",
@@ -243,7 +254,22 @@
           "retentionPushed": "Aufbewahrung auf {{count}} Repository(s) angewendet.",
           "retentionPushFailed": "Die Aufbewahrung der Strategie „{{strategy}}“ ist gespeichert, konnte aber nicht angewendet werden ({{reason}}). Führen Sie den Befehl erneut aus, sobald der Server erreichbar ist.",
           "optionCpuLimit": "CPU-Obergrenze für die Snapshots dieser Strategie: Prozent aller Kerne, 1-100 (Standard 50); none hebt sie auf",
-          "cpuLimitStrategyOnly": "--cpu-limit gilt für die gesamte Strategie; --destination weglassen."
+          "cpuLimitStrategyOnly": "--cpu-limit gilt für die gesamte Strategie; --destination weglassen.",
+          "optionRpo": "Deklariertes Schutzziel, z. B. 15m (mindestens 5m; none löscht es)",
+          "optionRepoRpo": "Ziel je Repository als <ref>=<dauer>, wiederholbar (none entfernt es); name:* ist die Familie",
+          "optionRepoCellSize": "Zellgröße je Repository als <ref>=<größe>, wiederholbar. Eine Änderung initialisiert das Repository neu",
+          "optionNoEstimate": "Änderungs- und Kostenschätzung überspringen",
+          "optionDryRun": "Zeigen, was sich ändern würde, ohne zu schreiben",
+          "rpoInvalid": "Ungültiges {{option}} \"{{value}}\": {{reason}}",
+          "repoOptionInvalid": "{{option}} erwartet <ref>=<wert>, erhalten: \"{{value}}\"",
+          "cellSizeInvalid": "Die Zellgröße \"{{value}}\" ist keine Größe wie 1M oder 4M",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" hat kein Ziel; setzen Sie zuerst eines mit --repo-rpo {{ref}}=<dauer>",
+          "noMeasurement": "Keine Änderungsmessung für {{refs}}. Führen Sie zuerst `rdc backup churn <repo>` aus oder übergeben Sie --no-estimate.",
+          "reseedWarning": "Die Änderung der Zellgröße von {{ref}} auf {{size}} initialisiert es neu: Jede Zelle wird erneut hochgeladen und berechnet, und Forks auf dem alten Raster deduplizieren nicht mehr. Ein geplanter Lauf übernimmt die Rasteränderung nie von selbst.",
+          "retentionDefaulted": "Strategie \"{{strategy}}\" hat keine Aufbewahrung deklariert, daher wird jeder Snapshot innerhalb von {{window}} behalten (Standard des Tarifs {{plan}}).",
+          "retentionDefaultNoStorage": "Der Tarif {{plan}} hat keinen Cloud-Backup-Speicher, daher wurde keine Standardaufbewahrung gesetzt.",
+          "retentionDefaultNoPlan": "Der Tarif konnte nicht gelesen werden, daher wurde keine Standardaufbewahrung gesetzt. Deklarieren Sie eine mit --retention.",
+          "dryRun": "Probelauf: Strategie \"{{strategy}}\" würde sich ändern ({{changes}}). Es wurde nichts geschrieben."
         },
         "show": {
           "description": "Backup-Strategie-Details anzeigen",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "Backup-Speicherkontingent, gespeicherte Bytes und Nutzung pro Repository anzeigen",
         "empty": "Noch keine Backup-Speichernutzung pro Repository erfasst.",
-        "fetching": "Backup-Speichernutzung wird abgerufen..."
+        "fetching": "Backup-Speichernutzung wird abgerufen...",
+        "overLimit": "ÜBER DEM LIMIT",
+        "summary": "Verbraucht {{used}} von {{quota}} (aktiv {{live}}, reserviert {{leased}}, {{chunks}} Chunks) {{over}}",
+        "waiting": "Wartet auf Löschung: {{waiting}} in {{chunks}} Chunk(s), nicht berechnet. Änderungsgrenze {{cap}}.",
+        "throttled": "Wartender Speicher liegt über der Änderungsgrenze von {{cap}}: Ein Backup-Strom schneller als stündlich wird abgelehnt, bis er abgebaut ist."
       },
       "verify": {
         "completed": "Backup für {{name}} verifiziert",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "Löscht einen gespeicherten Snapshot. Seine exklusiven Daten gibt die nächste Garbage Collection frei.",
           "notInRepo": "Snapshot {{snapshot}} gehört nicht zum gespeicherten Verlauf von {{name}}. IDs anzeigen mit: rdc backup manifests {{name}}",
-          "success": "{{count}} Snapshot(s) von {{name}} gelöscht, darunter {{snapshot}}."
+          "success": "{{count}} Snapshot(s) von {{name}} gelöscht, darunter {{snapshot}}.",
+          "delayed": "Das Löschen von Snapshot {{snapshot}} aus \"{{name}}\" ist verzögert: Er lässt sich noch wiederherstellen und wird am {{when}} (UTC) entfernt. Abbrechen mit: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "Für dieses Repository gespeichert: vorher {{beforeBytes}} in {{beforeChunks}} Chunk(s), nachher {{afterBytes}} in {{afterChunks}} Chunk(s).",
         "usageUnavailable": "Bereinigt, aber die Belegung nach der Bereinigung konnte nicht gelesen werden: {{error}}",
         "progress": "Bereinigung von „{{name}}“: Durchgang {{round}}, bisher {{chunks}} Objekt(e) gelöscht ({{bytes}}).",
-        "tooManyRounds": "Die Bereinigung von „{{name}}“ war nach {{rounds}} Durchgängen nicht abgeschlossen. Den Befehl erneut ausführen, um fortzufahren."
+        "tooManyRounds": "Die Bereinigung von „{{name}}“ war nach {{rounds}} Durchgängen nicht abgeschlossen. Den Befehl erneut ausführen, um fortzufahren.",
+        "optionCancel": "Ein verzögertes Entfernen abbrechen, bevor es wirksam wird",
+        "cancelExclusive": "--cancel lässt sich nicht mit --dry-run kombinieren",
+        "cancelled": "Das verzögerte Entfernen von \"{{name}}\" wurde abgebrochen.",
+        "nothingWaiting": "Es wartete kein Entfernen von \"{{name}}\".",
+        "delayed": "Das Entfernen von \"{{name}}\" ist verzögert: Nichts wurde gelöscht, es läuft am {{when}} (UTC). Bis dahin abbrechen mit: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Beweist per Wiederherstellung einer Datei, dass sich ein Snapshot mit der Passphrase öffnen lässt",
@@ -391,6 +427,55 @@
         "optionDryRun": "Zeigt, was getan würde; berührt nichts",
         "optionReplace": "Einen abweichenden Schlüssel auf der Maschine ersetzen (sendet zum Nachweis die Passphrase)",
         "syncDescription": "Den Listing-Schlüssel des Repositorys auf seiner Maschine installieren oder einen abweichenden ersetzen"
+      },
+      "churn": {
+        "description": "Misst, wie viel vom Abbild eines Repositorys sich zwischen Läufen ändert, projiziert den Upload je Zellgröße und empfiehlt eine. Eine Reflink-Basis liegt während der Messung auf der Maschine und wird immer wieder entfernt.",
+        "descriptionShort": "Repository-Änderungsrate messen und eine Zellgröße empfehlen",
+        "optionSamples": "Anzahl der Messproben (Standard 3)",
+        "optionInterval": "Wartezeit zwischen den Proben, z. B. 10m (Standard 10m)",
+        "probing": "\"{{name}}\" wird gemessen (Probe {{probe}})...",
+        "probed": "Probe von \"{{name}}\" aufgezeichnet",
+        "probeFailed": "Probe von \"{{name}}\" fehlgeschlagen",
+        "forgetting": "Probenbasis von \"{{name}}\" wird entfernt...",
+        "forgotten": "Die Probenbasis von \"{{name}}\" wurde von der Maschine entfernt.",
+        "forgetFailed": "Die Probenbasis von \"{{name}}\" konnte nicht entfernt werden und belegt weiter Platz auf der Maschine. Führen Sie rdc backup churn {{name}} erneut aus; am Ende wird die Basis entfernt.",
+        "noMeasurement": "Für \"{{name}}\" wurde keine Änderungsrate gemessen: Eine erste Probe setzt nur eine Basislinie ({{baselines}} Basislinie, {{skipped}} übersprungen). Es wird nichts projiziert.",
+        "samplesInvalid": "--samples erwartet eine ganze Zahl von 1 bis {{max}}, erhalten: \"{{value}}\"",
+        "intervalInvalid": "--interval erwartet eine Dauer wie 5m oder 1h (unter 24h), erhalten: \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "Empfohlene Zellgröße: {{cell}}. Die Schreibvorgänge sind klein und verstreut, und es werden {{savedPercent}} % weniger Bytes hochgeladen als bei 4 MiB. Eine Änderung initialisiert das Repository neu.",
+          "clustered-large": "Empfohlene Zellgröße: {{cell}}. Die Schreibvorgänge sind groß und zusammenhängend, daher braucht es für dieselben Bytes weit weniger Puts.",
+          "default": "Empfohlene Zellgröße: {{cell}}, der Standard. Keine andere Größe spart genug.",
+          "idle": "Empfohlene Zellgröße: {{cell}}, der Standard. Das Repository hat sich zwischen den Proben nicht geändert.",
+          "collapse-cap": "Empfohlene Zellgröße: {{cell}}. 1 MiB würde {{savedPercent}} % sparen, aber das Abbild überschritte damit 262.144 Zellen, ab denen das Bereinigen aufgeschoben wird."
+        },
+        "estimate": {
+          "target": "{{name}}: {{cells}} geänderte Zelle(n) pro Lauf, {{runs}} Läufe pro Tag (berechnet mit 4-MiB-Zellen).",
+          "cost": "Geschätzt {{total}} im Monat: {{classA}} Class-A- und {{classB}} Class-B-Operationen, {{storage}} Speicher ({{window}} berechnet, {{waiting}} in der 7-tägigen Karenzzeit).",
+          "capHeld": "Wartender Speicher pendelt sich bei {{waiting}} ein, unter der Änderungsgrenze von {{cap}}.",
+          "capExceeded": "Wartender Speicher würde {{waiting}} erreichen und die Änderungsgrenze von {{cap}} in {{days}} Tag(en) überschreiten: Ein Strom schneller als stündlich würde abgelehnt, bis er abgebaut ist."
+        }
+      },
+      "immutability": {
+        "description": "Verzögerungsfenster für das Löschen gespeicherter Backups anzeigen oder setzen",
+        "show": {
+          "description": "Das geltende Löschverzögerungsfenster anzeigen",
+          "window": "Verzögertes Löschen: Ein Löschen, Entfernen oder kleinere Aufbewahrung wartet {{days}} Tag(e) und lässt sich bis dahin rückgängig machen.",
+          "off": "Verzögertes Löschen ist aus: Löschvorgänge wirken sofort."
+        },
+        "set": {
+          "description": "Das Löschverzögerungsfenster in Tagen setzen (0 bis 30)",
+          "daysArgument": "Tage, die ein Löschvorgang wartet, bevor er wirksam wird (0 bis 30)",
+          "applied": "Das Löschverzögerungsfenster beträgt jetzt {{days}} Tag(e).",
+          "appliedOff": "Verzögertes Löschen ist aus.",
+          "invalid": "Ein Fenster besteht aus ganzen Tagen von 0 bis {{max}}, erhalten: \"{{value}}\""
+        },
+        "pending": "Das Fenster verkürzt sich am {{when}} (UTC) auf {{days}} Tag(e). Bis dahin gelten weiter {{current}} Tag(e)."
+      },
+      "undelete": {
+        "description": "Ein verzögertes Löschen eines Snapshots abbrechen, bevor es wirksam wird",
+        "success": "Snapshot {{snapshot}} bleibt erhalten: Sein Löschen wurde abgebrochen.",
+        "notWaiting": "Snapshot {{snapshot}} wartete nicht auf das Löschen."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{verb}} auf {{repo}}, gestartet {{startedAt}} von {{origin}}. Verfolgen: {{attach}}",
         "runningJobsSection": "Jobs (laufend oder in der letzten Stunde beendet)",
         "verifyFailureSection": "Fehlgeschlagene Backup-Verifizierungen",
-        "verifyFailureWarning": "{{count}} Repository(s) haben ihre letzte Backup-Verifizierung nicht bestanden."
+        "verifyFailureWarning": "{{count}} Repository(s) haben ihre letzte Backup-Verifizierung nicht bestanden.",
+        "missedTargetSection": "Repositorys, die ihr Backup-Ziel verfehlt haben",
+        "missedTargetWarning": "{{count}} Repository(s) haben ihr Backup-Ziel im letzten Lauf verfehlt."
       },
       "gpu": {
         "descriptionShort": "GPUs und Geräte-Freigaben einer Maschine anzeigen",

@@ -18,7 +18,9 @@ WEBAUTHN_ORIGIN = "https://us.rediacc.com"
 # private/account/src/entry/cloudflare.ts. Without this block the handler ships
 # but is never invoked and event_log grows without bound.
 [triggers]
-crons = ["0 3 * * *"]
+# Hourly backup maintenance, then the daily audit sweep and reminders.
+# private/account/src/entry/cloudflare.ts dispatches on these exact strings.
+crons = ["17 * * * *", "0 3 * * *"]
 
 [observability]
 enabled = true

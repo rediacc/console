@@ -1220,6 +1220,36 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--rpo <duration>",
+                  "descriptionKey": "commands.backup.strategy.set.optionRpo",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--repo-rpo <ref=duration>",
+                  "descriptionKey": "commands.backup.strategy.set.optionRepoRpo",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--repo-cell-size <ref=size>",
+                  "descriptionKey": "commands.backup.strategy.set.optionRepoCellSize",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--no-estimate",
+                  "descriptionKey": "commands.backup.strategy.set.optionNoEstimate",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.backup.strategy.set.optionDryRun",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--enable",
                   "descriptionKey": "commands.backup.strategy.set.optionEnable",
                   "mandatory": false,
@@ -1463,7 +1493,26 @@
         {
           "name": "manifests",
           "descriptionKey": "commands.backup.manifests.description",
-          "options": [],
+          "options": [
+            {
+              "flags": "--limit <n>",
+              "descriptionKey": "commands.backup.manifests.optionLimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--before <cursor>",
+              "descriptionKey": "commands.backup.manifests.optionBefore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--include-deleted",
+              "descriptionKey": "commands.backup.manifests.optionIncludeDeleted",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
           "arguments": [
             {
               "name": "repo-ref",
@@ -1701,6 +1750,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--keep-within <duration>",
+                  "descriptionKey": "commands.backup.retention.optionKeepWithin",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--stream <id>",
                   "descriptionKey": "commands.backup.retention.optionStream",
                   "mandatory": false,
@@ -1767,6 +1822,82 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "immutability",
+          "descriptionKey": "commands.backup.immutability.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "show",
+              "descriptionKey": "commands.backup.immutability.show.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "set",
+              "descriptionKey": "commands.backup.immutability.set.description",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "days",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "undelete",
+          "descriptionKey": "commands.backup.undelete.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "snapshot-id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "churn",
+          "descriptionKey": "commands.backup.churn.description",
+          "options": [
+            {
+              "flags": "--samples <n>",
+              "descriptionKey": "commands.backup.churn.optionSamples",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--interval <duration>",
+              "descriptionKey": "commands.backup.churn.optionInterval",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         },
         {
           "name": "reconcile",
@@ -2185,6 +2316,12 @@
             {
               "flags": "-y, --yes",
               "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cancel",
+              "descriptionKey": "commands.backup.purge.optionCancel",
               "mandatory": false,
               "defaultValue": null
             }

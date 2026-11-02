@@ -89,6 +89,10 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // `preview` reads the policy and manifests through accountServerFetch; `snapshots delete` deletes manifests through it. Neither touches a machine.
   'backup retention preview': { plane: 'other' },
   'backup snapshots delete': { plane: 'other' },
+  // The delayed-deletion window and `undelete` are accountServerFetch calls against the control plane; no machine is reached. (`backup churn` drives a machine and keeps the backup domain's machine default.)
+  'backup immutability show': { plane: 'other' },
+  'backup immutability set': { plane: 'other' },
+  'backup undelete': { plane: 'other' },
   // `purge` deletes a whole lineage through accountServerFetch, the same control-plane call as `snapshots delete`; no machine is reached.
   'backup purge': { plane: 'other' },
 

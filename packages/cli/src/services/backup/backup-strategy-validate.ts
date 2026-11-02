@@ -8,10 +8,12 @@
  * reaches both.
  */
 
+import { parseDurationSeconds, RPO_MIN_SECONDS, rpoProblem } from '@rediacc/shared/backup/duration';
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../../i18n/index.js';
 import type { BackupStrategyDestination } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
+import { cronMinGapSeconds } from './backup-schedule-interval.js';
 import type { ScheduledStrategy } from './backup-schedule-targets.js';
 
 /**
@@ -147,11 +149,54 @@ export function invalidCronReason(cron: string): string | undefined {
     : `Invalid cron expression: "${cron}" (expected 5 fields)`;
 }
 
-/** The first per-repo cadence override whose cron is not 5 fields. */
-function repoScheduleReason(strategy: ScheduledStrategy): string | undefined {
-  for (const [ref, repoCron] of Object.entries(strategy.repoSchedules ?? {})) {
-    const reason = invalidCronReason(repoCron);
-    if (reason) return `Per-repo schedule for "${ref}": ${reason}`;
+/** Why a cron fires too often, or undefined. The 5-minute floor of decision O6 holds for cron schedules as it does for a declared target. */
+export function cronFloorReason(cron: string, what: string): string | undefined {
+  const gap = cronMinGapSeconds(cron);
+  return gap < RPO_MIN_SECONDS
+    ? `${what} "${cron}" fires every ${gap}s. A backup schedule must be at least ${RPO_MIN_SECONDS / 60} minutes apart.`
+    : undefined;
+}
+
+/** Why a declared target length is unusable, or undefined. */
+function rpoReason(value: string): string | undefined {
+  const seconds = parseDurationSeconds(value);
+  if (seconds === undefined) return `Invalid rpo "${value}": expected a duration such as 15m or 1h`;
+  const problem = rpoProblem(seconds);
+  return problem ? `Invalid rpo "${value}": ${problem}` : undefined;
+}
+
+const SIZE_PATTERN = /^\d+(\.\d+)?[KMGkmg]$/;
+
+/** The first problem in one per-repo target, naming the field. A config that went through the schema never trips these; a hand-edited one does. */
+function repoTargetReason(
+  target: NonNullable<ScheduledStrategy['repoTargets']>[string]
+): string | undefined {
+  const rpo = rpoReason(target.rpo);
+  if (rpo) return rpo;
+  if (target.cellSize !== undefined && !SIZE_PATTERN.test(target.cellSize)) {
+    return `cellSize "${target.cellSize}" is not a size such as 1M or 4M`;
+  }
+  for (const field of ['indexEvery', 'hookTimeout'] as const) {
+    const value = target[field];
+    if (value !== undefined && parseDurationSeconds(value) === undefined) {
+      return `${field} "${value}" is not a duration such as 30s or 1h`;
+    }
+  }
+  if (target.hookFailure !== undefined && !['continue', 'abort'].includes(target.hookFailure)) {
+    return `hookFailure "${String(target.hookFailure)}" must be continue or abort`;
+  }
+  return undefined;
+}
+
+/** The first problem in the strategy's own target or in a per-repo target. */
+function targetsReason(strategy: ScheduledStrategy): string | undefined {
+  if (strategy.rpo !== undefined) {
+    const reason = rpoReason(strategy.rpo);
+    if (reason) return reason;
+  }
+  for (const [ref, target] of Object.entries(strategy.repoTargets ?? {})) {
+    const reason = repoTargetReason(target);
+    if (reason) return `Per-repo target for "${ref}": ${reason}`;
   }
   return undefined;
 }
@@ -187,7 +232,12 @@ export function strategyUnschedulableReason(
     (strategy.verify?.deepSchedule === undefined
       ? undefined
       : invalidCronReason(strategy.verify.deepSchedule)) ??
-    repoScheduleReason(strategy) ??
+    // With a declared target the main unit renders from it and `schedule` is unused, so its frequency is not held to the floor.
+    (strategy.rpo === undefined ? cronFloorReason(strategy.schedule, 'Schedule') : undefined) ??
+    (strategy.verify?.deepSchedule === undefined
+      ? undefined
+      : cronFloorReason(strategy.verify.deepSchedule, 'Deep-verify schedule')) ??
+    targetsReason(strategy) ??
     destinationsReason(destinations);
   if (reason) return reason;
   try {

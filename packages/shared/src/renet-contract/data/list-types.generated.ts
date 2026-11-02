@@ -394,14 +394,20 @@ export interface BackupCoverage {
 
 /** BackupRepoStatus (referenced type) */
 export interface BackupRepoStatus {
+  achieved_rpo_ms?: number;
   age_days: number;
   guid: string;
+  hook_failures?: number;
+  last_capture_at?: string;
   last_skip_reason?: string;
   last_skipped_at?: string;
   last_success_at?: string;
   last_verify_at?: string;
   last_verify_status?: string;
   name?: string;
+  target_met?: boolean;
+  target_seconds?: number;
+  ticks_missed?: number;
 }
 
 /** StaleProcessesSection (referenced type) */

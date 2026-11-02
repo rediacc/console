@@ -4,6 +4,7 @@
  * to the account server through `accountServerFetch` and never reach a machine.
  */
 
+import { formatDuration, parseDurationSeconds } from '@rediacc/shared/backup/duration';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
@@ -11,7 +12,6 @@ import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
-import type { BackupManifestsResponse } from './backup-storage.js';
 import { resolveLineage } from './backup-storage-browse.js';
 
 interface BackupRetentionPolicy {
@@ -23,6 +23,13 @@ interface BackupRetentionPolicy {
   keepWeekly: number | null;
   keepMonthly: number | null;
   keepYearly: number | null;
+  keepWithinSeconds: number | null;
+  /**
+   * A change that keeps less waits out the delayed-deletion window: the knobs above stay in force
+   * until `effectiveAt`. `{ clear: true }` is a waiting removal of the policy.
+   */
+  pendingPolicy: ({ clear: true } | Record<string, number | null>) | null;
+  effectiveAt: string | null;
   updatedAt: string;
 }
 
@@ -32,7 +39,10 @@ interface BackupRetentionResponse {
 
 type RetentionPolicySource = 'stream' | 'declared' | 'plan' | 'default' | 'orphan';
 
-type RetentionKnobs = Omit<BackupRetentionPolicy, 'lineageGuid' | 'streamId' | 'updatedAt'>;
+type RetentionKnobs = Omit<
+  BackupRetentionPolicy,
+  'lineageGuid' | 'streamId' | 'updatedAt' | 'pendingPolicy' | 'effectiveAt' | 'keepWithinSeconds'
+> & { keepWithinSeconds?: number | null };
 
 /** GET /backups/retention/preview, the dry run of the next sweep. */
 interface BackupRetentionPreview {
@@ -40,6 +50,8 @@ interface BackupRetentionPreview {
   policySource: RetentionPolicySource;
   streams: { streamId: string; policySource: RetentionPolicySource; policy: RetentionKnobs }[];
   deleted: { snapshotId: string; streamId: string; createdAt: string }[];
+  /** Every kept snapshot, with why it stays (`within`, `hourly`, `floor`, `verified`, `proven`, ...). */
+  kept?: { snapshotId: string; streamId: string; createdAt: string; reasons: string[] }[];
   keptSnapshots: number;
   freedBytes: number | null;
   freedChunks: number | null;
@@ -68,6 +80,7 @@ const knobCells = (p: RetentionKnobs) => ({
   weekly: p.keepWeekly ?? '-',
   monthly: p.keepMonthly ?? '-',
   yearly: p.keepYearly ?? '-',
+  within: p.keepWithinSeconds ? formatDuration(p.keepWithinSeconds) : '-',
 });
 
 const KNOB_COLUMNS = [
@@ -77,6 +90,7 @@ const KNOB_COLUMNS = [
   { key: 'weekly', header: 'Weekly', align: 'right' as const },
   { key: 'monthly', header: 'Monthly', align: 'right' as const },
   { key: 'yearly', header: 'Yearly', align: 'right' as const },
+  { key: 'within', header: 'Within', align: 'right' as const },
 ];
 
 /**
@@ -98,6 +112,15 @@ const RETENTION_KNOBS = [
   ['keepMonthly', '--keep-monthly'],
   ['keepYearly', '--keep-yearly'],
 ] as const;
+
+/** Parse `--keep-within 24h` into seconds; a bare number or an unknown unit is refused by name. */
+function keepWithinSeconds(raw: string): number {
+  const seconds = parseDurationSeconds(raw);
+  if (seconds === undefined) {
+    throw new ValidationError(t('commands.backup.retention.keepWithinInvalid', { value: raw }));
+  }
+  return seconds;
+}
 
 /** The effective-policy table of one repository: its source, then each stream's own. */
 function renderEffectivePolicy(repoRef: string, effective: BackupRetentionPreview): void {
@@ -121,6 +144,41 @@ function renderEffectivePolicy(repoRef: string, effective: BackupRetentionPrevie
   outputService.print(outputService.format(rows, getOutputFormat(), columns));
 }
 
+/**
+ * Why the kept snapshots stay, counted per reason: a snapshot kept for two reasons counts under
+ * both, so the counts name the rules at work and do not sum to the kept total.
+ */
+function reportKeptReasons(preview: BackupRetentionPreview): void {
+  const counts = new Map<string, number>();
+  for (const row of preview.kept ?? []) {
+    for (const reason of row.reasons) counts.set(reason, (counts.get(reason) ?? 0) + 1);
+  }
+  if (counts.size === 0) return;
+  const summary = [...counts.entries()].map(([reason, n]) => `${reason} ${n}`).join(', ');
+  outputService.info(t('commands.backup.retention.preview.reasons', { reasons: summary }));
+}
+
+/** `YYYY-MM-DD HH:MM` (UTC) of an ISO instant, the way the other listings print a time. */
+function clock(iso: string): string {
+  return iso.replace('T', ' ').slice(0, 16);
+}
+
+/**
+ * Say when a waiting change takes effect. The knobs the server echoes are the ones IN FORCE: a
+ * change that keeps less waits out the delayed-deletion window, and an echo read as "what was
+ * just set" would claim a protection the server has not yet reduced.
+ */
+function warnPending(name: string, policies: BackupRetentionPolicy[]): void {
+  for (const policy of policies) {
+    if (!policy.pendingPolicy || !policy.effectiveAt) continue;
+    const key =
+      'clear' in policy.pendingPolicy
+        ? 'commands.backup.retention.pendingClear'
+        : 'commands.backup.retention.set.pending';
+    outputService.warn(t(key, { name, when: clock(policy.effectiveAt) }));
+  }
+}
+
 /** `backup retention preview <repo>`, what the next sweep deletes and the bytes it frees. */
 function registerRetentionPreview(retention: Command): void {
   retention
@@ -135,6 +193,7 @@ function registerRetentionPreview(retention: Command): void {
           outputService.print(preview, format);
           return;
         }
+        reportKeptReasons(preview);
         if (preview.deleted.length === 0) {
           outputService.info(t('commands.backup.retention.preview.nothing', { name: repoRef }));
           return;
@@ -181,35 +240,63 @@ export function registerBackupSnapshots(backup: Command): void {
     .description(t('commands.backup.snapshots.delete.description'))
     .action(async (repoRef: string, snapshotId: string) => {
       try {
-        const lineage = await resolveLineage(repoRef);
-        const history = await accountServerFetch<BackupManifestsResponse>(
-          `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
-        );
-        if (!history.manifests.some((m) => m.snapshotId === snapshotId)) {
-          throw new ValidationError(
-            t('commands.backup.snapshots.delete.notInRepo', { snapshot: snapshotId, name: repoRef })
-          );
-        }
-        const result = await accountServerFetch<{ deleted: string[] }>(
-          `/account/api/v1/backups/snapshots/${encodeURIComponent(snapshotId)}`,
-          { method: 'DELETE' }
-        );
-        const format = getOutputFormat();
-        if (format !== 'table') {
-          outputService.print(result, format);
-          return;
-        }
-        outputService.success(
-          t('commands.backup.snapshots.delete.success', {
-            name: repoRef,
-            count: result.deleted.length,
-            snapshot: snapshotId,
-          })
-        );
+        await runSnapshotDelete(repoRef, snapshotId);
       } catch (error) {
         handleError(error);
       }
     });
+}
+
+/** Refuse an id that does not resolve inside the repository's own lineage. */
+async function assertSnapshotInRepo(
+  lineage: string,
+  snapshotId: string,
+  repoRef: string
+): Promise<void> {
+  // Ownership is one indexed lookup by id inside the lineage: the listing is capped at 500 rows, and an older id is not in it.
+  try {
+    await accountServerFetch(
+      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}`
+    );
+  } catch (error) {
+    if ((error as { status?: unknown } | null)?.status !== 404) throw error;
+    throw new ValidationError(
+      t('commands.backup.snapshots.delete.notInRepo', { snapshot: snapshotId, name: repoRef })
+    );
+  }
+}
+
+async function runSnapshotDelete(repoRef: string, snapshotId: string): Promise<void> {
+  const lineage = await resolveLineage(repoRef);
+  await assertSnapshotInRepo(lineage, snapshotId, repoRef);
+  const result = await accountServerFetch<{
+    deleted: string[];
+    delayed?: boolean;
+    deleteAfter?: string;
+  }>(`/account/api/v1/backups/snapshots/${encodeURIComponent(snapshotId)}`, { method: 'DELETE' });
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(result, format);
+    return;
+  }
+  // A delayed-deletion window answers 202 with nothing deleted: the snapshot still restores, and `undelete` cancels the hold until it is due.
+  if (result.delayed) {
+    outputService.warn(
+      t('commands.backup.snapshots.delete.delayed', {
+        name: repoRef,
+        snapshot: snapshotId,
+        when: result.deleteAfter ? clock(result.deleteAfter) : '-',
+      })
+    );
+    return;
+  }
+  outputService.success(
+    t('commands.backup.snapshots.delete.success', {
+      name: repoRef,
+      count: result.deleted.length,
+      snapshot: snapshotId,
+    })
+  );
 }
 
 /** The policy table for every lineage that has one, repos resolved to names. */
@@ -273,6 +360,10 @@ function retentionSetBody(
     body[field] = n;
     declared++;
   }
+  if (options.keepWithin !== undefined) {
+    body.keepWithinSeconds = keepWithinSeconds(options.keepWithin);
+    declared++;
+  }
   // EVERY knob is replaced, never merged, the server says so at routes/backups.ts:167. So an empty set would silently clear the policy while reading like a no-op. Refuse instead.
   if (declared === 0) {
     throw new ValidationError(t('commands.backup.retention.noKnobs'));
@@ -313,6 +404,7 @@ export function registerBackupRetention(backup: Command): void {
     .option('--keep-weekly <n>', t('commands.backup.retention.optionKeepWeekly'))
     .option('--keep-monthly <n>', t('commands.backup.retention.optionKeepMonthly'))
     .option('--keep-yearly <n>', t('commands.backup.retention.optionKeepYearly'))
+    .option('--keep-within <duration>', t('commands.backup.retention.optionKeepWithin'))
     .option('--stream <id>', t('commands.backup.retention.optionStream'))
     .action(async (repoRef: string, options: Record<string, string | undefined>) => {
       try {
@@ -325,7 +417,13 @@ export function registerBackupRetention(backup: Command): void {
           t('commands.backup.retention.set.success', { name: repoRef, count: String(declared) })
         );
         const format = getOutputFormat();
-        if (format !== 'table') outputService.print(result, format);
+        if (format !== 'table') {
+          outputService.print(result, format);
+          return;
+        }
+        // The echo is the policy in force, which differs from the request while a change waits.
+        if (result.policies.length > 0) await printPolicyTable(result, format);
+        warnPending(repoRef, result.policies);
       } catch (error) {
         handleError(error);
       }
@@ -340,10 +438,22 @@ export function registerBackupRetention(backup: Command): void {
       try {
         const lineage = await resolveLineage(repoRef);
         const streamQuery = options.stream ? `&stream=${encodeURIComponent(options.stream)}` : '';
-        await accountServerFetch<BackupRetentionResponse>(
+        const result = await accountServerFetch<BackupRetentionResponse>(
           `/account/api/v1/backups/retention?lineage=${encodeURIComponent(lineage)}${streamQuery}`,
           { method: 'DELETE' }
         );
+        // Under a delayed-deletion window the removal waits: the row is still there, marked, and the policy in force keeps applying until then.
+        const waiting = result.policies.filter(
+          (p) =>
+            p.lineageGuid === lineage &&
+            (p.streamId ?? null) === (options.stream ?? null) &&
+            p.pendingPolicy !== null &&
+            'clear' in p.pendingPolicy
+        );
+        if (waiting.length > 0) {
+          warnPending(repoRef, waiting);
+          return;
+        }
         // Clearing is NOT "keep nothing": with no row the server sweeps this lineage under the plan default, else the server default (backup-gc.service.ts planRetention). Say so, because "keep nothing" would be a data-loss expectation and "keep everything" a quota surprise.
         outputService.success(t('commands.backup.retention.cleared', { name: repoRef }));
       } catch (error) {

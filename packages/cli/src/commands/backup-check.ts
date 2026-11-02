@@ -111,7 +111,7 @@ async function newestSnapshot(
 ): Promise<BackupManifestsResponse['manifests'][number] | undefined> {
   assertHostedBackupAccount();
   const index = await accountServerFetch<BackupManifestsResponse>(
-    `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
+    `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}&limit=1`
   );
   return [...index.manifests]
     .sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0))

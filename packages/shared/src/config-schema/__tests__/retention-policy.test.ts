@@ -88,3 +88,73 @@ describe('RetentionPolicySchema', () => {
     expect(() => RdcConfigSchema.parse(configWith({ [knob]: '7' }))).toThrow();
   });
 });
+
+describe('retention keepWithinSeconds (D-retention)', () => {
+  it('round-trips and counts as a declared knob', () => {
+    expect(retentionOf(RdcConfigSchema.parse(configWith({ keepWithinSeconds: 86_400 })))).toEqual({
+      keepWithinSeconds: 86_400,
+    });
+  });
+
+  it.each([0, -5, 1.5, '24h'])('rejects keepWithinSeconds %s', (value) => {
+    expect(() => RdcConfigSchema.parse(configWith({ keepWithinSeconds: value }))).toThrow();
+  });
+});
+
+describe('declared protection targets (D-rpo)', () => {
+  function withStrategy(extra: Record<string, unknown>) {
+    const base = configWith();
+    const strategy = {
+      destinations: [{ kind: 'hosted-service', name: 'offsite' }],
+      schedule: '0 3 * * *',
+      ...extra,
+    };
+    return { ...base, resources: { backupStrategies: { nightly: strategy } } };
+  }
+  const targetsOf = (parsed: ReturnType<typeof RdcConfigSchema.parse>) =>
+    (
+      parsed.resources?.backupStrategies as
+        | Record<string, { repoTargets?: unknown; rpo?: unknown }>
+        | undefined
+    )?.nightly;
+
+  it('round-trips a strategy rpo and a per-repo target with every field', () => {
+    const repoTargets = {
+      mail: {
+        rpo: '15m',
+        cellSize: '1M',
+        indexEvery: '1h',
+        hookTimeout: '45s',
+        hookFailure: 'abort',
+      },
+    };
+    const parsed = RdcConfigSchema.parse(withStrategy({ rpo: '30m', repoTargets }));
+    expect(targetsOf(parsed)).toMatchObject({ rpo: '30m', repoTargets });
+  });
+
+  it.each(['4m', '299s', '7m', '90m', 'soon', '15', '0m'])('rejects rpo %s', (rpo) => {
+    expect(() => RdcConfigSchema.parse(withStrategy({ rpo }))).toThrow();
+    expect(() => RdcConfigSchema.parse(withStrategy({ repoTargets: { mail: { rpo } } }))).toThrow();
+  });
+
+  it.each(['5m', '10m', '15m', '30m', '1h', '2h', '24h'])('accepts rpo %s', (rpo) => {
+    expect(() => RdcConfigSchema.parse(withStrategy({ rpo }))).not.toThrow();
+  });
+
+  it('refuses the removed repoSchedules key by name instead of stripping it', () => {
+    expect(() =>
+      RdcConfigSchema.parse(withStrategy({ repoSchedules: { mail: '*/30 * * * *' } }))
+    ).toThrow(/repoTargets/);
+  });
+
+  it('refuses a misspelt target field and an unknown hookFailure', () => {
+    expect(() =>
+      RdcConfigSchema.parse(withStrategy({ repoTargets: { mail: { rpo: '15m', rop: '5m' } } }))
+    ).toThrow();
+    expect(() =>
+      RdcConfigSchema.parse(
+        withStrategy({ repoTargets: { mail: { rpo: '15m', hookFailure: 'ignore' } } })
+      )
+    ).toThrow();
+  });
+});

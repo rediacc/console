@@ -91,6 +91,8 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
     'Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.',
 
   // ── The operator's credential ─────────────────────────────────────────
+  'backup churn':
+    'a client-side loop of probes that can run for hours, and it must forget its base when it ends',
   'backup check':
     'reads a listing and restores a file with the repository credential, which stays where the config lives',
   'backup repair':

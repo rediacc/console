@@ -160,14 +160,12 @@ describe('backup restore --path', () => {
 
   it('resolves a time to a snapshot id under the source stream scope', async () => {
     mockExecutorExecute.mockResolvedValue({ success: true, exitCode: 0 });
+    // The resolve route answers the one row; the anchor names the stream, and a listing is read for the index.
     mockAccountServerFetch.mockResolvedValue({
-      manifests: [
-        {
-          snapshotId: SNAPSHOT,
-          streamId: 's1',
-          createdAt: '2026-08-14T09:00:00.000Z',
-        },
-      ],
+      snapshotId: SNAPSHOT,
+      streamId: 's1',
+      hasIndex: true,
+      createdAt: '2026-08-14T09:00:00.000Z',
     });
     // The anchor read goes through backup_verify.
     mockExecuteRepoFunction.mockImplementation((fn: string) =>

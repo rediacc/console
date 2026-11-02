@@ -43,7 +43,12 @@
       "manifests": {
         "description": "Serverisse salvestatud varukoopia hetktõmmiste manifestide loendamine",
         "empty": "Varukoopia manifeste ei leitud.",
-        "fetching": "Varukoopia manifestide toomine..."
+        "fetching": "Varukoopia manifestide toomine...",
+        "optionLimit": "Ridu lehel (vaikimisi ja maksimaalselt 500)",
+        "optionBefore": "Lehekursor eelmisest loendist (nextBefore)",
+        "optionIncludeDeleted": "Kaasa hetktõmmised, mille edasilükatud kustutus on ootel",
+        "limitInvalid": "--limit võtab täisarvu vähemalt 1, saadi \"{{value}}\"",
+        "more": "Kuvan {{shown}} hetktõmmist {{total}}-st. Järgmine leht: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "Ajal {{at}} või enne seda ei tehtud ühtegi hetktõmmist.",
@@ -107,7 +112,8 @@
         "salvageHole": "  auk baitidel {{offset}} kuni {{end}}: {{reason}}",
         "salvageNeedsAs": "--salvage vajab --as <uus nimi>: kahjustatud kujutist ei paigutata kunagi olemasoleva nime alla.",
         "salvageNeedsSnapshot": "--salvage vajab taastamiseks tükihoidla hetktõmmist.",
-        "salvageWholeImage": "--salvage taastab terve kujutise; seda ei saa kombineerida valikutega --path ega --to."
+        "salvageWholeImage": "--salvage taastab terve kujutise; seda ei saa kombineerida valikutega --path ega --to.",
+        "atIndexGap": "Hetktõmmisel {{snapshot}} puudub salvestatud loend, seega loetakse selle asemel {{indexed}}, mis tehti {{gap}} varem."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "Säilita iga selle arvu aasta kohta uusim hetktõmmis",
         "set": {
           "description": "Määra, mitu hetktõmmist säilitada. Iga säte asendatakse tervikuna, mitte ei liideta.",
-          "success": "{{name}} säilitamispoliitika määrati ({{count}} reeglit). Sellest välja jäävad hetktõmmised kustutatakse järgmise koristuse käigus."
+          "success": "{{name}} säilitamispoliitika määrati ({{count}} reeglit). Sellest välja jäävad hetktõmmised kustutatakse järgmise koristuse käigus.",
+          "pending": "Muudatus säilitab vähem, seega ootab see edasilükatud kustutamise akent ja jõustub hoidla \"{{name}}\" jaoks {{when}} (UTC). Kuvatud poliitika kehtib selle ajani."
         },
         "effective": "{{name}} kehtiv säilitus: {{source}}",
         "optionStream": "Rakenda ainult sellele varunduse voole (voo ID); ilma selleta kehtib kogu hoidla vaikeväärtus",
         "preview": {
           "description": "Näitab, milliseid hetktõmmiseid järgmine puhastus kustutaks ja kui palju ruumi vabastaks.",
           "nothing": "Järgmine puhastus ei kustuta hoidlast {{name}} midagi.",
-          "summary": "Järgmine puhastus kustutab hoidla {{name}} {{count}} hetktõmmist, jätab alles {{kept}} ja vabastab {{bytes}}."
+          "summary": "Järgmine puhastus kustutab hoidla {{name}} {{count}} hetktõmmist, jätab alles {{kept}} ja vabastab {{bytes}}.",
+          "reasons": "Säilitatud põhjusel: {{reasons}}"
         },
         "seeded": "Strateegia \"{{strategy}}\" säilitus määrati {{count}} hoidlale, millel poliitikat polnud.",
         "seedFailed": "Strateegia \"{{strategy}}\" säilitust ei õnnestunud määrata ({{reason}}). Seni kehtib serveri vaikeväärtus.",
@@ -143,7 +151,10 @@
           "plan": "paketi vaikeväärtus",
           "default": "serveri vaikeväärtus",
           "orphan": "orvuks jäänud hoidla tähtaeg"
-        }
+        },
+        "keepWithinInvalid": "--keep-within võtab kestuse nagu 24h või 90m, saadi \"{{value}}\"",
+        "optionKeepWithin": "Säilita iga hetktõmmis selle aja jooksul uusimast, nt 24h",
+        "pendingClear": "Hoidla \"{{name}}\" poliitika eemaldamine ootab edasilükatud kustutamise akent ja jõustub {{when}} (UTC). Kehtiv poliitika kehtib selle ajani edasi."
       },
       "run": {
         "description": "Käivitab varukoopia kohe kaugmasinal",
@@ -243,7 +254,22 @@
           "retentionPushed": "Säilitus rakendati {{count}} hoidlale.",
           "retentionPushFailed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid seda ei õnnestunud rakendada ({{reason}}). Käivita käsk uuesti, kui server on kättesaadav.",
           "optionCpuLimit": "Selle strateegia hetktõmmiste protsessori ülempiir: protsent kõigist tuumadest, 1-100 (vaikimisi 50); none eemaldab selle",
-          "cpuLimitStrategyOnly": "--cpu-limit kehtib kogu strateegiale; eemalda --destination."
+          "cpuLimitStrategyOnly": "--cpu-limit kehtib kogu strateegiale; eemalda --destination.",
+          "optionRpo": "Deklareeritud kaitseeesmärk, nt 15m (vähemalt 5m; none eemaldab)",
+          "optionRepoRpo": "Hoidla eesmärk kujul <ref>=<kestus>, korratav (none eemaldab); name:* on pere",
+          "optionRepoCellSize": "Hoidla lahtrisuurus kujul <ref>=<suurus>, korratav. Muutmine külvab hoidla uuesti",
+          "optionNoEstimate": "Jäta muutlikkuse ja kulu hinnang vahele",
+          "optionDryRun": "Näita, mis muutuks, ilma midagi kirjutamata",
+          "rpoInvalid": "Kehtetu {{option}} \"{{value}}\": {{reason}}",
+          "repoOptionInvalid": "{{option}} võtab kujul <ref>=<väärtus>, saadi \"{{value}}\"",
+          "cellSizeInvalid": "Lahtrisuurus \"{{value}}\" ei ole suurus nagu 1M või 4M",
+          "repoCellSizeNeedsTarget": "Hoidlal \"{{ref}}\" pole eesmärki; sea esmalt üks käsuga --repo-rpo {{ref}}=<kestus>",
+          "noMeasurement": "Hoidla(te) {{refs}} muutlikkuse mõõtmist pole. Käivitage esmalt `rdc backup churn <repo>` või andke --no-estimate.",
+          "reseedWarning": "Hoidla {{ref}} lahtrisuuruse muutmine väärtuseks {{size}} külvab selle uuesti: iga lahter laaditakse uuesti üles ja arvestatakse, ning vana ruudustiku kahvlid lõpetavad dubleerimise tuvastamise. Ajastatud jooksutus ei võta ruudustiku muudatust kunagi ise.",
+          "retentionDefaulted": "Strateegia \"{{strategy}}\" ei deklareerinud säilitust, seega säilitatakse iga hetktõmmis {{window}} jooksul ({{plan}} paketi vaikeväärtus).",
+          "retentionDefaultNoStorage": "Paketil {{plan}} pole pilvevarunduse salvestusruumi, seega vaikesäilitust ei seatud.",
+          "retentionDefaultNoPlan": "Paketti ei õnnestunud lugeda, seega vaikesäilitust ei seatud. Deklareerige see käsuga --retention.",
+          "dryRun": "Proovijooksutus: strateegia \"{{strategy}}\" muutuks ({{changes}}). Midagi ei kirjutatud."
         },
         "show": {
           "description": "Kuva varundussettrateegia üksikasjad",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "Näita varukoopia salvestuskvooti, salvestatud baite ja kasutust hoidla kohta",
         "empty": "Hoidla kohta pole veel varukoopia salvestuskasutust registreeritud.",
-        "fetching": "Varukoopia salvestuskasutuse toomine..."
+        "fetching": "Varukoopia salvestuskasutuse toomine...",
+        "overLimit": "PIIR ÜLETATUD",
+        "summary": "Kasutatud {{used}} kogumahust {{quota}} (aktiivne {{live}}, reserveeritud {{leased}}, {{chunks}} tükki) {{over}}",
+        "waiting": "Kustutamist ootab: {{waiting}} {{chunks}} tükis, ei arvestata. Muutlikkuse piir {{cap}}.",
+        "throttled": "Ootel salvestusruum on üle muutlikkuse piiri {{cap}}: tunnist kiirem varundusvoog lükatakse tagasi, kuni see tühjeneb."
       },
       "verify": {
         "completed": "Varukoopia kinnitatud hoidlale {{name}}",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "Kustutab ühe salvestatud hetktõmmise. Selle ainuomased andmed vabastab järgmine prügikoristus.",
           "notInRepo": "Hetktõmmist {{snapshot}} pole hoidla {{name}} salvestatud ajaloos. ID-sid saab vaadata käsuga: rdc backup manifests {{name}}",
-          "success": "Hoidla {{name}} {{count}} hetktõmmist kustutati, sh {{snapshot}}."
+          "success": "Hoidla {{name}} {{count}} hetktõmmist kustutati, sh {{snapshot}}.",
+          "delayed": "Hoidla \"{{name}}\" hetktõmmise {{snapshot}} kustutus on edasi lükatud: see on veel taastatav ja eemaldatakse {{when}} (UTC). Tühista käsuga: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "Selle hoidla salvestatud maht: enne {{beforeBytes}} {{beforeChunks}} tükis, pärast {{afterBytes}} {{afterChunks}} tükis.",
         "usageUnavailable": "Puhastus tehtud, kuid pärast puhastust kasutust ei õnnestunud lugeda: {{error}}",
         "progress": "Hoidla \"{{name}}\" puhastamine: {{round}}. voor, seni kustutatud {{chunks}} objekti ({{bytes}}).",
-        "tooManyRounds": "Hoidla \"{{name}}\" puhastus ei lõppenud {{rounds}} vooruga. Jätkamiseks käivita puhastus uuesti."
+        "tooManyRounds": "Hoidla \"{{name}}\" puhastus ei lõppenud {{rounds}} vooruga. Jätkamiseks käivita puhastus uuesti.",
+        "optionCancel": "Tühista edasilükatud täielik eemaldus enne jõustumist",
+        "cancelExclusive": "--cancel ei saa kasutada koos --dry-run'iga",
+        "cancelled": "Hoidla \"{{name}}\" edasilükatud täielik eemaldus tühistati.",
+        "nothingWaiting": "Hoidla \"{{name}}\" täielikku eemaldust ei oodatud.",
+        "delayed": "Hoidla \"{{name}}\" täielik eemaldus on edasi lükatud: midagi ei kustutatud ja see käivitub {{when}} (UTC). Tühistage see enne käsuga: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Tõendab, et hetktõmmis avaneb parooliga, taastades ühe faili",
@@ -391,6 +427,55 @@
         "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
         "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)",
         "syncDescription": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti"
+      },
+      "churn": {
+        "description": "Mõõdab, kui palju hoidla kujutis jooksutuste vahel muutub, prognoosib üleslaadimise mahu iga lahtrisuuruse kohta ja soovitab ühte. Töö ajal hoitakse masinas reflink-baasi, mis eemaldatakse alati.",
+        "descriptionShort": "Mõõda hoidla muutlikkust ja soovita lahtrisuurust",
+        "optionSamples": "Võetavate mõõteproovide arv (vaikimisi 3)",
+        "optionInterval": "Ooteaeg sondeerimiste vahel, nt 10m (vaikimisi 10m)",
+        "probing": "Sondeerin \"{{name}}\" (sondeerimine {{probe}})...",
+        "probed": "\"{{name}}\" sondeerimine salvestatud",
+        "probeFailed": "\"{{name}}\" sondeerimine ebaõnnestus",
+        "forgetting": "Eemaldan hoidla \"{{name}}\" sondibaasi...",
+        "forgotten": "Hoidla \"{{name}}\" sondibaas eemaldati masinast.",
+        "forgetFailed": "Hoidla \"{{name}}\" sondibaasi ei õnnestunud eemaldada ja see hoiab masinas ruumi kinni. Käivitage rdc backup churn {{name}} uuesti; see eemaldab baasi lõpus.",
+        "noMeasurement": "Hoidla \"{{name}}\" muutlikkust ei mõõdetud: esimene sondeerimine seab vaid lähtetaseme ({{baselines}} lähtetase, {{skipped}} vahele jäetud). Midagi ei prognoosita.",
+        "samplesInvalid": "--samples võtab täisarvu vahemikus 1 kuni {{max}}, saadi \"{{value}}\"",
+        "intervalInvalid": "--interval võtab kestuse nagu 5m või 1h (alla 24h), saadi \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "Soovitatav lahtrisuurus: {{cell}}. Kirjutused on väikesed ja hajusad ning laaditakse üles {{savedPercent}}% vähem baite kui 4 MiB puhul. Muutmine külvab hoidla uuesti.",
+          "clustered-large": "Soovitatav lahtrisuurus: {{cell}}. Kirjutused on suured ja koondunud, seega on samade baitide jaoks vaja palju vähem put-päringuid.",
+          "default": "Soovitatav lahtrisuurus: {{cell}}, vaikeväärtus. Ükski teine suurus ei säästa piisavalt.",
+          "idle": "Soovitatav lahtrisuurus: {{cell}}, vaikeväärtus. Hoidla ei muutunud sondeerimiste vahel.",
+          "collapse-cap": "Soovitatav lahtrisuurus: {{cell}}. 1 MiB säästaks {{savedPercent}}%, kuid selle suuruse korral ületaks kujutis 262 144 lahtrit ja kärpimine lükkub edasi."
+        },
+        "estimate": {
+          "target": "{{name}}: {{cells}} muutunud lahtrit jooksutuse kohta, {{runs}} jooksutust päevas (arvutatud 4 MiB lahtritega).",
+          "cost": "Hinnanguline {{total}} kuus: {{classA}} Class A ja {{classB}} Class B toimingut, {{storage}} salvestusruumi ({{window}} arvestatud, {{waiting}} ootab 7-päevast armuaega).",
+          "capHeld": "Ootel salvestusruum stabiliseerub tasemel {{waiting}}, mis jääb alla muutlikkuse piiri {{cap}}.",
+          "capExceeded": "Ootel salvestusruum jõuaks mahuni {{waiting}} ja ületaks muutlikkuse piiri {{cap}} {{days}} päevaga: tunnist kiirem voog lükataks tagasi, kuni see tühjeneb."
+        }
+      },
+      "immutability": {
+        "description": "Näita või sea salvestatud varukoopiate edasilükatud kustutamise akent",
+        "show": {
+          "description": "Näita kehtivat edasilükatud kustutamise akent",
+          "window": "Edasilükatud kustutamine: kustutus, täielik eemaldus või väiksem säilitus ootab {{days}} päeva ja seda saab selle ajani tagasi võtta.",
+          "off": "Edasilükatud kustutamine on väljas: kustutused jõustuvad kohe."
+        },
+        "set": {
+          "description": "Sea edasilükatud kustutamise aken päevades (0 kuni 30)",
+          "daysArgument": "Mitu päeva kustutus ootab enne jõustumist (0 kuni 30)",
+          "applied": "Edasilükatud kustutamise aken on nüüd {{days}} päeva.",
+          "appliedOff": "Edasilükatud kustutamine on väljas.",
+          "invalid": "Aken on täispäevad vahemikus 0 kuni {{max}}, saadi \"{{value}}\""
+        },
+        "pending": "Aken lüheneb {{when}} (UTC) {{days}} päevale. Seni kehtib {{current}} päeva."
+      },
+      "undelete": {
+        "description": "Tühista hetktõmmise edasilükatud kustutus enne jõustumist",
+        "success": "Hetktõmmis {{snapshot}} säilib: selle kustutus tühistati.",
+        "notWaiting": "Hetktõmmis {{snapshot}} ei oodanud kustutamist."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{verb}} hoidlas {{repo}}, käivitatud {{startedAt}}, käivitaja {{origin}}. Jälgimiseks: {{attach}}",
         "runningJobsSection": "Tööd (käimas või viimase tunni jooksul lõppenud)",
         "verifyFailureSection": "Ebaõnnestunud varunduskontrollid",
-        "verifyFailureWarning": "{{count}} hoidlat ebaõnnestus viimases varunduskontrollis."
+        "verifyFailureWarning": "{{count}} hoidlat ebaõnnestus viimases varunduskontrollis.",
+        "missedTargetSection": "Hoidlad, mis jäid varundusest eesmärgist maha",
+        "missedTargetWarning": "{{count}} hoidlat jäi viimasel jooksutusel varundusest eesmärgist maha."
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",

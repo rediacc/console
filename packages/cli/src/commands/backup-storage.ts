@@ -23,19 +23,30 @@ import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
 import { registerBackupCheck } from './backup-check.js';
+import { registerBackupChurn } from './backup-churn.js';
+import { registerBackupImmutability } from './backup-immutability.js';
 import { registerBackupReconcile } from './backup-reconcile.js';
 import { registerBackupRepair } from './backup-repair.js';
 import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
 import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
 import { isLiveMountListing, parseBrowseResult } from './backup-storage-parser.js';
-import { registerBackupTocKey } from './backup-toc-key.js';
 import { registerBackupSnapshot } from './backup-storage-snapshot.js';
 import { runStoreVerify } from './backup-store-verify.js';
+import { registerBackupTocKey } from './backup-toc-key.js';
 
 /** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
   subscriptionId: string;
+  /** The physical total the store holds: live plus waiting. */
   storedBytes: number;
+  /** What kept versions can restore: the figure the quota counts. */
+  liveBytes: number;
+  /** What no kept version can restore, waiting out its grace. Not charged. */
+  waitingBytes: number;
+  waitingChunks: number;
+  /** Waiting bytes above this refuse a stream committing faster than hourly. */
+  churnCapBytes: number;
+  churnCapped: boolean;
   chunkCount: number;
   usageAdjustment: number;
   leasedBytes: number;
@@ -47,33 +58,43 @@ interface BackupUsageResponse {
   lineages: {
     lineageGuid: string;
     storedBytes: number;
+    liveBytes: number;
+    waitingBytes: number;
     chunkCount: number;
     logicalBytes: number;
     updatedAt: string;
   }[];
 }
 
-/** GET /backups/manifests, the server-side snapshot index. */
-interface BackupManifestEntry {
+/** GET /backups/manifests and GET /backups/snapshots/resolve: one committed snapshot. */
+export interface BackupManifestEntry {
   snapshotId: string;
   lineageGuid: string;
   streamId: string;
-  parentSnapshotId?: string;
+  parentSnapshotId?: string | null;
   cellSizeBytes: number;
   totalBytes: number;
   addedBytes: number;
   addedChunkCount: number;
   hasIndex?: boolean;
   createdAt: string;
+  /** What the commit declared; null on a row from before the field existed. */
+  consistency?: string | null;
+  /** Set on a delayed delete, which still restores until `deleteAfter`. */
+  deletedAt?: string | null;
+  deleteAfter?: string | null;
 }
+
 /**
- * Exported because `backup restore --at` resolves a TIME against this same
- * index (backup.ts::resolveSnapshotAt). One declaration, not two: a
- * hand-written twin of a wire shape is how the two sides drift apart while both
- * stay green.
+ * A page of the server-side snapshot index, newest first. `nextBefore` is the `before` of the
+ * next page (null on the last); `total` is the lineage's row count, sent on the first page of one
+ * named lineage only. `backup restore --at` does not read this listing: it resolves a time through
+ * GET /backups/snapshots/resolve (backup-restore-chunk.ts), because the page is capped.
  */
 export interface BackupManifestsResponse {
   manifests: BackupManifestEntry[];
+  nextBefore?: string | null;
+  total?: number;
 }
 
 /** `backup usage`, quota vs stored bytes, plus per-repo (lineage) usage. */
@@ -97,10 +118,30 @@ function registerBackupUsage(backup: Command): void {
 
         const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
         outputService.info(
-          `Used ${formatSizeBytes(usage.usedBytes)} of ${formatSizeBytes(usage.quotaBytes)}` +
-            ` (stored ${formatSizeBytes(usage.storedBytes)}, leased ${formatSizeBytes(usage.leasedBytes)}` +
-            `, ${usage.chunkCount} chunks)${usage.overLimit ? '  OVER LIMIT' : ''}`
+          t('commands.backup.usage.summary', {
+            used: formatSizeBytes(usage.usedBytes),
+            quota: formatSizeBytes(usage.quotaBytes),
+            live: formatSizeBytes(usage.liveBytes),
+            leased: formatSizeBytes(usage.leasedBytes),
+            chunks: usage.chunkCount,
+            over: usage.overLimit ? t('commands.backup.usage.overLimit') : '',
+          })
         );
+        // Waiting storage is not charged: it is named so the stored total is not read as the bill.
+        if (usage.waitingBytes > 0 || usage.waitingChunks > 0) {
+          outputService.info(
+            t('commands.backup.usage.waiting', {
+              waiting: formatSizeBytes(usage.waitingBytes),
+              chunks: usage.waitingChunks,
+              cap: formatSizeBytes(usage.churnCapBytes),
+            })
+          );
+        }
+        if (usage.churnCapped) {
+          outputService.warn(
+            t('commands.backup.usage.throttled', { cap: formatSizeBytes(usage.churnCapBytes) })
+          );
+        }
 
         if (usage.lineages.length === 0) {
           outputService.print(t('commands.backup.usage.empty'));
@@ -112,6 +153,8 @@ function registerBackupUsage(backup: Command): void {
           .map((l) => ({
             repo: resolve(l.lineageGuid),
             lineage: l.lineageGuid,
+            live: formatSizeBytes(l.liveBytes),
+            waiting: formatSizeBytes(l.waitingBytes),
             stored: formatSizeBytes(l.storedBytes),
             logical: formatSizeBytes(l.logicalBytes),
             chunks: l.chunkCount,
@@ -122,6 +165,8 @@ function registerBackupUsage(backup: Command): void {
         const columns = [
           { key: 'repo', header: 'Repo' },
           { key: 'lineage', header: 'Lineage' },
+          { key: 'live', header: 'Live', align: 'right' as const },
+          { key: 'waiting', header: 'Waiting', align: 'right' as const },
           { key: 'stored', header: 'Stored', align: 'right' as const },
           { key: 'logical', header: 'Logical', align: 'right' as const },
           { key: 'chunks', header: 'Chunks', align: 'right' as const },
@@ -134,22 +179,51 @@ function registerBackupUsage(backup: Command): void {
     });
 }
 
+interface ManifestsOptions {
+  limit?: string;
+  before?: string;
+  includeDeleted?: boolean;
+}
+
+/** The query parameters `backup manifests` was asked for: none unless a flag names one. */
+function manifestsQuery(options: ManifestsOptions): string[] {
+  const query: string[] = [];
+  if (options.limit !== undefined) {
+    if (!/^[1-9]\d*$/.test(options.limit)) {
+      throw new ValidationError(
+        t('commands.backup.manifests.limitInvalid', { value: options.limit })
+      );
+    }
+    query.push(`limit=${options.limit}`);
+  }
+  if (options.before) query.push(`before=${encodeURIComponent(options.before)}`);
+  if (options.includeDeleted) query.push('includeDeleted=1');
+  return query;
+}
+
+/** `YYYY-MM-DD HH:MM` of an ISO instant. */
+const minuteOf = (iso: string): string => iso.replace('T', ' ').slice(0, 16);
+
 /** `backup manifests [repo-ref]`, the server snapshot index, optionally scoped. */
 function registerBackupManifests(backup: Command): void {
   backup
     .command('manifests')
     .argument('[repo-ref]', t('options.repoRef'))
     .description(t('commands.backup.manifests.description'))
-    .action(async (repoRef: string | undefined) => {
+    .option('--limit <n>', t('commands.backup.manifests.optionLimit'))
+    .option('--before <cursor>', t('commands.backup.manifests.optionBefore'))
+    .option('--include-deleted', t('commands.backup.manifests.optionIncludeDeleted'))
+    .action(async (repoRef: string | undefined, options: ManifestsOptions) => {
       try {
+        const query = manifestsQuery(options);
         // Scope to one lineage (grand GUID) when a repo is named. Config-local resolution only, the index lives on the server, not on a machine.
         const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
 
         assertHostedBackupAccount();
         outputService.info(t('commands.backup.manifests.fetching'));
-        const query = lineage ? `?lineage=${encodeURIComponent(lineage)}` : '';
+        if (lineage) query.unshift(`lineage=${encodeURIComponent(lineage)}`);
         const result = await accountServerFetch<BackupManifestsResponse>(
-          `/account/api/v1/backups/manifests${query}`
+          `/account/api/v1/backups/manifests${query.length > 0 ? `?${query.join('&')}` : ''}`
         );
 
         // The lineage GUID is the grand repo's GUID, and every fork of it shares that GUID, so a fork's snapshots resolve to the grand's name. An unknown lineage resolves to null (`-o json`) or its short GUID (table).
@@ -191,6 +265,9 @@ function registerBackupManifests(backup: Command): void {
           total: formatSizeBytes(m.totalBytes),
           added: `${formatSizeBytes(m.addedBytes)} / ${m.addedChunkCount}`,
           index: m.hasIndex ? 'yes' : 'no',
+          consistency: m.consistency ?? '-',
+          // A delayed delete still restores until it is due, so the cell says when, not "deleted".
+          state: m.deleteAfter ? `deleting after ${minuteOf(m.deleteAfter)}` : '-',
         }));
 
         const columns = [
@@ -201,8 +278,20 @@ function registerBackupManifests(backup: Command): void {
           { key: 'total', header: 'Total', align: 'right' as const },
           { key: 'added', header: 'Added / chunks', align: 'right' as const },
           { key: 'index', header: 'Index' },
+          { key: 'consistency', header: 'Consistency' },
+          { key: 'state', header: 'State' },
         ];
         outputService.print(outputService.format(rows, format, columns));
+        // The listing is paged newest first: the cursor of the next page is named, never left to be guessed.
+        if (result.nextBefore) {
+          outputService.info(
+            t('commands.backup.manifests.more', {
+              shown: sorted.length,
+              total: result.total ?? sorted.length,
+              before: result.nextBefore,
+            })
+          );
+        }
       } catch (error) {
         handleError(error);
       }
@@ -432,6 +521,8 @@ export function registerBackupStorageCommands(backup: Command): void {
   registerBackupSnapshot(backup);
   registerBackupRetention(backup);
   registerBackupSnapshots(backup);
+  registerBackupImmutability(backup);
+  registerBackupChurn(backup);
   registerBackupReconcile(backup);
   registerBackupRepair(backup);
   registerBackupCheck(backup);

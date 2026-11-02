@@ -423,6 +423,152 @@ describe('backup retention', () => {
     expect(body).toEqual({ lineageGuid: 'lin-1', keepLast: 7, keepMonthly: 12 });
   });
 
+  it('set --keep-within sends the window as whole seconds', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+
+    await run(['retention', 'set', 'shop', '--keep-within', '24h']);
+
+    const [, init] = mockAccountServerFetch.mock.calls[0] as [string, { body: unknown }];
+    expect(init.body).toEqual({ lineageGuid: 'lin-1', keepWithinSeconds: 86_400 });
+  });
+
+  it.each(['24', '1x', '0h'])('set --keep-within %s is refused before any call', async (value) => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+
+    await expect(run(['retention', 'set', 'shop', '--keep-within', value])).rejects.toThrow(
+      'commands.backup.retention.keepWithinInvalid'
+    );
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
+  });
+
+  const policyRow = (over: Record<string, unknown>) => ({
+    lineageGuid: 'lin-1',
+    streamId: null,
+    keepLast: 3,
+    keepHourly: null,
+    keepDaily: 7,
+    keepWeekly: null,
+    keepMonthly: null,
+    keepYearly: null,
+    keepWithinSeconds: null,
+    pendingPolicy: null,
+    effectiveAt: null,
+    updatedAt: '2026-11-02T00:00:00.000Z',
+    ...over,
+  });
+
+  it('set says when a change that keeps less takes effect, and shows the policy still in force', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({
+      policies: [
+        policyRow({
+          pendingPolicy: {
+            keepLast: 1,
+            keepHourly: null,
+            keepDaily: 1,
+            keepWeekly: null,
+            keepMonthly: null,
+            keepYearly: null,
+            keepWithinSeconds: null,
+          },
+          effectiveAt: '2026-11-09T08:00:00.000Z',
+        }),
+      ],
+    });
+
+    await run(['retention', 'set', 'shop', '--keep-last', '1', '--keep-daily', '1']);
+
+    // THE DEFECT: an echo that prints the request as if it were in force, while the server keeps the old rule for the delay window.
+    const warned = vi
+      .mocked(outputService.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .join('\n');
+    expect(warned).toContain('commands.backup.retention.set.pending');
+    expect(warned).toContain('2026-11-09 08:00');
+    const printed = mockPrint.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(printed).toContain('"last":3');
+    expect(printed).toContain('"daily":7');
+  });
+
+  it('set with nothing waiting does not claim a delay', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({ policies: [policyRow({})] });
+
+    await run(['retention', 'set', 'shop', '--keep-last', '3']);
+
+    expect(vi.mocked(outputService.warn)).not.toHaveBeenCalled();
+  });
+
+  it('show lists the window and a waiting change', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('/retention/preview')
+          ? {
+              lineageGuid: 'lin-1',
+              policySource: 'declared',
+              streams: [],
+              deleted: [],
+              keptSnapshots: 0,
+              freedBytes: 0,
+              freedChunks: 0,
+            }
+          : {
+              policies: [
+                policyRow({
+                  keepWithinSeconds: 86_400,
+                  pendingPolicy: { clear: true },
+                  effectiveAt: '2026-11-09T08:00:00.000Z',
+                }),
+              ],
+            }
+      )
+    );
+    outputFormat.value = 'json';
+
+    await run(['retention', 'shop']);
+
+    const printed = mockPrint.mock.calls.map((c) => JSON.stringify(c[0])).join('\n');
+    expect(printed).toContain('keepWithinSeconds');
+    expect(printed).toContain('pendingPolicy');
+  });
+
+  it('preview names why each kept snapshot stays', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({
+      lineageGuid: 'lin-1',
+      policySource: 'declared',
+      streams: [],
+      deleted: [{ snapshotId: 'snap-old', streamId: 's-1', createdAt: '2026-01-01T00:00:00.000Z' }],
+      kept: [
+        { snapshotId: 'a', streamId: 's-1', createdAt: 'x', reasons: ['within'] },
+        { snapshotId: 'b', streamId: 's-1', createdAt: 'x', reasons: ['within', 'hourly'] },
+        { snapshotId: 'c', streamId: 's-1', createdAt: 'x', reasons: ['floor'] },
+      ],
+      keptSnapshots: 3,
+      freedBytes: 4096,
+      freedChunks: 1,
+    });
+
+    await run(['retention', 'preview', 'shop']);
+
+    const infos = vi
+      .mocked(outputService.info)
+      .mock.calls.map((c) => String(c[0]))
+      .join('\n');
+    expect(infos).toContain('commands.backup.retention.preview.reasons');
+    expect(infos).toContain('within 2');
+    expect(infos).toContain('hourly 1');
+    expect(infos).toContain('floor 1');
+  });
+
   it('set REFUSES an empty knob set instead of silently clearing the policy', async () => {
     mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
     mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
@@ -438,6 +584,33 @@ describe('backup retention', () => {
 
     await expect(run(['retention', 'set', 'shop', '--keep-last', 'seven'])).rejects.toThrow();
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
+  });
+
+  it('clear under a delayed-deletion window says the removal waits, not that it happened', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({
+      policies: [
+        {
+          lineageGuid: 'lin-1',
+          streamId: null,
+          keepLast: 3,
+          keepWithinSeconds: null,
+          pendingPolicy: { clear: true },
+          effectiveAt: '2026-11-09T08:00:00.000Z',
+        },
+      ],
+    });
+
+    await run(['retention', 'clear', 'shop']);
+
+    const warned = vi
+      .mocked(outputService.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .join('\n');
+    expect(warned).toContain('commands.backup.retention.pendingClear');
+    expect(warned).toContain('2026-11-09 08:00');
+    expect(vi.mocked(outputService.success)).not.toHaveBeenCalled();
   });
 
   it('clear sends a DELETE scoped to the lineage', async () => {
@@ -460,22 +633,21 @@ describe('backup retention', () => {
  * from another repository never reaches the delete route.
  */
 describe('backup snapshots delete', () => {
-  const history = {
-    manifests: [{ snapshotId: 'snap-1', lineageGuid: 'lin-1', streamId: 's-1', createdAt: 'x' }],
-  };
+  const owned = { snapshotId: 'snap-1', lineageGuid: 'lin-1', streamId: 's-1', createdAt: 'x' };
+  const resolveUrl = (id: string) =>
+    `/account/api/v1/backups/snapshots/resolve?lineage=lin-1&anchorSnapshotId=${id}`;
 
-  it('deletes through the account route once the id is in the repository history', async () => {
+  it('deletes through the account route once the id resolves inside the repository lineage', async () => {
     mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
     mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
     mockAccountServerFetch
-      .mockResolvedValueOnce(history)
+      .mockResolvedValueOnce(owned)
       .mockResolvedValueOnce({ deleted: ['snap-1'] });
 
     await run(['snapshots', 'delete', 'shop', 'snap-1']);
 
-    expect(mockAccountServerFetch.mock.calls[0][0]).toBe(
-      '/account/api/v1/backups/manifests?lineage=lin-1'
-    );
+    // One lookup by id: the listing is capped at 500 rows and an older id is not in it.
+    expect(mockAccountServerFetch.mock.calls[0][0]).toBe(resolveUrl('snap-1'));
     const [url, init] = mockAccountServerFetch.mock.calls[1] as [string, { method: string }];
     expect(url).toBe('/account/api/v1/backups/snapshots/snap-1');
     expect(init.method).toBe('DELETE');
@@ -484,11 +656,24 @@ describe('backup snapshots delete', () => {
   it('refuses an id that is not in the named repository, without calling the delete route', async () => {
     mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
     mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
-    mockAccountServerFetch.mockResolvedValueOnce(history);
+    mockAccountServerFetch.mockRejectedValueOnce(
+      Object.assign(new Error('No snapshot matches in this lineage'), { status: 404 })
+    );
 
     await expect(run(['snapshots', 'delete', 'shop', 'snap-other'])).rejects.toThrow(
       'commands.backup.snapshots.delete.notInRepo'
     );
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not read an outage as "not in this repository"', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockRejectedValueOnce(
+      Object.assign(new Error('unavailable'), { status: 503 })
+    );
+
+    await expect(run(['snapshots', 'delete', 'shop', 'snap-1'])).rejects.toThrow('unavailable');
     expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
   });
 });

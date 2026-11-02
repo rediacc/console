@@ -43,7 +43,12 @@
       "manifests": {
         "description": "서버에 기록된 백업 스냅샷 매니페스트를 나열합니다",
         "empty": "백업 매니페스트를 찾을 수 없습니다.",
-        "fetching": "백업 매니페스트를 가져오는 중..."
+        "fetching": "백업 매니페스트를 가져오는 중...",
+        "optionLimit": "페이지당 행 수 (기본값이자 최대 500)",
+        "optionBefore": "이전 목록의 페이지 커서 (nextBefore)",
+        "optionIncludeDeleted": "지연 삭제가 대기 중인 스냅샷 포함",
+        "limitInvalid": "--limit 은 1 이상의 정수를 받습니다. 받은 값: \"{{value}}\"",
+        "more": "스냅샷 {{total}}개 중 {{shown}}개 표시 중. 다음 페이지: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "{{at}} 또는 그 이전에 생성된 스냅샷이 없습니다",
@@ -107,7 +112,8 @@
         "salvageHole": "  구멍: 바이트 {{offset}}부터 {{end}}까지: {{reason}}",
         "salvageNeedsAs": "--salvage에는 --as <새 이름>이 필요합니다. 손상된 이미지는 기존 이름으로 배치되지 않습니다.",
         "salvageNeedsSnapshot": "--salvage에는 복원할 청크 저장소 스냅샷이 필요합니다.",
-        "salvageWholeImage": "--salvage는 이미지 전체를 복원하며 --path 또는 --to와 함께 사용할 수 없습니다."
+        "salvageWholeImage": "--salvage는 이미지 전체를 복원하며 --path 또는 --to와 함께 사용할 수 없습니다.",
+        "atIndexGap": "스냅샷 {{snapshot}} 에는 저장된 목록이 없어 {{gap}} 전에 찍은 {{indexed}} 을(를) 대신 읽습니다."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "지정한 연수만큼 각 해의 최신 스냅샷을 보존합니다",
         "set": {
           "description": "보존할 스냅샷 개수를 지정합니다. 모든 항목은 병합되지 않고 전부 교체됩니다",
-          "success": "{{name}}의 보존 정책을 설정했습니다({{count}}개의 규칙). 정책을 벗어난 스냅샷은 다음 정리 작업에서 삭제됩니다"
+          "success": "{{name}}의 보존 정책을 설정했습니다({{count}}개의 규칙). 정책을 벗어난 스냅샷은 다음 정리 작업에서 삭제됩니다",
+          "pending": "이 변경은 보존량을 줄이므로 지연 삭제 기간을 기다린 뒤 \"{{name}}\"에 {{when}} (UTC)부터 적용됩니다. 표시된 정책은 그때까지 유지됩니다."
         },
         "effective": "{{name}}에 적용되는 보존 설정: {{source}}",
         "optionStream": "이 백업 스트림에만 적용합니다(스트림 ID). 생략하면 저장소 전체 기본값이 적용됩니다",
         "preview": {
           "description": "다음 정리에서 삭제될 스냅샷과 확보될 공간을 보여줍니다.",
           "nothing": "다음 정리에서는 {{name}}의 스냅샷이 삭제되지 않습니다.",
-          "summary": "다음 정리에서 {{name}}의 스냅샷 {{count}}개를 삭제하고 {{kept}}개를 남기며 {{bytes}}를 확보합니다."
+          "summary": "다음 정리에서 {{name}}의 스냅샷 {{count}}개를 삭제하고 {{kept}}개를 남기며 {{bytes}}를 확보합니다.",
+          "reasons": "보존 사유: {{reasons}}"
         },
         "seeded": "전략 \"{{strategy}}\"의 보존 설정을 정책이 없던 저장소 {{count}}개에 지정했습니다.",
         "seedFailed": "전략 \"{{strategy}}\"의 보존 설정을 지정하지 못했습니다({{reason}}). 지정되기 전까지는 서버 기본값이 적용됩니다.",
@@ -143,7 +151,10 @@
           "plan": "요금제 기본값",
           "default": "서버 기본값",
           "orphan": "고아 저장소 유예 기간"
-        }
+        },
+        "keepWithinInvalid": "--keep-within 은 24h 또는 90m 같은 기간을 받습니다. 받은 값: \"{{value}}\"",
+        "optionKeepWithin": "가장 최근 스냅샷에서 이 기간 안의 모든 스냅샷 보존, 예: 24h",
+        "pendingClear": "\"{{name}}\" 정책 제거는 지연 삭제 기간을 기다린 뒤 {{when}} (UTC)부터 적용됩니다. 적용 중인 정책은 그때까지 계속 적용됩니다."
       },
       "run": {
         "description": "원격 머신에서 즉시 백업을 실행합니다",
@@ -243,7 +254,22 @@
           "retentionPushed": "저장소 {{count}}개에 보존 설정을 적용했습니다.",
           "retentionPushFailed": "전략 \"{{strategy}}\"의 보존 설정은 저장했지만 적용하지 못했습니다({{reason}}). 서버에 연결되면 명령을 다시 실행하세요.",
           "optionCpuLimit": "이 전략의 스냅샷에 대한 CPU 상한: 전체 코어 대비 백분율, 1-100 (기본 50). none 으로 해제",
-          "cpuLimitStrategyOnly": "--cpu-limit 는 전략 전체에 적용됩니다. --destination 을 제거하세요."
+          "cpuLimitStrategyOnly": "--cpu-limit 는 전략 전체에 적용됩니다. --destination 을 제거하세요.",
+          "optionRpo": "선언할 보호 목표, 예: 15m (최소 5m, none 은 해제)",
+          "optionRepoRpo": "저장소별 목표를 <ref>=<기간> 으로 지정, 반복 가능 (none 은 제거). name:* 는 패밀리",
+          "optionRepoCellSize": "저장소별 셀 크기를 <ref>=<크기> 로 지정, 반복 가능. 변경하면 저장소를 다시 시딩",
+          "optionNoEstimate": "변동 및 비용 추정 건너뛰기",
+          "optionDryRun": "무엇이 바뀔지 보여 주고 아무것도 쓰지 않음",
+          "rpoInvalid": "{{option}} \"{{value}}\" 이(가) 올바르지 않습니다: {{reason}}",
+          "repoOptionInvalid": "{{option}} 은 <ref>=<값> 을 받습니다. 받은 값: \"{{value}}\"",
+          "cellSizeInvalid": "셀 크기 \"{{value}}\" 은(는) 1M 또는 4M 같은 크기가 아닙니다",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\"에는 목표가 없습니다. 먼저 --repo-rpo {{ref}}=<기간> 으로 설정하세요",
+          "noMeasurement": "{{refs}} 의 변동 측정이 없습니다. 먼저 `rdc backup churn <repo>` 를 실행하거나 --no-estimate 를 지정하세요.",
+          "reseedWarning": "{{ref}} 의 셀 크기를 {{size}} 로 바꾸면 다시 시딩됩니다: 모든 셀이 다시 업로드되어 과금되고 이전 그리드의 포크는 중복 제거되지 않습니다. 예약 실행은 그리드 변경을 스스로 받아들이지 않습니다.",
+          "retentionDefaulted": "전략 \"{{strategy}}\" 은(는) 보존을 선언하지 않아 {{window}} 이내의 모든 스냅샷을 보존합니다 ({{plan}} 플랜 기본값).",
+          "retentionDefaultNoStorage": "{{plan}} 플랜에는 클라우드 백업 스토리지가 없어 기본 보존을 설정하지 않았습니다.",
+          "retentionDefaultNoPlan": "플랜을 읽지 못해 기본 보존을 설정하지 않았습니다. --retention 으로 선언하세요.",
+          "dryRun": "드라이 런: 전략 \"{{strategy}}\" 이(가) 변경됩니다 ({{changes}}). 아무것도 쓰지 않았습니다."
         },
         "show": {
           "description": "백업 전략 세부 정보를 표시합니다",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "백업 스토리지 쿼터, 저장된 바이트 수, 저장소별 사용량을 표시합니다",
         "empty": "저장소별 백업 스토리지 사용량이 아직 기록되지 않았습니다.",
-        "fetching": "백업 스토리지 사용량을 가져오는 중..."
+        "fetching": "백업 스토리지 사용량을 가져오는 중...",
+        "overLimit": "한도 초과",
+        "summary": "{{quota}} 중 {{used}} 사용 (활성 {{live}}, 예약 {{leased}}, 청크 {{chunks}}개) {{over}}",
+        "waiting": "삭제 대기: 청크 {{chunks}}개에 {{waiting}}, 과금 제외. 변동 상한 {{cap}}.",
+        "throttled": "대기 중 스토리지가 변동 상한 {{cap}}을 넘었습니다: 1시간보다 빠른 백업 스트림은 비워질 때까지 거부됩니다."
       },
       "verify": {
         "completed": "{{name}}의 백업이 검증되었습니다",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "저장된 스냅샷 하나를 삭제합니다. 그 스냅샷만 쓰던 데이터는 다음 가비지 컬렉션에서 해제됩니다.",
           "notInRepo": "스냅샷 {{snapshot}}은(는) {{name}}의 저장된 기록에 없습니다. ID 목록은 rdc backup manifests {{name}}로 확인하세요.",
-          "success": "{{name}}의 스냅샷 {{count}}개를 삭제했습니다({{snapshot}} 포함)."
+          "success": "{{name}}의 스냅샷 {{count}}개를 삭제했습니다({{snapshot}} 포함).",
+          "delayed": "\"{{name}}\"의 스냅샷 {{snapshot}} 삭제가 지연되었습니다: 아직 복원할 수 있으며 {{when}} (UTC)에 제거됩니다. 취소: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "이 저장소의 저장량: 퍼지 전 {{beforeBytes}}(청크 {{beforeChunks}}개), 퍼지 후 {{afterBytes}}(청크 {{afterChunks}}개).",
         "usageUnavailable": "퍼지는 완료되었지만 퍼지 후 사용량을 읽지 못했습니다: {{error}}",
         "progress": "\"{{name}}\" 퍼지 중: {{round}}번째 라운드, 지금까지 객체 {{chunks}}개 삭제({{bytes}}).",
-        "tooManyRounds": "\"{{name}}\" 퍼지가 {{rounds}}번의 라운드 후에도 끝나지 않았습니다. 계속하려면 다시 실행하세요."
+        "tooManyRounds": "\"{{name}}\" 퍼지가 {{rounds}}번의 라운드 후에도 끝나지 않았습니다. 계속하려면 다시 실행하세요.",
+        "optionCancel": "지연된 전체 제거를 적용되기 전에 취소",
+        "cancelExclusive": "--cancel 은 --dry-run 과 함께 쓸 수 없습니다",
+        "cancelled": "\"{{name}}\"의 지연된 전체 제거를 취소했습니다.",
+        "nothingWaiting": "\"{{name}}\"의 대기 중인 전체 제거가 없었습니다.",
+        "delayed": "\"{{name}}\"의 전체 제거가 지연되었습니다: 아무것도 삭제되지 않았고 {{when}} (UTC)에 실행됩니다. 그 전에 취소하려면: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "파일 하나를 복원해 스냅샷이 암호로 열리는지 증명합니다",
@@ -391,6 +427,55 @@
         "optionDryRun": "수행될 작업을 보고하며 아무것도 건드리지 않습니다",
         "optionReplace": "머신에 이미 있는 다른 키를 교체합니다(증명을 위해 암호를 전송합니다)",
         "syncDescription": "저장소의 목록 키를 해당 머신에 설치하거나 다른 키를 교체합니다"
+      },
+      "churn": {
+        "description": "저장소 이미지가 실행 사이에 얼마나 바뀌는지 측정하고, 셀 크기별 업로드량을 예측해 하나를 권장합니다. 실행 중에는 머신에 reflink 기반을 두며 끝나면 항상 제거합니다.",
+        "descriptionShort": "저장소 변동을 측정하고 셀 크기를 권장",
+        "optionSamples": "수집할 측정 표본 수 (기본 3)",
+        "optionInterval": "프로브 사이 대기 시간, 예: 10m (기본 10m)",
+        "probing": "\"{{name}}\" 측정 중 (프로브 {{probe}})...",
+        "probed": "\"{{name}}\" 프로브를 기록했습니다",
+        "probeFailed": "\"{{name}}\" 프로브에 실패했습니다",
+        "forgetting": "\"{{name}}\"의 프로브 기반을 제거하는 중...",
+        "forgotten": "\"{{name}}\"의 프로브 기반을 머신에서 제거했습니다.",
+        "forgetFailed": "\"{{name}}\"의 프로브 기반을 제거하지 못해 머신에서 계속 공간을 차지합니다. rdc backup churn {{name}} 을 다시 실행하세요. 끝날 때 기반을 제거합니다.",
+        "noMeasurement": "\"{{name}}\"의 변동이 측정되지 않았습니다: 첫 프로브는 기준점만 정합니다 (기준 {{baselines}}개, 건너뜀 {{skipped}}개). 예측은 하지 않습니다.",
+        "samplesInvalid": "--samples 는 1에서 {{max}} 사이의 정수를 받습니다. 받은 값: \"{{value}}\"",
+        "intervalInvalid": "--interval 은 5m 또는 1h 같은 기간(24h 미만)을 받습니다. 받은 값: \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "권장 셀 크기: {{cell}}. 쓰기가 작고 흩어져 있어 4 MiB보다 {{savedPercent}}% 적은 바이트를 업로드합니다. 변경하면 저장소를 다시 시딩합니다.",
+          "clustered-large": "권장 셀 크기: {{cell}}. 쓰기가 크고 모여 있어 같은 바이트에 필요한 put이 훨씬 적습니다.",
+          "default": "권장 셀 크기: {{cell}} (기본값). 다른 크기는 충분히 절약하지 못합니다.",
+          "idle": "권장 셀 크기: {{cell}} (기본값). 프로브 사이에 저장소가 바뀌지 않았습니다.",
+          "collapse-cap": "권장 셀 크기: {{cell}}. 1 MiB는 {{savedPercent}}%를 절약하지만 그 크기에서는 이미지가 262,144개 셀을 넘어 정리가 미뤄집니다."
+        },
+        "estimate": {
+          "target": "{{name}}: 실행당 변경 셀 {{cells}}개, 하루 {{runs}}회 실행 (4 MiB 셀 기준).",
+          "cost": "월 예상 {{total}}: Class A 작업 {{classA}}건, Class B 작업 {{classB}}건, 스토리지 {{storage}} (과금 {{window}}, 7일 유예 대기 {{waiting}}).",
+          "capHeld": "대기 중 스토리지는 {{waiting}}에서 안정되며 변동 상한 {{cap}} 아래입니다.",
+          "capExceeded": "대기 중 스토리지가 {{waiting}}에 도달해 {{days}}일 안에 변동 상한 {{cap}}을 넘습니다. 1시간보다 빠른 스트림은 비워질 때까지 거부됩니다."
+        }
+      },
+      "immutability": {
+        "description": "저장된 백업의 지연 삭제 기간을 표시하거나 설정",
+        "show": {
+          "description": "적용 중인 지연 삭제 기간 표시",
+          "window": "지연 삭제: 삭제, 전체 제거, 보존 축소는 {{days}}일 대기하며 그때까지 취소할 수 있습니다.",
+          "off": "지연 삭제가 꺼져 있습니다: 삭제는 즉시 적용됩니다."
+        },
+        "set": {
+          "description": "지연 삭제 기간을 일 단위로 설정 (0~30)",
+          "daysArgument": "삭제가 적용되기 전에 기다리는 일수 (0~30)",
+          "applied": "지연 삭제 기간은 이제 {{days}}일입니다.",
+          "appliedOff": "지연 삭제가 꺼져 있습니다.",
+          "invalid": "기간은 0에서 {{max}} 사이의 정수 일수입니다. 받은 값: \"{{value}}\""
+        },
+        "pending": "기간은 {{when}} (UTC)에 {{days}}일로 줄어듭니다. 그때까지 {{current}}일이 적용됩니다."
+      },
+      "undelete": {
+        "description": "스냅샷의 지연 삭제를 적용되기 전에 취소",
+        "success": "스냅샷 {{snapshot}} 은(는) 유지됩니다: 삭제가 취소되었습니다.",
+        "notWaiting": "스냅샷 {{snapshot}} 은(는) 삭제 대기 중이 아니었습니다."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{repo}}의 {{verb}}, {{startedAt}}에 {{origin}}이(가) 시작함. 따라가려면: {{attach}}",
         "runningJobsSection": "작업 (실행 중이거나 최근 1시간 안에 끝남)",
         "verifyFailureSection": "실패한 백업 검증",
-        "verifyFailureWarning": "저장소 {{count}}개가 마지막 백업 검증에 실패했습니다."
+        "verifyFailureWarning": "저장소 {{count}}개가 마지막 백업 검증에 실패했습니다.",
+        "missedTargetSection": "백업 목표를 달성하지 못한 저장소",
+        "missedTargetWarning": "저장소 {{count}}개가 마지막 실행에서 백업 목표를 달성하지 못했습니다."
       },
       "gpu": {
         "descriptionShort": "머신의 GPU와 장치 부여 현황 확인",

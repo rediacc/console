@@ -1,7 +1,13 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
+const mockTCalls = vi.hoisted(() => [] as { key: string; params: Record<string, unknown> }[]);
+vi.mock('../../i18n/index.js', () => ({
+  t: (key: string, params?: Record<string, unknown>) => {
+    mockTCalls.push({ key, params: params ?? {} });
+    return key;
+  },
+}));
 
 const mockFetch = vi.hoisted(() => vi.fn());
 const mockInfo = vi.hoisted(() => vi.fn());
@@ -139,6 +145,7 @@ describe('backup purge', () => {
     repos.set('shop', { repositoryGuid: LINEAGE });
     repos.set('shop:fork', { repositoryGuid: 'fork-guid', grandGuid: LINEAGE });
     configWrites.length = 0;
+    mockTCalls.length = 0;
     serveAccount();
   });
 
@@ -147,10 +154,27 @@ describe('backup purge', () => {
 
     expect(deleteCalls()).toHaveLength(0);
     expect(mockAskInput).not.toHaveBeenCalled();
-    expect(mockFetch).toHaveBeenCalledWith(`/account/api/v1/backups/manifests?lineage=${LINEAGE}`);
+    expect(mockFetch).toHaveBeenCalledWith(
+      `/account/api/v1/backups/manifests?lineage=${LINEAGE}&limit=1`
+    );
     expect(mockFetch).toHaveBeenCalledWith('/account/api/v1/backups/usage');
     expect(mockInfo).toHaveBeenCalledWith('commands.backup.purge.dryRun');
     expect(configWrites).toEqual([]);
+  });
+
+  it('reports the server count of a history longer than one page, not the page length', async () => {
+    const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((path: string, init?: unknown) =>
+      path.startsWith('/account/api/v1/backups/manifests')
+        ? // The listing is capped at 500 rows a page: total is the lineage's real count.
+          Promise.resolve({ manifests: [{ snapshotId: 's1' }], nextBefore: 'x~y', total: 750 })
+        : served(path, init)
+    );
+    await run(['shop', '--dry-run']);
+
+    // THE DEFECT: the page length (1 here, 500 at the cap) printed as the snapshot count.
+    const dryRun = mockTCalls.find((c) => c.key === 'commands.backup.purge.dryRun');
+    expect(dryRun?.params.count).toBe(750);
   });
 
   it('-y sends exactly one DELETE, to the resolved lineage, without prompting', async () => {
@@ -232,6 +256,82 @@ describe('backup purge', () => {
     await expect(run(['shop', '-y'])).rejects.toThrow('commands.backup.purge.tooManyRounds');
     expect(deleteCalls()).toHaveLength(200);
     expect(mockSuccess).not.toHaveBeenCalled();
+  });
+
+  /** What the account answers (202) to a purge under a delayed-deletion window: nothing deleted, a due time. */
+  const delayedAnswer = {
+    lineageGuid: LINEAGE,
+    done: false,
+    delayed: true,
+    code: 'BACKUP_DELETION_DELAYED',
+    purgeAfter: '2026-11-09T08:00:00.000Z',
+    freedBytes: 0,
+    deletedSnapshots: 0,
+    deletedChunks: 0,
+    deletedBytes: 0,
+  };
+
+  function serveDelayed(): void {
+    const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
+    mockFetch.mockImplementation((path: string, init?: { method?: string }) =>
+      init?.method === 'DELETE' ? Promise.resolve(delayedAnswer) : served(path, init)
+    );
+  }
+
+  it('window 7: one DELETE answers delayed, and the rounds stop instead of looping to 200', async () => {
+    serveDelayed();
+    const { purgeLineageRounds } = await import('../backup-purge.js');
+    // THE DEFECT: `done` is false on a delayed answer, so a loop that waits for done calls 200 times and throws tooManyRounds.
+    const result = await purgeLineageRounds('shop', LINEAGE, String);
+    expect(deleteCalls()).toHaveLength(1);
+    expect(result.delayed).toBe(true);
+    expect(result.purgeAfter).toBe('2026-11-09T08:00:00.000Z');
+  });
+
+  it('window 7: the command says the purge is delayed and how to cancel it, never "purged"', async () => {
+    serveDelayed();
+    await run(['shop', '-y']);
+
+    expect(deleteCalls()).toHaveLength(1);
+    expect(mockSuccess).not.toHaveBeenCalled();
+    const warned = mockTCalls.find((c) => c.key === 'commands.backup.purge.delayed');
+    expect(warned?.params).toMatchObject({ name: 'shop', when: '2026-11-09 08:00' });
+    expect(mockTCalls.some((c) => c.key === 'commands.backup.purge.usageDelta')).toBe(false);
+  });
+
+  it('window 0: the same call still finishes in rounds and says purged', async () => {
+    await run(['shop', '-y']);
+
+    expect(deleteCalls()).toHaveLength(1);
+    expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.success');
+    expect(mockTCalls.some((c) => c.key === 'commands.backup.purge.delayed')).toBe(false);
+  });
+
+  it('--cancel posts the cancel route for the lineage and touches nothing else', async () => {
+    mockFetch.mockResolvedValue({ lineageGuid: LINEAGE, cancelled: true });
+    await run(['shop', '--cancel']);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0] as [string, { method: string }];
+    expect(url).toBe(`/account/api/v1/backups/lineages/${LINEAGE}/purge/cancel`);
+    expect(init.method).toBe('POST');
+    expect(mockAskInput).not.toHaveBeenCalled();
+    expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.cancelled');
+  });
+
+  it('--cancel says so when no purge was waiting', async () => {
+    mockFetch.mockResolvedValue({ lineageGuid: LINEAGE, cancelled: false });
+    await run(['shop', '--cancel']);
+
+    expect(mockSuccess).not.toHaveBeenCalled();
+    expect(mockInfo).toHaveBeenCalledWith('commands.backup.purge.nothingWaiting');
+  });
+
+  it('--cancel refuses to combine with --dry-run, before any call', async () => {
+    await expect(run(['shop', '--cancel', '--dry-run'])).rejects.toThrow(
+      'commands.backup.purge.cancelExclusive'
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('warns when the usage read after a successful purge fails', async () => {

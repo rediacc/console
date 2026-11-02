@@ -227,12 +227,14 @@ describe('backup restore: licensing the target machine', () => {
       serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       token: { token: 'rdt_test' },
     });
-    mockAccountServerFetch.mockResolvedValue({
-      manifests: [
-        { snapshotId: SNAPSHOT_ID, lineageGuid: SOURCE_GUID, totalBytes: SNAPSHOT_BYTES },
-        { snapshotId: 'older-one', lineageGuid: SOURCE_GUID, totalBytes: 999 * 1024 ** 3 },
-      ],
-    });
+    // The size is read by id through the resolve route, so the answer depends on the id asked for: a decoy for any other id.
+    mockAccountServerFetch.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.includes(`anchorSnapshotId=${SNAPSHOT_ID}`)
+          ? { snapshotId: SNAPSHOT_ID, lineageGuid: SOURCE_GUID, totalBytes: SNAPSHOT_BYTES }
+          : { snapshotId: 'older-one', lineageGuid: SOURCE_GUID, totalBytes: 999 * 1024 ** 3 }
+      )
+    );
     mockExecStreaming.mockResolvedValue(0);
     mockExec.mockImplementation((command: string) => {
       if (command.includes('datastore list --json')) {
@@ -306,7 +308,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 13 });
     // The lookup is exact, not "newest": the 999 GB decoy manifest in the same lineage must not be the one that was read.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
-      `/account/api/v1/backups/manifests?lineage=${SOURCE_GUID}`
+      `/account/api/v1/backups/snapshots/resolve?lineage=${SOURCE_GUID}&anchorSnapshotId=${SNAPSHOT_ID}`
     );
     // No stat probe: there is nothing on the target to measure.
     expect(

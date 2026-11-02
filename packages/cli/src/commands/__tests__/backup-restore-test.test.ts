@@ -187,9 +187,7 @@ beforeEach(() => {
   mocks.fetch.mockImplementation((url: string) => {
     if (url.includes('/verification'))
       return Promise.resolve({ snapshotId: SNAP, verificationState: 'proven' });
-    return Promise.resolve({
-      manifests: [{ snapshotId: SNAP, lineageGuid: 'lineage-1', totalBytes: 10 * GB }],
-    });
+    return Promise.resolve({ snapshotId: SNAP, lineageGuid: 'lineage-1', totalBytes: 10 * GB });
   });
   mocks.sftpExec.mockResolvedValue(`${40 * GB}\n`);
   script({});
@@ -259,9 +257,7 @@ describe('backup verify --restore-test', () => {
     mocks.fetch.mockImplementation((url: string) =>
       url.includes('/verification')
         ? Promise.resolve({ snapshotId: SNAP, verificationState: 'failed' })
-        : Promise.resolve({
-            manifests: [{ snapshotId: SNAP, lineageGuid: 'lineage-1', totalBytes: 10 * GB }],
-          })
+        : Promise.resolve({ snapshotId: SNAP, lineageGuid: 'lineage-1', totalBytes: 10 * GB })
     );
     await run(['verify', 'shop', '--restore-test']);
     expect(printed()).toMatchObject({ status: 'failed', verificationState: 'failed' });

@@ -83,6 +83,15 @@ export async function settleCloudBackups(
   if (purgeBackups) {
     const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
     const purged = await purgeLineageRounds(name, lineage, formatSizeBytes);
+    if (purged.delayed) {
+      outputService.warn(
+        t('commands.backup.purge.delayed', {
+          name,
+          when: purged.purgeAfter?.replace('T', ' ').slice(0, 16) ?? '-',
+        })
+      );
+      return;
+    }
     outputService.info(
       t('commands.repo.delete.backupsPurged', {
         repository: name,

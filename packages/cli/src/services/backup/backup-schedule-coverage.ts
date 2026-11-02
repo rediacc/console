@@ -1,5 +1,5 @@
 /**
- * How often a schedule fires, and which repositories have fallen behind it.
+ * How often a schedule fires, and which repositories have fallen behind it or their declared target.
  *
  * A backup job can succeed while covering less than it should (a licence lapses, a transfer window
  * closes before the largest images), and nothing about the unit says so. The age of each repo's last
@@ -14,6 +14,7 @@ import {
   coverageByGuid,
   machineUnitSpecs,
   type ScheduledStrategy,
+  targetsByGuid,
 } from './backup-schedule-targets.js';
 import { invalidCronReason } from './backup-strategy-validate.js';
 
@@ -94,46 +95,137 @@ export function cronIntervalMs(cron: string): number | undefined {
   return longest;
 }
 
-/** One repo whose last successful backup is older than twice its schedule interval. */
+/**
+ * What renet's backup_coverage reports per repository once a target is declared. Declared here beside
+ * the generated type, which carries the fields only after the contract is regenerated from renet.
+ */
+type CoverageRepo = BackupCoverage['repos'][number] & {
+  last_capture_at?: string;
+  target_seconds?: number;
+  achieved_rpo_ms?: number;
+  ticks_missed?: number;
+  target_met?: boolean;
+  hook_failures?: number;
+};
+
+/** How far past its target a repository may fall before it counts as late: max(T, 5 minutes). The same figure renet's nextExpected uses. */
+function targetGraceSeconds(targetSeconds: number): number {
+  return Math.max(targetSeconds, 300);
+}
+
+/**
+ * One repo that has fallen behind: a cron repo whose last success is older than twice its schedule
+ * interval, or a target repo whose last capture is older than T + grace. Seconds, because at a
+ * sub-hour cadence a figure in days rounds to 0 and says nothing.
+ */
 export interface StaleBackupRepo {
   guid: string;
   name?: string;
   lastSuccessAt: string;
-  ageDays: number;
-  /** The shortest schedule interval covering the repo, in days. */
-  intervalDays: number;
+  ageSeconds: number;
+  /** The shortest schedule interval covering the repo (its target length for a target repo), in seconds. */
+  intervalSeconds: number;
+  /** Set for a repo with a declared target; the verdict then measures against T + grace. */
+  targetSeconds?: number;
 }
 
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
+/** One repo whose latest run missed its declared target, with how the run went. */
+export interface MissedTargetRepo {
+  guid: string;
+  name?: string;
+  targetSeconds: number;
+  achievedRpoMs?: number;
+  ticksMissed?: number;
+  hookFailures?: number;
 }
 
 /**
- * Repos the machine's bound strategies cover whose last success is older than 2x the shortest
- * interval covering them. A repo with no success on record is left to the never-backed-up check
- * (it may simply be new), and a repo no strategy covers is not this check's business.
+ * The instant a target repo's content was last proven: the later of its last capture (a commit or an
+ * unchanged check) and its last success. An older renet reports no capture time, and the success
+ * time then stands alone.
+ */
+function lastProvenMs(repo: CoverageRepo): number {
+  const times = [repo.last_capture_at, repo.last_success_at]
+    .map((v) => (v ? Date.parse(v) : Number.NaN))
+    .filter((n) => !Number.isNaN(n));
+  return times.length > 0 ? Math.max(...times) : Number.NaN;
+}
+
+/**
+ * Repos the machine's bound strategies cover that have fallen behind. A cron repo is stale past 2x
+ * the shortest interval covering it; a repo with a declared target is stale past T + grace measured
+ * from its last capture, so an idle repo whose `unchanged` runs advance the capture stays fresh and a
+ * hung run, which writes nothing, ages out. A repo with no success on record is left to the
+ * never-backed-up check (it may simply be new), and a repo no strategy covers is not this check's
+ * business.
  */
 export function staleBackupRepos(
   coverage: BackupCoverage | undefined,
   cronsByGuid: Map<string, string[]>,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  targetsByGuid: Map<string, number> = new Map()
 ): StaleBackupRepo[] {
   const stale: StaleBackupRepo[] = [];
-  for (const repo of coverage?.repos ?? []) {
-    const interval = shortestInterval(cronsByGuid.get(repo.guid));
-    const last = repo.last_success_at ? Date.parse(repo.last_success_at) : Number.NaN;
-    if (interval === undefined || Number.isNaN(last) || !repo.last_success_at) continue;
-    const age = nowMs - last;
-    if (age <= 2 * interval) continue;
-    stale.push({
-      guid: repo.guid,
-      ...(repo.name && { name: repo.name }),
-      lastSuccessAt: repo.last_success_at,
-      ageDays: round1(age / DAY_MS),
-      intervalDays: round1(interval / DAY_MS),
-    });
+  for (const repo of (coverage?.repos ?? []) as CoverageRepo[]) {
+    const verdict = staleVerdict(
+      repo,
+      cronsByGuid.get(repo.guid),
+      targetsByGuid.get(repo.guid),
+      nowMs
+    );
+    if (verdict) stale.push(verdict);
   }
   return stale;
+}
+
+/** One repo's verdict: how far behind it is and against what, or undefined when it is within its limit or has nothing to judge. */
+function staleVerdict(
+  repo: CoverageRepo,
+  crons: string[] | undefined,
+  target: number | undefined,
+  nowMs: number
+): StaleBackupRepo | undefined {
+  if (!repo.last_success_at) return undefined;
+  const intervalMs = target === undefined ? shortestInterval(crons) : target * 1000;
+  const lastMs = target === undefined ? Date.parse(repo.last_success_at) : lastProvenMs(repo);
+  if (intervalMs === undefined || Number.isNaN(lastMs)) return undefined;
+  const age = nowMs - lastMs;
+  const limit =
+    target === undefined ? 2 * intervalMs : (target + targetGraceSeconds(target)) * 1000;
+  if (age <= limit) return undefined;
+  return {
+    guid: repo.guid,
+    ...(repo.name && { name: repo.name }),
+    lastSuccessAt: repo.last_success_at,
+    ageSeconds: Math.round(age / 1000),
+    intervalSeconds: Math.round(intervalMs / 1000),
+    ...(target !== undefined && { targetSeconds: target }),
+  };
+}
+
+/**
+ * Repos with a declared target whose latest run reported `target_met: false` (a skipped, throttled,
+ * hook-failed or late run). A repo with no declared target is not judged: the flag is a statement
+ * about a target, and a removed target's leftovers must not read as a miss.
+ */
+export function missedTargetRepos(
+  coverage: BackupCoverage | undefined,
+  targetsByGuid: Map<string, number>
+): MissedTargetRepo[] {
+  const missed: MissedTargetRepo[] = [];
+  for (const repo of (coverage?.repos ?? []) as CoverageRepo[]) {
+    const target = targetsByGuid.get(repo.guid);
+    if (target === undefined || repo.target_met !== false) continue;
+    missed.push({
+      guid: repo.guid,
+      ...(repo.name && { name: repo.name }),
+      targetSeconds: target,
+      ...(repo.achieved_rpo_ms !== undefined && { achievedRpoMs: repo.achieved_rpo_ms }),
+      ...(repo.ticks_missed !== undefined && { ticksMissed: repo.ticks_missed }),
+      ...(repo.hook_failures !== undefined && { hookFailures: repo.hook_failures }),
+    });
+  }
+  return missed;
 }
 
 /** The shortest interval among the crons covering a repo; undefined when none is readable. */
@@ -142,17 +234,37 @@ function shortestInterval(crons: string[] | undefined): number | undefined {
   return intervals.length > 0 ? Math.min(...intervals) : undefined;
 }
 
+/** A span in the unit a person reads it in: `45s`, `11m`, `3h20m`, `3d`. */
+export function formatSpan(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 2 * 86_400 && seconds % 86_400 !== 0) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return m === 0 ? `${h}h` : `${h}h${m}m`;
+  }
+  const days = Math.round((seconds / 86_400) * 10) / 10;
+  return `${days}d`;
+}
+
+/** The backup standing of a machine: repos behind their schedule or target, and repos whose latest run missed a target. */
+export interface MachineTargetStatus {
+  stale: StaleBackupRepo[];
+  missed: MissedTargetRepo[];
+}
+
 /**
- * The stale repos on a machine, resolved through the config: the strategies bound to it, enabled,
- * rendered to unit specs exactly as `backup schedule` renders them. A config the scheduler would
- * refuse (an unknown repo name) yields no verdict rather than a crash of the status read.
+ * The standing of every repository on a machine, resolved through the config: the strategies bound
+ * to it, enabled, rendered to unit specs exactly as `backup schedule` renders them. A config the
+ * scheduler would refuse (an unknown repo name) yields no verdict rather than a crash of the status
+ * read. A repo that is stale is not also listed as missed.
  */
-export function machineStaleBackups(
+export function machineBackupTargetStatus(
   config: RdcConfig,
   machineName: string,
   coverage: BackupCoverage | undefined,
   nowMs: number = Date.now()
-): StaleBackupRepo[] {
+): MachineTargetStatus {
   const machine = config.resources?.machines?.[machineName];
   const all = config.resources?.backupStrategies ?? {};
   const strategies: { name: string; config: ScheduledStrategy }[] = [];
@@ -162,13 +274,34 @@ export function machineStaleBackups(
     if (strategy.enabled === false) continue;
     strategies.push({ name, config: strategy });
   }
-  if (strategies.length === 0) return [];
+  if (strategies.length === 0) return { stale: [], missed: [] };
   try {
     const specs = machineUnitSpecs(strategies, config, machineName);
-    return staleBackupRepos(coverage, coverageByGuid(specs, config, machineName), nowMs);
+    const targets = targetsByGuid(specs, config, machineName);
+    const stale = staleBackupRepos(
+      coverage,
+      coverageByGuid(specs, config, machineName),
+      nowMs,
+      targets
+    );
+    const late = new Set(stale.map((s) => s.guid));
+    return {
+      stale,
+      missed: missedTargetRepos(coverage, targets).filter((m) => !late.has(m.guid)),
+    };
   } catch {
-    return [];
+    return { stale: [], missed: [] };
   }
+}
+
+/** The stale repos on a machine (see machineBackupTargetStatus). */
+export function machineStaleBackups(
+  config: RdcConfig,
+  machineName: string,
+  coverage: BackupCoverage | undefined,
+  nowMs: number = Date.now()
+): StaleBackupRepo[] {
+  return machineBackupTargetStatus(config, machineName, coverage, nowMs).stale;
 }
 
 /** One repo whose most recent `backup verify` did not come back clean. */

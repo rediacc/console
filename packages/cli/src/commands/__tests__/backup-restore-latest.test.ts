@@ -139,12 +139,18 @@ beforeEach(() => {
 
 describe('backup restore without --at', () => {
   it('restores the newest snapshot of a lineage that has snapshots', async () => {
-    mockFetch.mockResolvedValue({
-      manifests: [
-        { snapshotId: 'snap-old', streamId: 's', createdAt: '2020-01-01T00:00:00.000Z' },
-        { snapshotId: 'snap-new', streamId: 's', createdAt: '2020-02-01T00:00:00.000Z' },
-      ],
-    });
+    // The newest snapshot is the resolve route's answer for `now` (any stream); the listing only says that history exists.
+    mockFetch.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.includes('/snapshots/resolve')
+          ? { snapshotId: 'snap-new', streamId: 's', createdAt: '2020-02-01T00:00:00.000Z' }
+          : {
+              manifests: [
+                { snapshotId: 'snap-new', streamId: 's', createdAt: '2020-02-01T00:00:00.000Z' },
+              ],
+            }
+      )
+    );
     await run(ARGS);
     expect(fnCalls()).toContain('backup_restore');
     expect(fnCalls()).not.toContain('backup_pull');

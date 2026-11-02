@@ -43,7 +43,12 @@
       "manifests": {
         "description": "Sunucuya kaydedilen yedek anlık görüntü manifestlerini listele",
         "empty": "Yedek manifesti bulunamadı.",
-        "fetching": "Yedek manifestleri alınıyor..."
+        "fetching": "Yedek manifestleri alınıyor...",
+        "optionLimit": "Sayfa başına satır (varsayılan ve en çok 500)",
+        "optionBefore": "Önceki bir listeden sayfa imleci (nextBefore)",
+        "optionIncludeDeleted": "Ertelenmiş silmesi bekleyen anlık görüntüleri de dahil et",
+        "limitInvalid": "--limit en az 1 olan bir tam sayı alır, \"{{value}}\" alındı",
+        "more": "{{total}} anlık görüntüden {{shown}} tanesi gösteriliyor. Sonraki sayfa: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "{{at}} anında veya öncesinde alınmış bir anlık görüntü yok.",
@@ -107,7 +112,8 @@
         "salvageHole": "  boşluk: {{offset}} ile {{end}} arası baytlar: {{reason}}",
         "salvageNeedsAs": "--salvage için --as <yeni ad> gerekir: hasarlı imaj hiçbir zaman var olan bir adın altına yerleştirilmez.",
         "salvageNeedsSnapshot": "--salvage için geri yüklenecek bir parça deposu anlık görüntüsü gerekir.",
-        "salvageWholeImage": "--salvage imajın tamamını geri yükler; --path veya --to ile birlikte kullanılamaz."
+        "salvageWholeImage": "--salvage imajın tamamını geri yükler; --path veya --to ile birlikte kullanılamaz.",
+        "atIndexGap": "{{snapshot}} anlık görüntüsünün saklanan bir listesi yok, bu yüzden bunun yerine {{gap}} önce alınan {{indexed}} okunuyor."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "Bu kadar yılın her birinden en yeni anlık görüntüyü sakla",
         "set": {
           "description": "Kaç anlık görüntü saklanacağını belirtin. Her ayar birleştirilmez, tamamen değiştirilir.",
-          "success": "{{name}} için saklama politikası ayarlandı ({{count}} kural). Bunun dışında kalan anlık görüntüler bir sonraki temizlikte silinir."
+          "success": "{{name}} için saklama politikası ayarlandı ({{count}} kural). Bunun dışında kalan anlık görüntüler bir sonraki temizlikte silinir.",
+          "pending": "Değişiklik daha azını saklıyor, bu yüzden ertelenmiş silme penceresini bekler ve \"{{name}}\" için {{when}} (UTC) tarihinde yürürlüğe girer. Gösterilen ilke o zamana kadar geçerli kalır."
         },
         "effective": "{{name}} için geçerli saklama: {{source}}",
         "optionStream": "Yalnızca bu yedek akışına uygula (bir akış kimliği); verilmezse tüm depo için varsayılan geçerli olur",
         "preview": {
           "description": "Bir sonraki temizliğin hangi anlık görüntüleri sileceğini ve ne kadar yer açacağını gösterir.",
           "nothing": "Bir sonraki temizlik {{name}} için hiçbir şey silmez.",
-          "summary": "Bir sonraki temizlik {{name}} deposunun {{count}} anlık görüntüsünü siler, {{kept}} tanesini tutar ve {{bytes}} yer açar."
+          "summary": "Bir sonraki temizlik {{name}} deposunun {{count}} anlık görüntüsünü siler, {{kept}} tanesini tutar ve {{bytes}} yer açar.",
+          "reasons": "Saklama nedeni: {{reasons}}"
         },
         "seeded": "\"{{strategy}}\" stratejisinin saklama kuralı, politikası olmayan {{count}} depo için tanımlandı.",
         "seedFailed": "\"{{strategy}}\" stratejisinin saklama kuralı tanımlanamadı ({{reason}}). Tanımlanana kadar sunucu varsayılanı geçerli.",
@@ -143,7 +151,10 @@
           "plan": "plan varsayılanı",
           "default": "sunucu varsayılanı",
           "orphan": "sahipsiz depo süresi"
-        }
+        },
+        "keepWithinInvalid": "--keep-within 24h veya 90m gibi bir süre alır, \"{{value}}\" alındı",
+        "optionKeepWithin": "En yeni anlık görüntüden bu süre içindeki her anlık görüntüyü sakla, örn. 24h",
+        "pendingClear": "\"{{name}}\" ilkesinin kaldırılması ertelenmiş silme penceresini bekler ve {{when}} (UTC) tarihinde yürürlüğe girer. Geçerli ilke o zamana kadar uygulanmaya devam eder."
       },
       "run": {
         "description": "Uzak makinede hemen bir yedekleme başlat",
@@ -243,7 +254,22 @@
           "retentionPushed": "Saklama kuralı {{count}} depoya uygulandı.",
           "retentionPushFailed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulanamadı ({{reason}}). Sunucuya erişilebildiğinde komutu yeniden çalıştırın.",
           "optionCpuLimit": "Bu stratejinin anlık görüntüleri için CPU üst sınırı: tüm çekirdeklerin yüzdesi, 1-100 (varsayılan 50); none kaldırır",
-          "cpuLimitStrategyOnly": "--cpu-limit stratejinin tamamı için geçerlidir; --destination'ı çıkarın."
+          "cpuLimitStrategyOnly": "--cpu-limit stratejinin tamamı için geçerlidir; --destination'ı çıkarın.",
+          "optionRpo": "Bildirilen koruma hedefi, örneğin 15m (en az 5m; none kaldırır)",
+          "optionRepoRpo": "Depo başına hedef, <ref>=<süre> biçiminde, tekrarlanabilir (none kaldırır); name:* ailedir",
+          "optionRepoCellSize": "Depo başına hücre boyutu, <ref>=<boyut> biçiminde, tekrarlanabilir. Değişiklik depoyu yeniden tohumlar",
+          "optionNoEstimate": "Değişim ve maliyet tahminini atla",
+          "optionDryRun": "Neyin değişeceğini göster, hiçbir şey yazma",
+          "rpoInvalid": "Geçersiz {{option}} \"{{value}}\": {{reason}}",
+          "repoOptionInvalid": "{{option}} <ref>=<değer> alır, \"{{value}}\" alındı",
+          "cellSizeInvalid": "\"{{value}}\" hücre boyutu 1M veya 4M gibi bir boyut değil",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" için hedef yok; önce --repo-rpo {{ref}}=<süre> ile bir hedef belirleyin",
+          "noMeasurement": "{{refs}} için değişim ölçümü yok. Önce `rdc backup churn <repo>` çalıştırın veya --no-estimate verin.",
+          "reseedWarning": "{{ref}} hücre boyutunu {{size}} yapmak onu yeniden tohumlar: her hücre yeniden yüklenir ve ücretlendirilir, eski ızgaradaki fork'lar tekilleştirmeyi bırakır. Zamanlanmış bir çalıştırma ızgara değişikliğini kendi başına asla almaz.",
+          "retentionDefaulted": "\"{{strategy}}\" stratejisi saklama bildirmedi, bu yüzden {{window}} içindeki her anlık görüntü saklanır ({{plan}} planı varsayılanı).",
+          "retentionDefaultNoStorage": "{{plan}} planında bulut yedek depolaması yok, bu yüzden varsayılan saklama ayarlanmadı.",
+          "retentionDefaultNoPlan": "Plan okunamadı, bu yüzden varsayılan saklama ayarlanmadı. --retention ile bir tane bildirin.",
+          "dryRun": "Deneme: \"{{strategy}}\" stratejisi değişirdi ({{changes}}). Hiçbir şey yazılmadı."
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "Yedek depolama kotasını, saklanan bayt sayısını ve depo başına kullanımı göster",
         "empty": "Depo başına yedek depolama kullanımı henüz kaydedilmedi.",
-        "fetching": "Yedek depolama kullanımı alınıyor..."
+        "fetching": "Yedek depolama kullanımı alınıyor...",
+        "overLimit": "SINIR AŞILDI",
+        "summary": "{{quota}} içinden {{used}} kullanıldı (canlı {{live}}, ayrılmış {{leased}}, {{chunks}} chunk) {{over}}",
+        "waiting": "Silinmeyi bekleyen: {{chunks}} chunk içinde {{waiting}}, ücretlendirilmez. Değişim sınırı {{cap}}.",
+        "throttled": "Bekleyen depolama {{cap}} değişim sınırının üzerinde: saatlikten hızlı bir yedek akışı boşalana kadar reddedilir."
       },
       "verify": {
         "completed": "{{name}} için yedek doğrulandı",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "Saklanan tek bir anlık görüntüyü siler. Yalnızca ona ait veriler bir sonraki çöp toplamada boşaltılır.",
           "notInRepo": "{{snapshot}} anlık görüntüsü {{name}} deposunun saklanan geçmişinde yok. Kimlikleri listelemek için: rdc backup manifests {{name}}",
-          "success": "{{name}} deposunun {{snapshot}} dahil {{count}} anlık görüntüsü silindi."
+          "success": "{{name}} deposunun {{snapshot}} dahil {{count}} anlık görüntüsü silindi.",
+          "delayed": "\"{{name}}\" deposundaki {{snapshot}} anlık görüntüsünün silinmesi ertelendi: hâlâ geri yüklenebilir ve {{when}} (UTC) tarihinde kaldırılır. İptal için: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "Bu depo için depolanan: önce {{beforeChunks}} parçada {{beforeBytes}}, sonra {{afterChunks}} parçada {{afterBytes}}.",
         "usageUnavailable": "Temizleme tamamlandı ancak temizlemeden sonraki kullanım okunamadı: {{error}}",
         "progress": "\"{{name}}\" temizleniyor: {{round}}. tur, şimdiye kadar {{chunks}} nesne silindi ({{bytes}}).",
-        "tooManyRounds": "\"{{name}}\" temizliği {{rounds}} turda bitmedi. Devam etmek için temizliği yeniden çalıştırın."
+        "tooManyRounds": "\"{{name}}\" temizliği {{rounds}} turda bitmedi. Devam etmek için temizliği yeniden çalıştırın.",
+        "optionCancel": "Ertelenmiş tam temizlemeyi yürürlüğe girmeden iptal et",
+        "cancelExclusive": "--cancel, --dry-run ile birlikte kullanılamaz",
+        "cancelled": "\"{{name}}\" için ertelenmiş tam temizleme iptal edildi.",
+        "nothingWaiting": "\"{{name}}\" için bekleyen bir temizleme yoktu.",
+        "delayed": "\"{{name}}\" temizlemesi ertelendi: hiçbir şey silinmedi ve {{when}} (UTC) tarihinde çalışır. Öncesinde şununla iptal edin: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Bir dosyayı geri yükleyerek anlık görüntünün parola ile açıldığını kanıtlar",
@@ -391,6 +427,55 @@
         "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
         "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)",
         "syncDescription": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir"
+      },
+      "churn": {
+        "description": "Bir deponun imajının çalıştırmalar arasında ne kadar değiştiğini ölçer, hücre boyutu başına yüklemeyi öngörür ve birini önerir. Çalışırken makinede bir reflink tabanı tutulur ve her zaman kaldırılır.",
+        "descriptionShort": "Depo değişimini ölç ve bir hücre boyutu öner",
+        "optionSamples": "Alınacak ölçüm sayısı (varsayılan 3)",
+        "optionInterval": "Yoklamalar arası bekleme, örneğin 10m (varsayılan 10m)",
+        "probing": "\"{{name}}\" yoklanıyor (yoklama {{probe}})...",
+        "probed": "\"{{name}}\" yoklaması kaydedildi",
+        "probeFailed": "\"{{name}}\" yoklaması başarısız oldu",
+        "forgetting": "\"{{name}}\" yoklama tabanı kaldırılıyor...",
+        "forgotten": "\"{{name}}\" yoklama tabanı makineden kaldırıldı.",
+        "forgetFailed": "\"{{name}}\" yoklama tabanı kaldırılamadı ve makinede hâlâ yer tutuyor. rdc backup churn {{name}} komutunu yeniden çalıştırın; bitişte tabanı kaldırır.",
+        "noMeasurement": "\"{{name}}\" için değişim ölçülmedi: ilk yoklama yalnızca bir başlangıç noktası koyar ({{baselines}} başlangıç, {{skipped}} atlandı). Hiçbir öngörü yapılmaz.",
+        "samplesInvalid": "--samples 1 ile {{max}} arasında bir tam sayı alır, \"{{value}}\" alındı",
+        "intervalInvalid": "--interval 5m veya 1h gibi bir süre alır (24h altı), \"{{value}}\" alındı",
+        "recommend": {
+          "scattered-small": "Önerilen hücre boyutu: {{cell}}. Yazmalar küçük ve dağınık, ve 4 MiB'a göre %{{savedPercent}} daha az bayt yüklenir. Değiştirmek depoyu yeniden tohumlar.",
+          "clustered-large": "Önerilen hücre boyutu: {{cell}}. Yazmalar büyük ve kümelenmiş, bu yüzden aynı baytlar için çok daha az put gerekir.",
+          "default": "Önerilen hücre boyutu: {{cell}}, varsayılan. Başka hiçbir boyut yeterince kazandırmıyor.",
+          "idle": "Önerilen hücre boyutu: {{cell}}, varsayılan. Depo yoklamalar arasında değişmedi.",
+          "collapse-cap": "Önerilen hücre boyutu: {{cell}}. 1 MiB %{{savedPercent}} kazandırırdı, ancak bu boyutta imaj 262.144 hücreyi aşar ve budama ertelenir."
+        },
+        "estimate": {
+          "target": "{{name}}: çalıştırma başına {{cells}} değişen hücre, günde {{runs}} çalıştırma (4 MiB hücrelerle hesaplandı).",
+          "cost": "Aylık tahmini {{total}}: {{classA}} Class A ve {{classB}} Class B işlemi, {{storage}} depolama ({{window}} ücretlendirilen, {{waiting}} 7 günlük ek sürede bekleyen).",
+          "capHeld": "Bekleyen depolama {{waiting}} düzeyinde dengelenir, {{cap}} değişim sınırının altında kalır.",
+          "capExceeded": "Bekleyen depolama {{waiting}} değerine ulaşır ve {{days}} gün içinde {{cap}} değişim sınırını aşardı: saatlikten hızlı bir akış boşalana kadar reddedilirdi."
+        }
+      },
+      "immutability": {
+        "description": "Saklanan yedeklerin ertelenmiş silme penceresini göster veya ayarla",
+        "show": {
+          "description": "Geçerli ertelenmiş silme penceresini göster",
+          "window": "Ertelenmiş silme: bir silme, tam temizleme veya daha az saklama {{days}} gün bekler ve o zamana kadar geri alınabilir.",
+          "off": "Ertelenmiş silme kapalı: silmeler hemen yürürlüğe girer."
+        },
+        "set": {
+          "description": "Ertelenmiş silme penceresini gün olarak ayarla (0 ile 30)",
+          "daysArgument": "Bir silmenin yürürlüğe girmeden önce bekleyeceği gün sayısı (0 ile 30)",
+          "applied": "Ertelenmiş silme penceresi artık {{days}} gün.",
+          "appliedOff": "Ertelenmiş silme kapalı.",
+          "invalid": "Pencere 0 ile {{max}} arasında tam gündür, \"{{value}}\" alındı"
+        },
+        "pending": "Pencere {{when}} (UTC) tarihinde {{days}} güne iner. O zamana kadar {{current}} gün geçerli kalır."
+      },
+      "undelete": {
+        "description": "Bir anlık görüntünün ertelenmiş silmesini yürürlüğe girmeden iptal et",
+        "success": "{{snapshot}} anlık görüntüsü korunuyor: silmesi iptal edildi.",
+        "notWaiting": "{{snapshot}} anlık görüntüsü silinmeyi beklemiyordu."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{repo}} üzerinde {{verb}}, {{startedAt}} tarihinde {{origin}} tarafından başlatıldı. İzlemek için: {{attach}}",
         "runningJobsSection": "İşler (çalışan veya son bir saat içinde biten)",
         "verifyFailureSection": "Başarısız yedek doğrulamaları",
-        "verifyFailureWarning": "{{count}} depo son yedek doğrulamasında başarısız oldu."
+        "verifyFailureWarning": "{{count}} depo son yedek doğrulamasında başarısız oldu.",
+        "missedTargetSection": "Yedekleme hedefini kaçıran depolar",
+        "missedTargetWarning": "{{count}} depo son çalıştırmada yedekleme hedefini kaçırdı."
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",

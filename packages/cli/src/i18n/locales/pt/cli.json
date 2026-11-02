@@ -43,7 +43,12 @@
       "manifests": {
         "description": "Listar os manifestos de snapshots de cópia de segurança registados no servidor",
         "empty": "Não foram encontrados manifestos de cópia de segurança.",
-        "fetching": "A obter manifestos de cópia de segurança..."
+        "fetching": "A obter manifestos de cópia de segurança...",
+        "optionLimit": "Linhas por página (padrão e máximo 500)",
+        "optionBefore": "Cursor de página de uma listagem anterior (nextBefore)",
+        "optionIncludeDeleted": "Incluir snapshots com exclusão adiada pendente",
+        "limitInvalid": "--limit aceita um número inteiro de pelo menos 1, recebido \"{{value}}\"",
+        "more": "Mostrando {{shown}} de {{total}} snapshots. Próxima página: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "Não foi feito nenhum snapshot em ou antes de {{at}}.",
@@ -107,7 +112,8 @@
         "salvageHole": "  buraco nos bytes {{offset}} a {{end}}: {{reason}}",
         "salvageNeedsAs": "--salvage requer --as <novo nome>: uma imagem danificada nunca é colocada sob um nome existente.",
         "salvageNeedsSnapshot": "--salvage requer um snapshot do chunk store de onde restaurar.",
-        "salvageWholeImage": "--salvage restaura uma imagem inteira; não pode ser combinado com --path nem --to."
+        "salvageWholeImage": "--salvage restaura uma imagem inteira; não pode ser combinado com --path nem --to.",
+        "atIndexGap": "O snapshot {{snapshot}} não tem listagem armazenada, então {{indexed}} é lido no lugar, tirado {{gap}} antes."
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "Manter o snapshot mais recente de cada um destes anos",
         "set": {
           "description": "Indique quantos snapshots manter. Cada campo é substituído por completo, nunca combinado.",
-          "success": "Política de retenção definida para {{name}} ({{count}} regra(s)). Os snapshots fora dela são eliminados na próxima limpeza."
+          "success": "Política de retenção definida para {{name}} ({{count}} regra(s)). Os snapshots fora dela são eliminados na próxima limpeza.",
+          "pending": "A mudança mantém menos, então espera a janela de exclusão adiada e tem efeito em {{when}} (UTC) para \"{{name}}\". A política exibida continua em vigor até lá."
         },
         "effective": "Retenção em vigor para {{name}}: {{source}}",
         "optionStream": "Aplicar apenas a este fluxo de backup (um id de fluxo); sem ele, vale o padrão do repositório inteiro",
         "preview": {
           "description": "Mostra quais snapshots a próxima limpeza apagaria e quanto espaço liberaria.",
           "nothing": "A próxima limpeza não apaga nada de {{name}}.",
-          "summary": "A próxima limpeza apaga {{count}} snapshot(s) de {{name}}, mantém {{kept}} e libera {{bytes}}."
+          "summary": "A próxima limpeza apaga {{count}} snapshot(s) de {{name}}, mantém {{kept}} e libera {{bytes}}.",
+          "reasons": "Mantido por: {{reasons}}"
         },
         "seeded": "A retenção da estratégia \"{{strategy}}\" foi declarada para {{count}} repositório(s) sem política.",
         "seedFailed": "Não foi possível declarar a retenção da estratégia \"{{strategy}}\" ({{reason}}). Enquanto isso vale o padrão do servidor.",
@@ -143,7 +151,10 @@
           "plan": "padrão do plano",
           "default": "padrão do servidor",
           "orphan": "prazo de repositório órfão"
-        }
+        },
+        "keepWithinInvalid": "--keep-within aceita uma duração como 24h ou 90m, recebido \"{{value}}\"",
+        "optionKeepWithin": "Manter todo snapshot dentro deste tempo do mais recente, p. ex. 24h",
+        "pendingClear": "Remover a política de \"{{name}}\" espera a janela de exclusão adiada e tem efeito em {{when}} (UTC). A política em vigor continua valendo até lá."
       },
       "run": {
         "description": "Acionar uma cópia de segurança imediatamente numa máquina remota",
@@ -243,7 +254,22 @@
           "retentionPushed": "Retenção aplicada a {{count}} repositório(s).",
           "retentionPushFailed": "A retenção da estratégia \"{{strategy}}\" está salva, mas não pôde ser aplicada ({{reason}}). Execute o comando de novo quando o servidor responder.",
           "optionCpuLimit": "Teto de CPU dos snapshots desta estratégia: percentagem de todos os núcleos, 1-100 (padrão 50); none remove-o",
-          "cpuLimitStrategyOnly": "--cpu-limit aplica-se a toda a estratégia; remova --destination."
+          "cpuLimitStrategyOnly": "--cpu-limit aplica-se a toda a estratégia; remova --destination.",
+          "optionRpo": "Meta de proteção declarada, por exemplo 15m (mínimo 5m; none a remove)",
+          "optionRepoRpo": "Meta por repositório como <ref>=<duração>, repetível (none a remove); name:* é a família",
+          "optionRepoCellSize": "Tamanho de célula por repositório como <ref>=<tamanho>, repetível. Uma mudança semeia o repositório de novo",
+          "optionNoEstimate": "Pular a estimativa de variação e custo",
+          "optionDryRun": "Mostrar o que mudaria sem gravar nada",
+          "rpoInvalid": "{{option}} inválido \"{{value}}\": {{reason}}",
+          "repoOptionInvalid": "{{option}} aceita <ref>=<valor>, recebido \"{{value}}\"",
+          "cellSizeInvalid": "O tamanho de célula \"{{value}}\" não é um tamanho como 1M ou 4M",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" não tem meta; defina uma antes com --repo-rpo {{ref}}=<duração>",
+          "noMeasurement": "Sem medição de variação para {{refs}}. Execute antes `rdc backup churn <repo>` ou passe --no-estimate.",
+          "reseedWarning": "Mudar o tamanho de célula de {{ref}} para {{size}} o semeia de novo: toda célula é enviada outra vez e cobrada, e forks na grade antiga deixam de deduplicar. Uma execução agendada nunca assume a mudança de grade sozinha.",
+          "retentionDefaulted": "A estratégia \"{{strategy}}\" não declarou retenção, então todo snapshot dentro de {{window}} é mantido (padrão do plano {{plan}}).",
+          "retentionDefaultNoStorage": "O plano {{plan}} não tem armazenamento de backup na nuvem, então nenhuma retenção padrão foi definida.",
+          "retentionDefaultNoPlan": "Não foi possível ler o plano, então nenhuma retenção padrão foi definida. Declare uma com --retention.",
+          "dryRun": "Simulação: a estratégia \"{{strategy}}\" mudaria ({{changes}}). Nada foi gravado."
         },
         "show": {
           "description": "Mostrar os detalhes de uma estratégia de cópia de segurança",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "Mostrar a quota de armazenamento de cópias de segurança, os bytes armazenados e o uso por repositório",
         "empty": "Ainda não foi registado uso de armazenamento de cópias de segurança por repositório.",
-        "fetching": "A obter o uso do armazenamento de cópias de segurança..."
+        "fetching": "A obter o uso do armazenamento de cópias de segurança...",
+        "overLimit": "LIMITE EXCEDIDO",
+        "summary": "Usado {{used}} de {{quota}} (ativo {{live}}, reservado {{leased}}, {{chunks}} chunks) {{over}}",
+        "waiting": "Aguardando exclusão: {{waiting}} em {{chunks}} chunk(s), não cobrado. Limite de variação {{cap}}.",
+        "throttled": "O armazenamento em espera passa do limite de variação de {{cap}}: um fluxo de backup mais rápido que a cada hora é recusado até esvaziar."
       },
       "verify": {
         "completed": "Cópia de segurança verificada para {{name}}",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "Apaga um snapshot armazenado. Os dados exclusivos dele são liberados na próxima coleta de lixo.",
           "notInRepo": "O snapshot {{snapshot}} não está no histórico armazenado de {{name}}. Para listar os ids: rdc backup manifests {{name}}",
-          "success": "{{count}} snapshot(s) de {{name}} apagado(s), incluindo {{snapshot}}."
+          "success": "{{count}} snapshot(s) de {{name}} apagado(s), incluindo {{snapshot}}.",
+          "delayed": "A exclusão do snapshot {{snapshot}} de \"{{name}}\" está adiada: ele ainda pode ser restaurado e será removido em {{when}} (UTC). Cancele com: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "Armazenado para este repositório: antes {{beforeBytes}} em {{beforeChunks}} bloco(s), depois {{afterBytes}} em {{afterChunks}} bloco(s).",
         "usageUnavailable": "Limpeza concluída, mas não foi possível ler o uso após a limpeza: {{error}}",
         "progress": "Limpando \"{{name}}\": rodada {{round}}, {{chunks}} objeto(s) removido(s) até agora ({{bytes}}).",
-        "tooManyRounds": "A limpeza de \"{{name}}\" não terminou após {{rounds}} rodadas. Executar a limpeza de novo para continuar."
+        "tooManyRounds": "A limpeza de \"{{name}}\" não terminou após {{rounds}} rodadas. Executar a limpeza de novo para continuar.",
+        "optionCancel": "Cancelar uma remoção total adiada antes de ter efeito",
+        "cancelExclusive": "--cancel não pode ser combinado com --dry-run",
+        "cancelled": "A remoção total adiada de \"{{name}}\" foi cancelada.",
+        "nothingWaiting": "Nenhuma remoção total de \"{{name}}\" estava em espera.",
+        "delayed": "A remoção total de \"{{name}}\" está adiada: nada foi excluído e ela roda em {{when}} (UTC). Cancele antes com: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "Comprova que um snapshot abre com a frase secreta restaurando um ficheiro",
@@ -391,6 +427,55 @@
         "optionDryRun": "Indica o que seria feito; não toca em nada",
         "optionReplace": "Substituir uma chave diferente já presente na máquina (envia a frase secreta como prova)",
         "syncDescription": "Instalar a chave de listagem do repositório na sua máquina, ou substituir uma diferente"
+      },
+      "churn": {
+        "description": "Mede quanto a imagem de um repositório muda entre execuções, projeta o envio por tamanho de célula e recomenda um. Uma base reflink fica na máquina durante a medição e é sempre removida.",
+        "descriptionShort": "Medir a variação de um repositório e recomendar um tamanho de célula",
+        "optionSamples": "Amostras medidas a coletar (padrão 3)",
+        "optionInterval": "Espera entre as sondas, por exemplo 10m (padrão 10m)",
+        "probing": "Sondando \"{{name}}\" (sonda {{probe}})...",
+        "probed": "Sonda de \"{{name}}\" registrada",
+        "probeFailed": "A sonda de \"{{name}}\" falhou",
+        "forgetting": "Removendo a base de sonda de \"{{name}}\"...",
+        "forgotten": "A base de sonda de \"{{name}}\" foi removida da máquina.",
+        "forgetFailed": "A base de sonda de \"{{name}}\" não pôde ser removida e ainda ocupa espaço na máquina. Execute rdc backup churn {{name}} de novo; ao terminar ele remove a base.",
+        "noMeasurement": "Nenhuma variação foi medida para \"{{name}}\": uma primeira sonda apenas fixa uma linha de base ({{baselines}} base, {{skipped}} ignoradas). Nada é projetado.",
+        "samplesInvalid": "--samples aceita um número inteiro de 1 a {{max}}, recebido \"{{value}}\"",
+        "intervalInvalid": "--interval aceita uma duração como 5m ou 1h (menos de 24h), recebido \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "Tamanho de célula recomendado: {{cell}}. As gravações são pequenas e dispersas, e são enviados {{savedPercent}}% menos bytes que com 4 MiB. Alterá-lo semeia o repositório de novo.",
+          "clustered-large": "Tamanho de célula recomendado: {{cell}}. As gravações são grandes e agrupadas, então são necessários bem menos puts para os mesmos bytes.",
+          "default": "Tamanho de célula recomendado: {{cell}}, o padrão. Nenhum outro tamanho economiza o bastante.",
+          "idle": "Tamanho de célula recomendado: {{cell}}, o padrão. O repositório não mudou entre as sondas.",
+          "collapse-cap": "Tamanho de célula recomendado: {{cell}}. 1 MiB economizaria {{savedPercent}}%, mas a imagem passaria de 262.144 células nesse tamanho, ponto em que a poda é adiada."
+        },
+        "estimate": {
+          "target": "{{name}}: {{cells}} célula(s) alterada(s) por execução, {{runs}} execuções por dia (calculado com células de 4 MiB).",
+          "cost": "Estimado {{total}} por mês: {{classA}} operações Class A e {{classB}} Class B, {{storage}} de armazenamento ({{window}} cobrado, {{waiting}} na carência de 7 dias).",
+          "capHeld": "O armazenamento em espera se estabiliza em {{waiting}}, abaixo do limite de variação de {{cap}}.",
+          "capExceeded": "O armazenamento em espera chegaria a {{waiting}} e passaria do limite de variação de {{cap}} em {{days}} dia(s): um fluxo mais rápido que a cada hora seria recusado até esvaziar."
+        }
+      },
+      "immutability": {
+        "description": "Mostrar ou definir a janela de exclusão adiada dos backups armazenados",
+        "show": {
+          "description": "Mostrar a janela de exclusão adiada em vigor",
+          "window": "Exclusão adiada: uma exclusão, remoção total ou retenção menor espera {{days}} dia(s) e pode ser desfeita até lá.",
+          "off": "A exclusão adiada está desativada: as exclusões têm efeito de imediato."
+        },
+        "set": {
+          "description": "Definir a janela de exclusão adiada em dias (0 a 30)",
+          "daysArgument": "Dias que uma exclusão espera antes de ter efeito (0 a 30)",
+          "applied": "A janela de exclusão adiada agora é de {{days}} dia(s).",
+          "appliedOff": "A exclusão adiada está desativada.",
+          "invalid": "Uma janela são dias inteiros de 0 a {{max}}, recebido \"{{value}}\""
+        },
+        "pending": "A janela diminui para {{days}} dia(s) em {{when}} (UTC). Até lá continuam em vigor {{current}} dia(s)."
+      },
+      "undelete": {
+        "description": "Cancelar a exclusão adiada de um snapshot antes de ter efeito",
+        "success": "O snapshot {{snapshot}} foi mantido: sua exclusão foi cancelada.",
+        "notWaiting": "O snapshot {{snapshot}} não estava aguardando exclusão."
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{verb}} em {{repo}}, iniciada {{startedAt}} por {{origin}}. Para acompanhar: {{attach}}",
         "runningJobsSection": "Tarefas (em execução ou concluídas na última hora)",
         "verifyFailureSection": "Verificações de cópia falhadas",
-        "verifyFailureWarning": "{{count}} repositório(s) falharam a última verificação de cópia."
+        "verifyFailureWarning": "{{count}} repositório(s) falharam a última verificação de cópia.",
+        "missedTargetSection": "Repositórios que não cumpriram a meta de backup",
+        "missedTargetWarning": "{{count}} repositório(s) não cumpriram a meta de backup na última execução."
       },
       "gpu": {
         "descriptionShort": "Inspecionar as GPUs e as concessões de dispositivos de uma máquina",

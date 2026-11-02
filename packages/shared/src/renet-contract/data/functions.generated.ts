@@ -30,6 +30,14 @@ export interface BackupBrowseAtParams {
   limit?: string;
 }
 
+/** Measure a repository's block churn since the last probe, projected at each cell size */
+export interface BackupChurnProbeParams {
+  /** Remove this repository's reflink base instead of measuring */
+  forget?: boolean;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
+}
+
 /** Compare a restored copy with the source repository's backup anchor, byte for byte */
 export interface BackupCompareParams {
   /** The source repository GUID whose anchor the copy is held to */
@@ -176,6 +184,20 @@ export interface BackupSnapshotParams {
   hashParallelism?: number;
   /** Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** The protection target this run serves, as a duration (5m). Takes the backup slot, detaches a first seed, commits nothing on an idle repository, and reports against the target */
+  target?: string;
+  /** End the run past this long, as a duration (15m), slot wait included, and drop its staged copy */
+  deadline?: string;
+  /** Bound on each of backup_prepare and backup_finish, as a duration. Empty = 30s; at most 5m */
+  hookTimeout?: string;
+  /** When backup_prepare fails or times out: continue (store a crash-consistent copy) or abort (upload nothing) */
+  hookFailure?: string;
+  /** Seal the browse index only this often, as a duration. Empty = every run, or 1h with a target */
+  indexEvery?: string;
+  /** Grid cell size in bytes. Empty keeps the repository's recorded grid, else 4 MiB. A different value needs accept_grid_change */
+  cellBytes?: number;
+  /** Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged */
+  acceptGridChange?: boolean;
 }
 
 /** Inspect or install a repository's browse-listing public key */
@@ -940,6 +962,7 @@ export interface SetupParams {
 export const RENET_FUNCTIONS = [
   'backup_browse',
   'backup_browse_at',
+  'backup_churn_probe',
   'backup_compare',
   'backup_delete',
   'backup_list',
@@ -1043,6 +1066,7 @@ export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 export const RENET_BRIDGE_FUNCTIONS = [
   'backup_browse',
   'backup_browse_at',
+  'backup_churn_probe',
   'backup_compare',
   'backup_delete',
   'backup_list',
@@ -1224,6 +1248,7 @@ export type RenetBridgeFunctionName = (typeof RENET_BRIDGE_FUNCTIONS)[number];
 export type FunctionParamsMap = {
   backup_browse: BackupBrowseParams;
   backup_browse_at: BackupBrowseAtParams;
+  backup_churn_probe: BackupChurnProbeParams;
   backup_compare: BackupCompareParams;
   backup_delete: BackupDeleteParams;
   backup_list: BackupListParams;
@@ -1325,6 +1350,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_browse_at': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_churn_probe': {
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_compare': {
@@ -1737,6 +1765,23 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'backup_churn_probe': {
+    name: 'backup_churn_probe',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      forget: {
+        type: 'bool',
+        default: 'false',
+        help: 'Remove this repository\'s reflink base instead of measuring',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+    },
+  },
   'backup_compare': {
     name: 'backup_compare',
     category: 'backup',
@@ -2104,6 +2149,38 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       cpuLimit: {
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota',
+      },
+      target: {
+        type: 'string',
+        help: 'The protection target this run serves, as a duration (5m). Takes the backup slot, detaches a first seed, commits nothing on an idle repository, and reports against the target',
+      },
+      deadline: {
+        type: 'string',
+        help: 'End the run past this long, as a duration (15m), slot wait included, and drop its staged copy',
+      },
+      hookTimeout: {
+        type: 'string',
+        help: 'Bound on each of backup_prepare and backup_finish, as a duration. Empty = 30s; at most 5m',
+      },
+      hookFailure: {
+        type: 'string',
+        help: 'When backup_prepare fails or times out: continue (store a crash-consistent copy) or abort (upload nothing)',
+        options: ['continue', 'abort'],
+        ui: 'dropdown',
+        enum: ['continue', 'abort'],
+      },
+      indexEvery: {
+        type: 'string',
+        help: 'Seal the browse index only this often, as a duration. Empty = every run, or 1h with a target',
+      },
+      cellBytes: {
+        type: 'int',
+        help: 'Grid cell size in bytes. Empty keeps the repository\'s recorded grid, else 4 MiB. A different value needs accept_grid_change',
+      },
+      acceptGridChange: {
+        type: 'bool',
+        default: 'false',
+        help: 'Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged',
       },
     },
   },
@@ -3866,6 +3943,7 @@ export type QueueFunctionsType = {
 export const queueFunctions: QueueFunctionsType = {
   backup_browse: (params) => ({ functionName: 'backup_browse', params }),
   backup_browse_at: (params) => ({ functionName: 'backup_browse_at', params }),
+  backup_churn_probe: (params) => ({ functionName: 'backup_churn_probe', params }),
   backup_compare: (params) => ({ functionName: 'backup_compare', params }),
   backup_delete: (params) => ({ functionName: 'backup_delete', params }),
   backup_list: (params) => ({ functionName: 'backup_list', params }),

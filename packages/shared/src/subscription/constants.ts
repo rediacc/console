@@ -193,6 +193,40 @@ export const PLAN_BACKUP_RETENTION: Record<
 } as const;
 
 /**
+ * The keep-within window a plan offers (D-retention, decision O3): `defaultSeconds` is what a
+ * strategy with a declared target gets when it names none (null where the plan has no cloud
+ * backup), `limitSeconds` the most a declared policy may ask for (0 means the plan does not offer
+ * the knob). A separate table from PLAN_BACKUP_RETENTION because that one counts snapshots and
+ * this one counts time. COMMUNITY's limit forbids `keepHourly`, so allowing a window there is a
+ * real change in what that plan can keep.
+ */
+export const PLAN_BACKUP_KEEP_WITHIN: Record<
+  PlanCode,
+  { defaultSeconds: number | null; limitSeconds: number }
+> = {
+  FREE: { defaultSeconds: null, limitSeconds: 0 },
+  COMMUNITY: { defaultSeconds: 24 * 3600, limitSeconds: 24 * 3600 },
+  PROFESSIONAL: { defaultSeconds: 24 * 3600, limitSeconds: 72 * 3600 },
+  BUSINESS: { defaultSeconds: 48 * 3600, limitSeconds: 7 * 24 * 3600 },
+  ENTERPRISE: { defaultSeconds: 72 * 3600, limitSeconds: 30 * 24 * 3600 },
+} as const;
+
+/**
+ * The window above the plan's limit, or undefined when it fits. An unknown plan has no limit, like
+ * every other retention knob (retentionAbovePlan in the account's backup-gc service).
+ */
+export function keepWithinAbovePlan(
+  planCode: string | null | undefined,
+  requestedSeconds: number
+): { knob: 'keepWithinSeconds'; requested: number; limit: number } | undefined {
+  if (!planCode || !(planCode in PLAN_BACKUP_KEEP_WITHIN)) return undefined;
+  const limit = PLAN_BACKUP_KEEP_WITHIN[planCode as PlanCode].limitSeconds;
+  return requestedSeconds > limit
+    ? { knob: 'keepWithinSeconds', requested: requestedSeconds, limit }
+    : undefined;
+}
+
+/**
  * How long a machine holds its Floating license slot after the last repo
  * license issuance on that machine, before it auto-releases from inactivity.
  * Single source of truth for both the account server's enforcement

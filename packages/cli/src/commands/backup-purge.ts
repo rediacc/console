@@ -11,6 +11,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import type { OutputFormat } from '../types/index.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { resolveRepoRefLocal } from '../utils/repo-target.js';
@@ -33,6 +34,10 @@ interface LineagePurgeResponse {
   deletedChunks: number;
   deletedBytes: number;
   remainingChunks?: number;
+  /** Set (with HTTP 202) when a delayed-deletion window holds the purge: nothing was deleted, and it runs at `purgeAfter` unless cancelled. */
+  delayed?: boolean;
+  code?: string;
+  purgeAfter?: string;
 }
 
 /** Guard against a server that never reports done: 200 rounds of the account's 5,000-object batch is a million objects. */
@@ -45,6 +50,10 @@ const MAX_PURGE_ROUNDS = 200;
  * round alone while chunk and byte counts are summed. A response with no `done` field (an older server,
  * one call per delete) is the final round. Rounds are idempotent, so
  * a failed run is finished by running the command again.
+ *
+ * A delayed answer (a delayed-deletion window above 0: HTTP 202, `delayed` true, `done` false) ends the
+ * loop at once: it deleted nothing, and another round would only read the same due time, 200 times,
+ * and then throw.
  */
 export async function purgeLineageRounds(
   name: string,
@@ -60,7 +69,7 @@ export async function purgeLineageRounds(
     );
     deletedChunks += result.deletedChunks;
     deletedBytes += result.deletedBytes;
-    if (result.done !== false) return { ...result, deletedChunks, deletedBytes };
+    if (result.delayed || result.done !== false) return { ...result, deletedChunks, deletedBytes };
     outputService.info(
       t('commands.backup.purge.progress', {
         name,
@@ -76,7 +85,11 @@ export async function purgeLineageRounds(
 interface PurgeOptions {
   dryRun?: boolean;
   yes?: boolean;
+  cancel?: boolean;
 }
+
+/** `YYYY-MM-DD HH:MM` (UTC) of an ISO instant. */
+const minuteOf = (iso: string): string => iso.replace('T', ' ').slice(0, 16);
 
 /** What the store holds for one lineage right now. A lineage absent from usage holds nothing. */
 async function lineageFootprint(
@@ -127,8 +140,61 @@ async function confirmByName(repoKey: string, snapshots: number, bytes: string):
   return answer === repoKey;
 }
 
+/** `purge --cancel`: undo a purge a delayed-deletion window is holding. Nothing is deleted or read besides the cancel. */
+async function runCancelPurge(repoKey: string, lineage: string): Promise<void> {
+  assertHostedBackupAccount();
+  const result = await accountServerFetch<{ lineageGuid: string; cancelled: boolean }>(
+    `/account/api/v1/backups/lineages/${encodeURIComponent(lineage)}/purge/cancel`,
+    { method: 'POST' }
+  );
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(result, format);
+    return;
+  }
+  if (result.cancelled) {
+    outputService.success(t('commands.backup.purge.cancelled', { name: repoKey }));
+  } else {
+    outputService.info(t('commands.backup.purge.nothingWaiting', { name: repoKey }));
+  }
+}
+
+/** `--dry-run`: the plan as structured output, or the one sentence of what would be purged. */
+function printDryRun(
+  plan: {
+    repository: string;
+    lineageGuid: string;
+    snapshots: number;
+    storedBytes: number;
+    chunkCount: number;
+  },
+  format: OutputFormat,
+  formatBytes: (bytes: number) => string
+): void {
+  if (format !== 'table') {
+    outputService.print({ dryRun: true, ...plan }, format);
+    return;
+  }
+  outputService.info(
+    t('commands.backup.purge.dryRun', {
+      name: plan.repository,
+      lineage: plan.lineageGuid,
+      count: plan.snapshots,
+      bytes: formatBytes(plan.storedBytes),
+      chunks: plan.chunkCount,
+    })
+  );
+}
+
 async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<void> {
+  if (options.cancel && options.dryRun) {
+    throw new ValidationError(t('commands.backup.purge.cancelExclusive'));
+  }
   const { repoKey, lineage } = await resolvePurgeTarget(repoRef);
+  if (options.cancel) {
+    await runCancelPurge(repoKey, lineage);
+    return;
+  }
   // A Free License (or no login) has no hosted store to purge: say so instead of a token error.
   assertHostedBackupAccount();
   const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
@@ -136,11 +202,13 @@ async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<v
 
   const [history, before] = await Promise.all([
     accountServerFetch<BackupManifestsResponse>(
-      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
+      // One row is enough: `total` is the lineage's whole count and rides the first page of a named lineage.
+      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}&limit=1`
     ),
     lineageFootprint(lineage),
   ]);
-  const snapshots = history.manifests.length;
+  // The listing is capped per page, so its length understates a long history; the server's count does not.
+  const snapshots = history.total ?? history.manifests.length;
   const plan = {
     repository: repoKey,
     lineageGuid: lineage,
@@ -150,19 +218,7 @@ async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<v
   };
 
   if (options.dryRun) {
-    if (format !== 'table') {
-      outputService.print({ dryRun: true, ...plan }, format);
-      return;
-    }
-    outputService.info(
-      t('commands.backup.purge.dryRun', {
-        name: repoKey,
-        lineage,
-        count: snapshots,
-        bytes: formatSizeBytes(before.storedBytes),
-        chunks: before.chunkCount,
-      })
-    );
+    printDryRun(plan, format, formatSizeBytes);
     return;
   }
 
@@ -181,6 +237,36 @@ async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<v
   }
 
   const purged = await purgeLineageRounds(repoKey, lineage, formatSizeBytes);
+  await reportPurged({ repoKey, lineage, plan, before, purged, format });
+}
+
+interface PurgeReport {
+  repoKey: string;
+  lineage: string;
+  plan: Record<string, unknown>;
+  before: { storedBytes: number; chunkCount: number };
+  purged: LineagePurgeResponse;
+  format: OutputFormat;
+}
+
+/** What the operator is told once the rounds end: held (delayed), or done with the usage before and after. */
+async function reportPurged(report: PurgeReport): Promise<void> {
+  const { repoKey, lineage, plan, before, purged, format } = report;
+  const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+  // A delayed answer deleted nothing: say when it runs and how to stop it, and skip the success line and the usage delta, which would claim bytes that are still stored and charged.
+  if (purged.delayed) {
+    if (format !== 'table') {
+      outputService.print({ ...plan, purged }, format);
+      return;
+    }
+    outputService.warn(
+      t('commands.backup.purge.delayed', {
+        name: repoKey,
+        when: purged.purgeAfter ? minuteOf(purged.purgeAfter) : '-',
+      })
+    );
+    return;
+  }
   // The usage row before and after is the evidence for the stored chunk count.
   const after = await footprintAfterPurge(lineage);
 
@@ -207,7 +293,7 @@ async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<v
   }
 }
 
-/** Register `backup purge <repo-ref> [--dry-run] [-y]`. */
+/** Register `backup purge <repo-ref> [--dry-run] [-y] [--cancel]`. */
 export function registerBackupPurge(backup: Command): void {
   backup
     .command('purge')
@@ -216,6 +302,7 @@ export function registerBackupPurge(backup: Command): void {
     .description(t('commands.backup.purge.description'))
     .option('--dry-run', t('options.dryRun'))
     .option('-y, --yes', t('options.yes'))
+    .option('--cancel', t('commands.backup.purge.optionCancel'))
     .action(async (repoRef: string, options: PurgeOptions) => {
       try {
         await runBackupPurge(repoRef, options);

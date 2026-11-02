@@ -25,6 +25,12 @@ export const BackupBrowseAtParamsSchema = z.object({
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
 });
 
+/** Measure a repository's block churn since the last probe, projected at each cell size */
+export const BackupChurnProbeParamsSchema = z.object({
+  forget: z.boolean().default(false).optional().describe('Remove this repository\'s reflink base instead of measuring'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+});
+
 /** Compare a restored copy with the source repository's backup anchor, byte for byte */
 export const BackupCompareParamsSchema = z.object({
   againstAnchor: z.string().min(1).describe('The source repository GUID whose anchor the copy is held to'),
@@ -135,6 +141,13 @@ export const BackupSnapshotParamsSchema = z.object({
   readBwlimit: z.string().optional().describe('Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   hashParallelism: z.number().int().optional().describe('Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota'),
+  target: z.string().optional().describe('The protection target this run serves, as a duration (5m). Takes the backup slot, detaches a first seed, commits nothing on an idle repository, and reports against the target'),
+  deadline: z.string().optional().describe('End the run past this long, as a duration (15m), slot wait included, and drop its staged copy'),
+  hookTimeout: z.string().optional().describe('Bound on each of backup_prepare and backup_finish, as a duration. Empty = 30s; at most 5m'),
+  hookFailure: z.enum(['continue', 'abort']).optional().describe('When backup_prepare fails or times out: continue (store a crash-consistent copy) or abort (upload nothing)'),
+  indexEvery: z.string().optional().describe('Seal the browse index only this often, as a duration. Empty = every run, or 1h with a target'),
+  cellBytes: z.number().int().optional().describe('Grid cell size in bytes. Empty keeps the repository\'s recorded grid, else 4 MiB. A different value needs accept_grid_change'),
+  acceptGridChange: z.boolean().default(false).optional().describe('Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged'),
 });
 
 /** Inspect or install a repository's browse-listing public key */
@@ -715,6 +728,7 @@ export const SetupParamsSchema = z.object({
 export const FUNCTION_SCHEMAS = {
   backup_browse: BackupBrowseParamsSchema,
   backup_browse_at: BackupBrowseAtParamsSchema,
+  backup_churn_probe: BackupChurnProbeParamsSchema,
   backup_compare: BackupCompareParamsSchema,
   backup_delete: BackupDeleteParamsSchema,
   backup_list: BackupListParamsSchema,

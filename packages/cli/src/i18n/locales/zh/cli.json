@@ -43,7 +43,12 @@
       "manifests": {
         "description": "列出服务器上记录的备份快照清单",
         "empty": "未找到备份清单。",
-        "fetching": "正在获取备份清单..."
+        "fetching": "正在获取备份清单...",
+        "optionLimit": "每页行数(默认且最大 500)",
+        "optionBefore": "来自上一次列表的分页游标(nextBefore)",
+        "optionIncludeDeleted": "包含延迟删除待生效的快照",
+        "limitInvalid": "--limit 接受不小于 1 的整数,收到 \"{{value}}\"",
+        "more": "显示 {{total}} 个快照中的 {{shown}} 个。下一页:--before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "在 {{at}} 或之前没有创建任何快照。",
@@ -107,7 +112,8 @@
         "salvageHole": "  空洞位于字节 {{offset}} 至 {{end}}:{{reason}}",
         "salvageNeedsAs": "--salvage 需要 --as <新名称>:损坏的镜像绝不会放在已有名称之下。",
         "salvageNeedsSnapshot": "--salvage 需要一个数据块存储快照作为恢复来源。",
-        "salvageWholeImage": "--salvage 恢复整个镜像,不能与 --path 或 --to 同时使用。"
+        "salvageWholeImage": "--salvage 恢复整个镜像,不能与 --path 或 --to 同时使用。",
+        "atIndexGap": "快照 {{snapshot}} 没有已存储的列表,因此改为读取早 {{gap}} 的 {{indexed}}。"
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "为这么多年中的每一年保留最新的快照",
         "set": {
           "description": "指定要保留的快照数量。每个选项都会被整体替换，而不是合并。",
-          "success": "已为 {{name}} 设置保留策略（{{count}} 条规则）。范围之外的快照将在下一次清理时被删除。"
+          "success": "已为 {{name}} 设置保留策略（{{count}} 条规则）。范围之外的快照将在下一次清理时被删除。",
+          "pending": "此更改保留得更少,因此会等待延迟删除窗口,并于 {{when}}(UTC)对 \"{{name}}\" 生效。所示策略在此之前保持有效。"
         },
         "effective": "{{name}} 当前生效的保留策略:{{source}}",
         "optionStream": "仅应用于此备份流(流 ID);省略时使用整个仓库的默认值",
         "preview": {
           "description": "显示下一次清理将删除哪些快照,以及可释放的空间。",
           "nothing": "下一次清理不会删除 {{name}} 的任何内容。",
-          "summary": "下一次清理将删除 {{name}} 的 {{count}} 个快照,保留 {{kept}} 个,并释放 {{bytes}}。"
+          "summary": "下一次清理将删除 {{name}} 的 {{count}} 个快照,保留 {{kept}} 个,并释放 {{bytes}}。",
+          "reasons": "保留原因:{{reasons}}"
         },
         "seeded": "策略“{{strategy}}”的保留设置已应用到 {{count}} 个没有保留策略的仓库。",
         "seedFailed": "无法应用策略“{{strategy}}”的保留设置({{reason}})。在应用之前,使用服务器默认值。",
@@ -143,7 +151,10 @@
           "plan": "套餐默认值",
           "default": "服务器默认值",
           "orphan": "孤立仓库的保留期"
-        }
+        },
+        "keepWithinInvalid": "--keep-within 接受 24h 或 90m 这样的时长,收到 \"{{value}}\"",
+        "optionKeepWithin": "保留距最新快照在此时长内的所有快照,例如 24h",
+        "pendingClear": "移除 \"{{name}}\" 的策略会等待延迟删除窗口,并于 {{when}}(UTC)生效。在此之前,当前生效的策略继续适用。"
       },
       "run": {
         "description": "在远程机器上立即触发备份",
@@ -243,7 +254,22 @@
           "retentionPushed": "已将保留设置应用到 {{count}} 个仓库。",
           "retentionPushFailed": "策略“{{strategy}}”的保留设置已保存,但未能应用({{reason}})。服务器可访问后请重新运行此命令。",
           "optionCpuLimit": "此策略快照的 CPU 上限：占全部核心的百分比，1-100（默认 50）；none 表示清除",
-          "cpuLimitStrategyOnly": "--cpu-limit 作用于整个策略；请去掉 --destination。"
+          "cpuLimitStrategyOnly": "--cpu-limit 作用于整个策略；请去掉 --destination。",
+          "optionRpo": "声明的保护目标,例如 15m(至少 5m;none 表示清除)",
+          "optionRepoRpo": "按仓库设置目标,格式 <ref>=<时长>,可重复(none 表示移除);name:* 表示整个系列",
+          "optionRepoCellSize": "按仓库设置单元大小,格式 <ref>=<大小>,可重复。更改会重新播种该仓库",
+          "optionNoEstimate": "跳过变化量与成本估算",
+          "optionDryRun": "显示将发生的更改,不写入任何内容",
+          "rpoInvalid": "{{option}} \"{{value}}\" 无效:{{reason}}",
+          "repoOptionInvalid": "{{option}} 接受 <ref>=<值>,收到 \"{{value}}\"",
+          "cellSizeInvalid": "单元大小 \"{{value}}\" 不是 1M 或 4M 这样的大小",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" 没有目标;请先用 --repo-rpo {{ref}}=<时长> 设置一个",
+          "noMeasurement": "没有 {{refs}} 的变化量测量。请先运行 `rdc backup churn <repo>`,或传入 --no-estimate。",
+          "reseedWarning": "将 {{ref}} 的单元大小改为 {{size}} 会重新播种它:每个单元都会重新上传并计费,旧网格上的分叉不再去重。计划运行绝不会自行接受网格变更。",
+          "retentionDefaulted": "策略 \"{{strategy}}\" 未声明保留,因此保留 {{window}} 内的所有快照({{plan}} 套餐默认值)。",
+          "retentionDefaultNoStorage": "{{plan}} 套餐没有云备份存储,因此未设置默认保留。",
+          "retentionDefaultNoPlan": "无法读取套餐,因此未设置默认保留。请用 --retention 声明。",
+          "dryRun": "试运行:策略 \"{{strategy}}\" 将发生更改({{changes}})。未写入任何内容。"
         },
         "show": {
           "description": "显示备份策略详情",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "显示备份存储配额、已存储字节数和各仓库的使用情况",
         "empty": "尚未记录任何按仓库统计的备份存储使用情况。",
-        "fetching": "正在获取备份存储使用情况..."
+        "fetching": "正在获取备份存储使用情况...",
+        "overLimit": "已超出限额",
+        "summary": "已用 {{used}},共 {{quota}}(活跃 {{live}},已预留 {{leased}},{{chunks}} 个块){{over}}",
+        "waiting": "等待删除:{{chunks}} 个块共 {{waiting}},不计费。变化上限 {{cap}}。",
+        "throttled": "等待中的存储超过 {{cap}} 的变化上限:快于每小时一次的备份流会被拒绝,直到存储腾空。"
       },
       "verify": {
         "completed": "已验证 {{name}} 的备份",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "删除一个已存储的快照。其独占的数据会在下一次垃圾回收时释放。",
           "notInRepo": "快照 {{snapshot}} 不在 {{name}} 的已存储历史中。可用以下命令列出其 ID:rdc backup manifests {{name}}",
-          "success": "已删除 {{name}} 的 {{count}} 个快照,包括 {{snapshot}}。"
+          "success": "已删除 {{name}} 的 {{count}} 个快照,包括 {{snapshot}}。",
+          "delayed": "\"{{name}}\" 的快照 {{snapshot}} 的删除已延迟:它仍可恢复,并将于 {{when}}(UTC)移除。取消:rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "此仓库的存储量:清除前 {{beforeBytes}}({{beforeChunks}} 个分块),清除后 {{afterBytes}}({{afterChunks}} 个分块)。",
         "usageUnavailable": "清除已完成,但无法读取清除后的用量:{{error}}",
         "progress": "正在清除“{{name}}”:第 {{round}} 轮,已删除 {{chunks}} 个对象({{bytes}})。",
-        "tooManyRounds": "“{{name}}”的清除在 {{rounds}} 轮后仍未完成。再次运行即可继续。"
+        "tooManyRounds": "“{{name}}”的清除在 {{rounds}} 轮后仍未完成。再次运行即可继续。",
+        "optionCancel": "在生效前取消延迟的整体清除",
+        "cancelExclusive": "--cancel 不能与 --dry-run 同时使用",
+        "cancelled": "已取消 \"{{name}}\" 的延迟整体清除。",
+        "nothingWaiting": "没有等待中的 \"{{name}}\" 整体清除。",
+        "delayed": "\"{{name}}\" 的整体清除已延迟:未删除任何内容,将于 {{when}}(UTC)执行。在此之前可取消:rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "通过恢复一个文件,证明已存储的快照可以用口令打开",
@@ -391,6 +427,55 @@
         "optionDryRun": "报告将要执行的操作;不触碰任何内容",
         "optionReplace": "替换机器上已有的不同密钥(会发送口令作为证明)",
         "syncDescription": "在仓库所在机器上安装其列表密钥,或替换不同的密钥"
+      },
+      "churn": {
+        "description": "测量仓库镜像在两次运行之间变化了多少,按单元大小预测上传量并给出推荐。运行期间机器上会保留一个 reflink 基线,结束时一定会删除。",
+        "descriptionShort": "测量仓库变化量并推荐单元大小",
+        "optionSamples": "要采集的测量样本数(默认 3)",
+        "optionInterval": "探测之间的等待时间,例如 10m(默认 10m)",
+        "probing": "正在探测 \"{{name}}\"(第 {{probe}} 次探测)...",
+        "probed": "已记录 \"{{name}}\" 的探测",
+        "probeFailed": "\"{{name}}\" 的探测失败",
+        "forgetting": "正在删除 \"{{name}}\" 的探测基线...",
+        "forgotten": "已从机器上删除 \"{{name}}\" 的探测基线。",
+        "forgetFailed": "无法删除 \"{{name}}\" 的探测基线,它仍占用机器上的空间。请再次运行 rdc backup churn {{name}};结束时它会删除基线。",
+        "noMeasurement": "未测得 \"{{name}}\" 的变化量:第一次探测只设定基线(基线 {{baselines}} 个,跳过 {{skipped}} 个)。不做任何预测。",
+        "samplesInvalid": "--samples 接受 1 到 {{max}} 之间的整数,收到 \"{{value}}\"",
+        "intervalInvalid": "--interval 接受 5m 或 1h 这样的时长(小于 24h),收到 \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "推荐的单元大小:{{cell}}。写入小而分散,比 4 MiB 少上传 {{savedPercent}}% 的字节。更改会重新播种该仓库。",
+          "clustered-large": "推荐的单元大小:{{cell}}。写入大而集中,因此相同字节所需的 put 少得多。",
+          "default": "推荐的单元大小:{{cell}},即默认值。其他大小节省不够多。",
+          "idle": "推荐的单元大小:{{cell}},即默认值。探测之间仓库没有变化。",
+          "collapse-cap": "推荐的单元大小:{{cell}}。1 MiB 可节省 {{savedPercent}}%,但该大小下镜像会超过 262,144 个单元,清理将被推迟。"
+        },
+        "estimate": {
+          "target": "{{name}}:每次运行变化 {{cells}} 个单元,每天运行 {{runs}} 次(按 4 MiB 单元计算)。",
+          "cost": "预计每月 {{total}}:Class A 操作 {{classA}} 次,Class B 操作 {{classB}} 次,存储 {{storage}}(计费 {{window}},处于 7 天宽限期的等待量 {{waiting}})。",
+          "capHeld": "等待中的存储稳定在 {{waiting}},低于 {{cap}} 的变化上限。",
+          "capExceeded": "等待中的存储将达到 {{waiting}},并在 {{days}} 天内超过 {{cap}} 的变化上限:快于每小时一次的流会被拒绝,直到存储腾空。"
+        }
+      },
+      "immutability": {
+        "description": "显示或设置已存储备份的延迟删除窗口",
+        "show": {
+          "description": "显示当前生效的延迟删除窗口",
+          "window": "延迟删除:删除、整体清除或缩减保留都会等待 {{days}} 天,在此之前可以撤销。",
+          "off": "延迟删除已关闭:删除立即生效。"
+        },
+        "set": {
+          "description": "以天为单位设置延迟删除窗口(0 到 30)",
+          "daysArgument": "删除生效前等待的天数(0 到 30)",
+          "applied": "延迟删除窗口现在是 {{days}} 天。",
+          "appliedOff": "延迟删除已关闭。",
+          "invalid": "窗口为 0 到 {{max}} 之间的整数天,收到 \"{{value}}\""
+        },
+        "pending": "窗口将于 {{when}}(UTC)缩短为 {{days}} 天。在此之前 {{current}} 天仍然有效。"
+      },
+      "undelete": {
+        "description": "在生效前取消快照的延迟删除",
+        "success": "快照 {{snapshot}} 已保留:它的删除已取消。",
+        "notWaiting": "快照 {{snapshot}} 并未等待删除。"
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}:{{repo}} 上的 {{verb}},由 {{origin}} 于 {{startedAt}} 启动。跟踪:{{attach}}",
         "runningJobsSection": "作业(运行中或最近一小时内结束)",
         "verifyFailureSection": "失败的备份验证",
-        "verifyFailureWarning": "{{count}} 个仓库的上次备份验证失败。"
+        "verifyFailureWarning": "{{count}} 个仓库的上次备份验证失败。",
+        "missedTargetSection": "未达到备份目标的仓库",
+        "missedTargetWarning": "{{count}} 个仓库在最近一次运行中未达到备份目标。"
       },
       "gpu": {
         "descriptionShort": "查看机器的 GPU 和设备授权",

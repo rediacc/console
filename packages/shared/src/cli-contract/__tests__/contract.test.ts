@@ -184,7 +184,7 @@ describe('CLI contract', () => {
     // Client-side rsync of the encrypted repo image to or from the operator's own disk (PLAN-backup-local-image C1).
     excluded.push('backup download', 'backup upload');
     // The operator's credential or token drives them: the listing key, the passphrase checks and the repair's account calls (PLAN-backup-integrity C3 to C5, S2).
-    excluded.push('backup check', 'backup repair', 'backup toc-key sync');
+    excluded.push('backup check', 'backup churn', 'backup repair', 'backup toc-key sync');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);

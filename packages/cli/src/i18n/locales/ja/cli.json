@@ -43,7 +43,12 @@
       "manifests": {
         "description": "サーバーに記録されたバックアップスナップショットのマニフェストを一覧表示する",
         "empty": "バックアップマニフェストが見つかりません。",
-        "fetching": "バックアップマニフェストを取得中..."
+        "fetching": "バックアップマニフェストを取得中...",
+        "optionLimit": "1 ページあたりの行数 (既定かつ最大 500)",
+        "optionBefore": "前回の一覧のページカーソル (nextBefore)",
+        "optionIncludeDeleted": "遅延削除が保留中のスナップショットを含める",
+        "limitInvalid": "--limit には 1 以上の整数を指定します。受け取った値: \"{{value}}\"",
+        "more": "{{total}} 件中 {{shown}} 件のスナップショットを表示中。次のページ: --before {{before}}"
       },
       "restore": {
         "atNoSnapshot": "{{at}} 以前にスナップショットが取得されていません",
@@ -107,7 +112,8 @@
         "salvageHole": "  空き: バイト {{offset}} から {{end}}: {{reason}}",
         "salvageNeedsAs": "--salvage には --as <新しい名前> が必要です。破損したイメージを既存の名前で配置することはありません。",
         "salvageNeedsSnapshot": "--salvage には復元元のチャンクストアのスナップショットが必要です。",
-        "salvageWholeImage": "--salvage はイメージ全体を復元します。--path や --to とは併用できません。"
+        "salvageWholeImage": "--salvage はイメージ全体を復元します。--path や --to とは併用できません。",
+        "atIndexGap": "スナップショット {{snapshot}} には保存済みの一覧がないため、{{gap}} 前に取得した {{indexed}} を読み取ります。"
       },
       "retention": {
         "clear": {
@@ -126,14 +132,16 @@
         "optionKeepYearly": "指定した年数分、それぞれ最新のスナップショットを保持する",
         "set": {
           "description": "保持するスナップショット数を指定する。各項目は常に上書きされ、マージはされない",
-          "success": "{{name}} の保持ポリシーを設定しました（{{count}} 件のルール）。対象外のスナップショットは次回のクリーンアップで削除されます"
+          "success": "{{name}} の保持ポリシーを設定しました（{{count}} 件のルール）。対象外のスナップショットは次回のクリーンアップで削除されます",
+          "pending": "この変更は保持量を減らすため、遅延削除ウィンドウを待ち、\"{{name}}\" に対して {{when}} (UTC) に有効になります。表示中のポリシーはそれまで有効です。"
         },
         "effective": "{{name}} に適用される保持設定: {{source}}",
         "optionStream": "このバックアップストリームだけに適用します(ストリーム ID)。省略するとリポジトリ全体の既定値になります",
         "preview": {
           "description": "次回のクリーンアップで削除されるスナップショットと、解放される容量を表示します。",
           "nothing": "次回のクリーンアップでは {{name}} のスナップショットは削除されません。",
-          "summary": "次回のクリーンアップで {{name}} のスナップショットを {{count}} 件削除し、{{kept}} 件を残して {{bytes}} を解放します。"
+          "summary": "次回のクリーンアップで {{name}} のスナップショットを {{count}} 件削除し、{{kept}} 件を残して {{bytes}} を解放します。",
+          "reasons": "保持理由: {{reasons}}"
         },
         "seeded": "戦略「{{strategy}}」の保持設定を、ポリシーのない {{count}} 件のリポジトリに適用しました。",
         "seedFailed": "戦略「{{strategy}}」の保持設定を適用できませんでした({{reason}})。適用されるまではサーバーの既定値が使われます。",
@@ -143,7 +151,10 @@
           "plan": "プランの既定値",
           "default": "サーバーの既定値",
           "orphan": "孤立リポジトリの猶予期間"
-        }
+        },
+        "keepWithinInvalid": "--keep-within には 24h や 90m のような期間を指定します。受け取った値: \"{{value}}\"",
+        "optionKeepWithin": "最新から指定期間内のスナップショットをすべて保持する (例: 24h)",
+        "pendingClear": "\"{{name}}\" のポリシーの削除は遅延削除ウィンドウを待ち、{{when}} (UTC) に有効になります。現在のポリシーはそれまで適用され続けます。"
       },
       "run": {
         "description": "リモートマシンで今すぐバックアップを実行",
@@ -243,7 +254,22 @@
           "retentionPushed": "{{count}} 件のリポジトリに保持設定を適用しました。",
           "retentionPushFailed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用できませんでした({{reason}})。サーバーに接続できるようになったらもう一度実行してください。",
           "optionCpuLimit": "この戦略のスナップショットの CPU 上限: 全コアに対する割合、1-100（既定 50）。none で解除",
-          "cpuLimitStrategyOnly": "--cpu-limit は戦略全体に適用されます。--destination を外してください。"
+          "cpuLimitStrategyOnly": "--cpu-limit は戦略全体に適用されます。--destination を外してください。",
+          "optionRpo": "宣言する保護目標 (例: 15m、最短 5m。none で解除)",
+          "optionRepoRpo": "リポジトリごとの目標を <ref>=<期間> で指定 (複数可、none で解除)。name:* はファミリー",
+          "optionRepoCellSize": "リポジトリごとのセルサイズを <ref>=<サイズ> で指定 (複数可)。変更するとリポジトリを再シード",
+          "optionNoEstimate": "変化量とコストの見積もりを省略する",
+          "optionDryRun": "変更内容を表示し、何も書き込まない",
+          "rpoInvalid": "{{option}} \"{{value}}\" は無効です: {{reason}}",
+          "repoOptionInvalid": "{{option}} には <ref>=<値> を指定します。受け取った値: \"{{value}}\"",
+          "cellSizeInvalid": "セルサイズ \"{{value}}\" は 1M や 4M のようなサイズではありません",
+          "repoCellSizeNeedsTarget": "\"{{ref}}\" には目標がありません。先に --repo-rpo {{ref}}=<期間> で設定してください",
+          "noMeasurement": "{{refs}} の変化量の測定がありません。先に `rdc backup churn <repo>` を実行するか、--no-estimate を指定してください。",
+          "reseedWarning": "{{ref}} のセルサイズを {{size}} に変更すると再シードされます: すべてのセルが再アップロードされて課金され、旧グリッド上のフォークは重複排除されなくなります。スケジュール実行がグリッドの変更を自動で受け入れることはありません。",
+          "retentionDefaulted": "ストラテジー \"{{strategy}}\" は保持を宣言していないため、{{window}} 以内のスナップショットをすべて保持します ({{plan}} プランの既定)。",
+          "retentionDefaultNoStorage": "{{plan}} プランにはクラウドバックアップのストレージがないため、既定の保持は設定されませんでした。",
+          "retentionDefaultNoPlan": "プランを読み取れなかったため、既定の保持は設定されませんでした。--retention で宣言してください。",
+          "dryRun": "ドライラン: ストラテジー \"{{strategy}}\" は変更されます ({{changes}})。何も書き込まれていません。"
         },
         "show": {
           "description": "バックアップ戦略の詳細を表示",
@@ -289,7 +315,11 @@
       "usage": {
         "description": "バックアップストレージのクォータ、保存済みバイト数、リポジトリごとの使用量を表示する",
         "empty": "リポジトリごとのバックアップストレージ使用量はまだ記録されていません。",
-        "fetching": "バックアップストレージの使用量を取得中..."
+        "fetching": "バックアップストレージの使用量を取得中...",
+        "overLimit": "上限超過",
+        "summary": "{{quota}} 中 {{used}} を使用 (有効 {{live}}、予約 {{leased}}、{{chunks}} チャンク) {{over}}",
+        "waiting": "削除待ち: {{chunks}} チャンクで {{waiting}}、課金対象外。変化量の上限は {{cap}}。",
+        "throttled": "待機中のストレージが変化量の上限 {{cap}} を超えています: 1 時間より速いバックアップストリームは、空きができるまで拒否されます。"
       },
       "verify": {
         "completed": "{{name}} のバックアップを検証しました",
@@ -314,7 +344,8 @@
         "delete": {
           "description": "保存済みスナップショットを 1 つ削除します。そのスナップショット固有のデータは、次回のガベージコレクションで解放されます。",
           "notInRepo": "スナップショット {{snapshot}} は {{name}} の保存済み履歴にありません。ID は rdc backup manifests {{name}} で確認できます。",
-          "success": "{{name}} のスナップショットを {{snapshot}} を含め {{count}} 件削除しました。"
+          "success": "{{name}} のスナップショットを {{snapshot}} を含め {{count}} 件削除しました。",
+          "delayed": "\"{{name}}\" のスナップショット {{snapshot}} の削除は遅延されています: まだ復元でき、{{when}} (UTC) に削除されます。取り消すには: rdc backup undelete {{snapshot}}"
         }
       },
       "download": {
@@ -370,7 +401,12 @@
         "usageDelta": "このリポジトリの保存量: パージ前 {{beforeBytes}} ({{beforeChunks}} チャンク)、パージ後 {{afterBytes}} ({{afterChunks}} チャンク)。",
         "usageUnavailable": "パージは完了しましたが、パージ後の使用量を読み取れませんでした: {{error}}",
         "progress": "「{{name}}」をパージ中: {{round}} 回目、これまでに {{chunks}} 個のオブジェクトを削除しました({{bytes}})。",
-        "tooManyRounds": "「{{name}}」のパージは {{rounds}} 回で完了しませんでした。続行するにはもう一度実行してください。"
+        "tooManyRounds": "「{{name}}」のパージは {{rounds}} 回で完了しませんでした。続行するにはもう一度実行してください。",
+        "optionCancel": "遅延全消去を有効になる前に取り消す",
+        "cancelExclusive": "--cancel は --dry-run と併用できません",
+        "cancelled": "\"{{name}}\" の遅延全消去を取り消しました。",
+        "nothingWaiting": "\"{{name}}\" の待機中の全消去はありませんでした。",
+        "delayed": "\"{{name}}\" の全消去は遅延されています: 何も削除されておらず、{{when}} (UTC) に実行されます。それまでに取り消すには: rdc backup purge {{name}} --cancel"
       },
       "check": {
         "description": "1つのファイルを復元して、スナップショットがパスフレーズで開くことを証明します",
@@ -391,6 +427,55 @@
         "optionDryRun": "実行される内容を表示し、何にも触れません",
         "optionReplace": "マシンにすでにある別のキーを置き換えます(証明のためパスフレーズを送信します)",
         "syncDescription": "リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます"
+      },
+      "churn": {
+        "description": "リポジトリのイメージが実行間でどれだけ変わるかを測定し、セルサイズごとのアップロード量を予測して推奨を示します。実行中はマシン上に reflink ベースを保持し、終了時に必ず削除します。",
+        "descriptionShort": "リポジトリの変化量を測定してセルサイズを推奨する",
+        "optionSamples": "取得する測定サンプル数 (既定 3)",
+        "optionInterval": "プローブ間の待機時間 (例: 10m、既定 10m)",
+        "probing": "\"{{name}}\" を測定中 (プローブ {{probe}})...",
+        "probed": "\"{{name}}\" のプローブを記録しました",
+        "probeFailed": "\"{{name}}\" のプローブに失敗しました",
+        "forgetting": "\"{{name}}\" のプローブベースを削除中...",
+        "forgotten": "\"{{name}}\" のプローブベースをマシンから削除しました。",
+        "forgetFailed": "\"{{name}}\" のプローブベースを削除できず、マシン上の領域を占有したままです。rdc backup churn {{name}} をもう一度実行してください。終了時にベースを削除します。",
+        "noMeasurement": "\"{{name}}\" の変化量は測定されませんでした: 最初のプローブは基準点を置くだけです (基準 {{baselines}} 件、スキップ {{skipped}} 件)。予測は行いません。",
+        "samplesInvalid": "--samples には 1 から {{max}} までの整数を指定します。受け取った値: \"{{value}}\"",
+        "intervalInvalid": "--interval には 5m や 1h のような期間 (24h 未満) を指定します。受け取った値: \"{{value}}\"",
+        "recommend": {
+          "scattered-small": "推奨セルサイズ: {{cell}}。書き込みは小さく散在しており、4 MiB より {{savedPercent}}% 少ないバイト数で済みます。変更するとリポジトリを再シードします。",
+          "clustered-large": "推奨セルサイズ: {{cell}}。書き込みは大きくまとまっているため、同じバイト数でも put がはるかに少なくて済みます。",
+          "default": "推奨セルサイズ: {{cell}} (既定)。他のサイズでは十分に節約できません。",
+          "idle": "推奨セルサイズ: {{cell}} (既定)。プローブ間でリポジトリは変化しませんでした。",
+          "collapse-cap": "推奨セルサイズ: {{cell}}。1 MiB なら {{savedPercent}}% 節約できますが、そのサイズではイメージが 262,144 セルを超え、プルーニングが延期されます。"
+        },
+        "estimate": {
+          "target": "{{name}}: 1 回の実行あたり変更セル {{cells}} 個、1 日 {{runs}} 回実行 (4 MiB セルで算出)。",
+          "cost": "月額の見積もり {{total}}: Class A 操作 {{classA}} 回、Class B 操作 {{classB}} 回、ストレージ {{storage}} (課金 {{window}}、7 日間の猶予で待機 {{waiting}})。",
+          "capHeld": "待機中のストレージは {{waiting}} で安定し、変化量の上限 {{cap}} を下回ります。",
+          "capExceeded": "待機中のストレージは {{waiting}} に達し、{{days}} 日で変化量の上限 {{cap}} を超えます。1 時間より速いストリームは、空きができるまで拒否されます。"
+        }
+      },
+      "immutability": {
+        "description": "保存済みバックアップの遅延削除ウィンドウを表示または設定する",
+        "show": {
+          "description": "有効な遅延削除ウィンドウを表示する",
+          "window": "遅延削除: 削除、全消去、保持の縮小は {{days}} 日待機し、それまで取り消せます。",
+          "off": "遅延削除はオフです: 削除は即座に有効になります。"
+        },
+        "set": {
+          "description": "遅延削除ウィンドウを日数で設定する (0 から 30)",
+          "daysArgument": "削除が有効になるまで待つ日数 (0 から 30)",
+          "applied": "遅延削除ウィンドウは {{days}} 日になりました。",
+          "appliedOff": "遅延削除はオフです。",
+          "invalid": "ウィンドウは 0 から {{max}} までの整数日です。受け取った値: \"{{value}}\""
+        },
+        "pending": "ウィンドウは {{when}} (UTC) に {{days}} 日へ短縮されます。それまでは {{current}} 日が有効です。"
+      },
+      "undelete": {
+        "description": "スナップショットの遅延削除を有効になる前に取り消す",
+        "success": "スナップショット {{snapshot}} は保持されます: 削除を取り消しました。",
+        "notWaiting": "スナップショット {{snapshot}} は削除待ちではありませんでした。"
       }
     },
     "cluster": {
@@ -1462,7 +1547,9 @@
         "runningJobsRow": "{{id}} {{state}}: {{repo}} の {{verb}}、{{startedAt}} に {{origin}} が開始。追跡するには: {{attach}}",
         "runningJobsSection": "ジョブ(実行中、または直近1時間以内に終了)",
         "verifyFailureSection": "失敗したバックアップ検証",
-        "verifyFailureWarning": "{{count}} 個のリポジトリが直近のバックアップ検証に失敗しました。"
+        "verifyFailureWarning": "{{count}} 個のリポジトリが直近のバックアップ検証に失敗しました。",
+        "missedTargetSection": "バックアップ目標を達成できなかったリポジトリ",
+        "missedTargetWarning": "{{count}} 件のリポジトリが直近の実行でバックアップ目標を達成できませんでした。"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",

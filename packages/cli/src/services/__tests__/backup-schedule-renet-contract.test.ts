@@ -57,13 +57,13 @@ interface SnapshotFlagSet {
 
 type FlagSets = Record<Subcommand, SnapshotFlagSet>;
 
-/** String constants declared across cmd/renet (`FlagDatastore = "datastore"`). */
+/** String constants declared across cmd/renet (`FlagDatastore = "datastore"`, and the unexported `flagTarget = "target"` of the target flags). */
 function renetStringConstants(): Map<string, string> {
   const consts = new Map<string, string>();
   for (const file of readdirSync(RENET_CMD_DIR)) {
     if (!file.endsWith('.go') || file.endsWith('_test.go')) continue;
     const src = readFileSync(path.join(RENET_CMD_DIR, file), 'utf8');
-    for (const m of src.matchAll(/^\s*([A-Z]\w*)\s*=\s*"([^"]*)"/gm)) consts.set(m[1], m[2]);
+    for (const m of src.matchAll(/^\s*([A-Za-z]\w*)\s*=\s*"([^"]*)"/gm)) consts.set(m[1], m[2]);
   }
   return consts;
 }
@@ -234,7 +234,30 @@ const MATRIX: Record<string, ScheduledStrategy> = {
   perRepo: {
     schedule: '0 3 * * *',
     destinations: [hosted],
-    repoSchedules: { gitlab: '*/30 * * * *' },
+    repoTargets: { gitlab: { rpo: '30m' } },
+  },
+  // Every flag a declared target can add, at both levels: the strategy's own target and a per-repo one.
+  rpoStrategy: {
+    schedule: '0 3 * * *',
+    destinations: [hosted],
+    exclude: ['gitlab'],
+    rpo: '15m',
+    indexEvery: '2h',
+    hookTimeout: '45s',
+    hookFailure: 'abort',
+  },
+  rpoRepoFull: {
+    schedule: '0 3 * * *',
+    destinations: [hosted],
+    repoTargets: {
+      'mail:trial': {
+        rpo: '5m',
+        cellSize: '1M',
+        indexEvery: '1h',
+        hookTimeout: '1m30s',
+        hookFailure: 'continue',
+      },
+    },
   },
   twoDestinations: {
     schedule: '0 3 * * *',
@@ -266,6 +289,12 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     expect(set.snapshot.flags.get('parallelism')).toBe('Int');
     expect(set.snapshot.flags.get('cold')).toBe('Bool');
     expect(set.snapshot.flags.get('expected-interval')).toBe('Duration');
+    expect(set.snapshot.flags.get('target')).toBe('Duration');
+    expect(set.snapshot.flags.get('deadline')).toBe('Duration');
+    expect(set.snapshot.flags.get('hook-timeout')).toBe('Duration');
+    expect(set.snapshot.flags.get('hook-failure')).toBe('String');
+    expect(set.snapshot.flags.get('index-every')).toBe('Duration');
+    expect(set.snapshot.flags.get('cell-bytes')).toBe('Int64');
     expect(set.snapshot.guidOnly.has('repo')).toBe(true);
     expect(set.verify.flags.get('level')).toBe('String');
     expect(set.verify.flags.get('next-due')).toBe('String');
@@ -301,6 +330,27 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     ]);
     expect(argvProblems('/r backup report --reason unquoted words', set)).toEqual([
       '--reason must be one quoted argument, got unquoted words',
+    ]);
+  });
+
+  it('the target flags the generator emits are all rendered, and a malformed one is refused (control)', () => {
+    const lines = generatedExecStarts().filter((l) => l.includes(' --target '));
+    expect(lines.length).toBeGreaterThanOrEqual(3);
+    const all = lines.join('\n');
+    for (const flag of [
+      '--deadline',
+      '--hook-timeout',
+      '--hook-failure',
+      '--index-every',
+      '--cell-bytes 1048576',
+    ]) {
+      expect(all).toContain(flag);
+    }
+    expect(argvProblems('/r backup snapshot --target soon', set)).toEqual([
+      'invalid argument "soon" for --target: not a duration',
+    ]);
+    expect(argvProblems('/r backup snapshot --cell-bytes 1M', set)).toEqual([
+      'invalid argument "1M" for --cell-bytes: not an integer',
     ]);
   });
 

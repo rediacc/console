@@ -93,6 +93,7 @@ describe('machine status running jobs', () => {
       'stale_binary',
       'backup_staleness',
       'verify_failures',
+      'target_misses',
     ]);
     expect(doc.jobs).toEqual([]);
     const withJob = statusJsonDocument({ machine: 'hostinger' }, [live], resolve, null, []);

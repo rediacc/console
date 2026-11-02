@@ -95,7 +95,8 @@ function dayMatches(date: Date, rule: DayRule): boolean {
   return rule.domRestricted && rule.dowRestricted ? byDom || byDow : byDom && byDow;
 }
 
-export function cronMaxGapSeconds(cron: string): number {
+/** The sorted firing times (seconds from the reference start) of a 5-field cron over the reference year. */
+function cronFireTimes(cron: string): number[] {
   const fields = cron.trim().split(/\s+/);
   if (fields.length !== 5)
     throw new Error(`Invalid cron expression: "${cron}" (expected 5 fields)`);
@@ -110,8 +111,24 @@ export function cronMaxGapSeconds(cron: string): number {
     domRestricted: !domF.startsWith('*'),
     dowRestricted: !dowF.startsWith('*'),
   };
+  return fireTimes(rule, hours, minutes);
+}
 
-  return longestGap(fireTimes(rule, hours, minutes));
+export function cronMaxGapSeconds(cron: string): number {
+  return longestGap(cronFireTimes(cron));
+}
+
+/**
+ * The SHORTEST gap between two firings of a cron, in seconds: what the 5-minute floor on cron schedules
+ * (decision O6) is measured against. A cron that fires once a year has no short gap, so it reports the
+ * whole year.
+ */
+export function cronMinGapSeconds(cron: string): number {
+  const times = cronFireTimes(cron);
+  if (times.length < 2) return REFERENCE_DAYS * DAY;
+  let shortest = times[0] + REFERENCE_DAYS * DAY - times[times.length - 1];
+  for (let i = 1; i < times.length; i++) shortest = Math.min(shortest, times[i] - times[i - 1]);
+  return shortest;
 }
 
 /** Seconds from the reference start of every firing within the reference year. */

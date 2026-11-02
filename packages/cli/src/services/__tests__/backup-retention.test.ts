@@ -25,6 +25,7 @@ const {
   pushStrategyRetention,
   retentionCronMismatches,
   RetentionSpecError,
+  retentionUnusedByCadence,
   strategyLineages,
 } = await import('../backup/backup-retention.js');
 
@@ -66,6 +67,45 @@ describe('parseRetentionSpec', () => {
       expect(() => parseRetentionSpec(raw)).toThrow(RetentionSpecError);
     }
   );
+});
+
+describe('parseRetentionSpec within= (D-retention)', () => {
+  it('parses a window into seconds, beside the counted knobs', () => {
+    expect(parseRetentionSpec('within=24h')).toEqual({ keepWithinSeconds: 86_400 });
+    expect(parseRetentionSpec('last=3, within=90m')).toEqual({
+      keepLast: 3,
+      keepWithinSeconds: 5_400,
+    });
+  });
+
+  // A bare number has no unit and a wrong unit is a 60x or 1000x error on a rule that decides what gets deleted.
+  it.each(['within=24', 'within=1x', 'within=0h', 'within=', 'within=1h,within=2h', 'within=-1h'])(
+    'refuses %s',
+    (raw) => {
+      expect(() => parseRetentionSpec(raw)).toThrow(RetentionSpecError);
+    }
+  );
+});
+
+describe('cadence finer than any knob can use (D-retention)', () => {
+  it('warns when a 5-minute cron has neither last nor within to keep its snapshots', () => {
+    expect(retentionUnusedByCadence({ keepDaily: 7, keepHourly: 24 }, '*/5 * * * *')).toBe(true);
+  });
+
+  it('is quiet once last or within can keep the fine snapshots', () => {
+    expect(retentionUnusedByCadence({ keepLast: 12 }, '*/5 * * * *')).toBe(false);
+    expect(retentionUnusedByCadence({ keepWithinSeconds: 3_600 }, '*/5 * * * *')).toBe(false);
+  });
+
+  it('is quiet for a cron that is not sub-hourly, and for no policy', () => {
+    expect(retentionUnusedByCadence({ keepDaily: 7 }, '0 */2 * * *')).toBe(false);
+    expect(retentionUnusedByCadence({ keepDaily: 7 }, '0 3 * * *')).toBe(false);
+    expect(retentionUnusedByCadence(undefined, '*/5 * * * *')).toBe(false);
+  });
+
+  it('reads a minute list as sub-hourly too', () => {
+    expect(retentionUnusedByCadence({ keepDaily: 7 }, '0,30 * * * *')).toBe(true);
+  });
 });
 
 describe('cron fit (F7)', () => {

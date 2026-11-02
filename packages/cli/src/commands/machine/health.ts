@@ -7,9 +7,10 @@ import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import type {
   FailedVerifyRepo,
+  MissedTargetRepo,
   StaleBackupRepo,
 } from '../../services/backup/backup-schedule-coverage.js';
-import { failedVerifyRepos } from '../../services/backup/backup-schedule-coverage.js';
+import { failedVerifyRepos, formatSpan } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
@@ -18,7 +19,7 @@ import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import { fetchStaleBackups, fetchStaleBinaries } from './status.js';
+import { fetchMissedTargets, fetchStaleBackups, fetchStaleBinaries } from './status.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
   0: () => outputService.success(t('commands.machine.health.statusHealthy')),
@@ -153,6 +154,8 @@ function displayHealthReport(health: MachineHealthResult, name: string): void {
 export interface HealthStaleness {
   staleBinary: RenetProcess[] | null;
   staleBackups: StaleBackupRepo[];
+  /** Repos whose latest run missed their declared target (D-rpo). */
+  missedTargets?: MissedTargetRepo[];
   /** Repos whose last `backup verify` mismatched or failed (backup_coverage). */
   failedVerifies?: FailedVerifyRepo[];
 }
@@ -175,9 +178,37 @@ export function applyStaleness(
     );
     exitCode = Math.max(exitCode, 1);
   }
-  if (extra.staleBackups.length > 0) {
+  const behindSchedule = extra.staleBackups.filter((b) => b.targetSeconds === undefined);
+  const behindTarget = extra.staleBackups.filter((b) => b.targetSeconds !== undefined);
+  if (behindSchedule.length > 0) {
     issues.push(
-      `${extra.staleBackups.length} repository(ies) last backed up more than twice their schedule interval ago`
+      `${behindSchedule.length} repository(ies) last backed up more than twice their schedule interval ago`
+    );
+    exitCode = Math.max(exitCode, 1);
+  }
+  if (behindTarget.length > 0) {
+    const named = behindTarget
+      .map(
+        (b) =>
+          `${b.name ?? b.guid} (target ${formatSpan(b.targetSeconds ?? 0)}, last captured ${formatSpan(b.ageSeconds)} ago)`
+      )
+      .join(', ');
+    issues.push(`${behindTarget.length} repository(ies) missed their backup target: ${named}`);
+    exitCode = Math.max(exitCode, 1);
+  }
+  // A repo already reported as behind its target is not named a second time.
+  const reported = new Set(extra.staleBackups.map((b) => b.guid));
+  const missed = (extra.missedTargets ?? []).filter((m) => !reported.has(m.guid));
+  if (missed.length > 0) {
+    const named = missed
+      .map((m) => {
+        const achieved =
+          m.achievedRpoMs === undefined ? '' : `, achieved ${formatSpan(m.achievedRpoMs / 1000)}`;
+        return `${m.name ?? m.guid} (target ${formatSpan(m.targetSeconds)}${achieved})`;
+      })
+      .join(', ');
+    issues.push(
+      `${missed.length} repository(ies) missed their backup target on the latest run: ${named}`
     );
     exitCode = Math.max(exitCode, 1);
   }
@@ -192,6 +223,15 @@ export function applyStaleness(
   // Raised from 0 only by these checks, so the shared verdict's message moves with it.
   const message = exitCode === health.exitCode ? health.message : 'System has warnings';
   return { ...health, issues, exitCode, healthy: exitCode === 0, message };
+}
+
+/** The machine's repos behind their schedule or target, and those whose latest run missed one. */
+function backupStanding(
+  name: string,
+  listResult: ReturnType<typeof parseListResult>
+): Promise<[StaleBackupRepo[], MissedTargetRepo[]]> {
+  if (!listResult) return Promise.resolve([[], []]);
+  return Promise.all([fetchStaleBackups(name, listResult), fetchMissedTargets(name, listResult)]);
 }
 
 export function registerHealthCommand(machine: Command, program: Command): void {
@@ -221,14 +261,15 @@ export function registerHealthCommand(machine: Command, program: Command): void 
 
         const format = program.opts().output as OutputFormat;
         const listResult = parseListResult(machine.vaultStatus);
-        const [staleBinary, staleBackups] = await Promise.all([
+        const [staleBinary, [staleBackups, missedTargets]] = await Promise.all([
           fetchStaleBinaries(name),
-          listResult ? fetchStaleBackups(name, listResult) : Promise.resolve([]),
+          backupStanding(name, listResult),
         ]);
         const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
         const health = applyStaleness(getMachineHealth(machine), {
           staleBinary,
           staleBackups,
+          missedTargets,
           failedVerifies,
         });
 
@@ -238,6 +279,7 @@ export function registerHealthCommand(machine: Command, program: Command): void 
               ...health,
               stale_binary: staleBinary,
               backup_staleness: staleBackups,
+              target_misses: missedTargets,
               verify_failures: failedVerifies,
             },
             format

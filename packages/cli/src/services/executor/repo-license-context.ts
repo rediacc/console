@@ -7,7 +7,7 @@
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 // Type-only, so nothing from the command layer is pulled in at runtime. The declaration is imported rather than restated because it is a WIRE shape: a hand-written twin here is how the two sides drift apart while both stay green.
-import type { BackupManifestsResponse } from '../../commands/backup-storage.js';
+import type { BackupManifestEntry } from '../../commands/backup-storage.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -337,11 +337,10 @@ const RESTORE_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[
 export async function resolveRestoreSizeGb(lineage: string, at: unknown): Promise<number> {
   const snapshotId = typeof at === 'string' ? at : '';
   try {
-    const index = await accountServerFetch<BackupManifestsResponse>(
-      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
+    // One row by id through the resolve route: the listing is capped at 500 rows, and an older snapshot is not in it.
+    const manifest = await accountServerFetch<BackupManifestEntry>(
+      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}`
     );
-    const manifest = index.manifests.find((m) => m.snapshotId === snapshotId);
-    if (!manifest) throw new Error(`no manifest for snapshot ${snapshotId || '(unset)'}`);
     return Math.max(MIN_REQUESTED_SIZE_GB, Math.ceil(manifest.totalBytes / (1024 * 1024 * 1024)));
   } catch (error) {
     outputService.warn(

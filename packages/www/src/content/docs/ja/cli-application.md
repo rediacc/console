@@ -7,7 +7,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "25885f2d388aa233"
+sourceHash: "76a6fd60eea85fdb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2488,8 +2488,15 @@ rdc backup list [artifact-ref] [options]
 {{t:cli.commands.backup.manifests.description}}
 
 ```bash
-rdc backup manifests [repo-ref]
+rdc backup manifests [repo-ref] [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--limit <n>` | {{t:cli.commands.backup.manifests.optionLimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--before <cursor>` | {{t:cli.commands.backup.manifests.optionBefore}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--include-deleted` | {{t:cli.commands.backup.manifests.optionIncludeDeleted}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-backup-restore"></a>
 ### 8.5 restore
@@ -2555,6 +2562,7 @@ rdc backup retention set <repo-ref> [options]
 | `--keep-weekly <n>` | {{t:cli.commands.backup.retention.optionKeepWeekly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--keep-monthly <n>` | {{t:cli.commands.backup.retention.optionKeepMonthly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--keep-yearly <n>` | {{t:cli.commands.backup.retention.optionKeepYearly}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-within <duration>` | {{t:cli.commands.backup.retention.optionKeepWithin}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--stream <id>` | {{t:cli.commands.backup.retention.optionStream}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2663,6 +2671,11 @@ rdc backup strategy set <strategy> [options]
 | `--include <repos>` | {{t:cli.commands.backup.strategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--exclude <repos>` | {{t:cli.commands.backup.strategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--retention <spec>` | {{t:cli.commands.backup.strategy.set.optionRetention}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--rpo <duration>` | {{t:cli.commands.backup.strategy.set.optionRpo}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo-rpo <ref=duration>` | {{t:cli.commands.backup.strategy.set.optionRepoRpo}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo-cell-size <ref=size>` | {{t:cli.commands.backup.strategy.set.optionRepoCellSize}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-estimate` | {{t:cli.commands.backup.strategy.set.optionNoEstimate}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dry-run` | {{t:cli.commands.backup.strategy.set.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--enable` | {{t:cli.commands.backup.strategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--disable` | {{t:cli.commands.backup.strategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -2842,6 +2855,7 @@ rdc backup purge <repo-ref> [options]
 |------|-------------|----------|---------|
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cancel` | {{t:cli.commands.backup.purge.optionCancel}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-backup-check"></a>
@@ -2881,6 +2895,54 @@ rdc backup repair <repo-ref> [options]
 
 ```bash
 rdc backup toc-key
+```
+
+<a id="cli-local-backup-churn"></a>
+### 8.22 churn
+
+{{t:cli.commands.backup.churn.description}}
+
+```bash
+rdc backup churn <repo-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--samples <n>` | {{t:cli.commands.backup.churn.optionSamples}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--interval <duration>` | {{t:cli.commands.backup.churn.optionInterval}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-immutability"></a>
+### 8.23 immutability
+
+{{t:cli.commands.backup.immutability.description}}
+
+<a id="cli-local-backup-immutability-show"></a>
+#### show
+
+{{t:cli.commands.backup.immutability.show.description}}
+
+```bash
+rdc backup immutability show
+```
+
+<a id="cli-local-backup-immutability-set"></a>
+#### set
+
+{{t:cli.commands.backup.immutability.set.description}}
+
+```bash
+rdc backup immutability set <days>
+```
+
+<a id="cli-local-backup-undelete"></a>
+### 8.24 undelete
+
+{{t:cli.commands.backup.undelete.description}}
+
+```bash
+rdc backup undelete <snapshot-id>
 ```
 
 ---
