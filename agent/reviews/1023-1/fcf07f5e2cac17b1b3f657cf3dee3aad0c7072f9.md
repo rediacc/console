@@ -21,7 +21,7 @@ Body-Sig: 931c4c1da22df545
 ### fcf07f5e.1 [low] knip.jsonc:234
 Anchor: in-diff
 Claim: After removing the cloudflare entry, the workers/proxy block keeps an empty "ignoreDependencies": [ ] array (lines 234-235); it is dead config and should be deleted with its key.
-Resolution: open
+Resolution: fixed ebd89f8604f97070732410dab9b1ab06a5312c72 | 45048a90 2026-11-02T05:25:00Z
 
 ### fcf07f5e.2 [low] scripts/data/doc-registry.md:886
 Anchor: in-diff
