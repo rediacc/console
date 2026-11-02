@@ -142,7 +142,8 @@ export const REGISTRY: GateMutation[] = [
     find: 'released, err := releaser.ReleaseLease(ctx, snapshotID)',
     replace: 'released, err := true, error(nil)',
     expect: 'no longer calls',
-    defect: "a repair stops sending the lease release, so the lineage's GC stays suspended until the TTL",
+    defect:
+      "a repair stops sending the lease release, so the lineage's GC stays suspended until the TTL",
   },
   {
     gate: 'check:ci-backup-manifest-shape-parity',

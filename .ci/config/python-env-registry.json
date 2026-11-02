@@ -1761,6 +1761,9 @@
     ".ci/rediacc_ci/tests/test_docker_retag_image.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_drills_backup_integrity.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_drills_backup_license.py": [
       "PATH"
     ],
