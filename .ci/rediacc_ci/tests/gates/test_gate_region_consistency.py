@@ -114,8 +114,8 @@ PLANTS = [
     (
         "account-shape",
         "workers/account/wrangler.us.toml",
-        'crons = ["0 3 * * *"]',
-        'crons = ["0 4 * * *"]',
+        'crons = ["17 * * * *", "0 3 * * *"]',
+        'crons = ["17 * * * *", "0 4 * * *"]',
         "stable-us   account",
     ),
     (

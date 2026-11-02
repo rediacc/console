@@ -308,7 +308,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 13 });
     // The lookup is exact, not "newest": the 999 GB decoy manifest in the same lineage must not be the one that was read.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
-      `/account/api/v1/backups/snapshots/resolve?lineage=${SOURCE_GUID}&anchorSnapshotId=${SNAPSHOT_ID}`
+      `/account/api/v1/backups/snapshots/resolve?lineage=${SOURCE_GUID}&anchorSnapshotId=${SNAPSHOT_ID}&includeDeleted=1`
     );
     // No stat probe: there is nothing on the target to measure.
     expect(

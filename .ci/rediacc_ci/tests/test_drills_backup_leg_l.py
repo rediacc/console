@@ -1,6 +1,6 @@
 """Leg l of `rediacc_ci.drills.backup` (GC and retention through the maintenance seam) against an in-memory model of the control plane.
 
-The model keeps what the leg reads: a chain of snapshots per lineage, a chunk ledger, a keep-last policy, the per-stream floor of 3 and the 7-day grace counted from the prune. The live run against `./run.sh account dev` and RustFS is the acceptance and belongs to the lead; these cases pin the leg's own logic, and that it goes red when the server misbehaves.
+The model keeps what the leg reads: a chain of snapshots per lineage, a chunk ledger, a keep-last policy that waits out the 7-day delayed-deletion window, the per-stream floor of 3 and the 7-day grace counted from the prune. The live run against `./run.sh account dev` and RustFS is the acceptance and belongs to the lead; these cases pin the leg's own logic, and that it goes red when the server misbehaves.
 """
 
 from __future__ import annotations
@@ -21,6 +21,8 @@ if typing.TYPE_CHECKING:
 
 FLOOR = 3
 GRACE_DAYS = 7
+WINDOW_DAYS = 7
+DEFAULT_KEEP_LAST = 7
 CELL = backup.CELL_BYTES
 
 
@@ -32,7 +34,8 @@ class Plane:
         self.lineage = ""
         self.snapshots: list[dict] = []  # oldest first: {id, cells}
         self.chunks: dict[str, int | None] = {}  # hash -> day it was orphaned, or None
-        self.keep_last: int | None = None
+        self.keep_last = DEFAULT_KEEP_LAST
+        self.waiting: int | None = None
         self.manifest_cells: dict[str, list[str]] = {}
         self.pending: list[str] = []
         self.maintenance_days: list[int] = []
@@ -40,18 +43,41 @@ class Plane:
     def referenced(self) -> set[str]:
         return {h for s in self.snapshots for h in s["cells"] if h}
 
-    def doomed(self) -> list[str]:
-        if self.keep_last is None:
-            return []
-        keep = max(self.keep_last, 1 if self.bug == "no-floor" else FLOOR)
+    def in_force(self, days: int) -> int:
+        """The keepLast that decides at `days`. `stale-preview` is promotion left to the sweep alone."""
+        return self.waiting if self.waiting is not None and days >= WINDOW_DAYS else self.keep_last
+
+    def doomed(self, days: int) -> list[str]:
+        keep = max(self.in_force(days), 1 if self.bug == "no-floor" else FLOOR)
         return [s["id"] for s in self.snapshots[: max(0, len(self.snapshots) - keep)]]
+
+    def preview(self, days: int) -> dict:
+        at = days if self.bug != "stale-preview" else 0
+        doomed = self.doomed(at)
+        kept = [s["id"] for s in self.snapshots if s["id"] not in doomed]
+        floor = kept[-FLOOR:]
+        return {
+            "streams": [{"policy": {"keepLast": self.in_force(at)}}],
+            "deleted": [{"snapshotId": s} for s in doomed],
+            "kept": [
+                {
+                    "snapshotId": s,
+                    "reasons": (["floor"] if s in floor else ["last"])
+                    + (["age-anchor"] if days < WINDOW_DAYS and s == kept[0] else []),
+                }
+                for s in kept
+            ],
+            "keptSnapshots": len(kept),
+        }
 
     def stored(self) -> int:
         return len(self.chunks) * CELL
 
     def sweep(self, days: int) -> dict:
         report: dict = {"retentionPolicy": [], "gc": [], "failures": []}
-        doomed = self.doomed()
+        if self.waiting is not None and days >= WINDOW_DAYS:
+            self.keep_last, self.waiting = self.waiting, None
+        doomed = self.doomed(days)
         if doomed:
             report["retentionPolicy"].append(
                 {"lineageGuid": self.lineage, "deletedSnapshots": doomed, "keptSnapshots": FLOOR}
@@ -94,15 +120,21 @@ class Plane:
             return 200, {"manifests": [{"snapshotId": s["id"]} for s in reversed(self.snapshots)]}
         if path.endswith("/usage"):
             return 200, {"storedBytes": self.stored()}
+        if path.endswith("/test/backup/retention-preview"):
+            now = datetime.datetime.fromisoformat(str(data["now"]))
+            days = round((now - datetime.datetime.now(datetime.UTC)).total_seconds() / 86400)
+            return 200, self.preview(days)
         if path.endswith("/retention/preview"):
-            doomed = self.doomed()
-            return 200, {
-                "deleted": [{"snapshotId": s} for s in doomed],
-                "keptSnapshots": len(self.snapshots) - len(doomed),
-            }
+            return 200, self.preview(0)
         if path.endswith("/retention") and method == "PUT":
-            self.keep_last = int(data["keepLast"])
-            return 200, {"policies": []}
+            asked = int(data["keepLast"])
+            if self.bug == "no-wait":
+                self.keep_last = asked
+                return 200, {"policies": [{"keepLast": asked, "pendingPolicy": None}]}
+            self.waiting = asked
+            return 200, {
+                "policies": [{"keepLast": self.keep_last, "pendingPolicy": {"keepLast": asked}}]
+            }
         if path.endswith("/test/backup/maintenance"):
             now = datetime.datetime.fromisoformat(str(data["now"]))
             days = round((now - datetime.datetime.now(datetime.UTC)).total_seconds() / 86400)
@@ -231,8 +263,10 @@ def test_leg_l_passes_against_a_server_that_prunes_to_the_floor_and_frees_after_
         subject.d.teardown()
 
 
-@pytest.mark.parametrize("bug", ["no-floor", "no-grace", "no-gc-accounting"])
-def test_leg_l_goes_red_when_the_server_breaks_the_floor_the_grace_or_the_accounting(
+@pytest.mark.parametrize(
+    "bug", ["no-floor", "no-grace", "no-gc-accounting", "no-wait", "stale-preview"]
+)
+def test_leg_l_goes_red_when_the_server_breaks_the_floor_the_grace_the_accounting_or_the_wait(
     subject: backup.Backup, monkeypatch: pytest.MonkeyPatch, bug: str
 ) -> None:
     plane = Plane(bug)

@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-10-29T22:19:03.947Z",
+  "generatedAt": "2026-11-02T10:25:32.788Z",
   "legs": [
     {
       "index": 1,
@@ -54,6 +54,7 @@
       "index": 2,
       "ids": [
         "github.com/rediacc/renet/pkg/atomicjson",
+        "github.com/rediacc/renet/pkg/backuphook",
         "github.com/rediacc/renet/pkg/bwrate",
         "github.com/rediacc/renet/pkg/certexport",
         "github.com/rediacc/renet/pkg/certexport/trigger",

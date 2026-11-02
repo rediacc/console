@@ -47,6 +47,10 @@ const ROUTES_TS = 'private/account/src/routes/backups.ts';
 const DTO_TS = 'private/account/src/dto/backup.dto.ts';
 const CLIENT_GO = 'private/renet/pkg/chunkstore/session.go';
 const REPAIR_GO = 'private/renet/pkg/chunkstore/repair.go';
+const REPORT_GO = 'private/renet/cmd/renet/backup_report.go';
+const REPORT_FIELDS_GO = 'private/renet/cmd/renet/backup_snapshot_report.go';
+const RESTORE_SIZE_TS = 'packages/cli/src/services/executor/repo-license-context.ts';
+const RESTORE_TEST_TS = 'packages/cli/src/commands/backup-restore-test.ts';
 
 interface Leg {
   /** Route path as mounted in the account's backups router. */
@@ -80,7 +84,18 @@ interface Leg {
    * function it defers, so a call in an unused helper does not count.
    */
   callerCall?: { file: string; pattern: RegExp; within?: string };
+  /**
+   * The files speaking this leg, for one session.go does not send: the report body is built in
+   * cmd/renet, and a query string reaches the account from the CLI. Absent means session.go. Each
+   * leg names its own file, so the keys of one leg cannot be satisfied by another's speaker.
+   */
+  clientFiles?: string[];
+  /** How the speaker spells a key, for one that is no Go JSON tag. Absent means clientNames. */
+  keySpelling?: (key: string) => RegExp;
 }
+
+/** A key of a query string the CLI composes. */
+const queryKey = (key: string) => new RegExp(`[?&]${key}=`);
 
 /** The protocol, declared once. Both sides are checked against THIS. */
 const LEGS: Leg[] = [
@@ -206,6 +221,42 @@ const LEGS: Leg[] = [
     // The request reaches the server through ReleaseLease, which RepairUpload defers on its way out.
     callerCall: { file: REPAIR_GO, pattern: /\breleaser\.ReleaseLease\(/, within: 'RepairUpload' },
   },
+  {
+    // The run's report. A spelling the schema does not accept is stripped silently, and hookFailures and hookFinish are the only way the account learns an application's prepare keeps failing or may still be held: nothing would alert, and no run would fail.
+    path: '/reports',
+    requestSchema: 'backupReportRequest',
+    responseSchema: 'backupReportResponse',
+    requestKeys: [
+      'kind',
+      'snapshotId',
+      'level',
+      'status',
+      'reason',
+      'nextExpectedAt',
+      'targetSeconds',
+      'achievedRpoMs',
+      'ticksMissed',
+      'targetMet',
+      'hookFailures',
+      'hookFinish',
+    ],
+    responseKeys: [],
+    clientCall: /\.APIBase\(\)\s*\+\s*"\/reports"/,
+    clientFiles: [REPORT_GO, REPORT_FIELDS_GO],
+  },
+  // A delayed delete still restores until its time, and the resolve route hides it unless asked. The two by-id size reads ask: without it a restore of one is licensed at the minimum size, and a restore test refuses it for an unknown size.
+  ...[RESTORE_SIZE_TS, RESTORE_TEST_TS].map(
+    (file): Leg => ({
+      path: '/snapshots/resolve',
+      requestSchema: 'backupSnapshotResolveQuery',
+      responseSchema: 'backupSnapshotResolveResponse',
+      requestKeys: ['lineage', 'anchorSnapshotId', 'includeDeleted'],
+      responseKeys: [],
+      clientCall: /\/backups\/snapshots\/resolve\?/,
+      clientFiles: [file],
+      keySpelling: queryKey,
+    })
+  ),
 ];
 
 /** The session header the account authenticates with. */
@@ -417,8 +468,12 @@ function checkLegs(
     if (!routes.includes(`'${leg.path}'`)) {
       problems.push(`    ${leg.path}\n      declared here but ${ROUTES_TS} mounts no such route.`);
     }
-    if (!clientCalls(leg, client)) {
-      problems.push(`    ${leg.path}\n      declared here but ${CLIENT_GO} never calls it.`);
+    const speaker = leg.clientFiles
+      ? leg.clientFiles.map((file) => sources[file] ?? '').join('\n')
+      : client;
+    const speakerName = leg.clientFiles?.join(', ') ?? CLIENT_GO;
+    if (!clientCalls(leg, speaker)) {
+      problems.push(`    ${leg.path}\n      declared here but ${speakerName} never calls it.`);
     }
     if (!callerCalls(leg, sources) && leg.callerCall) {
       problems.push(
@@ -463,10 +518,13 @@ function checkLegs(
       }
     }
     for (const key of [...leg.requestKeys, ...leg.responseKeys]) {
-      if (!clientNames(client, key)) {
+      const named = leg.keySpelling
+        ? leg.keySpelling(key).test(speaker)
+        : clientNames(speaker, key);
+      if (!named) {
         problems.push(
           `    ${leg.path} field "${key}"\n` +
-            `      part of the protocol, but ${CLIENT_GO} never names it. A field the\n` +
+            `      part of the protocol, but ${speakerName} never names it. A field the\n` +
             `      client does not send is a 400; one it does not read decodes to the\n` +
             `      zero value, and a zero-valued work list is the silent no-op.`
         );
@@ -665,6 +723,43 @@ if (clientCalls(releaseLeg, `// ${releaseSend}`) || clientCalls(releaseLeg, 'log
   process.exit(1);
 }
 
+/**
+ * Seventh control, on the REAL legs another file speaks: each must pass on its own file holding
+ * the keys, and fail when the key is gone from it, whatever session.go says. The keys sit in a
+ * session.go text here so a leg falling back to that file reads as a blind arm.
+ */
+const reportLeg = LEGS.find((leg) => leg.path === '/reports');
+const resolveLegs = LEGS.filter((leg) => leg.path === '/snapshots/resolve');
+if (!reportLeg || resolveLegs.length !== 2) {
+  console.error('✗ speaker control: the /reports leg or a /snapshots/resolve leg is gone.');
+  process.exit(1);
+}
+for (const [leg, key, spell] of [
+  [reportLeg, 'hookFailures', 'json:"hookFailures,omitempty"'],
+  [reportLeg, 'hookFinish', 'json:"hookFinish,omitempty"'],
+  [resolveLegs[0], 'includeDeleted', '&includeDeleted=1'],
+  [resolveLegs[1], 'includeDeleted', '&includeDeleted=1'],
+] as const) {
+  const lone: Leg = { ...leg, responseSchema: null, requestSchema: 'ctrl', requestKeys: [key] };
+  const accepts = `export const ctrl = z.object({\n  ${key}: z.string(),\n});`;
+  const call = leg === reportLeg ? 'x.APIBase()+"/reports"' : '/backups/snapshots/resolve?';
+  const files = leg.clientFiles ?? [];
+  const route = `'${leg.path}'`;
+  const speak = (text: string) => Object.fromEntries(files.map((f) => [f, text]));
+  if (checkLegs([lone], route, accepts, '', speak(`${call} ${spell}`)).length !== 0) {
+    console.error(`✗ speaker control over-fired: ${leg.path} did not see ${spell}.`);
+    process.exit(1);
+  }
+  const gone = speak(`${call} ${spell.replace(key, 'x')}`);
+  if (
+    checkLegs([lone], route, accepts, `"${key}" ${spell}`, speak(call)).length === 0 ||
+    checkLegs([lone], route, accepts, '', gone).length === 0
+  ) {
+    console.error(`✗ speaker control did not fire: ${leg.path} accepted a speaker without ${key}.`);
+    process.exit(1);
+  }
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);
@@ -675,7 +770,13 @@ if (routes.length === 0 || dto.length === 0 || client.length === 0) {
   process.exit(1);
 }
 
-const problems = checkLegs(LEGS, routes, dto, client, { [REPAIR_GO]: read(REPAIR_GO) });
+const problems = checkLegs(LEGS, routes, dto, client, {
+  [REPAIR_GO]: read(REPAIR_GO),
+  [REPORT_GO]: read(REPORT_GO),
+  [REPORT_FIELDS_GO]: read(REPORT_FIELDS_GO),
+  [RESTORE_SIZE_TS]: read(RESTORE_SIZE_TS),
+  [RESTORE_TEST_TS]: read(RESTORE_TEST_TS),
+});
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {
   problems.push(`    auth\n      ${ROUTES_TS} no longer reads ${SESSION_HEADER}.`);

@@ -78,18 +78,14 @@ export interface RpoChange {
 }
 
 function rpoSecondsOf(raw: string, option: string): number {
-  const seconds = parseDurationSeconds(raw);
-  const problem =
-    seconds === undefined ? 'expected a duration such as 15m or 1h' : rpoProblem(seconds);
-  if (seconds === undefined || problem) {
-    throw new ValidationError(
-      t('commands.backup.strategy.set.rpoInvalid', {
-        option,
-        value: raw,
-        reason: problem ?? 'expected a duration such as 15m or 1h',
-      })
+  const invalid = (reason: string) =>
+    new ValidationError(
+      t('commands.backup.strategy.set.rpoInvalid', { option, value: raw, reason })
     );
-  }
+  const seconds = parseDurationSeconds(raw);
+  if (seconds === undefined) throw invalid('expected a duration such as 15m or 1h');
+  const problem = rpoProblem(seconds);
+  if (problem) throw invalid(problem);
   return seconds;
 }
 
@@ -146,8 +142,9 @@ function planRepoCellSize(raws: string[], targets: RepoTargets, change: RpoChang
       throw new ValidationError(t('commands.backup.strategy.set.repoCellSizeNeedsTarget', { ref }));
     }
     if (isNone(value)) {
-      const { cellSize: _dropped, ...rest } = targets[ref];
-      targets[ref] = rest;
+      const next = { ...targets[ref] };
+      delete next.cellSize;
+      targets[ref] = next;
       change.summary.push(`${ref}: cell size cleared`);
       continue;
     }

@@ -6,7 +6,7 @@ WHAT IT IS FOR. The backup-storage program replaces whole-image pushes with a co
 
 COST. No virtual machines for the default legs. It runs against `./run.sh account dev` (restarted by the drill) and the RustFS that script starts on :9100, and uploads a few hundred kilobytes. Leg i (`rdc backup verify` on a real repo) is opt-in and refuses itself by name when no machine is there.
 
-LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy prunes down to the per-stream floor of 3, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically. m: the scheduled verify (levels b and c of `runMaintenance`) against the real store: a control pass reports two checked chunks and nothing missing or corrupt, then one chunk object is deleted and another overwritten straight in RustFS, and the next pass names the first as missing and the second as corrupt. n: a presigned chunk PUT is bound to its declared size and checksum: a body one byte too long and a same-length body with other bytes are both refused by the store, then the exact body through the same URL is accepted (the control, last, because the PUT is create-only). o: a twin tenant on its own subscription cannot reach this one's lineage: not through the license (guid ownership), the session binding, a path rewritten inside a signed URL, an object planted under the shared lineage id in its own prefix, or the manifest list. p: the LUKS identity a commit declares is held to the licence and to the stream's previous row, each refusal by name (uuid-changed, key-digest-changed, identity-undeclared, accepted-change-has-parent, licence-uuid-mismatch), and the manifest body to the commit (`BACKUP_MANIFEST_BODY_MISMATCH`); with `--renet` a swapped image is refused by real renet with a lost journal too, and a wrong passphrase places nothing. q: retention keeps a verified snapshot through a run of bad nights, against a twin lineage with no verdict that loses it. r: a corrupt chunk is named by the store pass, deleted by the repair route, put back, and the next pass is clean with the head's root checked; a live lease refuses the repair and a released one does not; with `--renet` real `renet backup repair` does the re-upload. s: a duplicate create-only PUT answers 412 and a wrong checksum is refused BY THE STORE, printed as one `STORE-PROOF` line so a tier B run (`--legs a,s`) reads as that store's proof.
+LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy waits out the delayed-deletion window, then prunes down to the per-stream floor of 3 exactly as the dry run at that clock said, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically. m: the scheduled verify (levels b and c of `runMaintenance`) against the real store: a control pass reports two checked chunks and nothing missing or corrupt, then one chunk object is deleted and another overwritten straight in RustFS, and the next pass names the first as missing and the second as corrupt. n: a presigned chunk PUT is bound to its declared size and checksum: a body one byte too long and a same-length body with other bytes are both refused by the store, then the exact body through the same URL is accepted (the control, last, because the PUT is create-only). o: a twin tenant on its own subscription cannot reach this one's lineage: not through the license (guid ownership), the session binding, a path rewritten inside a signed URL, an object planted under the shared lineage id in its own prefix, or the manifest list. p: the LUKS identity a commit declares is held to the licence and to the stream's previous row, each refusal by name (uuid-changed, key-digest-changed, identity-undeclared, accepted-change-has-parent, licence-uuid-mismatch), and the manifest body to the commit (`BACKUP_MANIFEST_BODY_MISMATCH`); with `--renet` a swapped image is refused by real renet with a lost journal too, and a wrong passphrase places nothing. q: retention keeps a verified snapshot through a run of bad nights, against a twin lineage with no verdict that loses it. r: a corrupt chunk is named by the store pass, deleted by the repair route, put back, and the next pass is clean with the head's root checked; a live lease refuses the repair and a released one does not; with `--renet` real `renet backup repair` does the re-upload. s: a duplicate create-only PUT answers 412 and a wrong checksum is refused BY THE STORE, printed as one `STORE-PROOF` line so a tier B run (`--legs a,s`) reads as that store's proof.
 
 NOT PROVEN HERE, said plainly: by default no machine runs `renet backup snapshot` or `renet backup restore` in this host-only drill, and legs b-d produce their own cells. `--renet` (with `--vm`) swaps legs b-d for the real thing: a repository on the worker is snapshotted, one cell is rewritten, it is snapshotted again, and both are restored by renet and byte-compared (`rediacc_ci.drills.backup_renet`); the FIEMAP/anchor half is still renet's btrfs tier.
 
@@ -84,6 +84,9 @@ CELLS = 8
 HOLES = frozenset({2, 6})
 # Leg l commits this many snapshots into one chain; the per-stream retention floor (3) keeps them from being pruned down to the declared keepLast of 1.
 L_SNAPSHOTS = 5
+# The server's default keepLast, in force until a declared change that keeps less has waited out the window, and leg l's sweep, past that 7-day wait.
+DEFAULT_KEEP_LAST = 7
+L_SWEEP_DAYS = 9
 # Leg m seeds exactly two non-zero cells (the sample of 3 always covers both), and its two maintenance clocks sit past leg l's +17 days plus the 7-day verify interval.
 M_CELLS = (0, 1)
 M_CONTROL_DAYS = 25
@@ -1824,6 +1827,44 @@ class Backup:
         self.av(len(failed), 0, "and no phase failed for the drill subscription")
         return report if isinstance(report, dict) else {}
 
+    def retention_preview_at(self, lineage: str, days_ahead: int) -> list[str]:
+        """The retention dry run at a clock `days_ahead` days in the future, the read beside run_maintenance. Returns the snapshots it names, sorted; the kept list stays in the captured reply."""
+        when = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=days_ahead)
+        body = self.api(
+            "POST",
+            "%s/test/backup/retention-preview" % self.d.api_base(),
+            {
+                "subscriptionId": self.subscription_id,
+                "lineageGuid": lineage,
+                "now": when.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            },
+        )
+        self.capture("POST /test/backup/retention-preview (now + %d days)" % days_ahead, body)
+        self.d.assert_equal("200", self.status, "the dry run at now + %d days answers" % days_ahead)
+        return self.named_doomed()
+
+    def named_doomed(self) -> list[str]:
+        """The snapshots the captured dry run names, sorted."""
+        return sorted(
+            wire.jstr(x.get("snapshotId"))
+            for x in _as_list(self.field("deleted"))
+            if isinstance(x, dict)
+        )
+
+    def kept_reasons(self, snapshot: str) -> list[object]:
+        """Why the captured dry run keeps one snapshot; empty when it does not."""
+        for entry in _as_list(self.field("kept")):
+            if isinstance(entry, dict) and entry.get("snapshotId") == snapshot:
+                return _as_list(entry.get("reasons"))
+        return []
+
+    def stream_policy(self, knob: str) -> str:
+        """One knob of the policy the captured dry run says decides, from its only stream."""
+        streams = _as_list(self.field("streams"))
+        first = streams[0] if streams and isinstance(streams[0], dict) else {}
+        policy = first.get("policy")
+        return wire.jstr(policy.get(knob)) if isinstance(policy, dict) else ""
+
     def stored_bytes(self) -> int:
         usage = self.api("GET", "%s/usage" % self.backup_api(), None, self.bearer())
         return _as_number(wire.jstr(self.field("storedBytes", usage)))
@@ -1906,7 +1947,17 @@ class Backup:
         )
         self.capture("PUT /backups/retention (keepLast 1)", policy)
         d.assert_equal("200", self.status, "a keep-last-1 policy is declared for the lineage")
+        declared = _as_list(self.field("policies"))
+        answer = declared[0] if declared and isinstance(declared[0], dict) else {}
+        waiting = answer.get("pendingPolicy")
+        self.av(
+            waiting.get("keepLast") if isinstance(waiting, dict) else None,
+            1,
+            "and it keeps less, so it waits out the 7-day delayed-deletion window",
+        )
+        self.av(answer.get("keepLast"), DEFAULT_KEEP_LAST, "and the knobs in force have not moved")
 
+        # Today's dry run answers the policy in force, and the wait is the reason nothing is named.
         preview = self.api(
             "GET",
             "%s/retention/preview?lineage=%s" % (self.backup_api(), lineage),
@@ -1915,20 +1966,32 @@ class Backup:
         )
         self.capture("GET /backups/retention/preview", preview)
         d.assert_equal("200", self.status, "the dry run answers")
-        named = sorted(
-            wire.jstr(x.get("snapshotId"))
-            for x in _as_list(self.field("deleted"))
-            if isinstance(x, dict)
+        self.av(self.named_doomed(), [], "CONTROL: inside the wait the dry run names nothing")
+        self.aj("keptSnapshots", L_SNAPSHOTS, "and keeps all five")
+        self.av(self.stream_policy("keepLast"), str(DEFAULT_KEEP_LAST), "under the knobs in force")
+        self.av(
+            "age-anchor" in self.kept_reasons(snaps[0]),
+            True,
+            "and a stream younger than the window keeps its oldest as the age anchor",
         )
+
+        # Past the wait the declared policy decides. Every snapshot is older than the window by then, so the age anchor is the newest, which the floor holds already: the floor alone stands between keepLast 1 and the two it spares.
+        named = self.retention_preview_at(lineage, L_SWEEP_DAYS)
+        self.av(self.stream_policy("keepLast"), "1", "past the wait the declared policy decides")
         self.av(
             named,
             sorted(snaps[:2]),
             "the dry run names the two oldest only: the per-stream floor of 3 outranks keepLast 1",
         )
         self.aj("keptSnapshots", L_SNAPSHOTS - 2, "and keeps three")
+        self.av(
+            self.kept_reasons(snaps[2]),
+            ["floor"],
+            "and the floor is the only reason the oldest of them stays",
+        )
 
         # The prune pass: manifests go, and the chunks they orphaned are pinned for the 7-day grace counted from this pass.
-        sweep = self.run_maintenance(9)
+        sweep = self.run_maintenance(L_SWEEP_DAYS)
         self.av(
             self.deleted_by(sweep, lineage),
             sorted(snaps[:2]),
@@ -2863,49 +2926,34 @@ class Backup:
             self.capture("PUT /backups/retention (keepLast 1)", text)
             d.assert_equal("200", self.status, "keep-last-1 is declared")
 
-        # The newest three are the positional floor, and every one of them failed, which is the case this leg exists for: position alone would keep only bad versions.
+        # Inside the wait the knobs in force keep every one of them, so today's dry run names nothing, on either lineage.
+        for target in (lineage, twin):
+            preview = self.api(
+                "GET",
+                "%s/retention/preview?lineage=%s" % (self.backup_api(), target),
+                None,
+                self.bearer(),
+            )
+            self.capture("GET /backups/retention/preview (inside the wait)", preview)
+            d.assert_equal("200", self.status, "the dry run answers")
+            self.av(self.named_doomed(), [], "CONTROL: inside the wait it names nothing")
+
+        # The newest three are the positional floor, and every one of them failed, which is the case this leg exists for: position alone would keep only bad versions. Past the window the age anchor passes over a failed row too, so on this lineage it lands on the verified snapshot and on the twin on the newest: the assertion on the reason is what holds the verdict to account, not the survival alone.
         doomed = sorted(s for i, s in enumerate(snaps[:3]) if i != Q_VERIFIED)
-        preview = self.api(
-            "GET",
-            "%s/retention/preview?lineage=%s" % (self.backup_api(), lineage),
-            None,
-            self.bearer(),
-        )
-        self.capture("GET /backups/retention/preview (verified lineage)", preview)
-        d.assert_equal("200", self.status, "the dry run answers")
         self.av(
-            sorted(
-                wire.jstr(x.get("snapshotId"))
-                for x in _as_list(self.field("deleted"))
-                if isinstance(x, dict)
-            ),
+            self.retention_preview_at(lineage, Q_SWEEP_DAYS),
             doomed,
             "the dry run spares the verified snapshot, older than the floor",
         )
-        reasons: object = next(
-            (
-                x.get("reasons")
-                for x in _as_list(self.field("kept"))
-                if isinstance(x, dict) and x.get("snapshotId") == verified
-            ),
-            [],
+        self.av(
+            "last-verified" in self.kept_reasons(verified),
+            True,
+            "and names why: last-verified",
         )
-        self.av("last-verified" in _as_list(reasons), True, "and names why: last-verified")
 
         # CONTROL: the same chain with no verdict loses that snapshot, so the verdict is what kept it.
-        preview = self.api(
-            "GET",
-            "%s/retention/preview?lineage=%s" % (self.backup_api(), twin),
-            None,
-            self.bearer(),
-        )
-        self.capture("GET /backups/retention/preview (no verdict, planted control)", preview)
         self.av(
-            sorted(
-                wire.jstr(x.get("snapshotId"))
-                for x in _as_list(self.field("deleted"))
-                if isinstance(x, dict)
-            ),
+            self.retention_preview_at(twin, Q_SWEEP_DAYS),
             sorted(twin_snaps[:3]),
             "CONTROL: with no verdict the same snapshot is doomed",
         )

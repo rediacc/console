@@ -71,6 +71,8 @@ const METADATA: Record<string, string> = {
   luksUuid: 'identity of the LUKS container, read back to detect a replaced image; names no chunk',
   luksKeyDigest:
     'digest of the LUKS key material for the same identity check; it keys no stored object',
+  consistency:
+    'what the capture promises about the application (app-quiesced or crash-consistent); a label on the snapshot that names no chunk',
   parent:
     'parent SNAPSHOT id, not a chunk hash; the parent manifest is itself indexed, which is why no parent-chain walk is needed',
 };

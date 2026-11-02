@@ -337,9 +337,9 @@ const RESTORE_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[
 export async function resolveRestoreSizeGb(lineage: string, at: unknown): Promise<number> {
   const snapshotId = typeof at === 'string' ? at : '';
   try {
-    // One row by id through the resolve route: the listing is capped at 500 rows, and an older snapshot is not in it.
+    // One row by id through the resolve route: the listing is capped at 500 rows, and an older snapshot is not in it. A delayed delete still restores until its time, so it still has a size.
     const manifest = await accountServerFetch<BackupManifestEntry>(
-      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}`
+      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}&includeDeleted=1`
     );
     return Math.max(MIN_REQUESTED_SIZE_GB, Math.ceil(manifest.totalBytes / (1024 * 1024 * 1024)));
   } catch (error) {

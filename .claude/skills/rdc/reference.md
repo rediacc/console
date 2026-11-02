@@ -409,6 +409,11 @@ Create or update a backup strategy
 - `--include <repos>`: Only back up these repos (comma-separated names)
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
 - `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
+- `--rpo <duration>`: Declared protection target, for example 15m (at least 5m; none clears it)
+- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family (default: )
+- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository (default: )
+- `--no-estimate`: Skip the churn and cost estimate
+- `--dry-run`: Show what would change and write nothing
 - `--enable`: Enable the strategy or destination
 - `--disable`: Disable the strategy or destination
 
@@ -514,6 +519,12 @@ Show backup storage quota, stored bytes, and per-repo usage
 
 List backup snapshot manifests recorded on the server
 
+**Options:**
+
+- `--limit <n>`: Rows per page (default and maximum 500)
+- `--before <cursor>`: Page cursor from a previous listing (nextBefore)
+- `--include-deleted`: Include snapshots whose delayed delete is pending
+
 > MCP tool
 
 ### rdc backup verify <repo-ref>
@@ -580,6 +591,7 @@ Declare how many snapshots to keep. Every knob is replaced, not merged.
 - `--keep-weekly <n>`: Keep the newest snapshot from each of this many weeks
 - `--keep-monthly <n>`: Keep the newest snapshot from each of this many months
 - `--keep-yearly <n>`: Keep the newest snapshot from each of this many years
+- `--keep-within <duration>`: Keep every snapshot within this long of the newest, e.g. 24h
 - `--stream <id>`: Apply to this backup stream only (a stream id); without it, the repository-wide default
 
 > MCP excluded: Declares what the server deletes, and replaces every knob rather than merging, so a partial call silently discards retained snapshots.
@@ -599,6 +611,36 @@ Remove the declared policy, so the plan or server default applies again.
 Delete one stored snapshot; its exclusive data is freed by the next garbage collection.
 
 > MCP excluded: Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.
+
+### rdc backup immutability show
+
+Show the delayed-deletion window in force
+
+> MCP tool
+
+### rdc backup immutability set <days>
+
+Set the delayed-deletion window in days (0 to 30)
+
+> MCP excluded: Changes how long a delete waits before it takes effect, which is the operator's safety window and not an agent's to move.
+
+### rdc backup undelete <snapshot-id>
+
+Cancel a delayed snapshot delete before it takes effect
+
+> MCP tool
+
+### rdc backup churn <repo-ref>
+
+Measure how much of a repository image changes between runs, project the upload per cell size and recommend one. A reflink base is kept on the machine while it runs and is always removed.
+
+**Options:**
+
+- `--samples <n>`: Measured samples to take (default 3)
+- `--interval <duration>`: Wait between probes, for example 10m (default 10m)
+- `--debug`: Enable debug output
+
+> MCP excluded: Waits minutes to hours between probes and holds a reflink base on the machine until it ends; run it from a terminal.
 
 ### rdc backup reconcile [repo-ref]
 
@@ -726,6 +768,7 @@ Delete every stored backup snapshot of a repository from the chunk store at once
 
 - `--dry-run`: Show what would be done without making changes
 - `-y, --yes`: Skip confirmation prompt
+- `--cancel`: Cancel a delayed purge before it takes effect
 
 > agent: fork-only | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
 

@@ -5,13 +5,13 @@ import {
   generateServiceUnit,
 } from '../../services/backup/backup-schedule-unit-generator.js';
 import { strategyUnschedulableReason } from '../../services/backup/backup-strategy-validate.js';
+import { applyBackupStrategyOptions } from '../backup-strategy.js';
 import {
-  applyBackupStrategyOptions,
   buildDestination,
   buildStrategyUpdate,
   parseRepoFilter,
   parseRetentionOption,
-} from '../backup-strategy.js';
+} from '../backup-strategy-options.js';
 
 describe('parseRepoFilter', () => {
   it('parses a comma-separated list, trimming and dropping empties', () => {

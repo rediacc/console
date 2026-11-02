@@ -79,7 +79,7 @@ async function indexedImageBytes(lineage: string, snapshotId: string): Promise<n
   assertHostedBackupAccount();
   try {
     const row = await accountServerFetch<BackupManifestsResponse['manifests'][number]>(
-      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}`
+      `/account/api/v1/backups/snapshots/resolve?lineage=${encodeURIComponent(lineage)}&anchorSnapshotId=${encodeURIComponent(snapshotId)}&includeDeleted=1`
     );
     return row.totalBytes;
   } catch (error) {

@@ -72,12 +72,22 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/backupstate",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/list",
         "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/backuphook/**",
+      "packages": [
+        "pkg/backuphook"
+      ],
+      "dependents": [
+        "cmd/renet"
       ]
     },
     {
@@ -109,6 +119,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/compose",
         "pkg/convergeguard",
         "pkg/functions",
@@ -130,6 +141,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/credentials",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -151,6 +163,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -181,6 +194,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/convergeguard",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -198,6 +212,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/backupstate",
         "pkg/certexport",
         "pkg/chunkstore",
@@ -270,6 +285,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/functions",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
@@ -286,6 +302,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -307,6 +324,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -334,6 +352,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -378,6 +397,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -408,6 +428,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -441,6 +462,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/convergeguard",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -458,6 +480,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -486,6 +509,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -544,6 +568,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -591,6 +616,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -619,6 +645,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/compose",
         "pkg/convergeguard",
@@ -640,6 +667,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -680,6 +708,7 @@
       "dependents": [
         "cmd/renet",
         "pkg/atomicjson",
+        "pkg/backuphook",
         "pkg/backupstate",
         "pkg/bwrate",
         "pkg/certexport",
@@ -862,6 +891,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/functions",
         "pkg/infra/ceph",
         "pkg/infra/docker",
@@ -902,6 +932,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -930,6 +961,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/backupstate",
         "pkg/certexport",
         "pkg/chunkstore",
@@ -960,6 +992,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/functions",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
@@ -976,6 +1009,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/credentials",
         "pkg/functions",
@@ -1003,6 +1037,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/datastore",
         "pkg/functions",
@@ -1027,6 +1062,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/functions",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
@@ -1042,6 +1078,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/compose",
         "pkg/convergeguard",
         "pkg/functions",
@@ -1070,6 +1107,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -1127,6 +1165,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/datastore",
         "pkg/functions",
@@ -1150,6 +1189,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/convergeguard",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -1178,6 +1218,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/compose",
         "pkg/convergeguard",
@@ -1214,6 +1255,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/functions",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
@@ -1228,6 +1270,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -1258,6 +1301,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/compose",
         "pkg/convergeguard",
@@ -1278,6 +1322,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -1315,6 +1360,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/compose",
         "pkg/convergeguard",
@@ -1339,6 +1385,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/functions",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
@@ -1382,6 +1429,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -1406,6 +1454,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/kube/csidriver",
@@ -1426,6 +1475,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -1490,6 +1540,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -1522,6 +1573,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backuphook",
         "pkg/chunkstore",
         "pkg/datastore",
         "pkg/functions",
