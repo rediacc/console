@@ -63,7 +63,7 @@ step: Run account integration tests
 needs: none
 id: check:ci-account-server
 run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test
-lane: quality-go
+lane: quality-account
 ---- end gate ----
 """
 

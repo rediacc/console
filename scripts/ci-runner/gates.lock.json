@@ -4076,7 +4076,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-go",
+      "job": "quality-account",
       "step": "Run account integration tests"
     }
   },
@@ -4104,7 +4104,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-go",
+      "job": "quality-account",
       "step": "Check config token auth requires org membership"
     }
   },
@@ -4118,7 +4118,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-go",
+      "job": "quality-account",
       "step": "Assert no NODE_ENV branching in account routes"
     }
   },
@@ -4132,7 +4132,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-go",
+      "job": "quality-account",
       "step": "Check no admin user role (must be root)"
     }
   },
@@ -4154,7 +4154,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-go",
+      "job": "quality-account",
       "step": "Check scope registry audit"
     }
   },
@@ -4469,7 +4469,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-go",
+      "job": "quality-account",
       "step": "Run account backup tests"
     }
   },

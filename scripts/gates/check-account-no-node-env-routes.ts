@@ -17,7 +17,7 @@
  * ---- gate ----
  * step: Assert no NODE_ENV branching in account routes
  * needs: node, submodules
- * lane: quality-go
+ * lane: quality-account
  * selftest: true
  * ---- end gate ----
  */

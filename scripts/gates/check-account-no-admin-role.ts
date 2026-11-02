@@ -20,7 +20,7 @@
  * ---- gate ----
  * step: Check no admin user role (must be root)
  * needs: node, submodules
- * lane: quality-go
+ * lane: quality-account
  * selftest: true
  * ---- end gate ----
  */

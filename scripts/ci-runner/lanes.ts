@@ -35,6 +35,7 @@ const LANE_ORDER = [
   'quality-security',
   'quality-packages',
   'quality-www-build',
+  'quality-account',
   'quality-go',
 ] as const;
 

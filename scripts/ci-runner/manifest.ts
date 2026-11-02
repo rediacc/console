@@ -3842,7 +3842,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-account',
       step: 'Run account integration tests',
     },
   },
@@ -3866,7 +3866,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-account',
       step: 'Check config token auth requires org membership',
     },
   },
@@ -3879,7 +3879,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-account',
       step: 'Assert no NODE_ENV branching in account routes',
     },
   },
@@ -3891,7 +3891,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-account',
       step: 'Check no admin user role (must be root)',
     },
   },
@@ -3908,7 +3908,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-account',
       step: 'Check scope registry audit',
     },
   },
@@ -4190,7 +4190,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-account',
       step: 'Run account backup tests',
     },
   },

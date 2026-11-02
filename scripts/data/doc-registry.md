@@ -28,17 +28,17 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | build:packages | local-only | no | no |
 | build:www | quality-www-build / Build www (produces dist/route-manifest.json) | no | yes |
 | check:actions | quality-code / Action freshness | yes | no |
-| check:ci-account-backup | quality-go / Run account backup tests | yes | yes |
-| check:ci-account-config-auth | quality-go / Check config token auth requires org membership | yes | no |
+| check:ci-account-backup | quality-account / Run account backup tests | yes | yes |
+| check:ci-account-config-auth | quality-account / Check config token auth requires org membership | yes | no |
 | check:ci-account-env-retired | quality-security / Account env files retired | yes | no |
 | check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | no |
-| check:ci-account-no-admin-role | quality-go / Check no admin user role (must be root) | yes | no |
-| check:ci-account-no-node-env-routes | quality-go / Assert no NODE_ENV branching in account routes | yes | no |
+| check:ci-account-no-admin-role | quality-account / Check no admin user role (must be root) | yes | no |
+| check:ci-account-no-node-env-routes | quality-account / Assert no NODE_ENV branching in account routes | yes | no |
 | check:ci-account-onboarding | quality-content / Validate account onboarding splash against canonical tutorials | yes | no |
 | check:ci-account-portal | quality-packages / Check account portal (typecheck + build) | yes | yes |
 | check:ci-account-probes | quality-static / Dev-stack liveness probes | yes | no |
-| check:ci-account-scope-audit | quality-go / Check scope registry audit | yes | no |
-| check:ci-account-server | quality-go / Run account integration tests | yes | yes |
+| check:ci-account-scope-audit | quality-account / Check scope registry audit | yes | no |
+| check:ci-account-server | quality-account / Run account integration tests | yes | yes |
 | check:ci-actionlint | quality-code / Workflow lint (actionlint) | yes | no |
 | check:ci-actions-allowlist | quality-static / Actions allowlist | yes | no |
 | check:ci-actions-vars | quality-security / GitHub Actions variables | yes | no |

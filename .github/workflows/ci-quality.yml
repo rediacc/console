@@ -2667,7 +2667,7 @@ jobs:
 
   # ============================================================================
   # L10 GO -- everything needing a Go toolchain and the renet/account submodules.
-  # Absorbs: renet, ebpf-objects, account-server.
+  # Absorbs: renet, ebpf-objects. (The account gates moved to quality-account.)
   # ============================================================================
   quality-go:
     name: Go
@@ -2902,6 +2902,80 @@ jobs:
         working-directory: private/renet
         run: go test ./pkg/ebpf/ -v
 
+      # J2 (PLAN-backup-program): the chunk-store data plane, non-root, counted
+      # (the gate refuses a green that ran fewer tests than its floor).
+      - name: Renet test map and mapped Go tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-renet-test-map
+
+      - name: Run Go cross-language signature tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        working-directory: private/renet
+        run: go test -v ./pkg/subscription/... -run TestCrossLanguage
+
+  # ============================================================================
+  # L10b ACCOUNT -- the account server's own gates and its integration suite.
+  # Absorbs: account-config-auth, account-no-admin-role, account-scope-audit,
+  # account-no-node-env-routes, account-backup, account-server.
+  #
+  # SPLIT OUT OF quality-go, 2026-11-02, after Quality / Go hit its 14-minute
+  # timeout twice on run 41502786816 (916 s and 930 s, both dying inside
+  # `Run account integration tests`). The same Go cache key was restored in the
+  # passing run 41478109601 (11m02s) and the failing one, and every CPU-bound
+  # step slowed by the same 1.5x in the failing one (renet quality 4m34 -> 7m08,
+  # the three golangci-lint GOOS passes 61/69/69 s -> 95/112/110 s, the
+  # cpu-features compile 8 s -> 14 s, the account suite 2m14 -> over 3m18): a
+  # slower runner, not a cache that keyed itself cold. A lane that finishes in
+  # 11m against a 14m cap has no room for a runner 1.5x slower, and
+  # check-lane-budget caps timeout-minutes at 15, so the number is not the fix.
+  #
+  # WHAT THIS LANE NEEDS, and what it does not. It reads renet SOURCE files
+  # (backup-createonly-conformance and backup-store-pass read pkg/chunkstore
+  # text and a testdata vector), so it takes the submodules on the same
+  # readonly-preset App token the Go lane uses: no token is widened. It runs no
+  # Go toolchain and no clang, and it needs no deep history (nothing here asks
+  # `git log`), so it carries neither setup-go nor the deep fetch that made the
+  # Go checkout slow.
+  # ============================================================================
+  quality-account:
+    name: Account
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      # natives: the account suite needs the compiled ssh2/cpu-features bindings.
+      # account: the integration tests run out of private/account's own tree.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          natives: 'true'
+          build-packages: 'true'
+
       - name: Check config token auth requires org membership
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-config-auth
@@ -2914,6 +2988,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-scope-audit
 
+      - name: Assert no NODE_ENV branching in account routes
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-no-node-env-routes
+
       # J3 (PLAN-backup-program): the backup-* account test files by themselves, so a
       # red backup path names itself in this step instead of hiding inside the
       # whole-suite step below.
@@ -2921,24 +2999,9 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-backup
 
-      # J2 (PLAN-backup-program): the chunk-store data plane, non-root, counted
-      # (the gate refuses a green that ran fewer tests than its floor).
-      - name: Renet test map and mapped Go tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-renet-test-map
-
-      - name: Assert no NODE_ENV branching in account routes
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-account-no-node-env-routes
-
       - name: Run account integration tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test
-
-      - name: Run Go cross-language signature tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        working-directory: private/renet
-        run: go test -v ./pkg/subscription/... -run TestCrossLanguage
 
   # ============================================================================
   # L11 WIRING -- node, nothing else, and NEVER a shard.

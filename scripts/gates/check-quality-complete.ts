@@ -495,7 +495,7 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
  * Deciding that is a design call this gate deliberately does not make; making the gap
  * VISIBLE instead of silent is what it does.
  */
-export const UNDECIDED_LANES: readonly string[] = ['ci-quick', 'quality-packages', 'quality-go'];
+export const UNDECIDED_LANES: readonly string[] = ['ci-quick', 'quality-packages', 'quality-account', 'quality-go'];
 
 /**
  * Step names a lane's `# >>> gate-bind` region emits, per lane.
