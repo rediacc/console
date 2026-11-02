@@ -15,6 +15,9 @@
 import { configService } from '../config/config-resources.js';
 import type { ExtraMachine } from './types.js';
 
+/** Functions whose `to` param is a directory on the machine, never a peer machine. */
+const PATH_DESTINATION_FUNCTIONS: ReadonlySet<string> = new Set(['backup_restore_path']);
+
 /**
  * Resolve the peer machine referenced by `params`, if any.
  *
@@ -22,9 +25,10 @@ import type { ExtraMachine } from './types.js';
  * which is the common case.
  */
 export async function resolveExtraMachines(
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
+  functionName?: string
 ): Promise<Record<string, ExtraMachine> | undefined> {
-  const peer = peerMachineName(params);
+  const peer = peerMachineName(params, functionName);
   if (!peer) return undefined;
 
   const machine = await configService.getLocalMachine(peer);
@@ -51,7 +55,12 @@ export async function resolveExtraMachines(
  * only be the datastore family, where `--to` always names a machine. That is
  * what makes the last rule safe: it cannot swallow a storage name.
  */
-function peerMachineName(params: Record<string, unknown>): string | undefined {
+function peerMachineName(
+  params: Record<string, unknown>,
+  functionName?: string
+): string | undefined {
+  // `to` names a DIRECTORY here, and with no discriminator it would be read as a datastore peer: `Machine "/tmp/x" not found`.
+  if (functionName && PATH_DESTINATION_FUNCTIONS.has(functionName)) return undefined;
   if (params.destinationType === 'machine' && typeof params.to === 'string') {
     return params.to;
   }

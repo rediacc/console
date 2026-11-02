@@ -810,6 +810,7 @@ test.describe
       const tag = String(stamp).slice(-8);
       const REPO_NAME = `e2ebk-scn-${tag}`;
       const SAME_NAME = `${REPO_NAME}-same`;
+      const PRIME_BACK = `${REPO_NAME}-prime`;
       const FORK_TAG = 'fk';
       const FORK_BACK = `${REPO_NAME}-forkback`;
       const COLD_NAME = `e2ebk-cold-${tag}`;
@@ -928,6 +929,7 @@ test.describe
           COLD_BACK,
           COLD_NAME,
           FORK_BACK,
+          PRIME_BACK,
           SAME_NAME,
           REPO_NAME,
         ]) {
@@ -953,14 +955,21 @@ test.describe
       });
 
       test('K2. a restore killed mid-flight resumes and still lands byte-identical', async () => {
-        // Raw verb on the machine: a CLI restore mints a fresh GUID per call and the staging file is keyed by the target GUID, so only a fixed target can resume. The raw call may borrow another repo's license on the machine, which this case does not claim to test.
+        // Raw verb on the machine: a CLI restore mints a fresh GUID per call and the staging file is keyed by the target GUID, so only a fixed target can resume.
+        // The raw verb runs on a licence of the REQUESTED lineage only (resolveRestoreLicense, since 43aba35), and a licence of another lineage is never borrowed. A raw call cannot mint one for a target whose image does not exist yet, so a CLI restore onto this machine goes first: it issues this lineage's licence here, the way a user's restore does. Its copy is then removed with the other names.
+        const prime = await cliRestore(`${REPO_NAME}@${M1}`, PRIME_BACK, M2, seedSnapshotId);
+        expect(
+          prime.code,
+          `the CLI restore that licenses the lineage on the second machine: ${bothChannels(prime).slice(-1000)}`
+        ).toBe(0);
         const target = randomUUID();
         cleanup.push(async () => {
           await w2.executeViaBridge(
             `sudo rm -f "${DS}/repositories/${target}" "${DS}/repositories/.restore-${target}"`
           );
         });
-        const args = `--repo "${target}" --lineage "${repo.guid}" --at "${seedSnapshotId}" --datastore "${DS}"`;
+        // --no-seed: the prime copy above is a same-lineage copy on this machine, and seeding from it would finish the restore inside the kill window.
+        const args = `--repo "${target}" --lineage "${repo.guid}" --at "${seedSnapshotId}" --datastore "${DS}" --no-seed`;
         // A 1 MiB/s cap on a single worker stretches a seed of tens of MiB well past the 8 s kill.
         const killed = await w2.executeViaBridge(
           `sudo timeout -s KILL 8 renet backup restore ${args} --parallelism 1 --bwlimit 1048576`
@@ -1228,6 +1237,14 @@ test.describe
           expect(corrupted.flipped, 'the fixture reported no byte flip').toMatch(
             /^[0-9a-f]{2} [0-9a-f]{2}$/
           );
+          // A failed restore drops its registration (rollbackRestoreRegistration), so the config names no GUID for the target afterwards and "no image placed" is read off the machine: the set of images on the second machine is the same before and after.
+          const imagesOnW2 = async () => {
+            const listed = await w2.executeViaBridge(
+              `sudo ls -A "${DS}/repositories" | grep -E '^[0-9a-f-]{36}$' | sort || true`
+            );
+            return listed.stdout.trim();
+          };
+          const imagesBefore = await imagesOnW2();
           const restore = await cliRestore(
             `${CORRUPT_NAME}@${M1}`,
             CORRUPT_BACK,
@@ -1235,11 +1252,9 @@ test.describe
             record.snapshotId
           );
           expect(restore.code, 'a restore from a corrupted chunk exited 0').not.toBe(0);
-          const back = repoIdentity(cli, CORRUPT_BACK);
-          expect(
-            await imageSha(w2, back.guid),
-            'a corrupted chunk was assembled into a placed image'
-          ).toBe('');
+          expect(await imagesOnW2(), 'a corrupted chunk was assembled into a placed image').toBe(
+            imagesBefore
+          );
           // K11 "verify reports it": the server re-hashes the lineage's stored chunks and names the flipped one by its hash.
           const flipped = await storeVerify();
           expect(

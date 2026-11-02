@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 NET_BASE = "192.168.111"
 DEFAULT_PORT = "4900"
 DEFAULT_WORKER = "11"
-SCOPES = "license:read,license:activate,subscription:read,backup:read"
+SCOPES = "license:read,license:activate,subscription:read,backup:read,backup:manage"
 USAGE = (
     "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [--port <n>] [--worker <n>] [--rebuild-renet | --no-rebuild-renet]\n"
     "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]"

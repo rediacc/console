@@ -425,7 +425,8 @@ class LocalExecutorService {
 
     // Peer machines (backup push/pull targets) are resolved HERE, from params, against the executor's own config. Callers may still pass them explicitly (tests do), but no command should: a proxy client holds no config and so cannot resolve a peer's IP. Deriving executor-side keeps one code path.
     const params = options.params ?? {};
-    const extraMachines = options.extraMachines ?? (await resolveExtraMachines(params));
+    const extraMachines =
+      options.extraMachines ?? (await resolveExtraMachines(params, options.functionName));
 
     const vaultInputs: VaultInputs = {
       machineName: options.machineName,

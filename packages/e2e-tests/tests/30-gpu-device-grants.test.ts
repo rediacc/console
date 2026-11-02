@@ -32,6 +32,13 @@ const DEVICE_LC = DEVICE.toLowerCase();
 // repository_gpu_grant keeps the operate licence tier, so the call names a licensed repository.
 const REPO = e2eRepoGuid();
 const SPEC_PATH = `/etc/cdi/rediacc-e2e-${RUN_ID}.yaml`;
+// A grant records the network's repo mount, which renet reads from the network's systemd unit (daemon grant refuses a network whose unit names none), so the suite stages a unit for its fake network. The unit is never started or loaded: nothing runs it.
+const UNIT_PATH = `/etc/systemd/system/rediacc-docker-${NETWORK_ID}.service`;
+const UNIT = [
+  '[Service]',
+  `ExecStart=/usr/bin/renet daemon start-foreground --network-id=${NETWORK_ID} --repo-mount-path=${WK_DATASTORE_PATH}/mounts/${REPO}`,
+  '',
+].join('\n');
 const SPEC = [
   'cdiVersion: "0.6.0"',
   `kind: ${KIND}`,
@@ -46,9 +53,38 @@ const SPEC = [
   '',
 ].join('\n');
 
-/** The grants-section line of this run's network (gpu.list.grant: `  network <id> (<mount>): <devices>`), or ''. */
-function grantLine(output: string): string {
-  return output.split('\n').find((l) => l.trim().startsWith(`network ${NETWORK_ID} `)) ?? '';
+/**
+ * The text a verb printed. `renet functions once` re-emits the verb's stdout through the logger as
+ * msg="[<fn>] <line>" on STDERR, with escaped quotes; only those lines are the verb's own, the
+ * rest of STDERR is the logger's narration (it echoes the command line).
+ */
+function verbText(fn: string, result: { stdout: string; stderr: string }): string {
+  const wrapped = new RegExp(`msg="\\[${fn}\\] (.*)"$`);
+  const lines = result.stdout.split('\n');
+  for (const line of result.stderr.split('\n')) {
+    const m = wrapped.exec(line);
+    if (m) lines.push(m[1].replaceAll('\\"', '"'));
+  }
+  return lines.join('\n');
+}
+
+interface GrantsDoc {
+  grants?: { network_id: number; devices?: { name: string }[] }[];
+}
+
+/** The device names of this run's network in a machine_gpu_list record (JSON), or '' when it has no grant. */
+function grantLine(result: { stdout: string; stderr: string }): string {
+  const text = verbText('machine_gpu_list', result);
+  const lines = text.split('\n');
+  const start = lines.indexOf('{');
+  const end = lines.indexOf('}', start);
+  if (start < 0 || end < 0) return '';
+  const doc = JSON.parse(lines.slice(start, end + 1).join('\n')) as GrantsDoc;
+  const mine = doc.grants?.find((g) => g.network_id === NETWORK_ID);
+  return (mine?.devices ?? [])
+    .map((d) => d.name)
+    .join(',')
+    .toLowerCase();
 }
 
 test.describe
@@ -65,13 +101,18 @@ test.describe
         `sudo mkdir -p /etc/cdi && echo ${b64} | base64 -d | sudo tee ${SPEC_PATH} >/dev/null`
       );
       expect(runner.isSuccess(written), runner.getCombinedOutput(written)).toBe(true);
+      const unitB64 = Buffer.from(UNIT).toString('base64');
+      const staged = await runner.executeOnWorker(
+        `echo ${unitB64} | base64 -d | sudo tee ${UNIT_PATH} >/dev/null`
+      );
+      expect(runner.isSuccess(staged), runner.getCombinedOutput(staged)).toBe(true);
       const licensed = await runner.licenseRepository(REPO);
       expect(runner.isSuccess(licensed), runner.getCombinedOutput(licensed)).toBe(true);
     });
 
     test.afterAll(async () => {
       await runner.executeOnWorker(
-        `sudo renet daemon grant --network-id ${NETWORK_ID} --clear; sudo rm -f ${SPEC_PATH} ${WK_DATASTORE_PATH}/repositories/${REPO}`
+        `sudo renet daemon grant --network-id ${NETWORK_ID} --clear; sudo rm -f ${SPEC_PATH} ${UNIT_PATH} ${WK_DATASTORE_PATH}/repositories/${REPO}`
       );
     });
 
@@ -102,7 +143,7 @@ test.describe
       // the network's own line of the grants section.
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
-      expect(grantLine(runner.getCombinedOutput(listed))).toContain(DEVICE_LC);
+      expect(grantLine(listed)).toContain(DEVICE_LC);
     });
 
     test('repository_gpu_revoke removes the device from the grant', async () => {
@@ -110,15 +151,14 @@ test.describe
         once('repository_gpu_revoke', ` --device ${DEVICE}`)
       );
       expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
-      // `--show` prints the grant after the revoke on stdout (logs go to stderr), so an
-      // empty or missing grant cannot pass this by printing nothing.
-      const shown = result.stdout.toLowerCase();
-      expect(shown, runner.getCombinedOutput(result)).toContain('devices');
+      // `--show` prints the grant record after the revoke (re-emitted by `functions once`). Revoking the last device drops the grant, so the record is the empty one: a printed record without the device, which a verb that printed nothing cannot pass.
+      const shown = verbText('repository_gpu_revoke', result).toLowerCase();
+      expect(shown, runner.getCombinedOutput(result)).toContain('"repo_mount_path"');
       expect(shown).not.toContain(DEVICE_LC);
 
       // The network's grants line, when the grant record outlives its last device.
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
-      expect(grantLine(runner.getCombinedOutput(listed))).not.toContain(DEVICE_LC);
+      expect(grantLine(listed)).not.toContain(DEVICE_LC);
     });
   });

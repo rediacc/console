@@ -94,9 +94,16 @@ rdc repo up my-app --no-start
 rdc term connect my-app -c "echo 'order-1042 paid 2026-08-16' > orders.txt && sync"
 
 # The chunk store's credential-free read side, run here rather than on camera
-# (see the header). It answers `no-backup` on a repo that has never been
-# uploaded, and exits 0 doing so -- a non-zero here means the verb broke.
-rdc backup verify my-app
+# (see the header). A repo named on the command line has to be backed up, so on
+# one that has never been uploaded it answers `no-backup` and exits 1
+# (PLAN-backup-integrity V3; an enumerated run stays informational and exits 0).
+# Exit 1 is the expected answer here: any other code means the verb broke.
+verify_rc=0
+rdc backup verify my-app || verify_rc=$?
+if [ "$verify_rc" -ne 1 ]; then
+    echo "rdc backup verify on a never-uploaded repo exited $verify_rc, expected 1 (no-backup)" >&2
+    exit 1
+fi
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
 exec >&3 2>&4

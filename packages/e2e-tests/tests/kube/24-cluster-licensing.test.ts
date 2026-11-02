@@ -153,8 +153,10 @@ const CLUSTER_OPS_ENV = { REDIACC_ALLOW_CLUSTER_OPS: '*' };
  * Every assertion here reads the human lines (`Machine slots: 0/5`, the slot-limit message). The CLI
  * answers JSON on a non-TTY stdout, which a Playwright run always has, and prints those lines only as
  * a table, so the suite pins the table format the way the drills do. An explicit `-o json` still wins.
+ * NO_COLOR: a pipe is not a TTY, yet the CLI paints each wrapped line, and an escape sequence in the
+ * middle of a sentence breaks every fragment match.
  */
-const TABLE_OUTPUT_ENV = { REDIACC_DEFAULT_OUTPUT: 'table' };
+const TABLE_OUTPUT_ENV = { REDIACC_DEFAULT_OUTPUT: 'table', NO_COLOR: '1' };
 
 /** The verbatim fragment `errors.agent.clusterOpBlocked` opens with. */
 const POLICY_BLOCKED = 'is blocked in agent mode';
@@ -176,8 +178,13 @@ const PARTIAL_PLACEMENT_FRAGMENTS = [
   'Free a slot or raise the ceiling, then re-run',
 ] as const;
 
-/** Everything the CLI said, both channels — refusals arrive on stderr. */
-const bothChannels = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr;
+/**
+ * Everything the CLI said, both channels — refusals arrive on stderr. Prose is hard-wrapped to the
+ * terminal width (80 on a pipe), so runs of whitespace collapse to one space: a fragment or a
+ * number sentence must not depend on where the wrap fell.
+ */
+const bothChannels = (r: { stdout: string; stderr: string }): string =>
+  `${r.stdout}${r.stderr}`.replaceAll(/\s+/g, ' ');
 
 /**
  * Pull the four numbers out of the slot-limit message and assert they are

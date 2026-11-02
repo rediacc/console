@@ -277,10 +277,12 @@ test.describe
 
       test('1. a repo the engine never touched reports no-backup, as a record', async () => {
         const result = await verifyViaFunction(REPO_GUID);
+        // A repository the call names has to be backed up (PLAN-backup-integrity V3), so its
+        // no-backup record rides on exit 1; an enumerated run reports the same record and exits 0.
         expect(
           result.code,
           `backup_verify exited ${result.code}:\n${result.stderr.slice(-800)}`
-        ).toBe(0);
+        ).toBe(1);
 
         const records = parseVerifyRecords(result.stdout + result.stderr);
         const mine = records.filter((r) => r.guid === REPO_GUID);
@@ -301,7 +303,8 @@ test.describe
 
       test('2. the level parameter reaches the verb (level=full is carried through)', async () => {
         const result = await verifyViaFunction(REPO_GUID, 'full');
-        expect(result.code, `backup_verify --level full: ${result.stderr.slice(-600)}`).toBe(0);
+        // The named repository has no backup, so the run exits 1 (see test 1) and still records its level.
+        expect(result.code, `backup_verify --level full: ${result.stderr.slice(-600)}`).toBe(1);
         const mine = parseVerifyRecords(result.stdout + result.stderr).filter(
           (r) => r.guid === REPO_GUID
         );
@@ -369,7 +372,13 @@ test.describe
       test('4d. backup_compare does not call a copy identical with no anchor to hold it to', async () => {
         const result = await backupFunction('backup_compare', { against_anchor: e2eRepoGuid() });
         expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(false);
-        expect(runner.getCombinedOutput(result)).not.toContain('identical');
+        const output = runner.getCombinedOutput(result);
+        // The refusal itself says "the copy is not identical", so the word cannot be the control:
+        // the record's status is. It is failed, with the reason named, never identical.
+        // `functions once` re-emits the record inside msg="..." with escaped quotes, hence the \\?.
+        expect(output).toMatch(/"status\\?":\\?"failed/);
+        expect(output).toContain('has no backup anchor');
+        expect(output).not.toMatch(/"status\\?":\\?"identical/);
       });
 
       test('4e. backup_churn_probe --forget on a repository with no base reports it forgotten, not measured', async () => {
@@ -377,8 +386,9 @@ test.describe
         const result = await backupFunction('backup_churn_probe', { forget: 'true' });
         expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
         const output = runner.getCombinedOutput(result);
-        expect(output).toContain('"status":"forgotten"');
-        expect(output).not.toMatch(/"status":"(failed|baseline|measured)"/);
+        // The record rides `functions once` re-emitted inside msg="..." with escaped quotes, hence the \\?.
+        expect(output).toMatch(/"status\\?":\\?"forgotten\\?"/);
+        expect(output).not.toMatch(/"status\\?":\\?"(failed|baseline|measured)\\?"/);
       });
 
       test('5. verify is a read: it leaves no anchor and no journal behind', async () => {

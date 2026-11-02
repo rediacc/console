@@ -582,8 +582,9 @@ test.describe
           expect(missing.code, 'a missing path restored without error').not.toBe(0);
           // NO_SUCH_PATH alone could ride along with an unrelated crash, so the refusal must also name the path that was asked for.
           const missingOutput = w1.getCombinedOutput(missing);
+          // getCombinedOutput() lowercases (TestHelpers.ts:15), so the code is matched lowercase.
           expect(missingOutput, 'the refusal does not carry NO_SUCH_PATH').toContain(
-            'NO_SUCH_PATH'
+            'no_such_path'
           );
           expect(missingOutput, 'the refusal does not name the missing path').toContain(
             `missing-${stamp}`
@@ -740,7 +741,7 @@ test.describe
             liveTreeHash
           );
 
-          // A path the snapshot does not hold: NO_SUCH_PATH, nothing written.
+          // A path the snapshot does not hold: refused with exit 19 (NO_SUCH_PATH), nothing written.
           const missingTo = `${toBase}/missing`;
           const missing = await cli.run([
             'backup',
@@ -754,8 +755,13 @@ test.describe
             missingTo,
           ]);
           expect(missing.code, 'a missing path restored without error').not.toBe(0);
-          expect(bothChannels(missing), 'the refusal does not carry NO_SUCH_PATH').toContain(
-            'NO_SUCH_PATH'
+          // The CLI renders any coded refusal it has no message of its own for as `command failed: exit status <code>: <renet's message>`, so the code word NO_SUCH_PATH is the verb's payload (asserted through the function in 3c) and the CLI's own surface is exit 19 (restorepath.ExitNoSuchPath) plus the message naming the path.
+          const refusal = bothChannels(missing);
+          expect(refusal, 'the refusal does not carry exit 19 (NO_SUCH_PATH)').toContain(
+            'exit status 19'
+          );
+          expect(refusal, 'the refusal does not name the missing path').toContain(
+            `missing-${stamp} is not in snapshot`
           );
           const absent = await w1.executeViaBridge(
             `sudo test -e "${missingTo}" && echo present || echo absent`
