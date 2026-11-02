@@ -78,7 +78,7 @@ function grantLine(result: { stdout: string; stderr: string }): string {
   const lines = text.split('\n');
   const start = lines.indexOf('{');
   const end = lines.indexOf('}', start);
-  if (start < 0 || end < 0) return '';
+  if (start < 0 || end < 0) throw new Error('machine_gpu_list printed no JSON document');
   const doc = JSON.parse(lines.slice(start, end + 1).join('\n')) as GrantsDoc;
   const mine = doc.grants?.find((g) => g.network_id === NETWORK_ID);
   return (mine?.devices ?? [])

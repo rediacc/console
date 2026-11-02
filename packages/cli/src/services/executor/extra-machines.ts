@@ -53,7 +53,9 @@ export async function resolveExtraMachines(
  * The backup family always sets its discriminator (repo-backup.ts sets
  * destinationType/sourceType on every path), so an undiscriminated `to` can
  * only be the datastore family, where `--to` always names a machine. That is
- * what makes the last rule safe: it cannot swallow a storage name.
+ * what makes the last rule safe: it cannot swallow a storage name. The one
+ * exception is PATH_DESTINATION_FUNCTIONS, whose `to` is a directory and which
+ * take no peer at all.
  */
 function peerMachineName(
   params: Record<string, unknown>,
