@@ -17,19 +17,14 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AccessSchema } from '@rediacc/shared/config-schema';
-import ssh2 from 'ssh2';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { generateSSHKeyPair } from '../../../utils/ssh-keygen.js';
 
 const CONFIG_ID = '0f3c9a21-7d4e-4b6a-9c11-2e5f8d7a6b30';
 const HOSTED = { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] };
 
-function keyPair(comment: string): { privateKey: string; publicKey: string } {
-  const keys = ssh2.utils.generateKeyPairSync('ed25519', { comment });
-  return { privateKey: keys.private, publicKey: keys.public };
-}
-
-const SESSION = keyPair('team');
-const PROBE = keyPair('rediacc-live-console-probe');
+const SESSION = generateSSHKeyPair('team');
+const PROBE = generateSSHKeyPair('rediacc-live-console-probe');
 
 interface Fake {
   root: string;
@@ -37,6 +32,7 @@ interface Fake {
   sshConnection: string;
   sessionPublicKey?: string;
   /** Runs after an SFTP writeFile, to simulate a concurrent writer. */
+  sessionPrivateKey?: string;
   afterWrite?: (path: string) => void;
   writes: string[];
   swaps: string[];
@@ -90,7 +86,7 @@ vi.mock('../machine-connection.js', () => ({
     acquire: vi.fn(async () => ({
       sftp: fakeSftp,
       machine: { ip: '72.61.137.225', user: 'muhammed' },
-      sshPrivateKey: SESSION.privateKey,
+      sshPrivateKey: fake.sessionPrivateKey ?? SESSION.privateKey,
       ensure: vi.fn(),
       release,
     })),
@@ -247,13 +243,23 @@ describe('pushAccess', () => {
   });
 
   it('refuses ACCESS_LOCKOUT when only the configured public key names the session key', async () => {
-    const other = keyPair('configured');
+    const other = generateSSHKeyPair('configured');
     fake.sessionPublicKey = other.publicKey;
     access = probeAccess(other.publicKey);
     fake.sshConnection = '203.0.113.7 51234 72.61.137.225 22';
 
     await expect(pushAccess('hostinger')).rejects.toBeInstanceOf(AccessLockoutError);
     expect(fakeSftp.writeFile).not.toHaveBeenCalled();
+  });
+
+  it('refuses with zero writes when the session key cannot be read, since the guard cannot judge it', async () => {
+    access = probeAccess(SESSION.publicKey);
+    fake.sessionPrivateKey = 'not a key';
+
+    await expect(pushAccess('hostinger')).rejects.toThrow(/nothing was written/);
+
+    expect(fake.swaps).toEqual([]);
+    expect(fake.writes).toEqual([]);
   });
 
   it('the session key inside its ranges proceeds', async () => {
@@ -359,7 +365,7 @@ describe('desiredAccessKeys', () => {
         keys: {
           plain: { publicKey: PROBE.publicKey, machines: { hostinger: true } },
           ranged: { publicKey: SESSION.publicKey, machines: { hostinger: { sourceRanges: own } } },
-          other: { publicKey: keyPair('other').publicKey, machines: { edge: true } },
+          other: { publicKey: generateSSHKeyPair('other').publicKey, machines: { edge: true } },
         },
       }),
       'hostinger'

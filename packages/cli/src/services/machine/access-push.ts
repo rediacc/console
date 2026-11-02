@@ -137,6 +137,11 @@ function sessionKeyBlobs(sshPrivateKey: string, sshPublicKey?: string): Set<stri
     const blob = raw === undefined ? null : canonicalKeyBlob(raw);
     if (blob !== null) blobs.add(blob);
   }
+  if (blobs.size === 0) {
+    throw new Error(
+      'Cannot read the public half of this session key, so a push cannot tell whether it would lock the CLI out; nothing was written'
+    );
+  }
   return blobs;
 }
 
