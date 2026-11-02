@@ -4181,6 +4181,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-backup',
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-backup',
     gate: true,
+    // Measured 21s in CI on 2026-11-02, after the backup integrity and critical-tier suites grew it.
+    slow: true,
     mutex: ['account-vitest'],
     cores: { min: 1, max: 'all' },
     heavy: true,

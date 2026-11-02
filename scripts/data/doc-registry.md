@@ -28,7 +28,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | build:packages | local-only | no | no |
 | build:www | quality-www-build / Build www (produces dist/route-manifest.json) | no | yes |
 | check:actions | quality-code / Action freshness | yes | no |
-| check:ci-account-backup | quality-go / Run account backup tests | yes | no |
+| check:ci-account-backup | quality-go / Run account backup tests | yes | yes |
 | check:ci-account-config-auth | quality-go / Check config token auth requires org membership | yes | no |
 | check:ci-account-env-retired | quality-security / Account env files retired | yes | no |
 | check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | no |
