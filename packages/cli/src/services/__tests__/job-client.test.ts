@@ -306,6 +306,23 @@ describe('parseJobStatus + jobStatusToExecuteResult', () => {
     expect(result.error).toContain('cryptsetup: device busy');
   });
 
+  it('carries a task refusal code (18 no-listing, 16 quota) to the result the callers branch on', () => {
+    for (const code of [18, 16]) {
+      const status = parseJobStatus(
+        JSON.stringify({
+          ...base,
+          state: 'failed',
+          exit_code: code,
+          finished_at: '2026-07-12T16:58:11.000Z',
+          error: `command failed: exit status ${code}: snapshot has no listing`,
+        })
+      );
+      const result = jobStatusToExecuteResult(status, 1000);
+      expect(result.success).toBe(false);
+      expect(result.exitCode).toBe(code);
+    }
+  });
+
   it('maps a cancelled job, preserving renet exit code 130', () => {
     const status = parseJobStatus(
       JSON.stringify({

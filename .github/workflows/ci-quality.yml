@@ -552,8 +552,9 @@ jobs:
 
   quality-branch:
     name: Branch
-    runs-on: ubuntu-slim
-    timeout-minutes: 12
+    # Off ubuntu-slim: the plan gates outgrew its one core and 15-minute cap, reaching 13 minutes and then the 12-minute timeout on run 41478109601.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Confirmed NOT a pusher: the old `push` app-token preset was deleted and
     # this job now only REPORTS that a rebase is needed. Its remote operations are
     # a read-only `git fetch origin` and the archival gate's read of merged PRs.
