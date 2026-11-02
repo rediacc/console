@@ -386,47 +386,56 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### M: account maintenance (writer M)
 
-- [ ] M1: Resumable batched prune per D-prune: whole-segment batches, a per-visit cap and a per-visit read cache. `pruneManifests` no longer needs the whole doomed list in one call.
+- [x] M1: Resumable batched prune per D-prune: whole-segment batches, a per-visit cap and a per-visit read cache. `pruneManifests` no longer needs the whole doomed list in one call.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-prune-batched.test.ts
   - Tests: 300 doomed rows clear across visits with each visit under the cap; a wholly doomed segment costs no PUT; a manifest is read once per visit; a crash between each write leaves the existing documented state; an unreadable manifest defers only its batch.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-prune-batched.test.ts tests/integration/backup-retention.test.ts tests/integration/backup-gc.test.ts` rc 0.
-- [ ] M2: Phase shares and per-lineage fairness: the resume point becomes per phase, and a budget stop advances the phase.
+    (ticked) 2026-11-02T09:31:31Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M2: Phase shares and per-lineage fairness: the resume point becomes per phase, and a budget stop advances the phase.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-maintenance-fairness.test.ts
   - Tests: one lineage with 2,000 doomed rows beside a small one, and the small one prunes on the first visit; chunk work runs on a visit where retention hit its share; the sibling's verify phases still progress; the persisted cursor round-trips.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-maintenance-fairness.test.ts tests/integration/backup-maintenance-isolation.test.ts` rc 0.
-- [ ] M3: Lease-tolerant sweep per D-lease: the prune interlock replaces the lineage skip, and reap ignores leases. `report.retentionSkippedLeased` is replaced by rows kept for a lease.
+    (ticked) 2026-11-02T09:31:32Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M3: Lease-tolerant sweep per D-lease: the prune interlock replaces the lineage skip, and reap ignores leases. `report.retentionSkippedLeased` is replaced by rows kept for a lease.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-prune-lease.test.ts
   - Tests: a lease naming base B keeps B while other rows go; a lease appearing between the plan and the batch keeps the row; a commit after the prune is refused with `BACKUP_PARENT_INVALID`; an expired lease protects nothing.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-prune-lease.test.ts` rc 0.
-- [ ] M4: Sweep frequency (F23): `scheduled` dispatches on `controller.cron`; backup maintenance runs at the O8 cadence and the audit sweep stays daily; seven configs carry both crons; the on-prem default interval moves from 6 hours to 1 hour.
+    (ticked) 2026-11-02T09:31:33Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M4: Sweep frequency (F23): `scheduled` dispatches on `controller.cron`; backup maintenance runs at the O8 cadence and the audit sweep stays daily; seven configs carry both crons; the on-prem default interval moves from 6 hours to 1 hour.
   - Owns: private/account/src/entry/cloudflare.ts, private/account/src/entry/on-premise.ts, private/account/src/entry/node.ts, private/account/src/types/env.ts, private/account/wrangler.toml, workers/account/wrangler.eu.toml, workers/account/wrangler.us.toml, workers/account/wrangler.asia.toml, workers/account/wrangler.edge-eu.toml, workers/account/wrangler.edge-us.toml, workers/account/wrangler.edge-asia.toml, workers/account/wrangler.bench.toml, private/account/tests/integration/backup-cron-dispatch.test.ts
   - Tests: the backup cron does not run the audit sweep and the reverse; every config lists both crons.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-cron-dispatch.test.ts && npm run typecheck` rc 0.
-- [ ] M5: Counted, incremental refset (F16, F17), extending the sibling's G2: counts and bytes in the object, pending rows folded per visit, an independent resumable recount, and chunk GC and verify reading the same object. A commit no longer invalidates the set.
+    (ticked) 2026-11-02T09:31:34Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M5: Counted, incremental refset (F16, F17), extending the sibling's G2: counts and bytes in the object, pending rows folded per visit, an independent resumable recount, and chunk GC and verify reading the same object. A commit no longer invalidates the set.
   - Owns: private/account/src/services/backup-refset.ts, private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-refset-counted.test.ts
   - Tests: counts equal a recount after commits, prunes and collapses; a set ahead of D1 after a crash recovers; a full manifest folds through one GET; a visit with 400 kept manifests reads one object; a recount survives commits landing during it.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-refset-counted.test.ts tests/integration/backup-refset.test.ts` rc 0.
-- [ ] M6: The pair per D-ledger: waiting rows replace release pins; classify and reap replace the GC loop; the safety conditions for reap; `overQuotaOne` reads `live`; purge, delete, orphan expiry and `deleteSubscriptionBackups` handle the new tables; reconcile reports `waitingDriftBytes`.
+    (ticked) 2026-11-02T09:31:35Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M6: The pair per D-ledger: waiting rows replace release pins; classify and reap replace the GC loop; the safety conditions for reap; `overQuotaOne` reads `live`; purge, delete, orphan expiry and `deleteSubscriptionBackups` handle the new tables; reconcile reports `waitingDriftBytes`.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-ledger-pair.test.ts
   - Tests: a chunk named by a fork's stream does not move to waiting when the other stream prunes; a prune moves exact bytes; debris is classified and not charged; a count corrupted to zero is caught by the recount and never reaped (the headline control); a row with a live pin is not reaped; the grace stays 7 days from `waiting_since`; deleting a subscription leaves no rows.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-ledger-pair.test.ts tests/integration/backup-meter-orphaned-chunks.test.ts tests/integration/backup-verify-reconcile.test.ts` rc 0.
-- [ ] M7: `keepWithin` per D-retention in the keep sets and the preview, and policies applying through `effective_at`.
+    (ticked) 2026-11-02T09:31:36Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M7: `keepWithin` per D-retention in the keep sets and the preview, and policies applying through `effective_at`.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-retention-within.test.ts
   - Tests: only `keepWithin` set is not keep-all; a stream stopped for a month deletes nothing from its window; interior prune plus a restore at each kept minute; the sibling's verified snapshot outside the window survives; bucket representative preference never drops the newest; the preview names reasons.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-retention-within.test.ts tests/integration/backup-retention-verified.test.ts` rc 0.
-- [ ] M8: Delayed destruction per D-immutable: tombstones are roots, a finalize phase, delayed purge, and a shortened `D` waits. Repair, collapse and retain-on-cancel exemptions are explicit and tested.
+    (ticked) 2026-11-02T09:31:37Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
+- [x] M8: Delayed destruction per D-immutable: tombstones are roots, a finalize phase, delayed purge, and a shortened `D` waits. Repair, collapse and retain-on-cancel exemptions are explicit and tested.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-immutability.test.ts
   - Tests: a delete with `D=7` keeps restoring until final; undelete restores; a tightened policy waits while a loosened one applies at once; shortening `D` waits; a tombstoned snapshot's chunks stay live; repair still deletes a corrupt object; `D=0` behaves as today.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-immutability.test.ts` rc 0.
+    (ticked) 2026-11-02T09:31:38Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
 - [ ] M9: Missed-target alerting (R4, F22), extending G4: a stream with `target_seconds` past `nextExpectedAt`, or with 3 consecutive `targetMet: false`, sends at most one alert per stream per 6 hours from the end of each sweep, naming the target, the achieved figure and the reason. A destructive intent (M8) sends immediately. Detection latency equals the sweep interval, and docs state that.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/src/services/notification.service.ts, private/account/src/email/templates/security.ts, private/account/tests/integration/backup-target-alerts.test.ts
   - Tests: a hung run with no report alerts through the dead-man path; a `throttled` run names the cap; a repeat inside 6 hours sends nothing; a recovered stream clears `missed_since`; a stream with no target stays on the daily digest; the preference off suppresses both.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-target-alerts.test.ts tests/integration/backup-alerts.test.ts` rc 0.
 
-- [ ] M10: The age anchor: each stream always keeps one snapshot older than `D`, so a flood of new versions or backed-up ransomware cannot age every good version out inside the window, and routine pruning cannot bypass delayed destruction.
+- [x] M10: The age anchor: each stream always keeps one snapshot older than `D`, so a flood of new versions or backed-up ransomware cannot age every good version out inside the window, and routine pruning cannot bypass delayed destruction.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-age-anchor.test.ts
   - Tests: a 5-minute flood across a `D=7` window leaves a snapshot older than `D` restorable (the headline control); a stream younger than `D` keeps its oldest; the preview names `age-anchor`; `D=0` keeps no extra snapshot.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-age-anchor.test.ts` rc 0.
+    (ticked) 2026-11-02T09:31:39Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
 
 ### Q: account storage, routes and schema (writer Q)
 
