@@ -4,29 +4,37 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import http.client
 import json
 import pathlib
 import subprocess
 import threading
 import urllib.error
-import urllib.request
 
 import pytest
 
-from rediacc_ci.drills import backup, backup_onprem as onprem, backup_renet as renet
+from rediacc_ci.drills import backup
+from rediacc_ci.drills import backup_onprem as onprem
+from rediacc_ci.drills import backup_renet as renet
 
 ROOT = pathlib.Path(__file__).resolve()
-VECTORS = pathlib.Path("/home/developer/console/private/renet/pkg/chunkstore/testdata/cells_root_vectors.json")
+VECTORS = pathlib.Path(
+    "/home/developer/console/private/renet/pkg/chunkstore/testdata/cells_root_vectors.json"
+)
 
 
 def test_the_drill_root_gives_every_known_answer() -> None:
     vectors = json.loads(VECTORS.read_text())["vectors"]
     assert vectors
     for v in vectors:
-        assert backup.cells_root(v["cells"], v["cellBytes"], v["imageBytes"]) == v["root"], v["name"]
+        assert backup.cells_root(v["cells"], v["cellBytes"], v["imageBytes"]) == v["root"], v[
+            "name"
+        ]
 
 
-def test_a_delta_manifest_commits_to_the_whole_image_and_the_declared_identity(tmp_path: pathlib.Path) -> None:
+def test_a_delta_manifest_commits_to_the_whole_image_and_the_declared_identity(
+    tmp_path: pathlib.Path,
+) -> None:
     seed, incr = tmp_path / "1", tmp_path / "2"
     backup.make_image(seed, "1")
     backup.make_image(incr, "2")
@@ -100,32 +108,37 @@ def test_preflight_verdict(line: str, verdict: str) -> None:
 
 
 @pytest.mark.parametrize(("enforce", "wrong_status"), [(False, 200), (True, 400)])
-def test_the_fake_store_is_non_conforming_in_the_way_each_row_needs(enforce: bool, wrong_status: int) -> None:
+def test_the_fake_store_is_non_conforming_in_the_way_each_row_needs(
+    enforce: bool, wrong_status: int
+) -> None:
     fake = onprem.FakeStore(enforce)
     threading.Thread(target=fake.serve_forever, daemon=True).start()
     try:
-        url = "http://127.0.0.1:%d/b/k" % fake.server_address[1]
 
         def put(body: bytes, signed: bytes) -> int:
             digest = base64.b64encode(hashlib.sha256(signed).digest()).decode()
-            request = urllib.request.Request(
-                url, data=body, method="PUT", headers={"x-amz-checksum-sha256": digest, "If-None-Match": "*"}
-            )
+            connection = http.client.HTTPConnection("127.0.0.1", fake.server_address[1], timeout=5)
             try:
-                with urllib.request.urlopen(request, timeout=5) as response:
-                    return response.status
-            except urllib.error.HTTPError as exc:
-                return exc.code
+                connection.request(
+                    "PUT", "/b/k", body, {"x-amz-checksum-sha256": digest, "If-None-Match": "*"}
+                )
+                return connection.getresponse().status
+            finally:
+                connection.close()
 
         assert put(b"a", b"a") == 200
-        assert put(b"a", b"a") == 200, "a duplicate must not be refused: that is the defect it plants"
+        assert put(b"a", b"a") == 200, (
+            "a duplicate must not be refused: that is the defect it plants"
+        )
         assert put(b"b", b"a") == wrong_status
     finally:
         fake.shutdown()
         fake.server_close()
 
 
-def test_the_journal_commands_move_it_aside_and_back(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_journal_commands_move_it_aside_and_back(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(renet, "JOURNAL_DIR", str(tmp_path))
     journal = tmp_path / "ds-guid.json"
     other = tmp_path / "ds-other.json"
@@ -133,7 +146,7 @@ def test_the_journal_commands_move_it_aside_and_back(tmp_path: pathlib.Path, mon
     other.write_text("{}")
 
     def run(command: str) -> None:
-        subprocess.run(command.replace("sudo -n ", ""), shell=True, check=True)
+        subprocess.run(["/bin/sh", "-c", command.replace("sudo -n ", "")], check=True)
 
     run(renet.journal_aside_command("guid"))
     assert not journal.exists()
@@ -150,8 +163,14 @@ def test_the_swap_commands_replace_the_image_and_put_it_back(tmp_path: pathlib.P
     image.write_bytes(b"original")
     swap = renet.swap_image_command(str(ds), "guid")
     assert "luksFormat" in swap
-    assert subprocess.run(["sh", "-n", "-c", swap.replace("sudo -n ", "")], check=False).returncode == 0
-    subprocess.run(renet.unswap_image_command(str(ds), "guid").replace("sudo -n ", ""), shell=True, check=False)
+    assert (
+        subprocess.run(["sh", "-n", "-c", swap.replace("sudo -n ", "")], check=False).returncode
+        == 0
+    )
+    subprocess.run(
+        ["/bin/sh", "-c", renet.unswap_image_command(str(ds), "guid").replace("sudo -n ", "")],
+        check=False,
+    )
     assert image.read_bytes() == b"original"
 
 

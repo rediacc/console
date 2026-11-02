@@ -9,6 +9,7 @@ import { RENET_FUNCTION_ACCESS, renetAccessFor } from '../renet-function-access.
  */
 const EXPECTED_READ_ONLY = [
   'backup_browse',
+  'backup_compare',
   'backup_list',
   'backup_verify',
   'ceph_clone_list',

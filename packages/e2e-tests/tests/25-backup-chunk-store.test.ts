@@ -342,6 +342,36 @@ test.describe
         );
       });
 
+      /** Drive a backup function the way rdc does: the FunctionDef, via a vault. */
+      const backupFunction = (name: string, params: Record<string, string>) => {
+        const vault = new VaultBuilder()
+          .withFunction(name)
+          .withTeam(TEST_TEAM)
+          .withRepository(named, named)
+          .withMachine(runner.getTargetVM(), TEST_USER, DS)
+          .withDatastore(DS)
+          .withParams(params);
+        return runner.executeWithVault(name, vault);
+      };
+
+      test('4b. backup_toc_key reports a repository with no stored key as absent', async () => {
+        const result = await backupFunction('backup_toc_key', { action: 'status' });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
+        expect(runner.getCombinedOutput(result)).toContain('absent');
+      });
+
+      test('4c. backup_repair refuses a repository with no anchor, and uploads nothing', async () => {
+        const result = await backupFunction('backup_repair', { hashes: '0'.repeat(64) });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(false);
+        expect(runner.getCombinedOutput(result)).toContain('no backup anchor');
+      });
+
+      test('4d. backup_compare does not call a copy identical with no anchor to hold it to', async () => {
+        const result = await backupFunction('backup_compare', { against_anchor: e2eRepoGuid() });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(false);
+        expect(runner.getCombinedOutput(result)).not.toContain('identical');
+      });
+
       test('5. verify is a read: it leaves no anchor and no journal behind', async () => {
         // An anchor or journal conjured by a READ is the state a later incremental would trust — and it would describe a snapshot that was never uploaded. CASE MATTERS HERE. getCombinedOutput() LOWERCASES (TestHelpers.ts:15), so a literal carrying a capital can never match no matter what the machine did. `/No such file/` was exactly that: the anchor directory was correctly absent
         // and the assertion still went red, because only the `total 0` arm was alive. Every matcher in this file is

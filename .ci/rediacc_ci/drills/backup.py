@@ -2878,7 +2878,7 @@ class Backup:
             doomed,
             "the dry run spares the verified snapshot, older than the floor",
         )
-        reasons = next(
+        reasons: object = next(
             (
                 x.get("reasons")
                 for x in _as_list(self.field("kept"))

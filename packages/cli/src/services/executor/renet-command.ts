@@ -109,6 +109,8 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'backup_restore',
   'backup_restore_path',
   'backup_verify',
+  'backup_compare',
+  'backup_repair',
   // Health-gated repository lifecycle, and the ones that grow with the image.
   'repository_up',
   'repository_up_all',
@@ -158,6 +160,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'backup_browse_at',
   'backup_delete',
   'backup_list',
+  'backup_toc_key',
   'ceph_client_config_export',
   'ceph_client_config_install',
   'ceph_client_mount',

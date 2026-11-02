@@ -85,7 +85,25 @@ FAILED = "FAILED"
 NOT_VERIFIED = "NOT_VERIFIED"
 STATUSES = (VERIFIED, FAILED, NOT_VERIFIED)
 # The RustFS drill legs a-l without the opt-in machine leg i (box J4: "legs a-l"); leg l is box J8. Legs n and o are the S5 and S12 isolation legs; leg m is not required.
-REQUIRED_LEGS = ("a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "n", "o", "p", "q", "r", "s")
+REQUIRED_LEGS = (
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "j",
+    "k",
+    "l",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+)
 CACHE_DIR = ".ci/cache/backup-check"
 LATEST = "receipt.json"
 ARCHIVE_SCAN_MAX = 50
