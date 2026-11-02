@@ -5772,6 +5772,7 @@
     ],
     "paths": [
       ".ci/rediacc_ci/**",
+      ".ci/config/shards/quality-pytest.json",
       ".claude/rediacc_hooks/**",
       ".claude/hooks/**",
       ".claude/settings.json",

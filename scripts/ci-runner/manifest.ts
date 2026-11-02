@@ -5421,6 +5421,8 @@ export const GATES: readonly GateSpec[] = [
     // inline-python detector whose verdicts those cases assert. The harness declared every one of them; dropping its entry without moving them would have left editing a guard select no gate that runs it, which is the same pass-over-unread-code this comment already records once.
     paths: [
       '.ci/rediacc_ci/**',
+      // The gate's own control reads this file's `of`, which ci:quick skipped as untouched in run 41391988380.
+      '.ci/config/shards/quality-pytest.json',
       '.claude/rediacc_hooks/**',
       // `.ci/scripts/test/gates/**` left this list on 2026-10-08: W11-A/B/C and section 12 U1-U3 deleted the last bash gate test and twin under it, so the glob matched nothing and could only drop out of --changed.
       '.claude/hooks/**',

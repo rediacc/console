@@ -115,7 +115,7 @@ def shard_min_tests(of: int) -> int:
 RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 840)
 
 # The `of` of `.ci/config/shards/quality-pytest.json`, pinned by a selftest control against the committed manifest so the two cannot drift apart silently.
-WHOLE_CORPUS_LEGS = 4
+WHOLE_CORPUS_LEGS = 5
 QUALITY_PYTEST_MANIFEST = ".ci/config/shards/quality-pytest.json"
 
 
