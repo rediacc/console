@@ -31,8 +31,8 @@ interface Fake {
   home: string;
   sshConnection: string;
   sessionPublicKey?: string;
-  /** Runs after an SFTP writeFile, to simulate a concurrent writer. */
   sessionPrivateKey?: string;
+  /** Runs after an SFTP writeFile, to simulate a concurrent writer. */
   afterWrite?: (path: string) => void;
   writes: string[];
   swaps: string[];

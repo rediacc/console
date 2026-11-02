@@ -123,15 +123,19 @@ function sha256(data: Buffer): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
+/** Canonical blob of a private key's public half, or null when the key does not parse. */
+function privateKeyBlob(sshPrivateKey: string): string | null {
+  const parsed = ssh2.utils.parseKey(sshPrivateKey);
+  const first = Array.isArray(parsed) ? parsed[0] : parsed;
+  if (first === undefined || first instanceof Error) return null;
+  return canonicalKeyBlob(first.getPublicSSH().toString('base64'));
+}
+
 /** Canonical blobs of the keys this session authenticates with: the private key's public half, and the configured public key. */
 function sessionKeyBlobs(sshPrivateKey: string, sshPublicKey?: string): Set<string> {
   const blobs = new Set<string>();
-  const parsed = ssh2.utils.parseKey(sshPrivateKey);
-  const first = Array.isArray(parsed) ? parsed[0] : parsed;
-  if (first !== undefined && !(first instanceof Error)) {
-    const blob = canonicalKeyBlob(first.getPublicSSH().toString('base64'));
-    if (blob !== null) blobs.add(blob);
-  }
+  const fromPrivate = privateKeyBlob(sshPrivateKey);
+  if (fromPrivate !== null) blobs.add(fromPrivate);
   if (sshPublicKey) {
     const raw = parseOpenSshPublicKey(sshPublicKey.trim())?.blob;
     const blob = raw === undefined ? null : canonicalKeyBlob(raw);

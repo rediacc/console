@@ -4345,7 +4345,7 @@ async function runAdvance(
   const carriedRed = advanceExit(exitCode, receipt);
   if (carriedRed !== exitCode)
     humanOut(
-      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${(receipt.failed ?? []).join(', ') || '(none listed)'}\n`
+      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}\n`
     );
   return carriedRed;
 }
