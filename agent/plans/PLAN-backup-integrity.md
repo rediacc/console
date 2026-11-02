@@ -364,9 +364,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 - [ ] D1: Renet artifacts: regenerate the function contract (`renet functions generate-types`) for `backup_verify`, `backup_snapshot`, `backup_restore`, `backup_toc_key`; add new functions to the tier map; add every new `i18n.T` key to the renet catalogs and baselines.
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts, private/renet/pkg/i18n/**
   - Accept: `npm run check:ci-renet-types && npm run check:ci-renet-tiers && npm run check:ci-renet` rc 0.
-- [ ] D2: CLI artifacts: command metadata and planes for `backup repair`, `backup check`, `backup toc-key`; update the count pins with their reasons; CLI strings in all 13 locales; regenerate the contract and docs data.
+- [x] D2: CLI artifacts: command metadata and planes for `backup repair`, `backup check`, `backup toc-key`; update the count pins with their reasons; CLI strings in all 13 locales; regenerate the contract and docs data.
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
+    (ticked) 2026-11-02T08:01:49Z by 45048a90: commit:f5bc56d80 with 29c70f4c7. check:ci-i18n-completeness, check:ci-i18n-hashes, check:ci-i18n-cli-key-usage, check:ci-i18n-placeholders, check:ci-cli-contract and typecheck rc=0, rerun 2026-11-02.
 - [ ] D3: Docs: the verification ladder and schedule, restore's passphrase statement, repair and salvage with what is safe, TOC keys and the no-listing case, the alert preference, in all 13 locales. docs/backup-storage/07-execution-record.md records tier B's real result (P3), with each claim dated.
   - Owns: packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, docs/backup-storage/07-execution-record.md
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
@@ -378,8 +379,9 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 
 - [ ] P1: VMs: the renet backup area on real cryptsetup and btrfs: a mounted repo with a wrong password keeps its TOC key, a wrong passphrase on restore places nothing, spot and deep run inside the scope.
   - Accept: `npm run vm:check` rc 0 with the backup leg VERIFIED, receipt recorded here.
-- [ ] P2: Drills: `./run.sh drill backup` and `./run.sh drill backup-onprem`, with new legs p to s and their controls firing.
+- [x] P2: Drills: `./run.sh drill backup` and `./run.sh drill backup-onprem`, with new legs p to s and their controls firing.
   - Accept: both rc 0; the receipt `block_backup_unverified_push` reads is fresh for this tree.
+    (ticked) 2026-11-02T08:01:50Z by 45048a90: commit:ebd89f860. ./run.sh drill backup rc=0 and ./run.sh drill backup-onprem rc=0; receipt VERIFIED with legs a to s and onprem true; each new leg has a planted control, in commit 075c90af3.
 - [ ] P3: R2 tier B (needs decision O1): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` on the probe bucket, proving a duplicate PUT answers 412 and a wrong checksum is refused. The result corrects the grants.go comment and 07-execution-record.md in the same commit. If R2 refuses a wrong checksum differently than documented, that is a finding, not a retune.
   - Accept: the command rc 0, the status codes recorded here.
 - [ ] P4: The D1 clone check covers migration 0073.

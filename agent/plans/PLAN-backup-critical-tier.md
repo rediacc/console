@@ -452,6 +452,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Accept: `cd private/account && npx vitest run tests/integration/backup-immutability-routes.test.ts` rc 0.
 - [ ] Q6: Per-run write count (F25): one coalesced event for a routine run; a deviation still logs in full. The test counts D1 statements for one stored run at N=10 and holds it at or under the target recorded here from the unfixed tree minus the pin and grant event rows.
   - Owns: private/account/src/services/backup-storage.service.ts, private/account/tests/integration/backup-run-writes.test.ts
+  - Recorded 2026-11-02: one stored run at N=10, session to report, wrote 13 rows on the unfixed tree (10 the row counter sees, 3 event rows it cannot, since the event log writes through RETURNING). Target 9: minus the session event, the grant event and two lastSeen updates, one on /streams and one on /reports.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-run-writes.test.ts` rc 0.
 
 ### U: renet chunkstore (writer U)

@@ -161,8 +161,8 @@
       "owner": "45048a90",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 22,
-      "done": 35,
+      "open": 20,
+      "done": 37,
       "open_sigs": [
         "06623ce1",
         "11388dba",
@@ -182,10 +182,8 @@
         "b7391850",
         "dda0e806",
         "e09055a5",
-        "e34094ab",
         "e39f99dd",
-        "ef318b56",
-        "f80ba538"
+        "ef318b56"
       ],
       "done_sigs": [
         "03d3059d",
@@ -219,8 +217,10 @@
         "d03ded4f",
         "d8edf791",
         "d98f0f32",
+        "e34094ab",
         "ef6c1dc4",
         "f6317671",
+        "f80ba538",
         "fddfe305",
         "ff5e3af2"
       ]
