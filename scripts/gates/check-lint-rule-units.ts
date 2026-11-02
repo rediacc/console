@@ -52,17 +52,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-import { RULES_DIR, REPO_ROOT } from '../../eslint-rules/lib/paths.js';
 import {
+  jsonRuleTester,
+  runCases,
   SPEC_DIR,
   SPEC_SUFFIX,
-  jsonRuleTester,
   sourceRuleTester,
-  runCases,
   withFixture,
 } from '../../eslint-rules/__tests__/harness.js';
+import { REPO_ROOT, RULES_DIR } from '../../eslint-rules/lib/paths.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const GREEN = '[32m';
 const RED = '[31m';
@@ -252,7 +251,9 @@ async function main(): Promise<number> {
   }
 
   const tested = new Set(results.map((r) => r.ruleId));
-  const untested = [...universe].filter((id) => !tested.has(id)).sort();
+  const untested = [...universe]
+    .filter((id) => !tested.has(id))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
   if (failures.length > 0) {
     console.error(`${RED}✗ lint rule unit specs${NC}`);
@@ -271,7 +272,7 @@ async function main(): Promise<number> {
   return 0;
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   main()
     .then((code) => process.exit(code))
     .catch((error: unknown) => {

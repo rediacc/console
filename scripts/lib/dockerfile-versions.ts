@@ -2,7 +2,7 @@
  * Parse `ARG <BASE>_VERSION=<version>` pins out of a Dockerfile.
  *
  * The Dockerfile is the single source of truth for the versions of the binaries
- * renet embeds (criu, rsync, rclone, zot, k3s, the CSI sidecars). Two gates read
+ * renet embeds (criu, rsync, zot, k3s, the CSI sidecars). Two gates read
  * these pins and must agree on how they are parsed, so the parser lives here
  * rather than being copied:
  *   - check-embed-credits.ts   — asserts the pins match embed.go + the credits

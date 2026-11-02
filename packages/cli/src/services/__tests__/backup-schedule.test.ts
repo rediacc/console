@@ -15,10 +15,6 @@ beforeAll(async () => {
 const mockExecStreaming = vi.fn();
 const mockConnect = vi.fn().mockResolvedValue(undefined);
 const mockClose = vi.fn();
-// A tripwire, not a stub. The rclone/OneDrive emission was removed on 2026-08-15, so any call to buildRcloneArgs from the scheduling path means dead credential plumbing came back to life.
-const mockBuildRcloneArgs = vi.fn(() => {
-  throw new Error('buildRcloneArgs must not be reachable from the backup scheduling path');
-});
 
 const mockAcquireRemoteRenet = vi
   .fn()
@@ -30,7 +26,7 @@ const mockGetBackupStrategy = vi.fn();
 // Defaults to "no strategies beyond those under test" so the unbound-strategy warning has something well-formed to read. Tests that care override it.
 const mockListBackupStrategies = vi.fn(() => Promise.resolve({}));
 const mockGetLocalConfig = vi.fn();
-const mockGetStorage = vi.fn();
+const mockGetCurrent = vi.fn();
 
 const mockOutputInfo = vi.fn();
 const mockOutputWarn = vi.fn();
@@ -43,10 +39,6 @@ vi.mock('../../remote/sftp/index.js', () => ({
       execStreaming = mockExecStreaming;
     }
   ),
-}));
-
-vi.mock('@rediacc/shared/storage-browser', () => ({
-  buildRcloneArgs: mockBuildRcloneArgs,
 }));
 
 vi.mock('../renet/renet-execution.js', () => ({
@@ -63,7 +55,7 @@ vi.mock('../config/config-resources.js', () => ({
     getBackupStrategy: mockGetBackupStrategy,
     listBackupStrategies: mockListBackupStrategies,
     getLocalConfig: mockGetLocalConfig,
-    getStorage: mockGetStorage,
+    getCurrent: mockGetCurrent,
   },
 }));
 
@@ -106,6 +98,8 @@ function scriptedExec(scripts: ExecScript[]): void {
           return Promise.resolve(s.exit ?? 0);
         }
       }
+      // The deploy reads the machine's core count for the unit's CPUQuota; an unscripted machine has eight.
+      if (cmd === 'nproc') opts?.onStdout?.(Buffer.from('8\n'));
       return Promise.resolve(0);
     }
   );
@@ -158,7 +152,10 @@ async function desiredContentFor(
     strategy,
     destinations,
     datastore,
-    remoteRenetPath
+    remoteRenetPath,
+    undefined,
+    // The scripted machine reports eight cores (scriptedExec), so the deployed unit carries CPUQuota=400%.
+    8
   );
   const timerContent = _testing.generateTimerUnit(
     strategyName,
@@ -191,8 +188,8 @@ const DEFAULT_LOCAL_CONFIG = {
 };
 
 /**
- * The only destination kind a unit can be generated for since the rclone/
- * OneDrive path was removed on 2026-08-15.
+ * The only destination kind a unit can be generated for since the retired
+ * sync path was removed on 2026-08-15.
  */
 const HOSTED_DEST: import('../../types/index.js').BackupStrategyDestination = {
   kind: 'hosted-service',
@@ -209,6 +206,44 @@ const KINDLESS_DEST = {
   name: 'onedrive-hourly',
   storage: 'microsoft',
 } as unknown as import('../../types/index.js').BackupStrategyDestination;
+
+const MAIL_GUID = 'aaaaaaaa-0000-4000-8000-000000000001';
+const MAIL_FORK_GUID = 'aaaaaaaa-0000-4000-8000-000000000002';
+const GITLAB_GUID = 'bbbbbbbb-0000-4000-8000-000000000001';
+const POOL_REPO_GUID = 'cccccccc-0000-4000-8000-000000000001';
+
+/** The RdcConfig the scheduler resolves include/exclude names and placements from. */
+function rdcConfig(over: { mailFork?: boolean; pool?: boolean } = {}) {
+  const mailTags: Record<string, { repositoryGuid: string }> = {
+    latest: { repositoryGuid: MAIL_GUID },
+  };
+  if (over.mailFork) mailTags.trial = { repositoryGuid: MAIL_FORK_GUID };
+  return {
+    resources: {
+      machines: {
+        hostinger: { ip: '72.61.137.225', user: 'muhammed', datastore: WK_DATASTORE_PATH },
+      },
+      datastores: over.pool
+        ? { pool: { backend: { kind: 'local', machine: 'hostinger', path: '/mnt/pool' } } }
+        : {},
+      repositories: {
+        mail: { placement: { machine: 'hostinger' }, grand: 'latest', tags: mailTags },
+        gitlab: {
+          placement: { machine: 'hostinger' },
+          grand: 'latest',
+          tags: { latest: { repositoryGuid: GITLAB_GUID } },
+        },
+        ...(over.pool && {
+          poolrepo: {
+            placement: { datastore: 'pool' },
+            grand: 'latest',
+            tags: { latest: { repositoryGuid: POOL_REPO_GUID } },
+          },
+        }),
+      },
+    },
+  };
+}
 
 const DEFAULT_STRATEGY = {
   schedule: '0 * * * *',
@@ -229,8 +264,8 @@ describe('generateServiceUnit', () => {
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain('ExecStart=/usr/bin/renet backup snapshot');
-    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and the rclone-style '6M' the schema declares would die at cobra's flag parse inside the timer, at run time, on a machine nobody is watching.
-    expect(serviceContent).toContain('--bwlimit 6291456');
+    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and the unit-suffixed '6M' the schema declares would die at cobra's flag parse inside the timer, at run time, on a machine nobody is watching.
+    expect(serviceContent).toContain('--bwlimit 6000000');
     expect(serviceContent).not.toContain('--bwlimit 6M');
     // The chunk store carries no credentials by construction, so the
     // EnvironmentFile= sidecar has nothing to hold any more.
@@ -239,7 +274,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('never writes credentials into the unit or a sidecar for a chunk-store destination', async () => {
-    // Successor to the rclone test that pinned credentials OUT of ExecStart and
+    // Successor to the retired test that pinned credentials OUT of ExecStart and
     // INTO a 0600 EnvironmentFile=. There is no credential to place any more:
     // the machine authenticates with its signed licence blob, so the correct assertion is that nothing credential-shaped appears anywhere.
     const { _testing } = await import('../backup/backup-schedule.js');
@@ -251,7 +286,7 @@ describe('generateServiceUnit', () => {
       '/usr/bin/renet'
     );
     expect(envVars).toEqual({});
-    expect(serviceContent).not.toMatch(/RCLONE_|--rclone-param|--setenv|token/i);
+    expect(serviceContent).not.toMatch(/--setenv|token/i);
     expect(serviceContent).not.toContain('EnvironmentFile=');
   });
 
@@ -381,7 +416,14 @@ describe('generateServiceUnit', () => {
       _testing.generateServiceUnit(
         'mixed',
         { schedule: '0 * * * *', destinations: [] },
-        [HOSTED_DEST, { kind: 'storage' as const, name: 'dest2', storage: 'm2' }],
+        [
+          HOSTED_DEST,
+          {
+            kind: 'storage',
+            name: 'dest2',
+            storage: 'm2',
+          } as unknown as import('../../types/index.js').BackupStrategyDestination,
+        ],
         WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
@@ -389,20 +431,26 @@ describe('generateServiceUnit', () => {
     expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
   });
 
-  it('REFUSES an rclone `storage` destination instead of emitting a unit with no ExecStart', async () => {
-    // The exact defect the hosted-service branch was added to fix, reachable again from the other side now that rclone is gone: a config still naming a storage destination must not deploy a timer that backs up nothing.
+  it('REFUSES a legacy `storage` destination instead of emitting a unit with no ExecStart', async () => {
+    // The exact defect the hosted-service branch was added to fix, reachable again from the other side now that the old path is gone: a config still naming a storage destination must not deploy a timer that backs up nothing.
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(
         'hourly-hot',
         { schedule: '0 * * * *', mode: 'hot', destinations: [] },
-        [{ kind: 'storage' as const, name: 'onedrive-hourly', storage: 'microsoft' }],
+        [
+          {
+            kind: 'storage',
+            name: 'onedrive-hourly',
+            storage: 'microsoft',
+          } as unknown as import('../../types/index.js').BackupStrategyDestination,
+        ],
         WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
     expect(call).toThrow(/Backup destination "onedrive-hourly"/);
     expect(call).toThrow(/kind "storage"/);
-    expect(call).toThrow(/rclone\/OneDrive path was removed on 2026-08-15/);
+    expect(call).toThrow(/Only `hosted-service` destinations can be scheduled/);
     expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
   });
 
@@ -423,22 +471,13 @@ describe('generateServiceUnit', () => {
 });
 
 describe('sanitizeBackupOutput', () => {
-  it('redacts --rclone-param values for sensitive keys', async () => {
+  it('redacts --setenv values for sensitive keys', async () => {
     const { sanitizeBackupOutput } = await import('../backup/backup-schedule.js');
     const input =
-      'backup sync push --rclone-param \'onedrive-token={"access_token":"x"}\' --rclone-param \'bwlimit=6M\'';
+      'systemd-run --setenv=ACCOUNT_TOKEN=\'{"access_token":"abc"}\' --setenv=BWLIMIT=\'6M\' --remain-after-exit';
     const out = sanitizeBackupOutput(input);
-    expect(out).toContain('onedrive-token=[REDACTED]');
-    expect(out).toContain('bwlimit=6M');
-  });
-
-  it('redacts --setenv values for sensitive RCLONE_ keys', async () => {
-    const { sanitizeBackupOutput } = await import('../backup/backup-schedule.js');
-    const input =
-      'systemd-run --setenv=RCLONE_ONEDRIVE_TOKEN=\'{"access_token":"abc"}\' --setenv=RCLONE_BWLIMIT=\'6M\' --remain-after-exit';
-    const out = sanitizeBackupOutput(input);
-    expect(out).toContain("--setenv=RCLONE_ONEDRIVE_TOKEN='[REDACTED]'");
-    expect(out).toContain("--setenv=RCLONE_BWLIMIT='6M'");
+    expect(out).toContain("--setenv=ACCOUNT_TOKEN='[REDACTED]'");
+    expect(out).toContain("--setenv=BWLIMIT='6M'");
   });
 });
 
@@ -446,9 +485,9 @@ describe('generateEnvFile', () => {
   it('quotes values and escapes backslashes and double quotes', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     const tokenJson = '{"access_token":"ab\\c","refresh_token":"x\\"y"}';
-    const content = _testing.generateEnvFile({ RCLONE_ONEDRIVE_TOKEN: tokenJson });
+    const content = _testing.generateEnvFile({ ACCOUNT_TOKEN: tokenJson });
     expect(content).toBe(
-      `RCLONE_ONEDRIVE_TOKEN="{\\"access_token\\":\\"ab\\\\c\\",\\"refresh_token\\":\\"x\\\\\\"y\\"}"\n`
+      `ACCOUNT_TOKEN="{\\"access_token\\":\\"ab\\\\c\\",\\"refresh_token\\":\\"x\\\\\\"y\\"}"\n`
     );
   });
 
@@ -718,8 +757,8 @@ describe('pushBackupSchedule (reconcile)', () => {
     vi.clearAllMocks();
     mockExecStreaming.mockResolvedValue(0);
     mockGetLocalConfig.mockResolvedValue(DEFAULT_LOCAL_CONFIG);
+    mockGetCurrent.mockResolvedValue(rdcConfig());
     mockGetBackupStrategy.mockResolvedValue(DEFAULT_STRATEGY);
-    mockGetStorage.mockResolvedValue({ vaultContent: { any: 'value' } });
     mockRefreshRepoLicensesBatch.mockResolvedValue({
       scanned: 2,
       issued: 1,
@@ -999,7 +1038,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     );
     const cmds = recordedCommands();
     expect(cmds.some((c) => c.includes('.new'))).toBe(false);
-    expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
+    expect(cmds.includes('sudo systemctl daemon-reload')).toBe(false);
   });
 
   it('test 6: update with in-flight service and --force → proceeds with warning, never stops the service', async () => {
@@ -1109,7 +1148,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds.some((c) => c.includes('systemctl show'))).toBe(true);
     expect(cmds.some((c) => c.includes('tee '))).toBe(false);
     expect(cmds.some((c) => c.startsWith('sudo mv '))).toBe(false);
-    expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
+    expect(cmds.includes('sudo systemctl daemon-reload')).toBe(false);
     expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
     expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
@@ -1140,5 +1179,141 @@ describe('pushBackupSchedule (reconcile)', () => {
 
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow('no valid repo licenses');
+  });
+
+  /** A machine with no backup units yet, whose timers load once written. */
+  function freshMachine(...timers: string[]): void {
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: timers.map((t) => healthyTimerRecord(t)).join(''),
+      },
+    ]);
+  }
+
+  /** The content `tee`d into a staged unit file, by path suffix. */
+  function stagedContent(suffix: string): string | undefined {
+    const call = mockExecStreaming.mock.calls.find(
+      ([cmd]) => typeof cmd === 'string' && cmd.startsWith('sudo tee ') && cmd.includes(suffix)
+    );
+    return (call?.[1] as { stdin?: string } | undefined)?.stdin;
+  }
+
+  it('G1: resolves include names to GUIDs, never passing a name to renet', async () => {
+    mockGetBackupStrategy.mockResolvedValue({ ...DEFAULT_STRATEGY, include: ['mail'] });
+    freshMachine('rediacc-backup-hourly-hot.timer');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+    const unit = stagedContent('rediacc-backup-hourly-hot.service.new');
+    expect(unit).toContain(`--repo ${MAIL_GUID}`);
+    expect(unit).not.toContain(GITLAB_GUID);
+    expect(unit).not.toMatch(/--repo mail\b/);
+  });
+
+  it('G1: an exclude list becomes --exclude-repo <guid>', async () => {
+    mockGetBackupStrategy.mockResolvedValue({ ...DEFAULT_STRATEGY, exclude: ['gitlab'] });
+    freshMachine('rediacc-backup-hourly-hot.timer');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+    const unit = stagedContent('rediacc-backup-hourly-hot.service.new');
+    expect(unit).toContain(`--exclude-repo ${GITLAB_GUID}`);
+    expect(unit).not.toContain('--repo ');
+  });
+
+  it('G1: refuses to deploy a strategy naming a repository the config does not know', async () => {
+    mockGetBackupStrategy.mockResolvedValue({ ...DEFAULT_STRATEGY, include: ['ghost'] });
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    await expect(pushBackupSchedule('hostinger')).rejects.toThrow(
+      /"ghost", which is not in the config/
+    );
+    expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
+  });
+
+  it('G5: a named datastore on the machine gets its own unit, pointed at its path', async () => {
+    mockGetCurrent.mockResolvedValue(rdcConfig({ pool: true }));
+    freshMachine('rediacc-backup-hourly-hot.timer', 'rediacc-backup-hourly-hot.ds.pool.timer');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+    const implicit = stagedContent('rediacc-backup-hourly-hot.service.new');
+    const pool = stagedContent('rediacc-backup-hourly-hot.ds.pool.service.new');
+    expect(implicit).toContain(`--datastore ${WK_DATASTORE_PATH}`);
+    expect(pool).toContain('--datastore /mnt/pool');
+    expect(stagedContent('rediacc-backup-hourly-hot.ds.pool.timer.new')).toContain('OnCalendar=');
+  });
+
+  it('G4: a new fork of an included family re-renders the unit with the fork GUID', async () => {
+    mockGetBackupStrategy.mockResolvedValue({ ...DEFAULT_STRATEGY, include: ['mail'] });
+    const { _testing, reconcileSchedulesAfterRepoChange } = await import(
+      '../backup/backup-schedule.js'
+    );
+    const { machineUnitSpecs } = await import('../backup/backup-schedule-targets.js');
+    // The unit deployed before the fork existed, as the machine holds it.
+    const before = machineUnitSpecs(
+      [{ name: 'hourly-hot', config: { ...DEFAULT_STRATEGY, include: ['mail'] } as never }],
+      rdcConfig() as never,
+      'hostinger'
+    )[0];
+    const deployed = _testing.generateServiceUnit(
+      before.unitName,
+      before.strategy,
+      before.strategy.destinations,
+      before.datastore.path,
+      '/usr/bin/renet',
+      before.scope,
+      8
+    ).serviceContent;
+    const timer = _testing.generateTimerUnit('hourly-hot', _testing.cronToOnCalendar('0 * * * *'));
+    const svcPath = '/etc/systemd/system/rediacc-backup-hourly-hot.service';
+    const timerPath = '/etc/systemd/system/rediacc-backup-hourly-hot.timer';
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: `${svcPath}\n${timerPath}\n` },
+      {
+        match: 'sha256sum',
+        stdout: `${_testing.sha256Hex(deployed)}  ${svcPath}\n${_testing.sha256Hex(timer)}  ${timerPath}\n`,
+      },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout:
+          idleServiceRecord('rediacc-backup-hourly-hot.service') +
+          healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+    mockGetCurrent.mockResolvedValue(rdcConfig({ mailFork: true }));
+
+    expect(await reconcileSchedulesAfterRepoChange('hostinger')).toBe(true);
+    const staged = stagedContent('rediacc-backup-hourly-hot.service.new');
+    expect(staged).toContain(`--repo ${MAIL_GUID}`);
+    expect(staged).toContain(`--repo ${MAIL_FORK_GUID}`);
+    // The timer did not change, so only the service is rewritten.
+    expect(stagedContent('rediacc-backup-hourly-hot.timer.new')).toBeUndefined();
+  });
+
+  it('G4: a machine with no bound strategy is left alone after a repo change', async () => {
+    mockGetLocalConfig.mockResolvedValue({
+      ...DEFAULT_LOCAL_CONFIG,
+      machines: { hostinger: { ip: '1.2.3.4', user: 'test' } },
+    });
+    const { reconcileSchedulesAfterRepoChange } = await import('../backup/backup-schedule.js');
+    expect(await reconcileSchedulesAfterRepoChange('hostinger')).toBe(false);
+    expect(mockExecStreaming).not.toHaveBeenCalled();
+  });
+
+  it('G4: a failed re-render warns and does not throw (the repo change already happened)', async () => {
+    mockGetBackupStrategy.mockResolvedValue({ ...DEFAULT_STRATEGY, include: ['ghost'] });
+    const { reconcileSchedulesAfterRepoChange } = await import('../backup/backup-schedule.js');
+    expect(await reconcileSchedulesAfterRepoChange('hostinger')).toBe(false);
+    expect(mockOutputWarn).toHaveBeenCalledWith(expect.stringContaining('was not re-rendered'));
+  });
+
+  it('G4: an unreadable config warns and does not throw either', async () => {
+    mockGetLocalConfig.mockRejectedValue(new Error('config locked'));
+    const { reconcileSchedulesAfterRepoChange } = await import('../backup/backup-schedule.js');
+    expect(await reconcileSchedulesAfterRepoChange('hostinger')).toBe(false);
+    expect(mockOutputWarn).toHaveBeenCalledWith(expect.stringContaining('config locked'));
   });
 });

@@ -14,6 +14,8 @@ import pathlib
 import subprocess
 import time
 
+import pytest
+
 from rediacc_ci.release import check_soak_period, list_edge_releases
 from rediacc_ci.tests import differential as diff
 
@@ -596,3 +598,75 @@ def test_list_edge_releases_404_is_not_retried(monkeypatch, tmp_path) -> None:
     assert list_edge_releases.main([]) == 1
     assert len(fake.calls) == 1
     assert fake.slept == []
+
+
+# --------------------------------------------------------------------------- select(), the pure core `main` and the local release share
+
+
+NOW_EPOCH = 1_800_000_000
+
+
+def _days_ago(value: str) -> int | None:
+    """A test `epoch`: the date is spelled `-<days>`, so no clock or `date` binary is involved."""
+    return NOW_EPOCH - int(value[1:]) * 86400 if value.startswith("-") else None
+
+
+def test_select_reads_no_environment(monkeypatch) -> None:
+    for name in ("GITHUB_OUTPUT", "EDGE_DATE", "SOAK_DAYS", "EDGE_VERSION", "FORCE"):
+        monkeypatch.delenv(name, raising=False)
+    got = check_soak_period.select(
+        edge_version="1.2.3", edge_date="-8", soak_days=7, now_epoch=NOW_EPOCH, epoch=_days_ago
+    )
+    assert got.ready
+    assert got.selected is not None
+    assert (got.selected.version, got.path) == ("1.2.3", "soak")
+    assert got.lines == ("Edge release age: 8 days (soak: 7 days)", "Soak period complete")
+
+
+def test_select_inside_the_window_is_not_ready() -> None:
+    got = check_soak_period.select(
+        edge_version="1.2.3", edge_date="-2", soak_days=7, now_epoch=NOW_EPOCH, epoch=_days_ago
+    )
+    assert not got.ready
+    assert got.selected is None
+    assert "Edge needs 5 more day(s) of soak" in got.lines
+
+
+def test_select_force_skips_the_age() -> None:
+    got = check_soak_period.select(
+        edge_version="1.2.3",
+        edge_date="-0",
+        soak_days=7,
+        now_epoch=NOW_EPOCH,
+        force=True,
+        epoch=_days_ago,
+    )
+    assert got.ready
+    assert got.path == "force"
+
+
+def test_select_an_unreadable_date_raises_before_deciding() -> None:
+    with pytest.raises(check_soak_period.SelectError, match="EDGE_DATE could not be parsed"):
+        check_soak_period.select(
+            edge_version="1.2.3",
+            edge_date="never",
+            soak_days=7,
+            now_epoch=NOW_EPOCH,
+            epoch=_days_ago,
+        )
+
+
+def test_select_takes_the_nightly_readers_injected() -> None:
+    got = check_soak_period.select(
+        edge_version="1.2.3",
+        edge_date="-1",
+        soak_days=7,
+        now_epoch=NOW_EPOCH,
+        nightly=True,
+        nightly_head_sha="f" * 40,
+        nightly_tested=lambda: (True, "the nightly concluded success"),
+        tested_by_nightly=lambda version, _sha: (version == "1.2.3", "proven for v%s" % version),
+        epoch=_days_ago,
+    )
+    assert got.ready
+    assert got.path == "nightly"

@@ -271,7 +271,7 @@ def test_rebuild_passes_the_public_key_and_withholds_the_private_one(
 
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", PRIV_SENTINEL)
     plane.rebuild_renet(PUB, fake)
-    assert seen["argv"][1:] == ["-m", "rediacc_ci.infra.build_renet", "--nolicense"]
+    assert seen["argv"][1:] == ["-m", "rediacc_ci.infra.build_renet"]
     assert seen["env"]["ACCOUNT_ED25519_PUBLIC_KEY"] == PUB
     assert "ACCOUNT_ED25519_PRIVATE_KEY" not in seen["env"]
     assert PRIV_SENTINEL not in " ".join(seen["argv"])
@@ -285,7 +285,7 @@ def buildinfo(key: str | None) -> str:
     )
     return (
         f"/r/renet: go0.0.0-test\n\tpath\tgithub.com/{RENET_REPO}/cmd/renet\n"
-        f'\tbuild\t-ldflags="-s -w -X main.Version=0.0.0-dev{ldflag}"\n\tbuild\t-tags=nolicense\n'
+        f'\tbuild\t-ldflags="-s -w -X main.Version=0.0.0-dev{ldflag}"\n'
     )
 
 

@@ -1,11 +1,14 @@
 import { expect, test } from '@playwright/test';
-import {
-  DEFAULT_DATASTORE_PATH,
-  DEFAULT_NETWORK_ID,
-  TEST_PASSWORD,
-  TEST_REPOSITORY_NAME,
-} from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+
+// renet takes a repository only as a GUID (or a name the vault maps to one), and licenses it by that GUID, so even the repositories this suite never creates are named by GUIDs: a friendly name is refused before the verb runs, which is not the behaviour these cases probe.
+const TEST_REPOSITORY_NAME = e2eRepoGuid();
+const NONEXISTENT_REPO = e2eRepoGuid();
+const UNMOUNTED_REPO = e2eRepoGuid();
+const IDLE_REPO = e2eRepoGuid();
+const DAEMON_TEST_REPO = e2eRepoGuid();
 
 /**
  * Rediaccfile Up/Down Tests (4+ functions)
@@ -40,10 +43,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * ```
  */
 test.describe('Rediaccfile Up/Down Functions @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -76,12 +79,13 @@ test.describe('Rediaccfile Up/Down Functions @bridge', () => {
  */
 test.describe
   .serial('Rediaccfile Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `rediaccfile-test-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    // A GUID: renet licenses a repository by its name, and the account server signs UUIDs only.
+    const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite for repository operations)
@@ -146,17 +150,17 @@ test.describe
  * Tests edge cases for Rediaccfile handling.
  */
 test.describe('Rediaccfile Edge Cases @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
   test('up on nonexistent repository should handle gracefully', async () => {
     // Up with auto-mount fails on nonexistent repo but doesn't crash
     const result = await runner.repositoryUp(
-      'nonexistent-repo-xyz',
+      NONEXISTENT_REPO,
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
@@ -164,14 +168,14 @@ test.describe('Rediaccfile Edge Cases @bridge', () => {
   });
 
   test('down on nonexistent repository should handle gracefully', async () => {
-    const result = await runner.repositoryDown('nonexistent-repo-xyz', DEFAULT_DATASTORE_PATH);
+    const result = await runner.repositoryDown(NONEXISTENT_REPO, DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
   });
 
   test('up on unmounted repository should handle gracefully', async () => {
     // Up with auto-mount tries to mount but fails gracefully on nonexistent repo
     const result = await runner.repositoryUp(
-      'unmounted-repo',
+      UNMOUNTED_REPO,
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
@@ -180,7 +184,7 @@ test.describe('Rediaccfile Edge Cases @bridge', () => {
 
   test('down on repository without running services should handle gracefully', async () => {
     // Calling down when nothing is running
-    const result = await runner.repositoryDown('idle-repo', DEFAULT_DATASTORE_PATH);
+    const result = await runner.repositoryDown(IDLE_REPO, DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
   });
 });
@@ -191,11 +195,11 @@ test.describe('Rediaccfile Edge Cases @bridge', () => {
  * Tests multiple up/down cycles.
  */
 test.describe('Rediaccfile Multiple Runs @bridge', () => {
-  let runner: BridgeTestRunner;
-  const repositoryName = `multi-run-${Date.now()}`;
+  let runner: RenetFunctionsTestRunner;
+  const repositoryName = e2eRepoGuid();
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
@@ -218,17 +222,17 @@ test.describe('Rediaccfile Multiple Runs @bridge', () => {
  * Tests Rediaccfile integration with daemon functions.
  */
 test.describe('Rediaccfile with Daemons @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
   });
 
   test('up handles nonexistent repo gracefully', async () => {
     // Up with auto-mount fails on nonexistent repo but doesn't crash
     const result = await runner.repositoryUp(
-      'daemon-test',
+      DAEMON_TEST_REPO,
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
@@ -237,7 +241,7 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
 
   test('daemon_status after up should work', async () => {
     const result = await runner.daemonStatus(
-      'daemon-test',
+      DAEMON_TEST_REPO,
       DEFAULT_DATASTORE_PATH,
       DEFAULT_NETWORK_ID
     );
@@ -245,7 +249,7 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
   });
 
   test('down should stop daemons without syntax errors', async () => {
-    const result = await runner.repositoryDown('daemon-test', DEFAULT_DATASTORE_PATH);
+    const result = await runner.repositoryDown(DAEMON_TEST_REPO, DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
   });
 });
@@ -258,13 +262,14 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
  */
 test.describe
   .serial('Rediaccfile Real Execution @bridge @integration', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `rediaccfile-nginx-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    // A GUID: renet licenses a repository by its name, and the account server signs UUIDs only.
+    const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const containerName = `nginx-test-${Date.now()}`;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
     });

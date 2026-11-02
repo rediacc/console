@@ -1414,13 +1414,6 @@
           "expect": 1
         },
         {
-          "repo": ".",
-          "file": "workers/proxy/Dockerfile",
-          "role": "version",
-          "arg": "NPM_VERSION",
-          "expect": 1
-        },
-        {
           "repo": "private/account",
           "file": "Dockerfile",
           "role": "version",
@@ -1798,6 +1791,82 @@
       "literals": []
     },
     {
+      "id": "toolchain:agg",
+      "kind": "leaf",
+      "name": "agg (asciinema gif generator)",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "asciinema/agg",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "AGG_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-x86-64",
+          "env": "AGG_SHA256_LINUX_X86_64",
+          "asset": "agg-x86_64-unknown-linux-gnu",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-aarch64",
+          "env": "AGG_SHA256_LINUX_AARCH64",
+          "asset": "agg-aarch64-unknown-linux-gnu",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin-x86-64",
+          "env": "AGG_SHA256_DARWIN_X86_64",
+          "asset": "agg-x86_64-apple-darwin",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin-aarch64",
+          "env": "AGG_SHA256_DARWIN_AARCH64",
+          "asset": "agg-aarch64-apple-darwin",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
       "id": "toolchain:shfmt",
       "kind": "leaf",
       "name": "shfmt",
@@ -1860,6 +1929,1153 @@
           "match": "^readonly SHFMT_SHA256_DARWIN_ARM64=\"(?<value>[^\"]+)\"",
           "label": ".ci/config/constants.sh SHFMT_SHA256_DARWIN_ARM64",
           "asset": "shfmt_v{version}_darwin_arm64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:opentofu",
+      "kind": "leaf",
+      "name": "OpenTofu",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "opentofu/opentofu",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "version",
+          "match": "^  version: '(?<value>[^']+)',$",
+          "label": "OPENTOFU_PIN.version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "version",
+          "match": "/releases/download/v(?<value>[0-9][^/']*)/tofu_",
+          "label": "OPENTOFU_PIN asset URL release directories",
+          "expect": 6
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "version",
+          "match": "/tofu_(?<value>[0-9][^_']*)_[a-z]+_[a-z0-9]+\\.zip'",
+          "label": "OPENTOFU_PIN asset URL file names",
+          "expect": 6
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:linux-amd64",
+          "match": "^    'linux-amd64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['linux-amd64'].sha256",
+          "asset": "tofu_{version}_linux_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:linux-arm64",
+          "match": "^    'linux-arm64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['linux-arm64'].sha256",
+          "asset": "tofu_{version}_linux_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:darwin-amd64",
+          "match": "^    'darwin-amd64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['darwin-amd64'].sha256",
+          "asset": "tofu_{version}_darwin_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:darwin-arm64",
+          "match": "^    'darwin-arm64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['darwin-arm64'].sha256",
+          "asset": "tofu_{version}_darwin_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:windows-amd64",
+          "match": "^    'windows-amd64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['windows-amd64'].sha256",
+          "asset": "tofu_{version}_windows_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+          "role": "sha256:windows-arm64",
+          "match": "^    'windows-arm64': \\{ url: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "OPENTOFU_PIN.assets['windows-arm64'].sha256",
+          "asset": "tofu_{version}_windows_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "version",
+          "match": "^[0-9a-f]{64}  tofu_(?<value>[^_]+)_linux_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:linux-amd64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_linux_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, linux-amd64",
+          "asset": "tofu_{version}_linux_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:linux-arm64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_linux_arm64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, linux-arm64",
+          "asset": "tofu_{version}_linux_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:darwin-amd64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_darwin_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, darwin-amd64",
+          "asset": "tofu_{version}_darwin_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:darwin-arm64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_darwin_arm64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, darwin-arm64",
+          "asset": "tofu_{version}_darwin_arm64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:windows-amd64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_windows_amd64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, windows-amd64",
+          "asset": "tofu_{version}_windows_amd64.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/opentofu/SHA256SUMS",
+          "role": "sha256:windows-arm64",
+          "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_windows_arm64\\.zip$",
+          "label": "the recorded signed SHA256SUMS, windows-arm64",
+          "asset": "tofu_{version}_windows_arm64.zip",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:tofu-providers",
+      "kind": "leaf",
+      "name": "OpenTofu providers",
+      "driver": "toolchain",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: this one leaf carries an exact version for each of the providers in provider-registry.json, and a pins driver compares a single version per leaf; npx tsx scripts/pins/tofu-provider-pins.ts --lock moves each provider to its newest release-age-cleared release inside its major line and rewrites every site"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:aliyun-alicloud",
+          "json": "/aliyun~1alicloud/version",
+          "label": "provider-registry.json aliyun/alicloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:aliyun-alicloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/aliyun\\/alicloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of aliyun/alicloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:aliyun-alicloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/aliyun\\/alicloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of aliyun/alicloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:aliyun-alicloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/aliyun\\/alicloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['aliyun/alicloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:anexia-it-anxcloud",
+          "json": "/anexia-it~1anxcloud/version",
+          "label": "provider-registry.json anexia-it/anxcloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:anexia-it-anxcloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/anexia-it\\/anxcloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of anexia-it/anxcloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:anexia-it-anxcloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/anexia-it\\/anxcloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of anexia-it/anxcloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:anexia-it-anxcloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/anexia-it\\/anxcloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['anexia-it/anxcloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:bizflycloud-bizflycloud",
+          "json": "/bizflycloud~1bizflycloud/version",
+          "label": "provider-registry.json bizflycloud/bizflycloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:bizflycloud-bizflycloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/bizflycloud\\/bizflycloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of bizflycloud/bizflycloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:bizflycloud-bizflycloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/bizflycloud\\/bizflycloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of bizflycloud/bizflycloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:bizflycloud-bizflycloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/bizflycloud\\/bizflycloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['bizflycloud/bizflycloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:bpg-proxmox",
+          "json": "/bpg~1proxmox/version",
+          "label": "provider-registry.json bpg/proxmox version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:bpg-proxmox",
+          "match": "^provider \"registry\\.opentofu\\.org\\/bpg\\/proxmox\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of bpg/proxmox, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:bpg-proxmox",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/bpg\\/proxmox\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of bpg/proxmox",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:bpg-proxmox",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/bpg\\/proxmox\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['bpg/proxmox'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:brightbox-brightbox",
+          "json": "/brightbox~1brightbox/version",
+          "label": "provider-registry.json brightbox/brightbox version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:brightbox-brightbox",
+          "match": "^provider \"registry\\.opentofu\\.org\\/brightbox\\/brightbox\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of brightbox/brightbox, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:brightbox-brightbox",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/brightbox\\/brightbox\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of brightbox/brightbox",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:brightbox-brightbox",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/brightbox\\/brightbox\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['brightbox/brightbox'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:cherryservers-cherryservers",
+          "json": "/cherryservers~1cherryservers/version",
+          "label": "provider-registry.json cherryservers/cherryservers version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:cherryservers-cherryservers",
+          "match": "^provider \"registry\\.opentofu\\.org\\/cherryservers\\/cherryservers\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of cherryservers/cherryservers, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:cherryservers-cherryservers",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/cherryservers\\/cherryservers\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of cherryservers/cherryservers",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:cherryservers-cherryservers",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/cherryservers\\/cherryservers\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['cherryservers/cherryservers'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:civo-civo",
+          "json": "/civo~1civo/version",
+          "label": "provider-registry.json civo/civo version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:civo-civo",
+          "match": "^provider \"registry\\.opentofu\\.org\\/civo\\/civo\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of civo/civo, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:civo-civo",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/civo\\/civo\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of civo/civo",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:civo-civo",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/civo\\/civo\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['civo/civo'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:cloudscale-ch-cloudscale",
+          "json": "/cloudscale-ch~1cloudscale/version",
+          "label": "provider-registry.json cloudscale-ch/cloudscale version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:cloudscale-ch-cloudscale",
+          "match": "^provider \"registry\\.opentofu\\.org\\/cloudscale-ch\\/cloudscale\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of cloudscale-ch/cloudscale, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:cloudscale-ch-cloudscale",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/cloudscale-ch\\/cloudscale\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of cloudscale-ch/cloudscale",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:cloudscale-ch-cloudscale",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/cloudscale-ch\\/cloudscale\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['cloudscale-ch/cloudscale'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:contabo-contabo",
+          "json": "/contabo~1contabo/version",
+          "label": "provider-registry.json contabo/contabo version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:contabo-contabo",
+          "match": "^provider \"registry\\.opentofu\\.org\\/contabo\\/contabo\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of contabo/contabo, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:contabo-contabo",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/contabo\\/contabo\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of contabo/contabo",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:contabo-contabo",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/contabo\\/contabo\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['contabo/contabo'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:digitalocean-digitalocean",
+          "json": "/digitalocean~1digitalocean/version",
+          "label": "provider-registry.json digitalocean/digitalocean version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:digitalocean-digitalocean",
+          "match": "^provider \"registry\\.opentofu\\.org\\/digitalocean\\/digitalocean\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of digitalocean/digitalocean, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:digitalocean-digitalocean",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/digitalocean\\/digitalocean\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of digitalocean/digitalocean",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:digitalocean-digitalocean",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/digitalocean\\/digitalocean\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['digitalocean/digitalocean'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:equinix-equinix",
+          "json": "/equinix~1equinix/version",
+          "label": "provider-registry.json equinix/equinix version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:equinix-equinix",
+          "match": "^provider \"registry\\.opentofu\\.org\\/equinix\\/equinix\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of equinix/equinix, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:equinix-equinix",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/equinix\\/equinix\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of equinix/equinix",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:equinix-equinix",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/equinix\\/equinix\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['equinix/equinix'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:exoscale-exoscale",
+          "json": "/exoscale~1exoscale/version",
+          "label": "provider-registry.json exoscale/exoscale version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:exoscale-exoscale",
+          "match": "^provider \"registry\\.opentofu\\.org\\/exoscale\\/exoscale\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of exoscale/exoscale, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:exoscale-exoscale",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/exoscale\\/exoscale\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of exoscale/exoscale",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:exoscale-exoscale",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/exoscale\\/exoscale\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['exoscale/exoscale'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:glesys-glesys",
+          "json": "/glesys~1glesys/version",
+          "label": "provider-registry.json glesys/glesys version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:glesys-glesys",
+          "match": "^provider \"registry\\.opentofu\\.org\\/glesys\\/glesys\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of glesys/glesys, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:glesys-glesys",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/glesys\\/glesys\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of glesys/glesys",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:glesys-glesys",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/glesys\\/glesys\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['glesys/glesys'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:hashicorp-aws",
+          "json": "/hashicorp~1aws/version",
+          "label": "provider-registry.json hashicorp/aws version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:hashicorp-aws",
+          "match": "^provider \"registry\\.opentofu\\.org\\/hashicorp\\/aws\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of hashicorp/aws, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:hashicorp-aws",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/hashicorp\\/aws\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of hashicorp/aws",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:hashicorp-aws",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/hashicorp\\/aws\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['hashicorp/aws'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:hashicorp-azurerm",
+          "json": "/hashicorp~1azurerm/version",
+          "label": "provider-registry.json hashicorp/azurerm version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:hashicorp-azurerm",
+          "match": "^provider \"registry\\.opentofu\\.org\\/hashicorp\\/azurerm\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of hashicorp/azurerm, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:hashicorp-azurerm",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/hashicorp\\/azurerm\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of hashicorp/azurerm",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:hashicorp-azurerm",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/hashicorp\\/azurerm\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['hashicorp/azurerm'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:hashicorp-google",
+          "json": "/hashicorp~1google/version",
+          "label": "provider-registry.json hashicorp/google version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:hashicorp-google",
+          "match": "^provider \"registry\\.opentofu\\.org\\/hashicorp\\/google\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of hashicorp/google, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:hashicorp-google",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/hashicorp\\/google\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of hashicorp/google",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:hashicorp-google",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/hashicorp\\/google\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['hashicorp/google'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:hetznercloud-hcloud",
+          "json": "/hetznercloud~1hcloud/version",
+          "label": "provider-registry.json hetznercloud/hcloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:hetznercloud-hcloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/hetznercloud\\/hcloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of hetznercloud/hcloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:hetznercloud-hcloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/hetznercloud\\/hcloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of hetznercloud/hcloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:hetznercloud-hcloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/hetznercloud\\/hcloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['hetznercloud/hcloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:huaweicloud-huaweicloud",
+          "json": "/huaweicloud~1huaweicloud/version",
+          "label": "provider-registry.json huaweicloud/huaweicloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:huaweicloud-huaweicloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/huaweicloud\\/huaweicloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of huaweicloud/huaweicloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:huaweicloud-huaweicloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/huaweicloud\\/huaweicloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of huaweicloud/huaweicloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:huaweicloud-huaweicloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/huaweicloud\\/huaweicloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['huaweicloud/huaweicloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:ibm-cloud-ibm",
+          "json": "/IBM-Cloud~1ibm/version",
+          "label": "provider-registry.json IBM-Cloud/ibm version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:ibm-cloud-ibm",
+          "match": "^provider \"registry\\.opentofu\\.org\\/ibm-cloud\\/ibm\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of IBM-Cloud/ibm, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:ibm-cloud-ibm",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/ibm-cloud\\/ibm\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of IBM-Cloud/ibm",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:ibm-cloud-ibm",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/ibm-cloud\\/ibm\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['IBM-Cloud/ibm'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:ionos-cloud-ionoscloud",
+          "json": "/ionos-cloud~1ionoscloud/version",
+          "label": "provider-registry.json ionos-cloud/ionoscloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:ionos-cloud-ionoscloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/ionos-cloud\\/ionoscloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of ionos-cloud/ionoscloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:ionos-cloud-ionoscloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/ionos-cloud\\/ionoscloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of ionos-cloud/ionoscloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:ionos-cloud-ionoscloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/ionos-cloud\\/ionoscloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['ionos-cloud/ionoscloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:kamatera-kamatera",
+          "json": "/Kamatera~1kamatera/version",
+          "label": "provider-registry.json Kamatera/kamatera version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:kamatera-kamatera",
+          "match": "^provider \"registry\\.opentofu\\.org\\/kamatera\\/kamatera\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of Kamatera/kamatera, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:kamatera-kamatera",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/kamatera\\/kamatera\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of Kamatera/kamatera",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:kamatera-kamatera",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/kamatera\\/kamatera\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['Kamatera/kamatera'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:linode-linode",
+          "json": "/linode~1linode/version",
+          "label": "provider-registry.json linode/linode version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:linode-linode",
+          "match": "^provider \"registry\\.opentofu\\.org\\/linode\\/linode\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of linode/linode, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:linode-linode",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/linode\\/linode\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of linode/linode",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:linode-linode",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/linode\\/linode\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['linode/linode'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:oracle-oci",
+          "json": "/oracle~1oci/version",
+          "label": "provider-registry.json oracle/oci version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:oracle-oci",
+          "match": "^provider \"registry\\.opentofu\\.org\\/oracle\\/oci\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of oracle/oci, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:oracle-oci",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/oracle\\/oci\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of oracle/oci",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:oracle-oci",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/oracle\\/oci\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['oracle/oci'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:ovh-ovh",
+          "json": "/ovh~1ovh/version",
+          "label": "provider-registry.json ovh/ovh version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:ovh-ovh",
+          "match": "^provider \"registry\\.opentofu\\.org\\/ovh\\/ovh\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of ovh/ovh, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:ovh-ovh",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/ovh\\/ovh\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of ovh/ovh",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:ovh-ovh",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/ovh\\/ovh\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['ovh/ovh'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:scaleway-scaleway",
+          "json": "/scaleway~1scaleway/version",
+          "label": "provider-registry.json scaleway/scaleway version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:scaleway-scaleway",
+          "match": "^provider \"registry\\.opentofu\\.org\\/scaleway\\/scaleway\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of scaleway/scaleway, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:scaleway-scaleway",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/scaleway\\/scaleway\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of scaleway/scaleway",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:scaleway-scaleway",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/scaleway\\/scaleway\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['scaleway/scaleway'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:serverscom-serverscom",
+          "json": "/serverscom~1serverscom/version",
+          "label": "provider-registry.json serverscom/serverscom version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:serverscom-serverscom",
+          "match": "^provider \"registry\\.opentofu\\.org\\/serverscom\\/serverscom\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of serverscom/serverscom, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:serverscom-serverscom",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/serverscom\\/serverscom\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of serverscom/serverscom",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:serverscom-serverscom",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/serverscom\\/serverscom\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['serverscom/serverscom'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:tencentcloudstack-tencentcloud",
+          "json": "/tencentcloudstack~1tencentcloud/version",
+          "label": "provider-registry.json tencentcloudstack/tencentcloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:tencentcloudstack-tencentcloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/tencentcloudstack\\/tencentcloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of tencentcloudstack/tencentcloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:tencentcloudstack-tencentcloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/tencentcloudstack\\/tencentcloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of tencentcloudstack/tencentcloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:tencentcloudstack-tencentcloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/tencentcloudstack\\/tencentcloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['tencentcloudstack/tencentcloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:upcloudltd-upcloud",
+          "json": "/UpCloudLtd~1upcloud/version",
+          "label": "provider-registry.json UpCloudLtd/upcloud version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:upcloudltd-upcloud",
+          "match": "^provider \"registry\\.opentofu\\.org\\/upcloudltd\\/upcloud\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of UpCloudLtd/upcloud, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:upcloudltd-upcloud",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/upcloudltd\\/upcloud\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of UpCloudLtd/upcloud",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:upcloudltd-upcloud",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/upcloudltd\\/upcloud\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['UpCloudLtd/upcloud'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:vultr-vultr",
+          "json": "/vultr~1vultr/version",
+          "label": "provider-registry.json vultr/vultr version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:vultr-vultr",
+          "match": "^provider \"registry\\.opentofu\\.org\\/vultr\\/vultr\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of vultr/vultr, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:vultr-vultr",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/vultr\\/vultr\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of vultr/vultr",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:vultr-vultr",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/vultr\\/vultr\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['vultr/vultr'].lock",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-registry.json",
+          "role": "version:yandex-cloud-yandex",
+          "json": "/yandex-cloud~1yandex/version",
+          "label": "provider-registry.json yandex-cloud/yandex version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "version:yandex-cloud-yandex",
+          "match": "^provider \"registry\\.opentofu\\.org\\/yandex-cloud\\/yandex\" \\{\\n {2}version {5}= \"(?<value>[^\"]+)\"$",
+          "label": "the recorded lock block of yandex-cloud/yandex, version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "scripts/pins/data/tofu-providers/providers.lock.hcl",
+          "role": "lock:yandex-cloud-yandex",
+          "match": "^(?<value>provider \"registry\\.opentofu\\.org\\/yandex-cloud\\/yandex\" \\{\\n[^}]*\\n\\})$",
+          "label": "the recorded lock block of yandex-cloud/yandex",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tofu/provider-pins.generated.ts",
+          "role": "lock:yandex-cloud-yandex",
+          "match": "^ {4}lock: `(?<value>provider \"registry\\.opentofu\\.org\\/yandex-cloud\\/yandex\" \\{\\n[^}]*\\n\\})`,$",
+          "label": "PROVIDER_PINS['yandex-cloud/yandex'].lock",
           "expect": 1
         }
       ],
@@ -2050,6 +3266,14 @@
           "role": "version",
           "match": "^readonly WRANGLER_VERSION=\"(?<value>[^\"]+)\"",
           "label": ".ci/config/constants.sh WRANGLER_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "workers/account/package.json",
+          "role": "version",
+          "match": "\"wrangler\": \"(?<value>[^\"]+)\"",
+          "label": "workers/account/package.json wrangler",
           "expect": 1
         }
       ],
@@ -2379,7 +3603,7 @@
     {
       "id": "image:proxy-node",
       "kind": "leaf",
-      "name": "node image for the proxy worker's build and runtime stages",
+      "name": "node image for the proxy worker's runtime stage (the tag and its multi-arch index digest)",
       "driver": "docker",
       "source": {
         "type": "dockerhub",
@@ -2398,8 +3622,15 @@
           "repo": ".",
           "file": "workers/proxy/Dockerfile",
           "role": "version",
-          "match": "^FROM (?<value>node:\\S+)(?: AS build)?$",
-          "expect": 2
+          "match": "^FROM (?<value>node:[^@\\s]+)@sha256:[0-9a-f]{64}$",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "workers/proxy/Dockerfile",
+          "role": "digest",
+          "match": "^FROM node:[^@\\s]+@(?<value>sha256:[0-9a-f]{64})$",
+          "expect": 1
         }
       ],
       "derive": [],

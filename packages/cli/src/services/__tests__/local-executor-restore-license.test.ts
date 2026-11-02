@@ -56,15 +56,19 @@ const {
   mockAccountServerFetch: vi.fn(),
 }));
 
-vi.mock('../../remote/sftp/index.js', () => ({
-  SFTPClient: class MockSFTPClient {
-    connect = mockConnect;
-    close = mockClose;
-    exec = mockExec;
-    execStreaming = mockExecStreaming;
-    isConnected = () => true;
-  },
-}));
+// Every renet call runs as a machine job: the script below answers as renet's run did (stdout, stderr, exit code), and the fake turns a `job start` exec into the attach stream renet prints for that run.
+vi.mock('../../remote/sftp/index.js', async () => {
+  const { asJobAttach } = await import('./job-attach-fake.js');
+  return {
+    SFTPClient: class MockSFTPClient {
+      connect = mockConnect;
+      close = mockClose;
+      exec = mockExec;
+      execStreaming = asJobAttach(mockExecStreaming as never);
+      isConnected = () => true;
+    },
+  };
+});
 
 vi.mock('../config/config-resources.js', () => ({
   configService: {
@@ -195,13 +199,10 @@ function storeReports(licensed: ReturnType<typeof installedLicence>[]) {
 }
 
 describe('backup restore: licensing the target machine', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: MockInstance<typeof outputService.warn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Without this the whole pre-flight early-returns, and every assertion below would pass for a reason that has nothing to do with the fix.
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -243,11 +244,6 @@ describe('backup restore: licensing the target machine', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-    if (savedSkipActivation === undefined) {
-      delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-    } else {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   // T1, the required test. Delete the restore arm at the provisionAndVerify seam, or invert its predicate, and this goes red.
@@ -497,16 +493,6 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(2);
     expect(mockIssueRepoLicense.mock.calls[1][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
-  });
-
-  // The bypass must stay honoured: nolicense/CI builds have no subscription server to mint against.
-  it('honours REDIACC_SKIP_MACHINE_ACTIVATION', async () => {
-    process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
-
-    const result = await localExecutorService.execute(restoreOptions);
-
-    expect(result.success).toBe(true);
-    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
   });
 });
 

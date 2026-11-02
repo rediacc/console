@@ -5,27 +5,28 @@
  * E2E-sealed); they need the `backup:read` scope
  * on the presented token. `verify` is executor-side: it runs the renet
  * `backup_verify` verb on the machine that holds the repo, the machine, not the
- * server, owns the anchor and the cell data.
+ * server, owns the anchor and the cell data. `verify --store` is the exception,
+ * a control-plane call: the server re-hashes the lineage's stored chunks.
  */
 
 import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
-import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { planStep } from '../services/jobs/steps.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
-import { lineageOf, runBrowseAt } from './backup-storage-browse.js';
-import {
-  isLiveMountListing,
-  parseBrowseResult,
-  parseVerifyVerdict,
-} from './backup-storage-parser.js';
+import { registerBackupReconcile } from './backup-reconcile.js';
+import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
+import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
+import { isLiveMountListing, parseBrowseResult } from './backup-storage-parser.js';
+import { registerBackupSnapshot } from './backup-storage-snapshot.js';
 
 /** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
@@ -58,6 +59,7 @@ interface BackupManifestEntry {
   totalBytes: number;
   addedBytes: number;
   addedChunkCount: number;
+  hasIndex?: boolean;
   createdAt: string;
 }
 /**
@@ -77,6 +79,7 @@ function registerBackupUsage(backup: Command): void {
     .description(t('commands.backup.usage.description'))
     .action(async () => {
       try {
+        assertHostedBackupAccount();
         outputService.info(t('commands.backup.usage.fetching'));
         const usage = await accountServerFetch<BackupUsageResponse>(
           '/account/api/v1/backups/usage'
@@ -127,21 +130,6 @@ function registerBackupUsage(backup: Command): void {
     });
 }
 
-/**
- * The lineage (grand) GUID a repo ref belongs to. ONE implementation, shared by
- * `manifests` and `retention`: both address the server-side index by lineage,
- * and a second copy of this resolution is how the two commands would come to
- * disagree about which repo the operator named.
- */
-async function resolveLineage(repoRef: string): Promise<string> {
-  const { repoKey } = await resolveRepoRefLocal(repoRef);
-  const repo = await configService.getRepository(repoKey);
-  if (!repo) {
-    throw new Error(`Repository "${repoKey}" not found in this config.`);
-  }
-  return lineageOf(repo);
-}
-
 /** `backup manifests [repo-ref]`, the server snapshot index, optionally scoped. */
 function registerBackupManifests(backup: Command): void {
   backup
@@ -153,43 +141,62 @@ function registerBackupManifests(backup: Command): void {
         // Scope to one lineage (grand GUID) when a repo is named. Config-local resolution only, the index lives on the server, not on a machine.
         const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
 
+        assertHostedBackupAccount();
         outputService.info(t('commands.backup.manifests.fetching'));
         const query = lineage ? `?lineage=${encodeURIComponent(lineage)}` : '';
         const result = await accountServerFetch<BackupManifestsResponse>(
           `/account/api/v1/backups/manifests${query}`
         );
 
+        // The lineage GUID is the grand repo's GUID, and every fork of it shares that GUID, so a fork's snapshots resolve to the grand's name. An unknown lineage resolves to null (`-o json`) or its short GUID (table).
+        const resolve = createGuidResolver(await loadGuidMap());
+        const nameOf = (lineage: string): string | null => {
+          const name = resolve(lineage);
+          return name === lineage ? null : name;
+        };
+        const repoOf = (lineage: string): string => nameOf(lineage) ?? lineage.slice(0, 8);
+        // Newest first, by parsed time: ISO strings with and without fractional seconds do not order correctly as text.
+        // An unparseable createdAt counts as the oldest, so the comparator never returns NaN and the order stays deterministic.
+        const createdMs = (createdAt: string): number => Date.parse(createdAt) || 0;
+        const sorted = [...result.manifests].sort(
+          (a, b) => createdMs(b.createdAt) - createdMs(a.createdAt)
+        );
+
         const format = getOutputFormat();
         if (format !== 'table') {
-          outputService.print(result, format);
+          // Every wire field stays; `repo` is the one addition.
+          outputService.print(
+            { ...result, manifests: sorted.map((m) => ({ ...m, repo: nameOf(m.lineageGuid) })) },
+            format
+          );
           return;
         }
-        if (result.manifests.length === 0) {
+        if (sorted.length === 0) {
           outputService.print(t('commands.backup.manifests.empty'));
           return;
         }
 
         const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
-        const resolve = createGuidResolver(await loadGuidMap());
-        const rows = result.manifests
-          .map((m) => ({
-            repo: resolve(m.lineageGuid),
-            snapshot: m.snapshotId,
-            created: m.createdAt.replace('T', ' ').replace(/\..*$/, ''),
-            total: formatSizeBytes(m.totalBytes),
-            added: formatSizeBytes(m.addedBytes),
-            chunks: m.addedChunkCount,
-          }))
-          // Most recent first (ISO timestamps sort lexicographically).
-          .sort((a, b) => b.created.localeCompare(a.created));
+        // Ids read `<timestamp>Z-<hash>`: the timestamp is the Snapshot column already, so the short form is the first 8 hash characters. Full ids stay in `-o json`.
+        const shortId = (id: string): string => (id.split('-').pop() ?? id).slice(0, 8);
+        const rows = sorted.map((m) => ({
+          repo: repoOf(m.lineageGuid),
+          snapshot: m.createdAt.replace('T', ' ').replace(/\..*$/, '').replace(/Z$/, ''),
+          id: shortId(m.snapshotId),
+          parent: m.parentSnapshotId ? shortId(m.parentSnapshotId) : '-',
+          total: formatSizeBytes(m.totalBytes),
+          added: `${formatSizeBytes(m.addedBytes)} / ${m.addedChunkCount}`,
+          index: m.hasIndex ? 'yes' : 'no',
+        }));
 
         const columns = [
           { key: 'repo', header: 'Repo' },
           { key: 'snapshot', header: 'Snapshot' },
-          { key: 'created', header: 'Created' },
+          { key: 'id', header: 'Id' },
+          { key: 'parent', header: 'Parent' },
           { key: 'total', header: 'Total', align: 'right' as const },
-          { key: 'added', header: 'Added', align: 'right' as const },
-          { key: 'chunks', header: 'Chunks', align: 'right' as const },
+          { key: 'added', header: 'Added / chunks', align: 'right' as const },
+          { key: 'index', header: 'Index' },
         ];
         outputService.print(outputService.format(rows, format, columns));
       } catch (error) {
@@ -197,12 +204,6 @@ function registerBackupManifests(backup: Command): void {
       }
     });
 }
-
-/**
- * The renet `backup browse-at` verb exits 18 when the snapshot has no stored
- * listing. Propagated verbatim, like the quota refusal's 16.
- */
-const RENET_NO_LISTING_EXIT = 18;
 
 /**
  * `backup browse <repo-ref> [--path] [--at <time|snapshot>]` -- list what a repository
@@ -325,113 +326,127 @@ function registerBackupBrowse(backup: Command): void {
     );
 }
 
-/** `backup verify <repo> [--deep]`, executor-side anchor verification. */
+/** POST /backups/verify, level `chunks`: one capped page of the lineage's re-hashed chunks. */
+interface BackupChunkVerifyResponse {
+  subscriptionId: string;
+  chunks: {
+    lineageGuid: string;
+    checked: number;
+    missing: string[];
+    corrupt: string[];
+    nextAfter: string | null;
+  };
+}
+
+/** The `backup verify --store` verdict: every referenced chunk of the lineage, re-hashed by the server. */
+export interface StoreVerifyVerdict {
+  lineageGuid: string;
+  checked: number;
+  missing: string[];
+  corrupt: string[];
+}
+
+/**
+ * Walk the server's chunk verify for one lineage, page by page, until the
+ * cursor runs out. Each page re-hashes at most the server's cap
+ * (BACKUP_VERIFY_CHUNKS_MAX), so a large lineage is many requests.
+ */
+export async function runStoreVerify(lineageGuid: string): Promise<StoreVerifyVerdict> {
+  assertHostedBackupAccount();
+  const verdict: StoreVerifyVerdict = { lineageGuid, checked: 0, missing: [], corrupt: [] };
+  let after: string | undefined;
+  const sent = new Set<string>();
+  for (;;) {
+    const page = await accountServerFetch<BackupChunkVerifyResponse>(
+      '/account/api/v1/backups/verify',
+      { method: 'POST', body: { lineageGuid, level: 'chunks', after } }
+    );
+    verdict.checked += page.chunks.checked;
+    verdict.missing.push(...page.chunks.missing);
+    verdict.corrupt.push(...page.chunks.corrupt);
+    if (!page.chunks.nextAfter) return verdict;
+    // A cursor already sent, the last one or any earlier (A, B, A), would loop forever on a misbehaving server.
+    if (sent.has(page.chunks.nextAfter) || page.chunks.nextAfter === after) {
+      throw new Error(`backup verify --store: the server repeated cursor ${page.chunks.nextAfter}`);
+    }
+    after = page.chunks.nextAfter;
+    sent.add(after);
+  }
+}
+
+/**
+ * `backup verify <repo> [--deep] [--store]`. Without `--store`, executor-side
+ * anchor verification on the machine. With `--store`, the server re-downloads
+ * every chunk the repo's lineage references and re-hashes it, so a flipped or
+ * lost object in the store is named by its hash; exit 1 when any is.
+ */
 function registerBackupVerify(backup: Command): void {
   backup
     .command('verify')
     .argument('<repo-ref>', t('options.repoRef'))
     .description(t('commands.backup.verify.description'))
     .option('--deep', t('commands.backup.verify.optionDeep'))
-    .option('--debug', t('options.debug'))
-    .action(async (repoRef: string, options: { deep?: boolean; debug?: boolean }) => {
-      try {
-        const { repoKey, machineName } = await resolveRepoRef(repoRef);
-        const level = options.deep ? 'full' : 'spot';
-        const result = await executeRepoFunction(
-          'backup_verify',
-          repoKey,
-          machineName,
-          { level },
-          // captureOutput: the verdict IS the answer here. Without it the step detector drops the verb's JSON and `backup verify` exits 0 with EMPTY stdout whether the anchor verified or mismatched, which is the one thing an operator must be able to tell apart.
-          { debug: options.debug, captureOutput: true },
-          {
-            starting: t('commands.backup.verify.starting', { name: repoKey, level }),
-            completed: t('commands.backup.verify.completed', { name: repoKey }),
-            failed: t('commands.backup.verify.failed', { name: repoKey }),
-          }
-        );
-        if (!result.success) {
-          // executeRepoFunction already rendered the failure (envelope and exit code), and renet's verdict rides its output tail.
-          // Printing the verdict too would put a SECOND JSON document on stdout.
-          await recordBackupRun(repoKey, { kind: 'verify', status: 'mismatch' });
-          return;
-        }
-        // The verdict is structured data, so it is printed as structured data in every mode -- including `table`, where the alternative would be a hand-written English sentence (a new i18n key across 13 locales) that says strictly less than the record itself.
-        const verdict = parseVerifyVerdict(result.stdout) ?? { status: 'verified', level };
-        const format = getOutputFormat();
-        outputService.print(verdict, format === 'table' ? 'json' : format);
-        await recordBackupRun(repoKey, { kind: 'verify', status: 'verified' });
-      } catch (error) {
-        handleError(error);
-      }
-    });
-}
-
-/**
- * The renet verb exits 16 when the server refuses on storage quota
- * (cmd/renet/backup_snapshot.go). The CLI propagates it verbatim rather than
- * collapsing it to 1, so a script can tell "out of space, prune or upgrade"
- * from "it broke, go debug". 11 through 15 are already spent in the CLI's own
- * exit table, which is why the verb picked 16.
- */
-const RENET_QUOTA_REFUSED_EXIT = 16;
-
-/**
- * `backup snapshot <repo> [--reseed] [--dry-run]`, upload a chunk-store
- * snapshot. This is the write side of the chunk path: the first run uploads the
- * full non-zero inventory, every run after it uploads only changed cells.
- */
-function registerBackupSnapshot(backup: Command): void {
-  backup
-    .command('snapshot')
-    .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.snapshot.description'))
-    .option('--reseed', t('commands.backup.snapshot.optionReseed'))
-    .option('--dry-run', t('commands.backup.snapshot.optionDryRun'))
-    .option('--cold', t('commands.backup.snapshot.optionCold'))
+    .option('--store', t('commands.backup.verify.optionStore'))
     .option('--debug', t('options.debug'))
     .action(
-      async (
-        repoRef: string,
-        options: { reseed?: boolean; dryRun?: boolean; cold?: boolean; debug?: boolean }
-      ) => {
+      async (repoRef: string, options: { deep?: boolean; store?: boolean; debug?: boolean }) => {
         try {
+          if (options.store) {
+            const { repoKey } = await resolveRepoRefLocal(repoRef);
+            const verdict = await runStoreVerify(await resolveLineage(repoRef));
+            const format = getOutputFormat();
+            outputService.print(verdict, format === 'table' ? 'json' : format);
+            // A lineage with no stored chunks verified nothing: it is not recorded or reported as verified.
+            if (verdict.checked === 0) {
+              outputService.warn(t('commands.backup.verify.storeEmpty', { name: repoKey }));
+              await recordBackupRun(repoKey, { kind: 'verify', status: 'empty' });
+              setExitCode(1);
+              return;
+            }
+            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
+            await recordBackupRun(repoKey, {
+              kind: 'verify',
+              status: clean ? 'verified' : 'mismatch',
+            });
+            if (!clean) setExitCode(1);
+            return;
+          }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
-          const result = await executeRepoFunction(
-            'backup_snapshot',
+          const level = options.deep ? 'full' : 'spot';
+          await executeRepoFunction(
+            'backup_verify',
             repoKey,
             machineName,
+            { level },
+            // captureOutput: the verdict IS the answer here. Without it the step detector drops the verb's JSON and `backup verify` exits 0 with EMPTY stdout whether the anchor verified or mismatched, which is the one thing an operator must be able to tell apart.
             {
-              reseed: options.reseed ?? false,
-              dry_run: options.dryRun ?? false,
-              // Without this the cold path was reachable only from a scheduled unit or by SSH-ing to the machine: the generator emits --cold, but an operator wanting one application-consistent snapshot before a risky change had no supported route to it.
-              cold: options.cold ?? false,
+              debug: options.debug,
+              captureOutput: true,
+              // The verdict print and the run record are steps on the job's ticket, so nothing says "verified" before the job has verified anything (PLAN-detached-jobs J4). The verdict is structured data, printed as structured data in every mode. On a failure executeRepoFunction renders the failure (envelope and exit code), and renet's
+              // verdict rides its output tail; printing the verdict too would put a SECOND JSON document on stdout, so no failure step prints.
+              job: {
+                verb: 'backup verify',
+                steps: [
+                  planStep('reportVerifyVerdict', { level }),
+                  planStep('recordBackupRun', {
+                    repo: repoKey,
+                    kind: 'verify',
+                    status: 'verified',
+                  }),
+                  planStep('recordBackupRunFailed', {
+                    repo: repoKey,
+                    kind: 'verify',
+                    status: 'mismatch',
+                  }),
+                ],
+              },
             },
-            { debug: options.debug },
             {
-              starting: t('commands.backup.snapshot.starting', { name: repoKey }),
-              completed: t('commands.backup.snapshot.completed', { name: repoKey }),
-              failed: t('commands.backup.snapshot.failed', { name: repoKey }),
+              starting: t('commands.backup.verify.starting', { name: repoKey, level }),
+              completed: t('commands.backup.verify.completed', { name: repoKey }),
+              failed: t('commands.backup.verify.failed', { name: repoKey }),
             }
           );
-          // A dry run moved nothing, so it must not be recorded as a stored backup: a run history that counts plans as backups would make the next operator believe a snapshot exists that never happened. Exit 16 is the renet verb's quota refusal and it is NOT a plain failure: the operator action is prune or upgrade, never debug. Flattening it to 1 (as this did) threw away a
-          // distinction the verb deliberately encodes, and left the quotaRefused message with no call site at all.
-          const quotaRefused = result.exitCode === RENET_QUOTA_REFUSED_EXIT;
-          if (!options.dryRun) {
-            // Three outcomes, kept distinct on purpose (see the note above): a quota refusal is not a generic failure.
-            let runStatus = 'failed';
-            if (result.success) {
-              runStatus = 'stored';
-            } else if (quotaRefused) {
-              runStatus = 'quota-refused';
-            }
-            await recordBackupRun(repoKey, { kind: 'snapshot', status: runStatus });
-          }
-          if (quotaRefused) {
-            outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
-            setExitCode(RENET_QUOTA_REFUSED_EXIT);
-          }
-          // Any other failure keeps the exit code executeRepoFunction's renderer set (10 for a license refresh, for one); overwriting it with 1 lost that.
         } catch (error) {
           handleError(error);
         }
@@ -439,150 +454,9 @@ function registerBackupSnapshot(backup: Command): void {
     );
 }
 
+export { snapshotUploadParams } from './backup-storage-snapshot.js';
+
 /** Register the chunk-store backup reads + verification under `rdc backup`. */
-interface BackupRetentionPolicy {
-  lineageGuid: string;
-  keepLast: number | null;
-  keepHourly: number | null;
-  keepDaily: number | null;
-  keepWeekly: number | null;
-  keepMonthly: number | null;
-  keepYearly: number | null;
-  updatedAt: string;
-}
-
-interface BackupRetentionResponse {
-  policies: BackupRetentionPolicy[];
-}
-
-/** The GFS knobs, in the order an operator thinks about them. */
-const RETENTION_KNOBS = [
-  ['keepLast', '--keep-last'],
-  ['keepHourly', '--keep-hourly'],
-  ['keepDaily', '--keep-daily'],
-  ['keepWeekly', '--keep-weekly'],
-  ['keepMonthly', '--keep-monthly'],
-  ['keepYearly', '--keep-yearly'],
-] as const;
-
-/**
- * `backup retention [repo-ref]`, show the policy the SERVER is enforcing.
- *
- * Read back from the server rather than printed from the local config on
- * purpose: what is displayed is then always what is enforced. A policy shown
- * from config would be a statement of intent that a failed push could make a
- * lie, and this is the surface that decides what gets DELETED.
- */
-function registerBackupRetention(backup: Command): void {
-  const retention = backup
-    .command('retention')
-    .argument('[repo-ref]', t('options.repoRef'))
-    .description(t('commands.backup.retention.description'))
-    .action(async (repoRef: string | undefined) => {
-      try {
-        const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
-        const query = lineage ? `?lineage=${encodeURIComponent(lineage)}` : '';
-        const result = await accountServerFetch<BackupRetentionResponse>(
-          `/account/api/v1/backups/retention${query}`
-        );
-        const format = getOutputFormat();
-        if (format !== 'table') {
-          outputService.print(result, format);
-          return;
-        }
-        if (result.policies.length === 0) {
-          outputService.print(t('commands.backup.retention.empty'));
-          return;
-        }
-        const resolve = createGuidResolver(await loadGuidMap());
-        const rows = result.policies.map((p) => ({
-          repo: resolve(p.lineageGuid),
-          last: p.keepLast ?? '-',
-          hourly: p.keepHourly ?? '-',
-          daily: p.keepDaily ?? '-',
-          weekly: p.keepWeekly ?? '-',
-          monthly: p.keepMonthly ?? '-',
-          yearly: p.keepYearly ?? '-',
-        }));
-        const columns = [
-          { key: 'repo', header: 'Repo' },
-          { key: 'last', header: 'Last', align: 'right' as const },
-          { key: 'hourly', header: 'Hourly', align: 'right' as const },
-          { key: 'daily', header: 'Daily', align: 'right' as const },
-          { key: 'weekly', header: 'Weekly', align: 'right' as const },
-          { key: 'monthly', header: 'Monthly', align: 'right' as const },
-          { key: 'yearly', header: 'Yearly', align: 'right' as const },
-        ];
-        outputService.print(outputService.format(rows, format, columns));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  retention
-    .command('set')
-    .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.retention.set.description'))
-    .option('--keep-last <n>', t('commands.backup.retention.optionKeepLast'))
-    .option('--keep-hourly <n>', t('commands.backup.retention.optionKeepHourly'))
-    .option('--keep-daily <n>', t('commands.backup.retention.optionKeepDaily'))
-    .option('--keep-weekly <n>', t('commands.backup.retention.optionKeepWeekly'))
-    .option('--keep-monthly <n>', t('commands.backup.retention.optionKeepMonthly'))
-    .option('--keep-yearly <n>', t('commands.backup.retention.optionKeepYearly'))
-    .action(async (repoRef: string, options: Record<string, string | undefined>) => {
-      try {
-        const lineageGuid = await resolveLineage(repoRef);
-        const body: Record<string, unknown> = { lineageGuid };
-        let declared = 0;
-        for (const [field, flag] of RETENTION_KNOBS) {
-          const raw = options[field];
-          if (raw === undefined) continue;
-          const n = Number(raw);
-          if (!Number.isInteger(n) || n < 0) {
-            throw new ValidationError(
-              t('commands.backup.retention.knobNotAnInteger', { flag, value: raw })
-            );
-          }
-          body[field] = n;
-          declared++;
-        }
-        // EVERY knob is replaced, never merged, the server says so at routes/backups.ts:167. So an empty set would silently clear the policy while reading like a no-op. Refuse instead.
-        if (declared === 0) {
-          throw new ValidationError(t('commands.backup.retention.noKnobs'));
-        }
-        const result = await accountServerFetch<BackupRetentionResponse>(
-          '/account/api/v1/backups/retention',
-          { method: 'PUT', body: JSON.stringify(body) }
-        );
-        outputService.success(
-          t('commands.backup.retention.set.success', { name: repoRef, count: String(declared) })
-        );
-        const format = getOutputFormat();
-        if (format !== 'table') outputService.print(result, format);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  retention
-    .command('clear')
-    .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.retention.clear.description'))
-    .action(async (repoRef: string) => {
-      try {
-        const lineage = await resolveLineage(repoRef);
-        await accountServerFetch<BackupRetentionResponse>(
-          `/account/api/v1/backups/retention?lineage=${encodeURIComponent(lineage)}`,
-          { method: 'DELETE' }
-        );
-        // Clearing is NOT "keep nothing": with no row the sweep never looks at this lineage again, so every snapshot is kept. Say so, because the opposite reading would be a data-loss expectation.
-        outputService.success(t('commands.backup.retention.cleared', { name: repoRef }));
-      } catch (error) {
-        handleError(error);
-      }
-    });
-}
-
 export function registerBackupStorageCommands(backup: Command): void {
   registerBackupUsage(backup);
   registerBackupManifests(backup);
@@ -590,4 +464,6 @@ export function registerBackupStorageCommands(backup: Command): void {
   registerBackupBrowse(backup);
   registerBackupSnapshot(backup);
   registerBackupRetention(backup);
+  registerBackupSnapshots(backup);
+  registerBackupReconcile(backup);
 }

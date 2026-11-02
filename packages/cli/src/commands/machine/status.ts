@@ -1,5 +1,7 @@
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type {
+  JobInfo,
+  JobOrigin,
   ListResult,
   StorageHealthResult,
   SystemInfo,
@@ -17,8 +19,10 @@ import {
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import type { RuntimeRepoLicenseStatus } from '../../services/account/license.js';
+import type { StaleBackupRepo } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import type { RenetProcess } from '../../services/renet/renet-daemons.js';
 import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
 import { ambiguous, notFound } from '../../utils/cli-exit-error.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
@@ -177,6 +181,7 @@ function getSections(
             size: repo.size_human,
             mounted: repo.mounted ? 'Yes' : 'No',
             docker: repo.docker_running ? 'Yes' : 'No',
+            running: repo.containers_running ? 'Yes' : 'No',
             autostart: repo.autostart ? 'Yes' : 'No',
             containers: repo.container_count,
             disk: repo.disk_space?.use_percent ?? '-',
@@ -466,9 +471,9 @@ function printStorageSummary(sys: SystemInfo | undefined): void {
   );
 }
 
-/** Pool fill level + backup-snapshot pinning, shown under the storage-health
- * table (rediacc/renet#76). */
-function renderPoolSummary(pool: StorageHealthResult['pool']): void {
+/** Pool fill level + the space transfer snapshots and staging pin, shown under
+ * the storage-health table (rediacc/renet#76). */
+export function renderPoolSummary(pool: StorageHealthResult['pool']): void {
   if (!pool) return;
   outputService.info(
     t('commands.machine.status.storageHealthPoolSummary', {
@@ -477,12 +482,12 @@ function renderPoolSummary(pool: StorageHealthResult['pool']): void {
       percent: pool.used_percent.toFixed(1),
     })
   );
-  if (pool.active_backup_snapshots > 0 || pool.stale_backup_snapshots > 0) {
+  if (pool.active_transfer_snapshots > 0 || pool.stale_transfer_snapshots > 0) {
     outputService.info(
       t('commands.machine.status.storageHealthPoolSnapshots', {
-        pinned: pool.backup_snapshot_pinned_human,
-        active: pool.active_backup_snapshots,
-        stale: pool.stale_backup_snapshots,
+        pinned: pool.transfer_pinned_human,
+        active: pool.active_transfer_snapshots,
+        stale: pool.stale_transfer_snapshots,
       })
     );
   }
@@ -634,13 +639,15 @@ async function gatherStatus(
   guidMap: Awaited<ReturnType<typeof loadGuidMap>>;
   machineConfig: MachineConfig | undefined;
   licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
+  staleBinary: RenetProcess[] | null;
+  staleBackups: StaleBackupRepo[];
 }> {
   const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
     '../../services/machine/machine-status.js'
   );
   const wantsLicenses = sections.length === 0 || sections.includes('licenses');
 
-  const [listResult, guidMap, machineConfig, licenseEntries] = await Promise.all([
+  const [listResult, guidMap, machineConfig, licenseEntries, staleBinary] = await Promise.all([
     withSpinner(
       t('commands.machine.status.fetching', { machine: machineName }),
       () =>
@@ -653,6 +660,7 @@ async function gatherStatus(
     loadGuidMap(),
     configService.getLocalMachine(machineName).catch(() => undefined),
     wantsLicenses ? fetchRepoLicenseDetail(machineName) : Promise.resolve([]),
+    fetchStaleBinaries(machineName),
   ]);
 
   return {
@@ -660,7 +668,151 @@ async function gatherStatus(
     guidMap,
     machineConfig,
     licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
+    staleBinary,
+    staleBackups: await fetchStaleBackups(machineName, listResult),
   };
+}
+
+/**
+ * renet processes still running a replaced binary (C4). Read from /proc over its own exec, so it
+ * answers whatever renet version the machine has. Null when the probe could not run: unknown is
+ * never reported as "none stale".
+ */
+export async function fetchStaleBinaries(machineName: string): Promise<RenetProcess[] | null> {
+  try {
+    const { machineConnections } = await import('../../services/machine/machine-connection.js');
+    const { probeStaleRenetProcesses } = await import('../../services/renet/renet-daemons.js');
+    const { REMOTE_RENET_PATH } = await import('../../services/renet/renet-provisioner.js');
+    const lease = await machineConnections.acquire(machineName);
+    try {
+      return await probeStaleRenetProcesses(lease.sftp, REMOTE_RENET_PATH);
+    } finally {
+      lease.release();
+    }
+  } catch {
+    return null;
+  }
+}
+
+/** Repos whose last backup is older than 2x the schedule covering them (G7). */
+export async function fetchStaleBackups(
+  machineName: string,
+  listResult: ListResult
+): Promise<StaleBackupRepo[]> {
+  if (!listResult.backup_coverage) return [];
+  const config = await configService.getCurrent().catch(() => null);
+  if (!config) return [];
+  const { machineStaleBackups } = await import('../../services/backup/backup-schedule-coverage.js');
+  return machineStaleBackups(config, machineName, listResult.backup_coverage);
+}
+
+/** Table rows for the stale-binary section. */
+export function staleBinaryRows(procs: RenetProcess[]): Record<string, unknown>[] {
+  return procs.map((p) => ({ pid: p.pid, unit: p.unit, exe: p.exe }));
+}
+
+/** Table rows for the stale-backup section. */
+export function staleBackupRows(
+  stale: StaleBackupRepo[],
+  resolve: (guid: string) => string
+): Record<string, unknown>[] {
+  return stale.map((b) => ({
+    repository: resolve(b.guid),
+    lastBackup: b.lastSuccessAt,
+    ageDays: b.ageDays,
+    scheduleEveryDays: b.intervalDays,
+  }));
+}
+
+/** The staleness sections and their warnings, printed after the main tables. */
+function renderStaleness(
+  staleBinary: RenetProcess[] | null,
+  staleBackups: StaleBackupRepo[],
+  resolve: (guid: string) => string
+): void {
+  if (staleBinary && staleBinary.length > 0) {
+    outputService.info(`\n${t('commands.machine.status.staleBinarySection')}`);
+    writeStdout(`${outputService.formatTable(staleBinaryRows(staleBinary))}\n`);
+    outputService.warn(
+      t('commands.machine.status.staleBinaryWarning', { count: staleBinary.length })
+    );
+  }
+  if (staleBackups.length > 0) {
+    outputService.info(`\n${t('commands.machine.status.staleBackupSection')}`);
+    writeStdout(`${outputService.formatTable(staleBackupRows(staleBackups, resolve))}\n`);
+    outputService.warn(
+      t('commands.machine.status.staleBackupWarning', { count: staleBackups.length })
+    );
+  }
+}
+
+/** Who started a job, as one cell: client, config name, then the actor or SSH user. */
+function formatJobOrigin(origin: JobOrigin | undefined): string {
+  if (!origin) return '-';
+  const who = origin.actor ?? origin.ssh_user;
+  const head = [origin.client, origin.config_name].filter(Boolean).join(' ');
+  const text = who ? `${head} (${who})`.trim() : head;
+  return text || '-';
+}
+
+/**
+ * The running-jobs section (PLAN-detached-jobs J21): the header and one line per live or recently
+ * finished job, each naming the exact command that attaches to it. Empty when renet reports no
+ * jobs, or is too old to report the section at all.
+ */
+export function runningJobLines(
+  jobs: JobInfo[] | undefined,
+  resolve: (guid: string) => string
+): string[] {
+  if (!jobs || jobs.length === 0) return [];
+  return [
+    t('commands.machine.status.runningJobsSection'),
+    ...jobs.map((j) =>
+      t('commands.machine.status.runningJobsRow', {
+        id: j.job_id,
+        verb: j.function ?? j.command ?? '-',
+        repo: j.repo_guid ? resolve(j.repo_guid) : '-',
+        startedAt: j.started_at,
+        origin: formatJobOrigin(j.origin),
+        state: j.state,
+        attach: j.attach,
+      })
+    ),
+  ];
+}
+
+/** The jobs section for JSON output, with each repo GUID resolved to its name. */
+export function enrichJobs(
+  jobs: JobInfo[] | undefined,
+  resolve: (guid: string) => string
+): (JobInfo & { repository?: string })[] {
+  return (jobs ?? []).map((j) => (j.repo_guid ? { ...j, repository: resolve(j.repo_guid) } : j));
+}
+
+/**
+ * The printed `machine status --output json` document: the enriched sections, then `jobs` (always
+ * present, an empty array when renet reports none), `stale_binary` and `backup_staleness`.
+ */
+export function statusJsonDocument(
+  enriched: Record<string, unknown>,
+  jobs: JobInfo[] | undefined,
+  resolve: (guid: string) => string,
+  staleBinary: RenetProcess[] | null,
+  staleBackups: StaleBackupRepo[]
+): Record<string, unknown> {
+  return {
+    ...enriched,
+    jobs: enrichJobs(jobs, resolve),
+    stale_binary: staleBinary,
+    backup_staleness: staleBackups,
+  };
+}
+
+function renderRunningJobs(jobs: JobInfo[] | undefined, resolve: (guid: string) => string): void {
+  const lines = runningJobLines(jobs, resolve);
+  if (lines.length === 0) return;
+  outputService.info(`\n${lines[0]}`);
+  for (const line of lines.slice(1)) outputService.info(line);
 }
 
 export function registerStatusCommand(machine: Command, program: Command): void {
@@ -690,11 +842,8 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         const sections = collectSections(options);
 
-        const { listResult, guidMap, machineConfig, licenseDetail } = await gatherStatus(
-          machineName,
-          sections,
-          options.debug
-        );
+        const { listResult, guidMap, machineConfig, licenseDetail, staleBinary, staleBackups } =
+          await gatherStatus(machineName, sections, options.debug);
 
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
@@ -729,7 +878,10 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             licenseDetail,
             machineName
           );
-          outputService.print(enriched, format);
+          outputService.print(
+            statusJsonDocument(enriched, listResult.jobs, resolve, staleBinary, staleBackups),
+            format
+          );
         } else {
           renderTableMode(
             listResult,
@@ -741,6 +893,8 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             machineName
           );
           renderBlockedBackupAlerts(licenseDetail);
+          renderStaleness(staleBinary, staleBackups, resolve);
+          renderRunningJobs(listResult.jobs, resolve);
         }
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)

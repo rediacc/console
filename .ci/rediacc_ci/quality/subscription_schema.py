@@ -105,7 +105,7 @@ def generate(root: pathlib.Path, out: pathlib.Path) -> int:
     env["SUBSCRIPTION_SCHEMA_OUT"] = str(out)
     try:
         proc = subprocess.run(
-            ["npx", "tsx", GENERATOR],
+            ["npx", "--no-install", "tsx", GENERATOR],
             cwd=str(root),
             env=env,
             stdout=subprocess.DEVNULL,
@@ -126,7 +126,7 @@ def format_through_stdin(root: pathlib.Path, fresh: pathlib.Path, formatted: pat
     try:
         with fresh.open("rb") as stdin, formatted.open("wb") as stdout:
             status = subprocess.run(
-                ["npx", "biome", "format", "--stdin-file-path=%s" % SCHEMA_REL],
+                ["npx", "--no-install", "biome", "format", "--stdin-file-path=%s" % SCHEMA_REL],
                 cwd=str(root),
                 stdin=stdin,
                 stdout=stdout,

@@ -10,7 +10,7 @@
  *                   (Release.breaking): a plain bump, `bump --all` and `apply-soaked` leave it,
  *                   `bump toolchain:go --major --reason "<why>"` takes it, and status ages the
  *                   line as a newer major.
- *   toolchain:npm   the npm registry, the four NPM_VERSION sites, then the canonical lockfile pass
+ *   toolchain:npm   the npm registry, the three NPM_VERSION sites, then the canonical lockfile pass
  *                   over EVERY lockfile of the npm family scope under the NEW npm, since a lockfile
  *                   written by any other npm is refused by check:ci-lockfile.
  *   python tools    PyPI (ruff, mypy, pytest, pytest-xdist, PyYAML) for the version, GitHub
@@ -21,15 +21,26 @@
  *                   in the site's `asset`, downloaded from awscli.amazonaws.com and hashed, since
  *                   AWS publishes no sha256 beside them.
  *   wrangler        the npm registry for the version in constants.sh.
+ *   cli-tool:opentofu  GitHub releases for the version; every sha256 from the release SHA256SUMS
+ *                   after its cosign keyless signature verified (scripts/pins/signed-release.ts),
+ *                   which is recorded beside the pin, into the generated constants rdc ships.
  *
  * `toolchain:node` has a `none` source (the Node major is the operator's), and answers "not compared".
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { WK_GO_DL_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
+import {
+  type CosignRunner,
+  EVIDENCE_FILES,
+  signedReleaseOf,
+  systemCosign,
+  verifySignedRelease,
+} from '../../../pins/signed-release.js';
 import { NotCompared, UnreadableListing } from '../../upstream.js';
 import {
   type DriverContext,
+  type FileWrite,
   type Inspection,
   leafCurrent,
   type PinDriver,
@@ -40,6 +51,7 @@ import {
   type Release,
 } from '../driver.js';
 import { idName, type PinEntry, type PinScope } from '../registry.js';
+import { pinnedNpm } from './npm.js';
 import { checkSites, digestFor, hashSites } from './toolchain-plan.js';
 import {
   byNewest,
@@ -120,7 +132,9 @@ function expandScope(root: string, scope: PinScope): Array<{ repo: string; file:
 
 export function createToolchainDriver(
   up: Upstream,
-  mutant: ToolchainMutant | null = null
+  mutant: ToolchainMutant | null = null,
+  /** Runs cosign for a pin whose checksums are signed (scripts/pins/signed-release.ts); a selftest passes a stand-in. */
+  cosign: CosignRunner = systemCosign()
 ): PinDriver {
   async function goReleases(entry: PinEntry, current: string | null): Promise<Found[]> {
     const who = entry.name;
@@ -205,6 +219,24 @@ export function createToolchainDriver(
         });
       }
     }
+    // A package.json site (toolchain:wrangler's workers/account/package.json) leaves its lockfile naming the old version unless the lockfile pass runs in that directory, so npm ci refuses the pair and the old tool stays installed.
+    // pinnedNpm throws PlanRefused when .devcontainer/toolchain.env lacks NPM_VERSION, so a package.json site that has a lockfile refuses the plan there instead of planning with an ambient npm (toolchain:wrangler planned without that file before this pass existed). A site with no lockfile beside it is skipped below before pinnedNpm runs, and plans without that refusal.
+    if (entry.id !== 'toolchain:npm') {
+      for (const s of entry.sites.filter(
+        (x) => x.file === 'package.json' || x.file.endsWith('/package.json')
+      )) {
+        const dir = path.posix.dirname(s.file);
+        const lock = path.posix.join(dir, 'package-lock.json');
+        // No lockfile beside the site means nothing to go stale, and the pass would CREATE one and declare it in `writes`.
+        if (!fs.existsSync(path.join(ctx.root, s.repo, lock))) continue;
+        steps.push({
+          label: `canonical lockfile pass for ${s.repo === '.' ? '' : `${s.repo}/`}${lock} after the ${s.file} rewrite`,
+          run: `npx -y npm@${pinnedNpm(ctx.root)} install --package-lock-only --ignore-scripts`,
+          cwd: path.posix.join(s.repo, dir === '.' ? '' : dir),
+          writes: [{ repo: s.repo, file: lock }],
+        });
+      }
+    }
     if (entry.id === 'toolchain:npm') {
       const family = ctx.reg.entries.filter((e) => e.driver === 'npm');
       const locks = family.flatMap((e) =>
@@ -234,9 +266,36 @@ export function createToolchainDriver(
       const current = leafCurrent(entry, ctx);
       const values: Record<string, string> = { version: to.version };
       const hashed = hashSites(entry);
+      // A pin whose upstream signs its SHA256SUMS takes every digest from that file, and only after
+      // the signature verified; the verified files are recorded beside the pin (signed-release.ts).
+      const signed = signedReleaseOf(entry.id);
+      const evidence: FileWrite[] = [];
       if (hashed.length > 0) {
         const hit = (await foundFor(entry, current)).find((r) => r.version === to.version);
         const digests = new Map(hit?.digests ?? []);
+        if (signed) {
+          const assets = [
+            ...new Set(
+              hashed.flatMap((s) => (s.asset ? [s.asset.replaceAll('{version}', to.version)] : []))
+            ),
+          ];
+          const v = await verifySignedRelease(
+            entry.id,
+            signed,
+            to.version,
+            assets,
+            digests,
+            up,
+            cosign
+          );
+          for (const [a, d] of v.digests) digests.set(a, d);
+          for (const [k, name] of Object.entries(EVIDENCE_FILES))
+            evidence.push({
+              repo: '.',
+              file: `${signed.evidence}/${name}`,
+              after: v.files[k as keyof typeof EVIDENCE_FILES],
+            });
+        }
         // An asset named by a full URL (AWS's versioned aws CLI installers) has no published
         // digest anywhere, so it is downloaded and hashed; a release asset keeps the API digest.
         for (const site of hashed) {
@@ -255,7 +314,21 @@ export function createToolchainDriver(
           }
         }
       }
-      const { writes, changes } = planLeafSites(entry, values, ctx);
+      const planned = planLeafSites(entry, values, ctx);
+      // The recorded files replace whole what the site rewrites made of the old ones.
+      const recorded = new Set(evidence.map((w) => w.file));
+      const writes = [
+        ...planned.writes.filter((w) => w.repo !== '.' || !recorded.has(w.file)),
+        ...evidence,
+      ];
+      const changes = [
+        ...planned.changes,
+        ...(signed
+          ? [
+              `${signed.evidence}: the cosign-verified SHA256SUMS, signature and certificate of ${to.version}`,
+            ]
+          : []),
+      ];
       return { entry, from: current, to, writes, steps: stepsFor(entry, to, ctx), changes };
     } catch (err) {
       throw refusal(err);

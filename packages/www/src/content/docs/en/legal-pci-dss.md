@@ -33,7 +33,7 @@ Reference: [PCI Security Standards Council](https://www.pcisecuritystandards.org
 
 PCI DSS leans hard on segmentation. I keep seeing teams layer iptables rules on top of insufficient isolation. That doesn't work. The teams that pass have segmentation built into the architecture. Rediacc gives you that by default:
 
-- Each repository runs in its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`
+- Each repository runs in its own Docker daemon at `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`
 - Repositories have isolated loopback IP subnets (127.0.x.x/26, 61 usable IPs per network)
 - iptables rules enforced by renet block all cross-daemon traffic
 - Containers from different repositories cannot communicate at the network level

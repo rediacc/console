@@ -74,7 +74,7 @@ export function computeEdges(results: readonly ProbeResult[]): ProbeEdgesReport 
   if (results.length === 0) {
     throw new Error('VACUOUS: computeEdges received zero probe results.');
   }
-  const order = [...results].map((r) => r.file).sort();
+  const order = [...results].map((r) => r.file).sort((a, b) => Number(a > b) - Number(a < b));
   const outcomeByFile = new Map(results.map((r) => [r.file, r.outcome]));
 
   const failedAlone: string[] = [];

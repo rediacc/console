@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: fr
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Services
@@ -53,7 +53,7 @@ Lorsqu'une fonction du Rediaccfile s'exécute, les variables d'environnement sui
 | `REDIACC_WORKING_DIR` | Chemin de montage du dépôt | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | GUID du dépôt | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | ID réseau (entier) | `2816` |
-| `DOCKER_HOST` | Socket Docker pour le démon isolé de ce dépôt | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Socket Docker pour le démon isolé de ce dépôt | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | IP de bouclage pour chaque service défini dans `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 
 Les variables `{SERVICE}_IP` sont auto-générées à partir des mappages de slots dans `.rediacc.json` et exportées avant l'exécution de vos fonctions Rediaccfile. La convention de nommage convertit le nom du service en majuscules avec les tirets remplacés par des underscores, puis ajoute `_IP`. Par exemple, un service nommé `listmonk-app` avec le slot `0` devient `LISTMONK_APP_IP=127.0.11.2`.
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` permet à un service de monter un tunnel WireGuard, par exemple pour faire sortir un processus précis par un point de terminaison distant. Comme tous les services utilisent le réseau hôte, confinir le tunnel dans un espace de noms réseau interne au conteneur afin qu'il ne modifie pas le routage de l'hôte. Les options privilégiées larges comme `privileged: true`, `pid: host` et `ipc: host` restent refusées par la validation quel que soit le label utilisé.
+`rediacc.wireguard` permet à un service de monter un tunnel WireGuard, par exemple pour faire sortir un processus précis par un point de terminaison distant. Comme tous les services utilisent le réseau hôte, confinir le tunnel dans un espace de noms réseau interne au conteneur afin qu'il ne modifie pas le routage de l'hôte. Les options privilégiées larges comme `privileged: true`, `pid: host` et `ipc: host` restent refusées quel que soit le label utilisé, aussi bien par la validation compose que sur l'API Docker, où le démon du dépôt répond par un `403`.
 
 ### Disposition multi-services
 
@@ -454,7 +454,7 @@ Deux modes de livraison fonctionnent dans compose :
 
 **Mode `env`.** Interpolez via `${REDIACC_SECRET_<KEY>}` dans n'importe quelle valeur `environment:`. Le wrapper renet transmet la valeur dans l'environnement du conteneur au moment du déploiement.
 
-**Mode `file`.** La valeur atterrit dans un fichier tmpfs côté hôte dans `/var/run/rediacc/secrets/<networkID>/<KEY>`, et vous le montez dans le conteneur via le bloc `secrets:` standard de Docker compose. Le conteneur lit `/run/secrets/<key>`. Privilégiez ce mode pour quoi que ce soit de sensible. Les valeurs n'apparaissent jamais dans `docker inspect` ou `/proc/<pid>/environ`.
+**Mode `file`.** La valeur atterrit dans un fichier tmpfs côté hôte dans `/var/run/rediacc/net-<networkID>/secrets/<KEY>`, et vous le montez dans le conteneur via le bloc `secrets:` standard de Docker compose. Le conteneur lit `/run/secrets/<key>`. Privilégiez ce mode pour quoi que ce soit de sensible. Les valeurs n'apparaissent jamais dans `docker inspect` ou `/proc/<pid>/environ`.
 
 ```yaml
 services:
@@ -467,9 +467,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Semez les valeurs avec `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` et l'équivalent en mode fichier. Consultez [Dépôts § Secrets](/fr/docs/repositories#secrets) pour la procédure complète et [Secrets par dépôt](/fr/docs/rdc-cheat-sheet#per-repo-secrets) sur la feuille de triche pour la référence des commandes.
 
-> **Les chemins entre dépôts sont rejetés lors de la validation.** Un `secrets: file:` (ou `configs: file:`, ou `env_file:`) de compose pointant vers le répertoire `/var/run/rediacc/secrets/<other-networkID>/` d'un autre dépôt est fortement rejeté par le wrapper renet avant l'exécution de docker compose. `--unsafe` ne l'ignore PAS. Défense en profondeur : le sandbox Landlock autour du shell Rediaccfile limite les lectures au répertoire des secrets du réseau actuel, de sorte qu'un `cat /var/run/rediacc/secrets/<other>/X` depuis bash du Rediaccfile échoue avec EACCES même s'il contourne le validateur YAML. Vous n'avez pas besoin d'opt-in ; c'est activé par défaut pour chaque `repo up`.
+> **Les chemins entre dépôts sont rejetés lors de la validation.** Un `secrets: file:` (ou `configs: file:`, ou `env_file:`) de compose pointant vers le répertoire `/var/run/rediacc/net-<other-networkID>/secrets/` d'un autre dépôt est fortement rejeté par le wrapper renet avant l'exécution de docker compose. `--unsafe` ne l'ignore PAS. Défense en profondeur : le sandbox Landlock autour du shell Rediaccfile limite les lectures au répertoire des secrets du réseau actuel, de sorte qu'un `cat /var/run/rediacc/net-<other>/secrets/X` depuis bash du Rediaccfile échoue avec EACCES même s'il contourne le validateur YAML. Vous n'avez pas besoin d'opt-in ; c'est activé par défaut pour chaque `repo up`.

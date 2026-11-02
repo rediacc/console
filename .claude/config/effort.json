@@ -329,6 +329,10 @@
       "block": "high",
       "advise": "smart"
     },
+    "bigpieces": {
+      "block": "high",
+      "advise": "smart"
+    },
     "pr-stale": {
       "block": "high",
       "advise": "smart"
@@ -502,6 +506,9 @@
       "advise": "high"
     },
     "effort-tune": {
+      "advise": "low"
+    },
+    "renet-tests": {
       "advise": "low"
     },
     "soaked-pins": {

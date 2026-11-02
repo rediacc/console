@@ -774,3 +774,160 @@ def test_a_contended_retirement_keeps_the_moves_success(gate, tmp_path, monkeypa
         "the entry stayed, for RQ-MOVED and --retire-promoted",
     )
     gate.log_pass("a contended queue retirement leaves the move done, with a warning and exit 0")
+
+
+# --------------------------------------------------------------------------- Keep or archive. Ruling ASKED:2026-10-28T10:58Z: a stale backlog plan is the operator's question, never the sweep's deletion.
+
+_IDLE_REL = "agent/plans/PLAN-idle.md"
+_IDLE = "# PLAN: idle sketch\nStatus: draft\nFirst-Seen: 2024-01-01\n\n- [ ] a box\n"
+_GONE_REL = "agent/plans/_done/PLAN-gone.md"
+
+
+def _stale_pair(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A tree holding one backlog plan and one terminal plan, both far past their clocks."""
+    root = _seed(
+        tmp_path,
+        {
+            _IDLE_REL: _IDLE,
+            _GONE_REL: "# PLAN: gone\nStatus: done\nFirst-Seen: 2024-01-01\n",
+        },
+    )
+    _ledger(
+        root,
+        {
+            _GONE_REL: {"moved_at": "2024-02-01"},
+            _IDLE_REL: {"status": "draft", "open": 1, "done": 0},
+        },
+    )
+    return root
+
+
+def test_sweep_write_keeps_a_stale_backlog_plan_and_asks_the_operator(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, result, "the sweep must succeed")
+    gate.assert_eq((root / _GONE_REL).exists(), False, "the stale terminal plan is still swept")
+    index = (root / "agent/INDEX.md").read_text(encoding="utf-8")
+    gate.assert_contains(index, "PLAN-gone.md", "and the terminal plan leaves its tombstone")
+    gate.assert_not_contains(index, "PLAN-idle.md", "the backlog plan gets no tombstone")
+    gate.assert_eq(
+        (root / _IDLE_REL).read_text(encoding="utf-8"),
+        _IDLE,
+        "the stale backlog plan survives --sweep --write byte for byte",
+    )
+    gate.assert_contains(result.out, "OPERATOR QUESTION: keep or archive 1", "the question heading")
+    gate.assert_contains(result.out, "  %s\n" % _IDLE_REL, "the question names the path")
+    gate.assert_contains(result.out, "title:  PLAN: idle sketch", "and the title")
+    gate.assert_contains(result.out, "Status: draft", "and the Status")
+    gate.assert_contains(result.out, "age:    ", "and the age")
+    gate.assert_contains(
+        result.out, "--keep %s --asked <YYYY-MM-DDTHH:MMZ>" % _IDLE_REL, "the keep command"
+    )
+    gate.assert_contains(
+        result.out, "--archive %s --asked <YYYY-MM-DDTHH:MMZ>" % _IDLE_REL, "the archive command"
+    )
+    gate.log_pass("--sweep --write deletes the terminal plan and asks about the backlog one")
+
+
+def test_sweep_dry_run_lists_the_question_too(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    result = _gate(root, "--sweep")
+    gate.assert_exit(0, result, "a dry run is a report")
+    gate.assert_contains(result.out, "OPERATOR QUESTION", "the dry run asks the same question")
+    gate.assert_contains(
+        result.out, "  %s (done)" % _GONE_REL, "the terminal plan is listed as due"
+    )
+    gate.assert_not_contains(result.out, "%s (backlog)" % _IDLE_REL, "the backlog plan is not due")
+    gate.assert_eq((root / _IDLE_REL).is_file(), True, "nothing is touched")
+    gate.log_pass("--sweep without --write lists the question beside the due list")
+
+
+def test_f4_names_the_question_flow_rather_than_deletion(gate, tmp_path):
+    root = _seed(tmp_path, {_IDLE_REL: _IDLE})
+    result = _gate(root)
+    gate.assert_exit(1, result, "a stale backlog plan is an open question, and the gate reds on it")
+    gate.assert_contains(result.err, "F4 %s" % _IDLE_REL, "F4 names the plan")
+    gate.assert_contains(result.err, "keep or archive", "F4 names the question")
+    gate.assert_contains(result.err, "never deleted", "and says it is never deleted")
+    gate.assert_not_contains(
+        result.err, "let the sweeper expire", "the old deletion advice is gone"
+    )
+    gate.log_pass("F4 points at the keep-or-archive flow")
+
+
+def test_keep_writes_kept_and_the_plan_is_no_longer_stale(gate, tmp_path):
+    root = _seed(tmp_path, {_IDLE_REL: _IDLE})
+    result = _gate(root, "--keep", _IDLE_REL, "--asked", "2026-10-28T10:58Z")
+    gate.assert_exit(0, result, "a well-formed keep answer is recorded")
+    text = (root / _IDLE_REL).read_text(encoding="utf-8")
+    lines = text.splitlines()
+    gate.assert_eq(lines[1], "Status: draft", "Status: stays where it was")
+    gate.assert_eq(lines[2].startswith("Kept: "), True, "Kept: sits directly under Status:")
+    gate.assert_eq(lines[2].endswith(" ASKED:2026-10-28T10:58Z"), True, "and names the answer")
+    again = _gate(root, "--keep", _IDLE_REL, "--asked", "2026-10-28T11:00Z")
+    gate.assert_exit(0, again, "a second keep is accepted")
+    gate.assert_eq(
+        (root / _IDLE_REL).read_text(encoding="utf-8").count("Kept:"), 1, "and replaces the line"
+    )
+    swept = _gate(root, "--sweep")
+    gate.assert_not_contains(swept.out, "OPERATOR QUESTION", "a kept plan is no longer asked about")
+    verdict = _gate(root)
+    gate.assert_exit(0, verdict, "and F4 no longer fires on it")
+    gate.log_pass("--keep writes Kept: under Status: and restarts the backlog clock")
+
+
+def test_archive_moves_the_plan_into_removed_as_removed(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    result = _gate(root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z")
+    gate.assert_exit(0, result, "a well-formed archive answer is recorded")
+    moved = root / "agent/plans/_removed/PLAN-idle.md"
+    gate.assert_eq(moved.is_file(), True, "the plan is in _removed/")
+    text = moved.read_text(encoding="utf-8")
+    gate.assert_contains(text, "Status: removed\n", "with Status: removed")
+    gate.assert_contains(text, "Removed-Why: ", "and a Removed-Why:")
+    gate.assert_contains(text, "ASKED:2026-10-28T10:58Z", "naming the answer")
+    gate.assert_contains(text, "First-Seen: 2024-01-01", "its own clock is carried")
+    stub = (root / _IDLE_REL).read_text(encoding="utf-8")
+    gate.assert_contains(stub, "Moved-To: agent/plans/_removed/PLAN-idle.md", "a stub points on")
+    rows = json.loads((root / ".ci/config/plan-boxes.json").read_text(encoding="utf-8"))["plans"]
+    gate.assert_contains(
+        rows["agent/plans/_removed/PLAN-idle.md"]["moved_at"], "-", "the terminal clock starts"
+    )
+    gate.log_pass("--archive sets Status: removed and moves the plan into _removed/")
+
+
+def test_archive_that_the_move_refuses_leaves_the_text_unchanged(gate, tmp_path):
+    root = _seed(tmp_path, {_IDLE_REL: _IDLE})
+    _ledger(root, {})
+    result = _gate(root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z")
+    gate.assert_exit(1, result, "a terminal move with no ledger row is refused")
+    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), _IDLE, "the text is restored")
+    gate.log_pass("an archive the move refuses leaves the plan exactly as it was")
+
+
+def test_both_answer_verbs_refuse_without_a_well_formed_asked(gate, tmp_path):
+    root = _seed(tmp_path, {_IDLE_REL: _IDLE, "agent/plans/PLAN-live.md": CLEAN_LIVE})
+    _ledger(root, {_IDLE_REL: {"status": "draft", "open": 1, "done": 0}})
+    bad = {
+        "missing": [],
+        "a space for the T": ["--asked", "2026-10-28 10:58Z"],
+        "no Z": ["--asked", "2026-10-28T10:58"],
+        "an impossible minute": ["--asked", "2026-13-40T25:99Z"],
+        "the future": ["--asked", "2999-01-01T00:00Z"],
+    }
+    for verb in ("--keep", "--archive"):
+        for label, tail in bad.items():
+            result = _gate(root, verb, _IDLE_REL, *tail)
+            gate.assert_exit(2, result, "%s with %s ASKED must refuse" % (verb, label))
+            gate.assert_contains(result.err, "--asked", "the refusal names the flag")
+            gate.assert_eq(
+                (root / _IDLE_REL).read_text(encoding="utf-8"), _IDLE, "and writes nothing"
+            )
+        live = _gate(root, verb, "agent/plans/PLAN-live.md", "--asked", "2026-10-28T10:58Z")
+        gate.assert_exit(2, live, "%s refuses a plan that is not backlog" % verb)
+        gate.assert_contains(live.err, "not backlog", "and says why")
+    gate.assert_eq((root / "agent/plans/_removed").exists(), False, "nothing was archived")
+    gate.log_pass("--keep and --archive refuse a missing, malformed, impossible or future minute")
+
+
+CLEAN_LIVE = "# PLAN: live\nStatus: in-progress\n\n- [ ] a box\n"

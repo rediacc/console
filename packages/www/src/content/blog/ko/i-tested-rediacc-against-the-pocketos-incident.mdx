@@ -11,8 +11,8 @@ tags:
   - 사례연구
 featured: true
 language: ko
-sourceHash: "4658b7226eb1e696"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "2b10e7d64d0ce38d"
+sourceCommit: "c8a8908f7412252e302fe5280980c35d5cae82da"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -124,7 +124,7 @@ Total: 6.3s
 
 2 GB 포크의 복제 단계는 573밀리초가 걸렸습니다. 128 GB 포크의 복제 단계는 2.3초가 걸렸습니다. 따라서 데이터 복제는 선형이 아니라 서브선형입니다. 엄밀히 말해 상수가 아닙니다. 하지만 총 포크 시간은 거의 동일합니다(6.3초 대 7.2초). 대기 시간의 대부분이 SSH와 라이센스 과정이지, 데이터가 아니기 때문입니다. 사용자 입장에서 포크는 저장소 크기에 관계없이 6~7초의 일시 중지입니다.
 
-이제 포크에서 작업 중입니다. 자체 GUID(`22c57178-...`), 자체 networkId(`21760`), 자체 마운트 경로, 자체 Docker 데몬 소켓(`/var/run/rediacc/docker-21760.sock`)이 있습니다. 부모의 데이터는 reflink를 통해 공유됩니다. 부모 자체는 내내 계속 실행됩니다.
+이제 포크에서 작업 중입니다. 자체 GUID(`22c57178-...`), 자체 networkId(`21760`), 자체 마운트 경로, 자체 Docker 데몬 소켓(`/var/run/rediacc/net-21760/docker-21760.sock`)이 있습니다. 부모의 데이터는 reflink를 통해 공유됩니다. 부모 자체는 내내 계속 실행됩니다.
 
 포크에 `term connect`할 때 이것이 보입니다:
 

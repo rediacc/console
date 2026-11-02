@@ -208,6 +208,25 @@ SCOPES = (
             "independently of the pid-wait anchor."
         ),
     ),
+    Scope(
+        name="release-run-procfs",
+        files=(".claude/rediacc_hooks/git/release_run.py",),
+        classes=("procfs",),
+        env="REDIACC_RELEASE_RUN_PROCFS",
+        why=(
+            "A READ path: the release-run admission takes a process's start time, argv, "
+            "environ and exe from procfs, and on a machine with no procfs at /proc a "
+            "hard-coded read answers 'unreadable', which is a refusal that looks like a "
+            "broken release rather than a missing platform feature. The root is named "
+            "once (PROCFS_ROOT) and every read builds from it. The override is "
+            "admission-safe by construction: it counts only when it is root-owned and "
+            "closed to writes with every ancestor, otherwise the real /proc answers, so "
+            "no caller can forge the process table this hook trusts. Its own scope "
+            "rather than a widening of proc-table: that scope is the guards' backend "
+            "choice between procfs and `ps`, and this module has no `ps` side, so the "
+            "two can go dead independently."
+        ),
+    ),
 )
 
 

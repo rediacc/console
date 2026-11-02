@@ -78,7 +78,7 @@ describe('generateClusterTfJson', () => {
   it('materializes one instance per member as <cluster>-<pool>-<n>', () => {
     const tf = generateClusterTfJson({ ...twoPoolSpec, mapping: linodeMapping });
     const instances = (tf.resource as Record<string, Record<string, unknown>>).linode_instance;
-    expect(Object.keys(instances).sort()).toEqual([
+    expect(Object.keys(instances).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       'prod-ceph-1',
       'prod-ceph-2',
       'prod-ceph-3',
@@ -131,7 +131,7 @@ describe('generateClusterTfJson', () => {
     const resources = tf.resource as Record<string, Record<string, Record<string, unknown>>>;
     const volumes = resources.linode_volume;
     // One volume per ceph member; k8s members (no disks) get none.
-    expect(Object.keys(volumes).sort()).toEqual([
+    expect(Object.keys(volumes).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       'prod-ceph-1-osd1',
       'prod-ceph-2-osd1',
       'prod-ceph-3-osd1',
@@ -167,13 +167,9 @@ describe('generateClusterTfJson', () => {
     const resources = tf.resource as Record<string, Record<string, unknown>>;
     expect(resources.hcloud_network).toBeDefined();
     expect(resources.hcloud_network_subnet).toBeDefined();
-    expect(Object.keys(resources.hcloud_server_network).sort()).toEqual([
-      'prod-ceph-1',
-      'prod-ceph-2',
-      'prod-ceph-3',
-      'prod-k8s-1',
-      'prod-k8s-2',
-    ]);
+    expect(
+      Object.keys(resources.hcloud_server_network).sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual(['prod-ceph-1', 'prod-ceph-2', 'prod-ceph-3', 'prod-k8s-1', 'prod-k8s-2']);
     // resource_id ssh: exactly one shared key resource for the cluster.
     expect(resources.hcloud_ssh_key).toBeDefined();
     expect(Object.keys(resources.hcloud_ssh_key)).toEqual(['cluster']);
@@ -225,5 +221,33 @@ describe('generateClusterTfJson', () => {
   it('renders a stable golden object (linode two-pool)', () => {
     const tf = generateClusterTfJson({ ...twoPoolSpec, mapping: linodeMapping });
     expect(tf).toMatchSnapshot();
+  });
+});
+
+describe('a mapping with requiredEnvAttrs on the cluster path', () => {
+  const envMapping: ProviderMapping = {
+    ...linodeMapping,
+    requiredEnvAttrs: { project_id: 'TEST_CLUSTER_PROJECT_ID' },
+  };
+
+  it('wires the env value into every member as a number', () => {
+    process.env.TEST_CLUSTER_PROJECT_ID = '4242';
+    try {
+      const tf = generateClusterTfJson({ ...twoPoolSpec, mapping: envMapping }) as {
+        resource: Record<string, Record<string, Record<string, unknown>>>;
+      };
+      const members = Object.values(tf.resource[envMapping.resource] ?? {});
+      expect(members.length).toBeGreaterThan(0);
+      for (const m of members) expect(m.project_id).toBe(4242);
+    } finally {
+      delete process.env.TEST_CLUSTER_PROJECT_ID;
+    }
+  });
+
+  it('refuses to generate when the variable is unset', () => {
+    delete process.env.TEST_CLUSTER_PROJECT_ID;
+    expect(() => generateClusterTfJson({ ...twoPoolSpec, mapping: envMapping })).toThrow(
+      /TEST_CLUSTER_PROJECT_ID/
+    );
   });
 });

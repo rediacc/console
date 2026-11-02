@@ -595,11 +595,12 @@ function validateCommand(
   // missing-reference-entry is expected for undocumented commands -- skip
   if (parsed.reason === 'missing-reference-entry') return;
 
+  const reason: string | undefined = parsed.reason;
   violations.push({
     file: filePath,
     line,
     command: rawCommand,
-    reason: parsed.reason || 'unknown',
+    reason: reason ?? 'unknown',
     detail: formatParsedError(parsed),
   });
 }
@@ -662,7 +663,7 @@ async function scanForStaleCommandPaths(violations: Violation[]): Promise<void> 
   }
   const unique = [...new Set(files)]
     .filter((f) => !isExcluded(f) && !COMMAND_PATH_IGNORE.test(f))
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
   for (const relPath of unique) {
     const absPath = path.join(ROOT, relPath);
@@ -736,7 +737,9 @@ async function main(): Promise<void> {
   }
 
   // Deduplicate, minus the evidence documents (see EXCLUDED_FILES)
-  const uniqueFiles = [...new Set(files)].filter((f) => !isExcluded(f)).sort();
+  const uniqueFiles = [...new Set(files)]
+    .filter((f) => !isExcluded(f))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
   console.log(colors.dim(`Scanning ${uniqueFiles.length} files...`));
 

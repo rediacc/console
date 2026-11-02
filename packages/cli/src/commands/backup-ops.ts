@@ -1,7 +1,7 @@
-import { BACKUP_DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import type { SFTPClient } from '../remote/sftp/index.js';
+import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr, writeStdout } from '../services/core/request-context.js';
@@ -42,52 +42,68 @@ async function triggerDeployedUnit(
   }
 }
 
+/**
+ * The unit names a strategy runs as on a machine: the base unit, one per datastore (`.ds.`) and one per
+ * repository with its own cadence (`.repo.`), as `backup schedule` renders them. A strategy that is not
+ * bound to the machine, or whose units cannot be resolved, falls back to its bare name.
+ */
+async function strategyUnitNames(machineName: string, strategyName: string): Promise<string[]> {
+  const { expectedScheduleUnits } = await import('../services/backup/backup-schedule.js');
+  let units: string[] = [];
+  try {
+    units = (await expectedScheduleUnits(machineName))
+      .filter((u) => u.strategyName === strategyName)
+      .map((u) => u.unitName);
+  } catch {
+    units = [];
+  }
+  return units.length > 0 ? units : [strategyName];
+}
+
+/** Whether `rediacc-backup-<unit>.service` is installed on the machine. */
+async function isUnitDeployed(sftp: SFTPClient, unit: string): Promise<boolean> {
+  let checkOutput = '';
+  await sftp.execStreaming(`systemctl cat rediacc-backup-${unit}.service 2>/dev/null`, {
+    onStdout: (data) => {
+      checkOutput += data;
+    },
+    onStderr: () => {},
+  });
+  return checkOutput.length > 0;
+}
+
 /** Run an ad-hoc backup via systemd-run when no deployed unit exists. */
 async function triggerAdhocBackup(
   sftp: SFTPClient,
+  machineName: string,
   name: string,
   config: import('../types/index.js').BackupStrategyConfig,
-  datastore: string,
   remoteRenetPath: string,
   debug?: boolean
 ): Promise<void> {
   outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
-  const { _testing } = await import('../services/backup/backup-schedule.js');
-
-  const enabledDests = config.destinations.filter((d) => d.enabled !== false);
-  // INVERTED 2026-08-15. This used to require the rclone `storage` kind and refuse hosted-service; the rclone path has been removed, so the chunk store is the only destination an ad-hoc run can drive. Left as-is, this function would now refuse every destination there is.
-  for (const dest of enabledDests) {
-    if (dest.kind !== 'hosted-service') {
-      throw new Error(
-        `Backup destination "${dest.name}" has kind "${(dest as { kind?: string }).kind ?? BACKUP_DEFAULTS.DESTINATION_KIND}". The ` +
-          'rclone/OneDrive path was removed on 2026-08-15; change it to a ' +
-          '`hosted-service` destination to run it.'
-      );
-    }
-  }
-
-  const { commands, envVars } = _testing.buildBackupCommands(
+  const { buildStrategyCommandsForMachine, sanitizeBackupOutput } = await import(
+    '../services/backup/backup-schedule.js'
+  );
+  const commands = await buildStrategyCommandsForMachine(
+    machineName,
+    name,
     config,
-    enabledDests,
-    datastore,
     remoteRenetPath
   );
+  if (commands.length === 0) {
+    outputService.warn(`Backup strategy "${name}" covers no repository on ${machineName}`);
+    return;
+  }
 
   const adhocUnit = `rediacc-backup-${name}-adhoc`;
-  const fullCmd = commands.join(' && ');
-  // Pass credentials via systemd-run --setenv= so JSON tokens never appear in
-  // the unit's on-disk ExecStart= line (or in `systemctl show` output as the
-  // persistent units do). Each value is single-quote-wrapped so the outer
-  // shell hands systemd-run exactly `KEY=value`.
-  const shQuote = (v: string): string => `'${v.replaceAll("'", "'\\''")}'`;
-  const setenvArgs = Object.entries(envVars)
-    .map(([k, v]) => `--setenv=${k}=${shQuote(v)}`)
-    .join(' ');
-  const setenvPart = setenvArgs ? `${setenvArgs} ` : '';
-  const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} ${setenvPart}--remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+  await clearFinishedAdhocUnit(sftp, adhocUnit, name);
+  const { buildAdhocSystemdRun } = await import(
+    '../services/backup/backup-schedule-unit-generator.js'
+  );
+  const systemdRunCmd = buildAdhocSystemdRun(adhocUnit, commands, config.cpuLimit);
 
   if (debug) {
-    const { sanitizeBackupOutput } = await import('../services/backup/backup-schedule.js');
     outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
   }
 
@@ -103,7 +119,66 @@ async function triggerAdhocBackup(
   if (exitCode === 0) {
     outputService.success(`Ad-hoc backup started: ${adhocUnit}.service`);
   } else {
-    outputService.warn(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
+    throw new Error(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
+  }
+}
+
+/** SubStates of a unit that has finished (or was never loaded): only these are safe to stop and clear. */
+const FINISHED_SUBSTATES = new Set(['', 'dead', 'exited', 'failed']);
+
+/**
+ * An ad-hoc unit lingers after it exits (`--remain-after-exit`), and systemd-run refuses a name that is
+ * still loaded. Refuse unless it has finished (any transitional state such as auto-restart or reload counts
+ * as running); otherwise stop it and clear its failed state so the next run can reuse the name.
+ */
+async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: string): Promise<void> {
+  let subState = '';
+  await sftp.execStreaming(
+    `systemctl show -p SubState --value ${unit}.service 2>/dev/null || true`,
+    {
+      onStdout: (data) => {
+        subState += data;
+      },
+      onStderr: () => {},
+    }
+  );
+  if (!FINISHED_SUBSTATES.has(subState.trim())) {
+    throw new Error(
+      `An ad-hoc backup for "${name}" is still running (${unit}.service). Wait for it, or cancel it with: rdc backup cancel ${name}`
+    );
+  }
+  await sftp.execStreaming(
+    `sudo systemctl stop ${unit}.service 2>/dev/null; sudo systemctl reset-failed ${unit}.service 2>/dev/null; true`,
+    { onStdout: () => {}, onStderr: () => {} }
+  );
+}
+
+/**
+ * Declare each strategy's retention on the lineages it covers, filling only lineages that have no
+ * policy of their own (a per-repo `backup retention set` stays). Best-effort: the schedule or run it
+ * rides on matters more than the policy push, and the server enforces its default meanwhile.
+ */
+async function seedStrategyRetention(names: string[], machineName: string): Promise<void> {
+  if (!hasAccountToken()) return;
+  const all = await configService.listBackupStrategies();
+  for (const name of names) {
+    const strategy = all[name] as (typeof all)[string] | undefined;
+    if (!strategy?.retention) continue;
+    try {
+      const { pushed } = await pushStrategyRetention(strategy, { overwrite: false, machineName });
+      if (pushed > 0) {
+        outputService.info(
+          t('commands.backup.retention.seeded', { strategy: name, count: pushed })
+        );
+      }
+    } catch (error) {
+      outputService.warn(
+        t('commands.backup.retention.seedFailed', {
+          strategy: name,
+          reason: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
   }
 }
 
@@ -139,7 +214,8 @@ async function runBackupNow(
     strategies.push({ name: stratName, config });
   }
 
-  const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+  await seedStrategyRetention(toTrigger, machineName);
+
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
@@ -157,21 +233,16 @@ async function runBackupNow(
 
   try {
     for (const { name, config } of strategies) {
-      const serviceName = `rediacc-backup-${name}.service`;
-
-      // Check if the systemd unit is deployed
-      let checkOutput = '';
-      await sftp.execStreaming(`systemctl cat ${serviceName} 2>/dev/null`, {
-        onStdout: (data) => {
-          checkOutput += data;
-        },
-        onStderr: () => {},
-      });
-
-      if (checkOutput.length > 0) {
-        await triggerDeployedUnit(sftp, serviceName, debug);
-      } else {
-        await triggerAdhocBackup(sftp, name, config, datastore, remoteRenetPath, debug);
+      const deployed: string[] = [];
+      for (const unit of await strategyUnitNames(machineName, name)) {
+        if (await isUnitDeployed(sftp, unit)) deployed.push(unit);
+      }
+      if (deployed.length === 0) {
+        await triggerAdhocBackup(sftp, machineName, name, config, remoteRenetPath, debug);
+        continue;
+      }
+      for (const unit of deployed) {
+        await triggerDeployedUnit(sftp, `rediacc-backup-${unit}.service`, debug);
       }
     }
   } finally {
@@ -225,16 +296,25 @@ async function cancelBackup(
 
   try {
     for (const name of toCheck) {
-      await cancelStrategyUnits(lease.sftp, name, debug);
+      await cancelStrategyUnits(lease.sftp, machineName, name, debug);
     }
   } finally {
     lease.release();
   }
 }
 
-/** Try to cancel both scheduled and ad-hoc units for a strategy. */
-async function cancelStrategyUnits(sftp: SFTPClient, name: string, debug?: boolean): Promise<void> {
-  const units = [`rediacc-backup-${name}.service`, `rediacc-backup-${name}-adhoc.service`];
+/** Try to cancel every scheduled unit of a strategy (base, `.ds.`, `.repo.`) and its ad-hoc unit. */
+async function cancelStrategyUnits(
+  sftp: SFTPClient,
+  machineName: string,
+  name: string,
+  debug?: boolean
+): Promise<void> {
+  const unitNames = new Set([name, ...(await strategyUnitNames(machineName, name))]);
+  const units = [
+    ...[...unitNames].map((u) => `rediacc-backup-${u}.service`),
+    `rediacc-backup-${name}-adhoc.service`,
+  ];
   let cancelled = false;
   for (const unit of units) {
     if (await tryCancelUnit(sftp, unit, debug)) cancelled = true;
@@ -265,79 +345,33 @@ async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<
 }
 
 /**
- * Map a systemd ActiveState to what an operator needs to see.
- *
- * `failed` must never be presentable as "nothing to see here"; an unknown state
- * is passed through rather than bucketed, so a systemd state this code has not
- * met yet shows up as itself instead of being silently normalised away.
+ * `backup status`: one row per scheduled unit (base, `.ds.`, `.repo.`) with timer presence, last run
+ * and result, next run and a missed-run verdict, then the recent journal of a named strategy's units.
  */
-export function describeServiceState(state: string): string {
-  switch (state) {
-    case 'active':
-    case 'activating':
-      return 'RUNNING';
-    case 'failed':
-      return 'FAILED';
-    case 'inactive':
-    case '':
-      return 'idle';
-    default:
-      return state;
-  }
-}
-
-/** Build status row for a single backup strategy. */
-async function buildStatusRow(sftp: SFTPClient, name: string): Promise<Record<string, string>> {
-  const serviceName = `rediacc-backup-${name}.service`;
-  const state = await readServiceState(sftp, serviceName);
-  const strategy = await configService.getBackupStrategy(name);
-  return {
-    strategy: name,
-    mode: strategy?.mode ?? BACKUP_DEFAULTS.MODE,
-    schedule: strategy?.schedule ?? '-',
-    status: describeServiceState(state),
-  };
-}
-
 async function showBackupStatus(machineName: string, strategyFilter?: string): Promise<void> {
+  const { reportBackupScheduleStatus } = await import('../services/backup/backup-schedule.js');
+  await reportBackupScheduleStatus(machineName, strategyFilter);
+  if (!strategyFilter) return;
+
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
     throw new Error(`Machine "${machineName}" not found`);
   }
-
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-
-  // Read-only: only `systemctl is-active` runs, so no renet binary is resolved here.
-  outputService.info(`Connecting to ${machine.ip}...`);
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-  const sftp = lease.sftp;
-
   try {
-    const configuredStrategies = machine.backupStrategies ?? [];
-    const namesToCheck = strategyFilter ? [strategyFilter] : configuredStrategies;
-
-    const rows: Record<string, string>[] = [];
-    for (const name of namesToCheck) {
-      rows.push(await buildStatusRow(sftp, name));
-    }
-
-    outputService.print(rows, 'table');
-
-    // Show journal for specific strategy
-    if (strategyFilter) {
-      outputService.info(`\nRecent logs (${strategyFilter}):`);
-      await sftp.execStreaming(
-        `journalctl -u rediacc-backup-${strategyFilter}.service --no-pager -n 20 2>/dev/null || echo "(no logs)"`,
-        {
-          onStdout: (data) => {
-            writeStdout(data);
-          },
-          onStderr: () => {},
-        }
-      );
-    }
+    outputService.info(`\nRecent logs (${strategyFilter}):`);
+    await lease.sftp.execStreaming(
+      `journalctl -u 'rediacc-backup-${strategyFilter}.service' -u 'rediacc-backup-${strategyFilter}.*.service' --no-pager -n 20 2>/dev/null || echo "(no logs)"`,
+      {
+        onStdout: (data) => {
+          writeStdout(data);
+        },
+        onStderr: () => {},
+      }
+    );
   } finally {
     lease.release();
   }
@@ -365,6 +399,8 @@ export function registerBackupOpsCommands(backup: Command): void {
         });
         if (!options.dryRun) {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
+          const bound = (await configService.getLocalConfig()).machines[machineName];
+          await seedStrategyRetention(bound?.backupStrategies ?? [], machineName);
           // DR nudge: enabling backups without config-storage enrollment leaves the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
           const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
           await warnIfConfigStorageUnenrolled();

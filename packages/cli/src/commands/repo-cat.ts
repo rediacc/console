@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
@@ -86,7 +87,7 @@ export function registerRepoCatCommand(repo: Command): void {
           if (!repoEntry) {
             throw new Error(`Repository "${name}" not found in context`);
           }
-          await configService.ensureRepositoryNetworkId(repoKey);
+          await ensureRepositoryNetworkId(repoKey);
 
           const params: Record<string, unknown> = { path: options.remoteFile };
           if (options.maxBytes) params.max_bytes = Number.parseInt(options.maxBytes, 10);
@@ -99,7 +100,7 @@ export function registerRepoCatCommand(repo: Command): void {
           // Progress goes to stderr (outputService.info), keeping stdout pure.
           outputService.info(
             t('commands.repo.cat.starting', {
-              repository: name,
+              repository: ref,
               machine: machineName,
               path: options.remoteFile,
             })

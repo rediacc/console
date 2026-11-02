@@ -19,6 +19,7 @@ import {
   walkContractCommands,
 } from '../../../scripts/lib/command-tree-lib.js';
 import { cli } from '../../cli.js';
+import { getMcpExclusions } from '../command-metadata.js';
 import { COMMAND_PLANES, getCommandPlane, isInteractiveCommand } from '../command-planes.js';
 
 const resolver = createDescriptionResolver(loadLocale('en'));
@@ -113,14 +114,35 @@ describe('command plane coverage', () => {
     // for the same reason `usage` and `manifests` are: accountServerFetch
     // against the control plane, never a machine. Inheriting the backup domain's machine default would have made them proxyCapable, offering the command that decides what gets DELETED for remote execution.
     // 175 -> 177, other 25 -> 27: `config remote versions` and `config remote restore` (PLAN-config-sync-hardening T16) inherit `config remote`'s `other` plane: both talk to the config store on the account server, never a machine.
-    expect(COMMANDS.length).toBe(177);
-    expect(counts).toEqual({ config: 54, machine: 96, other: 27 });
+    // 177 -> 178, other 27 -> 28: `subscription proxy-token` mints a proxy:exec token from this device's login against the account server, never a machine, so it inherits `subscription`'s `other` plane.
+    //
+    // 178 -> 179, machine 96 -> 97: `machine converge` restarts stale repo daemons on a machine, so it is a machine-plane leaf.
+    //
+    // 179 -> 182, machine 97 -> 100: `machine gpu list`, `repo gpu grant` and `repo gpu revoke` each reach a machine (the GPU inventory and the repository's device grants live there).
+    //
+    // 182 -> 176, config 54 -> 50, machine 100 -> 99, other 28 -> 27: `rdc storage` (list, add, remove, import, prune, browse) was deleted with the storage retirement.
+    //
+    // 176 -> 179, machine 99 -> 100, other 27 -> 29: `machine restart-services` rolls renet daemons on a machine, so it is a machine-plane leaf; `backup retention preview` and `backup snapshots delete` are accountServerFetch calls against the control plane, so `other` like their `retention` siblings.
+    // 179 -> 188, config 50 -> 57, machine 100 -> 101, other 29 -> 30: `config access add|remove|ranges|list` and `machine access set|remove|show` edit only the config (PLAN-ssh-key-source-ranges C1); `machine access push` rewrites the machine's authorized_keys, so it is machine-plane. `subscription proxy-token` (eff7c7dcd) mints a token against the account server, so it is `other`; its commit did not update this record.
+    //
+    // 188 -> 189, machine 101 -> 102: `repo prune` classifies and reclaims a repository's Docker storage through renet on the machine.
+    //
+    // 189 -> 190, other 30 -> 31: `backup reconcile` (PLAN-backup-meter-orphaned-chunks C1) is an accountServerFetch call that reconciles the backup ledger against the store, never a machine, so `other` like `backup usage`.
+    //
+    // 190 -> 191, machine 102 -> 103: `job wait` (PLAN-detached-jobs J5) resumes following a job on its machine, so it is machine-plane like its `job` siblings.
+    // 191 -> 193, machine 103 -> 105: `backup download` and `backup upload` (PLAN-backup-local-image C1) hold a renet session on the machine, so they keep the backup domain's machine plane; the contract keeps them off the proxy as client-side transfers.
+    //
+    // 193 -> 195, other 31 -> 33: `tools install` and `tools list` (PLAN-cli-tofu-toolchain T3) install and list local binaries on the workstation, never a machine.
+    //
+    // 195 -> 196, other 33 -> 34: `backup purge` (PLAN-backup-download-from-store) deletes a lineage through accountServerFetch, so `other` like `backup snapshots delete`.
+    expect(COMMANDS.length).toBe(196);
+    expect(counts).toEqual({ config: 57, machine: 105, other: 34 });
   });
 
   it('records the interactive commands', () => {
     const interactive = COMMANDS.filter((c) => isInteractiveCommand(c.pathKey))
       .map((c) => c.pathKey)
-      .sort();
+      .sort((a, b) => Number(a > b) - Number(a < b));
 
     // Commands that need a TTY or never return: an interactive shell, $EDITOR, a tunnel or stream held until Ctrl+C, a browser callback, or a daemon that listens until SIGINT.
     expect(interactive).toEqual([
@@ -153,7 +175,19 @@ describe('command plane coverage', () => {
     // executor can no longer be handed them. They were never machine commands, the relocation out of the `config` noun silently gave them repo's machine default, and this list is exactly the set the proxy will run remotely, which is why an archive verb appearing in it was a wrong-target data-loss bug (§4.9). 89 -> 90: `backup verify` is a machine-plane, non-interactive read (the
     // backup_verify verb runs on the machine that holds the anchor). 90 -> 91: `backup snapshot` is machine-plane and non-interactive, so a remote executor can run it, exactly like its `backup verify` sibling. 91 -> 92: `backup browse` reads the repository IMAGE, which only exists on the machine holding it, so it is machine-plane for the same reason `backup verify` is. Note it is
     // NOT `other` like `usage`/`manifests`: those ask the account server, this one cannot be answered without the image.
-    expect(machineNonInteractive.length).toBe(92);
+    //
+    // 92 -> 93: `machine converge` is machine-plane and non-interactive; the contract excludes it from proxying separately (caller-held env secrets).
+    //
+    // 93 -> 96: the three `gpu` leaves are machine-plane and non-interactive.
+    //
+    // 96 -> 95: `storage prune` went with `rdc storage`.
+    //
+    // 95 -> 96: `machine restart-services` is machine-plane and non-interactive.
+    // 96 -> 97: `machine access push` is machine-plane and non-interactive; the contract excludes it from proxying (an executor never rewrites its own access).
+    // 97 -> 98: `repo prune` is machine-plane and non-interactive (the `--offline` confirmation is a plain prompt, skipped by -y).
+    // 98 -> 99: `job wait` (PLAN-detached-jobs J5) is machine-plane and non-interactive, like `job logs --follow`.
+    // 99 -> 101: `backup download` and `backup upload` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local.
+    expect(machineNonInteractive.length).toBe(101);
   });
 
   it('plane and interactive entries all point at real commands', () => {
@@ -166,5 +200,21 @@ describe('command plane coverage', () => {
         `COMMAND_PLANES entries that are not commands in the CLI tree: ${stale.join(', ')}`
       );
     }
+  });
+});
+
+/**
+ * Operator ruling ASKED:2026-10-28T13:29Z, "Bar both from MCP": `machine access set` binds a key to a machine and `machine access push` writes it into authorized_keys, so neither is an agent surface. `show` stays callable.
+ */
+describe('machine access MCP exclusion', () => {
+  const excluded = getMcpExclusions();
+
+  it('bars set and push from MCP with a reason', () => {
+    expect(excluded['machine access set']).toBeTruthy();
+    expect(excluded['machine access push']).toBeTruthy();
+  });
+
+  it('leaves show callable', () => {
+    expect(excluded).not.toHaveProperty('machine access show');
   });
 });

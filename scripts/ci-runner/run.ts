@@ -133,6 +133,7 @@ import {
   criticalPath,
   type EventSink,
   type GateTiming,
+  idleCoreMsBetween,
   openEventSink,
   parseCarried,
   type StageStop,
@@ -143,7 +144,7 @@ import {
 } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
-import { predictMakespan, schedulerSelftest } from './sim';
+import { predictMakespan, reclaimLoopSelftest, schedulerSelftest } from './sim';
 import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -1283,7 +1284,10 @@ function readCpuTick(): { tick: CpuTick; cores: number } | undefined {
 }
 
 /** Machine CPU every 500 ms for the life of the pool (PLAN-ci-quick-cpu-scheduling 2.3). Unreferenced, so it can never keep the runner alive. */
-function startCpuSampler(): { stop: () => { ticks: CpuTick[]; cores: number } } {
+function startCpuSampler(): {
+  stop: () => { ticks: CpuTick[]; cores: number };
+  idleCoreMs: (fromMs: number, toMs: number) => number | undefined;
+} {
   const ticks: CpuTick[] = [];
   let cores = 0;
   const take = (): void => {
@@ -1301,6 +1305,7 @@ function startCpuSampler(): { stop: () => { ticks: CpuTick[]; cores: number } } 
       take();
       return { ticks, cores };
     },
+    idleCoreMs: (fromMs, toMs) => idleCoreMsBetween(ticks, cores, fromMs, toMs),
   };
 }
 
@@ -1727,7 +1732,7 @@ async function selftest(): Promise<number> {
   // THE TIMELINE (report.ts timelineOf): every launched gate has a start and an end relative to the run's start, a skipped one has none, and the footer prints the tail with them. The footer above had no startedAt, which is the control: it must print no timeline.
   {
     const t0 = Math.min(...results.flatMap((r) => (r.readyAt === undefined ? [] : [r.readyAt])));
-    const tl = timelineOf(results, t0);
+    const tl = sparse(timelineOf(results, t0));
     const pass = tl['selftest:pass'];
     require_(
       pass !== undefined &&
@@ -2500,8 +2505,8 @@ async function selftest(): Promise<number> {
     require_(
       green !== undefined &&
         green.whole === true &&
-        green.droppedVerified.x?.exitCode === 0 &&
-        green.droppedVerified.x?.headTree === 't' &&
+        sparse(green.droppedVerified).x?.exitCode === 0 &&
+        sparse(green.droppedVerified).x?.headTree === 't' &&
         green.exitCode === 0 &&
         green.failed.length === 0,
       `a passing --only x at the receipt's tree must land in droppedVerified and keep whole, got ${JSON.stringify(green)}`
@@ -2556,7 +2561,7 @@ async function selftest(): Promise<number> {
     require_(
       red?.failed.includes('x') === true &&
         red.exitCode === 1 &&
-        red.droppedVerified.x?.exitCode === 1 &&
+        sparse(red.droppedVerified).x?.exitCode === 1 &&
         JSON.stringify(red.findings.x) === '["k1"]',
       `a red --only x must land in failed with exitCode 1 and its findings, got ${JSON.stringify(red)}`
     );
@@ -2735,6 +2740,8 @@ async function selftest(): Promise<number> {
       mine === 0,
       `the lone gate's tokens must be released when the pool drains, ${mine} held`
     );
+    // The borrow through the real pool loop, and the reading (both in sim.ts, so they run with the scheduler's other cases).
+    for (const failure of await reclaimLoopSelftest()) require_(false, failure);
   }
 
   // A RETIRED FIELD IS REFUSED BY NAME; a well-formed range is not. 4 assertions.
@@ -3215,10 +3222,19 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
     (id) => !(id in verified) && !run.ids.includes(id)
   );
   const findings: Record<string, string[] | null> = { ...(prior.findings ?? {}) };
+  // Each merged gate's verdict moves with its exit code, so `failed` and `blocked` stay the sets of gates with verdict fail and blocked (the push guard refuses a receipt where they differ, 2026-10-31).
+  const gates: Record<string, ReceiptGate> = { ...((prior as Partial<Receipt>).gates ?? {}) };
+  const blocked = ((prior as Partial<Receipt>).blocked ?? []).filter((id) => !run.ids.includes(id));
   for (const id of run.ids) {
     const status = run.results.find((r) => r.id === id)?.status;
+    if (gates[id])
+      gates[id] = {
+        ...gates[id],
+        verdict: status === 'ok' ? 'ok' : status === 'blocked' ? 'blocked' : 'fail',
+      };
+    if (status === 'blocked') blocked.push(id);
     verified[id] = {
-      exitCode: status === 'ok' ? 0 : 1,
+      exitCode: status === 'ok' ? 0 : status === 'blocked' ? 77 : 1,
       headTree: run.tree,
       finishedAt: run.finishedAt,
       judgedRoot: run.judgedRoot,
@@ -3227,7 +3243,9 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
     delete findings[id];
     if (status === 'fail' && id in run.findings) findings[id] = run.findings[id];
   }
-  const droppedFailed = Object.keys(verified).filter((id) => verified[id].exitCode !== 0);
+  const droppedFailed = Object.keys(verified).filter(
+    (id) => verified[id].exitCode !== 0 && verified[id].exitCode !== 77
+  );
   const failed = [...wholeFailed, ...droppedFailed.filter((id) => !wholeFailed.includes(id))];
   const priorExit = typeof prior.exitCode === 'number' ? prior.exitCode : 1;
   const wholeExit = priorFailedDrop ? (wholeFailed.length > 0 ? priorExit : 0) : priorExit;
@@ -3236,6 +3254,8 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
       ...(prior as Receipt),
       droppedVerified: verified,
       failed,
+      blocked,
+      gates,
       findings,
       exitCode: Math.max(wholeExit, droppedFailed.length > 0 ? 1 : 0),
     },
@@ -3354,12 +3374,18 @@ function mergeVerdicts(
     findings[id] = pg.findings;
   }
   const sorted: Record<string, string[] | null> = {};
-  for (const id of Object.keys(findings).sort()) sorted[id] = findings[id];
+  for (const id of Object.keys(findings).sort((a, b) => Number(a > b) - Number(a < b)))
+    sorted[id] = findings[id];
   return {
     failed,
     findings: sorted,
     exitCode: failed.length > 0 ? Math.max(freshExit, 1) : freshExit,
   };
+}
+
+/** A `Record<string, T>` read the way an index access really behaves: an absent key is `undefined` (noUncheckedIndexedAccess is off, so the plain type claims otherwise). */
+function sparse<T>(record: Record<string, T>): Partial<Record<string, T>> {
+  return record;
 }
 
 /** Every gate the run knows about gets an entry: ran, carried, deferred (slow, not selected) or ciOnly. */
@@ -3535,7 +3561,7 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
     );
     const r2 = receiptOf(t2, second, {});
     check(
-      r2.gates['g:b']?.carriedFrom?.headTree === t1 && r2.gates['g:b'].judgedTree === t1,
+      sparse(r2.gates)['g:b']?.carriedFrom?.headTree === t1 && r2.gates['g:b'].judgedTree === t1,
       'a carried receipt entry keeps its origin tree and judgedTree'
     );
 
@@ -3622,9 +3648,9 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
       disposable: false,
     });
     check(
-      mixed['s:slow']?.verdict === 'deferred' &&
-        mixed['s:ci']?.verdict === 'ciOnly' &&
-        mixed['s:ran']?.verdict === 'blocked' &&
+      sparse(mixed)['s:slow']?.verdict === 'deferred' &&
+        sparse(mixed)['s:ci']?.verdict === 'ciOnly' &&
+        sparse(mixed)['s:ran']?.verdict === 'blocked' &&
         mixed['s:ran'].inputHash === null,
       `receiptGates must name deferred, ciOnly and blocked (a skipped gate), got ${JSON.stringify(mixed)}`
     );
@@ -3993,6 +4019,9 @@ async function runGraph(
       costs,
       order,
       lease,
+      // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
+      idleCoreMs:
+        opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
       exec: (spec, grant: Grant) =>
         execGate(spec, {
           cwd: REPO_ROOT,
@@ -4188,7 +4217,9 @@ function planAdvance(input: {
       kind: 'full',
       why: `${outside.length} changed path(s) lie outside the record set, e.g. ${outside.slice(0, 3).join(', ')}`,
     };
-  const readers = [...new Set(paths.flatMap((p) => matching(p).flatMap((g) => g.readers)))].sort();
+  const readers = [...new Set(paths.flatMap((p) => matching(p).flatMap((g) => g.readers)))].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   const unknown = readers.filter((id) => !input.known.has(id));
   if (unknown.length > 0)
     return {
@@ -4272,12 +4303,13 @@ async function runAdvance(
     finishedAt: new Date().toISOString(),
   };
   try {
+    const priorAdvances = receipt.advances as Advance[] | undefined;
     fs.writeFileSync(
       dest,
-      `${JSON.stringify({ ...receipt, advances: [...(receipt.advances ?? []), step] }, null, 2)}\n`
+      `${JSON.stringify({ ...receipt, advances: [...(priorAdvances ?? []), step] }, null, 2)}\n`
     );
     humanOut(
-      `ci-runner: receipt at ${dest} advanced to tree ${plan.to.slice(0, 9)} (advances[${(receipt.advances ?? []).length}])\n`
+      `ci-runner: receipt at ${dest} advanced to tree ${plan.to.slice(0, 9)} (advances[${(priorAdvances ?? []).length}])\n`
     );
   } catch (err) {
     humanOut(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
@@ -4533,7 +4565,7 @@ function narrowPlan(
     `  F  non-carried fails ${list(F)}\n`,
     `  C  their learned clusters ${list(C)}${modelNote}\n`,
     changed === undefined
-      ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head || '(none)'}', so no touched gate is in the set\n`
+      ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head === '' ? '(none)' : head}', so no touched gate is in the set\n`
       : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s) since ${head.slice(0, 9)}) ${list(T)}\n`,
     `  A  associated with the changed classes ${list(A)}${modelNote}\n`,
     `  narrow set: ${ids.size} gate(s)\n`,

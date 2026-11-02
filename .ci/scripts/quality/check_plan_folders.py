@@ -10,7 +10,7 @@ NINE FINDINGS, EACH WITH A PLANTED CONTROL:
     F1  a plan at the legacy path rather than under agent/plans/**
     F2  the folder disagrees with `Status:`
     F3  a terminal plan past terminal_days
-    F4  a not-started plan past backlog_days
+    F4  a not-started plan past backlog_days, an open keep-or-archive question for the operator
     F5  a stub pointing at a stub, at itself, or at nothing
     F6  `moved_at` disagrees with the git history of the new path
     F7  a citation resolving to neither a file nor a tombstone
@@ -32,8 +32,17 @@ THE VERBS.
                retire every `## Promoted` entry whose plan is already a moved stub (the
                repair for a queue that predates the retirement; check:ci-plan-record
                RQ-MOVED names each one)
-    --sweep    what the retention clocks would delete; REFUSES to act without --write
+    --sweep    what the terminal clock would delete, REFUSING to act without --write, and
+               the backlog plans past backlog_days as an operator keep-or-archive question
+    --keep P --asked <YYYY-MM-DDTHH:MMZ>
+               the operator kept P: write `Kept: <today> ASKED:<minute>` under Status:,
+               which restarts P's backlog clock from today
+    --archive P --asked <YYYY-MM-DDTHH:MMZ>
+               the operator archived P: set `Status: removed` with a `Removed-Why:` naming
+               the answer, then --move it into _removed/, where the terminal clock takes over
     --update   write the tombstone section of agent/INDEX.md
+
+THE SWEEP DELETES TERMINAL PLANS ONLY. A plan in `_done/` or `_removed/` past terminal_days is deleted and leaves a tombstone. A backlog plan past backlog_days is NEVER deleted or moved by the sweep, by the operator's ruling of 2026-10-28 (ASKED:2026-10-28T10:58Z, "they should be asked to the operator to keep or archive"): both the dry run and `--write` print it under an OPERATOR QUESTION heading with its path, title, Status and age, plus the `--keep` and `--archive` commands that record the answer. Both answer verbs refuse without a well-formed ASKED minute, so no agent can answer the question on the operator's behalf without naming when it was asked.
 
 `--sweep` WITHOUT `--write` IS A REPORT AND EXITS 0. A sweeper that deleted by default is a program whose dry run is the dangerous one, and every other destructive verb in this repository is opt-in the same way.
 
@@ -204,6 +213,53 @@ def selftest() -> int:
             )
         ),
         set(),
+    )
+
+    # Q. The keep-or-archive split (ruling ASKED:2026-10-28T10:58Z): a stale backlog plan is a question, never a deletion; a stale terminal plan is still swept.
+    stale_plans = _plans([(backlog_rel, stale_backlog)])
+    tally.check(
+        "Q1 a stale backlog plan is in the question",
+        [p.rel for p, _age in PL.stale_backlog(stale_plans, CONFIG, TODAY)],
+        [backlog_rel],
+    )
+    tally.check(
+        "Q2 a stale backlog plan is never due for the sweep",
+        [p.rel for p in _expired(stale_plans, CONFIG, TODAY)],
+        [],
+    )
+    tally.check(
+        "Q3 a stale terminal plan is still due for the sweep",
+        [p.rel for p in _expired(_plans([(done_rel, CLEAN_DONE)], aged_ledger), CONFIG, TODAY)],
+        [done_rel],
+    )
+    kept_text = PL.with_kept(stale_backlog, "2026-09-20", "2026-09-20T10:00Z")
+    tally.check(
+        "Q4 a Kept: answer restarts the clock",
+        PL.stale_backlog(_plans([(backlog_rel, kept_text)]), CONFIG, TODAY),
+        [],
+    )
+    old_kept = PL.with_kept(stale_backlog, "2025-01-01", "2025-01-01T10:00Z")
+    tally.check(
+        "Q5 a Kept: older than the clock changes nothing",
+        len(PL.stale_backlog(_plans([(backlog_rel, old_kept)]), CONFIG, TODAY)),
+        1,
+    )
+    tally.check(
+        "Q6 a second Kept: replaces the first",
+        PL.with_kept(kept_text, "2026-09-21", "2026-09-21T09:00Z").count("Kept:"),
+        1,
+    )
+    tally.check(
+        "Q7 an archived plan classifies as removed",
+        PL.classify(PL.parse_plan(backlog_rel, PL.with_archived(stale_backlog, "why"))),
+        PL.STATE_REMOVED,
+    )
+    tally.check(
+        "Q8 a well-formed ASKED minute parses", bool(PL.asked_minute("2026-10-28T10:58Z")), True
+    )
+    tally.check("Q9 a malformed ASKED minute is refused", PL.asked_minute("2026-10-28 10:58"), None)
+    tally.check(
+        "Q10 an impossible ASKED minute is refused", PL.asked_minute("2026-13-40T25:99Z"), None
     )
 
     # F5. Two stubs, and the mutant points the first at the second.
@@ -427,6 +483,7 @@ def status(root: pathlib.Path, config: dict) -> int:
     print("tombstone %3d  %s" % (len(stones), PL.INDEX_REL))
     due = _expired(plans, config, today)
     print("due for sweep: %d" % len(due))
+    print("awaiting keep-or-archive: %d" % len(PL.stale_backlog(plans, config, today)))
     return 0
 
 
@@ -434,20 +491,58 @@ def _expired(plans: list[PL.Plan], config: dict, today: dt.date) -> list[PL.Plan
     """Every plan a `--sweep --write` would delete. The ONE predicate, shared.
 
     `--sweep`'s report and `--sweep --write`'s action read this same list, so a dry run cannot describe something the real run would not do.
+
+    TERMINAL ONLY. A backlog plan past its clock is an operator question (`PL.stale_backlog`, ruling ASKED:2026-10-28T10:58Z), so the state test below admits nothing outside TERMINAL_STATES however old it is.
     """
     out = []
     for plan in plans:
         if PL.is_stub(plan):
             continue
         state = PL.classify(plan)
+        if state not in PL.TERMINAL_STATES:
+            continue
         keep = PL.retention_days(state, config)
         if keep is None:
             continue
-        when = PL.as_date(plan.moved_at) if state in PL.TERMINAL_STATES else PL.last_touch(plan)
-        age = PL.age_days(when, today)
+        age = PL.age_days(PL.as_date(plan.moved_at), today)
         if age is not None and age > keep:
             out.append(plan)
     return out
+
+
+_SELF = ".ci/scripts/quality/check_plan_folders.py"
+RULING = "ASKED:2026-10-28T10:58Z"
+
+
+def _print_question(plans: list[PL.Plan], config: dict, today: dt.date) -> int:
+    """The backlog plans past backlog_days, as the operator's keep-or-archive question. Returns how many."""
+    stale = PL.stale_backlog(plans, config, today)
+    limit = int(config["backlog_days"])
+    if not stale:
+        print("✓ keep-or-archive: no backlog plan is past the %d-day backlog_days" % limit)
+        return 0
+    print(
+        "\nOPERATOR QUESTION: keep or archive %d backlog plan(s) past the %d-day backlog_days.\n"
+        "  The sweep never deletes or moves a backlog plan (ruling %s); each one waits for "
+        "the operator's answer." % (len(stale), limit, RULING)
+    )
+    for plan, age in stale:
+        when = PL.last_touch(plan)
+        print("  %s" % plan.rel)
+        print("    title:  %s" % (plan.title or "(no heading)"))
+        print("    Status: %s" % plan.status)
+        print(
+            "    age:    %d day(s), clock from %s" % (age, when.isoformat() if when else "unknown")
+        )
+        print("    keep:    python3 %s --keep %s --asked <YYYY-MM-DDTHH:MMZ>" % (_SELF, plan.rel))
+        print(
+            "    archive: python3 %s --archive %s --asked <YYYY-MM-DDTHH:MMZ>" % (_SELF, plan.rel)
+        )
+    print(
+        "  <YYYY-MM-DDTHH:MMZ> is the UTC minute the operator answered. Keep writes `Kept:` and "
+        "restarts the clock; archive sets `Status: removed` and moves the plan into _removed/."
+    )
+    return len(stale)
 
 
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
@@ -455,7 +550,11 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     today = dt.datetime.now(dt.UTC).date()
     due = _expired(plans, config, today)
     if not due:
-        print("✓ sweep: nothing has aged past its retention")
+        print(
+            "✓ sweep: no terminal plan has aged past the %d-day terminal_days"
+            % int(config["terminal_days"])
+        )
+        _print_question(plans, config, today)
         return 0
     for plan in due:
         print("  %s (%s)" % (plan.rel, PL.classify(plan)))
@@ -465,6 +564,7 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
             "destructive is a program whose dry run is the dangerous one." % len(due),
             file=sys.stderr,
         )
+        _print_question(plans, config, today)
         return 0
     rows = list(stones)
     for plan in due:
@@ -488,12 +588,114 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         if not result.ok:
             print("✗ git rm %s failed: %s" % (plan.rel, result.stderr.strip()), file=sys.stderr)
             return 1
+        # A stub left behind would point at nothing, which F5 refuses.
+        stub = "agent/plans/" + plan.rel.rsplit("/", 1)[-1]
+        if stub != plan.rel and (root / stub).is_file():
+            result = gitx.git(["rm", "-q", "--", stub], root=root)
+            if not result.ok:
+                print("✗ git rm %s failed: %s" % (stub, result.stderr.strip()), file=sys.stderr)
+                return 1
     _write_tombstones(root, rows)
-    print("✓ swept %d plan(s); %d tombstone row(s) in %s" % (len(due), len(rows), PL.INDEX_REL))
+    print(
+        "✓ swept %d terminal plan(s); %d tombstone row(s) in %s"
+        % (len(due), len(rows), PL.INDEX_REL)
+    )
     print(
         "  Regenerate the ledgers: npm run check:ci-plan-boxes -- --update && npm run check:ci-plan-record -- --update"
     )
+    _print_question(plans, config, today)
     return 0
+
+
+def _answer_target(root: pathlib.Path, rel: str, asked: str, verb: str):
+    """The (text, plan, minute) an answer verb acts on, or None after printing why it refused.
+
+    Both verbs share every refusal: a malformed or future ASKED minute, a path that is not a plan, a stub, and a plan that is not backlog. The question is about backlog plans only, so an answer to anything else is a misdirected command rather than an answer.
+    """
+    minute = PL.asked_minute(asked)
+    if minute is None:
+        print(
+            "✗ %s needs --asked <YYYY-MM-DDTHH:MMZ>, the UTC minute the operator answered the "
+            "keep-or-archive question; got %r. An answer that names no minute is not an answer."
+            % (verb, asked),
+            file=sys.stderr,
+        )
+        return None
+    if minute > dt.datetime.now(dt.UTC):
+        print(
+            "✗ --asked %s is in the future, so it cannot name an answer already given" % asked,
+            file=sys.stderr,
+        )
+        return None
+    if not PL.is_plan_path(rel) or not (root / rel).is_file():
+        print("✗ %s is not a plan file" % rel, file=sys.stderr)
+        return None
+    text = (root / rel).read_text(encoding="utf-8", errors="replace")
+    plan = PL.parse_plan(rel, text)
+    state = PL.classify(plan)
+    if state != PL.STATE_BACKLOG:
+        print(
+            "✗ %s is %s (`Status: %s`), not backlog; the keep-or-archive question covers "
+            "backlog plans only" % (rel, state, plan.status),
+            file=sys.stderr,
+        )
+        return None
+    return text, plan, minute
+
+
+def keep(root: pathlib.Path, rel: str, asked: str) -> int:
+    """`--keep`: the operator kept a backlog plan, so its clock restarts today."""
+    target = _answer_target(root, rel, asked, "--keep")
+    if target is None:
+        return 2
+    text, _plan, _minute = target
+    today = dt.datetime.now(dt.UTC).date().isoformat()
+    body = PL.with_kept(text, today, asked)
+    if PL.parse_plan(rel, body).kept != today:
+        print(
+            "✗ the Kept: line written into %s does not parse back within the first %d lines, so "
+            "the clock would not restart; nothing was written" % (rel, PL.HEADER_LINES),
+            file=sys.stderr,
+        )
+        return 1
+    (root / rel).write_text(body, encoding="utf-8")
+    print(
+        "✓ kept %s: Kept: %s ASKED:%s, the backlog clock restarts from %s"
+        % (rel, today, asked, today)
+    )
+    return 0
+
+
+def archive(root: pathlib.Path, rel: str, asked: str, config: dict) -> int:
+    """`--archive`: the operator archived a backlog plan, so it becomes `removed` and moves."""
+    target = _answer_target(root, rel, asked, "--archive")
+    if target is None:
+        return 2
+    text, plan, _minute = target
+    why = "archived on the operator's keep-or-archive answer ASKED:%s (Status was %s)" % (
+        asked,
+        plan.status,
+    )
+    (root / rel).write_text(PL.with_archived(text, why), encoding="utf-8")
+    rc = move(root, rel, config)
+    if rc != 0 and (root / rel).is_file() and not PL.looks_like_stub(PL.read_probe(root / rel)):
+        # The move refused before touching the tree, so the plan goes back to the text it had.
+        (root / rel).write_text(text, encoding="utf-8")
+        print("✗ %s was not archived; its text is unchanged" % rel, file=sys.stderr)
+        return rc
+    if rc == 0:
+        print(
+            "✓ archived %s: Status: removed, now on the %d-day terminal clock"
+            % (rel, int(config["terminal_days"]))
+        )
+    return rc
+
+
+def _flag_value(argv: list[str], flag: str) -> str:
+    if flag not in argv:
+        return ""
+    i = argv.index(flag)
+    return argv[i + 1] if len(argv) > i + 1 and not argv[i + 1].startswith("--") else ""
 
 
 def _write_tombstones(root: pathlib.Path, rows: list[PL.Tombstone]) -> None:
@@ -768,6 +970,19 @@ def main(argv: list[str]) -> int:
                 print("✗ --move needs a plan path", file=sys.stderr)
                 return 2
             return move(root, target, config)
+        # Two explicit branches, not a loop over the verbs: check:ci-gate-tree-writes reads `if "--<verb>" in argv:` as the guard on archive(), and a loop variable hides it. --keep is checked first, as before.
+        if "--keep" in argv:
+            target = _flag_value(argv, "--keep")
+            if not target:
+                print("✗ --keep needs a plan path", file=sys.stderr)
+                return 2
+            return keep(root, target, _flag_value(argv, "--asked"))
+        if "--archive" in argv:
+            target = _flag_value(argv, "--archive")
+            if not target:
+                print("✗ --archive needs a plan path", file=sys.stderr)
+                return 2
+            return archive(root, target, _flag_value(argv, "--asked"), config)
         if "--retire-promoted" in argv:
             return retire_promoted(root)
         if "--sweep" in argv:

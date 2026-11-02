@@ -171,7 +171,7 @@ function declaredPackageNames(root: string): Universe | null {
       'optionalDependencies',
       'peerDependencies',
     ]) {
-      for (const n of Object.keys((pkg[field] as Record<string, string>) ?? {})) {
+      for (const n of Object.keys((pkg[field] as Record<string, string> | undefined) ?? {})) {
         names.add(n);
         if (dirRel) names.add(`${dirRel}:${n}`);
       }
@@ -900,10 +900,9 @@ function main(): void {
   if (fs.existsSync(pkgPath)) {
     try {
       const reasons =
-        (JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))._overridesReasons as Record<
-          string,
-          string
-        >) ?? {};
+        (JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))._overridesReasons as
+          | Record<string, string>
+          | undefined) ?? {};
       for (const [k, v] of Object.entries(reasons)) {
         if (/^BLOCKER:\s*preventive\b/i.test(v)) preventive.add(k);
       }

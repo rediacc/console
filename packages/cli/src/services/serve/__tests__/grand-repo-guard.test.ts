@@ -35,6 +35,7 @@ vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../utils/agent-guard.js')>()),
   isAgentEnvironment: () => false,
 }));
+
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
@@ -92,8 +93,9 @@ function fleetConfig(policy?: PolicyDocument): RdcConfig {
           },
         },
       },
-      storages: {},
     },
+    // Recorded network IDs: a repo without one asks its machine first, and the fake executor is no machine.
+    state: { repos: { shop: { latest: { networkId: 2816 }, trial: { networkId: 2880 } } } },
     encryption: { mode: 'plaintext' },
     ...(policy ? { policy } : {}),
   };

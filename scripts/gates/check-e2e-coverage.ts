@@ -24,14 +24,23 @@
  *      branch of conditional `projects`, evaluated with CI=1) and resolve every
  *      project's testDir + testMatch − testIgnore into a concrete file set:
  *      LIVE_TESTS. Only these files can confer coverage.
- *   3. HARNESS METHOD MAP — parse src/utils/bridge/methods/*.ts into
+ *   3. HARNESS METHOD MAP — parse src/utils/renet-functions/methods/*.ts into
  *      (methodName → dispatched verb). A verb is covered by a method ONLY when
  *      `.methodName(` is CALLED from a LIVE_TESTS file (or, one hop, from a
- *      helper under src/utils/bridge/helpers that a live test reaches). A method
+ *      helper under src/utils/renet-functions/helpers that a live test reaches). A method
  *      that is merely DECLARED — the dead-coverage failure mode — does not count.
  *   4. COVERAGE — a renet function counts as covered when its raw verb literal
  *      or its CLI space-form appears in a LIVE_TESTS file, OR rule 3 resolves it.
  *      Everything else must sit on the BLOCKER-gated allowlist, or the gate fails.
+ *      The subject set is RENET_FUNCTIONS plus every RENET_BRIDGE_FUNCTIONS name
+ *      (box G1 of agent/plans/PLAN-jobs-backup-real-machine-tests.md): reading
+ *      only the public list left internal verbs such as repository_migrate and
+ *      repository_gc unchecked behind an "all covered" line. forwardSubjects()
+ *      states why every bridge entry counts as a machine function, and
+ *      bridgeReadProblems() refuses a bridge read too small to mean anything.
+ *
+ * The controls in runControls() run FIRST on every invocation, before any
+ * verdict is computed from the helpers they prove.
  *
  * The gate PRINTS its own coverage limits (configs in the registry, files
  * expanded, helper-indirection hops) so it cannot overstate what it measured —
@@ -62,8 +71,8 @@ const E2E_DIR = process.env.E2E_COV_E2E_DIR ?? path.join(REPO_ROOT, 'packages/e2
 const FUNCTIONS_FILE =
   process.env.E2E_COV_FUNCTIONS_FILE ??
   path.join(REPO_ROOT, 'packages/shared/src/renet-contract/data/functions.generated.ts');
-const METHODS_DIR = path.join(E2E_DIR, 'src/utils/bridge/methods');
-const HELPERS_DIR = path.join(E2E_DIR, 'src/utils/bridge/helpers');
+const METHODS_DIR = path.join(E2E_DIR, 'src/utils/renet-functions/methods');
+const HELPERS_DIR = path.join(E2E_DIR, 'src/utils/renet-functions/helpers');
 const WORKFLOWS_DIR =
   process.env.E2E_COV_WORKFLOWS_DIR ?? path.join(REPO_ROOT, '.github/workflows');
 const ALLOWLIST_FILE =
@@ -91,6 +100,10 @@ const PRODUCTION_REGISTRY: { file: string; isDefault: boolean }[] = [
   { file: 'playwright.k8s-multinode.config.ts', isDefault: false },
   { file: 'playwright.migrate.config.ts', isDefault: false },
   { file: 'playwright.backup-browse-at.config.ts', isDefault: false },
+  // Suite 26 (box J6 of agent/plans/PLAN-backup-program.md): the chunk-store backup suite, run by its own ct-tests.yml job.
+  { file: 'playwright.backup-storage.config.ts', isDefault: false },
+  // Suite 31 (box K10 of agent/plans/PLAN-backup-program.md): the 50 GiB large-repo nightly, run by the standalone ct-backup-perf.yml.
+  { file: 'playwright.backup-large-repo.config.ts', isDefault: false },
 ];
 
 /**
@@ -337,7 +350,7 @@ function parseHelperMethodNames(text: string): string[] {
   return names;
 }
 
-/** methodName → dispatched verb, parsed from src/utils/bridge/methods/*.ts. */
+/** methodName → dispatched verb, parsed from src/utils/renet-functions/methods/*.ts. */
 function buildMethodMap(): Map<string, string> {
   const map = new Map<string, string>();
   const files = globSync('*.ts', { cwd: METHODS_DIR, absolute: true });
@@ -362,23 +375,195 @@ function buildMethodMap(): Map<string, string> {
 
 // ── main ─────────────────────────────────────────────────────────────────────
 
-function extractRenetFunctions(): string[] {
-  const content = fs.readFileSync(FUNCTIONS_FILE, 'utf-8');
-  const lines = content.split('\n');
-  const fns: string[] = [];
-  let inArray = false;
-  for (const line of lines) {
-    if (/RENET_FUNCTIONS\s*=\s*\[/.test(line)) {
-      inArray = true;
-      continue;
-    }
-    if (inArray && /\]\s*as\s+const/.test(line)) break;
-    if (inArray) {
-      const m = line.match(/'([a-z0-9_]+)'/);
-      if (m) fns.push(m[1]!);
-    }
+/**
+ * Every quoted name in `<name> = [ ... ] as const`, in file order, or null when
+ * the array is absent or never closes.
+ *
+ * It reads the whole bracket SPAN, not one line at a time. The line state
+ * machine it replaces opened on the assignment line and skipped the rest of
+ * that line, so a one-line array (`X = ['a', 'b'] as const;`, the shape the
+ * gate's own fixture test writes) yielded nothing and then ran on into the next
+ * array. Null and empty are different answers on purpose: "no such array" is a
+ * stale contract, "an empty one" is a broken parse, and the caller words them
+ * differently.
+ */
+export function extractConstArray(content: string, name: string): string[] | null {
+  const open = new RegExp(`\\b${name}\\s*=\\s*\\[`).exec(content);
+  if (!open) return null;
+  const rest = content.slice(open.index + open[0].length);
+  // The array of quoted verbs ends at the FIRST `]`, which must be followed by `as const`. Searching the rest of the file for `] as const` instead would run a missing `as const` on into a later array.
+  const end = rest.indexOf(']');
+  if (end < 0 || !/^\s*as\s+const\b/.test(rest.slice(end + 1))) return null;
+  return [...rest.slice(0, end).matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1]!);
+}
+
+/**
+ * WHICH BRIDGE ENTRIES ARE MACHINE FUNCTIONS: all of them, and the rule is
+ * read off the generated contract rather than chosen.
+ *
+ * RENET_BRIDGE_FUNCTIONS is emitted from renet's command Registry (every name
+ * `functions once --function <name>` resolves), and every Registry entry is a
+ * CommandBuilder that builds a `sudo renet ...` argv executed on the target
+ * machine. The generated metadata offers no field that marks any entry
+ * otherwise: every RENET_FUNCTIONS entry's FUNCTION_REQUIREMENTS row carries
+ * `machine: true` (93 of 93 when this was written), and the bridge-only
+ * remainder (internal and experimental verbs, plus the schema-less alias
+ * ceph_clone_create) carries no requirements row at all, so excluding a prefix
+ * such as daemon_* or machine_check_* would be an unchecked choice that
+ * silently drops verbs from the gate. Fail toward checking: the forward subject
+ * is the union, and a verb that genuinely cannot run in CI goes on the
+ * allowlist with its reason, where it stays visible.
+ */
+export function forwardSubjects(
+  publicFns: string[],
+  bridgeFns: string[]
+): { subjects: string[]; bridgeOnly: string[] } {
+  const pub = new Set(publicFns);
+  const bridgeOnly = [...new Set(bridgeFns)].filter((n) => !pub.has(n));
+  return { subjects: [...new Set([...publicFns, ...bridgeOnly])], bridgeOnly };
+}
+
+/**
+ * The anti-vacuity refusal for the bridge read. Empty means sound.
+ *
+ * Three shapes of a read that would make the widened gate check less than it
+ * claims: the array is absent (a contract that predates it), it is shorter
+ * than the floor (a parse that stopped early), or it is missing a PUBLIC name.
+ * The last is a structural invariant of the generator, not a heuristic: the
+ * public list is the schema'd subset of the same Registry, so a public name the
+ * bridge read lacks means the read is truncated, whatever its length.
+ */
+export function bridgeReadProblems(
+  publicFns: string[],
+  bridgeFns: string[] | null,
+  floor: number
+): string[] {
+  if (bridgeFns === null) {
+    return [
+      'RENET_BRIDGE_FUNCTIONS was not found in the contract, so no bridge verb is checked. Regenerate: private/renet/bin/renet functions generate-types --output packages/shared/src/renet-contract/data --version dev',
+    ];
   }
-  return fns;
+  const problems: string[] = [];
+  if (bridgeFns.length < floor) {
+    problems.push(
+      `read ${bridgeFns.length} name(s) from RENET_BRIDGE_FUNCTIONS, below the floor of ${floor}; the parse stopped early or the contract collapsed, and a green here would check almost nothing`
+    );
+  }
+  const bridge = new Set(bridgeFns);
+  const absent = publicFns.filter((n) => !bridge.has(n));
+  if (absent.length > 0) {
+    problems.push(
+      `${absent.length} RENET_FUNCTIONS name(s) are missing from the RENET_BRIDGE_FUNCTIONS read (first: ${absent[0]}); the bridge list is the whole Registry, so the read is truncated`
+    );
+  }
+  return problems;
+}
+
+/**
+ * The production floor. 173 bridge names when it was set (93 public plus 80
+ * internal and experimental); 150 leaves room for a legitimate retirement
+ * wave and still refuses a parse that read a fraction. A fixture contract
+ * (E2E_COV_FUNCTIONS_FILE) is tiny by design, so there the floor is 1 unless
+ * E2E_COV_BRIDGE_FLOOR says otherwise; the public-subset check above still
+ * applies to it in full.
+ */
+const PRODUCTION_BRIDGE_FLOOR = 150;
+function bridgeFloor(): number {
+  const raw = process.env.E2E_COV_BRIDGE_FLOOR;
+  if (raw !== undefined) {
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1)
+      fail(`E2E_COV_BRIDGE_FLOOR must be a positive integer, got '${raw}'`);
+    return n;
+  }
+  return process.env.E2E_COV_FUNCTIONS_FILE ? 1 : PRODUCTION_BRIDGE_FLOOR;
+}
+
+/**
+ * Allowlist entries that name no forward subject at all. The covered-and-listed
+ * check cannot see these: a verb renet deleted is neither covered nor missing,
+ * so its entry would sit in the list forever, excusing nothing.
+ */
+export function unknownAllowlistEntries(allowlist: Iterable<string>, subjects: string[]): string[] {
+  const known = new Set(subjects);
+  return [...allowlist].filter((e) => !known.has(e)).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * The controls, run FIRST on every invocation. They prove the pure helpers
+ * above in both directions (something that must fire beside something that
+ * must not) before any verdict is computed from them, so a regression in the
+ * instrument fails as a broken instrument rather than reading as coverage.
+ */
+export function runControls(): string[] {
+  const failures: string[] = [];
+  let ran = 0;
+  const check = (label: string, got: unknown, want: unknown): void => {
+    ran++;
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      failures.push(`${label}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+    }
+  };
+  const multi =
+    "export const RENET_FUNCTIONS = [\n  'a',\n] as const;\n" +
+    "export const RENET_BRIDGE_FUNCTIONS = [\n  'a',\n  'b',\n] as const;\n" +
+    "export const LATER = ['z'] as const;\n";
+  check('multi-line array is read whole', extractConstArray(multi, 'RENET_BRIDGE_FUNCTIONS'), [
+    'a',
+    'b',
+  ]);
+  check('MIRROR: a later array is not read into it', extractConstArray(multi, 'RENET_FUNCTIONS'), [
+    'a',
+  ]);
+  check(
+    'one-line array is read whole',
+    extractConstArray(
+      "export const RENET_BRIDGE_FUNCTIONS = ['a', 'b', 'c'] as const;\n",
+      'RENET_BRIDGE_FUNCTIONS'
+    ),
+    ['a', 'b', 'c']
+  );
+  check(
+    'MIRROR: an absent array is null, not empty',
+    extractConstArray('export const X = [] as const;', 'RENET_BRIDGE_FUNCTIONS'),
+    null
+  );
+  check(
+    'MIRROR: an array without `as const` is null, not the next array read into it',
+    extractConstArray(
+      "export const RENET_BRIDGE_FUNCTIONS = ['a'];\nexport const LATER = ['z'] as const;\n",
+      'RENET_BRIDGE_FUNCTIONS'
+    ),
+    null
+  );
+  check(
+    'MIRROR: RENET_FUNCTIONS does not match inside another name',
+    extractConstArray("NOT_RENET_FUNCTIONS = ['q'] as const;", 'RENET_FUNCTIONS'),
+    null
+  );
+  check('bridge-only names are the extra ones', forwardSubjects(['a'], ['a', 'b']).bridgeOnly, [
+    'b',
+  ]);
+  check('MIRROR: subjects carry no duplicate', forwardSubjects(['a'], ['a', 'b']).subjects, [
+    'a',
+    'b',
+  ]);
+  check('vacuity fires on an absent array', bridgeReadProblems(['a'], null, 1).length, 1);
+  check('vacuity fires below the floor', bridgeReadProblems(['a'], ['a'], 2).length, 1);
+  check(
+    'vacuity fires on a truncated read',
+    bridgeReadProblems(['a', 'b'], ['a', 'c'], 1).length,
+    1
+  );
+  check('MIRROR: a sound read raises nothing', bridgeReadProblems(['a'], ['a', 'b'], 2), []);
+  check('unknown allowlist entry is named', unknownAllowlistEntries(['gone', 'a'], ['a']), [
+    'gone',
+  ]);
+  check('MIRROR: a known allowlist entry is not', unknownAllowlistEntries(['a'], ['a']), []);
+  const CONTROL_FLOOR = 13;
+  if (ran < CONTROL_FLOOR)
+    failures.push(`only ${ran} control(s) ran, below the floor of ${CONTROL_FLOOR}`);
+  return failures;
 }
 
 /**
@@ -406,6 +591,92 @@ const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
 };
 
 /**
+ * ── 5. Dark suites (box J5 of agent/plans/PLAN-backup-program.md) ──────────
+ *
+ * The verb check above asks "is every shipped verb exercised by a live suite";
+ * it cannot see a SUITE that no CI job runs when every verb it drives happens
+ * to be covered elsewhere, or allowlisted. Suite 26 was exactly that: its config
+ * (playwright.backup-storage.config.ts) is in no workflow, its default-config
+ * project is gated behind BACKUP_STORAGE_SUITE=1, which no workflow sets, and the
+ * gate stayed green. So every test file under tests/ must be selected by a live
+ * config, or be named here with a `BLOCKER:` reason. An entry whose file goes
+ * live, or no longer exists, fails as stale, so this list only shrinks.
+ *
+ * Suite 26 is deliberately ABSENT: the gate fails on it until box J6 wires it
+ * into CI (its config in a workflow and LIVE_CONFIG_REGISTRY, or
+ * BACKUP_STORAGE_SUITE=1 in a workflow and CI_LEG_ENABLE_FLAGS).
+ *
+ * Overridable via E2E_COV_DARK_SUITES (a JSON object, path relative to the e2e
+ * directory -> reason) for the fixture test.
+ */
+const PRODUCTION_DARK_SUITES: Record<string, string> = {
+  'tests/20-image-build.test.ts':
+    'BLOCKER: suite 20 builds VM images at about 35 minutes per test and no CI runner carries the image toolchain; it runs locally through playwright.image.config.ts (packages/e2e-tests/README.md "Deliberately not in CI", item 3).',
+  'tests/23-cli-migrate-routing.test.ts':
+    'BLOCKER: CLI_SUITE is declared empty on every ct-tests.yml matrix leg until a local two-worker validation of its rdc argv and machine registration lands (plan phase 5; the comment above the E2E Workers `include:` matrix names the one-line switch).',
+  'tests/ops-lifecycle/18-ops-lifecycle.test.ts':
+    'BLOCKER: these tests stop, start and reset the shared fleet the other suites run on, so no config selects them; ci-ops-test.yml drives ops setup, check, up, status and down on throwaway VMs, and the reset path (OpsManager.resetVMs) has no CI run at all.',
+};
+const DARK_REASON_MIN = 40;
+
+function loadDarkSuites(): Record<string, string> {
+  const override = process.env.E2E_COV_DARK_SUITES;
+  if (override === undefined) return PRODUCTION_DARK_SUITES;
+  const parsed: unknown = JSON.parse(override);
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    fail('E2E_COV_DARK_SUITES is not a JSON object of path -> reason');
+  }
+  return parsed as Record<string, string>;
+}
+
+/**
+ * Every test file under tests/ that no live config selects, judged against the
+ * dark-suite list. Pure over its inputs so the counts it returns are the ones
+ * printed. `allTests` and `liveTests` are absolute paths.
+ */
+export function darkSuiteFindings(
+  allTests: string[],
+  liveTests: Set<string>,
+  exempt: Record<string, string>,
+  e2eDir: string
+): { dark: string[]; problems: string[]; exempted: number } {
+  const problems: string[] = [];
+  const dark: string[] = [];
+  let exempted = 0;
+  const existing = new Set(allTests.map((f) => path.relative(e2eDir, f)));
+  for (const file of allTests) {
+    if (liveTests.has(file)) continue;
+    const key = path.relative(e2eDir, file);
+    if (key in exempt) {
+      exempted++;
+      continue;
+    }
+    dark.push(key);
+  }
+  for (const [key, reason] of Object.entries(exempt)) {
+    if (!existing.has(key)) {
+      problems.push(
+        `  - dark-suite entry '${key}' names no test file under tests/ (stale: delete it)`
+      );
+    } else if (liveTests.has(path.join(e2eDir, key))) {
+      problems.push(
+        `  - dark-suite entry '${key}' is now selected by a live config (debt paid: delete it)`
+      );
+    }
+    if (
+      typeof reason !== 'string' ||
+      !reason.startsWith('BLOCKER:') ||
+      reason.length < DARK_REASON_MIN
+    ) {
+      problems.push(
+        `  - dark-suite entry '${key}' needs a reason starting 'BLOCKER:' of ${DARK_REASON_MIN}+ characters`
+      );
+    }
+  }
+  return { dark, problems, exempted };
+}
+
+/**
  * Blank out `//` and block comments, preserving line structure.
  *
  * Line count is preserved so any position-based reporting stays honest, and
@@ -424,8 +695,37 @@ async function main(): Promise<void> {
   console.log('e2e-tests coverage gate — forward (live-config membership)');
   console.log('============================================================\n');
 
+  const controlFailures = runControls();
+  if (controlFailures.length > 0) {
+    console.log(
+      `${RED}✗${RESET} The gate's own controls failed, so the instrument is broken and no verdict below would mean anything:\n`
+    );
+    for (const f of controlFailures) console.log(`  - ${f}`);
+    process.exit(1);
+  }
+
   if (!fs.existsSync(FUNCTIONS_FILE)) fail(`Functions file not found: ${rel(FUNCTIONS_FILE)}`);
   if (!fs.existsSync(E2E_DIR)) fail(`e2e-tests directory not found: ${rel(E2E_DIR)}`);
+
+  // Read the contract and refuse a vacuous bridge read BEFORE any coverage is computed from it.
+  const contract = fs.readFileSync(FUNCTIONS_FILE, 'utf-8');
+  const publicFns = extractConstArray(contract, 'RENET_FUNCTIONS') ?? [];
+  if (publicFns.length === 0) fail('No functions extracted from RENET_FUNCTIONS: parsing broke');
+  const bridgeFns = extractConstArray(contract, 'RENET_BRIDGE_FUNCTIONS');
+  const floor = bridgeFloor();
+  const bridgeProblems = bridgeReadProblems(publicFns, bridgeFns, floor);
+  if (bridgeProblems.length > 0) {
+    console.log(
+      `${RED}✗${RESET} The bridge-function read is not sound, so the forward check would cover less than it claims:\n`
+    );
+    for (const p of bridgeProblems) console.log(`  - ${p}`);
+    process.exit(1);
+  }
+  const { subjects: fns, bridgeOnly } = forwardSubjects(publicFns, bridgeFns!);
+  console.log(
+    `${GREEN}✓${RESET} Read ${bridgeFns!.length} bridge function(s) (floor ${floor}): ` +
+      `${publicFns.length} public + ${bridgeOnly.length} bridge-only, all machine functions\n`
+  );
 
   selfCheckRegistry();
 
@@ -444,6 +744,52 @@ async function main(): Promise<void> {
   );
   for (const line of perConfigCounts) console.log(`    ${line}`);
   console.log('');
+
+  // Dark suites: every test file under tests/ must be live or named with a BLOCKER.
+  const testsDir = path.join(E2E_DIR, 'tests');
+  const allTests = fs.existsSync(testsDir)
+    ? globSync(DEFAULT_TEST_MATCH, { cwd: testsDir, absolute: true, nodir: true }).sort((a, b) =>
+        a.localeCompare(b)
+      )
+    : [];
+  if (allTests.length === 0) {
+    fail(
+      `Discovered ZERO test files under ${rel(testsDir)}; the dark-suite check is not seeing the tree, so its green would mean nothing`
+    );
+  }
+  const darkConfigs = (globSync('playwright*.config.ts', { cwd: E2E_DIR }) as string[])
+    .filter((c) => !LIVE_CONFIG_REGISTRY.some((r) => r.file === c))
+    .sort((a, b) => a.localeCompare(b));
+  const darkSuites = darkSuiteFindings(allTests, liveTestFiles, loadDarkSuites(), E2E_DIR);
+  let darkFailed = false;
+  if (darkSuites.problems.length > 0) {
+    darkFailed = true;
+    console.log(
+      `${RED}✗${RESET} The dark-suite list in scripts/gates/check-e2e-coverage.ts is stale:\n`
+    );
+    for (const p of darkSuites.problems) console.log(p);
+    console.log('');
+  }
+  if (darkSuites.dark.length > 0) {
+    darkFailed = true;
+    console.log(
+      `${RED}✗${RESET} ${darkSuites.dark.length} e2e suite file(s) that NO CI job runs (no live config selects them):\n`
+    );
+    for (const f of darkSuites.dark) console.log(`    - ${f}`);
+    console.log('');
+    console.log(`  Configs no workflow runs: ${darkConfigs.join(', ') || '(none)'}`);
+    console.log('  Wire the suite into CI: put its config on a workflow step (--config) and in');
+    console.log('  LIVE_CONFIG_REGISTRY, or set its enable flag in the workflow and in');
+    console.log('  CI_LEG_ENABLE_FLAGS. Only a suite that genuinely cannot run in CI goes into');
+    console.log("  PRODUCTION_DARK_SUITES, with a 'BLOCKER:' reason.");
+    console.log('');
+  }
+  if (!darkFailed) {
+    console.log(
+      `${GREEN}✓${RESET} Every one of ${allTests.length} e2e test file(s) is selected by a live config ` +
+        `(${darkSuites.exempted} dark by BLOCKER; configs no workflow runs: ${darkConfigs.join(', ') || 'none'})\n`
+    );
+  }
 
   // Read live-test contents once, WITH COMMENTS STRIPPED.
   //
@@ -465,7 +811,7 @@ async function main(): Promise<void> {
     : [];
 
   // A helper file confers coverage ONLY when a live test actually reaches it — i.e. a live test calls one of the helper's own methods (`.helperMethod(`). This is the single level of indirection the tree needs: suite 17 drives `runner.repositoryCommit(...)`, a RepositoryHelpers method that shells out `renet repository commit` (a space-form dispatch, not a `function:` literal), so
-  // that helper's space-forms are genuine live coverage. A helper NO live test touches confers nothing (fail closed). BridgeTestRunner.ts is NOT a helper and is never in this set — counting its re-export delegations is exactly the dead-coverage this gate exists to reject.
+  // that helper's space-forms are genuine live coverage. A helper NO live test touches confers nothing (fail closed). RenetFunctionsTestRunner.ts is NOT a helper and is never in this set — counting its re-export delegations is exactly the dead-coverage this gate exists to reject.
   const liveHelperText = new Map<string, string>();
   for (const f of helperFiles) {
     const text = stripComments(fs.readFileSync(f, 'utf-8'));
@@ -488,9 +834,6 @@ async function main(): Promise<void> {
     return false;
   };
   let helperHopVerbs = 0;
-
-  const fns = extractRenetFunctions();
-  if (fns.length === 0) fail('No functions extracted from RENET_FUNCTIONS — parsing broke');
 
   // Allowlist (BLOCKER-gated, shared validator).
   const allowEntries = parseBlockeredList(ALLOWLIST_FILE, '#');
@@ -532,15 +875,31 @@ async function main(): Promise<void> {
   console.log('Coverage limits (what this gate actually measured):');
   console.log(`  - live configs in registry:        ${LIVE_CONFIG_REGISTRY.length}`);
   console.log(`  - live test files expanded:         ${liveFiles.length}`);
+  console.log(
+    `  - e2e test files under tests/:      ${allTests.length} (${darkSuites.dark.length} dark, ${darkSuites.exempted} dark by BLOCKER)`
+  );
   console.log(`  - harness verb-methods mapped:      ${methodMap.size}`);
   console.log(
     `  - live helper files (1 hop):        ${liveHelperText.size} of ${helperFiles.length}`
   );
   console.log(`  - verbs resolved via a helper hop:  ${helperHopVerbs} (one level max)`);
-  console.log(`  - renet functions checked:          ${fns.length}`);
-  console.log(`  - allowlisted (legacy debt):        ${allowlist.size}\n`);
+  console.log(
+    `  - renet functions checked:          ${fns.length} (${publicFns.length} public + ${bridgeOnly.length} bridge-only)`
+  );
+  console.log(`  - allowlisted:                      ${allowlist.size}\n`);
 
-  let failed = false;
+  let failed = darkFailed;
+
+  const unknownAllowed = unknownAllowlistEntries(allowlist, fns);
+  if (unknownAllowed.length > 0) {
+    failed = true;
+    console.log(
+      `${RED}✗${RESET} ${unknownAllowed.length} allowlist entr(ies) name no renet function in ` +
+        `RENET_FUNCTIONS or RENET_BRIDGE_FUNCTIONS; the verb is gone, so delete the entry from ${rel(ALLOWLIST_FILE)}:`
+    );
+    for (const fn of unknownAllowed) console.log(`    - ${fn}`);
+    console.log('');
+  }
 
   if (staleAllowlisted.length > 0) {
     failed = true;
@@ -573,7 +932,7 @@ async function main(): Promise<void> {
 
   console.log(
     `${GREEN}✓${RESET} All ${fns.length - allowlist.size} enforced renet functions are ` +
-      `covered by a live suite (${allowlist.size} legacy names allowlisted)`
+      `covered by a live suite (${allowlist.size} allowlisted by BLOCKER)`
   );
 }
 

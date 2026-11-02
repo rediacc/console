@@ -35,7 +35,9 @@ GOLDEN_USAGE = {
     ),
     "fix": "Usage: ./run.sh fix [format|lint|shell|all]",
 }
-GOLDEN_DRILL_USAGE = "Usage: ./run.sh drill [universe|transfer|license|backup|vmcheck] [--selftest]"
+GOLDEN_DRILL_USAGE = (
+    "Usage: ./run.sh drill [universe|transfer|license|backup|backup-onprem|vmcheck] [--selftest]"
+)
 
 
 def noting(log: list, item, result=0):
@@ -383,7 +385,7 @@ def test_d2_quality_deps_runs_the_check_deps_gate(monkeypatch) -> None:
     monkeypatch.setattr(rv, "_node_ok", lambda: True)
     monkeypatch.setattr(rv, "_run", lambda argv, **_kw: noting(seen, argv))
     assert rv.quality_deps() == 0
-    assert seen == [["npx", "tsx", str(rv.root() / "scripts/gates/check-deps.ts")]]
+    assert seen == [["npx", "--no-install", "tsx", str(rv.root() / "scripts/gates/check-deps.ts")]]
     assert (rv.root() / "scripts/gates/check-deps.ts").is_file()
 
 

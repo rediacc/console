@@ -6,11 +6,13 @@ THE FIXTURE IS A PLAIN DIRECTORY, not a git repository: the gate reads plan file
 """
 
 import hashlib
+import importlib
 import pathlib
 import subprocess
 import sys
 
 import pytest
+import wl_planconc as X
 import wl_plandeps as D
 
 from rediacc_ci import paths
@@ -481,3 +483,48 @@ def test_migrate_x_apply_needs_write_refuses_drift_and_adds_three_lines(gate, tm
     gate.log_pass(
         "--apply writes only with --write, refuses drift, and adds exactly three lines per file"
     )
+
+
+# --------------------------------------------------------------------------- One Owns grammar for the gate and the spawn guard.
+
+#: (label, value). The header gate and the concurrency guard must agree on every one: a line the gate passes but the guard reads as "no Owns" fails closed at writer spawn.
+OWNS_VALUES = (
+    ("one glob", "src/a/**"),
+    ("two globs", "src/a/**, docs/b.md"),
+    ("the same glob twice", "src/a/**, src/a/**"),
+    ("a comma inside a note", "src/x.ts (a, b only), docs/y/**"),
+    ("a comma inside a brace group", "src/{a,b}.ts"),
+    ("an unclosed note", "src/x.ts (a, b only"),
+    ("a doubled comma", "a/**,, b/**"),
+    ("none with a reason", "none -- an operator-action plan"),
+    ("none without a reason", "none"),
+)
+
+
+@pytest.mark.parametrize(("label", "value"), OWNS_VALUES, ids=[v[0] for v in OWNS_VALUES])
+def test_the_gate_and_the_spawn_guard_read_every_owns_line_alike(gate, label, value):
+    """The gate's D13 verdict, `--set-x`'s verdict and wl_planconc's reading of the same line must all agree; the duplicated glob and the comma-in-a-note rows are the two that once diverged."""
+    paths.on_sys_path(paths.from_root(".ci", "scripts", "quality"))
+    deps_gate = importlib.import_module("check_plan_deps")
+    text = _plan().replace("Owns: docs/fixture/**", "Owns: %s" % value)
+    header = D.parse_header(text)
+    guard_ok = X.declared_owns("Owns: %s" % value) is not None
+    gate_d13 = any(f.code == D.D_OWNS for f in X.x_findings(header, text))
+    set_x_refuses = any(
+        p.startswith(D.D_OWNS) for p in deps_gate.x_problems(_plan(), {"Owns": value})[1]
+    )
+    gate.assert_eq(gate_d13, not guard_ok, "%s: D13 mirrors the guard's reading" % label)
+    gate.assert_eq(set_x_refuses, gate_d13, "%s: --set-x refuses exactly what D13 flags" % label)
+    gate.log_pass("%s: gate, --set-x and guard agree (accepted=%s)" % (label, guard_ok))
+
+
+def test_a_duplicated_owns_glob_reds_a_planted_tree(gate, tmp_path):
+    """On disk, through the real invocation: a plan whose Owns lists one glob twice is D13 and rc 1; the same plan with the glob once is green."""
+    ok = _plan(dep="no-dep -- fixture plan stands alone")
+    dup = ok.replace("Owns: docs/fixture/**", "Owns: docs/fixture/**, docs/fixture/**")
+    red = _gate(_seed(tmp_path / "red", p00=dup))
+    gate.assert_exit(1, red, "a duplicated Owns glob")
+    gate.assert_contains(red.combined, "listed twice", "the finding names the duplicate")
+    green = _gate(_seed(tmp_path / "green", p00=ok))
+    gate.assert_exit(0, green, "the same plan with the glob once")
+    gate.log_pass("a duplicated Owns glob reds the tree and removing it returns green")

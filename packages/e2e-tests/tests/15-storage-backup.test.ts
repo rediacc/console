@@ -7,22 +7,19 @@ import {
   TEST_TEAM,
   TEST_USER,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { DEFAULT_RUSTFS_CONFIG, StorageTestHelper } from '../src/utils/storage/StorageTestHelper';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
  * Storage Backup Operations Tests
  *
- * Tests backup_push and backup_pull with S3-compatible storage (RustFS).
- * These tests verify:
- * - Push to storage generates valid commands
- * - Pull from storage generates valid commands
- * - Storage connectivity and configuration
+ * Tests the S3-compatible storage the bridge VM serves (RustFS) and the
+ * machine-to-machine backup_push / backup_pull that remains after the storage
+ * arm was retired.
  *
  * Prerequisites:
  * - RustFS must be running on bridge VM (renet ops rustfs start)
- * - rclone must be configured on worker VMs (renet ops rustfs configure-workers)
  *
  * VMs are automatically started via global-setup.ts.
  */
@@ -82,114 +79,19 @@ test.describe('Storage Infrastructure @bridge @storage @infra', () => {
   });
 });
 
-/** stdout and stderr together: renet logs the command on stderr. */
-async function pushOutput(runner: BridgeTestRunner, vault: unknown): Promise<string> {
-  const result = await runner.pushWithVault(vault as never);
-
-  return result.stdout + result.stderr;
-}
-
-test.describe('Storage arm is RETIRED @bridge @storage', () => {
-  let runner: BridgeTestRunner;
-  let storage: StorageTestHelper;
+/**
+ * The storage arm of backup_push / backup_pull is retired: renet refuses a storage destination, and
+ * its own unit tests pin that refusal. What ships is machine-to-machine transfer, so that is what
+ * these assert.
+ */
+test.describe('Machine Backup Operations @bridge @storage', () => {
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
-    storage = new StorageTestHelper(DEFAULT_BRIDGE_IP, DEFAULT_RUSTFS_CONFIG);
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
-  /**
-   * These three describes used to assert that push and pull EMITTED rclone
-   * flags. That arm is gone: renet answers a storage destination with
-   * errStorageRetired(), and its unit tests already assert the --rclone-*
-   * flags are unregistered.
-   *
-   * They are rewritten rather than deleted, because the removal is the thing
-   * worth testing now. A deleted test proves nothing about whether the arm
-   * came back.
-   *
-   * The other half of the old file was worse than stale. Six tests asserted
-   * only `hasValidCommandSyntax(result)`, which a REFUSAL satisfies just as
-   * well as a success, so they passed while the feature they named was being
-   * removed underneath them and would have kept passing had it never worked at
-   * all. Asserting on the refusal's TEXT is what makes these mean something.
-   */
-  test('push to storage is refused, and the refusal names where to go instead', async () => {
-    const vault = VaultBuilder.forPush()
-      .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', 'storage-backup-repo')
-      .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withStorage(storage.getVaultStorageConfig())
-      .withPushParams({
-        destinationType: 'storage',
-        dest: 'backup.tar',
-        storages: ['rustfs'],
-      });
-
-    const output = await pushOutput(runner, vault);
-
-    // ASSERTED ON WHAT BOTH REFUSALS SHARE. There are two retirement messages, not one: cmd/renet's errStorageRetired says "backup push --to storage is retired", while the bridge functions layer this test drives says "backup_push with a 'storage' destination is retired". The first version of this test pinned `storage is retired`, which only the CLI wording contains, so it failed
-    // against the layer it actually exercises.
-    expect(output).toContain('is retired');
-    expect(output).toContain('rclone cloud arm');
-    // The sentence must carry the operator somewhere, or a refusal is just a dead end with better grammar.
-    //
-    // ASSERTED BY THE DISTINCTIVE FRAGMENTS, not the bare verb names, and this comment avoids spelling them for the same reason. check-e2e-coverage counts a verb literal appearing ANYWHERE in a live suite -- assertions and comments alike -- as that verb being exercised. Naming the restore verb here made it look covered by a suite that only ever reads it inside an error string, and
-    // the gate then demanded its allowlist entry be deleted as a debt paid. That would have recorded coverage which does not exist. `--at <snapshot>` and `chunk store` pin the same guidance without pretending anything ran.
-    expect(output).toContain('chunk store');
-    expect(output).toContain('--at <snapshot>');
-    // And the retired flags must not reappear in the emitted command.
-    expect(output).not.toContain('--rclone-backend');
-    expect(output).not.toContain('--rclone-bucket');
-  });
-
-  test('pull from storage is refused the same way', async () => {
-    const vault = VaultBuilder.forPull()
-      .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', 'storage-pull-repo')
-      .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withStorage(storage.getVaultStorageConfig())
-      .withPullParams({
-        sourceType: 'storage',
-        from: 'rustfs',
-      });
-
-    const result = await runner.pullWithVault(vault);
-    const output = result.stdout + result.stderr;
-
-    expect(output).toContain('is retired');
-    expect(output).toContain('rclone cloud arm');
-    expect(output).toContain('chunk store');
-    expect(output).not.toContain('--rclone-backend');
-  });
-
-  test('CONTROL: machine transfer is untouched by the retirement', async () => {
-    // Without this, a renet that refused EVERY destination would satisfy both assertions above while having broken the half that still ships.
-    const vault = VaultBuilder.forPush()
-      .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', 'machine-still-works-repo')
-      .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withPushParams({
-        destinationType: 'machine',
-        dest: DEFAULT_WORKER_2_IP,
-      });
-
-    const output = await pushOutput(runner, vault);
-
-    expect(output).not.toContain('rclone cloud arm');
-  });
-});
-
-test.describe('Mixed Backup Operations @bridge @storage', () => {
-  let runner: BridgeTestRunner;
-  let storage: StorageTestHelper;
-
-  test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
-    storage = new StorageTestHelper(DEFAULT_BRIDGE_IP, DEFAULT_RUSTFS_CONFIG);
-  });
-
-  test('push to machine should still work alongside storage', async () => {
+  test('push to machine should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository('test-repo-guid', 'machine-push-repo')
@@ -205,7 +107,7 @@ test.describe('Mixed Backup Operations @bridge @storage', () => {
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test('pull from machine should still work', async () => {
+  test('pull from machine should work', async () => {
     const vault = VaultBuilder.forPull()
       .withTeam(TEST_TEAM)
       .withRepository('test-repo-guid', 'machine-pull-repo')
@@ -220,15 +122,15 @@ test.describe('Mixed Backup Operations @bridge @storage', () => {
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
 
-  test('push with combined options should work', async () => {
+  test('push to machine with combined options should work', async () => {
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository('test-repo-guid', 'combined-repo')
       .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withStorage(storage.getVaultStorageConfig())
+      .withDestinationMachine(DEFAULT_WORKER_2_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
       .withPushParams({
-        destinationType: 'storage',
-        dest: 'combined-backup.tar',
+        destinationType: 'machine',
+        machines: [DEFAULT_WORKER_2_IP],
         state: 'offline',
         checkpoint: true,
         override: true,

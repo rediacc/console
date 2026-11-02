@@ -36,7 +36,7 @@ def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None, npm_ls_out=""):
     _stub(
         bin_dir,
         "npx",
-        'echo "$*" >> %s\nif [ "$3 $4" = "bucket list" ]; then printf "%s"; fi\nexit 0\n'
+        'echo "$*" >> %s\nif [ "$4 $5" = "bucket list" ]; then printf "%s"; fi\nexit 0\n'
         % (log, names),
     )
     cfg = tmp_path / "wrangler.test.toml"
@@ -63,7 +63,7 @@ TWO_BUCKETS = (
 def test_a_missing_bound_bucket_is_created_before_anything_else(tmp_path):
     done, calls = _run(tmp_path, "buckets CFG", listed=("have-it",), config=TWO_BUCKETS)
     assert done.returncode == 0, done.stderr
-    assert "wrangler r2 bucket create missing-one" in calls
+    assert "--no-install wrangler r2 bucket create missing-one" in calls
     assert not any("create have-it" in c for c in calls)
 
 

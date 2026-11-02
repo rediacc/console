@@ -547,7 +547,7 @@ function allRuleModuleFiles(dir) {
     }
   };
   walk(dir);
-  return out.sort();
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** modulePath for each of KNOWN_OFF's 5 rules. `source-rules.ts`'s own docstring
@@ -673,6 +673,11 @@ const BIOME_PLUGIN_FIXTURES = [
   },
 ];
 
+/** What a catch block was handed, as text: its `message` when it has one, else the value itself (a throw can be anything). */
+function thrownMessage(thrown) {
+  return String(thrown?.message ?? thrown);
+}
+
 /** Run `biome lint .` and parse its (experimental) JSON reporter. Biome exits 1
  *  when diagnostics are present -- that is the expected, successful case here,
  *  not a launch failure -- so stdout is read off the error too. */
@@ -763,7 +768,9 @@ async function runBiomePluginLiveness() {
     .filter((f) => f.endsWith('.grit'))
     .map((f) => f.slice(0, -'.grit'.length))
     .sort();
-  const fixturePlugins = BIOME_PLUGIN_FIXTURES.map((f) => f.plugin).sort();
+  const fixturePlugins = BIOME_PLUGIN_FIXTURES.map((f) => f.plugin).sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   const missingFixtures = gritPlugins.filter((g) => !fixturePlugins.includes(g));
   const staleFixtures = fixturePlugins.filter((f) => !gritPlugins.includes(f));
   const complete = missingFixtures.length === 0 && staleFixtures.length === 0;
@@ -967,7 +974,7 @@ async function main() {
               : host.runSourceRule(target.rule, code, run);
           for (const f of found) messages.push({ ruleId: target.ruleId, message: f.message });
         } catch (error) {
-          messages.push({ fatal: true, message: String(error?.message ?? error) });
+          messages.push({ fatal: true, message: thrownMessage(error) });
         }
       }
       return [{ messages }];
@@ -1000,7 +1007,7 @@ async function main() {
   const ruleFiles = allRuleModuleFiles(path.join(ROOT, 'eslint-rules'));
   const knownOffModulePaths = new Set(Object.values(KNOWN_OFF_MODULES));
   const undocumented = ruleFiles.filter((f) => !wiredModules.has(f) && !knownOffModulePaths.has(f));
-  const knownOff = Object.keys(KNOWN_OFF).sort();
+  const knownOff = Object.keys(KNOWN_OFF).sort((a, b) => Number(a > b) - Number(a < b));
   const staleKnownOffModules = Object.entries(KNOWN_OFF_MODULES)
     .filter(([ruleId]) => !(ruleId in KNOWN_OFF))
     .map(([ruleId]) => ruleId);
@@ -1037,8 +1044,12 @@ async function main() {
 
   // SET EQUALITY against the matrix, both directions.
   const matrixKeys = new Set(Object.keys(MATRIX));
-  const unproven = [...enabled].filter((r) => !matrixKeys.has(r)).sort();
-  const stale = [...matrixKeys].filter((r) => !enabled.has(r)).sort();
+  const unproven = [...enabled]
+    .filter((r) => !matrixKeys.has(r))
+    .sort((a, b) => Number(a > b) - Number(a < b));
+  const stale = [...matrixKeys]
+    .filter((r) => !enabled.has(r))
+    .sort((a, b) => Number(a > b) - Number(a < b));
   if (unproven.length > 0) {
     err(
       `${unproven.length} enabled rule(s) have no specimen here, so nothing proves they can fire:`
@@ -1136,7 +1147,7 @@ async function main() {
     // over `matrixKeys` rather than one hard-coded rule.
     const isolatedRuleIds = [...matrixKeys]
       .filter((r) => (MATRIX[r].mode ?? 'in-config') === 'isolated')
-      .sort();
+      .sort((a, b) => Number(a > b) - Number(a < b));
     for (const ruleId of isolatedRuleIds) {
       if (!ruleInstancesById.get(ruleId)?.[0]) {
         err(`${ruleId} has no RULE_INSTANCES entry, so the isolated probe has nothing to run.`);
@@ -1173,7 +1184,7 @@ async function main() {
 
     const optionProbe = optionInstance(asymmetric);
 
-    for (const ruleId of [...matrixKeys].sort()) {
+    for (const ruleId of [...matrixKeys].sort((a, b) => Number(a > b) - Number(a < b))) {
       const entry = MATRIX[ruleId];
       const mode = entry.mode ?? 'in-config';
 

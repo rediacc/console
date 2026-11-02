@@ -1,11 +1,11 @@
 ---
 name: backup-storage
-description: The backup and restore stack: the content-addressed chunk store and its index and manifest format, dedup and compaction, snapshot creation and pruning, retention and quota policy, the rdc backup and rdc datastore CLI verbs, scheduled backups and their systemd units, cold-backup runs, restore and disaster-recovery drills including round-trip verification, and remote backup targets (R2, S3, OneDrive) with their upload budgets. Use for work on backup, restore, snapshot, chunk store, retention, prune, or datastore storage accounting, or when a backup verification or restore drill fails.
+description: The backup and restore stack: the content-addressed chunk store and its index and manifest format, dedup and compaction, snapshot creation and pruning, retention and quota policy, the rdc backup and rdc datastore CLI verbs, scheduled backups and their systemd units, cold-backup runs, restore and disaster-recovery drills including round-trip verification, and the hosted backup plane (R2 in production, RustFS on Elite) with its upload budgets. Use for work on backup, restore, snapshot, chunk store, retention, prune, or datastore storage accounting, or when a backup verification or restore drill fails.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---
 
-You own the backup and restore stack: the Rediacc-native chunk store that replaced the rclone-to-consumer-cloud path, and everything hanging off it (quota, retention, prune, scheduling, restore drills).
+This agent owns the backup and restore stack: the Rediacc-native chunk store (the only backup path; the storage-destination commands are retired), and everything hanging off it (quota, retention, prune, scheduling, restore drills).
 
 ## Read the record before the plan
 
@@ -14,10 +14,10 @@ You own the backup and restore stack: the Rediacc-native chunk store that replac
 | file | what it is |
 |---|---|
 | `07-execution-record.md` | status, operator decisions, the bugs found in the built system, and every correction to the rest |
-| `01-verified-context.md` | what existed before the campaign, plus the findings ledger |
-| `02-design.md` | architecture and the 14 scored decisions (superseded in places by 07) |
-| `03-implementation-map.md` | per-surface seams with file:line, schema plan, traps by name |
-| `04-testing-and-local-loop.md` | the three-tier battery and the local VM topology |
+| `archive/01-verified-context.md` | what existed before the campaign, plus the findings ledger |
+| `archive/02-design.md` | architecture and the 14 scored decisions (superseded in places by 07) |
+| `archive/03-implementation-map.md` | per-surface seams with file:line, schema plan, traps by name |
+| `archive/04-testing-and-local-loop.md` | the three-tier battery and the local VM topology |
 | `08-cutover-runbook.md` | wave 5, the credentialed legs the operator still has to run |
 
 Every `file:line` in those documents is a hypothesis. Re-verify before editing.
@@ -25,8 +25,7 @@ Every `file:line` in those documents is a hypothesis. Re-verify before editing.
 ## The model, in one paragraph
 
 A fixed grid over the repo's LUKS image: cell `i` covers `[i*C, (i+1)*C)`. A snapshot MANIFEST maps every cell to either ZERO (a hole per FIEMAP metadata, never content-scanned) or the SHA-256 of that cell's ciphertext, which is also the object key: `t/<tenant>/l/<lineage>/c/<sha256>`, lineage = grand_guid so forks dedup against each other. First upload writes all non-zero cells;
-every later run reflink-snapshots the image under the repo flock, runs `delta.Compare(anchor, snapshot)` with strategy `physical`, hashes only touched cells, uploads only the hashes the store lacks with a create-only PUT (`If-None-Match`), commits the manifest, then advances the anchor by reflink swap. There are no delta chains, so restore never replays history: fetch the manifest,
-parallel-GET its cells, write at offsets into a sparse file. RTO is bandwidth-bound and constant in history depth.
+every later run reflink-snapshots the image under the repo flock, runs `delta.Compare(anchor, snapshot)` with strategy `physical`, hashes only touched cells, uploads only the hashes the store lacks with a create-only PUT (`If-None-Match`), commits the manifest, then advances the anchor by reflink swap. A manifest is full (`cells`) or a delta against a parent (`parent` plus `changedCells`), and the server's retention collapses a doomed run of deltas into its survivors. Restore composes the manifest chain (cell maps only, no data replay), then parallel-GETs each cell once and writes it at its offset into a sparse file. RTO is bandwidth-bound and constant in history depth.
 
 ## Where the code is
 
@@ -35,7 +34,7 @@ parallel-GET its cells, write at offsets into a sparse file. RTO is bandwidth-bo
 | engine | `private/renet/pkg/chunkstore/` (`grid.go`, `manifest.go`, `journal.go`, `grants.go`, `download.go`, `restore.go`, `pipeline_linux.go`) |
 | renet verbs | `private/renet/cmd/renet/backup_*.go`, registered in `pkg/functions/commands/backup.go` |
 | control plane | `private/account/src/routes/backups.ts`, `src/services/backup-chunk-store.ts`, `src/dto/backup.dto.ts` |
-| CLI | `packages/cli/src/commands/backup.ts`, `backup-ops.ts`, `backup-storage.ts`, `backup-strategy.ts` |
+| CLI | `packages/cli/src/commands/backup.ts`, `backup-ops.ts`, `backup-storage.ts`, `backup-storage-browse.ts`, `backup-strategy.ts`, `backup-retention-commands.ts` |
 | schedules | `packages/cli/src/services/backup/backup-schedule{,-execute,-reconcile,-unit-generator}.ts` |
 | drill | `.ci/rediacc_ci/drills/backup.py` (`./run.sh drill backup`) |
 | wire gate | `scripts/gates/check-backup-protocol-conformance.ts` (`npm run check:ci-backup-protocol-conformance`) |
@@ -44,9 +43,9 @@ Anchors live at `<datastore>/.chunk-anchors/<guid>` and the journal at `/var/lib
 
 ## Status
 
-Waves 0 to 4 are closed. `renet backup snapshot`, `rdc backup snapshot`, restore (`cmd/renet/backup_restore.go`, `rdc backup restore --at`), quota UI and the drill all exist and were driven for real. Wave 5b is the operator's: it needs a probe bucket, four secrets and a rotation slug.
+The chunk-store path is the only backup path. `renet backup snapshot`, `rdc backup snapshot`, restore (`cmd/renet/backup_restore.go`, `rdc backup restore --at`), quota, browse and the drill all exist. Retention is `rdc backup retention {preview,set,clear}` (`set` and `clear` take `--stream <id>`; `set` replaces every knob), `rdc backup snapshots delete <repo-ref> <snapshot-id>` removes one snapshot, `rdc backup strategy set --retention <spec>` carries a per-strategy spec, and `rdc repo delete --purge-backups` drops the repository's cloud backups at once. The authoritative verb list is `.claude/skills/rdc/reference.md`. `rdc storage`, storage destinations and storage-typed `repo push/pull` arguments are gone; `repo push/pull` move bytes between machines only. Elite boxes bundle the store (`private/elite/BACKUP.md`).
 
-**What is NOT proven: no machine has ever restored from a real bucket, because no bucket exists.** e2e suite 26's RESTORE tier automates that byte-identity proof but needs the fleet and the bucket. Nothing that removes the rclone path may land before that proof. "Restore exists" and "restore is exercised" are different claims and only the first one is true today.
+Open work lives in `agent/plans/PLAN-backup-program.md` (one box per item, each with its acceptance line). **"Restore exists" and "restore is exercised" are different claims**: suite 26's restore tier automates the byte-identity proof and needs the fleet plus a real store, so check the plan's K boxes for what has actually been driven.
 
 ## The trap that produced every bug in this stack
 
@@ -62,14 +61,14 @@ Two more of the same class worth carrying:
 - A BACKUP-intent session could mint a READ grant, because `mintGrant` checked intent
 and `mintReadGrant` did not. Enforcement was one-directional. Found by RUNNING the drill, not by reading code.
 - A `hosted-service` backup destination was SILENTLY SKIPPED by the schedule generator:
-it looked every destination up in the rclone map and dropped what it could not find, and a chunk-store destination has no rclone remote BY CONSTRUCTION. The operator got a timer that backed up nothing, with no error.
+it looked every destination up in a map of the old storage remotes and dropped what it could not find, and a chunk-store destination has no such entry BY CONSTRUCTION. The operator got a timer that backed up nothing, with no error.
 
 ## Decisions that are already made
 
 Do not relitigate these; they are the operator's, recorded in 07 §2.
 
 - **Production R2 uses the PRESIGN minter**, not the locally-signed JWT. The store stays
-the native R2 binding; grants are presigned URLs signed with the WORKER keys `ACCOUNT_BACKUP_S3_*`. Wave 5b sets those, NOT `ACCOUNT_BACKUP_R2_GRANT_PARENT_*`. The choice is GATED, not commented: `tests/integration/backup-plane-selection.test.ts` fails if the JWT minter is re-selected. Naming, because this family moved twice on 2026-09-02 (durable plan decision 10): the
+the native R2 binding; grants are presigned URLs signed with the WORKER keys `ACCOUNT_BACKUP_S3_*`. The production deploy sets those, NOT `ACCOUNT_BACKUP_R2_GRANT_PARENT_*`. The choice is GATED, not commented: `tests/integration/backup-plane-selection.test.ts` fails if the JWT minter is re-selected. Naming, because this family moved twice on 2026-09-02 (durable plan decision 10): the
 WORKER/`.env` keys are `ACCOUNT_BACKUP_S3_*` (they were `BACKUP_S3_*`, then briefly `CLOUDFLARE_R2_BACKUP_*`), while the GITHUB org-secret names are still `BACKUP_S3_*` and deliberately have not moved. zod v4 strips an unknown key silently, so a stale spelling here disables the backup plane with no error. Check `private/account/src/types/env.ts` before trusting any of these names.
 - **The SERVER names the keys.** `chunkPrefix` and `manifestKey` ride in the grant. The
 client never composes an object key; that coupling is what caused the wrong-level chunk write.
@@ -92,9 +91,9 @@ npm run check:ci-backup-protocol-conformance
 cd private/renet && go test -race ./pkg/chunkstore/... ./cmd/...
 ```
 
-Cold-backup runs restart repos concurrently; `REDIACC_COLD_BACKUP_CONCURRENCY` overrides the heuristic. The OneDrive path's `quotaLimitReached` is a DAILY upload budget, not throttling, which is why a 137 GB seed cannot cross a single window.
+Cold-backup runs restart repos concurrently; `REDIACC_COLD_BACKUP_CONCURRENCY` overrides the heuristic. A quota refusal from `backup snapshot` is exit 16 and means prune or upgrade, never debug.
 
 ## Out of scope, deliberately
 
-Whole-cluster atomic backup (rbd group snap plus export-diff): v1 restores are per-repo crash-consistent, not cross-repo coordinated, and the docs must keep saying so. `rdc repo push/pull --to/--from <storage>` and `storage browse` stay exactly as they are. Customer-supplied S3 as a backup target, Infrequent Access storage class, and purchasable quota upgrades are all mapped and
+Whole-cluster atomic backup (rbd group snap plus export-diff): v1 restores are per-repo crash-consistent, not cross-repo coordinated, and the docs must keep saying so. Customer-supplied S3 as a backup target, Infrequent Access storage class, and purchasable quota upgrades are all mapped and
 none are built. Do not claim continuous data protection or sub-minute replication; this system is neither.

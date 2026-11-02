@@ -115,6 +115,7 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
     """(normalised globs, problems). Refusal rules first, then brace expansion (at most BRACE_MAX per glob), then `dir/` and a wildcard-free existing directory become `dir/**` (the latter only when `root` is given). A leading `./` and doubled slashes are dropped."""
     out: list[str] = []
     problems: list[str] = []
+    submodules: frozenset[str] | None = None  # read once per call, on the first glob that needs it
     for raw in globs or ():
         glob = str(raw).strip()
         why = glob_problem(glob)
@@ -133,7 +134,10 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
             if g.endswith("/"):
                 g = g.rstrip("/") + "/**"
             elif root is not None and not _has_wild(g) and (pathlib.Path(root) / g).is_dir():
-                g += "/**"
+                if submodules is None:
+                    submodules = _submodule_roots(root)
+                if g not in submodules:
+                    g += "/**"
             why = glob_problem(g)
             if why:
                 problems.append(why)
@@ -141,6 +145,20 @@ def normalize_owns(globs, root=None) -> tuple[list[str], list[str]]:
             if g and g not in out:
                 out.append(g)
     return out, problems
+
+
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+
+
+def _submodule_roots(root) -> frozenset[str]:
+    """The submodule paths `.gitmodules` declares. A bare submodule root in an Owns line names its gitlink (the pointer bump), not every file of the submodule: `private/renet (the gitlink bump only)` widened to `private/renet/**` made a plan claim all of renet and refused every renet writer beside it. A plan that edits files inside the submodule writes `private/renet/` or `private/renet/**`, which still widen (test-plandeps.py pins both overlaps)."""
+    try:
+        text = (pathlib.Path(root) / ".gitmodules").read_text(encoding="utf-8")
+    except OSError:
+        return frozenset()
+    return frozenset(
+        m.strip().strip("/") for m in re.findall(r"^\s*path\s*=\s*(.+)$", text, re.MULTILINE)
+    )
 
 
 def _has_wild(glob: str) -> bool:
@@ -577,6 +595,16 @@ def plan_x(root, base: str) -> PlanX:
 # ---------------------------------------------------------------- the live world
 
 
+class LivePlans(dict):
+    """`live_plans`' map ({plan basename: [holder, ...]}) carrying `owns`: {plan basename: the union of the `Owns:` lines its live holders' prompts declare}, present only for a plan whose EVERY holder declared one (#f412fdb8). A holder seen only through a lease has no prompt to read, so its plan keeps the whole plan Owns. A dict, so every caller that reads holders is unchanged; `spawn_verdict` reads `owns` with getattr, so a plain dict means no narrowing."""
+
+    owns: dict[str, tuple[str, ...]]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owns = {}
+
+
 def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
     """Section 3: {plan basename: [holder, ...]} for every plan a live writer serves, or None when it cannot tell.
 
@@ -590,6 +618,8 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
     items = list(getattr(fold, "items", None) or [])
     by_id = {r["id"]: r for r in items if isinstance(r, dict) and r.get("id")}
     holders: dict[str, list[str]] = {}
+    # Per plan, each holder's declared Owns (None when it declared none or is a lease without a prompt).
+    declared: dict[str, list[tuple[str, ...] | None]] = {}
     live_ids: set[str] = set()
     for row in rows or []:
         if not row.get("writer"):
@@ -597,10 +627,12 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
         live_ids.add(row["id"])
         meta = metas.get(row["id"]) or {}
         prompt = LH.first_prompt(meta.get("jsonl")) if meta.get("jsonl") else ""
-        for plan in sorted(spawn_plans("%s\n%s" % (row.get("desc") or "", prompt), by_id)):
+        text = "%s\n%s" % (row.get("desc") or "", prompt)
+        for plan in sorted(spawn_plans(text, by_id)):
             holders.setdefault(plan, []).append(
                 "writer %s (%s)" % (row["id"], row.get("type") or "?")
             )
+            declared.setdefault(plan, []).append(declared_owns(text))
     peers = 0
     for rec in items:
         if rec.get("state") != ">":
@@ -628,9 +660,15 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
         )
         if label not in holders.get(plan, []):
             holders.setdefault(plan, []).append(label)
+            # Any lease holder: no prompt is readable here, so nothing narrows its plan.
+            declared.setdefault(plan, []).append(None)
     if rows is None and not peers:
         return None
-    return holders
+    out = LivePlans(holders)
+    for plan, owns in declared.items():
+        if owns and all(o for o in owns):
+            out.owns[plan] = tuple(dict.fromkeys(g for o in owns if o for g in o))
+    return out
 
 
 # ---------------------------------------------------------------- the spawn verdict
@@ -651,10 +689,33 @@ def _owns_of(x: PlanX) -> tuple[str, ...]:
     return x.owns if x.owns is not None else (FAIL_CLOSED_GLOB,)
 
 
-def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
+def _inside(glob: str, plan_globs) -> bool:
+    """Whether every path `glob` names is named by one of `plan_globs` too. Sound and deliberately narrow: a wildcard-free glob is tested against each plan glob's anchored regex; a glob with a wildcard is inside only `**` or a `<literal dir>/**` it sits under. Anything else reads as outside, which keeps the whole plan Owns, the side that refuses more."""
+    for p in plan_globs or ():
+        if p == glob or p in UNIVERSAL_GLOBS:
+            return True
+        if not _has_wild(glob) and glob_regex(p).match(glob):
+            return True
+        if p.endswith("/**") and not _has_wild(p[:-3]) and glob.startswith(p[:-2]):
+            return True
+    return False
+
+
+def narrowed_owns(declared, plan_globs) -> tuple[str, ...] | None:
+    """`declared` (a writer's own `Owns:` globs) when every one lies inside `plan_globs` (the plans it serves), else None (#f412fdb8). A narrower claim than the plan's is how two plans whose Owns overlap on paper run boxes side by side: PLAN-telemetry-export sequences its proxy boxes behind the proxy writers in its own prose, and the whole-plan comparison refused every one of its boxes beside them. A declared glob outside the plan's Owns narrows nothing."""
+    if not declared or not plan_globs:
+        return None
+    if all(_inside(g, plan_globs) for g in declared):
+        return tuple(declared)
+    return None
+
+
+def spawn_verdict(serving, live, xinfo, declared=None, gitlinks=None, root=None) -> Verdict:
     """Section 5a steps 2-6 as one pure decision.
 
-    `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is a planless spawn's own Owns globs or None. A missing Owns fails closed as `**`.
+    `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is the spawn's own Owns globs or None. A missing Owns fails closed as `**`. `gitlinks` is the set of submodule roots whose bare name in an Owns line is a pointer bump (default: read once per call from the `.gitmodules` of `root`, the checkout the caller judges, else the root this file sits in). The root is a parameter, not an environment read: this module is sealed against env knobs (.ci/policy/worklist-env-registry.json), so the guard passes the project root it already resolved.
+
+    A planless spawn is judged on `declared`. A spawn serving plans is judged on `declared` as written when it declares one, else on the plans' whole Owns; a live plan likewise on `live.owns[plan]` when `live` is a `LivePlans` whose holders all declared one inside the plan's Owns. The mutex rules never narrow the LIVE side: a live exclusive plan refuses a spawn whose files are unknown or overlap the plan's whole Owns, and an exclusive plan cannot start while any other plan is live.
     """
     serving = set(serving or ())
     others = {p: h for p, h in (live or {}).items() if p not in serving and h}
@@ -682,9 +743,6 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
                 "no-owns",
                 ("%s declares no valid Owns; add it with `check_plan_deps.py --set-x`" % s,),
             )
-    for p in sorted(xl):
-        if xl[p].exclusive:
-            return Verdict(False, "mutex", (holder(p),))
     if serving and others:
         for s in sorted(xs):
             if xs[s].exclusive:
@@ -698,13 +756,24 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
                     ),
                 )
     mine: tuple[str, ...] | None
+    narrow_notes: list[str] = []
+    live_owns = getattr(live, "owns", None) or {}
     if serving:
         union: list[str] = []
         for s in sorted(xs):
             union.extend(_owns_of(xs[s]))
-        mine = tuple(union)
+        # A declared Owns line is the spawn's claim and is judged as written, also where it reaches outside the plan's Owns
+        # (operator ruling 2026-10-28, "Judge declared Owns"); a spawn that declares nothing is judged on the plan's whole Owns.
+        mine = tuple(declared) if declared else tuple(union)
+        if mine != tuple(union):
+            narrow_notes.append("this spawn on its declared Owns `%s`" % ", ".join(mine))
     else:
         mine = tuple(declared) if declared is not None else None
+    # A live exclusive plan is a mutex over ITS files (operator ruling 2026-10-28, "Fix the guard now"): it refuses a spawn whose
+    # Owns overlap the plan's whole Owns, or a spawn whose files are unknown, never a writer whose declared files are disjoint.
+    for p in sorted(xl):
+        if xl[p].exclusive and (mine is None or owns_overlap(mine, _owns_of(xl[p]))):
+            return Verdict(False, "mutex", (holder(p),))
     if mine is None:
         return Verdict(
             True,
@@ -712,9 +781,19 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
             (),
             "a planless writer spawn declares no `Owns:` line, so its files are not checked against live plans",
         )
+    if gitlinks is None:
+        gitlinks = _submodule_roots(pathlib.Path(root) if root else _REPO_ROOT)
     for p in sorted(xl):
-        theirs = _owns_of(xl[p])
-        hits = owns_overlap(mine, theirs)
+        whole = _owns_of(xl[p])
+        theirs = narrowed_owns(live_owns.get(p), whole) or whole
+        if theirs != whole:
+            narrow_notes.append(
+                "%s on its live writers' declared Owns `%s`" % (p, ", ".join(theirs))
+            )
+        # A bare submodule root names its gitlink (the pointer bump). Writers never commit and the lead commits every bump, so two plans sharing only a gitlink cannot collide in the tree; refusing on it made every renet or account plan exclusive of every other (2026-10-30: a production-key-only writer refused detached-jobs, backup-download-from-store and settings writers on `private/renet` / `private/account` alone).
+        hits = [
+            h for h in owns_overlap(mine, theirs) if not (h[0] == h[1] == h[2] and h[2] in gitlinks)
+        ]
         if hits:
             ga, gb, w = hits[0]
             return Verdict(
@@ -723,8 +802,11 @@ def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
                 (
                     holder(p),
                     "this spawn claims `%s` and %s claims `%s`; both claim `%s`" % (ga, p, gb, w),
+                    *(["judged " + "; ".join(narrow_notes)] if narrow_notes else []),
                 ),
             )
+    if narrow_notes:
+        return Verdict(True, "ok", (), "judged " + "; ".join(narrow_notes))
     return Verdict(True, "ok")
 
 

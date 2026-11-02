@@ -4,7 +4,7 @@ import { getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { assertMachineExists, assertStorageExists } from './_validate.js';
+import { assertMachineExists } from './_validate.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
 
 export interface BackupListEntry {
@@ -72,29 +72,9 @@ function extractBackupListPayload(stdout: string): BackupListPayload | undefined
   return undefined;
 }
 
-async function assertBackupFromExists(fromName: string, sourceType: unknown): Promise<void> {
-  // `local` names the machine whose OWN datastore is read, so it validates as a machine exactly like `machine` does. Spelled out rather than left to the fall-through below: that branch probes machine-then-storage and would happen to succeed, which is the kind of accident that rots into a bug the day storage stops resolving.
-  if (sourceType === 'local' || sourceType === 'machine') {
-    await assertMachineExists(fromName);
-    return;
-  }
-  if (sourceType === 'storage') {
-    await assertStorageExists(fromName);
-    return;
-  }
-  // Unknown source type, pass if it resolves as either machine or storage.
-  const isMachine = await assertMachineExists(fromName).then(
-    () => true,
-    () => false
-  );
-  if (isMachine) return;
-  const isStorage = await assertStorageExists(fromName).then(
-    () => true,
-    () => false
-  );
-  if (!isStorage) {
-    throw new ValidationError(`"${fromName}" is not a known machine or storage`);
-  }
+async function assertBackupFromExists(fromName: string): Promise<void> {
+  // `local` names the machine whose OWN datastore is read, so every source type validates as a machine.
+  await assertMachineExists(fromName);
 }
 
 export async function fetchBackupList(
@@ -109,7 +89,7 @@ export async function fetchBackupList(
 
   const fromName = typeof coerced.from === 'string' ? coerced.from : undefined;
   if (fromName) {
-    await assertBackupFromExists(fromName, coerced.sourceType);
+    await assertBackupFromExists(fromName);
   }
 
   const result = await getExecutor().execute({

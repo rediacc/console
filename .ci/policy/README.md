@@ -79,21 +79,21 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | File | Shape | Entries | BLOCKER lines | In POLICY_FILES |
 |---|---|---|---|---|
 | `.actions-upgrade-blocklist` | name per line | 0 | 0 | both |
-| `.audit-allowlist` | name per line | 0 | 1 | both |
+| `.audit-allowlist` | name per line | 2 | 3 | both |
 | `.audit-prod-allowlist` | name per line | 1 | 2 | both |
 | `.ci-parity-exempt` | name per line | 8 | 9 | both |
-| `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
+| `.cli-i18n-orphan-allowlist` | name per line | 6 | 7 | both |
 | `.dead-bash-allowlist` | name per line | 4 | 5 | both |
-| `.deps-upgrade-blocklist` | name per line | 2 | 3 | both |
+| `.deps-upgrade-blocklist` | name per line | 1 | 2 | both |
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 2 | both |
-| `.e2e-coverage-allowlist` | name per line | 19 | 3 | both |
+| `.e2e-coverage-allowlist` | name per line | 44 | 10 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
 | `.language-policy-allowlist` | name per line | 39 | 40 | both |
 | `.pins-upgrade-blocklist` | name per line | 5 | 6 | both |
-| `.plan-housekeeping-allowlist` | name per line | 4 | 5 | both |
-| `.profiler-coverage-allowlist` | name per line | 63 | 4 | both |
+| `.plan-housekeeping-allowlist` | name per line | 2 | 3 | both |
+| `.profiler-coverage-allowlist` | name per line | 62 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
 | `carry-exempt.json` | JSON table | - | 0 | both |

@@ -97,7 +97,7 @@ EXIT_NO_VERDICT = 2
 EXIT_HEAD_MOVED = 3
 EXIT_NO_CI = 4
 
-# HOW LONG A --wait GIVES GITHUB TO MOVE THE PR HEAD onto the branch's pushed tip. Right after `git push`, the PR's headRefOid lags the remote ref by seconds, and a verdict read in that window belongs to the OLD head (measured 2026-10-07: PR #599, run 37633980671 on c6cca783 was returned as final seconds after 515d1f901 was pushed).
+# HOW LONG A --wait GIVES GITHUB TO MOVE THE PR HEAD onto the branch's pushed tip. Right after `git push`, the PR's headRefOid lags the remote ref by seconds, and a verdict read in that window belongs to the OLD head (measured 2026-10-07: PR #599, run 37633980671 on c6cca783 was returned as final seconds after 63bcdb604 was pushed).
 HEAD_LAG_S = int(os.environ.get("CI_TRACE_HEAD_LAG_S", "120"))
 HEAD_LAG_POLL_S = int(os.environ.get("CI_TRACE_HEAD_LAG_POLL_S", "5"))
 
@@ -353,8 +353,11 @@ def _read_progress(root, run_id):
     return run_progress(run_id, jobs) if jobs else None
 
 
-def _trace_run(root, run_id, wait, timeout, as_json):
-    """Trace one run id to a terminal state. Mirrors the branch reader's codes."""
+def _trace_run(root, run_id, wait, timeout, as_json, expect_workflow=""):
+    """Trace one run id to a terminal state. Mirrors the branch reader's codes.
+
+    `expect_workflow` (a display name, from `--scheduled --workflow X --run N`) refuses a run of another workflow as no verdict, so a mistyped id is never judged as X's run.
+    """
     deadline = time.time() + timeout
     read_failures = 0
     while True:
@@ -369,6 +372,16 @@ def _trace_run(root, run_id, wait, timeout, as_json):
             time.sleep(POLL_SECONDS)
             continue
         read_failures = 0
+        # AN UNREAD WORKFLOW NAME IS NOT A MATCH. The guard used to require a non-empty name before comparing, so a run whose workflow could not be read was judged as the named workflow's run.
+        if expect_workflow and workflow != expect_workflow:
+            _no_verdict(
+                "run %s is a %r run, not %r; pass that workflow's run id"
+                % (run_id, workflow, expect_workflow)
+                if workflow
+                else "the workflow of run %s could not be read, so it is not judged as a %r run"
+                % (run_id, expect_workflow)
+            )
+            return EXIT_NO_VERDICT
         if wait:
             _gh_tick(as_json)
 
@@ -946,7 +959,10 @@ def main(argv=None):
             "                 path-filtered), after a registration grace; for a branch\n"
             "                 head the nearest ancestor with checks is named and judged\n"
             "  --scheduled    0 every scheduled workflow and main's newest push run green,\n"
-            "                 1 any red, 2 unreadable, no scheduled run, or an unknown --workflow\n"
+            "                 1 any red, 2 unreadable, no scheduled run, or an unknown --workflow;\n"
+            "                 with --run <id>: that run's verdict, as --run alone (--wait waits)\n"
+            "  --runs         0 runs listed, 2 none on the branch, unreadable, or an unknown\n"
+            "                 --workflow (the known ones are named)\n"
             "PR SIGNALS: every verdict on a PR also prints the PR's bot comments for the\n"
             "head (review attempts, summaries) with their next action; they never change\n"
             "the exit code.\n"
@@ -1009,7 +1025,12 @@ def main(argv=None):
         help="why the PR head's Console CI run (or --run <id>) is red, cancelled or slow: cause, failing step, category, silences",
     )
     verbs.add_argument(
-        "--runs", action="store_true", help="the newest Console CI runs on the branch"
+        "--runs",
+        action="store_true",
+        help=(
+            "the newest Console CI runs on the branch (--ref, default current), every event;"
+            " with --workflow NAME that workflow's runs instead (Release to Edge after a merge)"
+        ),
     )
     verbs.add_argument(
         "--jobs",
@@ -1048,7 +1069,13 @@ def main(argv=None):
     verbs.add_argument(
         "--workflow",
         metavar="NAME",
-        help="with --scheduled: one workflow (stem, file or display name) and its newest 5 scheduled runs",
+        help=(
+            "a workflow by stem, file or display name. With --runs: any workflow's newest runs"
+            " on the branch. With --scheduled: a scheduled workflow's newest 5 scheduled runs and"
+            " newest workflow_dispatch runs on main (the exit code counts the scheduled ones)."
+            " With --scheduled --run <id>: any workflow, and that run's verdict, refused when"
+            " the run's workflow is another one or cannot be read"
+        ),
     )
     ap.add_argument(
         "--worklist-item",
@@ -1092,10 +1119,51 @@ def main(argv=None):
                 )
             root = found
 
-    if args.workflow and not args.scheduled:
-        ap.error("--workflow needs --scheduled")
+    # A FLAG THAT WOULD BE IGNORED IS REFUSED. `--scheduled --workflow pins-soaked --wait --run 39902213758` printed the two newest scheduled runs and exited 1 while that dispatch run was still in flight (2026-10-23): --run and --wait were dropped without a word.
+    if args.workflow and not (args.scheduled or args.runs):
+        ap.error("--workflow needs --scheduled or --runs")
+    one_read = [
+        flag
+        for flag, on in (
+            ("--why", args.why),
+            ("--runs", args.runs),
+            ("--jobs", args.jobs),
+            ("--job", bool(args.job)),
+            ("--history", bool(args.history)),
+            ("--watchdog", args.watchdog is not None),
+        )
+        if on
+    ]
+    # ONE VERB PER CALL. The dispatch below takes the first verb it meets, so `--runs --jobs` ran --runs and `--why --runs` ran --why, each dropping the other without a word.
+    picked = one_read + (["--scheduled"] if args.scheduled else [])
+    if len(picked) > 1:
+        ap.error("%s and %s are separate verbs; run one per call" % (picked[0], picked[1]))
+    if args.wait and one_read:
+        ap.error(
+            "--wait does not combine with %s, a one-read verb; wait on one run with"
+            " --run <id> --wait (or --scheduled --run <id> --wait)" % one_read[0]
+        )
+    if args.scheduled and args.wait and not args.run:
+        ap.error(
+            "--scheduled --wait needs --run <id>: the all-workflows read has no single run to"
+            " wait on"
+        )
+    if args.until_final and not args.wait:
+        ap.error("--until-final needs --wait")
+    # A --run wait already returns only once the run's status is `completed`, never on its first failed job, so --until-final would change nothing there and is refused rather than accepted and dropped.
+    if args.until_final and args.run:
+        ap.error(
+            "--until-final applies to a branch wait; --run <id> --wait already waits until"
+            " that run completes"
+        )
+    if args.runs and args.run:
+        ap.error("--runs lists a branch's runs; for one run use --run <id> without --runs")
+    if args.scheduled and args.ref and _branch_name(args.ref) != "main":
+        ap.error("--scheduled reads main only; drop --ref %s" % args.ref)
     if args.scheduled:
-        return verb_scheduled(root, args.workflow, args.json)
+        return verb_scheduled(
+            root, args.workflow, args.json, run_id=args.run, wait=args.wait, timeout=args.timeout
+        )
     if args.job:
         mode = "log" if args.log else ("steps" if args.steps else "errors")
         return verb_job(root, args.job, mode, args.json)
@@ -1106,7 +1174,7 @@ def main(argv=None):
     if args.why:
         return verb_why(root, args.run, args.attempt, args.ref or _branch(root), args.json)
     if args.runs:
-        return verb_runs(root, args.ref or _branch(root), args.json)
+        return verb_runs(root, args.ref or _branch(root), args.json, workflow=args.workflow)
     if args.run and args.jobs:
         return verb_jobs(root, args.run, args.attempt, args.json)
 
@@ -1328,6 +1396,8 @@ def _sched_lines(w):
     crons = ", ".join(w.get("crons") or []) or "?"
     where = "%s (%s)  cron %s" % (w.get("name") or w.get("stem"), w.get("file") or "?", crons)
     if not w.get("run_id"):
+        if w.get("not_on_main"):
+            return ["  NONE   %s  not on main yet, so no scheduled run there" % where]
         return ["  NONE   %s  no completed scheduled run" % where]
     red = _is_red(w)
     lines = [
@@ -1370,20 +1440,35 @@ def _verb_scheduled_workflow(root, sched, name, as_json):
     if w is None:
         print(
             "no-verdict: %r is not a scheduled workflow; known: %s"
-            % (
-                name,
-                ", ".join(
-                    "%s (%s, %s)" % (k.get("stem"), k.get("file"), k.get("name")) for k in known
-                )
-                or "none",
-            ),
+            % (name, _known_text(known) or "none"),
             file=sys.stderr,
         )
         return EXIT_NO_VERDICT
     runs, err = sched.recent_runs(root, w.get("stem"), limit=5)
     runs = list(runs or [])
+    # THE DISPATCH RUNS BESIDE THE SCHEDULED ONES, shown and never counted. A workflow_dispatch run of a scheduled workflow (pins-soaked run 39902213758, PLAN-pins-command.md T11) was invisible here, because wl_schedred reads event=schedule only; the exit code stays the scheduled runs' verdict, since the soak counts only those, and `--run <id>` judges a dispatch run.
+    dispatch, dispatch_err = _fetch_runs(
+        root,
+        str(w.get("file") or ""),
+        "main",
+        events=("workflow_dispatch",),
+        per_page=DISPATCH_SHOWN,
+    )
+    dispatch_rows = _runs_rows(dispatch or [])
     if as_json:
-        print(json.dumps({"workflow": w, "runs": runs, "error": err or ""}, indent=2, default=str))
+        print(
+            json.dumps(
+                {
+                    "workflow": w,
+                    "runs": runs,
+                    "error": err or "",
+                    "dispatch": dispatch_rows,
+                    "dispatch_error": dispatch_err or "",
+                },
+                indent=2,
+                default=str,
+            )
+        )
     # An in-flight run has no verdict yet (wl_schedred blanks its conclusion), so the newest COMPLETED run decides the exit code.
     done = [r for r in runs if not r.get("in_flight")]
     if not as_json and runs:
@@ -1408,6 +1493,8 @@ def _verb_scheduled_workflow(root, sched, name, as_json):
                 print("         failed: %s" % _jobs_text(r["failed_jobs"]))
         if done and _is_red(done[0]):
             print("  next: %s --run %s --why" % (D.TRACE_CMD, done[0].get("run_id")))
+    if not as_json:
+        _print_dispatch(w, dispatch_rows, dispatch_err)
     if not done:
         print(
             "no-verdict: no completed scheduled run of %s%s"
@@ -1418,17 +1505,73 @@ def _verb_scheduled_workflow(root, sched, name, as_json):
     return EXIT_RED if _is_red(done[0]) else EXIT_GREEN
 
 
-def verb_scheduled(root, workflow, as_json):
-    """--scheduled [--workflow X]: 0 all green, 1 any red, 2 unreadable, empty or unknown."""
+DISPATCH_SHOWN = 3
+
+
+def _print_dispatch(w, rows, err):
+    """The newest workflow_dispatch runs of one scheduled workflow on main, labelled DISPATCH, with the `--run` line that judges one."""
+    if err:
+        print("  ?      workflow_dispatch runs of %s on main unreadable: %s" % (w.get("file"), err))
+        return
+    if not rows:
+        print("  (no workflow_dispatch run of %s on main)" % w.get("file"))
+        return
+    print("  workflow_dispatch runs on main (shown, not counted in the exit code):")
+    for r in rows:
+        live = r["status"] != "completed"
+        label = "RUN" if live else ("GREEN" if r["conclusion"] == "success" else "RED")
+        print(
+            "  %-6s run %s attempt %s  %s @ %s  dispatch  %s"
+            % (
+                label,
+                r["run_id"],
+                r["attempt"] or "?",
+                r["status"] if live else (r["conclusion"] or "?"),
+                r["sha"] or "?",
+                _age(r["created_at"]),
+            )
+        )
+    print(
+        "  judge one: %s --scheduled --workflow %s --run %s [--wait]"
+        % (D.TRACE_CMD, w.get("stem"), rows[0]["run_id"])
+    )
+
+
+def _verb_scheduled_run(root, workflow, run_id, wait, timeout, as_json):
+    """--scheduled [--workflow X] --run N: that one run's verdict (any event), through the same reader as `--run N`.
+
+    X resolves against EVERY workflow under .github/workflows, not only the scheduled ones: one run is judged the same way whatever triggered it, so a dispatch-only workflow (`--workflow "Release to Edge" --run <id>`) is a valid target and the check that the run is X's own is what matters.
+    """
+    expect = ""
+    if workflow:
+        known = _workflows(root)
+        w = _resolve_workflow(known, workflow)
+        if w is None:
+            print(
+                "no-verdict: %r names no workflow under %s; known: %s"
+                % (workflow, WORKFLOW_DIR, _known_text(known) or "none"),
+                file=sys.stderr,
+            )
+            return EXIT_NO_VERDICT
+        expect = str(w.get("name") or "")
+    return _trace_run(root, run_id, wait, timeout, as_json, expect_workflow=expect)
+
+
+def verb_scheduled(root, workflow, as_json, run_id=None, wait=False, timeout=0):
+    """--scheduled [--workflow X] [--run N [--wait]]: 0 all green, 1 any red, 2 unreadable, empty, in flight or unknown."""
+    # The label names the reader that ran, so a crash in the --run path is not reported as the scheduled-run reader's.
+    what = "the run reader" if run_id else "the scheduled-run reader"
     try:
         import wl_schedred
 
+        if run_id:
+            return _verb_scheduled_run(root, workflow, run_id, wait, timeout, as_json)
         if workflow:
             return _verb_scheduled_workflow(root, wl_schedred, workflow, as_json)
         data = wl_schedred.refresh(root, wl_core.worklist_for(root), force=True)
     except Exception as exc:
         print(
-            "no-verdict: the scheduled-run reader failed: %s: %s" % (type(exc).__name__, exc),
+            "no-verdict: %s failed: %s: %s" % (what, type(exc).__name__, exc),
             file=sys.stderr,
         )
         return EXIT_NO_VERDICT
@@ -1500,13 +1643,53 @@ def _branch_name(ref):
 RUNS_EVENTS = ("", "push", "pull_request", "schedule", "workflow_dispatch")
 
 
-def verb_runs(root, ref, as_json):
-    ref = _branch_name(ref)
+#: Every workflow file under this, by stem, file and top-level `name:`, so `--runs --workflow` takes any spelling of any workflow (the Release to Edge dispatch `/pr-merge` step 5 looks up, a pins-soaked dispatch), not only the scheduled ones wl_schedred discovers.
+WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
+_TOP_NAME = re.compile(r"^name:[ \t]*(\S[^\n]*?)[ \t]*$", re.MULTILINE)
+
+
+def _workflows(root):
+    """[{stem, file, name}] for every `.github/workflows/*.y*ml`, sorted by file; a workflow with no top-level `name:` takes the name GitHub gives its runs, the file's repository path."""
+    try:
+        files = sorted(
+            f
+            for f in (pathlib.Path(root) / WORKFLOW_DIR).iterdir()
+            if f.suffix in (".yml", ".yaml") and f.is_file()
+        )
+    except OSError:
+        return []
+    out = []
+    for f in files:
+        try:
+            m = _TOP_NAME.search(f.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            m = None
+        name = m.group(1).split(" #", 1)[0].strip().strip("'\"") if m else ""
+        out.append(
+            {
+                "stem": f.stem,
+                "file": f.name,
+                "name": name or "%s/%s" % (WORKFLOW_DIR.as_posix(), f.name),
+            }
+        )
+    return out
+
+
+def _known_text(known):
+    return ", ".join("%s (%s, %s)" % (k.get("stem"), k.get("file"), k.get("name")) for k in known)
+
+
+def _fetch_runs(root, wf_file, ref, events=RUNS_EVENTS, per_page=10):
+    """(runs newest first, error) for one workflow file on one branch, read once per `events` spelling and merged by run id; runs is None only when every read failed."""
     fetch = _fetcher(root)
-    base = "actions/workflows/ci.yml/runs?branch=%s&per_page=10" % urllib.parse.quote(ref, safe="/")
+    base = "actions/workflows/%s/runs?branch=%s&per_page=%d" % (
+        urllib.parse.quote(wf_file, safe=""),
+        urllib.parse.quote(ref, safe="/"),
+        per_page,
+    )
     merged: dict = {}
     errors = []
-    for event in RUNS_EVENTS:
+    for event in events:
         data, err = fetch.json(base + ("&event=%s" % event if event else ""))
         got = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
         if got is None:
@@ -1515,25 +1698,18 @@ def verb_runs(root, ref, as_json):
         for r in got:
             if isinstance(r, dict) and r.get("id") is not None:
                 merged.setdefault(r.get("id"), r)
-    if len(errors) == len(RUNS_EVENTS):
-        print("no-verdict: %s" % errors[0], file=sys.stderr)
-        return EXIT_NO_VERDICT
+    if len(errors) == len(events):
+        return None, errors[0]
     runs = sorted(
         merged.values(),
         key=lambda r: (str(r.get("created_at") or ""), r.get("id") or 0),
         reverse=True,
-    )[:10]
-    # AN EMPTY LIST IS AN ANSWER, AND IT IS SAID OUT LOUD (#09a94592). It used to print the header with no rows at rc 0, which reads as "the rows went missing" and sends the next session to `gh run list` instead.
-    if not runs:
-        if as_json:
-            print("[]")
-        print(
-            "no-verdict: no %s run on branch %r (the API matches the exact branch name)"
-            % (wl_ci.CONSOLE_CI_WORKFLOW, ref),
-            file=sys.stderr,
-        )
-        return EXIT_NO_VERDICT
-    rows = [
+    )[:per_page]
+    return runs, ""
+
+
+def _runs_rows(runs):
+    return [
         {
             "run_id": r.get("id"),
             "attempt": r.get("run_attempt"),
@@ -1545,21 +1721,52 @@ def verb_runs(root, ref, as_json):
         }
         for r in runs
     ]
-    text = "\n".join(
-        ["%s runs on %s (newest first):" % (wl_ci.CONSOLE_CI_WORKFLOW, ref)]
-        + [
-            "  %s  a%s  %-11s %-10s %s  %s  %s"
-            % (
-                r["run_id"],
-                r["attempt"],
-                r["status"],
-                r["conclusion"] or "-",
-                r["sha"],
-                r["event"],
-                r["created_at"],
+
+
+def _runs_line(r):
+    return "  %s  a%s  %-11s %-10s %s  %s  %s" % (
+        r["run_id"],
+        r["attempt"],
+        r["status"],
+        r["conclusion"] or "-",
+        r["sha"],
+        r["event"],
+        r["created_at"],
+    )
+
+
+def verb_runs(root, ref, as_json, workflow=None):
+    """--runs [--workflow X]: the newest runs of Console CI (or of workflow X) on the branch, every event merged."""
+    ref = _branch_name(ref)
+    wf_file, label = "ci.yml", wl_ci.CONSOLE_CI_WORKFLOW
+    if workflow:
+        known = _workflows(root)
+        w = _resolve_workflow(known, workflow)
+        if w is None:
+            print(
+                "no-verdict: %r names no workflow under %s; known: %s"
+                % (workflow, WORKFLOW_DIR, _known_text(known) or "none"),
+                file=sys.stderr,
             )
-            for r in rows
-        ]
+            return EXIT_NO_VERDICT
+        wf_file, label = w["file"], w["name"]
+    runs, err = _fetch_runs(root, wf_file, ref)
+    if runs is None:
+        print("no-verdict: %s" % err, file=sys.stderr)
+        return EXIT_NO_VERDICT
+    # AN EMPTY LIST IS AN ANSWER, AND IT IS SAID OUT LOUD (#09a94592). It used to print the header with no rows at rc 0, which reads as "the rows went missing" and sends the next session to `gh run list` instead.
+    if not runs:
+        if as_json:
+            print("[]")
+        print(
+            "no-verdict: no %s run on branch %r (the API matches the exact branch name)"
+            % (label, ref),
+            file=sys.stderr,
+        )
+        return EXIT_NO_VERDICT
+    rows = _runs_rows(runs)
+    text = "\n".join(
+        ["%s runs on %s (newest first):" % (label, ref)] + [_runs_line(r) for r in rows]
     )
     _out(rows, text, as_json)
     return 0
@@ -1777,9 +1984,18 @@ def _gap_line(g):
 
 
 def verb_history(root, job_name, as_json):
-    rows = D.history(_fetcher(root), job_name)
+    passed: dict[str, int] = {}
+    rows = D.history(_fetcher(root), job_name, passed=passed)
     p90 = D._p90_table().get(job_name)
-    lines = ["%s: last %d run(s)%s" % (job_name, len(rows), "; p90 %.1fm" % p90 if p90 else "")]
+    lines = [
+        "%s: last %d run(s)%s%s"
+        % (
+            job_name,
+            len(rows),
+            "; p90 %.1fm" % p90 if p90 else "",
+            "; %d skipped run(s) passed over" % passed["skipped"] if passed.get("skipped") else "",
+        )
+    ]
     lines.extend(
         "  %-10s %7s  run %s a%s  %s %s  job %s"
         % (
@@ -1795,7 +2011,7 @@ def verb_history(root, job_name, as_json):
     )
     if not rows:
         lines.append(
-            "  (no completed run of a job with that exact name among the 20 newest Console CI runs)"
+            "  (no completed, non-skipped run of a job with that exact name among the 30 newest Console CI runs)"
         )
     _out(rows, "\n".join(lines), as_json)
     return 0 if rows else EXIT_NO_VERDICT

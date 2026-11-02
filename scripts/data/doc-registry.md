@@ -28,6 +28,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | build:packages | local-only | no | no |
 | build:www | quality-www-build / Build www (produces dist/route-manifest.json) | no | yes |
 | check:actions | quality-code / Action freshness | yes | no |
+| check:ci-account-backup | quality-go / Run account backup tests | yes | no |
 | check:ci-account-config-auth | quality-go / Check config token auth requires org membership | yes | no |
 | check:ci-account-env-retired | quality-security / Account env files retired | yes | no |
 | check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | no |
@@ -65,6 +66,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-bws-map | quality-security / Bitwarden secret map | yes | no |
 | check:ci-bws-map-live | local-only | yes | no |
 | check:ci-bws-rotation-notice | quality-security / BWS rotation notice | yes | no |
+| check:ci-bws-step-scope | quality-security / Bitwarden step-scoped secrets | yes | no |
 | check:ci-captcha-recovery | quality-www-build / Captcha recovery | yes | no |
 | check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no |
 | check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no |
@@ -76,14 +78,17 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-client-i18n | quality-i18n / i18n | yes | no |
 | check:ci-command-planes | quality-code / Command planes | yes | no |
 | check:ci-command-tree | quality-code / Command tree | yes | no |
+| check:ci-commit-citations | quality-branch / Commit citations | yes | no |
 | check:ci-compose-env | quality-static / Compose env | yes | no |
 | check:ci-config-migrations | quality-packages / Check config-migration runner + fixtures | yes | no |
+| check:ci-config-server-key-constant | quality-security / Config server key constant confined | yes | no |
 | check:ci-container-build-context | quality-static / Container build context | yes | no |
 | check:ci-content-quality | quality-content / Check content for AI slop patterns | yes | no |
 | check:ci-control-in-string | quality-code / Controls are not written inside string literals | yes | no |
 | check:ci-control-vacuity | quality-code / Control-first gates prove their plant landed | yes | no |
 | check:ci-css-dom-refs | quality-content / CSS DOM references | yes | no |
 | check:ci-cta-bolt | quality-www-build / CTA bolt | yes | yes |
+| check:ci-de-orthography | quality-content / German orthography | yes | no |
 | check:ci-dead-bash | quality-code / Dead bash | yes | yes |
 | check:ci-dead-case-arms | test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py | yes | no |
 | check:ci-dead-css | quality-content / Dead CSS | yes | no |
@@ -119,7 +124,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-embed-credits | quality-go / Check embed credits consistency | yes | no |
 | check:ci-enumeration-vacuity | quality-code / Enumeration vacuity | yes | no |
 | check:ci-env-file-adoption | quality-static / Env file adoption | yes | no |
-| check:ci-env-manifest | quality-static / Env manifest | yes | no |
+| check:ci-env-manifest | quality-static / Env manifest | yes | yes |
 | check:ci-environment-names | quality-static / Environment names | yes | no |
 | check:ci-external-links | quality-content / External links | yes | yes |
 | check:ci-fetch-integrity | quality-code / CI fetch integrity | yes | no |
@@ -130,6 +135,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-gate-bind | quality-code / Gate binding | yes | no |
 | check:ci-gate-cwd-independence | quality-code / Gate cwd independence | yes | no |
 | check:ci-gate-manifest | quality-code / Gate manifest self-consistency | yes | no |
+| check:ci-gate-mutations | quality-code / Gate mutations | yes | no |
 | check:ci-gate-prerequisites | quality-code / Gate prerequisites | yes | no |
 | check:ci-gate-reachability-coverage | quality-static / Gate-reachability probe agrees with registrations | yes | no |
 | check:ci-gate-test-real-file-plants | quality-code / Gate-test real-file plants | yes | no |
@@ -216,7 +222,10 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-no-client-key-composition | quality-code / No client-side key composition | yes | no |
 | check:ci-no-inline-python | quality-static / No inline Python in JS/TS | yes | no |
 | check:ci-no-otlp-creds | build-renet / Assert no OTLP credentials baked into the built binaries | yes | no |
+| check:ci-no-rclone-embedded | build-renet / Assert no rclone payload in the embed lockfile, staged assets or built binaries | yes | no |
 | check:ci-npmrc | quality-code / Block legacy-peer-deps workarounds | yes | no |
+| check:ci-operator-rulings | quality-static / Operator rulings | yes | no |
+| check:ci-override-ranges | quality-security / Override ranges | yes | no |
 | check:ci-overrides-reasons | quality-security / BLOCKER validator — package.json overrides | yes | no |
 | check:ci-package-key-budget | quality-code / Package key budget | yes | no |
 | check:ci-page-density | quality-www-build / Page density | yes | yes |
@@ -234,6 +243,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-plan-folders | quality-branch / Plan folders and retention | yes | yes |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes |
 | check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | yes |
+| check:ci-plan-live-proof | quality-branch / Plan live proof | yes | yes |
 | check:ci-plan-record | quality-branch / Plan records | yes | yes |
 | check:ci-plant-proofs | quality-static / Control plant proofs | yes | no |
 | check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes |
@@ -249,14 +259,18 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-profiler-coverage | test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py | yes | no |
 | check:ci-prose-style | quality-content / Check prose style (the work, not the person) | yes | yes |
 | check:ci-proxy-cli-manifest | local-only | yes | no |
+| check:ci-proxy-configs | quality-static / Proxy configs | yes | no |
+| check:ci-proxy-cost-guard | quality-static / Proxy cost guard | yes | no |
+| check:ci-proxy-deploy-dry-run | quality-static / Proxy deploy dry run | yes | yes |
 | check:ci-proxy-docker-prepull | local-only | yes | yes |
 | check:ci-proxy-ensure-nfpm | local-only | yes | no |
 | check:ci-proxy-go-unit | local-only | yes | yes |
-| check:ci-proxy-image-smoke | local-only | yes | yes |
+| check:ci-proxy-image-smoke | proxy-image-smoke / Proxy image smoke | yes | yes |
 | check:ci-proxy-license-e2e | local-only | yes | yes |
 | check:ci-proxy-linux-packages | local-only | yes | no |
 | check:ci-proxy-ops-host-check | local-only | yes | no |
 | check:ci-proxy-rdc-update | local-only | yes | no |
+| check:ci-proxy-wrangler-dev-e2e | local-only | yes | yes |
 | check:ci-pytest | quality-pytest / Python package tests | yes | yes |
 | check:ci-python-control-plants | quality-static / Python control plants | yes | no |
 | check:ci-python-env-registry | quality-static / Python env registry | yes | yes |
@@ -271,18 +285,20 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-recovery-context | quality-go / Check recovery functions get an uncancellable context | yes | no |
 | check:ci-redirect-integrity | quality-www-build / Redirects | yes | yes |
 | check:ci-redirects | quality-www-build / Redirects | no | yes |
+| check:ci-region-consistency | quality-static / Region consistency | yes | no |
 | check:ci-regions-sync | test: .ci/rediacc_ci/tests/gates/test_gate_regions_sync.py | yes | no |
 | check:ci-release-bump-skip | test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py | yes | no |
 | check:ci-release-key-canonical | quality-security / Release key canonical | yes | no |
 | check:ci-release-signing-coverage | quality-security / Release signing coverage | yes | no |
 | check:ci-renet | quality-go / Run renet quality | yes | yes |
 | check:ci-renet-govulncheck | quality-go / Renet govulncheck | yes | yes |
+| check:ci-renet-test-map | quality-go / Renet test map and mapped Go tests | yes | yes |
 | check:ci-renet-tiers | local-only | yes | no |
 | check:ci-renet-types | quality-go / Check renet types freshness | yes | no |
 | check:ci-resprofile | quality-branch / Resource profile (previous run's captures) | yes | no |
 | check:ci-retention-knob-parity | quality-code / Retention knob parity | yes | no |
 | check:ci-retired-commands | quality-content / Retired commands in docs | yes | no |
-| check:ci-retired-terms | quality-static / Retired terms | yes | no |
+| check:ci-retired-terms | quality-security / Retired terms | yes | no |
 | check:ci-review-resolutions | quality-branch / Review resolutions | yes | no |
 | check:ci-rubric-calibration | quality-code / Rubric calibration | yes | no |
 | check:ci-runner-advice | quality-static / Runner sizing advice | yes | no |
@@ -304,6 +320,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-sentence-wrapping | quality-content / Sentence wrapping | yes | no |
 | check:ci-seo | quality-www-build / SEO | no | yes |
 | check:ci-seo-core | quality-www-build / SEO | yes | yes |
+| check:ci-settings-registry | quality-static / Settings registry | yes | no |
 | check:ci-setup-idempotency | quality-code / Setup path idempotency | yes | no |
 | check:ci-setup-port-parity | quality-static / Setup port parity | yes | no |
 | check:ci-shape-duplication | quality-code / Shape duplication | yes | no |
@@ -321,7 +338,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-source-rules | quality-code / Source-authored lint rules, host-run | yes | yes |
 | check:ci-ssr-locale | quality-www-build / SSR locale | yes | yes |
 | check:ci-staging-tag-guard | quality-security / Staging tag guard | yes | no |
-| check:ci-standalone-selftests | quality-code / Standalone selftests | yes | no |
+| check:ci-standalone-selftests | quality-code / Standalone selftests | yes | yes |
 | check:ci-step-env-parity | quality-code / Step env parity | yes | no |
 | check:ci-subscription-schema | quality-go / Check subscription schema consistency | yes | no |
 | check:ci-suppression-liveness | quality-security / Suppression liveness — are our allowlist entries still needed? | yes | no |
@@ -358,6 +375,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-video-player-invariants | quality-content / Video player invariants | yes | no |
 | check:ci-viewport-unit-mixing | quality-content / Dead CSS | yes | no |
 | check:ci-watch-recipe | quality-code / CI-watch recipe has one source | yes | no |
+| check:ci-worker-observability-budget | quality-static / Worker observability budget | yes | no |
 | check:ci-worker-secret-names | quality-code / Worker secret names | yes | no |
 | check:ci-workflow-env-provision | quality-static / Workflow env provision | yes | no |
 | check:ci-workflow-gates | quality-code / Workflow structural gates | yes | no |
@@ -390,13 +408,16 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | gen:docs | local-only | no | no |
 | gen:gates-lock | local-only | no | no |
 | lint:unused | quality-code / Unused exports (knip) | yes | yes |
+| login:bench | local-only | no | no |
 | pins | local-only | no | no |
+| release:local | local-only | no | no |
+| settings | local-only | no | no |
 | shard:place | local-only | no | no |
 | test:install-script | quality-static / Install-script tests | yes | no |
 | test:write-once-guard | quality-static / Write-once guard tests | yes | no |
 | vm:check | local-only | no | no |
 
-371 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+392 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -481,6 +502,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_leasehelp.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_lineage.py | (none) | via .claude/hooks/stop/wl_core.py | py |
 | .claude/hooks/stop/wl_liveness.py | (none) | via .claude/hooks/stop/test-teammate-idle.py | py |
+| .claude/hooks/stop/wl_liveproof.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_lkg.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_loopspeed.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_models.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
@@ -492,6 +514,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_planfile.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_planindex.py | (none) | via .claude/hooks/stop/test-planindex.py | py |
 | .claude/hooks/stop/wl_planorder.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
+| .claude/hooks/stop/wl_planpreflight.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_planqueue.py | (none) | via .claude/hooks/stop/wl_agents.py | py |
 | .claude/hooks/stop/wl_planrec.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
 | .claude/hooks/stop/wl_popup.py | (none) | via .claude/hooks/stop/test-popup.py | py |
@@ -502,6 +525,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_prscope.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_prsignals.py | (none) | via .claude/hooks/stop/wl_prreview.py | py |
 | .claude/hooks/stop/wl_reggate.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
+| .claude/hooks/stop/wl_renettests.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_report.py | SubagentStop | settings.json | py |
 | .claude/hooks/stop/wl_resprofile.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_ressample.py | (none) | via .claude/hooks/stop/wl_common.py | py |
@@ -510,6 +534,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_roster.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_roundlog.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_rules.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
+| .claude/hooks/stop/wl_ruling.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_schedred.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_scratch.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_shapedup.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
@@ -529,6 +554,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/execcount.py | (none) | (nothing) | py |
 | .claude/rediacc_hooks/git/artifacts.py | (none) | via .claude/hooks/context/onboard.py | py |
 | .claude/rediacc_hooks/git/githooks.py | (none) | via .claude/rediacc_hooks/git/artifacts.py | py |
+| .claude/rediacc_hooks/git/release_run.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/guards/_hookpath.py | (none) | via .claude/rediacc_hooks/guards/test-block_host_toolchain_run.py | py |
 | .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | (none) | via dispatch.py (glob) | py |
@@ -536,6 +562,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_agent_browser_repo_output.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_agent_cap.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_agent_state_shape.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_backup_unverified_push.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_bash_write_to_running_script.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_binary_deploy.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_blanket_git_add.py | (none) | via dispatch.py (glob) | py |
@@ -557,6 +584,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_host_toolchain_run.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_inline_python.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_inline_workflow_run.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_long_sleep.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_merge_with_unpushed.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_missing_npm_script.py | (none) | via dispatch.py (glob) | py |
@@ -578,6 +607,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_raw_ci_read.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_raw_pr_body_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_renet_untested_push.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_review_file_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_review_file_shell_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_roundlog_truncate.py | (none) | via dispatch.py (glob) | py |
@@ -592,6 +622,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_suppressions.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_suppressions_shell_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_turbo_early_push.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_unasked_release.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unlinked_commit_author.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unproven_bulk_transform.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unpushed_submodule_pin.py | (none) | via dispatch.py (glob) | py |
@@ -605,6 +636,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_worktree_add.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_admin_merge.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_agent_cap.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_backup_unverified_push.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_ci_skip_token.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_cli_bundle.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_commit_meta.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -615,6 +647,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_git_amend.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_git_hook_bypass.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_host_toolchain_run.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_live_proof_ledger_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_live_proof_ledger_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_long_sleep.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_missing_npm_script.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_no_review_ineligible.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -627,6 +661,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_push_to_protected_branch.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_raw_ci_read.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_renet_untested_push.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_review_file_edit.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_review_file_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_roundlog_truncate.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -634,6 +669,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_suppressions.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_suppressions_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_turbo_early_push.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_unasked_release.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unpushed_submodule_pin.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -668,13 +704,17 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/hooklabels.py | (none) | via .claude/rediacc_hooks/tests/hookblocks.py | py |
 | .claude/rediacc_hooks/tests/regolden.py | (none) | via .claude/rediacc_hooks/tests/goldenio.py | py |
 | .claude/rediacc_hooks/tests/test_bash_semantics.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_binary_deploy_recursive.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_block_commit_meta_env_expand.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_block_settled_questions.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_bulk_review_records.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_dispatch.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_gh_flag_spellings.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_githook_backup_receipt.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_gen_docs.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_generated_artifacts.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_githook_release_run.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_golden_drift.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guard_chained_state.py | (none) | via pytest (testpaths) | py |
@@ -699,6 +739,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_project_dir_fallback.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_regolden_bootstrap.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_review_commit_hook.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_runningscript_target.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_settings_collapse.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_shellscan_clone_identity.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_shellscan_differential.py | (none) | via pytest (testpaths) | py |
@@ -707,6 +748,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_agent_session_archival.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_background_waits.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_bgsweep_stop.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_cadence.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_cap_wait.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_checklists.py | (none) | via pytest (testpaths) | py |
@@ -736,6 +778,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_judge_state.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_leases.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_lineage.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_liveproof.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_lkg.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_loop_next.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_loopspeed.py | (none) | via pytest (testpaths) | py |
@@ -746,10 +789,13 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_outcomes.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_deps.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_fidelity.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_plan_preflight.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_priority.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_tracked_enumeration.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_planconc_narrow.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_pr_scope_stop.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_priority_ladder.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_promote.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_prreview.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_prscope.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_queue_progress.py | (none) | via pytest (testpaths) | py |
@@ -766,13 +812,13 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_review_deferrals.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_review_diff.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_roster.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_rulings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_schedred.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_scratch.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_soakedpins.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_state_document.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_store_journal.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py | (none) | via pytest (testpaths) | py |
-| .claude/rediacc_hooks/tests/test_wl_submodule_decision.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_triage_and_plans.py | (none) | via pytest (testpaths) | py |
@@ -783,7 +829,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/test-popup.py | py |
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 
-369 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+394 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -801,27 +847,28 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 |---|---|---|
 | .ci/breakpoint/.breakpoint-drift-accept | 1 | prose only (no live entry) |
 | .ci/config/actions-vars.json | 1 | JSON value |
+| .ci/config/bws-step-scoped.json | 5 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
-| .ci/config/pins.json | 15 | JSON value |
+| .ci/config/pins.json | 16 | JSON value |
 | .ci/config/prose-style-rules.json | 9 | JSON value |
-| .ci/config/retired-terms.json | 4 | JSON value |
+| .ci/config/retired-terms.json | 10 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
-| .ci/policy/.audit-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.audit-allowlist | 3 | # comment |
 | .ci/policy/.audit-prod-allowlist | 2 | # comment |
 | .ci/policy/.ci-parity-exempt | 9 | # comment |
-| .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
+| .ci/policy/.cli-i18n-orphan-allowlist | 7 | inline |
 | .ci/policy/.dead-bash-allowlist | 5 | # comment |
-| .ci/policy/.deps-upgrade-blocklist | 3 | inline |
+| .ci/policy/.deps-upgrade-blocklist | 2 | inline |
 | .ci/policy/.devcontainer-upgrade-blocklist | 2 | prose only (no live entry) |
-| .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
+| .ci/policy/.e2e-coverage-allowlist | 10 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
 | .ci/policy/.language-policy-allowlist | 40 | # comment |
 | .ci/policy/.pins-upgrade-blocklist | 6 | inline |
-| .ci/policy/.plan-housekeeping-allowlist | 5 | # comment |
+| .ci/policy/.plan-housekeeping-allowlist | 3 | # comment |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.unverified-download-allowlist | 4 | # comment |
@@ -833,16 +880,17 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .hadolint.yaml | 1 | # comment |
 | .shellcheckrc | 2 | # comment |
 | .syncpackrc-reasons.json | 9 | JSON value |
-| agent/ledgers/plan-investigation.jsonl | 2 | inline |
+| agent/ledgers/plan-investigation.jsonl | 3 | inline |
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
-| knip.jsonc | 26 | // comment |
-| package.json | 23 | JSON value |
+| agent/reviews/1023-1/clean.jsonl | 1 | prose only (no live entry) |
+| knip.jsonc | 29 | // comment |
+| package.json | 22 | JSON value |
 | pyproject.toml | 66 | # comment |
-| scripts/ci-runner/gates.lock.json | 31 | JSON value |
+| scripts/ci-runner/gates.lock.json | 34 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |
 | scripts/data/shape-duplication-seed.json | 11 | JSON value |
 
-42 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+44 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -862,7 +910,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/lib | 2 | .sh 2 |
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
-| .ci/config | 55 | .json 45, .txt 4, .sh 2, .cfg 1, .conf 1, .env 1, .yaml 1 |
+| .ci/config | 64 | .json 54, .txt 4, .sh 2, .cfg 1, .conf 1, .env 1, .yaml 1 |
 | .ci/config/shards | 6 | .json 6 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
@@ -876,38 +924,40 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
 | .ci/policy | 26 | (none) 18, .json 7, .md 1 |
 | .ci/prompts | 1 | .md 1 |
-| .ci/rediacc_ci | 18 | .py 18 |
+| .ci/rediacc_ci | 17 | .py 17 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
 | .ci/rediacc_ci/catalog | 3 | .py 3 |
-| .ci/rediacc_ci/ci | 31 | .py 31 |
+| .ci/rediacc_ci/ci | 32 | .py 32 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
-| .ci/rediacc_ci/core | 43 | .py 43 |
-| .ci/rediacc_ci/deploy | 35 | .py 35 |
+| .ci/rediacc_ci/core | 44 | .py 44 |
+| .ci/rediacc_ci/deploy | 41 | .py 41 |
 | .ci/rediacc_ci/dev | 5 | .py 5 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 6 | .py 6 |
-| .ci/rediacc_ci/drills | 13 | .py 13 |
+| .ci/rediacc_ci/drills | 19 | .py 19 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
-| .ci/rediacc_ci/housekeeping | 7 | .py 7 |
-| .ci/rediacc_ci/infra | 18 | .py 18 |
-| .ci/rediacc_ci/ops | 15 | .py 15 |
+| .ci/rediacc_ci/housekeeping | 8 | .py 8 |
+| .ci/rediacc_ci/infra | 21 | .py 21 |
+| .ci/rediacc_ci/ops | 33 | .py 33 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 10 | .py 10 |
+| .ci/rediacc_ci/proof | 5 | .py 5 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 114 | .py 114 |
-| .ci/rediacc_ci/release | 30 | .py 30 |
-| .ci/rediacc_ci/review | 7 | .py 7 |
+| .ci/rediacc_ci/quality | 120 | .py 120 |
+| .ci/rediacc_ci/release | 35 | .py 35 |
+| .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
+| .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 398 | .py 398 |
+| .ci/rediacc_ci/tests | 474 | .py 474 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
-| .ci/rediacc_ci/tests/gates | 194 | .py 193, .fixture 1 |
+| .ci/rediacc_ci/tests/gates | 199 | .py 198, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
@@ -983,6 +1033,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/w7p5-go-deps-probe-failure | 6 | .golden 6 |
 | .ci/rediacc_ci/tests/goldens/wait-for-vm-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/write-once-guard | 7 | .golden 7 |
+| .ci/rediacc_ci/tests/proof | 4 | .py 4 |
 | .ci/rediacc_ci/version | 5 | .py 5 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
 | .ci/scripts/ci | 9 | .cjs 8, .py 1 |
@@ -994,21 +1045,21 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/infra | 3 | .sh 3 |
 | .ci/scripts/lib | 1 | .sh 1 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 163 | .py 161, .json 1, .mjs 1 |
+| .ci/scripts/quality | 174 | .py 172, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/security | 2 | .py 2 |
 | .ci/scripts/test | 2 | .sh 1, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/lib | 1 | .sh 1 |
-| .ci/shadow | 287 | .jsonl 286, .json 1 |
+| .ci/shadow | 240 | .jsonl 239, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |
 | .ci/tutorials/apps/heartbeat/app | 2 | .json 1, .mjs 1 |
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
-| .ci/tutorials/lib | 4 | .sh 4 |
+| .ci/tutorials/lib | 5 | .sh 5 |
 
-151 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+154 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 ## Hook wiring, folded
@@ -1048,7 +1099,7 @@ Scans: `run.sh`, the `VERBS` table of `.ci/rediacc_ci/__main__.py` and the pins 
 |---|---|---|---|
 | `./run.sh` | router arms (bash, in the router itself) | 2 | `provision`, `www` |
 | `python3 -m rediacc_ci` | verbs in its `VERBS` table (every verb the router does not serve itself) | 12 | `account`, `clean`, `dev`, `devbox`, `drill`, `fix`, `help`, `quality`, `rotation`, `service`, `setup`, `worktree` |
-| `.ci/bootstrap.sh` | pinned tools, from `.devcontainer/toolchain.env` | 5 | `AWSCLI_VERSION=2.38.4`, `PYTEST_VERSION=9.1.1`, `PYTEST_XDIST_VERSION=3.8.0`, `RUFF_VERSION=0.17.1`, `UV_VERSION=0.13.4` |
+| `.ci/bootstrap.sh` | pinned tools, from `.devcontainer/toolchain.env` | 7 | `AGG_VERSION=1.9.0`, `AWSCLI_VERSION=2.39.3`, `PYTEST_VERSION=9.2.0`, `PYTEST_XDIST_VERSION=3.8.0`, `PYYAML_VERSION=6.0.3`, `RUFF_VERSION=0.17.3`, `UV_VERSION=0.13.6` |
 
 3 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
@@ -1073,8 +1124,8 @@ Scans: every `.github/workflows/*.yml` that calls a reusable workflow, folded to
 | `cd-v2.yml` | 6 | `deploy-account-stable`, `deploy-marketing-stable` | `cd-deploy-account.yml`, `cd-deploy-worker.yml` |
 | `ci.yml` | 0 | `duplicate-run` | - |
 | `ci.yml` | 1 | `initialize` | - |
-| `ci.yml` | 2 | `breakpoint-lifecycle`, `build-devcontainer`, `build-renet`, `cancel-watchdog`, `cd-preflight`, `check-release-state`, `e2e-dependency-probe`, `label-guide`, `quality`, `run-sh-tests`, `tests` | `ci-build-docker.yml`, `ci-build-renet.yml`, `ci-quality.yml`, `ct-e2e-probe.yml`, `ct-tests.yml` |
-| `ci.yml` | 3 | `build-cli`, `build-docker-fast`, `ops-tests`, `package-tests`, `review-gate` | `ci-build-cli.yml`, `ci-build-docker.yml`, `ci-ops-test.yml` |
+| `ci.yml` | 2 | `breakpoint-lifecycle`, `build-devcontainer`, `build-renet`, `cancel-watchdog`, `cd-preflight`, `check-release-state`, `label-guide`, `quality`, `run-sh-tests` | `ci-build-docker.yml`, `ci-build-renet.yml`, `ci-quality.yml` |
+| `ci.yml` | 3 | `build-cli`, `build-docker-fast`, `e2e-dependency-probe`, `ops-tests`, `package-tests`, `review-gate`, `tests` | `ci-build-cli.yml`, `ci-build-docker.yml`, `ci-ops-test.yml`, `ct-e2e-probe.yml`, `ct-tests.yml` |
 | `ci.yml` | 4 | `build-docker`, `elite-run-test`, `stripe-sandbox`, `update-flow-test` | `ci-build-docker.yml`, `ct-update-flow.yml` |
 | `ci.yml` | 5 | `stage-artifacts` | `cd-stage.yml` |
 | `ci.yml` | 6 | `deploy-preview`, `validate-install`, `validate-promote` | `ct-install-methods.yml` |
@@ -1146,10 +1197,14 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/agent-session-archival.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
 | `.ci/config/bulk-transform-proof-baseline.json` | .ci/config | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
 | `.ci/config/bws-secret-map.json` | .ci/config | wiring: `.github/actions/bws-secrets/action.yml` | yes -- repoint in `.github/actions/bws-secrets/action.yml` |
+| `.ci/config/bws-step-scoped.json` | .ci/config | wiring: `.github/actions/bws-scrub/action.yml` | yes -- repoint in `.github/actions/bws-scrub/action.yml` |
 | `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/rediacc_ci/quality/bws_map_live.py` | no -- hardcoded in `.ci/rediacc_ci/quality/bws_map_live.py` |
 | `.ci/config/carried-reds.json` | .ci/config | code: `.claude/hooks/stop/wl_ci.py` | no -- hardcoded in `.claude/hooks/stop/wl_ci.py` |
+| `.ci/config/cf-spend-guard.json` | .ci/config | wiring: `.github/workflows/cf-usage-report.yml` | yes -- repoint in `.github/workflows/cf-usage-report.yml` |
+| `.ci/config/cf-waf-rules.json` | .ci/config | code: `.ci/rediacc_ci/ops/apply_cf_waf_rules.py` | no -- hardcoded in `.ci/rediacc_ci/ops/apply_cf_waf_rules.py` |
 | `.ci/config/ci-alerts.json` | .ci/config | wiring: `.github/workflows/nightly-status.yml` | yes -- repoint in `.github/workflows/nightly-status.yml` |
 | `.ci/config/commit-attributions.json` | .ci/config | code: `scripts/gates/check-pr-task-trailers.ts` | no -- hardcoded in `scripts/gates/check-pr-task-trailers.ts` |
+| `.ci/config/commit-citations-baseline.json` | .ci/config | code: `.ci/scripts/quality/check_commit_citations.py` | no -- hardcoded in `.ci/scripts/quality/check_commit_citations.py` |
 | `.ci/config/commit-identity.json` | .ci/config | code: `.ci/rediacc_ci/quality/commit_identity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/commit_identity.py` |
 | `.ci/config/commit-policy.json` | .ci/config | code: `.claude/rediacc_hooks/commit_policy.py` | no -- hardcoded in `.claude/rediacc_hooks/commit_policy.py` |
 | `.ci/config/commit-review.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
@@ -1164,16 +1219,20 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/merged-prs.json` | .ci/config | code: `scripts/lib/suppression-liveness.ts` | no -- hardcoded in `scripts/lib/suppression-liveness.ts` |
 | `.ci/config/model-invocation-exceptions.json` | .ci/config | code: `.claude/rediacc_hooks/model_invocation.py` | no -- hardcoded in `.claude/rediacc_hooks/model_invocation.py` |
 | `.ci/config/pin-major-grace.json` | .ci/config | code: `scripts/lib/pins/status.ts` | no -- hardcoded in `scripts/lib/pins/status.ts` |
-| `.ci/config/pins.json` | .ci/config | code: `.ci/rediacc_ci/core/pins.py` | no -- hardcoded in `.ci/rediacc_ci/core/pins.py` |
+| `.ci/config/pins.json` | .ci/config | wiring: `knip.jsonc` | yes -- repoint in `knip.jsonc` |
 | `.ci/config/plan-boxes.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/scripts/quality/check_plan_implementation.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_implementation.py` |
 | `.ci/config/plan-lifecycle.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `.ci/config/plan-priority-seed-baseline.json` | .ci/config | code: `.ci/scripts/quality/check_plan_record.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_record.py` |
 | `.ci/config/plant-proof-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/plant_proofs.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plant_proofs.py` |
+| `.ci/config/proof-tiers.json` | .ci/config | code: `.ci/rediacc_ci/proof/surfaces.py` | no -- hardcoded in `.ci/rediacc_ci/proof/surfaces.py` |
 | `.ci/config/prose-style-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
 | `.ci/config/prose-style-rules.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
 | `.ci/config/python-env-registry.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
 | `.ci/config/python-types-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_types.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_types.py` |
 | `.ci/config/release-age.json` | .ci/config | code: `.ci/rediacc_ci/quality/go_deps.py` | no -- hardcoded in `.ci/rediacc_ci/quality/go_deps.py` |
+| `.ci/config/release-requires.json` | .ci/config | code: `.ci/rediacc_ci/release/order.py` | no -- hardcoded in `.ci/rediacc_ci/release/order.py` |
+| `.ci/config/renet-test-map.json` | .ci/config | code: `.claude/hooks/stop/wl_renettests.py` | no -- hardcoded in `.claude/hooks/stop/wl_renettests.py` |
 | `.ci/config/retired-terms.json` | .ci/config | code: `.ci/rediacc_ci/quality/retired_terms.py` | no -- hardcoded in `.ci/rediacc_ci/quality/retired_terms.py` |
 | `.ci/config/rubric-calibration.json` | .ci/config | code: `.ci/rediacc_ci/quality/rubric_calibration.py` | no -- hardcoded in `.ci/rediacc_ci/quality/rubric_calibration.py` |
 | `.ci/config/scope-mirrors-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/scope_mirrors.py` | no -- hardcoded in `.ci/rediacc_ci/quality/scope_mirrors.py` |
@@ -1181,6 +1240,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/secret-reachability.json` | .ci/config | code: `.ci/scripts/quality/check_secret_reachability.py` | no -- hardcoded in `.ci/scripts/quality/check_secret_reachability.py` |
 | `.ci/config/secret-scope-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
 | `.ci/config/secret-supply.json` | .ci/config | code: `.ci/rediacc_ci/quality/account_env_retired.py` | no -- hardcoded in `.ci/rediacc_ci/quality/account_env_retired.py` |
+| `.ci/config/settings.json` | .ci/config | wiring: `pyproject.toml` | yes -- repoint in `pyproject.toml` |
 | `.ci/config/syncpack-source-exclusions.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/tracked-credentials-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
 | `.ci/config/tree-write-mutators.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
@@ -1218,7 +1278,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/policy/tree-shape.json` | .ci/policy | code: `.ci/rediacc_ci/quality/tree_shape.py` | no -- hardcoded in `.ci/rediacc_ci/quality/tree_shape.py` |
 | `.ci/policy/worklist-env-registry.json` | .ci/policy | code: `.ci/rediacc_ci/quality/worklist_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/worklist_env_registry.py` |
 
-87 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+96 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -1254,6 +1314,14 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH` | secret | - |
 | `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE` | secret | - |
 | `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_BENCH` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_US_EDGE` | secret | - |
+| `ACCOUNT_CONFIG_SERVER_KEY_US_STABLE` | secret | - |
 | `ACCOUNT_ED25519_PRIVATE_KEY` | secret | - |
 | `ACCOUNT_ED25519_PRIVATE_KEY_DEV` | secret | - |
 | `ACCOUNT_ED25519_PUBLIC_KEY` | secret | - |
@@ -1273,11 +1341,15 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ACTIONS_API_BASE` | gate-seam | - |
 | `ACTION_REFS_MIN_FILES` | gate-seam | - |
 | `AGENT_BROWSER_SESSION` | harness | - |
-| `AGENT_BROWSER_VERSION` | toolchain | - |
 | `AGENT_SESSION_ARCHIVAL_ROOT` | gate-seam | - |
 | `AGE_FAIL_DAYS` | gate-seam | - |
 | `AGE_WARN_DAYS` | gate-seam | - |
 | `AGG_BIN` | toolchain | - |
+| `AGG_SHA256_DARWIN_AARCH64` | toolchain | - |
+| `AGG_SHA256_DARWIN_X86_64` | toolchain | - |
+| `AGG_SHA256_LINUX_AARCH64` | toolchain | - |
+| `AGG_SHA256_LINUX_X86_64` | toolchain | - |
+| `AGG_VERSION` | toolchain | - |
 | `ALLOW_STALE` | ci-runner | - |
 | `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` | secret | - |
 | `APK_RSA_PRIVATE_KEY` | secret | - |
@@ -1293,6 +1365,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ARG_CONNECT_TIMEOUT` | ci-runner | - |
 | `ARG_VERIFY` | ci-runner | - |
 | `ARTIFACTS_DIR` | harness | - |
+| `ARTIFACT_DIR` | ci-runner | - |
 | `ASTRO_PORT` | harness | - |
 | `ATTEMPTS` | ci-runner | - |
 | `AUTOPILOT_ALLOW_PUSH` | tombstone | - |
@@ -1338,12 +1411,17 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `AWS_SES_SECRET_ACCESS_KEY_BENCH` | secret | - |
 | `AWS_SES_SECRET_ACCESS_KEY_EU` | secret | - |
 | `AWS_SES_SECRET_ACCESS_KEY_US` | secret | - |
+| `AWS_SES_SMTP_PASSWORD_EU` | secret | - |
 | `BACKUP_BROWSE_AT_SUITE` | harness | - |
 | `BACKUP_BUCKET_EDGE` | ci-runner | - |
 | `BACKUP_BUCKET_NAME` | harness | - |
 | `BACKUP_BUCKET_STABLE` | ci-runner | - |
+| `BACKUP_CHECK_PUSH_REASON` | harness | - |
+| `BACKUP_LARGE_REPO_SUITE` | harness | - |
 | `BACKUP_STORAGE_SUITE` | harness | - |
 | `BAKED_IMAGE_KEY` | harness | - |
+| `BEFORE_SHA` | ci-runner | - |
+| `BENCH_ROOT_PASSWORD` | secret | - |
 | `BINARY_PATH` | ci-runner | - |
 | `BOT` | tombstone | - |
 | `BP_ACCESS_EMAILS` | harness | - |
@@ -1378,6 +1456,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `BWS_ROTATE_MIN_SECRETS` | harness | - |
 | `BWS_ROTATE_SECRET_MAP` | harness | - |
 | `BWS_ROTATE_TARGET_FILE` | harness | - |
+| `BWS_STEP_SCOPED_CONFIG` | gate-seam | - |
+| `BWS_STEP_SCOPE_MIN_WINDOWS` | gate-seam | - |
 | `CAMPAIGN` | tombstone | - |
 | `CAPTURE_DIR` | gate-seam | - |
 | `CAPTURE_EXTRA_ARGS` | gate-seam | - |
@@ -1491,6 +1571,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `DECISION_IDS_BASE` | gate-seam | - |
 | `DECISION_IDS_REGISTER` | gate-seam | - |
 | `DECISION_IDS_ROOT` | gate-seam | - |
+| `DEPLOY_RECORD_OUT` | gate-seam | - |
+| `DEPLOY_RECORD_VERSION` | gate-seam | - |
 | `DEPLOY_SCRIPT` | ci-runner | - |
 | `DEPLOY_WORKERS_ONLY` | ci-runner | - |
 | `DESKTOP_RESOLUTION` | harness | - |
@@ -1544,6 +1626,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `E2E_CLUSTER_NAME` | harness | - |
 | `E2E_CLUSTER_REPO` | harness | - |
 | `E2E_COV_ALLOWLIST` | gate-seam | - |
+| `E2E_COV_BRIDGE_FLOOR` | gate-seam | - |
+| `E2E_COV_DARK_SUITES` | gate-seam | - |
 | `E2E_COV_E2E_DIR` | gate-seam | - |
 | `E2E_COV_FUNCTIONS_FILE` | gate-seam | - |
 | `E2E_COV_REGISTRY` | gate-seam | - |
@@ -1562,6 +1646,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `EDGE_VERSION` | ci-runner | - |
 | `EDITOR` | machine-local | - |
 | `EFFORT` | tombstone | - |
+| `ELITE_S3_PROBE_BUCKET` | ci-runner | - |
+| `ELITE_S3_PROBE_SCRIPT` | gate-seam | - |
 | `EMBED_BLOCKLIST_FILE` | gate-seam | - |
 | `EMBED_CREDITS_DOCKERFILE` | gate-seam | - |
 | `EMBED_CREDITS_GO_FILE` | gate-seam | - |
@@ -1570,6 +1656,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `EMBED_PARITY_LOCKFILE` | gate-seam | - |
 | `EMBED_UPSTREAM_BASE` | gate-seam | - |
 | `ENABLE_HTTPS` | harness | - |
+| `ENABLE_OUTCOME` | ci-runner | - |
 | `ENUM_VACUITY_MIN` | gate-seam | - |
 | `ENV_MANIFEST_OVERRIDE_FILE` | gate-seam | - |
 | `ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE` | gate-seam | - |
@@ -1588,6 +1675,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `FORCE` | ci-runner | - |
 | `FORCE_FULL_CI` | ci-runner | - |
 | `FORMAT_SCOPE_ROOT` | gate-seam | - |
+| `FREE_LICENSE_HMAC_KEY` | secret | - |
 | `FULL_CI` | secret | - |
 | `FULL_CI_LABEL` | ci-runner | - |
 | `FULL_INTEGRATION` | harness | - |
@@ -1666,9 +1754,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `INPUT_CI_RUN_ID` | ci-runner | - |
 | `INPUT_SECRETS` | ci-runner | - |
 | `INPUT_SHA` | ci-runner | - |
+| `INSTANCE_NAME` | ci-runner | - |
 | `IN_FLIGHT_VERSION` | ci-runner | - |
 | `IS_BOT` | ci-runner | - |
 | `JOB_STATUS` | ci-runner | - |
+| `JWT_SECRET` | gate-seam | - |
+| `K10_SEED_GB` | harness | - |
 | `K8S_MODE` | harness | - |
 | `KEEP_CLUSTER` | harness | - |
 | `KEEP_GROUPS` | harness | - |
@@ -1691,6 +1782,44 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LANGUAGE_POLICY_ROOT` | gate-seam | - |
 | `LC_ALL` | machine-local | - |
 | `LC_CTYPE` | machine-local | - |
+| `LINODE_API_TOKEN` | secret | - |
+| `LIVE_CONSOLE_D1_DATABASE` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_D1_DATABASE` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_ORG_A_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_ORG_A_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_ORG_A_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_ORG_B_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_ORG_B_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_ORG_B_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_D1_DATABASE` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_ORG_A_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_ORG_A_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_ORG_A_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_ORG_B_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_ORG_B_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_ORG_B_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_D1_DATABASE` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_A_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_A_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_A_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_B_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_B_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_B_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_C_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_ORG_C_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_MACHINE` | secret | - |
+| `LIVE_CONSOLE_ORG_A_EMAIL` | secret | - |
+| `LIVE_CONSOLE_ORG_A_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_ORG_A_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_ORG_B_EMAIL` | secret | - |
+| `LIVE_CONSOLE_ORG_B_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_ORG_B_TOTP_SECRET` | secret | - |
+| `LIVE_CONSOLE_PROBE_SSH_KEY` | secret | - |
+| `LIVE_CONSOLE_STORE_PASSWORD` | secret | - |
 | `LOCALAPPDATA` | machine-local | - |
 | `LOCAL_CI_DIR` | harness | - |
 | `LOCAL_LIB_DIR` | harness | - |
@@ -1716,6 +1845,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `MSYSTEM` | machine-local | - |
 | `MYPY_BIN` | toolchain | - |
 | `MYPY_VERSION` | toolchain | - |
+| `NAMES` | ci-runner | - |
 | `NETWORK_CIDR` | harness | - |
 | `NET_SRC` | harness | - |
 | `NEXT_VERSION` | ci-runner | - |
@@ -1734,6 +1864,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `NIGHTLY_RUN_ID` | ci-runner | - |
 | `NIGHTLY_URL` | ci-runner | - |
 | `NODE_COMPILE_CACHE` | toolchain | - |
+| `NODE_ENV` | product-runtime | - |
 | `NODE_OPTIONS` | toolchain | - |
 | `NODE_VERSION` | toolchain | - |
 | `NODE_VERSION_MIN` | toolchain | - |
@@ -1741,6 +1872,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `NO_COLOR` | machine-local | - |
 | `NPM_DIR` | ci-runner | - |
 | `NPM_VERSION` | toolchain | - |
+| `OBS_GRAFANA_READ_TOKEN` | secret | - |
 | `OBS_MIRROR_EVR` | ci-runner | - |
 | `OBS_OTLP_CREDENTIALS` | secret | - |
 | `OBS_OTLP_CREDENTIALS_ASIA` | secret | - |
@@ -1767,6 +1899,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PINS_ROOT` | gate-seam | - |
 | `PINS_SOAKED_WORKFLOW_FILE` | gate-seam | - |
 | `PINS_T8_MUTANT` | gate-seam | - |
+| `PIN_NEW` | ci-runner | - |
+| `PIN_OLD` | ci-runner | - |
 | `PI_GO_FAIL` | gate-seam | - |
 | `PI_GO_JSON` | gate-seam | - |
 | `PKG_BINARY_NAME` | ci-runner | - |
@@ -1846,7 +1980,10 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PYTEST_RUN_TIMEOUT_S` | harness | - |
 | `PYTEST_VERSION` | toolchain | - |
 | `PYTEST_XDIST_VERSION` | toolchain | - |
+| `PYTHONNOUSERSITE` | toolchain | - |
 | `PYTHONPATH` | toolchain | - |
+| `PYTHONPYCACHEPREFIX` | toolchain | - |
+| `PYTHONSAFEPATH` | toolchain | - |
 | `PYYAML_VERSION` | toolchain | - |
 | `PY_CONTROL_PLANTS_ROOT` | gate-seam | - |
 | `QUALITY_COMPLETE_ROOT` | gate-seam | - |
@@ -1855,13 +1992,14 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `QUICK_LANE_FLOOR` | gate-seam | - |
 | `QWEN_TTS_PYTHON_BIN` | toolchain | - |
 | `R2_JURISDICTION` | product-runtime | - |
+| `RCLONE_GATE_BINARIES` | gate-seam | - |
+| `RCLONE_GATE_REQUIRE_BINARIES` | gate-seam | - |
 | `RDC_ALLOW_DOWNGRADE` | tombstone | - |
 | `RDC_BENCH` | tombstone | note |
 | `RDC_BINARY` | harness | - |
 | `RDC_DEBUG_RENET_PROVISION` | tombstone | - |
 | `RDC_DISABLE_AUTOUPDATE` | tombstone | - |
 | `RDC_PROD` | tombstone | - |
-| `RDC_RENET_LICENSE` | ci-runner | - |
 | `RDC_SKIP_ROUTER_RESTART` | tombstone | - |
 | `RDC_SKIP_SETUP_CHECK` | tombstone | - |
 | `RDC_TIMING_CHART` | tombstone | - |
@@ -1882,12 +2020,16 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_ALLOW_DOWNGRADE` | product-runtime | - |
 | `REDIACC_ALLOW_GRAND_REPO` | product-runtime | - |
 | `REDIACC_API_TOKEN` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
+| `REDIACC_BENCH_EMAIL` | secret | - |
+| `REDIACC_BENCH_MASTER_PASSWORD` | secret | - |
+| `REDIACC_BENCH_PASSWORD` | secret | - |
+| `REDIACC_BENCH_TOTP_SEED` | secret | - |
 | `REDIACC_BWS_PROFILES` | harness | - |
 | `REDIACC_CI_REGOLDEN` | harness | - |
 | `REDIACC_CI_REGOLDEN_ONLY` | harness | - |
 | `REDIACC_CI_ROOT` | gate-seam | note |
 | `REDIACC_CONFIG` | product-runtime | - |
-| `REDIACC_CONFIG_PASSWORD` | secret | - |
+| `REDIACC_CONFIG_PASSWORD` | tombstone | - |
 | `REDIACC_DAEMON_DEBUG` | tombstone | - |
 | `REDIACC_DATASTORE_PATH` | product-runtime | - |
 | `REDIACC_DEBUG` | product-runtime | - |
@@ -1905,7 +2047,11 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_KEY_USAGE_PROBE` | gate-seam | - |
 | `REDIACC_LANE` | harness | - |
 | `REDIACC_LANG` | product-runtime | - |
+| `REDIACC_LOGIN_EMAIL` | secret | - |
+| `REDIACC_LOGIN_PASSWORD` | secret | - |
+| `REDIACC_LOGIN_TOTP` | secret | - |
 | `REDIACC_MASTER_PASSWORD` | secret | - |
+| `REDIACC_NEW_CONFIG_PASSWORD` | tombstone | - |
 | `REDIACC_NO_COLOR` | tombstone | - |
 | `REDIACC_NO_DAEMON` | product-runtime | - |
 | `REDIACC_NO_DOCKER` | harness | - |
@@ -1913,17 +2059,22 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_PID_WAIT_PROCFS` | harness | - |
 | `REDIACC_PROC_BACKEND` | gate-seam | - |
 | `REDIACC_PROVISION_LOCK_TIMEOUT_MS` | product-runtime | - |
+| `REDIACC_PROXY_TIMEOUT_MS` | product-runtime | - |
 | `REDIACC_PROXY_URL` | product-runtime | - |
 | `REDIACC_PYTEST_REAL_DIST` | harness | - |
-| `REDIACC_REGION` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
+| `REDIACC_REGION` | product-runtime | - |
 | `REDIACC_SECRET_STORE` | product-runtime | - |
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | product-runtime | - |
-| `REDIACC_SKIP_MACHINE_ACTIVATION` | product-runtime | - |
+| `REDIACC_SKIP_MACHINE_ACTIVATION` | tombstone | - |
 | `REDIACC_SKIP_ROUTER_RESTART` | product-runtime | - |
+| `REDIACC_SKIP_RUNTIME_CONVERGE` | product-runtime | - |
 | `REDIACC_SKIP_SETUP_CHECK` | product-runtime | - |
+| `REDIACC_SMOKE_DOH_URL` | gate-seam | - |
 | `REDIACC_SMOKE_NO_DOCKER` | harness | - |
+| `REDIACC_SMOKE_RESOLVE_WINDOW_S` | gate-seam | - |
 | `REDIACC_SSH_LINGER_MS` | product-runtime | - |
 | `REDIACC_STARTUP_TIMEOUT` | harness | - |
+| `REDIACC_STORE_MASTER_PASSWORD` | secret | - |
 | `REDIACC_SUBSCRIPTION_TOKEN` | tombstone | - |
 | `REDIACC_SUBSCRIPTION_TOKEN_FILE` | tombstone | - |
 | `REDIACC_TEAM` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
@@ -1931,14 +2082,19 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_TELEMETRY_ENDPOINT` | product-runtime | - |
 | `REDIACC_TEST_ENV_APPLY` | gate-seam | - |
 | `REDIACC_TIMEOUT_BIN` | harness | - |
+| `REDIACC_TOFU` | product-runtime | - |
 | `REDIACC_TOKEN` | secret | - |
 | `REDIACC_TOOLCHAIN_LOADED` | toolchain | - |
+| `REDIACC_TRANSCRIPT_PATH` | harness | - |
 | `REDIACC_UPDATE_CHANNEL` | product-runtime | - |
 | `REDIACC_UPDATE_INTERVAL_HOURS` | product-runtime | - |
 | `REDIACC_VIA_DAEMON` | product-runtime | - |
+| `REDIACC_VM_DISK_DIR` | ci-runner | - |
 | `REDIACC_VSCODE_PATH` | product-runtime | - |
 | `REDIACC_WORKTREE_STDIN_PROCFS` | machine-local | - |
 | `REDIACC_YES` | product-runtime | - |
+| `REF` | ci-runner | - |
+| `REGION` | ci-runner | - |
 | `REGIONS_BAKED_FILE` | gate-seam | - |
 | `REGIONS_ROOT_FILE` | gate-seam | - |
 | `RELEASES_BASE_URL` | ci-runner | - |
@@ -1957,11 +2113,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RENET_DATA_DIR` | harness | - |
 | `RENET_DIR` | gate-seam | - |
 | `RENET_EMBED_CACHE_HIT` | ci-runner | - |
-| `RENET_EXPECT_NO_ACCOUNT_SERVER` | harness | - |
+| `RENET_KEYLESS` | tombstone | - |
 | `RENET_ROOT` | harness | - |
 | `RENET_TAG` | ci-runner | - |
 | `RENET_TEST_EXTRA_TIERS` | ci-runner | - |
 | `RENET_TEST_PKGS` | ci-runner | - |
+| `RENET_TOKEN` | ci-runner | - |
 | `RENET_VERSION` | ci-runner | - |
 | `REPO` | tombstone | - |
 | `REPOSITORY_NETWORK_MODE` | harness | - |
@@ -2008,6 +2165,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RETRY_REPO` | ci-runner | - |
 | `REVIEW_MODEL` | ci-runner | - |
 | `REVIEW_OUTCOME` | ci-runner | - |
+| `ROLLBACK_OUTCOME` | ci-runner | - |
 | `ROOT_EMAIL` | secret | - |
 | `ROTATION_BOUND` | gate-seam | - |
 | `ROTATION_RC` | ci-runner | - |
@@ -2051,6 +2209,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `SERVICE_RUSTFS_CONSOLE_PORT` | harness | - |
 | `SERVICE_STATUS_NOW` | gate-seam | - |
 | `SERVICE_TAG` | harness | - |
+| `SHA` | ci-runner | - |
 | `SHADOW_FOREIGN_PID` | gate-seam | - |
 | `SHADOW_PIDS` | gate-seam | - |
 | `SHADOW_PRE` | gate-seam | - |
@@ -2127,6 +2286,10 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `TARGET` | ci-runner | - |
 | `TARGET_RUN_ID` | ci-runner | - |
 | `TEMPLATE` | tombstone | - |
+| `TEST_CLUSTER_PROJECT_ID` | harness | - |
+| `TEST_PROVIDER_TOKEN` | harness | - |
+| `TF_CLI_CONFIG_FILE` | harness | - |
+| `TF_PLUGIN_CACHE_DIR` | product-runtime | - |
 | `THRESHOLD_GB` | ci-runner | - |
 | `TIMEOUT_SECS` | ci-runner | - |
 | `TMPDIR` | machine-local | - |
@@ -2179,6 +2342,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `VM_BRIDGE` | harness | - |
 | `VM_CEPH_NODES` | harness | - |
 | `VM_CONTROL` | harness | - |
+| `VM_DSK` | ci-runner | - |
 | `VM_IMAGE` | harness | - |
 | `VM_NET` | harness | - |
 | `VM_NET_BASE` | harness | - |
@@ -2244,6 +2408,13 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WK_PKG_MAINTAINER_EMAIL` | well-known | - |
 | `WK_PKG_SIGNING_KEY_NAME` | well-known | - |
 | `WK_PROFILING_ORIGIN` | well-known | - |
+| `WK_PROXY_ASIA_HOST` | well-known | - |
+| `WK_PROXY_BENCH_HOST` | well-known | - |
+| `WK_PROXY_EDGE_ASIA_HOST` | well-known | - |
+| `WK_PROXY_EDGE_EU_HOST` | well-known | - |
+| `WK_PROXY_EDGE_US_HOST` | well-known | - |
+| `WK_PROXY_EU_HOST` | well-known | - |
+| `WK_PROXY_US_HOST` | well-known | - |
 | `WK_RELEASES_BUCKET` | well-known | - |
 | `WK_RELEASES_ORIGIN` | well-known | - |
 | `WK_RENET_REPO` | well-known | - |
@@ -2278,6 +2449,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_BG_OUTPUT_DIR` | harness | - |
 | `WORKLIST_BG_REPORT_MIN` | harness | - |
 | `WORKLIST_BG_STALE_MIN` | harness | - |
+| `WORKLIST_BIGPIECES_LATCH_MIN` | harness | - |
 | `WORKLIST_BIG_OPEN_FLOOR` | harness | - |
 | `WORKLIST_BIG_TOP_N` | harness | - |
 | `WORKLIST_BRAVE_MAX_FIRES` | harness | - |
@@ -2379,7 +2551,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_STORE_DIR` | harness | - |
 | `WORKLIST_STUCK_ROUNDS` | harness | - |
 | `WORKLIST_STUCK_SUPERVISED_MAX_MIN` | harness | - |
-| `WORKLIST_SUBMODULE_DECIDED_LATCH_MIN` | harness | - |
 | `WORKLIST_SUBMODULE_LATCH_MIN` | harness | - |
 | `WORKLIST_SWEEP_MAX_FIRES` | harness | - |
 | `WORKLIST_SWEEP_TTL_MIN` | harness | - |
@@ -2394,6 +2565,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_WHY_MAX_CHARS` | harness | - |
 | `WORKLIST_WHY_MAX_RECORDS` | harness | - |
 | `WORKTREE_TODAY` | gate-seam | - |
+| `WRANGLER_BIN` | gate-seam | - |
 | `WR_CONCLUSION` | ci-runner | - |
 | `WR_EVENT` | ci-runner | - |
 | `WR_HEAD_BRANCH` | ci-runner | - |
@@ -2411,6 +2583,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `_DEVBOX_DOCKER` | harness | - |
 | `_WL_SITEPROFILE` | harness | - |
 
-1168 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+1280 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->

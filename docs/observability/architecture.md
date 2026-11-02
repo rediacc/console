@@ -10,6 +10,8 @@ Renet (Go)              ──┘                                             �
                                                                         └── Pyroscope  (profiling)
 ```
 
+The Cloudflare Workers (account server, proxy) do not send OTLP themselves. Workers Observability exports through account-level destinations, shown under Cloudflare Workers below.
+
 All telemetry flows over OTLP HTTP to the Alloy collector, which fans out to the appropriate backend.
 
 ## Infrastructure
@@ -54,7 +56,25 @@ Before renet#51, credentials were baked at build time: esbuild `define` for the 
 
 ## Cloudflare Workers
 
-The account server's CF Workers deployment uses native tracing via the `[observability]` section in `private/account/wrangler.toml`. This auto-captures request lifecycle, D1 queries, and outbound fetches. Data goes to both the CF dashboard and the self-hosted stack.
+Target design (PLAN-telemetry-export.md). The runtime's native tracing, enabled by the `[observability]` section of each `workers/account/wrangler.*.toml`, exports to Workers Observability destinations:
+
+```
+Account Worker (stable, edge) ─┐
+                               ├─ Workers Observability ──▶ destination otlp-<r>-traces / otlp-<r>-logs
+Proxy Workers (seven, see below)┘  (account: persist = true;      │  Authorization: Basic
+                                    proxy: persist = false)
+                                                              ▼
+                                   https://otlp.rediacc.io/v1/{traces,logs} (Traefik basicauth ▶ Alloy)
+                                                              │  transform: identity, redaction
+                                                              ├── Tempo (traces, spanmetrics)
+                                                              └── Loki  (logs)
+```
+
+Eight destinations exist, `otlp-<r>-traces` and `otlp-<r>-logs` for r in `eu`, `us`, `asia`, `bench`. Stable and edge of a region share a pair, and each proxy Worker uses the pair of its own region with `persist = false`. `./run.sh rotation rotate otlp-<r>` upserts the destination headers when it rotates the credential. The Alloy transform sets `service.name`, `deployment.environment`, `rediacc.region` and `rediacc.worker`, and redacts query strings and tokens. Details are in [signals/account-server.md](signals/account-server.md) and [signals/proxy.md](signals/proxy.md).
+
+Seven proxy Workers send as `rediacc-proxy`: `rediacc-proxy-{eu,us,asia}`, `edge-rediacc-proxy-{eu,us,asia}` and `rediacc-proxy-bench`. The Alloy transform maps their script names, matched by `^(edge-)?rediacc-proxy-(eu|us|asia|bench)$`, to `service.name = rediacc-proxy` and sets `deployment.environment` and `rediacc.region` from the same name. That regex is the target the transform is moved to by box L8 of PLAN-proxy-cd-six-targets. Each Worker also answers `/v1/ready`, described in [signals/proxy.md](signals/proxy.md).
+
+A silent sender is caught by the delivery check and a Grafana alert; see [runbooks/adding-new-signals.md](runbooks/adding-new-signals.md).
 
 ## Retention
 

@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # サービス
@@ -52,7 +52,7 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 | `REDIACC_WORKING_DIR` | リポジトリのマウントパス | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | リポジトリGUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | ネットワークID（整数） | `2816` |
-| `DOCKER_HOST` | このリポジトリの隔離デーモン用Dockerソケット | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | このリポジトリの隔離デーモン用Dockerソケット | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json`で定義された各サービスのループバックIP | `POSTGRES_IP=127.0.11.2` |
 
 `{SERVICE}_IP`変数は`.rediacc.json`のスロットマッピングから自動生成され、Rediaccfile関数が実行される前にエクスポートされます。命名規則では、サービス名を大文字に変換し、ハイフンをアンダースコアに置き換え、`_IP`を付加します。例えば、スロット`0`の`listmonk-app`というサービスは`LISTMONK_APP_IP=127.0.11.2`になります。
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` を使うと、サービスからWireGuardトンネルを確立できます。たとえば、特定のプロセスのトラフィックをリモートエンドポイント経由でルーティングする場合などに活用できます。すべてのサービスはホストネットワーキングで動作するため、ホストのルーティングに影響が出ないよう、トンネルはコンテナ内のネットワーク名前空間に閉じ込めてください。`privileged: true`、`pid: host`、`ipc: host` などの広範な特権オプションは、ラベルに関わらずバリデーションで拒否されます。
+`rediacc.wireguard` を使うと、サービスからWireGuardトンネルを確立できます。たとえば、特定のプロセスのトラフィックをリモートエンドポイント経由でルーティングする場合などに活用できます。すべてのサービスはホストネットワーキングで動作するため、ホストのルーティングに影響が出ないよう、トンネルはコンテナ内のネットワーク名前空間に閉じ込めてください。`privileged: true`、`pid: host`、`ipc: host` などの広範な特権オプションは、ラベルに関わらず、composeのバリデーションでもDocker API上でも拒否されます。Docker APIではリポジトリのデーモンが `403` を返します。
 
 ### マルチサービスレイアウト
 
@@ -453,7 +453,7 @@ composeで機能する2つの配信モードがあります：
 
 **`env`モード**。任意の`environment:`値内で`${REDIACC_SECRET_<KEY>}`を使用して補間します。renetラッパーはデプロイ時にコンテナの環境に値を渡します。
 
-**`file`モード**。値はホスト側のtmpfsファイル（`/var/run/rediacc/secrets/<networkID>/<KEY>`）に配置され、Dockerのcomposeの標準`secrets:`ブロック経由でコンテナにマウントします。コンテナは`/run/secrets/<key>`を読みます。何か機密情報がある場合はこのモードを優先してください。値は`docker inspect`や`/proc/<pid>/environ`に表示されません。
+**`file`モード**。値はホスト側のtmpfsファイル（`/var/run/rediacc/net-<networkID>/secrets/<KEY>`）に配置され、Dockerのcomposeの標準`secrets:`ブロック経由でコンテナにマウントします。コンテナは`/run/secrets/<key>`を読みます。何か機密情報がある場合はこのモードを優先してください。値は`docker inspect`や`/proc/<pid>/environ`に表示されません。
 
 ```yaml
 services:
@@ -466,9 +466,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""`でファイルモード相当の値をシードします。詳細については[リポジトリ » シークレット](/ja/docs/repositories#secrets)を参照し、コマンドリファレンスについてはチートシートの[リポジトリごとのシークレット](/ja/docs/rdc-cheat-sheet#per-repo-secrets)を参照してください。
 
-> **クロスリポパスはバリデーション時に拒否されます。** composeの`secrets: file:`（または`configs: file:`、または`env_file:`）が別のリポジトリの`/var/run/rediacc/secrets/<other-networkID>/`ディレクトリを指していると、renetラッパーによって`docker compose`実行前に厳密に拒否されます。`--unsafe`はオーバーライドしません。深層防御：Rediaccfileシェルの周囲のLandlockサンドボックスはリードを現在のネットワークのシークレットディレクトリにスコープするため、YAMLバリデーターをバイパスしても、Rediaccfileのbashから`cat /var/run/rediacc/secrets/<other>/X`を実行するとEACCESで失敗します。オプトインする必要はありません。これはすべての`repo up`でデフォルトで有効です。
+> **クロスリポパスはバリデーション時に拒否されます。** composeの`secrets: file:`（または`configs: file:`、または`env_file:`）が別のリポジトリの`/var/run/rediacc/net-<other-networkID>/secrets/`ディレクトリを指していると、renetラッパーによって`docker compose`実行前に厳密に拒否されます。`--unsafe`はオーバーライドしません。深層防御：Rediaccfileシェルの周囲のLandlockサンドボックスはリードを現在のネットワークのシークレットディレクトリにスコープするため、YAMLバリデーターをバイパスしても、Rediaccfileのbashから`cat /var/run/rediacc/net-<other>/secrets/X`を実行するとEACCESで失敗します。オプトインする必要はありません。これはすべての`repo up`でデフォルトで有効です。

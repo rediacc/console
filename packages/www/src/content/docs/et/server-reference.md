@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: et
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Serveri viide
@@ -44,7 +44,7 @@ Kõrgetasemelise arhitektuuri kohta vaadake [Arhitektuur](/en/docs/architecture)
 ├── letsencrypt/                       # ACME-sertifikaadid
 └── traefik/dynamic/                   # Dünaamilised marsruutifailid
 
-/run/rediacc/docker-{id}.sock          # Võrgupõhised Dockeri pesad
+/run/rediacc/net-{id}/docker-{id}.sock          # Võrgupõhised Dockeri pesad
 /var/lib/rediacc/router/               # Marsruuteri olek (pordi eraldised)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 Samuti saate kasutada Dockeri pesa otse:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > Käivitage compose alati kataloogist, mis sisaldab `docker-compose.yml`-i, vastasel juhul Docker ei leia faili.
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # Deemoni logid
 
 ### Varundamine ja taastamine
 
-Lükake varukoopiad teisele masinale või pilvesalvestusse:
+Saada varukoopiad teisele masinale. Tükksalvestuse hetktõmmised tehakse käsuga `rdc backup snapshot` või `renet backup snapshot`:
 
 ```bash
 # Lükka kaugmasinale (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Lükka pilvesalvestusse (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Tõmba kaugelt
 renet backup pull --name {uuid} --network-id {id} --source machine \
@@ -316,7 +312,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### Leidke, milline Dockeri pesa konteinerit käitab
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +338,7 @@ renet list containers
 - `--`-eraldaja on nõutav enne argumentide edastamist `renet compose`-le ja `renet docker`-ile
 - Käivitage compose kataloogist, mis sisaldab `docker-compose.yml`-i
 - `.rediacc.json`-pesa omistused on stabiilsed, ärge muutke neid pärast juurutamist
-- Kasutage `/run/rediacc/docker-{id}.sock`-teid (systemd võib muuta pärand `/var/run/`-teid)
+- Kasutage `/run/rediacc/net-{id}/docker-{id}.sock`-teid (systemd võib muuta pärand `/var/run/`-teid)
 - Käivitage aeg-ajalt `renet prune --dry-run`, et leida mahajäetud ressursse
 - BTRFS-hetktõmmised (`renet backup`) on kiired ja odavad, kasutage neid enne riskantseid muudatusi
 - Repositooriumid on LUKS-krüpteeritud, parooli kaotamine tähendab andmete kaotamist

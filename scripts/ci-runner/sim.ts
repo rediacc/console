@@ -10,21 +10,30 @@
  *
  * Run directly for the comparison table: `npx tsx scripts/ci-runner/sim.ts`.
  */
-import { fileURLToPath } from 'node:url';
+import { isEntryPoint } from '../lib/entry-point.js';
 import type { GateSpec } from './manifest';
 import {
   admit,
+  BORROW_WALL_MS,
+  type BorrowSpan,
   type Candidate,
   type CoreBudget,
   fitToLease,
   type GateCost,
+  type IdleReader,
   LEASE_POLL_MS,
   type PoolOptions,
   planAdmission,
+  RECLAIM_HEADROOM,
+  RECLAIM_POLL_MS,
+  RECLAIM_WINDOW_MS,
+  reclaimableCores,
+  runPool,
   type Sched,
   type ScheduleOrder,
   SETTLE_MS,
 } from './pool';
+import { type CpuTick, idleCoreMsBetween } from './report';
 
 interface SimGate {
   id: string;
@@ -47,6 +56,8 @@ interface SimGate {
   est?: { estMs?: number; wallMs?: number; cpuMs?: number; perCore?: number };
   /** Default true: the scheduler sees cpu = cores x wall, wall and memMb as measured. False: it sees nothing. */
   measured?: boolean;
+  /** What the gate really keeps busy as it progresses: from `atFrac` of its work on, `cores` instead of its width. Models a wide gate that goes quiet, which the budget cannot see. Its progress is unchanged. */
+  phases?: { atFrac: number; cores: number }[];
 }
 
 interface SimConfig {
@@ -60,6 +71,8 @@ interface SimConfig {
   capCheck?: number;
   /** The learned order (rank.ts), passed to planAdmission exactly as runPool passes it. */
   order?: ScheduleOrder;
+  /** Feed admit() the idle this simulated machine measures, and re-read it on RECLAIM_POLL_MS, as runPool does when it has an `idleCoreMs`. Off is the budget alone. */
+  conserve?: boolean;
 }
 
 /** Several runs on one machine drawing from one token pool, the way core_lease.py's broker serves them. */
@@ -90,6 +103,12 @@ interface SimResult {
   leaseHeld: Set<string>;
   /** Gates that launched past the lease: granted cores and tokens held (GateResult.overLease). */
   overLease: Map<string, { granted: number; held: number }>;
+  /** Gates admit() launched into measured idle, with the cores each took. */
+  borrowed: Map<string, number>;
+  /** The most cores every gate on the machine really wanted at one moment. */
+  peakDemand: number;
+  /** The integral of demand above the machine's cores: how much the machine was oversubscribed, and for how long. */
+  overCoreS: number;
 }
 
 /** A run's result inside simulateRuns: its own gates, plus when it ended and the machine's idle core-seconds from t = 0 to that end. */
@@ -168,6 +187,10 @@ function runState(run: SimRun, cfg: SimConfig) {
     leaseHeld: new Set<string>(),
     leaseSince: new Map<string, number>(),
     overLease: new Map<string, { granted: number; held: number }>(),
+    borrowed: new Map<string, number>(),
+    borrows: new Map<string, BorrowSpan>(),
+    /** Full-speed wall each running gate started with, to place its `phases`. */
+    totals: new Map<string, number>(),
     /** Lease tokens this run holds. */
     tokens: 0,
     /** Next moment this run re-reads the lease on its own timer. */
@@ -187,20 +210,54 @@ type RunState = ReturnType<typeof runState>;
 function engine(
   runs: readonly SimRun[],
   cfg: SimConfig & { tokens?: number; pollMs?: number }
-): { makespanMs: number; idleCoreS: number; runs: Map<string, RunState> } {
+): {
+  makespanMs: number;
+  idleCoreS: number;
+  peakDemand: number;
+  overCoreS: number;
+  runs: Map<string, RunState>;
+} {
   const states = runs.map((r) => runState(r, cfg));
   const pollMs = cfg.pollMs ?? LEASE_POLL_MS;
   const leased = cfg.tokens !== undefined;
   const total = cfg.tokens ?? Number.POSITIVE_INFINITY;
   let t = 0;
   let busy = 0;
+  let peakDemand = 0;
+  let over = 0;
+  // What the simulated machine measured, newest last, kept no further back than one window: the seam run.ts fills from /proc/stat.
+  const history: { from: number; to: number; idle: number }[] = [];
+  const idleCoreMs = (fromMs: number, toMs: number): number | undefined => {
+    if (history.length === 0 || (history[0]?.from ?? 0) > fromMs + EPS_MS) return undefined;
+    let sum = 0;
+    for (const h of history) {
+      sum += h.idle * Math.max(0, Math.min(h.to, toMs) - Math.max(h.from, fromMs));
+    }
+    return sum;
+  };
   const started = (s: RunState): boolean => s.run.startMs <= t + EPS_MS;
   const freeTokens = (): number => total - states.reduce((sum, s) => sum + s.tokens, 0);
-  // True width while running: the grant for an elastic gate, the declared d otherwise.
-  const width = (s: RunState, id: string): number =>
-    s.truth.get(id)?.elastic !== undefined
-      ? (s.grants.get(id) ?? 1)
-      : (s.truth.get(id)?.cores ?? 0);
+  // True width while running: the grant for an elastic gate, the declared d otherwise, or what its current phase really keeps busy.
+  const width = (s: RunState, id: string): number => {
+    const g = s.truth.get(id);
+    const total = s.totals.get(id) ?? 0;
+    const done = total > 0 ? 1 - (s.running.get(id) ?? 0) / total : 0;
+    let phase: number | undefined;
+    for (const p of g?.phases ?? []) if (done + 1e-12 >= p.atFrac) phase = p.cores;
+    if (phase !== undefined) return phase;
+    return g?.elastic !== undefined ? (s.grants.get(id) ?? 1) : (g?.cores ?? 0);
+  };
+  // Time until this gate's next phase boundary, at full speed; infinite past its last.
+  const toPhase = (s: RunState, id: string): number => {
+    const total = s.totals.get(id) ?? 0;
+    const left = s.running.get(id) ?? 0;
+    let next = Number.POSITIVE_INFINITY;
+    for (const p of s.truth.get(id)?.phases ?? []) {
+      const gap = left - total * (1 - p.atFrac);
+      if (gap > EPS_MS) next = Math.min(next, gap);
+    }
+    return next;
+  };
   const inUse = (s: RunState): number => {
     let sum = 0;
     for (const id of s.running.keys()) sum += (s.launched.get(id) ?? s.cand(id)).cores;
@@ -223,6 +280,9 @@ function engine(
     for (const spec of ready) if (!s.readyAt.has(spec.id)) s.readyAt.set(spec.id, t);
     const pending = s.specs.filter((spec) => !s.starts.has(spec.id)).map((spec) => s.cand(spec.id));
     const live = states.filter((o) => started(o) && !o.done).length;
+    const borrowable = cfg.conserve
+      ? reclaimableCores(t, idleCoreMs, [...s.borrows.values()], leased ? live : 1)
+      : undefined;
     const result = admit(
       ready.map((spec) => s.cand(spec.id)),
       [...s.running.keys()].map((id) => {
@@ -235,6 +295,7 @@ function engine(
         heavyLimit: cfg.heavyLimit,
         budget: cfg.budget,
         pending,
+        borrowable,
         ...(leased
           ? {
               leaseFree: freeTokens() + Math.max(0, s.tokens - inUse(s)),
@@ -271,16 +332,25 @@ function engine(
       s.starts.set(g.id, t);
       s.launched.set(g.id, g);
       s.grants.set(g.id, g.grant ?? 1);
+      if (g.borrowed !== undefined) {
+        s.borrowed.set(g.id, g.borrowed);
+        s.borrows.set(g.id, { from: t, cores: g.borrowed });
+      }
       const tg = s.truth.get(g.id);
-      s.running.set(
-        g.id,
+      const full =
         tg?.elastic !== undefined
           ? (tg.cores * tg.wallMs) / ((tg.perCore ?? 1) * Math.max(1, g.grant ?? 1))
-          : (tg?.wallMs ?? 0)
-      );
+          : (tg?.wallMs ?? 0);
+      s.running.set(g.id, full);
+      s.totals.set(g.id, full);
     }
     if (leaseWait)
       s.wake = t + Math.max(1, Math.min(pollMs, (result.wakeAt ?? Number.POSITIVE_INFINITY) - t));
+    if (
+      cfg.conserve &&
+      result.held.some(([, why]) => why === 'cpu' || why === 'reservation' || why === 'lease')
+    )
+      s.wake = Math.min(s.wake, t + RECLAIM_POLL_MS);
     if (cfg.sched === 'cores' && cfg.capCheck !== undefined && s.running.size > 1) {
       let budgeted = 0;
       for (const id of s.running.keys()) budgeted += (s.launched.get(id) ?? s.cand(id)).cores;
@@ -299,11 +369,20 @@ function engine(
     const rate = demand > 0 ? Math.min(1, cfg.machineCores / demand) : 1;
     let step = Number.POSITIVE_INFINITY;
     for (const s of states) {
-      for (const left of s.running.values()) step = Math.min(step, left / rate);
+      for (const [id, left] of s.running) {
+        step = Math.min(step, left / rate, toPhase(s, id) / rate);
+      }
       if (!started(s)) step = Math.min(step, s.run.startMs - t);
       else if (!s.done) step = Math.min(step, s.wake - t);
     }
     if (!Number.isFinite(step)) throw new Error(`sim: every run stalled at ${t} ms`);
+    peakDemand = Math.max(peakDemand, demand);
+    over += Math.max(0, demand - cfg.machineCores) * step;
+    if (cfg.conserve && step > 0) {
+      history.push({ from: t, to: t + step, idle: Math.max(0, cfg.machineCores - demand) });
+      while ((history[1]?.to ?? Number.POSITIVE_INFINITY) < t + step - RECLAIM_WINDOW_MS - 1)
+        history.shift();
+    }
     t += step;
     busy += Math.min(cfg.machineCores, demand) * step;
     for (const s of states) {
@@ -313,6 +392,8 @@ function engine(
         if (rest <= EPS_MS) {
           s.running.delete(id);
           s.ends.set(id, t);
+          const span = s.borrows.get(id);
+          if (span !== undefined) span.to = t;
           ended = true;
         } else s.running.set(id, rest);
       }
@@ -332,12 +413,23 @@ function engine(
   return {
     makespanMs: t,
     idleCoreS: (cfg.machineCores * t - busy) / 1000,
+    peakDemand,
+    overCoreS: over / 1000,
     runs: new Map(states.map((s) => [s.run.id, s])),
   };
 }
 
-function resultOf(s: RunState, makespanMs: number, idleCoreS: number): SimResult {
+function resultOf(
+  s: RunState,
+  makespanMs: number,
+  idleCoreS: number,
+  peakDemand: number,
+  overCoreS: number
+): SimResult {
   return {
+    borrowed: s.borrowed,
+    peakDemand,
+    overCoreS,
     makespanMs,
     idleCoreS,
     starts: s.starts,
@@ -354,7 +446,7 @@ function simulate(gates: readonly SimGate[], cfg: SimConfig): SimResult {
   const out = engine([{ id: 'run', startMs: 0, gates }], cfg);
   const s = out.runs.get('run');
   if (s === undefined) throw new Error('sim: the single run vanished');
-  return resultOf(s, out.makespanMs, out.idleCoreS);
+  return resultOf(s, out.makespanMs, out.idleCoreS, out.peakDemand, out.overCoreS);
 }
 
 /**
@@ -368,7 +460,7 @@ export function simulateRuns(
   const results = new Map<string, RunResult>();
   for (const [id, s] of out.runs)
     results.set(id, {
-      ...resultOf(s, s.endMs - s.run.startMs, out.idleCoreS),
+      ...resultOf(s, s.endMs - s.run.startMs, out.idleCoreS, out.peakDemand, out.overCoreS),
       endMs: s.endMs,
       idleToEndCoreS: (cfg.machineCores * s.endMs - s.busyAtEnd) / 1000,
     });
@@ -806,8 +898,7 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
     `survivor: a:first ${ga.grants.get('a:first')}, b ${gb.grants.get('b:short')}, a:second after b exited ${ga.grants.get('a:second')}`
   );
   check(
-    (ga.grants.get('a:first') ?? 99) <= 12 &&
-      (gb.endMs ?? Number.POSITIVE_INFINITY) < (ga.starts.get('a:second') ?? 0),
+    (ga.grants.get('a:first') ?? 99) <= 12 && gb.endMs < (ga.starts.get('a:second') ?? 0),
     `CONTROL: a's first gate must share with b, and b must exit before a's second gate, got ${ga.grants.get('a:first')}, b ended ${gb.endMs}`
   );
   check(
@@ -968,13 +1059,395 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
     `CONTROL: at a 0.9 share the planning wall must come from the work model, got ${planned(0.9)} ms`
   );
 
+  // 17. THE WIDE GATE THAT GOES QUIET (ci:quick run 39, 2026-11-01: 735 s under 3 busy cores with 76 gates ready). A pytest-shaped gate is granted about half the machine by the area rule; its predicted wall is a quarter of its true one, and from there on it keeps 0.4 of a core busy. 300 gates a little wider than what the grant leaves free queue behind it, the way check:types and check:ci-format-scope did at 9 and 23 cores, with one gate as wide as the machine. The area rule balances the backlog against the wide gate's PREDICTED wall, so a queue that fits drains before the tail; what is left for the tail is what does not fit. On the budget alone everything held waits for the true end, and no gate ending means no pass at all. With the idle measured, the queue drains into it, while the machine-wide gate, which no reading can fit, still waits for its reservation.
+  const quietTotal = 4_000_000;
+  const quietEst = 1_000_000;
+  const quietAt = quietEst / quietTotal;
+  const tailMix = (
+    phases: SimGate['phases'],
+    opts: {
+      prefix?: string;
+      machineWide?: boolean;
+      queued?: number;
+      queuedCores?: number;
+      queuedWallMs?: number;
+      total?: number;
+      est?: number;
+    } = {}
+  ): SimGate[] => {
+    const prefix = opts.prefix ?? '';
+    return [
+      {
+        id: `${prefix}wide`,
+        cores: 1,
+        wallMs: opts.total ?? quietTotal,
+        elastic: { min: 2, max: 'all' },
+        est: { cpuMs: opts.est ?? quietEst, wallMs: 200_000, estMs: 200_000, perCore: 1 },
+        phases,
+      },
+      ...(opts.machineWide === false
+        ? []
+        : [{ id: `${prefix}machine-wide`, cores: 24, wallMs: 6_000 }]),
+      ...Array.from({ length: opts.queued ?? 300 }, (_, i) => ({
+        id: `${prefix}q-${i}`,
+        cores: opts.queuedCores ?? 13,
+        wallMs: opts.queuedWallMs ?? 200,
+      })),
+    ];
+  };
+  const lastQueued = (r: SimResult, prefix = ''): number =>
+    Math.max(
+      ...[...r.ends].filter(([id]) => id.startsWith(`${prefix}q-`)).map(([, end]) => end),
+      0
+    );
+  const onLease = (gates: SimGate[], conserve: boolean): RunResult =>
+    runOf(simulateRuns([{ id: 'r', startMs: 0, gates }], { ...leaseCfg, conserve }), 'r');
+  const quietOff = onLease(tailMix([{ atFrac: quietAt, cores: 0.4 }]), false);
+  const quietOn = onLease(tailMix([{ atFrac: quietAt, cores: 0.4 }]), true);
+  const wideEnd = quietOff.ends.get('wide') ?? 0;
+  const quietFrom = quietAt * wideEnd;
+  table.push(
+    `wide gate quiet from ${(quietFrom / 1000).toFixed(0)} s, ends ${(wideEnd / 1000).toFixed(0)} s, grant ${quietOff.grants.get('wide')}`
+  );
+  table.push(
+    `  budget alone:   last queued gate ends ${(lastQueued(quietOff) / 1000).toFixed(0)} s, makespan ${(quietOff.makespanMs / 1000).toFixed(0)} s, idle ${quietOff.idleCoreS.toFixed(0)} core-s, borrowed ${quietOff.borrowed.size}`
+  );
+  table.push(
+    `  idle measured:  last queued gate ends ${(lastQueued(quietOn) / 1000).toFixed(0)} s, makespan ${(quietOn.makespanMs / 1000).toFixed(0)} s, idle ${quietOn.idleCoreS.toFixed(0)} core-s, borrowed ${quietOn.borrowed.size}, peak demand ${quietOn.peakDemand.toFixed(1)}`
+  );
+  check(
+    lastQueued(quietOff) >= wideEnd - EPS_MS && quietOff.borrowed.size === 0,
+    `CONTROL: on the budget alone the queue must wait out the quiet wide gate, last queued end ${lastQueued(quietOff).toFixed(0)} ms against its end ${wideEnd.toFixed(0)} ms`
+  );
+  check(
+    lastQueued(quietOn) <= quietFrom + 90_000,
+    `a held queue must drain into a quiet wide gate's real idle within 90 s of it going quiet at ${quietFrom.toFixed(0)} ms, last queued end ${lastQueued(quietOn).toFixed(0)} ms`
+  );
+  check(
+    quietOn.grants.get('wide') === quietOff.grants.get('wide') &&
+      (quietOn.starts.get('machine-wide') ?? 0) >= (quietOn.ends.get('wide') ?? 0) - EPS_MS,
+    `borrowing must not change the wide grant, and a gate wider than the reading must still wait for its reservation: grants ${quietOff.grants.get('wide')} and ${quietOn.grants.get('wide')}, machine-wide started ${quietOn.starts.get('machine-wide')} ms`
+  );
+  check(
+    quietOn.peakDemand <= P24.machineCores + 1e-6 && quietOn.overCoreS === 0,
+    `a borrow into a gate that stays quiet must never oversubscribe, peak demand ${quietOn.peakDemand.toFixed(2)}, over ${quietOn.overCoreS.toFixed(1)} core-s`
+  );
+
+  // 18. CONTROL: THE SAME GATE REALLY BUSY. The budget's picture is true, so the reading finds at most what the budget left, and nothing beyond the machine is ever started. The wide gate must not lose wall to a borrow.
+  const busyOff = onLease(tailMix(undefined), false);
+  const busyOn = onLease(tailMix(undefined), true);
+  table.push(
+    `  really busy:    wide ends ${((busyOn.ends.get('wide') ?? 0) / 1000).toFixed(0)} s (budget alone ${((busyOff.ends.get('wide') ?? 0) / 1000).toFixed(0)} s), peak demand ${busyOn.peakDemand.toFixed(1)}, over ${busyOn.overCoreS.toFixed(1)} core-s, borrowed ${busyOn.borrowed.size}`
+  );
+  check(
+    busyOn.peakDemand <= P24.machineCores + 1e-6 && busyOn.overCoreS === 0,
+    `a wide gate that really is busy must not be oversubscribed, peak demand ${busyOn.peakDemand.toFixed(2)} on ${P24.machineCores} cores, over ${busyOn.overCoreS.toFixed(1)} core-s`
+  );
+  check(
+    (busyOn.ends.get('wide') ?? 0) <= (busyOff.ends.get('wide') ?? 0) + EPS_MS,
+    `borrowing beside a busy wide gate must not slow it, ${busyOn.ends.get('wide')} against ${busyOff.ends.get('wide')} ms`
+  );
+
+  // The same again with a queue of one-core gates, which the reading could admit: past the wide gate's predicted end the stale reservation holds them, and what they may then borrow is the cores really idle, so the machine fills and stops there.
+  const busyOnes = onLease(
+    tailMix(undefined, { machineWide: true, queued: 2000, queuedCores: 1, queuedWallMs: 500 }),
+    true
+  );
+  table.push(
+    `  busy, one-core: borrowed ${busyOnes.borrowed.size}, peak demand ${busyOnes.peakDemand.toFixed(1)}, over ${busyOnes.overCoreS.toFixed(1)} core-s`
+  );
+  check(
+    busyOnes.peakDemand <= P24.machineCores + 1e-6 && busyOnes.overCoreS === 0,
+    `one-core gates borrowing beside a busy wide gate must stop at the machine, peak demand ${busyOnes.peakDemand.toFixed(2)}, over ${busyOnes.overCoreS.toFixed(1)} core-s`
+  );
+
+  // 19. THE WAKE: the wide gate goes quiet for 15 s, long enough for the reading to settle and the queue to borrow, then wakes with the borrowers still running. The oversubscription this causes is the rule's whole debt, so it is bounded by what could be borrowed at once for as long as a borrower may run, and the wide gate pays only that.
+  const wakeTotal = 80_000_000;
+  const wakeEst = 40_000_000;
+  const wakeFrom = wakeEst / wakeTotal;
+  const wakeMix = (): SimGate[] =>
+    tailMix(
+      [
+        { atFrac: wakeFrom, cores: 0.4 },
+        { atFrac: wakeFrom + 15_000 / 4_210_000, cores: 19 },
+      ],
+      {
+        machineWide: false,
+        queued: 120,
+        queuedCores: 2,
+        queuedWallMs: 40_000,
+        total: wakeTotal,
+        est: wakeEst,
+      }
+    );
+  const wakeOff = onLease(wakeMix(), false);
+  const wakeOn = onLease(wakeMix(), true);
+  const overBound = ((P24.machineCores - RECLAIM_HEADROOM) * BORROW_WALL_MS) / 1000;
+  table.push(
+    `  wakes mid-tail: wide ends ${((wakeOn.ends.get('wide') ?? 0) / 1000).toFixed(0)} s (budget alone ${((wakeOff.ends.get('wide') ?? 0) / 1000).toFixed(0)} s), peak demand ${wakeOn.peakDemand.toFixed(1)}, over ${wakeOn.overCoreS.toFixed(0)} core-s (bound ${overBound.toFixed(0)}), borrowed ${wakeOn.borrowed.size}`
+  );
+  check(
+    wakeOn.overCoreS > 0 && wakeOn.borrowed.size > 0,
+    `CONTROL: the wake case must really catch borrowers running, or its bound proves nothing: over ${wakeOn.overCoreS.toFixed(1)} core-s, borrowed ${wakeOn.borrowed.size}`
+  );
+  check(
+    wakeOn.overCoreS <= overBound,
+    `a wake must cost at most the borrowed cores for one borrow wall, ${overBound.toFixed(0)} core-s, got ${wakeOn.overCoreS.toFixed(1)}`
+  );
+  check(
+    (wakeOn.ends.get('wide') ?? 0) <= (wakeOff.ends.get('wide') ?? 0) + BORROW_WALL_MS,
+    `a wake must delay the wide gate by at most one borrow wall, ${wakeOn.ends.get('wide')} against ${wakeOff.ends.get('wide')} ms`
+  );
+
+  // 20. A RESERVATION IS STILL HONOURED: a fixed d-20 gate holds the budget and goes quiet; a d-20 gate behind it reserves its end, and 30 one-core gates of 45 s are ready. A borrow holds no budget, so the reserved gate starts the moment the holder ends, the same moment as with no borrowing at all. The one-core gates are predicted to run past that moment, so past the 4 cores the reservation leaves spare the budget alone keeps them waiting.
+  const reservedMix = (): SimGate[] => [
+    { id: 'holder', cores: 20, wallMs: 40_000, phases: [{ atFrac: 0.05, cores: 0.5 }] },
+    { id: 'reserved', cores: 20, wallMs: 10_000 },
+    ...Array.from({ length: 30 }, (_, i) => ({ id: `res-${i}`, cores: 1, wallMs: 45_000 })),
+  ];
+  const resOff = onLease(reservedMix(), false);
+  const resOn = onLease(reservedMix(), true);
+  table.push(
+    `  reservation:    reserved gate starts ${((resOn.starts.get('reserved') ?? 0) / 1000).toFixed(1)} s (budget alone ${((resOff.starts.get('reserved') ?? 0) / 1000).toFixed(1)} s), borrowed ${resOn.borrowed.size}, makespan ${(resOn.makespanMs / 1000).toFixed(0)} s (budget alone ${(resOff.makespanMs / 1000).toFixed(0)} s)`
+  );
+  check(
+    (resOn.starts.get('reserved') ?? 0) <= (resOff.starts.get('reserved') ?? 0) + EPS_MS &&
+      resOn.borrowed.size > 0,
+    `borrowers must not move a reserved start: ${resOn.starts.get('reserved')} against ${resOff.starts.get('reserved')} ms, borrowed ${resOn.borrowed.size}`
+  );
+
+  // 21. TWO RUNS, ONE IDLE: each has a quiet wide gate and a queue. Each reads the same machine, so each may spend only its half (the pure line in 22 holds the split), and a borrow takes no token, so the neighbour's grant and its budget are what they were. What the lease does with two runs on its own is unchanged, including the over-lease the bounded hold already admits; the borrow may add nothing to it.
+  const twoMix = (prefix: string): SimGate[] =>
+    tailMix([{ atFrac: 0.05, cores: 0.4 }], { prefix, machineWide: false, queuedCores: 6 });
+  const twoRuns = (conserve: boolean): { a: RunResult; b: RunResult } => {
+    const out = simulateRuns(
+      [
+        { id: 'a', startMs: 0, gates: twoMix('a:') },
+        { id: 'b', startMs: 0, gates: twoMix('b:') },
+      ],
+      { ...leaseCfg, conserve }
+    );
+    return { a: runOf(out, 'a'), b: runOf(out, 'b') };
+  };
+  const twoOff = twoRuns(false);
+  const twoOn = twoRuns(true);
+  table.push(
+    `  two runs:       grants ${twoOn.a.grants.get('a:wide')} and ${twoOn.b.grants.get('b:wide')}, b's queue ends ${(lastQueued(twoOn.b, 'b:') / 1000).toFixed(0)} s (budget alone ${(lastQueued(twoOff.b, 'b:') / 1000).toFixed(0)} s), borrowed ${twoOn.a.borrowed.size} and ${twoOn.b.borrowed.size}, peak demand ${twoOn.a.peakDemand.toFixed(1)} (budget alone ${twoOff.a.peakDemand.toFixed(1)}), over ${twoOn.a.overCoreS.toFixed(1)} core-s (budget alone ${twoOff.a.overCoreS.toFixed(1)})`
+  );
+  check(
+    twoOn.a.grants.get('a:wide') === twoOff.a.grants.get('a:wide') &&
+      twoOn.b.grants.get('b:wide') === twoOff.b.grants.get('b:wide'),
+    "a borrow takes no token, so neither run's grant may move"
+  );
+  check(
+    twoOn.b.borrowed.size > 0 && lastQueued(twoOn.b, 'b:') < lastQueued(twoOff.b, 'b:'),
+    `the run the lease starves must borrow and finish sooner: borrowed ${twoOn.b.borrowed.size}, queue end ${lastQueued(twoOn.b, 'b:')} against ${lastQueued(twoOff.b, 'b:')} ms`
+  );
+  check(
+    twoOn.a.peakDemand <= twoOff.a.peakDemand + 1e-6 &&
+      twoOn.a.overCoreS <= twoOff.a.overCoreS + 1e-6,
+    `two runs borrowing must add no oversubscription: peak ${twoOn.a.peakDemand.toFixed(2)} against ${twoOff.a.peakDemand.toFixed(2)}, over ${twoOn.a.overCoreS.toFixed(2)} against ${twoOff.a.overCoreS.toFixed(2)} core-s`
+  );
+
+  // 22. THE READING, PURE. Each line is a way the figure could lie.
+  const steady =
+    (idle: number): ((from: number, to: number) => number) =>
+    (from, to) =>
+      idle * (to - from);
+  const T = 100_000;
+  check(
+    reclaimableCores(T, steady(20), [], 1) === 19,
+    `20 idle cores less the headroom must read 19, got ${reclaimableCores(T, steady(20), [], 1)}`
+  );
+  check(reclaimableCores(T, () => undefined, [], 1) === 0, 'no reading must never read as idle');
+  check(
+    reclaimableCores(T, steady(20), [], 2) === 9,
+    `two runs split 20 idle into 10, less the headroom 9, got ${reclaimableCores(T, steady(20), [], 2)}`
+  );
+  check(
+    reclaimableCores(T, (from, to) => (to > T - 2_000 ? 2 : 20) * (to - from), [], 1) === 1,
+    `one busy bucket must be the whole figure: the idle has to hold across the window, got ${reclaimableCores(T, (from, to) => (to > T - 2_000 ? 2 : 20) * (to - from), [], 1)}`
+  );
+  check(
+    reclaimableCores(T, steady(15), [{ from: T - 60_000, cores: 5 }], 1) === 14,
+    `a borrower running through the window is added back and then subtracted, reading the 15 really idle less the headroom, got ${reclaimableCores(T, steady(15), [{ from: T - 60_000, cores: 5 }], 1)}`
+  );
+  check(
+    reclaimableCores(T, steady(0), [{ from: T - 60_000, to: T - 50_000, cores: 5 }], 1) === 0,
+    'a borrower that ended before the window must add nothing back'
+  );
+
+  // 23. WHO MAY BORROW, PURE: a long gate stays on the budget; a claim held elsewhere, the process count and memory all still refuse.
+  const cand = (id: string, over: Partial<Candidate> = {}): Candidate => ({
+    id,
+    slots: 1,
+    cores: 1,
+    memMb: 100,
+    estMs: 5_000,
+    heavy: false,
+    mutex: [],
+    reads: [],
+    cpuMs: 5_000,
+    ...over,
+  });
+  const fullBudget = { cores: 24, epsilon: 0, maxProcs: 48, memMb: 10_000 };
+  const holderGate = {
+    gate: cand('holder', { cores: 24, grant: 24, mutex: ['res'] }),
+    endsAt: 1_000_000,
+  };
+  const admitWith = (
+    ready: Candidate[],
+    borrowable: number | undefined,
+    budget = fullBudget
+  ): Set<string> =>
+    new Set(
+      admit(
+        ready,
+        [holderGate],
+        { sched: 'cores', jobs: 24, heavyLimit: 5, budget, borrowable },
+        0
+      ).launch.map((g) => g.id)
+    );
+  check(
+    admitWith([cand('short')], undefined).size === 0,
+    'CONTROL: with no reading a full budget must still hold a one-core gate'
+  );
+  check(admitWith([cand('short')], 5).has('short'), 'a short gate must borrow from measured idle');
+  check(
+    !admitWith([cand('long', { estMs: BORROW_WALL_MS + 1 })], 20).has('long'),
+    'a gate predicted past the borrow wall must stay on the budget'
+  );
+  check(
+    !admitWith([cand('narrow', { cores: 4 })], 3).has('narrow'),
+    'a gate wider than the reading must not borrow'
+  );
+  check(
+    admitWith([cand('a'), cand('b'), cand('c')], 2).size === 2,
+    'a pass must spend the reading once, not once per gate'
+  );
+  check(
+    !admitWith([cand('claim', { reads: ['res'] })], 20).has('claim'),
+    "a borrower must still respect a running gate's exclusive claim"
+  );
+  check(
+    !admitWith([cand('procs')], 20, { ...fullBudget, maxProcs: 1 }).has('procs'),
+    'a borrower must still count against K'
+  );
+  check(
+    !admitWith([cand('fat', { memMb: 20_000 })], 20).has('fat'),
+    'a borrower must still count against M'
+  );
+  const borrowedLaunch = admit(
+    [cand('short', { cores: 3 })],
+    [holderGate],
+    { sched: 'cores', jobs: 24, heavyLimit: 5, budget: fullBudget, borrowable: 5 },
+    0
+  ).launch[0];
+  check(
+    borrowedLaunch?.cores === 0 && borrowedLaunch?.grant === 3 && borrowedLaunch?.borrowed === 3,
+    `a borrow holds no budget and its process is told its real width: ${JSON.stringify(borrowedLaunch)}`
+  );
+
   return { failures, assertions, table };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+/**
+ * THE BORROW THROUGH THE REAL POOL LOOP (pool.ts reclaimableCores). A one-core gate behind a full budget: nothing ends until it starts, or a timer gives up, so only the pool's own idle poll can launch it. schedulerSelftest drives admit() and cannot see that wake. The control has no reading, and the same gate waits out the whole wide gate. Returns failures.
+ */
+export async function reclaimLoopSelftest(): Promise<string[]> {
+  const failures: string[] = [];
+  const specs: GateSpec[] = [
+    specOf({ id: 'quiet-wide', cores: 4, wallMs: 60_000 }),
+    specOf({ id: 'quiet-small', cores: 1, wallMs: 1_000 }),
+  ];
+  const drive = async (
+    idleCoreMs: IdleReader | undefined
+  ): Promise<{ order: string[]; told: Map<string, number>; borrowed: number | undefined }> => {
+    const order: string[] = [];
+    const told = new Map<string, number>();
+    let release: () => void = () => {};
+    const smallStarted = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const results = await runPool(specs, {
+      jobs: 4,
+      heavyLimit: 1,
+      failFast: false,
+      durations: new Map([
+        ['quiet-wide', 60_000],
+        ['quiet-small', 1_000],
+      ]),
+      sched: 'cores',
+      budget: { cores: 4, epsilon: 0, maxProcs: 8, memMb: 64 * 1024 },
+      costs: new Map<string, GateCost>([
+        ['quiet-wide', { cpuMs: 240_000, wallMs: 60_000 }],
+        ['quiet-small', { cpuMs: 1_000, wallMs: 1_000 }],
+      ]),
+      idleCoreMs,
+      reclaimPollMs: 10,
+      exec: async (spec, grant) => {
+        order.push(spec.id);
+        told.set(spec.id, grant.cores);
+        if (spec.id === 'quiet-small') release();
+        else
+          await Promise.race([
+            smallStarted,
+            new Promise<void>((resolve) => setTimeout(resolve, 300)),
+          ]);
+        order.push(`${spec.id}:end`);
+        return { code: 0, stdout: '', stderr: '', ms: 1 };
+      },
+    });
+    return {
+      order,
+      told,
+      borrowed: results.find((r) => r.id === 'quiet-small')?.borrowed,
+    };
+  };
+  const on = await drive((from, to) => 3 * (to - from));
+  if (
+    !(
+      on.order.indexOf('quiet-small') < on.order.indexOf('quiet-wide:end') &&
+      on.told.get('quiet-small') === 1 &&
+      on.borrowed === 1
+    )
+  )
+    failures.push(
+      `the pool's idle poll must start a held gate in measured idle while the wide gate runs, told 1 core and recorded as borrowed, got ${JSON.stringify(on.order)} ${JSON.stringify([...on.told])} borrowed ${on.borrowed}`
+    );
+  const off = await drive(undefined);
+  if (
+    !(off.order.indexOf('quiet-small') > off.order.indexOf('quiet-wide:end')) ||
+    off.borrowed !== undefined
+  )
+    failures.push(
+      `CONTROL: with no idle reading the same gate must wait out the wide gate, got ${JSON.stringify(off.order)}`
+    );
+  // The reading itself: half idle of 24 between two ticks; a window older than the first tick, and one past a stopped sampler, must both read as nothing.
+  const ticks: CpuTick[] = [
+    { t: 1000, busy: 0, idle: 0, iowait: 0, total: 0 },
+    { t: 3000, busy: 50, idle: 50, iowait: 0, total: 100 },
+  ];
+  if (idleCoreMsBetween(ticks, 24, 1000, 3000) !== 12 * 2000)
+    failures.push(
+      `half idle on 24 cores over 2 s must read 24,000 core-ms, got ${idleCoreMsBetween(ticks, 24, 1000, 3000)}`
+    );
+  if (idleCoreMsBetween(ticks, 24, 500, 3000) !== undefined)
+    failures.push('a window older than the first tick must read as no reading');
+  if (idleCoreMsBetween(ticks, 24, 2000, 9000) !== undefined)
+    failures.push('a window past a stopped sampler must read as no reading');
+  return failures;
+}
+
+if (isEntryPoint(import.meta.filename)) {
   const { failures, assertions, table } = schedulerSelftest();
-  for (const row of table) process.stdout.write(`${row}\n`);
-  for (const f of failures) process.stderr.write(`FAIL: ${f}\n`);
-  process.stdout.write(`sim: ${assertions - failures.length}/${assertions} assertions hold\n`);
-  process.exitCode = failures.length > 0 ? 1 : 0;
+  // A promise chain, not a top-level await: run.ts imports this file, and a scratch tree with no `"type": "module"` loads it as CJS, where esbuild refuses a top-level await.
+  void reclaimLoopSelftest().then((loop) => {
+    for (const row of table) process.stdout.write(`${row}\n`);
+    for (const f of [...failures, ...loop]) process.stderr.write(`FAIL: ${f}\n`);
+    process.stdout.write(
+      `sim: ${assertions - failures.length}/${assertions} assertions hold, pool loop ${loop.length === 0 ? 'holds' : 'FAILS'}\n`
+    );
+    process.exitCode = failures.length + loop.length > 0 ? 1 : 0;
+  });
 }

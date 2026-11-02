@@ -280,7 +280,9 @@ class Roundtrip:
         listing = self.run_vm("sudo -n renet repository license-status --output json").stdout
         try:
             rows = json.loads(listing)
-            return str(next(r["status"] for r in rows if r["repositoryGuid"] == src))
+            row = next(r for r in rows if r["repositoryGuid"] == src)
+            status = str(row["status"])
+            return status if status == "valid" else "%s: %s" % (status, row.get("message", ""))
         except (ValueError, StopIteration, KeyError, TypeError):
             return "unreadable: %s" % listing.strip()[:80]
 
@@ -309,13 +311,27 @@ class Roundtrip:
             )
         )
 
-    def restore(self, tgt: str, lineage: str, at: str) -> dict:
+    def restore(self, tgt: str, lineage: str, at: str, passphrase: str = "") -> dict:
+        """`renet backup restore`; a `passphrase` goes over stdin, never onto a command line, and makes the verb test-open the image before placing it."""
         return self._json_result(
             self.run_vm(
-                "sudo -n renet backup restore --datastore %s --repo %s --lineage %s --at %s"
-                % (self.datastore, tgt, lineage, at),
+                "sudo -n renet backup restore --datastore %s --repo %s --lineage %s --at %s%s"
+                % (self.datastore, tgt, lineage, at, " --password-stdin" if passphrase else ""),
+                passphrase + "\n" if passphrase else None,
                 must=False,
             )
+        )
+
+    def passphrase(self) -> str:
+        """The source repository's passphrase, which `create_source` kept in the work directory."""
+        return (self.work / "luks.txt").read_text(encoding="utf-8").strip()
+
+    def image_present(self, guid: str) -> bool:
+        return (
+            self.run_vm(
+                "sudo -n test -e %s/repositories/%s" % (self.datastore, guid), must=False
+            ).returncode
+            == 0
         )
 
     def teardown(self) -> None:
@@ -389,8 +405,13 @@ class Roundtrip:
         self.created.append(tgt)
         # The target's own licence. Skipping this is what makes resolveRestoreLicense reach for a stranger's; see the header.
         self.issue_license(tgt, src, "fork")
-        restored = self.restore(tgt, src, snap)
+        # PROVE THE GATE. A wrong passphrase must end the restore with nothing placed, so the "opened" below can be false.
+        refused = self.restore(tgt, src, snap, "not-" + self.passphrase())
+        self.check("wrong passphrase: refused", "refused", str(refused.get("passphraseCheck", "")))
+        self.check("wrong passphrase: places nothing", "False", str(self.image_present(tgt)))
+        restored = self.restore(tgt, src, snap, self.passphrase())
         self.check("restore completed", "restored", str(restored.get("status", "")))
+        self.check("the image opens", "opened", str(restored.get("passphraseCheck", "")))
         if restored.get("status") != "restored":
             raise StepError("the restore did not complete, so there is no image to compare")
 

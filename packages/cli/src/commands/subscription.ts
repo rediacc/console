@@ -13,6 +13,11 @@ import {
   saveStoredSubscriptionToken,
 } from '../services/account/subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
+import {
+  loginWithPassword,
+  resolvePasswordLoginInput,
+  wantsPasswordLogin,
+} from '../services/account/subscription-password-auth.js';
 import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { configService } from '../services/config/config-resources.js';
 import { updateConfigAtPointer } from '../services/config/synced-write.js';
@@ -31,6 +36,7 @@ import {
   executeSubscriptionStatus,
 } from './subscription-actions.js';
 import { outputSubscriptionScope } from './subscription-output.js';
+import { executeProxyToken } from './subscription-proxy-token.js';
 
 /** Clear session and notify when the server URL has changed. */
 function handleServerChange(currentServer: string | undefined, newServer: string): void {
@@ -274,6 +280,19 @@ async function loginWithToken(token: string, serverUrl: string): Promise<void> {
   renderLoginSummary(status, status.teamName ?? currentTeamName, serverUrl);
 }
 
+/** Headless login input: REDIACC_LOGIN_EMAIL + REDIACC_LOGIN_PASSWORD (or --password-stdin). Read before any prompt or server rewrite so a refusal leaves nothing behind. */
+function readPasswordLoginInput(options: {
+  token?: string;
+  passwordStdin?: boolean;
+}): Promise<Awaited<ReturnType<typeof resolvePasswordLoginInput>> | undefined> {
+  const stdin = Boolean(options.passwordStdin);
+  if (options.token !== undefined && stdin) {
+    return Promise.reject(new ValidationError(t('commands.subscription.login.tokenAndPassword')));
+  }
+  if (options.token !== undefined || !wantsPasswordLogin(stdin)) return Promise.resolve(undefined);
+  return resolvePasswordLoginInput(stdin);
+}
+
 export function registerSubscriptionCommands(program: Command): void {
   const sub = program
     .command('subscription')
@@ -285,11 +304,13 @@ export function registerSubscriptionCommands(program: Command): void {
     .command('login')
     .description(t('commands.subscription.login.description'))
     .option('-t, --token <token>', t('options.apiToken'))
+    .option('--password-stdin', t('commands.subscription.login.optionPasswordStdin'))
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
+        const passwordLogin = await readPasswordLoginInput(options);
         // Read and validate the token FIRST: a refused token (empty stdin, whitespace) must not leave a region prompt or a server rewrite behind it. `--token ""` is a token given and refused, not the device-code flow.
-        const token =
+        let token =
           options.token === undefined ? undefined : await resolveLoginToken(String(options.token));
 
         if (options.server) {
@@ -299,6 +320,14 @@ export function registerSubscriptionCommands(program: Command): void {
         }
 
         const serverUrl = await resolveAndSyncServer(options);
+
+        if (passwordLogin) {
+          token = await withSpinner(
+            t('commands.subscription.login.passwordSigningIn'),
+            () => loginWithPassword(serverUrl, passwordLogin),
+            t('commands.subscription.login.passwordSignedIn')
+          );
+        }
 
         if (token === undefined) {
           const { status } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
@@ -341,6 +370,21 @@ export function registerSubscriptionCommands(program: Command): void {
           }
         }
         outputService.success(t('commands.subscription.logout.success'));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription proxy-token [--json]
+  // Mints a short-lived proxy:exec token from this device's login, for `rdc --proxy`. Stdout carries
+  // only the token (with --json, the token and its expiresAt), so `$(...)` captures it whole.
+  sub
+    .command('proxy-token')
+    .description(t('commands.subscription.proxyToken.description'))
+    .option('--json', t('commands.subscription.proxyToken.jsonOption'))
+    .action(async (options: { json?: boolean }) => {
+      try {
+        await executeProxyToken(options);
       } catch (error) {
         handleError(error);
       }

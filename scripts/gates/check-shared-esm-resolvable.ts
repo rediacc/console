@@ -189,7 +189,9 @@ if (!existsSync(DIST)) {
   process.exit(1);
 }
 
-const modules = globSync('**/*.js', { cwd: DIST, absolute: true }).sort();
+const modules = globSync('**/*.js', { cwd: DIST, absolute: true }).sort(
+  (a, b) => Number(a > b) - Number(a < b)
+);
 if (modules.length < MIN_MODULES) {
   console.error(
     `✗ only ${modules.length} modules under dist (floor ${MIN_MODULES}).\n` +

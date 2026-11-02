@@ -10,6 +10,8 @@ import json
 import os
 import subprocess
 
+from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
+
 from rediacc_hooks import dispatch
 
 
@@ -69,3 +71,46 @@ def test_stale_pr_branch_date_without_payload_cwd_judges_ev_cwd(tmp_path, monkey
         "block_stale_pr_branch_date", payload, cwd=str(repo), env=dict(os.environ)
     )
     assert rc == 0, err
+
+
+def _stale_repo(tmp_path):
+    repo = tmp_path / "console"
+    repo.mkdir()
+    branch = _stale_branch()
+    _git(repo, "init", "-q", "--initial-branch=%s" % branch)
+    (repo / "seed").write_text("s\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "seed")
+    return repo, branch
+
+
+def _create(repo, command, monkeypatch):
+    monkeypatch.delenv("PR_BRANCH_DATE_OK", raising=False)
+    payload = json.dumps(
+        {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(repo)}
+    )
+    return dispatch.run_one(
+        "block_stale_pr_branch_date", payload, cwd=str(repo), env=dict(os.environ)
+    )
+
+
+def test_submodule_pr_on_the_live_console_branch_is_admitted(tmp_path, monkeypatch):
+    """A submodule PR whose head is the console's live branch keeps that name, whatever its date (2026-10-23, `--repo rediacc/account --head 1020-1`)."""
+    repo, branch = _stale_repo(tmp_path)
+    for flag in ("--repo " + ACCOUNT_REPO, "-R " + RENET_REPO, "--repo=" + ELITE_REPO):
+        cmd = "gh pr create --draft %s --head %s --fill" % (flag, branch)
+        rc, _out, err = _create(repo, cmd, monkeypatch)
+        assert rc == 0, (cmd, err)
+
+
+def test_submodule_pr_on_another_stale_head_and_console_pr_are_still_refused(tmp_path, monkeypatch):
+    repo, branch = _stale_repo(tmp_path)
+    other = "0103-1" if branch != "0103-1" else "0104-1"
+    for cmd in (
+        "gh pr create --draft --repo %s --head %s --fill" % (ACCOUNT_REPO, other),
+        "gh pr create --draft --head %s --fill" % branch,
+        "gh pr create --draft --repo %s --head %s --fill" % (GH_REPO, branch),
+    ):
+        rc, _out, err = _create(repo, cmd, monkeypatch)
+        assert rc == 2, (cmd, err)
+        assert "carries an OLD date" in err

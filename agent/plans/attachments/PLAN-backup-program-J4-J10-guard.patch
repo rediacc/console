@@ -1,0 +1,1300 @@
+diff --git a/.claude/rediacc_hooks/git/githooks.py b/.claude/rediacc_hooks/git/githooks.py
+index 175b1e7b3..9967b230e 100644
+--- a/.claude/rediacc_hooks/git/githooks.py
++++ b/.claude/rediacc_hooks/git/githooks.py
+@@ -7,7 +7,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
+   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
+   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
+   pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
+-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
++  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below).
+ 
+ THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
+ 
+@@ -334,9 +334,95 @@ def pre_push(argv: list[str], stdin: str) -> int:
+                 "this creates the remote branch `%s`, and the one live branch is `%s`."
+                 % (name, current or "(detached)")
+             )
++    reason = backup_receipt_refusal(repo, lines)
++    if reason:
++        return _refuse(
++            "this push touches the backup paths and no VERIFIED backup receipt covers it.\n"
++            "%s\n"
++            "The pre-bash guard `block_backup_unverified_push` admits the same push with an\n"
++            "operator answer: %s='<drill-unavailable|not-runtime|deadline>: <why, %d+ chars>\n"
++            "ASKED:<YYYY-MM-DDTHH:MM>Z' on the push. This hook checks its shape only; the guard\n"
++            "proves the ASKED minute." % (reason, BACKUP_REASON_ENV, BACKUP_MIN_WHY)
++        )
+     return 0
+ 
+ 
++# THE BACKUP RECEIPT AT THE GIT LAYER (box J10 of agent/plans/PLAN-backup-program.md). `block_backup_unverified_push` (box J4) refuses an agent's Bash `git push` of the backup paths without a VERIFIED backup receipt; a push from the operator's terminal or from a subprocess never reaches it, so this hook asks the same question of every pushed `refs/heads/*` commit.
++#
++# ONE DEFINITION, RUN AS A PROCESS. The trigger and the admission rule are `rediacc_ci.drills.backup_check_trigger`, and this module adds no `sys.path` entry (`test_canonical_sys_path_hop.py`), so it runs `python3 -m rediacc_ci.drills.backup_check_trigger check` with `.ci` of THIS checkout on `PYTHONPATH`, against the pushing repository. Exit 0 admits; 1 is the refusal it prints; anything else, a timeout included, is UNCHECKED and refused too, never a pass.
++#
++# WHAT IS NOT JUDGED: a submodule push (the console pointer push carries its range), a delete, a non-branch ref, and a commit some remote-tracking ref already contains (it was judged when it was first pushed; the fast-forward of `main` and the mirror copy are such pushes). The base is the remote's old tip when it is a commit here, else the merge-base with `refs/remotes/origin/main`.
++#
++# THE ESCAPE is the guard's own variable, checked for shape (a kind, a why of `BACKUP_MIN_WHY`+ characters, an `ASKED:` minute). No transcript reaches a git hook, so the minute is proven only by the guard for an agent's push; from the operator's terminal it is the operator's own word, like `COMMIT_POLICY_OK=1`.
++BACKUP_MODULE = "rediacc_ci.drills.backup_check_trigger"
++BACKUP_REASON_ENV = "BACKUP_CHECK_PUSH_REASON"
++BACKUP_KINDS = ("drill-unavailable", "not-runtime", "deadline")
++BACKUP_MIN_WHY = 40
++BACKUP_TIMEOUT = 120
++_BACKUP_REASON_RE = re.compile(r"^\s*([A-Za-z-]+)\s*:\s*(.*?)\s*$", re.DOTALL)
++_BACKUP_ASKED_RE = re.compile(r"\bASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
++
++
++def backup_escape_shaped(reason: str) -> bool:
++    """True when `reason` has the shape the guard's escape needs: a known kind, a why of `BACKUP_MIN_WHY`+ characters once the `ASKED:` token is removed, and the token itself."""
++    m = _BACKUP_REASON_RE.match(reason or "")
++    if not m or m.group(1).lower() not in BACKUP_KINDS:
++        return False
++    why = re.sub(r"\s*\bASKED:\S*", "", m.group(2)).strip()
++    return len(why) >= BACKUP_MIN_WHY and bool(_BACKUP_ASKED_RE.search(reason))
++
++
++def _published(repo: str, oid: str) -> bool:
++    return bool(
++        cp.git(
++            ["for-each-ref", "--contains", oid, "--format=%(refname)", "refs/remotes/"], cwd=repo
++        )
++    )
++
++
++def backup_receipt_refusal(repo: str, lines: list[list[str]]) -> str:
++    """ "" when no pushed branch commit needs the backup receipt or a receipt admits each, else the refusal text."""
++    if not repo or cp.superproject(repo):
++        return ""
++    if backup_escape_shaped(os.environ.get(BACKUP_REASON_ENV, "")):
++        return ""
++    env = dict(os.environ, PYTHONPATH=str(CONSOLE_ROOT / ".ci"))
++    for _local_ref, local_oid, remote_ref, remote_oid in lines:
++        if not remote_ref.startswith("refs/heads/") or local_oid == cp.ZERO_OID:
++            continue
++        if _published(repo, local_oid):
++            continue
++        argv = [sys.executable, "-m", BACKUP_MODULE, "check", "--root", repo, "--tip", local_oid]
++        if (
++            remote_oid != cp.ZERO_OID
++            and cp.git(["cat-file", "-e", "%s^{commit}" % remote_oid], cwd=repo) is not None
++        ):
++            argv += ["--base", remote_oid]
++        try:
++            proc = subprocess.run(
++                argv,
++                cwd=repo,
++                env=env,
++                capture_output=True,
++                text=True,
++                timeout=BACKUP_TIMEOUT,
++                check=False,
++            )
++        except (OSError, subprocess.TimeoutExpired) as exc:
++            return "UNCHECKED: the backup check of %s did not run (%s)" % (local_oid[:12], exc)
++        if proc.returncode == 0:
++            continue
++        said = (proc.stderr.strip() or proc.stdout.strip())[-2000:]
++        if proc.returncode != 1:
++            return "UNCHECKED: the backup check of %s exited %d: %s" % (
++                local_oid[:12],
++                proc.returncode,
++                said or "(no output)",
++            )
++        return said
++    return ""
++
++
+ # --------------------------------------------------------------------------- pre-commit ---------------------------------------------------------------------------
+ #
+ # A COMMIT THAT LEAVES A GENERATED DOC REGION STALE IS REFUSED HERE, NOT 17 MINUTES LATER. On branch 1006-1, 1fb9eefe7 edited `.ci/policy/.audit-prod-allowlist` and 7f2ece4c1 edited `.ci/config/env-manifest.json`, both inputs of `scripts/gen/gen-docs.ts`, and neither re-ran `--write`. Each surfaced only in the pre-push run, as check:ci-doc-region-parity and three test_gate_docs_gen failures, and each needed a fix commit (423397221,
+diff --git a/scripts/data/hook-inventory-baseline.json b/scripts/data/hook-inventory-baseline.json
+index b0ff425b6..51c6621e9 100644
+--- a/scripts/data/hook-inventory-baseline.json
++++ b/scripts/data/hook-inventory-baseline.json
+@@ -15,6 +15,7 @@
+   ".claude/rediacc_hooks/guards/block_agent_browser_repo_output.py",
+   ".claude/rediacc_hooks/guards/block_agent_cap.py",
+   ".claude/rediacc_hooks/guards/block_agent_state_shape.py",
++  ".claude/rediacc_hooks/guards/block_backup_unverified_push.py",
+   ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
+   ".claude/rediacc_hooks/guards/block_binary_deploy.py",
+   ".claude/rediacc_hooks/guards/block_blanket_git_add.py",
+diff --git a/.claude/rediacc_hooks/guards/block_backup_unverified_push.py b/.claude/rediacc_hooks/guards/block_backup_unverified_push.py
+new file mode 100644
+index 000000000..c1dd17f34
+--- /dev/null
++++ b/.claude/rediacc_hooks/guards/block_backup_unverified_push.py
+@@ -0,0 +1,496 @@
++"""Refuse a `git push` whose range touches the backup paths (the CLI backup commands and services, renet's chunk store and backup commands, the account backup routes and services) unless a VERIFIED backup receipt covers the pushed tree and both its gitlinks, or the operator answered for it.
++
++THE ORDER. Box J4 of agent/plans/PLAN-backup-program.md: "a backup receipt: backup_check_trigger.py plus block_backup_unverified_push.py, cloned from the vm-check pair ... REASON_ENV with ASKED: is the only escape". The backup path has no CI job that drives it end to end on every change (suite 26 is box J6), so a change to it is proven by the RustFS drill (legs a-l) and its on-premise variant (box I7) before it leaves this machine.
++
++WHAT IS TOUCHED is never decided here. `rediacc_ci.drills.backup_check_trigger.changed_paths(root, base, "push", tip)` is the only definition, imported through `syspath.import_from_ci`; its git arithmetic and `push_base` are the vm-check trigger's own. A private/renet or private/account gitlink move is diffed inside that submodule, and a range that cannot be computed is UNKNOWN, listed as `(unknown) <submodule> <sha>: <why>`, and counts as touched. A push base that cannot be resolved is unknown the same way.
++
++WHAT IS PUSHED is `block_vm_unverified_push`'s reading, called rather than copied (`VM._tips`): every refspec source resolved to a commit and judged on its own, `--all` and glob refspecs enumerated, `--mirror` and an unenumerable ref set judged blind (refused unless escaped as `not-runtime` or `deadline`).
++
++THE RECEIPT is judged by `backup_check_trigger.admit(root, tree, inputs_of_tree(root, tree), pointers_of_tree(root, tree))`: VERIFIED, both gitlinks equal to the pushed tree's (`stale-gitlink`), the same tree or the same console trigger digest (`other-inputs`), each submodule checkout equal to its pointer and unmodified. A receipt short of legs a-l or the on-premise variant is never VERIFIED (the module refuses to write one).
++
++THE ESCAPE is an environment assignment on the push itself, read from the shared lexer's walk (`run.env`) exactly as `VM_CHECK_PUSH_REASON` is:
++
++    BACKUP_CHECK_PUSH_REASON='<kind>: <why, 40+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z' git push origin <branch>
++
++    drill-unavailable  a NOT_VERIFIED backup receipt for these inputs exists, so the attempt was made
++    not-runtime        the touched change cannot alter what the drill exercises; the why names the files
++    deadline           production or CD state that cannot wait; the why names it
++
++  Every kind needs the `ASKED:` minute, matched against an AskUserQuestion answer in the payload's `transcript_path` within 300 s by `wl_checks._asked_in_transcript`. A transcript that cannot be read proves nothing, so the escape is refused then.
++
++THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/backup-check-push-reasons.jsonl (ts, branch, head, tree, renet, account, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 63 is the last pre-bash slot, so every other guard, `block_vm_unverified_push` at 62 included, has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing.
++
++SCOPE is `block_vm_unverified_push`'s: a command-position `git push` in this checkout; not a `--dry-run`, a delete, the GitLab mirror push of `origin/main`, a submodule push or another repository. The git-level `pre-push` hook (box J10) backs this up for pushes that never pass through the Bash tool.
++
++FAILS OPEN, LOUDLY, on a broken environment (no root, the trigger module will not import, git cannot name the pushed tree): a note on stderr and the push allowed, like the sibling push guards. A verdict is never failed open.
++"""
++
++import datetime
++import json
++import pathlib
++
++from rediacc_hooks import commit_policy, hookio, plan_gate, syspath
++from rediacc_hooks.guards import block_unverified_push as PUSH
++from rediacc_hooks.guards import block_vm_unverified_push as VM
++
++CHAIN = "pre-bash"
++OWN_SUITE = True
++# The last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard has let the command through.
++ORDER = 63
++
++# The touched test, inverted: planted, every push reads as untouched and passes without a receipt.
++DEFECT = ("if not hits:", "if True:")
++# The further mutants the own suite plants; each must flip at least one refusal to allowed.
++MUTANTS = {
++    # The judge stops requiring the pushed tree's gitlinks, so a receipt taken at another renet admits.
++    "gitlinks-ignored": (
++        "verdict = trigger.admit(root_path, tree, digest, pointers)",
++        "verdict = trigger.admit(root_path, tree, digest, {})",
++    ),
++    "inputs-always-equal": (
++        'return receipt.get("tree") == tree or (bool(digest) and receipt.get("inputs") == digest)',
++        "return True",
++    ),
++    "asked-always-true": (
++        "return bool(wl_checks._asked_in_transcript(reason, transcript))",
++        "return True",
++    ),
++}
++
++REASON_ENV = "BACKUP_CHECK_PUSH_REASON"
++KINDS = ("drill-unavailable", "not-runtime", "deadline")
++MIN_WHY = 40
++LEDGER_REL = "agent/ledgers/backup-check-push-reasons.jsonl"
++HITS_SHOWN = 10
++TRIGGER_MOD = "rediacc_ci.drills.backup_check_trigger"
++
++UNEXAMINED = "block-backup-unverified-push: %s; this push passed UNEXAMINED."
++
++
++# --------------------------------------------------------------------------- fixture worlds
++
++RENET = VM.RENET
++ACCOUNT = VM.ACCOUNT
++CONSOLE_FILE = "packages/cli/src/services/backup/backup-schedule.ts"
++RENET_FILE = "pkg/chunkstore/store.go"
++RENET_TEST = "pkg/chunkstore/store_test.go"
++RENET_OTHER = "pkg/license/x.go"
++ACCOUNT_FILE = "src/services/backup-gc.service.ts"
++
++
++def world(path, console=False, renet_files=(), account_files=(), missing_old=False):
++    """`block_vm_unverified_push.world` (a console-shaped checkout on `1008-1` with real `private/renet` and `private/account` gitlinks, one unpushed commit), plus a second commit editing `CONSOLE_FILE` when `console`. Returns the console path."""
++    root = VM.world(
++        path, renet_files=renet_files, account_files=account_files, missing_old=missing_old
++    )
++    if console:
++        VM._put(root, CONSOLE_FILE, "export const schedule = 2;\n")
++        VM._commit(root, "backup schedule")
++    return root
++
++
++def plant_receipt(
++    root,
++    status="VERIFIED",
++    tree=None,
++    legs=None,
++    onprem=True,
++    reason_class=None,
++    checkout=None,
++    modified=False,
++):
++    """Write a schema 1 backup receipt into `root`'s cache through the trigger module's own `write`, keyed on `tree` (HEAD's by default) with that tree's digest and gitlinks. `checkout` overrides the renet checkout, `modified` both modified flags."""
++    trigger = syspath.import_from_ci(TRIGGER_MOD)
++    root = pathlib.Path(root)
++    tree = tree or VM._git(root, "rev-parse", "HEAD^{tree}")
++    pointers = trigger.pointers_of_tree(root, tree)
++    reason = None
++    if status != "VERIFIED":
++        reason = {"class": reason_class or "store-unavailable", "detail": "RustFS :9100 refused"}
++    receipt = {
++        "schema": trigger.SCHEMA,
++        "status": status,
++        "reason": reason,
++        "tree": tree,
++        "head": VM._git(root, "rev-parse", "HEAD"),
++        "inputs": trigger.inputs_of_tree(root, tree),
++        "renet": {
++            "pointer": pointers[RENET],
++            "checkout": pointers[RENET] if checkout is None else checkout,
++            "modified": modified,
++        },
++        "account": {
++            "pointer": pointers[ACCOUNT],
++            "checkout": pointers[ACCOUNT],
++            "modified": modified,
++        },
++        "legs": list(trigger.REQUIRED_LEGS if legs is None else legs),
++        "onprem": onprem,
++        "runId": "fixture-backup-run",
++        "startedAt": "2026-01-01T00:00:00Z",
++        "finishedAt": "2026-01-01T00:05:00Z",
++    }
++    trigger.write(root, receipt)
++    return root
++
++
++def _seed_tree(root):
++    tree = VM._git(root, "rev-parse", "origin/main^{tree}")
++    if not tree:
++        raise RuntimeError("fixture has no origin/main tree to seed the receipt from")
++    return tree
++
++
++def _stale_gitlink(path):
++    """A renet chunk-store range; the only VERIFIED receipt was taken at the seed, whose console inputs match but whose renet gitlink is the old one."""
++    root = world(path, renet_files=(RENET_FILE,))
++    return plant_receipt(root, tree=_seed_tree(root))
++
++
++def _stale_not_verified(path):
++    """The console backup file touched; the only NOT_VERIFIED receipt is for the seed's tree, whose console inputs differ."""
++    root = world(path, console=True)
++    return plant_receipt(root, "NOT_VERIFIED", tree=_seed_tree(root))
++
++
++FIXTURES = {
++    "bck-docs-only": world,
++    "bck-console-none": lambda p: world(p, console=True),
++    "bck-console-verified": lambda p: plant_receipt(world(p, console=True)),
++    "bck-console-not-verified": lambda p: plant_receipt(world(p, console=True), "NOT_VERIFIED"),
++    "bck-console-failed": lambda p: plant_receipt(world(p, console=True), "FAILED"),
++    "bck-renet-chunkstore": lambda p: world(p, renet_files=(RENET_FILE,)),
++    "bck-renet-tests-only": lambda p: world(p, renet_files=(RENET_TEST,)),
++    "bck-renet-other": lambda p: world(p, renet_files=(RENET_OTHER,)),
++    "bck-renet-verified": lambda p: plant_receipt(world(p, renet_files=(RENET_FILE,))),
++    "bck-stale-gitlink": _stale_gitlink,
++    "bck-account-src": lambda p: world(p, account_files=(ACCOUNT_FILE,)),
++    "bck-missing-old": lambda p: world(p, missing_old=True),
++    "bck-stale-not-verified": _stale_not_verified,
++}
++
++ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
++    (name[len("bck-") :], {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in FIXTURES
++]
++
++_ASK = " ASKED:2026-01-01T00:00Z"
++_FILES = "only comments in packages/cli/src/services/backup changed, no runtime code"
++_DEADLINE = "the 03:00Z CD promote carries the broken stable backup restore otherwise"
++_UNAVAIL = "RustFS on :9100 refuses connections and run.sh account dev cannot start it"
++_PUSH = "git push origin 1008-1"
++EDGE_CASES = [
++    ("a bare push", "git push -u origin 1008-1"),
++    ("an implicit push", "git push"),
++    ("a -C push", "git -C . push origin 1008-1"),
++    (
++        "drill-unavailable",
++        "%s='drill-unavailable: %s%s' %s" % (REASON_ENV, _UNAVAIL, _ASK, _PUSH),
++    ),
++    ("not-runtime", "%s='not-runtime: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
++    ("deadline", "%s='deadline: %s%s' %s" % (REASON_ENV, _DEADLINE, _ASK, _PUSH)),
++    ("an unknown kind", "%s='because: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
++    ("a short why", "%s='deadline: soon%s' %s" % (REASON_ENV, _ASK, _PUSH)),
++    ("no ASKED", "%s='not-runtime: %s' %s" % (REASON_ENV, _FILES, _PUSH)),
++    ("a dry run", "git push --dry-run origin 1008-1"),
++    ("a delete push", "git push origin --delete 1007-1"),
++    ("the mirror push of main", "git push gitlab origin/main:refs/heads/main --follow-tags"),
++    ("a submodule push", "git -C private/renet push origin 1008-1"),
++    ("prose naming a push", "echo 'git push origin 1008-1'"),
++    ("a mirror push", "git push --mirror origin"),
++]
++
++
++# --------------------------------------------------------------------------- what the command pushes
++
++
++def _pushes(cmd, root, base):
++    """[(canonical push line, reason-or-None, args)] for every judged push of this checkout in `cmd`, in order (`block_vm_unverified_push._pushes` with this guard's escape variable)."""
++    created = commit_policy.created_dirs(cmd, base)
++    out = []
++    for run in commit_policy.git_runs(cmd, "push"):
++        _, _, args = commit_policy.git_split(run.argv)
++        if VM._skipped(args):
++            continue
++        repo = commit_policy.scoped_repo(run, base, root, created) or root
++        if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
++            continue
++        line = " ".join(["git", "push", *args])
++        if not VM._mirrors(args) and PUSH.pushes_only_origin_main(root, [line]):
++            continue
++        out.append((line, run.env.get(REASON_ENV), args))
++    return out
++
++
++def _hits(trigger, root, tip):
++    """(base, hits): the touched backup paths plus every unknown range, each spelled so the refusal can name it."""
++    git = trigger.make_git(root)
++    branch = commit_policy.current_branch(str(root))
++    resolved = trigger.push_base(git, branch or None)
++    if not resolved.ref:
++        return "", ["(unknown) no push base: tried %s" % ", ".join(resolved.tried)]
++    base = git(["merge-base", tip, resolved.ref])
++    if not base:
++        return resolved.ref, ["(unknown) no merge base of %s and %s" % (tip, resolved.ref)]
++    changed = trigger.changed_paths(root, base, "push", tip)
++    found = list(changed.hits) + ["(unknown) %s" % u for u in changed.unknown]
++    return "%s via %s" % (base[:12], resolved.via or resolved.ref), found
++
++
++# --------------------------------------------------------------------------- the escape
++
++
++def _for_these_inputs(receipt, tree, digest):
++    return receipt.get("tree") == tree or (bool(digest) and receipt.get("inputs") == digest)
++
++
++def _not_verified_attempt(trigger, root, tree, digest):
++    """The NOT_VERIFIED receipt taken for these inputs, or None."""
++    for receipt in (trigger.read_archive(root, tree), trigger.read_latest(root)):
++        if receipt is None or receipt.get("status") != trigger.NOT_VERIFIED:
++            continue
++        if _for_these_inputs(receipt, tree, digest):
++            return receipt
++    return None
++
++
++def _operator_answered(ev, reason):
++    """True when an `ASKED:` minute in `reason` matches an AskUserQuestion answer in the payload's transcript."""
++    transcript = ev.field("transcript_path")
++    if not transcript:
++        return False
++    syspath.on_sys_path(plan_gate.STOP_DIR)
++    try:
++        import wl_checks
++    except ImportError as exc:
++        ev.warn(
++            "block-backup-unverified-push: wl_checks could not import (%s), so no ASKED: "
++            "minute can be proven." % exc
++        )
++        return False
++    return bool(wl_checks._asked_in_transcript(reason, transcript))
++
++
++def _judge_reason(ev, reason, trigger, root, tree, digest):
++    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None)."""
++    if reason is None:
++        return None, "escape-missing: no `%s=` on it" % REASON_ENV, None
++    m = VM.REASON_RE.match(reason)
++    kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
++    if kind not in KINDS:
++        return (
++            None,
++            "escape-kind: `%s=%r`: the kind must be one of %s"
++            % (REASON_ENV, reason, ", ".join(KINDS)),
++            None,
++        )
++    why = VM.ASKED_TOKEN_RE.sub("", rest).strip()
++    if len(why) < MIN_WHY:
++        return (
++            None,
++            "escape-why: `%s`: the why is %d characters; at least %d name the files or the deadline"
++            % (reason, len(why), MIN_WHY),
++            None,
++        )
++    if not VM.ASKED_STRICT_RE.search(reason):
++        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason, None
++    if not _operator_answered(ev, reason):
++        return (
++            None,
++            (
++                "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this "
++                "session's transcript (within 300 s)"
++            ),
++            None,
++        )
++    attempt = None
++    if kind == "drill-unavailable" and tree is None:
++        return (
++            None,
++            (
++                "escape-blind: `drill-unavailable` names a NOT_VERIFIED attempt for one tree, and this "
++                "push sends refs no single tree describes; only `not-runtime` or `deadline` admits it"
++            ),
++            None,
++        )
++    if kind == "drill-unavailable":
++        attempt = _not_verified_attempt(trigger, root, tree, digest)
++        if attempt is None:
++            return (
++                None,
++                (
++                    "escape-no-attempt: `drill-unavailable`, but no NOT_VERIFIED backup receipt exists "
++                    "for these inputs; run the backup drill so the attempt is on record"
++                ),
++                None,
++            )
++    return kind, why, attempt
++
++
++# --------------------------------------------------------------------------- the ledger
++
++
++def _row(root, commit, tree, kind, why, reason, hits, attempt):
++    asked = VM.ASKED_STRICT_RE.search(reason or "")
++    receipt = None
++    if attempt is not None:
++        receipt = {
++            "status": attempt.get("status"),
++            "class": (attempt.get("reason") or {}).get("class"),
++        }
++    return {
++        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
++        "branch": commit_policy.current_branch(root),
++        "head": commit,
++        "tree": tree,
++        "renet": VM._pointer(root, tree, RENET),
++        "account": VM._pointer(root, tree, ACCOUNT),
++        "kind": kind,
++        "why": why,
++        "asked": asked.group(0)[len("ASKED:") :] if asked else "",
++        "hits": hits[:HITS_SHOWN],
++        "receipt": receipt,
++    }
++
++
++def _record(ev, root, rows):
++    path = pathlib.Path(root) / LEDGER_REL
++    try:
++        path.parent.mkdir(parents=True, exist_ok=True)
++        with open(path, "a", encoding="utf-8") as fh:
++            fh.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
++    except OSError as exc:
++        ev.warn(
++            "block-backup-unverified-push: the admission was NOT recorded in %s (%s)."
++            % (LEDGER_REL, exc)
++        )
++
++
++REFUSAL = """BLOCKED: this push touches the backup paths and no VERIFIED backup receipt covers tree %(tree)s (commit %(commit)s, pushed as `%(src)s`).
++
++Receipt: [%(code)s] %(verdict)s
++Touched (%(n)d, base %(base)s):
++%(hits)s
++Prove it with the RustFS drill, legs a-l plus the on-premise variant (box I7); the drill
++writes .ci/cache/backup-check/receipt.json:
++
++    ./run.sh drill backup
++
++%(lines)sWhen the drill cannot answer, the operator decides, and the escape names the minute of
++that answer (an AskUserQuestion in this session, matched within 300 s):
++
++    %(env)s='<kind>: <why, %(min)d+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z' git push ...
++
++    drill-unavailable  a NOT_VERIFIED backup receipt for these inputs exists
++    not-runtime        the change cannot alter what the drill exercises; name the files
++    deadline           production or CD state that cannot wait; name it
++
++Each admitted escape is appended to %(ledger)s.
++The operator's own `!` command does not pass through this guard.
++"""
++
++BLIND_REFUSAL = """BLOCKED: this push sends refs that no backup receipt can describe (`%(src)s`).
++
++Why:
++%(hits)s
++Push the branches one by one (`git push origin <branch>`), so each pushed commit is judged
++against its own receipt, or have the operator decide, naming the minute of that answer:
++
++%(lines)s    %(env)s='<not-runtime|deadline>: <why, %(min)d+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z' git push ...
++
++Each admitted escape is appended to %(ledger)s.
++"""
++
++
++def run(ev):
++    cmd = ev.raw("tool_input", "command")
++    if cmd in ("", "null"):
++        return hookio.ALLOW
++    root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
++    if not root:
++        return hookio.ALLOW
++    base = ev.field("cwd") or root
++    pushes = _pushes(cmd, root, base)
++    if not pushes:
++        return hookio.ALLOW
++    try:
++        trigger = syspath.import_from_ci(TRIGGER_MOD)
++    except ImportError as exc:
++        ev.warn(UNEXAMINED % ("the backup trigger module could not import (%s)" % exc))
++        return hookio.ALLOW
++    root_path = pathlib.Path(root)
++    tips, unresolved, blind = VM._tips(root, pushes)
++    for src in unresolved:
++        ev.warn(UNEXAMINED % ("git could not name the pushed commit of `%s`" % src))
++
++    rows = []
++    blocks = []
++    for label, hits, sending in blind:
++        refusals = []
++        for index in sending:
++            line, reason, _args = pushes[index]
++            kind, why, _attempt = _judge_reason(ev, reason, trigger, root_path, None, "")
++            if kind is None:
++                refusals.append("  %s\n    escape refused: %s\n" % (line, why))
++                continue
++            rows.append(_row(root, "", "", kind, why, reason, hits, None))
++        if refusals:
++            blocks.append(
++                BLIND_REFUSAL
++                % {
++                    "src": label,
++                    "hits": "".join("  %s\n" % h for h in hits),
++                    "lines": "".join(refusals) + "\n",
++                    "env": REASON_ENV,
++                    "min": MIN_WHY,
++                    "ledger": LEDGER_REL,
++                }
++            )
++    for commit, (src, sending) in tips.items():
++        tree = commit_policy.git(["rev-parse", "%s^{tree}" % commit], cwd=root)
++        if not tree:
++            ev.warn(UNEXAMINED % ("git could not name the pushed tree of %s" % src))
++            continue
++        base_name, hits = _hits(trigger, root_path, commit)
++        if not hits:
++            continue
++        digest = trigger.inputs_of_tree(root_path, tree)
++        pointers = trigger.pointers_of_tree(root_path, tree)
++        verdict = trigger.admit(root_path, tree, digest, pointers)
++        if verdict.ok:
++            continue
++        refusals = []
++        for index in sending:
++            line, reason, _args = pushes[index]
++            kind, why, attempt = _judge_reason(ev, reason, trigger, root_path, tree, digest)
++            if kind is None:
++                refusals.append("  %s\n    escape refused: %s\n" % (line, why))
++                continue
++            rows.append(_row(root, commit, tree, kind, why, reason, hits, attempt))
++        if not refusals:
++            continue
++        shown = "".join("  %s\n" % h for h in hits[:HITS_SHOWN])
++        if len(hits) > HITS_SHOWN:
++            shown += "  ... and %d more\n" % (len(hits) - HITS_SHOWN)
++        blocks.append(
++            REFUSAL
++            % {
++                "tree": tree[:12],
++                "commit": commit[:12],
++                "src": src,
++                "verdict": verdict.message,
++                "code": verdict.code,
++                "n": len(hits),
++                "base": base_name or "unresolved",
++                "hits": shown,
++                "lines": "".join(refusals) + "\n",
++                "env": REASON_ENV,
++                "min": MIN_WHY,
++                "ledger": LEDGER_REL,
++            }
++        )
++    if blocks:
++        ev.warn_raw("\n".join(blocks))
++        return hookio.DENY
++    if rows:
++        _record(ev, root, rows)
++    return hookio.ALLOW
+diff --git a/.claude/rediacc_hooks/guards/test-block_backup_unverified_push.py b/.claude/rediacc_hooks/guards/test-block_backup_unverified_push.py
+new file mode 100644
+index 000000000..bb92fadd3
+--- /dev/null
++++ b/.claude/rediacc_hooks/guards/test-block_backup_unverified_push.py
+@@ -0,0 +1,457 @@
++#!/usr/bin/env python3
++"""Control harness for block_backup_unverified_push (OWN_SUITE: never bash, so no golden), box J4 of agent/plans/PLAN-backup-program.md.
++
++REAL REPOSITORIES, one per world, built under a `rediacc_ci.runtmp` run directory by the guard's own `world()` and `plant_receipt()` (the builders its differential `FIXTURES` use): a console-shaped checkout on `1008-1` with real `private/renet` and `private/account` gitlinks, `origin/main` at the seed and unpushed work, and schema 1 backup receipts written through `backup_check_trigger.write`, so a receipt shape the module would refuse can never be planted here.
++
++THE BOX'S THREE CLAIMS, each with its twin: no receipt is refused (a console backup file, a renet chunk-store file, an account backup service), a receipt admits (the same worlds with a VERIFIED receipt), and a stale gitlink is refused (a VERIFIED receipt whose console inputs match but whose renet gitlink is the seed's).
++
++BOTH DIRECTIONS. Every refusal has an allow twin that differs by one planted fact: a docs-only range, a test-only renet range, a renet range outside the backup paths, a VERIFIED receipt, a valid escape of each kind against a transcript holding one AskUserQuestion answer. Every escape kind is refused in its invalid case.
++
++THE LEDGER. An admitted escape appends exactly one line to agent/ledgers/backup-check-push-reasons.jsonl in the world; a refused command and a push a VERIFIED receipt admits append nothing.
++
++THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and each of its `MUTANTS` are planted in a copy run through the same payloads, and each must flip its named refusal to allowed.
++"""
++
++import importlib.util
++import json
++import os
++import pathlib
++import subprocess
++import sys
++import tempfile
++
++HERE = pathlib.Path(__file__).resolve().parent
++DISPATCH = str(HERE.parent / "dispatch.py")
++STEM = "block_backup_unverified_push"
++GUARD = HERE / ("%s.py" % STEM)
++LEDGER = "agent/ledgers/backup-check-push-reasons.jsonl"
++REASON_ENV = "BACKUP_CHECK_PUSH_REASON"
++
++_RUNTMP = importlib.util.spec_from_file_location(
++    "runtmp", HERE.parents[2] / ".ci" / "rediacc_ci" / "runtmp.py"
++)
++if _RUNTMP is None or _RUNTMP.loader is None:
++    raise SystemExit("%s: .ci/rediacc_ci/runtmp.py is missing" % __file__)
++runtmp = importlib.util.module_from_spec(_RUNTMP)
++_RUNTMP.loader.exec_module(runtmp)
++RUN_TMP = runtmp.run_dir("guard-backup-unverified-push-")
++
++_SYSPATH = importlib.util.spec_from_file_location(
++    "_rediacc_syspath", HERE.parents[1] / "rediacc_hooks" / "syspath.py"
++)
++if _SYSPATH is None or _SYSPATH.loader is None:
++    raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
++syspath = importlib.util.module_from_spec(_SYSPATH)
++_SYSPATH.loader.exec_module(syspath)
++syspath.on_sys_path(syspath.CLAUDE_DIR)
++_SPEC = importlib.util.spec_from_file_location("backup_push_guard_under_test", GUARD)
++if _SPEC is None or _SPEC.loader is None:
++    raise SystemExit("cannot load %s" % GUARD)
++G = importlib.util.module_from_spec(_SPEC)
++_SPEC.loader.exec_module(G)
++
++
++def new_dir(prefix):
++    return pathlib.Path(tempfile.mkdtemp(prefix=prefix, dir=RUN_TMP)) / "repo"
++
++
++def built(name):
++    return G.FIXTURES[name](new_dir(name + "-"))
++
++
++DOCS = built("bck-docs-only")
++CONSOLE_NONE = built("bck-console-none")
++CONSOLE_VERIFIED = built("bck-console-verified")
++CONSOLE_NOT_VERIFIED = built("bck-console-not-verified")
++CONSOLE_FAILED = built("bck-console-failed")
++CHUNKSTORE = built("bck-renet-chunkstore")
++RENET_TESTS = built("bck-renet-tests-only")
++RENET_OTHER = built("bck-renet-other")
++RENET_VERIFIED = built("bck-renet-verified")
++STALE_GITLINK = built("bck-stale-gitlink")
++ACCOUNT_SRC = built("bck-account-src")
++ACCOUNT_VERIFIED = G.plant_receipt(built("bck-account-src"))
++MISSING_OLD = built("bck-missing-old")
++STALE_NV = built("bck-stale-not-verified")
++# A VERIFIED receipt for the pushed tree whose drill ran renet at another commit, and one with uncommitted edits.
++CHECKOUT_MISMATCH = G.plant_receipt(
++    G.world(new_dir("checkout-mismatch-"), renet_files=(G.RENET_FILE,)),
++    checkout="0" * 40,
++)
++MODIFIED = G.plant_receipt(
++    G.world(new_dir("modified-"), renet_files=(G.RENET_FILE,)), modified=True
++)
++# Worlds the escape cases write ledger lines into, one per kind, so each count is exact.
++ESC_NR = built("bck-console-none")
++ESC_DL = built("bck-console-none")
++ESC_NV = built("bck-console-not-verified")
++ESC_MIRROR = built("bck-docs-only")
++
++
++def transcript(answer_ts):
++    """A lead transcript holding one AskUserQuestion and its answer at `answer_ts`."""
++    path = pathlib.Path(tempfile.mkdtemp(prefix="transcript-", dir=RUN_TMP)) / "lead.jsonl"
++    records = [
++        {
++            "type": "assistant",
++            "timestamp": "2026-01-01T00:00:10Z",
++            "message": {
++                "content": [
++                    {"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_fixture_ask"}
++                ]
++            },
++        },
++        {
++            "type": "user",
++            "timestamp": answer_ts,
++            "message": {
++                "content": [
++                    {"type": "tool_result", "tool_use_id": "toolu_fixture_ask", "content": "a"}
++                ]
++            },
++        },
++    ]
++    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
++    return str(path)
++
++
++ANSWERED = transcript("2026-01-01T00:00:30Z")
++ASK = " ASKED:2026-01-01T00:00Z"
++ASK_ELSEWHERE = " ASKED:2026-01-01T00:10Z"
++R = REASON_ENV + "='%s' "
++PUSH = "git push origin 1008-1"
++CONSOLE_HIT = G.CONSOLE_FILE
++RENET_HIT = "private/renet/%s" % G.RENET_FILE
++ACCOUNT_HIT = "private/account/%s" % G.ACCOUNT_FILE
++
++CASES = [
++    # (name, command, root, transcript, expect_blocked, stderr needle) ---- the trigger
++    ("docs only", PUSH, DOCS, None, False, ""),
++    ("renet range, tests only", PUSH, RENET_TESTS, None, False, ""),
++    ("renet range outside the backup paths", PUSH, RENET_OTHER, None, False, ""),
++    ("console backup file, no receipt", PUSH, CONSOLE_NONE, None, True, CONSOLE_HIT),
++    ("console backup file: names no-receipt", PUSH, CONSOLE_NONE, None, True, "[no-receipt]"),
++    (
++        "console backup file: names the drill",
++        PUSH,
++        CONSOLE_NONE,
++        None,
++        True,
++        "./run.sh drill backup",
++    ),
++    ("console backup file: an implicit push", "git push", CONSOLE_NONE, None, True, ""),
++    ("console backup file: a -C push", "git -C . push origin 1008-1", CONSOLE_NONE, None, True, ""),
++    (
++        "console backup file: the push to main",
++        "git push origin 1008-1:main",
++        CONSOLE_NONE,
++        None,
++        True,
++        "",
++    ),
++    ("renet chunk store, no receipt", PUSH, CHUNKSTORE, None, True, RENET_HIT),
++    ("account backup service, no receipt", PUSH, ACCOUNT_SRC, None, True, ACCOUNT_HIT),
++    ("the old renet object missing", PUSH, MISSING_OLD, None, True, "(unknown) private/renet"),
++    # ---- the receipt
++    ("console backup file, VERIFIED", PUSH, CONSOLE_VERIFIED, None, False, ""),
++    ("renet chunk store, VERIFIED", PUSH, RENET_VERIFIED, None, False, ""),
++    ("account backup service, VERIFIED", PUSH, ACCOUNT_VERIFIED, None, False, ""),
++    ("console backup file, NOT_VERIFIED", PUSH, CONSOLE_NOT_VERIFIED, None, True, "[not-verified]"),
++    ("console backup file, FAILED", PUSH, CONSOLE_FAILED, None, True, "[failed]"),
++    ("renet chunk store, a stale gitlink", PUSH, STALE_GITLINK, None, True, "[stale-gitlink]"),
++    (
++        "renet chunk store, checkout not the pointer",
++        PUSH,
++        CHECKOUT_MISMATCH,
++        None,
++        True,
++        "[checkout-mismatch]",
++    ),
++    ("renet chunk store, modified checkout", PUSH, MODIFIED, None, True, "[modified-checkout]"),
++    ("a dry run", "git push --dry-run origin 1008-1", CONSOLE_NONE, None, False, ""),
++    ("a delete push", "git push origin --delete 1007-1", CONSOLE_NONE, None, False, ""),
++    ("prose naming a push", "echo 'git push origin 1008-1'", CONSOLE_NONE, None, False, ""),
++    (
++        "a mirror push",
++        "git push --mirror origin",
++        DOCS,
++        None,
++        True,
++        "no backup receipt can describe",
++    ),
++    # ---- the escape
++    (
++        "not-runtime, answered",
++        (R % ("not-runtime: " + G._FILES + ASK)) + PUSH,
++        ESC_NR,
++        ANSWERED,
++        False,
++        "",
++    ),
++    (
++        "deadline, answered",
++        (R % ("deadline: " + G._DEADLINE + ASK)) + PUSH,
++        ESC_DL,
++        ANSWERED,
++        False,
++        "",
++    ),
++    (
++        "drill-unavailable over its own NOT_VERIFIED",
++        (R % ("drill-unavailable: " + G._UNAVAIL + ASK)) + PUSH,
++        ESC_NV,
++        ANSWERED,
++        False,
++        "",
++    ),
++    (
++        "drill-unavailable over another tree's NOT_VERIFIED",
++        (R % ("drill-unavailable: " + G._UNAVAIL + ASK)) + PUSH,
++        STALE_NV,
++        ANSWERED,
++        True,
++        "escape-no-attempt",
++    ),
++    (
++        "drill-unavailable with no receipt at all",
++        (R % ("drill-unavailable: " + G._UNAVAIL + ASK)) + PUSH,
++        CONSOLE_NONE,
++        ANSWERED,
++        True,
++        "escape-no-attempt",
++    ),
++    (
++        "an ASKED matching no answer",
++        (R % ("not-runtime: " + G._FILES + ASK_ELSEWHERE)) + PUSH,
++        CONSOLE_NONE,
++        ANSWERED,
++        True,
++        "escape-unproven",
++    ),
++    (
++        "no transcript",
++        (R % ("not-runtime: " + G._FILES + ASK)) + PUSH,
++        CONSOLE_NONE,
++        None,
++        True,
++        "escape-unproven",
++    ),
++    (
++        "an unknown kind",
++        (R % ("because: " + G._FILES + ASK)) + PUSH,
++        CONSOLE_NONE,
++        ANSWERED,
++        True,
++        "escape-kind",
++    ),
++    (
++        "a short why",
++        (R % ("deadline: soon" + ASK)) + PUSH,
++        CONSOLE_NONE,
++        ANSWERED,
++        True,
++        "escape-why",
++    ),
++    (
++        "no ASKED",
++        (R % ("not-runtime: " + G._FILES)) + PUSH,
++        CONSOLE_NONE,
++        ANSWERED,
++        True,
++        "escape-asked",
++    ),
++    (
++        "the vm-check variable is not this escape",
++        ("VM_CHECK_PUSH_REASON='not-runtime: " + G._FILES + ASK + "' ") + PUSH,
++        CONSOLE_NONE,
++        ANSWERED,
++        True,
++        "escape-missing",
++    ),
++    (
++        "a mirror push, escaped",
++        (R % ("deadline: " + G._DEADLINE + ASK)) + "git push --mirror origin",
++        ESC_MIRROR,
++        ANSWERED,
++        False,
++        "",
++    ),
++    (
++        "a mirror push, drill-unavailable",
++        (R % ("drill-unavailable: " + G._UNAVAIL + ASK)) + "git push --mirror origin",
++        DOCS,
++        ANSWERED,
++        True,
++        "escape-blind",
++    ),
++]
++
++BROKEN_RUNNER = (
++    "import sys; sys.path.insert(0, %r)\n"
++    "from rediacc_hooks import hookio\n"
++    "src = open(%r, encoding='utf-8').read()\n"
++    "old, new = %r\n"
++    "import ast\n"
++    "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
++    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'MUTANTS') for t in n.targets)]\n"
++    "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
++    " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
++    "assert outside.count(old) == 1, 'the mutant must name exactly one line outside its declaration'\n"
++    "ns = {'__name__': 'broken', '__file__': %r}\n"
++    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
++    "ev = hookio.Event(sys.stdin.read())\n"
++    "rc = ns['run'](ev)\n"
++    "sys.stderr.write(ev.result(rc)[2])\n"
++    "sys.exit(rc)\n"
++)
++
++
++def ledger_lines(root):
++    path = pathlib.Path(root) / LEDGER
++    return path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
++
++
++def run(command, root, transcript_path, broken=None):
++    """(blocked, stderr) of one payload through the dispatcher, or through a copy of the guard with `broken` (an (old, new) mutant) planted."""
++    env = dict(
++        os.environ,
++        CLAUDE_PROJECT_DIR=str(root),
++        TMPDIR=tempfile.mkdtemp(prefix="tmp-", dir=RUN_TMP),
++    )
++    env.pop(REASON_ENV, None)
++    doc = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(root)}
++    if transcript_path:
++        doc["transcript_path"] = transcript_path
++    if broken:
++        argv = [
++            sys.executable,
++            "-c",
++            BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), broken, str(GUARD)),
++        ]
++    else:
++        argv = [sys.executable, DISPATCH, STEM]
++    proc = subprocess.run(
++        argv, input=json.dumps(doc), capture_output=True, text=True, check=False, env=env
++    )
++    if proc.returncode not in (0, 2):
++        raise SystemExit(
++            "%s runner crashed (rc %d): %s"
++            % ("broken" if broken else "guard", proc.returncode, proc.stderr[-800:])
++        )
++    return proc.returncode == 2, proc.stderr
++
++
++fails = 0
++blocked = 0
++for name, command, root, tr, want, needle in CASES:
++    before = len(ledger_lines(root))
++    got, err = run(command, root, tr)
++    grew = len(ledger_lines(root)) - before
++    blocked += got
++    ok = got == want and (not needle or needle in err)
++    escaped = REASON_ENV + "='" in command
++    if got and grew:
++        ok = False
++        print("    a refused command wrote %d ledger line(s)" % grew)
++    if not got and escaped and grew != 1:
++        ok = False
++        print("    an admitted escape wrote %d ledger line(s), want 1" % grew)
++    if not got and not escaped and grew:
++        ok = False
++        print("    a push admitted without an escape wrote %d ledger line(s)" % grew)
++    fails += not ok
++    print(
++        "%-52s want=%-8s got=%-8s %s"
++        % (
++            name,
++            "BLOCKED" if want else "allowed",
++            "BLOCKED" if got else "allowed",
++            "ok" if ok else "*** FAIL ***",
++        )
++    )
++    if not ok:
++        print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:8]))
++
++# The shape of the ledger lines, read back.
++want_keys = {
++    "ts",
++    "branch",
++    "head",
++    "tree",
++    "renet",
++    "account",
++    "kind",
++    "why",
++    "asked",
++    "hits",
++    "receipt",
++}
++checks = (
++    (ESC_NR, "not-runtime", None),
++    (ESC_DL, "deadline", None),
++    (ESC_NV, "drill-unavailable", {"status": "NOT_VERIFIED", "class": "store-unavailable"}),
++)
++for root, kind, receipt in checks:
++    rows = [json.loads(line) for line in ledger_lines(root)]
++    if not rows:
++        print("*** FAIL *** no ledger line was written for kind %s" % kind)
++        fails += 1
++        continue
++    last = rows[-1]
++    bad = [
++        what
++        for what, cond in (
++            ("keys", set(last) == want_keys),
++            ("kind", last.get("kind") == kind),
++            ("branch", last.get("branch") == "1008-1"),
++            ("head", len(last.get("head", "")) == 40),
++            ("tree", len(last.get("tree", "")) == 40),
++            ("renet", len(last.get("renet", "")) == 40),
++            ("account", len(last.get("account", "")) == 40),
++            ("asked", last.get("asked") == "2026-01-01T00:00Z"),
++            ("hits", last.get("hits") == [CONSOLE_HIT]),
++            ("receipt", last.get("receipt") == receipt),
++            ("why", "ASKED" not in last.get("why", "") and len(last.get("why", "")) >= G.MIN_WHY),
++        )
++        if not cond
++    ]
++    if bad:
++        print("*** FAIL *** ledger line %r is wrong in: %s" % (last, ", ".join(bad)))
++        fails += 1
++    else:
++        print("ledger: %d line(s) for kind %s, receipt %r" % (len(rows), kind, last["receipt"]))
++for quiet in (CONSOLE_NONE, CONSOLE_VERIFIED, RENET_VERIFIED, STALE_GITLINK, DOCS, STALE_NV):
++    if ledger_lines(quiet):
++        print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))
++        fails += 1
++
++print()
++CONTROLS = [("DEFECT", G.DEFECT), *sorted(G.MUTANTS.items())]
++# The case each control must flip, so a control cannot pass on some unrelated refusal.
++MUST_FLIP = {
++    "DEFECT": "console backup file, no receipt",
++    "gitlinks-ignored": "renet chunk store, a stale gitlink",
++    "inputs-always-equal": "drill-unavailable over another tree's NOT_VERIFIED",
++    "asked-always-true": "an ASKED matching no answer",
++}
++for label, mutant in CONTROLS:
++    flipped = [n for n, c, r, tr, w, _ in CASES if w and not run(c, r, tr, broken=mutant)[0]]
++    must = MUST_FLIP[label]
++    if must in flipped:
++        print(
++            "%s control: planted %r; %d refusal(s) flipped to allowed, including %r"
++            % (label, mutant[1], len(flipped), must)
++        )
++    else:
++        print(
++            "*** FAIL *** %s control: with %r planted, %r did not flip (flipped: %r)"
++            % (label, mutant, must, flipped)
++        )
++        fails += 1
++
++if blocked in (0, len(CASES)):
++    print("*** FAIL *** the guard answered the same way on every case")
++    fails += 1
++print("%d case(s), %d blocked, %d allowed" % (len(CASES), blocked, len(CASES) - blocked))
++print("FAILURES: %d" % fails)
++sys.exit(1 if fails else 0)
+diff --git a/.claude/rediacc_hooks/tests/test_githook_backup_receipt.py b/.claude/rediacc_hooks/tests/test_githook_backup_receipt.py
+new file mode 100644
+index 000000000..91d9e5421
+--- /dev/null
++++ b/.claude/rediacc_hooks/tests/test_githook_backup_receipt.py
+@@ -0,0 +1,208 @@
++"""The git-level `pre-push` check of the backup receipt (box J10 of agent/plans/PLAN-backup-program.md): `githooks.backup_receipt_refusal`, called from `githooks.pre_push`.
++
++REAL GIT. Each case builds a console-shaped repository on `1008-1` with nested `private/renet` and `private/account` repos and hand-recorded gitlinks, feeds `pre_push` the stdin lines git would, and reads its exit code and stderr. The receipt is written by `backup_check_trigger.record`, the drill runner's own call, so no shape the module would refuse is planted.
++
++BOTH DIRECTIONS. A backup-path push with no receipt and with a stale-gitlink receipt is refused; its twins (a VERIFIED receipt, a docs-only push, a commit a remote-tracking ref already holds, a delete, a well-formed escape) are admitted.
++
++THE CONTROL. The refused case is run again with `backup_receipt_refusal` replaced by an always-allow stub, and must then pass: a case that passes against a hook that never asks proves nothing about the hook.
++"""
++
++from __future__ import annotations
++
++import importlib.util
++import pathlib
++import subprocess
++import sys
++
++import pytest
++
++REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
++HOOKS = REPO_ROOT / ".claude" / "rediacc_hooks" / "git"
++ENV = {
++    "GIT_AUTHOR_NAME": "t",
++    "GIT_AUTHOR_EMAIL": "t@example.invalid",
++    "GIT_COMMITTER_NAME": "t",
++    "GIT_COMMITTER_EMAIL": "t@example.invalid",
++    "GIT_CONFIG_GLOBAL": "/dev/null",
++    "GIT_CONFIG_SYSTEM": "/dev/null",
++}
++ZERO = "0" * 40
++CONSOLE_FILE = "packages/cli/src/services/backup/backup-schedule.ts"
++ESCAPE = (
++    "not-runtime: only comments in packages/cli/src/services/backup changed, no runtime code "
++    "ASKED:2026-01-01T00:00Z"
++)
++
++
++def _load(name: str, path: pathlib.Path):
++    spec = importlib.util.spec_from_file_location(name, path)
++    assert spec is not None, path
++    assert spec.loader is not None, path
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++GH = _load("githooks_backup_receipt_under_test", HOOKS / "githooks.py")
++# `syspath.import_from_ci` is the one scoped `.ci` loader the hooks share; it takes `.ci` off sys.path again after the import.
++bct = _load(
++    "_rediacc_syspath_backup_receipt", REPO_ROOT / ".claude" / "rediacc_hooks" / "syspath.py"
++).import_from_ci("rediacc_ci.drills.backup_check_trigger")
++
++
++def _git(cwd: pathlib.Path, *args: str) -> str:
++    return subprocess.run(
++        ["git", "-C", str(cwd), *args],
++        capture_output=True,
++        text=True,
++        check=True,
++        env={**ENV, "PATH": "/usr/bin:/bin:/usr/local/bin", "HOME": "/nonexistent"},
++    ).stdout.strip()
++
++
++def _write(root: pathlib.Path, rel: str, text: str) -> None:
++    path = root / rel
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(text, encoding="utf-8")
++
++
++class World:
++    def __init__(self, root: pathlib.Path) -> None:
++        self.root = root
++        root.mkdir()
++        _git(root, "init", "-q", "-b", "main")
++        _write(root, ".gitignore", ".ci/cache/\n")
++        _write(root, CONSOLE_FILE, "export const a = 1;\n")
++        self.subs = {}
++        for sub in (bct.RENET_SUBMODULE, bct.ACCOUNT_SUBMODULE):
++            path = root / sub
++            path.mkdir(parents=True)
++            _git(path, "init", "-q", "-b", "main")
++            _write(path, "README.md", "x\n")
++            _git(path, "add", "-A")
++            _git(path, "commit", "-q", "-m", "seed")
++            self.subs[sub] = path
++        self.seed = self.commit("seed")
++        _git(root, "update-ref", "refs/remotes/origin/main", self.seed)
++        _git(root, "checkout", "-q", "-b", "1008-1")
++
++    def commit(self, msg: str) -> str:
++        _git(self.root, "add", "-A", "--", ".", ":!private")
++        for sub, path in self.subs.items():
++            head = _git(path, "rev-parse", "HEAD")
++            _git(self.root, "update-index", "--add", "--cacheinfo", "160000,%s,%s" % (head, sub))
++        _git(self.root, "commit", "-q", "--allow-empty", "-m", msg)
++        return _git(self.root, "rev-parse", "HEAD")
++
++    def record(self) -> None:
++        bct.record(
++            self.root,
++            status=bct.VERIFIED,
++            legs=bct.REQUIRED_LEGS,
++            onprem=True,
++            run_id="t-run",
++            started_at="2026-01-01T00:00:00Z",
++            finished_at="2026-01-01T00:05:00Z",
++        )
++
++
++def _touched(tmp_path: pathlib.Path) -> tuple[World, str]:
++    w = World(tmp_path / "c")
++    _write(w.root, CONSOLE_FILE, "export const a = 2;\n")
++    return w, w.commit("work")
++
++
++def _push(monkeypatch, capsys, world: World, tip: str, remote_oid: str = ZERO, ref: str = "1008-1"):
++    monkeypatch.chdir(world.root)
++    monkeypatch.delenv("COMMIT_POLICY_OK", raising=False)
++    line = "refs/heads/%s %s refs/heads/%s %s\n" % (ref, tip, ref, remote_oid)
++    rc = GH.pre_push(["origin", "https://github.com/fixture/console.git"], line)
++    return rc, capsys.readouterr().err
++
++
++def test_backup_path_without_a_receipt_is_refused(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, tip = _touched(tmp_path)
++    rc, err = _push(monkeypatch, capsys, w, tip)
++    assert rc == 1
++    assert "[no-receipt]" in err
++    assert CONSOLE_FILE in err
++    assert GH.BACKUP_REASON_ENV in err
++
++
++def test_control_a_hook_that_never_asks_admits_the_same_push(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, tip = _touched(tmp_path)
++    monkeypatch.setattr(GH, "backup_receipt_refusal", lambda *_a: "")
++    rc, _err = _push(monkeypatch, capsys, w, tip)
++    assert rc == 0
++
++
++def test_a_verified_receipt_admits(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, tip = _touched(tmp_path)
++    w.record()
++    rc, err = _push(monkeypatch, capsys, w, tip)
++    assert (rc, err) == (0, "")
++
++
++def test_a_stale_gitlink_is_refused(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, _tip = _touched(tmp_path)
++    w.record()
++    renet = w.subs[bct.RENET_SUBMODULE]
++    _write(renet, "pkg/chunkstore/store.go", "package chunkstore\n")
++    _git(renet, "add", "-A")
++    _git(renet, "commit", "-q", "-m", "chunkstore")
++    tip = w.commit("pointer")
++    rc, err = _push(monkeypatch, capsys, w, tip)
++    assert rc == 1
++    assert "[stale-gitlink]" in err
++
++
++def test_a_docs_only_push_is_admitted(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w = World(tmp_path / "c")
++    _write(w.root, "docs/x.md", "x\n")
++    tip = w.commit("docs")
++    assert _push(monkeypatch, capsys, w, tip)[0] == 0
++
++
++def test_an_already_published_commit_is_not_judged_again(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, tip = _touched(tmp_path)
++    _git(w.root, "update-ref", "refs/remotes/origin/1008-1", tip)
++    assert _push(monkeypatch, capsys, w, tip)[0] == 0
++
++
++def test_an_update_of_an_existing_branch_diffs_from_its_old_tip(tmp_path, monkeypatch, capsys):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, old = _touched(tmp_path)
++    _write(w.root, "docs/x.md", "x\n")
++    tip = w.commit("docs after the backup change")
++    # The old tip carried the backup change; the range old..tip is docs only.
++    assert _push(monkeypatch, capsys, w, tip, remote_oid=old)[0] == 0
++
++
++def test_a_delete_is_not_judged(tmp_path, monkeypatch):
++    monkeypatch.delenv(GH.BACKUP_REASON_ENV, raising=False)
++    w, tip = _touched(tmp_path)
++    monkeypatch.chdir(w.root)
++    line = "(delete) %s refs/heads/1007-1 %s\n" % (ZERO, tip)
++    assert GH.pre_push(["origin", "u"], line) == 0
++
++
++@pytest.mark.parametrize(
++    ("reason", "want_rc"),
++    [
++        (ESCAPE, 0),
++        ("not-runtime: short ASKED:2026-01-01T00:00Z", 1),
++        (ESCAPE.replace(" ASKED:2026-01-01T00:00Z", ""), 1),
++        (ESCAPE.replace("not-runtime", "because"), 1),
++    ],
++)
++def test_the_escape_is_checked_for_shape(tmp_path, monkeypatch, capsys, reason, want_rc):
++    w, tip = _touched(tmp_path)
++    monkeypatch.setenv(GH.BACKUP_REASON_ENV, reason)
++    assert _push(monkeypatch, capsys, w, tip)[0] == want_rc

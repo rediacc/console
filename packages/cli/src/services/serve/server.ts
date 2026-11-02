@@ -48,6 +48,7 @@ import { connectForJobs, followJobLogs, readJobStatus } from '../executor/job-re
 import { AuthError, type AuthVerifier } from './auth.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
+import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
 import { isReadOnlyCommand, PolicyDenied, resolveGrandRepoMutation } from './policy.js';
 import { SessionError } from './sessions.js';
@@ -64,10 +65,16 @@ import { SessionError } from './sessions.js';
 const CONFIG_SESSION_HEADER = 'x-config-session';
 
 /** Turn any thrown value into an HTTP status plus a message worth reading. */
-function statusFor(error: unknown): { status: 400 | 401 | 403 | 404 | 500; message: string } {
+function statusFor(error: unknown): {
+  status: 400 | 401 | 403 | 404 | 500;
+  message: string;
+  code?: string;
+} {
   if (error instanceof AuthError) return { status: error.status, message: error.message };
   if (error instanceof PolicyDenied) return { status: 403, message: error.message };
-  if (error instanceof SessionError) return { status: 404, message: error.message };
+  if (error instanceof SessionError) {
+    return { status: 404, message: error.message, ...(error.code ? { code: error.code } : {}) };
+  }
   if (error instanceof CommandRejected) return { status: 400, message: error.message };
   // A job id the machine (or an untrusted re-attach client) made up: refused before it reaches a shell, and reported as a bad request, not a server fault.
   if (error instanceof InvalidJobIdError) return { status: 400, message: error.message };
@@ -75,6 +82,13 @@ function statusFor(error: unknown): { status: 400 | 401 | 403 | 404 | 500; messa
     status: 500,
     message: error instanceof Error ? error.message : 'The executor failed to run this command.',
   };
+}
+
+let sharedEgressReporter: ReturnType<typeof createEgressReporter> | undefined;
+/** The container tier's reporter, built on first use so a daemon never creates one. */
+function defaultEgressReporter(): ReturnType<typeof createEgressReporter> {
+  sharedEgressReporter ??= createEgressReporter();
+  return sharedEgressReporter;
 }
 
 export function createServeApp(deps: ServeDeps): Hono {
@@ -106,8 +120,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       );
       return c.json({ sessionId, publicKey });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
   });
 
@@ -117,11 +131,22 @@ export function createServeApp(deps: ServeDeps): Hono {
       // The grant is bound to the principal who OPENED the session: this is the same identity, resolved by the account server, that grantCek checks the session against. A valid token for a different user cannot complete someone else's grant.
       const principal = await authenticate(c.req.header('authorization'), deps);
       const blob = CekHandoffBlobSchema.parse(await c.req.json());
-      await deps.sessions.grantCek(c.req.param('id'), blob, principal);
+      const sessionId = c.req.param('id');
+      await deps.sessions.grantCek(sessionId, blob, principal);
+      if (deps.recordGrant) {
+        try {
+          // The bearer that completed the grant is the account server's proof that this user granted the session; without the record no config token is minted for it (PLAN-backup-program S7).
+          await deps.recordGrant(sessionId, bearerOf(c.req.header('authorization')));
+        } catch (error) {
+          // A key the account server will not serve a config under is dropped rather than held: nothing in RAM outlives a grant the server refused.
+          deps.sessions.close(sessionId);
+          throw error;
+        }
+      }
       return c.json({ ok: true });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
   });
 
@@ -145,8 +170,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       principal = await authenticate(c.req.header('authorization'), deps);
       request = CommandRequestSchema.parse(await c.req.json());
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     const clientContract = c.req.header(CONTRACT_VERSION_HEADER) ?? request.contractVersion;
@@ -168,8 +193,8 @@ export function createServeApp(deps: ServeDeps): Hono {
     try {
       prepared = prepareCommand(request.pathKey, request.params, request.positionals);
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
     const entry = prepared.entry;
 
@@ -204,8 +229,8 @@ export function createServeApp(deps: ServeDeps): Hono {
         isGrandRepo: await resolveGrandRepoMutation(entry, repoName, requestConfig),
       });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     const auditGate = await checkAuditCapability(deps, entry, request.pathKey);
@@ -219,11 +244,18 @@ export function createServeApp(deps: ServeDeps): Hono {
       };
 
       const started = Date.now();
+      // Only the dispatch sits in the try: the success audit and the result write come after it, so a throw while writing the result (a closed stream) can never reach the failure audit and ship a second event for the same command.
+      let dispatched: Awaited<ReturnType<typeof dispatchCommand>>;
       try {
-        const dispatched = await dispatchCommand({
+        dispatched = await dispatchCommand({
           prepared,
           executor: deps.executor,
           ...(requestConfig ? { config: requestConfig } : {}),
+          caller: {
+            userId: principal.userId,
+            orgId: principal.orgId,
+            userEmail: principal.userEmail,
+          },
           // The executor detaches a proxied command by default (its connection cannot be assumed to outlive the work), overridable via deps.detach.
           detached: deps.detach ? deps.detach(entry) : entry.detachable,
           // Announce the job the instant it starts, before any event, so a dropped connection can be re-attached via GET /v1/jobs/:id/events.
@@ -234,47 +266,25 @@ export function createServeApp(deps: ServeDeps): Hono {
             void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
           },
         });
-        const { result, functionName, machineName, stdout, stderr } = dispatched;
-
-        // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
-        await deps.audit?.({
-          principal,
-          commandPath: request.pathKey,
-          functionName: functionName ?? request.pathKey,
-          // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
-          // the action body); fall back to the request for verbs that still name
-          // the machine explicitly (backup, job).
-          machineName:
-            machineName ??
-            targetFrom(
-              entry.machineOption,
-              entry.machinePositional,
-              request.params,
-              request.positionals
-            ),
-          params: request.params,
-          success: result.success,
-          durationMs: result.durationMs,
-          destructive: entry.destructive ?? false,
-        });
-
-        await write({
-          kind: 'result',
-          result,
-          stdout,
-          ...(dispatched.stdoutBytes
-            ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
-            : {}),
-          stderr: withNotices(stderr, [
-            auditWarning,
-            dispatched.unpersistedConfigWrites > 0
-              ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
-              : undefined,
-          ]),
-        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
+        // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
+        await deps.audit?.({
+          principal,
+          commandPath: request.pathKey,
+          machineName: targetFrom(
+            entry.machineOption,
+            entry.machinePositional,
+            request.params,
+            request.positionals
+          ),
+          params: request.params,
+          success: false,
+          exitCode: 1,
+          durationMs: Date.now() - started,
+          destructive: entry.destructive ?? false,
+        });
         await write({
           kind: 'result',
           result: {
@@ -284,7 +294,65 @@ export function createServeApp(deps: ServeDeps): Hono {
             durationMs: Date.now() - started,
           },
         });
+        return;
       }
+      const { functionName, machineName, stdout, stderr } = dispatched;
+      let { result } = dispatched;
+
+      // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
+      await deps.audit?.({
+        principal,
+        commandPath: request.pathKey,
+        ...(functionName ? { functionName } : {}),
+        // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
+        // the action body); fall back to the request for verbs that still name
+        // the machine explicitly (backup, job).
+        machineName:
+          machineName ??
+          targetFrom(
+            entry.machineOption,
+            entry.machinePositional,
+            request.params,
+            request.positionals
+          ),
+        params: request.params,
+        success: result.success,
+        exitCode: result.exitCode,
+        durationMs: result.durationMs,
+        destructive: entry.destructive ?? false,
+      });
+
+      // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Only a result that names the address it never reached is reported, since the proxy probes that address before the report counts. Awaited, so the report finishes before the result line.
+      const { connectTarget, ...served } = result;
+      result = served;
+      if (
+        deps.mode === 'container' &&
+        !result.success &&
+        result.errorCode === EGRESS_UNREACHABLE_CODE &&
+        connectTarget
+      ) {
+        const report = deps.reportEgressUnreachable ?? defaultEgressReporter();
+        // A reporter that throws synchronously is caught too: the result line is always written.
+        const answer = await Promise.resolve()
+          .then(() => report(connectTarget))
+          .catch(() => undefined);
+        result = { ...result, errorGuidance: egressGuidance(answer, connectTarget) };
+      }
+
+      await write({
+        kind: 'result',
+        result,
+        stdout,
+        ...(dispatched.stdoutBytes
+          ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
+          : {}),
+        stderr: withNotices(stderr, [
+          auditWarning,
+          dispatched.unpersistedConfigWrites > 0
+            ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
+            : undefined,
+        ]),
+      });
     });
   });
 
@@ -310,8 +378,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       principal = await authenticate(c.req.header('authorization'), deps);
       jobId = assertJobId(c.req.param('id'));
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     const machine = c.req.query('machine');
@@ -329,8 +397,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       requestConfig = requestScopedConfig(deps, config);
       deps.authorize({ principal, commandPath: 'job logs', config, machineName: machine });
     } catch (error) {
-      const { status, message } = statusFor(error);
-      return c.json({ error: message }, status);
+      const { status, message, code } = statusFor(error);
+      return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
     return streamText(c, async (stream) => {
@@ -480,8 +548,13 @@ function targetFrom(
   return typeof fromPositional === 'string' ? fromPositional : undefined;
 }
 
+/** The raw bearer token of an Authorization header, or '' when there is none. */
+function bearerOf(header: string | undefined): string {
+  return header?.replace(/^Bearer\s+/i, '').trim() ?? '';
+}
+
 function authenticate(header: string | undefined, deps: ServeDeps) {
-  const token = header?.replace(/^Bearer\s+/i, '').trim();
+  const token = bearerOf(header);
   if (!token) {
     throw new AuthError(
       'This request carried no token. Authenticate with the account server.',

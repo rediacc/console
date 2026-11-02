@@ -30,7 +30,7 @@ import {
   type RenetAccess,
   readSSHKey,
 } from '../services/renet/renet-execution.js';
-import { ValidationError } from '../utils/errors.js';
+import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -139,11 +139,90 @@ export async function executeSubscriptionStatus(): Promise<void> {
   if (!status) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
-  outputRemoteStatus(status);
+  const configGuids = await readConfigRepoGuids();
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(subscriptionStatusData(status, configGuids), format);
+    return;
+  }
+  outputRemoteStatus(status, configGuids);
+}
+
+/** The structured form of the account view, for `-o json|yaml|csv`: the same facts the table prints. */
+function subscriptionStatusData(
+  status: NonNullable<Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>>,
+  configGuids?: Set<string>
+): Record<string, unknown> {
+  const recent = status.repoLicenses.recent;
+  return {
+    organization: status.orgName ?? null,
+    team: status.teamName ?? null,
+    plan: status.planCode,
+    status: status.status,
+    machineSlots: status.machineSlots,
+    repoLicenseIssuances: status.repoLicenseIssuances,
+    repoLicenses:
+      recent && configGuids
+        ? { ...splitRepoLicensesByConfig(recent, configGuids), scope: 'config' }
+        : { ...status.repoLicenses, scope: 'account' },
+    overLimitCount: status.machineSlots.machines.filter((m) => m.overLimit).length,
+  };
+}
+
+/** The repository GUIDs this config holds, or undefined when the config cannot be read. */
+async function readConfigRepoGuids(): Promise<Set<string> | undefined> {
+  try {
+    const repos = await configService.listRepositories();
+    return new Set(repos.map((r) => r.config.repositoryGuid).filter((g): g is string => !!g));
+  } catch {
+    return undefined;
+  }
+}
+
+type TrackedRepo = { repositoryGuid: string; freshness: string };
+
+/** Split the server's tracked repositories by membership in this config's GUIDs. */
+export function splitRepoLicensesByConfig(recent: TrackedRepo[], configGuids: Set<string>) {
+  const inConfig = recent.filter((r) => configGuids.has(r.repositoryGuid));
+  return {
+    totalTrackedRepos: inConfig.length,
+    validCount: inConfig.filter((r) => r.freshness === 'valid').length,
+    refreshRecommendedCount: inConfig.filter((r) => r.freshness === 'refresh_recommended').length,
+    hardExpiredCount: inConfig.filter((r) => r.freshness === 'hard_expired').length,
+    notInConfigCount: recent.length - inConfig.length,
+  };
+}
+
+function outputRepoLicenseCounts(
+  repoLicenses: NonNullable<
+    Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>
+  >['repoLicenses'],
+  configGuids?: Set<string>
+) {
+  const recent = repoLicenses.recent;
+  if (recent && configGuids) {
+    const split = splitRepoLicensesByConfig(recent, configGuids);
+    outputService.info(t('commands.subscription.status.remoteRepoLicensesInConfig', split));
+    outputService.info(
+      t('commands.subscription.status.remoteRepoLicensesNotInConfig', {
+        count: split.notInConfigCount,
+      })
+    );
+  } else {
+    outputService.info(
+      t('commands.subscription.status.remoteRepoLicenses', {
+        totalTrackedRepos: repoLicenses.totalTrackedRepos,
+        validCount: repoLicenses.validCount,
+        refreshRecommendedCount: repoLicenses.refreshRecommendedCount,
+        hardExpiredCount: repoLicenses.hardExpiredCount,
+      })
+    );
+  }
 }
 
 function outputRemoteStatus(
-  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>
+  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>,
+  configGuids?: Set<string>
 ) {
   if (!status) return;
   outputService.info(t('commands.subscription.status.remote'));
@@ -176,14 +255,7 @@ function outputRemoteStatus(
   } else if (issuanceUsage >= 0.8) {
     outputService.warn(t('commands.subscription.status.issuanceUsageHigh80'));
   }
-  outputService.info(
-    t('commands.subscription.status.remoteRepoLicenses', {
-      totalTrackedRepos: status.repoLicenses.totalTrackedRepos,
-      validCount: status.repoLicenses.validCount,
-      refreshRecommendedCount: status.repoLicenses.refreshRecommendedCount,
-      hardExpiredCount: status.repoLicenses.hardExpiredCount,
-    })
-  );
+  outputRepoLicenseCounts(status.repoLicenses, configGuids);
   for (const machine of status.machineSlots.machines) {
     const key = machine.overLimit
       ? 'commands.subscription.status.remoteMachineOverLimit'

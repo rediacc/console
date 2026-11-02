@@ -36,6 +36,18 @@
  * blocklist line and held-major exception in the same transaction, so the net diff of a major
  * is the manifest, the lockfile and those two removals.
  *
+ * AN OVERRIDE RANGE THE LOCKFILE DOES NOT MEET IS PART OF THE IN-RANGE RELEASE (worklist
+ * #c97a62d9). A hand-raised `overrides` floor on a transitive package (vite >=8.3.1 -> >=8.3.5
+ * on 2026-10-31, commit a96e82a8) is invisible to check-deps, which judges `npm outdated`'s
+ * direct dependencies only, so the run refused on eleven unrelated deferrals and the lock was
+ * moved by hand. Each project's direct overrides are read against its own lockfile; a copy
+ * outside the range is dated against the registry (the target is the release npm itself would
+ * pick under `--before=<release-age cutoff>`), planned as `npm update <name> --before=<cutoff>`
+ * with its freshness guard, and folded into the in-range release, so unrelated deferred
+ * packages stay deferred, counted in the run's label and named in the release reason, rather than refusing it. A target
+ * still inside the window refuses every plan of the family (the lock cannot meet its own
+ * manifest until it clears), and a range no published release admits refuses the run, naming the range to correct.
+ *
  * `remove <pkg>` and `lockfiles [<dir>]` are the other two plans this module builds.
  */
 import { spawnSync } from 'node:child_process';
@@ -43,10 +55,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { globSync } from 'glob';
 import { planOverrideBump } from '../../deps/execute.js';
-import type { InstallStep } from '../../deps/plan.js';
-import { FIXTURE_ROOT, MUTANT, type PackageInfo } from '../../deps/shared.js';
+import { freshnessCutoffMs, type InstallStep } from '../../deps/plan.js';
+import {
+  compareVersions,
+  FIXTURE_ROOT,
+  MUTANT,
+  type PackageInfo,
+  parseRange,
+  parseVersion,
+  rangeAdmits,
+} from '../../deps/shared.js';
 import { isWithinFreshnessWindow } from '../../release-age.js';
 import { REPO_ROOT } from '../../repo-root.js';
+import { askUpstream } from '../../upstream.js';
 import {
   type DriverContext,
   type FileWrite,
@@ -60,7 +81,14 @@ import {
   splitFamilySet,
 } from '../driver.js';
 import type { PinEntry, RepoPath } from '../registry.js';
-import { lockfileOf, predictManifests, sourceManifests } from './pin-manifests.js';
+import {
+  BIOME_CONFIG,
+  BIOME_PACKAGE,
+  lockfileOf,
+  planBiomeSchema,
+  predictManifests,
+  sourceManifests,
+} from './pin-manifests.js';
 
 // ---- the plan check-deps answers ------------------------------------------------------------
 
@@ -76,7 +104,7 @@ interface MajorCandidate {
   publishedMs: number | null;
 }
 
-interface NpmPlanJson {
+export interface NpmPlanJson {
   nowMs: number;
   minReleaseAgeMs: number;
   steps: InstallStep[];
@@ -119,7 +147,7 @@ function loadPlan(ctx: DriverContext, flags: string[]): NpmPlanJson {
 const q = (s: string): string => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
 
 /** The pinned npm version (.devcontainer/toolchain.env NPM_VERSION) of the tree being bumped. */
-function pinnedNpm(root: string): string {
+export function pinnedNpm(root: string): string {
   const tc = path.join(root, '.devcontainer/toolchain.env');
   const m = fs.existsSync(tc) ? /^NPM_VERSION=(\S+)$/m.exec(fs.readFileSync(tc, 'utf8')) : null;
   if (!m)
@@ -235,7 +263,7 @@ function needText(ctx: DriverContext, p: RepoPath): string {
 // ---- plan assembly --------------------------------------------------------------------------
 
 /** The npm steps of a plan as transaction steps, each `update` followed by its freshness guard, then the pin-group sync. */
-function stepsOf(
+export function stepsOf(
   ctx: DriverContext,
   entry: PinEntry,
   steps: InstallStep[],
@@ -281,6 +309,13 @@ function stepsOf(
         writes: [],
       });
   }
+  const biomeP = repoPathOf(ctx, path.join(ctx.root, BIOME_CONFIG));
+  const biomeText = ctx.read(biomeP);
+  const biomeAfter = biomeText === null ? null : planBiomeSchema(biomeText, steps);
+  if (biomeAfter !== null) {
+    writes.push({ ...biomeP, after: biomeAfter });
+    notes.push(`${keyOf(biomeP)}: $schema follows ${BIOME_PACKAGE}`);
+  }
   const moved = steps.filter((s) => s.packages.length > 0);
   const rc = path.join(ctx.root, '.syncpackrc.json');
   if (moved.length > 0 && fs.existsSync(rc)) {
@@ -303,7 +338,9 @@ function stepsOf(
         ...manifests.map((f) => repoPathOf(ctx, path.join(ctx.root, f))),
       ],
     });
-    const locks = [...new Set(manifests.flatMap((f) => lockfileOf(ctx.root, f) ?? []))].sort();
+    const locks = [...new Set(manifests.flatMap((f) => lockfileOf(ctx.root, f) ?? []))].sort(
+      (a, b) => Number(a > b) - Number(a < b)
+    );
     for (const lock of locks)
       out.push({
         label: `lockfile pass after the pin-group ranges: ${lock}`,
@@ -344,6 +381,232 @@ function npmPlanOf(
   return { entry, from, to, writes, steps: built.steps, changes };
 }
 
+// ---- override ranges the lockfile does not meet -------------------------------------------
+
+/** One direct override whose range a locked copy falls outside. */
+interface OverrideDrift {
+  name: string;
+  range: string;
+  /** The distinct locked versions outside the range, ascending. */
+  outside: string[];
+  /** The hoisted copy's version (`node_modules/<name>`), the one the freshness guard reads; null when there is none. */
+  hoisted: string | null;
+}
+
+/** The package name of a lockfile key (`node_modules/a/node_modules/@s/b` -> `@s/b`), and the chain of packages above it. */
+function lockChain(key: string): string[] {
+  return key
+    .split(/(?:^|\/)node_modules\//)
+    .filter((s) => s !== '')
+    .map((s) => s.replace(/\/$/, ''));
+}
+
+/**
+ * The direct overrides of a manifest (a string value, or the `"."` of an object value, keyed by
+ * a bare name) that a locked copy falls outside of. Pure. A `$name` reference, a `name@range`
+ * selector key and a range this module cannot parse are left out (they are check:ci-override-ranges'
+ * to judge); a copy below a package whose override object scopes the same name (gray-matter's
+ * js-yaml ^3) answers to that nested override, not the top-level one, so it is not judged here.
+ */
+export function overrideDrift(manifestText: string, lockText: string): OverrideDrift[] {
+  const overrides =
+    (JSON.parse(manifestText) as { overrides?: Record<string, unknown> }).overrides ?? {};
+  const locked =
+    (JSON.parse(lockText) as { packages?: Record<string, { version?: string; link?: boolean }> })
+      .packages ?? {};
+  const bare = (k: string): string => (k.lastIndexOf('@') > 0 ? k.slice(0, k.lastIndexOf('@')) : k);
+  /** For each overridden name, the packages whose override object re-scopes it. */
+  const scopedBy = new Map<string, Set<string>>();
+  const walk = (parent: string, obj: Record<string, unknown>): void => {
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === '.') continue;
+      const set = scopedBy.get(bare(k)) ?? new Set<string>();
+      set.add(parent);
+      scopedBy.set(bare(k), set);
+      if (typeof v === 'object' && v !== null) walk(bare(k), v as Record<string, unknown>);
+    }
+  };
+  const direct: Array<{ name: string; range: string }> = [];
+  for (const [k, v] of Object.entries(overrides)) {
+    const value =
+      typeof v === 'string'
+        ? v
+        : typeof v === 'object' && v !== null
+          ? (v as Record<string, unknown>)['.']
+          : undefined;
+    if (typeof v === 'object' && v !== null) walk(bare(k), v as Record<string, unknown>);
+    if (typeof value !== 'string' || value.startsWith('$') || bare(k) !== k) continue;
+    direct.push({ name: k, range: value });
+  }
+  const out: OverrideDrift[] = [];
+  for (const { name, range } of direct) {
+    const sets = parseRange(range);
+    if (!sets) continue;
+    const scopes = scopedBy.get(name) ?? new Set<string>();
+    const outside = new Set<string>();
+    for (const [key, entry] of Object.entries(locked)) {
+      const chain = lockChain(key);
+      if (chain.at(-1) !== name || entry.link === true || entry.version === undefined) continue;
+      if (chain.slice(0, -1).some((p) => scopes.has(p))) continue;
+      if (!rangeAdmits(sets, entry.version)) outside.add(entry.version);
+    }
+    if (outside.size === 0) continue;
+    out.push({
+      name,
+      range,
+      outside: [...outside].sort(compareVersions),
+      hoisted: locked[`node_modules/${name}`]?.version ?? null,
+    });
+  }
+  return out;
+}
+
+/** The part of a registry document the target needs. */
+export interface Packument {
+  versions?: Record<string, unknown>;
+  time?: Record<string, string>;
+  'dist-tags'?: Record<string, string>;
+}
+
+type OverrideTarget =
+  | { kind: 'target'; version: string; publishedMs: number }
+  | { kind: 'deferred'; version: string; publishedMs: number | null }
+  | { kind: 'none' };
+
+/**
+ * The release `npm update <name> --before=<cutoffMs>` resolves for an override range, as
+ * npm-pick-manifest picks it: the `latest` dist-tag when the range admits it and it is old
+ * enough, else the highest admitted stable release published at or before the cutoff. A release
+ * with no publish time is never old enough (fail closed). `deferred` names the newest admitted
+ * release when every one is inside the window; `none` means no published release is admitted.
+ * Pure; a null cutoff is a window switched off.
+ */
+export function overrideTarget(
+  range: string,
+  doc: Packument,
+  cutoffMs: number | null
+): OverrideTarget {
+  const sets = parseRange(range);
+  if (!sets) return { kind: 'none' };
+  const at = (v: string): number | null => {
+    const t = doc.time?.[v];
+    const ms = t === undefined ? Number.NaN : Date.parse(t);
+    return Number.isFinite(ms) ? ms : null;
+  };
+  const admitted = Object.keys(doc.versions ?? {})
+    .filter((v) => parseVersion(v)?.prerelease === null && rangeAdmits(sets, v))
+    .sort((a, b) => compareVersions(b, a));
+  if (admitted.length === 0) return { kind: 'none' };
+  const cleared = admitted.filter((v) => {
+    const ms = at(v);
+    return cutoffMs === null ? true : ms !== null && ms <= cutoffMs;
+  });
+  if (cleared.length === 0)
+    return { kind: 'deferred', version: admitted[0], publishedMs: at(admitted[0]) };
+  const tag = doc['dist-tags']?.latest;
+  const pick = tag !== undefined && cleared.includes(tag) ? tag : cleared[0];
+  return { kind: 'target', version: pick, publishedMs: at(pick) ?? 0 };
+}
+
+/** The override moves of one plan: the npm steps that move them, and the targets the window still holds. */
+export interface OverrideJudgement {
+  moves: InstallStep[];
+  /** One line per override whose every admitted release is inside the release-age window. */
+  deferred: string[];
+  /** One line per move, for the plan's changes. */
+  notes: string[];
+}
+
+const isoMs = (ms: number): string => new Date(ms).toISOString();
+
+/**
+ * Every npm project of the family, its direct overrides against its own lockfile (overrideDrift),
+ * each drifted one dated through `docs` (overrideTarget) and turned into an `npm update` step
+ * that carries the release-age cutoff, so the window applies to the override target as to every
+ * other planned package. `skip` holds `<abs cwd>\0<name>` pairs check-deps already plans. Throws
+ * PlanRefused for a range no published release admits; `docs` throws when the registry did not
+ * answer, which leaves the family not compared.
+ */
+export async function judgeOverrides(
+  entry: PinEntry,
+  ctx: DriverContext,
+  nowMs: number,
+  windowMs: number,
+  docs: (name: string) => Promise<Packument>,
+  skip: ReadonlySet<string> = new Set()
+): Promise<OverrideJudgement> {
+  const cutoff = freshnessCutoffMs(nowMs, windowMs);
+  const out: OverrideJudgement = { moves: [], deferred: [], notes: [] };
+  for (const d of projectDirs(entry, ctx)) {
+    const manifestP = repoPathOf(ctx, path.join(d.abs, 'package.json'));
+    const manifest = ctx.read(manifestP);
+    const lock = ctx.read(repoPathOf(ctx, path.join(d.abs, 'package-lock.json')));
+    if (manifest === null || lock === null) continue;
+    const dir = relDir(ctx, d.abs);
+    for (const drift of overrideDrift(manifest, lock)) {
+      if (skip.has(`${d.abs}\0${drift.name}`)) continue;
+      const where = `${keyOf(manifestP)}: overrides["${drift.name}"] ${drift.range}`;
+      const t = overrideTarget(drift.range, await docs(drift.name), cutoff);
+      if (t.kind === 'none')
+        throw new PlanRefused(
+          `${entry.id}: ${where} admits no published release, while the lock holds ${drift.outside.join(', ')}; correct the range`
+        );
+      if (t.kind === 'deferred') {
+        out.deferred.push(
+          `${where}: the lock holds ${drift.outside.join(', ')} and every admitted release is inside the release-age window (newest ${t.version}, ${t.publishedMs === null ? 'publish time unknown' : `published ${isoMs(t.publishedMs)}`})`
+        );
+        continue;
+      }
+      out.moves.push({
+        cwd: d.abs,
+        args: ['update', drift.name, ...(cutoff === null ? [] : [`--before=${isoMs(cutoff)}`])],
+        label: `${dir === '.' ? 'root' : dir} (override range)`,
+        packages: [
+          { name: drift.name, current: drift.hoisted ?? drift.outside[0], latest: t.version },
+        ],
+      });
+      out.notes.push(
+        `${where}: the lock holds ${drift.outside.join(', ')}; npm update ${drift.name} moves every copy it governs to ${t.version} (published ${isoMs(t.publishedMs)})`
+      );
+    }
+  }
+  return out;
+}
+
+/** The registry document of a package: from `<root>/.fixture-registry/` under a fixture root (as check-deps reads it), else registry.npmjs.org; throws when neither answers. */
+function registryDocs(ctx: DriverContext): (name: string) => Promise<Packument> {
+  const fixture = path.resolve(ctx.root) !== path.resolve(REPO_ROOT);
+  return async (name) => {
+    if (fixture) {
+      const p = path.join(ctx.root, '.fixture-registry', `${encodeURIComponent(name)}.json`);
+      if (!fs.existsSync(p)) throw new Error(`no fixture registry document for ${name} (${p})`);
+      return JSON.parse(fs.readFileSync(p, 'utf8')) as Packument;
+    }
+    const r = await askUpstream({
+      url: `https://registry.npmjs.org/${name.replace('/', '%2F')}`,
+      headers: { accept: 'application/json' },
+      who: `pins npm override ${name}`,
+    });
+    return JSON.parse(r.body) as Packument;
+  };
+}
+
+const overrideMemo = new WeakMap<DriverContext, Promise<OverrideJudgement>>();
+
+/** judgeOverrides for the context's tree, once per context, skipping what the check-deps plan already moves. */
+function overridesOf(
+  entry: PinEntry,
+  ctx: DriverContext,
+  plan: NpmPlanJson
+): Promise<OverrideJudgement> {
+  const hit = overrideMemo.get(ctx);
+  if (hit !== undefined) return hit;
+  const skip = new Set(plan.steps.flatMap((s) => s.packages.map((p) => `${s.cwd}\0${p.name}`)));
+  const p = judgeOverrides(entry, ctx, plan.nowMs, plan.minReleaseAgeMs, registryDocs(ctx), skip);
+  overrideMemo.set(ctx, p);
+  return p;
+}
+
 // ---- the driver -----------------------------------------------------------------------------
 
 const names = (steps: InstallStep[]): string[] => [
@@ -373,70 +636,170 @@ function majorRelease(m: MajorCandidate, plan: NpmPlanJson): Release {
 /** Synthetic version of the all-in-range release, `1.<n>` for n packages, so the core reads it as a same-major step from `1.0`. */
 const IN_RANGE_BASE = '1.0';
 
-/** The synthetic in-range release a plan answers, or null when nothing in range is past the window. */
-const inRangeVersion = (plan: NpmPlanJson): string | null =>
-  plan.steps.length > 0 ? `1.${names(plan.steps).length}` : null;
+/** The synthetic in-range release a plan answers (its packages plus its override moves), or null when nothing in range is past the window. */
+const inRangeVersion = (plan: NpmPlanJson, ov: OverrideJudgement): string | null => {
+  const n = names(plan.steps).length + ov.moves.length;
+  return n > 0 ? `1.${n}` : null;
+};
 
-export const npmDriver: PinDriver = {
-  name: 'npm',
-  holdKey: () => null,
-  inspect(entry, ctx): Promise<Inspection> {
-    const drift = installedDrift(entry, ctx);
-    if (drift.length > 0)
-      throw new Error(
-        `the installed tree disagrees with its lockfile, so npm outdated would judge versions nobody locked: ${drift.slice(0, 4).join('; ')}${drift.length > 4 ? `; and ${drift.length - 4} more` : ''}`
-      );
-    const plan = loadPlan(ctx, []);
-    const releases: Release[] = [];
-    const pkgs = names(plan.steps);
-    const inRange = inRangeVersion(plan);
-    if (inRange !== null)
-      releases.push({
+/** The deferred packages a run leaves behind, for its label: they stay deferred, they never refuse the run. */
+const leftDeferred = (plan: NpmPlanJson): string =>
+  plan.tooNew.length > 0
+    ? `; ${plan.tooNew.length} package(s) stay deferred inside the release-age window`
+    : '';
+
+/**
+ * The in-range release of the family, from the check-deps plan and the override judgement. Pure.
+ * An override target still inside the window makes it ineligible whatever else is pending (the
+ * lock cannot meet its own manifest until it clears); deferred packages alone answer the same
+ * `1.1` deferral as before overrides were judged.
+ */
+export function inRangeReleases(plan: NpmPlanJson, ov: OverrideJudgement): Release[] {
+  const pkgs = names(plan.steps);
+  const inRange = inRangeVersion(plan, ov);
+  if (ov.deferred.length > 0)
+    return [
+      {
+        version: inRange ?? '1.1',
+        publishedMs: null,
+        verdict: {
+          eligible: false,
+          why: `${ov.deferred.length} override target(s) inside the release-age window: ${ov.deferred.join('; ')}`,
+        },
+      },
+    ];
+  if (inRange !== null)
+    return [
+      {
         version: inRange,
         publishedMs: null,
         verdict: {
           eligible: true,
-          why: `${pkgs.length} package(s) past the release-age window across ${plan.manifests.length} manifest(s)`,
+          why: `${pkgs.length} package(s) past the release-age window across ${plan.manifests.length} manifest(s)${ov.moves.length > 0 ? `, ${ov.moves.length} override range(s) the lockfile does not meet` : ''}${leftDeferred(plan)}`,
         },
-      });
-    else if (plan.tooNew.length > 0)
-      releases.push({
+      },
+    ];
+  if (plan.tooNew.length > 0)
+    return [
+      {
         version: '1.1',
         publishedMs: null,
         verdict: {
           eligible: false,
           why: `${plan.tooNew.length} package(s) newer than the lockfiles, all inside the release-age window`,
         },
-      });
+      },
+    ];
+  return [];
+}
+
+/** The override moves a plan has not already planned, by (project, package). */
+const newMoves = (steps: InstallStep[], ov: OverrideJudgement): InstallStep[] =>
+  keptMoves(steps, ov).moves;
+
+/** The moves a plan has not already planned, with the notes of exactly those moves (judgeOverrides pushes one note per move, in order). */
+export function keptMoves(
+  steps: InstallStep[],
+  ov: OverrideJudgement
+): { moves: InstallStep[]; notes: string[] } {
+  const planned = new Set(steps.flatMap((s) => s.packages.map((p) => `${s.cwd}\0${p.name}`)));
+  const keep = ov.moves.map((m) => !planned.has(`${m.cwd}\0${m.packages[0].name}`));
+  return {
+    moves: ov.moves.filter((_, i) => keep[i]),
+    notes: ov.notes.filter((_, i) => keep[i]),
+  };
+}
+
+/** The unique deferred package names (one package deferred in two projects counts once). */
+function uniqueDeferred(tooNew: ReadonlyArray<{ pkg: { name: string } }>): string[] {
+  return [...new Set(tooNew.map((t) => t.pkg.name))];
+}
+
+/** How many distinct packages are deferred: the same dedupe deferredNames lists. */
+export function deferredCount(tooNew: ReadonlyArray<{ pkg: { name: string } }>): number {
+  return uniqueDeferred(tooNew).length;
+}
+
+/** The deferred packages by name, the first five and a count of the rest. */
+export function deferredNames(tooNew: ReadonlyArray<{ pkg: { name: string } }>): string {
+  const all = uniqueDeferred(tooNew);
+  return `${all.slice(0, 5).join(', ')}${all.length > 5 ? ` and ${all.length - 5} more` : ''}`;
+}
+
+/** Refuse any plan while an override target is still inside the window. */
+function refuseDeferredOverrides(entry: PinEntry, ov: OverrideJudgement): void {
+  if (ov.deferred.length > 0)
+    throw new PlanRefused(
+      `${entry.id}: ${ov.deferred.join('; ')}; nothing is written. Run it again once the target clears the window (npm run pins -- when ${entry.id}).`
+    );
+}
+
+/**
+ * The plan of the in-range release alone: check-deps' steps, then each override move (an
+ * `npm update <name> --before=<cutoff>` with its freshness guard). Deferred packages are left
+ * where they are and named in the label.
+ */
+export function inRangePlan(
+  entry: PinEntry,
+  ctx: DriverContext,
+  base: NpmPlanJson,
+  ov: OverrideJudgement
+): PinPlan {
+  refuseDeferredOverrides(entry, ov);
+  const moves = newMoves(base.steps, ov);
+  if (base.steps.length === 0 && moves.length === 0)
+    throw new PlanRefused(`${entry.id}: nothing past the window to bump`);
+  const pkgs = names(base.steps).length;
+  const label = [
+    ...(pkgs > 0 || moves.length === 0 ? [`${pkgs} package(s)`] : []),
+    ...(moves.length > 0
+      ? [
+          `${moves.length} override move(s) (${moves.map((m) => `${m.packages[0].name} ${m.packages[0].latest}`).join(', ')})`,
+        ]
+      : []),
+  ].join(' with ');
+  return npmPlanOf(
+    entry,
+    ctx,
+    `${base.manifests.length} manifests`,
+    {
+      version: `${label}${base.tooNew.length > 0 ? `; ${deferredCount(base.tooNew)} deferred package(s) left (${deferredNames(base.tooNew)})` : ''}`,
+      publishedMs: null,
+    },
+    { ...base, steps: [...base.steps, ...moves] },
+    [],
+    ov.notes
+  );
+}
+
+export const npmDriver: PinDriver = {
+  name: 'npm',
+  holdKey: () => null,
+  async inspect(entry, ctx): Promise<Inspection> {
+    const drift = installedDrift(entry, ctx);
+    if (drift.length > 0)
+      throw new Error(
+        `the installed tree disagrees with its lockfile, so npm outdated would judge versions nobody locked: ${drift.slice(0, 4).join('; ')}${drift.length > 4 ? `; and ${drift.length - 4} more` : ''}`
+      );
+    const plan = loadPlan(ctx, []);
+    const releases = inRangeReleases(plan, await overridesOf(entry, ctx, plan));
     for (const m of plan.majors) releases.push(majorRelease(m, plan));
-    return Promise.resolve({ current: IN_RANGE_BASE, releases });
+    return { current: IN_RANGE_BASE, releases };
   },
-  plan(entry, to, ctx, also = []): Promise<PinPlan> {
+  async plan(entry, to, ctx, also = []): Promise<PinPlan> {
     const base = loadPlan(ctx, []);
+    const ov = await overridesOf(entry, ctx, base);
     // The core hands a set run its in-range release and its majors together (scripts/lib/pins/status.ts); anything else is refused by name.
     const set = splitFamilySet(
       entry.id,
-      inRangeVersion(base),
+      inRangeVersion(base, ov),
       base.majors.map((m) => m.key),
       base.majors.filter((m) => m.blockKey === null).map((m) => m.key),
       [to, ...also]
     );
     const majors = set.majors.map((k) => base.majors.find((m) => m.key === k) as MajorCandidate);
-    if (majors.length === 0) {
-      if (base.steps.length === 0)
-        throw new PlanRefused(`${entry.id}: nothing past the window to bump`);
-      return Promise.resolve(
-        npmPlanOf(
-          entry,
-          ctx,
-          `${base.manifests.length} manifests`,
-          { version: `${names(base.steps).length} package(s)`, publishedMs: null },
-          base,
-          [],
-          []
-        )
-      );
-    }
+    if (majors.length === 0) return inRangePlan(entry, ctx, base, ov);
+    refuseDeferredOverrides(entry, ov);
     // Majors: the planner runs with every allow entry transient and every hold absent, so a family whose majors only converge as a set (check:deps stays red while any one is undecided) moves in one transaction.
     const plan = loadPlan(
       ctx,
@@ -471,21 +834,22 @@ export const npmDriver: PinDriver = {
     // The in-range packages that ride the same run are named in the release label, so the drafted subject does not read as the major alone.
     const riders = names(plan.steps).filter((n) => !majors.some((m) => m.pkg.name === n));
     const withRiders = riders.length > 0 ? ` with ${riders.length} in-range package(s)` : '';
-    return Promise.resolve(
-      npmPlanOf(
-        entry,
-        ctx,
-        majors.length === 1
-          ? `${first.pkg.name} ${first.pkg.current}`
-          : `${majors.length} majors (${majors.map((m) => m.key).join(', ')})`,
-        {
-          version: `${majors.length === 1 ? `${first.pkg.name} ${first.pkg.latest}` : `${majors.length} majors`}${withRiders}`,
-          publishedMs: to.publishedMs,
-        },
-        plan,
-        writes,
-        changes
-      )
+    // The override moves ride a major run too: the entry's gates judge the whole tree, and a lock outside its own overrides fails them.
+    const { moves, notes: moveNotes } = keptMoves(plan.steps, ov);
+    const withMoves = moves.length > 0 ? ` and ${moves.length} override move(s)` : '';
+    return npmPlanOf(
+      entry,
+      ctx,
+      majors.length === 1
+        ? `${first.pkg.name} ${first.pkg.current}`
+        : `${majors.length} majors (${majors.map((m) => m.key).join(', ')})`,
+      {
+        version: `${majors.length === 1 ? `${first.pkg.name} ${first.pkg.latest}` : `${majors.length} majors`}${withRiders}${withMoves}`,
+        publishedMs: to.publishedMs,
+      },
+      { ...plan, steps: [...plan.steps, ...moves] },
+      writes,
+      [...changes, ...moveNotes]
     );
   },
 };
@@ -591,7 +955,9 @@ function projectDirs(
       continue;
     }
     for (const pat of sc.files)
-      for (const f of globSync(pat, { cwd: base, posix: true }).sort()) {
+      for (const f of globSync(pat, { cwd: base, posix: true }).sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )) {
         const dir = path.posix.dirname(f) === '.' ? '' : path.posix.dirname(f);
         out.push({ repo: sc.repo, dir, abs: path.join(base, dir) });
       }
@@ -735,7 +1101,7 @@ function importersOf(pkg: string, dirs: string[]): string[] {
         '**/.build_cache/**',
         '**/.ci/cache/**',
       ],
-    }).sort())
+    }).sort((a, b) => Number(a > b) - Number(a < b)))
       if (!isOutput(f) && re.test(fs.readFileSync(path.join(d, f), 'utf8')))
         out.push(path.join(d, f));
   }
@@ -768,7 +1134,9 @@ export function planRemove(entry: PinEntry, ctx: DriverContext, pkg: string): Pi
     const members: Manifest[] = [];
     const wsGlobs = Array.isArray(root.json.workspaces) ? (root.json.workspaces as string[]) : [];
     for (const g of wsGlobs)
-      for (const d of globSync(g, { cwd: pr.abs, posix: true }).sort()) {
+      for (const d of globSync(g, { cwd: pr.abs, posix: true }).sort(
+        (a, b) => Number(a > b) - Number(a < b)
+      )) {
         const m = readManifest(path.join(pr.abs, d));
         if (m) members.push(m);
       }

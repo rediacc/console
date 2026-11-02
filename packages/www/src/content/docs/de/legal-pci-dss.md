@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: de
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Mal ehrlich: PCI DSS v4.0.1. ist nicht optional, wenn Sie Karteninhaberdaten verarbeiten. Version 4.0.1. läuft auf eine Anforderung hinaus: infrastrukturelle Isolierung von allem anderen.
@@ -35,7 +35,7 @@ Referenz: [PCI Security Standards Council](https://www.pcisecuritystandards.org/
 
 PCI DSS setzt hart auf Segmentierung. Ich sehe immer wieder Teams, die iptables-Regeln auf unzureichende Isolierung aufsetzen. Das funktioniert nicht. Die Teams, die bestehen, haben Segmentierung in die Architektur eingebaut. Rediacc liefert Ihnen das standardmäßig:
 
-- Jedes Repository läuft in seinem eigenen Docker Daemon unter `/var/run/rediacc/docker-<networkId>.sock`
+- Jedes Repository läuft in seinem eigenen Docker Daemon unter `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`
 - Repositories haben isolierte Loopback-IP-Subnetze (127.0.x.x/26, 61 nutzbare IPs pro Netzwerk)
 - Von renet erzwungene iptables-Regeln blockieren jeglichen Daemon-übergreifenden Verkehr
 - Container verschiedener Repositories können auf Netzwerkebene nicht kommunizieren

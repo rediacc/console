@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ko
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -85,7 +85,7 @@ Rediacc은 다르게 구축되었습니다. 전체 아키텍처는 [아키텍처
 
 1. **운영자 워크스테이션.** `rdc`를 실행합니다. LUKS2 자격증명을 보유합니다.
 2. **운영자 자신의 서버.** `renet`을 실행합니다. LUKS2 암호화 레포지터리를 보유합니다.
-3. **운영자 자신의 백업 대상.** rclone 호환 스토리지(S3, B2, OneDrive, 온프레미스 MinIO). 암호화된 볼륨을 수신합니다.
+3. **백업 대상.** 운영자가 제어하는 두 번째 머신(`rdc repo push`) 또는 SHA-256으로 주소가 지정된 암호문 셀만 보관하는 호스팅 청크 스토어(`rdc backup snapshot`) 중 하나입니다. LUKS 자격증명은 어느 쪽에도 전달되지 않습니다.
 
 레이어 4가 없습니다. Rediacc 회사는 실험적인 [클라우드 어댑터](/ko/docs/architecture)를 선택하지 않은 운영자에 대한 하위 처리자가 아닙니다. 셀프호스팅 운영자에게 Rediacc 회사와의 관계는 데이터 처리 계약이 아닌 소프트웨어 라이선스입니다.
 
@@ -130,7 +130,7 @@ Hetzner에서 Rediacc으로 이전 후:
 | 하위 처리자 | (1) 셀프호스팅에 해당 없음; (2) Hetzner 내부 전용, DPA에 명시 |
 | 계약 상태 | (1) 소프트웨어 라이선스, DPA 불필요; (2) Hetzner DPA + SCC 기체결 |
 | 키 관리 | 고객(LUKS2 자격증명이 운영자 구성에 있으며 서버에 없음) |
-| 종료 계획 | "rclone 호환 대상에서 rdc repo pull. 볼륨은 LUKS2 암호화; 운영자가 자격증명 보유." |
+| 종료 계획 | "두 번째 머신에서 rdc repo pull, 또는 저장된 임의의 스냅샷에서 rdc backup restore. 볼륨은 LUKS2 암호화; 운영자가 자격증명 보유." |
 | 최근 평가 | (2) 기존 IaaS 검토로 충당 |
 
 하나 대신 두 개의 등록부 항목입니다. 중요 티어 항목은 IaaS 공급자를 위한 것으로, 구매자는 이미 DPA와 테스트된 종료 계획을 갖추고 있었습니다. IaaS는 대부분의 팀이 관리하는 방법을 알고 있는 관계이기 때문입니다. Rediacc 항목은 비중요 티어입니다. 데이터 처리자가 아닌 소프트웨어 라이선스이기 때문입니다.

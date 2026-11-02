@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: et
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # Jälgimine
@@ -201,7 +201,7 @@ rdc machine status server-1
 See annab:
 - Hostinimi ja tööaeg
 - Mälu-, ketta- ja andmehoidla kasutus
-- Hoidlate koguarv, ühendatud arv, Dockeri töötav arv
+- Hoidlate koguarv, ühendatud arv, nende hoidlate arv, mille Dockeri deemon vastab
 - Üksikasjalik teave hoidla kaupa
 
 Kasutage `--output json` masinloetava väljundi jaoks.

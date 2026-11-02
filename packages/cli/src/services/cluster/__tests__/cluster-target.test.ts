@@ -1,11 +1,6 @@
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type {
-  ClusterConfig,
-  MachineConfig,
-  RdcConfig,
-  StorageConfig,
-} from '../../../types/index.js';
+import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { resolveRemoteName } from '../../../utils/remote-resolve.js';
 import { assertUniqueResourceName, resolveControlNode } from '../../config/config-cluster-ops.js';
 import { configService } from '../../config/config-resources.js';
@@ -24,7 +19,6 @@ function buildConfig(clusters: Record<string, ClusterConfig>): RdcConfig {
       'prod-k8s-1': { ip: '1.2.3.4', user: 'root', cluster: { cluster: 'prod', pool: 'k8s' } },
       'prod-ceph-1': { ip: '1.2.3.5', user: 'root', cluster: { cluster: 'prod', pool: 'ceph' } },
     },
-    storages: { s3: { provider: 'rclone', vaultContent: {} } },
     clusters,
   };
   return cfg;
@@ -109,16 +103,11 @@ describe('cluster target resolution matrix', () => {
     expect(details.kubeNamespace).toBeUndefined();
   });
 
-  it('resolveRemoteName resolves machine, storage, cluster, and treats members as machines', async () => {
+  it('resolveRemoteName resolves machine and cluster, treats members as machines, and refuses a storage name', async () => {
     const machine: MachineConfig = { ip: 'x', user: 'root' };
-    const storage: StorageConfig = { provider: 'rclone', vaultContent: {} };
     vi.spyOn(configService, 'getLocalMachine').mockImplementation((name: string) => {
       if (name === 'standalone' || name === 'prod-ceph-1') return Promise.resolve(machine);
       throw new Error('no machine');
-    });
-    vi.spyOn(configService, 'getStorage').mockImplementation((name: string) => {
-      if (name === 's3') return Promise.resolve(storage);
-      throw new Error('no storage');
     });
     // The cluster branch of resolveRemoteName reads getCurrent via config-cluster-ops.
     vi.spyOn(configService, 'getCurrent').mockResolvedValue(buildConfig({ prod: prodCluster }));
@@ -126,7 +115,8 @@ describe('cluster target resolution matrix', () => {
     expect((await resolveRemoteName('standalone')).type).toBe('machine');
     // A materialized member IS a machine, so machine-first ordering wins.
     expect((await resolveRemoteName('prod-ceph-1')).type).toBe('machine');
-    expect((await resolveRemoteName('s3')).type).toBe('storage');
+    // The retired storage kind no longer resolves to anything.
+    await expect(resolveRemoteName('s3')).rejects.toThrow();
     // The cluster's own name resolves as a cluster.
     expect((await resolveRemoteName('prod')).type).toBe('cluster');
   });

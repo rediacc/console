@@ -7,4 +7,4 @@ exit: 0
 ✓ Cutoff: 2026-09-21T08:45:12 (databases older than 60m)
 ✓ No stale migration-test databases found
 --- calls ---
-npx	wrangler	d1	list	--json
+npx	--no-install	wrangler	d1	list	--json

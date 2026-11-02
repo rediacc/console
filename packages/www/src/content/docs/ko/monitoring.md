@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: ko
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # 모니터링
@@ -201,7 +201,7 @@ rdc machine status server-1
 다음을 제공합니다.
 - 호스트명 및 가동 시간
 - 메모리, 디스크 및 데이터스토어 사용량
-- 총 저장소 수, 마운트된 수, Docker 실행 수
+- 총 저장소 수, 마운트된 수, Docker 데몬이 응답하는 저장소 수
 - 저장소별 상세 정보
 
 머신 가독성 출력을 위해 `--output json`을 사용하십시오.

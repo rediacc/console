@@ -12,7 +12,6 @@ function buildConfig(clusters: Record<string, ClusterConfig>): RdcConfig {
       standalone: { ip: '5.6.7.8', user: 'root' },
       'prod-k8s-1': { ip: '1.2.3.4', user: 'root', cluster: { cluster: 'prod', pool: 'k8s' } },
     },
-    storages: {},
     clusters,
   };
   return cfg;

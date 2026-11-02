@@ -16,7 +16,7 @@
 import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
-import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
+import { formatStepDuration, getActiveLabel, getDoneLine } from '../../utils/timeline.js';
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
 import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
 import type { RenetEvent } from './types.js';
@@ -59,18 +59,32 @@ export function assertProxyCapable(
 }
 
 /**
+ * Detachable verbs that `--background` must still refuse locally, with the reason, until agent/plans/PLAN-detached-jobs.md (J4, J22) runs each as one job with its follow-up code on the ticket. A verb leaves this table in the change that adds it to CONVERTED (packages/cli/src/services/jobs/plans.ts).
+ *
+ * `--background` gives EVERY machine call of the verb a zero attach window, probes included (executor-factory's attachDecorator), so each returns its ticket at once. For these verbs that is unsafe, per the J0 audit in that plan: a later call starts before the earlier job finishes, a probe answers empty and fails open, or a local step records a result that has not happened. `repo migrate -b` deletes the source while its delta push still reads it. The proxy path is unaffected: it detaches and follows each call to completion.
+ */
+export const BACKGROUND_UNSAFE: Record<string, string> = {};
+
+/**
  * Refuse `--background` for a command that cannot become a detached job.
  *
- * Mirrors assertProxyCapable and derives its message from the same
- * `proxyBlockedReason`, because `detachable` is `proxyCapable` minus jobs: a
- * command that cannot be proxied cannot be detached for the same reasons (it
- * needs a terminal, or transfers local files, or writes the caller's own
- * config), and a `rdc job *` command manages jobs rather than doing machine
- * work, so backgrounding one is circular. No new validation invariant: the
- * message is composed here from fields the contract already carries.
+ * Two checks, in order. A detachable verb named in BACKGROUND_UNSAFE is refused with its reason, because `--background` detaches every machine call of a verb with follow off. Otherwise the message derives from the contract's `proxyBlockedReason`, since `detachable` is `proxyCapable` minus jobs: a command that cannot be proxied cannot be detached for the same reasons (it needs a terminal, transfers local files, or writes the caller's own config), and a `rdc job *` command manages jobs rather than doing machine work, so backgrounding one is circular.
  */
 export function assertDetachable(commandPath: string, entry: ContractCommand | undefined): void {
+  const unsafe = BACKGROUND_UNSAFE[commandPath];
+  if (entry?.detachable && unsafe) {
+    throw new Error(
+      `"rdc ${commandPath}" cannot run with --background yet: it ${unsafe}. ` +
+        `Run it without --background; it keeps running on the machine only through --proxy.`
+    );
+  }
   if (entry?.detachable) return;
+
+  if (entry?.detachBlockedReason) {
+    throw new Error(
+      `"rdc ${commandPath}" cannot run in the background: ${entry.detachBlockedReason}`
+    );
+  }
 
   if (entry?.domain === 'job') {
     throw new Error(
@@ -183,8 +197,7 @@ function renderEvent(event: RenetEvent): void {
     case 'step_done':
       if (!event.name || event.duration_ms === undefined) break;
       writeStdout(
-        `\r✔ ${getDoneLabel(event.name)}${event.detail ? ` (${event.detail})` : ''} ` +
-          `(${formatStepDuration(event.duration_ms)})\n`
+        `\r✔ ${getDoneLine(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`
       );
       break;
     case 'log':
@@ -292,13 +305,7 @@ function writeOutcome(outcome: ProxyCommandOutcome): void {
   else if (outcome.stdout) writeStdout(`${outcome.stdout}\n`);
   if (outcome.stderr) writeStderr(`${outcome.stderr}\n`);
 
-  // Renet's own output has normally been rendered live already, arriving as `output` events the same way it streams to a terminal locally. Print the capture only when none of it came through, so a run never ends silently and nothing is ever shown twice.
-  // Never after raw bytes: those ARE the answer (`repo cat`), and renet's capture is the base64 envelope they were decoded from, which appended would corrupt the file.
-  if (!outcome.stdoutBytes && !outcome.renderedLiveOutput && outcome.renetStdout) {
-    writeStdout(
-      outcome.renetStdout.endsWith('\n') ? outcome.renetStdout : `${outcome.renetStdout}\n`
-    );
-  }
+  // Renet's raw capture is deliberately NOT carried or printed. A local run drops every renet line that is not a step (or that a captureOutput verb did not choose to print itself), so printing the capture put renet's own JSON (the machine probe's repository list) on the stdout of `repo up` and `repo down`. What a verb wants shown is in `outcome.stdout` (what its action body printed) or arrives live as `output` events (passthroughOutput verbs).
 
   if (outcome.error) writeStderr(`${outcome.error}\n`);
 }

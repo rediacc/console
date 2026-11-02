@@ -62,6 +62,8 @@ commit, so the same code path answers the same question.
 
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 
+`--plan <rel> [--json]` is a second mode, for the plan preflight: every line of one plan, classed blocking or history, with drift detection for fileline citations. Its contract and exit codes are in the WHOLE-PLAN MODE block below `selftest`.
+
 ---- gate ----
 step: Plan citations
 needs: none
@@ -79,6 +81,7 @@ blocker: BLOCKER: the gate runs without submodule checkouts by design (absent_su
 from __future__ import annotations
 
 import bisect
+import contextlib
 import json
 import os
 import pathlib
@@ -114,7 +117,8 @@ except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/
         f"through wl_planrec/wl_checks, so without them it has no oracle.",
         file=sys.stderr,
     )
-    sys.exit(1)
+    # `--plan` documents 2 for "the instrument could not answer" (WHOLE-PLAN MODE, EXIT CODES); the diff-scoped gate keeps its 1.
+    sys.exit(2 if "--plan" in sys.argv[1:] else 1)
 
 #: The corpus, and the predicate that defines it. `agent/` holds three different
 #: kinds of document and only one of them belongs here.
@@ -273,6 +277,12 @@ FINGERPRINT_RE = re.compile(r"fingerprint:([0-9a-f]{7,64})", re.IGNORECASE)
 #: one missed dead pointer, never a false accusation.
 AGENT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])(a[0-9a-f]{16})(?![0-9a-zA-Z])")
 
+#: AN RDC BACKUP SNAPSHOT ID IS NEVER A GIT OBJECT: renet names a snapshot `<YYYYMMDD>T<HHMMSS>Z-<16 hex>`, and a live record must quote it verbatim so `backup manifests` can find it again. Its 16-hex tail satisfies HEXTOK_RE by shape alone, the UUID tail's class. Measured 2026-10-30: a writer shortened sixteen snapshot ids in three backup plans to 8 hex to get past this gate, destroying the evidence the records exist to keep. Matched only right after the timestamp prefix, so a bare 16-hex run is still judged.
+SNAPSHOT_ID_RE = re.compile(r"\b\d{8}T\d{6}Z-([0-9a-f]{16})\b")
+
+#: A LIVE-PROOF RECEIPT ID IS NEVER A GIT OBJECT: `rediacc_ci.ops.live_proof record` names each ledger row `lp-<12 hex>`, and `worklist.py --live-proof` writes that id into the tick evidence it then hands this gate. Measured 2026-10-30: the verb's own tick for PLAN-token-ip-rebind b00bc9df was refused because `96f7f22b87b4` read as a dead object, so the two tools could never agree. Matched only right after `lp-`, AND only when that exact id is a row of `agent/ledgers/live-proof.jsonl` (`_ledger_receipt_ids`): a `lp-` prefix alone would let any dead commit sha through, so an `lp-<12 hex>` that no ledger row carries stays judged as an object (review 5c159bcf.1).
+RECEIPT_ID_RE = re.compile(r"(?<![0-9a-zA-Z])lp-([0-9a-f]{12})(?![0-9a-f])")
+
 #: A STOP-HOOK TICK ID IS NEVER A GIT OBJECT, the fourth instance of the class
 #: the three blocks above answer: a 12-hex run that satisfies HEXTOK_RE by
 #: coincidence of shape alone.
@@ -418,8 +428,13 @@ def fenced_lines(root, rel):
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return set()
+    return fence_set(text.splitlines())
+
+
+def fence_set(lines):
+    """The 1-based numbers of `lines` that sit inside a fenced block, fence lines included."""
     out, fenced = set(), False
-    for i, raw in enumerate(text.splitlines(), start=1):
+    for i, raw in enumerate(lines, start=1):
         if PFID.FENCE_RE.match(raw):
             fenced = not fenced
             out.add(i)
@@ -430,6 +445,30 @@ def fenced_lines(root, rel):
 
 
 # An OPEN plan box is a line the plan-box parser itself reads as unticked (`wl_planrec.BOX_LINE_RE`, bracket `[ ]`, any of its `-`, `*` or `+` bullets), so the exemption covers exactly the lines `check:ci-plan-boxes` keys as boxes and nothing shaped like one elsewhere. A gate named on one is the gate the box promises to build, so it cannot resolve yet: the box text is the durable key `check:ci-plan-boxes` refuses to let a change rewrite, so the name cannot be phrased away either. Ticking the box flips its bracket, which makes the line an addition again, and the gate is judged then, when it must exist.
+
+
+_LEDGER_IDS: dict[str, set[str]] = {}
+
+
+def _ledger_receipt_ids():
+    """The `id` of every row of the committed live-proof ledger (`lp-<12 hex>`), read once; empty when the ledger is absent or unreadable, so an unverifiable id is judged, never exempted."""
+    if "ids" not in _LEDGER_IDS:
+        ids = set()
+        try:
+            lines = (paths.repo_root() / "agent" / "ledgers" / "live-proof.jsonl").read_text(
+                encoding="utf-8"
+            )
+        except OSError:
+            lines = ""
+        for line in lines.splitlines():
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict) and isinstance(row.get("id"), str):
+                ids.add(row["id"])
+        _LEDGER_IDS["ids"] = ids
+    return _LEDGER_IDS["ids"]
 
 
 def citations(text):
@@ -457,6 +496,12 @@ def citations(text):
         uuid_tail_spans += [d.span(1) for d in D1_BOOKMARK_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
+    agent_id_spans += [n.span(1) for n in SNAPSHOT_ID_RE.finditer(text or "")]
+    agent_id_spans += [
+        r.span(1)
+        for r in RECEIPT_ID_RE.finditer(text or "")
+        if "lp-" + r.group(1) in _ledger_receipt_ids()
+    ]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
     tick_id_spans = [t.span(1) for t in TICK_ID_RE.finditer(text or "")]
     tick_id_spans += [t.span(1) for t in MARKER_FILE_RE.finditer(text or "")]
@@ -813,8 +858,10 @@ def corpus_citations(root):
 # resolvers work on a fixture. What must be true is that they work here.
 
 
-def selftest(root):
-    """Plant one unresolvable pointer per kind and require a finding; then the same four kinds resolvable and require SILENCE. Returns the number of control failures."""
+def selftest(root, drift=False):
+    """Plant one unresolvable pointer per kind and require a finding; then the same four kinds resolvable and require SILENCE. Returns the number of control failures.
+
+    `drift` adds the whole-plan mode's controls (`drift_selftest`). `--selftest` and `--plan` pass it; the diff-scoped default mode does not, so its output stays what CI has always read."""
     bad = 0
 
     def ck(label, ok, detail=""):
@@ -877,7 +924,7 @@ def selftest(root):
             unresolved(root, "object", orphan)[0],
             unresolved(root, "object", orphan)[1],
         )
-        # PRESENCE IS ASKED OF GIT DIRECTLY: wl_planrec.resolve also demands ancestry since c3cd6da14 (#27a05a50), so it answers False for exactly this orphan and can no longer stand in for "the object exists".
+        # PRESENCE IS ASKED OF GIT DIRECTLY: wl_planrec.resolve also demands ancestry since 82db6d6a4 (#27a05a50), so it answers False for exactly this orphan and can no longer stand in for "the object exists".
         ck(
             "CONTROL: and the orphan really IS present, so the finding is about "
             "REACHABILITY and not about a missing object",
@@ -1170,13 +1217,502 @@ def selftest(root):
         ck("CONTROL: a root-relative path is not given submodule advice", not got)
     else:
         print("  SKIP  submodule advice: no submodule is checked out here")
+    if drift:
+        drift_selftest(ck)
     return bad
+
+
+# --------------------------------------------------------------------------- WHOLE-PLAN MODE (`--plan <rel> [--json]`, PLAN-plan-preflight PF2). The diff-scoped mode above judges what a change ADDS; this one judges every line of ONE plan, for the preflight that revalidates a plan before its first box is worked. It reuses `citations()` and `unresolved()` unchanged and adds two things the diff mode never needed:
+#
+#   LINE CLASSES. A line is BLOCKING (the header, prose, an open box and its
+#   indented continuations) or HISTORY (a done box and its continuations, any
+#   `(ticked)` line, a fenced block). A history line records what was true when
+#   it was written; its citations are reported and never judged.
+#
+#   DRIFT. A fileline citation resolves when the file has that many lines, so a
+#   cited line whose content moved still passes. `git blame --porcelain` names the
+#   commit that last wrote the citing plan line, `git show <c>:<path>` gives the
+#   cited line as it read then, and the two texts are compared. When the old text
+#   occurs exactly once in the file now, the finding carries `relocate_to`.
+#
+# THE JSON CONTRACT IS FROZEN by the PF2 box, and PF3's `citation_report` parses it:
+#   {"plan", "unresolved": [{line, kind, token, why, blocking}],
+#    "drifted": [{line, token, relocate_to (int or null), blocking}]}
+# Counts and the not-judged residue go to stderr in --json mode, so stdout is exactly that object.
+#
+# EXIT CODES. 0: no blocking unresolved citation and no blocking drift without a relocation. 1: at least one of those, with the full report still printed. 2: the instrument could not answer (a control failed, the plan is missing, empty or out of scope, or git could not read the history it needs). History is read under GIT_NO_LAZY_FETCH=1: in a partial clone an unfetched blob is a refusal naming the fetch, never a silent network round trip and never a quiet "no drift".
+
+ZERO_SHA = "0" * 40
+FILELINE_TOKEN_RE = re.compile(r"^(.*):(\d+)(?:-\d+)?$")
+
+
+class HistoryUnreadableError(Exception):
+    """git could not read a commit, tree or blob the drift check needs."""
+
+
+def _git_hist(root, *args):
+    """(rc, stdout, stderr) for a history read that must never lazy-fetch."""
+    r = subprocess.run(
+        ["git", "-C", str(root), *args],
+        capture_output=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    # Bytes, decoded leniently: an author name or a cited blob in a legacy encoding must not raise mid-run, and a replacement character cannot change which line a citation points at.
+    return (
+        r.returncode,
+        r.stdout.decode("utf-8", errors="replace"),
+        r.stderr.decode("utf-8", errors="replace"),
+    )
+
+
+def _split_lines(text):
+    """`text` as git numbers it: one entry per newline-terminated line, a trailing partial line counted, CR stripped."""
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    return [ln.rstrip("\r") for ln in lines]
+
+
+def _indent(raw):
+    return len(raw) - len(raw.lstrip(" \t"))
+
+
+def line_classes(lines):
+    """{lineno: blocking} for every line of a plan, 1-based.
+
+    A box line opens a block; a later non-blank line indented deeper than the box belongs to it, and the first non-blank line at or left of the box's indent closes it. Blank lines neither open nor close. `[ ]`, `[?]` and `[>]` boxes are not done, so they and their continuations block; `[x]` boxes and theirs are history. A `(ticked)` evidence line is history wherever it sits, and so is every fenced line.
+    """
+    fences = fence_set(lines)
+    out = {}
+    box_indent, box_done = None, False
+    for i, raw in enumerate(lines, start=1):
+        if i in fences:
+            out[i] = False
+            continue
+        m = R.BOX_LINE_RE.match(raw)
+        if m:
+            box_indent, box_done = _indent(raw), m.group(1) in "xX"
+            blocking = not box_done
+        elif not raw.strip():
+            blocking = True
+        elif box_indent is not None and _indent(raw) > box_indent:
+            blocking = not box_done
+        else:
+            box_indent, box_done = None, False
+            blocking = True
+        if "(ticked)" in raw:
+            blocking = False
+        out[i] = blocking
+    return out
+
+
+def blame_commits(root, rel):
+    """{lineno: commit} for the working-tree copy of `rel`; an uncommitted line maps to ZERO_SHA.
+
+    An UNTRACKED plan has no history, so every line is uncommitted and nothing can have drifted since it was written. A tracked plan whose blame fails is a refusal, not an empty map: an empty map would read as "every line uncommitted" and report no drift on a plan git simply could not read.
+    """
+    # In HEAD, not merely in the index: a plan staged with `git add` and never committed passes ls-files, and blame then fails with "no such path in HEAD". ls-tree reads the tree only, so a blob:none clone answers it too.
+    rc, listed, _e = _git_hist(root, "ls-tree", "-z", "HEAD", "--", rel)
+    if rc != 0 or not listed:
+        return {}
+    rc, out, err = _git_hist(root, "blame", "--porcelain", "--", rel)
+    if rc != 0:
+        raise HistoryUnreadableError("git blame --porcelain -- %s: %s" % (rel, err.strip()))
+    got = {}
+    for ln in out.split("\n"):
+        parts = ln.split(" ")
+        # A porcelain header is `<40 hex> <orig line> <final line> [<group size>]`; the content lines start with a tab and the metadata lines with a word.
+        if (
+            len(parts) >= 3
+            and len(parts[0]) == 40
+            and all(c in "0123456789abcdef" for c in parts[0])
+        ):
+            got[int(parts[2])] = parts[0]
+    return got
+
+
+def lines_at(root, commit, path, cache):
+    """The lines of `path` at `commit`, or None when the path is not a file there.
+
+    The tree is read first: in a blob:none clone trees are present and blobs may not be, so "absent at that commit" (a fact) and "present but unfetched" (a refusal) stay two different answers.
+    """
+    key = (commit, path)
+    if key in cache:
+        return cache[key]
+    rc, out, err = _git_hist(root, "ls-tree", "-z", commit, "--", path)
+    if rc != 0:
+        raise HistoryUnreadableError("git ls-tree %s -- %s: %s" % (commit, path, err.strip()))
+    entry = out.split("\0", 1)[0]
+    meta = entry.split("\t", 1)[0].split()
+    if len(meta) != 3 or meta[1] != "blob":
+        cache[key] = None
+        return None
+    rc, blob, err = _git_hist(root, "cat-file", "blob", meta[2])
+    if rc != 0:
+        raise HistoryUnreadableError(
+            "blob %s (%s at %s) is not in this clone: %s. Fetch it (`git fetch origin` "
+            "or `git cat-file -p %s` with lazy fetching on) and re-run; the drift check "
+            "refuses rather than fetching behind your back"
+            % (meta[2], path, commit[:12], err.strip(), meta[2])
+        )
+    cache[key] = _split_lines(blob)
+    return cache[key]
+
+
+def drift_of(root, cited_path, resolved_path, line, commit, cache):
+    """(drifted, relocate_to) for one resolved fileline citation written in `commit`.
+
+    The cited line's text at `commit` is compared with its text in the working tree. A citation written before its target was committed (the path is absent at `commit` under both spellings) has no old text to compare, and counts as drifted with nowhere to relocate: an unverifiable pointer is a finding, never a pass. Relocation needs the old text to be non-blank and to occur exactly once now. A range citation (`path:12-34`) is judged on its first line, and `relocate_to` is its new first line; the range keeps its length.
+    """
+    if commit == ZERO_SHA:
+        return False, None
+    old = lines_at(root, commit, cited_path, cache)
+    if old is None and resolved_path != cited_path:
+        old = lines_at(root, commit, resolved_path, cache)
+    try:
+        now = _split_lines(
+            (pathlib.Path(root) / resolved_path).read_text(encoding="utf-8", errors="replace")
+        )
+    except OSError:
+        return True, None
+    if old is None or line > len(old):
+        return True, None
+    was = old[line - 1].rstrip()
+    if line <= len(now) and now[line - 1].rstrip() == was:
+        return False, None
+    if not was.strip():
+        return True, None
+    hits = [i for i, t in enumerate(now, start=1) if t.rstrip() == was]
+    return True, (hits[0] if len(hits) == 1 else None)
+
+
+def plan_report(root, rel, skip_prefixes=()):
+    """(report, shape) for one plan: `report` is the frozen JSON object, `shape` the counts printed beside it."""
+    text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+    lines = _split_lines(text)
+    classes = line_classes(lines)
+    blame = blame_commits(root, rel)
+    subs = submodule_paths(root) if pathlib.Path(root) == ROOT else ()
+    cache: dict[tuple[str, str], list[str] | None] = {}
+    unres, drifted = [], []
+    shape = {
+        "lines": len(lines),
+        "blocking_lines": sum(1 for v in classes.values() if v),
+        "citations": 0,
+        "drift_checked": 0,
+        "skipped_absent_submodule": 0,
+        "skipped_submodule_drift": 0,
+        "uncommitted_lines": 0,
+    }
+    for i, raw in enumerate(lines, start=1):
+        cites = citations(raw)
+        if not cites:
+            continue
+        blocking = classes[i]
+        commit = blame.get(i, ZERO_SHA)
+        if commit == ZERO_SHA:
+            shape["uncommitted_lines"] += 1
+        for kind, token in cites:
+            shape["citations"] += 1
+            if kind in ("fileline", "plan") and any(
+                token.startswith(p + "/") for p in skip_prefixes
+            ):
+                shape["skipped_absent_submodule"] += 1
+                continue
+            bad, why = unresolved(root, kind, token)
+            if bad:
+                unres.append(
+                    {"line": i, "kind": kind, "token": token, "why": why, "blocking": blocking}
+                )
+                continue
+            if kind != "fileline":
+                continue
+            m = FILELINE_TOKEN_RE.match(token)
+            if not m:
+                continue
+            cited_path, line = m.group(1), int(m.group(2))
+            resolved_path = why.rsplit(":", 1)[0] if why else cited_path
+            # A path inside a submodule is a gitlink in this repository's history, so `git show <c>:<path>` cannot read it. Counted and printed, never folded into "not drifted".
+            if any(resolved_path.startswith(p + "/") for p in subs):
+                shape["skipped_submodule_drift"] += 1
+                continue
+            shape["drift_checked"] += 1
+            moved, to = drift_of(root, cited_path, resolved_path, line, commit, cache)
+            if moved:
+                drifted.append({"line": i, "token": token, "relocate_to": to, "blocking": blocking})
+    report = {"plan": rel, "unresolved": unres, "drifted": drifted}
+    return report, shape
+
+
+def plan_verdict(report):
+    """(blocking_unresolved, blocking_unrelocatable_drift, relocatable)."""
+    bu = [u for u in report["unresolved"] if u["blocking"]]
+    bd = [d for d in report["drifted"] if d["blocking"] and d["relocate_to"] is None]
+    rl = [d for d in report["drifted"] if d["relocate_to"] is not None]
+    return bu, bd, rl
+
+
+def _fixture_git(fx, *args):
+    r = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(fx),
+            "-c",
+            "user.name=plan-citations control",
+            "-c",
+            "user.email=control@invalid",
+            "-c",
+            "commit.gpgsign=false",
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return r.returncode == 0
+
+
+def drift_selftest(ck):
+    """The whole-plan mode's controls, on a fixture repository built here, both directions each.
+
+    A FIXTURE, unlike the controls above, because drift is a property of history: the plan line has to be committed against one version of a file and the file changed afterwards, and the real tree offers no such pair it can be trusted to keep. The fixture cites `lib/a.txt` four ways: a line that moved down by one (RELOCATABLE), a line rewritten in place (DRIFTED, nowhere to go), a line untouched (SILENT), and the moved line again from an uncommitted plan line (SILENT, written against the tree it is read against).
+    """
+    with tempfile.TemporaryDirectory() as td:
+        fx = pathlib.Path(td)
+        if not _fixture_git(fx, "init", "-q", "."):
+            ck("the drift control could build a fixture repository", False)
+            return
+        (fx / "lib").mkdir()
+        (fx / "lib" / "a.txt").write_text("alpha\nbravo\ncharlie\ndelta\n", encoding="utf-8")
+        plan = (
+            "# PLAN: drift control\n"
+            "- [ ] T1 moved `lib/a.txt:2`\n"
+            "- [x] T2 rewritten `lib/a.txt:3`\n"
+            "    (ticked) evidence `lib/a.txt:4`\n"
+            "Prose cites the untouched `lib/a.txt:1`.\n"
+        )
+        (fx / "PLAN-x.md").write_text(plan, encoding="utf-8")
+        built = _fixture_git(fx, "add", "-A") and _fixture_git(fx, "commit", "-qm", "base")
+        # The change the plan did not see: a line inserted above `bravo` moves it from 2 to 3, `charlie` is rewritten in place, and `alpha` stays at 1.
+        (fx / "lib" / "a.txt").write_text(
+            "alpha\nINSERTED\nbravo\nCHARLIE-rewritten\ndelta\n", encoding="utf-8"
+        )
+        built = (
+            built and _fixture_git(fx, "add", "-A") and _fixture_git(fx, "commit", "-qm", "move")
+        )
+        # An uncommitted plan line citing the moved line by its NEW number: written against the tree it is read against.
+        (fx / "PLAN-x.md").write_text(
+            plan + "Fresh prose cites `lib/a.txt:3` today.\n", encoding="utf-8"
+        )
+        if not built:
+            ck("the drift control could commit its fixture history", False)
+            return
+        cache: dict[tuple[str, str], list[str] | None] = {}
+        blame = blame_commits(fx, "PLAN-x.md")
+        lines = _split_lines((fx / "PLAN-x.md").read_text(encoding="utf-8"))
+        ck(
+            "the blame map names a commit for every committed plan line and ZERO for the new one",
+            len(blame) == len(lines)
+            and blame.get(6) == ZERO_SHA
+            and blame.get(2) not in (None, ZERO_SHA),
+            blame,
+        )
+        (fx / "PLAN-staged.md").write_text(
+            "# PLAN: staged\n- [ ] T1 `lib/a.txt:1`\n", encoding="utf-8"
+        )
+        staged = _fixture_git(fx, "add", "--", "PLAN-staged.md")
+        ck(
+            "CONTROL: a plan staged but never committed has no blame and is judged all-uncommitted",
+            staged and blame_commits(fx, "PLAN-staged.md") == {},
+        )
+        c = blame.get(2, ZERO_SHA)
+        got = drift_of(fx, "lib/a.txt", "lib/a.txt", 2, c, cache)
+        ck(
+            "a cited line that MOVED is drifted and relocatable to its one new home",
+            got == (True, 3),
+            got,
+        )
+        got = drift_of(fx, "lib/a.txt", "lib/a.txt", 3, c, cache)
+        ck(
+            "a cited line REWRITTEN in place is drifted with nowhere to relocate",
+            got == (True, None),
+            got,
+        )
+        got = drift_of(fx, "lib/a.txt", "lib/a.txt", 1, c, cache)
+        ck("CONTROL: a cited line that did not change is SILENT", got == (False, None), got)
+        got = drift_of(fx, "lib/a.txt", "lib/a.txt", 3, blame.get(6, ""), cache)
+        ck(
+            "CONTROL: an uncommitted plan line is SILENT (written against today's tree)",
+            got == (False, None),
+            got,
+        )
+        (fx / "lib" / "a.txt").write_text("alpha\nbravo\nINSERTED\nbravo\n", encoding="utf-8")
+        got = drift_of(fx, "lib/a.txt", "lib/a.txt", 3, c, {})
+        ck(
+            "CONTROL: an old line that now occurs TWICE is drifted but NOT relocated",
+            got == (True, None),
+            got,
+        )
+        got = drift_of(fx, "lib/a.txt", "lib/a.txt", 9, c, {})
+        ck(
+            "a citation past the end of the file AT ITS COMMIT is drifted, never a pass",
+            got == (True, None),
+            got,
+        )
+        got = drift_of(fx, "lib/b.txt", "lib/b.txt", 1, c, {})
+        ck(
+            "a citation to a path absent at its commit is drifted, never a pass",
+            got == (True, None),
+            got,
+        )
+    # THE LINE CLASSES, both directions, over every shape the box names.
+    sample = [
+        "Status: approved `x.py:1`",
+        "- [ ] T1 open",
+        "    continuation of the open box",
+        "- [x] T2 done",
+        "    continuation of the done box",
+        "    (ticked) commit:abc rc=0",
+        "",
+        "    still the done box after a blank line",
+        "Prose again.",
+        "- [?] T3 deferred",
+        "- [>] T4 leased",
+        "```",
+        "- [ ] inside a fence",
+        "```",
+        "A prose line quoting (ticked) is history.",
+    ]
+    got = line_classes(sample)
+    want = {
+        1: True,
+        2: True,
+        3: True,
+        4: False,
+        5: False,
+        6: False,
+        7: True,
+        8: False,
+        9: True,
+        10: True,
+        11: True,
+        12: False,
+        13: False,
+        14: False,
+        15: False,
+    }
+    ck(
+        "line classes: header, prose, open boxes and their continuations BLOCK",
+        all(got[k] for k in want if want[k]),
+        got,
+    )
+    ck(
+        "CONTROL: done boxes, their continuations, (ticked) lines and fences are HISTORY",
+        not any(got[k] for k in want if not want[k]),
+        got,
+    )
+
+
+def plan_main(argv, root):
+    """`--plan <rel> [--json]`. See the WHOLE-PLAN MODE block for the contract and exit codes."""
+    as_json = "--json" in argv
+    i = argv.index("--plan")
+    rel = argv[i + 1] if i + 1 < len(argv) else ""
+    log = sys.stderr if as_json else sys.stdout
+    with contextlib.redirect_stdout(log):
+        print("plan citations --plan: controls first, then the verdict")
+        failed = selftest(root, drift=True)
+    if failed:
+        print(
+            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
+        )
+        return 2
+    if not rel or rel.startswith("-"):
+        print("✗ --plan needs a repository-relative plan path", file=sys.stderr)
+        return 2
+    if not in_scope(rel) or not (pathlib.Path(root) / rel).is_file():
+        print(
+            "✗ %s is not an in-scope plan on disk (a plan folder under agent/, or %s)"
+            % (rel, R.INDEX_REL),
+            file=sys.stderr,
+        )
+        return 2
+    absent = absent_submodules(root)
+    try:
+        report, shape = plan_report(root, rel, tuple(absent))
+    except HistoryUnreadableError as exc:
+        print("✗ cannot read the history the drift check needs: %s" % exc, file=sys.stderr)
+        return 2
+    if not shape["lines"]:
+        print(
+            "✗ %s is empty; there is nothing to judge and a green would mean nothing" % rel,
+            file=sys.stderr,
+        )
+        return 2
+    bu, bd, rl = plan_verdict(report)
+    summary = (
+        "%s: %d line(s), %d blocking; %d citation(s), %d fileline(s) drift-checked, "
+        "%d on uncommitted line(s); %d unresolved (%d blocking), %d drifted (%d blocking "
+        "with no relocation, %d relocatable)"
+        % (
+            rel,
+            shape["lines"],
+            shape["blocking_lines"],
+            shape["citations"],
+            shape["drift_checked"],
+            shape["uncommitted_lines"],
+            len(report["unresolved"]),
+            len(bu),
+            len(report["drifted"]),
+            len(bd),
+            len(rl),
+        )
+    )
+    residue = []
+    if shape["skipped_absent_submodule"]:
+        residue.append(
+            "  not judged: %d citation(s) under a submodule not checked out here (%s)"
+            % (shape["skipped_absent_submodule"], ", ".join(absent))
+        )
+    if shape["skipped_submodule_drift"]:
+        residue.append(
+            "  not drift-checked: %d fileline citation(s) inside a submodule, whose history "
+            "is not this repository's" % shape["skipped_submodule_drift"]
+        )
+    if as_json:
+        print(json.dumps(report, indent=2))
+        print(summary, file=sys.stderr)
+        for r in residue:
+            print(r, file=sys.stderr)
+        return 1 if (bu or bd) else 0
+    for r in residue:
+        print(r)
+    for u in report["unresolved"]:
+        tag = "BLOCKING" if u["blocking"] else "history "
+        print("  %s %s:%d: %s `%s` -- %s" % (tag, rel, u["line"], u["kind"], u["token"], u["why"]))
+    for d in report["drifted"]:
+        tag = "BLOCKING" if d["blocking"] else "history "
+        where = (
+            "the cited line now reads at :%d, rewrite the citation to it" % d["relocate_to"]
+            if d["relocate_to"] is not None
+            else "the cited text is gone or ambiguous; re-read the file and re-cite by hand"
+        )
+        print("  %s %s:%d: drifted `%s` -- %s" % (tag, rel, d["line"], d["token"], where))
+    if bu or bd:
+        print("✗ " + summary, file=sys.stderr)
+        return 1
+    print("✓ " + summary)
+    return 0
 
 
 def main(argv):
     root = ROOT
+    if "--plan" in argv:
+        return plan_main(argv, root)
     print("plan citations: controls first, then the verdict")
-    if selftest(root):
+    if selftest(root, drift="--selftest" in argv):
         print(
             "✗ instrument control failed; every verdict below would be meaningless",
             file=sys.stderr,

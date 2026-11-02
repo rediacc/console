@@ -63,7 +63,7 @@ export function findStaleCommandGlobs(
         if (isStale(glob)) found.add(glob);
       }
     }
-    return [...found].sort();
+    return [...found].sort((a, b) => Number(a > b) - Number(a < b));
   };
 
   return {

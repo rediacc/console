@@ -5,10 +5,22 @@
 import { t } from '../i18n/index.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import {
+  ensureRepositoryNetworkId,
+  networkIdConflictMessage,
+  parseNetworkIdConflict,
+} from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
+import type { PlannedStep } from '../services/jobs/steps.js';
+import { stateMismatch } from './cli-exit-error.js';
 import { renderLocalExecutionFailure } from './local-execution-failures.js';
 import { formatStepDuration } from './timeline.js';
+
+/** Verbs of an EXISTING repo that must not re-allocate its network ID on a refusal. */
+const NO_REALLOCATE_VERBS = new Set(['repository_up', 'repository_mount']);
 
 export interface RepoFunctionMessages {
   starting: string;
@@ -47,6 +59,23 @@ export async function recordedDatastoreMount(repoKey: string): Promise<string | 
 }
 
 /**
+ * Ensure a repo's network ID against the placement it is RECORDED on (machine, named datastore,
+ * cluster), so a record without an ID asks the right datastore before anything is allocated.
+ */
+export async function ensureRecordedNetworkId(
+  repoKey: string,
+  machine: string,
+  kubeCluster?: string
+): Promise<number> {
+  const datastore = await recordedDatastoreMount(repoKey);
+  return ensureRepositoryNetworkId(repoKey, {
+    machine,
+    ...(datastore !== undefined && { datastore }),
+    ...(kubeCluster !== undefined && { kubeCluster }),
+  });
+}
+
+/**
  * Execute a repository function on a remote machine.
  * Handles: validation, network ID, timeline rendering, error display.
  */
@@ -68,6 +97,15 @@ export async function executeRepoFunction(
      * json modes) while renet was reporting {"status":"verified",...}.
      */
     captureOutput?: boolean;
+    /**
+     * The converted command's verb and its client-side steps (PLAN-detached-jobs
+     * section 18). With a verb the call runs through `runCommandJob`: the steps
+     * ride the job's ticket and run once the job is seen finished, here inside
+     * the attach window or later in `rdc job wait` and the notice.
+     */
+    job?: { verb: string; steps: PlannedStep[] };
+    /** A probe the command reads before going on: `--background` leaves it attached (ExecuteOptions.probe). */
+    probe?: boolean;
   },
   messages: RepoFunctionMessages
 ): Promise<ExecuteResult> {
@@ -81,11 +119,11 @@ export async function executeRepoFunction(
   }
 
   // Ensure network_id is assigned (auto-allocates for legacy repos without one)
-  await configService.ensureRepositoryNetworkId(repoName);
+  await ensureRepositoryNetworkId(repoName);
 
   outputService.info(messages.starting);
 
-  const result = await getExecutor().execute({
+  const executeOptions = {
     functionName,
     machineName,
     kubeCluster: options.kubeCluster,
@@ -96,20 +134,51 @@ export async function executeRepoFunction(
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
     captureOutput: options.captureOutput,
-  });
+    ...(options.probe ? { probe: true } : {}),
+  };
+  const result = options.job
+    ? (await runCommandJob(options.job.verb, executeOptions, options.job.steps)).result
+    : await getExecutor().execute(executeOptions);
+
+  // The job outlived the attach window: the executor printed its ticket, and nothing has completed yet.
+  if (result.state === 'running') {
+    if (!result.success) setExitCode(result.exitCode);
+    return result;
+  }
 
   if (result.success) {
-    // Steps are rendered in real-time by the onStdout step detector. Just show "Total: Xs" at the end.
-    if (result.allSteps && result.allSteps.length > 0) {
-      const totalMs = result.allSteps.reduce((sum, s) => sum + s.duration_ms, 0);
-      outputService.info(`\nTotal: ${formatStepDuration(totalMs)}`);
-      outputService.setTimelineRendered();
-    } else {
-      outputService.success(messages.completed);
-    }
+    renderSuccess(result, messages.completed);
   } else {
-    renderLocalExecutionFailure(result, result.error ?? messages.failed);
+    renderFailure(result, { functionName, repoName, machineName, failed: messages.failed });
   }
 
   return result;
+}
+
+/** Steps are rendered in real time by the onStdout step detector; only "Total: Xs" is left to show. */
+function renderSuccess(result: ExecuteResult, completed: string): void {
+  if (result.allSteps && result.allSteps.length > 0) {
+    const totalMs = result.allSteps.reduce((sum, s) => sum + s.duration_ms, 0);
+    outputService.info(`\nTotal: ${formatStepDuration(totalMs)}`);
+    outputService.setTimelineRendered();
+  } else {
+    outputService.success(completed);
+  }
+}
+
+/**
+ * A network-ID refusal on up/mount throws the text that names the holder and points to
+ * `rdc config reconcile`; every other failure gets the generic rendering.
+ */
+function renderFailure(
+  result: ExecuteResult,
+  ctx: { functionName: string; repoName: string; machineName: string; failed: string }
+): void {
+  const conflict = NO_REALLOCATE_VERBS.has(ctx.functionName)
+    ? parseNetworkIdConflict(result)
+    : undefined;
+  if (conflict) {
+    throw stateMismatch(networkIdConflictMessage(conflict, ctx.repoName, ctx.machineName));
+  }
+  renderLocalExecutionFailure(result, result.error ?? ctx.failed);
 }

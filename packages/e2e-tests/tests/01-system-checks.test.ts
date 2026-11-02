@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * System Check Tests
@@ -18,7 +18,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * - machine_check_kernel, machine_check_setup, machine_check_memory
  * - machine_check_sudo, machine_check_tools, machine_check_renet, machine_check_criu
  * - machine_check_btrfs, machine_check_drivers, machine_check_system, machine_check_users
- * - machine_check_cli, machine_fix_groups
+ * - machine_check_cli, machine_fix_groups, machine_converge_runtime (dry run)
  * Note: datastore_status is tested in 03-datastore-lifecycle.test.ts
  */
 
@@ -31,10 +31,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 const LANDLOCK_INACTIVE_BY_DEFAULT = new Set(['ol-10']);
 
 test.describe('System Functions @bridge @smoke', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   // ===========================================================================
@@ -152,7 +152,7 @@ test.describe('System Functions @bridge @smoke', () => {
     const result = await runner.executeOnWorker('renet sandbox-exec --detect');
     const output = runner.getCombinedOutput(result);
 
-    const abi = output.match(/landlock abi version:\s*(\d+)/)?.[1] ?? 'unreported';
+    const abi = /landlock abi version:\s*(\d+)/.exec(output)?.[1] ?? 'unreported';
     test.info().annotations.push({
       type: 'landlock-abi',
       description: `ABI ${abi} on ${runner.getTargetVM()} (${os})`,
@@ -211,6 +211,13 @@ test.describe('System Functions @bridge @smoke', () => {
     expect(result.code).toBe(0);
   });
 
+  test('converge_runtime dry run should plan without restarting anything', async () => {
+    const result = await runner.convergeRuntimeDryRun();
+
+    expect(runner.isSuccess(result)).toBe(true);
+    expect(result.code).toBe(0);
+  });
+
   // NOTE: check_datastore is tested in 03-datastore-lifecycle.test.ts because it requires a datastore to be initialized first
 });
 
@@ -218,10 +225,10 @@ test.describe('System Functions @bridge @smoke', () => {
  * Parallel Execution Tests
  */
 test.describe('Parallel Execution @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('implemented functions should run in parallel', async () => {
@@ -245,10 +252,10 @@ test.describe('Parallel Execution @bridge', () => {
  * Error Handling Tests
  */
 test.describe('Error Handling @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('unknown function should fail with clear error', async () => {

@@ -8,61 +8,56 @@ tags:
 subcategory: data-protection
 order: 12
 language: et
-sourceHash: "7d9a82ee410c420a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Kärpimine
 
-Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kolm käsku katavad kolme erinevat ulatust:
+Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kaks käsku katavad kaht erinevat ulatust. Tükksalvestuses olevad tõmmised nende hulka ei kuulu: server kärbib need [säilituspoliitika](#backup-snapshots) alusel, liini ja varundusvoo kaupa.
 
 | Käsk | Mida puhastab | Kus asub tõeallikas |
 |---|---|---|
-| `rdc storage prune <storage> -m <machine>` | Orvuks jäänud varukoopiad pilvemälus | Kohalik CLI konfiguratsioon (ristleeritakse koos teostusmasina vastu ühendamise ohutuse jaoks) |
 | `rdc machine prune <machine>` | Masinal olevad andmehoidla artefaktid (alati); orvuks jäänud või tundmatud hoidlakujutised (valikuline) | Kohalik CLI konfiguratsioon + masina `.interim/state` peegel |
 | `rdc config prune` | Kohaliku konfiguratsiooni jäänukid (serdi vahemälu, aegunud arhiivid, rippuvad ristviited) | Ainult kohalik CLI konfiguratsioon |
 
-Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#safety-model).
+Need kaks on sõltumatud. Saad käivitada kumma tahes ilma teiseta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#safety-model).
 
 Kärpimine eemaldab oleku, mille on jätnud maha kustutatud ressursid. *Elavate* repositooriumite hõivatud ruumi tagasinõudmiseks (plokid, mille nende failisüsteemid on vabastanud, kuid bassein endiselt hoiab), kasuta selle asemel [`rdc repo trim`](/et/docs/repositories#reclaim-space-trim); need kaks täiendavad teineteist.
 
 ## Ühendamise ohutuse eelkontroll
 
-`storage prune` ja `machine prune --prune-unknown` käivitavad enne millegi kustutamist mõlemad **ühendamise ohutuse eelkontrolli**: need pärivad teostusmasinalt hetkel ühendatud või töötavaid hoidlaid, ristivad kustutamiskandidaatidega ja **keelduvad kustutamast kandidaati, mis on masinal endiselt aktiivne**. Ühendatud hoidla masinaväline varukoopia või elava hoidla kujutise kustutamine on tõeline andmekao oht. Eelkontroll muudab selle õnnetusliku tegemise võimatuks.
+`machine prune --prune-unknown` käivitab enne millegi kustutamist **ühendamise ohutuse eelkontrolli**: see pärib masinalt hetkel ühendatud või töötavaid hoidlaid, ristab need kustutamiskandidaatidega ja **keeldub kustutamast kandidaati, mis on masinal endiselt aktiivne**. Elava hoidla kujutise kustutamine on tõeline andmekao oht. Eelkontroll muudab selle õnnetusliku tegemise võimatuks.
 
 Alistamiseks (harv; ainult siis, kui oled kindel, et elav olek on vale), lisa `--force-delete-mounted`. See on eraldi lipp `--force`'ist (mis juhib arhiivi armuaega), nii et kaks turvaluugi pääsu jäävad eraldatuks.
 
-## Mäluhoidla kärpimine
+## Varunduse tõmmised
 
-Skannib mälupakkuja ja kustutab varukoopiad, mille GUID-id ei esine enam üheski kohalikus konfiguratsioonifailis.
+Käsuga `rdc backup snapshot` üles laaditud tõmmised asuvad tükksalvestuses ja server kärbib neid ise. Kliendipoolset kärpimiskäsku ei ole: määra, kui palju ajalugu säilitada, ja server eemaldab ülejäänu.
+
+Poliitika kuulub repositooriumi liinile, nii et repositoorium ja selle forkid jagavad seda, ning seda saab üle kirjutada ühe varundusvoo (üks repositoorium ühel masinal) jaoks. Lisaks säilitab iga voog poliitikast olenemata oma uusimad hetktõmmised ja praeguse ankru, nii et läbimine ei jäta voogu kunagi lootusetusse seisu.
 
 ```bash
-# Ainult eelvaade -- näita, mida kustutataks
-rdc storage prune my-s3 -m server-1 --dry-run
+# Näita kehtivat poliitikat ja kust see pärineb
+rdc backup retention my-app
 
-# Tegelikult kustuta orvuks jäänud varukoopiad (vaikekäitumine)
-rdc storage prune my-s3 -m server-1
+# Vaata, mida järgmine läbimine kustutaks ja kui palju ruumi see vabastaks, midagi kustutamata
+rdc backup retention preview my-app
 
-# Alista armuaeg (vaikimisi 7 päeva)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+# Säilita 7 päevast, 4 nädalast ja 6 kuist tõmmist
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Alista ühendamise ohutuse kontroll (kasuta ettevaatlikult)
-rdc storage prune my-s3 -m server-1 --force-delete-mounted
+# Kirjuta üle ainult üks voog
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Säilita jälle kõik tõmmised
+rdc backup retention clear my-app
+
+# Kustuta üks hetktõmmis kohe; järgmine prügikoristus vabastab selle ainuandmed
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
-`--machine` on nõutav, kuna rclone kutsed käivituvad teotusmasinal, mitte sinu sülearvutis. Klientidel ei eeldata rclone'i kohalikku paigaldust. Mälumandaadid pärinevad endiselt sinu kohalikust konfiguratsioonist; masin on lihtsalt rclone käivitaja.
-
-### Mida see kontrollib
-
-1. Loendab kõik varukoopiate GUID-id nimetatud mäluhoidlas (mõlemas `hot/` ja `cold/` alamkataloogi üleselt. Vt [Varundus ja taastamine](/et/docs/backup-restore#scheduled-backups)).
-2. Skannib kõik konfiguratsioonifailid kettal (`~/.config/rediacc/*.json`).
-3. Varukoopia on **orvuks jäänud**, kui selle GUID-ile ei viida üheski konfiguratsiooni hoidlate jaotises.
-4. Hiljuti arhiveeritud hoidlad armuaja jooksul on **kaitstud** isegi siis, kui need on aktiivsest konfiguratsioonist eemaldatud.
-5. Ühendamise ohutuse eelkontroll: `--machine`-l hetkel ühendatud GUID-id jäetakse vahele ja nendest teatatakse, neid ei kustutata kunagi.
-
-### Jõudlus
-
-Kustutamised grupeeritakse mäluhoidla alamtee järgi: üks rclone kutse `hot/` või `cold/` kataloogi kohta, sõltumata sellest, mitu GUID-i eemaldatakse. 11 orvuks jäänud varukoopia mahajäämus kahaneb ~50 s SSH üldkuludest ühe ringreisi kohta alamtee kohta.
+Poliitika reeglid leiad jaotisest [Varundus ja taastamine](/et/docs/backup-restore#retention); käsk `rdc backup usage` näitab, mis salvestuses praegu on.
 
 ## Masina kärpimine
 
@@ -132,7 +127,6 @@ Puhastab aegunud jäänukid **kohalikus konfiguratsioonifailis** `~/.config/redi
 3. **Rippuvad ristviited** konfiguratsioonikorvide vahel:
    - `resources.machines.<m>.backupStrategies[]` kirjed, mis nimetavad strateegiat, mida pole enam olemas.
    - `resources.backupStrategies.<s>.exclude[]` ja `include[]` kirjed, mis nimetavad hoidlat, mida pole enam olemas.
-   - Mäluhoidla sihtkohad, mille sihtmälu puudub. Märgitud hoiatusena, mitte automaatselt eemaldatavana (automaatne eemaldamine muudaks strateegia semantikat).
 
 ```bash
 # Ainult eelvaade
@@ -155,9 +149,8 @@ rdc config prune --grace-days 30
 
 ### Mida see EI puuduta
 
-- Aktiivsed ressursid (masinad, mäluhoidlad, hoidlad, varundustrateegiad, pilvepakkujad).
+- Aktiivsed ressursid (masinad, hoidlad, varundustrateegiad, pilvepakkujad).
 - Mandaadid, konto blokk, krüpterimisblokk, vaikeväärtused.
-- Mäluhoidla `vaultContent` (kaasa arvatud aegunud OneDrive `access_token`. Refresh_token vermib endiselt uusi; kärpimine sunniks uuesti autentima).
 - `knownHosts` kirjed (automaatne värskendamise tee on `rdc machine scan-keys`).
 - Tihendatud serdi blobimassiiv (`infra.acmeCertCache.<base>.data[]`) taastatakse automaatselt puhastatud serdinimistust; sa ei kaota ühtegi ahelat, mis katab endiselt säilitatud nime.
 
@@ -202,19 +195,19 @@ Kärpimine on loodud olema mitme konfiguratsiooni seadistustes vaikimisi ohutu.
 
 ### Mitme konfiguratsiooni teadlikkus
 
-`storage prune` ja `machine prune --orphaned-repos` skannivad **kõik** konfiguratsioonifailid `~/.config/rediacc/` kaustas, mitte ainult aktiivset. Hoidlale, millele viitab `production.json`, ei kustutata isegi siis, kui see puudub `staging.json`-ist. See väldib kogemata kustutamist, kui konfiguratsioonid on ulatuselt seotud erinevate keskkondadega.
+`machine prune --orphaned-repos` skannib **kõik** konfiguratsioonifailid `~/.config/rediacc/` kaustas, mitte ainult aktiivset. Hoidlale, millele viitab `production.json`, ei kustutata isegi siis, kui see puudub `staging.json`-ist. See väldib kogemata kustutamist, kui konfiguratsioonid on ulatuselt seotud erinevate keskkondadega.
 
 ### Armuaeg
 
-Kui hoidla eemaldatakse konfiguratsioonist `--archive-config` abil, liigutatakse selle mandaadikirje `resources.deletedRepositories[]` alla koos `deletedAt` ajatempliga. Kärpimiskäsud austavad armuaega (vaikimisi 7 päeva), mille jooksul on hiljuti arhiveeritud hoidlad kustutamise eest kaitstud. See annab sulle aega hoidla taastamiseks (`rdc repo admin archive restore <guid>`), kui see eemaldati kogemata. Pärast armuaja lõppu puhastab `storage prune`, `machine prune` ja `config prune` kirje automaatselt.
+Kui hoidla eemaldatakse konfiguratsioonist `--archive-config` abil, liigutatakse selle mandaadikirje `resources.deletedRepositories[]` alla koos `deletedAt` ajatempliga. Kärpimiskäsud austavad armuaega (vaikimisi 7 päeva), mille jooksul on hiljuti arhiveeritud hoidlad kustutamise eest kaitstud. See annab sulle aega hoidla taastamiseks (`rdc repo admin archive restore <guid>`), kui see eemaldati kogemata. Pärast armuaja lõppu puhastavad `machine prune` ja `config prune` kirje automaatselt.
 
 ### Ühendamise ohutuse eelkontroll
 
-Käsitletud eespool. `storage prune` ja `machine prune --prune-unknown` keelduvad kustutamast hoidlaid, mis on hetkel teotusmasinal ühendatud või töötavad. Alista ainult `--force-delete-mounted` abil.
+Käsitletud eespool. `machine prune --prune-unknown` keeldub kustutamast hoidlaid, mis on hetkel masinal ühendatud või töötavad. Alista ainult `--force-delete-mounted` abil.
 
 ### Rakenda vaikimisi; `--dry-run` eelvaateks
 
-Kõik kolm kärpimiskäsku **rakendavad** muudatused vaikimisi. Edasta `--dry-run` kirjutamata eelvaateks. See vastab tegusõnale: "prune" on iseenesest destruktiivne, ja kuiva käivituse lipp on sõnaselge loobumisvõimalus.
+Mõlemad kärpimiskäsud **rakendavad** muudatused vaikimisi. Edasta `--dry-run` kirjutamata eelvaateks. See vastab tegusõnale: "prune" on iseenesest destruktiivne, ja kuiva käivituse lipp on sõnaselge loobumisvõimalus.
 
 ## Konfigureerimine
 
@@ -237,11 +230,11 @@ rdc config field set --pointer /defaults/pruneGraceDays --new 14
 
 ## Parimad tavad
 
-- **Käivita tootmises esmalt kuiv käivitus.** Vaata enne destruktiivse kärpimise teostamist alati ette, eriti tootmise mäluhoidla puhul.
-- **Hoia mitut konfiguratsiooni ajakohasena.** Mäluhoidla ja masina kärpimine kontrollivad kõiki konfiguratsioone konfiguratsioonikataloogis. Kui konfiguratsioonifail on aegunud või kustutatud, kaotavad selle hoidlad kaitse. Hoia konfiguratsioonifailid täpsena.
+- **Käivita tootmises esmalt kuiv käivitus.** Vaata enne destruktiivse kärpimise teostamist alati ette.
+- **Hoia mitut konfiguratsiooni ajakohasena.** Masina kärpimine kontrollib kõiki konfiguratsioone konfiguratsioonikataloogis. Kui konfiguratsioonifail on aegunud või kustutatud, kaotavad selle hoidlad kaitse. Hoia konfiguratsioonifailid täpsena.
 - **Eelista `--prune-unknown` vs `--orphaned-repos`.** Kirurgiline lipp austab renet-peegli; jäme lipp kustutab rõõmsalt teiste tööriistade loodud forkid.
 - **Kasuta tootmises suuremeelseid armuaegu.** Vaikimisi 7-päevane armuaeg sobib enamiku töövoogudega. Ebaregulaarsetel hooldusakendega tootmiskeskkondade jaoks kaaluge 14 või 30 päeva.
-- **Ajasta mäluhoidla kärpimine pärast varunduskäivitusi.** Sidumine `storage prune` sinu varundusajakavaga, et hoida mäluhoidla kulusid kontrolli all ilma käsitsi sekkumiseta.
+- **Määra säilituspoliitika.** `rdc backup retention set` hoiab tõmmiste salvestuskulud kontrolli all ilma käsitsi sekkumiseta.
 - **Kombineeri masina kärpimine varundusajakavaga.** Pärast varundusajakavade juurutamist (`rdc backup schedule`) lisa perioodiline masina kärpimine, et puhastada aegunud hetktõmmised ja orvuks jäänud andmehoidla artefaktid.
 - **Käivita `config prune` perioodiliselt.** Kohaliku konfiguratsiooni paisumine (eriti serdi vahemälu) koguneb vaikselt; kord kvartalis tehtud `config prune --dry-run` on piisav selle tabamiseks.
 - **Auditeeri enne `--force` või `--force-delete-mounted` kasutamist.** Mõlemad lipud mööduvad ohutuskontrollidest. Kasuta `--force` ainult siis, kui oled kindel, et ükski teine konfiguratsioon ei viita küsimuses olevatele hoidlatele; kasuta `--force-delete-mounted` ainult siis, kui oled kindel, et masina elav olek on vale.

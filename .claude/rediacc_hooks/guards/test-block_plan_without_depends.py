@@ -11,6 +11,8 @@ THE DEFECT IS PROVEN HERE TOO. After the cases, the guard's source is loaded wit
 
 PRE-BACKFILL RATCHET. The expectation of "an Edit to a plan that already lacks the field" follows the guard's `PRE_BACKFILL_RATCHET` constant, read from its source: ALLOWED with a warning while it is True, REFUSED once T10 sets it to False.
 
+THE LIVE-PROOF LINE (agent/plans/PLAN-tested-on-bench.md V3). A new plan whose Owns hit a surface of `.ci/config/proof-tiers.json` is refused without the line; a malformed, emphasised, out-of-window or rulingless line is refused, and so is a `none` citing an open or unknown item or an absent quote, each with an allow twin (a target declared, a closed item, a committed quote, line 12, Owns hitting no surface, only test files, a bare pointer, an untouched existing line). The fixture tree carries a worklist store and a quote file for the waiver; `LIVE_DEFECT` is planted like the other two.
+
 THE X FIELDS AND THE OPERATOR FREEZE (agent/plans/PLAN-plan-priority-concurrency.md section 8, T4). Every fixture plan carries a valid Priority/Concurrency/Owns triple unless a case is about its absence, and the absence cases are always refused: the X fields are mandatory (T11). The freeze cases run against an on-disk `(operator)` plan, and the escape against transcript fixtures whose operator turn (or AskUserQuestion answer) names the plan and the level. BOTH declared defects are planted: `DEFECT` (the freeze) and `VERDICT_DEFECT` (the D1-D7 verdict); each must change at least one answer.
 """
 
@@ -36,6 +38,44 @@ atexit.register(shutil.rmtree, BASE, ignore_errors=True)
 SOURCE = GUARD.read_text(encoding="utf-8")
 RATCHET = bool(re.search(r"^PRE_BACKFILL_RATCHET = True$", SOURCE, re.MULTILINE))
 X_OK = "Priority: P2 -- a fixture plan\nConcurrency: parallel\nOwns: docs/fixture/**\n"
+# PLAN-tested-on-bench V3: X lines whose Owns hit the renet surface of .ci/config/proof-tiers.json, and the worklist items and quote file a `Live-Proof: none` may cite.
+X_RENET = "Priority: P2 -- a fixture plan\nConcurrency: parallel\nOwns: private/renet/cmd/**\n"
+CLOSED_ITEM = "c1c1c1c1"
+OPEN_ITEM = "0b0b0b0b"
+QUOTE = "Yes, bench + hostinger via eu-bench"
+QUOTE_FILE = "agent/rulings/fixture.md"
+STORE_EVENTS = [
+    {
+        "ev": "add",
+        "id": CLOSED_ITEM,
+        "at": "2026-10-01T00:00:00Z",
+        "by": "cafe0000",
+        "s": "x",
+        "o": "cafe0000",
+        "t": "(cafe0000) a closed ruling",
+    },
+    {
+        "ev": "add",
+        "id": OPEN_ITEM,
+        "at": "2026-10-01T00:00:01Z",
+        "by": "cafe0000",
+        "s": " ",
+        "o": "cafe0000",
+        "t": "(cafe0000) an open question",
+    },
+]
+
+
+def xlp(owns="private/renet/cmd/**", live=None, filler=0):
+    """X lines with the given Owns, `filler` neutral header lines, then an optional `Live-Proof:` value."""
+    out = "Priority: P2 -- a fixture plan\nConcurrency: parallel\nOwns: %s\n" % owns
+    out += "".join("Note-%d: filler\n" % i for i in range(filler))
+    if live is not None:
+        out += "%s\n" % live
+    return out
+
+
+DEP = "no-dep -- a live-proof fixture plan"
 OP = "Priority: P1 (operator) -- ruled by the operator\n"
 
 
@@ -126,6 +166,27 @@ def tree():
         "agent/plans/_done/PLAN-fin.md": plan(status="done"),
         "agent/plans/_removed/PLAN-rm.md": plan(status="removed"),
         "agent/INDEX.md": INDEX,
+        # PLAN-tested-on-bench V3: on-disk plans whose Owns hit a surface, one without the line (pre-V7), one with a broken line, one with a `none` citing an open item.
+        "agent/plans/PLAN-surf.md": plan(dep=DEP, x=X_RENET),
+        "agent/plans/PLAN-lpbad.md": plan(
+            dep=DEP, x=xlp(live="Live-Proof: edge -- the edge rollout check")
+        ),
+        "agent/plans/PLAN-lpopen.md": plan(
+            dep=DEP, x=xlp(live="Live-Proof: none -- ruled in #%s, still open" % OPEN_ITEM)
+        ),
+        "agent/plans/PLAN-lpok.md": plan(
+            dep=DEP, x=xlp(live="Live-Proof: none -- tooling only, ruled in #%s" % CLOSED_ITEM)
+        ),
+        # c27ca1eb.1: a declared bench target on a plan that owns no surface yet; an Owns edit onto renet must re-run LP2.
+        "agent/plans/PLAN-lpbench.md": plan(
+            dep=DEP,
+            x=xlp(
+                owns="docs/fixture/**",
+                live="Live-Proof: bench -- the cli against the bench origin",
+            ),
+        ),
+        QUOTE_FILE: "The operator answered: %s.\n" % QUOTE,
+        "agent/worklist/cafe0000.jsonl": "".join(json.dumps(e) + "\n" for e in STORE_EVENTS),
     }
     for rel, text in files.items():
         p = BASE / rel
@@ -282,6 +343,229 @@ CASES = [
         False,
     ),
     ("an empty payload", {}, False),
+    # ---- the Live-Proof line (PLAN-tested-on-bench V3) ----
+    ("a new surface plan without Live-Proof", write(NEW, plan(dep=DEP, x=X_RENET)), True),
+    (
+        "a new cli-remote plan without Live-Proof",
+        write(NEW, plan(dep=DEP, x=xlp(owns="packages/cli/src/remote/ssh.ts"))),
+        True,
+    ),
+    (
+        "a new account plan (braced glob) without Live-Proof",
+        write(NEW, plan(dep=DEP, x=xlp(owns="private/account/{src,web}/**"))),
+        True,
+    ),
+    (
+        "a new plan with a malformed Live-Proof (edge)",
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: edge -- the edge rollout check"))),
+        True,
+    ),
+    (
+        "a new plan with a reasonless Live-Proof",
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: bench"))),
+        True,
+    ),
+    (
+        "a new plan with an emphasised Live-Proof",
+        write(
+            NEW, plan(dep=DEP, x=xlp(live="**Live-Proof:** hostinger -- the renet binary check"))
+        ),
+        True,
+    ),
+    (
+        "a new plan with Live-Proof outside the window",
+        write(
+            NEW,
+            plan(dep=DEP, x=xlp(filler=4, live="Live-Proof: hostinger -- the renet binary check")),
+        ),
+        True,
+    ),
+    (
+        "a new plan with a rulingless none",
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: none -- a write-up only, no code ships"))),
+        True,
+    ),
+    (
+        "a new plan with a none citing an open item",
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: none -- ruled in #%s" % OPEN_ITEM))),
+        True,
+    ),
+    (
+        "a new plan with a none citing an unknown item",
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: none -- ruled in #deadbeef"))),
+        True,
+    ),
+    (
+        "a new plan with a none quoting what nobody said",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(live='Live-Proof: none -- "nobody ever said this" in %s' % QUOTE_FILE),
+            ),
+        ),
+        True,
+    ),
+    (
+        "a new no-surface plan with a malformed Live-Proof",
+        write(
+            NEW,
+            plan(dep=DEP, x=xlp(owns="docs/fixture/**", live="Live-Proof: stable -- the release")),
+        ),
+        True,
+    ),
+    (
+        "an Edit introducing a malformed Live-Proof",
+        edit(
+            "agent/plans/PLAN-surf.md",
+            "Owns: private/renet/cmd/**\n",
+            "Owns: private/renet/cmd/**\nLive-Proof: bench, edge -- the two rollouts\n",
+        ),
+        True,
+    ),
+    (
+        "an Edit pointing a valid none at an open item",
+        edit("agent/plans/PLAN-lpok.md", "#%s" % CLOSED_ITEM, "#%s" % OPEN_ITEM),
+        True,
+    ),
+    (
+        "a new renet plan declaring only bench (not admissible for renet)",
+        write(
+            NEW, plan(dep=DEP, x=xlp(live="Live-Proof: bench -- the cli against the bench origin"))
+        ),
+        True,
+    ),
+    (
+        "a new account plan declaring bench",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(
+                    owns="private/account/src/**",
+                    live="Live-Proof: bench -- the account worker on bench",
+                ),
+            ),
+        ),
+        False,
+    ),
+    (
+        "a new account plan declaring only hostinger (not admissible for account)",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(
+                    owns="private/account/src/**",
+                    live="Live-Proof: hostinger -- the account worker there",
+                ),
+            ),
+        ),
+        True,
+    ),
+    (
+        "a new renet plan declaring bench and hostinger (bench admissible for no touched surface)",
+        write(
+            NEW,
+            plan(dep=DEP, x=xlp(live="Live-Proof: bench, hostinger -- the cli and renet halves")),
+        ),
+        True,
+    ),
+    (
+        "a new surface plan declaring hostinger",
+        write(
+            NEW, plan(dep=DEP, x=xlp(live="Live-Proof: hostinger -- the renet binary served there"))
+        ),
+        False,
+    ),
+    (
+        "a new surface plan declaring both targets",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(
+                    owns="private/renet/cmd/**, private/account/src/**",
+                    live="Live-Proof: bench, hostinger -- the account and renet halves",
+                ),
+            ),
+        ),
+        False,
+    ),
+    (
+        "a new plan with a none citing a closed item",
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: none -- ruled in #%s" % CLOSED_ITEM))),
+        False,
+    ),
+    (
+        "a new plan with a none quoting a committed ruling",
+        write(
+            NEW,
+            plan(
+                dep=DEP,
+                x=xlp(live='Live-Proof: none -- operator: "%s" in %s' % (QUOTE, QUOTE_FILE)),
+            ),
+        ),
+        False,
+    ),
+    (
+        "Live-Proof at line 12 is inside the window",
+        write(
+            NEW,
+            plan(dep=DEP, x=xlp(filler=3, live="Live-Proof: hostinger -- the renet binary check")),
+        ),
+        False,
+    ),
+    (
+        "a new plan whose Owns hit no surface needs no line",
+        write(NEW, plan(dep=DEP, x=xlp(owns="docs/fixture/**, .ci/rediacc_ci/proof/**"))),
+        False,
+    ),
+    (
+        "a new plan owning only surface test files needs no line",
+        write(NEW, plan(dep=DEP, x=xlp(owns="packages/cli/src/**/*.test.ts"))),
+        False,
+    ),
+    (
+        "a new plan owning only a bare submodule pointer needs no line",
+        write(NEW, plan(dep=DEP, x=xlp(owns="private/renet"))),
+        False,
+    ),
+    (
+        "a new plan owning a submodule directory (trailing slash) needs the line",
+        write(NEW, plan(dep=DEP, x=xlp(owns="private/renet/"))),
+        True,
+    ),
+    (
+        "c27ca1eb.1: an Edit moving Owns onto renet under a bench-only Live-Proof",
+        edit("agent/plans/PLAN-lpbench.md", "Owns: docs/fixture/**", "Owns: private/renet/cmd/**"),
+        True,
+    ),
+    (
+        "c27ca1eb.1: an Edit moving Owns between non-surface globs under a bench Live-Proof",
+        edit("agent/plans/PLAN-lpbench.md", "Owns: docs/fixture/**", "Owns: docs/other/**"),
+        False,
+    ),
+    (
+        "a prose Edit to an existing surface plan without the line (V7 migrates it)",
+        edit("agent/plans/PLAN-surf.md", "T1 a box", "T1 the box"),
+        False,
+    ),
+    (
+        "a prose Edit keeping a broken Live-Proof line it had",
+        edit("agent/plans/PLAN-lpbad.md", "T1 a box", "T1 the box"),
+        False,
+    ),
+    (
+        "a prose Edit keeping a none whose item is open",
+        edit("agent/plans/PLAN-lpopen.md", "T1 a box", "T1 the box"),
+        False,
+    ),
+    (
+        "an Edit closing the gap with a valid line",
+        edit("agent/plans/PLAN-lpbad.md", "edge -- the edge", "hostinger -- the hostinger"),
+        False,
+    ),
     # ---- the X fields ----
     ("a new plan without X lines", write(NEW, plan(dep="PLAN-y.md", x="")), True),
     (
@@ -510,6 +794,21 @@ def main():
         if needle not in err:
             print("*** FAIL *** the refusal message lacks %r" % needle)
             fails += 1
+    # The Live-Proof refusal names its code, the surfaces it found and the accepted shapes.
+    tree()
+    _rc, err = run_case(write(NEW, plan(dep=DEP, x=X_RENET)))
+    for needle in ("LP1", "surfaces: renet", "Live-Proof: bench|hostinger"):
+        if needle not in err:
+            print("*** FAIL *** the Live-Proof refusal lacks %r" % needle)
+            fails += 1
+    tree()
+    _rc, err = run_case(
+        write(NEW, plan(dep=DEP, x=xlp(live="Live-Proof: none -- ruled in #%s" % OPEN_ITEM)))
+    )
+    if "LP2" not in err or "Live-Proof: none" not in err:
+        print("*** FAIL *** the waiver refusal does not name LP2 and the field: %r" % err[-300:])
+        fails += 1
+
     if RATCHET:
         tree()
         _rc, err = run_case(edit("agent/plans/PLAN-bare.md", "T1 a box", "T1 the box"))
@@ -530,9 +829,9 @@ def main():
 
     _good_ns: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)
-    for label in ("DEFECT", "VERDICT_DEFECT"):
+    for label in ("DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):
         old, new = _good_ns[label]
-        if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT"):
+        if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):
             print(
                 "*** FAIL *** the declared %s no longer applies to the guard outside its declaration: %r"
                 % (label, old)

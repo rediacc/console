@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: ko
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 문제는 이것입니다. AI 코딩 어시스턴트(Claude Code, Cursor, Cline, Windsurf)가 존재하지 않는 `rdc` 플래그를 계속 만들어 내고, 매번 물어보지 않으면 어떤 Rediacc 저장소 이름이 어떤 GUID에 매핑되는지 알 수 없습니다. 이 템플릿이 그 문제를 해결합니다. 아래 블록을 프로젝트의 `CLAUDE.md`, `.cursorrules`, 또는 도구가 사용하는 에이전트 설정 파일에 붙여넣으세요.
@@ -72,7 +72,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

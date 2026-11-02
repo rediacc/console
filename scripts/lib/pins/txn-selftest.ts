@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { type ControlCase, type RunControlsOptions, runControls } from '../controls.js';
+import { isEntryPoint } from '../entry-point.js';
 import {
   journalRoot,
   ledgerHolds,
@@ -644,6 +644,6 @@ export function txnCases(): ControlCase[] {
 // The two directory listings above are each judged against a file the case wrote itself, so an empty listing fails its case; the floor guards the case list, so a run that drops controls is refused rather than reported green.
 const MIN_TXN_CASES = 13;
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(txnSelftestExit(txnCases()));
 }

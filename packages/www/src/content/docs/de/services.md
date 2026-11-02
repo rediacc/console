@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: de
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Dienste
@@ -53,7 +53,7 @@ Wenn eine Rediaccfile-Funktion ausgeführt wird, stehen folgende Umgebungsvariab
 | `REDIACC_WORKING_DIR` | Einbindungspfad des Repositories | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | Repository-GUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | Netzwerk-ID (Ganzzahl) | `2816` |
-| `DOCKER_HOST` | Docker-Socket für den isolierten Daemon dieses Repositories | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Docker-Socket für den isolierten Daemon dieses Repositories | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback-IP für jeden in `.rediacc.json` definierten Dienst | `POSTGRES_IP=127.0.11.2` |
 
 Die `{SERVICE}_IP`-Variablen werden automatisch aus den Slot-Zuordnungen in `.rediacc.json` generiert und werden vor der Ausführung Ihrer Rediaccfile-Funktionen exportiert. Die Namenskonvention wandelt den Dienstnamen in Großbuchstaben um, ersetzt Bindestriche durch Unterstriche und hängt `_IP` an. Beispiel: Ein Dienst namens `listmonk-app` mit Slot `0` wird zu `LISTMONK_APP_IP=127.0.11.2`.
@@ -99,7 +99,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard` ermöglicht es einem Dienst, einen WireGuard-Tunnel aufzubauen, um beispielsweise einen einzelnen Prozess über einen entfernten Endpunkt zu routen. Da jeder Dienst mit Host-Networking läuft, sollte der Tunnel auf einen Container-internen Network-Namespace beschränkt werden, damit er das Routing des Hosts nicht verändert. Umfassende Privilegierungsoptionen wie `privileged: true`, `pid: host` und `ipc: host` bleiben unabhängig von Labels durch die Validierung abgelehnt.
+`rediacc.wireguard` ermöglicht es einem Dienst, einen WireGuard-Tunnel aufzubauen, um beispielsweise einen einzelnen Prozess über einen entfernten Endpunkt zu routen. Da jeder Dienst mit Host-Networking läuft, sollte der Tunnel auf einen Container-internen Network-Namespace beschränkt werden, damit er das Routing des Hosts nicht verändert. Umfassende Privilegierungsoptionen wie `privileged: true`, `pid: host` und `ipc: host` bleiben unabhängig von Labels abgelehnt, sowohl von der Compose-Validierung als auch auf der Docker-API, wo der Daemon des Repositories mit `403` antwortet.
 
 ### Multi-Service-Layout
 
@@ -454,7 +454,7 @@ Zwei Liefermodi funktionieren in Compose:
 
 **`env`-Modus.** Interpoliert via `${REDIACC_SECRET_<KEY>}` in jedem `environment:`-Wert. Der renet-Wrapper übergibt den Wert zur Deploy-Zeit in die Container-Umgebung.
 
-**`file`-Modus.** Der Wert landet in einer Host-seitigen tmpfs-Datei unter `/var/run/rediacc/secrets/<networkID>/<KEY>`, und Sie mounten ihn in den Container via Docker Compose's Standard `secrets:`-Block. Der Container liest `/run/secrets/<key>`. Bevorzugen Sie diesen Modus für alles Sensible. Werte erscheinen niemals in `docker inspect` oder `/proc/<pid>/environ`.
+**`file`-Modus.** Der Wert landet in einer Host-seitigen tmpfs-Datei unter `/var/run/rediacc/net-<networkID>/secrets/<KEY>`, und Sie mounten ihn in den Container via Docker Compose's Standard `secrets:`-Block. Der Container liest `/run/secrets/<key>`. Bevorzugen Sie diesen Modus für alles Sensible. Werte erscheinen niemals in `docker inspect` oder `/proc/<pid>/environ`.
 
 ```yaml
 services:
@@ -467,9 +467,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 Seeden Sie die Werte mit `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` und dem Äquivalent für File-Modus. Siehe [Repositories § Geheimnisse](/de/docs/repositories#secrets) für die vollständige Anleitung und [Pro-Repo-Geheimnisse](/de/docs/rdc-cheat-sheet#per-repo-secrets) im Spickzettel für die Befehlsreferenz.
 
-> **Cross-Repo-Pfade werden zur Validierungszeit abgelehnt.** Ein Compose-`secrets: file:` (oder `configs: file:`, oder `env_file:`), das auf das `/var/run/rediacc/secrets/<other-networkID>/`-Verzeichnis eines anderen Repositories zeigt, wird von dem renet-Wrapper vor docker compose mit Hard-Reject blockiert. `--unsafe` überschreibt es NICHT. Defense-in-depth: Der Landlock-Sandbox um die Rediaccfile-Shell bewältigt Lesen auf das secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/secrets/<other>/X` aus Rediaccfile-Bash mit EACCES fehlschlägt, selbst wenn es den YAML-Validator umgeht. Sie müssen es nicht explizit aktivieren; dies ist standardmäßig für alle `repo up` aktiviert.
+> **Cross-Repo-Pfade werden zur Validierungszeit abgelehnt.** Ein Compose-`secrets: file:` (oder `configs: file:`, oder `env_file:`), das auf das `/var/run/rediacc/net-<other-networkID>/secrets/`-Verzeichnis eines anderen Repositories zeigt, wird von dem renet-Wrapper vor docker compose mit Hard-Reject blockiert. `--unsafe` überschreibt es NICHT. Defense-in-depth: Der Landlock-Sandbox um die Rediaccfile-Shell bewältigt Lesen auf das secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/net-<other>/secrets/X` aus Rediaccfile-Bash mit EACCES fehlschlägt, selbst wenn es den YAML-Validator umgeht. Sie müssen es nicht explizit aktivieren; dies ist standardmäßig für alle `repo up` aktiviert.

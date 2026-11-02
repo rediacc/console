@@ -140,6 +140,8 @@ ARCHIVE_DIR = _lifecycle().get("archive_dir", "agent/archive/plans")
 
 # A path-shaped token: one or more directory components before a dotted basename. Only the basename survives into `loose_sig`.
 PATHISH_RE = re.compile(r"(?:[\w.@~-]+/)+([\w.@~-]+\.[A-Za-z0-9]{1,6})")
+# A gate citation's `ci-` namespace prefix. A gate planned as `check:x` that ships as `check:ci-x` is the same task under the CI lane's spelling; without this the box naming it has no legal tick, since this gate refuses the rename and check:ci-plan-citations refuses the planned name once the box is ticked (PLAN-backup-program J2/J3, 2026-10-26).
+GATE_CI_RE = re.compile(r"\bcheck:ci-")
 
 
 def sig(task: str) -> str:
@@ -153,15 +155,15 @@ def sig(task: str) -> str:
 
 
 def loose_sig(task: str) -> str:
-    """`sig` with directory prefixes stripped from the paths the box cites.
+    """`sig` with directory prefixes stripped from the paths the box cites and a `check:ci-` gate name read as `check:`.
 
     A box's identity is the TASK, not the spelling of the paths in it. Without this, moving a cited file re-signs every box that cites it and G-A1 reports the move as a DELETION, offering three remedies (tick it, mark it `[?]`, archive the plan) of which none is true and all three falsify the record. Measured 2026-09-09: moving 125 gates from `scripts/` to `scripts/gates/` reddened
     four boxes across three plans that way.
 
-    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised characters differ ONLY by a directory prefix; the basename stays, so everything else is kept.
+    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised characters differ ONLY by a directory prefix or by `check:ci-` against `check:` on a gate name (the same gate under two spellings, so a deleted box can match a moved one); the basename and the rest of the gate name stay, so everything else is kept.
     """
     return hashlib.sha256(
-        PFID._norm(PATHISH_RE.sub(r"\1", task))[:120].encode("utf-8")
+        PFID._norm(GATE_CI_RE.sub("check:", PATHISH_RE.sub(r"\1", task)))[:120].encode("utf-8")
     ).hexdigest()[:8]
 
 
@@ -860,7 +862,7 @@ def selftest() -> int:
 
     # A MOVED citation is a re-spelling, not a new task. `sig` must NOT absorb it -- the base ledger is keyed by `sig` and re-keying it would make every historical box look deleted -- so the tolerance lives in `loose_sig`, and both halves of that split are asserted here. The pair is the real 2026-09-09 case: `scripts/` -> `scripts/gates/`.
     was = "Write `scripts/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change"
-    now = was.replace("scripts/", "scripts/gates/")
+    now = controls.plant(was, "scripts/", "scripts/gates/")
     ok = loose_sig(was) == loose_sig(now)
     print(f"  {'PASS' if ok else 'FAIL'}  a box whose cited file MOVED keeps its LOOSE signature")
     if not ok:
@@ -871,6 +873,22 @@ def selftest() -> int:
     print(
         f"  {'PASS' if ok else 'FAIL'}  CONTROL: `sig` itself does NOT absorb the move, "
         f"so the ledger key is unchanged and the second chance is load-bearing"
+    )
+    if not ok:
+        bad += 1
+
+    # A gate renamed into the `ci-` namespace is the same re-spelling (the real 2026-10-26 case, PLAN-backup-program J2), and a different gate stays a different box.
+    was = "J2: Gate check:renet-chunkstore-unit (paths private/renet) running the chunkstore package unit tests non-root"
+    now = controls.plant(was, "check:renet-", "check:ci-renet-")
+    ok = loose_sig(was) == loose_sig(now) and sig(was) != sig(now)
+    print(
+        f"  {'PASS' if ok else 'FAIL'}  a box whose gate moved into the ci- namespace keeps its LOOSE signature only"
+    )
+    if not ok:
+        bad += 1
+    ok = loose_sig(was) != loose_sig(controls.plant(was, "check:renet-", "check:ci-account-"))
+    print(
+        f"  {'PASS' if ok else 'FAIL'}  CONTROL: a box naming a DIFFERENT gate keeps a different loose signature"
     )
     if not ok:
         bad += 1

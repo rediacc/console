@@ -19,29 +19,53 @@ import {
 } from '../services/addressing/resolve-machine.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { expectRepoState } from '../services/executor/executor-factory.js';
 import { probeRepoPresent } from '../services/repo/repo-mount-check.js';
 import { ambiguous, notFound } from './cli-exit-error.js';
+
+/** The machine-arm presence check `resolveRepoRef` hands to the next job instead of probing. */
+interface DeferredPresence {
+  machine: string;
+  repoGuid: string;
+}
 
 /**
  * Inject the default step-5 verifier (spec/03 §2.3) unless the caller opted out.
  * A read-only verb (`readOnly: true`) skips step 5; a caller that already passed
  * its own `verifyMount` keeps it. Otherwise every MUTATING repo verb, through
- * this single funnel, gets the GUID-presence probe: the derived machine must
+ * this single funnel, gets the GUID-presence check: the derived machine must
  * know the resolved tag's image or the verb refuses with exit 12 rather than
- * deploying to the wrong host. Probe-infrastructure failure fails OPEN (undefined
- * => true): the verb's own execution against the same machine surfaces the real
- * error moments later (repo-mount-check convention).
+ * deploying to the wrong host.
+ *
+ * The check no longer costs a `repository_list` round trip before the work
+ * (agent/plans/PLAN-detached-jobs.md section 14). It becomes the vault
+ * precondition `expect: repo_present` of the verb's first job on that machine
+ * and repository, which renet evaluates in `job start` before any unit exists
+ * and refuses with exit 12 (detached-execution JobPreconditionRefusedError).
+ * `onDeferred` receives the machine and GUID so the caller records it.
+ *
+ * Two arms still answer here. A converge-to-absent verb (`absentOk`) needs the
+ * answer BEFORE it decides whether to dispatch at all, so it keeps the probe
+ * (failing open on a probe-infrastructure failure, repo-mount-check
+ * convention). The datastore arm is verified at dispatch, as before (#92).
  */
-function withDefaultVerifier(options: ResolveMachineOptions): ResolveMachineOptions {
+function withDefaultVerifier(
+  options: ResolveMachineOptions,
+  onDeferred: (presence: DeferredPresence) => void
+): ResolveMachineOptions {
   if (options.readOnly || options.verifyMount) return options;
   return {
     ...options,
     verifyMount: async ({ machine, datastore, repoGuid }) => {
-      // #92: the presence probe serves the MACHINE arm only. probeRepoPresent rides repository_list, which enumerates DOCKER repos under <datastore>/repositories, a kube repo lives at <ds>/repos/<guid> on a NAMED datastore and is structurally invisible to it, so probing the datastore arm false-refused every mutating verb on a cluster repo with exit 12 (found live by the B1
-      // window, the arm's first-ever execution). The datastore arm's routing is verified at dispatch instead: derivation rides the attach hint, and renet errors loudly on an unmounted datastore, a wrong host cannot silently succeed there. A datastore- aware presence probe (a renet verb that can see <ds>/repos/) is the recorded follow-up, spec/13.
+      // #92: the presence check serves the MACHINE arm only. repository_list enumerates DOCKER repos under <datastore>/repositories; a kube repo lives at <ds>/repos/<guid> on a NAMED datastore and was structurally invisible to it, so probing the datastore arm false-refused every mutating verb on a cluster repo with exit 12 (found live by the B1
+      // window, the arm's first-ever execution). The datastore arm's routing is verified at dispatch instead: derivation rides the attach hint, and renet errors loudly on an unmounted datastore, a wrong host cannot silently succeed there.
       if (datastore !== undefined) return true;
-      const present = await probeRepoPresent(repoGuid, machine);
-      return present !== false;
+      if (options.absentOk) {
+        const present = await probeRepoPresent(repoGuid, machine);
+        return present !== false;
+      }
+      onDeferred({ machine, repoGuid });
+      return true;
     },
   };
 }
@@ -106,10 +130,27 @@ export async function resolveRepoRef(
     throw notFound(`repository "${parsed.name}" is not in this config.`);
   }
   const view = placementViewFromConfig(config);
-  const resolved = await resolveMachine(ref, view, withDefaultVerifier(options));
+  let deferred: DeferredPresence | undefined;
+  const resolved = await resolveMachine(
+    ref,
+    view,
+    withDefaultVerifier(options, (presence) => {
+      deferred = presence;
+    })
+  );
+  const repoKey = parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name;
+  if (deferred) {
+    expectRepoState({
+      machine: deferred.machine,
+      aliases: [repoKey, `${parsed.name}:${resolved.tag}`, deferred.repoGuid],
+      repoGuid: deferred.repoGuid,
+      repoName: parsed.name,
+      expect: 'repo_present',
+    });
+  }
   return {
     name: parsed.name,
-    repoKey: parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name,
+    repoKey,
     machineName: resolved.machine,
     ...(resolved.cluster !== undefined && { kubeCluster: resolved.cluster }),
     ...(resolved.datastore !== undefined && { datastore: resolved.datastore }),
@@ -325,8 +366,10 @@ function clusterCollisionError(name: string) {
 /** The exit-5 candidate listing for an unknown connect target (§3.3 step 3). */
 function candidateLines(ns: ConnectNamespaces): string[] {
   const lines: string[] = [];
-  const repos = Object.keys(ns.families).sort();
-  const places = [...Object.keys(ns.machines), ...Object.keys(ns.clusters)].sort();
+  const repos = Object.keys(ns.families).sort((a, b) => Number(a > b) - Number(a < b));
+  const places = [...Object.keys(ns.machines), ...Object.keys(ns.clusters)].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   if (repos.length > 0) lines.push(`known repositories: ${repos.join(', ')}`);
   if (places.length > 0) lines.push(`known machines and clusters: ${places.join(', ')}`);
   return lines;

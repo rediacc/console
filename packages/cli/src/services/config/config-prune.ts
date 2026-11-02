@@ -69,7 +69,7 @@ export interface ConfigPruneAnalysis {
   graceArchives: ArchiveGraceEntry[];
   /** Cross-reference values that would be (or were) dropped. */
   droppedRefs: DroppedRef[];
-  /** Soft warnings (storage destination references, flagged, not auto-removed). */
+  /** Soft warnings: references flagged rather than auto-removed (none since the storages family was retired). */
   warnings: string[];
   /**
    * Repository entries placed on no machine. Always reported; only removed when

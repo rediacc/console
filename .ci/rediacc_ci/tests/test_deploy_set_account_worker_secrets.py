@@ -51,6 +51,7 @@ FIXTURE_ENV = {
     "ACCOUNT_X25519_PUBLIC_KEY": "x2",
     "ACCOUNT_SERVER_API_KEY": "ak",
     "ACCOUNT_JWT_SECRET": "jw",
+    "FREE_LICENSE_HMAC_KEY": "hm",
     "ROOT_EMAIL": "root@example.invalid",
     "AWS_SES_ACCESS_KEY_ID_EU": "sk-eu",
     "AWS_SES_SECRET_ACCESS_KEY_EU": "ss-eu",
@@ -156,6 +157,7 @@ def _run(
 
 
 # THE ONE PLACE THE TWO SIDES ARE HANDED DIFFERENT ENVIRONMENTS, and it is a rename, not a value change. The twin read one unsuffixed backup key pair for every Worker; the port reads the run's own channel's pair (`ACCOUNT_BACKUP_S3_*_STABLE` on stable, `_EDGE` otherwise) and never reads the unsuffixed one (agent/plans/PLAN-backup-credential-isolation.md B2). So the port side receives the twin's values under its channel's names, after `drop_env`, and every golden key, which is built from the twin's arguments, is unchanged. The port-only cases below drive the raw names with `translate=False`.
+CONFIG_KEY = "ck"
 RETIRED_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 
 
@@ -165,7 +167,19 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
     for retired, channel in zip(RETIRED_PAIR, own, strict=True):
         if retired in out:
             out[channel] = out.pop(retired)
+    # The twin has no config server key. The port requires its own region's and channel's name, so the translated side is handed one; `_without_config_key` takes its line back out of the recorded document before the two sides are compared.
+    if out.get("SUFFIX"):
+        channel_name = "STABLE" if env.get("TARGET") == port.STABLE else "EDGE"
+        out.setdefault(
+            "%s_%s_%s" % (port.CONFIG_KEY_PREFIX, out["SUFFIX"], channel_name), CONFIG_KEY
+        )
     return out
+
+
+def _without_config_key(calls: str) -> str:
+    """The recorded call with the two document lines the twin never had removed (the config server key and the free-licence HMAC key)."""
+    calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
+    return calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
 
 
 def _run_live(
@@ -217,7 +231,10 @@ def _run_env(
         timeout=120,
         input="",
     )
-    return proc, call_log.read_text(encoding="utf-8")
+    calls = call_log.read_text(encoding="utf-8")
+    if side == "new" and translate:
+        calls = _without_config_key(calls)
+    return proc, calls
 
 
 def run_both(tmp_path: pathlib.Path, **kw):
@@ -254,7 +271,9 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
     """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's order, on the stable EU channel: the Stripe pair present, the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and the STABLE bucket rather than the edge one."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
-    assert old_calls.splitlines()[0] == ("npx\twrangler\tsecret\tbulk\t--name\trediacc-account-eu")
+    assert old_calls.splitlines()[0] == (
+        "npx\t--no-install\twrangler\tsecret\tbulk\t--name\trediacc-account-eu"
+    )
     assert document(old_calls) == (
         "{\n"
         '  "ACCOUNT_ED25519_PRIVATE_KEY": "e1",\n'
@@ -407,11 +426,20 @@ def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> 
     _assert_agree(old, new, "bucket-first", old_calls, new_calls)
 
 
+# The two guards the twin never had; neither has a golden, and each has a port-only test.
+PORT_ONLY_GUARDS = ("ACCOUNT_CONFIG_SERVER_KEY", "FREE_LICENSE_HMAC_KEY")
+
+
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
     """SEVENTEEN CASES ON STABLE, ONE PER GUARD, each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
-    demanded = port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
+    # The config server key is the port's own sixteenth guard; the twin has no golden for it, and `test_an_empty_config_server_key_is_refused_by_its_worker_key` drives it.
+    demanded = tuple(
+        name
+        for name in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
+        if name not in PORT_ONLY_GUARDS
+    )
     assert len(demanded) == 17
     for name in demanded:
         case = tmp_path / f"guard-{name}"
@@ -594,10 +622,10 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 29
+    assert len(port.KEYS) == 31
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 15
+    assert len(port.REQUIRED_NONEMPTY) == 17
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
@@ -658,6 +686,7 @@ def test_pure_helpers() -> None:
 
     assert port.wrangler_argv("rediacc-account-us") == [
         "npx",
+        "--no-install",
         "wrangler",
         "secret",
         "bulk",
@@ -793,8 +822,11 @@ EDGE_PAIR = {
 
 
 def _port_raw(tmp_path: pathlib.Path, **extra: str):
-    """The port with the fixture's retired pair removed, unless the case sets it itself."""
+    """The port with the fixture's retired pair removed, unless the case sets it itself. The run's own channel's config server key is supplied unless the case names one."""
     drop = tuple(name for name in RETIRED_PAIR if name not in extra)
+    if not any(name.startswith(port.CONFIG_KEY_PREFIX + "_") for name in extra):
+        channel = "STABLE" if extra.get("TARGET", FIXTURE_ENV["TARGET"]) == port.STABLE else "EDGE"
+        extra = {"ACCOUNT_CONFIG_SERVER_KEY_EU_" + channel: CONFIG_KEY, **extra}
     return _run_env(PORT, tmp_path, "", drop, extra, translate=False)
 
 
@@ -856,6 +888,108 @@ def test_an_empty_own_pair_is_the_ordinary_guard(tmp_path: pathlib.Path) -> None
     assert proc.returncode == 1
     assert calls == ""
     assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID is EMPTY for" in proc.stderr
+
+
+def _pair_for(target: str) -> dict[str, str]:
+    return STABLE_PAIR if target == "stable" else EDGE_PAIR
+
+
+CONFIG_STABLE = "ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE"
+CONFIG_EDGE = "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE"
+
+
+def test_the_config_server_key_is_pushed_under_the_worker_name(tmp_path: pathlib.Path) -> None:
+    """The vault name carries region and channel; the Worker secret is `ACCOUNT_CONFIG_SERVER_KEY` and nothing else, never `CONFIG_SERVER_KEY`."""
+    for target, name, other in (
+        ("stable", CONFIG_STABLE, CONFIG_EDGE),
+        ("edge", CONFIG_EDGE, CONFIG_STABLE),
+    ):
+        case = tmp_path / target
+        case.mkdir()
+        proc, calls = _port_raw(case, TARGET=target, **_pair_for(target), **{name: "key-" + target})
+        assert proc.returncode == 0, proc.stderr
+        doc = json.loads(document(calls))
+        assert doc["ACCOUNT_CONFIG_SERVER_KEY"] == "key-" + target
+        assert "CONFIG_SERVER_KEY" not in doc
+        assert other not in doc
+        assert name not in doc
+
+
+def test_the_config_server_key_follows_the_region(tmp_path: pathlib.Path) -> None:
+    """Another region's name is not read: with SUFFIX=US the EU name is ignored and the US one is pushed."""
+    proc, calls = _port_raw(
+        tmp_path,
+        SUFFIX="US",
+        **STABLE_PAIR,
+        AWS_SES_ACCESS_KEY_ID_US="sk-us",
+        AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
+        OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
+        STRIPE_WEBHOOK_SECRET_US="whsec_us",
+        ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
+        ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE="key-eu",
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(document(calls))["ACCOUNT_CONFIG_SERVER_KEY"] == "key-us"
+
+
+@pytest.mark.parametrize(
+    ("target", "own", "stray"),
+    [("stable", CONFIG_STABLE, CONFIG_EDGE), ("edge", CONFIG_EDGE, CONFIG_STABLE)],
+)
+def test_the_other_channels_config_server_key_is_refused(
+    tmp_path: pathlib.Path, target: str, own: str, stray: str
+) -> None:
+    """The other channel's name for the region is refused by NAME before anything is pushed, and no value is echoed."""
+    proc, calls = _port_raw(
+        tmp_path, TARGET=target, **_pair_for(target), **{own: "own-value", stray: "stray-value"}
+    )
+    assert proc.returncode == 1
+    assert calls == "", "a refused run still called wrangler"
+    first = proc.stderr.splitlines()[0]
+    assert first.startswith(
+        "%s: TARGET=%s takes its config server key from %s only" % (port.SELF, target, own)
+    )
+    assert first.endswith("%s is also set." % stray)
+    for value in ("own-value", "stray-value"):
+        assert value not in proc.stderr
+        assert value not in proc.stdout
+
+
+@pytest.mark.parametrize("target", ["stable", "edge"])
+def test_an_empty_config_server_key_is_refused_by_its_worker_key(
+    tmp_path: pathlib.Path, target: str
+) -> None:
+    """An empty own name is the ordinary guard, naming the Worker key; it is demanded on both channels."""
+    name = CONFIG_STABLE if target == "stable" else CONFIG_EDGE
+    proc, calls = _port_raw(tmp_path, TARGET=target, **_pair_for(target), **{name: ""})
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "ACCOUNT_CONFIG_SERVER_KEY is EMPTY for" in proc.stderr
+    # The printed Worker key is not a store name, so the refusal names the store entry too.
+    assert "Its store entry is %s." % name in proc.stderr
+    assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_CONFIG_SERVER_KEY"
+
+
+def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path) -> None:
+    """Port-only: the Worker key is pushed under its own name, and an empty value is refused with no wrangler call and no value in either stream."""
+    ok, calls = _port_raw(tmp_path, **_pair_for("stable"))
+    assert ok.returncode == 0, ok.stderr
+    assert json.loads(document(calls))["FREE_LICENSE_HMAC_KEY"] == "hm"
+    refused = tmp_path / "refused"
+    refused.mkdir()
+    proc, calls = _port_raw(refused, **_pair_for("stable"), FREE_LICENSE_HMAC_KEY="")
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "FREE_LICENSE_HMAC_KEY is EMPTY for" in proc.stderr
+    assert port.REQUIRED_NONEMPTY.count("FREE_LICENSE_HMAC_KEY") == 1
+
+
+def test_config_server_key_helper() -> None:
+    assert port.config_server_key({CONFIG_STABLE: "k"}, "stable", "EU") == "k"
+    assert port.config_server_key({CONFIG_EDGE: "k"}, "anything-else", "EU") == "k"
+    assert port.config_server_key({}, "stable", "EU") == ""
+    with pytest.raises(port.ScriptRefusalError):
+        port.config_server_key({CONFIG_STABLE: "a", CONFIG_EDGE: "b"}, "edge", "EU")
 
 
 def test_backup_pair_helper() -> None:

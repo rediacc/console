@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ja
-sourceHash: "14ed5791afa44326"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # RDC CLI チートシート
@@ -59,8 +59,12 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup snapshot <repo> --dry-run` | アップロードせずにスナップショットを計画する; 何が移動するかを報告する |
 | `rdc backup verify <repo>` | リポジトリのバックアップアンカーをチャンクストレージと照合して検証する |
 | `rdc backup usage` | チャンクストレージに保存されたバイト数をクォータと比較して表示する |
-| `rdc backup manifests <repo>` | サーバーに記録されたスナップショットマニフェストを一覧表示する |
-| `rdc storage browse <storage>` | ストレージの内容を参照する |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | チャンクストアのスナップショットを新しい名前でリストアする |
+| `rdc backup retention <repo>` | サーバーがリポジトリの系統に適用している保持ポリシーを表示する |
+| `rdc backup retention preview <repo>` | 次回の整理で削除される内容と解放される容量を表示する |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | 系統または1つのバックアップストリームの保持を宣言する |
+| `rdc backup retention clear <repo> [--stream <id>]` | ポリシーを削除する。すべてのスナップショットが保持される |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | スナップショットを1つ削除する。専有データは次の GC で解放される |
 
 ## リポジトリの移行
 
@@ -76,7 +80,7 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 
 | コマンド | 説明 |
 |---------|------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | 名前付きバックアップ戦略を作成または更新する |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | 名前付きバックアップ戦略を作成または更新する |
 | `rdc backup strategy list` | 定義済みバックアップ戦略を全て一覧表示する |
 | `rdc backup strategy show <name>` | 戦略の詳細を表示する |
 | `rdc backup strategy remove <name>` | 戦略を削除する |
@@ -137,8 +141,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | このマシン上のすべての設定を一覧表示する |
 | `rdc config set machine <alias>` | エイリアスを別のマシンに向ける |
 | `rdc machine add <machine> --ip <host> --user <user>` | 設定にマシンを追加する |
-| `rdc storage import rclone.conf` | rclone 設定からストレージプロバイダをインポートする |
-| `rdc storage list` | 設定済みストレージプロバイダを一覧表示する |
 | `rdc backup strategy set ...` | 名前付きバックアップ戦略を定義する |
 | `rdc --config <name> <command>` | 名前付き設定ファイルを使用する |
 

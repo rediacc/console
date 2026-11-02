@@ -279,7 +279,8 @@ export async function retryUpstream<T>(
         answer.unreachable
       );
     }
-    console.log(
+    // Progress, so stderr: a caller printing `--json` on stdout must stay parseable.
+    console.error(
       `${YELLOW}? ${target.who}: attempt ${tries} of ${limit} failed (${answer.what}), asking again in ${waitMs / 1000} s${NC}`
     );
     await sleep(waitMs);
@@ -358,7 +359,11 @@ export function githubAsker(
   return (apiPath, who) => {
     const headers = githubApiHeaders(userAgent);
     if (baseOverride) delete headers.Authorization;
-    return askUpstreamJson({ url: `${baseOverride || WK_GH_API_BASE}${apiPath}`, headers, who });
+    return askUpstreamJson({
+      url: `${baseOverride === undefined || baseOverride === '' ? WK_GH_API_BASE : baseOverride}${apiPath}`,
+      headers,
+      who,
+    });
   };
 }
 

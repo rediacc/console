@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Rediacc 규칙
@@ -58,7 +58,7 @@ down() {
 - **`rediacc.*` 레이블을 설정하지 마십시오.** renet이 `rediacc.network_id`, `rediacc.service_ip`, `rediacc.service_name`을 자동으로 주입합니다.
 - **`ports:` 매핑은 호스트 네트워킹 모드에서 무시됩니다.** HTTP 라우팅을 위해 `rediacc.service_port` 레이블을 추가하십시오 (이 레이블이 없는 서비스는 HTTP 경로를 받지 못합니다). TCP/UDP 포워딩에는 `rediacc.tcp_ports`/`rediacc.udp_ports` 레이블을 사용하십시오.
 - **재시작 정책(`restart: always`, `on-failure` 등)은 안전하게 사용할 수 있습니다.** renet이 CRIU 호환성을 위해 자동으로 제거합니다. 라우터 watchdog은 `.rediacc.json`에 저장된 원래 정책을 기반으로 중지된 컨테이너를 자동으로 복구합니다.
-- **위험한 설정은 기본적으로 차단됩니다.** `privileged: true`, `pid: host`, `ipc: host`, 시스템 경로에 대한 호스트 바인드 마운트는 거부됩니다. 직접 책임 하에 재정의하려면 `renet compose --unsafe`를 사용하십시오.
+- **위험한 설정은 기본적으로 차단됩니다.** `privileged: true`, `pid: host`, `ipc: host`, 시스템 경로에 대한 호스트 바인드 마운트는 거부됩니다. `privileged`와 호스트 `pid`, `ipc`, `uts` 차단은 Docker API에서도 적용됩니다. `${DOCKER_SOCKET}`을 직접 호출하는 컨테이너는 이들에 대해 `403`을 받으며, 어떤 플래그로도 재정의할 수 없습니다. `renet compose --unsafe`가 재정의하는 것은 읽기 전용 호스트 경로 검사뿐입니다.
 
 ### 컨테이너 내부 환경 변수
 
@@ -78,7 +78,7 @@ Renet이 모든 컨테이너에 자동으로 주입합니다.
 
 ## 네트워킹
 
-- **각 저장소는 `/var/run/rediacc/docker-<networkId>.sock`에 자체 Docker 데몬을 갖습니다.**
+- **각 저장소는 `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`에 자체 Docker 데몬을 갖습니다.**
 - **각 서비스는 /26 서브넷 내에서 고유한 루프백 IP를 받습니다** (예: `127.0.24.192/26`).
 - **바인딩은 자동입니다.** 서비스는 `0.0.0.0` 또는 `localhost`에 바인딩할 수 있으며, 커널이 주소를 서비스에 할당된 루프백 IP로 투명하게 재작성합니다. 명시적인 `${SERVICE_IP}` 바인딩은 여전히 작동하지만 더 이상 필수가 아닙니다.
 - **헬스 체크는 `localhost` 또는 `${SERVICE_IP}`를 사용할 수 있습니다.** 예: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
@@ -168,7 +168,7 @@ OS별 보안 자세 플래그가 필요하지 않습니다. `rdc`와 `renet`은 
 
 - `renet compose` 대신 `docker compose` 사용: 컨테이너가 네트워크 격리를 받지 못합니다.
 - 재시작 정책은 안전합니다. renet이 자동으로 제거하고 watchdog이 복구를 처리합니다.
-- `privileged: true` 사용: 필요하지 않습니다. renet이 대신 특정 CRIU 권한을 주입합니다.
+- `privileged: true` 사용: 필요하지 않습니다. renet이 대신 특정 CRIU 권한을 주입합니다. 저장소의 Docker 데몬은 compose와 Docker API 모두에서 이를 거부합니다.
 - 영구 설정 파일에 원시 IP 하드코딩: fork 격리를 유지하기 위해 연결에 서비스 이름을 사용하십시오.
 - 실패한 명령의 해결 방법으로 `rdc term connect -c` 사용: 대신 버그를 보고하십시오.
 - `repo delete`는 루프백 IP와 systemd 유닛을 포함한 전체 정리를 수행합니다. 이전 삭제의 잔재를 정리하려면 `rdc machine prune <name>`을 실행하십시오.

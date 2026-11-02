@@ -73,7 +73,7 @@ rdc machine setup my-server  # Provisions renet + creates datastore
 
 ```bash
 rdc config show                            # Human-readable summary
-cat ~/.config/rediacc/rediacc.json         # Raw JSON: machines, repos, storages, SSH key
+cat ~/.config/rediacc/rediacc.json         # Raw JSON: machines, repos, backup destinations, SSH key
 ```
 
 **One file = one environment.** Copy it to another laptop and you're ready.
@@ -221,7 +221,7 @@ rdc backup usage
 
 Snapshots upload to the chunk store, which needs an account server and a licensed repository. Only changed data is stored, so a second snapshot of the same repository costs the difference rather than the whole image.
 
-Pushing a repository to cloud storage with `--to <storage>` is retired and now refuses. To read an archive written before that change, `rdc storage browse` still works and needs `rclone` on your PATH.
+Backups have one destination kind, the hosted-service chunk store, and `--to` on `repo push` names a machine only. Retention is declared per repository lineage with `rdc backup retention set`, and scheduled runs come from `rdc backup strategy set` plus `rdc backup schedule`. See [Backup & Restore](/en/docs/backup-restore).
 
 ### 4. Pull from Remote
 

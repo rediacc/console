@@ -4,11 +4,11 @@ THE TWIN'S SIDE IS FROZEN (operator ruling D5, PLAN-retire-bash-oracles B3). Eve
 
 A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CLONE IS NOT STUBBED. The twin ran the real `clone-d1.sh` and the port runs the real `clone_d1`, so the comparison is about the callers and about the clone together. It reaches `npx wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
+THE CLONE IS NOT STUBBED. The twin ran the real `clone-d1.sh` and the port runs the real `clone_d1`, so the comparison is about the callers and about the clone together. It reaches `npx --no-install wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
 file, an execute reports success, and `PRAGMA foreign_key_check` answers with an
 empty result set. Its own output is therefore part of what the two sides are compared on.
 
-THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE, for the reason the module under test spells out: what the run PRINTS is `::group::` directives and one summary line, while the observable effect is the ordered `npx wrangler d1` invocations, one clone per region, and the bytes of the generated `wrangler-migration-test.toml`.
+THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE, for the reason the module under test spells out: what the run PRINTS is `::group::` directives and one summary line, while the observable effect is the ordered `npx --no-install wrangler d1` invocations, one clone per region, and the bytes of the generated `wrangler-migration-test.toml`.
 
 BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run creates and deletes databases in it.
 """
@@ -96,7 +96,7 @@ def save(state):
         json.dump(state, fh)
 
 
-rest = argv[1:] if argv[:1] == ["wrangler"] else None
+rest = argv[2:] if argv[:2] == ["--no-install", "wrangler"] else None
 if rest is None:
     sys.stderr.write("fake npx: unmodelled tool %r\n" % (argv[:1],))
     sys.exit(127)
@@ -377,8 +377,8 @@ def _wrangler_verbs(log: str) -> list[str]:
     out = []
     for line in _calls(log):
         fields = line.split()
-        if fields[:2] == ["npx", "wrangler"] and fields[2:3] == ["d1"]:
-            out.append(" ".join(fields[2:4]))
+        if fields[:3] == ["npx", "--no-install", "wrangler"] and fields[3:4] == ["d1"]:
+            out.append(" ".join(fields[3:5]))
     return out
 
 
@@ -407,7 +407,9 @@ def test_edge_databases_are_tested_before_stable_ones(tmp_path) -> None:
 
     proc, calls = old
     created = [
-        line.split()[4] for line in _calls(calls) if line.startswith("npx wrangler d1 create ")
+        line.split()[5]
+        for line in _calls(calls)
+        if line.startswith("npx --no-install wrangler d1 create ")
     ]
     assert created == [
         "migration-test-edge-eu-777-2",
@@ -656,7 +658,9 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     )
     assert new_proc.stdout != old_proc.stdout, "the group headers did not see it either"
     first_created = next(
-        line.split()[4] for line in _calls(new_calls) if line.startswith("npx wrangler d1 create ")
+        line.split()[5]
+        for line in _calls(new_calls)
+        if line.startswith("npx --no-install wrangler d1 create ")
     )
     assert first_created == "migration-test-stable-eu-777-2"
 
@@ -694,7 +698,7 @@ def test_read_names_follows_bash_rather_than_python() -> None:
 
 def test_the_argv_builders_match_the_twins_words() -> None:
     assert port.create_argv("d")[-2:] == ["--location", "eeur"]
-    assert port.info_argv("d") == ["npx", "wrangler", "d1", "info", "d", "--json"]
+    assert port.info_argv("d") == ["npx", "--no-install", "wrangler", "d1", "info", "d", "--json"]
     assert port.delete_argv("d")[-1] == "--skip-confirmation"
     assert port.migrations_argv("d")[-2:] == ["--config", "wrangler-migration-test.toml"]
     assert port.clone_args("src", "dst") == ["--source", "src", "--target", "dst"]
@@ -706,13 +710,13 @@ def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
     Both halves, because either alone is satisfiable by a broken pattern: the mask DOES collapse two different `mktemp -d` directories to one string, and it does NOT touch the filename after it, a `/tmp` path of any other shape, or
     the `--output=` flag that carries it.
     """
-    a = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/export.sql"
-    b = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.JTIJi7lgUF/export.sql"
+    a = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/export.sql"
+    b = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.JTIJi7lgUF/export.sql"
     assert _mask(a) == _mask(b)
     assert _mask(a).endswith("--output=/tmp/tmp.<MKTEMP>/export.sql")
 
     # A DIFFERENT FILENAME UNDER THE SAME MASK IS STILL A DIFFERENCE.
-    c = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/dump.sql"
+    c = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/dump.sql"
     assert _mask(a) != _mask(c)
     # AND A TEMPORARY PATH OF ANY OTHER SHAPE IS NOT MASKED AT ALL.
     assert _mask("/tmp/somewhere/else") == "/tmp/somewhere/else"

@@ -25,6 +25,7 @@ DELIBERATE DELTA FROM THE BASH (Rule T), tested in `test_drills_backup_local_pla
 
 from __future__ import annotations
 
+import argparse
 import os
 import pathlib
 import subprocess
@@ -36,7 +37,7 @@ from rediacc_ci.core import bws_env, env
 PRODUCTION_BUCKET = "rediacc-backups"
 ALREADY_THERE = ("BucketAlreadyOwnedByYou", "BucketAlreadyExists")
 PROFILE = "backup-plane"
-GATEWAY_COMMAND = ["npx", "tsx", "src/entry/dev-gateway.ts"]
+GATEWAY_COMMAND = ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"]
 
 
 def knobs(environ: dict[str, str]) -> dict[str, str]:
@@ -127,8 +128,21 @@ def gateway_environment(k: dict[str, str], environ: dict[str, str]) -> dict[str,
     return child
 
 
+def build_parser() -> argparse.ArgumentParser:
+    return argparse.ArgumentParser(
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_local_plane",
+        description=(
+            "Create the local RustFS probe bucket and replace this process with the account "
+            "dev gateway on the bridge address. Takes no arguments: every knob is an "
+            "environment variable (BRIDGE_HOST, GATEWAY_PORT, RUSTFS_PORT, RUSTFS_KEY, "
+            "RUSTFS_SECRET, PROBE_BUCKET, LOG_DIR)."
+        ),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
-    del argv  # no arguments: every knob is an environment variable
+    # --help exits 0 and an unknown argument exits 2, both before any side effect.
+    build_parser().parse_args(argv)
     k = knobs(dict(os.environ))
     if k["PROBE_BUCKET"] == PRODUCTION_BUCKET:
         # The drill carries the same guard for the same reason: a harness that CAN point at production eventually will.

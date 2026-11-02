@@ -49,7 +49,12 @@ const baseConfig = {
   encryption: { mode: 'plaintext' },
   resources: {
     machines: { m1: { ip: '10.0.0.1', user: 'root' } },
-    storages: { sOld: { provider: 's3' } },
+    repositories: {
+      rOld: {
+        grand: 'latest',
+        tags: { latest: { repositoryGuid: '11111111-1111-4111-8111-aaaaaaaaaaaa' } },
+      },
+    },
   },
 } as unknown as RdcConfig;
 
@@ -112,10 +117,116 @@ describe('RemoteResourceState persist', () => {
     expect(written.resources?.machines).toHaveProperty('m2');
   });
 
+  it('skips the push when the write changes nothing: no push, no version bump', async () => {
+    const adapter = createAdapter();
+    // The server is still at the version the state was built on: the cache is current.
+    adapter.pull.mockResolvedValue({
+      config: structuredClone(baseConfig),
+      version: 4,
+      sdkEpoch: 1,
+    });
+    const state = loadState(adapter);
+
+    await state.setMachines({ m1: { ip: '10.0.0.1', user: 'root' } });
+
+    expect(adapter.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
+  });
+
+  it('does not skip a write that equals a LAGGING cache: the push takes the 409 and the intended value lands', async () => {
+    const adapter = createAdapter();
+    const lagging = structuredClone(baseConfig);
+    (lagging.resources as { machines: unknown }).machines = {
+      m1: { ip: '10.0.0.5', user: 'root' },
+    };
+    // The on-disk cache holds m1=10.0.0.5, which is exactly what this write sets; the state was
+    // built on m1=10.0.0.1, and the server (v5) moved m1 to 10.0.0.99 meanwhile.
+    mockConfigFileStorage.loadDecrypted.mockImplementationOnce(() =>
+      Promise.resolve(structuredClone(lagging))
+    );
+    adapter.pull.mockResolvedValue({
+      config: {
+        ...structuredClone(baseConfig),
+        resources: {
+          ...structuredClone(baseConfig).resources,
+          machines: { m1: { ip: '10.0.0.99', user: 'root' } },
+        },
+      },
+      version: 5,
+      sdkEpoch: 1,
+    });
+    adapter.push
+      .mockRejectedValueOnce(new RemoteVersionConflictError('Version conflict: current is 5'))
+      .mockResolvedValueOnce({ version: 6 });
+    const state = loadState(adapter);
+
+    await state.setMachines({ m1: { ip: '10.0.0.5', user: 'root' } });
+
+    expect(adapter.push).toHaveBeenCalledTimes(2);
+    const [replayDoc, replayVersion] = adapter.push.mock.calls[1] as [RdcConfig, number];
+    expect(replayVersion).toBe(5);
+    expect(replayDoc.resources?.machines?.m1).toEqual({ ip: '10.0.0.5', user: 'root' });
+  });
+
+  it('stays silent under --quiet and -o json, prints otherwise', async () => {
+    const { outputService } = await import('../core/output.js');
+    const { setOutputFormat } = await import('../../utils/errors.js');
+    const write = vi.spyOn(console, 'error').mockImplementation(() => true);
+    let n = 0;
+    const run = async () => {
+      n += 1;
+      const adapter = createAdapter();
+      adapter.push.mockResolvedValue({ version: 5 });
+      await loadState(adapter).setMachines({ [`m${n}`]: { ip: '10.0.0.9', user: 'root' } });
+    };
+    try {
+      outputService.setQuiet(true);
+      await run();
+      expect(write).not.toHaveBeenCalled();
+      outputService.setQuiet(false);
+      setOutputFormat('json');
+      await run();
+      expect(write).not.toHaveBeenCalled();
+      setOutputFormat('table');
+      await run();
+      expect(write).toHaveBeenCalled();
+    } finally {
+      outputService.setQuiet(false);
+      setOutputFormat('table');
+      write.mockRestore();
+    }
+  });
+
+  it('prints one stderr line per push naming versions, command and changed pointers', async () => {
+    const adapter = createAdapter();
+    adapter.push.mockResolvedValue({ version: 5 });
+    const write = vi.spyOn(console, 'error').mockImplementation(() => true);
+    const { setInvocationCommand } = await import('../config/push-visibility.js');
+    setInvocationCommand('machine add');
+    try {
+      await loadState(adapter).setMachines({
+        m1: { ip: '10.0.0.1', user: 'root' },
+        m2: { ip: '10.0.0.2', user: 'root' },
+      });
+      // The prose writer may wrap at the terminal width: compare the whitespace-collapsed text.
+      const text = write.mock.calls
+        .map((c) => String(c[0]))
+        .join(' ')
+        .replace(/\s+/g, ' ');
+      expect(text).toContain(`config ${CONFIG_NAME}: pushed v4`);
+      expect(text).toContain('v5');
+      expect(text).toContain('"machine add"');
+      expect(text).toContain('/resources/machines/m2');
+    } finally {
+      write.mockRestore();
+      setInvocationCommand('');
+    }
+  });
+
   it('replays a 409 by re-applying ONLY the mutated bucket over the fresh pull', async () => {
     const adapter = createAdapter();
     // First push conflicts; the fresh pull is at v5 with a DIFFERENT bucket
-    // changed (storages) by the other device; second push succeeds at v6.
+    // changed (repositories) by the other device; second push succeeds at v6.
     adapter.push
       .mockRejectedValueOnce(new RemoteVersionConflictError('Version conflict: current is 5'))
       .mockResolvedValueOnce({ version: 6 });
@@ -126,7 +237,12 @@ describe('RemoteResourceState persist', () => {
         defaults: { universalUser: 'from-b' },
         resources: {
           machines: { m1: { ip: '10.0.0.1', user: 'root' } },
-          storages: { sNew: { provider: 'sftp' } },
+          repositories: {
+            rNew: {
+              grand: 'latest',
+              tags: { latest: { repositoryGuid: '22222222-2222-4222-8222-bbbbbbbbbbbb' } },
+            },
+          },
         },
       },
       version: 5,
@@ -143,9 +259,9 @@ describe('RemoteResourceState persist', () => {
     const [replayDoc, replayVersion] = adapter.push.mock.calls[1] as [RdcConfig, number];
     // Replay is based on the fresh server version...
     expect(replayVersion).toBe(5);
-    // ...carries the OTHER device's storages change...
-    expect(replayDoc.resources?.storages).toHaveProperty('sNew');
-    expect(replayDoc.resources?.storages).not.toHaveProperty('sOld');
+    // ...carries the OTHER device's repositories change...
+    expect(replayDoc.resources?.repositories).toHaveProperty('rNew');
+    expect(replayDoc.resources?.repositories).not.toHaveProperty('rOld');
     // ...and re-applies our machines mutation.
     expect(replayDoc.resources?.machines).toHaveProperty('m2');
     // Families outside the resource buckets go back as the other device left them, not from the
@@ -226,7 +342,7 @@ describe('RemoteResourceState persist', () => {
     });
     const state = loadState(adapter);
 
-    await expect(state.setStorages({ s2: { provider: 's3', vaultContent: {} } })).rejects.toThrow(
+    await expect(state.setMachines({ m9: { ip: '10.0.0.9', user: 'root' } })).rejects.toThrow(
       /still conflicting/
     );
 
@@ -253,6 +369,19 @@ describe('RemoteResourceState persist', () => {
     expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
     expect(mockConfigFileStorage.update).not.toHaveBeenCalled();
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
+  it('a no-op write fails closed when the server cannot confirm the version: no push, no cache write', async () => {
+    const adapter = createAdapter();
+    adapter.pull.mockRejectedValue(new RemoteUnreachableError(API_URL, { code: 'ECONNREFUSED' }));
+    const state = loadState(adapter);
+
+    await expect(state.setMachines({ m1: { ip: '10.0.0.1', user: 'root' } })).rejects.toThrow(
+      /NOT saved/
+    );
+    expect(adapter.pull).toHaveBeenCalledTimes(1);
+    expect(adapter.push).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
   });
 
   it('fails closed when the replay re-pull hits an unreachable server', async () => {

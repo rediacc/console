@@ -1,12 +1,13 @@
 # PLAN: a CLI login token can be moved to a new IP after a TOTP check (`Token is bound to a different IP address`)
 
-Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-config-handoff-relay-only.md -- shares config-remote*.ts, the cli.json locales and account-security.md; T5-T8 wait for the relay-only console commit, T1-T4 can start now
 Priority: P1 -- This is an operator ruling. The operator is blocked on every account-server command after each ISP address change, and re-login is the only way out today.
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/src/middleware/api-token.ts, private/account/src/routes/api-token-ip.ts (new), private/account/src/routes/index.ts (one mount line), private/account/src/services/api-token.service.ts, private/account/src/utils/totp.ts (verifyCodeStep only), private/account/src/errors.ts (new codes only), private/account/src/constants.ts (API_TOKEN_REBIND_* only), private/account/src/db/schema.ts (api_tokens block only), private/account/drizzle/0054_api_token_ip_rebind.sql, private/account/drizzle/meta/_journal.json, private/account/src/dto/api-token.dto.ts, private/account/src/routes/portal.ts (activity title/description maps only), private/account/src/routes/root.ts (admin activity title/description maps only), private/account/tests/integration/api-token-ip-rebind.test.ts (new), packages/shared/src/subscription/types.ts (rebind wire types only), packages/cli/src/services/account/account-client.ts, packages/cli/src/services/account/token-ip-rebind.ts (new), packages/cli/src/utils/prompt.ts (askInput only), packages/cli/src/utils/spinner.ts (suspend helper only), packages/cli/src/services/core/audit.ts (one option), packages/cli/src/services/telemetry/otlp-credentials.ts (one option), packages/cli/src/commands/config-remote-password.ts (describeEnrollForbidden only), packages/cli/src/commands/__tests__/config-remote-password.test.ts, packages/cli/src/services/__tests__/account-client-ip-rebind.test.ts (new), packages/cli/src/i18n/locales/*/cli.json, packages/www/src/content/docs/*/account-security.md
+Live-Proof: bench -- the api-token middleware, IP-rebind route and migration under private/account/src and packages/shared/src/subscription/types.ts are the account surface (bench only), and the rebind client under packages/cli/src/services/account is the cli surface, which bench admits too.
 Worklist: (the lead adds this with `worklist.py --add`)
 
 **Operator ruling, 2026-09-25 (AskUserQuestion):** "Re-bind after a 2FA check." CLI login tokens keep first-use IP binding. When a request is refused with "Token is bound to a different IP address", the CLI asks for a TOTP code and the server moves the binding to the new IP. A stolen token on its own must still fail from another network.
@@ -47,6 +48,9 @@ The submodule PR (A) merges first. The console PR (B, plus the pointer bump) fol
   - Live smoke of the operator's case: take a token bound to an address, change the egress IP (a VPN or phone hotspot is enough), run `rdc config remote enable`, get one prompt, enter the code, and the command succeeds.
   - Check that the portal Activity shows the "API token moved to a new IP" row.
   - Check that the same token with a wrong code from a third IP is refused.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:15:41Z by d778be9d: live-proof lp-96f7f22b87b4 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 
 ## 0. What the code does now
 

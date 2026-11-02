@@ -17,7 +17,7 @@ EVERY SITE ENDS AS EXACTLY ONE OF:
   DECLARED     UNRESOLVED with a `tree-write: safe <reason>` pragma on the line or the line above.
   TREE         the entry must hold an exclusive `tree:` claim (`mutex`; `reads` is rejected, as in pool_writer_safety) AND carry `writesTree: '<reason>'`.
   UNRESOLVED   red, unless a pragma declares it.
-Pragma rules, all enforced: the reason is at least 20 characters; `safe` on a site resolved TEMP/SCRATCH is STALE and red; `safe` on a resolved TREE site is ignored and reported (a pragma cannot overrule a proven write); `tree-write: mode --flag <reason>` is honoured only while no registered invocation passes that flag (bash-scanner hits and guards the resolver does
+Pragma rules, all enforced: the reason is at least 20 characters; `safe` on a site resolved TEMP/SCRATCH is STALE and red; `safe` on a resolved TREE site is ignored and reported (a pragma cannot overrule a proven write); `tree-write: mode --flag <reason>` (or `--a|--b` for a write several flags reach) is honoured only while no registered invocation passes any flag it names (bash-scanner hits and guards the resolver does
 not recognise).
 
 REGISTRATION IS CHECKED BOTH WAYS on every lock entry: `writesTree` without an exclusive `tree:` claim is red, and an exclusive `tree:` claim without `writesTree` is red. The rule is otherwise one-directional, as pool_writer_safety's is: a `writesTree` entry with no TREE site is listed as `declared, no site found`, never red.
@@ -89,7 +89,8 @@ FLOOR_TS = 257
 SELFTEST_FLOOR = 35
 
 PRAGMA_RE = re.compile(r"(?:#|//)\s*tree-write:\s*(safe|mode)\b\s*(.*)$")
-MODE_RE = re.compile(r"^(--?[A-Za-z0-9][\w-]*)\s+(.*)$")
+# `--a|--b` names every flag that reaches the write; the pragma holds only while no registered invocation passes ANY of them.
+MODE_RE = re.compile(r"^(--?[A-Za-z0-9][\w-]*(?:\|--?[A-Za-z0-9][\w-]*)*)\s+(.*)$")
 SEVERITY = {
     "TREE": 5,
     "UNRESOLVED": 4,
@@ -138,7 +139,7 @@ def _helper_cmd(repo: pathlib.Path) -> list[str]:
     tsx = repo / "node_modules" / ".bin" / "tsx"
     return [
         str(tsx) if tsx.is_file() else "npx",
-        *([] if tsx.is_file() else ["tsx"]),
+        *([] if tsx.is_file() else ["--no-install", "tsx"]),
         str(repo / HELPER_REL),
     ]
 
@@ -310,7 +311,8 @@ def classify(
     if gated:
         return "MODE-GATED", "only under %s" % " / ".join("|".join(c) for c in gated)
     if pragma is not None and pragma[0] == "mode":
-        if pragma[1] and pragma[1] not in passed:
+        flags = [f for f in pragma[1].split("|") if f]
+        if flags and not passed.intersection(flags):
             return "MODE-GATED", "only under %s (pragma)" % pragma[1]
         return (
             site.origin if site.origin == "TREE" else "UNRESOLVED",

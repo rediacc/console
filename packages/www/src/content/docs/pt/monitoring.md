@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: pt
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # Monitorização
@@ -201,7 +201,7 @@ rdc machine status server-1
 Isto fornece:
 - Hostname e tempo de atividade
 - Uso de memória, disco e datastore
-- Total de repositórios, contagem de montados, contagem de Docker em execução
+- Total de repositórios, contagem de montados, contagem de repositórios cujo daemon Docker responde
 - Informações detalhadas por repositório
 
 Use `--output json` para saída legível por máquina.

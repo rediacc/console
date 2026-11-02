@@ -48,6 +48,19 @@ The web console reads the same flag to decide whether a command gets a Run butto
 
 In development, when no real executor is configured, the account server answers command requests itself with mock streams and clearly fake data (resource names prefixed `mock-`). This makes the entire console exercisable, including forms, streaming, and result rendering, without a machine or an unlock. Real execution requires a real executor.
 
+## Restricting where the executor connects from
+
+The config's `access` bucket holds the allowed IPv4 and IPv6 source ranges for SSH keys. Ranges can be set config-wide, per key and per machine, so a machine accepts a key only from the addresses its executor connects from.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` registers a key and attaches the two ranges of the hosted executor, `104.28.0.0/16` and `2a09:bac0::/29`. Both are observed Cloudflare egress ranges, not a list that Cloudflare publishes, so they can change.
+- `rdc machine access set <machine> --key <key>` assigns a key to a machine; `--ipv4`, `--ipv6` and `--clear-ranges` adjust the ranges for that machine.
+- `rdc machine access push <machine>` writes the access lines to the machine, and `--dry-run` shows the result without changing anything.
+- `rdc machine access show <machine>` prints the access lines in effect.
+
+`machine setup` re-applies the access lines, so a rebuilt machine regains its restrictions.
+
+A push that would lock out the current SSH session, because its address lies outside the ranges of the key in use, is refused with `ACCESS_LOCKOUT`, and nothing is written. A push is refused with `ACCESS_FILE_CHANGED` when the file changed on the machine in the meantime; nothing was applied, so the push is safe to retry.
+
 ## Related
 
 - [Web Console](/en/docs/web-console), the browser client built on this model

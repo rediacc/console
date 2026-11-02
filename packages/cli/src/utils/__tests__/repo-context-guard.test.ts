@@ -1,3 +1,8 @@
+import {
+  repoDockerHost,
+  repoDockerSocketPath,
+  repoSecretsDir,
+} from '@rediacc/shared/config/runtime-paths';
 import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
@@ -14,11 +19,11 @@ describe('detectRepoContextCommand', () => {
       ['docker ps', 'docker'],
       ['docker compose up -d', 'docker'],
       ['Docker ps', 'docker'],
-      ['docker-compose up -d', 'docker'],
-      [`DOCKER_HOST=unix://${WK_RUNTIME_DIR}/docker-3072.sock docker ps`, 'docker'],
-      [`ls ${WK_RUNTIME_DIR}/docker-3072.sock`, 'docker'],
+      ['docker-compose up -d', 'docker-compose'],
+      ['DOCKER_HOST=unix:///tmp/other.sock docker ps', 'docker'],
+      [`ls ${repoDockerSocketPath(3072)}`, 'repo runtime dir'],
+      [`cat ${repoSecretsDir(3072)}/STRIPE_KEY`, 'repo runtime dir'],
       ['sudo renet compose -- up -d', 'renet compose'],
-      [`ls ${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/`, 'repo mount path'],
       ['docker ps | grep nginx', 'docker'],
       ['echo start && docker logs web', 'docker'],
       ['bash -c "docker ps"', 'docker'],
@@ -37,9 +42,23 @@ describe('detectRepoContextCommand', () => {
     });
 
     it('detects repo docker socket path without docker word', () => {
-      const result = detectRepoContextCommand(`ls ${WK_RUNTIME_DIR}/docker-3072.sock`);
-      // matches 'docker' pattern (word boundary before hyphen)
+      const result = detectRepoContextCommand(`ls ${repoDockerSocketPath(3072)}`);
+      // matches the runtime dir pattern (the socket lives inside net-<N>/)
       expect(result).not.toBeNull();
+    });
+
+    it('detects a file-mode secret path, which carries no docker word', () => {
+      const result = detectRepoContextCommand(`cat ${repoSecretsDir(3072)}/STRIPE_KEY`);
+      expect(result).not.toBeNull();
+      expect(result!.label).toBe('repo runtime dir');
+    });
+
+    it('does not treat the retired flat socket path as a runtime dir', () => {
+      expect(
+        REPO_CONTEXT_PATTERNS.find((p) => p.label === 'repo runtime dir')!.pattern.test(
+          `${WK_RUNTIME_DIR}/docker-3072.sock`
+        )
+      ).toBe(false);
     });
 
     it('detects renet compose', () => {
@@ -47,13 +66,109 @@ describe('detectRepoContextCommand', () => {
       expect(result).not.toBeNull();
       expect(result!.label).toBe('renet compose');
     });
+  });
 
-    it('detects repo mount path with GUID', () => {
-      const result = detectRepoContextCommand(
-        `cat ${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/config.yml`
-      );
+  describe('a docker segment that names one repo socket itself', () => {
+    const moved = repoDockerHost(3136);
+    const flat = `unix://${WK_RUNTIME_DIR}/docker-3136.sock`;
+
+    it.each([
+      `sudo docker -H ${flat} ps`,
+      `sudo docker -H ${moved} ps`,
+      `docker --host ${moved} ps -a`,
+      `docker --host=${moved} ps`,
+      `docker -H=${flat} logs web`,
+      `docker -H '${moved}' ps`,
+      `DOCKER_HOST=${moved} docker ps`,
+      `sudo DOCKER_HOST=${flat} docker ps`,
+      `env DOCKER_HOST=${moved} docker inspect web`,
+      `sudo docker -H ${flat} ps | grep nginx`,
+      `uptime && sudo docker -H ${moved} ps`,
+    ])('%s → admitted', (command) => {
+      expect(detectRepoContextCommand(command)).toBeNull();
+    });
+
+    it.each([
+      // A second docker segment without its own host still needs repo context.
+      [`sudo docker -H ${moved} ps; docker ps`, 'docker'],
+      // The socket of the host's system daemon, or an arbitrary path, is not a repo socket.
+      ['sudo docker -H unix:///var/run/docker.sock ps', 'docker'],
+      [`docker -H unix://${WK_RUNTIME_DIR}/net-3136/docker-3137.sock ps`, 'docker'],
+      [`docker -H unix://${WK_RUNTIME_DIR}/net-3136/../docker-3137.sock ps`, 'docker'],
+      // Without the unix:// scheme docker reads no socket, so nothing is named.
+      [`docker -H ${WK_RUNTIME_DIR}/docker-3136.sock ps`, 'docker'],
+      // A flag before -H that may take a value ends the scan.
+      [`docker --context x -H ${moved} ps`, 'docker'],
+      // An assignment exported in an earlier segment does not travel.
+      [`export DOCKER_HOST=${moved}; docker ps`, 'docker'],
+      // The host names a socket, but the segment runs something else.
+      [`DOCKER_HOST=${moved} curl localhost`, 'DOCKER_HOST'],
+    ])('%s → still detects "%s"', (command, expectedLabel) => {
+      const result = detectRepoContextCommand(command);
       expect(result).not.toBeNull();
-      expect(result!.label).toBe('repo mount path');
+      expect(result!.label).toBe(expectedLabel);
+    });
+
+    it.each([
+      `sudo docker -H ${moved} compose up -d`,
+      `docker --host=${moved} compose down`,
+      `docker --context x compose up`,
+      `DOCKER_HOST=${flat} docker compose up -d`,
+    ])('leaves %s to the compose guard, which refuses it', (command) => {
+      expect(detectDockerComposeCommand(command)).toBe(true);
+    });
+  });
+
+  describe('commands that only NAME docker in a unit or path (not docker client calls)', () => {
+    const mount = `${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890`;
+    it.each([
+      "systemctl list-units 'rediacc-docker-*'",
+      'systemctl status rediacc-docker-12288',
+      'find / -path /var/lib/docker',
+      'ls /var/lib/docker',
+      'cat /etc/docker/daemon.json',
+      // Mount metadata reads need no DOCKER_HOST.
+      `ls -la ${mount}`,
+      `stat ${mount}`,
+      `du -sh ${mount}`,
+      `df ${mount}`,
+      `findmnt ${mount}`,
+      `cat ${mount}/some-file`,
+      `cat ${mount}/docker-compose.yml`,
+    ])('%s → admitted', (command) => {
+      expect(detectRepoContextCommand(command)).toBeNull();
+    });
+
+    it.each([
+      ['sudo docker ps', 'docker'],
+      ['nice -n 5 docker ps', 'docker'],
+      ['timeout 10 docker ps', 'docker'],
+      ['ls | xargs docker rm', 'docker'],
+      ['sudo /usr/bin/docker-compose up', 'docker-compose'],
+      ['bash -c "docker ps"', 'docker'],
+      ['docker compose up -d', 'docker'],
+      [`docker run -v ${mount}:/data nginx`, 'docker'],
+      [`DOCKER_HOST=unix:///tmp/x.sock ls ${mount}`, 'DOCKER_HOST'],
+      ['echo $(docker ps -q)', 'docker'],
+      ['echo `docker ps -q`', 'docker'],
+      ['echo $(sudo $(which true) && docker info)', 'docker'],
+      ['/usr/bin/docker ps', 'docker'],
+      ['watch docker ps', 'docker'],
+      ["bash -lc 'docker ps'", 'docker'],
+      ['sh -ec "docker ps"', 'docker'],
+      ['su -c "docker ps" root', 'docker'],
+      ['flock /tmp/l -c "docker ps"', 'docker'],
+      ['nohup docker ps', 'docker'],
+      ['eval docker ps', 'docker'],
+      ['setsid docker ps', 'docker'],
+      ['ionice -c3 docker ps', 'docker'],
+      ['find / -name x -exec docker rm {} \\;', 'docker'],
+      [
+        `curl --unix-socket ${WK_RUNTIME_DIR}/docker-3136.sock http://x/containers/json`,
+        'repo docker socket',
+      ],
+    ])('%s → still detects "%s"', (command, label) => {
+      expect(detectRepoContextCommand(command)?.label).toBe(label);
     });
   });
 
@@ -64,6 +179,10 @@ describe('detectRepoContextCommand', () => {
       'cat /etc/hostname',
       'free -m',
       'cat .dockerignore',
+      'systemctl restart docker',
+      'journalctl -u docker --since today',
+      'sudo systemctl status docker',
+      'grep -c docker /etc/group',
       'sudo renet list all --json',
       `ls ${WK_DATASTORE_PATH}/mounts/`,
     ])('%s → no match', (command) => {

@@ -66,6 +66,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -369,6 +370,6 @@ const main = (): number => {
  * "was I run, or was I loaded" without `import.meta.main`, which is unavailable on the
  * tsx path these gates run under.
  */
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(main());
 }

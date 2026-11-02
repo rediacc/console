@@ -63,6 +63,8 @@ NEEDS = (
     ("check:ci-renet-tiers", "go"),
     # `.ci/rediacc_ci/quality/release_state.py:115-123` shells out to the `aws` CLI and `require_cmd`s it up front, so the gate FAILS without the binary rather than provisioning its own pin. That is the entry test the paragraph above states, and it is the one this table's original six got wrong three times.
     ("check:ci-release-state", "aws"),
+    # agent/plans/PLAN-local-release.md W2-C: the local release entry stages to and reads R2 through the aws resolver, and its risk R4 records `aws` missing on the host. The entry checks its prerequisites first and refuses without the binary, which is this table's entry test. A gate-key row, not a NEEDS_SCRIPT one: `npm run release:local` names an npm script, and the NEEDS_SCRIPT liveness loop admits only a tracked `.sh` basename or a `rediacc_ci.` module file.
+    ("release:local", "aws"),
 )
 
 # SCRIPTS THAT NAME NO GATE KEY AND NO BARE TOOL. Added 2026-09-23.
@@ -82,6 +84,8 @@ NEEDS_SCRIPT = (
     ("upload-r2.sh", "aws"),
     # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` (or the module a `.py` script path names) as the command's target.
     ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
+    # The local release entry run as a module (PLAN-local-release W2-B, d291e6690): its prerequisite table names `aws` for both the full and the workers-only run (local.py:82-83), resolved through `awscli`. The npm spelling is the `release:local` row in NEEDS.
+    ("rediacc_ci.release.local", "aws"),
     ("rediacc_ci.deploy.write_release_sentinel", "aws"),
     ("rediacc_ci.deploy.delete_r2_channel", "aws"),
     ("rediacc_ci.deploy.promote_r2_to_stable", "aws"),
@@ -98,6 +102,9 @@ NEEDS_SCRIPT = (
     # The module spellings of check:ci-release-state (NEEDS above routes the gate key only): release_state.py:141 and release_state_validator.py:251 run `aws s3api` directly.
     ("rediacc_ci.quality.release_state", "aws"),
     ("rediacc_ci.core.release_state_validator", "aws"),
+    # The executor artifact stage and the deploy record both run `aws s3` from inside the module (cd-deploy-account.yml runs them as `python3 -m`), and the coverage scan in test-block_host_toolchain_run.py found them without a row.
+    ("rediacc_ci.deploy.executor_artifacts", "aws"),
+    ("rediacc_ci.deploy.deploy_record", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
@@ -263,7 +270,7 @@ def _command_v(tool):
     return hookio.command_v(tool)
 
 
-# THE aws RUNGS, as `.ci/rediacc_ci/core/awscli.py` resolves them. Every aws call site execs through that resolver since 73e2c8217, so a host with no `aws` on PATH but an `AWS_BIN` or the pinned repo cache RUNS the command; refusing it there would route a working command into the devbox, the inverse of this guard's job.
+# THE aws RUNGS, as `.ci/rediacc_ci/core/awscli.py` resolves them. Every aws call site execs through that resolver since e7e2ceec1, so a host with no `aws` on PATH but an `AWS_BIN` or the pinned repo cache RUNS the command; refusing it there would route a working command into the devbox, the inverse of this guard's job.
 AWS_BIN_KEY = "AWS_BIN"
 AWSCLI_PIN_KEY = "AWSCLI_VERSION"
 TOOLCHAIN_ENV = ".devcontainer/toolchain.env"
@@ -423,7 +430,8 @@ def _is_invoked(key, cmd, runs=None):
             target = _python_target(args) or ""
             # A script path names the module too: `.ci/rediacc_ci/ops/scrub_sentinel.py` holds `rediacc_ci.ops.scrub_sentinel`.
             dotted = target[: -len(".py")].replace("/", ".") if target.endswith(".py") else ""
-            if target and (key in target or key in dotted):
+            # THE WHOLE MODULE NAME, never a substring of it: `rediacc_ci.release.local` is a prefix of `rediacc_ci.release.local_gates`, which runs no aws, and a substring test routed the gates module into the devbox for a binary it never calls. A script path matches by its dotted tail.
+            if target and (key in (target, dotted) or dotted.endswith("." + key)):
                 return True
             continue
         if opener.rsplit("/", 1)[-1] in _SHELLS and shellscan._shell_payload(args)[0] == "c":

@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 6
 language: ja
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # ネットワーキング
@@ -40,7 +40,7 @@ Rediaccは、外部トラフィックをコンテナにルーティングする�
                    ↓ 5秒ごとにポーリング
                ルートサーバー (コンテナを検出)
                    ↓ ラベルを検査
-               Dockerデーモン (/var/run/rediacc/docker-*.sock)
+               Dockerデーモン (/var/run/rediacc/net-*/docker-*.sock)
                    ↓
                コンテナ (127.x.x.x ループバックIPにバインド)
 ```
@@ -206,7 +206,14 @@ Let's Encrypt証明書が発行されてから各リポジトリのコンテナ�
 
 1. **ホストでの発行。** マシンレベルのTraefikコンテナ（`rediacc-proxy`、`/opt/rediacc/proxy/`にデプロイ）がACME更新を所有します。ホスト上の`/opt/rediacc/proxy/letsencrypt/acme.json`にすべての状態を保存します。更新は有効期限の約30日前に自動的にトリガーされます。`--cf-dns-token`が設定されていれば、オペレーターのアクションは不要です。
 
-2. **リポジトリごとのダンピング（オプション）。** 独自のコンテナ内に証明書ファイルが必要なサービス（例：`.pem`を直接読み込むメールサーバー）は、小さな`traefik-certs-dumper`コンテナを自分自身の隣にデプロイします。ダンパーは`/opt/rediacc/proxy/letsencrypt`を読み取り専用でバインドマウントし、抽出された証明書とキーをリポジトリのデータボリュームに`cert.pem` / `key.pem`として書き込みます。これが機能するには、リポジトリごとのDockerデーモンがマウント名前空間のアローリストに`/opt/rediacc/proxy`を持つ必要があります。これはデフォルトで既に含まれています。
+2. **リポジトリごとのエクスポート（オプション）。** 自身のコンテナ内に証明書ファイルが必要なサービス（たとえば `.pem` を直接読み込むメールサーバー）は、ルーティング対象のコンテナに `rediacc.cert_export=true` ラベルを付けて参加します。`renet cert export` はマシン上で root として動作し、5 分間隔のタイマーと、ルーターのルートが変わるたびに実行されます（どちらもマシンのセットアップ時に `renet cert export-install` がインストールします）。`acme.json` を読み取り、そのリポジトリ自身の証明書（Traefik の `Host`/`HostSNI` ルールが指定するホストのみ）を `<repo mount>/data/tls/<domain>/cert.pem` と `key.pem` にアトミックに書き込みます。ファイルの所有者はマウントの所有者です。停止中のリポジトリのホストも引き続きそのリポジトリのものとして扱われるため、他のリポジトリの証明書を受け取ることはありません。コンテナが `/opt/rediacc/proxy` にアクセスする必要はありません。リポジトリごとの Docker API ゲートがそのバインドを拒否するため、`traefik-certs-dumper` はもう実行できません。
+
+   ディレクトリは compose ファイルから読み取り専用でマウントします。エクスポートはリポジトリのマウントルートに書き込むので、`mail/` のようなサブディレクトリにある compose ファイルからは `../data/tls/<domain>/` で参照します。
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **クライアントサイドキャッシュ（`rediacc.json`）。** CLIは`acme.json`の圧縮コピーを設定ファイルの`acmeCertCache`に`baseDomain`をキーとして保存します。これにより複数のマシンが証明書を共有でき（`rdc machine infra cert push <machine>`経由）、オフラインインベントリとして機能します。
 
@@ -222,7 +229,7 @@ Let's Encrypt証明書が発行されてから各リポジトリのコンテナ�
 - `notAfter`が7日以上過去の証明書は完全に削除されます。不活性でキャッシュを膨張させるだけです。
 - `rdc config prune --certs-only`はすべてを消去します。`rdc config prune --certs-only`はインベントリを表示します。
 
-**トラブルシューティング：** `traefik-certs-dumper`が`/traefik/acme.json: no such file or directory`でクラッシュする場合、リポジトリごとのデーモンがホストのletsencryptストアを見ることができません。（a）ホスト上に`/opt/rediacc/proxy/letsencrypt/acme.json`が存在することを確認してください（これはホストレベルの`rediacc-proxy`の責任です）、および（b）リポジトリごとのデーモンが`/opt/rediacc/proxy`をアローリストに含む十分に新しいrenetで起動されたことを確認してください。renetをアップグレードした後、`rdc repo up`でリポジトリを再デプロイして適用してください。
+**トラブルシューティング：** `data/tls/<domain>/` が空のままの場合は、(a) ルーティング対象のコンテナに `rediacc.cert_export=true` が付いていること、(b) ドメインがその Traefik `Host`/`HostSNI` ルールのいずれかに含まれ、ホストの `/opt/rediacc/proxy/letsencrypt/acme.json` に証明書があること、(c) `systemctl status rediacc-cert-export.timer` でタイマーが有効になっていることを確認してください。`sudo renet cert export-install` でユニットを再インストールでき、`sudo systemctl start rediacc-cert-export.service` で即座にエクスポートできます。
 
 > **実験的：** 自動同期ケイデンスと有効期限ベースの削除はrenet 0.9+で導入されました。古いCLI/renetバージョンは`rdc config prune --certs-only`経由の純粋な手動同期を使用します。
 

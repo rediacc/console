@@ -4,6 +4,8 @@ import { listCanaries } from '../services/cluster/repo-release.js';
 import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { parseCapturedJson } from '../services/executor/renet-output.js';
+import { planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -12,7 +14,7 @@ import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { createRepoAdminCommand } from './repo-admin.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
-import { handleDownAll, handleRepoList, handleUpAll, postRepoUpTasks } from './repo-batch-utils.js';
+import { handleDownAll, handleRepoList, handleUpAll } from './repo-batch-utils.js';
 import { registerRepoBranchingCommands } from './repo-branching.js';
 import { registerRepoCanaryCommands } from './repo-canary.js';
 import { registerRepoCatCommand } from './repo-cat.js';
@@ -21,6 +23,7 @@ import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoForkCommand } from './repo-fork.js';
+import { registerRepoGpuCommands } from './repo-gpu.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
@@ -82,12 +85,12 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
   const functionName = noStart ? 'repository_mount' : 'repository_up';
   const messages = noStart
     ? {
-        starting: t('commands.repo.mount.starting', { repository: name, machine: machineName }),
+        starting: t('commands.repo.mount.starting', { repository: ref, machine: machineName }),
         completed: t('commands.repo.mount.completed'),
         failed: t('commands.repo.mount.failed'),
       }
     : {
-        starting: t('commands.repo.up.starting', { repository: name, machine: machineName }),
+        starting: t('commands.repo.up.starting', { repository: ref, machine: machineName }),
         completed: t('commands.repo.up.completed'),
         failed: t('commands.repo.up.failed'),
       };
@@ -97,20 +100,43 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
   if (dockerUp) {
     await deployRepoKeyIfNeeded(repoKey, machineName);
   }
+  // The DNS, certificate and URL steps ride the job's ticket and run once the containers are up (PLAN-detached-jobs J4).
   await executeRepoFunction(
     functionName,
     repoKey,
     machineName,
     params,
-    { ...options, kubeCluster },
+    {
+      ...options,
+      kubeCluster,
+      job: {
+        verb: 'repo up',
+        steps: dockerUp
+          ? [planStep('postRepoUpTasks', { repo: repoKey, machine: machineName })]
+          : [],
+      },
+    },
     messages
   );
-  if (dockerUp) {
-    await postRepoUpTasks(repoKey, machineName);
-  }
 }
 
 // executeRepoFunction imported from ../utils/repo-executor.js
+
+/**
+ * Print what `repository_status` reported, as data on stdout in every output format (the record is structured, so a table would only say less). Renet's text is passed through untouched when it is not JSON.
+ */
+function printRepoStatusRecord(stdout: string | undefined): void {
+  if (!stdout?.trim()) return;
+  let record: unknown;
+  try {
+    record = parseCapturedJson<unknown>(stdout);
+  } catch {
+    outputService.print(stdout.trimEnd());
+    return;
+  }
+  const format = getOutputFormat();
+  outputService.print(record, format === 'table' ? 'json' : format);
+}
 
 export function registerRepoCommands(program: Command): void {
   const repo = program
@@ -245,10 +271,10 @@ export function registerRepoCommands(program: Command): void {
               repoKey,
               machineName,
               params,
-              { ...options, kubeCluster },
+              { ...options, kubeCluster, job: { verb: 'repo down', steps: [] } },
               {
                 starting: t('commands.repo.down.starting', {
-                  repository: name,
+                  repository: ref,
                   machine: machineName,
                 }),
                 completed: t('commands.repo.down.completed'),
@@ -290,21 +316,24 @@ export function registerRepoCommands(program: Command): void {
           const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
             readOnly: true,
           });
-          await executeRepoFunction(
+          const result = await executeRepoFunction(
             'repository_status',
             repoKey,
             machineName,
             {},
-            { ...options, kubeCluster },
+            // captureOutput: the repo record IS the answer. The step detector drops it, so a local `repo status` printed nothing even with `-o json` while the proxied one (which streams renet's output) printed the record.
+            { ...options, kubeCluster, captureOutput: true },
             {
               starting: t('commands.repo.status.starting', {
-                repository: name,
+                repository: ref,
                 machine: machineName,
               }),
               completed: t('commands.repo.status.completed'),
               failed: t('commands.repo.status.failed'),
             }
           );
+          if (!result.success) return;
+          printRepoStatusRecord(result.stdout);
           // Managed replica sets are CRUD-from-birth state (R2-F17): surface any set built on this repo alongside its status.
           const replicaSets = Object.entries(await listReplicaSets()).filter(
             ([, set]) => set.repo === name
@@ -358,4 +387,5 @@ export function registerRepoCommands(program: Command): void {
   registerRepoContainerCommands(repo);
   registerRepoTunnelCommand(repo);
   registerRepoSecretCommands(repo);
+  registerRepoGpuCommands(repo);
 }

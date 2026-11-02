@@ -32,6 +32,7 @@ import {
   MAJOR_ALLOW_REL,
   readLockPackages,
 } from '../../deps/shared.js';
+import { isEntryPoint } from '../../entry-point.js';
 import { movedPinGroups, planManifestPins, sourceManifests } from './pin-manifests.js';
 
 const decode = (b64: string): InstallStep[] =>
@@ -87,7 +88,7 @@ function sync(steps: InstallStep[]): number {
     return 1;
   }
   if (plan.text === null) return 0;
-  // The declared ranges follow the moved pins: `npm update` never rewrites a range, so a manifest the group covers would keep the old one and syncpack would answer DiffersToPin (394935a1f). The no-manifest-pin mutant (honoured only under CHECK_DEPS_ROOT) skips this, the behaviour before 2026-10-19.
+  // The declared ranges follow the moved pins: `npm update` never rewrites a range, so a manifest the group covers would keep the old one and syncpack would answer DiffersToPin (4ba8aab48). The no-manifest-pin mutant (honoured only under CHECK_DEPS_ROOT) skips this, the behaviour before 2026-10-19.
   const before = fs.readFileSync(SYNCPACK_RC_PATH, 'utf8');
   const manifests = sourceManifests(CONSOLE_ROOT, before).map((file) => ({
     file,
@@ -112,7 +113,7 @@ function sync(steps: InstallStep[]): number {
   return 0;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   const [verb, payload] = process.argv.slice(2);
   if ((verb !== 'guard' && verb !== 'sync') || !payload) {
     console.error('usage: npm-steps.ts guard|sync <base64 json>');

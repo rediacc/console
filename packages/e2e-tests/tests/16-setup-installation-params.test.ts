@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_UID } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Setup Command Installation Parameters Tests
@@ -15,10 +15,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * These tests verify the vault parameter fixes are working end-to-end.
  */
 test.describe('Setup Installation Parameters @bridge @setup', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('setup with default installation params should succeed', async () => {
@@ -84,10 +84,10 @@ test.describe('Setup Installation Parameters @bridge @setup', () => {
  * Setup Installation Parameters - Edge Cases
  */
 test.describe('Setup Installation Parameters Edge Cases @bridge @setup', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('setup with manual docker_source should succeed', async () => {

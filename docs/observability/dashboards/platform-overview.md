@@ -8,6 +8,15 @@
 
 First stop for an overall health check. Shows all services at a glance and identifies which one has issues before you drill into a service-specific dashboard.
 
+## Variables
+
+| Variable | Label | Description |
+|----------|-------|-------------|
+| `environment` | `deployment_environment` | `production`, `edge` or `bench` |
+| `region` | `rediacc_region` | `eu`, `us` or `asia` |
+
+Only the account-server panels follow these variables; the CLI and renet panels select by service and do not narrow by environment or region.
+
 ## Panels
 
 | Panel | Type | Description |
@@ -22,6 +31,8 @@ First stop for an overall health check. Shows all services at a glance and ident
 | OTLP Pipeline | timeseries | Accepted vs exported spans — shows whether the telemetry pipeline is keeping up |
 | Recent Traces | table (Tempo) | Latest traces across all services |
 | Recent Logs | table (Loki) | Latest log entries across all services |
+
+The dashboard also carries rows for `rediacc-proxy` and `rediacc-proxy-executor`; see [Proxy Telemetry](../signals/proxy.md).
 
 ## Triage Flow
 

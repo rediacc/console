@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   BLOCK_SIZE,
-  type DeltaIndex,
   buildIndex,
   bytesToFetch,
+  type DeltaIndex,
   matchBlocks,
   reconstruct,
   remoteRanges,

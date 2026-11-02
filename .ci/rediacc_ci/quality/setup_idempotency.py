@@ -470,10 +470,17 @@ def check_c(report: Report, root: str) -> bool:
     return True
 
 
-# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev"], ...)` call compared against 0 in an `if`. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
+# What counts as checking the build's exit code in the Python port: the `_run(["./build.sh", "dev", ...], ...)` call compared against 0 in an `if`. The argv may carry more elements after "dev" (a flag build.sh grows later); a regex that pinned the argv to exactly two elements once stopped matching the live call and turned D red on correct code. (The bash twin accepted four spellings, `if ! (...)`, `) ||` and `|| {`; none exists in the port.)
+BUILD_CALL = r'_run\(\["\./build\.sh", "dev"(?:, [^\]\n]+)?\][^\n]*\)'
+# Two guarded shapes: the inline `if _run([...]) != 0:`, and the status kept in a name and tested on the next line (`rc = _run([...])` then `if rc != 0:`), which ensure_renet_built uses since it hands build.sh's own status to its caller (review 6de769e7.2).
 BUILD_GUARD_RE = re.compile(
-    r'if _run\(\["\./build\.sh", "dev"\][^\n]*\)\s*!=\s*0:',
+    r"if %s\s*!=\s*0:|(?P<v>\w+)\s*=\s*%s\n[ \t]*if (?P=v)\s*!=\s*0:" % (BUILD_CALL, BUILD_CALL),
     re.MULTILINE,
+)
+# The D control's mutation: keep the call, drop the comparison, in either shape.
+BUILD_GUARD_PLANT_RE = re.compile(
+    r"if (?P<inline>%s)\s*!=\s*0:|(?P<named>\w+\s*=\s*%s\n[ \t]*)if \w+\s*!=\s*0:"
+    % (BUILD_CALL, BUILD_CALL)
 )
 
 
@@ -603,6 +610,10 @@ def python_function_body(text: str, name: str) -> str:
                 out.append(line)
             continue
         if line.strip() == "" or line[:1] in (" ", "\t"):
+            out.append(line)
+            continue
+        # A signature wrapped over several lines closes with `) -> T:` at column 0; that line is still the def, not the next top-level statement.
+        if line.startswith(")") and line.rstrip().endswith(":"):
             out.append(line)
             continue
         break
@@ -813,14 +824,17 @@ def main(argv: list[str] | None = None) -> int:
         # D-control: restore the unchecked invocation.
         lc_broken = tmpdir / "lc-broken.py"
         lc_text = read_text(local_common_py)
-        d_old = 'if _run(["./build.sh", "dev"], cwd=renet_dir) != 0:'
-        lc_broken.write_text(
-            lc_text.replace(d_old, '_run(["./build.sh", "dev"], cwd=renet_dir)\n    if False:')
-            if d_old in lc_text
-            else lc_text,
-            encoding="utf-8",
+        # Keep the call, drop the comparison: `if _run([...]) != 0:` becomes `_run([...])` then `if False:`, and `rc = _run([...])` keeps its call while `if rc != 0:` becomes `if False:`. Exactly one site must change, or the control proves nothing.
+        lc_mutated, d_hits = BUILD_GUARD_PLANT_RE.subn(
+            lambda m: (
+                "%s\n    if False:" % m.group("inline")
+                if m.group("inline")
+                else "%sif False:" % m.group("named")
+            ),
+            lc_text,
         )
-        if "if False:" not in read_text(lc_broken):
+        lc_broken.write_text(lc_mutated, encoding="utf-8")
+        if d_hits != 1 or BUILD_GUARD_RE.search(read_text(lc_broken)):
             print(
                 "%sCONTROL IS VACUOUS%s: D -- mutation did not apply." % (red, nc), file=sys.stderr
             )
@@ -1050,6 +1064,42 @@ def selftest() -> int:
             encoding="utf-8",
         )
         ctl.truthy("CONTROL: a guarded build passes D", check_d(report, good))
+        named = tmpdir / "named.py"
+        named.write_text(
+            "def ensure_renet_built(env=None, status=None):\n"
+            '    rc = _run(["./build.sh", "dev"], cwd=renet_dir, env=build_env)\n'
+            "    if rc != 0:\n"
+            "        return False\n"
+            "    return True\n",
+            encoding="utf-8",
+        )
+        ctl.truthy(
+            "CONTROL: the live shape (status kept in a name, tested on the next line) passes D",
+            check_d(report, named),
+        )
+        extra_arg = tmpdir / "extra-arg.py"
+        extra_arg.write_text(
+            "def ensure_renet_built(env=None):\n"
+            '    if _run(["./build.sh", "dev", "--force"], cwd=renet_dir) != 0:\n'
+            "        return False\n"
+            "    return True\n",
+            encoding="utf-8",
+        )
+        ctl.truthy(
+            "CONTROL: a guarded build with an argument after dev passes D",
+            check_d(report, extra_arg),
+        )
+        named_bad = tmpdir / "named-bad.py"
+        named_bad.write_text(
+            "def ensure_renet_built(env=None, status=None):\n"
+            '    rc = _run(["./build.sh", "dev"], cwd=renet_dir, env=build_env)\n'
+            "    return os.path.isfile(renet_bin)\n",
+            encoding="utf-8",
+        )
+        ctl.falsy(
+            "PLANT: the status kept in a name but never tested fails D",
+            check_d(report, named_bad),
+        )
         bad = tmpdir / "bad.py"
         bad.write_text(
             "def ensure_renet_built(env=None):\n"

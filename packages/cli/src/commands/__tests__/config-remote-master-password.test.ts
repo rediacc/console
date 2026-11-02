@@ -1,0 +1,505 @@
+/**
+ * Headless master password enrollment (`rdc config remote enable --master-password`).
+ *
+ * The crypto is REAL here on purpose: the plan bans a mocked-crypto-only proof
+ * for this path. We build a genuine password slot (derive → wrap a real CEK under
+ * the derived slot secret + serverSecret), stand up a genuine encrypted config
+ * blob, and let the enroll flow's probe pull unwrap it end to end. Only the I/O
+ * seams (account API, config API, OS secure storage, config + token files) are
+ * mocked; every AES/HKDF/PBKDF2 operation runs for real.
+ */
+
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// ─── Hoisted I/O mocks (crypto stays real) ───────────────────────────────
+
+const {
+  mockAccountServerFetch,
+  mockConfigServerFetch,
+  secureMem,
+  tokenMem,
+  mockConfigFileStorage,
+} = vi.hoisted(() => ({
+  mockAccountServerFetch: vi.fn(),
+  mockConfigServerFetch: vi.fn(),
+  secureMem: new Map<string, string>(),
+  tokenMem: new Map<string, { token: string; wrappedCek: string }>(),
+  mockConfigFileStorage: {
+    // The cleanup after a failed enable asks which other local configs name the slot secret (F17).
+    list: vi.fn(() => Promise.resolve([] as string[])),
+    load: vi.fn(),
+    loadDecrypted: vi.fn(),
+    save: vi.fn(),
+    getConfigPath: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/account/account-client.js', () => ({
+  accountServerFetch: mockAccountServerFetch,
+}));
+
+vi.mock('../../services/config/config-server-client.js', () => ({
+  configServerFetch: mockConfigServerFetch,
+  ConfigServerError: class ConfigServerError extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+      super(message);
+      this.name = 'ConfigServerError';
+      this.status = status;
+    }
+  },
+}));
+
+vi.mock('../../utils/secure-storage.js', () => ({
+  getSecureStorage: () => ({
+    type: 'mem',
+    get: (k: string) => Promise.resolve(secureMem.get(k) ?? null),
+    set: (k: string, v: string) => {
+      secureMem.set(k, v);
+      return Promise.resolve();
+    },
+    delete: (k: string) => {
+      secureMem.delete(k);
+      return Promise.resolve();
+    },
+  }),
+}));
+
+vi.mock('../../adapters/remote-token-storage.js', () => ({
+  remoteTokenStorage: {
+    get: (name: string) => Promise.resolve(tokenMem.get(name) ?? null),
+    set: (name: string, data: { token: string; wrappedCek: string }) => {
+      tokenMem.set(name, data);
+      return Promise.resolve();
+    },
+    updateToken: (name: string, token: string) => {
+      const cur = tokenMem.get(name);
+      if (cur) tokenMem.set(name, { ...cur, token });
+      return Promise.resolve();
+    },
+    withLease: <T>(name: string, fn: (lease: unknown) => Promise<T>) => {
+      const data = tokenMem.get(name) ?? null;
+      return fn({
+        data,
+        get token() {
+          return tokenMem.get(name)?.token;
+        },
+        get sync() {
+          return (tokenMem.get(name) as { sync?: unknown } | undefined)?.sync;
+        },
+        update: (token: string) => {
+          const cur = tokenMem.get(name);
+          if (cur) tokenMem.set(name, { ...cur, token });
+          return Promise.resolve();
+        },
+        recordSync: (sync: unknown) => {
+          const cur = tokenMem.get(name);
+          if (cur) tokenMem.set(name, { ...cur, sync } as typeof cur);
+          return Promise.resolve();
+        },
+      });
+    },
+    delete: (name: string) => {
+      tokenMem.delete(name);
+      return Promise.resolve();
+    },
+  },
+}));
+
+vi.mock('../../adapters/config-file-storage.js', () => ({
+  configFileStorage: mockConfigFileStorage,
+}));
+
+// Real crypto, do NOT mock @rediacc/shared/*.
+import {
+  derivePasswordSlotSecret,
+  generateCek,
+  generateServerSecret,
+  importAesKey,
+  newPasswordSlotParams,
+  randomBytes,
+  toBase64,
+  wrapCekForSlot,
+} from '@rediacc/shared/config-crypto';
+import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
+import type { RdcConfig } from '../../types/index.js';
+import { enableMasterPassword } from '../config-remote-master-password.js';
+
+// ─── Fixture constants ───────────────────────────────────────────────────
+
+const API_URL = 'https://account.example.com';
+const CONFIG_NAME = 'headless-ci';
+const STORE_ID = '11111111-1111-4111-8111-111111111111';
+const CONFIG_ID = '22222222-2222-4222-8222-222222222222';
+const TEAM_ID = '33333333-3333-4333-8333-333333333333';
+const PASSWORD = 'correct horse battery staple';
+const SDK_EPOCH = 7;
+
+/**
+ * Provision a real password slot + a real encrypted config the probe pull can
+ * open. Returns the enroll response the server would send and the wired config
+ * API responses (session + config) sealed to the SAME CEK.
+ */
+async function provision(password: string, teamId: string | null = TEAM_ID) {
+  const kdfParams = newPasswordSlotParams();
+  const slotSecret = await derivePasswordSlotSecret(password, kdfParams);
+  const serverSecret = generateServerSecret();
+  const cek = await generateCek();
+  const wrappedCek = await wrapCekForSlot(cek, slotSecret, serverSecret);
+
+  const rawSdk = randomBytes(32);
+  const sdkDerived = await importAesKey(rawSdk);
+
+  const configInput = {
+    id: CONFIG_ID,
+    version: 1,
+    resources: { machines: { m1: { ip: '10.0.0.9', port: 22 } } },
+  } as unknown as RdcConfig;
+
+  const payload = await buildConfigPushPayload(configInput, {
+    storeId: STORE_ID,
+    version: 1,
+    sdkEpoch: SDK_EPOCH,
+    sdkDerived,
+    cek,
+    teamId: teamId ?? undefined,
+  });
+
+  return {
+    enroll: {
+      method: 'password' as const,
+      kdfParams,
+      wrappedCek,
+      token: 'rct_initial',
+      storeId: STORE_ID,
+      configId: CONFIG_ID,
+      teamId,
+    },
+    session: {
+      server_secret: toBase64(serverSecret),
+      sdk_derived: toBase64(rawSdk),
+      sdkEpoch: SDK_EPOCH,
+    },
+    config: {
+      server_secret: toBase64(serverSecret),
+      configData: payload.encryptedBlob,
+      envelope: {
+        envelopeVersion: payload.envelope.envelopeVersion,
+        configId: CONFIG_ID,
+        version: 1,
+        teamId,
+        lastModified: '2026-01-01T00:00:00Z',
+        sdkEpoch: SDK_EPOCH,
+        commitments: payload.envelope.commitments,
+      },
+      hmac: payload.hmac,
+      // The server's pull always returns the key of the epoch the blob was pushed in (configs.ts pull route).
+      sdk_derived: toBase64(rawSdk),
+    },
+  };
+}
+
+/** Route the config API mock to session vs config-pull by path. */
+function wireConfigApi(session: unknown, config: unknown) {
+  mockConfigServerFetch.mockImplementation((path: string) => {
+    if (path.includes('/configs/session')) return Promise.resolve({ data: session });
+    return Promise.resolve({ data: config });
+  });
+}
+
+describe('config remote enable --master-password', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    secureMem.clear();
+    tokenMem.clear();
+    delete process.env.REDIACC_STORE_MASTER_PASSWORD;
+    delete process.env.REDIACC_TOKEN;
+    const localConfig = {
+      schemaVersion: 3,
+      id: 'local-id',
+      version: 1,
+      account: { team: 'team', region: 'eu', accountServer: API_URL },
+      defaults: { language: 'en' },
+    };
+    mockConfigFileStorage.load.mockResolvedValue(localConfig);
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue(localConfig);
+    mockConfigFileStorage.save.mockResolvedValue(undefined);
+    mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
+  });
+
+  it('sends --config-id to password-enroll so the server scopes the match', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    mockConfigServerFetch.mockImplementation((path: string) => {
+      if (path.includes('/configs/session')) return Promise.resolve({ data: f.session });
+      // The attach lists the store before pulling: the chosen entry is visible.
+      if (path.endsWith('/account/api/v1/configs')) {
+        return Promise.resolve({
+          data: {
+            configs: [{ configId: CONFIG_ID, version: 1, lastModified: 'x', teamId: TEAM_ID }],
+          },
+        });
+      }
+      return Promise.resolve({ data: f.config });
+    });
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await expect(
+      enableMasterPassword(API_URL, CONFIG_NAME, { configId: CONFIG_ID })
+    ).resolves.toBeUndefined();
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/configs/password-enroll',
+      expect.objectContaining({ method: 'POST', body: { configId: CONFIG_ID } })
+    );
+  });
+
+  it('unlocks a pre-provisioned slot end to end (derive → wrap → enroll → probe unwrap)', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).resolves.toBeUndefined();
+
+    // Empty body; userId is resolved server-side from the token.
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/configs/password-enroll',
+      expect.objectContaining({ method: 'POST', serverUrl: API_URL, body: {} })
+    );
+
+    // Slot secret persisted under a fresh key id; token + wrappedCek persisted.
+    expect(secureMem.size).toBe(1);
+    const [storageKeyId, storedSecret] = [...secureMem.entries()][0];
+    expect(storageKeyId).toMatch(/^rdc:pw:/);
+    expect(storedSecret).toBe(
+      toBase64(await derivePasswordSlotSecret(PASSWORD, f.enroll.kdfParams))
+    );
+    expect(tokenMem.get(CONFIG_NAME)?.wrappedCek).toBe(f.enroll.wrappedCek);
+
+    // Pointer written only after the probe pull opened the config.
+    const savedPointer = mockConfigFileStorage.save.mock.calls.at(-1)?.[0];
+    expect(savedPointer.remote).toMatchObject({
+      apiUrl: API_URL,
+      storeId: STORE_ID,
+      configId: CONFIG_ID,
+      teamId: TEAM_ID,
+      storageKeyId,
+    });
+  });
+
+  it('uses an explicit password (the --master-password-stdin value) with no env password set', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+
+    await expect(
+      enableMasterPassword(API_URL, CONFIG_NAME, { masterPassword: PASSWORD })
+    ).resolves.toBeUndefined();
+    expect(secureMem.size).toBe(1);
+  });
+
+  it('collapses a null teamId (default config) to an undefined pointer field', async () => {
+    const f = await provision(PASSWORD, null);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await enableMasterPassword(API_URL, CONFIG_NAME);
+
+    const savedPointer = mockConfigFileStorage.save.mock.calls.at(-1)?.[0];
+    expect(savedPointer.remote.teamId).toBeUndefined();
+    expect('teamId' in savedPointer.remote).toBe(true);
+  });
+
+  it('passes REDIACC_TOKEN through as the enroll bearer token', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+    process.env.REDIACC_TOKEN = 'rdc_api_tok_abc';
+
+    await enableMasterPassword(API_URL, CONFIG_NAME);
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/configs/password-enroll',
+      expect.objectContaining({ token: 'rdc_api_tok_abc' })
+    );
+  });
+
+  it('fails with a clean message on a wrong password and cleans up artifacts', async () => {
+    // Slot provisioned under the RIGHT password; box supplies the WRONG one.
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    process.env.REDIACC_STORE_MASTER_PASSWORD = 'wrong password entirely';
+
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /Could not unlock the config with that password/
+    );
+
+    // No stored artifacts survive a failed probe.
+    expect(secureMem.size).toBe(0);
+    expect(tokenMem.size).toBe(0);
+    // The stripped pointer was never written.
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
+  // Several unrelated server conditions share HTTP 403 on password-enroll and the CLI used to render all of them as "requires a passkey". Apart from the IP binding (TOKEN_IP_MISMATCH, handled centrally in accountServerFetch), the server sends them as bare HTTPExceptions with no
+  // error code (see routes/configs.ts), so the message text is the only discriminator; these cases quote it verbatim.
+  const forbiddenCases: { name: string; serverMessage: string; expected: RegExp }[] = [
+    {
+      name: 'the passkey-only store policy',
+      serverMessage: 'This config store requires a passkey; other unlock methods are disabled.',
+      expected: /requires a passkey to unlock config storage/,
+    },
+    {
+      name: 'a token missing the config:enroll scope',
+      serverMessage: 'Missing required scope: config:enroll',
+      expected: /does not carry the config:enroll scope/,
+    },
+    {
+      name: 'an archived team',
+      serverMessage: 'Token team is no longer available',
+      expected: /archived or removed/,
+    },
+    {
+      name: 'a token with no user',
+      serverMessage: 'This token has no associated user and cannot enroll a config slot.',
+      expected: /not tied to a user in an organization/,
+    },
+    {
+      name: 'a token with no organization',
+      serverMessage: 'Enroll token has no organization',
+      expected: /not tied to a user in an organization/,
+    },
+  ];
+
+  for (const { name, serverMessage, expected } of forbiddenCases) {
+    it(`maps the 403 for ${name} to its own message and writes nothing`, async () => {
+      mockAccountServerFetch.mockRejectedValue(
+        Object.assign(new Error(serverMessage), { status: 403 })
+      );
+      process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+      await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(expected);
+      expect(secureMem.size).toBe(0);
+      expect(tokenMem.size).toBe(0);
+    });
+  }
+
+  const notFoundCases: { name: string; serverMessage: string; expected: RegExp }[] = [
+    {
+      name: 'a missing password slot',
+      serverMessage:
+        'You have no password slot on this config store; unlock with another method or enroll one.',
+      expected: /No password slot is provisioned/,
+    },
+    {
+      name: 'storage not configured',
+      serverMessage: 'Config storage is not configured',
+      expected: /Config storage is not configured for your organization/,
+    },
+    {
+      name: 'a config outside the token scope',
+      serverMessage: 'Config abc not found or not readable by this token.',
+      expected: /cannot offer that config to this login: Config abc not found or not readable/,
+    },
+    {
+      name: 'an unrecognised 404',
+      serverMessage: 'Some future not-found',
+      expected: /could not find what the enrollment needs: Some future not-found/,
+    },
+  ];
+
+  for (const { name, serverMessage, expected } of notFoundCases) {
+    it(`maps the 404 for ${name} to its own message`, async () => {
+      mockAccountServerFetch.mockRejectedValue(
+        Object.assign(new Error(serverMessage), { status: 404 })
+      );
+      process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+      const failure = await enableMasterPassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
+      expect((failure as Error).message).toMatch(expected);
+      if (name !== 'a missing password slot') {
+        expect((failure as Error).message).not.toMatch(/No password slot is provisioned/);
+      }
+      expect(secureMem.size).toBe(0);
+    });
+  }
+
+  it('surfaces the central TOKEN_IP_MISMATCH message unchanged', async () => {
+    // accountServerFetch has already localized the IP refusal (prompted, or explained both remedies) by the time it reaches the enroll handler.
+    const central =
+      'Your IP address changed, and this login only works from the old one. (central text)';
+    mockAccountServerFetch.mockRejectedValue(
+      Object.assign(new Error(central), { status: 403, code: 'TOKEN_IP_MISMATCH' })
+    );
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    const failure = await enableMasterPassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
+    expect((failure as Error).message).toBe(central);
+    expect(secureMem.size).toBe(0);
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('no longer matches the IP refusal by its text', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../config-remote-master-password.ts', import.meta.url)),
+      'utf8'
+    );
+    expect(source).not.toContain('bound to a different IP');
+  });
+
+  it('quotes an unrecognised 403 verbatim rather than guessing', async () => {
+    mockAccountServerFetch.mockRejectedValue(
+      Object.assign(new Error('Some future policy said no'), { status: 403 })
+    );
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /refused the config enrollment: Some future policy said no/
+    );
+    expect(secureMem.size).toBe(0);
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('prefers an explicit server error code over the message text', async () => {
+    mockAccountServerFetch.mockRejectedValue(
+      Object.assign(new Error('wording the server may change at will'), {
+        status: 403,
+        code: 'REQUIRE_PASSKEY',
+      })
+    );
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /requires a passkey to unlock config storage/
+    );
+  });
+
+  it('maps a 404 to the "no password slot provisioned" message', async () => {
+    mockAccountServerFetch.mockRejectedValue(
+      Object.assign(new Error('You have no password slot on this config store; enroll one.'), {
+        status: 404,
+      })
+    );
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /No password slot is provisioned/
+    );
+  });
+
+  it('requires REDIACC_STORE_MASTER_PASSWORD when stdin is not a TTY', async () => {
+    const f = await provision(PASSWORD);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    // No REDIACC_STORE_MASTER_PASSWORD set; vitest stdin is not a TTY.
+
+    await expect(enableMasterPassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /A master password is required/
+    );
+  });
+});

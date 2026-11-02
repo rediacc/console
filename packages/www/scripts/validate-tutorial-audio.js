@@ -36,6 +36,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SITE_LOCALES } from '@rediacc/locales';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
@@ -48,9 +49,10 @@ const AUDIO_LANGUAGES = SITE_LOCALES;
 // --lang/--cast/--quiet exist so an orchestrator can ask "is locale X finished and consistent?" between a narration run and dispatching its renders. Everything this file already checks -- transcriptHash vs a recomputed hash, step count vs transcript events, per-step id/markerIndex/narrationText equality, replay monotonicity, audioSrc existence, wordTimings structure and ordering
 // -- is exactly that readiness question, so the alternative (a done-marker file written by the producer) would be a weaker claim about the same thing.
 function parseCliArgs(argv) {
-  // Typed: without it TypeScript infers `null` from the initializer and every `opts.langs ? …` guard below reads as dead code, though `--lang` fills it in.
-  /** @type {{ langs: Set<string> | null; casts: Set<string> | null; quiet: boolean }} */
-  const opts = { langs: null, casts: null, quiet: false };
+  // Collected in lets and arrays, then folded to `Set | null` on return: an object literal seeded with `null` reads as `null` for the whole file and every `CLI.langs ? …` guard below would look dead.
+  const langs = [];
+  const casts = [];
+  let quiet = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const take = (name) => {
@@ -63,17 +65,17 @@ function parseCliArgs(argv) {
       return null;
     };
     if (arg === '--quiet' || arg === '-q') {
-      opts.quiet = true;
+      quiet = true;
       continue;
     }
     const lang = take('--lang');
     if (lang) {
-      opts.langs = new Set((opts.langs ? [...opts.langs] : []).concat(lang.split(',')));
+      langs.push(...lang.split(','));
       continue;
     }
     const cast = take('--cast');
     if (cast) {
-      opts.casts = new Set((opts.casts ? [...opts.casts] : []).concat(cast.split(',')));
+      casts.push(...cast.split(','));
       continue;
     }
     if (arg === '--help' || arg === '-h') {
@@ -88,7 +90,11 @@ function parseCliArgs(argv) {
     console.error(`validate-tutorial-audio: unknown argument ${arg}`);
     process.exit(2);
   }
-  return opts;
+  return {
+    langs: langs.length > 0 ? new Set(langs) : null,
+    casts: casts.length > 0 ? new Set(casts) : null,
+    quiet,
+  };
 }
 
 const CLI = parseCliArgs(process.argv.slice(2));
@@ -107,6 +113,16 @@ const KNOWN_TTS_PROVIDERS = new Set(['qwen3-tts', 'voxcpm2']);
 // `.ci/scripts/deploy/sync-media-from-r2.sh --audio-only`); every other
 // check in this file (hash consistency, wordTimings structure, replay-range sanity) still runs regardless, since none of that depends on the mp3 bytes actually being on disk.
 const AUDIO_TREE_PRESENT = fs.existsSync(AUDIO_DIR);
+
+// A PARTIAL tree is legitimate: `./run.sh www tutorials generate <name>` (or `media <name>`) narrates one tutorial and leaves exactly that tutorial's mp3s on disk, so the tree exists while 233 of the 234 (tutorial, language) pairs have no audio here. Demanding every pair's files then reported ~540 "missing" files for tutorials nobody touched (measured 2026-10-24 after publishing managing-secrets). So on the DEFAULT run, mp3 existence is checked per PAIR, and only for a pair that has at least one of its mp3s locally -- a pair with some audio but not all of it is still a failure, which is the case this check exists for. A SELECTIVE run (--lang/--cast) keeps demanding every file of every pair it matched, because it asks "is this ready" and an absent pair is not ready.
+const STRICT_AUDIO = CLI.langs !== null || CLI.casts !== null;
+const pairsWithoutLocalAudio = [];
+
+function audioPathOf(step) {
+  return typeof step?.audioSrc === 'string' && step.audioSrc.startsWith('/assets/tutorials/audio/')
+    ? path.join(ROOT, 'public', step.audioSrc.replace(/^\//, ''))
+    : null;
+}
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -223,6 +239,16 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
     );
   }
 
+  const checkAudioFiles =
+    AUDIO_TREE_PRESENT &&
+    (STRICT_AUDIO ||
+      steps.some((candidate) => {
+        const file = audioPathOf(candidate);
+        return file !== null && fs.existsSync(file);
+      }));
+  if (AUDIO_TREE_PRESENT && !checkAudioFiles)
+    pairsWithoutLocalAudio.push(`${lang}/${transcript.cast}`);
+
   for (let i = 0; i < Math.min(steps.length, transcript.events.length); i += 1) {
     const step = steps[i];
     const event = transcript.events[i];
@@ -276,7 +302,7 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
       !step.audioSrc.startsWith('/assets/tutorials/audio/')
     ) {
       pushError(errors, relativeTimeline, `steps[${i}].audioSrc invalid`, 'Regenerate timeline');
-    } else if (AUDIO_TREE_PRESENT) {
+    } else if (checkAudioFiles) {
       const absAudio = path.join(ROOT, 'public', step.audioSrc.replace(/^\//, ''));
       if (!fs.existsSync(absAudio)) {
         pushError(
@@ -406,6 +432,16 @@ function main() {
 
   for (const pair of pairs) {
     validatePair({ ...pair, errors });
+  }
+
+  if (pairsWithoutLocalAudio.length > 0 && !CLI.quiet) {
+    console.log(
+      colors.yellow(
+        `Audio files not checked for ${pairsWithoutLocalAudio.length} of ${pairs.length} pair(s): none of their mp3s exist locally ` +
+          '(a partial audio tree, e.g. after generating one tutorial). Their timeline structure was still validated. ' +
+          'To check them too: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only'
+      )
+    );
   }
 
   if (errors.length === 0) {

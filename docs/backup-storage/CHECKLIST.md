@@ -1,16 +1,17 @@
 # Handoff checklist: backup-storage
-Status: executing
+Superseded by agent/plans/PLAN-backup-program.md: open items (w8 and the w3/w4/w5 leftovers) are tracked there, and this file stays as a record.
+Status: superseded by agent/plans/PLAN-backup-program.md (2026-10-23)
 Owner: 97604f47
 
 ## Deliverables
-- [x] d1 file:docs/backup-storage/README.md
-- [x] d2 file:docs/backup-storage/01-verified-context.md
-- [x] d3 file:docs/backup-storage/02-design.md
-- [x] d4 file:docs/backup-storage/03-implementation-map.md
-- [x] d5 file:docs/backup-storage/04-testing-and-local-loop.md
-- [x] d6 file:docs/backup-storage/05-docs-and-decommission.md
-- [x] d7 file:docs/backup-storage/06-execution-guide.md
-- [x] d8 file:docs/backup-storage/PROMPT.md
+- [x] d1 file:docs/backup-storage/archive/README.md
+- [x] d2 file:docs/backup-storage/archive/01-verified-context.md
+- [x] d3 file:docs/backup-storage/archive/02-design.md
+- [x] d4 file:docs/backup-storage/archive/03-implementation-map.md
+- [x] d5 file:docs/backup-storage/archive/04-testing-and-local-loop.md
+- [x] d6 file:docs/backup-storage/archive/05-docs-and-decommission.md
+- [x] d7 file:docs/backup-storage/archive/06-execution-guide.md
+- [x] d8 file:docs/backup-storage/archive/PROMPT.md
 - [x] d9 file:~/.claude/projects/-home-muhammed-monorepo-console/programs/backup-storage/MANIFEST.md
 
 ## Waves
@@ -18,7 +19,7 @@ Owner: 97604f47
 - [x] w2 Wave 1: renet chunk engine + account control plane (parallel writers)
 - [x] w3 Wave 2: CLI/schema surfaces + portal quota UI (parallel writers)
       UNTICKED 2026-08-15 (RE-APPLIED after a silent revert, see 07 §9.17):
-      (a) `04-testing-and-local-loop.md:96` claimed the portal quota page smoke
+      (a) `archive/04-testing-and-local-loop.md:96` claimed the portal quota page smoke
       rides deploy-preview/smoke-test-preview; it did not, so BackupStorage.tsx
       (router.tsx:269) had NO coverage. **FIXED**: `stepQuotaPageShipped` in
       `.ci/scripts/test/smoke-test-preview.ts` now asserts the SERVED BUNDLE
@@ -29,7 +30,7 @@ Owner: 97604f47
       against a real preview deployment.
 - [x] w4 Wave 3: test battery (vitest + drill, e2e byte-verify)
       UNTICKED 2026-08-15 (RE-APPLIED after a silent revert): the battery runs,
-      but the control `06-execution-guide.md:49-51` calls non-negotiable was
+      but the control `archive/06-execution-guide.md:49-51` calls non-negotiable was
       never built. No corruption-injection helper exists anywhere (no
       flipByte/corruptChunk/injectCorruption under packages, scripts or .ci), so
       nothing proves chunk verification can FAIL — 'a battery that cannot fail is
@@ -39,8 +40,9 @@ Owner: 97604f47
       UNTICKED 2026-08-15 (RE-APPLIED after a silent revert): English is now
       corrected (backup-restore.md no longer denies a shipped chunk restore;
       limits.md no longer claims no retention is enforced and carries the plan
-      quotas), but the 12 non-English locales are still stale against it —
-      validate-translation-freshness exits 1. Re-tick when they land.
+      quotas). The 12 non-English locales have since caught up:
+      validate-translation-freshness --strict-all and check:i18n exit 0
+      (2026-10-24, PLAN-backup-program A1b).
 - [x] w6 Wave 5a: the credential-free half — cutover preflight (read-only, fails
       closed, proven both directions) + docs/backup-storage/08-cutover-runbook.md
 - [x] w7 Wave 5b-i: the PROBE BUCKET leg. `rediacc-backups-probe` created in R2

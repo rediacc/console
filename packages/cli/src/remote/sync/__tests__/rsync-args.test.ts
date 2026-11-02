@@ -35,4 +35,31 @@ describe('buildRsyncArgs', () => {
     expect(args).toContain('/opt/rsync');
     expect(args).not.toContain('--no-D');
   });
+
+  it('builds the skeleton upload as the plain directory-upload args', () => {
+    const args = buildRsyncArgs({ isUpload: true }, 'ssh', 'rediacc');
+    expect(args).toContain('--rsync-path');
+    expect(args).toContain('sudo rsync');
+    expect(args).toContain('rediacc:rediacc');
+    for (const flag of ['--mkpath', '--delete', '--exclude']) {
+      expect(args).not.toContain(flag);
+    }
+  });
+
+  it('keeps --mkpath on the file transfer and off download', () => {
+    expect(buildRsyncArgs({ isUpload: true, mkpath: true }, 'ssh', 'rediacc')).toContain(
+      '--mkpath'
+    );
+    const download = buildRsyncArgs({}, 'ssh', 'rediacc');
+    expect(download).not.toContain('--mkpath');
+    expect(download).not.toContain('--chown');
+  });
+
+  it('protects the rediacc-managed tree from --delete on a mirror upload only', () => {
+    const up = buildRsyncArgs({ isUpload: true, mirror: true }, 'ssh', 'rediacc');
+    expect(up).toContain('--delete');
+    expect(up).toContain('--filter=P /.rediacc/');
+    const down = buildRsyncArgs({ mirror: true }, 'ssh', 'rediacc');
+    expect(down).not.toContain('--filter=P /.rediacc/');
+  });
 });

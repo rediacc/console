@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner, type ExecResult } from '../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
+import {
+  type ExecResult,
+  RenetFunctionsTestRunner,
+} from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Multi-Machine Operations Tests
@@ -23,10 +27,10 @@ import { BridgeTestRunner, type ExecResult } from '../src/utils/bridge/BridgeTes
  */
 
 test.describe('Multi-Machine Connectivity @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('worker VM 1 should be reachable', async () => {
@@ -46,10 +50,10 @@ test.describe('Multi-Machine Connectivity @bridge @multi-machine', () => {
 });
 
 test.describe('Multi-Machine System Checks @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('machine_ping on worker VM 1', async () => {
@@ -90,12 +94,12 @@ test.describe('Multi-Machine System Checks @bridge @multi-machine', () => {
 });
 
 test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     // Global setup lays BTRFS down once at the START of the whole shard job, but a co-shard file that runs before this one and calls resetWorkerState() without re-initializing afterward (06-daemon-operations.test.ts does, in every describe) unmounts it and deletes the backing .img. Re-initializing both workers' datastores here, right before checking them, makes this describe's own assertion independent of shard composition and file order.
-    const vm2Runner = BridgeTestRunner.forWorker(2);
+    const vm2Runner = RenetFunctionsTestRunner.forWorker(2);
     await Promise.all([
       runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, true),
       vm2Runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, true),
@@ -103,7 +107,7 @@ test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
   });
 
   test('check_system on worker VM 1', async () => {
-    // check_system is available through bridge once, unlike check_setup
+    // check_system is available through functions once, unlike check_setup
     const result = await runner.checkSetupOnMachine(runner.getWorkerVM());
     expect(runner.isSuccess(result)).toBe(true);
   });
@@ -130,14 +134,14 @@ test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
 
 test.describe
   .serial('Multi-Machine Data Transfer @bridge @multi-machine', () => {
-    let runner: BridgeTestRunner;
-    let vm2Runner: BridgeTestRunner;
-    const testRepo = `multi-test-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    let vm2Runner: RenetFunctionsTestRunner;
+    const testRepo = e2eRepoGuid();
     let crossVMSSHAvailable = false;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
-      vm2Runner = BridgeTestRunner.forWorker(2);
+      runner = RenetFunctionsTestRunner.forWorker();
+      vm2Runner = RenetFunctionsTestRunner.forWorker(2);
 
       // Datastore init is NOT left to global setup here: global setup lays BTRFS down once at the START of the whole shard job, but a co-shard file that runs before this one and calls resetWorkerState() (06-daemon-operations.test.ts does, in every describe, without ever re-running datastoreInitPool afterward) unmounts it and deletes the backing .img -- resetWorkerState's own doc comment says as much ("Call in test.beforeAll() for groups that need fresh datastore"). Shard 5 hit exactly that ordering (06 before 11) and backup_push then failed on VM1 with "BTRFS filesystem required for snapshots". Re-initializing both VMs' datastores here removes the dependency on shard composition and file order instead of just reshuffling it.
       await Promise.all([
@@ -146,7 +150,17 @@ test.describe
       ]);
 
       // Create repository before running data transfer tests
-      await runner.repositoryNew(testRepo, '500M', TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
+      const created = await runner.repositoryNew(
+        testRepo,
+        '500M',
+        TEST_PASSWORD,
+        DEFAULT_DATASTORE_PATH
+      );
+      // A licence or create failure must stop here, at its cause, not surface as a stat error in the push test.
+      expect(
+        runner.isSuccess(created),
+        `repositoryNew(${testRepo}) failed with code ${created.code}: ${created.stderr || created.stdout}`
+      ).toBe(true);
 
       // Check if SSH from VM1 to VM2 is working (required for push/pull/deploy)
       try {
@@ -189,6 +203,16 @@ test.describe
     test('pull repository from VM1 to VM2', async () => {
       test.skip(!crossVMSSHAvailable, 'Cross-VM SSH not available - skipping data transfer tests');
       // Use vm2Runner to pull FROM VM1 TO VM2 This tests pulling from source machine (VM1) to destination (VM2)
+      // The pull lands on VM2, whose own licence store holds nothing for this repository yet (a licence is bound to the machine that holds it).
+      const licence = await installRepoLicence(vm2Runner.executeViaBridge.bind(vm2Runner), {
+        repositoryGuid: testRepo,
+        kind: 'grand',
+        size: '500M',
+        datastorePath: DEFAULT_DATASTORE_PATH,
+      });
+      expect(runner.isSuccess(licence), `licence on VM2: ${licence.stdout}${licence.stderr}`).toBe(
+        true
+      );
       const result = await vm2Runner.pull(testRepo, runner.getWorkerVM(), DEFAULT_DATASTORE_PATH);
 
       // Always log output for debugging
@@ -223,10 +247,10 @@ test.describe
   });
 
 test.describe('Parallel Execution Tests @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('parallel machine_ping on all workers', async () => {
@@ -280,7 +304,7 @@ test.describe('Parallel Execution Tests @bridge @multi-machine', () => {
           (async () => {
             const result = await runner.executeOnVM(
               vm,
-              `renet functions once --test-mode --function ${func}`
+              `sudo -n renet functions once --test-mode --function ${func}`
             );
             return { vm, func, result };
           })()
@@ -302,10 +326,10 @@ test.describe('Parallel Execution Tests @bridge @multi-machine', () => {
  * Tests repository operations that span multiple machines.
  */
 test.describe('Cross-Machine Repository @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('list repositories on VM1', async () => {
@@ -346,10 +370,10 @@ test.describe('Cross-Machine Repository @bridge @multi-machine', () => {
  * Tests that compare state across multiple machines.
  */
 test.describe('Machine State Comparison @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('renet version should match across machines', async () => {

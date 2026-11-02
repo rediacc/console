@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/advance-contract-floor.sh`.
 
-Advances the release-contract-floor RATCHET to the oldest cli `.released` sentinel on R2, and commits the new value.
+Advances the release-contract-floor RATCHET to the oldest cli `.released` sentinel on R2, and writes the new value into the tracked file in the working tree. It never commits and never pushes: a local release cannot push `main`, so the changed file rides the next PR as an ordinary commit.
 
 Usage: advance_contract_floor.py (no arguments; everything comes from the environment, exactly as the workflow block that used to hold this code did)
 
 WHY A RATCHET AT ALL. The release-state bijection gate
 (`Committed(v) <=> sentinel AND tag`) excludes tags older than the oldest
-`.released` sentinel on R2, because pre-contract releases never had one. That floor is DATA-DERIVED, so an accidental scrub of every cli sentinel would drop the floor to nothing and silently turn the gate into a no-op. Recording the observed floor in a committed file gives the gate a high-water mark that a scrub cannot walk backwards.
+`.released` sentinel on R2, because pre-contract releases never had one. That floor is DATA-DERIVED, so an accidental scrub of every cli sentinel would drop the floor to nothing and silently turn the gate into a no-op. Recording the observed floor in a committed file gives the gate a high-water mark that a scrub cannot walk backwards. The mark is the value COMMITTED on main: this module only writes the working tree, so an advance protects nothing until a PR commits the file. `release:local` runs it in this checkout (its `contract-floor` row is a `root` row, not a release-clone row), where the file rides the session's next PR; in a CI job the runner's tree is discarded, so the run says so with a `::warning::`, and until a commit lands `release.cd_preflight` reports the lag as WARN.
 
 MONOTONIC, AND THAT IS THE WHOLE SAFETY PROPERTY. It writes only when the observed oldest sentinel is STRICTLY NEWER than what the file already holds, so a retry or a no-op run leaves the tree clean and skips the commit entirely. `decide()` below is that rule as a pure function, so a test can drive every ordering without R2, a git remote, or a filesystem.
 
-THIS COMMITS AND PUSHES TO MAIN on an actual advance. The differential never lets a real `git` run: `git` is a recording fake on a scratch PATH in every case that reaches the write, and the fixture root is a temporary directory, never this checkout.
+NO GIT. The tests put a recording fake `git` on a scratch PATH and assert that it saw no call at all, on an advance and on a no-op. The fixture root is a temporary directory, never this checkout.
 
 `rsv_list_sentinels` IS NOT RE-PORTED. `core.release_state_validator.list_sentinels` already is that function, including its `tr '\\t' '\\n'` split (the aws `--output text` packing that makes there be records at all) and its two-stage sed-then-grep filter. Re-deriving it here would be a second answer to a question that has one. Two spellings differ and neither is reachable from
 this caller:
@@ -33,11 +33,7 @@ EMPTY BUCKET. Driven against the real twin on 2026-09-13 with an `aws` that exit
 and the exit code is 0. So expired credentials, a DNS fault and a genuinely scrubbed bucket all read as a green no-op on the script whose entire reason for existing is to defend against a scrub. It is reproduced rather than repaired because the acceptance rule for this wave is agreement with the live twin, and `release_state_validator.py` already records the same defect at the
 library level (its DEFECT 2). `PROBE_FAILURE_READS_AS_EMPTY_BUCKET` names it and the differential pins it in both directions.
 
-A SECOND, SMALLER ONE, ALSO REPRODUCED. On an advance the FILE IS WRITTEN BEFORE `git config` runs, and every git call is unguarded under `set -e`. So a failing `git commit` or `git push` exits with git's status having ALREADY modified the working tree, leaving the ratchet half-applied for whatever runs
-next in that checkout. Driven: with a `git` that exits 3, the run ends rc=3 with
-the floor file already carrying the new version.
-
-TWO DIVERGENCES, BOTH IN REFUSAL TEXT NOBODY PARSES:
+TWO DIVERGENCES, BOTH IN REFUSAL TEXT NOBODY PARSES, plus one deliberate change (no git, so `GIT_BOT_NAME` / `GIT_BOT_EMAIL` are no longer demanded):
 
   1. The five `${VAR:?msg}` refusals are BASH diagnostics carrying the twin's
      own path and LINE NUMBER (`...advance-contract-floor.sh: line 38:
@@ -56,8 +52,6 @@ from __future__ import annotations
 import os
 import pathlib
 import re
-import shutil
-import subprocess
 import sys
 
 from rediacc_ci import log
@@ -80,13 +74,11 @@ NO_FLOOR_READS_AS = "<unset>"
 # The product prefix the ratchet is derived from (:56). Only `cli` sentinels count; the floor is about the CLI release contract.
 PRODUCT = "cli"
 
-# The environment the twin demands, IN ITS ORDER (:38-42). Order is observable: only the first missing one is ever named.
+# The R2 environment the twin demands, IN ITS ORDER (:38-40); its two git-identity variables went with the commit. Order is observable: only the first missing one is ever named.
 REQUIRED_ENV = (
     "CLOUDFLARE_R2_ACCESS_KEY_ID",
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
     "CLOUDFLARE_R2_ENDPOINT",
-    "GIT_BOT_NAME",
-    "GIT_BOT_EMAIL",
 )
 
 # The defect named in the module docstring, as a constant so a test can assert it by name instead of restating the sentence.
@@ -149,14 +141,6 @@ def decide(current: str, oldest: str) -> tuple[bool, str]:
     return True, "::notice::advancing ratchet %s -> %s" % (shown, oldest)
 
 
-def _require_cmd(cmd: str) -> bool:
-    """`require_cmd` (common.sh:141-147), inline so the message is this file's."""
-    if shutil.which(cmd) is not None:
-        return True
-    log.error("Required command '%s' is not available" % cmd)
-    return False
-
-
 def _require_aws() -> bool:
     """`require_cmd aws`, resolved through `core.awscli`, with the same one-line refusal."""
     try:
@@ -167,20 +151,10 @@ def _require_aws() -> bool:
     return True
 
 
-def _git(root: pathlib.Path, args: list[str]) -> int:
-    """One `git` call with NEITHER stream redirected, like the twin.
-
-    `git push` writes its `To <remote>` / `* [new tag]` report to stderr, and a port that captured it would swallow the only evidence the ratchet was actually published.
-    """
-    return subprocess.run(["git", *args], cwd=str(root), check=False).returncode
-
-
 def main(argv: list[str]) -> int:
     del argv  # the twin takes no arguments and ignores anything it is given
 
     if not _require_aws():
-        return 1
-    if not _require_cmd("git"):
         return 1
 
     for name in REQUIRED_ENV:
@@ -211,20 +185,19 @@ def main(argv: list[str]) -> int:
     if not advance:
         return 0
 
-    # :67. WRITTEN BEFORE ANY git RUNS -- see the second defect in the module docstring: a failing commit or push leaves this edit behind.
     floor_path.write_text(oldest + "\n", encoding="utf-8")
-
-    for args in (
-        ["config", "user.name", os.environ["GIT_BOT_NAME"]],
-        ["config", "user.email", os.environ["GIT_BOT_EMAIL"]],
-        ["add", FLOOR_FILE],
-        ["commit", "-m", "chore(release-state): advance contract floor to %s [skip ci]" % oldest],
-        ["push", "origin", "HEAD:main"],
-    ):
-        rc = _git(root, args)
-        if rc != 0:
-            # `set -e`: the script dies HERE with git's own status, and git's own diagnostic on stderr is the only explanation anyone gets.
-            return rc
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        print(
+            "::warning::wrote %s in the runner's working tree, which this job discards; main's floor "
+            "stays %s until a PR commits %s (a `npm run release:local` run writes it in the checkout)"
+            % (FLOOR_FILE, current or "unset", oldest),
+            flush=True,
+        )
+    else:
+        print(
+            "::notice::wrote %s in the working tree; commit it with the next PR" % FLOOR_FILE,
+            flush=True,
+        )
     return 0
 
 

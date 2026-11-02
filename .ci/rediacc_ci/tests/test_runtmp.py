@@ -14,6 +14,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import uuid
 
 import pytest
 
@@ -298,3 +299,38 @@ def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch
         assert e.parent == shallow
     finally:
         runtmp.remove_tree(str(e))
+
+
+def _exact_base(length: int) -> pathlib.Path:
+    """A fresh directory under /tmp whose absolute path is exactly `length` bytes (tmp_path is far longer than DEEP_TMPDIR, so it cannot stand in for the boundary)."""
+    stem = "/tmp/rt-" + uuid.uuid4().hex * 4
+    path = pathlib.Path(stem[:length])
+    # The stem is longer than any plausible DEEP_TMPDIR; a length it cannot reach fails here instead of testing a shorter boundary (review 768f6e50.2).
+    assert len(str(path)) == length, (len(str(path)), length)
+    path.mkdir()
+    return path
+
+
+def test_the_deepest_kept_base_leaves_a_tsx_socket_path_under_the_kernel_limit(monkeypatch):
+    """A base exactly DEEP_TMPDIR bytes long is kept as the run dir's parent, and the real child TMPDIR (`<run dir>/tmp`) plus tsx's `/tsx-<uid>/<pid>.pipe` still fits sun_path (107 bytes); one byte more is rooted at /tmp. This is the `TMPDIR=<checkout>/.ci/cache/u1-tmp` case that died `listen EINVAL` at the old limit of 48."""
+    base = _exact_base(runtmp.DEEP_TMPDIR)
+    longer = _exact_base(runtmp.DEEP_TMPDIR + 1)
+    try:
+        monkeypatch.setattr(runtmp.tempfile, "tempdir", str(base))
+        # The long prefix is the longest one a gate harness uses.
+        kept = pathlib.Path(runtmp.run_dir("gate-harness-children-"))
+        try:
+            assert kept.parent == base
+            socket_path = "%s/tmp/tsx-%d/%d.pipe" % (kept, os.getuid(), 4194304)
+            assert len(socket_path) < 107, socket_path
+        finally:
+            runtmp.remove_tree(str(kept))
+        monkeypatch.setattr(runtmp.tempfile, "tempdir", str(longer))
+        rooted = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
+        try:
+            assert rooted.parent == pathlib.Path("/tmp")
+        finally:
+            runtmp.remove_tree(str(rooted))
+    finally:
+        base.rmdir()
+        longer.rmdir()

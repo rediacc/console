@@ -482,7 +482,7 @@
             "languageCookie": {
               "content": [
                 "<strong>Name:</strong> <code>rediacc_lang</code><br><strong>Typ:</strong> Erstanbieter, unbedingt erforderlich<br><strong>Dauer:</strong> 1 Jahr<br><strong>Zweck:</strong> Speichert Ihre bevorzugte Sprache.",
-                "Dieses Cookie wird gemaess der EU-ePrivacy-Richtlinie als \"unbedingt erforderlich\" eingestuft, da es fuer die von Ihnen angeforderte Funktionalitaet der Website unerlasslich ist. Fuer dieses Cookie ist kein Einwilligungsbanner erforderlich."
+                "Dieses Cookie wird gemäß der EU-ePrivacy-Richtlinie als \"unbedingt erforderlich\" eingestuft, da es für die von Ihnen angeforderte Funktionalität der Website unerlässlich ist. Für dieses Cookie ist kein Einwilligungsbanner erforderlich."
               ],
               "title": "3.1 Spracheinstellungs-Cookie"
             }
@@ -499,7 +499,7 @@
         "managingCookies": {
           "content": [
             "Sie können Cookies über Ihre Browsereinstellungen verwalten:",
-            "Bitte beachten Sie, dass die Deaktivierung des <code>rediacc_lang</code>-Cookies dazu fuehrt, dass die Website bei jedem Besuch auf Englisch zurueckgesetzt wird, anstatt Ihre Sprachpraeferenz zu speichern."
+            "Bitte beachten Sie, dass die Deaktivierung des <code>rediacc_lang</code>-Cookies dazu führt, dass die Website bei jedem Besuch auf Englisch zurückgesetzt wird, anstatt Ihre Sprachpräferenz zu speichern."
           ],
           "id": "managing-cookies",
           "items": [
@@ -522,7 +522,7 @@
             "Folgende Technologien werden auf unserer Website <strong>nicht</strong> verwendet:"
           ],
           "content2": [
-            "Hinweis: Diese Cookie-Richtlinie gilt für die Rediacc-Marketingwebsite. Unsere Softwareprodukte (Webanwendung, CLI, Middleware, Renet-Agent) erfassen separate Nutzungstelemetrie, die keine Cookies verwendet. Einzelheiten zur Produkttelemetrie finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
+            "Hinweis: Diese Cookie-Richtlinie gilt für die Rediacc-Marketingwebsite. Unsere Softwareprodukte (CLI und Renet-Agent) erfassen separate Nutzungstelemetrie, die keine Cookies verwendet. Einzelheiten zur Produkttelemetrie finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -1869,6 +1869,11 @@
         "description": "Installation in 5 Minuten. Starten Sie die 14-tägige kostenlose Testphase.",
         "heading": "Infrastruktur schützen."
       },
+      "freeLicense": {
+        "cta": "Rediacc installieren",
+        "description": "Jede Maschine kann ohne Registrierung eine kostenlose Lizenz für ein Repository erhalten: bis zu 3 GB, 48 Stunden gültig und beliebig oft kostenlos verlängerbar. Läuft sie ab, arbeiten laufende Repositories weiter; neue Repositories und gehostete Backups erfordern einen kostenpflichtigen Plan.",
+        "heading": "Ohne Konto ausprobieren"
+      },
       "hero": {
         "subtitle": "Der richtige Plan für dein Team. Transparente Preise, keine versteckten Gebühren, jederzeit kündbar.",
         "title": "Gebaut für echte Anforderungen"
@@ -1962,7 +1967,7 @@
           {
             "key": "repoSize",
             "label": "Beschränkung der Repository-Größe",
-            "tooltip": "Community-Nutzer koennen bis zu 10 GB verwenden. Groessere Repositories erfordern einen kostenpflichtigen Plan."
+            "tooltip": "Community-Nutzer können bis zu 10 GB verwenden. Größere Repositories erfordern einen kostenpflichtigen Plan."
           },
           {
             "key": "floatingLicenses",
@@ -2164,10 +2169,16 @@
             },
             "productTelemetry": {
               "content": [
-                "Unsere Softwareprodukte (Webanwendung, CLI, Middleware und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um die Produktqualität, Leistung und Zuverlässigkeit zu verbessern. Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Browsertyp, Leistungsmetriken, Funktionsnutzungsmuster und Fehlerberichte. Persönliche Identifikatoren werden vor der Erfassung anonymisiert – E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden niemals erfasst.",
-                "Telemetrie ist in unserer Webanwendung und CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
+                "Unsere Softwareprodukte (CLI und Renet-Agent) erfassen Nutzungstelemetrie, um Qualität, Leistung und Zuverlässigkeit der Produkte zu verbessern. Die Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Leistungsmetriken, Nutzungsmuster von Funktionen und Fehlerberichte. Persönliche Kennungen werden vor der Erfassung anonymisiert: E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden nie erfasst. Die Telemetrie unserer Website und des Kontodienstes enthält außerdem den Standort auf Stadtebene (Stadt und Region). Er stammt vom Edge-Netzwerk von Cloudflare und wird 7 Tage lang gespeichert.",
+                "Telemetrie ist in unserer CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
               ],
               "title": "2.5 Produkttelemetriedaten"
+            },
+            "freeLicenseData": {
+              "content": [
+                "Fordert eine Maschine ohne Konto eine kostenlose Lizenz an, speichern wir einen verschlüsselten Hash der anfragenden IP-Adresse (die vollständige IPv4-Adresse oder das /64-Präfix einer IPv6-Adresse), niemals die Adresse selbst, und zwar nur im Zähler je Adresse, wo er nach 72 Stunden gelöscht wird. Der Lizenzdatensatz enthält die Maschinen- und Repository-Kennungen aus der Anfrage und keine IP-Daten. Rechtsgrundlage ist unser berechtigtes Interesse, den Missbrauch eines kostenlosen Dienstes zu verhindern."
+              ],
+              "title": "2.6 Anfragen nach einer kostenlosen Lizenz"
             }
           },
           "title": "2. Von uns erhobene Daten"
@@ -2313,7 +2324,7 @@
             "paidTiers": {
               "content": [
                 "Bezahlte Abonnements sind grundsätzlich nicht erstattungsfähig. Ausnahmen:",
-                "Wir bieten jedoch in folgenden Faellen Erstattungen an:"
+                "Wir bieten jedoch in folgenden Fällen Erstattungen an:"
               ],
               "items": [
                 "<strong>Erste 14 Tage:</strong> Vollständige Erstattung für Erstabonnenten",
@@ -2341,7 +2352,7 @@
         "refundProcessing": {
           "content": [
             "Genehmigte Erstattungen werden innerhalb von 10 Werktagen auf das ursprüngliche Zahlungsmittel überwiesen.",
-            "Erstattungen fuer Jahresabonnements, die per Bankueberweisung bezahlt wurden, koennen bis zu 30 Werktage in Anspruch nehmen."
+            "Erstattungen für Jahresabonnements, die per Banküberweisung bezahlt wurden, können bis zu 30 Werktage in Anspruch nehmen."
           ],
           "id": "refund-processing",
           "title": "5. Erstattungsabwicklung"
@@ -2923,19 +2934,19 @@
         "benefits": {
           "items": [
             {
-              "description": "Einen wegwerfbaren Klon angreifen, nicht die Produktion. Abstuerzen, kaputtmachen, exploiten — Ihre Live-Infrastruktur bleibt unberuehrt.",
+              "description": "Einen wegwerfbaren Klon angreifen, nicht die Produktion. Abstürzen, kaputtmachen, exploiten — Ihre Live-Infrastruktur bleibt unberührt.",
               "icon": "shield",
               "title": "Null Produktionsrisiko"
             },
             {
-              "description": "Gegen tatsaechliche Konfigurationen, echte Daten und Live-Dienstversionen testen — nicht eine bereinigte Staging-Umgebung, die vor Monaten abgedriftet ist.",
+              "description": "Gegen tatsächliche Konfigurationen, echte Daten und Live-Dienstversionen testen — nicht eine bereinigte Staging-Umgebung, die vor Monaten abgedriftet ist.",
               "icon": "server",
               "title": "Echte Produktionsbedingungen"
             },
             {
-              "description": "Pentests bei jedem Deployment, jede Woche oder bei jedem Commit ausfuehren. Kein monatelanges Warten zwischen manuellen Auftraegen mehr.",
+              "description": "Pentests bei jedem Deployment, jede Woche oder bei jedem Commit ausführen. Kein monatelanges Warten zwischen manuellen Aufträgen mehr.",
               "icon": "clock",
-              "title": "Kontinuierlich, nicht jaehrlich"
+              "title": "Kontinuierlich, nicht jährlich"
             }
           ],
           "title": "Was Sie bekommen"
@@ -3032,12 +3043,12 @@
               "title": "Klonen"
             },
             {
-              "description": "KI-gestuetzte Pentests gegen den Klon ausfuehren — Port-Scans, SQLi, XSS, CVE-Pruefungen, Authentifizierungstests. Echte Angriffe, echte Daten.",
+              "description": "KI-gestützte Pentests gegen den Klon ausführen — Port-Scans, SQLi, XSS, CVE-Prüfungen, Authentifizierungstests. Echte Angriffe, echte Daten.",
               "icon": "shield",
               "title": "Angreifen"
             },
             {
-              "description": "Priorisierten Schwachstellenbericht erhalten. Patchen, bevor Angreifer sie finden. Klon zerstoeren — Produktion nie beruehrt.",
+              "description": "Priorisierten Schwachstellenbericht erhalten. Patchen, bevor Angreifer sie finden. Klon zerstören — Produktion nie berührt.",
               "icon": "check-circle",
               "title": "Fix"
             }
@@ -3074,7 +3085,7 @@
           ],
           "timeline": {
             "newLabel": "MIT REDIACC",
-            "newSteps": ["Pentest ausfuehren", "47s", "7 Schwachstellen gefunden"],
+            "newSteps": ["Pentest ausführen", "47s", "7 Schwachstellen gefunden"],
             "oldLabel": "TRADITIONELLE PENTESTS",
             "oldSteps": [
               {
@@ -3094,7 +3105,7 @@
                 "text": "PDF-Bericht erhalten"
               },
               {
-                "day": "Realitaet",
+                "day": "Realität",
                 "text": "Prod ist anders"
               }
             ]
@@ -3135,7 +3146,7 @@
           "rediaccLabel": "Rediacc (greift einen Produktionsklon an)",
           "rows": [
             {
-              "rediacc": "Produktionsklon (Sekunden alt, 100% Uebereinstimmung)",
+              "rediacc": "Produktionsklon (Sekunden alt, 100% Übereinstimmung)",
               "traditional": "Staging (Wochen alt, Konfigurationsdrift)"
             },
             {
@@ -3148,7 +3159,7 @@
             },
             {
               "rediacc": "47 Sekunden via btrfs CoW",
-              "traditional": "Tage bis Wochen fuer Staging"
+              "traditional": "Tage bis Wochen für Staging"
             },
             {
               "rediacc": "Kontinuierlich (automatisiert, bei jedem Deployment)",
@@ -3166,17 +3177,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Jedes Backup, jede Wiederherstellung, jeder Zugriff, jede Schluesselrotation, Konfigurationsaenderung und Benutzeraktion — vollstaendig mit Zeitstempel, Benutzerzuordnung und Kontext.",
+              "description": "Jedes Backup, jede Wiederherstellung, jeder Zugriff, jede Schlüsselrotation, Konfigurationsänderung und Benutzeraktion — vollständig mit Zeitstempel, Benutzerzuordnung und Kontext.",
               "icon": "eye",
-              "title": "Vollstaendige Transparenz"
+              "title": "Vollständige Transparenz"
             },
             {
-              "description": "SHA-256-signiert und chronologisch verkettet. Selbst Root kann keinen Eintrag aendern, ohne die Integritaetskette zu brechen. Pruefer lieben es.",
+              "description": "SHA-256-signiert und chronologisch verkettet. Selbst Root kann keinen Eintrag ändern, ohne die Integritätskette zu brechen. Prüfer lieben es.",
               "icon": "shield",
               "title": "Manipulationssichere Logs"
             },
             {
-              "description": "Einen Befehl ausfuehren und einen compliance-faehigen Audit-Bericht fuer jeden Zeitraum erhalten. Keine Log-Aggregation, keine manuelle Korrelation, keine Verzoegerungen.",
+              "description": "Einen Befehl ausführen und einen compliance-fähigen Audit-Bericht für jeden Zeitraum erhalten. Keine Log-Aggregation, keine manuelle Korrelation, keine Verzögerungen.",
               "icon": "file-text",
               "title": "Sofortige Berichte"
             }
@@ -3247,7 +3258,7 @@
               "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
-              "name": "Schluesselrotationsverfolgung",
+              "name": "Schlüsselrotationsverfolgung",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -3323,14 +3334,14 @@
           },
           "steps": [
             {
-              "description": "Jedes Backup, jede Wiederherstellung, jeder Zugriff, jede Schluesselrotation und Konfigurationsaenderung wird automatisch aufgezeichnet. Kein Opt-in, kein Setup.",
+              "description": "Jedes Backup, jede Wiederherstellung, jeder Zugriff, jede Schlüsselrotation und Konfigurationsänderung wird automatisch aufgezeichnet. Kein Opt-in, kein Setup.",
               "icon": "eye",
               "title": "Log"
             },
             {
-              "description": "Logs werden kryptografisch mit SHA-256 signiert. Manipulationssicher — selbst Root kann den Datensatz nicht ohne Erkennung aendern.",
+              "description": "Logs werden kryptografisch mit SHA-256 signiert. Manipulationssicher — selbst Root kann den Datensatz nicht ohne Erkennung ändern.",
               "icon": "shield",
-              "title": "Schuetzen"
+              "title": "Schützen"
             },
             {
               "description": "Öffnen Sie die Aktivitätsseite im Portal, filtern Sie einen beliebigen Zeitraum und exportieren Sie ihn als JSON. So erhalten Sie in Sekunden einen prüfungsbereiten Bericht.",
@@ -3365,12 +3376,12 @@
               "number": "$1,76M",
               "ref": 1,
               "source": "IBM Cost of a Data Breach Report 2024",
-              "text": "zusaetzliche Kosten bei Datenpannen, wenn Personalluecken in der Sicherheit die Reaktion verzoegern"
+              "text": "zusätzliche Kosten bei Datenpannen, wenn Personallücken in der Sicherheit die Reaktion verzögern"
             }
           ],
           "timeline": {
             "newLabel": "MIT REDIACC",
-            "newSteps": ["Audit ausfuehren", "Sofort", "Vollstaendiger Bericht"],
+            "newSteps": ["Audit ausführen", "Sofort", "Vollständiger Bericht"],
             "oldLabel": "DER ALTE WEG",
             "oldSteps": [
               {
@@ -3387,7 +3398,7 @@
               },
               {
                 "day": "Monat 3",
-                "text": "Pruefer findet Luecken"
+                "text": "Prüfer findet Lücken"
               },
               {
                 "day": "Ergebnis",
@@ -3476,19 +3487,19 @@
           "rows": [
             {
               "rediacc": "Kryptografisch signiert — Manipulationserkennung eingebaut",
-              "traditional": "Veraenderbare Logs — Root kann Eintraege bearbeiten oder loeschen"
+              "traditional": "Veränderbare Logs — Root kann Einträge bearbeiten oder löschen"
             },
             {
               "rediacc": "Zentralisierte Audit-Kette pro Maschine — ein Befehl zum Exportieren",
-              "traditional": "Verstreut ueber Server, Formate und Aufbewahrungsrichtlinien"
+              "traditional": "Verstreut über Server, Formate und Aufbewahrungsrichtlinien"
             },
             {
               "rediacc": "Automatisch und obligatorisch — jede Operation wird erfasst",
-              "traditional": "Opt-in-Protokollierung — Ereignisse werden leicht uebersehen oder herausgefiltert"
+              "traditional": "Opt-in-Protokollierung — Ereignisse werden leicht übersehen oder herausgefiltert"
             },
             {
               "rediacc": "Sofortige Berichtsgenerierung — jeder Zeitraum, jeder Filter",
-              "traditional": "Stunden fuer die Zusammenstellung eines Audits — manuelle Korrelation ueber Systeme hinweg"
+              "traditional": "Stunden für die Zusammenstellung eines Audits — manuelle Korrelation über Systeme hinweg"
             }
           ],
           "title": "Warum Anwendungslogs keine Audit-Trails sind"
@@ -3539,12 +3550,12 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Vollstaendige Dienst-Integritaetspruefung",
+              "name": "Vollständige Dienst-Integritätsprüfung",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Taegliche automatisierte Tests",
+              "name": "Tägliche automatisierte Tests",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -3554,7 +3565,7 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Pruefsumme / Dateiintegritaet",
+              "name": "Prüfsumme / Dateiintegrität",
               "refs": [5, 6, 7, 8, 0],
               "values": ["check", "check", "check", "check", "rediacc"]
             },
@@ -3635,17 +3646,17 @@
           },
           "steps": [
             {
-              "description": "rdc repo push production ausfuehren. btrfs-Snapshot erfasst Ihren gesamten Stack atomar.",
+              "description": "rdc repo push production ausführen. btrfs-Snapshot erfasst Ihren gesamten Stack atomar.",
               "icon": "download",
               "title": "Sichern"
             },
             {
-              "description": "Jedes Backup wird geklont, gestartet und ueberprueft. Nicht „Backup abgeschlossen“ — tatsaechlich wiederhergestellt und getestet.",
+              "description": "Jedes Backup wird geklont, gestartet und überprüft. Nicht „Backup abgeschlossen“ — tatsächlich wiederhergestellt und getestet.",
               "icon": "check-circle",
               "title": "Verifizieren"
             },
             {
-              "description": "Wenn etwas fehlschlaegt, wissen Sie es sofort. Integration mit PagerDuty, Slack, E-Mail. Kein Dashboard zum Pruefen.",
+              "description": "Wenn etwas fehlschlägt, wissen Sie es sofort. Integration mit PagerDuty, Slack, E-Mail. Kein Dashboard zum Prüfen.",
               "icon": "bell",
               "title": "Alarmieren"
             }
@@ -3655,7 +3666,7 @@
         "label": "Backup-Verifizierung",
         "meta": {
           "description": "Warten Sie nicht auf eine Katastrophe, um herauszufinden, dass Ihr Backup beschädigt ist. Rediacc prüft jedes Backup im Moment seiner Erstellung.",
-          "keywords": "Backup-Verifizierung, Backup-Tests, Wiederherstellungsverifizierung, Backup-Integritaet, automatische Backup-Pruefung, btrfs-Klon, Backup-Zustandspruefung",
+          "keywords": "Backup-Verifizierung, Backup-Tests, Wiederherstellungsverifizierung, Backup-Integrität, automatische Backup-Prüfung, btrfs-Klon, Backup-Zustandsprüfung",
           "title": "Backup-Verifizierung - Automatisch | Rediacc"
         },
         "problem": {
@@ -3671,7 +3682,7 @@
               "number": "Nur 13%",
               "ref": 2,
               "source": "Veeam Data Protection Trends Report 2024",
-              "text": "der Organisationen koennen die Wiederherstellung waehrend einer Katastrophe orchestrieren"
+              "text": "der Organisationen können die Wiederherstellung während einer Katastrophe orchestrieren"
             },
             {
               "number": "$173/Datensatz",
@@ -3767,16 +3778,16 @@
           "rediaccLabel": "Rediacc-Verifizierung",
           "rows": [
             {
-              "rediacc": "Vollstaendige Wiederherstellung + Start + Integritaetspruefung — Dienstintegritaet",
-              "traditional": "Pruefsummenvalidierung — nur Dateiintegritaet"
+              "rediacc": "Vollständige Wiederherstellung + Start + Integritätsprüfung — Dienstintegrität",
+              "traditional": "Prüfsummenvalidierung — nur Dateiintegrität"
             },
             {
-              "rediacc": "Tatsaechliche Wiederherstellung in isoliertem Klon und Verifizierung jedes Endpunkts",
-              "traditional": "„Backup abgeschlossen“-Status — kein Beweis fuer Wiederherstellbarkeit"
+              "rediacc": "Tatsächliche Wiederherstellung in isoliertem Klon und Verifizierung jedes Endpunkts",
+              "traditional": "„Backup abgeschlossen“-Status — kein Beweis für Wiederherstellbarkeit"
             },
             {
-              "rediacc": "Automatisiert taeglich — jedes Backup, jedes Mal",
-              "traditional": "Manuelle Stichprobe — bestenfalls vierteljaehrlich"
+              "rediacc": "Automatisiert täglich — jedes Backup, jedes Mal",
+              "traditional": "Manuelle Stichprobe — bestenfalls vierteljährlich"
             },
             {
               "rediacc": "btrfs-Klon in Sekunden — nahezu null Speicher-Overhead",
@@ -3791,14 +3802,14 @@
         "benefits": {
           "items": [
             {
-              "description": "Eine Cloud faellt aus, eine andere uebernimmt. Kein manueller Eingriff. Automatischer Failover bei fehlgeschlagener Integritaetspruefung. Anbindung an Ihren Monitoring-Stack.",
+              "description": "Eine Cloud fällt aus, eine andere übernimmt. Kein manueller Eingriff. Automatischer Failover bei fehlgeschlagener Integritätsprüfung. Anbindung an Ihren Monitoring-Stack.",
               "icon": "cloud",
               "title": "Immer online"
             },
             {
               "description": "AWS, Azure, GCP, Hetzner oder Ihre eigene Hardware. Frei kombinieren. Jede Linux-Maschine mit btrfs kann ein Replikationsziel sein.",
               "icon": "layers",
-              "title": "Multi-Cloud standardmaessig"
+              "title": "Multi-Cloud standardmäßig"
             },
             {
               "description": "Wechseln Sie jederzeit zwischen Clouds. Die gesicherten Kopien nutzen ein offenes Format, es gibt keine proprietären Agents. Es ist Standard-btrfs, seit 2013 fester Bestandteil von Linux.",
@@ -3808,7 +3819,7 @@
           ],
           "title": "Was Sie bekommen"
         },
-        "blurb": "Wenn AWS ausfaellt, laufen Sie weiter",
+        "blurb": "Wenn AWS ausfällt, laufen Sie weiter",
         "bottomCta": {
           "command": "rdc repo push production --to secondary-dc",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Replizieren Sie standortübergreifend kostenlos. Keine Kreditkarte.",
@@ -3857,12 +3868,12 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Nur inkrementelle Uebertragung (98% Einsparung)",
+              "name": "Nur inkrementelle Übertragung (98% Einsparung)",
               "refs": [0, 7, 8, 9, 0],
               "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
-              "name": "Anbieteruebergreifender Failover",
+              "name": "Anbieterübergreifender Failover",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -3954,9 +3965,9 @@
               "title": "Replizieren"
             },
             {
-              "description": "Kontinuierliche Integritaetspruefungen erkennen Ausfaelle sofort. Anbindung an Ihren Monitoring-Stack (Grafana, Prometheus).",
+              "description": "Kontinuierliche Integritätsprüfungen erkennen Ausfälle sofort. Anbindung an Ihren Monitoring-Stack (Grafana, Prometheus).",
               "icon": "eye",
-              "title": "Ueberwachen"
+              "title": "Überwachen"
             },
             {
               "description": "Traffic wird in unter 30 Sekunden auf gesunde Infrastruktur umgeleitet. Automatische DNS-Updates. Null manuelle Schritte.",
@@ -3969,7 +3980,7 @@
         "label": "Cloud-Ausfallschutz",
         "meta": {
           "description": "Ihre Infrastruktur läuft auf mehreren Clouds. Wenn eine ausfällt, übernehmen die anderen. Automatisch.",
-          "keywords": "Cloud-Ausfallschutz, Multi-Cloud-Failover, Cloud-uebergreifende Replikation, Notfallwiederherstellung, Cloud-Redundanz, automatisches Failover, btrfs-Replikation",
+          "keywords": "Cloud-Ausfallschutz, Multi-Cloud-Failover, Cloud-übergreifende Replikation, Notfallwiederherstellung, Cloud-Redundanz, automatisches Failover, btrfs-Replikation",
           "title": "Cloud-Ausfallschutz – Immer online | Rediacc"
         },
         "problem": {
@@ -3979,19 +3990,19 @@
               "number": "$300K+",
               "ref": 1,
               "source": "ITIC 2024 Hourly Cost of Downtime Survey",
-              "text": "pro Stunde Ausfallzeit fuer 90% der mittelgrossen bis grossen Unternehmen"
+              "text": "pro Stunde Ausfallzeit für 90% der mittelgroßen bis großen Unternehmen"
             },
             {
               "number": "18%",
               "ref": 2,
               "source": "Parametrix 2024 Cloud Outage Risk Report",
-              "text": "Anstieg kritischer Cloud-Ausfaelle im Jahr 2024"
+              "text": "Anstieg kritischer Cloud-Ausfälle im Jahr 2024"
             },
             {
               "number": "$400 Mrd.",
               "ref": 3,
               "source": "Splunk / Oxford Economics 2024",
-              "text": "jaehrliche Ausfallkosten fuer Global-2000-Unternehmen"
+              "text": "jährliche Ausfallkosten für Global-2000-Unternehmen"
             }
           ],
           "timeline": {
@@ -4017,7 +4028,7 @@
               },
               {
                 "day": "Stunde 8+",
-                "text": "Immer noch eingeschraenkt"
+                "text": "Immer noch eingeschränkt"
               }
             ]
           },
@@ -4104,20 +4115,20 @@
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
-              "rediacc": "Inkrementeller Diff: nur geaenderte Bloecke, typisch 2,4 GB taeglicher Transfer",
-              "traditional": "Vollstaendiger VM-Image-Transfer: 380 GB pro Synchronisierungszyklus, Stunden bis zum Abschluss"
+              "rediacc": "Inkrementeller Diff: nur geänderte Blöcke, typisch 2,4 GB täglicher Transfer",
+              "traditional": "Vollständiger VM-Image-Transfer: 380 GB pro Synchronisierungszyklus, Stunden bis zum Abschluss"
             },
             {
               "rediacc": "Cloud-agnostisch: jede Linux-Maschine zu jeder Linux-Maschine",
               "traditional": "Anbietergebundene Replikation (AWS zu AWS, Azure zu Azure)"
             },
             {
-              "rediacc": "Automatische Integritaetspruefung + DNS-Failover in unter 30 Sekunden",
+              "rediacc": "Automatische Integritätsprüfung + DNS-Failover in unter 30 Sekunden",
               "traditional": "Manueller DNS-Failover: 15-60 Minuten Ingenieurzeit"
             },
             {
-              "rediacc": "Egress-Gebuehren: $0,09/GB, ~$0,22/Sync fuer 2,4 GB inkrementellen Diff",
-              "traditional": "Egress-Gebuehren: $0,09/GB, ~$34/Sync fuer 380 GB Full-Image"
+              "rediacc": "Egress-Gebühren: $0,09/GB, ~$0,22/Sync für 2,4 GB inkrementellen Diff",
+              "traditional": "Egress-Gebühren: $0,09/GB, ~$34/Sync für 380 GB Full-Image"
             }
           ],
           "title": "Warum Cross-Cloud-Replikation schnell und günstig ist",
@@ -4128,24 +4139,24 @@
         "benefits": {
           "items": [
             {
-              "description": "Schwachstellen am Tag ihres Auftauchens erkennen — nicht 6 Monate spaeter beim naechsten jaehrlichen Audit. Null blinde Flecken.",
+              "description": "Schwachstellen am Tag ihres Auftauchens erkennen — nicht 6 Monate später beim nächsten jährlichen Audit. Null blinde Flecken.",
               "icon": "clock",
-              "title": "Taegliche Abdeckung"
+              "title": "Tägliche Abdeckung"
             },
             {
-              "description": "Klonen, Testen, Berichten und Alarmieren erfolgen ohne manuelle Arbeit. Zeitplan einmal festlegen, Ergebnisse fuer immer erhalten.",
+              "description": "Klonen, Testen, Berichten und Alarmieren erfolgen ohne manuelle Arbeit. Zeitplan einmal festlegen, Ergebnisse für immer erhalten.",
               "icon": "check-circle",
-              "title": "Vollstaendig automatisiert"
+              "title": "Vollständig automatisiert"
             },
             {
-              "description": "Schwachstellen-Trends ueber die Zeit verfolgen. Sehen, wie sich Ihre Sicherheitslage Woche fuer Woche mit automatisierten Trendberichten verbessert.",
+              "description": "Schwachstellen-Trends über die Zeit verfolgen. Sehen, wie sich Ihre Sicherheitslage Woche für Woche mit automatisierten Trendberichten verbessert.",
               "icon": "trending-down",
               "title": "Messbare Verbesserung"
             }
           ],
           "title": "Was Sie bekommen"
         },
-        "blurb": "Sicherheit kontinuierlich testen, nicht jaehrlich",
+        "blurb": "Sicherheit kontinuierlich testen, nicht jährlich",
         "bottomCta": {
           "command": "rdc backup restore production --as production-verify -m primary --up",
           "primaryCta": "Kostenlos starten",
@@ -4227,12 +4238,12 @@
           },
           "steps": [
             {
-              "description": "Taegliche, woechentliche oder benutzerdefinierte Testfrequenz festlegen. Zeitfenster waehlen, in dem Scans die Monitoring-Baselines nicht beeinflussen.",
+              "description": "Tägliche, wöchentliche oder benutzerdefinierte Testfrequenz festlegen. Zeitfenster wählen, in dem Scans die Monitoring-Baselines nicht beeinflussen.",
               "icon": "clock",
               "title": "Planen"
             },
             {
-              "description": "Ein frischer Produktionsklon wird automatisch erstellt. KI-Pentests laufen gegen echte Daten und echte Konfigurationen. Klon wird zerstoert.",
+              "description": "Ein frischer Produktionsklon wird automatisch erstellt. KI-Pentests laufen gegen echte Daten und echte Konfigurationen. Klon wird zerstört.",
               "icon": "copy",
               "title": "Klonen + Angreifen"
             },
@@ -4247,7 +4258,7 @@
         "label": "Kontinuierliche Sicherheitstests",
         "meta": {
           "description": "Führen Sie täglich Sicherheitstests auf frischen Produktionsklonen durch. Finden Sie Schwachstellen, wenn sie auftreten — nicht Monate später.",
-          "keywords": "kontinuierliche Sicherheitstests, taegliches Pentesting, automatisierte Sicherheit, Schwachstellenerkennung",
+          "keywords": "kontinuierliche Sicherheitstests, tägliches Pentesting, automatisierte Sicherheit, Schwachstellenerkennung",
           "title": "Kontinuierliche Sicherheitstests — Rediacc"
         },
         "problem": {
@@ -4257,13 +4268,13 @@
               "number": "364 Tage",
               "ref": 0,
               "source": "Industry standard: 365 days minus testing window",
-              "text": "Exposition zwischen jaehrlichen Pentests"
+              "text": "Exposition zwischen jährlichen Pentests"
             },
             {
               "number": "30.6 days",
               "ref": 1,
               "source": "Qualys TruRisk Research Report 2023",
-              "text": "durchschnittliche Zeit zur Behebung waffenfaehiger Schwachstellen"
+              "text": "durchschnittliche Zeit zur Behebung waffenfähiger Schwachstellen"
             },
             {
               "number": "$4,88M",
@@ -4274,12 +4285,12 @@
           ],
           "timeline": {
             "newLabel": "MIT REDIACC",
-            "newSteps": ["Taegliche Scans", "0 Tage", "Keine blinden Flecken"],
+            "newSteps": ["Tägliche Scans", "0 Tage", "Keine blinden Flecken"],
             "oldLabel": "JÄHRLICHE PENTESTS",
             "oldSteps": [
               {
                 "day": "Jan",
-                "text": "Pentest durchfuehren"
+                "text": "Pentest durchführen"
               },
               {
                 "day": "Feb-Mrz",
@@ -4294,7 +4305,7 @@
                 "text": "Neue Schwachstellen tauchen auf"
               },
               {
-                "day": "Realitaet",
+                "day": "Realität",
                 "text": "364 Tage blind"
               }
             ]
@@ -4335,7 +4346,7 @@
           "rediaccLabel": "Rediacc (kontinuierlich)",
           "rows": [
             {
-              "rediacc": "Taeglich, woechentlich oder bei jedem Deployment",
+              "rediacc": "Täglich, wöchentlich oder bei jedem Deployment",
               "traditional": "1-2x pro Jahr (Monate im Voraus geplant)"
             },
             {
@@ -4352,7 +4363,7 @@
             },
             {
               "rediacc": "One-time setup, then fully automated",
-              "traditional": "Planen, Umfang definieren, koordinieren, ueberpruefen"
+              "traditional": "Planen, Umfang definieren, koordinieren, überprüfen"
             },
             {
               "rediacc": "$0 Grenzkosten (nur Infrastrukturkosten)",
@@ -4706,7 +4717,7 @@
         "title": "Wenig Zeit?"
       },
       "encryption": {
-        "blurb": "Ihre Schluessel. Ihre Verschluesselung. Ohne Ausnahme.",
+        "blurb": "Ihre Schlüssel. Ihre Verschlüsselung. Ohne Ausnahme.",
         "bottomCta": {
           "command": "rdc repo up production",
           "primaryCta": "Kostenlos mit Community starten",
@@ -4745,7 +4756,7 @@
           "description": "Die meisten Backup-Tools verschlüsseln Ihre Daten mit ihren Schlüsseln. Das ist nicht Ihre Verschlüsselung — es ist deren.",
           "features": [
             {
-              "name": "Kundeneigene Verschluesselungsschluessel",
+              "name": "Kundeneigene Verschlüsselungsschlüssel",
               "refs": [3, 4, 5, 6, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -4755,22 +4766,22 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Selbstbedienungs-Schluesselrotation",
+              "name": "Selbstbedienungs-Schlüsselrotation",
               "refs": [7, 8, 9, 10, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "AES-256-Verschluesselung im Ruhezustand",
+              "name": "AES-256-Verschlüsselung im Ruhezustand",
               "refs": [11, 12, 13, 14, 0],
               "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
-              "name": "Schluessel-Isolation pro Repository",
+              "name": "Schlüssel-Isolation pro Repository",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Verschluesselung bei der Uebertragung",
+              "name": "Verschlüsselung bei der Übertragung",
               "refs": [15, 16, 17, 18, 0],
               "values": ["check", "check", "check", "check", "rediacc"]
             },
@@ -4846,27 +4857,27 @@
           },
           "steps": [
             {
-              "description": "rdc keygen production ausfuehren. Ein 4096-Bit-RSA-Schluesselpaar erstellen, das nur Sie besitzen.",
+              "description": "rdc keygen production ausführen. Ein 4096-Bit-RSA-Schlüsselpaar erstellen, das nur Sie besitzen.",
               "icon": "key",
               "title": "Generieren"
             },
             {
-              "description": "Jedes Backup wird mit AES-256-GCM und Ihrem Schluessel versiegelt. Daten werden automatisch im Ruhezustand und bei der Uebertragung verschluesselt.",
+              "description": "Jedes Backup wird mit AES-256-GCM und Ihrem Schlüssel versiegelt. Daten werden automatisch im Ruhezustand und bei der Übertragung verschlüsselt.",
               "icon": "lock",
-              "title": "Verschluesseln"
+              "title": "Verschlüsseln"
             },
             {
-              "description": "Zero-Knowledge-Architektur. Rediacc sieht nie Ihren Schluessel, beruehrt nie Ihre Klartextdaten. Nur Sie koennen entschluesseln.",
+              "description": "Zero-Knowledge-Architektur. Rediacc sieht nie Ihren Schlüssel, berührt nie Ihre Klartextdaten. Nur Sie können entschlüsseln.",
               "icon": "eye-off",
               "title": "Kontrollieren"
             }
           ],
           "title": "Ein Befehl. Totale Kontrolle."
         },
-        "label": "Verschluesselung unter Ihrer Kontrolle",
+        "label": "Verschlüsselung unter Ihrer Kontrolle",
         "meta": {
           "description": "Jedes Backup wird mit Schlüsseln verschlüsselt, die Ihnen gehören. Nicht die Schlüssel Ihres Anbieters. Nicht geteilte Schlüssel. Nur Ihre.",
-          "keywords": "Verschluesselung, Zero-Knowledge, kundenverwaltete Schluessel, AES-256, Backup-Verschluesselung",
+          "keywords": "Verschlüsselung, Zero-Knowledge, kundenverwaltete Schlüssel, AES-256, Backup-Verschlüsselung",
           "title": "Verschlüsselung unter Ihrer Kontrolle — Rediacc"
         },
         "problem": {
@@ -4876,7 +4887,7 @@
               "number": "Nur 8%",
               "ref": 1,
               "source": "Thales 2025 Cloud Security Study",
-              "text": "der Organisationen verschluesseln 80%+ ihrer Cloud-Daten"
+              "text": "der Organisationen verschlüsseln 80%+ ihrer Cloud-Daten"
             },
             {
               "number": "$4,88M",
@@ -4888,7 +4899,7 @@
               "number": "57%",
               "ref": 1,
               "source": "Thales 2025 Cloud Security Study",
-              "text": "der Organisationen nutzen 5+ Schluesselverwaltungssysteme, was Verschluesselungs-Blindstellen schafft"
+              "text": "der Organisationen nutzen 5+ Schlüsselverwaltungssysteme, was Verschlüsselungs-Blindstellen schafft"
             }
           ],
           "title": "Vom Anbieter verwaltete Schlüssel gehören nicht wirklich Ihnen"
@@ -5003,20 +5014,20 @@
           "rediaccLabel": "Rediacc (Schlüssel beim Kunden)",
           "rows": [
             {
-              "rediacc": "Kundeneigene Schluessel — nur Sie koennen entschluesseln",
-              "traditional": "Anbieter haelt Verschluesselungsschluessel — kann auf Ihre Daten zugreifen"
+              "rediacc": "Kundeneigene Schlüssel — nur Sie können entschlüsseln",
+              "traditional": "Anbieter hält Verschlüsselungsschlüssel — kann auf Ihre Daten zugreifen"
             },
             {
-              "rediacc": "Schlussel-Isolation pro Repository auf Ihrer Infrastruktur",
-              "traditional": "Gemeinsame Schluesselinfrastruktur ueber Mandanten hinweg"
+              "rediacc": "Schlüssel-Isolation pro Repository auf Ihrer Infrastruktur",
+              "traditional": "Gemeinsame Schlüsselinfrastruktur über Mandanten hinweg"
             },
             {
               "rediacc": "Zero-Knowledge — Datenpanne hat keine nutzbaren Daten offenzulegen",
-              "traditional": "Anbieter-Datenpanne legt alle verschluesselten Daten offen"
+              "traditional": "Anbieter-Datenpanne legt alle verschlüsselten Daten offen"
             },
             {
-              "rediacc": "Selbstbedienungs-Schluesselrotation via CLI — keine Abhaengigkeiten. Jeder Lesevorgang wird geprüft, sodass Manipulationen sofort auffallen.",
-              "traditional": "Schluesselrotation erfordert Anbieterbeteiligung"
+              "rediacc": "Selbstbedienungs-Schlüsselrotation via CLI — keine Abhängigkeiten. Jeder Lesevorgang wird geprüft, sodass Manipulationen sofort auffallen.",
+              "traditional": "Schlüsselrotation erfordert Anbieterbeteiligung"
             }
           ],
           "title": "Warum anbietergesteuerte Verschlüsselung Sie im Stich lässt"
@@ -5184,12 +5195,12 @@
           },
           "steps": [
             {
-              "description": "Der Entwickler fuehrt rdc ceph snapshot create production aus. Keine Tickets. Keine Genehmigungen.",
+              "description": "Der Entwickler führt rdc ceph snapshot create production aus. Keine Tickets. Keine Genehmigungen.",
               "icon": "terminal",
               "title": "Ausführen"
             },
             {
-              "description": "Eine exakte Kopie der Produktion ist in 60 Sekunden verfuegbar. Gleiches Betriebssystem, gleiche Konfigurationen, gleiche Daten.",
+              "description": "Eine exakte Kopie der Produktion ist in 60 Sekunden verfügbar. Gleiches Betriebssystem, gleiche Konfigurationen, gleiche Daten.",
               "icon": "copy",
               "title": "Klonen"
             },
@@ -5220,7 +5231,7 @@
               "number": "$6,9M/Jahr",
               "ref": 1,
               "source": "Atlassian 2024",
-              "text": "Kosten fuer Entwicklerineffizienz pro 500 Entwickler"
+              "text": "Kosten für Entwicklerineffizienz pro 500 Entwickler"
             },
             {
               "number": "$50K/Jahr",
@@ -5240,7 +5251,7 @@
               },
               {
                 "day": "Tue",
-                "text": "Ops prueft"
+                "text": "Ops prüft"
               },
               {
                 "day": "Wed",
@@ -5252,7 +5263,7 @@
               },
               {
                 "day": "Fri",
-                "text": "Stimmt nicht mit Prod ueberein"
+                "text": "Stimmt nicht mit Prod überein"
               }
             ]
           },
@@ -5339,19 +5350,19 @@
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
-              "rediacc": "Nur-Metadaten-Snapshot: unter einer Sekunde, beliebige Groesse",
-              "traditional": "Docker-Volume-Kopie: vollstaendige Datenkopie, Minuten bis Stunden"
+              "rediacc": "Nur-Metadaten-Snapshot: unter einer Sekunde, beliebige Größe",
+              "traditional": "Docker-Volume-Kopie: vollständige Datenkopie, Minuten bis Stunden"
             },
             {
               "rediacc": "Sofortige Leseleistung, kein Lazy-Load, nahezu null Kosten",
-              "traditional": "AWS EBS Snapshot: asynchron, Lazy-Load-Einbussen, $0,75/Snap/AZ/Std fuer Fast Restore"
+              "traditional": "AWS EBS Snapshot: asynchron, Lazy-Load-Einbußen, $0,75/Snap/AZ/Std für Fast Restore"
             },
             {
               "rediacc": "Jede Datenbank-Engine wird gleichzeitig in einer atomaren Operation geklont",
               "traditional": "pg_dump von 241 GB: ca. 12-36 Stunden, nur PostgreSQL"
             },
             {
-              "rediacc": "10 Klone teilen Bloecke via CoW (~12 GB Delta)",
+              "rediacc": "10 Klone teilen Blöcke via CoW (~12 GB Delta)",
               "traditional": "10 Klone = 10x Speicher (2,4 TB)"
             },
             {
@@ -5524,7 +5535,7 @@
           },
           "steps": [
             {
-              "description": "rdc failover test --simulate ausfuehren. Kontrollierter Ausfall gegen einen Klon. Null Risiko fuer die Produktion.",
+              "description": "rdc failover test --simulate ausführen. Kontrollierter Ausfall gegen einen Klon. Null Risiko für die Produktion.",
               "icon": "flask",
               "title": "Simulieren"
             },
@@ -5534,7 +5545,7 @@
               "title": "Beobachten"
             },
             {
-              "description": "Bestanden/Nicht-bestanden-Bericht mit exaktem RTO, RPO und Dienststatus pro Service erhalten. Luecken schliessen, bevor sie zu echten Ausfaellen werden.",
+              "description": "Bestanden/Nicht-bestanden-Bericht mit exaktem RTO, RPO und Dienststatus pro Service erhalten. Lücken schließen, bevor sie zu echten Ausfällen werden.",
               "icon": "check-circle",
               "title": "Verifizieren"
             }
@@ -5560,18 +5571,18 @@
               "number": "Nur 32%",
               "ref": 1,
               "source": "Veeam 2024 Data Protection Trends Report",
-              "text": "der Organisationen koennen 50 Server innerhalb einer Arbeitswoche wiederherstellen"
+              "text": "der Organisationen können 50 Server innerhalb einer Arbeitswoche wiederherstellen"
             },
             {
               "number": "Nur 58%",
               "ref": 1,
               "source": "Veeam 2024 Data Protection Trends Report",
-              "text": "der Server wurden innerhalb des SLA waehrend Wiederherstellungstests wiederaufgenommen"
+              "text": "der Server wurden innerhalb des SLA während Wiederherstellungstests wiederaufgenommen"
             }
           ],
           "timeline": {
             "newLabel": "Mit Rediacc",
-            "newSteps": ["Test ausfuehren", "4 min", "Bericht"],
+            "newSteps": ["Test ausführen", "4 min", "Bericht"],
             "oldLabel": "Der alte Weg",
             "oldSteps": [
               {
@@ -5580,7 +5591,7 @@
               },
               {
                 "day": "Q2",
-                "text": "Verschieben (zu beschaeftigt)"
+                "text": "Verschieben (zu beschäftigt)"
               },
               {
                 "day": "Q3",
@@ -5588,11 +5599,11 @@
               },
               {
                 "day": "Tag 1",
-                "text": "Test manuell durchfuehren"
+                "text": "Test manuell durchführen"
               },
               {
                 "day": "Tag 2",
-                "text": "Luecken finden, Panik"
+                "text": "Lücken finden, Panik"
               }
             ]
           },
@@ -5672,7 +5683,7 @@
             },
             {
               "rediacc": "Ein Befehl, 4 Minuten, automatisiert",
-              "traditional": "3-5 Tage Planung, Team zusammenstellen, Durchfuehrung"
+              "traditional": "3-5 Tage Planung, Team zusammenstellen, Durchführung"
             },
             {
               "rediacc": "Monatlich oder via Cron/CI — so oft testen wie deployen",
@@ -5731,7 +5742,7 @@
           "description": "Traditionelle Backup-Tools versprechen Unveränderlichkeit durch Software-Sperren. Ransomware kann diese knacken. Rediacc erzwingt sie auf Speicherebene, wo Ransomware nicht hinreicht.",
           "features": [
             {
-              "name": "Unveraenderliche Backups",
+              "name": "Unveränderliche Backups",
               "refs": [4, 5, 6, 7, 0, 0],
               "values": ["check", "check", "check", "check", "cross", "rediacc"]
             },
@@ -5741,7 +5752,7 @@
               "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Automatisierte taegliche Wiederherstellungsverifizierung",
+              "name": "Automatisierte tägliche Wiederherstellungsverifizierung",
               "refs": [8, 0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -5761,7 +5772,7 @@
               "values": ["Minuten", "Minuten", "Hours", "Hours", "Sekunden", "<5 min"]
             },
             {
-              "name": "Self-Hosted / keine Cloud-Abhaengigkeit",
+              "name": "Self-Hosted / keine Cloud-Abhängigkeit",
               "refs": [19, 20, 21, 0, 22, 0],
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
@@ -5832,12 +5843,12 @@
           },
           "steps": [
             {
-              "description": "rdc repo push production --immutable ausfuehren. Ihre Daten werden sofort erfasst und versiegelt.",
+              "description": "rdc repo push production --immutable ausführen. Ihre Daten werden sofort erfasst und versiegelt.",
               "icon": "download",
               "title": "Sichern"
             },
             {
-              "description": "Unveraenderlichkeit greift auf Dateisystemebene. Keine Aenderungen erlaubt. Nicht durch Ransomware. Nicht durch Root.",
+              "description": "Unveränderlichkeit greift auf Dateisystemebene. Keine Änderungen erlaubt. Nicht durch Ransomware. Nicht durch Root.",
               "icon": "lock",
               "title": "Versiegeln"
             },
@@ -5849,10 +5860,10 @@
           ],
           "title": "Ein Befehl. Totaler Schutz."
         },
-        "label": "Unveraenderliche Backups",
+        "label": "Unveränderliche Backups",
         "meta": {
           "description": "Ihre Backups sind unveränderlich ab dem Moment ihrer Erstellung. Niemand kann sie ändern. Keine Hacker. Nicht einmal Sie.",
-          "keywords": "unveraenderliche Backups, Ransomware-Schutz, btrfs-Snapshots, Backup-Verifizierung, Notfallwiederherstellung, Copy-on-Write, versiegelte Backups",
+          "keywords": "unveränderliche Backups, Ransomware-Schutz, btrfs-Snapshots, Backup-Verifizierung, Notfallwiederherstellung, Copy-on-Write, versiegelte Backups",
           "title": "Immutable Backups - Ransomware-Schutz | Rediacc"
         },
         "problem": {
@@ -6004,7 +6015,7 @@
               "traditional": "Verifizierung = nur Statusmeldung „Backup abgeschlossen“"
             },
             {
-              "rediacc": "CoW-Snapshots: 30 taegliche Backups teilen Bloecke (~40 GB Delta gesamt)",
+              "rediacc": "CoW-Snapshots: 30 tägliche Backups teilen Blöcke (~40 GB Delta gesamt)",
               "traditional": "Vollkopie pro Backup: 380 GB x 30 Tage = 11,4 TB Speicher"
             }
           ],
@@ -6013,7 +6024,7 @@
         }
       },
       "infrastructureCosts": {
-        "blurb": "Schluss mit dem Bezahlen fuer ungenutzte Umgebungen",
+        "blurb": "Schluss mit dem Bezahlen für ungenutzte Umgebungen",
         "bottomCta": {
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Starten Sie mit der kostenlosen Community-Edition. On-Demand-Klonen inklusive.",
@@ -6059,12 +6070,12 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Konfigurierbare TTL mit Auto-Zerstoerung",
+              "name": "Konfigurierbare TTL mit Auto-Zerstörung",
               "refs": [4, 0, 0, 0, 0],
               "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Vollstaendige Produktionsdaten im Klon",
+              "name": "Vollständige Produktionsdaten im Klon",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -6148,17 +6159,17 @@
           },
           "steps": [
             {
-              "description": "Einen produktionsidentischen Klon bei Bedarf erstellen. 52 Sekunden. Kostet Centbetraege dank Copy-on-Write.",
+              "description": "Einen produktionsidentischen Klon bei Bedarf erstellen. 52 Sekunden. Kostet Centbeträge dank Copy-on-Write.",
               "icon": "zap",
               "title": "Hochfahren"
             },
             {
-              "description": "Entwickeln, testen, demonstrieren — was auch immer Sie brauchen. Nur geaenderte Bloecke verbrauchen zusaetzlichen Speicherplatz.",
+              "description": "Entwickeln, testen, demonstrieren — was auch immer Sie brauchen. Nur geänderte Blöcke verbrauchen zusätzlichen Speicherplatz.",
               "icon": "terminal",
               "title": "Use"
             },
             {
-              "description": "Umgebung wird nach konfigurierbarer TTL automatisch zerstoert. Speicher wird sofort freigegeben. Null Restkosten.",
+              "description": "Umgebung wird nach konfigurierbarer TTL automatisch zerstört. Speicher wird sofort freigegeben. Null Restkosten.",
               "icon": "clock",
               "title": "Abbauen"
             }
@@ -6184,7 +6195,7 @@
               "number": "$6,9M/Jahr",
               "ref": 2,
               "source": "Atlassian 2024",
-              "text": "Kosten fuer Entwicklerineffizienz pro 500 Entwickler"
+              "text": "Kosten für Entwicklerineffizienz pro 500 Entwickler"
             },
             {
               "number": "$24K–$50K",
@@ -6253,19 +6264,19 @@
           "rows": [
             {
               "rediacc": "2.1 GB per clone (0.6%) — shared blocks with production",
-              "traditional": "380 GB pro Umgebung, vollstaendig dupliziert"
+              "traditional": "380 GB pro Umgebung, vollständig dupliziert"
             },
             {
-              "rediacc": "On-Demand mit konfigurierbarer TTL — automatische Zerstoerung nach Fertigstellung",
-              "traditional": "Dauerbetrieb, 24/7 bezahlen unabhaengig von der Nutzung"
+              "rediacc": "On-Demand mit konfigurierbarer TTL — automatische Zerstörung nach Fertigstellung",
+              "traditional": "Dauerbetrieb, 24/7 bezahlen unabhängig von der Nutzung"
             },
             {
               "rediacc": "Automatische Bereinigung, Speicher wird sofort freigegeben",
-              "traditional": "Manueller Abbau, vergessene Umgebungen haeufen sich an"
+              "traditional": "Manueller Abbau, vergessene Umgebungen häufen sich an"
             },
             {
-              "rediacc": "52 Sekunden fuer einen produktionsidentischen Klon",
-              "traditional": "15–30 Minuten fuer die Bereitstellung jeder neuen Umgebung"
+              "rediacc": "52 Sekunden für einen produktionsidentischen Klon",
+              "traditional": "15–30 Minuten für die Bereitstellung jeder neuen Umgebung"
             },
             {
               "rediacc": "Cluster für den Test forken, danach löschen. Kopien teilen sich den Speicher.",
@@ -6348,17 +6359,17 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Automatisierte Integritaetspruefungen nach Wiederherstellung",
+              "name": "Automatisierte Integritätsprüfungen nach Wiederherstellung",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Point-in-Time-Snapshot-Granularitaet",
+              "name": "Point-in-Time-Snapshot-Granularität",
               "refs": [8, 9, 10, 11, 0],
               "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
-              "name": "Zero-Overhead-Klon (kein zusaetzlicher Speicher)",
+              "name": "Zero-Overhead-Klon (kein zusätzlicher Speicher)",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -6439,12 +6450,12 @@
           },
           "steps": [
             {
-              "description": "rdc repo snapshot list production ausfuehren. Einen beliebigen Zeitpunkt in Ihrer Backup-Timeline auswaehlen.",
+              "description": "rdc repo snapshot list production ausführen. Einen beliebigen Zeitpunkt in Ihrer Backup-Timeline auswählen.",
               "icon": "clock",
-              "title": "Auswaehlen"
+              "title": "Auswählen"
             },
             {
-              "description": "rdc restore production --from <snapshot> ausfuehren. btrfs-Klon stellt die komplette Umgebung atomar wieder her.",
+              "description": "rdc restore production --from <snapshot> ausführen. btrfs-Klon stellt die komplette Umgebung atomar wieder her.",
               "icon": "refresh",
               "title": "Wiederherstellen"
             },
@@ -6459,7 +6470,7 @@
         "label": "Sofortige Wiederherstellung",
         "meta": {
           "description": "Nicht nur Dateien. Komplette Umgebungen (Server, Konfigurationen, Datenbanken) in Minuten wiederhergestellt und am Laufen.",
-          "keywords": "sofortige Wiederherstellung, vollstaendige Umgebungswiederherstellung, btrfs-Klon, Notfallwiederherstellung, Backup-Wiederherstellung, Zeitpunktwiederherstellung, Gesundheitspruefungen, Ein-Befehl-Wiederherstellung",
+          "keywords": "sofortige Wiederherstellung, vollständige Umgebungswiederherstellung, btrfs-Klon, Notfallwiederherstellung, Backup-Wiederherstellung, Zeitpunktwiederherstellung, Gesundheitsprüfungen, Ein-Befehl-Wiederherstellung",
           "title": "Sofortige Wiederherstellung - Vollrestore | Rediacc"
         },
         "problem": {
@@ -6475,18 +6486,18 @@
               "number": "$300K+/Std",
               "ref": 2,
               "source": "ITIC Hourly Cost of Downtime Survey 2024",
-              "text": "Ausfallkosten fuer 90% der mittelgrossen und grossen Unternehmen"
+              "text": "Ausfallkosten für 90% der mittelgroßen und großen Unternehmen"
             },
             {
               "number": "Nur 13%",
               "ref": 3,
               "source": "Veeam Data Protection Trends Report 2024",
-              "text": "der Organisationen koennen die Wiederherstellung waehrend einer Katastrophe orchestrieren"
+              "text": "der Organisationen können die Wiederherstellung während einer Katastrophe orchestrieren"
             }
           ],
           "timeline": {
             "newLabel": "Mit Rediacc",
-            "newSteps": ["Wiederherstellung starten", "3m 47s", "Laeuft"],
+            "newSteps": ["Wiederherstellung starten", "3m 47s", "Läuft"],
             "oldLabel": "Der alte Weg",
             "oldSteps": [
               {
@@ -6667,7 +6678,7 @@
               "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
-              "name": "Auto-Zerstoerung nach Pipeline",
+              "name": "Auto-Zerstörung nach Pipeline",
               "refs": [8, 0, 9, 0, 0],
               "values": ["check", "cross", "check", "cross", "rediacc"]
             },
@@ -6705,7 +6716,7 @@
               {
                 "footer": "webhook → rdc",
                 "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
-                "status": "Ausloeser",
+                "status": "Auslöser",
                 "title": "Git Push"
               },
               {
@@ -6724,17 +6735,17 @@
           },
           "steps": [
             {
-              "description": "Eine Webhook-Zeile zu Ihrer Git-Konfiguration hinzufuegen. GitLab CI, GitHub Actions oder jedes webhookfaehige System.",
+              "description": "Eine Webhook-Zeile zu Ihrer Git-Konfiguration hinzufügen. GitLab CI, GitHub Actions oder jedes webhookfähige System.",
               "icon": "git-branch",
               "title": "Verbinden"
             },
             {
               "description": "Jeder Push erstellt automatisch einen frischen Produktionsklon. Echte Daten, echte Konfigurationen, echte Dienste.",
               "icon": "bolt",
-              "title": "Ausloesen"
+              "title": "Auslösen"
             },
             {
-              "description": "Ihre CI-Pipeline fuehrt Tests auf einem produktionsidentischen Klon aus. Automatische Zerstoerung nach Testabschluss.",
+              "description": "Ihre CI-Pipeline führt Tests auf einem produktionsidentischen Klon aus. Automatische Zerstörung nach Testabschluss.",
               "icon": "check-circle",
               "title": "Test"
             }
@@ -6760,13 +6771,13 @@
               "number": "182x",
               "ref": 2,
               "source": "DORA State of DevOps, 2024",
-              "text": "haeufigere Deployments bei Teams mit optimierter CI/CD"
+              "text": "häufigere Deployments bei Teams mit optimierter CI/CD"
             },
             {
               "number": "$6,9M/Jahr",
               "ref": 1,
               "source": "Atlassian 2024",
-              "text": "Kosten fuer Entwicklerineffizienz pro 500 Entwickler"
+              "text": "Kosten für Entwicklerineffizienz pro 500 Entwickler"
             }
           ],
           "title": "Custom CI/CD-Skripte brechen und niemand wartet sie"
@@ -6849,7 +6860,7 @@
             },
             {
               "rediacc": "52 Sekunden zum Klonen des gesamten Produktions-Stacks",
-              "traditional": "15–30 Min. fuer die Bereitstellung der Testumgebung"
+              "traditional": "15–30 Min. für die Bereitstellung der Testumgebung"
             },
             {
               "rediacc": "Automatische Bereinigung nach Pipeline-Abschluss",
@@ -7167,7 +7178,7 @@
             {
               "description": "Die Daten bleiben durchgehend mit AES-256 verschlüsselt. Nie entschlüsselt, auch nicht für eine Sekunde.",
               "icon": "lock",
-              "title": "Verschluesselung waehrend der Uebertragung"
+              "title": "Verschlüsselung während der Übertragung"
             },
             {
               "description": "Verschlüsselungskonfiguration, Schlüssel, Docker-Einstellungen und Netzwerkrichtlinien – alles wandert als eine Einheit.",
@@ -7219,12 +7230,12 @@
           "description": "Die meisten Backup-Tools behandeln Migration als Nebensache. Rediacc behandelt sie als erstklassige verschlüsselte Operation.",
           "features": [
             {
-              "name": "Migration ohne Entschluesselung",
+              "name": "Migration ohne Entschlüsselung",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Kundeneigene Schluessel waehrend der Uebertragung",
+              "name": "Kundeneigene Schlüssel während der Übertragung",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -7234,7 +7245,7 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
-              "name": "Integritaetsverifizierung nach Uebertragung",
+              "name": "Integritätsverifizierung nach Übertragung",
               "refs": [6, 7, 8, 9, 0],
               "values": ["check", "check", "check", "check", "rediacc"]
             },
@@ -7325,12 +7336,12 @@
               "title": "Packen"
             },
             {
-              "description": "Uebertragung an ein beliebiges Ziel ueber einen verschluesselten Kanal. AES-256 wird waehrend des Transits nie unterbrochen.",
+              "description": "Übertragung an ein beliebiges Ziel über einen verschlüsselten Kanal. AES-256 wird während des Transits nie unterbrochen.",
               "icon": "arrow-right-circle",
               "title": "Verschieben"
             },
             {
-              "description": "SHA-256-Integritaetspruefungen bestaetigen, dass jedes Byte intakt angekommen ist. Automatischer Rollback bei Fehlern.",
+              "description": "SHA-256-Integritätsprüfungen bestätigen, dass jedes Byte intakt angekommen ist. Automatischer Rollback bei Fehlern.",
               "icon": "check-circle",
               "title": "Verifizieren"
             }
@@ -7340,7 +7351,7 @@
         "label": "Sichere Migration",
         "meta": {
           "description": "Wechsel zwischen Servern, Clouds oder Anbietern? Verschlüsselte Backups reisen sicher – keine Exposition, kein Datenverlust.",
-          "keywords": "verschluesselte Migration, Zero-Exposure-Transfer, Datenmigrationssicherheit, verschluesselter Backup-Transfer, btrfs-Migration, Servermigration, Cloud-Migrationsverschluesselung",
+          "keywords": "verschlüsselte Migration, Zero-Exposure-Transfer, Datenmigrationssicherheit, verschlüsselter Backup-Transfer, btrfs-Migration, Servermigration, Cloud-Migrationsverschlüsselung",
           "title": "Sichere Datenmigration ohne Risiko | Rediacc"
         },
         "problem": {
@@ -7350,7 +7361,7 @@
               "number": "89%",
               "ref": 2,
               "source": "Flexera 2024 / Thales 2025",
-              "text": "der Unternehmen arbeiten Multi-Cloud, aber nur 8% verschluesseln 80%+ der Cloud-Daten"
+              "text": "der Unternehmen arbeiten Multi-Cloud, aber nur 8% verschlüsseln 80%+ der Cloud-Daten"
             },
             {
               "number": "$4,88M",
@@ -7362,7 +7373,7 @@
               "number": "$90K–$300K",
               "ref": 4,
               "source": "Cloud provider pricing",
-              "text": "Egress-Kosten pro Petabyte bei der Migration verschluesselter Daten zwischen Clouds"
+              "text": "Egress-Kosten pro Petabyte bei der Migration verschlüsselter Daten zwischen Clouds"
             }
           ],
           "timeline": {
@@ -7372,7 +7383,7 @@
             "oldSteps": [
               {
                 "day": "Schritt 1",
-                "text": "Daten entschluesseln"
+                "text": "Daten entschlüsseln"
               },
               {
                 "day": "Schritt 2",
@@ -7380,11 +7391,11 @@
               },
               {
                 "day": "Schritt 3",
-                "text": "Unverschluesselt uebertragen"
+                "text": "Unverschlüsselt übertragen"
               },
               {
                 "day": "Schritt 4",
-                "text": "Auf Zielsystem neu verschluesseln"
+                "text": "Auf Zielsystem neu verschlüsseln"
               },
               {
                 "day": "Ergebnis",
@@ -7472,18 +7483,18 @@
           "rows": [
             {
               "rediacc": "Verschlüsseltes btrfs send/receive – wird niemals entschlüsselt",
-              "traditional": "Entschluesseln → uebertragen → neu verschluesseln Pipeline"
+              "traditional": "Entschlüsseln → übertragen → neu verschlüsseln Pipeline"
             },
             {
               "rediacc": "Schlüssel verlassen die Quellmaschine nie",
               "traditional": "Das Migrationstool braucht Zugriff auf die Schlüssel"
             },
             {
-              "rediacc": "Verschluesselungskonfiguration, Docker-Einstellungen, Netzwerkrouten migrieren gemeinsam",
+              "rediacc": "Verschlüsselungskonfiguration, Docker-Einstellungen, Netzwerkrouten migrieren gemeinsam",
               "traditional": "Einstellungen müssen auf der Zielseite manuell neu konfiguriert werden"
             },
             {
-              "rediacc": "SHA-256-Pruefsummenverifizierung pro Repository nach der Uebertragung",
+              "rediacc": "SHA-256-Prüfsummenverifizierung pro Repository nach der Übertragung",
               "traditional": "Man hofft, dass alles angekommen ist – ohne Prüfung"
             },
             {
@@ -7501,15 +7512,15 @@
             {
               "description": "Betriebssystem, Bibliotheken, Konfigurationen, Docker-Einstellungen und echte Produktionsdaten. Alles identisch — automatisch verifiziert.",
               "icon": "check-circle",
-              "title": "Exakte Uebereinstimmung"
+              "title": "Exakte Übereinstimmung"
             },
             {
-              "description": "Frische Klone vom neuesten Produktions-Snapshot jedes Mal. Drift wird nicht schrittweise reduziert — er ist strukturell unmoeglich.",
+              "description": "Frische Klone vom neuesten Produktions-Snapshot jedes Mal. Drift wird nicht schrittweise reduziert — er ist strukturell unmöglich.",
               "icon": "refresh",
               "title": "Kein Drift"
             },
             {
-              "description": "Wenn Dev und Prod Byte fuer Byte identisch sind, hoeren umgebungsspezifische Fehler auf zu existieren. Nicht reduziert — eliminiert.",
+              "description": "Wenn Dev und Prod Byte für Byte identisch sind, hören umgebungsspezifische Fehler auf zu existieren. Nicht reduziert — eliminiert.",
               "icon": "shield",
               "title": "Weniger Produktionsfehler"
             }
@@ -7553,12 +7564,12 @@
           "description": "Entwicklertools klonen Code. Rediacc klont vollständige laufende Umgebungen — Code, Daten, Konfigurationen und Dienste zusammen.",
           "features": [
             {
-              "name": "Vollstaendiger Produktionsdaten-Klon",
+              "name": "Vollständiger Produktionsdaten-Klon",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "OS + Bibliotheks-Paritaetsverifizierung",
+              "name": "OS + Bibliotheks-Paritätsverifizierung",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
@@ -7662,7 +7673,7 @@
               "title": "Entwickeln"
             },
             {
-              "description": "Mit Zuversicht ausliefern. Keine Umgebungsueberraschungen. Was im Klon funktioniert, funktioniert in der Produktion.",
+              "description": "Mit Zuversicht ausliefern. Keine Umgebungsüberraschungen. Was im Klon funktioniert, funktioniert in der Produktion.",
               "icon": "check-circle",
               "title": "Deployen"
             }
@@ -7682,7 +7693,7 @@
               "number": "182x",
               "ref": 1,
               "source": "DORA State of DevOps, 2024",
-              "text": "haeufigere Deployments bei Spitzenteams im Vergleich zu schwachen Teams"
+              "text": "häufigere Deployments bei Spitzenteams im Vergleich zu schwachen Teams"
             },
             {
               "number": "69%",
@@ -7699,7 +7710,7 @@
           ],
           "timeline": {
             "newLabel": "MIT REDIACC",
-            "newSteps": ["Klon ausfuehren", "47s", "100% Uebereinstimmung"],
+            "newSteps": ["Klon ausführen", "47s", "100% Übereinstimmung"],
             "oldLabel": "TRADITIONELLE ENTWICKLUNGSUMGEBUNGEN",
             "oldSteps": [
               {
@@ -7720,7 +7731,7 @@
               },
               {
                 "day": "Ergebnis",
-                "text": "Stimmt immer noch nicht ueberein"
+                "text": "Stimmt immer noch nicht überein"
               }
             ]
           },
@@ -7780,19 +7791,19 @@
           "rows": [
             {
               "rediacc": "Exaktes Betriebssystem, Pakete und Versionen aus Produktions-Snapshot geklont",
-              "traditional": "OS-Pakete manuell installieren, hoffen, dass Versionen uebereinstimmen"
+              "traditional": "OS-Pakete manuell installieren, hoffen, dass Versionen übereinstimmen"
             },
             {
-              "rediacc": "Echte Produktionsdaten via Copy-on-Write geklont — null zusaetzlicher Speicher",
+              "rediacc": "Echte Produktionsdaten via Copy-on-Write geklont — null zusätzlicher Speicher",
               "traditional": "Synthetische Testdaten, die nicht die reale Nutzung widerspiegeln"
             },
             {
-              "rediacc": "Frischer Klon vom neuesten Snapshot jedes Mal — null Drift moeglich",
-              "traditional": "Konfigurationsdateien driften ueber Tage, Wochen, Monate auseinander"
+              "rediacc": "Frischer Klon vom neuesten Snapshot jedes Mal — null Drift möglich",
+              "traditional": "Konfigurationsdateien driften über Tage, Wochen, Monate auseinander"
             },
             {
-              "rediacc": "47 Sekunden, automatische Paritaetsverifizierung mit --verify-parity-Flag",
-              "traditional": "Tage fuer Bereitstellung, keine Paritaetsverifizierung"
+              "rediacc": "47 Sekunden, automatische Paritätsverifizierung mit --verify-parity-Flag",
+              "traditional": "Tage für Bereitstellung, keine Paritätsverifizierung"
             },
             {
               "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab",
@@ -7863,12 +7874,12 @@
               "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Keine Datenuebertragung erforderlich",
+              "name": "Keine Datenübertragung erforderlich",
               "refs": [0, 0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Self-Hosted / keine Cloud-Abhaengigkeit",
+              "name": "Self-Hosted / keine Cloud-Abhängigkeit",
               "refs": [15, 16, 17, 0, 18, 0],
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
@@ -7940,14 +7951,14 @@
           },
           "steps": [
             {
-              "description": "rdc backup list ausfuehren, um Ihren letzten sauberen Snapshot zu finden.",
+              "description": "rdc backup list ausführen, um Ihren letzten sauberen Snapshot zu finden.",
               "icon": "eye",
               "title": "Erkennen"
             },
             {
-              "description": "Den exakten Zeitpunkt vor dem Angriff auswaehlen. Minutengenaue Praezision.",
+              "description": "Den exakten Zeitpunkt vor dem Angriff auswählen. Minutengenaue Präzision.",
               "icon": "arrow-right-circle",
-              "title": "Auswaehlen"
+              "title": "Auswählen"
             },
             {
               "description": "Komplette Umgebung in unter 5 Minuten wieder online. Alle Container, alle Daten, alle Konfigurationen.",
@@ -8089,15 +8100,15 @@
               "traditional": "OS + Pakete neu installieren: 2-4 Stunden pro Server"
             },
             {
-              "rediacc": "Lokaler Snapshot, null Datenuebertragung: 500 GB in unter 60 Sekunden wiederherstellen",
-              "traditional": "Backup von Remote-Speicher wiederherstellen: Stunden bis Tage bei grossen Datenmengen"
+              "rediacc": "Lokaler Snapshot, null Datenübertragung: 500 GB in unter 60 Sekunden wiederherstellen",
+              "traditional": "Backup von Remote-Speicher wiederherstellen: Stunden bis Tage bei großen Datenmengen"
             },
             {
               "rediacc": "Full-Environment-Snapshot: Netzwerk, Dienste, SSL alles enthalten",
-              "traditional": "Netzwerk, Dienste, SSL neu konfigurieren: manuell, fehleranfaellig"
+              "traditional": "Netzwerk, Dienste, SSL neu konfigurieren: manuell, fehleranfällig"
             },
             {
-              "rediacc": "Automatische Integritaetspruefung nach Wiederherstellung: 8/8 Dienste verifiziert laufend. Der Snapshot bewahrt die Beweise, während die Wiederherstellung läuft.",
+              "rediacc": "Automatische Integritätsprüfung nach Wiederherstellung: 8/8 Dienste verifiziert laufend. Der Snapshot bewahrt die Beweise, während die Wiederherstellung läuft.",
               "traditional": "Nach Wiederherstellung manuell verifizieren: hoffen, dass nichts vergessen wurde"
             }
           ],
@@ -8159,12 +8170,12 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Sofortige auditfaehige Berichte",
+              "name": "Sofortige auditfähige Berichte",
               "refs": [12, 13, 14, 15, 0],
               "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
-              "name": "Multi-Framework-Unterstuetzung",
+              "name": "Multi-Framework-Unterstützung",
               "refs": [16, 17, 18, 19, 0],
               "values": ["cross", "check", "check", "check", "rediacc"]
             },
@@ -8246,27 +8257,27 @@
           },
           "steps": [
             {
-              "description": "rdc config backup-strategy set --cron '0 2 * * *' ausfuehren. Aufbewahrung pro Framework oder Datentyp definieren.",
+              "description": "rdc config backup-strategy set --cron '0 2 * * *' ausführen. Aufbewahrung pro Framework oder Datentyp definieren.",
               "icon": "sliders",
               "title": "Richtlinien festlegen"
             },
             {
-              "description": "Rediacc setzt Richtlinien automatisch durch. Alte Backups werden planmaessig bereinigt. Keine manuellen Tabellen.",
+              "description": "Rediacc setzt Richtlinien automatisch durch. Alte Backups werden planmäßig bereinigt. Keine manuellen Tabellen.",
               "icon": "refresh",
               "title": "Automatisieren"
             },
             {
-              "description": "rdc retention report ausfuehren. Vollstaendiger auditfaehiger Bericht in Sekunden. Export an Ihr SIEM.",
+              "description": "rdc retention report ausführen. Vollständiger auditfähiger Bericht in Sekunden. Export an Ihr SIEM.",
               "icon": "clipboard-check",
               "title": "Auditieren"
             }
           ],
           "title": "Ein Befehl. Volle Compliance."
         },
-        "label": "Aufbewahrungskonformitaet",
+        "label": "Aufbewahrungskonformität",
         "meta": {
           "description": "Konfigurierbare Aufbewahrungsrichtlinien, die Compliance-Anforderungen erfüllen. HIPAA, SOC2, GDPR, standardmäßig abgedeckt.",
-          "keywords": "Aufbewahrungskonformitaet, Datenaufbewahrung, HIPAA-Konformitaet, SOC2, DSGVO, Backup-Aufbewahrung, pruefungsbereit, Compliance-Automatisierung",
+          "keywords": "Aufbewahrungskonformität, Datenaufbewahrung, HIPAA-Konformität, SOC2, DSGVO, Backup-Aufbewahrung, prüfungsbereit, Compliance-Automatisierung",
           "title": "Aufbewahrungskonformität - Datenretention | Rediacc"
         },
         "problem": {
@@ -8282,13 +8293,13 @@
               "number": "$2,13M",
               "ref": 2,
               "source": "HHS HIPAA Enforcement",
-              "text": "maximale HIPAA-Strafe pro Verstossskategorie pro Jahr"
+              "text": "maximale HIPAA-Strafe pro Verstoßskategorie pro Jahr"
             },
             {
               "number": "€1,2 Mrd.",
               "ref": 3,
               "source": "CMS GDPR Enforcement Tracker 2024/2025",
-              "text": "DSGVO-Bussgelder in ganz Europa allein im Jahr 2024"
+              "text": "DSGVO-Bußgelder in ganz Europa allein im Jahr 2024"
             }
           ],
           "title": "Compliance-Verstöße sind teuer"
@@ -8414,11 +8425,11 @@
               "traditional": "Manuelle Cleanup-Skripte, leicht fehleranfällig"
             },
             {
-              "rediacc": "Sofortige auditfaehige Berichte via rdc retention report",
+              "rediacc": "Sofortige auditfähige Berichte via rdc retention report",
               "traditional": "3-6 Wochen Audit-Vorbereitung"
             },
             {
-              "rediacc": "Jedes aufbewahrte Backup wird taeglich verifiziert",
+              "rediacc": "Jedes aufbewahrte Backup wird täglich verifiziert",
               "traditional": "Kein Nachweis, dass Backups wiederherstellbar sind"
             }
           ],
@@ -8430,17 +8441,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Jedes Update auf einem exakten Klon testen, bevor es live geht. Den Klon kaputtmachen, nicht die Produktion. Automatische taegliche Backup-Verifizierung in Ihrer CI-Pipeline. Fehlgeschlagen? Sie erhalten eine Warnung, bevor es relevant wird.",
+              "description": "Jedes Update auf einem exakten Klon testen, bevor es live geht. Den Klon kaputtmachen, nicht die Produktion. Automatische tägliche Backup-Verifizierung in Ihrer CI-Pipeline. Fehlgeschlagen? Sie erhalten eine Warnung, bevor es relevant wird.",
               "icon": "shield",
               "title": "Risikofreies Patchen"
             },
             {
-              "description": "Ihre Testumgebung entspricht exakt der Produktion. Gleiches Betriebssystem, gleicher Kernel, gleiche Daten, gleiche Konfigurationen. Keine Ueberraschungen beim Go-Live.",
+              "description": "Ihre Testumgebung entspricht exakt der Produktion. Gleiches Betriebssystem, gleicher Kernel, gleiche Daten, gleiche Konfigurationen. Keine Überraschungen beim Go-Live.",
               "icon": "layers",
               "title": "Produktionsidentisch"
             },
             {
-              "description": "Etwas geht schief? Der Klon ist wegwerfbar. Mit einem Befehl loeschen. Produktion war nie gefaehrdet. Keine Rollback-Prozeduren, keine Ausfallzeit.",
+              "description": "Etwas geht schief? Der Klon ist wegwerfbar. Mit einem Befehl löschen. Produktion war nie gefährdet. Keine Rollback-Prozeduren, keine Ausfallzeit.",
               "icon": "refresh",
               "title": "Sofortiger Rollback"
             }
@@ -8501,17 +8512,17 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Null zusaetzlicher Speicher (CoW)",
+              "name": "Null zusätzlicher Speicher (CoW)",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Auto-Integritaetspruefung nach Patch",
+              "name": "Auto-Integritätsprüfung nach Patch",
               "refs": [7, 8, 9, 10, 0],
               "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
-              "name": "Self-Hosted, keine Cloud-Abhaengigkeit",
+              "name": "Self-Hosted, keine Cloud-Abhängigkeit",
               "refs": [11, 12, 13, 14, 0],
               "values": ["check", "cross", "check", "cross", "rediacc"]
             },
@@ -8587,19 +8598,19 @@
           },
           "steps": [
             {
-              "description": "rdc ceph snapshot create production ausfuehren. Eine exakte Kopie ist in 60 Sekunden verfuegbar.",
+              "description": "rdc ceph snapshot create production ausführen. Eine exakte Kopie ist in 60 Sekunden verfügbar.",
               "icon": "terminal",
               "title": "Klonen"
             },
             {
-              "description": "Patches, Upgrades, Kernel-Updates anwenden. Frei experimentieren. Produktion bleibt unberuehrt.",
+              "description": "Patches, Upgrades, Kernel-Updates anwenden. Frei experimentieren. Produktion bleibt unberührt.",
               "icon": "flask",
               "title": "Testen"
             },
             {
-              "description": "Integritaetspruefungen bestanden? Mit Zuversicht auf Produktion anwenden. Fehlgeschlagen? Klon verwerfen. Nichts passiert.",
+              "description": "Integritätsprüfungen bestanden? Mit Zuversicht auf Produktion anwenden. Fehlgeschlagen? Klon verwerfen. Nichts passiert.",
               "icon": "check-circle",
-              "title": "Bestaetigen"
+              "title": "Bestätigen"
             }
           ],
           "title": "Ein Befehl. Null Risiko."
@@ -8623,7 +8634,7 @@
               "number": "45%",
               "ref": 2,
               "source": "Uptime Institute 2023",
-              "text": "der Netzwerkausfaelle durch Konfigurations-/Aenderungsmanagement verursacht"
+              "text": "der Netzwerkausfälle durch Konfigurations-/Änderungsmanagement verursacht"
             },
             {
               "number": "$9.000/Min",
@@ -8750,12 +8761,12 @@
               "traditional": "Test-VM: teilweise Kopie, fehlende Daten, andere Kernel-Version"
             },
             {
-              "rediacc": "Klon auf Abruf: nahezu null Speicher via CoW, existiert nur waehrend des Tests",
+              "rediacc": "Klon auf Abruf: nahezu null Speicher via CoW, existiert nur während des Tests",
               "traditional": "Blue-Green-Deployment: erfordert dauerhaft 2x Infrastrukturkosten"
             },
             {
-              "rediacc": "Isolierter Klon: null Produktions-Traffic-Exposition, vollstaendig unabhaengiges Netzwerk",
-              "traditional": "Canary-Deployment: fuehrt dennoch ungetesteten Code auf Produktions-Traffic aus"
+              "rediacc": "Isolierter Klon: null Produktions-Traffic-Exposition, vollständig unabhängiges Netzwerk",
+              "traditional": "Canary-Deployment: führt dennoch ungetesteten Code auf Produktions-Traffic aus"
             }
           ],
           "title": "Warum sicheres Testen auf Dateisystemebene funktioniert",
@@ -8768,7 +8779,7 @@
             {
               "description": "Ihre gesamte Infrastruktur in unter einer Stunde zwischen Clouds verschieben. Gleicher Befehl, jeder Anbieter. AWS zu Hetzner, Azure zu Bare Metal — kein Unterschied.",
               "icon": "arrow-right-circle",
-              "title": "Echte Portabilitaet"
+              "title": "Echte Portabilität"
             },
             {
               "description": "No proprietary formats. Standard btrfs subvolumes — available in every modern Linux kernel. Your data is always accessible, always portable.",
@@ -8776,7 +8787,7 @@
               "title": "Offene Standards"
             },
             {
-              "description": "Wenn Sie in 38 Minuten wechseln koennen, konkurrieren Anbieter um Ihr Geschaeft. Aus einer Position der Staerke verhandeln. Wechseln, wenn sich Preise aendern. Kein Vertragsdruck.",
+              "description": "Wenn Sie in 38 Minuten wechseln können, konkurrieren Anbieter um Ihr Geschäft. Aus einer Position der Stärke verhandeln. Wechseln, wenn sich Preise ändern. Kein Vertragsdruck.",
               "icon": "dollar",
               "title": "Preismacht"
             }
@@ -8822,7 +8833,7 @@
           "description": "Cloud-native Tools binden Sie. Backup-Tools migrieren nicht. Nur Rediacc gibt Ihnen Echtzeit-Portabilität über jeden Anbieter.",
           "features": [
             {
-              "name": "Anbieteruebergreifende Migration",
+              "name": "Anbieterübergreifende Migration",
               "refs": [0, 4, 5, 0, 0],
               "values": ["cross", "check", "check", "cross", "rediacc"]
             },
@@ -8832,12 +8843,12 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Null proprietaere Formate",
+              "name": "Null proprietäre Formate",
               "refs": [0, 0, 0, 0, 0],
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
-              "name": "Nur inkrementelle Uebertragung",
+              "name": "Nur inkrementelle Übertragung",
               "refs": [0, 6, 7, 8, 0],
               "values": ["cross", "check", "check", "cross", "rediacc"]
             },
@@ -8924,19 +8935,19 @@
           },
           "steps": [
             {
-              "description": "Ihre Daten liegen in Standard-btrfs-Subvolumes. Keine proprietaeren Formate. Keine Anbieter-Agenten. Einfach Linux.",
+              "description": "Ihre Daten liegen in Standard-btrfs-Subvolumes. Keine proprietären Formate. Keine Anbieter-Agenten. Einfach Linux.",
               "icon": "file-text",
               "title": "Standardformate"
             },
             {
-              "description": "rdc repo push production --to new-provider --checkpoint ausfuehren. Inkrementelle Uebertragung. Null Ausfallzeit.",
+              "description": "rdc repo push production --to new-provider --checkpoint ausführen. Inkrementelle Übertragung. Null Ausfallzeit.",
               "icon": "arrow-right-circle",
               "title": "Ein-Befehl-Migration"
             },
             {
-              "description": "Keine proprietaeren APIs oder cloudspezifischen Tools. Jede Linux-Maschine ist ein gueltiges Migrationsziel.",
+              "description": "Keine proprietären APIs oder cloudspezifischen Tools. Jede Linux-Maschine ist ein gültiges Migrationsziel.",
               "icon": "lock",
-              "title": "Keine Abhaengigkeiten"
+              "title": "Keine Abhängigkeiten"
             }
           ],
           "title": "Ein Befehl. Totale Freiheit."
@@ -8944,7 +8955,7 @@
         "label": "Vendor-Lock-in-Freiheit",
         "meta": {
           "description": "Überall deployen. Jederzeit migrieren. Keine Lock-in-Verträge. Keine proprietären Formate. Ihre Daten bleiben Ihre.",
-          "keywords": "Anbieterabhaengigkeit, Cloud-Migration, Multi-Cloud, Portabilitaet, btrfs-Migration",
+          "keywords": "Anbieterabhängigkeit, Cloud-Migration, Multi-Cloud, Portabilität, btrfs-Migration",
           "title": "Freiheit von Anbieter-Lock-in — Rediacc"
         },
         "problem": {
@@ -8954,19 +8965,19 @@
               "number": "27%",
               "ref": 1,
               "source": "Flexera 2024 State of the Cloud Report",
-              "text": "der Cloud-IaaS/PaaS-Ausgaben werden organisationsuebergreifend verschwendet"
+              "text": "der Cloud-IaaS/PaaS-Ausgaben werden organisationsübergreifend verschwendet"
             },
             {
               "number": "17%",
               "ref": 2,
               "source": "Flexera 2025 State of the Cloud Report",
-              "text": "durchschnittliche Cloud-Budgetueberschreitung durch Organisationen"
+              "text": "durchschnittliche Cloud-Budgetüberschreitung durch Organisationen"
             },
             {
               "number": "$0,09/GB",
               "ref": 3,
               "source": "AWS/Azure/GCP Pricing 2024",
-              "text": "Egress-Gebuehren, die das Verlassen absichtlich teuer machen"
+              "text": "Egress-Gebühren, die das Verlassen absichtlich teuer machen"
             }
           ],
           "timeline": {
@@ -9068,20 +9079,20 @@
           "rediaccLabel": "Rediacc (Standard-Linux-Speicher)",
           "rows": [
             {
-              "rediacc": "Ein Befehl: Snapshot, uebertragen, verifizieren, DNS umschalten — unter 1 Stunde",
+              "rediacc": "Ein Befehl: Snapshot, übertragen, verifizieren, DNS umschalten — unter 1 Stunde",
               "traditional": "6-18 Monate Projekt: bewerten, neu aufbauen, konvertieren, testen, umschalten"
             },
             {
               "rediacc": "Standard-Dateisystem: keine Formatkonvertierung, jedes Linux-Ziel",
-              "traditional": "Vollstaendiger Datenexport: anbieterspezifisches Format, Konvertierung erforderlich"
+              "traditional": "Vollständiger Datenexport: anbieterspezifisches Format, Konvertierung erforderlich"
             },
             {
               "rediacc": "Nur inkrementell: $0,09/GB auf 3,8 GB = $0,34 pro Transfer",
-              "traditional": "Egress-Gebuehren: $0,09/GB auf 420 GB = $37,80 pro vollstaendigem Transfer"
+              "traditional": "Egress-Gebühren: $0,09/GB auf 420 GB = $37,80 pro vollständigem Transfer"
             },
             {
               "rediacc": "Cloud-agnostisch: gleiche rdc-Befehle funktionieren auf AWS, Hetzner, Bare Metal",
-              "traditional": "Erfordert cloudspezifisches Tooling: Terraform-Umschreibungen, API-Aenderungen"
+              "traditional": "Erfordert cloudspezifisches Tooling: Terraform-Umschreibungen, API-Änderungen"
             },
             {
               "rediacc": "rdc cluster migrate moves the running cluster, data included",
@@ -9095,19 +9106,19 @@
         "benefits": {
           "items": [
             {
-              "description": "Jeden Fix auf einem exakten Produktionsklon testen, bevor er deployt wird. Wenn der Patch etwas kaputtmacht, Klon verwerfen. Produktion unberuehrt.",
+              "description": "Jeden Fix auf einem exakten Produktionsklon testen, bevor er deployt wird. Wenn der Patch etwas kaputtmacht, Klon verwerfen. Produktion unberührt.",
               "icon": "shield",
               "title": "Sicheres Patchen"
             },
             {
-              "description": "Von der CVE-Veroeffentlichung zum verifizierten Produktionspatch in unter 4 Minuten. Keine monatelangen Expositionsfenster mehr.",
+              "description": "Von der CVE-Veröffentlichung zum verifizierten Produktionspatch in unter 4 Minuten. Keine monatelangen Expositionsfenster mehr.",
               "icon": "clock",
               "title": "Behebung am selben Tag"
             },
             {
               "description": "Jeder Patch wird vollständig geprüft: CVE-Rescan, Service-Health, Regressionstests, TLS-Verifizierung. Auf echten Produktionsdaten.",
               "icon": "check-circle",
-              "title": "Vollstaendige Verifizierung"
+              "title": "Vollständige Verifizierung"
             }
           ],
           "title": "Was Sie bekommen"
@@ -9199,12 +9210,12 @@
               "title": "Erkennen"
             },
             {
-              "description": "Produktion in 47 Sekunden klonen. Fix auf dem Klon anwenden. Vollstaendige Regressionstests gegen echte Daten und Konfigurationen ausfuehren.",
+              "description": "Produktion in 47 Sekunden klonen. Fix auf dem Klon anwenden. Vollständige Regressionstests gegen echte Daten und Konfigurationen ausführen.",
               "icon": "copy",
               "title": "Klonen + Patchen"
             },
             {
-              "description": "Bestaetigen, dass die Schwachstelle gepatcht ist und nichts anderes kaputt gegangen ist. Mit Zuversicht auf Produktion deployen. Klon zerstoeren.",
+              "description": "Bestätigen, dass die Schwachstelle gepatcht ist und nichts anderes kaputt gegangen ist. Mit Zuversicht auf Produktion deployen. Klon zerstören.",
               "icon": "check-circle",
               "title": "Verifizieren + Deployen"
             }
@@ -9224,7 +9235,7 @@
               "number": "30.6 days",
               "ref": 1,
               "source": "Qualys TruRisk Research Report 2023",
-              "text": "durchschnittliche Zeit zur Behebung waffenfaehiger Schwachstellen"
+              "text": "durchschnittliche Zeit zur Behebung waffenfähiger Schwachstellen"
             },
             {
               "number": "180%",
@@ -9246,7 +9257,7 @@
             "oldSteps": [
               {
                 "day": "Tag 1",
-                "text": "CVE veroeffentlicht"
+                "text": "CVE veröffentlicht"
               },
               {
                 "day": "Woche 1-2",
@@ -9261,8 +9272,8 @@
                 "text": "Zeitfenster planen"
               },
               {
-                "day": "Realitaet",
-                "text": "Patch zerstoert Prod"
+                "day": "Realität",
+                "text": "Patch zerstört Prod"
               }
             ]
           },
@@ -9305,7 +9316,7 @@
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Produktionsklon (Sekunden alt, 100% Uebereinstimmung)",
+              "rediacc": "Produktionsklon (Sekunden alt, 100% Übereinstimmung)",
               "traditional": "Staging (Wochen alt, Konfigurationsdrift)"
             },
             {
@@ -9314,10 +9325,10 @@
             },
             {
               "rediacc": "0 %, Fehler am Klon erkannt und verworfen",
-              "traditional": "Ungetestete Patches riskieren unbeabsichtigte Stoerungen"
+              "traditional": "Ungetestete Patches riskieren unbeabsichtigte Störungen"
             },
             {
-              "rediacc": "Klon zerstoeren, Produktion wurde nie geaendert",
+              "rediacc": "Klon zerstören, Produktion wurde nie geändert",
               "traditional": "Hoffen, dass das Rollback-Skript funktioniert"
             }
           ],
@@ -9336,7 +9347,7 @@
         "title": "Unsere Telemetriepraxis"
       },
       "meta": {
-        "description": "Welche Telemetriedaten Rediacc erfasst, warum, wie sie verarbeitet werden und wie Sie sich abmelden. Web-App, CLI, Middleware und Renet-Agent.",
+        "description": "Welche Telemetriedaten Rediacc-Produkte erfassen, warum, wie sie verarbeitet werden und wie Sie widersprechen. Gilt für CLI und Renet-Agent.",
         "keywords": "Telemetrie-Richtlinie, Datenerfassung, OpenTelemetry, Abmeldung, Datenschutz, DSGVO, Rediacc",
         "title": "Telemetrie-Richtlinie — Rediacc"
       },
@@ -9360,16 +9371,16 @@
                 "<strong>Renet-Agent-Lebenszyklus:</strong> Start-, Stopp- und Wiederverbindungsereignisse",
                 "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
-              "title": "7.1 Erfasste Daten"
+              "title": "5.1 Erfasste Daten"
             },
             "bridgeOptOut": {
               "content": [
                 "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>, um die Renet-Agent-Telemetrie (einschließlich Profiling) zu deaktivieren."
               ],
-              "title": "7.2 So melden Sie sich ab"
+              "title": "5.2 So melden Sie sich ab"
             }
           },
-          "title": "7. Renet-Agent-Telemetrie"
+          "title": "5. Renet-Agent-Telemetrie"
         },
         "ccpa": {
           "content": [
@@ -9377,19 +9388,19 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Kategorien erfasster Informationen:</strong> Internet- oder elektronische Netzwerkaktivitätsinformationen (Browsertyp, Interaktionsdaten, Fehlerprotokolle), Geräteidentifikatoren (anonymisiert), Geolokalisierungsdaten (nur auf Landesebene, abgeleitet von der IP-Adresse, die nicht gespeichert wird)",
+            "<strong>Kategorien erfasster Informationen:</strong> Internet- oder elektronische Netzwerkaktivitätsinformationen (Browsertyp, Interaktionsdaten, Fehlerprotokolle), Geräteidentifikatoren (anonymisiert), Geolokalisierungsdaten (auf Stadtebene: Stadt und Region, am Edge von Cloudflare aus der IP-Adresse abgeleitet; die IP-Adresse selbst wird nicht gespeichert, der Standort wird 7 Tage lang aufbewahrt)",
             "<strong>Zweck:</strong> Verbesserung und Aufrechterhaltung der Dienstqualität, Debugging, Leistungsüberwachung und Sicherheit",
             "<strong>Verkauf/Weitergabe:</strong> Wir verkaufen oder teilen keine Telemetriedaten im Sinne des CCPA/CPRA",
-            "<strong>Recht auf Abmeldung:</strong> Verwenden Sie die in den Abschnitten 4–7 oben beschriebenen produktspezifischen Abmeldemechanismen. Wir berücksichtigen auch das Global Privacy Control (GPC)-Signal in unserer Webanwendung."
+            "<strong>Recht auf Abmeldung:</strong> Verwenden Sie die in den Abschnitten 4 und 5 oben beschriebenen produktspezifischen Abmeldemechanismen. Wir berücksichtigen auch das Global Privacy Control (GPC)-Signal in unserer Webanwendung."
           ],
-          "title": "11. Einwohner Kaliforniens (CCPA/CPRA)"
+          "title": "9. Einwohner Kaliforniens (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Wir können diese Telemetrie-Richtlinie aktualisieren, wenn wir neue Produkte hinzufügen, die erfassten Daten ändern oder unsere Verarbeitungspraktiken modifizieren. Änderungen werden auf dieser Seite mit einem aktualisierten Gültigkeitsdatum veröffentlicht. Wir benachrichtigen Benutzer über wesentliche Änderungen durch unsere Produkt-Release-Hinweise und Website."
           ],
           "id": "changes",
-          "title": "12. Änderungen dieser Richtlinie"
+          "title": "10. Änderungen dieser Richtlinie"
         },
         "cli": {
           "content": [
@@ -9408,7 +9419,7 @@
                 "<strong>Sitzung:</strong> zufällig generierte Sitzungs-ID, Befehlsausführungsdauer",
                 "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
-              "title": "5.1 Erfasste Daten"
+              "title": "4.1 Erfasste Daten"
             },
             "cliOptOut": {
               "content": [
@@ -9419,10 +9430,10 @@
                 "Setzen Sie <code>telemetryEnabled: false</code> in Ihrer CLI-Konfigurationsdatei",
                 "Die Telemetrie wird in CI-Umgebungen <strong>automatisch deaktiviert</strong> (erkannt über die Umgebungsvariable <code>CI</code>)"
               ],
-              "title": "5.2 So melden Sie sich ab"
+              "title": "4.2 So melden Sie sich ab"
             }
           },
-          "title": "5. CLI-Telemetrie"
+          "title": "4. CLI-Telemetrie"
         },
         "dataProcessing": {
           "content": [
@@ -9436,19 +9447,19 @@
             "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht an Dritte weitergegeben, verkauft oder zugänglich gemacht.",
             "<strong>Infrastruktur:</strong> Alle Telemetriedaten werden auf Infrastruktur innerhalb der Europäischen Union verarbeitet und gespeichert."
           ],
-          "title": "8. Datenverarbeitung und -speicherung"
+          "title": "6. Datenverarbeitung und -speicherung"
         },
         "internationalTransfers": {
           "content": [
             "Telemetriedaten werden ausschließlich auf Servern innerhalb der Europäischen Union verarbeitet und gespeichert. Für den unwahrscheinlichen Fall, dass Telemetriedaten außerhalb der EU/des EWR übermittelt werden müssen (z. B. für die Notfallwiederherstellung), werden geeignete Schutzmaßnahmen getroffen, einschließlich Standardvertragsklauseln (SCCs) gemäß der Genehmigung der Europäischen Kommission."
           ],
           "id": "international-transfers",
-          "title": "9. Internationale Datenübermittlungen"
+          "title": "7. Internationale Datenübermittlungen"
         },
         "introduction": {
           "content": [
             "Rediacc-Softwareprodukte erfassen anonymisierte Nutzungstelemetrie, um uns bei der Verbesserung der Produktqualität, der Diagnose von Problemen und dem Verständnis der Nutzung unserer Tools zu helfen. Diese Telemetrie-Richtlinie beschreibt genau, welche Daten erfasst werden, warum, wie sie verarbeitet werden und wie Sie sich abmelden können.",
-            "Diese Richtlinie umfasst vier Produkte: die <strong>Rediacc Webanwendung</strong>, die <strong>Rediacc CLI</strong>, die <strong>Rediacc Middleware</strong> und die <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
+            "Diese Richtlinie gilt für zwei Produkte: die <strong>Rediacc CLI</strong> und den <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und unserer <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
           ],
           "id": "introduction",
           "title": "1. Einleitung"
@@ -9456,8 +9467,8 @@
         "legalBasis": {
           "content": [
             "Gemäß der EU-Datenschutz-Grundverordnung (DSGVO) und der ePrivacy-Richtlinie hängt unsere Rechtsgrundlage für die Telemetrieerfassung vom Produktkontext ab:",
-            "Für die <strong>Webanwendung</strong> (browserbasiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> (DSGVO Art. 6(1)(f)) zum Zweck der Aufrechterhaltung und Verbesserung der Dienstqualität erfasst. Sie können sich jederzeit abmelden.",
-            "Für <strong>CLI, Middleware und Renet-Agent</strong> (auf Ihrer Infrastruktur installiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> mit klaren Abmeldemechanismen erfasst. Sie können die Telemetrie deaktivieren, bevor Daten gesendet werden."
+            "Für die <strong>CLI und den Renet-Agent</strong> (auf Ihrer Infrastruktur installiert): Die Telemetrie wird auf Grundlage des <strong>berechtigten Interesses</strong> (DSGVO Art. 6(1)(f)) erfasst, mit klaren Möglichkeiten zur Abmeldung. Sie können die Telemetrie deaktivieren, bevor Daten gesendet werden.",
+            "Für Nutzer in Rechtsordnungen, die eine ausdrückliche Einwilligung verlangen (z. B. Südkorea nach dem PIPA), sollte die Telemetrie in der Produktkonfiguration ausdrücklich aktiviert werden, bevor Daten übertragen werden."
           ],
           "id": "legal-basis",
           "title": "3. Rechtsgrundlage für die Erfassung"
@@ -9488,7 +9499,7 @@
             "<strong>Abmeldung:</strong> Telemetrie jederzeit über die oben beschriebenen produktspezifischen Mechanismen deaktivieren",
             "<strong>Beschwerde:</strong> Eine Beschwerde bei der estnischen Datenschutzaufsicht (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) oder Ihrer lokalen Aufsichtsbehörde einreichen"
           ],
-          "title": "10. Ihre Rechte"
+          "title": "8. Ihre Rechte"
         }
       },
       "toc": {
@@ -9516,68 +9527,68 @@
         "acceptance": {
           "content": [
             "Durch den Zugriff auf oder die Nutzung der Rediacc-Website (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) oder der Rediacc-Plattform stimmen Sie diesen Nutzungsbedingungen zu.",
-            "Wenn Sie diesen Bedingungen nicht zustimmen, duerfen Sie die Dienste nicht nutzen oder darauf zugreifen. Diese Bedingungen stellen eine rechtsverbindliche Vereinbarung zwischen Ihnen und der Rediacc OUe (Registernummer 17363830) dar, einer in Estland registrierten Gesellschaft mit Sitz in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estland (\"Rediacc\", \"wir\", \"uns\" oder \"unser\")."
+            "Wenn Sie diesen Bedingungen nicht zustimmen, dürfen Sie die Dienste nicht nutzen oder darauf zugreifen. Diese Bedingungen stellen eine rechtsverbindliche Vereinbarung zwischen Ihnen und der Rediacc OUe (Registernummer 17363830) dar, einer in Estland registrierten Gesellschaft mit Sitz in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estland (\"Rediacc\", \"wir\", \"uns\" oder \"unser\")."
           ],
           "id": "acceptance",
-          "title": "1. Annahme der Bedingungen"
+          "title": "2. Annahme der Bedingungen"
         },
         "accounts": {
           "content": [
             "Sie müssen genaue Informationen bei der Registrierung angeben und sind für alle Aktivitäten unter Ihrem Konto verantwortlich."
           ],
           "content2": [
-            "Sie muessen uns unverzueglich unter <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> benachrichtigen, wenn Sie einen unbefugten Zugriff auf Ihr Konto vermuten. Wir behalten uns das Recht vor, Konten zu sperren oder zu loeschen, die laenger als zwoelf (12) Monate inaktiv sind oder von denen wir vernuenftigerweise annehmen, dass sie unter Verstoss gegen diese Bedingungen genutzt werden."
+            "Sie müssen uns unverzüglich unter <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> benachrichtigen, wenn Sie einen unbefugten Zugriff auf Ihr Konto vermuten. Wir behalten uns das Recht vor, Konten zu sperren oder zu löschen, die länger als zwölf (12) Monate inaktiv sind oder von denen wir vernünftigerweise annehmen, dass sie unter Verstoß gegen diese Bedingungen genutzt werden."
           ],
           "id": "accounts",
           "items": [
-            "Schutz Ihrer Kontozugangsdaten, API-Tokens und Zugriffsschluessel",
-            "Alle Aktivitaeten, die unter Ihrem Konto oder durch Ihre autorisierten Benutzer erfolgen",
+            "Schutz Ihrer Kontozugangsdaten, API-Tokens und Zugriffsschlüssel",
+            "Alle Aktivitäten, die unter Ihrem Konto oder durch Ihre autorisierten Benutzer erfolgen",
             "Sicherstellung, dass autorisierte Benutzer diese Bedingungen einhalten",
-            "Wahrung der Vertraulichkeit Ihrer Konfigurationsdateien, einschliesslich privater SSH-Schluessel und Verschluesselungszugangsdaten"
+            "Wahrung der Vertraulichkeit Ihrer Konfigurationsdateien, einschließlich privater SSH-Schlüssel und Verschlüsselungszugangsdaten"
           ],
-          "title": "3. Konten und Registrierung"
+          "title": "4. Konten und Registrierung"
         },
         "changes": {
           "content": [
             "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren.",
-            "Ihre fortgesetzte Nutzung der Dienste nach Inkrafttreten der aktualisierten Bedingungen gilt als Annahme der ueberarbeiteten Bedingungen. Wenn Sie den aktualisierten Bedingungen nicht zustimmen, muessen Sie die Nutzung der Dienste einstellen und Ihr Abonnement kuendigen, bevor die Aenderungen in Kraft treten."
+            "Ihre fortgesetzte Nutzung der Dienste nach Inkrafttreten der aktualisierten Bedingungen gilt als Annahme der überarbeiteten Bedingungen. Wenn Sie den aktualisierten Bedingungen nicht zustimmen, müssen Sie die Nutzung der Dienste einstellen und Ihr Abonnement kündigen, bevor die Änderungen in Kraft treten."
           ],
           "id": "changes",
-          "title": "14. Änderungen dieser Bedingungen"
+          "title": "19. Änderungen dieser Bedingungen"
         },
         "dataOwnership": {
           "content": [
             "Ihre Daten gehören Ihnen. Details in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a>.",
-            "Kontoinformationen (E-Mail, Organisationsname, Rechnungsdetails) werden gemaess unserer <a href=\"privacy-policy\">Datenschutzerklaerung</a> verarbeitet. Bei Kuendigung Ihres Kontos koennen Sie Ihre Kontodaten innerhalb von dreissig (30) Tagen exportieren. Nach dreissig (30) Tagen loeschen wir Ihre Kontodaten aus unseren aktiven Systemen. Kundendaten auf Ihren Maschinen sind von der Kontokuendigung nicht betroffen — sie verbleiben auf Ihrer Infrastruktur unter Ihrer Kontrolle.",
-            "Gemaess dem EU-Datengesetz (Verordnung 2023/2854) haben Sie bei Nutzung der Cloud-Funktionen der Plattform das Recht, den Anbieter zu wechseln oder zu einem selbst gehosteten Setup zu migrieren. Ihre Kundendaten werden auf Ihren eigenen Maschinen gespeichert und befinden sich stets unter Ihrer Kontrolle. Kontodaten und Konfigurationen, die auf der Plattform gespeichert sind, koennen in standardisierten, maschinenlesbaren Formaten exportiert werden. Wir leisten angemessene Unterstuetzung waehrend eines Uebergangszeitraums von bis zu dreissig (30) Tagen nach Ihrer Anfrage."
+            "Kontoinformationen (E-Mail, Organisationsname, Rechnungsdetails) werden gemäß unserer <a href=\"privacy-policy\">Datenschutzerklärung</a> verarbeitet. Bei Kündigung Ihres Kontos können Sie Ihre Kontodaten innerhalb von dreißig (30) Tagen exportieren. Nach dreißig (30) Tagen löschen wir Ihre Kontodaten aus unseren aktiven Systemen. Kundendaten auf Ihren Maschinen sind von der Kontokündigung nicht betroffen — sie verbleiben auf Ihrer Infrastruktur unter Ihrer Kontrolle.",
+            "Gemäß dem EU-Datengesetz (Verordnung 2023/2854) haben Sie bei Nutzung der Cloud-Funktionen der Plattform das Recht, den Anbieter zu wechseln oder zu einem selbst gehosteten Setup zu migrieren. Ihre Kundendaten werden auf Ihren eigenen Maschinen gespeichert und befinden sich stets unter Ihrer Kontrolle. Kontodaten und Konfigurationen, die auf der Plattform gespeichert sind, können in standardisierten, maschinenlesbaren Formaten exportiert werden. Wir leisten angemessene Unterstützung während eines Übergangszeitraums von bis zu dreißig (30) Tagen nach Ihrer Anfrage."
           ],
           "id": "data-ownership",
-          "title": "8. Ihre Daten"
+          "title": "11. Ihre Daten"
         },
         "definitions": {
-          "content": ["Die folgenden Definitionen gelten fuer diese gesamten Nutzungsbedingungen:"],
+          "content": ["Die folgenden Definitionen gelten für diese gesamten Nutzungsbedingungen:"],
           "id": "definitions",
           "items": [
             "<strong>\"Konto\"</strong> bezeichnet das Benutzerkonto, das Sie erstellen, um auf die Plattform zuzugreifen und Ihr Abonnement zu verwalten.",
-            "<strong>\"Autorisierter Benutzer\"</strong> bezeichnet jede Person, der unter Ihrem Konto Zugang zu den Diensten gewaehrt wird, einschliesslich Teammitgliedern, Mitarbeitern und Auftragnehmern, die in Ihrem Namen handeln.",
-            "<strong>\"Renet-Agent\"</strong> bezeichnet den serverseitigen Rediacc-Agenten, der auf Ihren Maschinen laeuft, um verschluesselte Speicherung, Container-Orchestrierung und Infrastrukturoperationen zu verwalten.",
+            "<strong>\"Autorisierter Benutzer\"</strong> bezeichnet jede Person, der unter Ihrem Konto Zugang zu den Diensten gewährt wird, einschließlich Teammitgliedern, Mitarbeitern und Auftragnehmern, die in Ihrem Namen handeln.",
+            "<strong>\"Renet-Agent\"</strong> bezeichnet den serverseitigen Rediacc-Agenten, der auf Ihren Maschinen läuft, um verschlüsselte Speicherung, Container-Orchestrierung und Infrastrukturoperationen zu verwalten.",
             "<strong>\"CLI\"</strong> bezeichnet die Rediacc-Befehlszeilenschnittstelle (<code>rdc</code>), die auf Ihrer Arbeitsstation installiert ist.",
-            "<strong>\"Konfiguration\"</strong> bezeichnet die lokalen Konfigurationsdateien auf Ihrer Arbeitsstation, die Maschinenverbindungsdetails, Verschluesselungszugangsdaten und andere Betriebseinstellungen enthalten.",
+            "<strong>\"Konfiguration\"</strong> bezeichnet die lokalen Konfigurationsdateien auf Ihrer Arbeitsstation, die Maschinenverbindungsdetails, Verschlüsselungszugangsdaten und andere Betriebseinstellungen enthalten.",
             "<strong>\"Kundendaten\"</strong> bezeichnet alle Daten, Inhalte, Dateien, Container, Konfigurationen und Anwendungen, die Sie auf Ihren Maschinen unter Nutzung der Dienste bereitstellen, speichern oder verarbeiten. Kundendaten umfassen keine Kontoinformationen oder Telemetriedaten.",
             "<strong>\"Maschine\"</strong> bezeichnet einen Server oder eine virtuelle Maschine, die Sie besitzen oder kontrollieren und auf der der Renet-Agent installiert ist.",
-            "<strong>\"On-Premise-Software\"</strong> bezeichnet die auf Ihrer Infrastruktur installierten Softwarekomponenten, einschliesslich CLI, Renet-Agent und Desktop-Anwendung.",
+            "<strong>\"On-Premise-Software\"</strong> bezeichnet die auf Ihrer Infrastruktur installierten Softwarekomponenten, einschließlich CLI, Renet-Agent und Desktop-Anwendung.",
             "<strong>\"Plattform\"</strong> bezeichnet die Rediacc-Webanwendung, das Kontoportal und alle von Rediacc bereitgestellten cloudbasierten Dienste.",
-            "<strong>\"Repository\"</strong> bezeichnet eine isolierte Anwendungsbereitstellung, die vom Renet-Agenten verwaltet wird und aus einem verschluesselten Festplatten-Image, einem dedizierten Docker-Daemon und zugehoerigen Containern besteht.",
-            "<strong>\"Dienste\"</strong> bezeichnet zusammenfassend die On-Premise-Software, die Plattform, die Dokumentation und alle zugehoerigen professionellen Dienstleistungen, die von Rediacc bereitgestellt werden.",
-            "<strong>\"Abonnement\"</strong> bezeichnet die von Ihnen gewaehlte Planstufe (Community, Professional, Business oder Enterprise), die Ihren Zugang zu Funktionen und Ressourcenlimits bestimmt.",
+            "<strong>\"Repository\"</strong> bezeichnet eine isolierte Anwendungsbereitstellung, die vom Renet-Agenten verwaltet wird und aus einem verschlüsselten Festplatten-Image, einem dedizierten Docker-Daemon und zugehörigen Containern besteht.",
+            "<strong>\"Dienste\"</strong> bezeichnet zusammenfassend die On-Premise-Software, die Plattform, die Dokumentation und alle zugehörigen professionellen Dienstleistungen, die von Rediacc bereitgestellt werden.",
+            "<strong>\"Abonnement\"</strong> bezeichnet die von Ihnen gewählte Planstufe (Community, Professional, Business oder Enterprise), die Ihren Zugang zu Funktionen und Ressourcenlimits bestimmt.",
             "<strong>\"Telemetriedaten\"</strong> bezeichnet anonymisierte Nutzungsdaten, die von den Diensten wie in unserer <a href=\"telemetry-policy\">Telemetrierichtlinie</a> beschrieben erfasst werden."
           ],
           "title": "1. Definitions"
         },
         "experimentalFeatures": {
           "content": [
-            "Bestimmte Funktionen der Dienste koennen als \"experimentell\", \"Beta\" oder \"Vorschau\" (zusammenfassend \"Experimentelle Funktionen\") gekennzeichnet sein. Experimentelle Funktionen werden zu Evaluierungszwecken bereitgestellt und koennen unvollstaendig, instabil oder ohne Vorankuendigung aenderbar sein.",
-            "Experimentelle Funktionen werden \"WIE BESEHEN\" ohne jegliche Gewaehrleistung bereitgestellt. Wir koennen experimentelle Funktionen jederzeit ohne vorherige Ankuendigung aendern oder einstellen und haften nicht fuer Verluste oder Schaeden, die aus Ihrer Nutzung oder Ihrem Vertrauen auf experimentelle Funktionen entstehen."
+            "Bestimmte Funktionen der Dienste können als \"experimentell\", \"Beta\" oder \"Vorschau\" (zusammenfassend \"Experimentelle Funktionen\") gekennzeichnet sein. Experimentelle Funktionen werden zu Evaluierungszwecken bereitgestellt und können unvollständig, instabil oder ohne Vorankündigung änderbar sein.",
+            "Experimentelle Funktionen werden \"WIE BESEHEN\" ohne jegliche Gewährleistung bereitgestellt. Wir können experimentelle Funktionen jederzeit ohne vorherige Ankündigung ändern oder einstellen und haften nicht für Verluste oder Schäden, die aus Ihrer Nutzung oder Ihrem Vertrauen auf experimentelle Funktionen entstehen."
           ],
           "id": "experimental-features",
           "title": "8. Experimentelle Funktionen"
@@ -9585,76 +9596,76 @@
         "governingLaw": {
           "content": [
             "Diese Bedingungen unterliegen dem Recht der Republik Estland.",
-            "Ungeachtet des Vorstehenden kann jede Partei vor jedem zustaendigen Gericht einstweiligen Rechtsschutz oder andere billigkeitsrechtliche Massnahmen beantragen, um die tatsaechliche oder drohende Verletzung, Aneignung oder Versto ssung gegen geistige Eigentumsrechte oder Vertraulichkeitspflichten zu verhindern."
+            "Ungeachtet des Vorstehenden kann jede Partei vor jedem zuständigen Gericht einstweiligen Rechtsschutz oder andere billigkeitsrechtliche Maßnahmen beantragen, um die tatsächliche oder drohende Verletzung, Aneignung oder Versto ssung gegen geistige Eigentumsrechte oder Vertraulichkeitspflichten zu verhindern."
           ],
           "id": "governing-law",
-          "title": "13. Anwendbares Recht"
+          "title": "18. Anwendbares Recht"
         },
         "indemnification": {
           "id": "indemnification",
           "subsections": {
             "byCustomer": {
               "content": [
-                "Sie verpflichten sich, Rediacc und seine leitenden Angestellten, Direktoren, Mitarbeiter und Vertreter von allen Anspruechen Dritter, Schaeden, Verlusten oder Kosten (einschliesslich angemessener Anwaltsgebuehren) freizustellen, zu verteidigen und schadlos zu halten, die entstehen aus: (a) Ihrer Nutzung der Dienste; (b) Inhalten oder Anwendungen, die Sie mithilfe der Dienste bereitstellen; (c) Ihrem Verstoss gegen diese Bedingungen; oder (d) Ihrem Verstoss gegen geltendes Recht oder Rechte Dritter."
+                "Sie verpflichten sich, Rediacc und seine leitenden Angestellten, Direktoren, Mitarbeiter und Vertreter von allen Ansprüchen Dritter, Schäden, Verlusten oder Kosten (einschließlich angemessener Anwaltsgebühren) freizustellen, zu verteidigen und schadlos zu halten, die entstehen aus: (a) Ihrer Nutzung der Dienste; (b) Inhalten oder Anwendungen, die Sie mithilfe der Dienste bereitstellen; (c) Ihrem Verstoß gegen diese Bedingungen; oder (d) Ihrem Verstoß gegen geltendes Recht oder Rechte Dritter."
               ],
               "title": "16.1 By You"
             },
             "byRediacc": {
               "content": [
-                "Rediacc wird Sie von allen Anspruechen Dritter freistellen, verteidigen und schadlos halten, die behaupten, dass die von Rediacc bereitgestellte On-Premise-Software oder Plattform ein gueltiges geistiges Eigentumsrecht eines Dritten verletzt, vorausgesetzt, dass Sie: (a) Rediacc unverzueglich ueber den Anspruch informieren; (b) Rediacc die alleinige Kontrolle ueber die Verteidigung und den Vergleich ueberlassen; und (c) auf Kosten von Rediacc angemessene Mitwirkung leisten.",
-                "Wenn die Dienste Gegenstand eines Verletzungsanspruchs werden oder nach Einschaetzung von Rediacc werden koennten, kann Rediacc nach eigenem Ermessen: (i) das Recht fuer Sie beschaffen, die Dienste weiterhin zu nutzen; (ii) die betroffene Komponente ersetzen oder aendern, um sie nicht verletzend zu gestalten; oder (iii) wenn weder (i) noch (ii) wirtschaftlich zumutbar ist, das betroffene Abonnement kuendigen und im Voraus gezahlte, nicht genutzte Gebuehren erstatten.",
-                "Rediacc hat keine Verpflichtung gemaess diesem Abschnitt fuer Ansprueche, die entstehen aus: von Ihnen vorgenommenen Aenderungen an den Diensten, der Nutzung der Dienste in Kombination mit nicht von Rediacc bereitgestellter Drittanbieter-Software oder der Nutzung der Dienste unter Verstoss gegen diese Bedingungen."
+                "Rediacc wird Sie von allen Ansprüchen Dritter freistellen, verteidigen und schadlos halten, die behaupten, dass die von Rediacc bereitgestellte On-Premise-Software oder Plattform ein gültiges geistiges Eigentumsrecht eines Dritten verletzt, vorausgesetzt, dass Sie: (a) Rediacc unverzüglich über den Anspruch informieren; (b) Rediacc die alleinige Kontrolle über die Verteidigung und den Vergleich überlassen; und (c) auf Kosten von Rediacc angemessene Mitwirkung leisten.",
+                "Wenn die Dienste Gegenstand eines Verletzungsanspruchs werden oder nach Einschätzung von Rediacc werden könnten, kann Rediacc nach eigenem Ermessen: (i) das Recht für Sie beschaffen, die Dienste weiterhin zu nutzen; (ii) die betroffene Komponente ersetzen oder ändern, um sie nicht verletzend zu gestalten; oder (iii) wenn weder (i) noch (ii) wirtschaftlich zumutbar ist, das betroffene Abonnement kündigen und im Voraus gezahlte, nicht genutzte Gebühren erstatten.",
+                "Rediacc hat keine Verpflichtung gemäß diesem Abschnitt für Ansprüche, die entstehen aus: von Ihnen vorgenommenen Änderungen an den Diensten, der Nutzung der Dienste in Kombination mit nicht von Rediacc bereitgestellter Drittanbieter-Software oder der Nutzung der Dienste unter Verstoß gegen diese Bedingungen."
               ],
               "title": "16.2 By Rediacc"
             }
           },
-          "title": "11. Freistellung"
+          "title": "16. Freistellung"
         },
         "intellectualProperty": {
           "content": [
             "Die Dienste sind Eigentum von Rediacc und durch Urheberrechtsgesetze geschützt.",
-            "Sie behalten alle Rechte, Titel und Ansprueche an Ihren Kundendaten und allen Inhalten oder Anwendungen, die Sie mithilfe der Dienste erstellen. Durch die Nutzung der Plattform gewaehren Sie Rediacc eine beschraenkte, weltweite, gebuehrenfreie Lizenz zum Hosten, Verarbeiten und Anzeigen Ihrer Kontoinformationen ausschliesslich zur Bereitstellung der Dienste fuer Sie. Diese Lizenz endet, wenn Sie Ihr Konto loeschen.",
-            "Wir duerfen anonymisierte, aggregierte Daten, die aus Ihrer Nutzung der Dienste abgeleitet werden (einschliesslich Telemetriedaten), fuer Produktverbesserung, Analysen und Benchmarking-Zwecke erfassen und verwenden. Solche aggregierten Daten identifizieren weder Sie noch einzelne Benutzer."
+            "Sie behalten alle Rechte, Titel und Ansprüche an Ihren Kundendaten und allen Inhalten oder Anwendungen, die Sie mithilfe der Dienste erstellen. Durch die Nutzung der Plattform gewähren Sie Rediacc eine beschränkte, weltweite, gebührenfreie Lizenz zum Hosten, Verarbeiten und Anzeigen Ihrer Kontoinformationen ausschließlich zur Bereitstellung der Dienste für Sie. Diese Lizenz endet, wenn Sie Ihr Konto löschen.",
+            "Wir dürfen anonymisierte, aggregierte Daten, die aus Ihrer Nutzung der Dienste abgeleitet werden (einschließlich Telemetriedaten), für Produktverbesserung, Analysen und Benchmarking-Zwecke erfassen und verwenden. Solche aggregierten Daten identifizieren weder Sie noch einzelne Benutzer."
           ],
           "id": "intellectual-property",
-          "title": "7. Geistiges Eigentum"
+          "title": "12. Geistiges Eigentum"
         },
         "limitationOfLiability": {
           "content": [
             "Im größtmöglichen gesetzlich zulässigen Umfang haftet Rediacc nicht für indirekte Schäden.",
-            "DIE GESAMTHAFTUNG VON REDIACC FUER ALLE ANSPRUECHE, DIE SICH AUS ODER IM ZUSAMMENHANG MIT DIESEN BEDINGUNGEN ODER DEN DIENSTEN ERGEBEN, DARF DEN HOEHEREN DER FOLGENDEN BETRAEGE NICHT UEBERSTEIGEN: (A) DEN GESAMTBETRAG, DEN SIE IN DEN ZWOELF (12) MONATEN VOR DEM DEN ANSPRUCH BEGRUENDENDEN EREIGNIS AN REDIACC GEZAHLT HABEN; ODER (B) EINHUNDERT US-DOLLAR ($100).",
-            "DIE BESCHRAENKUNGEN UND AUSSCHLUESSE IN DEN ABSCHNITTEN 14 UND 15 GELTEN NICHT FUER: (A) HAFTUNG FUER TOD ODER KOERPERVERLETZUNG DURCH FAHRLAESSIGKEIT; (B) HAFTUNG FUER BETRUG ODER ARGLISTIGE TAEUSCHUNG; (C) HAFTUNG FUER VORSAETZLICHES FEHLVERHALTEN (TAHTLIK RIKKUMINE) ODER GROBE FAHRLAESSIGKEIT (RASKE HOOLETUS) NACH DEM ESTNISCHEN SCHULDRECHTSGESETZ; ODER (D) JEGLICHE ANDERE HAFTUNG, DIE NACH GELTENDEM RECHT NICHT AUSGESCHLOSSEN ODER BESCHRAENKT WERDEN KANN."
+            "DIE GESAMTHAFTUNG VON REDIACC FÜR ALLE ANSPRÜCHE, DIE SICH AUS ODER IM ZUSAMMENHANG MIT DIESEN BEDINGUNGEN ODER DEN DIENSTEN ERGEBEN, DARF DEN HÖHEREN DER FOLGENDEN BETRÄGE NICHT ÜBERSTEIGEN: (A) DEN GESAMTBETRAG, DEN SIE IN DEN ZWÖLF (12) MONATEN VOR DEM DEN ANSPRUCH BEGRÜNDENDEN EREIGNIS AN REDIACC GEZAHLT HABEN; ODER (B) EINHUNDERT US-DOLLAR ($100).",
+            "DIE BESCHRÄNKUNGEN UND AUSSCHLÜSSE IN DEN ABSCHNITTEN 14 UND 15 GELTEN NICHT FÜR: (A) HAFTUNG FÜR TOD ODER KÖRPERVERLETZUNG DURCH FAHRLÄSSIGKEIT; (B) HAFTUNG FÜR BETRUG ODER ARGLISTIGE TÄUSCHUNG; (C) HAFTUNG FÜR VORSÄTZLICHES FEHLVERHALTEN (TAHTLIK RIKKUMINE) ODER GROBE FAHRLÄSSIGKEIT (RASKE HOOLETUS) NACH DEM ESTNISCHEN SCHULDRECHTSGESETZ; ODER (D) JEGLICHE ANDERE HAFTUNG, DIE NACH GELTENDEM RECHT NICHT AUSGESCHLOSSEN ODER BESCHRÄNKT WERDEN KANN."
           ],
           "id": "limitation-of-liability",
-          "title": "10. Haftungsbeschränkung"
+          "title": "15. Haftungsbeschränkung"
         },
         "onPremiseLicense": {
           "content": [
-            "Vorbehaltlich dieser Bedingungen und Ihres aktiven Abonnements gewaehrt Ihnen Rediacc eine beschraenkte, nicht-exklusive, nicht unterlizenzierbare, nicht uebertragbare, widerrufliche Lizenz zur Installation und Nutzung der On-Premise-Software (CLI, Renet-Agent und Desktop-Anwendung) ausschliesslich fuer Ihre internen Geschaeftszwecke waehrend Ihrer Abonnementlaufzeit."
+            "Vorbehaltlich dieser Bedingungen und Ihres aktiven Abonnements gewährt Ihnen Rediacc eine beschränkte, nicht-exklusive, nicht unterlizenzierbare, nicht übertragbare, widerrufliche Lizenz zur Installation und Nutzung der On-Premise-Software (CLI, Renet-Agent und Desktop-Anwendung) ausschließlich für Ihre internen Geschäftszwecke während Ihrer Abonnementlaufzeit."
           ],
           "id": "on-premise-license",
           "subsections": {
             "encryptionCredentials": {
               "content": [
-                "Die On-Premise-Software verwendet LUKS-Vollverschluesselung fuer Repository-Daten. Verschluesselungszugangsdaten werden lokal generiert und ausschliesslich in Ihren Konfigurationsdateien auf Ihrer Arbeitsstation gespeichert. <strong>Rediacc hat keinen Zugriff auf Ihre Verschluesselungszugangsdaten und kann Ihre Daten nicht wiederherstellen, wenn Sie diese verlieren.</strong> Sie sind allein verantwortlich fuer die Sicherung Ihrer Konfigurationsdateien und Verschluesselungszugangsdaten."
+                "Die On-Premise-Software verwendet LUKS-Vollverschlüsselung für Repository-Daten. Verschlüsselungszugangsdaten werden lokal generiert und ausschließlich in Ihren Konfigurationsdateien auf Ihrer Arbeitsstation gespeichert. <strong>Rediacc hat keinen Zugriff auf Ihre Verschlüsselungszugangsdaten und kann Ihre Daten nicht wiederherstellen, wenn Sie diese verlieren.</strong> Sie sind allein verantwortlich für die Sicherung Ihrer Konfigurationsdateien und Verschlüsselungszugangsdaten."
               ],
               "title": "6.3 Encryption and Credentials"
             },
             "installation": {
               "content": [
-                "Der Renet-Agent arbeitet mit erhoehten (Root-)Rechten auf Ihren Maschinen, um verschluesselte Volumes, Container-Laufzeitumgebungen und Systemdienste zu verwalten. Sie sind allein verantwortlich fuer die Sicherheit Ihrer Maschinen, einschliesslich SSH-Zugriff, Firewall-Konfiguration, Betriebssystem-Updates und physischer Sicherheit. Rediacc greift nicht remote auf Ihre Maschinen zu, es sei denn, Sie fordern dies ausdruecklich zu Supportzwecken an."
+                "Der Renet-Agent arbeitet mit erhöhten (Root-)Rechten auf Ihren Maschinen, um verschlüsselte Volumes, Container-Laufzeitumgebungen und Systemdienste zu verwalten. Sie sind allein verantwortlich für die Sicherheit Ihrer Maschinen, einschließlich SSH-Zugriff, Firewall-Konfiguration, Betriebssystem-Updates und physischer Sicherheit. Rediacc greift nicht remote auf Ihre Maschinen zu, es sei denn, Sie fordern dies ausdrücklich zu Supportzwecken an."
               ],
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["Sie duerfen nicht:"],
+              "content": ["Sie dürfen nicht:"],
               "items": [
-                "Die Renet-Agent-Binaerdatei oder eine nicht quelloffene Komponente der On-Premise-Software zurueckentwickeln, dekompilieren, disassemblieren oder auf andere Weise versuchen, den Quellcode abzuleiten",
+                "Die Renet-Agent-Binärdatei oder eine nicht quelloffene Komponente der On-Premise-Software zurückentwickeln, dekompilieren, disassemblieren oder auf andere Weise versuchen, den Quellcode abzuleiten",
                 "Die On-Premise-Software an Dritte weiterverbreiten, unterlizenzieren, vermieten, verleasen oder verleihen",
-                "Eigentumshinweise, Kennzeichnungen oder Markierungen auf der On-Premise-Software entfernen, aendern oder unkenntlich machen",
+                "Eigentumshinweise, Kennzeichnungen oder Markierungen auf der On-Premise-Software entfernen, ändern oder unkenntlich machen",
                 "Die On-Premise-Software verwenden, um ein konkurrierendes Produkt oder einen konkurrierenden Dienst zu entwickeln",
                 "Lizenzvalidierungs-, Telemetrie- oder Sicherheitsmechanismen in der On-Premise-Software umgehen oder deaktivieren",
-                "Die Maschinenaktivierungslimits Ihrer Abonnementstufe ueberschreiten"
+                "Die Maschinenaktivierungslimits Ihrer Abonnementstufe überschreiten"
               ],
               "title": "6.2 Restrictions"
             }
@@ -9663,9 +9674,9 @@
         },
         "platformLicense": {
           "content": [
-            "Vorbehaltlich dieser Bedingungen und Ihres aktiven Abonnements gewaehrt Ihnen Rediacc eine beschraenkte, nicht-exklusive, nicht uebertragbare Lizenz zum Zugriff auf und zur Nutzung der Plattform waehrend Ihrer Abonnementlaufzeit. Sie duerfen autorisierten Benutzern innerhalb Ihrer Organisation Zugang gewaehren.",
-            "Wir behalten uns das Recht vor, Funktionen der Plattform jederzeit zu aendern, zu aktualisieren oder einzustellen. Soweit praktikabel, werden wir ueber wesentliche Aenderungen im Voraus informieren. Aenderungen werden die Kernfunktionalitaet Ihrer aktuellen Abonnementstufe waehrend eines aktiven kostenpflichtigen Abrechnungszeitraums nicht wesentlich einschraenken.",
-            "Wir sind bestrebt, eine hohe Verfuegbarkeit der Plattform aufrechtzuerhalten, garantieren jedoch keinen ununterbrochenen Zugang. Die Plattform kann aufgrund von Wartung, Updates oder Umstaenden ausserhalb unserer Kontrolle voruebergehend nicht verfuegbar sein."
+            "Vorbehaltlich dieser Bedingungen und Ihres aktiven Abonnements gewährt Ihnen Rediacc eine beschränkte, nicht-exklusive, nicht übertragbare Lizenz zum Zugriff auf und zur Nutzung der Plattform während Ihrer Abonnementlaufzeit. Sie dürfen autorisierten Benutzern innerhalb Ihrer Organisation Zugang gewähren.",
+            "Wir behalten uns das Recht vor, Funktionen der Plattform jederzeit zu ändern, zu aktualisieren oder einzustellen. Soweit praktikabel, werden wir über wesentliche Änderungen im Voraus informieren. Änderungen werden die Kernfunktionalität Ihrer aktuellen Abonnementstufe während eines aktiven kostenpflichtigen Abrechnungszeitraums nicht wesentlich einschränken.",
+            "Wir sind bestrebt, eine hohe Verfügbarkeit der Plattform aufrechtzuerhalten, garantieren jedoch keinen ununterbrochenen Zugang. Die Plattform kann aufgrund von Wartung, Updates oder Umständen außerhalb unserer Kontrolle vorübergehend nicht verfügbar sein."
           ],
           "id": "platform-license",
           "title": "7. Plattformlizenz"
@@ -9675,15 +9686,15 @@
             "Rediacc bietet eine Infrastruktur-Automatisierungsplattform für KI-gesteuerte Operationen."
           ],
           "content2": [
-            "Die spezifischen Funktionen, Ressourcenlimits und Moeglichkeiten, die Ihnen zur Verfuegung stehen, haengen von Ihrer Abonnementstufe ab. Funktionsbeschreibungen auf unserer Website und in der Dokumentation beschreiben die beabsichtigte Funktionalitaet jeder Stufe, stellen jedoch keine verbindlichen Leistungsgarantien dar."
+            "Die spezifischen Funktionen, Ressourcenlimits und Möglichkeiten, die Ihnen zur Verfügung stehen, hängen von Ihrer Abonnementstufe ab. Funktionsbeschreibungen auf unserer Website und in der Dokumentation beschreiben die beabsichtigte Funktionalität jeder Stufe, stellen jedoch keine verbindlichen Leistungsgarantien dar."
           ],
           "id": "service-description",
           "items": [
-            "<strong>On-Premise-Software:</strong> Die CLI (<code>rdc</code>), der Renet-Agent und die Desktop-Anwendung — installiert auf Ihren Arbeitsstationen und Maschinen zur Orchestrierung verschluesselter, isolierter Container-Bereitstellungen",
-            "<strong>Plattform:</strong> Die Webanwendung und das Kontoportal fuer Abonnementverwaltung, Teamzusammenarbeit und (sofern verfuegbar) cloudbasiertes Infrastrukturmanagement",
-            "<strong>Professionelle Dienstleistungen:</strong> Optionale Beratung, Migrationsunterstuetzung und Implementierungshilfe, vorbehaltlich separater Dienstleistungsvereinbarungen"
+            "<strong>On-Premise-Software:</strong> Die CLI (<code>rdc</code>), der Renet-Agent und die Desktop-Anwendung — installiert auf Ihren Arbeitsstationen und Maschinen zur Orchestrierung verschlüsselter, isolierter Container-Bereitstellungen",
+            "<strong>Plattform:</strong> Die Webanwendung und das Kontoportal für Abonnementverwaltung, Teamzusammenarbeit und (sofern verfügbar) cloudbasiertes Infrastrukturmanagement",
+            "<strong>Professionelle Dienstleistungen:</strong> Optionale Beratung, Migrationsunterstützung und Implementierungshilfe, vorbehaltlich separater Dienstleistungsvereinbarungen"
           ],
-          "title": "2. Beschreibung der Dienste"
+          "title": "3. Beschreibung der Dienste"
         },
         "subscriptions": {
           "content": [
@@ -9699,9 +9710,9 @@
           "subsections": {
             "billing": {
               "content": [
-                "Kostenpflichtige Abonnements (Professional und Business) beginnen mit einer 14-taegigen kostenlosen Testphase. Sie geben bei der Anmeldung eine Zahlungsmethode an, und die erste Abbuchung erfolgt, wenn die Testphase endet. Sie koennen vor Ablauf der Testphase kostenlos kuendigen. Wenn Sie waehrend der Testphase kuendigen, ein kostenpflichtiges Abonnement spaeter kuendigen oder eine Zahlung fehlschlaegt, faellt Ihr Konto auf die kostenlose Community-Stufe zurueck.",
-                "Kostenpflichtige Abonnements werden monatlich oder jaehrlich im Voraus abgerechnet. Die jaehrliche Abrechnung wird mit einem Rabatt von 15 % auf zwoelf (12) Monate des Monatspreises angeboten. Alle Gebuehren sind in US-Dollar angegeben. Die Zahlung wird ueber unseren externen Zahlungsdienstleister (Stripe) abgewickelt; wir speichern keine vollstaendigen Zahlungskartendaten.",
-                "Wir behalten uns das Recht vor, unsere Preise mit einer Frist von dreissig (30) Tagen zu aendern. Preisaenderungen wirken sich nicht auf Ihren aktuellen Abrechnungszeitraum aus. Wenn Sie einer Preisaenderung nicht zustimmen, koennen Sie Ihr Abonnement vor dem naechsten Abrechnungszeitraum kuendigen."
+                "Kostenpflichtige Abonnements (Professional und Business) beginnen mit einer 14-tägigen kostenlosen Testphase. Sie geben bei der Anmeldung eine Zahlungsmethode an, und die erste Abbuchung erfolgt, wenn die Testphase endet. Sie können vor Ablauf der Testphase kostenlos kündigen. Wenn Sie während der Testphase kündigen, ein kostenpflichtiges Abonnement später kündigen oder eine Zahlung fehlschlägt, fällt Ihr Konto auf die kostenlose Community-Stufe zurück.",
+                "Kostenpflichtige Abonnements werden monatlich oder jährlich im Voraus abgerechnet. Die jährliche Abrechnung wird mit einem Rabatt von 15 % auf zwölf (12) Monate des Monatspreises angeboten. Alle Gebühren sind in US-Dollar angegeben. Die Zahlung wird über unseren externen Zahlungsdienstleister (Stripe) abgewickelt; wir speichern keine vollständigen Zahlungskartendaten.",
+                "Wir behalten uns das Recht vor, unsere Preise mit einer Frist von dreißig (30) Tagen zu ändern. Preisänderungen wirken sich nicht auf Ihren aktuellen Abrechnungszeitraum aus. Wenn Sie einer Preisänderung nicht zustimmen, können Sie Ihr Abonnement vor dem nächsten Abrechnungszeitraum kündigen."
               ],
               "title": "5.1 Billing"
             },
@@ -9716,52 +9727,52 @@
             },
             "gracePeriod": {
               "content": [
-                "Die On-Premise-Software ueberprueft regelmaessig Ihren Abonnementstatus. Wenn die Validierung fehlschlaegt (aufgrund von Netzwerkproblemen, abgelaufenem Abonnement oder Nichtzahlung), gilt eine Karenzzeit von drei (3) Tagen. Nach Ablauf der Karenzzeit arbeitet die On-Premise-Software auf dem Funktionsniveau der Community-Stufe, bis der Abonnementstatus wiederhergestellt ist."
+                "Die On-Premise-Software überprüft regelmäßig Ihren Abonnementstatus. Wenn die Validierung fehlschlägt (aufgrund von Netzwerkproblemen, abgelaufenem Abonnement oder Nichtzahlung), gilt eine Karenzzeit von drei (3) Tagen. Nach Ablauf der Karenzzeit arbeitet die On-Premise-Software auf dem Funktionsniveau der Community-Stufe, bis der Abonnementstatus wiederhergestellt ist."
               ],
               "title": "5.4 License Validation and Grace Period"
             },
             "renewalCancellation": {
               "content": [
-                "Kostenpflichtige Abonnements verlaengern sich automatisch am Ende jedes Abrechnungszeitraums zum jeweils gueltigen Preis, sofern Sie nicht vor dem Verlaengerungsdatum kuendigen. <strong>Mit dem Abschluss eines kostenpflichtigen Abonnements autorisieren Sie wiederkehrende Abbuchungen von Ihrem Zahlungsmittel, bis Sie kuendigen.</strong> Sie koennen jederzeit ueber das Kontoportal oder per E-Mail an <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> kuendigen. Nach der Kuendigung behalten Sie bis zum Ende Ihres aktuellen Abrechnungszeitraums Zugang zu den kostenpflichtigen Funktionen. Anteilige Erstattungen fuer angefangene Abrechnungszeitraeume werden nicht gewaehrt, es sei denn, dies ist in unserer <a href=\"refund-policy\">Erstattungsrichtlinie</a> beschrieben. Wir senden vor jeder jaehrlichen Verlaengerung eine Erinnerung an Ihre Konto-E-Mail-Adresse."
+                "Kostenpflichtige Abonnements verlängern sich automatisch am Ende jedes Abrechnungszeitraums zum jeweils gültigen Preis, sofern Sie nicht vor dem Verlängerungsdatum kündigen. <strong>Mit dem Abschluss eines kostenpflichtigen Abonnements autorisieren Sie wiederkehrende Abbuchungen von Ihrem Zahlungsmittel, bis Sie kündigen.</strong> Sie können jederzeit über das Kontoportal oder per E-Mail an <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> kündigen. Nach der Kündigung behalten Sie bis zum Ende Ihres aktuellen Abrechnungszeitraums Zugang zu den kostenpflichtigen Funktionen. Anteilige Erstattungen für angefangene Abrechnungszeiträume werden nicht gewährt, es sei denn, dies ist in unserer <a href=\"refund-policy\">Erstattungsrichtlinie</a> beschrieben. Wir senden vor jeder jährlichen Verlängerung eine Erinnerung an Ihre Konto-E-Mail-Adresse."
               ],
               "title": "5.3 Renewal and Cancellation"
             },
             "taxes": {
               "content": [
-                "Alle Gebuehren verstehen sich zuzueglich anfallender Steuern. Sie sind fuer alle Steuern, Abgaben und Gebuehren verantwortlich, die von Steuerbehoerden auf Ihr Abonnement erhoben werden, mit Ausnahme von Steuern auf das Nettoeinkommen von Rediacc. Soweit gesetzlich vorgeschrieben, erhebt und fuehrt Rediacc die anfallenden Steuern (einschliesslich EU-Mehrwertsteuer) ab, und diese werden auf Ihrer Rechnung einzeln aufgefuehrt."
+                "Alle Gebühren verstehen sich zuzüglich anfallender Steuern. Sie sind für alle Steuern, Abgaben und Gebühren verantwortlich, die von Steuerbehörden auf Ihr Abonnement erhoben werden, mit Ausnahme von Steuern auf das Nettoeinkommen von Rediacc. Soweit gesetzlich vorgeschrieben, erhebt und führt Rediacc die anfallenden Steuern (einschließlich EU-Mehrwertsteuer) ab, und diese werden auf Ihrer Rechnung einzeln aufgeführt."
               ],
               "title": "5.2 Taxes"
             }
           },
-          "title": "4. Abonnements und Zahlung"
+          "title": "5. Abonnements und Zahlung"
         },
         "telemetry": {
           "content": [
             "Unsere Softwareprodukte erfassen anonymisierte Nutzungstelemetrie, um die Produktqualität und Leistung zu verbessern. Durch die Nutzung der Dienste bestätigen Sie, dass die Telemetrieerfassung wie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a> beschrieben erfolgt.",
             "Die Telemetrie ist datenschutzfreundlich gestaltet: Persönliche Identifikatoren werden vor der Übertragung anonymisiert, und Sie können die Telemetrie jederzeit deaktivieren. Die <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a> beschreibt die von jedem Produkt erfassten spezifischen Daten und die Mechanismen zur Deaktivierung der Erfassung.",
-            "In Rechtsordnungen, die eine ausdrueckliche Einwilligung zur Telemetrieerfassung auf Endgeraeten erfordern (einschliesslich gemaess der ePrivacy-Richtlinie in der Umsetzung Ihrer Rechtsordnung), sollten Sie Ihre Telemetrieeinstellungen vor der erstmaligen Nutzung der On-Premise-Software konfigurieren. Ihre fortgesetzte Nutzung der Dienste bei aktivierter Telemetrie stellt Ihre Einwilligung in die in der <a href=\"telemetry-policy\">Telemetrierichtlinie</a> beschriebene Erfassung dar."
+            "In Rechtsordnungen, die eine ausdrückliche Einwilligung zur Telemetrieerfassung auf Endgeräten erfordern (einschließlich gemäß der ePrivacy-Richtlinie in der Umsetzung Ihrer Rechtsordnung), sollten Sie Ihre Telemetrieeinstellungen vor der erstmaligen Nutzung der On-Premise-Software konfigurieren. Ihre fortgesetzte Nutzung der Dienste bei aktivierter Telemetrie stellt Ihre Einwilligung in die in der <a href=\"telemetry-policy\">Telemetrierichtlinie</a> beschriebene Erfassung dar."
           ],
           "id": "telemetry",
-          "title": "6. Telemetrie und Datenerfassung"
+          "title": "10. Telemetrie und Datenerfassung"
         },
         "termination": {
           "content": [
             "Sie können Ihr Konto jederzeit kündigen. Wir können Ihren Zugang bei Verstoß gegen diese Bedingungen aussetzen.",
-            "Bei Kuendigung:"
+            "Bei Kündigung:"
           ],
           "id": "termination",
           "items": [
-            "Ihre Lizenz zur Nutzung der On-Premise-Software und der Plattform endet am Ende Ihres aktuellen Abrechnungszeitraums (oder sofort im Falle eines Verstosses)",
-            "Kundendaten auf Ihren Maschinen bleiben unter Ihrer Kontrolle — Rediacc kann nicht darauf zugreifen oder sie loeschen",
-            "Kontodaten werden fuer dreissig (30) Tage aufbewahrt, um den Export zu ermoeglichen, und dann aus unseren aktiven Systemen geloescht",
-            "Die Abschnitte 1 (Definitionen), 11 (Ihre Daten), 12 (Geistiges Eigentum), 14 (Gewaehrleistungen), 15 (Haftung), 16 (Freistellung) und 18 (Anwendbares Recht) ueberdauern die Kuendigung"
+            "Ihre Lizenz zur Nutzung der On-Premise-Software und der Plattform endet am Ende Ihres aktuellen Abrechnungszeitraums (oder sofort im Falle eines Verstoßes)",
+            "Kundendaten auf Ihren Maschinen bleiben unter Ihrer Kontrolle — Rediacc kann nicht darauf zugreifen oder sie löschen",
+            "Kontodaten werden für dreißig (30) Tage aufbewahrt, um den Export zu ermöglichen, und dann aus unseren aktiven Systemen gelöscht",
+            "Die Abschnitte 1 (Definitionen), 11 (Ihre Daten), 12 (Geistiges Eigentum), 14 (Gewährleistungen), 15 (Haftung), 16 (Freistellung) und 18 (Anwendbares Recht) überdauern die Kündigung"
           ],
-          "title": "12. Kündigung"
+          "title": "17. Kündigung"
         },
         "thirdPartyComponents": {
           "content": [
-            "Die On-Premise-Software kann Open-Source-Software von Drittanbietern auf Ihren Maschinen installieren, konfigurieren oder damit interagieren, einschliesslich Docker, Container-Laufzeitumgebungen und Speichersynchronisationstools. Diese Drittanbieterkomponenten unterliegen ihren jeweiligen eigenen Lizenzen und werden von Rediacc \"WIE BESEHEN\" ohne Gewaehrleistung bereitgestellt.",
-            "Rediacc uebernimmt keine Haftung fuer die Funktionalitaet, Sicherheit oder Verfuegbarkeit von Drittanbieterkomponenten. Sie sind dafuer verantwortlich, die Lizenzen jeglicher auf Ihrer Infrastruktur bereitgestellter Drittanbieter-Software zu ueberpruefen und einzuhalten."
+            "Die On-Premise-Software kann Open-Source-Software von Drittanbietern auf Ihren Maschinen installieren, konfigurieren oder damit interagieren, einschließlich Docker, Container-Laufzeitumgebungen und Speichersynchronisationstools. Diese Drittanbieterkomponenten unterliegen ihren jeweiligen eigenen Lizenzen und werden von Rediacc \"WIE BESEHEN\" ohne Gewährleistung bereitgestellt.",
+            "Rediacc übernimmt keine Haftung für die Funktionalität, Sicherheit oder Verfügbarkeit von Drittanbieterkomponenten. Sie sind dafür verantwortlich, die Lizenzen jeglicher auf Ihrer Infrastruktur bereitgestellter Drittanbieter-Software zu überprüfen und einzuhalten."
           ],
           "id": "third-party-components",
           "title": "13. Drittanbieter-Komponenten"
@@ -9771,27 +9782,27 @@
             "Sie stimmen zu, dass Sie und Ihre autorisierten Benutzer die Dienste nicht verwenden werden, um:"
           ],
           "content2": [
-            "Sie sind allein verantwortlich fuer die Inhalte und Anwendungen, die Sie auf Ihren Maschinen mithilfe der Dienste bereitstellen. Wir behalten uns das Recht vor, den Zugang zur Plattform zu sperren oder zu beenden, wenn wir vernuenftigerweise annehmen, dass ein Verstoss gegen diese Beschraenkungen vorliegt."
+            "Sie sind allein verantwortlich für die Inhalte und Anwendungen, die Sie auf Ihren Maschinen mithilfe der Dienste bereitstellen. Wir behalten uns das Recht vor, den Zugang zur Plattform zu sperren oder zu beenden, wenn wir vernünftigerweise annehmen, dass ein Verstoß gegen diese Beschränkungen vorliegt."
           ],
           "id": "use-restrictions",
           "items": [
-            "Malware, Viren, Ransomware oder anderen schaedlichen Code bereitzustellen, zu hosten oder zu verbreiten",
-            "Kryptowaehrungs-Mining, Peer-to-Peer-Filesharing-Netzwerke oder offene Proxy-Dienste zu betreiben",
-            "Geistiges Eigentum, Privatsphaere oder andere Rechte Dritter zu verletzen oder sich anzueignen",
-            "Unaufgeforderte kommerzielle Mitteilungen (Spam) zu versenden oder Phishing-Angriffe durchzufuehren",
-            "Unbefugte Schwachstellenanalysen, Penetrationstests oder Lasttests gegen die Rediacc-Infrastruktur durchzufuehren",
-            "Personen oder Einrichtungen nachzuahmen oder Ihre Zugehoerigkeit falsch darzustellen",
-            "Gegen geltendes Recht, Vorschriften oder Rechte Dritter zu verstossen",
-            "Die Dienste ohne unsere vorherige schriftliche Zustimmung an Dritte weiterzuverkaufen, weiterzuverbreiten oder als Teil eines Managed-Service-Angebots verfuegbar zu machen"
+            "Malware, Viren, Ransomware oder anderen schädlichen Code bereitzustellen, zu hosten oder zu verbreiten",
+            "Kryptowährungs-Mining, Peer-to-Peer-Filesharing-Netzwerke oder offene Proxy-Dienste zu betreiben",
+            "Geistiges Eigentum, Privatsphäre oder andere Rechte Dritter zu verletzen oder sich anzueignen",
+            "Unaufgeforderte kommerzielle Mitteilungen (Spam) zu versenden oder Phishing-Angriffe durchzuführen",
+            "Unbefugte Schwachstellenanalysen, Penetrationstests oder Lasttests gegen die Rediacc-Infrastruktur durchzuführen",
+            "Personen oder Einrichtungen nachzuahmen oder Ihre Zugehörigkeit falsch darzustellen",
+            "Gegen geltendes Recht, Vorschriften oder Rechte Dritter zu verstoßen",
+            "Die Dienste ohne unsere vorherige schriftliche Zustimmung an Dritte weiterzuverkaufen, weiterzuverbreiten oder als Teil eines Managed-Service-Angebots verfügbar zu machen"
           ],
           "title": "9. Nutzungsbeschränkungen"
         },
         "warranties": {
           "content": [
-            "IM GESETZLICH ZULAESSIGEN RAHMEN WERDEN DIE DIENSTE \"WIE BESEHEN\" UND \"WIE VERFUEGBAR\" BEREITGESTELLT. REDIACC SCHLIESST ALLE GEWAEHRLEISTUNGEN AUS, OB AUSDRUECKLICH, STILLSCHWEIGEND ODER GESETZLICH, EINSCHLIESSLICH, ABER NICHT BESCHRAENKT AUF STILLSCHWEIGENDE GEWAEHRLEISTUNGEN DER MARKTGAENGIGKEIT, EIGNUNG FUER EINEN BESTIMMTEN ZWECK, NICHTVERLETZUNG UND JEGLICHE GEWAEHRLEISTUNGEN, DIE SICH AUS HANDELSUEBUNG ODER HANDELSBRAUCH ERGEBEN.",
-            "OHNE DAS VORSTEHENDE EINZUSCHRAENKEN, GEWAEHRLEISTET REDIACC NICHT, DASS: (A) DIE DIENSTE IHREN ANFORDERUNGEN ODER ERWARTUNGEN ENTSPRECHEN; (B) DIE DIENSTE UNUNTERBROCHEN, RECHTZEITIG, SICHER ODER FEHLERFREI SIND; (C) DIE DURCH DIE DIENSTE ERZIELTEN ERGEBNISSE GENAU ODER ZUVERLAESSIG SIND; ODER (D) MAENGEL IN DEN DIENSTEN BEHOBEN WERDEN.",
-            "NICHTS IN DIESEN BEDINGUNGEN SCHLIESST DIE HAFTUNG AUS ODER BESCHRAENKT SIE FUER: (A) TOD ODER KOERPERVERLETZUNG DURCH FAHRLAESSIGKEIT; (B) BETRUG ODER ARGLISTIGE TAEUSCHUNG; ODER (C) JEGLICHE HAFTUNG, DIE NACH DEM ESTNISCHEN SCHULDRECHTSGESETZ (VOLAOEIGUSSEADUS) NICHT AUSGESCHLOSSEN ODER BESCHRAENKT WERDEN KANN, EINSCHLIESSLICH DER HAFTUNG FUER VORSAETZLICHES FEHLVERHALTEN ODER GROBE FAHRLAESSIGKEIT.",
-            "Sie erkennen an, dass die On-Premise-Software mit erhoehten Rechten auf Ihren Maschinen arbeitet und dass Sie alle mit ihrer Installation und ihrem Betrieb auf Ihrer Infrastruktur verbundenen Risiken uebernehmen. Funktionsbeschreibungen, Leistungskennzahlen und Wiederherstellungszeitschaetzungen in unserer Dokumentation und unseren Marketingmaterialien beschreiben die beabsichtigte Funktionalitaet und sind keine verbindlichen Leistungsgarantien."
+            "IM GESETZLICH ZULÄSSIGEN RAHMEN WERDEN DIE DIENSTE \"WIE BESEHEN\" UND \"WIE VERFÜGBAR\" BEREITGESTELLT. REDIACC SCHLIESST ALLE GEWÄHRLEISTUNGEN AUS, OB AUSDRÜCKLICH, STILLSCHWEIGEND ODER GESETZLICH, EINSCHLIESSLICH, ABER NICHT BESCHRÄNKT AUF STILLSCHWEIGENDE GEWÄHRLEISTUNGEN DER MARKTGÄNGIGKEIT, EIGNUNG FÜR EINEN BESTIMMTEN ZWECK, NICHTVERLETZUNG UND JEGLICHE GEWÄHRLEISTUNGEN, DIE SICH AUS HANDELSÜBUNG ODER HANDELSBRAUCH ERGEBEN.",
+            "OHNE DAS VORSTEHENDE EINZUSCHRÄNKEN, GEWÄHRLEISTET REDIACC NICHT, DASS: (A) DIE DIENSTE IHREN ANFORDERUNGEN ODER ERWARTUNGEN ENTSPRECHEN; (B) DIE DIENSTE UNUNTERBROCHEN, RECHTZEITIG, SICHER ODER FEHLERFREI SIND; (C) DIE DURCH DIE DIENSTE ERZIELTEN ERGEBNISSE GENAU ODER ZUVERLÄSSIG SIND; ODER (D) MÄNGEL IN DEN DIENSTEN BEHOBEN WERDEN.",
+            "NICHTS IN DIESEN BEDINGUNGEN SCHLIESST DIE HAFTUNG AUS ODER BESCHRÄNKT SIE FÜR: (A) TOD ODER KÖRPERVERLETZUNG DURCH FAHRLÄSSIGKEIT; (B) BETRUG ODER ARGLISTIGE TÄUSCHUNG; ODER (C) JEGLICHE HAFTUNG, DIE NACH DEM ESTNISCHEN SCHULDRECHTSGESETZ (VOLAOEIGUSSEADUS) NICHT AUSGESCHLOSSEN ODER BESCHRÄNKT WERDEN KANN, EINSCHLIESSLICH DER HAFTUNG FÜR VORSÄTZLICHES FEHLVERHALTEN ODER GROBE FAHRLÄSSIGKEIT.",
+            "Sie erkennen an, dass die On-Premise-Software mit erhöhten Rechten auf Ihren Maschinen arbeitet und dass Sie alle mit ihrer Installation und ihrem Betrieb auf Ihrer Infrastruktur verbundenen Risiken übernehmen. Funktionsbeschreibungen, Leistungskennzahlen und Wiederherstellungszeitschätzungen in unserer Dokumentation und unseren Marketingmaterialien beschreiben die beabsichtigte Funktionalität und sind keine verbindlichen Leistungsgarantien."
           ],
           "id": "warranties",
           "title": "14. Gewährleistungsausschluss"

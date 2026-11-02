@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid } from '../../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Combined topology only: needs a Ceph cluster AND a worker acting as the RBD client that hosts the datastore.
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
@@ -37,8 +38,8 @@ test.describe
   .serial('Ceph RBD Datastore Lifecycle @bridge @ceph @datastore', () => {
     test.skip(!hasCephAndClient, 'Requires combined topology (VM_CEPH_NODES + VM_WORKERS)');
 
-    let worker: BridgeTestRunner;
-    let ceph: BridgeTestRunner;
+    let worker: RenetFunctionsTestRunner;
+    let ceph: RenetFunctionsTestRunner;
 
     const id = Date.now().toString(36);
     const pool = `ds-pool-${id}`;
@@ -46,7 +47,7 @@ test.describe
     const dsName = `ceph-ds-${id}`;
     const forkTag = 'fork1';
     const forkRef = `${dsName}:${forkTag}`;
-    const repoName = `ds-repo-${id}`;
+    const repoName = e2eRepoGuid();
     const repoPassword = 'ceph-ds-test-pw';
 
     // Mount points are DERIVED by the datastore layer, not chosen by the caller.
@@ -85,8 +86,8 @@ test.describe
     };
 
     test.beforeAll(() => {
-      worker = BridgeTestRunner.forWorker(1);
-      ceph = BridgeTestRunner.forCeph();
+      worker = RenetFunctionsTestRunner.forWorker(1);
+      ceph = RenetFunctionsTestRunner.forCeph();
     });
 
     test('1. Ceph cluster is healthy', async () => {

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   CURRENT_SCHEMA_VERSION,
   type MigrationContext,
@@ -6,9 +9,6 @@ import {
   RdcConfigSchema,
   runMigrations,
 } from '@rediacc/shared/config-schema';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { nodeCryptoProvider } from '../../adapters/crypto.js';
 
@@ -190,7 +190,10 @@ describe('migrateV2ToV3 transforms', () => {
     expect(repos.erpnext.grand).toBe('latest');
     expect(repos.erpnext.tags.latest.repositoryGuid).toBe('11111111-1111-4111-8111-111111111111');
     expect(repos.shop.grand).toBe('latest');
-    expect(Object.keys(repos.shop.tags).sort()).toEqual(['latest', 'test']);
+    expect(Object.keys(repos.shop.tags).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'latest',
+      'test',
+    ]);
     expect(repos.shop.tags.latest.tag).toBeUndefined();
     expect(repos.shop.tags.latest.networkId).toBeUndefined();
     expect(repos.shop.tags.latest.headCommit).toBeUndefined();
@@ -220,6 +223,14 @@ describe('migrateV2ToV3 transforms', () => {
     const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     expect(out.resources.machines['web-1'].ceph).toBeUndefined();
     expect(out.resources.machines['web-1'].ip).toBe('10.0.0.1');
+  });
+
+  it('T11 drops the retired storages family so the result passes the v3 schema', async () => {
+    const v2 = makeV2Sample() as V2Input & { resources: Record<string, unknown> };
+    v2.resources.storages = { 'backups-s3': { provider: 's3', vaultContent: {} } };
+    const out = await migrateV2ToV3(v2, throwingCtx);
+    expect((out as MigratedDoc).resources.storages).toBeUndefined();
+    expect(RdcConfigSchema.safeParse(out).success).toBe(true);
   });
 
   it('T9 splits archived-repo composite name into {name, tag}', async () => {
@@ -264,6 +275,7 @@ describe('migrateV2ToV3 transforms', () => {
     const password = 'test-pw';
     const inner = {
       machines: { 'web-1': { ip: '10.0.0.9', user: 'deploy' } },
+      storages: { 'backups-s3': { provider: 's3', vaultContent: {} } },
       repositories: {
         secret: {
           repositoryGuid: '88888888-8888-4888-8888-888888888888',
@@ -292,6 +304,7 @@ describe('migrateV2ToV3 transforms', () => {
     expect(out.resources.repositories.secret.tags.latest.credential).toBe('luks-secret');
     expect(out.state.repos.secret.latest.networkId).toBe(4032);
     expect(out.encryption.encryptedFields['/resources']).toBeUndefined();
+    expect(out.resources.storages).toBeUndefined();
   });
 
   it('aborts (rejects) when the master password is wrong', async () => {

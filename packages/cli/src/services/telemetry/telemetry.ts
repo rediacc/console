@@ -27,6 +27,7 @@ import {
   startProfiling as startProfilingImpl,
   stopProfiling as stopProfilingImpl,
 } from './profiling.js';
+import { currentRequestTelemetry } from './request-telemetry.js';
 import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
 
 /**
@@ -45,23 +46,32 @@ export function isTelemetryDisabled(): boolean {
   return !!process.env.CI || process.env.REDIACC_TELEMETRY_DISABLED === '1';
 }
 
-interface CliTelemetryConfig extends Partial<TelemetryConfig> {
+export interface TelemetryInitConfig extends Partial<TelemetryConfig> {
   /** CLI-specific: telemetry enabled (default: true, opt-out) */
   telemetryEnabled?: boolean;
+  /** Reported as `rediacc.region` on the resource. Set by the container executor. */
+  region?: string;
 }
+type CliTelemetryConfig = TelemetryInitConfig;
 
 interface CommandTrackingOptions {
   args?: string[];
   options?: Record<string, unknown>;
+  /**
+   * Key of the span in the active set. Defaults to the command name, which is only
+   * unique in a process that runs one command at a time; the executor passes a
+   * per-request key so two concurrent `repo list` spans do not overwrite each other.
+   */
+  spanKey?: string;
 }
 class CliTelemetryService {
   private sdk: NodeSDK | null = null;
   private tracer: Tracer | null = null;
   private logger: Logger | null = null;
   private metricReader: PeriodicExportingMetricReader | null = null;
-  private isEnabled = true;
-  private isInitialized = false;
-  private profilingStarted = false;
+  private isEnabled = true as boolean;
+  private isInitialized = false as boolean;
+  private profilingStarted = false as boolean;
   private readonly sessionId: string;
   private userContext: Partial<UserContext> = {};
   private readonly activeSpans: Map<string, Span> = new Map();
@@ -184,6 +194,7 @@ class CliTelemetryService {
         updateChannel: this.resolveUpdateChannel(),
         headers: this.getExporterHeaders(),
         sessionId: this.sessionId,
+        ...(config?.region ? { region: config.region } : {}),
       });
 
       this.sdk = result.sdk;
@@ -199,6 +210,11 @@ class CliTelemetryService {
       this.isEnabled = false;
       this.isInitialized = true;
     }
+  }
+
+  /** True while an SDK is constructed and exporting (not disabled, not credential-less). */
+  isRunning(): boolean {
+    return this.isEnabled && this.sdk !== null;
   }
 
   startProfiling(commandName: string): void {
@@ -268,7 +284,7 @@ class CliTelemetryService {
         ...this.getUserAttributes(),
       });
 
-      this.activeSpans.set(commandName, span);
+      this.activeSpans.set(options?.spanKey ?? commandName, span);
 
       // Log command start
       this.emitLog(SeverityNumber.INFO, `Command started: ${commandName}`, {
@@ -300,14 +316,15 @@ class CliTelemetryService {
 
   endCommand(
     commandName: string,
-    result: { success: boolean; exitCode?: number; error?: string; duration?: number }
+    result: { success: boolean; exitCode?: number; error?: string; duration?: number },
+    spanKey: string = commandName
   ): void {
     if (!this.isEnabled) {
       return;
     }
 
     try {
-      const span = this.activeSpans.get(commandName);
+      const span = this.activeSpans.get(spanKey);
       if (!span) {
         return;
       }
@@ -325,7 +342,7 @@ class CliTelemetryService {
       }
 
       span.end();
-      this.activeSpans.delete(commandName);
+      this.activeSpans.delete(spanKey);
 
       // Record metrics
       const attrs = { 'cli.command': commandName, 'cli.success': result.success };
@@ -424,7 +441,7 @@ class CliTelemetryService {
     }
 
     // Prevent multiple shutdown calls
-    if (this.pendingShutdown) {
+    if (this.pendingShutdown !== null) {
       return this.pendingShutdown;
     }
 
@@ -463,6 +480,16 @@ class CliTelemetryService {
   }
 
   private getUserAttributes(): Record<string, string> {
+    // Inside an executor request the user is the introspected caller. The singleton's context is the executor's own token and would attribute every caller's command to it.
+    const scope = currentRequestTelemetry();
+    if (scope) {
+      const caller = scope.caller;
+      if (!caller) return {};
+      return {
+        ...buildUserAttributes({ email: caller.userEmail, organization: caller.orgId }),
+        'user.id': caller.userId,
+      };
+    }
     return buildUserAttributes(this.userContext);
   }
 

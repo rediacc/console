@@ -69,7 +69,7 @@ FAILING = (DRIFT, UNCHECKED)
 
 PHASES = ("pr", "cd")
 
-# Validate Promotion: 1,123 objects took 11.2-14.6 min on main (4c8669b29), so 75 objects/min is the measured lower bound (1,123 objects in 14.6 min is 77/min); the watchdog cap is 20 min (`JOB_BUDGET_CAPS`, `validate-promote`).
+# Validate Promotion: 1,123 objects took 11.2-14.6 min on main (6f17924d1), so 75 objects/min is the measured lower bound (1,123 objects in 14.6 min is 77/min); the watchdog cap is 20 min (`JOB_BUDGET_CAPS`, `validate-promote`).
 PROMOTION_CHANNEL = "edge"
 PROMOTION_RATE_PER_MIN = 75
 PROMOTION_CAP_MIN = 20.0
@@ -603,6 +603,13 @@ def check_c(state: State, version: str, phase: str, release_sha: str) -> Result:
         lines.append(
             "ratchet %s is above %d sentinel(s) (%s): those are outside the bijection"
             % (ratchet, len(below), ", ".join(below))
+        )
+        status = WARN
+    elif key(ratchet) < key(oldest):
+        lines.append(
+            "ratchet %s lags the oldest sentinel %s: `release.advance_contract_floor` writes the "
+            "new floor into the working tree, and it is committed in the next PR"
+            % (ratchet, oldest)
         )
         status = WARN
     else:

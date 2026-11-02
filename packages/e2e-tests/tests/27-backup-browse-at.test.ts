@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -30,13 +31,13 @@ import {
   type SnapshotRecord,
   verbIsRegistered,
 } from '../src/utils/backupStorage';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
 import {
   announcePrerequisites,
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../src/utils/declaredSkip';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
@@ -190,7 +191,7 @@ test.describe
       const REPO_NAME = `e2ebk-browse-${String(stamp).slice(-8)}`;
 
       let cli: CliRunner;
-      let w1: BridgeTestRunner;
+      let w1: RenetFunctionsTestRunner;
       let repo: ProvisionedRepo;
       let subscriptionId = '';
       /** Taken while the repository's TOC key was absent: carries no listing. */
@@ -220,7 +221,21 @@ test.describe
       const comparable = (rows: unknown): string[] =>
         (Array.isArray(rows) ? (rows as { name: string; type: string }[]) : [])
           .map((row) => `${row.type} ${row.name}`)
-          .sort();
+          .sort((a, b) => Number(a > b) - Number(a < b));
+
+      /** Mount the repository with the passphrase carried by the vault file (`repository_credentials`), never as a `--password` argument: the bridge runner logs every command line. */
+      const mountRepo = () =>
+        w1.executeWithVault(
+          'repository_mount',
+          new VaultBuilder()
+            .withFunction('repository_mount')
+            .withTeam(TEST_TEAM)
+            .withRepository(repo.guid, repo.guid, Number(repo.networkId))
+            .withRepositoryCredential(repo.guid, repo.credential)
+            .withMachine(w1.getTargetVM(), TEST_USER, DS)
+            .withDatastore(DS)
+            .withParams({ network_id: Number(repo.networkId) })
+        );
 
       const disableAutostart = async (): Promise<void> => {
         await w1.executeViaBridge(
@@ -231,8 +246,10 @@ test.describe
       /** The machine-side `browse-at` verb's own JSON record, whose `listingSource` the CLI's row output does not carry. */
       const storedListingSource = async (snapshotId: string): Promise<string | undefined> => {
         const out = await w1.executeViaBridge(
-          `printf '%s\\n' '${repo.credential}' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${repo.guid}" --lineage "${repo.guid}" --at '${snapshotId}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${repo.guid}" --at '${snapshotId}' --password-stdin`,
+          undefined,
+          { stdin: `${repo.credential}\n` }
         );
         expect(out.code, `browse-at verb: ${w1.getCombinedOutput(out).slice(-800)}`).toBe(0);
         const record = parseEnvelope(out.stdout.trim().split('\n').pop() ?? '', out.stderr);
@@ -248,7 +265,7 @@ test.describe
       const LIVE_NOTE = 'listing was read from the live mount close to when it was taken';
 
       test.beforeAll(async () => {
-        w1 = BridgeTestRunner.forWorker(1);
+        w1 = RenetFunctionsTestRunner.forWorker(1);
         cli = await loginCli(CFG);
         await w1.ensureDatastoreReady(DS);
         await ensureDatastore(w1, M1);
@@ -293,7 +310,7 @@ test.describe
 
       test('2. `rdc backup browse --at <id>` equals a local `backup browse` of the same content', async () => {
         // The snapshot builds its listing by reading the image, which it can only do through a LIVE mount of the repository with no autostart keyfile (this repo has none): the staged copy cannot be opened, so the listing is walked from the live mount and sealed as `listingSource: "live-mount"` (cmd/renet/backup_snapshot_toc.go snapshotTOCListing). An UNMOUNTED repo still stores WITHOUT a listing. So the repo stays mounted from the write, through the snapshot, to the local read: the password mount also writes the key, so this snapshot carries a sealed listing, and nothing changes between it and the local read.
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        const mounted = await mountRepo();
         expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
         let local: string[];
         try {
@@ -387,13 +404,15 @@ test.describe
       });
 
       test('2c. control: a snapshot of a repository WITH an autostart keyfile reports listingSource staged and prints no live-mount note', async () => {
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        const mounted = await mountRepo();
         expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
         let stagedSnapshotId = '';
         try {
           const autostart = await w1.executeViaBridge(
-            `printf '%s\\n' '${repo.credential}' | sudo renet repository autostart enable --name "${repo.guid}" ` +
-              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`
+            `sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`,
+            undefined,
+            { stdin: `${repo.credential}\n` }
           );
           expect(
             autostart.code,
@@ -425,8 +444,10 @@ test.describe
         // The CLI always sends the config's credential, so the wrong one is driven through the verb on the machine. Same arguments as the CLI's call; only the passphrase differs.
         const lineage = repo.guid;
         const wrong = await w1.executeViaBridge(
-          `printf '%s\\n' 'not-the-passphrase' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`,
+          undefined,
+          { stdin: 'not-the-passphrase\n' }
         );
         expect(wrong.code, 'a wrong passphrase opened the listing').not.toBe(0);
         expect(wrong.code, 'a wrong passphrase must not read as NO_LISTING').not.toBe(18);
@@ -436,8 +457,10 @@ test.describe
 
         // Control: the right passphrase opens the same snapshot, so test 3 refused on the passphrase and not on a broken fixture.
         const right = await w1.executeViaBridge(
-          `printf '%s\\n' '${repo.credential}' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${repo.guid}" --lineage "${lineage}" --at '${listedSnapshotId}' --password-stdin`,
+          undefined,
+          { stdin: `${repo.credential}\n` }
         );
         expect(right.code, `right passphrase: ${w1.getCombinedOutput(right).slice(-800)}`).toBe(0);
         expect(right.stdout).toContain(`browse-at-${stamp}.txt`);
@@ -463,6 +486,284 @@ test.describe
           result.stdout + result.stderr,
           'the function listing does not name the planted file'
         ).toContain(`browse-at-${stamp}.txt`);
+      });
+
+      test('3c. restore-path restores one file and one directory byte-identical, and refuses a missing path without creating --to', async () => {
+        // restore-path refuses a listing walked from the live mount (NO_LISTING, reason live-mount), so the snapshot is taken the way test 2c takes its staged one: autostart enabled while the repo is mounted. The content is planted first and hashed from the live mount; the restored copies are hashed on the same machine.
+        const dirName = `rp-dir-${stamp}`;
+        const fileName = `rp-file-${stamp}.bin`;
+        const root = `${DS}/mounts/${repo.guid}`;
+        const toBase = `/tmp/rp-to-${stamp}`;
+        const sh = (cmd: string) => w1.executeViaBridge(`sudo sh -c '${cmd}'`);
+        const treeHash = (dir: string): string =>
+          `cd "${dir}" && find . -type f | sort | xargs sha256sum`;
+        // The passphrase travels in the vault the function runner hands to renet, never in a command line: the bridge runner logs every command it executes and has no stdin channel.
+        const restoreViaFunction = (pathArg: string, to: string, at: string) =>
+          w1.restorePathWithVault(
+            new VaultBuilder()
+              .withFunction('backup_restore_path')
+              .withTeam(TEST_TEAM)
+              .withRepository(repo.guid, repo.guid)
+              .withRepositoryCredential(repo.guid, repo.credential)
+              .withMachine(w1.getTargetVM(), TEST_USER, DS)
+              .withDatastore(DS)
+              .withParams({ lineage: repo.guid, at, path: pathArg, to })
+          );
+
+        let restoreSnapshotId = '';
+        let liveFileHash = '';
+        let liveTreeHash = '';
+        const mounted = await mountRepo();
+        expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
+        try {
+          const plant = await sh(
+            `mkdir -p "${root}/${dirName}/sub" && head -c 300000 /dev/urandom > "${root}/${fileName}" && ` +
+              `head -c 70000 /dev/urandom > "${root}/${dirName}/one.bin" && ` +
+              `head -c 5000 /dev/urandom > "${root}/${dirName}/sub/two.bin" && sync`
+          );
+          expect(plant.code, `planting: ${w1.getCombinedOutput(plant)}`).toBe(0);
+          const fileSum = await sh(`sha256sum "${root}/${fileName}"`);
+          const treeSum = await sh(treeHash(`${root}/${dirName}`));
+          expect(fileSum.code, `hashing the live file: ${fileSum.stderr}`).toBe(0);
+          expect(treeSum.code, `hashing the live tree: ${treeSum.stderr}`).toBe(0);
+          liveFileHash = fileSum.stdout.trim().split(/\s+/)[0] ?? '';
+          liveTreeHash = treeSum.stdout.trim();
+          expect(liveFileHash, 'no live file hash').toMatch(/^[0-9a-f]{64}$/);
+          expect(liveTreeHash.split('\n'), 'the live tree is not two files').toHaveLength(2);
+
+          const autostart = await w1.executeViaBridge(
+            `sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`,
+            undefined,
+            { stdin: `${repo.credential}\n` }
+          );
+          expect(
+            autostart.code,
+            `autostart enable: ${w1.getCombinedOutput(autostart).slice(-800)}`
+          ).toBe(0);
+          restoreSnapshotId = await snapshot();
+        } finally {
+          await disableAutostart().catch(() => undefined);
+          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+        }
+
+        try {
+          // One file, through the backup_restore_path FUNCTION driven by a vault.
+          const fileRun = await restoreViaFunction(fileName, `${toBase}/file`, restoreSnapshotId);
+          expect(
+            fileRun.code,
+            `backup_restore_path exited ${fileRun.code}:\n${(fileRun.stdout + fileRun.stderr).slice(-800)}`
+          ).toBe(0);
+          const restoredFile = await sh(`sha256sum "${toBase}/file/${fileName}"`);
+          expect(restoredFile.code, `restored file: ${restoredFile.stderr}`).toBe(0);
+          expect(
+            restoredFile.stdout.trim().split(/\s+/)[0],
+            'the restored file differs from the live one'
+          ).toBe(liveFileHash);
+
+          // One directory tree, through the function.
+          const dirRun = await restoreViaFunction(dirName, `${toBase}/dir`, restoreSnapshotId);
+          expect(dirRun.code, `restore-path dir: ${w1.getCombinedOutput(dirRun).slice(-800)}`).toBe(
+            0
+          );
+          const restoredTree = await sh(treeHash(`${toBase}/dir/${dirName}`));
+          expect(restoredTree.code, `restored tree: ${restoredTree.stderr}`).toBe(0);
+          expect(restoredTree.stdout.trim(), 'the restored tree differs from the live one').toBe(
+            liveTreeHash
+          );
+
+          // A path the snapshot does not hold: refused with NO_SUCH_PATH, and no --to directory appears. The function runner relays the verb's exit code and its stderr payload, so the code is read from the combined output (the exact exit code is not pinned through the function path).
+          const missingTo = `${toBase}/missing`;
+          const missing = await restoreViaFunction(
+            `missing-${stamp}`,
+            missingTo,
+            restoreSnapshotId
+          );
+          expect(missing.code, 'a missing path restored without error').not.toBe(0);
+          // NO_SUCH_PATH alone could ride along with an unrelated crash, so the refusal must also name the path that was asked for.
+          const missingOutput = w1.getCombinedOutput(missing);
+          expect(missingOutput, 'the refusal does not carry NO_SUCH_PATH').toContain(
+            'NO_SUCH_PATH'
+          );
+          expect(missingOutput, 'the refusal does not name the missing path').toContain(
+            `missing-${stamp}`
+          );
+          const absent = await w1.executeViaBridge(
+            `sudo test -e "${missingTo}" && echo present || echo absent`
+          );
+          expect(absent.stdout, 'a refused restore created the --to directory').toContain('absent');
+        } finally {
+          await w1.executeViaBridge(`sudo rm -rf "${toBase}"`).catch(() => undefined);
+        }
+      });
+
+      test('3d. rdc backup restore --path fetches only the cells that cover the path, measured against the full-image plan', async () => {
+        // The N4b proof. A 64 MiB filler sits beside the target, so a path restore that fetched the whole image would fetch at least 16 more chunks than one that fetched the cells under the path. The full-image figure is the `--dry-run` plan's chunksWanted (a real full restore can reuse a seed and under-report). The snapshot is staged (autostart on while mounted), as 3c does, because restore-path refuses a listing walked from the live mount.
+        const root = `${DS}/mounts/${repo.guid}`;
+        const dirName = `n4b-dir-${stamp}`;
+        const fileName = `n4b-file-${stamp}.bin`;
+        const fillerName = `n4b-filler-${stamp}.bin`;
+        const toBase = `/tmp/n4b-to-${stamp}`;
+        const sh = (cmd: string) => w1.executeViaBridge(`sudo sh -c '${cmd}'`);
+        const treeHash = (dir: string): string =>
+          `cd "${dir}" && find . -type f | sort | xargs sha256sum`;
+        const filler = 64 * 1024 * 1024;
+        const fileBytes = 300000;
+        // Fewer chunks than the whole-image plan by at least the filler's cells. This holds for the default 4 MiB cell grid (chunkstore.DefaultCellBytes, so 64 MiB is 16 cells); a grid with larger cells would shrink the filler's cell count below 16, and the margin would have to shrink with it.
+        const marginCells = 16;
+
+        interface PathRecord {
+          snapshotId: string;
+          files: number;
+          bytesWritten: number;
+          cellsTotal: number;
+          cellsSelected: number;
+          chunksFetched: number;
+        }
+
+        let snapshotId = '';
+        let liveFileHash = '';
+        let liveTreeHash = '';
+        const mounted = await mountRepo();
+        expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
+        try {
+          const plant = await sh(
+            `mkdir -p "${root}/${dirName}/sub" && head -c ${fileBytes} /dev/urandom > "${root}/${fileName}" && ` +
+              `head -c 70000 /dev/urandom > "${root}/${dirName}/a.bin" && ` +
+              `head -c 5000 /dev/urandom > "${root}/${dirName}/sub/b.bin" && ` +
+              `head -c ${filler} /dev/urandom > "${root}/${fillerName}" && sync`
+          );
+          expect(plant.code, `planting: ${w1.getCombinedOutput(plant)}`).toBe(0);
+          const fileSum = await sh(`sha256sum "${root}/${fileName}"`);
+          const treeSum = await sh(treeHash(`${root}/${dirName}`));
+          expect(fileSum.code, `hashing the live file: ${fileSum.stderr}`).toBe(0);
+          expect(treeSum.code, `hashing the live tree: ${treeSum.stderr}`).toBe(0);
+          liveFileHash = fileSum.stdout.trim().split(/\s+/)[0] ?? '';
+          liveTreeHash = treeSum.stdout.trim();
+          expect(liveFileHash, 'no live file hash').toMatch(/^[0-9a-f]{64}$/);
+          expect(liveTreeHash.split('\n'), 'the live tree is not two files').toHaveLength(2);
+
+          const autostart = await w1.executeViaBridge(
+            `sudo renet repository autostart enable --name "${repo.guid}" ` +
+              `--datastore "${DS}" --network-id ${repo.networkId} --password-stdin`,
+            undefined,
+            { stdin: `${repo.credential}\n` }
+          );
+          expect(
+            autostart.code,
+            `autostart enable: ${w1.getCombinedOutput(autostart).slice(-800)}`
+          ).toBe(0);
+          snapshotId = await snapshot();
+        } finally {
+          await disableAutostart().catch(() => undefined);
+          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+        }
+
+        try {
+          // Baseline: the full-image plan. Non-vacuity control, the filler must be in it.
+          const plan = await w1.executeViaBridge(
+            `sudo renet backup restore --repo "${randomUUID()}" --lineage "${repo.guid}" ` +
+              `--at "${snapshotId}" --datastore "${DS}" --dry-run`
+          );
+          expect(plan.code, `restore --dry-run: ${w1.getCombinedOutput(plan).slice(-800)}`).toBe(0);
+          const planLine = plan.stdout
+            .split('\n')
+            .reverse()
+            .find((line) => line.trim().startsWith('{'));
+          const planned = JSON.parse(planLine ?? '{}') as {
+            status?: string;
+            chunksWanted?: number;
+          };
+          expect(planned.status, `the dry run did not plan: ${plan.stdout.slice(-800)}`).toBe(
+            'planned'
+          );
+          const wanted = planned.chunksWanted ?? 0;
+          expect(
+            wanted,
+            'the full-image plan wants too few chunks: the filler is not in the baseline'
+          ).toBeGreaterThanOrEqual(marginCells);
+
+          const restorePath = async (pathArg: string, to: string) => {
+            const { result, json } = await cli.runJson<CliEnvelope<PathRecord>>([
+              'backup',
+              'restore',
+              `${REPO_NAME}@${M1}`,
+              '--at',
+              snapshotId,
+              '--path',
+              pathArg,
+              '--to',
+              to,
+            ]);
+            expect(
+              result.code,
+              `restore --path ${pathArg}: ${bothChannels(result).slice(-800)}`
+            ).toBe(0);
+            const record = json?.data;
+            expect(
+              record,
+              `no restore-path record: ${bothChannels(result).slice(-800)}`
+            ).toBeTruthy();
+            return record as PathRecord;
+          };
+          const expectFewerFetches = (record: PathRecord) => {
+            expect(record.snapshotId).toBe(snapshotId);
+            expect(record.chunksFetched, 'a path restore fetched nothing').toBeGreaterThanOrEqual(
+              1
+            );
+            expect(record.chunksFetched).toBeLessThanOrEqual(record.cellsSelected);
+            expect(record.cellsSelected).toBeLessThan(record.cellsTotal);
+            expect(
+              record.chunksFetched + marginCells,
+              `fetched ${record.chunksFetched} chunks against a full-image plan of ${wanted}`
+            ).toBeLessThanOrEqual(wanted);
+          };
+
+          // One file.
+          const fileRecord = await restorePath(fileName, `${toBase}/file`);
+          expect(fileRecord.files).toBe(1);
+          expect(fileRecord.bytesWritten).toBe(fileBytes);
+          expectFewerFetches(fileRecord);
+          const restoredFile = await sh(`sha256sum "${toBase}/file/${fileName}"`);
+          expect(restoredFile.code, `restored file: ${restoredFile.stderr}`).toBe(0);
+          expect(
+            restoredFile.stdout.trim().split(/\s+/)[0],
+            'the restored file differs from the live one'
+          ).toBe(liveFileHash);
+
+          // One directory tree.
+          const dirRecord = await restorePath(dirName, `${toBase}/dir`);
+          expectFewerFetches(dirRecord);
+          const restoredTree = await sh(treeHash(`${toBase}/dir/${dirName}`));
+          expect(restoredTree.code, `restored tree: ${restoredTree.stderr}`).toBe(0);
+          expect(restoredTree.stdout.trim(), 'the restored tree differs from the live one').toBe(
+            liveTreeHash
+          );
+
+          // A path the snapshot does not hold: NO_SUCH_PATH, nothing written.
+          const missingTo = `${toBase}/missing`;
+          const missing = await cli.run([
+            'backup',
+            'restore',
+            `${REPO_NAME}@${M1}`,
+            '--at',
+            snapshotId,
+            '--path',
+            `missing-${stamp}`,
+            '--to',
+            missingTo,
+          ]);
+          expect(missing.code, 'a missing path restored without error').not.toBe(0);
+          expect(bothChannels(missing), 'the refusal does not carry NO_SUCH_PATH').toContain(
+            'NO_SUCH_PATH'
+          );
+          const absent = await w1.executeViaBridge(
+            `sudo test -e "${missingTo}" && echo present || echo absent`
+          );
+          expect(absent.stdout, 'a refused restore created the --to directory').toContain('absent');
+        } finally {
+          await w1.executeViaBridge(`sudo rm -rf "${toBase}"`).catch(() => undefined);
+        }
       });
 
       test('4. a tampered stored listing fails closed: no rows, no content, and the original still opens', async () => {
@@ -551,7 +852,6 @@ test.describe
         try {
           const sinkCli = CliRunner.create({
             configName: CFG,
-            licensing: true,
             env: { REDIACC_ACCOUNT_SERVER: sinkUrl },
           });
           // The stored token's serverUrl outranks REDIACC_ACCOUNT_SERVER for every account fetch (account-client.ts resolveServerUrl), so the env alone never redirects a logged-in config. The redirect is the stored token file, restored in finally.
@@ -562,7 +862,7 @@ test.describe
             JSON.stringify({ ...JSON.parse(tokenOriginal), serverUrl: sinkUrl }),
             { mode: 0o600 }
           );
-          const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+          const mounted = await mountRepo();
           expect(mounted.code, `mounting: ${w1.getCombinedOutput(mounted).slice(-800)}`).toBe(0);
           const local = await sinkCli.runJson<CliEnvelope<unknown>>([
             'backup',

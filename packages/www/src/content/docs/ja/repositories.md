@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: ja
-sourceHash: "e1d1a463cc4049d4"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "a7c0a70e8868d2c0"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # リポジトリ
@@ -195,7 +195,7 @@ rdc repo checkout staging --from my-app:work --tag staging-copy
 2つの配信モード:
 
 - `env`: シークレットはターゲットマシンのrenetシェルで `REDIACC_SECRET_<KEY>` としてエクスポートされます。`docker-compose.yml` から `${REDIACC_SECRET_<KEY>}` 補間で参照します。コンテナの環境内で可視なので、アプリケーションがすでにenvで期待している接続文字列形式の値に使用してください。
-- `file`: シークレットはホスト上の `/var/run/rediacc/secrets/<networkID>/<KEY>` に書き込まれます（tmpfs、永続化されません）。composeファイルからは、`file:` ソースを持つトップレベルの `secrets:` 宣言とサービスごとの `secrets:` リストで参照します。コンテナは `/run/secrets/<key>` から読み取ります。機密性の高いものにはこのモードを使用してください。`docker inspect` や `/proc/<pid>/environ` には表示されません。
+- `file`: シークレットはホスト上の `/var/run/rediacc/net-<networkID>/secrets/<KEY>` に書き込まれます（tmpfs、永続化されません）。composeファイルからは、`file:` ソースを持つトップレベルの `secrets:` 宣言とサービスごとの `secrets:` リストで参照します。コンテナは `/run/secrets/<key>` から読み取ります。機密性の高いものにはこのモードを使用してください。`docker inspect` や `/proc/<pid>/environ` には表示されません。
 
 ```bash
 # Set, list, get（ダイジェストのみ）, unset
@@ -223,12 +223,12 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 サービス側の小文字の参照（`stripe_live_key`）はコンテナ内の `/run/secrets/<name>` ファイル名です。ホストパスの大文字の末尾部分（`STRIPE_LIVE_KEY`）は `--key` で設定した値と一致します。`${REDIACC_NETWORK_ID}` は `renet compose` によって自動的に補間されます。
 
-> **クロスリポジトリ隔離の強制**: renetのcomposeバリデーターは、他のリポジトリのネットワークIDを参照する `secrets: file:`（および `configs: file:`、`env_file:`）パスを拒否します。`/var/run/rediacc/secrets/...` 参照として受け入れられる形式はリテラルの `${REDIACC_NETWORK_ID}` トークン（または自分のネットワークの整数）のみです。`--unsafe` はこのチェックを上書きしません。RediaccfileのBashサブプロセスを囲むLandlockサンドボックスも、自分のネットワークのシークレットディレクトリのみにファイルシステムアクセスをスコープするため、Rediaccfileからの悪意ある `cat /var/run/rediacc/secrets/<other>/X` はカーネル層でEACCESで失敗します。
+> **クロスリポジトリ隔離の強制**: renetのcomposeバリデーターは、他のリポジトリのネットワークIDを参照する `secrets: file:`（および `configs: file:`、`env_file:`）パスを拒否します。`/var/run/rediacc/net-<N>/secrets/...` 参照として受け入れられる形式はリテラルの `${REDIACC_NETWORK_ID}` トークン（または自分のネットワークの整数）のみです。`--unsafe` はこのチェックを上書きしません。RediaccfileのBashサブプロセスを囲むLandlockサンドボックスも、自分のネットワークのシークレットディレクトリのみにファイルシステムアクセスをスコープするため、Rediaccfileからの悪意ある `cat /var/run/rediacc/net-<other>/secrets/X` はカーネル層でEACCESで失敗します。
 
 > **フォーク**: `rdc repo fork` はシークレットをコピー**しません**。フォークでシークレットを使用するには、フォークに対して `rdc repo secret set <fork>` を明示的に実行します。これは重要な安全特性です。フォークのコンテナは、外部サービスに対して本番プリンシパルとして動作できるべきではありません。
 

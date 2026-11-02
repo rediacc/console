@@ -217,7 +217,6 @@ The first positional argument of every leaf is the noun's primary name; `--name`
 | datastore verbs | `<datastore-ref>` = `ds[:tag]` | `rdc datastore attach ds-alpha:exp --to m2` |
 | cluster verbs | `<cluster>` (join/evict take `<machine>`) | `rdc cluster fork prod --tag staging` |
 | backup verbs | `<strategy>` or `<artifact-ref>` per leaf | `rdc backup run nightly -m prod-1` |
-| storage verbs | `<storage>` (`import` takes `<file>`) | `rdc storage browse s3-main` |
 | config verbs | config-file name where applicable | `rdc config delete staging` |
 | term | `<target>` = `place` or `repo-ref` | `rdc term connect shop@prod-1` |
 
@@ -608,7 +607,7 @@ Unchanged (06 §5). `log` flags: `--since <spec>`, `--path <glob>`, `--actor <ki
 - Gate: A. MCP: `log` mcp(read); `tail` exclude: `Endless stream.`; `verify` mcp(read).
 
 #### `config remote enable|disable|status|refresh`
-Unchanged (06 §5): zero-knowledge config sync. `enable` flags `--headless`, `--api-url <url>`.
+Zero-knowledge config sync (06 §5). `enable` flag `--api-url <url>`. The browser handoff goes through the account server relay and needs `rdc subscription login` first.
 - Gate: A. MCP: exclude (group, as today): `Interactive browser flow.` `status`
 mcp(read).
 
@@ -1219,7 +1218,9 @@ name (--as) or promote/delete the existing repo first." Restore never overwrites
 - Idempotency: create class on the target name.
 - Gate: B (grandGuard on the write side). MCP: mcp(write, destructive, idempotent:false).
 
-### 5.7 `rdc storage` (6 leaves)
+### 5.7 `rdc storage` (6 leaves, retired)
+
+**Retired by PLAN-backup-program H1.** The whole noun and its rclone payload were deleted: backups have one destination, the S3-compatible chunk store behind the account server, reached through `rdc backup snapshot|restore|browse|retention`. The leaves below record what was specified and no longer exist.
 
 External backup endpoints (S3, rsync targets). Absorbs `config storage *` (06 §2); `storage rename` dies (R2-F4). Verbs are **`add`/`remove`** per gate ruling R3 (a storage record registers an existing external endpoint; 06 §7.1's own rule).
 
@@ -1445,7 +1446,9 @@ Twelve commands, in §6.11 and §6.12. **All twelve are now dispositioned** by t
 | `machine backup status` | moved | `backup status --machine <m>` |
 | `machine backup cancel` | moved | `backup cancel --machine <m>` |
 
-### 6.2 `storage` (6)
+### 6.2 `storage` (6, retired)
+
+The targets below were built and then deleted with the noun (§5.7).
 
 | Current | Disposition | Target |
 |---|---|---|
@@ -1890,8 +1893,8 @@ over the v3 `DefaultsSchema` (team/region/machine keys retired, R2-F9); `config 
 
 1. **`backup restore` is built by composition, not new renet.** It parses the artifact ref
 (`repo[:tag]@place`, `@place` required), looks the source repo up for its GUID, registers a fresh live record under `--as`, `backup_pull`s the bytes to the placement machine, and optionally `repo up`s with the health-window/timeout flags. The `--machine` (docker) arm is complete; `--datastore` resolves the datastore's `state.datastores[d].attachedTo`. k8s up-richness rides w2b/w3.
-2. **`backup list` executor for `--storage`.** §5.6 pins `--machine XOR --storage` but does not
-say which machine runs rclone for a storage listing. As-built: `--machine` is the executor; `--storage` uses the ref's `@place`, else the sole registered machine, else **exit 11** (AMBIGUOUS) asking to qualify.
+2. **`backup list` executor for `--storage`** (retired with `rdc storage`, §5.7). §5.6 pinned `--machine XOR --storage` but did not
+say which machine ran rclone for a storage listing. As-built until the retirement: `--machine` was the executor; `--storage` used the ref's `@place`, else the sole registered machine, else **exit 11** (AMBIGUOUS) asking to qualify.
 3. **`config set/clear` scope.** They now write the v3 `DefaultsSchema`
 (`language`/`datastore-size`/`prune-grace-days`) via new `configService.setDefault/clearDefault/ clearDefaults`. `team`/`region`/`machine` give the R2-F9 retired-key error. The `AccountSchema.team/region` **fields still exist in the shared schema** (v2→v3 migration path); only the CLI surface stopped exposing them. Full schema-field removal is a follow-up.
 4. **`machine infra set/show` and `machine infra cert status/clear` are declared `plane: config`**

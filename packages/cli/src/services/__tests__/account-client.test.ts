@@ -126,7 +126,7 @@ describe('fetchServerInfo', () => {
     expect(info.environment).toBe('edge');
     expect(info.updateChannel).toBe('edge');
     expect(info.minCliVersion).toBe('0.9.0');
-    expect(info.e2e.keys).toHaveLength(1);
+    expect(info.e2e?.keys).toHaveLength(1);
   });
 
   it('returns stable updateChannel for production', async () => {

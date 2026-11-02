@@ -67,7 +67,6 @@ export interface ConfigSensitiveData {
   infra?: Record<string, unknown>;
   machines?: Record<string, unknown>;
   repositories?: Record<string, unknown>;
-  storages?: Record<string, unknown>;
   datastores?: Record<string, unknown>;
   clusters?: Record<string, unknown>;
   backupStrategies?: Record<string, unknown>;

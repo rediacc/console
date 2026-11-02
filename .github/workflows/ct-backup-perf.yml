@@ -1,0 +1,279 @@
+name: CT Backup Perf
+
+# Large-repository backup performance (box K10 of agent/plans/PLAN-backup-program.md): seeds
+# 50 GiB, runs a 256 MiB incremental against a byte, no-rehash and time budget, then deletes
+# the anchor as a control (suite 31, packages/e2e-tests/tests/31-backup-large-repo.test.ts).
+#
+# WHY STANDALONE and not a ct-tests.yml job: check:ci-lane-budget judges every job reachable
+# from ci.yml on a whole-job p90 measured from pull_request runs (a schedule-only job never
+# gets a sample, so it stays UNCHECKED, which is red) and caps a job at 15 minutes unless an
+# operator ruling lists it. This job takes up to 120. The steps are a copy of
+# test-e2e-backup-browse-at in ct-tests.yml; keep them in step with it.
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+# Every job below declares its own permissions, so this workflow-level default is
+# deliberately empty: a job added without a block gets nothing and fails loudly.
+permissions: {}
+
+concurrency:
+  group: ct-backup-perf-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backup-large-repo:
+    name: E2E Backup Large Repo
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-latest
+    # 120: a 50 GiB seed, its snapshot, the incremental and the anchor-deleted control (a
+    # full rehash). The suite's own Playwright timeout is 100 minutes (inner < outer).
+    timeout-minutes: 120
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11'
+      VM_CEPH_NODES: ''
+      # A 100 GB worker disk, on the runner's second disk so RustFS stays on /.
+      VM_DSK: '100'
+      REDIACC_VM_DISK_DIR: /mnt/rediacc-vm
+      BACKUP_LARGE_REPO_SUITE: '1'
+    steps:
+      # A dispatch on a feature branch would run the full job against code that is not what the
+      # nightly runs; fail loudly rather than skipping.
+      - name: Guard the dispatch to main
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        env:
+          DISPATCH_REF: ${{ github.ref }}
+        run: |
+          echo "::error::CT Backup Perf may only be dispatched on main (got: $DISPATCH_REF)."
+          exit 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      # T2.3 (PLAN-ci-time-budget): started in the background here, joined
+      # immediately before Setup KVM Host, so the cleanup overlaps the setup
+      # work in between instead of blocking it in the foreground.
+      # threshold_gb 200 forces the cleanup: / holds about 83 GB before it, and the RustFS store
+      # takes its share of / while the VM disk lives on /mnt.
+      - name: Free Disk Space (start)
+        uses: ./.github/actions/free-disk-space
+        with:
+          threshold_gb: '200'
+      # account: 'true' because start_backup_plane runs private/account.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+      - name: Install CLI Globally
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
+
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The go build stays on-runner in this job alone: the
+      # backup plane signs with a pair of its own (start_backup_plane), so renet
+      # is rebuilt with that key after the plane starts, and the run's shared
+      # production-keyed renet (agent/plans/PLAN-free-license.md F2) cannot serve.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet
+        id: build-renet
+        env:
+          # The production PUBLIC key, for this first build only: `ops host
+          # setup` and `ops up` need a renet before the backup plane (and its
+          # per-run key) can exist. The rebuild after the plane bakes the
+          # plane's key, and that is the renet the suites deploy.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Install renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
+      # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Free Disk Space (wait)
+        uses: ./.github/actions/free-disk-space
+        with:
+          mode: wait
+
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
+      - name: Setup KVM Host
+        run: sudo "$RENET_BINARY" ops host setup
+
+      # Fail by name when the disks cannot hold the 100 GB VM disk (/mnt) and the backup store (/),
+      # instead of dying mid-seed with ENOSPC.
+      - name: Preflight disk space
+        shell: bash
+        run: |
+          sudo install -d -o "$(whoami)" "$REDIACC_VM_DISK_DIR"
+          df -BG / /mnt
+          for mount in / /mnt; do
+            free=$(df -BG --output=avail "$mount" | tail -1 | tr -dc 0-9)
+            [ "$free" -ge 60 ] || { echo "::error::$mount has $free GB free, the run needs 60 on each of / and /mnt"; exit 1; }
+          done
+
+      - name: Create E2E Test Environment
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env --vm-workers "11 12"
+
+      # The suite's config has no globalSetup (it would reset a shared local
+      # fleet), so nothing else brings the VMs up, and the backup plane probes
+      # worker 11 over the VM network. RENET_DATA_DIR is the CI autodetect spelled
+      # out, so the plane's SSH probe finds the key `ops up` stages there.
+      - name: Provision VMs
+        env:
+          RENET_DATA_DIR: ${{ runner.temp }}/renet
+        run: "$RENET_BINARY ops up --force --parallel"
+      # No wait_for_vm_ssh step here: it probes with a bare `ssh` (no -i), so it
+      # authenticates only with a ~/.ssh default identity, and this job's VMs
+      # authorize only the key `ops up` stages under $RENET_DATA_DIR (run
+      # 39640583259: both VMs booted with ssh=ok while the probe timed out).
+      # `ops up` already waits for the bridge and workers, and the plane step
+      # below probes worker 11 with the staged key.
+
+      # RustFS, the probe bucket and an account server at the bridge host with a
+      # backup:read token (PLAN-e2e-browse-at-ci). LOUD: it exits non-zero with the
+      # server log attached on every path that does not leave the plane healthy
+      # from worker 11, so the tier is never a declared skip. It generates the
+      # ED25519 signing pair the account server uses and publishes the PUBLIC half
+      # as ACCOUNT_ED25519_PUBLIC_KEY; the private half is never written.
+      - name: Start the backup plane
+        env:
+          RENET_DATA_DIR: ${{ runner.temp }}/renet
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane
+
+      # `rdc repo create` files each licence under the SIGNER's fingerprint and
+      # renet looks up the fingerprint of the key it BAKED, so the renet the CLI
+      # deploys to worker 11 is rebuilt with the plane's public key. It cannot
+      # be built with it up front: the plane needs the VMs, and they need renet.
+      # The build stamp carries the key's hash, so this really relinks.
+      - name: Rebuild renet with the signing key
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      - name: Reinstall renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
+      - name: Verify renet bakes the signing key
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet "$RENET_BINARY" --verify-renet /usr/bin/renet --verify-renet private/renet/bin/renet-linux-amd64
+
+      # check-e2e-coverage's registry self-check pairs this `--config` with the
+      # runner by reading one logical shell command.
+      - name: Run E2E Tests (Backup Large Repo)
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-large-repo.config.ts --fail-on-skip
+
+      # The measured seconds and bytes, readable without opening the artifact.
+      - name: Summarise the K10 result
+        if: always()
+        run: |
+          result=packages/e2e-tests/reports/backup-large-repo-k10/k10-result.json
+          if [ -f "$result" ]; then
+            { echo '### K10 large-repo result'; echo '```json'; cat "$result"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::no $result: the suite stopped before it recorded a result"
+          fi
+
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: always()
+        with:
+          name: ct-backup-perf-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/vm-diagnostics/
+            ${{ runner.temp }}/account-for-e2e.log
+            packages/e2e-tests/reports/backup-large-repo*
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}

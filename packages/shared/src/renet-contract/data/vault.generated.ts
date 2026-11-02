@@ -47,28 +47,16 @@ export interface MachineSection {
   known_hosts?: string;
 }
 
-/** Storage system configuration (rclone backends) */
-export interface StorageSection {
-  /** Storage backend type (s3, b2, azure, etc.) */
-  backend: string;
-  /** Bucket name */
-  bucket?: string;
-  /** Region */
-  region?: string;
-  /** Folder path */
-  folder?: string;
-  /** Additional parameters */
-  parameters?: Record<string, unknown>;
-}
-
 /** Repository name and GUID mapping */
 export interface RepositoryInfo {
   /** Repository GUID */
   guid: string;
   /** Repository name */
   name: string;
-  /** Network ID */
-  network_id?: number;
+  /** Network ID, or auto to have renet job start allocate one */
+  network_id?: number | 'auto';
+  /** Network IDs an auto allocation must not pick (every ID the caller config holds) */
+  network_id_exclude?: number[];
 }
 
 /** Organization and API context */
@@ -109,12 +97,12 @@ export interface RenetVault {
   params?: Record<string, string | number | boolean>;
   /** Additional machines for multi-machine operations */
   extra_machines?: Record<string, MachineSection>;
-  /** Storage system configurations */
-  storage_systems?: Record<string, StorageSection>;
   /** Repository credentials by GUID */
   repository_credentials?: Record<string, string>;
   /** Repository info by name */
   repositories?: Record<string, RepositoryInfo>;
+  /** Start precondition renet job start checks against the machine */
+  expect?: 'repo_present' | 'repo_absent' | 'repo_unmounted';
   /** Organization and API context */
   context?: ContextSection;
   /** User preferences for task execution */

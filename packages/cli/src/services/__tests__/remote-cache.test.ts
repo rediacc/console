@@ -45,7 +45,6 @@ const pulled: RdcConfig = {
   version: 2,
   resources: {
     machines: { prod: { ip: '10.0.0.5', user: 'deploy' } },
-    storages: { s1: { provider: 's3' } },
   },
   credentials: { ssh: { privateKey: 'PRIV' } },
   defaults: { language: 'en', datastoreSize: '90%' },

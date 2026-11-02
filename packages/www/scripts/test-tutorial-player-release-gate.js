@@ -268,7 +268,7 @@ const SCENARIO_ROUTES = [
  * scenarios' own budget, which shows compilation and re-optimization are both behind it before
  * any scenario's clock starts. It does this for EVERY route in SCENARIO_ROUTES, because a route's
  * first visit can re-optimize again. The warm-up presses the poster both times: no docs page
- * builds a player before a press (4bc0f5141), so a wait without one waits for nothing.
+ * builds a player before a press (de781f0ac), so a wait without one waits for nothing.
  */
 function warmUpPlayer() {
   for (const [i, { path: route, inline }] of SCENARIO_ROUTES.entries()) {
@@ -478,7 +478,7 @@ function scenarioMountConsistency() {
   const closed = probe();
   writeArtifact('scenario-layering-solution.json', { before, after, closed });
 
-  // The docs half of the contract, both sides of the press: a visitor who never presses downloads no player (the 272 KB chunk is what 4bc0f5141 took off the page load), and the press replaces the poster with the player in place.
+  // The docs half of the contract, both sides of the press: a visitor who never presses downloads no player (the 272 KB chunk is what de781f0ac took off the page load), and the press replaces the poster with the player in place.
   assertCondition(
     !docsBefore.hasPlayer && docsBefore.hasPoster && docsBefore.clickToLoad === 'inline',
     'docs page must show a poster and NO player before the press',

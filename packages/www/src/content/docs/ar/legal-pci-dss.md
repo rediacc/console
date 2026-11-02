@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: ar
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 عندما تتعامل مع بيانات حامل البطاقة، معيار PCI DSS v4.0.1 ليس اختيارياً. ويختزل كل شيء إلى متطلب واحد: عزل على مستوى البنية الأساسية عن كل شيء آخر.
@@ -35,7 +35,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 معيار PCI DSS يركز بشدة على التجزئة. أرى بشكل متكرر فرقاً تطبق قواعد iptables فوق عزل ناقص. لا يعمل هذا. الفرق التي تنجح لديها التجزئة مدمجة في البنية الأساسية. Rediacc يوفر هذا لك بشكل افتراضي:
 
-- كل مستودع يعمل في Docker daemon خاص به في `/var/run/rediacc/docker-<networkId>.sock`
+- كل مستودع يعمل في Docker daemon خاص به في `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`
 - المستودعات لها شبكات فرعية loopback IP معزولة (127.0.x.x/26، 61 عنوان IP قابل للاستخدام لكل شبكة)
 - قواعد iptables المفروضة من renet تمنع جميع حركة المرور بين الشياطين
 - لا يمكن للحاويات من مستودعات مختلفة التواصل على مستوى الشبكة

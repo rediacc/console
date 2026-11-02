@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: et
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### Autentimine
@@ -69,6 +69,8 @@ rdc subscription login
 # Kuvatakse: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # Pärast kinnitamist saab CLI mandaadid automaatselt
 ```
+
+[Konfiguratsioonihoidla](/et/docs/config-storage) sidumine konfiguratsiooniga kasutab eraldi päringut, mis samuti käib läbi kontoserveri. See on seotud kontoga, millega CLI on sisse logitud, link hoiab oma saladusi `#` järel, et need serverilogidesse ei jõuaks, ja kasutaja sisestab kinnituslehel terminalist sidumiskoodi. Päring aegub 10 minuti pärast.
 
 ### Konfiguratsioonihoidla
 

@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Rediaccのルール
@@ -59,7 +59,7 @@ down() {
 - **`rediacc.*`ラベルを設定しないでください**, renetは`rediacc.network_id`、`rediacc.service_ip`、`rediacc.service_name`を自動注入します。
 - **`ports:`マッピングは無視されます**（ホストネットワーキングモード）。HTTP ルーティングには `rediacc.service_port` ラベルを追加してください（このラベルがないサービスは HTTP ルートを取得しません）。TCP/UDP 転送には `rediacc.tcp_ports`/`rediacc.udp_ports` ラベルを使用してください。
 - **再起動ポリシー（`restart: always`、`on-failure`など）は安全に使用できます**, renetはCRIU互換性のために自動的にこれらを削除します。ルーターウォッチドッグは`.rediacc.json`に保存された元のポリシーに基づいて停止したコンテナを自動回復します。
-- **危険な設定はデフォルトでブロックされます**, `privileged: true`、`pid: host`、`ipc: host`、およびシステムパスへのバインドマウントは拒否されます。自己責任でオーバーライドするには `renet compose --unsafe` を使用してください。
+- **危険な設定はデフォルトでブロックされます**, `privileged: true`、`pid: host`、`ipc: host`、およびシステムパスへのバインドマウントは拒否されます。`privileged` とホストの `pid`・`ipc`・`uts` のブロックは Docker API 上でも有効です。`${DOCKER_SOCKET}` を直接呼び出すコンテナはこれらに対して `403` を受け取り、どのフラグでも上書きできません。`renet compose --unsafe` が上書きできるのは、読み取り専用のホストパスのチェックだけです。
 
 ### コンテナ内の環境変数
 
@@ -79,7 +79,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 ## ネットワーク
 
-- **各リポジトリは独自のDockerデーモンを持ちます**（`/var/run/rediacc/docker-<networkId>.sock`）。
+- **各リポジトリは独自のDockerデーモンを持ちます**（`/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`）。
 - **各サービスは/26サブネット内でユニークなループバックIPを取得します**（例: `127.0.24.192/26`）。
 - **バインドは自動です**: サービスは `0.0.0.0` または `localhost` にバインドでき、カーネルが透過的にアドレスをサービスに割り当てられたループバック IP に書き換えます。`${SERVICE_IP}` への明示的なバインドも引き続き機能しますが、もはや必須ではありません。
 - **ヘルスチェックには `localhost`** または `${SERVICE_IP}` を使用できます。例: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
@@ -169,7 +169,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 - `renet compose`の代わりに`docker compose`を使用する, コンテナがネットワーク分離を取得できません。
 - 再起動ポリシーは安全です, renetが自動的に削除し、ウォッチドッグが回復を処理します。
-- `privileged: true` を使用する, 不要です。renetが代わりに特定のCRIUケーパビリティを注入します。
+- `privileged: true` を使用する, 不要です。renetが代わりに特定のCRIUケーパビリティを注入します。リポジトリのDockerデーモンは、composeでもDocker API上でもこれを拒否します。
 - 生の IP を永続的な設定ファイルにハードコードする - 接続にはサービス名を使用して fork の分離性を保ってください。
 - 失敗したコマンドの回避策として`rdc term connect -c`を使用する, 代わりにバグを報告してください。
 - `repo delete`はループバックIPとsystemdユニットを含む完全なクリーンアップを実行します。古い削除の残骸をクリーンアップするには`rdc machine prune <name>`を実行してください。

@@ -1,0 +1,6 @@
+# The executor artifacts of one release, written by rediacc_ci.deploy.executor_artifacts
+# (fetch or stage-local); never committed. The directory is tracked through .gitkeep so the
+# Dockerfile's bind mount always has a source.
+*
+!.gitignore
+!.gitkeep

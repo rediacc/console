@@ -310,7 +310,7 @@ beforeEach(async () => {
   relay.runs = 0;
   account.enroll = null;
   account.enrollCalls = 0;
-  delete process.env.REDIACC_CONFIG_PASSWORD;
+  delete process.env.REDIACC_STORE_MASTER_PASSWORD;
   Object.assign(server, {
     storeId: STORE_ID,
     configId: CONFIG_ID,
@@ -484,7 +484,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
   });
 });
 
-describe('config remote enable --password on a linked config whose slot secret is gone', () => {
+describe('config remote enable --master-password on a linked config whose slot secret is gone', () => {
   const PASSWORD = 'correct horse battery staple';
 
   async function passwordSlot(): Promise<void> {
@@ -505,9 +505,9 @@ describe('config remote enable --password on a linked config whose slot secret i
     await enrolledDevice();
     reboot();
     await passwordSlot();
-    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
 
-    await rdc('enable', '--password');
+    await rdc('enable', '--master-password');
 
     const pointer = (await readConfigFile()).remote;
     expect(pointer).toMatchObject({ storeId: STORE_ID, configId: CONFIG_ID, cachedVersion: 7 });
@@ -516,14 +516,46 @@ describe('config remote enable --password on a linked config whose slot secret i
     await rdc('refresh');
   });
 
+  it('refuses --config-id naming another config than the linked one, before any enrollment', async () => {
+    await enrolledDevice();
+    reboot();
+    await passwordSlot();
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+    const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
+
+    const error = await refusal(
+      'enable',
+      '--master-password',
+      '--config-id',
+      'someone-elses-config'
+    );
+
+    expect(error.message).toContain('someone-elses-config');
+    expect(error.message).toContain(CONFIG_ID);
+    expect(account.enrollCalls).toBe(0);
+    expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
+  });
+
+  it('accepts --config-id naming the linked config and re-enrolls', async () => {
+    await enrolledDevice();
+    reboot();
+    await passwordSlot();
+    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+
+    await rdc('enable', '--master-password', '--config-id', CONFIG_ID);
+
+    expect(account.enrollCalls).toBe(1);
+    expect((await readConfigFile()).remote?.storageKeyId).toMatch(/^rdc:pw:/);
+  });
+
   it('reports a wrong password and leaves the device as it was', async () => {
     await enrolledDevice();
     reboot();
     await passwordSlot();
-    process.env.REDIACC_CONFIG_PASSWORD = 'not the password';
+    process.env.REDIACC_STORE_MASTER_PASSWORD = 'not the password';
     const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
 
-    expect((await refusal('enable', '--password')).message).toMatch(/password/i);
+    expect((await refusal('enable', '--master-password')).message).toMatch(/password/i);
 
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
     expect(secureMem.size).toBe(0);

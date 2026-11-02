@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
-import type { SFTPClientConfig } from '../remote/sftp/index.js';
 import {
   createTempKnownHostsFile,
   createTempSSHKeyFile,
@@ -42,12 +41,15 @@ import {
   formatBytes,
   handleConfirmMode,
   handleDryRun,
+  isRsyncNotFoundError,
+  type SyncConnectionContext,
   type SyncDownloadOptions,
   type SyncUploadOptions,
   validateDownloadOptions,
   validateUploadOptions,
   withTrailingSlash,
 } from './repo-sync-helpers.js';
+import { ensureUploadParents } from './repo-sync-parents.js';
 
 async function ensureRenetProvisioned(machineName: string, access: RenetAccess): Promise<void> {
   try {
@@ -181,14 +183,6 @@ async function validateSyncOptions(
   };
 }
 
-export interface SyncConnectionContext {
-  details: Awaited<ReturnType<typeof getSSHConnectionDetails>>;
-  remotePath: string;
-  sftpRemotePath: string;
-  /** Connect options for the SFTP fallback; leased from the pool when rsync is absent. */
-  sftpConfig: SFTPClientConfig;
-}
-
 async function prepareSyncConnection(
   validated: ValidatedSyncOptions,
   remoteSubPath: string | undefined,
@@ -238,16 +232,7 @@ async function prepareSyncConnection(
     knownHosts: details.known_hosts,
   };
 
-  return { details, remotePath, sftpRemotePath, sftpConfig };
-}
-
-function isRsyncNotFoundError(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
-  if (err.message.includes('rsync not found')) return true;
-  // Older rsync (<3.2.3) doesn't recognize --mkpath; treat that as a
-  // "fallback to SFTP" signal rather than failing the upload outright. The error surface from rsync is an unrecognized-option message on stderr which carries through to the wrapped Error.message.
-  if (err.message.includes('--mkpath')) return true;
-  return false;
+  return { details, remotePath, sftpRemotePath, baseRemotePath, sftpConfig };
 }
 
 function displaySftpDryRunResult(result: {
@@ -300,9 +285,11 @@ async function executeSyncWithSftpFallback(
     duration: number;
     errors: string[];
   }>,
-  keyDiagnostic?: string
+  keyDiagnostic?: string,
+  beforeRsync?: () => Promise<void>
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
   try {
+    await beforeRsync?.();
     return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
@@ -395,7 +382,8 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
               spinner.text = `Uploading: ${file}`;
             },
           }),
-        sshKeyDiagnostic(ctx.details.privateKey)
+        sshKeyDiagnostic(ctx.details.privateKey),
+        () => ensureUploadParents(ctx, options.remoteFile ?? options.remote, rsyncOptions)
       );
       filesTransferred = counts.filesTransferred;
       bytesTransferred = counts.bytesTransferred;

@@ -71,6 +71,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { FAMILY_GATES } from '../lib/pins/family-gates.js';
@@ -529,8 +530,9 @@ async function selftest(): Promise<number> {
       'selection: the three toolchain leaves are judged',
       sel.judged
         .map((e) => e.id)
-        .sort()
-        .join(',') === [DEFERRED, STALE, DOWN].sort().join(','),
+        .sort((a, b) => Number(a > b) - Number(a < b))
+        .join(',') ===
+        [DEFERRED, STALE, DOWN].sort((a, b) => Number(a > b) - Number(a < b)).join(','),
       sel.judged.map((e) => e.id).join(',')
     );
     add(
@@ -811,6 +813,6 @@ async function main(): Promise<number> {
   return r.rc;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(await main());
 }

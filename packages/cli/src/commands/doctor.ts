@@ -1,20 +1,12 @@
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { DEFAULTS } from '@rediacc/shared/config';
-import {
-  WK_DOCKER_INSTALL_DOCS,
-  WK_GO_DL_BASE,
-  WK_SITE_ORIGIN,
-} from '@rediacc/shared/config/well-known.generated';
-import { isSubscriptionActive, type SubscriptionStatus } from '@rediacc/shared/subscription';
+import { WK_DOCKER_INSTALL_DOCS, WK_GO_DL_BASE } from '@rediacc/shared/config/well-known.generated';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { fetchSubscriptionLicenseReport } from '../services/account/license.js';
-import {
-  getSubscriptionServerUrl,
-  getSubscriptionTokenState,
-} from '../services/account/subscription-auth.js';
+import { getRsyncPath } from '../remote/msys2/paths.js';
+import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   getEmbeddedMetadata,
@@ -22,32 +14,33 @@ import {
   verifyEmbeddedRenetIntegrity,
 } from '../services/core/embedded-assets.js';
 import { outputService, terminalWidth } from '../services/core/output.js';
+import {
+  describeTofuFailure,
+  resolveTofu,
+  type TofuResolution,
+} from '../services/tofu/executor.js';
+import { findOnPath, type PathLookupOptions } from '../services/tools/path-lookup.js';
 import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { getInstallMethod, isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
+import { checkSubscription } from './doctor-subscription.js';
+import { toolSourceLabel } from './tools.js';
 
-type CheckStatus = 'ok' | 'warn' | 'fail';
+const UNKNOWN_VERSION = 'unknown';
 
-interface CheckResult {
+export type CheckStatus = 'ok' | 'warn' | 'fail';
+
+export interface CheckResult {
   name: string;
   value: string;
   status: CheckStatus;
   hint?: string;
 }
 
-interface CheckSection {
+export interface CheckSection {
   title: string;
   checks: CheckResult[];
-}
-
-function commandExists(cmd: string): boolean {
-  try {
-    execSync(`which ${cmd}`, { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function runCommand(cmd: string, args: string[]): { ok: boolean; output: string } {
@@ -66,12 +59,7 @@ function resolveRenetPath(contextRenetPath?: string): string | null {
   if (contextRenetPath && contextRenetPath !== DEFAULTS.CONTEXT.RENET_BINARY) {
     if (existsSync(contextRenetPath)) return contextRenetPath;
   }
-  try {
-    const whichCmd = process.platform === 'win32' ? 'where.exe renet' : 'which renet';
-    return execSync(whichCmd, { encoding: 'utf-8' }).trim().split('\n')[0];
-  } catch {
-    return null;
-  }
+  return findOnPath('renet');
 }
 
 function checkToolVersion(
@@ -81,10 +69,11 @@ function checkToolVersion(
   nameKey: string,
   hint: string
 ): CheckResult {
-  if (!commandExists(cmd)) {
+  const resolved = findOnPath(cmd);
+  if (!resolved) {
     return { name: t(nameKey), value: t('commands.doctor.notInstalled'), status: 'warn', hint };
   }
-  const result = runCommand(cmd, args);
+  const result = runCommand(resolved, args);
   const version = result.ok ? extractVersion(result.output) : 'unknown';
   return { name: t(nameKey), value: version, status: 'ok' };
 }
@@ -135,6 +124,64 @@ function checkEnvironment(): CheckSection {
   }
 
   return { title: t('commands.doctor.sections.environment'), checks };
+}
+
+export interface ToolsCheckDeps {
+  resolveTofu?: () => Promise<TofuResolution>;
+  /** PATH lookup options for rsync (env, platform); the real environment by default. */
+  pathLookup?: PathLookupOptions;
+  /** Output of `rsync --version`, or null when it does not run. */
+  rsyncVersion?: (path: string) => string | null;
+}
+
+/** A local rsync: the MSYS2 one rdc's sync uses on Windows, else the first on PATH. */
+function findRsync(lookup?: PathLookupOptions): string | null {
+  if (!lookup && process.platform === 'win32') {
+    const msys = getRsyncPath();
+    if (msys !== 'rsync' && existsSync(msys)) return msys;
+  }
+  return findOnPath('rsync', lookup);
+}
+
+function defaultRsyncVersion(path: string): string | null {
+  const result = runCommand(path, ['--version']);
+  return result.ok ? result.output : null;
+}
+
+async function checkTofu(resolve: () => Promise<TofuResolution>): Promise<CheckResult> {
+  const name = t('commands.doctor.checks.tofu');
+  const hint = t('commands.doctor.tofuInstallHint');
+  const result = await resolve();
+  if (result.ok) {
+    const { engine } = result;
+    const label = engine.engine === 'tofu' ? engine.version : `terraform ${engine.version}`;
+    return { name, value: `${label} (${toolSourceLabel(engine.source)})`, status: 'ok' };
+  }
+  if (result.reason === 'missing') {
+    return { name, value: t('commands.doctor.notInstalled'), status: 'warn', hint };
+  }
+  return { name, value: describeTofuFailure(result), status: 'warn', hint };
+}
+
+/** Local tools rdc runs itself: the provisioning engine and rsync. */
+export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSection> {
+  const checks: CheckResult[] = [await checkTofu(deps.resolveTofu ?? (() => resolveTofu()))];
+
+  const rsyncName = t('commands.doctor.checks.rsync');
+  const rsyncPath = findRsync(deps.pathLookup);
+  if (rsyncPath) {
+    const out = (deps.rsyncVersion ?? defaultRsyncVersion)(rsyncPath);
+    const version = out ? (/version\s+(\S+)/.exec(out)?.[1] ?? UNKNOWN_VERSION) : UNKNOWN_VERSION;
+    checks.push({ name: rsyncName, value: version, status: 'ok' });
+  } else {
+    checks.push({
+      name: rsyncName,
+      value: t('commands.doctor.notInstalled'),
+      status: 'warn',
+      hint: t('commands.doctor.rsyncInstallHint'),
+    });
+  }
+  return { title: t('commands.doctor.sections.tools'), checks };
 }
 
 function checkRenetBinary(checks: CheckResult[], renetPath: string | null): void {
@@ -323,131 +370,6 @@ async function checkVirtualization(): Promise<CheckSection> {
   return { title: t('commands.doctor.sections.virtualization'), checks };
 }
 
-const SUBSCRIPTION_CHECK_TIMEOUT_MS = 8000;
-const TIMEOUT_SENTINEL = Symbol('timeout');
-type LicenseReport = Awaited<ReturnType<typeof fetchSubscriptionLicenseReport>> & object;
-
-function getInactiveStatusHint(status: string): string {
-  if (status === 'EXPIRED') return `Subscription expired. Renew at ${WK_SITE_ORIGIN}/account`;
-  if (status === 'SUSPENDED') return 'Subscription suspended. Contact support or check billing';
-  return `Subscription inactive. Activate at ${WK_SITE_ORIGIN}/account`;
-}
-
-function checkSubscriptionStatus(checks: CheckResult[], report: LicenseReport): void {
-  const status = report.status as SubscriptionStatus;
-  if (!isSubscriptionActive(status)) {
-    checks.push({
-      name: t('commands.doctor.checks.subscriptionStatus'),
-      value: `${report.planCode} (${report.status})`,
-      status: 'fail',
-      hint: getInactiveStatusHint(report.status),
-    });
-    return;
-  }
-  if (status === 'GRACE') {
-    checks.push({
-      name: t('commands.doctor.checks.subscriptionStatus'),
-      value: `${report.planCode} (GRACE)`,
-      status: 'warn',
-      hint: `Subscription is in grace period. Renew at ${WK_SITE_ORIGIN}/account`,
-    });
-  } else {
-    checks.push({
-      name: t('commands.doctor.checks.subscriptionStatus'),
-      value: `${report.planCode} (ACTIVE)`,
-      status: 'ok',
-    });
-  }
-}
-
-function checkMachineSlots(checks: CheckResult[], report: LicenseReport): void {
-  const { active, max } = report.machineSlots;
-  const value = `${active}/${max}`;
-  let status: CheckStatus = 'ok';
-  let hint: string | undefined;
-  if (active >= max && max > 0) {
-    status = 'fail';
-    hint = 'All machine slots used. Upgrade plan or deactivate unused machines';
-  } else if (max > 0 && active >= max * 0.8) {
-    status = 'warn';
-    hint = 'Machine slots nearly full. Upgrade plan or deactivate unused machines';
-  }
-  checks.push({ name: t('commands.doctor.checks.subscriptionMachineSlots'), value, status, hint });
-}
-
-function checkRepoLicenses(checks: CheckResult[], report: LicenseReport): void {
-  const { totalTrackedRepos, validCount, refreshRecommendedCount, hardExpiredCount } =
-    report.repoLicenses;
-  const name = t('commands.doctor.checks.subscriptionRepoLicenses');
-  let value: string, status: CheckStatus, hint: string | undefined;
-  if (totalTrackedRepos === 0) {
-    value = 'no tracked repos';
-    status = 'ok';
-  } else if (hardExpiredCount > 0) {
-    value = `${validCount} valid, ${refreshRecommendedCount} need refresh, ${hardExpiredCount} expired`;
-    status = 'fail';
-    hint = 'Run: rdc subscription refresh -m <machine> to fix expired repo licenses';
-  } else if (refreshRecommendedCount > 0) {
-    value = `${validCount} valid, ${refreshRecommendedCount} need refresh`;
-    status = 'warn';
-    hint = 'Run: rdc subscription refresh -m <machine> to refresh repo licenses';
-  } else {
-    value = `${validCount}/${totalTrackedRepos} valid`;
-    status = 'ok';
-  }
-  checks.push({ name, value, status, hint });
-}
-
-async function checkSubscription(): Promise<CheckSection> {
-  const checks: CheckResult[] = [];
-  const tokenState = getSubscriptionTokenState();
-
-  if (tokenState.kind === 'missing') {
-    checks.push({
-      name: t('commands.doctor.checks.subscriptionToken'),
-      value: t('commands.doctor.notLoggedIn'),
-      status: 'warn',
-      hint: 'Run: rdc subscription login',
-    });
-    return { title: t('commands.doctor.sections.subscription'), checks };
-  }
-
-  const { token } = tokenState;
-  const scopeParts = [token.orgName, token.teamName].filter(Boolean).join(' / ');
-  checks.push({
-    name: t('commands.doctor.checks.subscriptionToken'),
-    value: scopeParts ? `authenticated (${scopeParts})` : 'authenticated',
-    status: 'ok',
-  });
-
-  const result = await Promise.race([
-    fetchSubscriptionLicenseReport(),
-    new Promise<typeof TIMEOUT_SENTINEL>((resolve) =>
-      setTimeout(() => resolve(TIMEOUT_SENTINEL), SUBSCRIPTION_CHECK_TIMEOUT_MS)
-    ),
-  ]);
-
-  if (!result || result === TIMEOUT_SENTINEL) {
-    const hint =
-      result === TIMEOUT_SENTINEL
-        ? 'Subscription server did not respond in time. Check network connectivity'
-        : 'Check network connectivity or try again later';
-    checks.push({
-      name: t('commands.doctor.checks.subscriptionStatus'),
-      value: t('commands.doctor.subscriptionUnreachable'),
-      status: 'warn',
-      hint,
-    });
-    return { title: t('commands.doctor.sections.subscription'), checks };
-  }
-
-  checkSubscriptionStatus(checks, result);
-  checkMachineSlots(checks, result);
-  checkRepoLicenses(checks, result);
-
-  return { title: t('commands.doctor.sections.subscription'), checks };
-}
-
 const STATUS_ICONS: Record<CheckStatus, string> = {
   ok: chalk.green('OK'),
   warn: chalk.yellow('WARN'),
@@ -512,6 +434,7 @@ export function registerDoctorCommand(program: Command): void {
       const outputFormat = (options.output ?? program.opts().output) as OutputFormat | undefined;
       const sections: CheckSection[] = [
         checkEnvironment(),
+        await checkTools(),
         await checkRenet(),
         await checkConfiguration(),
         await checkSubscription(),

@@ -368,6 +368,32 @@ def duplicate_roots(finding: dict, root: dict, inline: list[dict]) -> list[dict]
     ]
 
 
+def anchored_roots(finding: dict, root: dict, inline: list[dict], claimed: set[Any]) -> list[dict]:
+    """Every other github-actions root comment that anchors `finding` besides `root`, so --answer replies to and resolves ALL of its threads (PR #601, 2026-10-23: F1 had threads 4353683097 and 4353675090, one was answered and --check kept failing).
+
+    A root anchors it when it sits at the finding's path and line, or at its path with the finding's title in the body (the line moved or the thread is outdated). A root `match_inline` gave to another finding (`claimed`) is that finding's, never this one's.
+    """
+    title = str(finding.get("title") or "").strip()
+    line = finding.get("line")
+    out = [c for c in duplicate_roots(finding, root, inline) if c.get("id") not in claimed]
+    seen = {c.get("id") for c in out} | {root.get("id")}
+    for c in inline:
+        if (
+            c.get("id") in seen
+            or c.get("id") in claimed
+            or c.get("in_reply_to_id") is not None
+            or BOT_LOGIN not in _login(c)
+            or c.get("path") != finding.get("path")
+        ):
+            continue
+        at_line = line not in (None, "") and str(_line_of(c)) == str(line)
+        titled = bool(title) and title in (c.get("body") or "")
+        if at_line or titled:
+            out.append(c)
+            seen.add(c.get("id"))
+    return out
+
+
 def inline_answered(inline: list[dict], root: dict) -> bool:
     return any(
         r.get("in_reply_to_id") == root.get("id") and not is_low_effort_reply(r.get("body") or "")
@@ -938,7 +964,12 @@ def cmd_answer(
     targets = [
         (n, r)
         for n, root in sorted(matched.items())
-        for r in [root, *duplicate_roots(findings[n - 1], root, view.inline)]
+        for r in [
+            root,
+            *anchored_roots(
+                findings[n - 1], root, view.inline, {c.get("id") for c in matched.values()}
+            ),
+        ]
     ]
     for n, root in targets:
         cite = (
@@ -985,7 +1016,7 @@ def cmd_answer(
                 "  F%d: resolving thread %s failed: %s" % (n, thread[0], err.strip()[:200]),
                 file=sys.stderr,
             )
-    print("answered %d inline thread(s), %d failure(s)" % (len(matched), failures))
+    print("answered %d inline thread(s), %d failure(s)" % (len(targets), failures))
     return RC_UNREADABLE if failures else RC_OK
 
 

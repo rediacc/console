@@ -6,17 +6,18 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { probeRepoMounted } from '../services/repo/repo-mount-check.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
+import { bwlimitParam } from './bwlimit-param.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
-import { applyPullDeltaParams, applyPushDeltaParams, finalizePush } from './repo-delta.js';
-import { reportPushStats } from './repo-push-stats.js';
+import { applyPullDeltaParams, applyPushDeltaParams } from './repo-delta.js';
 
 interface BackupRunOptions {
   machine?: string;
@@ -37,7 +38,7 @@ type RepoConfig = import('@rediacc/shared/config-schema').RepositoryConfig;
 
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
 /**
- * Execute a bridge function in the appropriate mode (local/s3/cloud).
+ * Execute a renet function in the appropriate mode (local/s3/cloud).
  * Returns whether the execution succeeded so callers can gate follow-up state
  * writes (e.g. recording an auto-delta base only after a successful push),
  * plus the local execution result so callers can parse machine-readable
@@ -46,7 +47,8 @@ type RepoConfig = import('@rediacc/shared/config-schema').RepositoryConfig;
 async function executeFunction(
   functionName: string,
   params: Record<string, unknown>,
-  options: BackupRunOptions
+  options: BackupRunOptions,
+  job: { verb: string; steps: PlannedStep[] }
 ): Promise<{ ok: boolean; local?: ExecuteResult }> {
   const machineName = options.machine;
 
@@ -60,15 +62,26 @@ async function executeFunction(
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
-  const result = await getExecutor().execute({
-    functionName,
-    machineName,
-    kubeCluster: options.kubeCluster,
-    datastore: options.datastore,
-    params: coerced,
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-  });
+  // The follow-up bookkeeping rides the job's ticket as steps (PLAN-detached-jobs J4), so a ticket handed back before the transfer finished records nothing early.
+  const outcome = await runCommandJob(
+    job.verb,
+    {
+      functionName,
+      machineName,
+      kubeCluster: options.kubeCluster,
+      datastore: options.datastore,
+      params: coerced,
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    },
+    job.steps
+  );
+  const result = outcome.result;
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return { ok: false, local: result };
+  }
   if (result.success) {
     outputService.success(
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
@@ -91,18 +104,16 @@ function applyPushFlags(
   if (options.force) params.override = true;
 }
 
-/** Build params for a backup push (unified for machine and storage targets). */
+/** Build params for a backup push to a machine. */
 export function buildPushParams(
   repo: string,
   repositoryGuid: string,
-  resolvedType: 'machine' | 'storage',
+  resolvedType: 'machine',
   targetName: string,
-  options: { checkpoint?: boolean; force?: boolean },
-  storageMode?: 'hot' | 'cold'
+  options: { checkpoint?: boolean; force?: boolean }
 ): { params: Record<string, unknown>; dest: string } {
-  // Storage backups live under the scheduler's hot/cold layout: hot/ for repos that were mounted at push time, cold/ for unmounted ones. The machine target keeps the bare GUID (rsync into the datastore).
-  const dest =
-    resolvedType === 'storage' && storageMode ? `${storageMode}/${repositoryGuid}` : repositoryGuid;
+  // The machine target keeps the bare GUID (rsync into the datastore).
+  const dest = repositoryGuid;
   const params: Record<string, unknown> = {
     repository: repo,
     dest,
@@ -150,53 +161,22 @@ export async function autoProvisionTarget(
  */
 async function narrowRemoteToDataPlane(
   resolved: ResolvedRemote
-): Promise<{ type: 'machine' | 'storage'; name: string }> {
+): Promise<{ type: 'machine'; name: string }> {
   if (resolved.type === 'cluster') {
     return { type: 'machine', name: await resolveControlNode(resolved.name) };
   }
   return { type: resolved.type, name: resolved.name };
 }
 
-/**
- * The storage arm is retired, and this refuses it HERE rather than letting the
- * machine answer.
- *
- * renet already refuses a storage destination with errStorageRetired(), so this
- * is not the only guard. It exists because without it the operator pays an SSH
- * round trip to be told no, and because the CLI was still ADVERTISING the path
- * in its own help and examples while the engine refused it. That gap is how the
- * backup-restore tutorial kept running `rdc repo push my-app --to my-storage`
- * and failing 14 seconds into a CI job, and how the E2E suite kept asserting
- * rclone flags that no longer exist.
- *
- * The sentence matches renet's, deliberately: an operator who hits this from a
- * script and from a terminal should not have to work out that they are the same
- * refusal.
- */
-// STATIC KEYS, not `t(`commands.repo.${kind}.storageRetired`)`. The template
-// literal read fine and defeated check:ci-i18n-cli-key-usage, which finds a key by searching for its literal in the source: both keys were reported as orphans in en/cli.json while being very much in use. The allowlist exists for keys that are GENUINELY dynamic; these two are not, and suppressing a gate to keep a nicety is how the gate stops meaning anything.
-function refuseRetiredStorage(kind: 'push' | 'pull'): never {
-  throw new ValidationError(
-    kind === 'push'
-      ? t('commands.repo.push.storageRetired')
-      : t('commands.repo.pull.storageRetired')
-  );
-}
-
 /** Resolve backup target from CLI options. */
 async function resolvePushTarget(
   options: Record<string, unknown>
-): Promise<{ type: 'machine' | 'storage'; name: string }> {
+): Promise<{ type: 'machine'; name: string }> {
   if (options.toMachine) {
     return { type: 'machine', name: options.toMachine as string };
   }
   if (options.to) {
-    const resolved = await narrowRemoteToDataPlane(await resolveRemoteName(options.to as string));
-    if (resolved.type === 'storage') {
-      refuseRetiredStorage('push');
-    }
-
-    return resolved;
+    return narrowRemoteToDataPlane(await resolveRemoteName(options.to as string));
   }
   throw new ValidationError(t('commands.repo.push.destRequired'));
 }
@@ -246,7 +226,7 @@ async function preparePush(
   repo: string,
   options: Record<string, unknown>,
   repoConfig: RepoConfig,
-  resolvedType: 'machine' | 'storage',
+  resolvedType: 'machine',
   targetName: string
 ): Promise<{ params: Record<string, unknown>; dest: string; retainBase?: string }> {
   if (options.provision) {
@@ -261,30 +241,17 @@ async function preparePush(
     await deployRepoKeyIfNeeded(repo, targetName);
   }
 
-  // Storage layout is mode-scoped (hot = mounted at push time, cold =
-  // unmounted). Probe failure defaults to hot, pushes overwhelmingly target live repos.
-  let storageMode: 'hot' | 'cold' | undefined;
-  if (resolvedType === 'storage') {
-    const mounted = await probeRepoMounted(repoConfig.repositoryGuid, options.machine as string, {
-      debug: options.debug as boolean | undefined,
-      // #74: the probe enumerates ONE datastore, so without the repo's own mount a named-datastore repo reads as absent and every push is filed as `cold`.
-      datastore: options.datastore as string | undefined,
-    });
-    storageMode = mounted === false ? 'cold' : 'hot';
-  }
-
   const { params, dest } = buildPushParams(
     repo,
     repoConfig.repositoryGuid,
     resolvedType,
     targetName,
-    options,
-    storageMode
+    options
   );
   attachSeedLineage(params, repoConfig);
-  if (options.bwlimit) params.bwlimit = options.bwlimit;
+  if (options.bwlimit !== undefined) params.bwlimit = bwlimitParam(String(options.bwlimit));
 
-  // Deterministic CoW-delta push (machine target only; rclone/storage has no FIEMAP base). Resolves a base (explicit or hands-free) and retains a fresh immutable base on both ends; returns the GUID to record on success.
+  // Deterministic CoW-delta push (machine target only). Resolves a base (explicit or hands-free) and retains a fresh immutable base on both ends; returns the GUID to record on success.
   const retainBase =
     resolvedType === 'machine'
       ? await applyPushDeltaParams(params, options, repoConfig, targetName)
@@ -296,7 +263,7 @@ async function preparePush(
  * Push a repo backup addressed by its positional `<ref>`.
  *
  * The ref derives the SOURCE (the machine, or cluster control node, the repo
- * currently lives on); `--to` still names the DESTINATION place or storage.
+ * currently lives on); `--to` still names the DESTINATION place.
  * The pushed copy is a backup artifact, so there is no post-push deploy here:
  * `backup restore --up` is the verb that boots one.
  */
@@ -326,38 +293,75 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
   );
 
   // Show the human-readable target name; the dest GUID/path is renet detail.
-  outputService.info(t('commands.repo.push.pushing', { repo: name, dest: targetName }));
-  const { ok, local } = await executeFunction('backup_push', params, execOptions);
-  if (ok) {
-    reportPushStats(name, targetName, resolvedType, local, !!execOptions.json);
-  }
-  // retainBase is set only for machine targets; finalizePush also syncs commit metadata to the target when the pushed object is an immutable commit.
-  if (ok && resolvedType === 'machine') {
-    await finalizePush(
-      repoKey,
-      repoConfig,
-      targetName,
-      params,
-      retainBase,
-      execOptions.debug as boolean
+  outputService.info(t('commands.repo.push.pushing', { repo: ref, dest: targetName }));
+  await executeFunction('backup_push', params, execOptions, {
+    verb: 'repo push',
+    steps: [
+      planStep('reportPushStats', {
+        repo: name,
+        target: targetName,
+        targetType: resolvedType,
+        json: !!execOptions.json,
+      }),
+      // retainBase is set only for machine targets; the commit-meta successor syncs an immutable commit's mirror to the target.
+      ...(resolvedType === 'machine'
+        ? pushFinalizeSteps(repoKey, repoConfig, targetName, params, retainBase)
+        : []),
+    ],
+  });
+}
+
+/**
+ * The steps a successful machine push owes (PLAN-detached-jobs J4, J16): record the
+ * retained delta base and, when the pushed object is an immutable commit, the
+ * `repository_commit_meta` successor that reconstructs its state mirror on the target
+ * so cross-machine `rdc repo log` works post-push (commit metadata travels in the
+ * image but the out-of-volume mirror does not). Both are best-effort: the push
+ * already succeeded, so a failure in either is non-fatal.
+ */
+function pushFinalizeSteps(
+  repo: string,
+  repoConfig: RepoConfig,
+  machine: string,
+  params: Record<string, unknown>,
+  retainBase: string | undefined
+): PlannedStep[] {
+  const steps: PlannedStep[] = [];
+  if (retainBase) {
+    steps.push(
+      planStep('recordPushBase', {
+        repo,
+        machine,
+        method: params.deltaBase ? 'delta' : 'rsync',
+        verifiedBase: retainBase,
+      })
     );
   }
+  if (repoConfig.immutable) steps.push(commitMetaStep(repoConfig, machine));
+  return steps;
+}
+
+/** The `repository_commit_meta` successor of an immutable push: the commit's metadata, carried as plain step params. */
+function commitMetaStep(repoConfig: RepoConfig, target: string): PlannedStep {
+  const meta: Record<string, string | undefined> = {
+    message: repoConfig.commitMessage,
+    author: repoConfig.commitAuthor,
+    parent: repoConfig.commitParent,
+    grand: repoConfig.grandGuid,
+  };
+  const present = Object.fromEntries(Object.entries(meta).filter(([, value]) => !!value));
+  return planStep('syncCommitMeta', { target, commit: repoConfig.repositoryGuid, ...present });
 }
 
 /** Resolve backup source from CLI options. */
 async function resolvePullSource(
   options: Record<string, unknown>
-): Promise<{ type: 'machine' | 'storage'; name: string }> {
+): Promise<{ type: 'machine'; name: string }> {
   if (options.fromMachine) {
     return { type: 'machine', name: options.fromMachine as string };
   }
   if (options.from) {
-    const resolved = await narrowRemoteToDataPlane(await resolveRemoteName(options.from as string));
-    if (resolved.type === 'storage') {
-      refuseRetiredStorage('pull');
-    }
-
-    return resolved;
+    return narrowRemoteToDataPlane(await resolveRemoteName(options.from as string));
   }
   throw new ValidationError(t('commands.repo.pull.sourceRequired'));
 }
@@ -395,10 +399,10 @@ async function postPullDeploy(
  * Pull a repo backup addressed by its positional `<ref>`.
  *
  * The ref derives the repo's home machine, which is where the pull lands (and,
- * with `--up`, deploys); `--from` names the source place or storage.
+ * with `--up`, deploys); `--from` names the source place.
  */
 async function pullRepo(ref: string, options: Record<string, unknown>): Promise<void> {
-  const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+  const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
   await assertCommandPolicy(CMD.REPO_PULL, repoKey);
   const params: Record<string, unknown> = { repository: repoKey };
 
@@ -415,8 +419,8 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
   params.sourceType = resolvedType;
   params.from = sourceName;
   if (execOptions.force) params.force = true;
-  if (execOptions.bwlimit) params.bwlimit = execOptions.bwlimit;
-  // Delta pull is machine-source only (rclone/storage has no FIEMAP base).
+  if (execOptions.bwlimit !== undefined) params.bwlimit = bwlimitParam(String(execOptions.bwlimit));
+  // Delta pull is machine-source only.
   if (resolvedType === 'machine') applyPullDeltaParams(params, execOptions);
 
   const repoConfig = await configService.getRepository(repoKey);
@@ -426,13 +430,29 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
 
   await deployRepoKeyIfNeeded(repoKey, machineName);
 
-  outputService.info(t('commands.repo.pull.pulling', { repo: name }));
-  await executeFunction('backup_pull', params, execOptions);
-
-  if (execOptions.up) {
-    await postPullDeploy(repoKey, machineName, execOptions);
-  }
+  outputService.info(t('commands.repo.pull.pulling', { repo: ref }));
+  // `--up` is the successor: the deploy runs as its own job once the pull job succeeded, from whichever observer sees it finish first.
+  const datastore = execOptions.datastore as string | undefined;
+  await executeFunction('backup_pull', params, execOptions, {
+    verb: 'repo pull',
+    steps: execOptions.up
+      ? [
+          planStep('pullDeploy', {
+            repo: repoKey,
+            ...(datastore === undefined ? {} : { datastore }),
+            debug: execOptions.debug === true,
+          }),
+        ]
+      : [],
+  });
 }
+
+bindStepHandler('pullDeploy', async ({ machine, params }) => {
+  await postPullDeploy(String(params.repo), machine, {
+    datastore: typeof params.datastore === 'string' ? params.datastore : undefined,
+    debug: params.debug === true,
+  });
+});
 
 /**
  * Register backup-related commands directly on the repo command:
@@ -440,7 +460,7 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
  * - repo pull <ref>
  */
 export function registerRepoBackupCommands(repoCommand: Command): void {
-  // repo push <ref> --to <place|storage>
+  // repo push <ref> --to <place>
   repoCommand
     .command('push')
     .summary(t('commands.repo.push.descriptionShort'))
@@ -470,7 +490,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       }
     });
 
-  // repo pull <ref> --from <place|storage>
+  // repo pull <ref> --from <place>
   repoCommand
     .command('pull')
     .summary(t('commands.repo.pull.descriptionShort'))

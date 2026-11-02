@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: fr
-sourceHash: "ccced160d151eeeb"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # Stockage de configuration
@@ -71,7 +71,7 @@ Une passkey peut être ajoutée plus tard depuis la page Config Storage. Gardez 
 Une machine sans navigateur (un serveur, un runner CI, un démon executor) peut s'enrôler dans un store existant grâce à la méthode du mot de passe principal :
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Prérequis :
@@ -80,6 +80,23 @@ Prérequis :
 - Un **token API avec le scope `config:enroll`** pour authentifier l'appel
 
 L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics de l'emplacement ainsi que la clé enveloppée, dérive localement le secret du mot de passe, puis déballe la CEK sur l'appareil. Cela donne à l'appareil la capacité de déchiffrer et de synchroniser la configuration ; cela ne modifie pas le store.
+
+## Comment les clés parviennent à votre CLI
+
+`rdc config remote enable` (et `rdc config rotate-cek`) transmettent le secret de déverrouillage au CLI par l'intermédiaire du serveur de compte. Le CLI et le navigateur ne communiquent jamais directement : cela fonctionne donc de la même façon sur un serveur sans navigateur, sous WSL avec le navigateur côté Windows, ou depuis un téléphone.
+
+1. Connectez d'abord le CLI avec `rdc subscription login`. Le serveur rattache la demande à ce compte.
+2. Le CLI crée une demande de courte durée et affiche un lien ainsi qu'un **code d'appairage** tel que `7KQ2-M9XD-P4RT`. Le lien garde tout ce qu'il transporte après le `#`, que les navigateurs n'envoient jamais à un serveur.
+3. Ouvrez le lien dans n'importe quel navigateur connecté avec le même compte. Une demande issue d'un autre compte est refusée.
+4. Saisissez le code d'appairage affiché dans votre terminal lorsque la page le demande. Le bouton de déverrouillage reste désactivé tant qu'il ne correspond pas.
+5. Déverrouillez avec votre passkey ou votre mot de passe principal. Le navigateur scelle la clé pour le CLI, et le serveur relaie un blob qu'il ne peut pas lire.
+6. Le CLI déchiffre le blob, stocke le secret dans le trousseau du système (keyring) et confirme la réussite.
+
+La demande expire au bout de 10 minutes. Appuyez sur **Ctrl+C** dans le CLI pour l'annuler : le CLI demande au serveur de supprimer le lien, qui cesse aussitôt de fonctionner, et la page indique de relancer la commande. Si cette requête n'aboutit pas, le lien reste utilisable jusqu'à l'expiration de la demande. Si le lien est ouvert après son expiration, ou si une redirection de connexion a supprimé la partie après le `#`, relancez la commande.
+
+Le code d'appairage est dérivé de la clé contenue dans le lien. Si quelqu'un remplace le lien par le sien, le code affiché dans votre terminal ne correspondra pas à celui attendu par la page, et rien n'est libéré.
+
+Cela protège contre la falsification du lien et contre un relais qui remplacerait ou forgerait un blob. Cela ne protège pas contre un serveur qui livrerait un code de page modifié : la page que vous ouvrez est servie par le serveur de compte, et les clés ne sont aussi sûres que ce code. La même confiance s'applique à toutes les pages du portail qui manipulent la clé de configuration.
 
 ## Activation et lectures hors ligne
 

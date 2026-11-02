@@ -93,6 +93,7 @@ import {
   topVerbs,
 } from '../lib/doc-providers.js';
 import { findRegions, OPEN_RE, type Region } from '../lib/doc-regions.js';
+import { exitWithMainIfEntryPoint } from '../lib/entry-point.js';
 import { truncatedLines } from '../lib/findings-report.js';
 
 const HERE = import.meta.dirname;
@@ -1044,6 +1045,4 @@ function main(argv: string[]): number {
 }
 
 // THE IMPORT GUARD. This module exports its helpers so a control can drive them directly. Without the guard, importing one would run the whole gate inside the importer and exit, which is what scripts/gen/gen-docs.ts:607 does today and why this file cannot import it.
-if (path.resolve(process.argv[1] ?? '') === path.resolve(import.meta.filename)) {
-  process.exit(main(process.argv.slice(2)));
-}
+exitWithMainIfEntryPoint(import.meta.filename, main);

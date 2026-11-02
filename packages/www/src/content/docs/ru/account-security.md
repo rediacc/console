@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ru
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### Аутентификация
@@ -69,6 +69,8 @@ rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```
+
+Привязка конфигурации к [Config Storage](/en/docs/config-storage) использует отдельный запрос, который тоже проходит через сервер аккаунта. Он привязан к аккаунту, под которым выполнен вход в CLI, ссылка хранит свои секреты после `#`, чтобы они не попадали в журналы сервера, а пользователь вводит на странице подтверждения код сопряжения из терминала. Запрос действует 10 минут.
 
 ### Config Storage
 

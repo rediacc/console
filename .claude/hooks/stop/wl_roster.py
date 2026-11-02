@@ -715,6 +715,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     # PLAN ORDER AND PLAN CONCURRENCY (agent/plans/PLAN-plan-priority-concurrency.md sections 2 and 5c), judged against the writers the harness's own event proves live plus every session's fresh leases. A plan read that fails leaves the queue in age order with nothing held, and says why in `plan_error`: never a crashed roster.
     plan_holders: dict[str, list[str]] | None = None
     plan_serving: dict[str, set[str]] = {}
+    plan_declared: dict[str, tuple[str, ...] | None] = {}
     plan_error = ""
     xinfo = None
     order_key = queue_order
@@ -736,6 +737,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             for w in [aid, *ancestors(aid, metas)]:
                 served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
             plan_serving[aid] = served
+            plan_declared[aid] = X.declared_owns(text)
     except Exception as exc:
         plan_holders = None
         plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -744,7 +746,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     if plan_holders is not None:
         plan_conflicts = [
             (aid, sorted(plan_serving[aid]), list(v.lines))
-            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo)
+            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo, plan_declared)
         ]
 
     covered: list[Any] = []
@@ -949,9 +951,12 @@ _BASH_MAYBE_WRITES = re.compile(
 )
 # A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
 _PY_WRITES = re.compile(
-    r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*['\"]"
-    r"|\.write_(?:text|bytes)\(|\.unlink\(|\.rename\(|\.touch\("
-    r"|\bos\.(?:remove|unlink|rename|replace|rmdir)\(|\bshutil\.(?:rmtree|move|copy\w*)\("
+    r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*(?::\w*)?['\"]"
+    r"|\.write_(?:text|bytes)\(|\.unlink\(|\.rename\(|\.touch\(|\.rmdir\(|\.mkdir\("
+    r"|\bos\.(?:open|remove|unlink|rename|replace|rmdir|mkdir|makedirs|removedirs|symlink|link|truncate)\("
+    r"|\bshutil\.(?:rmtree|move|copy\w*)\("
+    r"|\.(?:to_(?:csv|json|pickle|parquet|excel|feather|hdf|html|xml|latex|markdown)|savefig|symlink_to|hardlink_to)\("
+    r"|\b(?:copy|copy2|copyfile|copytree|move|rmtree)\(|\bsubprocess\.\w+\("
 )
 # A string literal that reads as a repo path: path characters only, with a `/` or a file extension. `HEAD:x` and `utf-8` are not.
 _PY_PATH_LIT = re.compile(r"""['"]([A-Za-z0-9_.@+-][A-Za-z0-9_./@+-]*)['"]""")
@@ -1115,10 +1120,219 @@ def bash_write_paths(cmd, cwd, root):
             add(target, None)
     for text, run_cwd in py_bodies:
         if text and _PY_WRITES.search(text):
-            for lit in _PY_PATH_LIT.findall(text):
-                if "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit):
-                    add(lit, run_cwd)
+            for lit in _py_written_paths(text):
+                add(lit, run_cwd)
     return {p for p in out if p not in ("/dev/null", "/dev/stdout", "/dev/stderr")}
+
+
+def _is_path_lit(lit):
+    return "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit) is not None
+
+
+# Write-shaped calls `_py_written_paths` does not resolve to a target. One of them in a body means the targets are unknowable, so the old reading stands (every path literal counts) rather than the literal being dropped.
+_WRITE_LIKE_ATTRS = frozenset(
+    {
+        "to_csv",
+        "to_json",
+        "to_pickle",
+        "to_parquet",
+        "to_excel",
+        "to_feather",
+        "to_hdf",
+        "to_html",
+        "to_xml",
+        "to_latex",
+        "to_markdown",
+        "savefig",
+        "symlink_to",
+        "hardlink_to",
+        "symlink",
+        "link",
+    }
+)
+# The same, imported by name (`from shutil import copy`).
+_WRITE_LIKE_NAMES = frozenset({"copy", "copy2", "copyfile", "copytree", "move", "rmtree"})
+
+
+def _unlisted_write(node):
+    """Whether the call is a write whose target `_py_written_paths` cannot name: a pandas or matplotlib writer, a symlink, a shutil function imported bare, or a subprocess carrying a write verb or a redirect."""
+    import ast
+
+    f = node.func
+    if isinstance(f, ast.Name):
+        return f.id in _WRITE_LIKE_NAMES
+    if not isinstance(f, ast.Attribute):
+        return False
+    owner = f.value.id if isinstance(f.value, ast.Name) else None
+    if owner == "subprocess" and node.args:
+        for sub in ast.walk(node.args[0]):
+            if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                words = sub.value.split()
+                if ">" in sub.value or any(w in BASH_WRITE_VERBS or w == "sed" for w in words):
+                    return True
+        return False
+    return f.attr in _WRITE_LIKE_ATTRS
+
+
+def _py_written_paths(text):
+    """The repo-path literals a Python body writes, deletes or moves.
+
+    The body is parsed, and a path counts only as the target of a write-shaped call (`open(x, 'w')`, `Path(x).write_text`, `os.replace`, `shutil.move|copy*|rmtree`) where `x` is a literal, or a name bound once to a literal (or to `Path(<literal>)`, or a literal list a `for` walks). A path named only inside a string being written (a replacement text mentioning `agent/INDEX.md`) is not a target. When a write target cannot be resolved this way, or the body does not parse, the old reading stands: every path-shaped literal in the body counts, because a missed subtraction blocks the lead's turn while an extra one only defers the question to the writer's own tick."""
+    import ast
+
+    every = [lit for lit in _PY_PATH_LIT.findall(text) if _is_path_lit(lit)]
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return every
+    bound: dict[str, list[ast.expr]] = {}
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+        ):
+            bound.setdefault(node.targets[0].id, []).append(node.value)
+        elif isinstance(node, ast.For) and isinstance(node.target, ast.Name):
+            bound.setdefault(node.target.id, []).append(node.iter)
+
+    def strs(node, depth=0):
+        """Every string `node` can be, or None when any part is unknowable."""
+        if depth > 6:
+            return None
+        if isinstance(node, ast.Constant):
+            return [node.value] if isinstance(node.value, str) else None
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            out = []
+            for el in node.elts:
+                got = strs(el, depth + 1)
+                if got is None:
+                    return None
+                out += got
+            return out
+        if isinstance(node, ast.Name):
+            values = bound.get(node.id)
+            if not values:
+                return None
+            out = []
+            for v in values:
+                got = strs(v, depth + 1)
+                if got is None:
+                    return None
+                out += got
+            return out
+        if isinstance(node, ast.Call):
+            f = node.func
+            fname = (
+                f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else ""
+            )
+            if (
+                fname in ("Path", "PurePath", "str", "fspath")
+                and len(node.args) == 1
+                and not node.keywords
+            ):
+                return strs(node.args[0], depth + 1)
+            return None
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Div)):
+            left, right = strs(node.left, depth + 1), strs(node.right, depth + 1)
+            if left is None or right is None:
+                return None
+            sep = "/" if isinstance(node.op, ast.Div) else ""
+            return [a + sep + b for a in left for b in right]
+        return None
+
+    def mode_writes(call, pos):
+        mode = call.args[pos] if len(call.args) > pos else None
+        for kw in call.keywords:
+            if kw.arg == "mode":
+                mode = kw.value
+        if mode is None:
+            return False
+        if isinstance(mode, ast.Constant) and isinstance(mode.value, str):
+            # The part before `:` is the access mode; after it comes the compression of `tarfile.open` (`r:xz` reads, `w:gz` writes).
+            return any(c in mode.value.split(":", 1)[0] for c in "wax+")
+        return True  # a computed mode may write
+
+    found, unresolved = [], False
+
+    def take(node):
+        nonlocal unresolved
+        got = strs(node)
+        if got is None:
+            unresolved = True
+        else:
+            found.extend(got)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        f = node.func
+        attr = f.attr if isinstance(f, ast.Attribute) else None
+        owner = (
+            f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else None
+        )
+        # `attr` is set only for an Attribute, so `recv` is its receiver wherever `attr` is read below.
+        recv = f.value if isinstance(f, ast.Attribute) else f
+        args = node.args
+        if isinstance(f, ast.Name) and f.id == "open" and args:
+            if mode_writes(node, 1):
+                take(args[0])
+        elif (
+            attr == "open"
+            and owner in ("io", "codecs", "gzip", "bz2", "lzma", "tarfile", "zipfile")
+            and args
+        ):
+            # Module-level opens take (path, mode, ...) like the builtin.
+            if mode_writes(node, 1):
+                take(args[0])
+        elif attr == "open" and owner == "os" and args:
+            # os.open takes integer flags, not a mode string: count the target, conservatively.
+            take(args[0])
+        elif attr == "open" and owner not in (
+            "os",
+            "io",
+            "codecs",
+            "gzip",
+            "bz2",
+            "lzma",
+            "tarfile",
+            "zipfile",
+        ):
+            if mode_writes(node, 0):
+                take(recv)
+        elif (
+            attr in ("write_text", "write_bytes", "unlink", "touch", "rmdir", "mkdir")
+            and owner != "os"
+        ):
+            # `os.unlink(x)` and `os.rmdir(x)` carry the path as an argument, handled below, not as the receiver (`os` is no path).
+            take(recv)
+        elif attr in ("rename", "replace") and len(args) == 1 and owner not in ("os", "shutil"):
+            take(recv)
+            take(args[0])
+        elif owner == "os" and attr in (
+            "remove",
+            "unlink",
+            "rmdir",
+            "rename",
+            "replace",
+            "mkdir",
+            "makedirs",
+            "removedirs",
+            "truncate",
+        ):
+            for a in args[:2]:
+                take(a)
+        elif owner == "shutil" and (attr in ("rmtree", "move") or (attr or "").startswith("copy")):
+            if attr == "rmtree" and args:
+                take(args[0])
+            elif attr == "move":
+                for a in args[:2]:
+                    take(a)
+            elif len(args) > 1:
+                take(args[1])
+    if unresolved or any(_unlisted_write(n) for n in ast.walk(tree) if isinstance(n, ast.Call)):
+        return every
+    return [lit for lit in found if _is_path_lit(lit)]
 
 
 def _python_text(shellscan, run, cmd, cwd):

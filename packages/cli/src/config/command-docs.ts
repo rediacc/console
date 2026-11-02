@@ -258,7 +258,7 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
   ],
   'backup strategy set': [
     {
-      command: 'rdc backup strategy set nightly --storage backups-s3 --mode hot',
+      command: 'rdc backup strategy set nightly --cron "0 3 * * *" --mode hot',
       descriptionKey: 'commands.backup.strategy.set.examples.configure',
     },
     {
@@ -370,13 +370,16 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       descriptionKey: 'commands.job.logs.examples.follow',
     },
   ],
+  'job wait': [
+    { command: 'rdc job wait 12345', descriptionKey: 'commands.job.wait.examples.basic' },
+  ],
   'job cancel': [
     {
       command: 'rdc job cancel 12345 -m prod-1',
       descriptionKey: 'commands.job.cancel.examples.basic',
     },
   ],
-  // ── config / server / storage ────────────────────────────────────────────
+  // ── config / server ──────────────────────────────────────────────────────
   'config init': [
     {
       command: 'rdc config init production',
@@ -391,12 +394,6 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
     { command: 'rdc serve', descriptionKey: 'commands.serve.examples.basic' },
     { command: 'rdc serve --port 8080', descriptionKey: 'commands.serve.examples.customPort' },
     { command: 'rdc serve --mode container', descriptionKey: 'commands.serve.examples.container' },
-  ],
-  'storage add': [
-    {
-      command: 'rdc storage add backups-s3 --vault \'{"type":"s3"}\'',
-      descriptionKey: 'commands.storage.add.examples.basic',
-    },
   ],
 };
 
@@ -447,11 +444,11 @@ export const COMMAND_KEYWORDS: Record<string, readonly string[]> = {
   'job list': ['ls', 'jobs', 'tasks', 'queue'],
   'job status': ['info', 'state', 'progress', 'inspect'],
   'job logs': ['log', 'tail', 'output'],
+  'job wait': ['follow', 'resume', 'block', 'attach'],
   'job cancel': ['kill', 'stop', 'abort', 'terminate'],
-  // ── config / server / storage / diagnostics ──────────────────────────────
+  // ── config / server / diagnostics ────────────────────────────────────────
   'config init': ['setup', 'create', 'configure', 'profile'],
   serve: ['server', 'daemon', 'executor', 'host', 'api'],
-  'storage add': ['register', 's3', 'bucket', 'endpoint', 'remote'],
   doctor: ['diagnose', 'check', 'troubleshoot', 'health'],
   update: ['upgrade', 'version', 'self-update'],
 };
@@ -502,10 +499,6 @@ export const COMMAND_OUTPUT_HINTS: Record<string, CommandOutputHintDef> = {
   'datastore list': {
     primaryKey: 'name',
     columns: ['name', 'backend', 'size', 'cluster', 'attachedTo', 'writes', 'repos'],
-  },
-  'storage list': {
-    primaryKey: 'name',
-    columns: ['name', 'provider'],
   },
   'config list': {
     primaryKey: 'name',

@@ -11,8 +11,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: pt
-sourceHash: "e008783008d8e887"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "34d12ee4f0a3791c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 Você está apontando um assistente de código IA para sua infraestrutura. Quando Claude Code, Cursor, Gemini CLI, Copilot CLI ou qualquer coisa similar dirige `rdc`, o CLI detecta e aplica um conjunto de regras diferente do de um humano no teclado. Esta página cobre o que o agente pode e não pode fazer, e como as proteções se mantêm mesmo quando ele tenta convencer seu caminho para sair delas.
@@ -216,7 +216,7 @@ Esta é a linha de responsabilidade compartilhada:
 
 A mitigação primária é construída: **[segredos por repositório](/pt/docs/repositories#secrets)** são armazenados em um plano separado da imagem de repositório criptografada e não são copiados além do limite do fork. Os contêineres do fork inicializam com um mapa de segredos vazio e se identificam como um principal externo diferente do pai. Defina-os com `rdc repo secret set` (modo env para interpolação de composição, modo arquivo para blocos tmpfs `secrets:`). O portão de mutação é simétrico. Humanos e agentes devem fornecer `--current` (pré-condição estilo passwd) ou `--rotate-secret` (rotação auditada) para sobrescrever ou excluir um valor existente.
 
-**Isolamento de repositório cruzado é aplicado.** Um arquivo de composição malicioso ou descuidado no repositório B não pode referenciar o diretório de segredos do repositório A. O validador de composição do Renet nega duramente qualquer caminho `secrets: file:`, `configs: file:` ou `env_file:` que aponte para fora do diretório `${REDIACC_NETWORK_ID}` do repositório atual, e a rejeição NÃO é sobrescritível por `--unsafe`. Defesa em profundidade: a sandbox Landlock ao redor do subprocesso bash Rediaccfile limita leituras do sistema de arquivos ao diretório de segredos da rede atual apenas, então um `cat /var/run/rediacc/secrets/<other>/X` de um Rediaccfile malicioso falha com EACCES na camada do kernel.
+**Isolamento de repositório cruzado é aplicado.** Um arquivo de composição malicioso ou descuidado no repositório B não pode referenciar o diretório de segredos do repositório A. O validador de composição do Renet nega duramente qualquer caminho `secrets: file:`, `configs: file:` ou `env_file:` que aponte para fora do diretório `${REDIACC_NETWORK_ID}` do repositório atual, e a rejeição NÃO é sobrescritível por `--unsafe`. Defesa em profundidade: a sandbox Landlock ao redor do subprocesso bash Rediaccfile limita leituras do sistema de arquivos ao diretório de segredos da rede atual apenas, então um `cat /var/run/rediacc/net-<other>/secrets/X` de um Rediaccfile malicioso falha com EACCES na camada do kernel. O mesmo vale para a API do Docker: o socket Docker de cada repositório é atendido por um proxy de políticas do renet que recusa com `403` `--privileged`, `pid`, `ipc` e `uts` do host, pedidos de dispositivos e binds que alcancem o runtime ou os dados de outro repositório. Assim, um contêiner com `${DOCKER_SOCKET}` não consegue usar a API para chegar a outro repositório, e não é só o arquivo compose que é verificado. Somente o operador pode ampliar a regra de binds, para diretórios do host indicados por nome, com uma concessão pertencente ao root em que nenhum contêiner consegue gravar.
 
 Dois padrões adicionais fecham casos extremos:
 

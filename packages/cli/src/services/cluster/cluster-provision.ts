@@ -333,7 +333,7 @@ async function distributeCephClientConfig(
  * Install cluster components in dependency order: CEPH POOL FIRST (storage sits
  * below the k8s control plane), then k8s pools.
  *
- * Ceph install dispatches the internal ceph_* bridge functions to the ceph-pool
+ * Ceph install dispatches the internal ceph_* renet functions to the ceph-pool
  * members. The k8s branch remains the wave-5 seam (pending the renet kube
  * contract); it reports the pending work rather than pretending to install.
  */

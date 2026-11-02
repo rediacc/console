@@ -85,7 +85,7 @@ function derivedGrandTag(
 ): string | undefined {
   const keys = Object.keys(repos)
     .filter((key) => parseRepoRef(key).name === baseName)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   const grands = keys.filter((key) => !isForkConfig(repos[key])).map((k) => parseRepoRef(k).tag);
   if (grands.includes(RESERVED_GRAND_TAG)) return RESERVED_GRAND_TAG;
   const pick = grands[0] ?? (keys.length > 0 ? parseRepoRef(keys[0]).tag : undefined);
@@ -154,6 +154,21 @@ export function buildArchivedRecord(repoKey: string, rec: RepositoryConfig): Arc
   const { secrets: _secrets, ...record } = rec;
   void _secrets;
   return { ...record, name: base, tag, deletedAt: new Date().toISOString() };
+}
+
+/** The live record an archived one restores to: the archive-only `name` and `deletedAt` fields dropped. */
+export function restoreArchivedRecord(archived: ArchivedRepository): RepositoryConfig {
+  const { name: originalName, deletedAt, ...repoConfig } = archived;
+  void originalName;
+  void deletedAt;
+  return repoConfig;
+}
+
+/** The record with its mirrored CDI device grants set, or cleared when `devices` is empty. */
+export function withGpuDevices(rec: RepositoryConfig, devices: string[]): RepositoryConfig {
+  const { gpuDevices: previous, ...rest } = rec;
+  void previous;
+  return devices.length > 0 ? { ...rest, gpuDevices: devices } : rest;
 }
 
 /**

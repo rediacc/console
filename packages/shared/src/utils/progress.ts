@@ -1,6 +1,6 @@
 /**
  * Progress parsing utilities for console output
- * Supports bash scripts, rsync, rclone, and renet progress formats
+ * Supports bash scripts, rsync and renet progress formats
  */
 
 /** The last match of a progress pattern: its percentage and where it sits in the output. */
@@ -18,7 +18,7 @@ function lastProgressMatch(
  * Extract the most recent progress percentage from console output
  * Supports multiple formats:
  * - bash msg_progress "- N%"
- * - rsync/rclone "N%"
+ * - rsync "N%"
  * - renet "[operation] N% - message"
  *
  * @param output - Console output string
@@ -30,7 +30,7 @@ export function extractMostRecentProgress(output: string): number | null {
   // Pattern 1: msg_progress format "- N%" (bash scripts)
   const msgProgressPattern = /-\s+(\d+(?:\.\d+)?)%/g;
 
-  // Pattern 2: rsync/rclone format "N% speed" (transfer tools) Matches both byte format and human-readable format (K/M/G) Examples: "199,884,800 18% 190.59MB/s" or "1.5G 18% 190.59MB/s"
+  // Pattern 2: rsync format "N% speed" (transfer tools) Matches both byte format and human-readable format (K/M/G) Examples: "199,884,800 18% 190.59MB/s" or "1.5G 18% 190.59MB/s"
   const transferPattern = /\s+(\d+)%\s+[\d.,]+[KMG]?B\/s/g;
 
   // Pattern 3: renet format "[operation] N% - message" Examples: "[setup] 45% - Installing packages" or "[sync] 100% - Complete"
@@ -69,10 +69,6 @@ const RENET_PROGRESS_LINE_PATTERN = /^\[([^\]]+)\]\s+\d+(?:\.\d+)?%\s+-\s+(.+)$/
 /** Pattern for rsync transfer line */
 const RSYNC_PATTERN = /([\d.]+[KMG]?)\s+(\d+)%\s+([\d.]+[KMG]?B\/s)\s+(\d+:\d+:\d+)/;
 
-/** Pattern for rclone transfer line */
-const RCLONE_PATTERN =
-  /Transferred:\s+([\d.]+[KMG]?)\s+\/\s+([\d.]+\s*[KMG]?Bytes?),\s+(\d+)%,\s+([\d.]+\s*[KMG]?Bytes?\/s)/i;
-
 /** Try to extract renet format message from line */
 function tryExtractRenetMessage(line: string): string | null {
   const match = RENET_PROGRESS_LINE_PATTERN.exec(line);
@@ -93,16 +89,11 @@ function tryExtractMsgProgressMessage(line: string): string | null {
   return message || null;
 }
 
-/** Try to extract transfer tool (rsync/rclone) message from line */
+/** Try to extract transfer tool (rsync) message from line */
 function tryExtractTransferMessage(line: string): string | null {
   const rsyncMatch = RSYNC_PATTERN.exec(line);
   if (rsyncMatch) {
     return rsyncMatch[0];
-  }
-
-  const rcloneMatch = RCLONE_PATTERN.exec(line);
-  if (rcloneMatch) {
-    return rcloneMatch[0];
   }
 
   return null;

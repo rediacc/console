@@ -1,7 +1,7 @@
 /**
  * ResourceState interface and implementations.
  *
- * ResourceState abstracts access to machines, storages, repositories, and SSH
+ * ResourceState abstracts access to machines, repositories, and SSH
  * keys. It presents repositories as a FLAT map keyed by the legacy composite
  * `name` / `name:tag` string, with the on-disk v3 spec record (RepoRecord under
  * `resources.repositories[name].tags[tag]`) merged with its runtime status
@@ -30,8 +30,8 @@ import type {
   MachineConfig,
   RepositoryConfig,
   SSHContent,
-  StorageConfig,
 } from '../../types/index.js';
+import { announcePush, isNoopPush } from './push-visibility.js';
 import { mergeRemoteIntoCache, writeRemoteCache } from './remote-cache.js';
 
 // =============================================================================
@@ -54,6 +54,7 @@ const REPO_RECORD_KEYS = [
 const REPO_RUNTIME_KEYS = [
   'networkId',
   'registryPort',
+  'gpuDevices',
   'pushState',
   'headCommit',
   'commitMessage',
@@ -101,7 +102,7 @@ function flattenRepositories(
 
 /** Which tag is the production (grand) line: grandGuid unset or self-referential. */
 function deriveGrand(tags: Record<string, RepoRecord>): string {
-  const keys = Object.keys(tags).sort();
+  const keys = Object.keys(tags).sort((a, b) => Number(a > b) - Number(a < b));
   const grands = keys.filter((t) => {
     const g = tags[t].grandGuid;
     return !g || g === tags[t].repositoryGuid;
@@ -173,8 +174,6 @@ function nonEmpty<T extends object>(rec: T): T | undefined {
 export interface ResourceState {
   getMachines(): Record<string, MachineConfig>;
   setMachines(machines: Record<string, MachineConfig>): Promise<void>;
-  getStorages(): Record<string, StorageConfig>;
-  setStorages(storages: Record<string, StorageConfig>): Promise<void>;
   getRepositories(): Record<string, RepositoryConfig>;
   setRepositories(repos: Record<string, RepositoryConfig>): Promise<void>;
   getDeletedRepositories(): ArchivedRepository[];
@@ -185,7 +184,6 @@ export interface ResourceState {
 
 interface LocalState {
   machines: Record<string, MachineConfig>;
-  storages: Record<string, StorageConfig>;
   repositories: Record<string, RepositoryConfig>;
   deletedRepositories: ArchivedRepository[];
   sshContent: SSHContent | null;
@@ -193,7 +191,6 @@ interface LocalState {
 
 const LOCAL_STATE_BUCKETS = [
   'machines',
-  'storages',
   'repositories',
   'deletedRepositories',
   'sshContent',
@@ -204,7 +201,6 @@ function loadLocalState(source: RdcConfig): LocalState {
   const config = structuredClone(source);
   return {
     machines: config.resources?.machines ?? {},
-    storages: config.resources?.storages ?? {},
     repositories: flattenRepositories(config.resources?.repositories, config.state?.repos),
     deletedRepositories: config.resources?.deletedRepositories ?? [],
     sshContent: sshContentFrom(config),
@@ -220,7 +216,6 @@ function persistPatch(state: LocalState, cfg: RdcConfig): RdcConfig {
     resources: {
       ...(cfg.resources ?? {}),
       machines: nonEmpty(state.machines),
-      storages: nonEmpty(state.storages),
       repositories: nonEmpty(families),
       deletedRepositories:
         state.deletedRepositories.length > 0 ? state.deletedRepositories : undefined,
@@ -271,10 +266,6 @@ export class LocalResourceState implements ResourceState {
     return this.state.machines;
   }
 
-  getStorages(): Record<string, StorageConfig> {
-    return this.state.storages;
-  }
-
   getRepositories(): Record<string, RepositoryConfig> {
     return this.state.repositories;
   }
@@ -289,11 +280,6 @@ export class LocalResourceState implements ResourceState {
 
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
-    await this.persist();
-  }
-
-  async setStorages(storages: Record<string, StorageConfig>): Promise<void> {
-    this.state.storages = storages;
     await this.persist();
   }
 
@@ -400,8 +386,6 @@ function rebaseBucket(
   switch (bucket) {
     case 'machines':
       return { ...fresh, machines: rebaseRecord(fresh.machines, base.machines, mine.machines) };
-    case 'storages':
-      return { ...fresh, storages: rebaseRecord(fresh.storages, base.storages, mine.storages) };
     case 'repositories':
       return {
         ...fresh,
@@ -470,10 +454,6 @@ export class RemoteResourceState implements ResourceState {
     return this.state.machines;
   }
 
-  getStorages(): Record<string, StorageConfig> {
-    return this.state.storages;
-  }
-
   getRepositories(): Record<string, RepositoryConfig> {
     return this.state.repositories;
   }
@@ -489,11 +469,6 @@ export class RemoteResourceState implements ResourceState {
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
     await this.persist('machines');
-  }
-
-  async setStorages(storages: Record<string, StorageConfig>): Promise<void> {
-    this.state.storages = storages;
-    await this.persist('storages');
   }
 
   async setRepositories(repos: Record<string, RepositoryConfig>): Promise<void> {
@@ -573,10 +548,14 @@ export class RemoteResourceState implements ResourceState {
   private async pushOnce(build: (base: RdcConfig) => RdcConfig): Promise<PushAttempt> {
     const base = await configFileStorage.loadDecrypted(this.configName);
     const merged = build(base);
+    // Nothing a push carries changed: the version stays, no push goes out (R2). The cache may lag the server, though, and "equals the cache" then says nothing about the server's copy: a newer server value would win over the intended one. So a no-op is skipped only after one pull confirms the server is still at the version this state was built on; otherwise the push goes out, takes the 409 and replays the intended value as it always did.
+    if (isNoopPush(merged, base) && (await this.serverIsAt(this.version))) return { pushed: base };
     try {
       // The cache is the server copy at `this.version`: a committed path it holds that `merged` drops is a deletion, proven by a tombstone (T9).
       const result = await this.adapter.push(merged, this.version, { base });
+      const from = this.version;
       this.version = result.version;
+      announcePush(this.configName, from, result.version, merged, base);
       let cached: RdcConfig = merged;
       await configFileStorage.updateCache(this.configName, () => {
         cached = mergeRemoteIntoCache(merged, merged, result.version);
@@ -585,6 +564,15 @@ export class RemoteResourceState implements ResourceState {
       return { pushed: cached };
     } catch (error) {
       if (error instanceof RemoteVersionConflictError) return { conflict: error };
+      throw this.toWriteError(error);
+    }
+  }
+
+  /** True when the server's current version is `version`. An unreachable server fails closed. */
+  private async serverIsAt(version: number): Promise<boolean> {
+    try {
+      return (await this.adapter.pull()).version === version;
+    } catch (error) {
       throw this.toWriteError(error);
     }
   }

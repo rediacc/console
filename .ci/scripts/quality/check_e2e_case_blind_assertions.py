@@ -39,7 +39,16 @@ import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 TESTS = REPO / "packages" / "e2e-tests" / "tests"
-HELPER = REPO / "packages" / "e2e-tests" / "src" / "utils" / "bridge" / "helpers" / "TestHelpers.ts"
+HELPER = (
+    REPO
+    / "packages"
+    / "e2e-tests"
+    / "src"
+    / "utils"
+    / "renet-functions"
+    / "helpers"
+    / "TestHelpers.ts"
+)
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"

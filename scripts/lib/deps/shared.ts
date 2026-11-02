@@ -58,7 +58,7 @@ export function readLockPackages(dir: string): Record<string, LockEntry> | null 
  * Parse a semver version string into components
  */
 export function parseVersion(version: string): ParsedVersion | null {
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/.exec(version);
   if (!match) return null;
   return {
     major: Number.parseInt(match[1], 10),
@@ -157,7 +157,7 @@ function cmpTriple(a: Triple, b: Triple): number {
 }
 
 function parseComparator(text: string): Bound[] | null {
-  const m = text.match(COMPARATOR_RE);
+  const m = COMPARATOR_RE.exec(text);
   if (!m) return null;
   const op = (m[1] ?? '').replace('~>', '~');
   const parts: number[] = [];

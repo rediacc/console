@@ -1,6 +1,6 @@
 """The git-level `pre-commit` check of the generated artifacts declared in `.ci/config/generated-artifacts.json` (`.claude/rediacc_hooks/git/artifacts.py`, called from `githooks.pre_commit`).
 
-WHY IT EXISTS. Three stale generated files on 2026-10-13, each found late: the CLI contract after 8dbb6066e (40 minutes, a pre-push run), `agent/plans/QUEUE.md` (PR 600's CI, run 38381096702), and a gen-docs region, the one case caught at the commit. The registry makes the third the rule, and a rule that selects commits by declared globs and judges them with a declared checker has three ways to pass without running: the glob never matches, the checker never fails, or the hook never calls it. `check:ci-generated-artifacts` covers the first. This file covers the other two, with REAL git.
+WHY IT EXISTS. Three stale generated files on 2026-10-13, each found late: the CLI contract after 76e708dae (40 minutes, a pre-push run), `agent/plans/QUEUE.md` (PR 600's CI, run 38381096702), and a gen-docs region, the one case caught at the commit. The registry makes the third the rule, and a rule that selects commits by declared globs and judges them with a declared checker has three ways to pass without running: the glob never matches, the checker never fails, or the hook never calls it. `check:ci-generated-artifacts` covers the first. This file covers the other two, with REAL git.
 
 TWO HALVES.
 
@@ -435,8 +435,58 @@ def _link_build_products(repo: pathlib.Path) -> None:
             dst.symlink_to(src)
 
 
+def _prefetch_main_plans() -> int:
+    """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
+
+    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs."""
+    listed = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-tree", "-r", "origin/main", "--", "agent/plans"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    oids = [row.split()[2] for row in listed.stdout.splitlines() if len(row.split()) >= 3]
+    if not oids:
+        return 0
+    checked = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "cat-file", "--batch-check=%(objectname) %(objecttype)"],
+        input="\n".join(oids) + "\n",
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    missing = [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
+    if missing:
+        # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure names them.
+        try:
+            got = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(REPO_ROOT),
+                    "fetch",
+                    "-q",
+                    "--no-tags",
+                    "--no-write-fetch-head",
+                    "origin",
+                    *missing,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=300,
+            )
+            if got.returncode != 0:
+                print("plan blob prefetch failed: %s" % got.stderr.strip(), file=sys.stderr)
+        except subprocess.TimeoutExpired:
+            print("plan blob prefetch timed out", file=sys.stderr)
+    return len(missing)
+
+
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
+    _prefetch_main_plans()
     w = GD.World(tmp_path_factory.mktemp("githook-artifacts"), extra_overlay=_overlay())
     w.build()
     _link_build_products(w.repo)
@@ -487,6 +537,15 @@ def enrolled_refused(w, entry: dict, tag: str) -> tuple[bool, str]:
 
 
 def enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
+    """Resets the fixture to its starting commit even when an assertion fires midway: the module-scoped world is shared, so a planted control left behind made the next case fail on `the create control's path already exists`."""
+    head = w.head()
+    try:
+        return _enrolled_allowed(w, entry, tag)
+    finally:
+        w.reset(head)
+
+
+def _enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
     """The same control, then the entry's own generator, then the commit of both. When the doc-region check refuses first, because the artifact is itself a provider input (the gate lock is), the regions are regenerated and the commit is made again with them."""
     head = w.head()
     rel = _plant(w, entry)

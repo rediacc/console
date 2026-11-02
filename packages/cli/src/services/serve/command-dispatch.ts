@@ -38,6 +38,7 @@ import type { Command } from 'commander';
 import { CommanderError } from 'commander';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { createCli } from '../../cli.js';
+import { namedFailureOf } from '../../utils/errors.js';
 import { configService } from '../config/config-resources.js';
 import {
   type CommandRequestContext,
@@ -48,6 +49,12 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
+import {
+  currentRequestTelemetry,
+  runWithRequestTelemetry,
+  type TelemetryCaller,
+} from '../telemetry/request-telemetry.js';
+import { telemetryService } from '../telemetry/telemetry.js';
 
 /** A request the executor refuses before running anything. Answered as a 400. */
 export class CommandRejected extends Error {
@@ -102,6 +109,11 @@ export interface DispatchArgs {
    * none); a daemon omits it and runs against its enrolled config file.
    */
   config?: RdcConfig;
+  /**
+   * Who asked, as the account server introspected the caller. Telemetry attributes
+   * the command's spans to this and not to the executor's own token.
+   */
+  caller?: TelemetryCaller;
 }
 
 export interface DispatchOutcome {
@@ -312,6 +324,30 @@ function harden(command: Command, stderr: string[]): void {
   for (const child of command.commands) harden(child, stderr);
 }
 
+/**
+ * A command that threw never reaches its postAction hook, so its span would stay
+ * open forever. Close it here, inside the request's own telemetry scope, as an
+ * error. A command that failed before its span opened has nothing to close.
+ */
+function endFailedCommandSpan(error: unknown, durationMs: number): void {
+  const open = currentRequestTelemetry()?.open;
+  if (!open) return;
+  const exitCode = error instanceof DispatchExit ? error.code : 1;
+  telemetryService.endCommand(
+    open.commandName,
+    {
+      success: exitCode === 0,
+      exitCode,
+      // A DispatchExit with code 0 is a clean early exit, so it carries no error.
+      ...(exitCode === 0
+        ? {}
+        : { error: error instanceof Error ? error.message : 'The command failed.' }),
+      duration: durationMs,
+    },
+    open.spanKey
+  );
+}
+
 /** The result of a command that ran but reported nothing back through the executor. */
 function inertResult(durationMs: number): ExecuteResult {
   return { success: true, exitCode: 0, durationMs };
@@ -353,8 +389,11 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   // Every machine call a served command makes runs detached and is FOLLOWED to completion: the executor cannot assume the client's connection outlives the work, so it starts a job that survives a drop and streams its spool back. `onJobStarted` fires once per job so the route can announce a re-attach point. The detach decision defaults to the contract's `detachable` and is
   // overridden by the route when it must (deps.detach).
   const detached = args.detached ?? entry.detachable;
+  // Renet's own stdout is the command's answer only for a verb that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug. For every other verb a local run drops it (the step detector keeps step lines only, and a captureOutput verb prints what it chose from `result.stdout` itself), so a proxied run must not carry it either: the proxy client prints `output` events, which put renet's full repository-list JSON (the machine probe's answer) on the stdout of `repo up` and `repo down`. Events are therefore dropped here for such a verb; the raw `result.stdout` still travels on the wire for clients that want it.
+  let forwardRenetOutput = false;
   const recordingExecutor: Executor = {
     async execute(options) {
+      if (options.passthroughOutput || options.debug) forwardRenetOutput = true;
       functionName = options.functionName;
       machineName = options.machineName;
       const result = await args.executor.execute({
@@ -372,21 +411,27 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     output: createOutputState(),
     stdout: [],
     stderr: [],
-    onEvent: args.onEvent,
+    onEvent: (event, line) => {
+      if (event.type === 'output' && !forwardRenetOutput) return;
+      args.onEvent(event, line);
+    },
     executor: recordingExecutor,
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
-  const outcome = await runInRequestContext(context, async () => {
-    const program = createCli();
-    harden(program, context.stderr);
-    try {
-      await program.parseAsync(argv, { from: 'user' });
-      return { failed: false as const };
-    } catch (error) {
-      return { failed: true as const, error };
-    }
-  });
+  const outcome = await runWithRequestTelemetry(args.caller, () =>
+    runInRequestContext(context, async () => {
+      const program = createCli();
+      harden(program, context.stderr);
+      try {
+        await program.parseAsync(argv, { from: 'user' });
+        return { failed: false as const };
+      } catch (error) {
+        endFailedCommandSpan(error, Date.now() - started);
+        return { failed: true as const, error };
+      }
+    })
+  );
 
   const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);
   const stderr = context.stderr.join('\n');
@@ -440,11 +485,23 @@ function toFailure(
 ): ExecuteResult {
   if (lastResult && !lastResult.success) return lastResult;
 
+  // The named code (EGRESS_UNREACHABLE, SSH_REFUSED, ...) of a failure the command raised itself, either rethrown by handleError as a DispatchFailure or thrown bare, so every path reaches the served result with it.
+  const named = namedFailureOf(error);
+  const namedFields = named
+    ? {
+        errorCode: named.errorCode,
+        ...(named.guidance ? { errorGuidance: named.guidance } : {}),
+        // An unanswered connect keeps its address, so the egress report fires on this path as on executor.execute's.
+        ...(named.connectTarget ? { connectTarget: named.connectTarget } : {}),
+      }
+    : {};
+
   if (error instanceof DispatchExit) {
     return {
       success: error.code === 0,
       exitCode: error.code,
       error: error.code === 0 ? undefined : stderr.trim() || error.message,
+      ...namedFields,
       durationMs,
     };
   }
@@ -463,6 +520,7 @@ function toFailure(
     success: false,
     exitCode: 1,
     error: error instanceof Error ? error.message : 'The command failed.',
+    ...namedFields,
     durationMs,
   };
 }

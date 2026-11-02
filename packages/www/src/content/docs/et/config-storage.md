@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "ccced160d151eeeb"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # Konfiguratsioonisalv
@@ -69,7 +69,7 @@ Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kak
 Brauserita masin (server, CI-käitaja, käitaja teenus) saab liituda olemasoleva salvega peaparooli meetodi abil:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Nõuded:
@@ -78,6 +78,23 @@ Nõuded:
 - **API-token `config:enroll` õigusega** kutse autentimiseks
 
 Registreerimine on lugemistoiming: CLI toob pesa avalikud KDF-parameetrid ja mähitud võtme, tuletab parooli saladuse lokaalselt ning mähib CEK-i seadmes lahti. See annab seadmele õiguse konfiguratsiooni dekrüpteerida ja sünkroonida; see ei muuda salve.
+
+## Kuidas võtmed sinu CLI-ni jõuavad
+
+`rdc config remote enable` (ja `rdc config rotate-cek`) annavad avamissaladuse CLI-le kätte kontoserveri kaudu. CLI ja brauser ei suhtle kunagi otse, seega töötab see ühtmoodi brauserita serveris, WSL-is (kui brauser on Windowsis) ja telefonis.
+
+1. Logi CLI esmalt sisse käsuga `rdc subscription login`. Server seob päringu selle kontoga.
+2. CLI loob lühiealise päringu ning kuvab lingi ja **sidumiskoodi**, näiteks `7KQ2-M9XD-P4RT`. Link hoiab kõike, mida see kannab, märgi `#` taga, mida brauserid serverile kunagi ei saada.
+3. Ava link mis tahes brauseris, kus oled sisse logitud samal kontol. Teise konto päring lükatakse tagasi.
+4. Sisesta sidumiskood oma terminalist, kui leht seda küsib. Avamisnupp jääb keelatuks, kuni kood klapib.
+5. Ava pääsuvõtme või ülemparooliga. Brauser pitseerib võtme CLI-le ning server edastab andmeploki, mida ta lugeda ei saa.
+6. CLI dekrüpteerib andmeploki, salvestab saladuse operatsioonisüsteemi võtmehoidlasse (keyring) ja teatab õnnestumisest.
+
+Päring aegub 10 minuti pärast. Selle tühistamiseks vajuta CLI-s **Ctrl+C**: CLI palub serveril lingi tühistada, mispeale see lakkab kohe töötamast, ja leht palub käsu uuesti käivitada. Kui see päring kohale ei jõua, jääb link kasutatavaks päringu aegumiseni. Kui link avatakse pärast aegumist või kui sisselogimise ümbersuunamine kaotas `#` järgse osa, käivita käsk uuesti.
+
+Sidumiskood tuletatakse lingis olevast võtmest. Kui keegi vahetab lingi enda omaga välja, ei lange sinu terminalis olev kood kokku sellega, mida leht ootab, ja seega ei vabastata midagi.
+
+See kaitseb lingi võltsimise ning sellise vahendaja eest, mis andmeploki asendab või võltsib. See ei kaitse serveri eest, mis levitab muudetud lehekoodi: avatava lehe serveerib kontoserver ja võtmed on sama turvalised kui see kood. Sama usaldus kehtib kõigile portaali lehtedele, mis konfiguratsioonivõtmega tegelevad.
 
 ## Lubamine ja võrguühenduseta lugemine
 

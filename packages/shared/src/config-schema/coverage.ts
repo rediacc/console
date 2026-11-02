@@ -227,9 +227,9 @@ export function computeSchemaCoverage(
         !hasPrunedAncestor(t.segs, ctx.pruned)
     )
     .map((t) => t.raw);
-  const covered = [...ctx.covered].sort();
-  const uncovered = [...ctx.uncovered].sort();
-  const excluded = [...ctx.excluded].sort();
+  const covered = [...ctx.covered].sort((a, b) => Number(a > b) - Number(a < b));
+  const uncovered = [...ctx.uncovered].sort((a, b) => Number(a > b) - Number(a < b));
+  const excluded = [...ctx.excluded].sort((a, b) => Number(a > b) - Number(a < b));
   return { covered, uncovered, stale, excluded, leafCount: covered.length + uncovered.length };
 }
 

@@ -78,6 +78,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { isEntryPoint } from './entry-point.js';
 
 // --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
@@ -499,7 +500,7 @@ export function classify(
 /** sha256 over the SORTED findings. Order-independent, multiplicity-preserving. */
 export function fingerprint(findings: string[]): string {
   return createHash('sha256')
-    .update([...findings].sort().join('\n'))
+    .update([...findings].sort((a, b) => Number(a > b) - Number(a < b)).join('\n'))
     .digest('hex')
     .slice(0, 16);
 }
@@ -598,7 +599,7 @@ function multisetMinus(a: string[], b: string[]): string[] {
     if (n > 0) counts.set(x, n - 1);
     else out.push(x);
   }
-  return out.sort();
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /**
@@ -636,7 +637,10 @@ export function decide(pair: string, oldRun: SideRun, newRun: SideRun): Comparis
     ok: verdict === PASS_VERDICT,
     old: oldRun,
     new: newRun,
-    agreed: verdict === PASS_VERDICT ? [...oldRun.findings].sort() : [],
+    agreed:
+      verdict === PASS_VERDICT
+        ? [...oldRun.findings].sort((a, b) => Number(a > b) - Number(a < b))
+        : [],
     onlyOld,
     onlyNew,
     summary,
@@ -1113,8 +1117,10 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
     else disqualified.push({ tree: f.tree, verdict: f.verdict });
   }
 
-  const distinctTrees = counted.map((r) => r.tree.id).sort();
-  const fingerprints = [...new Set(counted.map((r) => r.old.fingerprint))].sort();
+  const distinctTrees = counted.map((r) => r.tree.id).sort((a, b) => Number(a > b) - Number(a < b));
+  const fingerprints = [...new Set(counted.map((r) => r.old.fingerprint))].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
 
   if (disqualified.length > 0) {
     for (const d of disqualified) {
@@ -1790,6 +1796,6 @@ export function main(argv: string[]): number {
   return cmp.ok ? 0 : 1;
 }
 
-// `import.meta.url` under tsx is the file URL; process.argv[1] is the path.
-const invoked = process.argv[1] && import.meta.url === `file://${path.resolve(process.argv[1])}`;
+// Run main() only when this file is the launched script (isEntryPoint compares real paths).
+const invoked = isEntryPoint(import.meta.filename);
 if (invoked) process.exit(main(process.argv.slice(2)));

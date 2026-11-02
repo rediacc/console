@@ -197,3 +197,26 @@ export function refuseIfEmpty<T>(items: T[], label: string, hint: string): T[] {
     `  ${hint}`
   );
 }
+
+/**
+ * The fail callback of a hand-written selftest: print `format(message)` to stderr and exit 1.
+ * `never` lets the compiler treat the code after a `fail(...)` call as unreachable.
+ */
+export function selftestFailer(format: (message: string) => string): (message: string) => never {
+  return (message: string): never => {
+    console.error(format(message));
+    process.exit(1);
+  };
+}
+
+/**
+ * The `--selftest` dispatch of a gate's main(): when the flag is present, run `selftest`
+ * (which exits non-zero itself on a failed control), print the ok line and return true so
+ * the caller returns before the real scan.
+ */
+export function dispatchSelftest(gate: string, selftest: () => void, detail = ''): boolean {
+  if (!process.argv.includes('--selftest')) return false;
+  selftest();
+  console.log(`${gate}: selftest ok${detail}`);
+  return true;
+}

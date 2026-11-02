@@ -80,7 +80,7 @@ CASES = [
         False,
         True,
     ),
-    # --- a program's text is read like a heredoc body (#78afdc0b): each BLOCKED row was allowed at c5c3036c3 ---
+    # --- a program's text is read like a heredoc body (#78afdc0b): each BLOCKED row was allowed at c72518af1 ---
     (
         "python -c running a long pause",
         "python3 -c 'import os; os.system(\"" + S + " 900\")'",

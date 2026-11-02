@@ -189,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         temp_dir = pathlib.Path(tmp)
         generate = subprocess.run(
-            ["npx", "tsx", GENERATOR, "--output", str(temp_dir)],
+            ["npx", "--no-install", "tsx", GENERATOR, "--output", str(temp_dir)],
             cwd=str(root),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,

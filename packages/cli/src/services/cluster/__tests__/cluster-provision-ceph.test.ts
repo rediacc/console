@@ -26,7 +26,7 @@ const memberIps: Record<string, string> = {
 
 function buildConfig(cluster: ClusterConfig): RdcConfig {
   const cfg = createEmptyRdcConfig();
-  cfg.resources = { machines: {}, storages: {}, clusters: { prod: cluster } };
+  cfg.resources = { machines: {}, clusters: { prod: cluster } };
   return cfg;
 }
 

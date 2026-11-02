@@ -2,11 +2,11 @@
 
 For full command syntax and options, see [reference.md](reference.md).
 
-Backup, restore, transfer, and sync repository images between machines or to/from external storage.
+Backup, restore, transfer, and sync repository images between machines and to the chunk store.
 
 Two nouns are involved:
 - `rdc repo push` / `rdc repo pull` / `rdc repo migrate` / `rdc repo sync`: move a repo's bytes.
-- `rdc backup`: strategies, scheduling, and restore. `backup strategy {set,remove,list,show}`, `backup schedule`, `backup run`, `backup status`, `backup cancel`, `backup list`, `backup restore`.
+- `rdc backup`: strategies, scheduling, and restore. `backup strategy {set,remove,list,show}`, `backup schedule`, `backup run`, `backup status`, `backup cancel`, `backup list`, `backup restore`, `backup retention {preview,set,clear}`, `backup snapshots delete`.
 
 **Prerequisite**: Both source AND target machines must be registered, set up, and the CLI SSH key must be configured. See "Prerequisites for ops VMs" in [SKILL.md](SKILL.md) and [config.md](config.md).
 
@@ -17,12 +17,7 @@ Two nouns are involved:
 
 **Important**: mounting is automatic. The retired `repo up --mount` flag is gone, and forks resolve the parent's credential on their own (no `--grand` flag on `repo up` any more).
 
-### Push to storage
-Backs up to configured external storage (S3, local file, etc.).
-
 ### Pull from another machine
-
-### Pull from storage
 
 ### List backups
 
@@ -118,16 +113,27 @@ rdc repo up <repo>                   # Auto-detects checkpoint, resumes
 ### Configure backup strategy
 The strategy name is a positional argument. Multiple destinations can be configured with different schedules:
 ```bash
-rdc backup strategy set daily --destination my-s3 --storage my-s3 --cron "0 2 * * *" --enable
-rdc backup strategy set offsite --destination azure-backup --storage azure-backup --cron "0 6 * * *" --enable
+rdc backup strategy set daily --destination hosted --cron "0 2 * * *" --enable
+rdc backup strategy set weekly --destination hosted --cron "0 6 * * 0" --include shop --exclude shop:scratch --enable
 ```
-`--storage <name>` is required the first time a destination is created (it names the rclone credentials from `rdc storage add`).
+A destination is a hosted-service chunk store (`kind: hosted-service`); `--include`/`--exclude` take repository names, where a bare name covers the whole fork family and `name:tag` one fork. `--retention <spec>` (for example `last=7,daily=7,weekly=4,monthly=6`; `none` removes it) sets the strategy's snapshot retention. Per-repository retention is set with `rdc backup retention set`.
 
 ### Show / list backup strategies
 ```bash
 rdc backup strategy list
 rdc backup strategy show daily
 ```
+
+### Retention and snapshot deletion
+```bash
+rdc backup retention preview <repo-ref>           # what the next sweep would delete, and the space freed
+rdc backup retention set <repo-ref> --keep-last 7 --keep-daily 7 --keep-weekly 4
+rdc backup retention set <repo-ref> --stream <id> --keep-last 3   # one backup stream only
+rdc backup retention clear <repo-ref>                          # keep every snapshot
+rdc backup retention clear <repo-ref> --stream <id>               # keep every snapshot of one stream
+rdc backup snapshots delete <repo-ref> <snapshot-id>              # data only that snapshot used is freed by the next GC
+```
+`retention set` replaces every knob rather than merging, so pass the whole policy. `retention set`, `retention clear` and `snapshots delete` are excluded from the MCP tools. `rdc repo delete <ref> --purge-backups` also deletes the repository's cloud backups at once instead of letting them expire.
 
 ### Deploy backup schedule to machine (systemd timer)
 ```bash
@@ -141,12 +147,6 @@ rdc backup status daily -m <machine>
 rdc backup list <artifact-ref> -m <machine>
 rdc backup restore <artifact-ref> --as <new-name> -m <machine> --up
 ```
-
-## Bulk sync (push/pull all repos)
-
-### Push all repos to storage
-
-### Pull all repos from storage
 
 ## File sync (rsync-based file transfer)
 

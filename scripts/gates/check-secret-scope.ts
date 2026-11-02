@@ -136,7 +136,7 @@ export function scan(dir: string): string[] {
       if (!ALLOWED.has(m[1])) ids.add(`${f}:${m[1]}`);
     }
   }
-  return [...ids].sort();
+  return [...ids].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function readBaseline(): string[] {

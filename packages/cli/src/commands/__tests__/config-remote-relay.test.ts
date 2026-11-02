@@ -209,7 +209,7 @@ const realTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
  * on the order of events only, never on how fast the machine is.
  */
 async function drive<T>(p: Promise<T>, stepMs = 1000): Promise<T> {
-  const state = { done: false };
+  const state = { done: false } as { done: boolean };
   const tracked = p.finally(() => {
     state.done = true;
   });

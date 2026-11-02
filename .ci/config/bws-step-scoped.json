@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "Bitwarden secrets that a workflow may hold for ONE step only. check:ci-bws-step-scope",
+    "(.ci/scripts/quality/check_bws_step_scope.py) refuses, for every name below, in every job:",
+    "  (i)   a bws-secrets fetch of the name that also fetches a name not in this file;",
+    "  (ii)  a step between that fetch and the last consumer that does not itself read the name;",
+    "  (iii) no ./.github/actions/bws-scrub naming the exported variable immediately after the",
+    "        last consumer;",
+    "  (iv)  a scrub without `if: always()`;",
+    "  (v)   a read of the exported variable after the scrub, or outside any fetch window.",
+    "A name is listed by its Bitwarden NAME (the left-hand side of `NAME > ENV_NAME`); the gate",
+    "derives the exported variable from each fetch line. Every name must be in",
+    "bws-secret-map.json and requested by at least one fetch, or the entry is refused as dead.",
+    "",
+    "THIS LIST ONLY GROWS. The rest of the class (GITHUB_APP_PRIVATE_KEY, DOCKERHUB_TOKEN, the",
+    "Cloudflare and Stripe keys) is tracked as the follow-up of",
+    "agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md. Each `reason` starts with",
+    "`BLOCKER:` and passes rediacc_ci.core.allowlist.validate_reason, per",
+    "docs/agent-reference/suppressions.md."
+  ],
+  "names": {
+    "ACCOUNT_ED25519_PRIVATE_KEY": {
+      "reason": "BLOCKER: the production licence-signing key; any step that can read it can mint a licence every released renet accepts, and its only consumers are the per-run account server start and the Worker secret push, one step per job"
+    },
+    "ACCOUNT_X25519_PRIVATE_KEY": {
+      "reason": "BLOCKER: the production X25519 key the account Worker decrypts with; it is pushed to the Worker by exactly one step in each of the three deploy jobs and no other step of those jobs has any use for it"
+    },
+    "RELEASE_GPG_PRIVATE_KEY": {
+      "reason": "BLOCKER: the release signing key behind every Linux package and package repository; a step that reads it can publish a signed package that apt and dnf trust, and only the two cd-stage packaging steps sign anything"
+    },
+    "RELEASE_GPG_PASSPHRASE": {
+      "reason": "BLOCKER: the passphrase that unlocks RELEASE_GPG_PRIVATE_KEY; holding it beside the key is holding the signing capability itself, so it is scoped to exactly the same two cd-stage packaging steps"
+    }
+  }
+}

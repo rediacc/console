@@ -801,8 +801,23 @@ def test_next_turbo_skips_a_plan_already_in_the_pr_set(tmp_path):
 def test_next_turbo_picks_the_prerequisite_first(tmp_path):
     root = _turbo_root(tmp_path, {"a": _xplan(depends="PLAN-p.md"), "p": _xplan()}, ["a"])
     assert plan_gate.next_turbo(root, (), 4) == [_t("p")]
-    # The prerequisite already rides the PR: the dependent waits for it, nothing else is named.
-    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("p"),)) == [_t("a")]
+    # The prerequisite already rides the PR: the dependent waits for it, nothing else is named (#1e3ac977; this line once asserted `[_t("a")]` under the same comment).
+    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("p"),)) == []
+    # Picked or served by a live writer is the same wait.
+    assert plan_gate.next_turbo(root, ("PLAN-p.md",), 4) == []
+
+
+def test_next_turbo_skips_a_pick_whose_own_prerequisite_is_unfinished(tmp_path):
+    """#1e3ac977, the dependency arm: a depends on p, p on q, and q rides the PR. The chain drops q and would name p, which cannot start before q finishes."""
+    plans = {"a": _xplan(depends="PLAN-p.md"), "p": _xplan(depends="PLAN-q.md"), "q": _xplan()}
+    root = _turbo_root(tmp_path, {**plans, "b": _xplan()}, ["a", "b"])
+    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("q"),)) == [_t("b")]
+    # CONTROL: q finished, so p is free and is the pick ahead of b.
+    done = {**plans, "q": _xplan(opened=0, done=1), "b": _xplan()}
+    root2 = _turbo_root(tmp_path / "done", done, ["a", "b"])
+    assert plan_gate.next_turbo(root2, (), 4, in_set=(_t("q"),)) == [_t("p"), _t("b")]
+    # CONTROL: nothing rides the PR, so the deepest prerequisite q is the pick, as before.
+    assert plan_gate.next_turbo(root, (), 1) == [_t("q")]
 
 
 def test_next_turbo_names_a_solo_plan_only_for_an_empty_pr(tmp_path):
@@ -826,8 +841,32 @@ def test_next_turbo_never_pairs_an_exclusive_plan_with_a_live_writers_plan(tmp_p
         ["e", "b"],
     )
     assert plan_gate.next_turbo(root, ("PLAN-live.md",), 3, in_set=(_t("live"),)) == [_t("b")]
-    # Control: with no live writer the exclusive plan is the pick, and it then pairs with nothing.
-    assert plan_gate.next_turbo(root, (), 3) == [_t("e")]
+    # Control: with no live writer the exclusive plan is the pick. It is a mutex over ITS files (711841c55, operator ruling 2026-10-28), so the disjoint b joins it.
+    assert plan_gate.next_turbo(root, (), 3) == [_t("e"), _t("b")]
+    # And a b whose Owns overlap e's does not.
+    overlap = _turbo_root(
+        tmp_path / "overlap",
+        {
+            "e": _xplan(conc="exclusive -- regenerates every golden"),
+            "b": _xplan(owns="docs/e/golden/**"),
+            "live": _xplan(),
+        },
+        ["e", "b"],
+    )
+    assert plan_gate.next_turbo(overlap, (), 3) == [_t("e")]
+
+
+def test_next_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(tmp_path):
+    """#1e3ac977, the concurrency arm: two live writers serving no plan leave `live_plans` empty, so `spawn_verdict` alone admitted the exclusive plan. `writers` holds it back, and it does not hold back the parallel plans behind it."""
+    root = _turbo_root(
+        tmp_path,
+        {"e": _xplan(conc="exclusive -- one program across renet"), "b": _xplan(), "c": _xplan()},
+        ["e", "b", "c"],
+    )
+    assert plan_gate.next_turbo(root, (), 3, writers=2) == [_t("b"), _t("c")]
+    assert plan_gate.next_turbo(root, (), 1, ceiling=False, writers=2) == [_t("b")]
+    # CONTROL: the same queue with no writer live names the exclusive plan first; b and c, whose Owns it does not claim, join it (711841c55, the overlap rule).
+    assert plan_gate.next_turbo(root, (), 3, writers=0) == [_t("e"), _t("b"), _t("c")]
 
 
 def test_next_turbo_never_names_two_plans_claiming_one_file(tmp_path):

@@ -50,6 +50,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { globSync } from 'glob';
 import {
+  WK_BENCH_ORIGIN,
   WK_GH_API_BASE,
   WK_GH_ORIGIN,
   WK_GH_REPO,
@@ -98,6 +99,8 @@ const TREE_ALLOWLISTED_DOMAINS = new Set([
   //
   // Cited once, docs/code-signing-guide.md:309, as attribution for the eSigner overage claim -- a citation, not an instruction, so the URL stays in prose.
   'billauer.co.il',
+  // bench.rediacc.com - the bench account server sits behind a Cloudflare IP allowlist, so it answers 403 to any client outside the operator network (CI runners and dev hosts alike) while serving the operator normally. An IP-dependent block, not a dead page. The allowlist is per domain, so every bench.rediacc.com link is skipped, not only the one cited in docs/dev-environments.md as the `--server` target of the bench config. The IPs allowed through are managed by `.ci/rediacc_ci/ops/bench_access.py` and expire 7 days after they are added.
+  new URL(WK_BENCH_ORIGIN).host,
   'ariregister.rik.ee', // Estonia e-Business Register - intermittent from CI runners: TIMEOUT against the 15s budget on one run and 503 on the next (jobs 104615289932, 104616780132); answers 200 from a non-datacenter IP but slowly, 9.7s and 13.9s in three probes that also returned one 500, so it is unstable rather than dead
   'www.iso.org', // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
   'www.meity.gov.in', // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
@@ -295,7 +298,7 @@ function buildHeaders(url: string): Record<string, string> {
   // Either name: this site read only GITHUB_TOKEN and was the reason every local
   // invocation set the same value twice. See scripts/lib/github-token.ts.
   const token = githubToken();
-  if (token && /^https:\/\/api\.github\.com\//.test(url)) {
+  if (token && url.startsWith(`${WK_GH_API_BASE}/`)) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['Accept'] = 'application/vnd.github+json';
   }
@@ -328,14 +331,15 @@ const GH_NON_REPO_OWNERS = new Set([
 
 export function toApiUrl(url: string): string | null {
   // A bare repo page (optional trailing slash, query or fragment) maps to the repos endpoint.
-  const bare = url.match(/^https:\/\/github\.com\/([^/?#]+)\/([^/?#]+)\/?(?:[?#].*)?$/);
+  const bare = /^https:\/\/github\.com\/([^/?#]+)\/([^/?#]+)\/?(?:[?#].*)?$/.exec(url);
   if (bare) {
     if (GH_NON_REPO_OWNERS.has(bare[1].toLowerCase())) return null;
     return `${WK_GH_API_BASE}/repos/${bare[1]}/${bare[2]}`;
   }
-  const m = url.match(
-    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/
-  );
+  const m =
+    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(issues|pull|tree|blob)\/(.+?)(?:[?#].*)?$/.exec(
+      url
+    );
   if (!m) return null;
   const [, owner, repo, kind, rest] = m;
   if (kind === 'issues' || kind === 'pull') {
@@ -372,7 +376,8 @@ async function ask(url: string, method: 'GET' | 'HEAD', maxAttempts?: number): P
 
 async function checkUrl(original: string): Promise<LinkVerdict> {
   // Rewrite github.com HTML URLs to api.github.com so GITHUB_TOKEN actually authorises the request. Only used when GITHUB_TOKEN is available.
-  const url = (githubToken() && toApiUrl(original)) || original;
+  const apiUrl = githubToken() ? toApiUrl(original) : null;
+  const url = apiUrl ?? original;
   let headFailure: NotCompared;
   try {
     await ask(url, 'HEAD');
@@ -442,7 +447,7 @@ async function probeOnce(url: string): Promise<ProbeOutcome> {
     await res.text().catch(() => {});
     return res.ok ? { kind: 'ok', status: res.status } : { kind: 'blocked', status: res.status };
   } catch (err) {
-    const cause = (err as { cause?: { code?: string } })?.cause;
+    const cause = (err as { cause?: { code?: string } } | undefined)?.cause;
     const code = cause?.code ?? '';
     // A name that no longer resolves is categorically different from a name that resolves and refuses us. The allowlist claims "reachable from a browser"; NXDOMAIN says nothing is reachable from anywhere.
     if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
@@ -715,7 +720,7 @@ export function failureKeys(f: FailureInputs): string[] {
     keys.add(hostKey(u).replace('link:', 'known-broken-stale:'));
   if (f.zeroProbes) keys.add('link:liveness-zero-probes');
   if (f.checkedNothing) keys.add('link:nothing-checked');
-  return [...keys].sort();
+  return [...keys].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function selftestFailureKeys(): number {
@@ -881,7 +886,7 @@ async function main() {
   if (skipped.length > 0) {
     console.log(`\n  Allowlisted domains (verified manually):`);
     const domains = new Set(skipped.map((e) => new URL(e.url).hostname));
-    for (const domain of [...domains].sort()) {
+    for (const domain of [...domains].sort((a, b) => Number(a > b) - Number(a < b))) {
       console.log(`    - ${domain}`);
     }
   }

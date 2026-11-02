@@ -286,7 +286,13 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
     ...(fields.has('lane') ? { lane: fields.get('lane') } : {}),
     ...(bool('selftest') === undefined ? {} : { selftest: bool('selftest') }),
     ...(bool('slow') === undefined ? {} : { slow: bool('slow') }),
-    ...(env.size > 0 ? { env: Object.fromEntries([...env].sort()) } : {}),
+    ...(env.size > 0
+      ? {
+          env: Object.fromEntries(
+            [...env].sort((a, b) => Number(String(a) > String(b)) - Number(String(a) < String(b)))
+          ),
+        }
+      : {}),
     ...(when === undefined ? {} : { when }),
     ...(fields.has('why') ? { why: fields.get('why') } : {}),
     ...(emit ? {} : { emit: false }),
@@ -382,5 +388,5 @@ export function inferredNeeds(rawSource: string): string[] {
     out.add('node');
   }
   if (/\bgo\s+(build|vet|test)\b/.test(source)) out.add('go');
-  return [...out].sort();
+  return [...out].sort((a, b) => Number(a > b) - Number(a < b));
 }

@@ -21,6 +21,8 @@ MUTANTS = (
     "os-ignore-series",
     "ceph-ignore-host",
     "docker-no-drain",
+    "docker-keep-digest",
+    "docker-skip-redigest",
 )
 
 

@@ -1065,6 +1065,77 @@ def patch_id(repo, sha):
     return out.split()[0] if rc == 0 and out.split() else ""
 
 
+def prefetch_diff_blobs(repo, rev_range, *paths):
+    """Fetch the blobs `rev_range`'s diffs read in one request, in a partial clone. CI's pytest job clones with `filter: blob:none`, where `git log -p` fetches them one commit at a time: over 200 s against 16 s for this repo's 1779 commits (measured 2026-11-01). `--raw` names both sides of every change without reading a blob. Mode 160000 is a gitlink, which is a commit of another repository, and naming one fails the whole fetch. `paths` limits the listing to a pathspec, for a walk over one file's versions. Best-effort: on any failure the diffs still fetch lazily."""
+    rc, promisor = git(repo, "config", "--get", "remote.origin.promisor")
+    if rc != 0 or promisor.strip() != "true":
+        return
+    pathspec = ("--", *paths) if paths else ()
+    rc, raw = git(
+        repo,
+        "log",
+        "--raw",
+        "--no-renames",
+        "--no-abbrev",
+        "--no-merges",
+        "--format=",
+        rev_range,
+        *pathspec,
+    )
+    if rc != 0:
+        return
+    oids = set()
+    for line in raw.splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        if fields[0] != ":160000":
+            oids.add(fields[2])
+        if fields[1] != "160000":
+            oids.add(fields[3])
+    wanted = sorted(oid for oid in oids if oid.strip("0"))
+    if wanted:
+        git(
+            repo,
+            "-c",
+            "fetch.negotiationAlgorithm=noop",
+            "fetch",
+            "--quiet",
+            "origin",
+            "--no-tags",
+            "--no-write-fetch-head",
+            "--recurse-submodules=no",
+            "--filter=blob:none",
+            "--stdin",
+            stdin="\n".join(wanted) + "\n",
+            timeout=120,
+        )
+
+
+def patch_ids(repo, rev_range):
+    """`{sha: patch-id}` for every non-merge commit of `rev_range`, from one `git log -p` piped to one `git patch-id --stable`: the same value `patch_id` gives each commit, without two subprocesses per commit (1759 commits took 19 s one by one, 5 s here). An empty commit has no diff and no entry, as `patch_id` returns "" for it. No `--root`: `git show` honours `log.showRoot` for a root commit, and so does `git log`, so the two agree under either setting. None when either git call fails, so a caller can fall back to `patch_id` per commit rather than read the whole range as unmapped."""
+    prefetch_diff_blobs(repo, rev_range)
+    rc, log = git(
+        repo,
+        "log",
+        "-p",
+        "--no-merges",
+        "--no-color",
+        "--format=commit %H",
+        rev_range,
+        timeout=120,
+    )
+    if rc != 0:
+        return None
+    if not log.strip():
+        return {}
+    rc, out = git(repo, "patch-id", "--stable", stdin=log, timeout=120)
+    if rc != 0:
+        return None
+    pairs = (line.split() for line in out.splitlines())
+    return {row[1]: row[0] for row in pairs if len(row) == 2}
+
+
 def uncovered(root, repo, branch, cfg=None, tip="HEAD"):
     """Commits of the branch, newest first, that have no review record (a `.md` file or a ledger line, by sha or patch-id) and no live reviewer.
 
@@ -2847,16 +2918,40 @@ def _has_line(path, number):
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 
+def _superproject_prefix(repo):
+    """`private/account/` when `repo` is a submodule checked out at that path of its superproject, else "". A finding of a submodule commit is read from the console root, so its evidence often cites `private/account/src/x.ts:12`; without this only the submodule-relative `src/x.ts:12` resolved (worklist #37f915ff: the renet form seemed to work only because its evidence also named a renet sha). Both sides are realpaths, so a symlinked checkout still yields its prefix."""
+    sup = git_out(repo, "rev-parse", "--show-superproject-working-tree")
+    if not sup:
+        return ""
+    sup_real, repo_real = os.path.realpath(sup), os.path.realpath(repo)
+    if repo_real == sup_real or os.path.commonpath([sup_real, repo_real]) != sup_real:
+        return ""
+    return os.path.relpath(repo_real, sup_real).replace(os.sep, "/") + "/"
+
+
+def _cites_line(root, cited, number):
+    # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository.
+    located = os.path.normpath(os.path.join(root, cited))
+    if not located.startswith(root + os.sep):
+        return False
+    with contextlib.suppress(OSError):
+        return os.path.isfile(located) and _has_line(located, number)
+    return False
+
+
 def _citation_ok(repo, evidence):
     root = os.path.abspath(repo)
-    for cited, number in _cited_paths(evidence):
-        # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository.
-        located = os.path.normpath(os.path.join(root, cited))
-        if not located.startswith(root + os.sep):
-            continue
-        with contextlib.suppress(OSError):
-            if os.path.isfile(located) and _has_line(located, number):
-                return True
+    cited_paths = list(_cited_paths(evidence))
+    if any(_cites_line(root, cited, number) for cited, number in cited_paths):
+        return True
+    # Only when no citation resolves as written: the console-root form of a submodule path (one git call, and a submodule directory that happens to share the prefix still resolves as written above).
+    prefix = _superproject_prefix(repo) if cited_paths else ""
+    if prefix and any(
+        _cites_line(root, cited[len(prefix) :], number)
+        for cited, number in cited_paths
+        if cited.startswith(prefix)
+    ):
+        return True
     for m in CITE_SHA.finditer(evidence):
         full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
         if full and git(repo, "merge-base", "--is-ancestor", full, "HEAD")[0] == 0:
@@ -2868,7 +2963,7 @@ REBASED_COPY_DEPTH = 400
 
 
 def rebased_copy_below(repo, pid, fix):
-    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix 7b6205f59 for e2a16724.1 was refused)."""
+    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix f00dbd623 for e2a16724.1 was refused)."""
     if not pid or pid == "(none)":
         return ""
     rc, out = git(repo, "rev-list", "--no-merges", "-n", str(REBASED_COPY_DEPTH), fix)
@@ -2929,6 +3024,40 @@ def _waive(finding_id, args, items, asked_ok):
     return "waived #%s ASKED:%sZ" % (item, minute)
 
 
+# A claim that a test is MISSING, not one that merely mentions a test: "no test covers this", "untested", "lacks coverage". A claim about a wrong or flaky test is anchored at the test file, so the plain touch rule already closes it.
+TEST_CLAIM_RE = re.compile(
+    r"\b(?:untested|uncovered|unverified)\b"
+    r"|\bnot (?:covered|tested|exercised|driven|asserted)\b"
+    r"|\b(?:no|not|never|without|lacks?|lacking|missing|absent|zero)\b[^.;]{0,80}?\b(?:tests?|coverage)\b"
+    r"|\b(?:tests?|coverage)\b[^.;]{0,40}?\b(?:missing|absent|lacks?)\b",
+    re.IGNORECASE,
+)
+# `*-selftest.ts` / `*_selftest.py` are this repo's standalone selftests (scripts/gates/check-standalone-selftests.ts runs them), tests by definition.
+_TEST_PATH_RE = re.compile(
+    r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$|[_.-]selftest\.[A-Za-z]+$"
+)
+
+
+def is_test_path(path):
+    """True for a path that names a test file (a tests/ directory, test_*, *_test.*, *.test.*, *.spec.*, and a standalone selftest named `*-selftest.*`, `*_selftest.*` or `*.selftest.*`)."""
+    return bool(_TEST_PATH_RE.search(path))
+
+
+def _norm_stem(path):
+    """The anchored file's name without directory or extension, lowercased and with `-` read as `_`."""
+    return pathlib.PurePosixPath(path).stem.lower().replace("-", "_")
+
+
+def related_test(test_path, anchored):
+    """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`). A test of some other module never closes this finding."""
+    stem = _norm_stem(anchored)
+    name = pathlib.PurePosixPath(test_path).name.lower().replace("-", "_")
+    # The stem stands as a whole token of the test's name: `io` is not in `test_radio.py`.
+    return (
+        bool(stem) and re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(stem), name) is not None
+    )
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -2938,8 +3067,16 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
     repo = repo_from_label(root, review.repo)
     stamp = "%s %s" % (me[:8], now_iso(now))
     if kind == "fixed":
+        args = list(args)
+        test_path = ""
+        if "--test" in args:
+            i = args.index("--test")
+            if i + 1 >= len(args):
+                raise ValueError("--test takes the path of the test the fix touches")
+            test_path = args[i + 1].strip()
+            del args[i : i + 2]
         if len(args) != 1:
-            raise ValueError("fixed takes exactly one sha")
+            raise ValueError("fixed takes exactly one sha (and optionally --test <path>)")
         fix = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % args[0])
         if not fix:
             raise ValueError("%s does not resolve to a commit in %s" % (args[0], review.repo))
@@ -2976,12 +3113,25 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             if stub_rc == 0
             else wl_store.plan_stub_target(str(pathlib.Path(repo) / finding.file))
         )
+        if test_path and test_path not in touched:
+            raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
+        if test_path and not is_test_path(test_path):
+            raise ValueError("%s is not a test path" % test_path)
         if (
             finding.file not in touched
             and not set(renamed.splitlines()) & set(touched)
             and not (moved and moved in touched)
+            # A "no test for this change" finding is closed by a test elsewhere: the fix may touch a test file instead of the anchored one, named by --test or found among the paths the fix touches.
+            and not (test_path and related_test(test_path, finding.file))
+            and not (
+                TEST_CLAIM_RE.search(finding.claim)
+                and any(is_test_path(t) and related_test(t, finding.file) for t in touched)
+            )
         ):
-            raise ValueError("%s does not touch %s" % (fix[:12], finding.file))
+            raise ValueError(
+                "%s does not touch %s, nor a test whose name carries `%s`"
+                % (fix[:12], finding.file, _norm_stem(finding.file))
+            )
         resolution = "fixed %s | %s" % (fix, stamp)
     elif kind == "not-a-bug":
         evidence = normalise_claim(" ".join(args), 400).replace("|", "/")
@@ -3088,7 +3238,7 @@ def commit_reviews(root, branch, run=subprocess.run):
 
 VERB_USAGE = """usage:
   worklist.py --review-mark <me>                                       list the branch's open findings
-  worklist.py --review-mark <me> <finding-id> fixed <sha>              the fix: on the branch, after the reviewed commit, touching the file
+  worklist.py --review-mark <me> <finding-id> fixed <sha> [--test <path>]  the fix: on the branch, after the reviewed commit, touching the file (or the named test, or a test file for a missing-test finding)
   worklist.py --review-mark <me> <finding-id> not-a-bug <evidence...>  >= 20 chars citing an existing path:line or a sha on the branch
   worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z
                                                                        an operator-only triaged item naming the finding id, and the minute of the operator's AskUserQuestion answer

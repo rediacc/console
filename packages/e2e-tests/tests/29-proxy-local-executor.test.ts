@@ -1,0 +1,445 @@
+import { randomUUID } from 'node:crypto';
+import { readFileSync, rmSync } from 'node:fs';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
+import net from 'node:net';
+import { expect, test } from '@playwright/test';
+import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
+import { type AuditEvent, AuditEventsRequestSchema } from '@rediacc/shared';
+import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
+import { DEFAULT_DATASTORE_PATH } from '../src/constants';
+import { type CliResult, CliRunner } from '../src/utils/CliRunner';
+import { loginCliToAccount } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
+
+/**
+ * Suite 29: `rdc --proxy` against a LOCAL executor (`rdc serve --mode daemon`),
+ * box B4 of agent/plans/PLAN-cloudflare-proxy.md (missing test 6).
+ *
+ * ## What runs for real, and what is stood in
+ *
+ * Real: the `rdc` client in proxy mode, the `rdc serve` executor (its HTTP
+ * server, token check, policy, command dispatch and audit call), the worker VM
+ * and the fork's Docker daemon on it.
+ *
+ * Stood in: the account server. The executor asks it two things, whose token a
+ * caller presented (`POST /account/api/v1/proxy/introspect`) and where to record
+ * what ran (`POST /account/api/v1/licenses/audit-events`). E2E Workers legs have
+ * no account server, so this suite serves those two routes from a loopback stub
+ * with two fixed tokens: the executor's own (`proxy:exec` and `audit:write`) and
+ * one caller's (`proxy:exec`, org owner). Any other token introspects as
+ * inactive, which is how the real server answers an unknown or foreign token.
+ * The stub also answers introspection only when the executor authenticates with
+ * its own token, so an executor that forgot its credential fails here too.
+ *
+ * ## What each case proves
+ *
+ *   1. CONTROL: `repo up` with a token the account server does not know exits
+ *      non-zero with the executor's 401, records no audit event, and the
+ *      machine shows that nothing started.
+ *   2. `repo status` through the proxy exits 0 and returns the fork's own record
+ *      from the machine (its GUID).
+ *   3. `repo up` through the proxy exits 0, and the fork's Docker daemon on the
+ *      worker runs the fork's service.
+ *   4. `repo down` through the proxy exits 0, and that container is gone.
+ *
+ * Each of 2-4 also checks the audit event the executor sent: the command, the
+ * machine, success, and the caller's token id as `onBehalfOfTokenId`.
+ *
+ * The fork, its parent, the executor and the stub are all this run's own, and
+ * afterAll removes every one of them.
+ */
+
+const RUN_ID = Date.now();
+const CONFIG_NAME = 'e2e-proxy';
+const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
+const NET_BASE = process.env.VM_NET_BASE ?? '192.168.111';
+const MACHINE = 'proxy-worker';
+const MACHINE_IP = `${NET_BASE}.${workers[0] ?? '11'}`;
+// The key and user the ops VMs authorize, resolved the way suite 23 resolves them.
+const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
+const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
+
+const GRAND = `proxy-${RUN_ID}`;
+const TAG = 'px';
+const FORK_REF = `${GRAND}:${TAG}`;
+const CONTAINER = `proxy-idle-${RUN_ID}`;
+const SERVICE_IMAGE = 'alpine:3.20';
+
+// Fixed, run-scoped credentials of the stub account server. They grant nothing anywhere else.
+const EXECUTOR_TOKEN = `e2e-executor-${RUN_ID}`;
+const CALLER_TOKEN = `e2e-caller-${RUN_ID}`;
+// UUIDs, as real token ids are: the stub's ingest schema refuses anything else in onBehalfOfTokenId.
+const CALLER_TOKEN_ID = randomUUID();
+const EXECUTOR_TOKEN_ID = randomUUID();
+const WRONG_TOKEN = `e2e-unknown-${RUN_ID}`;
+
+const REDIACCFILE = `#!/bin/bash
+up() {
+  renet compose -- up -d
+}
+down() {
+  renet compose -- down -v
+}
+`;
+const COMPOSE = `services:
+  idle:
+    image: ${SERVICE_IMAGE}
+    container_name: ${CONTAINER}
+    command: ["sleep", "infinity"]
+`;
+
+interface StubAccountServer {
+  url: string;
+  audits: AuditEvent[];
+  close: () => Promise<void>;
+}
+
+const IDENTITY_BASE = { active: true, orgId: 'org-e2e', orgRole: 'owner' };
+
+/** What the account server reports for a presented token: the two known ones, and inactive for any other. */
+function introspect(token: string | undefined): Record<string, unknown> {
+  if (token === EXECUTOR_TOKEN) {
+    return {
+      ...IDENTITY_BASE,
+      scopes: ['proxy:exec', 'audit:write'],
+      createdByUserId: 'user-executor',
+      userEmail: 'executor@e2e.invalid',
+      tokenId: EXECUTOR_TOKEN_ID,
+    };
+  }
+  if (token === CALLER_TOKEN) {
+    return {
+      ...IDENTITY_BASE,
+      scopes: ['proxy:exec'],
+      createdByUserId: 'user-caller',
+      userEmail: 'caller@e2e.invalid',
+      tokenId: CALLER_TOKEN_ID,
+    };
+  }
+  return { active: false };
+}
+
+/** One request to the stub: the status and JSON body it answers with. */
+function route(
+  url: string | undefined,
+  authorization: string | undefined,
+  body: string,
+  audits: AuditEvent[]
+): [number, unknown] {
+  const known =
+    url === '/account/api/v1/proxy/introspect' || url === '/account/api/v1/licenses/audit-events';
+  if (!known) return [404, { error: 'not served by the e2e stub' }];
+  if (authorization !== `Bearer ${EXECUTOR_TOKEN}`) {
+    return [401, { error: 'unknown executor credential' }];
+  }
+  if (url === '/account/api/v1/proxy/introspect') {
+    return [200, introspect((JSON.parse(body) as { token?: string }).token)];
+  }
+  // The real ingest route parses with this schema and answers 400 otherwise; this suite stayed green while every executor event the real route rejected shipped invalid, until 889309f2a, because the stub took any shape.
+  const parsed = AuditEventsRequestSchema.safeParse(JSON.parse(body));
+  if (!parsed.success)
+    return [400, { error: 'audit payload rejected', issues: parsed.error.issues }];
+  audits.push(...parsed.data.events);
+  return [200, { accepted: parsed.data.events.length }];
+}
+
+/** The two account-server routes the executor calls, with the tokens described above. */
+async function startStubAccountServer(): Promise<StubAccountServer> {
+  const audits: AuditEvent[] = [];
+  const server = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (chunk: Buffer) => {
+      body += chunk.toString('utf8');
+    });
+    req.on('end', () => {
+      const [status, payload] =
+        req.method === 'POST'
+          ? route(req.url, req.headers.authorization, body, audits)
+          : [404, { error: 'not served by the e2e stub' }];
+      res.writeHead(status, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(payload));
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://127.0.0.1:${port}`,
+    audits,
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.closeAllConnections();
+        server.close(() => resolve());
+      }),
+  };
+}
+
+/** A loopback port nothing listens on right now. */
+async function freePort(): Promise<number> {
+  const probe = net.createServer();
+  await new Promise<void>((resolve) => probe.listen(0, '127.0.0.1', resolve));
+  const { port } = probe.address() as AddressInfo;
+  await new Promise<void>((resolve) => probe.close(() => resolve()));
+  return port;
+}
+
+interface Executor {
+  url: string;
+  output: () => string;
+  stop: () => Promise<void>;
+}
+
+/** What the executor adds to CliRunner's environment: its own token, the stub as its account server, and no proxy of its own. */
+function executorEnv(accountUrl: string): NodeJS.ProcessEnv {
+  return {
+    REDIACC_TOKEN: EXECUTOR_TOKEN,
+    REDIACC_ACCOUNT_SERVER: accountUrl,
+    REDIACC_PROXY_URL: undefined,
+  };
+}
+
+/** Poll /v1/health until it answers, the process exits, or 60 s pass. */
+async function waitForHealth(url: string, hasExited: () => boolean, output: () => string) {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    if (hasExited())
+      throw new Error(`rdc serve exited before it answered /v1/health:\n${output()}`);
+    const healthy = await fetch(`${url}/v1/health`).then(
+      (res) => res.ok,
+      () => false
+    );
+    if (healthy) return;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`rdc serve did not answer /v1/health within 60s:\n${output()}`);
+}
+
+/** Start `rdc serve --mode daemon` on loopback and wait until it answers /v1/health. */
+async function startExecutor(accountUrl: string): Promise<Executor> {
+  const port = await freePort();
+  // CliRunner resolves the binary (E2E_CLI_BIN, the PATH rdc on GitHub Actions, else this checkout's bundle) and pins the dev renet on PATH.
+  const child = CliRunner.create({ configName: CONFIG_NAME }).spawn(
+    ['serve', '--mode', 'daemon', '--host', '127.0.0.1', '--port', String(port)],
+    executorEnv(accountUrl)
+  );
+  let output = '';
+  const collect = (chunk: Buffer) => {
+    output += chunk.toString('utf8');
+  };
+  child.stdout?.on('data', collect);
+  child.stderr?.on('data', collect);
+  let exited = false;
+  const exitedPromise = new Promise<void>((resolve) => {
+    child.on('exit', () => {
+      exited = true;
+      resolve();
+    });
+    // A spawn failure (ENOENT for the CLI binary) emits 'error' and no 'exit'; unhandled it would crash the test process instead of reaching waitForHealth's report.
+    child.on('error', (error) => {
+      output += `spawn failed: ${error.message}\n`;
+      exited = true;
+      resolve();
+    });
+  });
+
+  const url = `http://127.0.0.1:${port}`;
+  try {
+    await waitForHealth(
+      url,
+      () => exited,
+      () => output
+    );
+  } catch (error) {
+    child.kill('SIGKILL');
+    throw error;
+  }
+
+  return {
+    url,
+    output: () => output,
+    stop: async () => {
+      if (exited) return;
+      child.kill('SIGTERM');
+      const timer = setTimeout(() => child.kill('SIGKILL'), 20_000);
+      await exitedPromise;
+      clearTimeout(timer);
+    },
+  };
+}
+
+interface CliConfigFile {
+  resources?: {
+    repositories?: Record<string, { tags?: Record<string, { repositoryGuid?: string }> }>;
+  };
+  state?: { repos?: Record<string, Record<string, { networkId?: number }>> };
+}
+
+test.describe
+  .serial('rdc --proxy through a local executor @cli @proxy', () => {
+    test.setTimeout(600_000);
+
+    let cli: CliRunner;
+    let caller: CliRunner;
+    let stranger: CliRunner;
+    let runner: RenetFunctionsTestRunner;
+    let stub: StubAccountServer | undefined;
+    let executor: Executor | undefined;
+    let forkGuid = '';
+    let forkSocket = '';
+
+    const combined = (result: CliResult) => `${result.stdout}\n${result.stderr}`;
+
+    /** Run a command through the executor as the given client. */
+    const viaProxy = (client: CliRunner, ...args: string[]): Promise<CliResult> => {
+      if (!executor) throw new Error('the executor is not running');
+      return client.run(['--proxy', executor.url, ...args]);
+    };
+
+    const must = (step: string, result: CliResult) => {
+      if (result.code !== 0) {
+        throw new Error(`${step} exited ${result.code}:\n${combined(result)}`);
+      }
+    };
+
+    /** The fork's container as the fork's own Docker daemon reports it, '' when absent. */
+    const forkContainerStatus = async (): Promise<string> => {
+      // An absent socket (no daemon yet) is a clean '' ; a docker failure against a present socket must not read as "container gone", so it throws.
+      const listed = await runner.executeViaBridge(
+        `if sudo test -S ${forkSocket}; then sudo docker -H unix://${forkSocket} ps --filter name=${CONTAINER} --format '{{.Status}}'; fi`
+      );
+      if (listed.code !== 0) {
+        throw new Error(
+          `docker ps on the fork's daemon failed: ${listed.stdout}\n${listed.stderr}`
+        );
+      }
+      return listed.stdout.trim();
+    };
+
+    const auditFor = (command: string) =>
+      (stub?.audits ?? []).filter((e) => e.data.commandPath === command);
+
+    const expectAudited = (command: string) => {
+      const events = auditFor(command);
+      expect(events, `exactly one audit event for "${command}"`).toHaveLength(1);
+      expect(events[0].data.success, `the "${command}" audit event records success`).toBe(true);
+      expect(events[0].data.machineName).toBe(MACHINE);
+      expect(events[0].onBehalfOfTokenId, 'attributed to the caller token').toBe(CALLER_TOKEN_ID);
+    };
+
+    const writeIntoRepo = async (guid: string, file: string, content: string) => {
+      const target = `${DEFAULT_DATASTORE_PATH}/mounts/${guid}/${file}`;
+      const b64 = Buffer.from(content, 'utf8').toString('base64');
+      const written = await runner.executeViaBridge(
+        `echo ${b64} | base64 -d | sudo tee ${target} >/dev/null && sudo chown rediacc:rediacc ${target}`
+      );
+      if (written.code !== 0) {
+        throw new Error(`writing ${target} failed: ${written.stdout}\n${written.stderr}`);
+      }
+    };
+
+    const readConfig = (): CliConfigFile =>
+      JSON.parse(readFileSync(cli.configPath, 'utf8')) as CliConfigFile;
+
+    // `repo create -m` places the repo on the machine's default datastore. A fleet reset leaves none, so it is created only when absent: forcing it would wipe repos other suites keep there.
+    const ensureDatastore = async () => {
+      const mounted = await runner.executeViaBridge(`mountpoint -q ${DEFAULT_DATASTORE_PATH}`);
+      if (mounted.code === 0) return;
+      const init = await runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, false);
+      if (init.code !== 0) {
+        throw new Error(`datastore init failed: ${init.stdout}\n${init.stderr}`);
+      }
+    };
+
+    test.beforeAll(async () => {
+      runner = RenetFunctionsTestRunner.forWorker();
+      cli = CliRunner.create({ configName: CONFIG_NAME });
+      caller = CliRunner.create({ configName: CONFIG_NAME, env: { REDIACC_TOKEN: CALLER_TOKEN } });
+      stranger = CliRunner.create({ configName: CONFIG_NAME, env: { REDIACC_TOKEN: WRONG_TOKEN } });
+
+      // The config records the fleet's host keys, so one that outlived a fleet reset is stale: recreated each run (see CliRunner.resetConfig).
+      await CliRunner.resetConfig(CONFIG_NAME);
+      must('config init', await cli.initConfig(SSH_KEY));
+      // renet enforces licensing, so `repo create` and `repo fork` must issue licences: the config logs in to the account server first.
+      must('subscription login', await loginCliToAccount(cli));
+      must('machine add', await cli.addMachine(MACHINE, MACHINE_IP, SSH_USER));
+
+      await ensureDatastore();
+
+      // The fork's service is written into the parent before the fork, so the fork inherits it through the reflink.
+      must('repo create', await cli.run(['repo', 'create', GRAND, '-m', MACHINE, '--size', '1G']));
+      const grandGuid = readConfig().resources?.repositories?.[GRAND]?.tags?.latest?.repositoryGuid;
+      if (!grandGuid) throw new Error(`repo create recorded no GUID for ${GRAND}`);
+      await writeIntoRepo(grandGuid, 'Rediaccfile', REDIACCFILE);
+      await writeIntoRepo(grandGuid, 'docker-compose.yaml', COMPOSE);
+      must('repo fork', await cli.run(['repo', 'fork', GRAND, '--tag', TAG]));
+
+      const config = readConfig();
+      forkGuid = config.resources?.repositories?.[GRAND]?.tags?.[TAG]?.repositoryGuid ?? '';
+      const networkId = config.state?.repos?.[GRAND]?.[TAG]?.networkId;
+      if (!forkGuid || networkId === undefined) {
+        throw new Error(`repo fork recorded no GUID or network id for ${FORK_REF}`);
+      }
+      forkSocket = repoDockerSocketPath(networkId);
+
+      stub = await startStubAccountServer();
+      executor = await startExecutor(stub.url);
+    });
+
+    test.afterAll(async () => {
+      const serveOutput = executor?.output() ?? '';
+      await executor?.stop();
+      await stub?.close();
+      // The fork goes first: a parent with a live fork is not the thing to delete.
+      const forkGone = await cli.run(['repo', 'delete', FORK_REF, '-y']);
+      const grandGone = await cli.run(['repo', 'delete', GRAND, '-y']);
+      await CliRunner.resetConfig(CONFIG_NAME);
+      // The CLI keeps a backup beside the config, holding the deleted repos' credentials.
+      rmSync(`${cli.configPath}.bak`, { force: true });
+      if (forkGone.code !== 0 || grandGone.code !== 0) {
+        throw new Error(
+          `teardown left a repo behind:\n${combined(forkGone)}\n${combined(grandGone)}\n` +
+            `executor output:\n${serveOutput}`
+        );
+      }
+      // An empty guid (beforeAll failed before it was read) would make `grep -F ''` match every line.
+      const residue = forkGuid
+        ? await runner.executeViaBridge(
+            `ls ${DEFAULT_DATASTORE_PATH}/repositories/ 2>/dev/null | grep -F ${forkGuid} || true`
+          )
+        : { stdout: '' };
+      expect(residue.stdout.trim(), `${FORK_REF} residue on the machine`).toBe('');
+    });
+
+    test('CONTROL: a token the account server does not know is refused, and nothing starts', async () => {
+      const refused = await viaProxy(stranger, 'repo', 'up', FORK_REF);
+      const output = combined(refused).toLowerCase();
+      expect(refused.code, `a refused call exits non-zero\n${output}`).not.toBe(0);
+      expect(output, 'the refusal is the executor 401').toContain(
+        'proxy rejected this request (401)'
+      );
+      expect(output).toContain('this token is not valid for the executor');
+      expect(stub?.audits, 'a refused call records no audit event').toHaveLength(0);
+      expect(await forkContainerStatus(), 'nothing started on the machine').toBe('');
+    });
+
+    test("repo status through the proxy returns the fork's record from the machine", async () => {
+      const status = await viaProxy(caller, 'repo', 'status', FORK_REF);
+      expect(status.code, `repo status exits 0\n${combined(status)}`).toBe(0);
+      expect(status.stdout, "the record is the fork's own").toContain(forkGuid);
+      expectAudited('repo status');
+    });
+
+    test("repo up through the proxy starts the fork's service on the machine", async () => {
+      const up = await viaProxy(caller, 'repo', 'up', FORK_REF);
+      expect(up.code, `repo up exits 0\n${combined(up)}`).toBe(0);
+      expect(await forkContainerStatus(), "the fork's daemon runs its service").toMatch(/^Up /);
+      expectAudited('repo up');
+    });
+
+    test("repo down through the proxy stops the fork's service", async () => {
+      const down = await viaProxy(caller, 'repo', 'down', FORK_REF);
+      expect(down.code, `repo down exits 0\n${combined(down)}`).toBe(0);
+      expect(await forkContainerStatus(), 'the service container is gone').toBe('');
+      expectAudited('repo down');
+    });
+  });

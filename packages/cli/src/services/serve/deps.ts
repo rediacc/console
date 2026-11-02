@@ -12,6 +12,7 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDecision } from '@rediacc/shared/policy';
 import type { Executor } from '../executor/types.js';
 import type { AuthVerifier } from './auth.js';
+import type { EgressReportTarget, EgressUnreachableAnswer } from './egress-report.js';
 import type { AuthorizeArgs } from './policy.js';
 import type { SessionPrincipal, SessionStore } from './sessions.js';
 
@@ -19,10 +20,12 @@ import type { SessionPrincipal, SessionStore } from './sessions.js';
 export interface ExecutorAuditEvent {
   principal: SessionPrincipal;
   commandPath: string;
-  functionName: string;
+  /** The renet function the command called, absent when it reached none. */
+  functionName?: string;
   machineName?: string;
   params: Record<string, unknown>;
   success: boolean;
+  exitCode: number;
   durationMs: number;
   destructive: boolean;
 }
@@ -56,6 +59,24 @@ export interface ServeDeps {
    * latest grant. A loader with its own config (the daemon tier) ignores it.
    */
   loadConfig: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>;
+  /**
+   * Record with the account server that the bearer's user granted this session
+   * its config key (PLAN-backup-program S7). Called once the CEK grant leg
+   * succeeds; a failure undoes the grant. Set by the container tier, whose
+   * config token is minted only under a recorded grant; the daemon tier, which
+   * reads its own enrolled config, leaves it unset.
+   */
+  recordGrant?: (sessionId: string, bearerToken: string) => Promise<void>;
+  /**
+   * Tell the account side that this executor's path to `target` never answered
+   * (container tier only); the proxy probes `target` itself before the report
+   * counts. Never throws; answers undefined when no answer came back. Absent in
+   * container mode, the server uses the default reporter; in daemon mode it is
+   * never called.
+   */
+  reportEgressUnreachable?: (
+    target: EgressReportTarget
+  ) => Promise<EgressUnreachableAnswer | undefined>;
   /** Throws PolicyDenied when the principal may not run the command. */
   authorize: (args: AuthorizeArgs) => PolicyDecision;
   /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */

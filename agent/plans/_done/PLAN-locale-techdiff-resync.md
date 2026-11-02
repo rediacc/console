@@ -13,15 +13,15 @@ Owns: private/growth/i18n_pipeline, ./run.sh
 ## Tasks
 
 - [x] Size every locale and slug pair with `./run.sh --plan-only --lang <l> --group pages.solutionPages.<slug>` before the paid run -- acceptance: the 108 plan-only runs exit 0 and none is REJECTED over `LARGE_DELTA_REJECT_UNITS`
-    (ticked) 2026-10-08T11:40:49Z by d778be9d: commit:4ece90e30 the 108 --plan-only runs exited 0 with no rejection (10,092 stale keys) before the paid run
+    (ticked) 2026-10-08T11:40:49Z by d778be9d: commit:8d2620323 the 108 --plan-only runs exited 0 with no rejection (10,092 stale keys) before the paid run
 - [x] Re-translate the nine `pages.solutionPages.<slug>` groups in the 12 locales through the i18n pipeline at its haiku default -- acceptance: the 108 `./run.sh --lang <l> --group pages.solutionPages.<slug>` runs exit 0, and the `de` failoverTesting `techDiff.description` no longer carries the btrfs explainer English dropped in `03b6259b6`
-    (ticked) 2026-10-08T11:40:51Z by d778be9d: commit:fb3018103 the nine techDiff.description groups x12 locales resynced from current English after the haiku pipeline run; de failoverTesting no longer carries the btrfs explainer
+    (ticked) 2026-10-08T11:40:51Z by d778be9d: commit:eb47cc3e9 the nine techDiff.description groups x12 locales resynced from current English after the haiku pipeline run; de failoverTesting no longer carries the btrfs explainer
 - [x] Spot-check 3 locales x 3 pages against English by hand before stamping anything -- acceptance: the nine comparisons are recorded in the commit body, with no invented fact
-    (ticked) 2026-10-08T11:40:54Z by d778be9d: commit:4ece90e30 1,755 changed values audited against en.json, 505 fixed, invented facts removed; commit:fb3018103 its 108 values checked by number/tag/dash scans and a read
+    (ticked) 2026-10-08T11:40:54Z by d778be9d: commit:8d2620323 1,755 changed values audited against en.json, 505 fixed, invented facts removed; commit:eb47cc3e9 its 108 values checked by number/tag/dash scans and a read
 - [x] Lock the result with `npm run i18n:generate-hashes`, so the nine `techDiff.description` keys enter `.naturalized-hashes.json` -- acceptance: `npm run check:i18n` exits 0 end to end
-    (ticked) 2026-10-08T11:40:56Z by d778be9d: commit:fb3018103 the 108 keys sit in the naturalization ledger at the current English CRC; the i18n battery exits 0
+    (ticked) 2026-10-08T11:40:56Z by d778be9d: commit:eb47cc3e9 the 108 keys sit in the naturalization ledger at the current English CRC; the i18n battery exits 0
 - [x] `check:ci-i18n-locale-only` accepts the moved locale values on their merged English changes, with its findings read rather than bypassed by `--base`, and with no `--mark-done --all-stale` stamp -- acceptance: `npm run check:ci-i18n-locale-only` exits 0
-    (ticked) 2026-10-08T11:40:59Z by d778be9d: commit:d7e1e6a97 check:ci-i18n-locale-only reads the base ledger, so the catch-up passes with findings read, no --base and no --mark-done --all-stale
+    (ticked) 2026-10-08T11:40:59Z by d778be9d: commit:bb7fb6bbd check:ci-i18n-locale-only reads the base ledger, so the catch-up passes with findings read, no --base and no --mark-done --all-stale
 
 ## The defect
 

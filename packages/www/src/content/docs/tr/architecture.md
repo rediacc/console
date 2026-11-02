@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: tr
-sourceHash: "878b744629cb8b14"
-sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Mimari
@@ -73,12 +73,12 @@ Her depo kendi izole Docker daemon'una sahiptir. Bir depo bağlandığında, ren
 ![Docker İzolasyonu](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Örneğin, ağ kimliği `2816` olan bir depo şunu kullanır:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 Bu şu anlama gelir:
@@ -108,7 +108,7 @@ Docker verileri ve yapılandırması deponun bağlama noktasının içinde sakla
 
 **Paylaşılan çalışma zamanı yolu** (değişmez):
 ```
-/run/rediacc/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Bu birleşik düzen, daemon yolları ana bilgisayar dosya sistemi ile şifreli birim arasında bölündüğünde oluşan salt okunur ve okuma yazma bağlama çatışmalarını ortadan kaldırır. Hem depo başına hem de bağımsız daemon'lar aynı dizin yapısını izler; bu nedenle araçlar ve tanılama her iki durumda da aynı şekilde çalışır.
@@ -144,11 +144,11 @@ Kümenin tamamının klonlanması ve taşınması `rdc cluster fork` ve `rdc clu
 
 ## Yapılandırma Yapısı
 
-Her yapılandırma `~/.config/rediacc/` içinde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar ad'ı dosya adı olarak kullanır (örneğin `production.json`). Alanlar amaç açısından gruplandırılır: `resources` dağıtımları barındırır, `credentials` sırları barındırır, `account` bulut varsayılanlarını barındırır, `infra` TLS/DNS'i barındırır ve `encryption` alan başına şifreleme durumunu barındırır. Üst düzey `schemaVersion: 2` ayırıcısı ileri uyumluluğu garanti eder.
+Her yapılandırma `~/.config/rediacc/` içinde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar ad'ı dosya adı olarak kullanır (örneğin `production.json`). Alanlar amaç açısından gruplandırılır: `resources` dağıtımları barındırır, `credentials` sırları barındırır, `account` bulut varsayılanlarını barındırır, `infra` TLS/DNS'i barındırır ve `encryption` alan başına şifreleme durumunu barındırır. Üst düzey `schemaVersion: 3` ayırıcısı ileri uyumluluğu garanti eder.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -175,10 +175,12 @@ Her yapılandırma `~/.config/rediacc/` içinde saklanan düz bir JSON dosyasıd
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -203,14 +205,14 @@ Her yapılandırma `~/.config/rediacc/` içinde saklanan düz bir JSON dosyasıd
 
 | Kutu | İçerik |
 |---|---|
-| `schemaVersion` | Ayırıcı (şu anda `2`). Yükleyiciler bilinmeyen sürümleri reddeder. |
+| `schemaVersion` | Ayırıcı (şu anda `3`). Yükleyiciler bilinmeyen sürümleri reddeder. |
 | `id` / `version` | Değişmez UUID + monotonik sayaç; uzak yapılandırma deposunda iyimser kilitleme için kullanılır. |
 | `defaults.*` | Hassas olmayan çalışma zamanı varsayılanları (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | Satır içi SSH anahtar çifti + `knownHosts`. Eski `ssh.privateKeyPath` yerini alır (dosya yolu indirektion yok; içerik yükleme zamanında çözümlenir ve satır içinde saklanır). |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME jetonu. |
 | `credentials.masterPasswordVerifier` | Yalnızca `encryption.mode === "master-password"` olduğunda mevcuttur. |
 | `resources.machines.*` | Makine başına SSH bağlantı detayları. |
-| `resources.storages.*` | rclone uyumlu site dışı yedekleme kimlik bilgileri. |
+| `resources.backupStrategies.*` | Adlandırılmış yedekleme stratejileri: zamanlama, mod, depo filtreleri, saklama süresi ve hedefler (her zaman hizmet tarafından barındırılan bir chunk deposu). |
 | `resources.repositories.*` | Depo başına GUID + LUKS kimlik bilgisi + sandbox izole ajan erişimi için SSH anahtarı. |
 | `infra.acmeCertCache.*` | Cached Traefik acme.json, gzip+base64, alan adı ile anahtarlanmıştır. |
 | `encryption.mode` | `"plaintext"` (varsayılan) veya `"master-password"`. |

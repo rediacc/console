@@ -1,6 +1,6 @@
 # PLAN: lessons registry — documentation anchors on the trap registry
 
-Status: done -- 2026-10-20, every box ticked (9 of 9), merged to main with PR #600 (d35df2ab1)
+Status: done -- 2026-10-20, every box ticked (9 of 9), merged to main with PR #600 (52a24264c)
 Depends-On: no-dep -- extends `check:ci-trap-registry`, which is already on main; no open plan has to finish first
 Owner: d778be9d
 First-Seen: 2026-10-08
@@ -12,7 +12,7 @@ Worklist: #077d85c1
 ## Why (2026-10-04, branch 1004-1)
 
 - A 1004-1 commit, rewritten by its rebase-merge, deleted the "Rules learned this session" block from `agent/d778be9d/STATE.md`. The block held the wake timer, the ci:quick drop, shard legs, env registries and pathsOrigin.
-- The review finding was closed as not-a-bug with the claim "each dropped lesson lives durably" in CLAUDE.md, a plan and gates (the per-commit review record of 5aab82b4, its line 24, readable after the review-directory prune in commit 0d7650854).
+- The review finding was closed as not-a-bug with the claim "each dropped lesson lives durably" in CLAUDE.md, a plan and gates (the per-commit review record of 5aab82b4, its line 24, readable after the review-directory prune in commit 4eccaeac4).
 - Nothing checks that claim. If any of those places loses its sentence, the lesson is gone and every gate stays green.
 
 ## What exists (investigated 2026-10-08)
@@ -104,19 +104,19 @@ Documented-In: trap:check-cannot-fail
   - New F3c: a `Documented-In` before `Residue` reds, because it would cut off the stop-hook parser at `.claude/hooks/stop/wl_store.py:520-530`.
   - `Entry` gets a `documented_in` list.
   - The golden parser test compares five fields (`.ci/rediacc_ci/tests/test_quality_trap_registry.py:52-91`); its frozen corpora contain no new key, so it stays green unchanged. Acceptance: `python3 -m pytest .ci/rediacc_ci/tests/test_quality_trap_registry.py -q`.
-    (ticked) 2026-10-08T19:27:23Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0; test_quality_trap_registry passes
+    (ticked) 2026-10-08T19:27:23Z by d778be9d: commit:be59366ee check_trap_registry rc=0; test_quality_trap_registry passes
 - [x] L2 Writer A: `text:` and `doc:` resolvers.
   - Fence-aware heading scan (reuse `FENCE_RE`), whitespace-collapsed phrase search, 12-character minimum.
   - Red messages show the found-elsewhere path and the difflib suggestion.
   - New `TRAP_ANCHOR_ROOT` seam in `SEAMS` (`.ci/rediacc_ci/quality/trap_registry.py:150-162`).
-    (ticked) 2026-10-08T19:26:48Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:26:48Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [x] L3 Writer A: `box:` resolver.
   - Find the plan across all folders.
   - Match by label, then check the sig with the same formula as `check_plan_boxes.sig`. Assert they are equal in a test, because they can't be imported both ways (see `.claude/hooks/stop/wl_planrec.py:801-808`).
   - Fall back to `(record) sig=` lines.
-    (ticked) 2026-10-08T19:26:53Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:26:53Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [x] L4 Writer A: `guard:` kind in Enforced-By: resolves via `stems()` and requires two-sided liveness. Also `trap:` cross-references, checked after the whole corpus is parsed. Add the new kinds to the unknown-pointer message (`:584-588`) and to the `Shape` counts and success line (`:448-458`), so a collapse in any kind shows up.
-    (ticked) 2026-10-08T19:26:56Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:26:56Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [x] L5 Writer A: F6 controls, each red with its required message, added to `run_controls` (`.ci/rediacc_ci/quality/trap_registry.py:723`). Fixtures are built from scratch (`fixture_corpus`, `:613`), never by editing a copy:
   - C1: `text:` present → green.
   - C2: phrase deleted → red "not found".
@@ -139,7 +139,7 @@ Documented-In: trap:check-cannot-fail
   - C19: an unknown anchor kind → red.
   - C20: dangling `trap:` → red.
   - C21: Documented-In with an empty Enforced-By → red (existing F3).
-    (ticked) 2026-10-08T19:26:59Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:26:59Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 
   Acceptance: `npm run check:ci-trap-registry` prints a controls line with the new count, and the real tree stays green.
 - [x] L6 Writer B: gate tests against the real tree (`.ci/rediacc_ci/tests/gates/test_gate_trap_registry.py`).
@@ -149,15 +149,15 @@ Documented-In: trap:check-cannot-fail
   - (c) Re-wrap that sentence and insert lines above it → green.
   - (d) Rename the ci-gates heading → red naming the entry.
   - Each red is preceded by its green control in the same test.
-    (ticked) 2026-10-08T19:27:02Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:27:02Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [x] L7 Lead: add the `Documented-In` key and the anchor table to the TRAPS.md header (`docs/agent-reference/TRAPS.md:9-25`), and update the "Every pointer must RESOLVE" paragraph.
-    (ticked) 2026-10-08T19:27:04Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:27:04Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [x] L8 Lead: seed the ten entries below. Raise `TRAP_FLOOR_DEFAULT` from 98 to 109 in the same commit (99 entries today + 10). Re-record the frozen floor in `.ci/rediacc_ci/tests/goldens/twins/quality.check-trap-registry.jsonl` with `regolden.py --source port --reason "lessons registry seed"`. Acceptance: `npm run check:ci-trap-registry`, `python3 -m pytest .ci/rediacc_ci/tests/test_quality_trap_registry.py .ci/rediacc_ci/tests/gates/test_gate_trap_registry.py -q`, `npm run check:ci-python-env-registry`.
   - Amended 2026-10-08 (review 4b091d92.1): the box's "99 entries today + 10 = 109" count was off by one. The registry holds 108 entries and `TRAP_FLOOR_DEFAULT` is 108 (`.ci/rediacc_ci/quality/trap_registry.py:213`), which is what `check_trap_registry` reported (108 entries, floor 108).)
-    (ticked) 2026-10-08T19:27:07Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:27:07Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - [x] L9 Lead: a mutation proof on a disposable clone, never the shared tree. Delete each seeded anchor's target one at a time and confirm each turns red with that entry's id. Record the 10/10 count in the tick evidence.
   - Amended 2026-10-08 (review 4b091d92.2): the mutation proof covered all 14 documentation anchors the registry holds, which includes the ten seeded ones, so "14/14 red" is the box's count at its full width and not the "10/10" it names.)
-    (ticked) 2026-10-08T19:27:10Z by d778be9d: commit:dbe6488d1 check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
+    (ticked) 2026-10-08T19:27:10Z by d778be9d: commit:be59366ee check_trap_registry rc=0 (108 entries, 14 anchors); pytest 301 passed; L9 14/14 red
 - L10 and L11 moved on 2026-10-09 to agent/plans/PLAN-lessons-registry-followups.md, executing their recorded DEFAULT (defer). This PR's plan-implementation clock covers every plan the branch ticked, and a `[?]` box counts as open there.
 
 ## Seed lessons (L8)
@@ -171,8 +171,8 @@ Writing the final titles and body text is the lead's job. Each seed's pointers a
 | S3 | `new-test-module-needs-shard-leg` | `gate:check:ci-shard-manifest-coverage` | `text:docs/agent-reference/ci-gates.md places each missing unit and drops the ids of units that no longer exist` | empty |
 | S4 | `env-read-needs-both-registries` | `gate:check:ci-python-env-registry`, `gate:check:ci-worklist-env-registry` | `text:docs/agent-reference/ci-gates.md A new environment variable is registered with one command` | empty |
 | S5 | `manifest-paths-needs-paths-origin` | `gate:check:ci-paths-origin` | `text:scripts/ci-runner/manifest.ts pathsOrigin: 'declared'` | empty |
-| S6 | `tick-text-resigns-the-box` (commit 2398e380c, item #06c807ed) | `guard:block_plan_box_rewrite`, `gate:check:ci-plan-boxes` | `trap:` cross-reference to S7 | empty |
-| S7 | `bare-basename-citation` (CI run 37190043363, items #74f48292 and #fcaee69b) | `gate:check:ci-plan-citations`, `file:.claude/hooks/stop/wl_planrec.py` (`refuse_unresolved_citations`, commit f2e8a7a2b) | `text:.claude/hooks/stop/wl_planrec.py Write the full repo-relative path` | empty |
+| S6 | `tick-text-resigns-the-box` (commit 739e4d139, item #06c807ed) | `guard:block_plan_box_rewrite`, `gate:check:ci-plan-boxes` | `trap:` cross-reference to S7 | empty |
+| S7 | `bare-basename-citation` (CI run 37190043363, items #74f48292 and #fcaee69b) | `gate:check:ci-plan-citations`, `file:.claude/hooks/stop/wl_planrec.py` (`refuse_unresolved_citations`, commit 162bc9200) | `text:.claude/hooks/stop/wl_planrec.py Write the full repo-relative path` | empty |
 | S8 | `no-cacheprovider-vs-strict-config` | `JUDGMENT-ONLY` | `text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the \`cache_dir\` ini key`, `text:pyproject.toml --strict-config  an unknown key in THIS table is an error` | a nested pytest run against the repo's ini with `-p no:cacheprovider` exits 4 and collects nothing; nothing refuses it |
 | S9 | `gh-field-typed-vs-raw` | `JUDGMENT-ONLY` | `text:.claude/rediacc_hooks/shellscan.py "raw-field"` and the flag regex at `.claude/rediacc_hooks/guards/block_raw_pr_body_edit.py:67` | `-F` converts `true` and numbers and reads `@file`; `-f` sends a literal string. No guard judges which one was meant |
 | S10 | `retro-flag-after-bare-dashdash` | `file:.claude/hooks/stop/worklist.py` (the `--retro`/`--evidence` cut at `:860-866`) | `text:.claude/hooks/stop/worklist.py accepted anywhere BEFORE the bare` | only a trailing `--retro` is recovered; one in the middle of the note is silent note text |

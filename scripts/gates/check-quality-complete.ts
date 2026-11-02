@@ -95,7 +95,7 @@
  * ---- end gate ----
  */
 
-import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -275,10 +275,10 @@ export function judgeReceipts(
     const key = shardKey(r.lane, r.index, r.of);
     got.set(key, [...(got.get(key) ?? []), r]);
   }
-  for (const key of [...want.keys()].sort()) {
+  for (const key of [...want.keys()].sort((a, b) => Number(a > b) - Number(a < b))) {
     if (!got.has(key)) findings.push(`shard ${key} was declared and NEVER reported`);
   }
-  for (const key of [...got.keys()].sort()) {
+  for (const key of [...got.keys()].sort((a, b) => Number(a > b) - Number(a < b))) {
     if (!want.has(key)) {
       findings.push(
         `shard ${key} reported but is not in the declared plan. The leg ran against a ` +
@@ -415,7 +415,7 @@ export function wiringFindings(
   needs: ReadonlyMap<string, string[]>
 ): string[] {
   const findings: string[] = [];
-  const sharded = Object.keys(counts).sort();
+  const sharded = Object.keys(counts).sort((a, b) => Number(a > b) - Number(a < b));
   const hasAggregator = needs.has(AGGREGATOR_JOB);
 
   if (sharded.length > 0 && !hasAggregator) {
@@ -620,7 +620,7 @@ export function partitionFindings(
 
   // A NAME NO JOB ANSWERS TO, first: every clause below reads these lists, and a stale entry makes the union look complete while the lane it names is gone.
   for (const [what, members] of sets) {
-    for (const lane of [...members].sort()) {
+    for (const lane of [...members].sort((a, b) => Number(a > b) - Number(a < b))) {
       if (!known.has(lane)) {
         findings.push(
           `${lane} is listed as ${what} but ${WORKFLOW} has no such job. The list and the ` +
@@ -630,7 +630,7 @@ export function partitionFindings(
     }
   }
 
-  for (const lane of [...jobs].sort()) {
+  for (const lane of [...jobs].sort((a, b) => Number(a > b) - Number(a < b))) {
     const inSets = sets.filter(([, members]) => members.includes(lane)).map(([what]) => what);
     if (inSets.length === 0) {
       findings.push(
@@ -715,7 +715,7 @@ function main(argv: readonly string[]): number {
   }
   const needs = parseJobNeeds(workflowText);
 
-  const sharded = Object.keys(SHARD_COUNTS).sort();
+  const sharded = Object.keys(SHARD_COUNTS).sort((a, b) => Number(a > b) - Number(a < b));
   let declared: Shard[] = [];
   if (sharded.length > 0) {
     const plan = shardPlan(lock, caps, SHARD_COUNTS, measuredStepDurations(ROOT));
@@ -746,7 +746,7 @@ function main(argv: readonly string[]): number {
     if (UNDECIDED_LANES.length === 0) return;
     console.log(
       `  OPEN DECISION, ${UNDECIDED_LANES.length} lane(s) hand-written by omission rather ` +
-        `than by design: ${[...UNDECIDED_LANES].sort().join(', ')}.`
+        `than by design: ${[...UNDECIDED_LANES].sort((a, b) => Number(a > b) - Number(a < b)).join(', ')}.`
     );
     console.log(
       '  Each either earns a `# >>> gate-bind` region by having gates registered against ' +
@@ -901,6 +901,22 @@ const PART_UNDECIDED: readonly string[] = ['quality-go'];
 const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
 
 function selftest(): number {
+  // Every on-disk control makes its own scratch directory; they are removed in the finally even when building a case throws, so a selftest run leaves /tmp as it found it (1,108 qc-selftest-* directories had piled up by 2026-10-24; review 37ecbdd5.6).
+  const scratch: string[] = [];
+  try {
+    return selftestControls(scratch);
+  } finally {
+    // tree-write: safe every dir in scratch came from mkdtempSync under tmpdir() (scratchDir above)
+    for (const dir of scratch) rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function selftestControls(scratch: string[]): number {
+  const scratchDir = (): string => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+    scratch.push(dir);
+    return dir;
+  };
   const two = [shard('quality-security', 1, 2, 40), shard('quality-security', 2, 2, 42)];
   const bothReported = [
     receipt('quality-security', 1, 2, 40),
@@ -1349,7 +1365,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a real units-currency file on disk parses with no problem',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({
@@ -1367,7 +1383,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a receipt with BOTH gates and units is a problem, not a silent pick',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success', gates: 1, units: [] })
@@ -1378,7 +1394,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a receipt with NEITHER gates nor units is a problem',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success' })
@@ -1389,7 +1405,7 @@ function selftest(): number {
     {
       name: 'readReceipts: a unit entry missing outcome is a problem',
       ok: (() => {
-        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        const dir = scratchDir();
         writeFileSync(
           path.join(dir, 'a.json'),
           JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success', units: [{ id: 'g0' }] })

@@ -1,4 +1,4 @@
-// The path-to-module classification table for the CI scope engine, plus the pure classify() that applies it. PURE on purpose: no network, no git, no GitHub API, no fs. Everything context-dependent (the workflow closure) is computed by the caller and passed in, so this file is a lookup table that a unit test can exercise offline in milliseconds.
+// The path-to-module classification table for the CI scope engine, plus the pure classify() that applies it. PURE on purpose: no network, no git, no GitHub API, and no fs beyond reading .ci/config/proof-tiers.json once at load for the renet areas. Everything context-dependent (the workflow closure) is computed by the caller and passed in, so this file is a lookup table that a unit test can exercise offline in milliseconds.
 //
 // THE ONE RULE THAT MATTERS: every ambiguous case resolves to FULL CI. A false full run costs 70 minutes; a false reduced run merges untested code. So the table only names paths whose job surface is actually known, and everything
 // else falls through to `unclassified:<path>` = full. A new top-level tree, a
@@ -7,6 +7,18 @@
 // Design source: docs/ci-overhaul/02-v1-economics.md B1/B2 and the Wave B edge-case matrix (cases 17-24 are implemented here; the case number is cited at each site). This chunk is deliberately consumer-free: nothing in CI reads these outputs yet, so landing it cannot change CI behaviour.
 
 'use strict';
+
+// The renet areas come from .ci/config/proof-tiers.json, the map vm:check and the VM push guard read (agent/plans/PLAN-renet-change-test-triggers.md Design item 3). It is read ONCE at load, like a table literal: classify() itself still performs no I/O. A map that is PRESENT but names a CI job outside VM_E2E_JOB_KEYS (or is otherwise malformed) throws at load, the same shape as validateJobSurfaces. A map that is ABSENT (a copy of this directory without .ci/config, as two gate fixtures make) resolves
+// the ambiguity the way THE ONE RULE above says: no area narrows anything, every renet path selects every VM job, and each renet reason line carries `areas-unavailable` so the degradation is visible in the plan. The CI job that runs this engine checks out the whole tree, so there the map is always present.
+const PROOF_TIERS_REL = '../../config/proof-tiers.json';
+let PROOF_TIERS = null;
+let AREA_MAP_ERROR = null;
+try {
+  PROOF_TIERS = require(PROOF_TIERS_REL);
+} catch (e) {
+  if (e?.code !== 'MODULE_NOT_FOUND') throw e;
+  AREA_MAP_ERROR = `${PROOF_TIERS_REL} not found`;
+}
 
 // --------------------------------------------------------------------------- Modules. A module is a subtree with a known job surface. Submodules are modules too: the gitlink path (`private/renet`) and any expanded content path under it (`private/renet/pkg/x.go`) classify identically, so the pointer bump and the later compare-API expansion land in the same bucket.
 // ---------------------------------------------------------------------------
@@ -262,6 +274,116 @@ function validateJobSurfaces(surfaces, knownModules) {
 }
 validateJobSurfaces(JOB_SURFACES, KNOWN_MODULES);
 
+// --------------------------------------------------------------------------- Renet areas. A renet change used to select all nine VM jobs, because the module is the whole submodule. The areas of proof-tiers.json split it: an EXPANDED renet path (`private/renet/pkg/kube/x.go`) selects only the VM jobs its areas name, while the bare gitlink (`private/renet`, which the CI diff carries only when the scope engine cannot expand it: expandRenetGitlink in scope-engine.cjs turns a bump into its changed renet paths
+// once ci.yml fetches the submodule's history) and a renet runtime path in no area still select every VM job. A test file or doc under renet (the map's `exclude`) selects no VM job: it changes no deployed binary, and the `renet` key, which runs the Go tests, is still selected through the module. Non-VM keys that consume `renet` are untouched.
+//
+// The glob grammar is the Owns grammar rediacc_ci.proof.surfaces reads (wl_planconc.expand_braces then glob_regex): `{a,b}` expands, `**` spans segments, `*` and `?` stay inside one. A character class is refused here rather than half-supported; .ci/rediacc_ci/tests/proof/test_scope_map_areas.py checks this reading against the Python one on every tracked renet path.
+const RENET_PREFIX = 'private/renet/';
+
+function expandBraces(glob) {
+  const open = glob.indexOf('{');
+  if (open === -1) return [glob];
+  let depth = 0;
+  let close = -1;
+  const cuts = [];
+  for (let i = open; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        close = i;
+        break;
+      }
+    } else if (c === ',' && depth === 1) cuts.push(i);
+  }
+  if (close === -1) throw new Error(`an unbalanced '{' in ${glob}`);
+  const parts = [];
+  let from = open + 1;
+  for (const cut of [...cuts, close]) {
+    parts.push(glob.slice(from, cut));
+    from = cut + 1;
+  }
+  const head = glob.slice(0, open);
+  const tail = glob.slice(close + 1);
+  return parts.flatMap((p) => expandBraces(head + p + tail));
+}
+
+function globRegex(glob) {
+  if (/[[\]]/.test(glob))
+    throw new Error(`a character class is not supported in area glob ${glob}`);
+  const segs = glob.split('/');
+  const body = segs
+    .map((seg, n) => {
+      const last = n === segs.length - 1;
+      if (seg === '**') return last ? '.*' : '(?:[^/]*/)*';
+      const s = seg
+        .split('')
+        .map((ch) => {
+          if (ch === '*') return '[^/]*';
+          if (ch === '?') return '[^/]';
+          return ch.replace(/[.+^${}()|\\]/g, '\\$&');
+        })
+        .join('');
+      return s + (last ? '' : '/');
+    })
+    .join('');
+  return new RegExp(`^${body}$`);
+}
+
+function normaliseGlob(glob) {
+  let g = glob.replace(/\/{2,}/g, '/');
+  while (g.startsWith('./')) g = g.slice(2);
+  if (g.endsWith('/')) g = `${g.replace(/\/+$/, '')}/**`;
+  return g;
+}
+
+function loadRenetAreas(map, vmJobs) {
+  const areas = map?.tiers?.vm?.areas;
+  if (!areas || typeof areas !== 'object' || Object.keys(areas).length === 0) {
+    throw new Error('proof-tiers.json tiers.vm.areas is empty: no renet path could select an area');
+  }
+  const known = new Set(vmJobs);
+  const out = {};
+  for (const [name, area] of Object.entries(areas)) {
+    const globs = area?.globs;
+    const jobs = area?.ci_jobs;
+    if (!Array.isArray(globs) || globs.length === 0) throw new Error(`area ${name} has no globs`);
+    if (!Array.isArray(jobs) || jobs.length === 0) throw new Error(`area ${name} names no ci_jobs`);
+    for (const job of jobs) {
+      if (!known.has(job))
+        throw new Error(`area ${name} names ci job '${job}', not a VM/E2E job key`);
+    }
+    const regexes = globs.flatMap(expandBraces).map(normaliseGlob);
+    for (const g of regexes) {
+      if (!g.startsWith(RENET_PREFIX))
+        throw new Error(`area ${name} glob ${g} leaves ${RENET_PREFIX}`);
+    }
+    out[name] = { regexes: regexes.map(globRegex), ciJobs: [...jobs] };
+  }
+  const exclude = (map.exclude || []).flatMap(expandBraces).map(normaliseGlob).map(globRegex);
+  if (exclude.length === 0) throw new Error('proof-tiers.json exclude is empty');
+  return { areas: out, exclude };
+}
+
+const RENET_AREAS = PROOF_TIERS ? loadRenetAreas(PROOF_TIERS, VM_E2E_JOB_KEYS) : null;
+
+// renetAreasOf(path) -> { kind, areas }: `gitlink` (the bare pointer: every VM job), `excluded` (a test or doc: no VM job), `areas` (those areas' jobs), `unmapped` (a renet path in no area: every VM job), or `areas-unavailable` (the map is absent: every VM job). Only meaningful for a path the submodule-renet rule matched.
+function renetAreasOf(p) {
+  if (p === 'private/renet') return { kind: 'gitlink', areas: [] };
+  if (!RENET_AREAS) return { kind: 'areas-unavailable', areas: [] };
+  if (RENET_AREAS.exclude.some((rx) => rx.test(p))) return { kind: 'excluded', areas: [] };
+  const areas = Object.entries(RENET_AREAS.areas)
+    .filter(([, a]) => a.regexes.some((rx) => rx.test(p)))
+    .map(([name]) => name);
+  return areas.length > 0 ? { kind: 'areas', areas } : { kind: 'unmapped', areas: [] };
+}
+
+// The VM job keys the given areas name.
+function areaJobs(areas) {
+  return new Set(areas.flatMap((a) => RENET_AREAS?.areas[a]?.ciJobs || VM_E2E_JOB_KEYS));
+}
+
 // ---------------------------------------------------------------------------
 // classify(paths, ctx) -> { modules, reasons, mode, full_reasons }
 //
@@ -274,10 +396,20 @@ function classify(paths, ctx = {}) {
   const modules = new Set();
   const reasons = [];
   const fullReasons = [];
+  // The renet areas the delta touches, and whether any renet path (the bare gitlink, a path in no area) needs every VM job.
+  const renetAreas = new Set();
+  let renetAll = false;
 
   // Case 22: an empty delta means the computation upstream failed, never that nothing changed. Full, not reduced.
   if (!paths || paths.length === 0) {
-    return { modules, reasons, mode: 'full', full_reasons: ['empty-delta'] };
+    return {
+      modules,
+      reasons,
+      mode: 'full',
+      full_reasons: ['empty-delta'],
+      renet_areas: [],
+      renet_all: true,
+    };
   }
 
   for (const path of paths) {
@@ -293,6 +425,15 @@ function classify(paths, ctx = {}) {
       continue;
     }
     for (const mod of rule.modules) modules.add(mod);
+    if (rule.name === 'submodule-renet') {
+      const { kind, areas } = renetAreasOf(path);
+      if (kind !== 'areas' && kind !== 'excluded') renetAll = true;
+      for (const a of areas) renetAreas.add(a);
+      reasons.push(
+        `${path} -> ${rule.modules.join(',')} [${kind}${areas.length ? `: ${areas.join(',')}` : ''}]`
+      );
+      continue;
+    }
     reasons.push(`${path} -> ${rule.modules.join(',')}`);
   }
 
@@ -301,7 +442,21 @@ function classify(paths, ctx = {}) {
     reasons,
     mode: fullReasons.length > 0 ? 'full' : 'reduced',
     full_reasons: fullReasons,
+    renet_areas: [...renetAreas].sort((a, b) => Number(a > b) - Number(a < b)),
+    renet_all: renetAll,
   };
+}
+
+// The run verdict of one VM/E2E job whose surface `hit` intersects the delta. Only a job reached through `renet` ALONE is narrowed, and only when every renet path was area-mapped or excluded: any other module in its surface (cli, shared, account...) keeps today's answer. `renet_all` missing (a classification built elsewhere) counts as true, so an unknown shape runs everything.
+function vmJobVerdict(job, hit, classification) {
+  if (hit.length !== 1 || hit[0] !== 'renet' || classification.renet_all !== false) {
+    return { run: true, reason: `modules:${hit.join(',')}` };
+  }
+  const areas = classification.renet_areas || [];
+  const naming = areas.filter((a) => areaJobs([a]).has(job));
+  return naming.length > 0
+    ? { run: true, reason: `modules:renet;areas:${naming.join(',')}` }
+    : { run: false, reason: 'out-of-scope' };
 }
 
 // buildPlan(classification) -> the JSON plan --classify prints. In full mode every job runs; in reduced mode a job runs iff its surface intersects the touched modules.
@@ -314,15 +469,18 @@ function buildPlan(classification) {
       continue;
     }
     const hit = surface.filter((mod) => modules.has(mod));
-    jobs[job] =
-      hit.length > 0
-        ? { run: true, reason: `modules:${hit.join(',')}` }
-        : { run: false, reason: 'out-of-scope' };
+    if (hit.length === 0) {
+      jobs[job] = { run: false, reason: 'out-of-scope' };
+    } else if (VM_E2E_JOB_KEYS.includes(job)) {
+      jobs[job] = vmJobVerdict(job, hit, classification);
+    } else {
+      jobs[job] = { run: true, reason: `modules:${hit.join(',')}` };
+    }
   }
   return {
     engine: 'scope-engine/1',
     mode,
-    modules: [...modules].sort(),
+    modules: [...modules].sort((a, b) => Number(a > b) - Number(a < b)),
     reasons,
     full_reasons,
     jobs,
@@ -338,7 +496,14 @@ module.exports = {
   JOB_SURFACES,
   VM_E2E_SURFACE,
   VM_E2E_JOB_KEYS,
+  RENET_AREAS,
+  AREA_MAP_ERROR,
   validateJobSurfaces,
+  loadRenetAreas,
+  renetAreasOf,
+  areaJobs,
+  globRegex,
+  expandBraces,
   classify,
   buildPlan,
 };

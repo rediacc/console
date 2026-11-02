@@ -6,7 +6,6 @@ Complete monitoring stack with Prometheus metrics collection and Grafana visuali
 
 - Prometheus time-series database with configurable retention
 - Grafana visualization with pre-configured Prometheus data source
-- Node Exporter for system-level metrics (CPU, memory, disk)
 - Persistent data storage with automatic provisioning
 - Ready to add custom application metrics
 
@@ -34,9 +33,6 @@ Edit `.env` to customize:
 - `GRAFANA_ALLOW_SIGN_UP`: Allow user registration (default: false)
 - `GRAFANA_PLUGINS`: Comma-separated plugin list (optional)
 
-**Node Exporter:**
-- `NODE_EXPORTER_PORT`: Metrics endpoint port (default: 9100)
-
 ## Access
 
 **Prometheus:**
@@ -49,9 +45,7 @@ Edit `.env` to customize:
 - Default credentials: admin/admin (change on first login)
 - Prometheus data source pre-configured
 
-**Node Exporter:**
-- Port: 9100 (metrics endpoint)
-- Access metrics at: http://localhost:9100/metrics
+Host-wide metrics (CPU, memory, disk of the machine) are not collected here: a repo cannot mount `/proc`, `/sys` or `/`, so they belong to the machine-level observability stack.
 
 To add custom metrics, edit `prometheus/prometheus.yml` to add scrape targets, then reload config with `curl -X POST http://localhost:9090/-/reload`.
 
@@ -61,4 +55,3 @@ To add custom metrics, edit `prometheus/prometheus.yml` to add scrape targets, t
 - [Grafana on Docker Hub](https://hub.docker.com/r/grafana/grafana)
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [Grafana Documentation](https://grafana.com/docs/)
-- [Node Exporter Documentation](https://github.com/prometheus/node_exporter)

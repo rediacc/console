@@ -2,7 +2,7 @@
  * Subscription Constants
  *
  * Single source of truth for plan resources and features.
- * All components (account-server, middleware, renet, CLI) should use these values.
+ * All components (account-server, renet, CLI) should use these values.
  */
 
 import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing } from './types.js';
@@ -32,6 +32,11 @@ export const PLAN_LIMITS: Record<
     storageQuotaBytes: number;
   }
 > = {
+  FREE: {
+    maxRepositorySizeGb: 3,
+    maxRepoLicenseIssuancesPerMonth: 0,
+    storageQuotaBytes: 0,
+  },
   COMMUNITY: {
     maxRepositorySizeGb: 10,
     maxRepoLicenseIssuancesPerMonth: 100,
@@ -62,6 +67,131 @@ export function getStorageQuotaBytesForPlan(planCode: string): number {
   return PLAN_LIMITS.COMMUNITY.storageQuotaBytes;
 }
 
+/** The six GFS retention knobs, as a plan states them. */
+export interface BackupRetentionKnobs {
+  keepLast: number | null;
+  keepHourly: number | null;
+  keepDaily: number | null;
+  keepWeekly: number | null;
+  keepMonthly: number | null;
+  keepYearly: number | null;
+}
+
+/**
+ * Per-plan backup retention: the policy a lineage gets when no row is declared
+ * (`default`), and the most a declared policy may ask for (`limit`).
+ *
+ * A limit of `null` leaves that knob uncapped (the storage quota still bounds
+ * the bytes); `0` means the plan does not offer the knob, so any positive value
+ * is refused. Kept beside PLAN_LIMITS rather than inside it because
+ * PLAN_LIMITS is a flat number map that the generated subscription schema and
+ * renet's schema test read as `map[string]map[string]int`.
+ *
+ * `allowKeepAll` says whether a declared policy with every knob unset (keep
+ * every snapshot, bounded only by the storage quota) is offered. COMMUNITY
+ * does not offer it.
+ */
+export const PLAN_BACKUP_RETENTION: Record<
+  PlanCode,
+  { default: BackupRetentionKnobs; limit: BackupRetentionKnobs; allowKeepAll: boolean }
+> = {
+  FREE: {
+    default: {
+      keepLast: 0,
+      keepHourly: 0,
+      keepDaily: 0,
+      keepWeekly: 0,
+      keepMonthly: 0,
+      keepYearly: 0,
+    },
+    limit: {
+      keepLast: 0,
+      keepHourly: 0,
+      keepDaily: 0,
+      keepWeekly: 0,
+      keepMonthly: 0,
+      keepYearly: 0,
+    },
+    allowKeepAll: false,
+  },
+  COMMUNITY: {
+    default: {
+      keepLast: 3,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: null,
+      keepMonthly: null,
+      keepYearly: null,
+    },
+    limit: {
+      keepLast: 3,
+      keepHourly: 0,
+      keepDaily: 7,
+      keepWeekly: 0,
+      keepMonthly: 0,
+      keepYearly: 0,
+    },
+    allowKeepAll: false,
+  },
+  PROFESSIONAL: {
+    default: {
+      keepLast: 7,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: 4,
+      keepMonthly: 6,
+      keepYearly: null,
+    },
+    limit: {
+      keepLast: null,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: 4,
+      keepMonthly: 6,
+      keepYearly: 0,
+    },
+    allowKeepAll: true,
+  },
+  BUSINESS: {
+    default: {
+      keepLast: 7,
+      keepHourly: null,
+      keepDaily: 14,
+      keepWeekly: 8,
+      keepMonthly: 12,
+      keepYearly: 1,
+    },
+    limit: {
+      keepLast: null,
+      keepHourly: null,
+      keepDaily: 14,
+      keepWeekly: 8,
+      keepMonthly: 12,
+      keepYearly: 1,
+    },
+    allowKeepAll: true,
+  },
+  ENTERPRISE: {
+    default: {
+      keepLast: 7,
+      keepHourly: null,
+      keepDaily: 30,
+      keepWeekly: 12,
+      keepMonthly: 24,
+      keepYearly: 7,
+    },
+    limit: {
+      keepLast: null,
+      keepHourly: null,
+      keepDaily: 30,
+      keepWeekly: 12,
+      keepMonthly: 24,
+      keepYearly: 7,
+    },
+    allowKeepAll: true,
+  },
+} as const;
+
 /**
  * How long a machine holds its Floating license slot after the last repo
  * license issuance on that machine, before it auto-releases from inactivity.
@@ -76,6 +206,18 @@ export const MACHINE_AUTO_RELEASE_HOURS = MACHINE_AUTO_RELEASE_MS / (60 * 60 * 1
  * Feature availability by plan.
  */
 export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
+  FREE: {
+    permissionGroups: false,
+    ceph: false,
+    queuePriority: false,
+    advancedAnalytics: false,
+    prioritySupport: false,
+    auditLog: false,
+    advancedQueue: false,
+    customBranding: false,
+    dedicatedAccount: false,
+    delegationCerts: false,
+  },
   COMMUNITY: {
     permissionGroups: false,
     ceph: false,
@@ -147,40 +289,10 @@ export const SUBSCRIPTION_CONFIG = {
 export const TRIAL_PERIOD_DAYS = 14;
 
 /**
- * Accounts created before this instant keep a usable Community subscription
- * without ever starting a trial (the pre-trial-era free tier). Accounts
- * created after it must start a trial first; their Community access exists
- * only as the fallback after a cancelled or lapsed subscription.
- *
- * Set to the deploy instant of the trial-based model. Bump to the actual
- * deploy timestamp when the account server ships.
- */
-export const COMMUNITY_LEGACY_CUTOFF_ISO = '2026-07-07T00:00:00.000Z';
-
-/**
- * Whether a COMMUNITY subscription may issue licenses / activate machines.
- *
- * Usable when the account predates the trial-era cutoff (grandfathered
- * free tier), or the customer has been through a trial (`trialUsedAt`), or
- * the row is a post-cancellation fallback (`communityFallback`). A fresh
- * post-cutoff signup that never checked out gets neither marker and must
- * start a trial before using the product.
- */
-export function isCommunityUsable(sub: {
-  createdAt: string | Date;
-  metadata?: Record<string, unknown> | null;
-}): boolean {
-  const created = typeof sub.createdAt === 'string' ? sub.createdAt : sub.createdAt.toISOString();
-  if (created < COMMUNITY_LEGACY_CUTOFF_ISO) {
-    return true;
-  }
-  return Boolean(sub.metadata?.trialUsedAt) || sub.metadata?.communityFallback === 'true';
-}
-
-/**
  * All valid plan codes in order from lowest to highest tier.
  */
 export const PLAN_ORDER: readonly PlanCode[] = [
+  'FREE',
   'COMMUNITY',
   'PROFESSIONAL',
   'BUSINESS',
@@ -195,6 +307,7 @@ export const PLAN_ORDER: readonly PlanCode[] = [
  * the ENTERPRISE value applies to partner-negotiated subscriptions only.
  */
 export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
+  FREE: 1,
   COMMUNITY: 1,
   PROFESSIONAL: 1,
   BUSINESS: 1,
@@ -206,6 +319,7 @@ export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
  * Used when neither the request nor a per-subscription override specifies a value.
  */
 export const PLAN_DELEGATION_CERT_DEFAULT_DAYS: Record<PlanCode, number> = {
+  FREE: 2,
   COMMUNITY: 15,
   PROFESSIONAL: 60,
   BUSINESS: 90,
@@ -217,6 +331,7 @@ export const PLAN_DELEGATION_CERT_DEFAULT_DAYS: Record<PlanCode, number> = {
  * Bypassed when a subscription has an explicit `delegationCertDefaultDays` override.
  */
 export const PLAN_DELEGATION_CERT_MAX_DAYS: Record<PlanCode, number> = {
+  FREE: 2,
   COMMUNITY: 30,
   PROFESSIONAL: 120,
   BUSINESS: 180,
@@ -388,6 +503,11 @@ export function comparePlans(a: PlanCode, b: PlanCode): number {
  * amounts exist for internal accounting and partner-deal reference.
  */
 export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
+  FREE: {
+    monthlyPriceCents: 0,
+    annualPriceCents: 0,
+    currency: 'usd',
+  },
   COMMUNITY: {
     monthlyPriceCents: 0,
     annualPriceCents: 0,
@@ -414,6 +534,14 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
  * Display metadata by plan.
  */
 export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
+  FREE: {
+    displayName: 'Free License',
+    description: '48-hour renewable licence for one repository of up to 3 GB, no account needed',
+    paid: false,
+    featured: false,
+    selfServe: false,
+    webConsole: false,
+  },
   COMMUNITY: {
     displayName: 'Community',
     description: 'Free fallback plan that keeps one machine running after a cancelled trial',

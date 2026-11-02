@@ -21,11 +21,15 @@ EVERY FIXTURE IS BUILT BY CONSTRUCTION, never by substituting into real source, 
 """
 
 import json
+import os
+import pathlib
+import re
 import socket
 import subprocess
 import sys
 
 import pytest
+from _pytest.nodeid import NodeId
 
 from rediacc_ci import paths, xdist_groups
 from rediacc_ci.quality import pool_writer_safety
@@ -297,6 +301,217 @@ def test_the_root_conftest_marks_exactly_the_declaring_module(target, expr, want
     proc = _collect(target, expr)
     assert proc.returncode in (0, 5), proc.stdout + proc.stderr
     assert (_collected(proc) > 0) is want_any, proc.stdout + proc.stderr
+
+
+# --------------------------------------------------------------------------- A group reaches ONE worker (xdist_groups.stamp_group_ids) ---------------------------------------------------------------------------
+
+# Records which worker ran which id. It runs nothing: the question is the controller's schedule, so the item bodies would only add their own wall.
+_RECORDER = """
+import os, pathlib, pytest
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_protocol(item, nextitem):
+    with pathlib.Path(os.environ["GROUP_PROBE_LOG"]).open("a") as handle:
+        handle.write("%s %s\\n" % (os.environ.get("PYTEST_XDIST_WORKER", "serial"), item.nodeid))
+    return None if os.environ.get("GROUP_PROBE_RUN_BODIES") else True
+"""
+
+# Eight grouped items ahead of eight free ones. loadgroup hands every worker a first item before any worker can ask for a second, so a group the scheduler cannot see lands on all three workers, deterministically.
+_SPREAD_MODULE = """
+import pytest
+
+@pytest.mark.xdist_group("g")
+@pytest.mark.parametrize("i", range(8))
+def test_grouped(i):
+    pass
+
+@pytest.mark.parametrize("i", range(8))
+def test_free(i):
+    pass
+"""
+
+_STAMPING_CONFTEST = """
+import pytest
+from rediacc_ci import xdist_groups
+
+def group_of(item):
+    marker = item.get_closest_marker("xdist_group")
+    return marker.args[0] if marker is not None else None
+
+@pytest.hookimpl(wrapper=True)
+def pytest_collection_finish(session):
+    if not session.config.getoption("loadgroup", default=False):
+        return (yield)
+    stamped = xdist_groups.stamp_group_ids(session.items, group_of)
+    try:
+        return (yield)
+    finally:
+        xdist_groups.unstamp_group_ids(stamped)
+"""
+
+
+def _run_recorded(
+    tmp_path, cwd, args: list[str], *, run_bodies: bool = False
+) -> tuple[subprocess.CompletedProcess, list[tuple[str, str]]]:
+    """A REAL pytest with REAL xdist workers, because the defect lives between a worker's id strings and the controller's scheduler; returns the process and each item's (worker, node id)."""
+    probe = tmp_path / "probe"
+    probe.mkdir()
+    (probe / "group_probe_recorder.py").write_text(_RECORDER, encoding="utf-8")
+    log = tmp_path / "items.log"
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith(("PYTEST_", "CI_CORE_LEASE", "CI_RUNNER_CORES"))
+    }
+    env["GROUP_PROBE_LOG"] = str(log)
+    if run_bodies:
+        env["GROUP_PROBE_RUN_BODIES"] = "1"
+    # The lock the root conftest takes is machine-wide, so a scratch directory keeps this probe out of a live run's queue.
+    env["REDIACC_CORE_LEASE_DIR"] = str(tmp_path / "lease")
+    env["PYTHONPATH"] = os.pathsep.join([str(probe), str(paths.from_root(".ci"))])
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-p",
+            "group_probe_recorder",
+            "--basetemp",
+            str(tmp_path / "bt"),
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(cwd),
+        env=env,
+        timeout=300,
+    )
+    rows = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+    return proc, [tuple(row.split(" ", 1)) for row in rows]
+
+
+def _scratch_suite(tmp_path, conftest: str | None) -> pathlib.Path:
+    suite = tmp_path / "suite"
+    suite.mkdir()
+    (suite / "test_spread.py").write_text(_SPREAD_MODULE, encoding="utf-8")
+    if conftest is not None:
+        (suite / "conftest.py").write_text(conftest, encoding="utf-8")
+    return suite
+
+
+SCRATCH_ARGS = [
+    "-n",
+    "3",
+    "--dist",
+    "loadgroup",
+    "-c",
+    os.devnull,
+    "--rootdir",
+    ".",
+    "-p",
+    "no:cacheprovider",
+    ".",
+]
+
+
+def test_a_stamped_group_runs_on_one_worker_and_free_items_still_spread(tmp_path) -> None:
+    suite = _scratch_suite(tmp_path, _STAMPING_CONFTEST)
+    proc, rows = _run_recorded(tmp_path, suite, SCRATCH_ARGS)
+    grouped = [row for row in rows if "test_grouped" in row[1]]
+    free = [row for row in rows if "test_free" in row[1]]
+    assert len(grouped) == 8, proc.stdout + proc.stderr
+    assert len(free) == 8, proc.stdout + proc.stderr
+    assert len({worker for worker, _ in grouped}) == 1, grouped
+    # The other direction: a stamp that swept every item into the group would pass the lines above.
+    assert len({worker for worker, _ in free}) > 1, free
+
+
+def test_control_this_pytest_and_xdist_still_lose_the_group_without_the_stamp(tmp_path) -> None:
+    """CONTROL, and the note to whoever bumps the pins. On pytest 9.2.0 with xdist 3.8.0 the group spreads over every worker when nothing stamps it. If this reds after a bump, xdist repaired its own assignment: delete stamp_group_ids, the conftest hook and this control together."""
+    suite = _scratch_suite(tmp_path, None)
+    proc, rows = _run_recorded(tmp_path, suite, SCRATCH_ARGS)
+    grouped = [row for row in rows if "test_grouped" in row[1]]
+    assert len(grouped) == 8, proc.stdout + proc.stderr
+    assert len({worker for worker, _ in grouped}) > 1, grouped
+
+
+def test_the_root_conftest_keeps_a_declared_group_on_one_worker(tmp_path) -> None:
+    """The real conftest on the real module: the scratch cases above would still pass with the root conftest's hook deleted."""
+    proc, rows = _run_recorded(
+        tmp_path,
+        paths.repo_root(),
+        ["-n", "3", "--dist", "loadgroup", DECLARING_MODULE, UNGROUPED_MODULE],
+    )
+    grouped = [row for row in rows if DECLARING_MODULE in row[1]]
+    free = [row for row in rows if UNGROUPED_MODULE in row[1]]
+    assert grouped, proc.stdout + proc.stderr
+    assert free, proc.stdout + proc.stderr
+    assert len({worker for worker, _ in grouped}) == 1, sorted({worker for worker, _ in grouped})
+    assert len({worker for worker, _ in free}) > 1, free
+    # The stamp is gone by the time anything reports, so a test keeps its serial name.
+    assert not any(nodeid.endswith("@hooks-guards") for _, nodeid in grouped), grouped[:3]
+
+
+def test_a_junit_name_is_the_same_under_xdist(tmp_path) -> None:
+    """pytest 9.2's junit parses a report's id back into parts, so a stamp left on would report `test_grouped[0]@g]`, and a red's finding key would carry the broken name."""
+    suite = _scratch_suite(tmp_path, _STAMPING_CONFTEST)
+    junit = tmp_path / "junit.xml"
+    proc, _rows = _run_recorded(
+        tmp_path, suite, [*SCRATCH_ARGS[:-1], "--junitxml", str(junit), "."], run_bodies=True
+    )
+    assert junit.exists(), proc.stdout + proc.stderr
+    names = re.findall(r'<testcase [^>]*\bname="([^"]+)"', junit.read_text(encoding="utf-8"))
+    assert len(names) == 16, proc.stdout + proc.stderr
+    assert "test_grouped[0]" in names, names
+    assert not any("@" in name for name in names), names
+
+
+def test_a_serial_run_keeps_plain_ids(tmp_path) -> None:
+    """No worker means no scheduler to tell, so a serial run must not touch the ids."""
+    suite = _scratch_suite(tmp_path, _STAMPING_CONFTEST)
+    proc, rows = _run_recorded(
+        tmp_path, suite, ["-c", os.devnull, "--rootdir", ".", "-p", "no:cacheprovider", "."]
+    )
+    assert len(rows) == 16, proc.stdout + proc.stderr
+    assert not any("@" in nodeid for _, nodeid in rows), rows
+
+
+class _Item:
+    def __init__(self, nodeid: str, group: str | None, *, inert: bool = False) -> None:
+        self.group = group
+        self.inert = inert
+        self._stored = NodeId.parse(nodeid)
+
+    @property
+    def nodeid(self) -> str:
+        return str(self._stored)
+
+    @property
+    def _id(self) -> NodeId:
+        return self._stored
+
+    @_id.setter
+    def _id(self, value: NodeId) -> None:
+        if not self.inert:
+            self._stored = value
+
+
+def test_stamping_covers_grouped_items_and_unstamping_restores_them() -> None:
+    items = [_Item("a.py::t[x@1]", "g"), _Item("a.py::u", None), _Item("a.py::C::v", "g")]
+    stamped = xdist_groups.stamp_group_ids(items, lambda item: item.group)
+    assert len(stamped) == 2
+    assert [item.nodeid for item in items] == ["a.py::t[x@1]@g", "a.py::u", "a.py::C::v@g"]
+    xdist_groups.unstamp_group_ids(stamped)
+    assert [item.nodeid for item in items] == ["a.py::t[x@1]", "a.py::u", "a.py::C::v"]
+
+
+def test_a_stamp_that_does_not_take_fails_the_run_naming_the_group() -> None:
+    """THE EXACT SILENCE THIS REPLACES: an assignment that lands on an attribute nothing reads. Green here would mean a future pytest brings the 735 s tail back with no failure."""
+    with pytest.raises(
+        RuntimeError, match=r"xdist group 'g' did not reach the node id of a\.py::t"
+    ):
+        xdist_groups.stamp_group_ids([_Item("a.py::t", "g", inert=True)], lambda item: item.group)
 
 
 # --------------------------------------------------------------------------- Longest first (PF18) ---------------------------------------------------------------------------

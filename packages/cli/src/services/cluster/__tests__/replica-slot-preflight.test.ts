@@ -24,6 +24,19 @@ vi.mock('../../executor/executor-factory.js', () => ({
   getExecutor: () => ({ execute: mockExecute }),
 }));
 
+// The fork licence step reaches the account and a machine lease; stub both (its behaviour is covered in repo-replicate.test.ts).
+vi.mock('../../account/free-license.js', () => ({
+  issueFreeRepoLicense: vi.fn().mockResolvedValue(undefined),
+  resolveLicenseAuthority: vi.fn().mockResolvedValue('free'),
+}));
+vi.mock('../../machine/machine-connection.js', () => ({
+  machineConnections: {
+    acquire: vi.fn(() =>
+      Promise.resolve({ machine: {}, sshPrivateKey: 'key', sftp: {}, release: vi.fn() })
+    ),
+  },
+}));
+
 const { provisionReplicaDatastores } = await import('../repo-replicate.js');
 
 const base = {
@@ -45,7 +58,20 @@ describe('replica placement asks for machine slots first', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAssertSlots.mockResolvedValue(undefined);
-    mockExecute.mockResolvedValue({ success: true, stdout: '{}' });
+    mockExecute.mockImplementation((options: { functionName: string; params?: { tag?: string } }) =>
+      Promise.resolve({
+        success: true,
+        stdout:
+          options.functionName === 'datastore_list'
+            ? JSON.stringify(
+                ['set1-r1', 'set1-r2', 'set1-r3'].map((tag) => ({
+                  name: `ds-data:${tag}`,
+                  datastoreId: `id-${tag}`,
+                }))
+              )
+            : '{}',
+      })
+    );
   });
 
   it('counts the DISTINCT nodes the round-robin reaches, not the replica count', async () => {
@@ -73,7 +99,13 @@ describe('replica placement asks for machine slots first', () => {
       if (JSON.stringify(options).includes('set1-r2')) {
         throw new Error('Maximum machines (5) reached');
       }
-      return Promise.resolve({ success: true, stdout: '{}' });
+      return Promise.resolve({
+        success: true,
+        stdout:
+          (options as { functionName?: string }).functionName === 'datastore_list'
+            ? JSON.stringify([{ name: 'ds-data:set1-r1', datastoreId: 'id-set1-r1' }])
+            : '{}',
+      });
     });
 
     const error = await provisionReplicaDatastores({ ...base, replicas: 2, nodes }).then(

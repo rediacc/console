@@ -25,11 +25,20 @@
  * job-remote.ts, which imports from here and never the other way around.
  */
 
+import type { BackgroundEnvelope, JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import { z } from 'zod';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
+import { type JobOutputCollector } from './job-output-collector.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
+
+const UNKNOWN_JOB_ID = '?';
+const DEFAULT_WORK_LABEL = 'work';
+const DEFAULT_JOB_STATE = 'running';
+const UNKNOWN_ORIGIN = 'unknown';
+
+export { createJobOutputCollector, type JobOutputCollector } from './job-output-collector.js';
 
 /**
  * The shape of a job ID as renet mints it (pkg/jobs: `j<unixnano-hex>-<4-byte-hex>`).
@@ -60,11 +69,81 @@ export function assertJobId(jobId: string): string {
   return jobId;
 }
 
+/**
+ * An overlap entry as renet prints it (private/renet/pkg/jobs/overlap.go
+ * Overlap): another live job, or an active scheduled backup unit, that a start
+ * met. Mapped to the wire's camelCase JobOverlap by toJobOverlap.
+ */
+const RenetOverlapSchema = z.object({
+  started_at: z.string().optional(),
+  origin: z
+    .object({
+      config: z.object({ name: z.string().optional(), id: z.string().optional() }).optional(),
+      client: z.string().optional(),
+      version: z.string().optional(),
+      ssh_user: z.string().optional(),
+      actor: z.string().optional(),
+    })
+    .optional(),
+  job_id: z.string().optional(),
+  function: z.string().optional(),
+  command: z.string().optional(),
+  repo_guid: z.string().optional(),
+  machine: z.string().optional(),
+  lock_class: z.string().optional(),
+  state: z.string().optional(),
+  unit: z.string().optional(),
+  action: z.enum(['warn', 'refuse']),
+  attach: z.string().default(''),
+});
+
+type RenetOverlap = z.infer<typeof RenetOverlapSchema>;
+
+/** Drop the keys whose value is undefined or empty, so an absent renet field never becomes `""` on the wire. */
+function compact<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined && value !== '')
+  ) as T;
+}
+
+/** Map renet's overlap entry onto the wire's JobOverlap (section 19). */
+function toJobOverlap(o: RenetOverlap): JobOverlap {
+  const origin = o.origin
+    ? compact({
+        client: o.origin.client,
+        version: o.origin.version,
+        sshUser: o.origin.ssh_user,
+        config: o.origin.config,
+        actor: o.origin.actor,
+      })
+    : undefined;
+  return compact({
+    jobId: o.job_id,
+    function: o.function,
+    command: o.command,
+    repoGuid: o.repo_guid,
+    machine: o.machine,
+    lockClass: o.lock_class,
+    state: o.state,
+    startedAt: o.started_at,
+    origin,
+    unit: o.unit,
+    action: o.action,
+    attach: o.attach,
+  }) as JobOverlap;
+}
+
 /** What `renet job start --json` prints: everything needed to find the job again. */
 const JobHandleSchema = z.object({
   job_id: z.string(),
   unit: z.string(),
   log_path: z.string(),
+  /** Live jobs and scheduled units the start met and was allowed past. */
+  overlaps: z.array(RenetOverlapSchema).nullable().optional(),
+  /** True when the handle is an earlier start's with the same request id: nothing new started. */
+  deduped: z.boolean().optional(),
+  /** The network ID this start allocated for a vault with `network_id: "auto"` (section 14). */
+  network_id: z.number().int().positive().optional(),
 });
 
 type JobHandle = z.infer<typeof JobHandleSchema>;
@@ -87,6 +166,9 @@ const JobStatusSchema = z.object({
   unit: z.string().optional(),
   log_path: z.string().optional(),
   pid: z.number().optional(),
+  request_id: z.string().optional(),
+  command: z.string().optional(),
+  lock_class: z.string().optional(),
 });
 
 type JobStatus = z.infer<typeof JobStatusSchema>;
@@ -151,6 +233,51 @@ export function isJobCommandUnsupported(output: string): boolean {
   return /unknown command "job"/i.test(output);
 }
 
+/**
+ * Detect the other version-skew case: the remote renet has the command but not a flag this CLI passes (cobra's own `Error: unknown flag: --since-line` or `Error: unknown shorthand flag: 'x' in -x` line, bare, after a `[step]` tag or after `: `; docker's own `unknown flag` text carries no `Error:` and does not count). Cobra rejects the invocation while parsing flags, before any command body runs, so the answer can name the skew without having changed anything on the machine.
+ */
+export function isRenetFlagUnsupported(output: string): boolean {
+  return /(?:^|[:\]]\s)\s*Error: unknown (shorthand )?flag\b/m.test(output);
+}
+
+/** The answer to a renet that is older than the CLI talking to it. `machine` is the machine's name. */
+export function renetOlderThanCliMessage(machine: string): string {
+  return `renet on ${machine} is older than this CLI; run machine setup`;
+}
+
+/**
+ * Whether a failed `job start` means the machine's renet is too old to run it
+ * as a job: no `job` command at all, or no flag this CLI passes (`--request-id`,
+ * `--attach`, `--origin` arrived with J1 and J1b). Cobra rejects both while
+ * parsing, before any work, so nothing ran.
+ */
+export function isJobStartUnsupported(output: string): boolean {
+  return isJobCommandUnsupported(output) || isRenetFlagUnsupported(output);
+}
+
+/**
+ * The refusal for a renet older than the job model (Design 11). There is no
+ * synchronous fallback: every renet call runs as a job, and `machine setup`
+ * uploads the binary that can.
+ */
+function jobsUnsupportedMessage(machineName: string, verb: string): string {
+  return (
+    `renet on '${machineName}' is older than this CLI and cannot run ${verb} as a job. ` +
+    `Upgrade it: rdc machine setup ${machineName}`
+  );
+}
+
+/** Raised when the machine's renet cannot run a job: nothing ran, exit 1. */
+export class JobsUnsupportedError extends Error {
+  constructor(
+    readonly machineName: string,
+    readonly verb: string
+  ) {
+    super(jobsUnsupportedMessage(machineName, verb));
+    this.name = 'JobsUnsupportedError';
+  }
+}
+
 /** Raised when `job start` fails for a reason that is NOT version skew. */
 export class JobStartFailedError extends Error {
   constructor(
@@ -182,27 +309,73 @@ export function resumeHint(jobId: string, machineName: string): string {
 }
 
 /**
- * The message shown when a job is started in the background (`--background`).
- *
- * Fire-and-forget: the CLI does not wait, so it must hand back the job id and
- * the commands to catch up with it. Plain hardcoded English, like resumeHint.
+ * The message shown when a job is started in the background (`--background`),
+ * or outlives its attach window, in text mode. It goes to stderr: stdout
+ * belongs to the command (section 26). Under `-o json` the envelope replaces it.
  */
 export function backgroundStartedHint(jobId: string, machineName: string): string {
   return [
     `Started job ${jobId} on '${machineName}'. It keeps running in the background.`,
     ``,
+    `  Wait for it:      rdc job wait ${jobId}`,
     `  Follow it:        rdc job logs ${jobId} -m ${machineName} --follow`,
     `  Check the result: rdc job status ${jobId} -m ${machineName}`,
   ].join('\n');
 }
 
-/** The warning shown when a machine's renet is too old to run detached jobs. */
-export function versionSkewWarning(machineName: string): string {
-  return (
-    `The renet deployed on '${machineName}' is older than this CLI and does not support detached jobs. ` +
-    `Falling back to a synchronous run, which will not survive a dropped connection. ` +
-    `Redeploy renet to that machine to enable detached jobs.`
-  );
+/**
+ * The message shown when a direct attach lost its transport for longer than the
+ * reattach budget (section 16). The job keeps running and the ticket is kept.
+ */
+export function followLostHint(jobId: string, machineName: string): string {
+  return [
+    `Lost the connection to job ${jobId} on '${machineName}'. The job is STILL RUNNING and its ticket is kept.`,
+    ``,
+    `  Resume following: rdc job wait ${jobId}`,
+    `  Check the result: rdc job status ${jobId} -m ${machineName}`,
+  ].join('\n');
+}
+
+/** The `-b` / attach-window envelope (Design 2, section 26), shared with MCP. */
+export function backgroundEnvelope(params: {
+  jobId: string;
+  machine: string;
+  verb: string;
+  repo?: string;
+  overlaps?: JobOverlap[];
+}): BackgroundEnvelope {
+  return {
+    jobId: params.jobId,
+    machine: params.machine,
+    verb: params.verb,
+    ...(params.repo ? { repo: params.repo } : {}),
+    state: 'running',
+    follow: `rdc job wait ${params.jobId}`,
+    overlaps: params.overlaps ?? [],
+  };
+}
+
+/** One overlap as a stderr warning line plus the command that shows the other job (section 19). */
+export function overlapWarningLines(overlap: JobOverlap): string[] {
+  const head = `${overlap.action === 'refuse' ? 'Refused' : 'Warning'}: ${overlapSubject(overlap)}, ${originLabel(overlap.origin)}.`;
+  return overlap.attach ? [head, `  See it: ${overlap.attach}`] : [head];
+}
+
+/** "job <id> (<function> on <repo>) is running, started <ts>". */
+function overlapSubject(overlap: JobOverlap): string {
+  const what = overlap.unit ?? `job ${overlap.jobId ?? UNKNOWN_JOB_ID}`;
+  const doing = overlap.function ?? overlap.command ?? DEFAULT_WORK_LABEL;
+  const scope = overlap.repo ?? overlap.repoGuid;
+  const on = scope ? ` on ${scope}` : '';
+  const started = overlap.startedAt ? `, started ${overlap.startedAt}` : '';
+  return `${what} (${doing}${on}) is ${overlap.state ?? DEFAULT_JOB_STATE}${started}`;
+}
+
+/** "started by <user> via <client> (config <name>)", or the older-renet fallback. */
+function originLabel(origin: JobOverlap['origin']): string {
+  if (!origin) return 'started by: unknown (older renet)';
+  const config = origin.config?.name ? ` (config ${origin.config.name})` : '';
+  return `started by ${origin.sshUser ?? UNKNOWN_ORIGIN} via ${origin.client ?? UNKNOWN_ORIGIN}${config}`;
 }
 
 /** Parse `renet job start --json` output into a validated handle. */
@@ -300,14 +473,161 @@ export function buildJobStartCommand(params: {
   /** Job ceiling in milliseconds. Rendered as a Go duration ("600000ms"). */
   timeoutMs?: number;
   debug?: boolean;
+  /** The idempotency key (section 17): a retried start attaches to the first job. */
+  requestId?: string;
+  /** The `--attach` Go duration (`0s` is until terminal); absent prints the handle and returns. */
+  attach?: string;
+  /** The `--origin` JSON (section 19), at most 1 KiB. */
+  origin?: string;
+  /** The `--steps` JSON array (section 18): the client-side step plan renet keeps in the spool. */
+  steps?: string;
 }): RenetLaunch {
-  const { remoteRenetPath, env, timeoutMs, debug } = params;
+  const { remoteRenetPath, env, timeoutMs, debug, requestId, attach, origin, steps } = params;
   const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
   const debugFlag = debug ? ' --debug' : '';
+  const requestFlag = requestId ? ` --request-id ${shellQuote(requestId)}` : '';
+  const attachFlag = attach ? ` --attach ${shellQuote(attach)}` : '';
+  const originFlag = origin ? ` --origin ${shellQuote(origin)}` : '';
+  const stepsFlag = steps ? ` --steps ${shellQuote(steps)}` : '';
   return sudoRenet(
     env,
-    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}`
+    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}`
   );
+}
+
+// --- the attach stream -------------------------------------------------------
+
+/** The `{"type":"job_status",...}` trailer `job start --attach` and `job logs --with-status` print. */
+const JobStatusTrailerSchema = JobStatusSchema.extend({
+  type: z.literal('job_status'),
+  deduped: z.boolean().optional(),
+  overlaps: z.array(RenetOverlapSchema).nullable().optional(),
+});
+
+/** What a refused start prints on stdout before exiting 15. */
+const OverlapRefusalSchema = z.object({
+  refused: z.literal('overlap'),
+  overlaps: z.array(RenetOverlapSchema),
+});
+
+/**
+ * What a start refused by its vault's `expect` prints on stdout before exiting
+ * 15 (private/renet/cmd/renet/job_precondition.go PreconditionRefusal).
+ */
+const PreconditionRefusalSchema = z.object({
+  refused: z.literal('precondition'),
+  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted']),
+  state: z.string(),
+  repository: z.string(),
+  repo_guid: z.string(),
+  machine: z.string().optional(),
+  message: z.string(),
+});
+
+type PreconditionRefusal = z.infer<typeof PreconditionRefusalSchema>;
+
+export type { PreconditionRefusal };
+
+/** One line of a `job start --attach` stream, classified. */
+export type AttachLine =
+  | {
+      kind: 'handle';
+      jobId: string;
+      deduped: boolean;
+      overlaps: JobOverlap[];
+      networkId?: number;
+    }
+  | { kind: 'status'; status: JobStatus; deduped: boolean; overlaps: JobOverlap[] }
+  | { kind: 'refusal'; overlaps: JobOverlap[] }
+  | { kind: 'precondition'; refusal: PreconditionRefusal }
+  | { kind: 'event'; event: RenetEvent }
+  | { kind: 'raw'; text: string };
+
+/**
+ * Classify one complete line of an attach stream. The handle is the first
+ * line, the status trailer the last; every line between is one spool line (an
+ * event), which is what the line cursor counts.
+ */
+export function parseAttachLine(line: string): AttachLine {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(line);
+  } catch {
+    return { kind: 'raw', text: line };
+  }
+  if (!parsed || typeof parsed !== 'object') return { kind: 'event', event: parsed as RenetEvent };
+  const obj = parsed as Record<string, unknown>;
+  if (obj.type === 'job_handle') return handleLineOf(obj);
+  if (obj.type === 'job_status') return statusLineOf(obj);
+  if (obj.refused === 'overlap') {
+    return {
+      kind: 'refusal',
+      overlaps: OverlapRefusalSchema.parse(obj).overlaps.map(toJobOverlap),
+    };
+  }
+  if (obj.refused === 'precondition') {
+    return { kind: 'precondition', refusal: PreconditionRefusalSchema.parse(obj) };
+  }
+  return { kind: 'event', event: obj as unknown as RenetEvent };
+}
+
+function handleLineOf(obj: Record<string, unknown>): AttachLine {
+  const handle = JobHandleSchema.parse(obj);
+  return {
+    kind: 'handle',
+    jobId: assertJobId(handle.job_id),
+    deduped: handle.deduped === true,
+    overlaps: (handle.overlaps ?? []).map(toJobOverlap),
+    ...(handle.network_id === undefined ? {} : { networkId: handle.network_id }),
+  };
+}
+
+function statusLineOf(obj: Record<string, unknown>): AttachLine {
+  const { deduped, overlaps } = JobStatusTrailerSchema.parse(obj);
+  // The status schema strips the trailer-only keys (`type`, `deduped`, `overlaps`).
+  const status = JobStatusSchema.parse(obj);
+  return {
+    kind: 'status',
+    status,
+    deduped: deduped === true,
+    overlaps: (overlaps ?? []).map(toJobOverlap),
+  };
+}
+
+/** The overlaps, dedupe flag and allocated network ID of a plain (`-b`) handle. */
+export function handleOverlaps(stdout: string): {
+  deduped: boolean;
+  overlaps: JobOverlap[];
+  networkId?: number;
+} {
+  const handle = JobHandleSchema.parse(JSON.parse(extractJsonObject(stdout)));
+  return {
+    deduped: handle.deduped === true,
+    overlaps: (handle.overlaps ?? []).map(toJobOverlap),
+    ...(handle.network_id === undefined ? {} : { networkId: handle.network_id }),
+  };
+}
+
+/** The overlaps of a refusal printed on stdout, or null when the output is no refusal. */
+export function parseOverlapRefusal(stdout: string): JobOverlap[] | null {
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    const parsed = parseAttachLine(trimmed);
+    if (parsed.kind === 'refusal') return parsed.overlaps;
+  }
+  return null;
+}
+
+/** The precondition refusal printed on stdout, or null when the output is none. */
+export function parsePreconditionRefusal(stdout: string): PreconditionRefusal | null {
+  for (const line of stdout.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    const parsed = parseAttachLine(trimmed);
+    if (parsed.kind === 'precondition') return parsed.refusal;
+  }
+  return null;
 }
 
 /**
@@ -398,87 +718,6 @@ export function createEventLineReader(
         writeStdout(`${line}\n`);
       }
     }
-  };
-}
-
-/**
- * Accumulates a detached job's event stream back into the stdout, stderr, and
- * step timings a synchronous run would have produced.
- *
- * This exists because a detached job's spool is ALWAYS NDJSON (`job run` forces
- * events mode, cmd/renet/job_commands.go), so a status-to-result mapping has no
- * captured text to hand back unless it is reconstructed here. The reconstruction
- * is byte-faithful: renet emits the exact same string either as an `output`
- * event or as a `Println` on the synchronous path
- * (cmd/renet/execute_command.go), so concatenating `output` messages
- * newline-terminated reproduces the non-events stdout, bridge relay prefixes and
- * all. That is precisely what `parseCapturedJson` expects.
- *
- * Kept dependency-free and separate from rendering on purpose: capturing the
- * output must not depend on whether, or how, the caller wants it drawn.
- */
-export interface JobOutputCollector {
-  /** Fold one decoded event into the accumulated output. */
-  consume(event: RenetEvent): void;
-  /** The reconstructed stdout, byte-faithful with a synchronous run. */
-  readonly stdout: string;
-  /** The reconstructed stderr (error and warning log lines). */
-  readonly stderr: string;
-  /** Step timings recovered from `step_done` events. */
-  readonly steps: { name: string; duration_ms: number; detail?: string }[];
-}
-
-/**
- * The text an `output` event contributes to reconstructed stdout, or ''.
- *
- * renet's non-events path prints each line with Println, which always appends
- * exactly one newline; mirror that byte-for-byte so the reconstruction matches.
- */
-function outputEventText(event: RenetEvent): string {
-  return event.type === 'output' && event.msg != null ? `${event.msg}\n` : '';
-}
-
-/** The text an error/warning `log` event contributes to reconstructed stderr, or ''. */
-function logEventText(event: RenetEvent): string {
-  const isProblem = event.level === 'error' || event.level === 'warning';
-  return event.type === 'log' && isProblem && event.msg != null ? `${event.msg}\n` : '';
-}
-
-/** The step timing a `step_done` event contributes, or null when incomplete. */
-function stepDoneEntry(
-  event: RenetEvent
-): { name: string; duration_ms: number; detail?: string } | null {
-  if (event.type !== 'step_done' || !event.name || typeof event.duration_ms !== 'number') {
-    return null;
-  }
-  return {
-    name: event.name,
-    duration_ms: event.duration_ms,
-    ...(event.detail ? { detail: event.detail } : {}),
-  };
-}
-
-export function createJobOutputCollector(): JobOutputCollector {
-  let stdout = '';
-  let stderr = '';
-  const steps: { name: string; duration_ms: number; detail?: string }[] = [];
-
-  return {
-    consume(event: RenetEvent): void {
-      stdout += outputEventText(event);
-      stderr += logEventText(event);
-      const step = stepDoneEntry(event);
-      if (step) steps.push(step);
-    },
-    get stdout() {
-      return stdout;
-    },
-    get stderr() {
-      return stderr;
-    },
-    get steps() {
-      return steps;
-    },
   };
 }
 

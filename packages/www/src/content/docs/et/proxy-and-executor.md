@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: et
-sourceHash: "39ec44d8efc3f9b5"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "e56214cd4086bafa"
+sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
 ---
 
 # Proxy ja käitaja
@@ -49,6 +49,19 @@ Veebikonsool loeb sama lippu, et otsustada, kas käsk saab üldse Käivita nupu,
 ## Mock-käitaja
 
 Arenduse ajal, kui ühtegi päris käitajat pole konfigureeritud, vastab kontoserver käsupäringutele ise mock-voogude ja selgelt võltsandmetega (ressursside nimed eesliitega `mock-`). See võimaldab kogu konsooli testida, sealhulgas vorme, voogedastust ja tulemuste kuvamist, ilma masina või avamiseta. Päris käivitamiseks on vaja päris käitajat.
+
+## Piirang, kust käitaja ühendub
+
+Konfiguratsiooni `access`-hoidla sisaldab SSH-võtmete lubatud IPv4 ja IPv6 lähtevahemikke. Vahemikke saab määrata kogu konfiguratsioonile, võtmele ja masinale, nii et masin aktsepteerib võtit ainult nendelt aadressidelt, kust tema käitaja ühendub.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` registreerib võtme ja lisab hostitava käitaja kaks vahemikku: `104.28.0.0/16` ja `2a09:bac0::/29`. Mõlemad on jälgitud Cloudflare'i väljuva liikluse vahemikud, mitte Cloudflare'i avaldatud loend, seega võivad need muutuda.
+- `rdc machine access set <machine> --key <key>` määrab masinale võtme; `--ipv4`, `--ipv6` ja `--clear-ranges` kohandavad selle masina vahemikke.
+- `rdc machine access push <machine>` kirjutab juurdepääsuread masinasse ning `--dry-run` näitab tulemust midagi muutmata.
+- `rdc machine access show <machine>` kuvab kehtivad juurdepääsuread.
+
+`machine setup` rakendab juurdepääsuread uuesti, nii et uuesti üles seatud masin saab oma piirangud tagasi.
+
+Push, mis lukustaks praeguse SSH-seansi välja, kuna selle aadress jääb kasutatava võtme vahemikest välja, lükatakse tagasi veaga `ACCESS_LOCKOUT` ja midagi ei kirjutata. Push lükatakse tagasi veaga `ACCESS_FILE_CHANGED`, kui fail on masinas vahepeal muutunud; midagi ei rakendatud, seega võib pushi turvaliselt uuesti proovida.
 
 ## Seotud
 

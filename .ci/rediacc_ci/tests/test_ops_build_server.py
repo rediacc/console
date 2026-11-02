@@ -51,6 +51,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import bws_env
 from rediacc_ci.tests import frozen
 
 if typing.TYPE_CHECKING:
@@ -138,7 +139,7 @@ def fixture(
     if dotenv is not None:
         (root / "private" / "account" / ".cache").mkdir(parents=True, exist_ok=True)
         (root / "private" / "account" / ".cache" / "public-keys.env").write_text(
-            dotenv, encoding="utf-8"
+            bws_env.PUBLIC_KEY_CACHE_HEADER + dotenv, encoding="utf-8"
         )
     return root
 
@@ -512,3 +513,25 @@ def test_the_recorded_bytes_are_not_a_hash_of_themselves() -> None:
         digest = hashlib.sha256(frozen.read(SLUG, name).encode("utf-8")).hexdigest()
         assert digest not in seen, "%s and %s recorded identical bytes" % (name, seen[digest])
         seen[digest] = name
+
+
+def test_the_cache_header_is_the_one_bws_env_writes() -> None:
+    """build_server spells the v2 header out (its scratch root vendors no `rediacc_ci.core`); this keeps the two spellings one string (review 824f3bd7.2)."""
+    source = (ROOT / PORT_REL).read_text(encoding="utf-8")
+    assert repr(bws_env.PUBLIC_KEY_CACHE_HEADER)[1:-1] in source
+
+
+def test_a_cache_without_the_v2_header_bakes_no_key(tmp_path: pathlib.Path) -> None:
+    """A cache an older setup wrote may hold the retired DEV key under the production name (review 824f3bd7.2): build_server reads no key from it and says why. The CONTROL is the same cache with the header, read as before."""
+    root, args, kw = build(tmp_path, "the-account-key-comes-from-dotenv")
+    cache = root / "private" / "account" / ".cache" / "public-keys.env"
+    cache.write_text("ACCOUNT_ED25519_PUBLIC_KEY=retired-dev-key\n", encoding="utf-8")
+    _rc, _out, err, calls, _tree = run_port(root, args, **kw)
+    assert "retired-dev-key" not in calls
+    assert "predates the one-keypair store" in err
+    cache.write_text(
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "ACCOUNT_ED25519_PUBLIC_KEY=prod-key\n", encoding="utf-8"
+    )
+    _rc, _out, err, calls, _tree = run_port(root, args, **kw)
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=prod-key" in calls
+    assert "predates" not in err

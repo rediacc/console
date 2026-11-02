@@ -2029,3 +2029,13 @@ Residue: a mirror that adds an exception or contradicts the canonical while stil
 Documented-In: text:.ci/rediacc_ci/quality/scope_mirrors.py BLIND SPOTS (plan D9), also printed on every green
 
 CLAUDE.md states the PR-scope rules once, and the output style, the pr-epics skill, `/pr-babysit`, `/pr-merge`, the pr-babysitter agent, a guard's message and the QUEUE.md header restate them in their own words. Those copies are what an agent reads mid-task. A change to the rule reaches the copies only when its author remembers each one: 8ed69711c copied one sentence into five files by hand, and earlier changes left eight disagreements behind (agent/plans/PLAN-scope-mirrors.md, F1-F8). The canonical spans are anchored and pinned by sha, so an edit to one turns red until every registered mirror has been re-read and the clause repinned.
+
+## A remedy written for a human reads as an operator step
+Trap-Id: human-remedy-read-as-operator-step
+Enforced-By: hook:bench-login-is-the-agents-step, file:.ci/rediacc_ci/ops/live_proof.py
+Residue: the trapguard ring and the recorder cover `eu-bench` only; another tool's error text that tells a person to type a code still reads the same way to a session.
+Documented-In: doc:docs/agent-reference/bench-login.md#Whose step it is
+
+On 2026-10-30 `./rdc.sh --config eu-bench machine status hostinger` answered that the config token "could not be renewed because this device's login is tied to another network address" and told the reader to run a command in an interactive terminal and enter the code from an authenticator app. The text is right for a person at a terminal. A session read it as a step only the operator could take and asked the operator for the TOTP, though `npm run login:bench` derives that code from the vault and is agent-allowed for `eu-bench`.
+
+The CLI cannot carry the pointer itself: it is the shipped product and knows nothing of this repository's tooling. So the remedy sits where a session meets the text: the live-proof recorder runs `npm run login:bench` once and retries, a trapguard note names it after any `eu-bench` rdc call that printed the error, and `block_settled_questions` refuses the question. Before asking the operator for anything a CLI message tells a human to do, check whether a repository tool already does it.

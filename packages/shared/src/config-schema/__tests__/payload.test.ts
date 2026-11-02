@@ -47,7 +47,6 @@ function sampleConfig(): RdcConfig {
     resources: {
       machines: { 'web-1': { ip: '10.0.0.1', user: 'deploy', port: 22 } },
       repositories: {},
-      storages: {},
     },
     encryption: { mode: 'plaintext' },
   };
@@ -64,7 +63,7 @@ describe('config push payload', () => {
     const entries = buildCommitEntries(sampleConfig());
     const pointers = entries.map((e) => e.pointer);
 
-    expect(pointers).toEqual([...pointers].sort());
+    expect(pointers).toEqual([...pointers].sort((a, b) => Number(a > b) - Number(a < b)));
     expect(pointers).toContain('/credentials/ssh/privateKey');
     expect(pointers).toContain('/resources/machines/web-1/ip');
     // Public fields are never committed.

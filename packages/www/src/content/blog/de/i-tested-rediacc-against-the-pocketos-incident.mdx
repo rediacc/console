@@ -11,8 +11,8 @@ tags:
   - case-study
 featured: true
 language: de
-sourceHash: "4658b7226eb1e696"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "2b10e7d64d0ce38d"
+sourceCommit: "c8a8908f7412252e302fe5280980c35d5cae82da"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -124,7 +124,7 @@ Total: 6.3s
 
 Der Klon-Schritt des 2 GB Forks dauerte 573 Millisekunden. Der Klon-Schritt des 128 GB Forks dauerte 2,3 Sekunden. Das Klonen der Daten ist also sublinear, nicht streng konstant. Aber die Gesamtzeit für den Fork ist nahezu identisch (6,3 s gegenüber 7,2 s), weil der größte Teil der Wartezeit der SSH- und Lizenz-Tanz ist, nicht die Daten. Aus Sicht des Nutzers ist ein Fork eine Pause von 6 bis 7 Sekunden, unabhängig von der Repo-Größe.
 
-Jetzt arbeite ich auf dem Fork. Er hat seine eigene GUID (`22c57178-...`). Seine eigene networkId (`21760`). Seinen eigenen Mount-Pfad. Seinen eigenen Docker-Daemon-Socket (`/var/run/rediacc/docker-21760.sock`). Die Daten des Elternteils werden per Reflink geteilt. Das Elternteil selbst läuft die ganze Zeit weiter.
+Jetzt arbeite ich auf dem Fork. Er hat seine eigene GUID (`22c57178-...`). Seine eigene networkId (`21760`). Seinen eigenen Mount-Pfad. Seinen eigenen Docker-Daemon-Socket (`/var/run/rediacc/net-21760/docker-21760.sock`). Die Daten des Elternteils werden per Reflink geteilt. Das Elternteil selbst läuft die ganze Zeit weiter.
 
 Wenn ich mich per `term connect` in den Fork verbinde, sehe ich Folgendes:
 

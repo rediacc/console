@@ -55,15 +55,19 @@ const {
   mockVerifyMachineSetup: vi.fn(),
 }));
 
-vi.mock('../../remote/sftp/index.js', () => ({
-  SFTPClient: class MockSFTPClient {
-    connect = mockConnect;
-    close = mockClose;
-    exec = mockExec;
-    execStreaming = mockExecStreaming;
-    isConnected = () => true;
-  },
-}));
+// Every renet call runs as a machine job: the script below answers as renet's run did (stdout, stderr, exit code), and the fake turns a `job start` exec into the attach stream renet prints for that run.
+vi.mock('../../remote/sftp/index.js', async () => {
+  const { asJobAttach } = await import('./job-attach-fake.js');
+  return {
+    SFTPClient: class MockSFTPClient {
+      connect = mockConnect;
+      close = mockClose;
+      exec = mockExec;
+      execStreaming = asJobAttach(mockExecStreaming as never);
+      isConnected = () => true;
+    },
+  };
+});
 
 vi.mock('../config/config-resources.js', () => ({
   configService: {
@@ -115,11 +119,8 @@ vi.mock('../renet/renet-execution.js', () => ({
 const { localExecutorService } = await import('../executor/local-executor.js');
 
 describe('localExecutorService first-use onboarding', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
       sshPublicKey: 'PUBLIC_KEY',
@@ -157,12 +158,6 @@ describe('localExecutorService first-use onboarding', () => {
       status: { subscriptionId: 'sub_1' },
     });
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
-  });
-
-  afterEach(() => {
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   it('authorizes and retries once on first-use missing-license failures', async () => {
@@ -540,11 +535,8 @@ describe('localExecutorService first-use onboarding', () => {
 });
 
 describe('localExecutorService create/fork licensing flow', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
       sshPublicKey: 'PUBLIC_KEY',
@@ -566,12 +558,6 @@ describe('localExecutorService create/fork licensing flow', () => {
     mockRefreshRepoLicenseIdentity.mockResolvedValue(true);
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
     mockExecStreaming.mockResolvedValue(0);
-  });
-
-  afterEach(() => {
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   const createOptions = {
@@ -641,7 +627,7 @@ describe('localExecutorService create/fork licensing flow', () => {
 
   // `rdc repo commit` freezes a working fork into a NEW immutable repo, and renet's cmd layer refuses to start without a licence for that new repo's name (cmd/renet/repository_commit.go's ValidateInstalledRepoLicenseForCreate(scope, commitName)). Against an
   // enforcing binary the CLI never minted one, so commit was broken outright;
-  // dev builds carry --nolicense, which is what hid it.
+  // the license-free dev build of the time is what hid it.
   describe('repo commit pre-issuance', () => {
     const commitGuid = '11111111-2222-4333-8444-555555555555';
     const commitOptions = {
@@ -731,15 +717,6 @@ describe('localExecutorService create/fork licensing flow', () => {
     expect(call[4]).toBeDefined();
     // The lease was released, dropping the last reference and closing.
     expect(mockClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('refreshIdentityFor is a no-op when machine activation is skipped', async () => {
-    process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
-    await localExecutorService.refreshIdentityFor('repository_create', 'hostinger', {
-      repository: 'myrepo',
-    });
-    expect(mockConnect).not.toHaveBeenCalled();
-    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
   });
 
   // Bug #46: `kubeCluster` used to ALSO rewrite machineName to the cluster's control node. KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never reroutes the machine either: the caller's derived machine must stand, or every volume-level op on a k8s repo (trim, diff, commit, repo up's LUKS mount) runs on the control node instead of the host that mounts the datastore.

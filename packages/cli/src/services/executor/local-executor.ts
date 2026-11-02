@@ -11,6 +11,7 @@
  */
 
 import { t } from '../../i18n/index.js';
+import { SshConnectError } from '../../remote/sftp/connect-error.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
@@ -33,9 +34,14 @@ import {
   parseRenetLicenseFailure,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
+import {
+  CONVERGE_FUNCTION,
+  parseConvergeReport,
+  routerRefreshAfterPass,
+} from '../renet/runtime-converge.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
-import { runDetachedExecution } from './detached-execution.js';
+import { runJobExecution, runsOutsideJob } from './detached-execution.js';
 import { resolveExtraMachines } from './extra-machines.js';
 import { createJobOutputCollector } from './job-client.js';
 import {
@@ -48,48 +54,38 @@ import {
   resolveLicenseFailure,
 } from './license-recovery.js';
 import { createQuietStderrPump, shouldEchoRelayLive } from './output-lines.js';
-import { buildRemoteRenetCommand, detectEnvironment, resolveEnvSecrets } from './renet-command.js';
+import {
+  buildRemoteRenetCommand,
+  detectEnvironment,
+  resolveEnvSecrets,
+  resolveRenetTimeoutMs,
+} from './renet-command.js';
 import { renetAccessFor } from './renet-function-access.js';
 import type { RenetLaunch } from './renet-launch.js';
 import {
-  buildRenetExitError,
   createStdoutHandler,
   echoRenetFailure,
   extractStepsFromOutput,
   surfaceRenetWarnings,
 } from './renet-output.js';
+import { settleRenetRun } from './renet-settle.js';
+import { prepareSessionVault, sessionConvergeDeps } from './session-converge.js';
+import { timedStep } from './timed-step.js';
 import type { ExecuteOptions, ExecuteResult } from './types.js';
-import { loadContextRepositories, loadContextStorages, resolveKnownHosts } from './vault-inputs.js';
+import { applyVaultDirectives } from './vault-directives.js';
+import { loadContextRepositories, resolveKnownHosts } from './vault-inputs.js';
 
 // The pieces split out of this module stay importable from it, so no caller had to move.
 export { needsLicenseRecovery } from './license-recovery.js';
 export { buildRemoteRenetCommand, buildRenetEnv } from './renet-command.js';
 export { parseCapturedJson } from './renet-output.js';
+export { mergeEventsStderr, settleRenetRun } from './renet-settle.js';
 // ExecuteResult only. The other seam types are consumed from executor-factory, which is the entry point to this layer; re-exporting them here as well just gave callers two doors to the same room.
 export type { ExecuteResult } from './types.js';
+export { applyVaultDirectives } from './vault-directives.js';
 
-/** Run a step with spinner + timing. Shows "Loading..." then "✓ Loaded (1.2s)" on the same line. */
-async function timedStep<T>(
-  spinnerText: string,
-  successKey: string,
-  fn: () => Promise<T>
-): Promise<T> {
-  const start = Date.now();
-  const spinner = startSpinner(spinnerText);
-  try {
-    const result = await fn();
-    const successText = t(successKey, { duration: formatDuration(Date.now() - start) });
-    if (spinner) {
-      stopSpinner(true, successText);
-    } else {
-      outputService.info(successText);
-    }
-    return result;
-  } catch (error) {
-    if (spinner) stopSpinner(false);
-    throw error;
-  }
-}
+/** What `buildLocalVault` reads besides the function and its params, kept to build a second vault (the converge pass) in the same session. */
+type VaultInputs = Omit<Parameters<typeof buildLocalVault>[0], 'functionName' | 'params'>;
 
 /**
  * Service for executing tasks directly via renet subprocess.
@@ -143,10 +139,10 @@ class LocalExecutorService {
         startTime
       );
       if (recovered === null) {
-        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE doing any work, so a second run cannot double-execute even a detached job (a strictly weaker claim than startJob's version-skew fallback).
+        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE doing any work, so a second run cannot double-execute. The re-run is a NEW job, so it carries a new request id: the first one would dedupe onto the job that refused.
         result = await this.runOperation(
           sftp,
-          options,
+          options.requestId ? { ...options, requestId: `${options.requestId}:r` } : options,
           remoteRenetPath,
           vault,
           machine,
@@ -157,7 +153,8 @@ class LocalExecutorService {
       }
     }
 
-    if (result.success && !options.deferIdentityRefresh) {
+    // A job still running past its window may already have created repos, but the identity refresh needs the finished repo on disk. The `identityRefresh` plan step (packages/cli/src/services/jobs/plans.ts) is meant to run it when the job is seen to finish; the step runner is not wired to repo verbs until PLAN-detached-jobs J16, so until then a backgrounded create refreshes no identity.
+    if (result.success && result.state !== 'running' && !options.deferIdentityRefresh) {
       await maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
     }
 
@@ -170,13 +167,14 @@ class LocalExecutorService {
   }
 
   /**
-   * Run the operation once, detached when the caller asked for it and the
-   * machine supports it, else synchronously. Both variants flow back through the
-   * shared recovery, identity-refresh, and duration tail in
-   * executeWithConnectedSftp, so a detached run is no longer a second code path
-   * that silently skips license recovery (finding #33).
+   * Run the operation once, as a machine job (agent/plans/PLAN-detached-jobs.md
+   * section 14). Only the section 24 exemptions (`runsOutsideJob`: an
+   * interactive TTY exec, a log follow) stay on `renet execute`. There is no
+   * synchronous fallback: a renet too old for jobs refuses with the upgrade
+   * command (Design 11). Both paths flow back through the shared recovery,
+   * identity-refresh, and duration tail in executeWithConnectedSftp (finding #33).
    */
-  private async runOperation(
+  private runOperation(
     sftp: SFTPClient,
     options: ExecuteOptions,
     remoteRenetPath: string,
@@ -184,18 +182,10 @@ class LocalExecutorService {
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string
   ): Promise<ExecuteResult> {
-    if (options.detached) {
-      const detached = await runDetachedExecution(
-        remoteRenetPath,
-        vault,
-        options,
-        machine,
-        sshPrivateKey
-      );
-      // null means the machine's renet has no `job` command: fall back to sync.
-      if (detached !== null) return detached;
+    if (runsOutsideJob(options)) {
+      return this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
     }
-    return this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+    return runJobExecution(remoteRenetPath, vault, options, machine, sshPrivateKey);
   }
 
   /**
@@ -209,11 +199,13 @@ class LocalExecutorService {
     eventsMode?: boolean,
     otlpCreds?: { user: string; pass: string } | null,
     envSecrets?: Record<string, string>,
-    kubeconfig?: string
+    kubeconfig?: string,
+    timeoutMs?: number
   ): RenetLaunch {
     return buildRemoteRenetCommand({
       remoteRenetPath,
       eventsMode,
+      timeoutMs,
       isDevelopment: detectEnvironment() === 'development',
       telemetryDisabled: isTelemetryDisabled(),
       otlpCreds,
@@ -242,7 +234,8 @@ class LocalExecutorService {
       options.eventsMode,
       otlpCreds,
       envSecrets,
-      kubeconfig
+      kubeconfig,
+      resolveRenetTimeoutMs(options.functionName, options.timeout)
     );
     // Events mode streams NDJSON, not text. Reconstruct the real stdout from the events (below) instead of accumulating the raw stream: handing an event stream straight to parseCapturedJson is the pre-existing --proxy bug (#31).
     const collector = options.eventsMode ? createJobOutputCollector() : undefined;
@@ -275,9 +268,16 @@ class LocalExecutorService {
     // The command failed, so what we withheld is exactly what explains it.
     if (echoStderrLive) stderrPump.flush(exitCode !== 0);
 
-    if (collector) stdout = collector.stdout;
-
-    const combined = stdout + stderr;
+    const settled = settleRenetRun({
+      exitCode,
+      stdout,
+      stderr,
+      collector,
+      machineName: options.machineName,
+    });
+    stdout = settled.stdout;
+    stderr = settled.stderr;
+    const combined = settled.combined;
     const renetDurationMatch = /operation completed.*?duration_ms=(\d+)/.exec(combined);
     const operationMs = renetDurationMatch
       ? Number.parseInt(renetDurationMatch[1], 10)
@@ -288,7 +288,7 @@ class LocalExecutorService {
     return {
       success: exitCode === 0,
       exitCode,
-      error: exitCode === 0 ? undefined : buildRenetExitError(exitCode, stderr, stdout),
+      error: settled.error,
       durationMs: operationMs,
       stdout,
       stderr,
@@ -309,10 +309,10 @@ class LocalExecutorService {
     sftp: SFTPClient,
     cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[],
     quiet: boolean
-  ): Promise<{ remoteRenetPath: string; renetUploaded: boolean }> {
+  ): Promise<{ remoteRenetPath: string; renetUploaded: boolean; routerRefreshDue: boolean }> {
     const provStart = Date.now();
     // The dispatched function decides whether this run may replace the machine's renet (RENET_FUNCTION_ACCESS).
-    const access = renetAccessFor(options.functionName);
+    const access = renetAccessFor(options.functionName, options.params);
     const provisionFn = () =>
       acquireRemoteRenet(
         access,
@@ -322,11 +322,17 @@ class LocalExecutorService {
         {
           debug: options.debug,
           skipRouterRestart: options.skipRouterRestart,
+          // The router refresh waits for the runtime converge pass (executeSession).
+          deferRouterRefresh: true,
           machineName: options.machineName,
         },
         sftp
       );
-    const { remotePath: remoteRenetPath, uploaded: renetUploaded } = quiet
+    const {
+      remotePath: remoteRenetPath,
+      uploaded: renetUploaded,
+      routerRefreshDue,
+    } = quiet
       ? await provisionFn()
       : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
     cliSteps.push({
@@ -391,7 +397,7 @@ class LocalExecutorService {
       sftp
     );
 
-    return { remoteRenetPath, renetUploaded };
+    return { remoteRenetPath, renetUploaded, routerRefreshDue: routerRefreshDue === true };
   }
 
   /**
@@ -414,7 +420,6 @@ class LocalExecutorService {
     const sshPublicKey =
       config.sshPublicKey ?? (await readOptionalSSHKey(config.ssh.publicKeyPath));
     const sshKnownHosts = await resolveKnownHosts(machine.knownHosts);
-    const storages = await loadContextStorages();
     const { credentials: repositoryCredentials, configs: repositoryConfigs } =
       await loadContextRepositories();
 
@@ -422,8 +427,7 @@ class LocalExecutorService {
     const params = options.params ?? {};
     const extraMachines = options.extraMachines ?? (await resolveExtraMachines(params));
 
-    const vault = buildLocalVault({
-      functionName: options.functionName,
+    const vaultInputs: VaultInputs = {
       machineName: options.machineName,
       // #74: a caller that KNOWS the repo's placement declares its datastore here, and it must land in the MACHINE VAULT, that is the only datastore renet ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault). A `datastore` PARAM would not do it: `repository_create` resolves the datastore through AddDatastore, which reads the vault, not the params bag. The
       // fallback below is untouched and still correct: a machine with no named datastore keeps its own default. This only lets a caller stop staying silent.
@@ -431,14 +435,17 @@ class LocalExecutorService {
       sshPrivateKey,
       sshPublicKey,
       sshKnownHosts,
-      params,
       extraMachines,
-      storages,
       repositoryCredentials,
       repositoryConfigs,
-    });
+    };
+    const vault = applyVaultDirectives(
+      buildLocalVault({ ...vaultInputs, functionName: options.functionName, params }),
+      options,
+      repositoryConfigs
+    );
     cliSteps.push({ name: 'config', duration_ms: Date.now() - startTime, startedAtMs: startTime });
-    return { config, machine, sshPrivateKey, vault };
+    return { config, machine, sshPrivateKey, vault, vaultInputs };
   }
 
   private async executeSession(
@@ -446,13 +453,13 @@ class LocalExecutorService {
     config: Awaited<ReturnType<typeof configService.getLocalConfig>>,
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
     sshPrivateKey: string,
-    vault: ReturnType<typeof buildLocalVault>,
+    built: { vault: string; vaultInputs: VaultInputs },
     options: ExecuteOptions,
     cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[],
     quiet: boolean,
     startTime: number
   ): Promise<ExecuteResult> {
-    const { remoteRenetPath } = await this.provisionAndVerify(
+    const { remoteRenetPath, renetUploaded, routerRefreshDue } = await this.provisionAndVerify(
       config,
       machine,
       sshPrivateKey,
@@ -461,6 +468,22 @@ class LocalExecutorService {
       cliSteps,
       quiet
     );
+
+    const deps = sessionConvergeDeps({
+      sftp,
+      remoteRenetPath,
+      machine,
+      options,
+      buildVault: (params) =>
+        buildLocalVault({ ...built.vaultInputs, functionName: CONVERGE_FUNCTION, params }),
+      runRemote: (vault, runOptions) =>
+        this.runRemoteExecution(sftp, remoteRenetPath, vault, runOptions),
+    });
+    const isConverge = options.functionName === CONVERGE_FUNCTION;
+    const vault = await prepareSessionVault(sftp, deps, options, built.vault, {
+      renetUploaded,
+      routerRefreshDue,
+    });
 
     const result = await this.executeWithConnectedSftp(
       sftp,
@@ -471,6 +494,15 @@ class LocalExecutorService {
       sshPrivateKey,
       startTime
     );
+    if (isConverge) {
+      const refresh = routerRefreshAfterPass({
+        due: routerRefreshDue,
+        dryRun: options.params?.dry_run === true,
+        summary: parseConvergeReport(result.stdout)?.summary ?? null,
+        skipRouterRestart: options.skipRouterRestart,
+      });
+      if (refresh) await deps.refreshRouter();
+    }
     result.cliSteps = [...cliSteps];
     result.allSteps = [...cliSteps, ...(result.steps ?? [])];
 
@@ -508,11 +540,8 @@ class LocalExecutorService {
     const cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[] = [];
 
     try {
-      const { config, machine, sshPrivateKey, vault } = await this.loadConfigAndBuildVault(
-        options,
-        startTime,
-        cliSteps
-      );
+      const { config, machine, sshPrivateKey, vault, vaultInputs } =
+        await this.loadConfigAndBuildVault(options, startTime, cliSteps);
       const configText = t('timing.step.configLoaded', {
         duration: formatDuration(cliSteps[0].duration_ms),
       });
@@ -537,7 +566,7 @@ class LocalExecutorService {
           config,
           machine,
           sshPrivateKey,
-          vault,
+          { vault, vaultInputs },
           options,
           cliSteps,
           quiet,
@@ -551,11 +580,29 @@ class LocalExecutorService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const durationMs = Date.now() - startTime;
-      this.recordAudit(options, { success: false, exitCode: 1, durationMs, error: errorMessage });
+      this.recordAudit(options, {
+        success: false,
+        exitCode: error instanceof SshConnectError ? error.exitCode : 1,
+        durationMs,
+        error: errorMessage,
+      });
       // A CliExitError is a deliberate REFUSAL carrying its own exit code, its retryable flag and its next-actions. Flattening it into a generic
       // {exitCode: 1} result throws all of that away: a BUSY provisioning-lock
       // timeout (exit 15, retryable, "here is the pid holding it") arrived at the user as an anonymous exit 1. Let it through untouched.
       if (error instanceof CliExitError) throw error;
+      // A named connect failure keeps its code, exit code and guidance, so the console can tell an unreachable machine from a crash. An unanswered connect (EGRESS_UNREACHABLE) also carries its address, which `rdc serve` names in the egress report for the proxy to probe.
+      if (error instanceof SshConnectError) {
+        const connectTarget = { host: error.host, port: error.port };
+        return {
+          success: false,
+          exitCode: error.exitCode,
+          error: errorMessage,
+          ...(error.errorCode ? { errorCode: error.errorCode } : {}),
+          ...(error.guidance ? { errorGuidance: error.guidance } : {}),
+          ...(error.kind === 'unreachable' ? { connectTarget } : {}),
+          durationMs,
+        };
+      }
       return { success: false, exitCode: 1, error: errorMessage, durationMs };
     }
   }

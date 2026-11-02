@@ -58,7 +58,7 @@ const TEST_CONFIG: RdcConfig = {
     },
     backupStrategies: {
       nightly: {
-        destinations: [{ kind: 'storage', name: 'off', storage: 's1' }],
+        destinations: [{ kind: 'hosted-service', name: 'off' }],
         schedule: '0 3 * * *',
       },
     },

@@ -24,8 +24,23 @@ const h = vi.hoisted(() => ({
   failOn: null as string | null,
   /** repository_delete calls captured (R3). */
   deletedRepos: [] as string[],
+  /** Target-licence installs and executor calls, in the order they ran. */
+  order: [] as string[],
+  /** When set, the target-licence install throws this. */
+  licenseError: null as Error | null,
 }));
 
+vi.mock('../repo-migrate-license.js', () => ({
+  ensureTargetRepoLicense: vi.fn((repoKey: string, to: string) => {
+    h.order.push(`license:${repoKey}@${to}`);
+    return h.licenseError ? Promise.reject(h.licenseError) : Promise.resolve();
+  }),
+}));
+
+vi.mock('../config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn().mockResolvedValue(1),
+}));
 vi.mock('../config/config-resources.js', () => ({
   configService: {
     // undefined config => the R2 family guard is skipped (the fixture family is
@@ -33,7 +48,6 @@ vi.mock('../config/config-resources.js', () => ({
     getCurrent: vi.fn().mockResolvedValue(null),
     getRepository: vi.fn().mockResolvedValue({ repositoryGuid: h.GUID }),
     getLocalConfig: vi.fn().mockResolvedValue({ machines: { m1: {}, m2: {} } }),
-    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(1),
     setRepositoryPlacement: vi.fn((_family: string, placement: { machine: string }) => {
       h.written = placement;
       return Promise.resolve();
@@ -41,18 +55,33 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
+/** The scripted answer of one executor call. */
+function scriptedResult(req: {
+  functionName: string;
+  machineName?: string;
+  params?: Record<string, unknown>;
+}) {
+  h.order.push(`${req.functionName}@${req.machineName ?? ''}`);
+  if (req.functionName === 'repository_delete') {
+    h.deletedRepos.push(String(req.params?.repository ?? ''));
+  }
+  if (h.failOn && req.functionName === h.failOn) {
+    return { success: false, error: 'scripted failure' };
+  }
+  // The source job (PLAN-detached-jobs J4) ends with the cutover marker the placement rewrite waits on.
+  if (req.functionName === 'repository_migrate') {
+    return { success: true, stdout: '', steps: [{ name: 'cutover_complete', duration_ms: 1 }] };
+  }
+  // repository_list (assertNotMountedOnTarget) needs parseable stdout.
+  return { success: true, stdout: '[]' };
+}
+
 vi.mock('../executor/executor-factory.js', () => ({
   getExecutor: () => ({
-    execute: vi.fn((req: { functionName: string; params?: Record<string, unknown> }) => {
-      if (req.functionName === 'repository_delete') {
-        h.deletedRepos.push(String(req.params?.repository ?? ''));
-      }
-      if (h.failOn && req.functionName === h.failOn) {
-        return Promise.resolve({ success: false, error: 'scripted failure' });
-      }
-      // repository_list (assertNotMountedOnTarget) needs parseable stdout.
-      return Promise.resolve({ success: true, stdout: '[]' });
-    }),
+    execute: vi.fn(
+      (req: { functionName: string; machineName?: string; params?: Record<string, unknown> }) =>
+        Promise.resolve(scriptedResult(req))
+    ),
   }),
 }));
 
@@ -95,6 +124,7 @@ import { migrateRepo } from '../../commands/repo-migrate.js';
 import { ValidationError } from '../../utils/errors.js';
 import { resolveRepoRef } from '../../utils/repo-target.js';
 import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
 
 /** Stand up a family record for the R2 guards (which read configService.getCurrent). */
 function familyConfig(grand: string, tags: string[]): void {
@@ -126,6 +156,8 @@ beforeEach(() => {
   h.written = undefined;
   h.failOn = null;
   h.deletedRepos = [];
+  h.order = [];
+  h.licenseError = null;
   // Re-establish defaults each test: clearAllMocks() wipes call history but NOT implementations, so a per-test getCurrent/resolveRepoRef override would leak.
   vi.mocked(configService.getCurrent).mockResolvedValue(null);
   vi.mocked(resolveRepoRef).mockResolvedValue({
@@ -148,8 +180,8 @@ describe('repo migrate — placement rewrite (R1)', () => {
     expect(resolved.machine).toBe('m2');
   });
 
-  it('leaves placement on the SOURCE when phase 1 fails (pre-cutover)', async () => {
-    h.failOn = 'backup_push';
+  it('leaves placement on the SOURCE when the source job fails (pre-cutover)', async () => {
+    h.failOn = 'repository_migrate';
     await expect(migrateRepo('shop', { to: 'm2' })).rejects.toThrow();
 
     const declared = h.written ?? { machine: 'm1' };
@@ -203,5 +235,32 @@ describe('repo migrate — source disposition (R3)', () => {
   it('retains the source under --keep-source', async () => {
     await migrateRepo('shop', { to: 'm2', keepSource: true });
     expect(h.deletedRepos).toHaveLength(0);
+  });
+});
+
+describe('repo migrate: the target licence (#89f10804)', () => {
+  it('installs the licence on the TARGET before repository_up runs there', async () => {
+    await migrateRepo('shop', { to: 'm2' });
+    // Before the fix the target got no licence at all: repository_up on m2 ended in `LICENSE_REQUIRED: missing: no license data`.
+    const license = h.order.indexOf('license:shop@m2');
+    const up = h.order.indexOf('repository_up@m2');
+    expect(license).toBeGreaterThanOrEqual(0);
+    expect(up).toBeGreaterThan(license);
+  });
+
+  it('a failed licence install stops before repository_up and keeps the source', async () => {
+    h.licenseError = new Error('machine slot limit reached');
+    await expect(migrateRepo('shop', { to: 'm2' })).rejects.toThrow();
+    expect(h.order).not.toContain('repository_up@m2');
+    // The target never came up, so the source copy is the recovery material and is not deleted.
+    expect(h.deletedRepos).toHaveLength(0);
+    expect(h.written).toEqual({ machine: 'm2' });
+    // Placement already names the target and nothing runs there, so the failure tells the operator the recovery: `rdc repo up` on the target, with the source copy kept (placementRetryHint).
+    const warned = vi.mocked(outputService.warn).mock.calls.map(([line]) => String(line));
+    expect(warned).toContainEqual(
+      expect.stringMatching(
+        /points at m2, so 'rdc repo up shop' will retry there\. The source images were kept/
+      )
+    );
   });
 });

@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
+import { loginCliToAccount } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Suite 23 (`E2E Workers`, CLI_SUITE leg): the FIRST rdc-driven e2e. The two-VM `repo migrate` routing family is CLI logic — config placement rewrite + `config reconcile` — that renet-side tests structurally cannot cover (07 §1-9). This suite drives the real `rdc` binary via CliRunner and cross-checks the CLI's claims against the bridge (SSH → renet) so the CLI asserts are
 // falsifiable, not self-referential.
@@ -24,7 +25,7 @@ const M1_IP = `${NET_BASE}.${workers[0] ?? '11'}`;
 const M2_IP = `${NET_BASE}.${workers[1] ?? '12'}`;
 // SSH into the ops VMs: the key the bridge harness's outer hop uses, resolved by the same function (RENET_DATA_DIR, then $RUNNER_TEMP/renet under CI, then ~/.renet), overridable for a non-default layout.
 const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
-// The ops VMs are cloud-inited with the INVOKING user (the whole bridge harness connects as process.env.USER — see BridgeTestRunner/ InfrastructureManager), and the staged key authenticates that user, not root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured authentication methods failed") before anything else can run.
+// The ops VMs are cloud-inited with the INVOKING user (the whole bridge harness connects as process.env.USER — see RenetFunctionsTestRunner/ InfrastructureManager), and the staged key authenticates that user, not root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured authentication methods failed") before anything else can run.
 const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
 
 const APP = 'e2ecli-app';
@@ -50,8 +51,8 @@ test.describe
     test.setTimeout(600_000);
 
     let cli: CliRunner;
-    let w1: BridgeTestRunner;
-    let w2: BridgeTestRunner;
+    let w1: RenetFunctionsTestRunner;
+    let w2: RenetFunctionsTestRunner;
 
     // Placement the config claims for a repo, read from rdc's OWN config file — the exact artifact migrate mutates. TRANSCRIPT-CONFIRMED live: `repo list` requires -m (it queries a machine, merging live state), so the file read is both the only bare surface and the honest one for a pure config-placement assert.
     const readCliConfig = async (): Promise<CliConfigFile> =>
@@ -73,7 +74,7 @@ test.describe
 
     // Bridge-side cross-check: does renet on <runner> report the repo present? The CLI claims placement; the bridge is ground truth (07 §9). TRANSCRIPT-CONFIRMED live: storage speaks GUID (#93) — the raw repository_list carries the GUID as the repo's name, never the config name — and with --debug the listing rides the logrus stream (stderr), so both channels are grepped.
     const repoPresentOnBridge = async (
-      runner: BridgeTestRunner,
+      runner: RenetFunctionsTestRunner,
       name: string
     ): Promise<boolean> => {
       const guid = (await guidOf(name).catch(() => undefined)) ?? guids[name];
@@ -112,13 +113,16 @@ test.describe
 
     test.beforeAll(async () => {
       cli = CliRunner.create();
-      w1 = BridgeTestRunner.forWorker(1);
-      w2 = BridgeTestRunner.forWorker(2);
+      w1 = RenetFunctionsTestRunner.forWorker(1);
+      w2 = RenetFunctionsTestRunner.forWorker(2);
 
       // Isolated e2e-cli config (NEVER the default) + register both machines. Recreated from SCRATCH each run: the config records the fleet's host keys, and a config that outlives an ops down/up carries the PREVIOUS fleet's keys — every connection then fails host-key verification (found live: preflight red while the bridge probes were green). TRANSCRIPT-CONFIRM: SSH key/user +
       // whether a datastore attach step is needed before repo create in the config-v3 model.
       await CliRunner.resetConfig();
       await cli.initConfig(SSH_KEY);
+      // renet enforces licensing, so `repo create` must issue a licence: the config logs in to the account server first.
+      const login = await loginCliToAccount(cli);
+      expect(login.code, `subscription login: ${login.stderr.slice(-600)}`).toBe(0);
       await cli.addMachine(M1, M1_IP, SSH_USER);
       await cli.addMachine(M2, M2_IP, SSH_USER);
 

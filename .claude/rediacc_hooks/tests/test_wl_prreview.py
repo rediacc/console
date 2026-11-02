@@ -893,3 +893,37 @@ def test_duplicate_roots_needs_a_title_and_a_line():
     # A finding with a line never matches a root without one (review 44d7a883.1), and a whitespace-only title is no title (44d7a883.2).
     assert P.duplicate_roots(finding, root, [root, dict(root, line=None, id=905)]) == []
     assert P.duplicate_roots(dict(finding, title="  "), root, [root, other_same]) == []
+
+
+def test_answer_replies_to_every_thread_anchoring_a_finding(repo):
+    """PR #601, 2026-10-23: F1 had two inline threads, one answered by --answer and one left open, so --check kept failing. Both threads at F1's path:line get the reply and the resolve, even when the second one's body names another title; a root belonging to another finding is left alone."""
+    gh = FakeGh()
+    other = dict(gh.inline[0], id=880, body="**[HIGH]** - a differently worded copy\n\nbody")
+    other["created_at"] = "2026-10-03T08:00:00Z"
+    gh.inline.append(other)
+    gh.threads[880] = ["THREAD_880", False]
+    assert answer(repo, gh, good_lines(repo["fix"])) == 0
+    replies = sorted(c[3] for c in gh.posts() if c[3].endswith("/replies"))
+    assert "repos/%s/pulls/%d/comments/880/replies" % (REPO, PR) in replies
+    assert len(replies) == 3
+    assert all(t[1] for t in gh.threads.values())
+    assert P.cmd_check(None, gh) == 0
+
+
+def test_anchored_roots_leaves_a_claimed_duplicate_alone():
+    """79cf9eed.3/.6: a root `match_inline` gave to another finding is that finding's, even when it also reads as a title-and-line duplicate of this one. Before the fix `duplicate_roots` results skipped the `claimed` filter and the other finding's thread was replied to and resolved as this one's."""
+    finding = {
+        "path": "a.py",
+        "line": 2,
+        "severity": "high",
+        "title": "guard the empty list",
+        "body": "",
+    }
+    root = inline_root(900, finding)
+    mine_too = dict(root, id=901)
+    theirs = dict(root, id=902)
+    got = P.anchored_roots(finding, root, [root, mine_too, theirs], claimed={902})
+    assert [c["id"] for c in got] == [901]
+    assert [
+        c["id"] for c in P.anchored_roots(finding, root, [root, mine_too, theirs], claimed=set())
+    ] == [901, 902]

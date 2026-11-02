@@ -1,6 +1,11 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
-import { exitProcess, writeStdout } from '../services/core/request-context.js';
+import {
+  currentRequestContext,
+  DispatchExit,
+  exitProcess,
+  writeStdout,
+} from '../services/core/request-context.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
@@ -32,6 +37,57 @@ function isRetryable(error: CliError): boolean {
   return retryableCodes.includes(error.exitCode);
 }
 
+/** A CliError that also carries the named machine-readable code of the failure behind it. */
+type NamedCliError = CliError & { errorCode?: string };
+
+/**
+ * A DispatchExit that keeps the named code and guidance of the failure that ended the command. The served result is built from it, so a command that opens its own SSH connection reports the same errorCode an executor.execute failure does. Still a DispatchExit, so every instanceof check on it holds.
+ */
+class DispatchFailure extends DispatchExit {
+  constructor(
+    code: number,
+    readonly errorCode: string,
+    readonly guidance: string | undefined,
+    readonly connectTarget: { host: string; port: number } | undefined
+  ) {
+    super(code);
+  }
+}
+
+/** A named failure: its code, guidance and, for an unanswered connect, the address it never reached. */
+interface NamedFailure {
+  errorCode: string;
+  guidance: string | undefined;
+  connectTarget?: { host: string; port: number };
+}
+
+/** The address of an unanswered SSH connect (kind `unreachable`), which `rdc serve` names in its egress report. */
+function unreachableTarget(error: unknown): { host: string; port: number } | undefined {
+  const e = error as { kind?: unknown; host?: unknown; port?: unknown };
+  return e.kind === 'unreachable' && typeof e.host === 'string' && typeof e.port === 'number'
+    ? { host: e.host, port: e.port }
+    : undefined;
+}
+
+/** The named code and guidance of an error that carries one (an SSH connect failure), or undefined. */
+export function namedFailureOf(error: unknown): NamedFailure | undefined {
+  if (error instanceof DispatchFailure) {
+    return {
+      errorCode: error.errorCode,
+      guidance: error.guidance,
+      ...(error.connectTarget && { connectTarget: error.connectTarget }),
+    };
+  }
+  const named = sshConnectError(error);
+  if (!named?.errorCode) return undefined;
+  const connectTarget = unreachableTarget(error);
+  return {
+    errorCode: named.errorCode,
+    guidance: named.guidance,
+    ...(connectTarget && { connectTarget }),
+  };
+}
+
 /** Get actionable guidance for an error */
 function getGuidance(error: CliError): string | undefined {
   if (error.guidance) return error.guidance;
@@ -58,6 +114,9 @@ function outputJsonError(cliError: CliError): void {
         code: cliError.code,
         message: cliError.message,
         ...(cliError.details?.length && { details: cliError.details }),
+        ...((cliError as NamedCliError).errorCode && {
+          errorCode: (cliError as NamedCliError).errorCode,
+        }),
         retryable: isRetryable(cliError),
         guidance: getGuidance(cliError),
         ...(cliError.next && { next: cliError.next }),
@@ -113,13 +172,24 @@ export function handleError(error: unknown): never {
     outputTextError(cliError);
   }
 
-  // Fire-and-forget telemetry shutdown (don't block exit)
-  void telemetryService.shutdown().catch(() => {
-    // Ignore shutdown errors - we're exiting anyway
-  });
+  // Fire-and-forget telemetry shutdown (don't block exit). Inside an executor dispatch the process keeps serving other callers, and a shut-down SDK cannot be restarted, so one failed request would silence telemetry for all of them.
+  if (!currentRequestContext()) {
+    void telemetryService.shutdown().catch(() => {
+      // Ignore shutdown errors - we're exiting anyway
+    });
+  }
 
   // Exit synchronously. On a laptop this is process.exit() as it always was. Inside an executor dispatch it throws instead, because a command that fails
   // for one tenant must not kill the process serving everyone else.
+  const named = namedFailureOf(error);
+  if (named && currentRequestContext()) {
+    throw new DispatchFailure(
+      cliError.exitCode,
+      named.errorCode,
+      named.guidance,
+      named.connectTarget
+    );
+  }
   exitProcess(cliError.exitCode);
 }
 
@@ -195,6 +265,65 @@ function remoteConfigError(error: unknown): CliError | undefined {
 }
 
 /**
+ * A named SSH connect failure (remote/sftp/connect-error.ts), matched by name like the remote-config errors so this module does not import the SFTP client.
+ */
+function sshConnectError(error: unknown): NamedCliError | undefined {
+  if (!(error instanceof Error) || error.name !== 'SshConnectError') return undefined;
+  const named = error as Error & {
+    exitCode?: number;
+    retryable?: boolean;
+    guidance?: string;
+    errorCode?: string;
+  };
+  const network = named.exitCode === EXIT_CODES.NETWORK_ERROR;
+  return {
+    code: network ? ERROR_CODES.NETWORK_ERROR : ERROR_CODES.GENERAL_ERROR,
+    message: error.message,
+    exitCode: network ? EXIT_CODES.NETWORK_ERROR : EXIT_CODES.GENERAL_ERROR,
+    retryable: named.retryable === true,
+    ...(named.errorCode && { errorCode: named.errorCode }),
+    ...(named.guidance && { guidance: named.guidance }),
+  };
+}
+
+/**
+ * The access push's refusals (services/machine/access-push.ts, services/machine/authorized-keys.ts), matched by their
+ * `code` so this module does not import the SSH stack. Each code is its own stable string in the envelope. A lockout, a
+ * conflicting or duplicate key is the config's to fix (exit 2, not retryable); a file changed under the push is a race,
+ * so it exits 1 and is retryable.
+ */
+const ACCESS_ERRORS: Record<string, { exitCode: number; retryable: boolean }> = {
+  ACCESS_LOCKOUT: { exitCode: EXIT_CODES.INVALID_ARGUMENTS, retryable: false },
+  ACCESS_KEY_CONFLICT: { exitCode: EXIT_CODES.INVALID_ARGUMENTS, retryable: false },
+  ACCESS_KEY_DUPLICATE_BLOB: { exitCode: EXIT_CODES.INVALID_ARGUMENTS, retryable: false },
+  ACCESS_FILE_CHANGED: { exitCode: EXIT_CODES.GENERAL_ERROR, retryable: true },
+};
+
+/** The CliError for an access-push refusal, or undefined for any other error. */
+function accessError(error: unknown): CliError | undefined {
+  if (!(error instanceof Error)) return undefined;
+  const code = (error as Error & { code?: unknown }).code;
+  const entry =
+    typeof code === 'string' && Object.hasOwn(ACCESS_ERRORS, code)
+      ? ACCESS_ERRORS[code]
+      : undefined;
+  if (!entry) return undefined;
+  return {
+    code: code as string,
+    message: error.message,
+    exitCode: entry.exitCode,
+    retryable: entry.retryable,
+    // The message names the remedy (run the push again, fix the range or the key); the exit code's generic guidance would contradict it.
+    guidance: error.message,
+  };
+}
+
+/** The CliError for an error matched by name (remote-config or SSH connect) or by access-push code, or undefined. */
+function namedCliError(error: unknown): CliError | undefined {
+  return remoteConfigError(error) ?? sshConnectError(error) ?? accessError(error);
+}
+
+/**
  * Normalize various error types into a consistent CliError structure.
  */
 function normalizeError(error: unknown): CliError {
@@ -238,8 +367,8 @@ function normalizeError(error: unknown): CliError {
     };
   }
 
-  const remote = remoteConfigError(error);
-  if (remote) return remote;
+  const named = namedCliError(error);
+  if (named) return named;
 
   // Unknown error
   return {

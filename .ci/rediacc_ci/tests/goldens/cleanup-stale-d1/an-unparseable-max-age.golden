@@ -6,4 +6,4 @@ exit: 1
 ✓ Found 1 total D1 databases
 date: invalid date 'not-a-number minutes ago'
 --- calls ---
-npx	wrangler	d1	list	--json
+npx	--no-install	wrangler	d1	list	--json

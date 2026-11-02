@@ -92,7 +92,7 @@ interface InnerRequest {
 }
 interface InnerResponse {
   status: number;
-  body: Record<string, unknown>;
+  body: Record<string, unknown> | string;
 }
 
 const DATA_PATH = '/account/api/v1/licenses/status';
@@ -149,7 +149,11 @@ describe('accountServerFetch TOKEN_IP_MISMATCH rebind', () => {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ status: next.status, body: JSON.stringify(next.body) }),
+        json: () =>
+          Promise.resolve({
+            status: next.status,
+            body: typeof next.body === 'string' ? next.body : JSON.stringify(next.body),
+          }),
       } as unknown as Response);
     });
   });
@@ -185,6 +189,18 @@ describe('accountServerFetch TOKEN_IP_MISMATCH rebind', () => {
     expect(refused.headers.Authorization).toBe(`Bearer ${STORED_TOKEN}`);
     expect(retry).toEqual(refused);
     expect(stderrText()).toContain('203.0.113.9');
+  });
+
+  it('a plain-text router 404 surfaces its status and body, not a JSON.parse message', async () => {
+    queue(DATA_PATH, { status: 404, body: '404 Not Found' });
+
+    const failure = await accountServerFetch(DATA_PATH).catch((e: unknown) => e);
+
+    expect((failure as Error).message).toBe(
+      'Account server returned HTTP 404 with a non-JSON body: 404 Not Found'
+    );
+    expect(failure).toMatchObject({ status: 404 });
+    expect((failure as { code?: string }).code).toBeUndefined();
   });
 
   it('retries exactly once: a second mismatch after a move is reported, not prompted again', async () => {

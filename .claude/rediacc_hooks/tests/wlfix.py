@@ -56,12 +56,16 @@ def with_waker(tasks, waker: bool = True) -> list:
     return tasks
 
 
-# A STATE.md fresh enough and well-shaped enough to satisfy the gate. Keeps the literal phrase "ci-overhaul session" (the PostCompact cases grep for it in the additionalContext) and carries the mandatory '## Next action' section.
+# A STATE.md fresh enough and well-shaped enough to satisfy the gate. Keeps the literal phrase "ci-overhaul session" (the PostCompact cases grep for it in the additionalContext) and carries the mandatory '## Next action' and '## Big pieces' sections.
 STATE_BODY = """You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.
 
 ## Next action
 
-Push and watch the run, then bump the submodule pointers to the squash commits before the merge chain."""
+Push and watch the run, then bump the submodule pointers to the squash commits before the merge chain.
+
+## Big pieces
+
+none: the fixture project carries no plan with an open box."""
 
 # ONE live cron by default: the enforced shape is a single work loop, and a second cron fires `many-work-crons`.
 DEFAULT_CRONS = [{"id": "w", "schedule": "17 * * * *"}]
@@ -69,6 +73,8 @@ DEFAULT_CRONS = [{"id": "w", "schedule": "17 * * * *"}]
 # Reset by `setup()` for the reason the bash comment gave: a plain assignment in one case leaked into the next two and silently suppressed a check.
 RESET_KNOBS = (
     "WORKLIST_OUTQ_MAX",
+    "WORKLIST_BIGPIECES_LATCH_MIN",
+    "WORKLIST_SUBMODULE_LATCH_MIN",
     "WORKLIST_BG_OUTPUT_DIR",
     "WORKLIST_HARNESS_PID",
     "WORKLIST_PROJECTS_DIR",

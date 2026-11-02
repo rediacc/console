@@ -522,7 +522,7 @@
             "Las siguientes tecnologías <strong>no</strong> se utilizan en nuestro sitio web:"
           ],
           "content2": [
-            "Nota: Esta Política de Cookies se aplica al sitio web de marketing de Rediacc. Nuestros productos de software (aplicación web, CLI, Middleware, Agente Renet) recopilan telemetría de uso separada que no utiliza cookies. Para obtener detalles sobre la telemetría del producto, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
+            "Nota: Esta Política de Cookies se aplica al sitio web de marketing de Rediacc. Nuestros productos de software (CLI y Agente Renet) recopilan telemetría de uso independiente que no utiliza cookies. Para obtener detalles sobre la telemetría de los productos, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -1869,6 +1869,11 @@
         "description": "Instala en 5 minutos. Comienza 14 días gratis.",
         "heading": "Protege tu infraestructura"
       },
+      "freeLicense": {
+        "cta": "Instalar Rediacc",
+        "description": "Cualquier máquina puede obtener una licencia gratuita para un repositorio sin registrarse: hasta 3 GB, válida durante 48 horas y renovable gratis tantas veces como haga falta. Cuando vence, los repositorios en marcha siguen funcionando; los repositorios nuevos y las copias de seguridad alojadas requieren un plan de pago.",
+        "heading": "Pruébalo sin cuenta"
+      },
       "hero": {
         "subtitle": "Elige el plan que se ajuste a tu equipo. Precios transparentes, sin sorpresas, cancela cuando quieras.",
         "title": "Diseñado para operaciones reales"
@@ -2162,10 +2167,16 @@
             },
             "productTelemetry": {
               "content": [
-                "Nuestros productos de software (aplicación web, CLI, Middleware y Agente Renet) recopilan telemetría de uso anónima para mejorar la calidad, el rendimiento y la fiabilidad del producto. Los datos de telemetría incluyen información técnica como la versión de la aplicación, el sistema operativo, el tipo de navegador, métricas de rendimiento, patrones de uso de funciones e informes de errores. Los identificadores personales se anonimizan antes de la recopilación: las direcciones de correo electrónico se reducen solo al dominio, los ID de usuario se cifran con hash y se truncan, y las contraseñas o secretos nunca se recopilan.",
-                "La telemetría está habilitada de forma predeterminada en nuestra aplicación web y CLI, y puede deshabilitarse en todos los productos. Para obtener detalles completos sobre lo que recopila cada producto y cómo darse de baja, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
+                "Nuestros productos de software (CLI y Agente Renet) recopilan telemetría de uso para mejorar la calidad, el rendimiento y la fiabilidad de los productos. Los datos de telemetría incluyen información técnica como la versión de la aplicación, el sistema operativo, métricas de rendimiento, patrones de uso de funciones e informes de errores. Los identificadores personales se anonimizan antes de la recopilación: las direcciones de correo electrónico se reducen al dominio, los ID de usuario se codifican con hash y se truncan, y nunca se recopilan contraseñas ni secretos. La telemetría de nuestro sitio web y del servicio de cuentas también incluye la ubicación a nivel de ciudad (ciudad y región), que proviene del edge de Cloudflare y se conserva durante 7 días.",
+                "La telemetría está habilitada de forma predeterminada en nuestra CLI, y puede deshabilitarse en todos los productos. Para obtener detalles completos sobre lo que recopila cada producto y cómo darse de baja, consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>."
               ],
               "title": "2.5 Datos de telemetría del producto"
+            },
+            "freeLicenseData": {
+              "content": [
+                "Cuando una máquina solicita una licencia gratuita sin cuenta, almacenamos un hash con clave de la dirección IP solicitante (la dirección IPv4 completa o el prefijo /64 de una dirección IPv6), nunca la dirección en sí, y solo en el contador de cada dirección, donde se elimina a las 72 horas. El registro de la licencia contiene los identificadores de máquina y de repositorio que incluye la solicitud y ningún dato de IP. La base jurídica es nuestro interés legítimo en evitar el abuso de un servicio gratuito."
+              ],
+              "title": "2.6 Solicitudes de licencia gratuita"
             }
           },
           "title": "2. Información que recopilamos"
@@ -9332,7 +9343,7 @@
         "title": "Nuestras prácticas de telemetría"
       },
       "meta": {
-        "description": "Qué telemetría recopilan los productos Rediacc, por qué, cómo se procesa y cómo darse de baja. Cubre Web App, CLI, Middleware y Agente Renet.",
+        "description": "Detalles sobre qué datos de telemetría recopilan los productos de Rediacc, por qué, cómo se procesan y cómo darse de baja. Abarca la CLI y el Agente Renet.",
         "keywords": "política de telemetría, recopilación de datos, OpenTelemetry, darse de baja, privacidad, RGPD, Rediacc",
         "title": "Política de Telemetría — Rediacc"
       },
@@ -9356,16 +9367,16 @@
                 "<strong>Ciclo de vida del Agente Renet:</strong> eventos de inicio, cierre y reconexión",
                 "<strong>Perfilado de rendimiento:</strong> muestras de uso de CPU y perfiles de asignación de memoria, recopilados automáticamente y enviados a nuestro punto de perfilado"
               ],
-              "title": "7.1 Datos recopilados"
+              "title": "5.1 Datos recopilados"
             },
             "bridgeOptOut": {
               "content": [
                 "Establezca la variable de entorno <code>REDIACC_TELEMETRY_DISABLED=1</code> para desactivar la telemetría del Agente Renet (incluido el perfilado)."
               ],
-              "title": "7.2 Cómo darse de baja"
+              "title": "5.2 Cómo darse de baja"
             }
           },
-          "title": "7. Telemetría del Agente Renet"
+          "title": "5. Telemetría del Agente Renet"
         },
         "ccpa": {
           "content": [
@@ -9373,19 +9384,19 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Categorías de información recopilada:</strong> Información de actividad de Internet o red electrónica (tipo de navegador, datos de interacción, registros de errores), identificadores de dispositivo (anonimizados), datos de geolocalización (solo a nivel de país, derivados de la dirección IP que no se almacena)",
+            "<strong>Categorías de información recopilada:</strong> Información de actividad de Internet o red electrónica (tipo de navegador, datos de interacción, registros de errores), identificadores de dispositivo (anonimizados), datos de geolocalización (a nivel de ciudad: ciudad y región, derivados de la dirección IP en el edge de Cloudflare; la propia dirección IP no se almacena y la ubicación se conserva durante 7 días)",
             "<strong>Propósito:</strong> Mejorar y mantener la calidad del servicio, depuración, monitoreo de rendimiento y seguridad",
             "<strong>Venta/Compartición:</strong> No vendemos ni compartimos datos de telemetría según lo definido por la CCPA/CPRA",
-            "<strong>Derecho a darse de baja:</strong> Utilice los mecanismos de exclusión específicos del producto descritos en las secciones 4-7 anteriores. También respetamos la señal de Control Global de Privacidad (GPC) en nuestra aplicación web."
+            "<strong>Derecho a darse de baja:</strong> Utilice los mecanismos de exclusión específicos del producto descritos en las secciones 4 y 5 anteriores. También respetamos la señal de Control Global de Privacidad (GPC) en nuestra aplicación web."
           ],
-          "title": "11. Residentes de California (CCPA/CPRA)"
+          "title": "9. Residentes de California (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Podemos actualizar esta Política de Telemetría cuando agreguemos nuevos productos, cambiemos los datos que se recopilan o modifiquemos nuestras prácticas de procesamiento. Los cambios se publicarán en esta página con una fecha de vigencia actualizada. Notificaremos a los usuarios de cambios importantes a través de las notas de la versión de nuestro producto y el sitio web."
           ],
           "id": "changes",
-          "title": "12. Cambios en esta política"
+          "title": "10. Cambios en esta política"
         },
         "cli": {
           "content": [
@@ -9404,7 +9415,7 @@
                 "<strong>Sesión:</strong> ID de sesión generado aleatoriamente, duración de ejecución del comando",
                 "<strong>Perfilado de rendimiento:</strong> muestras de uso de CPU y perfiles de asignación de memoria, recopilados automáticamente y enviados a nuestro punto de perfilado"
               ],
-              "title": "5.1 Datos recopilados"
+              "title": "4.1 Datos recopilados"
             },
             "cliOptOut": {
               "content": [
@@ -9415,10 +9426,10 @@
                 "Establezca <code>telemetryEnabled: false</code> en su archivo de configuración de la CLI",
                 "La telemetría se <strong>desactiva automáticamente</strong> en entornos de CI (detectados mediante la variable de entorno <code>CI</code>)"
               ],
-              "title": "5.2 Cómo darse de baja"
+              "title": "4.2 Cómo darse de baja"
             }
           },
-          "title": "5. Telemetría de la CLI"
+          "title": "4. Telemetría de la CLI"
         },
         "dataProcessing": {
           "content": [
@@ -9432,19 +9443,19 @@
             "<strong>Sin compartir con terceros:</strong> Los datos de telemetría no se comparten, venden ni son accesibles para ningún tercero.",
             "<strong>Infraestructura:</strong> Todos los datos de telemetría se procesan y almacenan en infraestructura ubicada dentro de la Unión Europea."
           ],
-          "title": "8. Procesamiento y almacenamiento de datos"
+          "title": "6. Procesamiento y almacenamiento de datos"
         },
         "internationalTransfers": {
           "content": [
             "Los datos de telemetría se procesan y almacenan exclusivamente en servidores dentro de la Unión Europea. En el caso improbable de que los datos de telemetría necesiten ser transferidos fuera de la UE/EEE (por ejemplo, para recuperación ante desastres), se aplicarán las salvaguardas apropiadas, incluidas las Cláusulas Contractuales Tipo (CCT) aprobadas por la Comisión Europea."
           ],
           "id": "international-transfers",
-          "title": "9. Transferencias internacionales de datos"
+          "title": "7. Transferencias internacionales de datos"
         },
         "introduction": {
           "content": [
             "Los productos de software de Rediacc recopilan telemetría de uso anonimizada para ayudarnos a mejorar la calidad del producto, diagnosticar problemas y comprender cómo se utilizan nuestras herramientas. Esta Política de Telemetría describe exactamente qué datos se recopilan, por qué, cómo se procesan y cómo puede darse de baja.",
-            "Esta política cubre cuatro productos: la <strong>aplicación web de Rediacc</strong>, la <strong>CLI de Rediacc</strong>, el <strong>Middleware de Rediacc</strong> y el <strong>Agente Renet de Rediacc</strong>. Las analíticas del sitio web (Plausible) se cubren por separado en nuestra <a href=\"privacy-policy\">Política de Privacidad</a> y <a href=\"cookie-policy\">Política de Cookies</a>."
+            "Esta política abarca dos productos: la <strong>CLI de Rediacc</strong> y el <strong>Agente Renet de Rediacc</strong>. Las analíticas del sitio web (Plausible) se tratan por separado en nuestra <a href=\"privacy-policy\">Política de Privacidad</a> y nuestra <a href=\"cookie-policy\">Política de Cookies</a>."
           ],
           "id": "introduction",
           "title": "1. Introducción"
@@ -9452,8 +9463,8 @@
         "legalBasis": {
           "content": [
             "Según el Reglamento General de Protección de Datos (RGPD) de la UE y la Directiva de privacidad electrónica, nuestra base legal para la recopilación de telemetría depende del contexto del producto:",
-            "Para la <strong>aplicación web</strong> (basada en navegador): la telemetría se recopila bajo <strong>interés legítimo</strong> (RGPD Art. 6(1)(f)) con el fin de mantener y mejorar la calidad del servicio. Puede darse de baja en cualquier momento.",
-            "Para la <strong>CLI, Middleware y Agente Renet</strong> (instalados en su infraestructura): la telemetría se recopila bajo <strong>interés legítimo</strong> con mecanismos claros de exclusión proporcionados. Puede desactivar la telemetría antes de que se envíe cualquier dato."
+            "Para la <strong>CLI y el Agente Renet</strong> (instalados en su infraestructura): la telemetría se recopila bajo <strong>interés legítimo</strong> (RGPD Art. 6(1)(f)) y se ofrecen mecanismos claros de baja. Puede desactivar la telemetría antes de que se envíe ningún dato.",
+            "Para los usuarios de jurisdicciones que exigen consentimiento explícito (por ejemplo, Corea del Sur con la PIPA), la telemetría debe activarse de forma explícita en la configuración del producto antes de que se transmita ningún dato."
           ],
           "id": "legal-basis",
           "title": "3. Base legal para la recopilación"
@@ -9484,7 +9495,7 @@
             "<strong>Darse de baja:</strong> Desactivar la telemetría en cualquier momento utilizando los mecanismos específicos del producto descritos anteriormente",
             "<strong>Reclamación:</strong> Presentar una reclamación ante la Inspección de Protección de Datos de Estonia (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) o su autoridad supervisora local"
           ],
-          "title": "10. Sus derechos"
+          "title": "8. Sus derechos"
         }
       },
       "toc": {
@@ -9515,7 +9526,7 @@
             "Si usted no está de acuerdo con estos Términos, no debe acceder ni utilizar los Servicios. Estos Términos constituyen un acuerdo legalmente vinculante entre usted y Rediacc OÜ (código de registro 17363830), una empresa registrada en Estonia con oficina en Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"nosotros\" o \"nuestro\")."
           ],
           "id": "acceptance",
-          "title": "1. Aceptación de las condiciones"
+          "title": "2. Aceptación de las condiciones"
         },
         "accounts": {
           "content": [
@@ -9531,7 +9542,7 @@
             "Asegurar que los Usuarios Autorizados cumplan con estos Términos",
             "Mantener la confidencialidad de sus archivos de Configuración, incluidas las claves privadas SSH y las credenciales de cifrado"
           ],
-          "title": "3. Cuentas y registro"
+          "title": "4. Cuentas y registro"
         },
         "changes": {
           "content": [
@@ -9539,7 +9550,7 @@
             "El uso continuado de los Servicios después de que los Términos actualizados entren en vigor constituye la aceptación de los Términos revisados. Si no está de acuerdo con los Términos actualizados, debe dejar de usar los Servicios y cancelar su Suscripción antes de que los cambios entren en vigor."
           ],
           "id": "changes",
-          "title": "14. Cambios en estas condiciones"
+          "title": "19. Cambios en estas condiciones"
         },
         "dataOwnership": {
           "content": [
@@ -9548,7 +9559,7 @@
             "De acuerdo con la Ley de Datos de la UE (Reglamento 2023/2854), si utiliza las funcionalidades en la nube de la Plataforma, tiene derecho a cambiar de proveedor o migrar a una configuración autoalojada. Sus Datos del Cliente se almacenan en sus propias Máquinas y siempre están bajo su control. Cualquier dato de Cuenta y configuración almacenado en la Plataforma puede exportarse en formatos estándar legibles por máquina. Proporcionaremos asistencia razonable durante cualquier período de transición de hasta treinta (30) días después de su solicitud."
           ],
           "id": "data-ownership",
-          "title": "8. Sus datos"
+          "title": "11. Sus datos"
         },
         "definitions": {
           "content": [
@@ -9586,7 +9597,7 @@
             "No obstante lo anterior, cualquiera de las partes puede solicitar medidas cautelares u otras medidas de equidad ante cualquier tribunal de jurisdicción competente para prevenir la infracción real o amenazada, apropiación indebida o violación de derechos de propiedad intelectual u obligaciones de confidencialidad."
           ],
           "id": "governing-law",
-          "title": "13. Ley aplicable"
+          "title": "18. Ley aplicable"
         },
         "indemnification": {
           "id": "indemnification",
@@ -9606,7 +9617,7 @@
               "title": "16.2 By Rediacc"
             }
           },
-          "title": "11. Indemnización"
+          "title": "16. Indemnización"
         },
         "intellectualProperty": {
           "content": [
@@ -9615,7 +9626,7 @@
             "Podemos recopilar y utilizar datos anonimizados y agregados derivados de su uso de los Servicios (incluidos los Datos de Telemetría) para la mejora del producto, análisis y fines de referencia. Dichos datos agregados no le identifican a usted ni a ningún usuario individual."
           ],
           "id": "intellectual-property",
-          "title": "7. Propiedad intelectual"
+          "title": "12. Propiedad intelectual"
         },
         "limitationOfLiability": {
           "content": [
@@ -9624,7 +9635,7 @@
             "LAS LIMITACIONES Y EXCLUSIONES DE LAS SECCIONES 14 Y 15 NO SE APLICAN A: (A) RESPONSABILIDAD POR MUERTE O LESIONES PERSONALES CAUSADAS POR NEGLIGENCIA; (B) RESPONSABILIDAD POR FRAUDE O DECLARACIÓN FRAUDULENTA; (C) RESPONSABILIDAD POR CONDUCTA INTENCIONAL (TAHTLIK RIKKUMINE) O NEGLIGENCIA GRAVE (RASKE HOOLETUS) SEGÚN LA LEY ESTONIA DE OBLIGACIONES; O (D) CUALQUIER OTRA RESPONSABILIDAD QUE NO PUEDA SER EXCLUIDA O LIMITADA SEGÚN LA LEY APLICABLE."
           ],
           "id": "limitation-of-liability",
-          "title": "10. Limitación de responsabilidad"
+          "title": "15. Limitación de responsabilidad"
         },
         "onPremiseLicense": {
           "content": [
@@ -9681,7 +9692,7 @@
             "<strong>Plataforma:</strong> La aplicación web y el portal de cuentas para la gestión de suscripciones, la colaboración en equipo y (cuando esté disponible) la gestión de infraestructura basada en la nube",
             "<strong>Servicios Profesionales:</strong> Consultoría opcional, asistencia en migración y soporte de implementación, sujetos a acuerdos de servicio separados"
           ],
-          "title": "2. Descripción de los servicios"
+          "title": "3. Descripción de los servicios"
         },
         "subscriptions": {
           "content": [
@@ -9731,7 +9742,7 @@
               "title": "5.2 Taxes"
             }
           },
-          "title": "4. Suscripciones y pagos"
+          "title": "5. Suscripciones y pagos"
         },
         "telemetry": {
           "content": [
@@ -9740,7 +9751,7 @@
             "En jurisdicciones que requieren consentimiento explícito para la recopilación de telemetría en equipos terminales (incluida la Directiva ePrivacy según se implemente en su jurisdicción), debe configurar sus preferencias de telemetría antes del primer uso del Software On-Premise. El uso continuado de los Servicios con la telemetría habilitada constituye su consentimiento para la recopilación descrita en la <a href=\"telemetry-policy\">Política de Telemetría</a>."
           ],
           "id": "telemetry",
-          "title": "6. Telemetría y recopilación de datos"
+          "title": "10. Telemetría y recopilación de datos"
         },
         "termination": {
           "content": [
@@ -9754,7 +9765,7 @@
             "Los datos de la Cuenta se conservarán durante treinta (30) días para permitir la exportación, y luego se eliminarán de nuestros sistemas activos",
             "Las Secciones 1 (Definiciones), 11 (Sus Datos), 12 (Propiedad Intelectual), 14 (Garantías), 15 (Responsabilidad), 16 (Indemnización) y 18 (Ley Aplicable) sobreviven a la terminación"
           ],
-          "title": "12. Terminación"
+          "title": "17. Terminación"
         },
         "thirdPartyComponents": {
           "content": [

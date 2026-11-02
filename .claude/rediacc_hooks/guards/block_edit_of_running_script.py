@@ -38,8 +38,8 @@ ORDER = 7
 # THE LIMIT ARGUMENT, ZEROED. `live_shells` truncates to the first N matches before this guard ever reads them, so pinning it at 0 answers every case as though nothing were running -- local to this file's own `run()`, unlike the old HOOK_CHAIN-exclusion defect this guard carried before its process-table scan moved to `rediacc_hooks.runningscript` (PLAN-retire-bash-oracles A3): a
 # defect textually planted into THIS module's source can no longer reach into a function that lives in a different one.
 DEFECT = (
-    "runningscript.live_shells(runningscript.pattern_for(base), 3)",
-    "runningscript.live_shells(runningscript.pattern_for(base), 0)",
+    "runningscript.pattern_for(base), 3, path",
+    "runningscript.pattern_for(base), 0, path",
 )
 
 MESSAGE = """BLOCKED: '%(base)s' is being executed by a live process right now.
@@ -156,8 +156,7 @@ def _kill_stale(paths):
     the Python sweep reports different pids for the same case. Observed exactly that: three processes for one script, two of them from runs that had already finished, and the two sides disagreed on which two they saw.
 
     Only processes running THESE fixture scripts are touched -- nothing else on the machine can match a path under this world -- and each was started with
-    `start_new_session=True`, so it leads its own group and killing the group
-    takes its `sleep` child with it.
+    `start_new_session=True`. A process that leads its group loses the group, and any other loses itself and its direct `sleep` children, read before anything dies.
     """
     import time
 
@@ -165,6 +164,12 @@ def _kill_stale(paths):
         stale = [p for p in proc.pids() if any(t in (proc.cmdline(p) or "") for t in paths)]
         if not stale:
             return
+        # The children are read before anything dies. The bashcov-sup wrapper matches too and comes first in `stale`; killing it takes its script with it, and the script's child is then reparented, out of reach (measured 2026-11-01, about three orphans per run).
+        for child in [c for pid in stale for c in proc.children_named(pid, "sleep")]:
+            try:
+                os.kill(child, signal.SIGKILL)
+            except OSError:
+                continue
         for pid in stale:
             try:
                 if os.getpgid(pid) == pid:
@@ -233,7 +238,9 @@ def run(ev):
         if not hookio.case_glob(path, "*.sh"):
             continue
         base = path.rsplit("/", 1)[-1]
-        running = runningscript.live_shells(runningscript.pattern_for(base), 3)
+        running = runningscript.live_shells(
+            runningscript.pattern_for(base), 3, path, ev.field("cwd") or None
+        )
         if running != "":
             ev.warn_raw(MESSAGE % {"base": base, "running": indented(running)})
             return hookio.DENY

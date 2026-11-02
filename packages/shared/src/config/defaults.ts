@@ -92,17 +92,6 @@ export const REPOSITORY_DEFAULTS = {
 } as const;
 
 /**
- * Docker and system paths
- */
-export const DOCKER_DEFAULTS = {
-  /** Default Docker host socket path */
-  SOCKET_PATH: '/var/run/docker.sock',
-
-  /** Default Docker host URI */
-  HOST_URI: 'unix:///var/run/docker.sock',
-} as const;
-
-/**
  * Shell and binary paths
  */
 export const SHELL_DEFAULTS = {
@@ -478,30 +467,14 @@ export const SORT_DEFAULTS = {
 export const BACKUP_DEFAULTS = {
   /** Default backup mode (hot = zero-downtime snapshot while running) */
   MODE: 'hot' as const,
-  /**
-   * Default destination kind. The schema declares
-   * `kind: z.literal('storage').default('storage')`, so a PARSED destination
-   * always has one and TypeScript believes it is never undefined — but a raw
-   * config object has no `kind` field at all (the operator's live config reads
-   * exactly that way), so code reading it defensively needs a named default
-   * rather than a literal, which custom/no-hardcoded-nullish-defaults requires.
-   */
-  DESTINATION_KIND: 'storage' as const,
-  /**
-   * Kind for a destination the CLI is CREATING, which is deliberately NOT
-   * `DESTINATION_KIND` above. The two answer different questions and drifted
-   * apart on 2026-08-15 when the rclone path was deleted:
-   *
-   * - `DESTINATION_KIND` is what a destination on disk with no `kind` field
-   *   MEANS. That is a fact about old data and can never change: those entries
-   *   are rclone destinations, and reading them as anything else would mislabel
-   *   the operator's live config.
-   * - `NEW_DESTINATION_KIND` is what `rdc backup strategy set --destination`
-   *   makes when the operator does not say. It is `hosted-service` because the
-   *   chunk store is the only kind `rdc backup schedule` can deploy, so any
-   *   other default hands back a destination that cannot be scheduled.
-   */
+  /** Kind of every backup destination: the content-addressed chunk store, the only kind `rdc backup schedule` can deploy. */
   NEW_DESTINATION_KIND: 'hosted-service' as const,
+  /** Kind a destination without a `kind` field was, before the field existed: the removed `storage` kind. Names it in refusals. */
+  LEGACY_DESTINATION_KIND: 'storage' as const,
+  /** Marker in the missed-run column when a run was missed without a recorded reason. */
+  MISSED_REASON_FALLBACK: 'yes' as const,
+  /** Machine wording in a version-skew message when the failing job has no machine name. */
+  UNNAMED_TARGET_MACHINE: 'the target machine' as const,
 } as const;
 
 /**
@@ -517,7 +490,6 @@ export const DEFAULTS = {
   BACKUP: BACKUP_DEFAULTS,
   BATCH: BATCH_DEFAULTS,
   REPOSITORY: REPOSITORY_DEFAULTS,
-  DOCKER: DOCKER_DEFAULTS,
   SHELL: SHELL_DEFAULTS,
   TELEMETRY: TELEMETRY_DEFAULTS,
   TIMEOUT: TIMEOUT_DEFAULTS,

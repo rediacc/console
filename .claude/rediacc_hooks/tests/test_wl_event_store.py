@@ -594,6 +594,8 @@ DEADCODE_CONSUMERS = (
     wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "ci" / "ci-trace.py",
     wlfix.STOP_DIR.parent / "post-bash" / "review_commit.py",
     wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "plan_gate.py",
+    # `wl_review.patch_ids` is called only from the live-proof successor map, which imports it so a record's `Patch-Id:` has one spelling.
+    wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "review" / "successor.py",
 )
 
 
@@ -689,6 +691,7 @@ def test_144_state_document_staleness_is_world_keyed(wl):
             "Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite "
             "from test-hooks.sh.\n\n## Next action\n\nPush and watch the run, then bump the "
             "submodule pointers to the squash commits before the merge chain closes out.\n"
+            "\n## Big pieces\n\nnone\n"
         ),
     )
     wl.check("allow", "", "fresh STATE.md, settled world: allowed")

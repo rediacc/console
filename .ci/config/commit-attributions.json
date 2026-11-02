@@ -5,5 +5,11 @@
     "The gate refuses a STALE entry (sha not reachable from the tip), a REDUNDANT one (the commit carries a trailer), a duplicate, a short sha and an unknown epic. An entry for an already-merged commit is inert and may be pruned.",
     "docs/agent-reference/suppressions.md carries this file's row."
   ],
-  "attributions": []
+  "attributions": [
+    {
+      "sha": "e215279790bcb32a9b601c3d4b52361605c5c5bb",
+      "epic": "9f92c43e",
+      "reason": "Pins bump commit drafted by `npm run pins -- bump`, which omits the PR-TASK trailer when the branch snapshot names several epics and no --task is passed (scripts/pins/pins.ts:892); it sits between two 9f92c43e commits of the ci-green run, and the no-amend rule forbids rewriting it."
+    }
+  ]
 }

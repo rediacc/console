@@ -9,7 +9,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createOutputState, runInRequestContext } from '../../core/request-context.js';
 import { JobLogCursor } from '../job-client.js';
-import { followJobLogs, renderJobEvent } from '../job-remote.js';
+import { FollowLostError, followJobLogs, renderJobEvent } from '../job-remote.js';
 import type { RenetEvent } from '../types.js';
 
 const JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
@@ -64,6 +64,67 @@ describe('followJobLogs abort (detach, not cancel)', () => {
     );
 
     expect(interrupted).toBe(true);
+  });
+});
+
+describe('followJobLogs reconnect budget (Design 2, section 16)', () => {
+  /** A fake clock: every pause advances it. */
+  function clock() {
+    let now = 0;
+    return {
+      now: () => now,
+      sleep: (ms: number) => {
+        now += ms;
+        return Promise.resolve();
+      },
+    };
+  }
+
+  it('keeps reconnecting well past five drops while inside the 2-minute budget, then finishes', async () => {
+    let calls = 0;
+    const execStreaming = vi.fn((_cmd: string, handlers: { onStdout: (data: Buffer) => void }) => {
+      calls += 1;
+      // Twelve drops in a row (the old ceiling was five), then the tail delivers and ends.
+      if (calls <= 12) return Promise.reject(new Error('channel closed'));
+      handlers.onStdout(Buffer.from('{"type":"output","msg":"done"}\n'));
+      return Promise.resolve(0);
+    });
+    const sftp = { execStreaming };
+    const lease = { sftp, ensure: () => Promise.resolve(sftp), release: () => {} };
+    const cursor = new JobLogCursor(4);
+
+    const interrupted = await followJobLogs(
+      lease as never,
+      '/usr/bin/renet',
+      JOB_ID,
+      { onEvent: () => {}, reconnect: clock() },
+      cursor
+    );
+
+    expect(interrupted).toBe(false);
+    expect(calls).toBe(13);
+    // Every reconnect resumed from the last complete line.
+    expect(String(execStreaming.mock.calls[12][0])).toContain('--since-line 4');
+    expect(cursor.sinceLine).toBe(5);
+  });
+
+  it('gives up with FollowLostError, carrying the last line, once the transport stays gone past the budget', async () => {
+    const execStreaming = vi.fn(() => Promise.reject(new Error('channel closed')));
+    const sftp = { execStreaming };
+    const lease = { sftp, ensure: () => Promise.resolve(sftp), release: () => {} };
+
+    const error = await followJobLogs(
+      lease as never,
+      '/usr/bin/renet',
+      JOB_ID,
+      { onEvent: () => {}, reconnect: { ...clock(), budgetMs: 120_000 } },
+      new JobLogCursor(7)
+    ).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(FollowLostError);
+    expect((error as FollowLostError).sinceLine).toBe(7);
+    // 120 s at a 5 s capped backoff is well over five attempts.
+    expect(execStreaming.mock.calls.length).toBeGreaterThan(20);
   });
 });
 

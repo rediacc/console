@@ -12,6 +12,9 @@ name: Housekeeping
 #                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
 #                        branches, workflow runs/artifacts/cache).
 #   stripe-cleanup     - Stripe sandbox orphan sweep + per-region webhook verification.
+#   cf-leftovers       - rediacc_ci.housekeeping.cf_leftovers: a report-only listing of Workers
+#                        scripts, edge/bench D1 databases, routes and custom domains no
+#                        wrangler config accounts for. Deletes nothing; findings never fail it.
 #   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
 #                        artifact .ci/config/freshness.json registers against fresh
 #                        measurements, reported to the nightly-status issue.
@@ -40,6 +43,7 @@ concurrency:
 jobs:
   cleanup:
     name: Cleanup versions
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
     # cap, so the 60-minute timeout below was unreachable -- a long run was
     # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
@@ -211,6 +215,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Verify Stripe sandbox webhook endpoints (per-region)
+        shell: bash
         run: |
           jq -r '.regions[] | .edgeDomain' regions.json | while read -r domain; do
             echo "Verifying sandbox webhook for ${domain}..."
@@ -218,6 +223,45 @@ jobs:
           done
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+
+  cf-leftovers:
+    name: Cloudflare leftovers report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+
+      # Report only: GET listings, no deletion. A finding is a line in this log and exits 0;
+      # only an unreadable listing fails the step, so an API outage is not read as "nothing found".
+      - name: Report Cloudflare leftovers
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cf_leftovers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+      # The live half of check:ci-region-consistency: the seven account targets (stable and edge in eu, us,
+      # asia, plus bench) against Cloudflare, GET only, names and ids only. Drift exits 1; a listing the token
+      # cannot read (R2 needs Workers R2 Storage Read) is UNCHECKED and exits 2, never green.
+      - name: Region consistency (live)
+        if: ${{ !cancelled() }}
+        run: .ci/scripts/quality/check_region_consistency.py --live
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
   budget-check:
     name: CI time budget check

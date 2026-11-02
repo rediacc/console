@@ -23,7 +23,7 @@ Read this before fighting the devbox, the docker group, `account db`, the SEA lo
 
 **The devbox exists for AI agents first; for developers it is a convenience.** Restarting or recreating it to pick up an update (a new image, a new bind, a changed entrypoint) is almost always fine and needs no operator sign-off (operator ruling, 2026-09-24). `./run.sh devbox remove && ./run.sh devbox up` recreates it; a session whose own work is running inside the container finishes or pauses that work first.
 
-**One published port for the whole machine.** A shared `traefik:v3.6` container (`rediacc-devbox-proxy`, `rediacc_ci.core.devbox`) publishes `DEVBOX_PROXY_PORT` and routes by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app), `-db` and `-term` (ttyd on an attach-or-create tmux session, started by `devbox-autostart.sh`; a reload re-attaches rather than
+**One published port for the whole machine.** A shared `traefik:v3.7.16` container (`rediacc-devbox-proxy`, `rediacc_ci.core.devbox`) publishes `DEVBOX_PROXY_PORT` and routes by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app), `-db` and `-term` (ttyd on an attach-or-create tmux session, started by `devbox-autostart.sh`; a reload re-attaches rather than
 opening a new shell). Host routing rather than path routing is deliberate: every app keeps its own root path, so nothing needs `--server-base-path`/`base` configuration. Routes come from labels on the devbox container itself, so adding a worktree changes no proxy config. This exists because each published port needs its own manual forward on ChromeOS; now there is one -- and it is
 the ONLY one: devbox containers publish no ports at all, so the proxy is the sole ingress. `devbox status` PROBES each route and reports OK / "no backend yet", because Traefik's bare 502 names neither the service nor the reason. Servers started inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`) or the proxy cannot reach them and Traefik answers 502.
 
@@ -56,7 +56,7 @@ Bare `./rdc.sh` behaves like an installed `rdc`: the default config `~/.config/r
 there are no `.rdc-dev/` or `.rdc-bench/` token files.
 
 Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev <command>` (or `RDC_DEV=1 ./rdc.sh <command>`). `--dev` reads the gateway port from `.account-state` and the X25519 public key from the running gateway's `/.well-known/server-info`, seeds or patches `~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails fast if `./run.sh account dev` isn't running. Bench is just
-another config now: `./rdc.sh --config bench <command>` replaces the old `RDC_BENCH=1`. There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build stays `--nolicense` in all wrapper modes; `RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
+another config now: `./rdc.sh --config eu-bench <command>` replaces the old `RDC_BENCH=1`, and `npm run login:bench` logs it in (docs/agent-reference/bench-login.md). There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build is the one licence-enforcing build in every wrapper mode (production key baked, `ACCOUNT_ED25519_PUBLIC_KEY` required).
 
 `npm run vm:check` records the dev gateway it starts in `.ci/cache/vm-check/gateway.json` (port, start time and an account worktree digest) and writes the gateway log to `.ci/cache/vm-check/gateway.log`; the gateway stays running after the run and is reused only while the record matches `.account-state` and the account worktree.
 
@@ -77,7 +77,7 @@ The SEA is injected by `.ci/scripts/build/sea-inject/` (a streaming replacement 
 Moved here from `rdc.sh` on 2026-09-09, where 53 lines of demo runbook sat in the wrapper a developer types to run an ordinary CLI command. **The four commands were re-spelled on the way**: the versions in `rdc.sh` used `--parent`, `--machine` and `--name` flags that the positional-ref reshape removed, so as written they had stopped working. The spellings below are read off the
 live sources: `packages/cli/src/commands/repo-fork.ts:568-572`, `packages/cli/src/commands/vscode.ts:587-589` and `packages/cli/src/commands/repo-create-delete.ts:486-490`.
 
-Install a clean, license-free binary as the system `rdc` (renet built with `-tags nolicense`, no account-server calls), then repoint the PATH symlink once:
+The system `rdc` is the native binary, installed and then repointed through the PATH symlink once:
 
 ```bash
 ./rdc.sh --native
@@ -85,6 +85,8 @@ ln -sf "../share/rediacc/bin/rdc" ~/.local/bin/rdc
 ```
 
 After that, `rdc` from any terminal is the binary, with no dev-wrapper output.
+
+The binary enforces licensing like every other build: repo create and fork issue a repository licence, so the demo config needs the account server and a subscription token (`rdc subscription login`).
 
 URL anatomy (`demo-stackoverflow`); forks add the `-fork-<TAG>` infix:
 
@@ -138,34 +140,16 @@ demo-stackoverflow Postgres DB: top 10 tags by count."
 recovery)."
 
 
-### Reproducing license-flow bugs in dev (`RDC_RENET_LICENSE=1`)
+### Reproducing license-flow bugs in dev
 
-By default `./rdc.sh` rebuilds renet with the `--nolicense` Go build tag (`pkg/license/runtime_nolicense.go` stub) so dev iteration isn't blocked by license enforcement. That's the right default for everyday work, but it also hides license-flow bugs (e.g. rediacc/console#482) because the renet binary deployed to your test machine never returns `LICENSE_REQUIRED` (exit 10), so the
-CLI's recovery framework (`needsLicenseRecovery` in `packages/cli/src/services/executor/local-executor.ts`) never fires.
-
-To reproduce license-enforcement issues locally, set:
+`./rdc.sh` builds the one licence-enforcing renet (`./build.sh dev`, production key baked, no `nolicense` tag and no `bin/enforce/` split since renet `aa872ed`), so a licence-flow bug (e.g. rediacc/console#482) reproduces with no switch: the deployed binary returns `LICENSE_REQUIRED` (exit 10) and the CLI's recovery framework (`needsLicenseRecovery` in `packages/cli/src/services/executor/local-executor.ts`) fires.
 
 ```bash
-ACCOUNT_ED25519_PUBLIC_KEY="<the production ed25519 public key>" \
-RDC_RENET_LICENSE=1 \
 ./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine>
 ./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
 ```
 
-**Where the key comes from, corrected 2026-07-29.** This block used to fetch it with `curl -fsS https://www.rediacc.com/api/public/account-key`. That endpoint returns **404** and the account API is not served from `www.rediacc.com` at all (its other routes answer `410 Gone` there, while the same paths answer `200` on a PR preview worker). There is no public URL for the key today.
-
-CI does not need one, but **not for the reason this paragraph used to give**. It said `ACCOUNT_ED25519_PUBLIC_KEY` "already exists as an organisation secret ... verify with `gh api orgs/rediacc/actions/secrets`". That command now returns `{"total_count":0,"secrets":[]}`, and the paragraph was wrong twice over: the org store is not merely empty, it is **unused**. The key lives in
-**Bitwarden** (`.ci/config/bws-secret-map.json`) and workflows pull it through `./.github/actions/bws-secrets`. Running the old verification command and seeing zero reads as "the secret was deleted" when the truth is "you are looking in the wrong store".
-
-Locally you must paste the value. GitHub secrets are **write-only** -- `gh` can list their names and never their contents -- so there is no command that fetches it, and the old one-liner was not merely pointing at a dead URL, it was pointing at a shape of solution that cannot exist for a secret.
-
-Whatever you substitute, do NOT pipe an unchecked HTTP response into this variable. That was the original bug and it is worth stating plainly: with plain `curl -s` a 404 is SILENT, its HTML body becomes the value, and that HTML is baked into `keys.ProductionPublicKey` via ldflags. The build succeeds and every prod-signed licence then fails as `invalid_signature` -- exactly the
-symptom this variable exists to prevent. The documented cure was producing the disease.
-
-`RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as
-`invalid_signature`.
-
-After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subsequent `./rdc.sh` invocations rebuild the dev-friendly nolicense renet again.
+The production ed25519 public key comes from Bitwarden (`.ci/config/bws-secret-map.json`) through `./rdc.sh`, which supplies `ACCOUNT_ED25519_PUBLIC_KEY` to the renet build. No paste and no `ACCOUNT_ED25519_PUBLIC_KEY=` prefix are needed, and a renet build without the key fails instead of baking a wrong one. GitHub secrets are write-only and the account API serves no public URL for the key, so the store is the only source. The key reaches `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags; the key must match the account server that issued the licenses on the test machines, or prod-signed licenses fail validation as `invalid_signature`. `go version -m private/renet/bin/renet` shows `ProductionPublicKey=` when it is baked.
 
 ## A real passkey provider in the account E2E suite
 
@@ -206,6 +190,7 @@ rdc run -f container_restart -m <machine> --param repository=<repo> --param cont
 | `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
 | `python3 -m rediacc_ci.ops.reset_bench` (run with `PYTHONPATH=.ci`) | Wipe bench D1 + R2 + worker secrets |
 | `python3 -m rediacc_ci.ops.backup_d1` (run with `PYTHONPATH=.ci`) | Export production/edge D1 databases to `.backups/` |
+| `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted, each IP expires 7 days after it was added (stamp kept in the rule description, refreshed by re-adding); IPv6 is stored as the /64 prefix (a hand CIDR only /64 to /128), and under WSL `add-current` also asks the Windows host for its egress addresses; a 403 from a bench host means run `add-current` (the two health paths stay open for `telemetry-probe.yml`). `npm run ci:quick` runs `preflight` first: it probes bench from here and from the Windows host and runs `add-current` only on a 403, skips under `CI=true`, and never fails the run |
 | `rediacc_ci.ops.cf_auth` | Shared Cloudflare auth helpers for the bench and backup operator scripts |
 
 ## Secret Rotation (`./run.sh rotation`)

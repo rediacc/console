@@ -24,8 +24,7 @@ from rediacc_ci.core import tmp_capacity
 from rediacc_ci.tests import differential
 
 # The sweep of basetemps a KILLED run left, for every test in both pytest roots; see that module for why it is a plugin rather than code here.
-# The second: a directory pytest collects twice in one run gets its conftest fixtures both times (worklist #6b5becd7; the module says when pytest does that).
-pytest_plugins = ["rediacc_ci.pytest_tmp", "rediacc_ci.pytest_conftest_rebind"]
+pytest_plugins = ["rediacc_ci.pytest_tmp"]
 
 
 # The lock's real-tree declarations, read ONCE per process. A dict rather than a module-level rebind so no `global` statement is needed; the key names the reason the entry exists rather than being a bare index.
@@ -98,6 +97,18 @@ def _group_of(item: pytest.Item | None) -> str | None:
         return None
     name = marker.args[0] if marker.args else marker.kwargs.get("name")
     return str(name) if name else None
+
+
+# A WRAPPER BECAUSE THE IDS MUST BE STAMPED FOR xdist's OWN pytest_collection_finish AND NOT A MOMENT LONGER: that impl (xdist/remote.py) sends the worker's id strings to the controller, and the scheduler knows nothing else. Only a worker under `--dist loadgroup` has `loadgroup` set (xdist/remote.py setup_config), so a serial run is untouched. Why this exists: the block above xdist_groups.stamp_group_ids.
+@pytest.hookimpl(wrapper=True)
+def pytest_collection_finish(session: pytest.Session):
+    if not session.config.getoption("loadgroup", default=False):
+        return (yield)
+    stamped = xdist_groups.stamp_group_ids(session.items, _group_of)
+    try:
+        return (yield)
+    finally:
+        xdist_groups.unstamp_group_ids(stamped)
 
 
 @pytest.hookimpl(hookwrapper=True)

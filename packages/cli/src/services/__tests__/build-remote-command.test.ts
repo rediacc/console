@@ -20,6 +20,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildRemoteRenetCommand } from '../executor/local-executor.js';
+import { DATA_TRANSFER_TIMEOUT_MS, resolveRenetTimeoutMs } from '../executor/renet-command.js';
 import { STDIN_ENV_READER } from '../executor/renet-launch.js';
 
 const RENET = '/usr/bin/renet';
@@ -170,5 +171,40 @@ describe('a renet path with shell metacharacters stays one word', () => {
     expect(launch.command).toBe(
       `sudo env REDIACC_TELEMETRY_DISABLED=1 '/opt/my renet/o'\\''brien;rm -rf x/renet' execute --executor local`
     );
+  });
+});
+
+describe('renet run timeout', () => {
+  it('forwards an explicit timeout to renet execute', () => {
+    const launch = buildRemoteRenetCommand({
+      remoteRenetPath: RENET,
+      isDevelopment: false,
+      telemetryDisabled: true,
+      timeoutMs: 90_000,
+    });
+    expect(launch.command).toContain(`'/usr/bin/renet' execute --executor local --timeout 90000ms`);
+  });
+
+  it('gives a data-moving backup verb a ceiling above renet 10-minute default', () => {
+    for (const fn of [
+      'backup_snapshot',
+      'backup_push',
+      'backup_pull',
+      'backup_restore',
+      'backup_restore_path',
+      'backup_verify',
+    ]) {
+      expect(resolveRenetTimeoutMs(fn, undefined)).toBe(DATA_TRANSFER_TIMEOUT_MS);
+    }
+    expect(DATA_TRANSFER_TIMEOUT_MS).toBeGreaterThan(10 * 60 * 1000);
+  });
+
+  it('gives health-gated repository_up the 24 h class (PLAN-detached-jobs section 20)', () => {
+    expect(resolveRenetTimeoutMs('repository_up', undefined)).toBe(DATA_TRANSFER_TIMEOUT_MS);
+  });
+
+  it('leaves other verbs on renet default and lets an explicit value win', () => {
+    expect(resolveRenetTimeoutMs('repository_down', undefined)).toBeUndefined();
+    expect(resolveRenetTimeoutMs('backup_snapshot', 5000)).toBe(5000);
   });
 });

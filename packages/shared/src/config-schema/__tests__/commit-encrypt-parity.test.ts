@@ -54,7 +54,6 @@ function fullyPopulated(): RdcConfig {
     resources: {
       machines: { m1: { ip: '10.0.0.1', user: 'root' } },
       repositories: {},
-      storages: {},
       cloudProviders: { cp1: { apiToken: 'provider-secret', sshUser: 'u' } },
       datastores: { ds1: { size: '10G', backend: { kind: 'local', machine: 'm1', path: '/x' } } },
       // The families whose ABSENCE from this fixture let the family-drop bug ship: deletedRepositories commits credential pointers, so a fixture without it could not see toFullConfig failing to carry them.
@@ -70,7 +69,7 @@ function fullyPopulated(): RdcConfig {
       ],
       backupStrategies: {
         nightly: {
-          destinations: [{ kind: 'storage', name: 'off', storage: 's1' }],
+          destinations: [{ kind: 'hosted-service', name: 'off' }],
           schedule: '0 3 * * *',
         },
       },

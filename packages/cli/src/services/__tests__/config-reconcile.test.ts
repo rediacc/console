@@ -243,3 +243,97 @@ describe('verifyRoutingHint', () => {
     expect(v.error).toContain('rdc config reconcile');
   });
 });
+
+// PLAN-config-networkid-discovery T5: state.repos[*][*].networkId is rebuilt by GUID from `renet list all --json`, and on divergence the machine wins (D4(a)).
+describe('reconcileState network IDs', () => {
+  function listWithIds(entries: { guid: string; networkId?: number }[]): ListResult {
+    return {
+      repositories: entries.map((e) => ({
+        name: e.guid,
+        mounted: false,
+        ...(e.networkId !== undefined && { network_id: e.networkId }),
+      })),
+    } as unknown as ListResult;
+  }
+
+  function withPlacement(cfg: RdcConfig, machine: string): RdcConfig {
+    const shop = cfg.resources?.repositories?.shop;
+    if (!shop) throw new Error('fixture lost shop');
+    return {
+      ...cfg,
+      resources: {
+        ...cfg.resources,
+        repositories: { shop: { ...shop, placement: { machine } } },
+      },
+    };
+  }
+
+  it('rebuilds a missing network ID by GUID, per tag', async () => {
+    const { deps, written } = makeDeps(withPlacement(baseConfig(), 'web-1'), {
+      'web-1': listWithIds([
+        { guid: GRAND, networkId: 2880 },
+        { guid: FORK, networkId: 2944 },
+      ]),
+    });
+    const report = await reconcileState(deps);
+    expect(report.networkIdsRebuilt).toEqual([
+      { repository: 'shop:main', networkId: 2880, machine: 'web-1' },
+      { repository: 'shop:test', networkId: 2944, machine: 'web-1' },
+    ]);
+    expect(report.networkIdsDiverged).toEqual([]);
+    expect(written().state?.repos?.shop?.main?.networkId).toBe(2880);
+    expect(written().state?.repos?.shop?.test?.networkId).toBe(2944);
+  });
+
+  it('on divergence the machine wins, sibling runtime keys survive, and the old ID is reported', async () => {
+    const cfg = withPlacement(baseConfig(), 'web-1');
+    cfg.state = { repos: { shop: { main: { networkId: 2816, registryPort: 5001 } } } };
+    const { deps, written } = makeDeps(cfg, {
+      'web-1': listWithIds([{ guid: GRAND, networkId: 2880 }]),
+    });
+    const report = await reconcileState(deps);
+    expect(report.networkIdsDiverged).toEqual([
+      { repository: 'shop:main', networkId: 2880, machine: 'web-1', previous: 2816 },
+    ]);
+    expect(written().state?.repos?.shop?.main).toEqual({ networkId: 2880, registryPort: 5001 });
+  });
+
+  it('leaves a matching ID untouched and reports nothing', async () => {
+    const cfg = withPlacement(baseConfig(), 'web-1');
+    cfg.state = { repos: { shop: { main: { networkId: 2880 } } } };
+    const { deps } = makeDeps(cfg, { 'web-1': listWithIds([{ guid: GRAND, networkId: 2880 }]) });
+    const report = await reconcileState(deps);
+    expect(report.networkIdsRebuilt).toEqual([]);
+    expect(report.networkIdsDiverged).toEqual([]);
+  });
+
+  it('prefers the declared machine copy when the GUID carries different IDs on two machines', async () => {
+    const { deps, written } = makeDeps(withPlacement(baseConfig(), 'web-2'), {
+      'web-1': listWithIds([{ guid: GRAND, networkId: 2816 }]),
+      'web-2': listWithIds([{ guid: GRAND, networkId: 3008 }]),
+    });
+    await reconcileState(deps);
+    expect(written().state?.repos?.shop?.main?.networkId).toBe(3008);
+  });
+
+  it('reports a conflict and writes nothing when no declared copy settles differing IDs', async () => {
+    const { deps, written } = makeDeps(baseConfig(), {
+      'web-1': listWithIds([{ guid: GRAND, networkId: 2816 }]),
+      'web-2': listWithIds([{ guid: GRAND, networkId: 3008 }]),
+    });
+    const report = await reconcileState(deps);
+    expect(
+      report.conflicts.some((c) => c.kind === 'network-id' && c.repository === 'shop:main')
+    ).toBe(true);
+    expect(written().state?.repos?.shop?.main?.networkId).toBeUndefined();
+  });
+
+  it('skips a repo whose mirror records no ID', async () => {
+    const { deps, written } = makeDeps(withPlacement(baseConfig(), 'web-1'), {
+      'web-1': listWithIds([{ guid: GRAND }]),
+    });
+    const report = await reconcileState(deps);
+    expect(report.networkIdsRebuilt).toEqual([]);
+    expect(written().state?.repos).toBeUndefined();
+  });
+});

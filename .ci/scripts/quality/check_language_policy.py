@@ -81,7 +81,7 @@ ALLOWLIST = pathlib.Path(
 # WIDENED 2026-09-21 BY OPERATOR RULING, and a widening is its own wave rather than a drain. `scripts/ops/`, `scripts/drills/` and `scripts/dev/` hold 17 tracked bash files (7,244 lines) that source six libraries under `.ci/scripts/lib/`, `.ci/lib/` and `.ci/scripts/test/lib/`. While those callers sat outside the corpus the libraries they source could not retire: porting a
 # library whose only remaining consumers are un-scoped bash means either breaking them or granting the library a permanent exemption for a reason that is really "nothing scopes the caller". Naming the three directories here makes the callers debt, which is what a drain can reach. Their 17 files enter `.ci/config/language-policy-baseline.json` FROZEN in the same change, so this
 # widening refuses a NEW bash file under them from today while porting none of them.
-# `scripts/drills` left with its last bash file (882658c69).
+# `scripts/drills` left with its last bash file (363a35892).
 #
 # WIDENED AGAIN 2026-10-20 BY OPERATOR RULING ("Replace and widen the gate", PLAN-tooling-transformation W7P5-c): the scope is now EVERY TRACKED PATH outside `private/`. Under the four-root scope a new `.sh` under `.devcontainer/`, `.github/`, `packages/` or the rest of `scripts/` was refused by nothing, and the repo root was only half closed by `.ci/policy/tree-shape.json`'s `root_files`.
 # The bash that stays bash outside the old roots (installer entrypoints, devcontainer hooks, composite-action steps, product Rediaccfiles and template helpers) entered `.ci/policy/.language-policy-allowlist` in the same change, each with its own BLOCKER; nothing was baselined.

@@ -444,7 +444,7 @@ def test_b10_cache_to_refuses_a_private_key_and_writes_no_file(gate, tmp_path):
     gate.assert_contains(out, "mode 0644", "and says so, including the mode a reader needs")
     gate.assert_eq(
         target.read_text(encoding="utf-8"),
-        "%s=ssh-ed25519-AAAA-public\n" % public_name,
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "%s=ssh-ed25519-AAAA-public\n" % public_name,
         "the cache file's contents are not the NAME=value line four readers sed",
     )
     gate.assert_eq(
@@ -453,6 +453,65 @@ def test_b10_cache_to_refuses_a_private_key_and_writes_no_file(gate, tmp_path):
         "the cache is not 0644, so a build may not read it",
     )
     gate.log_pass("cache-to refuses a private key and writes nothing; a public key IS written 0644")
+
+
+def test_b10c_cache_to_refuses_the_retired_dev_alias_and_writes_no_file(gate, tmp_path):
+    """B10c. One keypair (agent/plans/PLAN-production-key-only.md K1): `cache-to` reads each public key from the store entry of the same name only, so the retired `_DEV` alias is refused and no file is written. Control: the unaliased name IS written 0644."""
+    target = tmp_path / "public-keys.env"
+    fixture(
+        tmp_path,
+        json.dumps(
+            [
+                {"key": "ACCOUNT_ED25519_PUBLIC_KEY_DEV", "value": "dev-public-must-not-be-cached"},
+                {"key": "ACCOUNT_ED25519_PUBLIC_KEY", "value": "prod-public"},
+            ]
+        ),
+    )
+    out = run_verb(
+        gate,
+        tmp_path,
+        "cache-to",
+        str(target),
+        "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
+    )
+    gate.assert_contains(out, "outside the pair table", "the retired alias is refused by name")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.assert_not_contains(out, "dev-public-must-not-be-cached", "and never prints the value")
+    if target.exists():
+        gate.log_fail("cache-to WROTE %s for the retired DEV alias" % target)
+    gate.ok("no file was written for the retired alias")
+
+    out = run_verb(gate, tmp_path, "cache-to", str(target), "ACCOUNT_ED25519_PUBLIC_KEY")
+    gate.assert_contains(out, "rc=0", "CONTROL: the unaliased public key IS cached")
+    gate.assert_eq(
+        target.read_text(encoding="utf-8"),
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "ACCOUNT_ED25519_PUBLIC_KEY=prod-public\n",
+        "the cache holds the production entry",
+    )
+    gate.assert_eq(stat.S_IMODE(target.stat().st_mode), 0o644, "the cache is not 0644")
+    gate.log_pass(
+        "cache-to refuses the retired DEV alias and writes nothing; the live name is written 0644"
+    )
+
+
+def test_b11_a_parked_spec_is_never_loaded(gate, tmp_path):
+    """B11. A `__` name is a parked, retired entry: `names` refuses it before the fetch and prints no value. Control: the live name resolves."""
+    fixture(
+        tmp_path,
+        json.dumps(
+            [
+                {"key": "__ALPHA_TOKEN", "value": "parked-value-never-shown"},
+                {"key": "ALPHA_TOKEN", "value": "a-val"},
+            ]
+        ),
+    )
+    out = run_load(gate, tmp_path, "__ALPHA_TOKEN")
+    gate.assert_contains(out, "load refuses 1 parked spec(s): __ALPHA_TOKEN", "named")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.assert_not_contains(out, "parked-value-never-shown", "and never prints the value")
+    out = run_load(gate, tmp_path, "ALPHA_TOKEN")
+    gate.assert_contains(out, "rc=0", "CONTROL: the live name resolves")
+    gate.log_pass("a parked spec is refused before any fetch; the live name resolves")
 
 
 def test_b10b_a_partial_cache_is_never_written(gate, tmp_path):

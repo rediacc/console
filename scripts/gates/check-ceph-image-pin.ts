@@ -63,6 +63,10 @@ export interface Pin {
   image?: string;
   review?: string;
   hostVersion?: string;
+  /** host-version.<target> lines: a per-target series override, each needing a host-version-reason.<target> line. */
+  hostVersionOverrides: Record<string, string>;
+  /** host-version-reason.<target> lines: why the target leaves the shared series. */
+  hostVersionReasons: Record<string, string>;
   /** host.<target> lines: target -> exact package version. */
   hosts: Record<string, string>;
   /** key-expiry.<name> lines: name -> YYYY-MM-DD. */
@@ -70,7 +74,7 @@ export interface Pin {
 }
 
 export function parsePin(text: string): Pin {
-  const out: Pin = { hosts: {}, keyExpiry: {} };
+  const out: Pin = { hosts: {}, keyExpiry: {}, hostVersionOverrides: {}, hostVersionReasons: {} };
   for (const line of text.split('\n')) {
     const t = line.trim();
     if (!t || t.startsWith('#')) continue;
@@ -81,6 +85,10 @@ export function parsePin(text: string): Pin {
     if (k === 'image') out.image = v;
     else if (k === 'review') out.review = v;
     else if (k === 'host-version') out.hostVersion = v;
+    else if (k.startsWith('host-version.'))
+      out.hostVersionOverrides[k.slice('host-version.'.length)] = v;
+    else if (k.startsWith('host-version-reason.'))
+      out.hostVersionReasons[k.slice('host-version-reason.'.length)] = v;
     else if (k.startsWith('host.')) out.hosts[k.slice('host.'.length)] = v;
     else if (k.startsWith('key-expiry.')) out.keyExpiry[k.slice('key-expiry.'.length)] = v;
   }
@@ -113,11 +121,24 @@ export function hostProblems(pin: Pin, goPins: Record<string, string> | undefine
   const out: string[] = [];
   const targets = Object.keys(pin.hosts);
   if (targets.length === 0) out.push('the pin file has no host.<target> lines');
+  for (const t of Object.keys(pin.hostVersionOverrides)) {
+    if (!(t in pin.hosts))
+      out.push(`host-version.${t} overrides a target that has no host.${t} line`);
+    if (!pin.hostVersionReasons[t]?.trim())
+      out.push(
+        `host-version.${t}=${pin.hostVersionOverrides[t]} has no host-version-reason.${t} line: leaving the shared series needs a recorded reason`
+      );
+  }
+  for (const t of Object.keys(pin.hostVersionReasons)) {
+    if (!(t in pin.hostVersionOverrides))
+      out.push(`host-version-reason.${t} has no host-version.${t} line to explain`);
+  }
   for (const t of targets) {
     const v = pin.hosts[t];
-    if (pin.hostVersion && upstreamVersion(v) !== pin.hostVersion) {
+    const want = pin.hostVersionOverrides[t] ?? pin.hostVersion;
+    if (want && upstreamVersion(v) !== want) {
       out.push(
-        `host.${t}=${v} is upstream ${upstreamVersion(v)}, but host-version is ${pin.hostVersion}`
+        `host.${t}=${v} is upstream ${upstreamVersion(v)}, but ${t in pin.hostVersionOverrides ? `host-version.${t}` : 'host-version'} is ${want}`
       );
     }
     if (goPins && goPins[t] !== v) {
@@ -275,6 +296,43 @@ function selftest(): boolean {
       ok:
         expiryProblems(parsePin(HEALTHY_PIN), new Date('2027-04-20T00:00:00Z')).length === 1 &&
         expiryProblems(parsePin(HEALTHY_PIN), new Date('2027-05-08T00:00:00Z')).length === 1,
+    },
+    {
+      name: 'an override line moves one target to its own series and leaves the others on host-version',
+      ok: (() => {
+        const p = parsePin(
+          `${HEALTHY_PIN.replace('19.2.3-lp160.2.98', '19.2.9-lp160.1.1')}\nhost-version.opensuse-16.0=19.2.9\nhost-version-reason.opensuse-16.0=ruling`
+        );
+        const go = goHostPins(HEALTHY_GO.replace('19.2.3-lp160.2.98', '19.2.9-lp160.1.1'));
+        const moved = hostProblems(p, go).length === 0;
+        const other = hostProblems(
+          parsePin(
+            `${HEALTHY_PIN.replace('19.2.3-lp160.2.98', '19.2.9-lp160.1.1').replace('19.2.3-8.fc43', '19.2.9-1.fc43')}\nhost-version.opensuse-16.0=19.2.9\nhost-version-reason.opensuse-16.0=ruling`
+          ),
+          undefined
+        );
+        return moved && other.length === 1;
+      })(),
+    },
+    {
+      name: 'CONTROL: an override with no reason is refused',
+      ok:
+        hostProblems(
+          parsePin(
+            `${HEALTHY_PIN.replace('19.2.3-lp160.2.98', '19.2.9-lp160.1.1')}\nhost-version.opensuse-16.0=19.2.9`
+          ),
+          undefined
+        ).length === 1,
+    },
+    {
+      name: 'CONTROL: an override that the host line does not match is reported',
+      ok:
+        hostProblems(
+          parsePin(
+            `${HEALTHY_PIN}\nhost-version.opensuse-16.0=19.2.9\nhost-version-reason.opensuse-16.0=ruling`
+          ),
+          undefined
+        ).length === 1,
     },
     {
       name: 'a key expiring in 31 days is NOT reported (control)',

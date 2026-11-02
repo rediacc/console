@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: it
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Regole di Rediacc
@@ -58,7 +58,7 @@ down() {
 - **Non impostare etichette `rediacc.*`**: renet inietta automaticamente `rediacc.network_id`, `rediacc.service_ip` e `rediacc.service_name`.
 - **I mapping `ports:` vengono ignorati** in modalità host networking. Aggiungi l'etichetta `rediacc.service_port` per il routing HTTP (i servizi senza questa etichetta non ottengono route HTTP). Usa le etichette `rediacc.tcp_ports`/`rediacc.udp_ports` per il forwarding TCP/UDP.
 - **Le policy di restart (`restart: always`, `on-failure`, ecc.) sono sicure da usare**: renet le rimuove automaticamente per compatibilità con CRIU. Il watchdog del router ripristina automaticamente i container fermi in base alla policy originale salvata in `.rediacc.json`.
-- **Le impostazioni pericolose sono bloccate per impostazione predefinita**: `privileged: true`, `pid: host`, `ipc: host` e i bind mount dell'host verso percorsi di sistema vengono rifiutati. Usa `renet compose --unsafe` per sovrascrivere a tuo rischio.
+- **Le impostazioni pericolose sono bloccate per impostazione predefinita**: `privileged: true`, `pid: host`, `ipc: host` e i bind mount dell'host verso percorsi di sistema vengono rifiutati. Il blocco di `privileged` e di `pid`, `ipc` e `uts` dell'host vale anche sull'API Docker: un container che chiama direttamente `${DOCKER_SOCKET}` riceve un `403` per queste opzioni, e nessun flag lo aggira. `renet compose --unsafe` aggira solo i controlli sui percorsi dell'host in sola lettura.
 
 ### Variabili d'ambiente all'interno dei container
 
@@ -78,7 +78,7 @@ Renet inietta automaticamente queste in ogni container:
 
 ## Networking
 
-- **Ogni repository ottiene il proprio daemon Docker** su `/var/run/rediacc/docker-<networkId>.sock`.
+- **Ogni repository ottiene il proprio daemon Docker** su `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`.
 - **Ogni servizio ottiene un IP loopback univoco** all'interno di una subnet /26 (es. `127.0.24.192/26`).
 - **Il binding è automatico**: I servizi possono fare bind su `0.0.0.0` o `localhost` - il kernel riscrive in modo trasparente l'indirizzo all'IP loopback assegnato al servizio. Il binding esplicito con `${SERVICE_IP}` funziona ancora ma non è più necessario.
 - **Gli health check possono usare `localhost`** o `${SERVICE_IP}`. Esempio: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
@@ -168,7 +168,7 @@ In sintesi: `rdc` e `renet` rilevano automaticamente il sistema operativo in ese
 
 - Usare `docker compose` invece di `renet compose`: i container non otterranno l'isolamento di rete.
 - Le policy di restart sono sicure; renet le rimuove automaticamente e il watchdog gestisce il ripristino.
-- Usare `privileged: true`: non necessario, renet inietta le capability CRIU specifiche al suo posto.
+- Usare `privileged: true`: non necessario, renet inietta le capability CRIU specifiche al suo posto. Il daemon Docker del repository lo rifiuta, sia in compose sia sull'API Docker.
 - Inserire IP grezzi in file di configurazione persistenti - usa i nomi dei servizi per le connessioni per mantenere l'isolamento del fork.
 - Usare `rdc term connect -c` come workaround per comandi falliti: segnala invece i bug.
 - `repo delete` esegue una pulizia completa inclusi IP loopback e unità systemd. Esegui `rdc machine prune <name>` per ripulire i residui di eliminazioni legacy.

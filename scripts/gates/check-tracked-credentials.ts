@@ -211,7 +211,7 @@ export function scan(root: string): string[] {
     if (hasPemBody(text)) ids.add(`${f}:PEM_BODY`);
     if (TOKEN_RE.test(text)) ids.add(`${f}:TOKEN`);
   }
-  return [...ids].sort();
+  return [...ids].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function readBaseline(): string[] {

@@ -10,4 +10,4 @@ exit: 0
 ⚠ [DRY-RUN] Would delete: migration-test-a
 ✓ Would delete 1 of 1 stale databases
 --- calls ---
-npx	wrangler	d1	list	--json
+npx	--no-install	wrangler	d1	list	--json

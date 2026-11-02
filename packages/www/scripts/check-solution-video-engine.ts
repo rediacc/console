@@ -132,7 +132,9 @@ function main(): number {
     console.error('');
   }
 
-  const langs = [...new Set(stale.map((f) => f.lang))].sort();
+  const langs = [...new Set(stale.map((f) => f.lang))].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   const en = langs.includes('en');
   console.error('To fix, from private/growth/video_pipeline:');
   if (en) {
@@ -161,7 +163,7 @@ function main(): number {
  * should condemn, so four of the seven assertions below check that something does NOT report.
  */
 function selftest(): number {
-  let fails = 0;
+  let fails = 0 as number;
   const chk = (name: string, got: unknown, want: unknown) => {
     if (JSON.stringify(got) === JSON.stringify(want)) console.log(`  PASS  ${name}`);
     else {

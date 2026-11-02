@@ -12,8 +12,8 @@ tags:
   - conformidade
 featured: false
 language: pt
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -84,7 +84,7 @@ O operador nunca inicia sessão na infraestrutura da Rediacc-empresa para execut
 
 1. **Estação de trabalho do operador.** Corre `rdc`. Detém a credencial LUKS2.
 2. **Servidor próprio do operador.** Corre `renet`. Detém os repositórios encriptados com LUKS2.
-3. **Destino de cópia de segurança próprio do operador.** Qualquer armazenamento compatível com rclone (S3, B2, OneDrive, MinIO local). Recebe volumes encriptados.
+3. **Destino de cópia de segurança.** Uma segunda máquina controlada pelo operador (`rdc repo push`) ou o armazenamento em chunks alojado (`rdc backup snapshot`), que guarda apenas células cifradas endereçadas pelo seu SHA-256. A credencial LUKS não chega a nenhum dos dois.
 
 Não existe camada 4. A Rediacc-empresa não é subprocessadora para nenhum operador que não tenha optado pelo experimental [adaptador Cloud](/pt/docs/architecture). Para operadores auto-alojados, a relação com a Rediacc-empresa é uma licença de software, não um acordo de processamento de dados.
 
@@ -129,7 +129,7 @@ Após migrar para a Rediacc no Hetzner:
 | Subprocessadores | (1) Nenhum para auto-alojado; (2) Apenas internos da Hetzner, listados no DPA deles |
 | Estado contratual | (1) Licença de software, não é necessário DPA; (2) DPA Hetzner + SCCs já em vigor |
 | Custódia de chaves | Cliente (credencial LUKS2 na configuração do operador, não no servidor) |
-| Plano de saída | "rdc repo pull a partir de qualquer destino compatível com rclone. Os volumes são encriptados com LUKS2; o operador detém a credencial." |
+| Plano de saída | "rdc repo pull a partir da segunda máquina, ou rdc backup restore a partir de qualquer snapshot guardado. Os volumes são encriptados com LUKS2; o operador detém a credencial." |
 | Última avaliação | (2) abrangida pela revisão IaaS existente |
 
 Duas entradas de registo em vez de uma. A entrada de nível crítico é para o fornecedor IaaS, onde o comprador já tinha um DPA em vigor e um plano de saída testado, porque IaaS é uma relação que a maioria das equipas sabe gerir. A entrada Rediacc é não crítica porque é uma licença de software, não um processador de dados.

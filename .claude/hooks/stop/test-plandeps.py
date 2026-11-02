@@ -9,10 +9,13 @@ EVERY REFUSAL HAS A PASSING TWIN built from the same fixture with one fact chang
 """
 
 import importlib.util
+import json
 import pathlib
+import tempfile
 
 import wl_planconc as X
 import wl_plandeps as D
+import wl_planfile
 
 _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci"
 
@@ -30,7 +33,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 253  # 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 330  # 320 before the review 9450761b and dfb34f9d controls (submodule overlap, one .gitmodules read, the serving-plan mutex and Owns-none exclusive); 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -523,6 +526,68 @@ check(
     (None, 1),
 )
 
+# --------------------------------------------------------------------------- Revalidated (PLAN-plan-preflight.md PF1): `YYYY-MM-DD @ <12-40 hex> [-- note]`, optional, X window.
+
+RV_SHA = "0123456789abcdef0123"
+RV_HEAD = "# P\n\nStatus: draft\nOwner: x\nOwns: a/**\n"
+
+
+def rv(line):
+    return D.parse_header(RV_HEAD + line + "\n## Tasks\n")
+
+
+rv_ok = rv("Revalidated: 2026-10-23 @ %s -- merge base of 1023-1\n" % RV_SHA)
+check(
+    "revalidated: valid parses date, sha and note",
+    (
+        fget(rv_ok, D.REVALIDATED),
+        rv_ok.field_errors(D.REVALIDATED),
+    ),
+    ((6, D.Revalidated("2026-10-23", RV_SHA, "merge base of 1023-1")), []),
+)
+check(
+    "revalidated: valid without a note",
+    rv("Revalidated: 2026-10-23 @ %s\n" % RV_SHA[:12]).revalidated,
+    D.Revalidated("2026-10-23", RV_SHA[:12], ""),
+)
+rv_bad_date = rv("Revalidated: 2026-13-40 @ %s\n" % RV_SHA)
+check(
+    "revalidated: bad date is refused",
+    (rv_bad_date.revalidated, bool(rv_bad_date.field_errors(D.REVALIDATED))),
+    (None, True),
+)
+rv_short = rv("Revalidated: 2026-10-23 @ %s\n" % RV_SHA[:11])
+check(
+    "revalidated: short sha is refused",
+    (rv_short.revalidated, bool(rv_short.field_errors(D.REVALIDATED))),
+    (None, True),
+)
+rv_dup = rv("Revalidated: 2026-10-23 @ %s\nRevalidated: 2026-10-24 @ %s\n" % (RV_SHA, RV_SHA[:12]))
+check(
+    "revalidated: duplicate line is a structural error, the first is kept",
+    (
+        (fget(rv_dup, D.REVALIDATED) or (None,))[0],
+        ["second" in m for m in rv_dup.field_errors(D.REVALIDATED)],
+    ),
+    (6, [True]),
+)
+rv13 = D.parse_header(
+    "Status: draft\n"
+    + "".join("N%d: x\n" % i for i in range(11))
+    + "Revalidated: 2026-10-23 @ %s\n" % RV_SHA
+)
+check(
+    "revalidated: line 13 is outside the window",
+    (rv13.revalidated, ["outside" in m for m in rv13.field_errors(D.REVALIDATED)]),
+    (None, [True]),
+)
+rv_absent = rv("")
+check(
+    "revalidated: absent field yields no finding",
+    (rv_absent.revalidated, rv_absent.field_errors(D.REVALIDATED), D.REVALIDATED in D.FIELD_SPECS),
+    (None, [], True),
+)
+
 # --------------------------------------------------------------------------- set_x: append after the header block, replace in place.
 
 base = "# PLAN: x\nStatus: draft\nDepends-On: no-dep -- stands alone for this test\nOwner: cafe\nScope: wrapped\ncontinued here\n\n## Tasks\n"
@@ -615,6 +680,47 @@ check(
 )
 check("normalize: a trailing slash", X.normalize_owns(["dir/"])[0], ["dir/**"])
 check("normalize: ./ and // dropped", X.normalize_owns(["./a//b"])[0], ["a/b"])
+with tempfile.TemporaryDirectory() as _d:
+    (pathlib.Path(_d) / "sub/inner").mkdir(parents=True)
+    (pathlib.Path(_d) / "plain").mkdir()
+    (pathlib.Path(_d) / ".gitmodules").write_text('[submodule "sub"]\n\tpath = sub\n\turl = x\n')
+    check(
+        "normalize: a submodule root stays its gitlink, a plain directory widens",
+        X.normalize_owns(["sub", "plain", "sub/inner"], _d)[0],
+        ["sub", "plain/**", "sub/inner/**"],
+    )
+    # Review 9450761b.1: the overlap a bare submodule root yields. It claims the gitlink, so a writer editing files inside the submodule is not refused beside it; `sub/` (or `sub/**`) is how a plan claims the whole submodule, and then it is.
+    _gitlink = X.normalize_owns(["sub"], _d)[0]
+    _whole = X.normalize_owns(["sub/"], _d)[0]
+    check(
+        "overlap: a bare submodule root misses files inside it",
+        X.owns_overlap(_gitlink, ["sub/x.go"]),
+        [],
+    )
+    check(
+        "overlap: the bare root meets its own gitlink",
+        bool(X.owns_overlap(_gitlink, ["sub"])),
+        True,
+    )
+    check(
+        "overlap: CONTROL, sub/ claims the whole submodule",
+        bool(X.owns_overlap(_whole, ["sub/x.go"])),
+        True,
+    )
+    # Review 9450761b.2: `.gitmodules` is read once per call, not once per glob.
+    _reads: list[object] = []
+    _orig = X._submodule_roots
+
+    def _counting_roots(root):
+        _reads.append(root)
+        return _orig(root)
+
+    X._submodule_roots = _counting_roots
+    try:
+        X.normalize_owns(["sub", "plain", "a", "b", "c"], _d)
+    finally:
+        X._submodule_roots = _orig
+    check("normalize: .gitmodules is read once per call", len(_reads), 1)
 for bad in ("/etc/x", "a/../b", "!a", "a\\b", "{a,b}/{c,d}/{e,f}/{g,h}/{i,j}/{k,l}", "a/{b"):
     check("normalize: refuses %r" % bad, bool(X.normalize_owns([bad])[1]), True)
 check(
@@ -688,6 +794,7 @@ XI = {
     "PLAN-g.md": px_("PLAN-g.md", owns=("src/f/b.py",)),
     "PLAN-h.md": px_("PLAN-h.md", owns=None),
     "PLAN-n.md": px_("PLAN-n.md", owns=(), none=True),
+    "PLAN-o.md": px_("PLAN-o.md", owns=("src/e/x.py",)),
 }
 xi = XI.__getitem__
 
@@ -698,10 +805,19 @@ def sv(serving, live, declared=None):
 
 LIVE_E = {"PLAN-e.md": ["writer a1b2c3d4 (general-purpose)"]}
 LIVE_F = {"PLAN-f.md": ["lease #abcd1234 worker:w1"]}
-check("verdict m1: a live exclusive refuses another plan", sv({"PLAN-f.md"}, LIVE_E).kind, "mutex")
+check(
+    "verdict m1: a live exclusive refuses a plan whose Owns overlap its own",
+    sv({"PLAN-o.md"}, LIVE_E).kind,
+    "mutex",
+)
 check(
     "verdict m1: the refusal names the holder",
-    "a1b2c3d4" in sv({"PLAN-f.md"}, LIVE_E).lines[0],
+    "a1b2c3d4" in sv({"PLAN-o.md"}, LIVE_E).lines[0],
+    True,
+)
+check(
+    "verdict m1b: a live exclusive admits a plan whose Owns are disjoint (operator ruling 2026-10-28)",
+    sv({"PLAN-f.md"}, LIVE_E).allow,
     True,
 )
 check("verdict m1c: nothing live allows", sv({"PLAN-f.md"}, {}).allow, True)
@@ -748,6 +864,102 @@ check(
     "verdict D4: planless, declared Owns disjoint",
     sv(set(), LIVE_F, declared=("docs/y.md",)).allow,
     True,
+)
+
+# #f412fdb8: a spawn serving a plan, and a live plan's writers, are judged on a declared Owns subset that lies inside the plan's Owns.
+XI.update({
+    "PLAN-t.md": px_("PLAN-t.md", owns=("src/t/**", "src/proxy/**")),
+    "PLAN-p.md": px_("PLAN-p.md", owns=("src/proxy/**",)),
+})  # fmt: skip
+LIVE_P = {"PLAN-p.md": ["writer p1p1p1p1 (general-purpose)"]}
+check(
+    "narrow s0: the whole plan Owns overlap a live plan, as before",
+    sv({"PLAN-t.md"}, LIVE_P).kind,
+    "overlap",
+)
+check(
+    "narrow s1: a declared subset inside the plan, disjoint from the live plan, is allowed",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/a.py", "src/t/sub/**")).allow,
+    True,
+)
+check(
+    "narrow s1: the allow says it was judged on the declared Owns",
+    "declared Owns" in sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/**",)).note,
+    True,
+)
+check(
+    "narrow s2: a declared subset that still meets the live plan is refused",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/proxy/x.py",)).kind,
+    "overlap",
+)
+check(
+    "narrow s3: a declared Owns reaching outside the plan's Owns is judged as declared (operator ruling 2026-10-28)",
+    sv({"PLAN-t.md"}, LIVE_P, declared=("src/t/**", "docs/elsewhere.md")).allow,
+    True,
+)
+check(
+    "narrow s4: a wildcard under a literal dir that the plan does not own as `dir/**` narrows nothing",
+    X.narrowed_owns(("src/*/a.py",), ("src/t/**",)),
+    None,
+)
+check(
+    "narrow s4: a wildcard-free path is matched against the plan's glob",
+    X.narrowed_owns(("src/t/deep/a.py",), ("src/*/deep/*.py",)),
+    ("src/t/deep/a.py",),
+)
+LIVE_T = X.LivePlans({"PLAN-t.md": ["writer t1t1t1t1 (general-purpose)"]})
+check(
+    "narrow l0: a live plan with no declared holder Owns overlaps on its whole Owns",
+    sv({"PLAN-p.md"}, LIVE_T).kind,
+    "overlap",
+)
+LIVE_T.owns["PLAN-t.md"] = ("src/t/**",)
+check(
+    "narrow l1: a live plan whose writers declared a disjoint subset is allowed beside",
+    sv({"PLAN-p.md"}, LIVE_T).allow,
+    True,
+)
+LIVE_T.owns["PLAN-t.md"] = ("src/t/**", "src/proxy/api.py")
+check(
+    "narrow l2: a live subset that meets the spawn is refused",
+    sv({"PLAN-p.md"}, LIVE_T).kind,
+    "overlap",
+)
+check(
+    "narrow m: an exclusive plan's mutex is judged on its whole Owns, so a declared path inside them is refused",
+    sv(set(), LIVE_E, declared=("src/e/zz.py",)).kind,
+    "mutex",
+)
+# Review dfb34f9d.1: the same mutex for a spawn SERVING a plan, whose declared narrowing is judged against the live exclusive plan's WHOLE Owns, even where that plan's live writers declared a narrower set; and its passing twin, a declared narrowing disjoint from those Owns.
+LIVE_EN = X.LivePlans(LIVE_E)
+LIVE_EN.owns["PLAN-e.md"] = ("src/e/only.py",)
+check(
+    "narrow m2: a serving plan's declared path inside a live exclusive plan's whole Owns is refused, though its writers declared less",
+    sv({"PLAN-o.md"}, LIVE_EN, declared=("src/e/x.py",)).kind,
+    "mutex",
+)
+XI["PLAN-oe.md"] = px_("PLAN-oe.md", owns=("src/e/**", "src/oe/**"))
+check(
+    "narrow m2: CONTROL, a serving plan overlapping the exclusive plan on paper but declaring a disjoint narrowing is allowed",
+    sv({"PLAN-oe.md"}, LIVE_EN, declared=("src/oe/a.py",)).allow,
+    True,
+)
+check(
+    "narrow m2: CONTROL, the same serving plan with no declared narrowing is refused on its whole Owns",
+    sv({"PLAN-oe.md"}, LIVE_EN).kind,
+    "mutex",
+)
+# Review dfb34f9d.2: an exclusive plan is a mutex over ITS files, so one declaring `Owns: none` excludes nothing a spawn declares. A writer serving it is refused (`owns-none`, above), so only a lease can make it live.
+XI["PLAN-en.md"] = px_("PLAN-en.md", excl=True, owns=(), none=True)
+check(
+    "narrow m3: a live exclusive plan with Owns none admits a spawn with declared files",
+    sv(set(), {"PLAN-en.md": ["lease #e0e0e0e0 worker:w9"]}, declared=("src/q/a.py",)).allow,
+    True,
+)
+check(
+    "narrow m3: CONTROL, the same live plan still refuses a spawn whose files are unknown",
+    sv(set(), {"PLAN-en.md": ["lease #e0e0e0e0 worker:w9"]}).kind,
+    "mutex",
 )
 
 # --------------------------------------------------------------------------- rank and order_key (section 2).
@@ -1057,5 +1269,264 @@ check(
     (True, False),
 )
 check("item_deps: no graph is no verdict", D.item_deps(None, LINK_X, []), None)
+
+
+# --------------------------------------------------------------------------- Live-Proof (PLAN-tested-on-bench.md V3): X-field shape, X window, a `none` only under a cited ruling.
+
+LP_HEAD = "# P\n\nStatus: draft\nOwner: x\nOwns: private/renet/cmd/**\n"
+LP_ITEM = "0123abcd"
+LP_QUOTE = "Yes, bench + hostinger via eu-bench"
+
+
+def lp(line, required=True):
+    """(parsed, [finding code, ...]) for a plan whose header carries `line` after the fixture head."""
+    h = D.parse_header(LP_HEAD + line + "\n## Tasks\n")
+    return h.live_proof, [code for code, _msg in D.live_proof_findings(h, required)]
+
+
+def lpv(value):
+    return D.parse_live_proof(value)
+
+
+check(
+    "live-proof: one target",
+    lp("Live-Proof: bench -- the account smoke on the bench origin\n"),
+    (D.LiveProof(("bench",), "the account smoke on the bench origin"), []),
+)
+check(
+    "live-proof: the other target",
+    some(lpv("hostinger -- the renet binary served on hostinger")[0]).targets,
+    ("hostinger",),
+)
+check(
+    "live-proof: both targets, list order kept",
+    some(lpv("hostinger, bench -- the cli and renet halves together")[0]).targets,
+    ("hostinger", "bench"),
+)
+check(
+    "live-proof: an em-dash reason",
+    some(lpv("bench \u2014 the proxy readiness check")[0]).reason,
+    "the proxy readiness check",
+)
+check(
+    "live-proof: none citing a worklist item",
+    lp("Live-Proof: none -- a write-up only, ruled in #%s\n" % LP_ITEM),
+    (D.LiveProof((), "a write-up only, ruled in #%s" % LP_ITEM, (LP_ITEM,)), []),
+)
+check(
+    "live-proof: none citing a 12-hex migrated item",
+    some(lpv("none -- tooling only, ruled in #0123456789ab")[0]).ruling_ids,
+    ("0123456789ab",),
+)
+check(
+    "live-proof: none citing an operator quote",
+    some(lpv('none -- the operator said "%s" in agent/rulings/x.md' % LP_QUOTE)[0]).ruling_quotes,
+    ((LP_QUOTE, "agent/rulings/x.md"),),
+)
+check(
+    "live-proof: none is .none, targets are not",
+    (
+        some(lpv("none -- tooling only, see #%s" % LP_ITEM)[0]).none,
+        some(lpv("bench -- the account smoke check")[0]).none,
+    ),
+    (True, False),
+)
+check("live-proof: absent and not required is no finding", lp("", required=False), (None, []))
+check("live-proof: absent and required is LP1", lp(""), (None, ["LP1"]))
+check(
+    "live-proof: a present valid line is not missing when required",
+    lp("Live-Proof: bench -- the account smoke check\n")[1],
+    [],
+)
+check(
+    "live-proof: a malformed line is LP1 even when not required",
+    lp("Live-Proof: bench\n", required=False),
+    (None, ["LP1"]),
+)
+check("live-proof: an empty value is refused", bool(lpv("")[1]), True)
+check("live-proof: a target list needs a reason", bool(lpv("bench")[1]), True)
+check("live-proof: a short reason is refused", bool(lpv("bench -- too short")[1]), True)
+check("live-proof: a placeholder reason is refused", bool(lpv("bench -- tbd")[1]), True)
+check(
+    "live-proof: an unknown target is refused",
+    bool(lpv("staging -- the staging smoke check")[1]),
+    True,
+)
+check(
+    "live-proof: a capitalised target is refused",
+    bool(lpv("Bench -- the account smoke check")[1]),
+    True,
+)
+check(
+    "live-proof: edge is refused by name",
+    any("edge is not a live-proof target" in e for e in lpv("edge -- the edge rollout check")[1]),
+    True,
+)
+check(
+    "live-proof: stable is refused by name",
+    any("CI/CD-only" in e for e in lpv("bench, stable -- the promoted release check")[1]),
+    True,
+)
+check(
+    "live-proof: a duplicate target is refused",
+    bool(lpv("bench, bench -- the account smoke check")[1]),
+    True,
+)
+check(
+    "live-proof: an empty target is refused",
+    bool(lpv("bench,, hostinger -- the two halves of it")[1]),
+    True,
+)
+check(
+    "live-proof: two targets without a comma are refused",
+    bool(lpv("bench hostinger -- the two halves of it")[1]),
+    True,
+)
+check(
+    "live-proof: none mixed with a target is refused",
+    bool(lpv("bench, none -- tooling only, see #%s" % LP_ITEM)[1]),
+    True,
+)
+check(
+    "live-proof: a rulingless none is refused",
+    any("cites no ruling" in e for e in lpv("none -- CI and agent tooling only, no surface")[1]),
+    True,
+)
+check(
+    "live-proof: a rulingless none in a header is LP1",
+    lp("Live-Proof: none -- CI and agent tooling only, no surface\n"),
+    (None, ["LP1"]),
+)
+check("live-proof: none without a reason is refused", bool(lpv("none")[1]), True)
+check(
+    "live-proof: a short-hex citation is not a ruling",
+    bool(lpv("none -- tooling only, see #0123abc")[1]),
+    True,
+)
+check(
+    "live-proof: a short quote is not a ruling",
+    bool(lpv('none -- the operator said "yes, go" in agent/rulings/x.md')[1]),
+    True,
+)
+lp_emph = D.parse_header(LP_HEAD + "**Live-Proof:** bench -- the account smoke check\n\n## Tasks\n")
+check(
+    "live-proof: an emphasised key is LP1 and parses nothing",
+    (lp_emph.live_proof, [c for c, _m in D.live_proof_findings(lp_emph, True)]),
+    (None, ["LP1"]),
+)
+check(
+    "live-proof: an emphasised value-side key is refused too",
+    lp("Live-Proof**: bench -- the account smoke check\n"),
+    (None, ["LP1"]),
+)
+LP_OK = "Live-Proof: bench -- the account smoke check\n"
+lp12 = "Status: draft\n" + "".join("N%d: x\n" % i for i in range(10)) + LP_OK
+check("live-proof: line 12 is inside the window", fget(D.parse_header(lp12), D.LIVE_PROOF)[0], 12)
+lp13 = "Status: draft\n" + "".join("N%d: x\n" % i for i in range(11)) + LP_OK
+lp13f = D.live_proof_findings(D.parse_header(lp13), True)
+check(
+    "live-proof: line 13 is outside it, LP1 and not a missing line",
+    (
+        D.parse_header(lp13).live_proof,
+        [c for c, _m in lp13f],
+        all("outside the 12-line header window" in m for _c, m in lp13f),
+    ),
+    (None, ["LP1"], True),
+)
+lpdup = D.parse_header(
+    LP_HEAD + LP_OK + "Live-Proof: hostinger -- the renet binary check\n\n## Tasks\n"
+)
+check(
+    "live-proof: a second line is LP1, the first still parses",
+    (some(lpdup.live_proof).targets, [c for c, _m in D.live_proof_findings(lpdup, True)]),
+    (("bench",), ["LP1"]),
+)
+check(
+    "live-proof: a line quoted in the body is not a header line",
+    lp("\n## Design\n\n    Live-Proof: none -- quoted in a fence\n", required=False),
+    (None, []),
+)
+check(
+    "live-proof: the citation patterns mirror wl_planfile's",
+    (D.LIVE_RULING_ID_RE.pattern, D.LIVE_RULING_QUOTE_RE.pattern),
+    (wl_planfile.RULING_ID_RE.pattern, wl_planfile.RULING_QUOTE_RE.pattern),
+)
+_tiers = json.loads((_CI.parent / "config" / "proof-tiers.json").read_text(encoding="utf-8"))
+check(
+    "live-proof: LIVE_TARGETS is exactly the map's live targets",
+    sorted(D.LIVE_TARGETS),
+    sorted({t for s in _tiers["surfaces"].values() for t in s["live"]}),
+)
+check(
+    "live-proof: the field is read in the X window",
+    D.FIELD_SPECS[D.LIVE_PROOF].window,
+    D.X_HEADER_LINES,
+)
+
+# The waiver resolves through wl_planfile.resolve_ruling: a closed item, or a quote in a non-plan file.
+lp_root = root / "lp"
+(lp_root / "agent" / "rulings").mkdir(parents=True)
+(lp_root / "agent" / "rulings" / "x.md").write_text("operator: %s.\n" % LP_QUOTE, encoding="utf-8")
+(lp_root / "agent" / "plans").mkdir(parents=True)
+(lp_root / "agent" / "plans" / "PLAN-q.md").write_text("%s\n" % LP_QUOTE, encoding="utf-8")
+LP_STATES = {LP_ITEM: "x", "0123abce": " ", "0123abcf": "?"}
+
+
+def waive(reason, states=LP_STATES):
+    """(ok, why) of the waiver a `none -- <reason>` line carries."""
+    proof = some(lpv("none -- " + reason)[0])
+    return D.resolve_live_proof_waiver(lp_root, "agent/plans/PLAN-w.md", proof, states)
+
+
+check(
+    "live-proof waiver: a closed item resolves",
+    waive("tooling only, ruled in #%s" % LP_ITEM)[0],
+    True,
+)
+check(
+    "live-proof waiver: an open item does not", waive("tooling only, ruled in #0123abce")[0], False
+)
+check(
+    "live-proof waiver: a deferred item does not",
+    waive("tooling only, ruled in #0123abcf")[0],
+    False,
+)
+check(
+    "live-proof waiver: an unknown item does not",
+    waive("tooling only, ruled in #deadbeef")[0],
+    False,
+)
+check(
+    "live-proof waiver: one dangling citation beside a good one does not",
+    waive("tooling only, ruled in #%s and #deadbeef" % LP_ITEM)[0],
+    False,
+)
+check(
+    "live-proof waiver: a quote present in its file resolves",
+    waive('the operator said "%s" in agent/rulings/x.md' % LP_QUOTE)[0],
+    True,
+)
+check(
+    "live-proof waiver: a quote absent from its file does not",
+    waive('the operator said "something nobody said here" in agent/rulings/x.md')[0],
+    False,
+)
+check(
+    "live-proof waiver: a quote from a plan does not",
+    waive('the operator said "%s" in agent/plans/PLAN-q.md' % LP_QUOTE)[0],
+    False,
+)
+check(
+    "live-proof waiver: the refusal names the field, not Ruling:",
+    "`Live-Proof: none`" in waive("tooling only, ruled in #deadbeef")[1],
+    True,
+)
+check(
+    "live-proof waiver: a target list needs none",
+    D.resolve_live_proof_waiver(
+        lp_root, "agent/plans/PLAN-w.md", some(lpv("bench -- the account smoke check")[0]), {}
+    )[0],
+    True,
+)
 
 T.exit()

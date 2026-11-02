@@ -117,7 +117,6 @@ describe('ConfigServiceBase remote integration', () => {
     resources: {
       machines: { prod: { ip: '10.0.0.5', user: 'deploy' } },
       repositories: {},
-      storages: {},
     },
   };
 

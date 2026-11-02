@@ -2,13 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../../src/utils/CliRunner';
 import {
   announcePrerequisites,
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../../src/utils/declaredSkip';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Suite 24 — the licensing-visible outcomes of the `rdc cluster` verbs (T6).
@@ -61,8 +61,8 @@ import {
  * job supplying no account server collects nothing rather than skipping
  * silently). The VM tier stays declared-skipped there via
  * `E2E_EXPECT_NO_CLUSTER_VMS`: suite 17 tears its cluster down in its own last
- * test, and that fleet runs `--nolicense` renet, so there is no licensed
- * cluster to adopt.
+ * test, and that fleet's repos carry no installed licence, so there is no
+ * licensed cluster to adopt.
  *
  * Argv marked TRANSCRIPT-CONFIRM is the best-derived form from the CLI source
  * and is to be confirmed on the first live run; the assertion SHAPE is final.
@@ -148,6 +148,13 @@ const SSH_KEY = process.env.E2E_SSH_KEY ?? getSSHPrivateKeyPath();
  * and says so rather than failing obscurely eight tests later.
  */
 const CLUSTER_OPS_ENV = { REDIACC_ALLOW_CLUSTER_OPS: '*' };
+
+/**
+ * Every assertion here reads the human lines (`Machine slots: 0/5`, the slot-limit message). The CLI
+ * answers JSON on a non-TTY stdout, which a Playwright run always has, and prints those lines only as
+ * a table, so the suite pins the table format the way the drills do. An explicit `-o json` still wins.
+ */
+const TABLE_OUTPUT_ENV = { REDIACC_DEFAULT_OUTPUT: 'table' };
 
 /** The verbatim fragment `errors.agent.clusterOpBlocked` opens with. */
 const POLICY_BLOCKED = 'is blocked in agent mode';
@@ -239,7 +246,9 @@ test.describe
 
       const machineNames = async (): Promise<string[]> => {
         const cfg = JSON.parse(await readFile(cli.configPath, 'utf8')) as CliConfigFile;
-        return Object.keys(cfg.resources?.machines ?? {}).sort();
+        return Object.keys(cfg.resources?.machines ?? {}).sort(
+          (a, b) => Number(a > b) - Number(a < b)
+        );
       };
 
       // A kvm declaration needs a network, and it must not be one the ops fleet or any other cluster uses (192.168.111 is the harness's own). The pool is k8s-agent, not k8s-server, because test 4 scales it: only k8s-agent pools scale in place (cluster-provision.ts), so a server pool is refused for its ROLE before the slot pre-flight is ever consulted, and test 4 would be measuring
@@ -262,10 +271,8 @@ test.describe
         await CliRunner.resetConfig(CFG);
         cli = CliRunner.create({
           configName: CFG,
-          // MUST be on: the default REDIACC_SKIP_MACHINE_ACTIVATION=1 removes
-          // issuance and recovery outright, which is the behaviour under test.
-          licensing: true,
-          env: { ...CLUSTER_OPS_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
+          // Issuance and recovery are always enforced, which is the behaviour under test.
+          env: { ...CLUSTER_OPS_ENV, ...TABLE_OUTPUT_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
         });
         await cli.initConfig(SSH_KEY);
         const login = await cli.run([
@@ -399,7 +406,7 @@ test.describe
       const MIGRATE_CLUSTER = `${CLUSTER}-mig`;
 
       let cli: CliRunner;
-      let w1: BridgeTestRunner;
+      let w1: RenetFunctionsTestRunner;
 
       /** `machine status <m> --licenses -o json` -> data.license_statuses[]. */
       const licenseStatuses = async (machine: string): Promise<LicenseStatus[]> => {
@@ -415,7 +422,9 @@ test.describe
       };
 
       const datastoreIds = (statuses: LicenseStatus[]): string[] =>
-        [...new Set(statuses.map((s) => s.datastoreId).filter((d): d is string => !!d))].sort();
+        [...new Set(statuses.map((s) => s.datastoreId).filter((d): d is string => !!d))].sort(
+          (a, b) => Number(a > b) - Number(a < b)
+        );
 
       /**
        * The monthly issuance counter, from `subscription status`. Every reissue
@@ -438,12 +447,11 @@ test.describe
       };
 
       test.beforeAll(async () => {
-        w1 = BridgeTestRunner.forWorker(1);
+        w1 = RenetFunctionsTestRunner.forWorker(1);
         await CliRunner.resetConfig(CFG);
         cli = CliRunner.create({
           configName: CFG,
-          licensing: true,
-          env: { ...CLUSTER_OPS_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
+          env: { ...CLUSTER_OPS_ENV, ...TABLE_OUTPUT_ENV, REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
         });
         await cli.initConfig(SSH_KEY);
         await cli.addMachine(M1, `${NET}.${workers[0]}`, process.env.USER ?? 'root');

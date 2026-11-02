@@ -43,7 +43,7 @@ interface ParsedMarkdown {
 }
 
 function parseMarkdownFrontmatter(raw: string): ParsedMarkdown {
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/.exec(raw);
   if (!match) {
     return { data: {}, content: raw, raw };
   }
@@ -95,7 +95,7 @@ function serializeMarkdownWithSourceCommit(raw: string, sourceCommit: string): s
 
 // ─── Source hash computation (must match validate-translation-freshness.js) ──
 
-function normalizeText(input: string): string {
+function normalizeText(input: string | null | undefined): string {
   return (
     String(input ?? '')
       .replace(/\r\n/g, '\n')
@@ -105,10 +105,10 @@ function normalizeText(input: string): string {
 
 function computeSourceHash(frontmatter: Record<string, unknown>, body: string): string {
   const payload = {
-    title: (frontmatter.title as string) ?? '',
-    description: (frontmatter.description as string) ?? '',
-    category: (frontmatter.category as string) ?? '',
-    author: (frontmatter.author as string) ?? '',
+    title: (frontmatter.title as string | undefined) ?? '',
+    description: (frontmatter.description as string | undefined) ?? '',
+    category: (frontmatter.category as string | undefined) ?? '',
+    author: (frontmatter.author as string | undefined) ?? '',
     tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
     body: normalizeText(body),
   };
@@ -272,7 +272,8 @@ function backfillJsonManifests(): ManifestBackfillResult[] {
 
     const manifest = JSON.parse(fs.readFileSync(hashFile, 'utf-8')) as HashManifest;
 
-    if (manifest.$meta?.sourceCommit) {
+    const meta = (manifest as { $meta?: HashManifest['$meta'] }).$meta;
+    if (meta?.sourceCommit) {
       results.push({ file: config.dir, status: 'skipped' });
       continue;
     }

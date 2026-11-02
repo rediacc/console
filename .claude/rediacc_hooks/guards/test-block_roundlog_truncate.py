@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """block_roundlog_truncate: a redirect onto a variable the command assigned is read as bash expands it (#7b3f34ae).
 
-The guard's broad differential is `hookcases.py`; this file pins the redirect-target rows only, in both directions through dispatch.py, then plants the typed-only read in-process and requires it to turn a row. Rows measured at 0600a4642: each refusal was allowed (rc 0), because the redirect target was read as typed (`$L`).
+The guard's broad differential is `hookcases.py`; this file pins the redirect-target rows only, in both directions through dispatch.py, then plants the typed-only read in-process and requires it to turn a row. Rows measured at e76fe1061: each refusal was allowed (rc 0), because the redirect target was read as typed (`$L`).
 
     test-block_roundlog_truncate.py
 """
@@ -34,7 +34,7 @@ CASES = [
     ("truncate through a name holding another file", "L=/tmp/notes.md; echo x > $L", False),
     ("truncate through an unset variable", "echo x > $UNSET_L", False),
     ("redirect bash refuses as ambiguous", 'L="%s %s"; echo x > $L' % (LOG, LOG), False),
-    # #63109cf2: a glob literal puts a log in play only where it can reach a log directory. The first two were refused (rc 2) at 8ef785864, a regex read as a glob meeting the log name while the program writes another file or none; the last three still reach `agent/` and stay refused.
+    # #63109cf2: a glob literal puts a log in play only where it can reach a log directory. The first two were refused (rc 2) at 6ea3efd3a, a regex read as a glob meeting the log name while the program writes another file or none; the last three still reach `agent/` and stay refused.
     (
         "a regex in a program that slices an unrelated file",
         "python3 - <<'PY'\nimport pathlib, re, tempfile\np = pathlib.Path(tempfile.mkdtemp()) / 'out.txt'\ns = 'abc def'\nm = re.search(r'[A-Za-z_][A-Za-z0-9_]*', s)\np.write_text(s[:m.end()])\nPY",
@@ -60,6 +60,42 @@ CASES = [
         "python3 - <<'PY'\nimport glob\nfor p in glob.glob('**/[a-z]*', recursive=True):\n    open(p, 'w').write('')\nPY",
         True,
     ),
+    # #3df07b02: a `**` under a fixed directory that is not a log directory walks only that tree. The first was refused (rc 2) at b9674ed79 (the live heredoc, minimised: it imports a module the reader cannot follow and only prints); the rest reach `agent/` and stay refused.
+    (
+        "a recursive glob under a fixed non-log directory, printed",
+        "python3 -I - <<'EOF2'\nimport sys; sys.path.insert(0,'.claude/hooks/stop')\nimport wl_planconc as X\nprint(X.spawn_verdict({'a.md'}, {}, None, declared=('workers/account/src/telemetry/**',)))\nEOF2",
+        False,
+    ),
+    (
+        "a recursive glob under a fixed non-log directory, written through",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('workers/src/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        False,
+    ),
+    (
+        "a recursive glob under agent",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('agent/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob under a parent directory",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('workers/../**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob that climbs out after the stars (3800cd21.1)",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('workers/**/../../agent/pr-*.md', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob under a fixed directory after chdir",
+        "python3 - <<'PY'\nimport glob, os\nos.chdir('/')\nfor p in glob.glob('home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob from the root",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('/home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -74,6 +110,15 @@ MUTANTS = [
             (
                 "        for op, target in _redirects(shellscan._analyse(cmd))\n",
                 "        for op, target in shellscan._analyse(cmd).writes\n",
+            ),
+        ],
+    ),
+    (
+        "any recursive glob reaches a log directory (#3df07b02)",
+        [
+            (
+                "                if _recursive_reaches_log_dir(alt, context):\n",
+                "                if True:\n",
             ),
         ],
     ),

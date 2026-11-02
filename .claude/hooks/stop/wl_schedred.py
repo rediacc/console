@@ -15,7 +15,7 @@ OWNERSHIP, without a message bus. An open `[ ]`/`[>]`/`[?]` item that `tracks()`
 
 Never raises into the Stop hook: every read failure is an `unreadable` answer, because a GitHub outage is not a reason to wedge a stop.
 
-CONSOLE CI'S NEWEST PUSH RUN ON MAIN IS WATCHED THE SAME WAY (`doc["push"]`). PR #595 merged as e6fc817f6 on 2026-10-06 and Console CI on main (run 37394654719) then went red twice: Validate Promotion stopped at its 15 min budget, CI Complete and Pipeline Sentinel failing behind it. The merging session's only record was a release item that named the run id beside "then Release to Edge", nothing at the Stop hook read
+CONSOLE CI'S NEWEST PUSH RUN ON MAIN IS WATCHED THE SAME WAY (`doc["push"]`). PR #595 merged as 185fde683 on 2026-10-06 and Console CI on main (run 37394654719) then went red twice: Validate Promotion stopped at its 15 min budget, CI Complete and Pipeline Sentinel failing behind it. The merging session's only record was a release item that named the run id beside "then Release to Edge", nothing at the Stop hook read
 main's push runs, and the operator found the reds by opening GitHub. Every CI read in the hook is scoped to a PR head, and main after a merge is on no PR, so the push run is read here with the scheduled ones: one `actions/workflows/ci.yml/runs?event=push&branch=main` call under the same TTL, the same claim, the same block. A red row carries its ROOT CAUSE from `ci_diagnose.diagnose` (the job to read, its
 cancel cause and category, read once per run attempt and cached), so the block names Validate Promotion and `timeout-cancel`, never the sentinel. Its tracking token is `push:ci` or `run:<id>`; a BARE run id does not track it, because the release item that named run 37394654719 in passing would otherwise have silenced exactly the red it was blind to.
 """
@@ -42,6 +42,8 @@ MAX_JOBS_SHOWN = 6
 # 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (measured 2026-10-19 on Console CI runs of 141 and 179 jobs), and one page also dropped every job past it.
 PAGE = 50
 MAX_PAGES = 20
+# gh's stderr for a workflow file the per-workflow runs endpoint does not know; it counts as not-on-main only when GitHub's registered-workflow list lacks the file too.
+NOT_ON_MAIN_MARK = "(HTTP 404)"
 WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
 
 # The tracking vocabulary. A display name counts only beside one of these words, so "fix Console CI lint" (a PR red) never reads as tracking the nightly.
@@ -250,6 +252,21 @@ def _failed_jobs(root, owner, name, run_id):
     )
 
 
+def _registered_files(root, owner, name):
+    """The set of workflow files GitHub has registered for the repo, or None when the list cannot be read. It is read through the Actions permission the runs read already holds, once per refresh, so it can neither be denied where the runs read was allowed (review bebb89ad.1) nor cost one call per workflow (bebb89ad.2)."""
+    docs, err = wl_gh.call_list(
+        ["api", "repos/%s/%s/actions/workflows?per_page=100" % (owner, name)],
+        cwd=root,
+    )
+    if err or docs is None:
+        return None
+    files = set()
+    for doc in docs:
+        for wf in (doc or {}).get("workflows") or []:
+            files.add(pathlib.PurePosixPath(str(wf.get("path") or "")).name)
+    return files
+
+
 def _fetch(root, owner, name, workflows, jobs_cache):
     """(rows, error, jobs_cache). An error string means the verdict could not be read at all."""
     data, err = wl_gh.call(
@@ -268,6 +285,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
         by_file.setdefault(_file_of(run), []).append(run)
     rows = []
     new_jobs = {}
+    registered = None
     for wf in workflows:
         runs = by_file.get(wf["file"], [])
         done = [r for r in runs if r.get("status") == "completed"]
@@ -281,6 +299,18 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                 ],
                 cwd=root,
             )
+            if ferr and NOT_ON_MAIN_MARK in ferr:
+                if registered is None:
+                    registered = _registered_files(root, owner, name)
+                absent = registered is not None and wf["file"] not in registered
+            else:
+                absent = False
+            if absent:
+                # A scheduled workflow added on the live branch is not registered on main yet, so it has no scheduled run there; one such file must not blind the whole read (2026-10-24, cf-usage-report.yml hid five red Console CI nightlies).
+                row = _run_row(wf, None, False)
+                row["not_on_main"] = True
+                rows.append(row)
+                continue
             if ferr:
                 return [], ferr, jobs_cache
             done = [

@@ -17,7 +17,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   2. JSON EXPRESSIONS ARE PATHS, NOT EVALUATED CODE. `drill_json` ran the caller's expression through node's `new Function`, and every failure inside it (a parse error, a typo) collapsed to an empty string indistinguishable from an absent field. `json_get` takes a path (`data.name`, `errors[0].code`) and distinguishes "absent" (empty string, the bash's answer) from "unparseable input" (`<unparseable>`), which an assertion reports as such.
   3. THE TEARDOWN REPORTS WHAT IT COULD NOT STOP. The bash swallowed every failure (`|| true`) so a surviving gateway left no trace; each step now records its failure on stderr and the teardown still completes.
   4. GATEWAY IS NEVER KILLED. `drill_gateway_stop` swept `lsof -ti:<port>` .. `<port>+2` with `kill -9` whenever `DRILL_GATEWAY_PORT` was set, and the `--no-restart` path sets it for a gateway the operator started: every `--no-restart` drill ended by SIGKILLing the gateway it had been told to reuse (or whatever else listened on those ports). The sweep now runs only after this run stopped a process group of its own.
-  5. STAYS OUT OF THE FAILURE REPORT. `drill_run env REDIACC_TOKEN=<token> REDIACC_CONFIG_PASSWORD=<password> rdc ...` recorded the whole `env` line as the command, and every failed assertion printed it ("command : ...") to stderr, which in CI is a log: the account token and the store password landed there. `run_with` passes the variables through the child's environment and records only the command.
+  5. STAYS OUT OF THE FAILURE REPORT. `drill_run env REDIACC_TOKEN=<token> REDIACC_STORE_MASTER_PASSWORD=<password> rdc ...` recorded the whole `env` line as the command, and every failed assertion printed it ("command : ...") to stderr, which in CI is a log: the account token and the store password landed there. `run_with` passes the variables through the child's environment and records only the command.
   6. `urllib`, NOT `curl` AND `node`. The API helpers, the port probe (`free_port`) and the offline shim (`Shim`, an in-process threaded TCP forwarder) no longer need curl, node or a generated `proxy.js`.
 """
 
@@ -51,6 +51,8 @@ if TYPE_CHECKING:
     import http.cookiejar
 
 GATEWAY_START_TIMEOUT = 300
+# Health polls after `account stop` before the stack counts as still running.
+STACK_STOP_POLLS = 10
 GATEWAY_POLL_SECONDS = 2
 
 
@@ -543,6 +545,7 @@ class Drill:
         log_file = target.open("ab")
         self.active_gateway_log = target
         self.stop_gateway()
+        self.stop_worktree_stack()
         log_file.truncate(0)
         started = int(time.time())
         # Its own process group (setsid): the tsx child must not survive a kill of the run.sh wrapper and keep the port bound.
@@ -556,6 +559,38 @@ class Drill:
             )
         self.note("gateway log: %s" % self.active_gateway_log)
         self.wait_gateway_started(started)
+
+    def stop_worktree_stack(self) -> None:
+        """Stop a dev stack this worktree already runs that this run did not start, so the start below is fresh.
+
+        `./run.sh account dev` reuses a live stack for the worktree (d681d61c2), which would hand this restart the stale server code it exists to replace. Only a recorded stack that answers health is stopped, through the documented `./run.sh account stop`; with no state file, or none healthy, nothing runs.
+        """
+        if not (self.root / ".account-state").is_file() or not self.gateway_alive():
+            return
+        outcome = "no answer"
+        try:
+            proc = subprocess.run(
+                [str(self.root / "run.sh"), "account", "stop"],
+                env=self.gateway_env(),
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            outcome = "exit %d: %s" % (proc.returncode, (proc.stdout + proc.stderr).strip()[-300:])
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            outcome = "%s: %s" % (type(exc).__name__, exc)
+        # The stop is confirmed, not assumed: a stack still answering health would be reused by `account dev` and the drill would verify stale server code.
+        for _ in range(STACK_STOP_POLLS):
+            if not self.gateway_alive():
+                return
+            time.sleep(GATEWAY_POLL_SECONDS)
+        if not self.gateway_alive():
+            return
+        raise GatewayError(
+            "`./run.sh account stop` did not stop the worktree's dev stack (%s); it is still answering health, so a restart would reuse its stale server code"
+            % outcome
+        )
 
     def wait_gateway_started(self, since: int) -> None:
         """Wait for a state file NEWER than `since` (account_dev writes `started=` last), then for /health."""

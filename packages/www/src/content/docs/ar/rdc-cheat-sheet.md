@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ar
-sourceHash: "14ed5791afa44326"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -59,8 +59,12 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup snapshot <repo> --dry-run` | تخطيط اللقطة دون رفع؛ يُظهر ما كان سيتحرك |
 | `rdc backup verify <repo>` | التحقق من مرساة النسخ الاحتياطي لمستودع مقابل التخزين المجزّأ |
 | `rdc backup usage` | عرض البايتات المخزَّنة في التخزين المجزّأ مقابل حصتك |
-| `rdc backup manifests <repo>` | عرض بيانات اللقطات المسجّلة على الخادم |
-| `rdc storage browse <storage>` | تصفح محتويات التخزين |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | استعادة لقطة من التخزين المجزّأ باسم جديد |
+| `rdc backup retention <repo>` | عرض سياسة الاحتفاظ التي يفرضها الخادم على سلسلة مستودع |
+| `rdc backup retention preview <repo>` | عرض ما سيحذفه المرور التالي والمساحة التي سيحررها |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | إعلان الاحتفاظ لسلسلة أو لمسار نسخ احتياطي واحد |
+| `rdc backup retention clear <repo> [--stream <id>]` | إزالة السياسة؛ تُحفظ كل لقطة |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | حذف لقطة واحدة؛ يحرر GC التالي بياناتها الخاصة بها |
 
 ## نقل المستودعات
 
@@ -76,7 +80,7 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 
 | الأمر | الوصف |
 |-------|-------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | إنشاء أو تحديث استراتيجية نسخ احتياطي مسماة |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | إنشاء أو تحديث استراتيجية نسخ احتياطي مسماة |
 | `rdc backup strategy list` | عرض جميع استراتيجيات النسخ الاحتياطي المحددة |
 | `rdc backup strategy show <name>` | عرض تفاصيل استراتيجية |
 | `rdc backup strategy remove <name>` | حذف استراتيجية |
@@ -137,8 +141,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | عرض جميع الإعدادات على هذا الجهاز |
 | `rdc config set machine <alias>` | توجيه اسم مستعار إلى جهاز مختلف |
 | `rdc machine add <machine> --ip <host> --user <user>` | إضافة جهاز إلى الإعدادات |
-| `rdc storage import rclone.conf` | استيراد مزودي التخزين من إعدادات rclone |
-| `rdc storage list` | عرض مزودي التخزين المهيأين |
 | `rdc backup strategy set ...` | تحديد استراتيجية نسخ احتياطي مسماة |
 | `rdc --config <name> <command>` | استخدام ملف إعدادات مسمى |
 

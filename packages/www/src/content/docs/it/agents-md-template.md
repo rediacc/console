@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: it
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Il problema è questo: gli assistenti AI di programmazione (Claude Code, Cursor, Cline, Windsurf) continuano a inventare flag `rdc` che non esistono, e non riescono a capire quale nome di repository Rediacc corrisponde a quale GUID senza chiedertelo ogni volta. Questo template risolve il problema. Incolla il blocco seguente nel file `CLAUDE.md`, `.cursorrules` o nel file di configurazione agente che usi.
@@ -72,7 +72,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

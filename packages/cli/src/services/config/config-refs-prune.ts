@@ -12,10 +12,9 @@
  * the input is OK, the caller deep-clones before calling) plus a structured
  * report of what was dropped and what raised a soft warning.
  *
- * Storage destinations (`backupStrategies.<s>.destinations[].storage`) are
- * intentionally NOT auto-pruned: removing a destination changes the meaning
- * of the strategy (a backup that was going to two storages now goes to one).
- * Those are reported as warnings so the operator can fix manually.
+ * No reference kind raises a warning since the storages family was retired:
+ * every strategy destination is a hosted service, which names no other
+ * resource. `warnings` stays in the result for reference kinds that need one.
  */
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
@@ -89,34 +88,15 @@ function pruneStrategyRepoList(
   }
 }
 
-function warnOrphanDestinations(
-  strategyName: string,
-  strategy: Strategy,
-  storageNames: Set<string>,
-  warnings: string[]
-): void {
-  for (const dest of strategy.destinations) {
-    // Only `storage`-kind destinations reference a /resources/storages entry;
-    // hosted-service destinations carry their own endpoint/credentials.
-    if (dest.kind !== 'storage') continue;
-    if (storageNames.has(dest.storage)) continue;
-    warnings.push(
-      `resources.backupStrategies.${strategyName}.destinations[name=${dest.name}].storage points at "${dest.storage}" which is not in resources.storages. Fix manually; auto-removing the destination would change the strategy's intent`
-    );
-  }
-}
-
 export function pruneDanglingRefs(config: RdcConfig): RefsPruneResult {
   const dropped: DroppedRef[] = [];
   const warnings: string[] = [];
 
   const machines = config.resources?.machines ?? {};
   const strategies = config.resources?.backupStrategies ?? {};
-  const storages = config.resources?.storages ?? {};
   const repos = config.resources?.repositories ?? {};
 
   const strategyNames = new Set(Object.keys(strategies));
-  const storageNames = new Set(Object.keys(storages));
   const repoNames = new Set(Object.keys(repos).map((k) => parseRepoRef(k).name));
 
   for (const [name, machine] of Object.entries(machines)) {
@@ -126,7 +106,6 @@ export function pruneDanglingRefs(config: RdcConfig): RefsPruneResult {
   for (const [name, strategy] of Object.entries(strategies)) {
     pruneStrategyRepoList(name, strategy, 'exclude', repoNames, dropped);
     pruneStrategyRepoList(name, strategy, 'include', repoNames, dropped);
-    warnOrphanDestinations(name, strategy, storageNames, warnings);
   }
 
   return { cleaned: config, dropped, warnings };

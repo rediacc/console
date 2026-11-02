@@ -11,8 +11,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: de
-sourceHash: "e008783008d8e887"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "34d12ee4f0a3791c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 Sie setzen einen KI-Coding-Assistenten auf Ihre Infrastruktur an. Wenn Claude Code, Cursor, Gemini CLI, Copilot CLI oder etwas Ähnliches `rdc` steuert, erkennt die CLI das und wendet einen anderen Regelsatz an als bei einem Menschen an der Tastatur. Diese Seite erklärt, was der Agent tun kann, was er nicht tun kann, und wie die Schutzmaßnahmen auch dann greifen, wenn der Agent versucht, sie zu umgehen.
@@ -216,7 +216,7 @@ Dies ist die Linie der gemeinsamen Verantwortung:
 
 Die primäre Gegenmaßnahme ist bereits eingebaut: **[Repository-Geheimnisse](/de/docs/repositories#secrets)** werden in einer separaten Ebene vom verschlüsselten Repository-Image gespeichert und nicht über die Fork-Grenze hinweg kopiert. Die Container eines Forks starten mit einer leeren Secrets-Map und identifizieren sich gegenüber externen Diensten als ein anderes Subjekt als das übergeordnete Repository. Setzen Sie sie mit `rdc repo secret set` (env-Modus für Compose-Interpolation, file-Modus für tmpfs-`secrets:`-Blöcke). Das Mutations-Gate ist symmetrisch. Menschen und Agents müssen gleichermaßen `--current` (passwd-ähnliche Vorbedingung) oder `--rotate-secret` (protokollierte Rotation) angeben, um einen bestehenden Wert zu überschreiben oder zu löschen.
 
-**Cross-Repository-Isolation ist durchgesetzt.** Eine böswillige oder fehlerhafte Compose-Datei in Repository B kann nicht auf das Secrets-Verzeichnis von Repository A verweisen. Renets Compose-Validator lehnt jeden `secrets: file:`, `configs: file:` oder `env_file:`-Pfad hart ab, der außerhalb des `${REDIACC_NETWORK_ID}`-Verzeichnisses des aktuellen Repositories liegt, und diese Ablehnung ist durch `--unsafe` NICHT überschreibbar. Defense-in-Depth: Die Landlock-Sandbox um den Rediaccfile-Bash-Subprozess begrenzt Dateisystem-Lesevorgänge ausschließlich auf das Secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/secrets/<other>/X` aus einer böswilligen Rediaccfile auf Kernel-Ebene mit EACCES fehlschlägt.
+**Cross-Repository-Isolation ist durchgesetzt.** Eine böswillige oder fehlerhafte Compose-Datei in Repository B kann nicht auf das Secrets-Verzeichnis von Repository A verweisen. Renets Compose-Validator lehnt jeden `secrets: file:`, `configs: file:` oder `env_file:`-Pfad hart ab, der außerhalb des `${REDIACC_NETWORK_ID}`-Verzeichnisses des aktuellen Repositories liegt, und diese Ablehnung ist durch `--unsafe` NICHT überschreibbar. Defense-in-Depth: Die Landlock-Sandbox um den Rediaccfile-Bash-Subprozess begrenzt Dateisystem-Lesevorgänge ausschließlich auf das Secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/net-<other>/secrets/X` aus einer böswilligen Rediaccfile auf Kernel-Ebene mit EACCES fehlschlägt. Dasselbe gilt für die Docker-API: Der Docker-Socket jedes Repositories wird von einem renet-Policy-Proxy bedient, der `--privileged`, Host-`pid`, -`ipc` und -`uts`, Geräteanfragen sowie Binds, die die Laufzeit oder Daten eines anderen Repositories erreichen, mit `403` abweist. Ein Container mit `${DOCKER_SOCKET}` kann die API also nicht nutzen, um ein anderes Repository zu erreichen, und nicht nur eine Compose-Datei wird geprüft. Nur der Operator kann die Bind-Regel für benannte Host-Verzeichnisse erweitern, und zwar mit einer Freigabe, die root gehört und in die kein Container schreiben kann.
 
 Zwei weitere Muster schließen Randfälle:
 

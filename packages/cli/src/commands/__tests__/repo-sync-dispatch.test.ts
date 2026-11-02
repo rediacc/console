@@ -37,11 +37,8 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
 
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
-import {
-  type SyncConnectionContext,
-  sftpDownloadTransfer,
-  sftpUploadTransfer,
-} from '../repo-sync.js';
+import { sftpDownloadTransfer, sftpUploadTransfer } from '../repo-sync.js';
+import type { SyncConnectionContext } from '../repo-sync-helpers.js';
 
 const details: ConnectionDetails = {
   host: '127.0.0.1',

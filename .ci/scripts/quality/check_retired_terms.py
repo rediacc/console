@@ -5,12 +5,16 @@ The logic, the refuse-or-advise split and the controls live in `rediacc_ci.quali
 
 ---- gate ----
 step: Retired terms
-lane: quality-static
-needs: none
-why: a retirement does not reach the work already queued against it. Worklist item
-     #fcd7316f stayed open to bake rclone into an image after rclone was ordered
-     removed, so an open item or a live plan naming a retired term is reported
-     unless it cites the work doing the retiring.
+lane: quality-security
+needs: submodules
+why: a retirement does not reach the work already queued against it, nor the shipped
+     text still naming it. Worklist item #fcd7316f stayed open to bake rclone into an
+     image after rclone was ordered removed, so an open item or a live plan naming a
+     retired term is reported unless it cites the work doing the retiring. Every
+     checked-out submodule's tracked files are read too: a hit refuses against a
+     count-keyed shrink-only file_baseline, file_exclusions drop a subtree under a
+     BLOCKER, and a line that must keep a term carries
+     `retired-term-ok(<term>): <reason>`. Absent submodules fail closed in CI.
 ---- end gate ----
 """
 

@@ -26,9 +26,11 @@ Rediacc uses OpenTelemetry to collect traces, metrics, and logs from all service
 | Service | Service Name | Language | Signals |
 |---------|-------------|----------|---------|
 | [CLI](signals/cli.md) | `rediacc-cli` | Node.js | Traces, Metrics, Logs |
-| [Account Server](signals/account-server.md) | `rediacc-account-server` | Node.js/Hono | Traces, Logs |
-| [Renet Bridge](signals/renet.md) | `renet-bridge` | Go | Traces, Metrics, Logs, Profiling |
+| [Account Server](signals/account-server.md) | `rediacc-account-server` | Cloudflare Workers (Hono) | Traces, Logs |
+| [Proxy Worker](signals/proxy.md) | `rediacc-proxy` | Cloudflare Workers | Traces, Logs |
+| [Proxy Executor](signals/proxy.md) | `rediacc-proxy-executor` | Node.js (CLI in a container) | Traces, Metrics, Logs |
 | [Renet Execute](signals/renet.md) | `renet-execute` | Go | Traces, Metrics, Logs, Profiling |
+| [Renet List](signals/renet.md) | `renet-list` | Go | Traces, Metrics, Logs |
 
 ## Something Broken? Start Here
 

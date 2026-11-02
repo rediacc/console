@@ -12,10 +12,13 @@ THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcri
 """
 
 import contextlib
+import http.server
 import json
 import os
 import pathlib
 import re
+import select
+import shlex
 import shutil
 import socket
 import subprocess
@@ -116,6 +119,8 @@ def drive(side: str, scenario: str) -> tuple[int, str, str]:
                 ["shadow", scenario],
                 _retired,
                 port=lambda: _run_driver("new", scenario),
+                # The memo makes WHICHEVER test drives a scenario first the caller of record, and xdist's loadgroup does not keep file order, so a label taken from the running test keyed the golden by run order (22 misses under -n 4). The explicit label is the one the golden was recorded under; the content hash is unchanged.
+                label="test_the_port_matches_the_live_twin[%s]" % scenario,
             )
         else:
             _CACHE[key] = _run_driver(side, scenario)
@@ -712,11 +717,155 @@ def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant(
         shutil.rmtree(work, ignore_errors=True)
 
 
+def _serve_info(handler) -> None:
+    code = 200 if handler.path == "/account/api/v1/.well-known/server-info" else 404
+    handler.send_response(code)
+    handler.end_headers()
+    handler.wfile.write(b"{}")
+
+
+class _ServerInfo:
+    """A loopback HTTP server that answers the dev gateway's server-info path with 200."""
+
+    def __init__(self) -> None:
+        handler = type(
+            "Handler",
+            (http.server.BaseHTTPRequestHandler,),
+            {"log_message": lambda *_a: None},
+        )
+        setattr(handler, "do_" + "GET", _serve_info)
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), handler)
+        self.port = self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+class _SecondStartError(AssertionError):
+    """dev() went past the reuse check into a fresh start."""
+
+
+def _arm_dev(monkeypatch, work, calls: list[str]) -> pathlib.Path:
+    env = shadow_driver.sandbox_env(work)
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", env["CONSOLE_ROOT_DIR"])
+    monkeypatch.setattr(account, "bws_exec", lambda *_a, **_k: calls.append("bws_exec"))
+    monkeypatch.setattr(account_lifecycle, "_check_node", lambda: None)
+
+    def second_start(*_a, **_k):
+        calls.append("allocate_ports")
+        raise _SecondStartError("a second stack was started")
+
+    monkeypatch.setattr(account, "allocate_ports", second_start)
+    monkeypatch.setattr(
+        account_lifecycle, "_stop_previous", lambda _state: calls.append("stop_previous")
+    )
+    return pathlib.Path(account.state_file(env))
+
+
+def test_dev_reuses_a_live_stack_and_starts_no_second(monkeypatch, capsys) -> None:
+    """A state file naming a live pid and a gateway answering server-info is reused: URL printed, rc 0, nothing stopped, nothing spawned, state untouched."""
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    tracked = None
+    gateway = _ServerInfo()
+    try:
+        calls: list[str] = []
+        state = _arm_dev(monkeypatch, work, calls)
+        tracked = _spawn_reaped(["sleep", "15"])
+        body = "gateway_port=%d\npids=%d\nwriter=%s\n" % (
+            gateway.port,
+            tracked.pid,
+            account.writer_stamp(),
+        )
+        state.write_text(body, encoding="utf-8")
+
+        assert account_lifecycle.dev() == 0
+        assert calls == [], calls
+        assert _alive(tracked.pid)
+        assert state.read_text(encoding="utf-8") == body
+        assert "http://localhost:%d" % gateway.port in capsys.readouterr().out
+    finally:
+        gateway.close()
+        if tracked is not None:
+            with contextlib.suppress(OSError):
+                tracked.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+@pytest.mark.parametrize("shape", ["dead-pid", "dead-port", "foreign-writer", "no-pids"])
+def test_dev_replaces_a_stale_state_file(monkeypatch, shape) -> None:
+    """Dead pids, a dead gateway port, another writer's stamp or no pids at all: the state is stale, the previous instance is cleaned and a fresh start begins."""
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    tracked = None
+    gateway = _ServerInfo()
+    try:
+        calls: list[str] = []
+        state = _arm_dev(monkeypatch, work, calls)
+        tracked = _spawn_reaped(["sleep", "15"])
+        port, pids, writer = gateway.port, str(tracked.pid), account.writer_stamp()
+        if shape == "dead-pid":
+            pids = "4194302"
+        elif shape == "dead-port":
+            gateway.close()
+        elif shape == "foreign-writer":
+            writer = FOREIGN_WRITER
+        else:
+            pids = ""
+        state.write_text(
+            "gateway_port=%d\npids=%s\nwriter=%s\n" % (port, pids, writer), encoding="utf-8"
+        )
+
+        assert account_lifecycle.live_stack_port(str(state)) is None
+        with pytest.raises(_SecondStartError):
+            account_lifecycle.dev()
+        assert calls == ["bws_exec", "stop_previous", "allocate_ports"], calls
+    finally:
+        if shape != "dead-port":
+            gateway.close()
+        if tracked is not None:
+            with contextlib.suppress(OSError):
+                tracked.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_stop_kills_the_whole_tree_not_only_the_recorded_pid(monkeypatch, tmp_path) -> None:
+    """The recorded pid is a job leader (npm exec -> sh -> server). Its child and grandchild must die with it."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    leader = None
+    try:
+        env = shadow_driver.sandbox_env(work)
+        state = pathlib.Path(account.state_file(env))
+        childfile = tmp_path / "child.pid"
+        leader = _spawn_reaped(
+            ["sh", "-c", "sh -c 'sleep 15 & echo $! > %s; wait' & wait" % childfile]
+        )
+        for _ in range(100):
+            if childfile.is_file() and childfile.read_text().strip():
+                break
+            time.sleep(0.05)
+        child = int(childfile.read_text().strip())
+        assert _alive(child)
+        state.write_text(
+            "gateway_port=1\npids=%d\nwriter=%s\n" % (leader.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
+        assert account.stop(env) == 0
+        assert _gone(leader.pid)
+        assert _gone(child), "stop() left a descendant of the recorded pid running"
+    finally:
+        if leader is not None:
+            with contextlib.suppress(OSError):
+                leader.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
 FOREIGN_WRITER = "some-devbox/pid:[4026532999]"
 
 
 def _fake_docker(directory: pathlib.Path) -> str:
-    """A `docker` that fails every call, so the two tests below need no skip: `account_stop`'s unscoped container teardown and ghost clean reach this instead of the machine's real daemon, and the pid handling under test runs exactly as it would."""
+    """A `docker` that fails every call, so every test that calls `account.stop` with it needs no skip: `account_stop`'s unscoped container teardown and ghost clean reach this instead of the machine's real daemon, and the pid handling under test runs exactly as it would."""
     directory.mkdir(parents=True, exist_ok=True)
     fake = directory / "docker"
     fake.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
@@ -857,8 +1006,8 @@ def _mint_env(**extra: str) -> dict[str, str]:
     return env
 
 
-def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_path) -> None:
-    """The whole contract: six `NAME=value` lines appended, non-empty values, names only on stderr, and stdout exactly one `::add-mask::` per value."""
+def test_mint_dev_keys_appends_exactly_seven_named_lines_and_prints_no_value(tmp_path) -> None:
+    """The whole contract: seven `NAME=value` lines appended, non-empty values, names only on stderr, and stdout exactly one `::add-mask::` per value."""
     target = tmp_path / "github_env"
     target.write_text("EARLIER=kept\n", encoding="utf-8")
     proc = _mint(_mint_env(GITHUB_ENV=str(target)))
@@ -870,7 +1019,7 @@ def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_p
     assert [line.split("=", 1)[0] for line in minted] == list(account.CRYPTO_KEYS)
     values = [line.split("=", 1)[1] for line in minted]
     assert all(values), "an empty value was written"
-    assert len(set(values)) == 6, "two of the six minted values are identical"
+    assert len(set(values)) == 7, "two of the seven minted values are identical"
     # Masked, or every later step's env block prints them in this public repo's logs; the runner consumes these lines unshown.
     assert proc.stdout.splitlines() == ["::add-mask::%s" % v for v in values], (
         "stdout must be exactly one ::add-mask:: per minted value, in order"
@@ -880,7 +1029,7 @@ def test_mint_dev_keys_appends_exactly_six_named_lines_and_prints_no_value(tmp_p
         assert value not in proc.stderr, "a minted value reached stderr"
     for name in account.CRYPTO_KEYS:
         assert name in proc.stderr, "%s is not named on stderr" % name
-    assert "6 throwaway dev key(s)" in proc.stderr
+    assert "7 throwaway dev key(s)" in proc.stderr
 
 
 def test_mint_dev_keys_refuses_without_github_env(tmp_path) -> None:
@@ -1031,6 +1180,8 @@ def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
                 ["lifecycle", scenario],
                 _retired,
                 port=lambda: _run_lifecycle("new", scenario),
+                # Explicit for the reason `drive` gives: the golden key must not depend on which test ran first.
+                label="test_the_lifecycle_port_matches_the_live_twin[%s]" % scenario,
             )
         else:
             _LIFECYCLE_CACHE[key] = _run_lifecycle(side, scenario)
@@ -1105,7 +1256,7 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
         "obs previous-instance call#1| kill -9 4194303",
         "obs reuse-rustfs side#9| env WEBAUTHN_ORIGIN=http://localhost:%d" % ACCOUNT_DEV_PORT,
         "obs no-docker-with-stripe side#16| state pids=N N N",
-        "obs no-docker-with-stripe bg| npx astro dev --port 4802 --host 192.0.2.10",
+        "obs no-docker-with-stripe bg| npx --no-install astro dev --port 4802 --host 192.0.2.10",
         "obs gateway-fails rc=3",
         "obs astro-never rc=1",
         "obs state-missing-key rc=1",
@@ -1124,9 +1275,11 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
     _, helpers_out, _ = drive_lifecycle("old", "helpers")
     assert "obs cleanup-kills-foreign foreign alive=0 signal=15" in helpers_out
     _, reset_out, _ = drive_lifecycle("old", "reset")
-    assert "obs whole side#2| len ACCOUNT_ED25519_PUBLIC_KEY=60" in reset_out
-    assert "obs push-fails tree| private/account/account.db file" in reset_out, (
-        "a failed push must leave the database alone"
+    # DB-only since agent/plans/PLAN-production-key-only.md K3: the database goes, and the stubbed `python3` (the tripwire for a `bws_env` push or cache refresh) records nothing.
+    assert "obs whole err#2| ✓ Removing account.db" in reset_out
+    assert "obs whole tree| private/account/account.db file" not in reset_out
+    assert not [line for line in reset_out.splitlines() if " side#" in line], (
+        "reset reached Bitwarden"
     )
 
 
@@ -1774,3 +1927,184 @@ def test_an_absent_lockfile_is_a_recorded_state(monkeypatch, tmp_path):
     with pytest.raises(_LaunchedError):
         account_lifecycle.test_e2e([])
     assert reached
+
+
+def test_tree_refuses_pid_zero_and_one():
+    """Review 4fb75de4.3: a recorded pid of 0 or 1 is never a job; os.kill(0, 0) would signal our own group."""
+    assert account._tree("0") == []
+    assert account._tree("1") == []
+    assert account._tree("not-a-pid") == []
+
+
+def test_stop_kills_a_sigterm_ignoring_child_whose_leader_exited(monkeypatch, tmp_path) -> None:
+    """Reviews 4fb75de4.1 and a6ac20cd.3, end to end through stop(): the leader dies on SIGTERM, its child ignores SIGTERM and is reparented, and the SIGKILL pass must still reach it. Red if stop() re-collects the tree after the TERM pass, because by then the dead leader has no children."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    leader = None
+    try:
+        env = shadow_driver.sandbox_env(work)
+        state = pathlib.Path(account.state_file(env))
+        childfile = tmp_path / "child.pid"
+        ignorer = (
+            "import os, signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+            "open(%r, 'w').write(str(os.getpid())); time.sleep(30)" % str(childfile)
+        )
+        leader = _spawn_reaped(
+            ["sh", "-c", "%s -c %s & wait" % (sys.executable, shlex.quote(ignorer))]
+        )
+        for _ in range(100):
+            if childfile.is_file() and childfile.read_text().strip():
+                break
+            time.sleep(0.05)
+        assert childfile.is_file(), "the SIGTERM-ignoring child never wrote its pid file"
+        assert childfile.read_text().strip(), "the SIGTERM-ignoring child's pid file is empty"
+        child = int(childfile.read_text().strip())
+        assert _alive(child)
+        state.write_text(
+            "gateway_port=1\npids=%d\nwriter=%s\n" % (leader.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
+        assert account.stop(env) == 0
+        assert _gone(child), "the SIGTERM-ignoring child of the exited leader survived stop()"
+    finally:
+        if leader is not None:
+            with contextlib.suppress(OSError):
+                leader.kill()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_stop_with_a_foreign_state_kills_only_the_gateway_occupant(monkeypatch, tmp_path) -> None:
+    """Review a6ac20cd.2: a state file another writer stamped gets the gateway occupant alone, never the trees on
+    gateway+1 and gateway+2."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    try:
+        env = shadow_driver.sandbox_env(work)
+        pathlib.Path(account.state_file(env)).write_text(
+            "gateway_port=4900\npids=\nwriter=%s\n" % FOREIGN_WRITER, encoding="utf-8"
+        )
+        tree_kills: list[str] = []
+        single_kills: list[str] = []
+        monkeypatch.setattr(account, "_lsof_port_pids", lambda port: ["70%s" % port[-1]])
+        monkeypatch.setattr(account, "_lsof_port_pid", lambda _port: "7000")
+        monkeypatch.setattr(
+            account, "_kill_tree", lambda pid, _sig, _members=None: tree_kills.append(pid)
+        )
+        monkeypatch.setattr(account, "_kill_quiet", lambda pid, _sig: single_kills.append(pid))
+        assert account.stop(env) == 0
+        assert tree_kills == [], (
+            "a foreign state must not license whole-tree kills on the dev ports"
+        )
+        assert single_kills == ["7000"]
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def test_sigkill_pass_reaches_a_child_after_its_leader_exits():
+    """Review 4fb75de4.1: with the members collected before SIGTERM, a SIGTERM-ignoring child is still in the SIGKILL
+    pass. The stand-in leader is a child this test already reaped (review a6ac20cd.4: no hardcoded pid)."""
+    gone = subprocess.Popen([sys.executable, "-c", "pass"])
+    gone.wait(timeout=10)
+    child = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import signal, sys, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print('ready', flush=True); time.sleep(60)",
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    # Wait until the SIGTERM handler is installed, or the signal can land first and end the child early.
+    assert child.stdout is not None
+    assert child.stdout.readline().strip() == "ready"
+    try:
+        members = [gone.pid, child.pid]
+        account._kill_tree(str(gone.pid), account.signal.SIGTERM, members)
+        time.sleep(0.3)
+        assert child.poll() is None, "the child ignores SIGTERM, so it must still be alive here"
+        account._kill_tree(str(gone.pid), account.signal.SIGKILL, members)
+        child.wait(timeout=5)
+        assert child.returncode is not None
+    finally:
+        with contextlib.suppress(OSError):
+            child.kill()
+        child.wait(timeout=5)
+        child.stdout.close()
+
+
+def test_still_same_drops_a_reused_pid():
+    """Review a6ac20cd.1: a member whose start time changed since collection was reused and is not signalled."""
+    me = os.getpid()
+    assert account._still_same([me], {me: account._start_time(me)}) == [me]
+    assert account._still_same([me], {me: "not-the-real-start-time"}) == []
+
+
+def test_kill_tree_with_members_never_signals_a_dropped_leader(monkeypatch):
+    """Review 4cb0f2b2.1: when the leader pid was reused and _still_same dropped it, _kill_tree(pid, sig, survivors)
+    signals the survivors only; the process now holding the leader pid is left alone."""
+    bystander = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        # Record the signals instead of timing an exit: a bystander that was signalled but has not yet exited would otherwise pass.
+        sent: list[str] = []
+        real_quiet = account._kill_quiet
+
+        def recording_kill(victim, sig):
+            sent.append(victim)
+            return real_quiet(victim, sig)
+
+        monkeypatch.setattr(account, "_kill_quiet", recording_kill)
+        account._kill_tree(str(bystander.pid), account.signal.SIGKILL, [survivor.pid])
+        survivor.wait(timeout=5)
+        assert sent == [str(survivor.pid)], sent
+        assert bystander.poll() is None, "the reused leader pid was signalled"
+    finally:
+        for proc in (bystander, survivor):
+            with contextlib.suppress(OSError):
+                proc.kill()
+            proc.wait(timeout=5)
+
+
+def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_path) -> None:
+    """Review 4cb0f2b2.2, end to end through stop(): a recorded process that survives SIGTERM but whose start time
+    changes before the SIGKILL pass (its pid was reused) is not killed. Red if stop() passes the unfiltered tree."""
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
+    work = shadow_driver.build_sandbox(paths.repo_root())
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print('ready', flush=True); time.sleep(30)",
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert proc.stdout is not None
+        # Bounded: a child that stalls before printing fails the test instead of blocking it.
+        assert select.select([proc.stdout], [], [], 10)[0], "the child never printed ready"
+        assert proc.stdout.readline().strip() == "ready"
+        calls: dict[int, int] = {}
+
+        def changing_start_time(pid: int) -> str:
+            calls[pid] = calls.get(pid, 0) + 1
+            return "first" if calls[pid] == 1 else "reused"
+
+        monkeypatch.setattr(account, "_start_time", changing_start_time)
+        monkeypatch.setattr(account, "_tree", lambda pid: [int(pid)])
+        env = shadow_driver.sandbox_env(work)
+        pathlib.Path(account.state_file(env)).write_text(
+            "gateway_port=1\npids=%d\nwriter=%s\n" % (proc.pid, account.writer_stamp()),
+            encoding="utf-8",
+        )
+        assert account.stop(env) == 0
+        assert proc.poll() is None, (
+            "stop() SIGKILLed a member whose start time changed (a reused pid)"
+        )
+    finally:
+        with contextlib.suppress(OSError):
+            proc.kill()
+        proc.wait(timeout=5)
+        if proc.stdout is not None:
+            proc.stdout.close()
+        shutil.rmtree(work, ignore_errors=True)

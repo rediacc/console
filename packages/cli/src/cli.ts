@@ -15,17 +15,18 @@ import { registerOpsCommands } from './commands/ops/index.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerShortcuts } from './commands/shortcuts.js';
-import { registerStorageCommands } from './commands/storage.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerTermCommands } from './commands/term.js';
+import { registerToolsCommands } from './commands/tools.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
 import { configService } from './services/config/config-resources.js';
+import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
-import { exitProcess } from './services/core/request-context.js';
+import { currentRequestContext, exitProcess } from './services/core/request-context.js';
 import { setBackgroundRequested } from './services/executor/executor-factory.js';
 import {
   assertDetachable,
@@ -33,9 +34,20 @@ import {
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
 import {
+  finishNotice,
+  shouldRunNotice,
+  startNoticeCheck,
+} from './services/jobs/finished-notice.js';
+import { liveNoticeDeps } from './services/jobs/remote-deps.js';
+import {
+  initContainerTelemetry,
+  isContainerServe,
+} from './services/telemetry/container-telemetry.js';
+import {
   fetchCommandOtlpCredentials,
   serverOptionOf,
 } from './services/telemetry/otlp-credentials.js';
+import { currentRequestTelemetry } from './services/telemetry/request-telemetry.js';
 import { isTelemetryDisabled, telemetryService } from './services/telemetry/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
@@ -48,16 +60,25 @@ import { VERSION } from './version.js';
 // Track if i18n has been initialized
 let i18nInitialized = false;
 
-// Track command context for telemetry
-const commandContext = new Map<string, { startTime: number }>();
-
 /**
- * The deferred telemetry-setup chain started in preAction (credential fetch →
- * initialize → startCommand → user context). postAction awaits it before
- * closing the command span. Resolved-by-default so a postAction without a
- * matching preAction (or with telemetry disabled) never hangs.
+ * Telemetry state of one command run, keyed by the Commander action command and not
+ * by the command's name: the executor runs many commands at once (two concurrent
+ * `repo list` share a name), and each dispatch builds its own tree, so the action
+ * command object is unique per run.
+ *
+ * `ready` is the deferred telemetry-setup chain started in preAction (credential
+ * fetch, initialize, startCommand, user context). postAction awaits it before
+ * closing the command span. A postAction without a matching preAction finds no
+ * entry and never waits.
  */
-let telemetryReady: Promise<void> = Promise.resolve();
+interface ActionTelemetry {
+  commandName: string;
+  startTime: number;
+  spanKey: string;
+  ready: Promise<void>;
+}
+const actionTelemetry = new WeakMap<Command, ActionTelemetry>();
+let spanSequence = 0;
 
 // formatDuration removed, timeline handles all timing display
 
@@ -184,6 +205,7 @@ export function createCli(): Command {
     .option('-b, --background', t('options.background'))
     .hook('preAction', async (thisCommand, actionCommand) => {
       const opts = thisCommand.opts();
+      setInvocationCommand(commandPathOf(actionCommand));
       const effectiveFormat = resolveOutputFormat(
         opts.output as OutputFormat,
         thisCommand.getOptionValueSource('output')
@@ -193,6 +215,9 @@ export function createCli(): Command {
       // Set --yes flag globally for prompt bypass
       if (opts.yes) {
         process.env.REDIACC_YES = '1';
+        // Commander gives -y to this root option wherever it appears, so a
+        // subcommand's own -y/--yes never fires; hand the value down.
+        actionCommand.setOptionValue('yes', true);
       }
       // Set --quiet mode to suppress informational output
       if (opts.quiet) {
@@ -215,6 +240,22 @@ export function createCli(): Command {
         const commandPath = commandPathOf(actionCommand);
         assertDetachable(commandPath, getCommand(commandPath));
         setBackgroundRequested(true);
+      }
+
+      // Finished-while-away notice (Design 8): a bounded check of this config's pending job tickets, printed on stderr in postAction.
+      if (
+        shouldRunNotice({
+          commandPath: commandPathOf(actionCommand),
+          quiet: Boolean(opts.quiet),
+          format: effectiveFormat,
+          inExecutorRequest: currentRequestContext() !== undefined,
+        })
+      ) {
+        try {
+          startNoticeCheck(liveNoticeDeps());
+        } catch {
+          // a config name the store rejects never blocks the command
+        }
       }
 
       // Run the command at a remote executor instead of here. Explicit opt-in only: an inferred mode was what made the retired cloud adapter leak conditionals through every layer.
@@ -251,9 +292,27 @@ export function createCli(): Command {
       // after initialize). Executor paths that inject the credentials into renet env await the same memoized fetch, and the postAction hook awaits this chain before ending the command span, so no telemetry is lost, the span's duration comes from the startTime captured here.
       const commandName = getFullCommandName(actionCommand);
       const startTime = Date.now();
-      commandContext.set(commandName, { startTime });
+      const spanKey = `${commandName}#${++spanSequence}`;
       outputService.setCommandContext(commandName, startTime);
-      telemetryReady = (async () => {
+      // Inside an executor request the SDK already exists (the container initialised it at start), the user is the introspected caller, and profiling is process-wide: none of the per-process setup below applies, only the command span.
+      const inRequest = currentRequestContext() !== undefined;
+      const containerServe = !inRequest && isContainerServe(actionCommand);
+      const ready = (async () => {
+        if (inRequest) {
+          telemetryService.startCommand(commandName, {
+            args: actionCommand.args,
+            options: actionCommand.opts(),
+            spanKey,
+          });
+          const scope = currentRequestTelemetry();
+          if (scope) scope.open = { commandName, spanKey };
+          return;
+        }
+        if (containerServe) {
+          // The container fetches its credential from its own account server (REDIACC_ACCOUNT_SERVER), initialises once under its own service name, and never profiles. There is no command span: `serve` runs until the container stops.
+          await initContainerTelemetry();
+          return;
+        }
         if (!isTelemetryDisabled()) {
           try {
             const otlpCreds = await fetchCommandOtlpCredentials(actionCommand);
@@ -273,6 +332,7 @@ export function createCli(): Command {
       })().catch(() => {
         // Telemetry setup failures never surface into the command.
       });
+      actionTelemetry.set(actionCommand, { commandName, startTime, spanKey, ready });
 
       // License auto-refresh is now handled per-operation in services/license.ts
     })
@@ -280,26 +340,41 @@ export function createCli(): Command {
       // Timeline rendering handles timing display for executor commands. No additional "Completed in X (total: Y)" message needed.
 
       // The deferred telemetry chain from preAction must land before the command span is closed, for fast commands it may still be in flight.
-      await telemetryReady;
+      const ctx = actionTelemetry.get(actionCommand);
+      await ctx?.ready;
 
-      // Stop profiling before ending telemetry
-      await telemetryService.stopProfiling();
+      // Stop profiling before ending telemetry (profiling is a process-wide singleton and is never started inside an executor request)
+      if (currentRequestContext() === undefined) {
+        await telemetryService.stopProfiling();
+      }
 
       // End telemetry tracking for the command
-      const commandName = getFullCommandName(actionCommand);
-      const ctx = commandContext.get(commandName);
+      const commandName = ctx?.commandName ?? getFullCommandName(actionCommand);
       const duration = ctx ? Date.now() - ctx.startTime : 0;
 
-      telemetryService.endCommand(commandName, {
-        success: true,
-        exitCode: 0,
-        duration,
-      });
+      // A command that reported failure through setExitCode() returns normally and reaches this hook, so its span takes that exit status rather than an unconditional success (inside a dispatch the code lives on the request, on a laptop on process.exitCode).
+      const requested = currentRequestContext()?.exitCode ?? process.exitCode;
+      const exitCode = Number(requested ?? 0) || 0;
+      telemetryService.endCommand(
+        commandName,
+        exitCode === 0
+          ? { success: true, exitCode: 0, duration }
+          : {
+              success: false,
+              exitCode,
+              error: `The command exited with code ${exitCode}.`,
+              duration,
+            },
+        ctx?.spanKey ?? commandName
+      );
 
-      commandContext.delete(commandName);
+      const scope = currentRequestTelemetry();
+      if (scope?.open && scope.open.spanKey === ctx?.spanKey) scope.open = undefined;
+      actionTelemetry.delete(actionCommand);
 
       // Flush audit events (fire-and-forget, timeout-bounded)
       await auditService.flush(serverOptionOf(actionCommand));
+      await finishNotice();
     });
 
   // Register all command groups
@@ -307,13 +382,13 @@ export function createCli(): Command {
   registerMachineCommands(cli);
   registerBackupCommands(cli);
   registerRepoCommands(cli);
-  registerStorageCommands(cli);
   registerConfigCommands(cli);
   registerDoctorCommand(cli);
   registerCreditsCommand(cli);
   registerClusterCommands(cli);
   registerTermCommands(cli);
   registerVSCodeCommands(cli);
+  registerToolsCommands(cli);
   registerUpdateCommand(cli);
   registerOpsCommands(cli);
   registerDatastoreCommands(cli);

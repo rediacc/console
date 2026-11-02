@@ -29,7 +29,7 @@ XDIST_GROUP = "wl-identity-l1"
 
 
 #: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
-ACCEPTED_RC = {"--batch-body": 1}
+ACCEPTED_RC = {"--batch-body": 1, "--promote": 1}
 
 
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
@@ -495,6 +495,10 @@ def drive_l1(fix) -> L1Drive:
             % (inv_rel, inv_selector, inv_rel, inv_rel),
             "[verdict: present]",
         ),
+        # A dry run (no --write) over the same fixture plan: it prints the five-part report and writes nothing. The fixture has no git repository, so the merge base is unresolvable and the report says so, after the same _identity_or_die its --write mode runs.
+        ("--plan-preflight", "--plan-preflight @WHO@ %s" % inv_rel, "5. VERDICT:"),
+        # Listing mode (a `<me>` and no plan): prints the open LP boxes after the same _identity_or_die its record and tick modes run, and runs no recorder.
+        ("--live-proof", "--live-proof @WHO@", "open live-proof box(es)"),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
         # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
         ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
@@ -503,6 +507,8 @@ def drive_l1(fix) -> L1Drive:
         ("--queue-set", "--queue-set @WHO@", "effort: "),
         # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
         ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
+        # Writes QUEUE.md (#dd9b7624): the fixture holds no such plan, so the accepted run answers with the does-not-exist refusal after the same _identity_or_die a real promote passes.
+        ("--promote", "--promote @WHO@ PLAN-l1-absent.md l1-note", "does not exist"),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),
@@ -519,6 +525,8 @@ def drive_l1(fix) -> L1Drive:
         ("--prune-scratch", "--prune-scratch @WHO@", "nothing to prune"),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
+        # The operator-ruling verb (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2), driven in its listing mode: a bare `<me>` prints the live rulings after the same _identity_or_die its record and revoke modes run.
+        ("--rule", "--rule @WHO@", "operator rulings:"),
     ]
 
     stand_in = fix.proj / ".ci" / "scripts" / "quality" / "check_agent_session_archival.py"

@@ -9,7 +9,7 @@ import { log } from '../src/utils/log';
  * These tests verify the complete image build pipeline:
  * 1. Download base cloud image
  * 2. Start VM with cloud-init
- * 3. Run customization script (install Docker, rclone, etc.)
+ * 3. Run customization script (install Docker, etc.)
  * 4. Convert to compressed qcow2
  *
  * Supported OSes (10 total):

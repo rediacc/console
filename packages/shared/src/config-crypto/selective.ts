@@ -37,7 +37,7 @@ import {
   generateFckSalt,
 } from './commitments.js';
 import { ENVELOPE_FIELDS, ENVELOPE_VERSION, LEGACY_ENVELOPE_VERSION } from './constants.js';
-import { ConfigIntegrityError } from './errors.js';
+import { ConfigEnvelopeTooNewError, ConfigIntegrityError } from './errors.js';
 import { hmacVerify } from './hmac.js';
 import { configDecrypt, configEncrypt } from './layers.js';
 import type {
@@ -246,6 +246,8 @@ export async function selectiveDecrypt(
       (await hmacVerify(payload.encryptedBlob, cek, payload.hmac));
     if (!hmacValid) throw new ConfigIntegrityError();
     sensitiveJson = await configDecrypt(payload.encryptedBlob, cek, sdkDerived);
+  } else if (typeof version === 'number' && version > ENVELOPE_VERSION) {
+    throw new ConfigEnvelopeTooNewError(version);
   } else {
     throw new Error(
       `Unsupported envelope version: ${String((payload.envelope as { envelopeVersion?: unknown }).envelopeVersion)}. This client reads envelope v${LEGACY_ENVELOPE_VERSION} and v${ENVELOPE_VERSION}.`

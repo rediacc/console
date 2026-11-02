@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block_vm_unverified_push (OWN_SUITE: never bash, so no golden), box VC4 of agent/plans/PLAN-vm-check.md and box AV5 of agent/plans/PLAN-account-vm-check.md.
 
-REAL REPOSITORIES, one per world, built under a `rediacc_ci.runtmp` run directory by the guard's own `world()` and `plant_receipt()` (the builders its differential `FIXTURES` use, so the suite and the differential judge one shape): a console-shaped checkout on `1008-1` with real `private/renet` and `private/account` gitlinks, `origin/main` at the seed and one unpushed commit, and schema 2 receipts written through `vm_check_receipt.write`, so a receipt shape the module would refuse can never be planted here. The one exception is the retired schema 1 receipt, written raw by `plant_schema_1` because the point of that world is that the module refuses to read it.
+REAL REPOSITORIES, one per world, built under a `rediacc_ci.runtmp` run directory by the guard's own `world()` and `plant_receipt()` (the builders its differential `FIXTURES` use, so the suite and the differential judge one shape): a console-shaped checkout on `1008-1` with real `private/renet` and `private/account` gitlinks, `origin/main` at the seed and one unpushed commit, and schema 3 receipts written through `rediacc_ci.proof.vm_tier.write`, so a receipt shape the module would refuse can never be planted here. The exceptions are the retired schema 1 and schema 2 receipts, written raw by `plant_retired` because the point of those worlds is that the module refuses to read them.
 
 BOTH DIRECTIONS. Every refusal has an allow twin that differs by one planted fact: a docs-only range, a test-only renet or account range, a VERIFIED receipt, a receipt that ran the touched side's phase, a receipt carried by a docs commit, a valid escape of each kind against a transcript holding one AskUserQuestion answer. Every escape kind is refused in its invalid case (an unknown kind, a short why, no ASKED, a malformed ASKED, an ASKED matching no answer, `vm-unavailable` with no NOT_VERIFIED receipt for these inputs).
 
@@ -97,6 +97,7 @@ ACCOUNT_MISSING_OLD = built("vmc-account-missing-old")
 RENET_WIDE = built("vmc-renet-wide")
 RENET_GOMOD = built("vmc-renet-gomod")
 SCHEMA_1 = built("vmc-schema-1")
+SCHEMA_2 = built("vmc-schema-2")
 RENET_WIDE_VERIFIED = G.plant_receipt(built("vmc-renet-wide"))
 # A renet-only VERIFIED receipt on a renet range, but the push base cannot be resolved: every side is charged, so the account phase is missing.
 NO_BASE = G.plant_receipt(built("vmc-renet-wide"))
@@ -366,7 +367,7 @@ CASES = [
         None,
         None,
         True,
-        "the account checkout",
+        "the private/account checkout",
     ),
     (
         "account checkout modified",
@@ -375,12 +376,21 @@ CASES = [
         None,
         None,
         True,
-        "account checkout had uncommitted changes",
+        "the private/account checkout has uncommitted surface changes",
     ),
     (
         "a schema 1 VERIFIED receipt",
         PUSH,
         SCHEMA_1,
+        None,
+        None,
+        True,
+        "no vm:check receipt exists",
+    ),
+    (
+        "a schema 2 VERIFIED receipt",
+        PUSH,
+        SCHEMA_2,
         None,
         None,
         True,
@@ -563,7 +573,7 @@ CASES = [
     ("NOT_VERIFIED", PUSH, CLI_NOT_VERIFIED, None, None, True, "fleet-unavailable"),
     ("FAILED", PUSH, CLI_FAILED, None, None, True, "V1.3"),
     ("VERIFIED for another pointer", PUSH, OTHER_POINTER, None, None, True, "other trigger inputs"),
-    ("VERIFIED, another renet build", PUSH, MISMATCH, None, None, True, "is not the pointer"),
+    ("VERIFIED, another renet build", PUSH, MISMATCH, None, None, True, "the renet pointer is"),
     # ---- not this guard's business
     ("a dry run", "git push --dry-run origin 1008-1", CLI_NONE, None, None, False, ""),
     ("a delete push", "git push origin --delete 1007-1", CLI_NONE, None, None, False, ""),
@@ -973,6 +983,7 @@ for quiet in (
     ACCOUNT_VERIFIED,
     ACCOUNT_RENET_RECEIPT,
     SCHEMA_1,
+    SCHEMA_2,
 ):
     if ledger_lines(quiet):
         print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))

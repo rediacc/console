@@ -123,5 +123,15 @@ export default test.defineConfig({
     ...(process.env.BACKUP_BROWSE_AT_SUITE === '1'
       ? [{ name: 'test-27', testMatch: '27-*.test.ts' }]
       : []),
+    // Docker API privilege gate (suite 28): the per-repo socket proxy refuses privileged, host-namespace and cross-repo binds (PLAN-dockerd-api-privilege-gate). Unconditional: it needs a worker VM, which every E2E Workers leg has, a renet build that serves the per-repo gate (the pre-fix renet makes the attacks exit 0 and fail), and registry pulls of alpine:3.20 and docker:28-cli.
+    { name: 'test-28', testMatch: '28-*.test.ts' },
+    // rdc --proxy through a local executor (suite 29, PLAN-cloudflare-proxy box B4): `rdc serve --mode daemon` on loopback, with the account server's introspect and audit routes stood in by an in-test stub, drives repo status, up and down on a fork. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-29', testMatch: '29-*.test.ts' },
+    // GPU device grants (suite 30, PLAN-gpu-device-grants): machine_gpu_list and repository_gpu_grant|revoke against a fake CDI spec on a worker VM with no GPU. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-30', testMatch: '30-*.test.ts' },
+    // Suite 31 (backup large-repo, box K10): a 50 GiB seed on a 100 GB worker disk. Only the standalone nightly ct-backup-perf.yml runs it, through playwright.backup-large-repo.config.ts; gated so the sharded E2E Workers legs and local runs collect nothing.
+    ...(process.env.BACKUP_LARGE_REPO_SUITE === '1'
+      ? [{ name: 'test-31', testMatch: '31-*.test.ts' }]
+      : []),
   ],
 });

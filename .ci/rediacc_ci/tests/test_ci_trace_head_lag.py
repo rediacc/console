@@ -1,4 +1,4 @@
-"""ci-trace --wait must not judge the PR's OLD head right after a push (2026-10-07: PR #599 returned run 37633980671's verdict on c6cca783 seconds after 515d1f901 was pushed, because GitHub had not yet moved headRefOid). It holds until the PR head equals origin's tip, bounded, and exits 2 rather than answer for an old head."""
+"""ci-trace --wait must not judge the PR's OLD head right after a push (2026-10-07: PR #599 returned run 37633980671's verdict on c6cca783 seconds after 63bcdb604 was pushed, because GitHub had not yet moved headRefOid). It holds until the PR head equals origin's tip, bounded, and exits 2 rather than answer for an old head."""
 
 import importlib.util
 

@@ -89,7 +89,7 @@ from rediacc_ci.controls import Controls
 
 # The two subjects, spelled exactly as the twin spells them, because the spelling lands in the finding text and in the log_step banner.
 CONSUMER = "packages/cli/src/utils/secure-storage.ts"
-# The probe is the transfer drill's keyring preflight. It lived in scripts/drills/transfer.sh until PLAN-retire-bash-oracles B3 retired that twin (50dd86fb0); the port is the code that runs, so the gate reads the port.
+# The probe is the transfer drill's keyring preflight. It lived in scripts/drills/transfer.sh until PLAN-retire-bash-oracles B3 retired that twin (e040863ab); the port is the code that runs, so the gate reads the port.
 PROBE = ".ci/rediacc_ci/drills/transfer.py"
 
 # Cleanup-only verbs, carried verbatim from the twin with its reasoning: "The consumer unlinks; the probe purges. Both remove the key and neither is on the success path the probe exists to predict, so they are interchangeable here. Anything else must be exercised."

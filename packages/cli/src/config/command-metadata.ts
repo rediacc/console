@@ -19,7 +19,7 @@ interface McpMeta {
   descriptionOverride?: string;
   /** Commander options (long names without --) to exclude from the MCP Zod schema. */
   excludeOptions?: string[];
-  /** Commander positional args that are optional in CLI but required in MCP. */
+  /** Commander positional args, or options by long name, that are optional in CLI but required in MCP. */
   requiredArgs?: string[];
   /** Always append these raw argv fragments to the command (e.g., ['--force']). */
   appendArgs?: string[];
@@ -60,6 +60,18 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['follow', 'debug'],
     },
   },
+  // `--timeout` is a required field in the MCP schema (requiredArgs), so a call always bounds the wait; the tool is on the write budget (the longest) because a wait runs until its timeout, not for one quick read. Callers keep the duration under it.
+  'job wait': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'write',
+      excludeOptions: ['debug'],
+      requiredArgs: ['timeout'],
+      descriptionOverride:
+        'Wait for a detached job to finish and return its outcome. timeout is required and must stay under 5m; a job still running at the timeout keeps running and can be waited on again',
+    },
+  },
   'job cancel': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
@@ -97,6 +109,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'machine list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  'machine gpu list': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
+  },
   'machine add': {
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
@@ -130,6 +145,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'backup usage': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // Applying rewrites the ledger that feeds quota (never deletes data); re-running converges.
+  // A dry run or --check changes nothing.
+  'backup reconcile': {
+    mcp: { destructive: true, idempotent: true, timeout: 'read' },
+  },
   'backup manifests': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
@@ -146,6 +166,22 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason:
       'Removes the policy entirely; the blast radius of getting it wrong is ' +
       'the operator keeping or losing every snapshot of a repository.',
+  },
+  // A dry run of the policy against the live manifests: it reports which snapshots a prune would delete and deletes nothing.
+  'backup retention preview': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'backup snapshots delete': {
+    mcpExcludeReason:
+      'Deletes snapshots outright; like a retention mutation, a wrong call ' +
+      'discards backups the operator meant to keep.',
+  },
+  // Destructive: every snapshot of the lineage goes at once. Excluded from MCP like `snapshots delete`, and grand-guarded so an agent cannot purge a grand repository's backups without the operator's override.
+  'backup purge': {
+    grandGuard: true,
+    mcpExcludeReason:
+      'Deletes every stored snapshot of a repository at once; a wrong call ' +
+      'discards all of its backups.',
   },
   'backup verify': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
@@ -315,14 +351,19 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['grace-days', 'debug'],
     },
   },
-
-  'storage prune': {
+  // Restarts every stale repo daemon on the machine (a short outage per repo), destroys no data, and a second run finds nothing stale.
+  'machine converge': {
     mcp: {
       destructive: true,
       idempotent: true,
       timeout: 'write',
-      excludeOptions: ['grace-days', 'debug', 'skip-router-restart'],
+      excludeOptions: ['json', 'debug'],
     },
+  },
+
+  // Restarts renet daemons still running a replaced binary (and with --include-docker each repo's supervisor, a short outage per repo); destroys no data, and a second run finds nothing stale.
+  'machine restart-services': {
+    mcp: { destructive: true, idempotent: true, timeout: 'write', excludeOptions: ['json'] },
   },
 
   'machine provision': {
@@ -403,6 +444,23 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason:
       'Applies the infra block to the machine: provisions cloud resources, public DNS and TLS. It spends real money and changes what the world can reach.',
   },
+  // ★ OPERATOR-RULED (ASKED:2026-10-28T13:29Z, "Bar both from MCP"): EXCLUDE both. `access set` binds a key to a machine and `access push` writes that binding into the machine's authorized_keys, so an agent must not be able to widen or apply who can log in. `access show` stays callable.
+  'machine access set': {
+    mcpExcludeReason:
+      'Binds an SSH key to a machine, which decides who `machine access push` lets in. Access changes are an operator decision.',
+  },
+  'machine access push': {
+    mcpExcludeReason:
+      "Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.",
+  },
+  // Same ruling's intent: `access remove` unbinds a key from a machine, which also changes who may log in once pushed.
+  'machine access remove': {
+    mcpExcludeReason:
+      'Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.',
+  },
+  'machine access show': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
   // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`, which returns no material, is agent surface. (These are #61's trio: they were declared destructive precisely so the console would confirm them; that is not a licence to also hand them to an agent.)
   'machine infra cert pull': {
     mcpExcludeReason:
@@ -443,6 +501,22 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo sync status': {
     mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
   },
+  // Local workstation tools (PLAN-cli-tofu-toolchain): they install and list binaries on the host running rdc, not on a machine.
+  'tools install': {
+    mcpExcludeReason: 'Installs a local binary on the MCP host. Run it from the CLI.',
+  },
+  'tools list': {
+    mcpExcludeReason: 'Lists local binaries on the MCP host. Run it from the CLI.',
+  },
+  // Client-side image transfers (PLAN-backup-local-image): same exclusion and grand guard as repo sync download/upload.
+  'backup download': {
+    grandGuard: true,
+    mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
+  },
+  'backup upload': {
+    grandGuard: true,
+    mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
+  },
 
   'config list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
@@ -451,6 +525,22 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'config current': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  // Same intent as the ASKED:2026-10-28T13:29Z ruling on `machine access set|push`: the config access writers declare the keys and source ranges every machine binding installs, so they change who may log in. `list` reads them and stays callable.
+  'config access add': {
+    mcpExcludeReason:
+      'Declares an SSH access key and its source ranges, which decides who may log in once bound and pushed. Access changes are an operator decision.',
+  },
+  'config access remove': {
+    mcpExcludeReason:
+      'Removes an SSH access key from the config, which changes who may log in once pushed. Access changes are an operator decision.',
+  },
+  'config access ranges': {
+    mcpExcludeReason:
+      'Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.',
+  },
+  'config access list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'config audit log': {
@@ -710,9 +800,19 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'docker-volumes', 'machine'],
     },
   },
+  // Same grand guard as `repo down`: `--offline` stops the repository's Docker daemon for the window. CLI-only, an agent never gets the daemon-stopping verb as an MCP tool.
+  'repo prune': {
+    grandGuard: true,
+    mcpExcludeReason:
+      "Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.",
+  },
   // Size policy (auto-grow/auto-trim, rediacc/renet#76). Setting policy changes machine behavior (quota growth consent), CLI-only; reading is harmless but the JSON blob shape is CLI-oriented too.
   'repo policy': {
     mcpExcludeReason: 'Size-policy management changes machine auto-grow behavior. Use CLI directly',
+  },
+  // A device grant widens what a repository's containers may reach on the host, so granting and revoking are the operator's call, CLI-only; the read-only `machine gpu list` is exposed.
+  'repo gpu': {
+    mcpExcludeReason: 'Device grants widen host access for a repository. Use CLI directly',
   },
   // Gate B on the REPO arm of each connect leaf (the place arm is a machine shell,
   // class A). These were keyed 'term repo' / 'vscode repo', paths that never
@@ -772,26 +872,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     agentBlocked: true,
     mcpExcludeReason: 'Escape hatch for raw renet functions: agents should use typed tools',
   },
-
-  // ── Subcommands ───────────────────────────────────────────────────
-  'storage browse': { mcpExcludeReason: 'Interactive file browser: requires TTY' },
-
-  // ── Factory-generated CRUD (covered by higher-level operations) ──
-  'storage list': {
-    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
-  },
-  'storage add': {
-    mcp: { destructive: false, idempotent: false, timeout: 'write' },
-  },
-  'storage remove': {
-    mcp: {
-      destructive: true,
-      idempotent: false,
-      timeout: 'write',
-      excludeOptions: ['yes', 'dry-run'],
-    },
-  },
-  'storage import': { mcpExcludeReason: 'Reads a local rclone definition file; use CLI directly.' },
 
   // ── repo logs / repo exec (R2-F14): the first-class replacements for the container side door `term connect` used to carry. These are what make the `term` MCP exclusion honest: an agent that wants a log line or a command run asks for exactly that, instead of asking for an interactive shell.
   'repo logs': {

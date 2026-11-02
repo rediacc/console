@@ -250,6 +250,37 @@ def test_write_secret_refuses_a_request_without_an_id(tmp_path) -> None:
     assert failure == "the writer answered an unexpected id"
 
 
+NEW_ID = "0b5e1a7d-0000-4000-8000-0000000000c7"
+
+
+def test_write_secret_create_accepts_the_new_entrys_id(tmp_path) -> None:
+    # #c938b4ab: a create carries no id, so the new id the writer answers was compared to None and the successful create reported "the writer answered an unexpected id".
+    failure = _write_with_fake_npx(
+        tmp_path,
+        "create",
+        "#!/bin/sh\ncat >/dev/null\necho %s\n" % NEW_ID,
+        {"op": "create", "key": "DEMO_NEW_KEY", "value": VALUE},
+    )
+    assert failure is None
+
+
+def test_write_secret_create_refuses_an_answer_that_is_not_an_id(tmp_path) -> None:
+    for name, script in (
+        ("empty", "#!/bin/sh\ncat >/dev/null\n"),
+        ("not-an-id", "#!/bin/sh\ncat >/dev/null\necho created\n"),
+        ("echoed-value", "#!/bin/sh\ncat >/dev/null\necho %s\n" % VALUE),
+        ("id-and-more", "#!/bin/sh\ncat >/dev/null\necho %s\necho %s\n" % (NEW_ID, VALUE)),
+    ):
+        failure = _write_with_fake_npx(
+            tmp_path,
+            "create-" + name,
+            script,
+            {"op": "create", "key": "DEMO_NEW_KEY", "value": VALUE},
+        )
+        assert failure == "the writer answered an unexpected id", name
+        assert VALUE not in failure
+
+
 def test_write_secret_timeout_kills_the_writer_group(tmp_path, monkeypatch) -> None:
     marker = tmp_path / "late-write"
     monkeypatch.setattr(bws_env, "WRITER_TIMEOUT_S", 1)

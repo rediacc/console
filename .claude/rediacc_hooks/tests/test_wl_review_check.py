@@ -558,6 +558,72 @@ def test_a_submodule_label_ignores_the_console_tip_pin(tmp_path):
     assert reasons == ["stale-tip"], reasons
 
 
+def test_a_submodule_citation_may_name_the_console_root_path(tmp_path, monkeypatch):
+    """A submodule finding's evidence read from the console root names `private/account/src/x.ts:1` (worklist #37f915ff); it resolves inside the submodule, while a path under another prefix, a line past the end, and a prefix that climbs out to a file that does exist still cite nothing."""
+    repo = tmp_path / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "src" / "x.ts").write_text("export const x = 1;\n", encoding="utf-8")
+    (tmp_path / "x.ts").write_text("outside\n", encoding="utf-8")
+    monkeypatch.setattr(R, "_superproject_prefix", lambda _repo: "private/account/")
+    assert R._citation_ok(str(repo), "the rule is private/account/src/x.ts:1 as written")
+    assert R._citation_ok(str(repo), "the rule is src/x.ts:1 as written")
+    assert not R._citation_ok(str(repo), "the rule is private/renet/src/x.ts:1 as written")
+    assert not R._citation_ok(str(repo), "the rule is private/account/src/x.ts:9 past the end")
+    assert not R._citation_ok(str(repo), "the rule is private/account/../x.ts:1 outside")
+    monkeypatch.setattr(R, "_superproject_prefix", lambda _repo: "")
+    assert not R._citation_ok(str(repo), "the rule is private/account/src/x.ts:1 as written")
+
+
+def test_a_directory_named_like_the_prefix_still_resolves_as_written(tmp_path, monkeypatch):
+    (tmp_path / "private" / "account").mkdir(parents=True)
+    (tmp_path / "private" / "account" / "y.ts").write_text("y\n", encoding="utf-8")
+    monkeypatch.setattr(R, "_superproject_prefix", lambda _repo: "private/account/")
+    assert R._citation_ok(str(tmp_path), "the rule is private/account/y.ts:1 as written")
+
+
+def test_the_superproject_prefix_of_a_plain_repo_is_empty(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    assert R._superproject_prefix(str(tmp_path)) == ""
+
+
+def test_the_superproject_prefix_of_a_real_submodule(tmp_path):
+    """Through git itself: a submodule checked out at private/account reports `private/account/`, and a console-root citation into it resolves."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@x",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@x",
+    }
+    sub_src = tmp_path / "sub_src"
+    subprocess.run(["git", "init", "-q", str(sub_src)], check=True, env=env)
+    (sub_src / "a.ts").write_text("a\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(sub_src), "add", "a.ts"], check=True, env=env)
+    subprocess.run(["git", "-C", str(sub_src), "commit", "-qm", "a"], check=True, env=env)
+    sup = tmp_path / "sup"
+    subprocess.run(["git", "init", "-q", str(sup)], check=True, env=env)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(sup),
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            "-q",
+            str(sub_src),
+            "private/account",
+        ],
+        check=True,
+        env=env,
+    )
+    sub = sup / "private" / "account"
+    assert R._superproject_prefix(str(sub)) == "private/account/"
+    assert R._citation_ok(str(sub), "see private/account/a.ts:1 for it")
+    assert R._superproject_prefix(str(sup)) == ""
+
+
 def test_a_citation_may_name_an_extensionless_file(tmp_path):
     """`Dockerfile:83` is a path:line like any other (worklist item on the refused not-a-bug mark, 2026-10-11); a line past the file's end, a missing file and a bare clock time still cite nothing."""
     (tmp_path / "Dockerfile").write_text("FROM x\nRUN y\n", encoding="utf-8")
@@ -669,3 +735,119 @@ def test_module_file_prefers_the_hit_sharing_the_most_directory_components():
     # Root-level files share the empty directory with each other, the unchanged edge.
     tree._files = ["util.py", "pkg/util.py"]
     assert tree.module_file("util", "main.py") == "util.py"
+
+
+def test_patch_ids_batch_equals_patch_id_per_commit(tmp_path):
+    """`patch_ids` is the batched `patch_id`: the records' `Patch-Id:` lines come from the latter, so a different value would map nothing."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run("init", "-q", "-b", "main")
+    (tmp_path / "a.txt").write_text("a\n")
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "base")
+    base = run("rev-parse", "HEAD")
+    for i in range(3):
+        (tmp_path / ("f%d.txt" % i)).write_text("%d\n" % i)
+        run("add", "f%d.txt" % i)
+        run("commit", "-q", "-m", "c%d" % i)
+    run("commit", "-q", "--allow-empty", "-m", "empty")
+    shas = run("rev-list", "%s..HEAD" % base).split()
+    batch = R.patch_ids(tmp_path, "%s..HEAD" % base)
+    assert len(batch) == 3
+    for sha in shas:
+        assert batch.get(sha, "") == R.patch_id(tmp_path, sha)
+    # CONTROL: the empty commit has no diff, so neither form gives it a patch-id.
+    assert R.patch_id(tmp_path, shas[0]) == ""
+    assert shas[0] not in batch
+
+
+def test_patch_ids_agrees_on_a_root_commit_under_either_show_root_and_reports_a_failed_call(
+    tmp_path,
+):
+    """`git show` and `git log` both honour log.showRoot, so the batch and the per-commit patch-id of a root commit agree with it on and off; a failed git call is None (a caller falls back), never an empty map that reads as nothing reviewed."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run("init", "-q", "-b", "main")
+    (tmp_path / "a.txt").write_text("a\n")
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "root")
+    root = run("rev-parse", "HEAD")
+    for show_root in ("true", "false"):
+        run("config", "log.showRoot", show_root)
+        assert R.patch_ids(tmp_path, "HEAD").get(root, "") == R.patch_id(tmp_path, root), show_root
+    run("config", "log.showRoot", "true")
+    # CONTROL: with the root diff shown, the value is a real patch-id, not two empty strings agreeing.
+    assert R.patch_id(tmp_path, root) != ""
+    assert R.patch_ids(tmp_path, "no-such-ref..HEAD") is None
+
+
+def test_patch_ids_prefetches_a_partial_clone_and_skips_a_gitlink(tmp_path, monkeypatch):
+    """In a partial clone the batch names both sides of every change and no gitlink, since a gitlink's commit lives in another repository and naming one fails the whole fetch. Outside a partial clone it fetches nothing."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run("init", "-q", "-b", "main")
+    (tmp_path / "a.txt").write_text("one\n")
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "base")
+    base = run("rev-parse", "HEAD")
+    old = run("rev-parse", "HEAD:a.txt")
+    (tmp_path / "a.txt").write_text("two\n")
+    gitlink = "1" * 40
+    run("update-index", "--add", "--cacheinfo", "160000,%s,sub" % gitlink)
+    run("add", "a.txt")
+    run("commit", "-q", "-m", "change")
+    new = run("rev-parse", "HEAD:a.txt")
+    real_git = R.git
+    fetched = []
+
+    def spy(repo, *args, **kwargs):
+        if "fetch" in args:
+            fetched.append(kwargs["stdin"].split())
+            return 0, ""
+        return real_git(repo, *args, **kwargs)
+
+    monkeypatch.setattr(R, "git", spy)
+    R.patch_ids(tmp_path, "%s..HEAD" % base)
+    assert fetched == [], "CONTROL: a full clone fetches nothing"
+    run("config", "remote.origin.promisor", "true")
+    R.patch_ids(tmp_path, "%s..HEAD" % base)
+    assert fetched == [sorted([old, new])]
+    # A pathspec limits the request to that file's versions.
+    fetched.clear()
+    R.prefetch_diff_blobs(tmp_path, "%s..HEAD" % base, "sub")
+    assert fetched == []
+    R.prefetch_diff_blobs(tmp_path, "%s..HEAD" % base, "a.txt")
+    assert fetched == [sorted([old, new])]

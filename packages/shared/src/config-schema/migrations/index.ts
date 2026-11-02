@@ -19,6 +19,7 @@
  *   6. CI gate `check:ci-config-migrations` will round-trip the fixture.
  */
 
+import { normalizeV3Document } from '../normalize.js';
 import { migrateV1ToV2 } from './v1-to-v2.js';
 import { migrateV2ToV3 } from './v2-to-v3.js';
 
@@ -79,7 +80,12 @@ export async function runMigrations(raw: unknown, ctx: MigrationContext): Promis
     );
   }
   if (fromVersion === CURRENT_SCHEMA_VERSION) {
-    return { config: raw, migrated: false, fromVersion, toVersion: fromVersion };
+    return {
+      config: normalizeV3Document(raw),
+      migrated: false,
+      fromVersion,
+      toVersion: fromVersion,
+    };
   }
 
   let current = raw;
@@ -96,7 +102,7 @@ export async function runMigrations(raw: unknown, ctx: MigrationContext): Promis
     cursor = next.toVersion;
   }
 
-  return { config: current, migrated: true, fromVersion, toVersion: cursor };
+  return { config: normalizeV3Document(current), migrated: true, fromVersion, toVersion: cursor };
 }
 
 function readSchemaVersion(raw: Record<string, unknown>): number {

@@ -4,6 +4,9 @@ import {
   buildTimingBars,
   buildTimingSummary,
   buildTimingWaterfall,
+  getActiveLabel,
+  getDoneLine,
+  getDoneText,
   PARALLEL_STEP_DETAIL,
   type TimelineStep,
   unattributedMs,
@@ -155,5 +158,36 @@ describe('zero/negative wall guards', () => {
     expect(buildTimingBars(s, 0)).toBe('');
     expect(buildTimingWaterfall(s, -5, T0)).toBeNull();
     expect(buildTimingSummary(s, 0, { minWallMs: 0 })).toBeNull();
+  });
+});
+
+describe('getDoneText', () => {
+  it('labels the sessions_end step and appends its detail', () => {
+    expect(getActiveLabel('sessions_end')).toBe('Ending sessions');
+    expect(getDoneText('sessions_end', '2 sessions (3 processes)')).toBe(
+      'Sessions ended: 2 sessions (3 processes)'
+    );
+  });
+
+  it('adds nothing without a detail or for the parallel marker', () => {
+    expect(getDoneText('docker_stop')).toBe('Docker stopped');
+    expect(getDoneText('dns', PARALLEL_STEP_DETAIL)).toBe('DNS records ensured');
+  });
+
+  // Every step with a detail now reads `Label: detail`, not the former `Label (detail)` (review bb3468b8.1).
+  it('renders any non-parallel detail as Label: detail', () => {
+    expect(getDoneText('docker_stop', 'compose project app')).toBe(
+      'Docker stopped: compose project app'
+    );
+  });
+});
+
+describe('getDoneLine', () => {
+  it('keeps a parallel step visible as Label (∥) and otherwise matches getDoneText', () => {
+    expect(getDoneLine('dns', PARALLEL_STEP_DETAIL)).toBe('DNS records ensured (∥)');
+    expect(getDoneLine('sessions_end', '1 sessions (1 processes)')).toBe(
+      'Sessions ended: 1 sessions (1 processes)'
+    );
+    expect(getDoneLine('docker_stop')).toBe('Docker stopped');
   });
 });

@@ -15,7 +15,11 @@
  * envelope version is authoritative and tracked in `remote.cachedVersion`.
  */
 
-import { DEVICE_LOCAL_POINTERS, RdcConfigSchema } from '@rediacc/shared/config-schema';
+import {
+  DEVICE_LOCAL_POINTERS,
+  normalizeV3Document,
+  RdcConfigSchema,
+} from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import {
   type RemoteConfigAdapter,
@@ -128,7 +132,7 @@ export function mergeRemoteIntoCache(
   pulled: RdcConfig,
   version: number
 ): RdcConfig {
-  const merged = overlayDeviceLocal(pulled, local);
+  const merged = overlayDeviceLocal(normalizeV3Document(pulled), local);
   if (merged.remote) {
     merged.remote = {
       ...merged.remote,

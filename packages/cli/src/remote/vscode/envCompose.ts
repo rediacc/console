@@ -3,7 +3,8 @@
  * Ported from desktop/src/cli/core/env_bootstrap.py and repository_env.py
  */
 
-import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
+import { t } from '../../i18n/index.js';
 import { repoTagFromName } from '../repository/repo-name.js';
 
 /**
@@ -65,10 +66,11 @@ export function buildRepositoryEnvironment(options: {
     additionalEnv = {},
   } = options;
 
-  // Derive Docker socket from networkId (per-repo isolated daemon)
-  const resolvedSocket =
-    dockerSocket ??
-    (networkId ? `${WK_RUNTIME_DIR}/docker-${networkId}.sock` : '/var/run/docker.sock');
+  // The repo's own daemon socket. A repo with no network id has none, and the session must not fall back to the host's system Docker socket.
+  if (dockerSocket === undefined && networkId === '') {
+    throw new Error(t('errors.ssh.noNetworkId', { repository: repositoryName }));
+  }
+  const resolvedSocket = dockerSocket ?? repoDockerSocketPath(networkId);
   const resolvedHost = dockerHost ?? `unix://${resolvedSocket}`;
 
   const fullRepoPath = `${datastore}${repositoryPath}`;

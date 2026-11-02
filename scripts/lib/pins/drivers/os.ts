@@ -14,7 +14,8 @@
  * which does not:
  *   - its upstream version (epoch and release stripped) equals `host-version`, since a Ceph
  *     client and cluster that disagree on the patch level cannot read each other's keyring
- *     (.ceph-image-pin explains), so a move of the series is the operator's decision;
+ *     (.ceph-image-pin explains), so a move of the series is the operator's decision, recorded as a
+ *     `host-version.opensuse-16.0` override with its `host-version-reason` line (hostVersionFor);
  *   - the obs-mirror tag for the EVR exists in ghcr.io/rediacc/ci-vm-bake
  *     (`obs_mirror mirror-tag`), because CI installs the pin from the captured tree and the
  *     Leap legs go red without one. An absent tag is "dispatch ci-obs-mirror while OBS still
@@ -28,7 +29,7 @@ import type { Inspection, PinDriver, PinPlan } from '../driver.js';
 import { leafCurrent, PlanRefused, planLeafSites } from '../driver.js';
 import {
   type Deps,
-  hostVersionOf,
+  hostVersionFor,
   leafKey,
   realDeps,
   requireSource,
@@ -60,7 +61,7 @@ export function osCephHostDriver(
         );
       if (evr === current) return { current, releases: [] };
 
-      const host = hostVersionOf((p) => ctx.read(p));
+      const host = hostVersionFor((p) => ctx.read(p), 'opensuse-16.0');
       if (mutant !== 'os-ignore-series' && upstreamVersion(evr) !== host)
         return {
           current,

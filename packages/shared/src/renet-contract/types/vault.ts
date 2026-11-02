@@ -15,7 +15,6 @@ export {
   type RenetVault,
   type RepositoryInfo,
   type SSHSection,
-  type StorageSection,
   type TaskSection,
   VAULT_SCHEMA,
   VAULT_VERSION,

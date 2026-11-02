@@ -13,7 +13,7 @@ import typing
 
 import pytest
 
-from rediacc_ci.ops import cf_auth, reset_bench
+from rediacc_ci.ops import cf_auth, deploy_bench, reset_bench
 from rediacc_ci.tests import ops_cf_harness as h
 
 if typing.TYPE_CHECKING:
@@ -25,7 +25,14 @@ GLOBAL_ENV = {"CF_GLOBAL_API_KEY": "gk", "CF_EMAIL": "ops@example.invalid"}
 
 @pytest.fixture
 def world(tmp_path: pathlib.Path) -> h.World:
-    return h.World(tmp_path)
+    scratch = h.World(tmp_path)
+    # deploy_bench reads the bench bucket from the BACKUP_BUCKET binding (PLAN-backup-presign-bucket-require-and-wrangler-vars B4), which the harness's minimal bench config does not declare.
+    config = scratch.root / "workers/account/wrangler.bench.toml"
+    config.write_text(
+        config.read_text()
+        + '\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "rediacc-backups-bench"\n'
+    )
+    return scratch
 
 
 def _curl_calls(world: h.World, mask: bool = True) -> list[dict]:
@@ -52,7 +59,7 @@ def test_token_mint_sequence_matches_bash(world: h.World) -> None:
     assert out_b == out_p
     assert [c["method"] for c in bash_calls] == ["GET", "GET", "POST"]
     assert port_calls[:2] == bash_calls[:2]
-    # The POST differs by exactly one added permission group (Workers R2 Storage Write): the bash token could not list buckets.
+    # The POST differs by exactly two added permission groups: Workers R2 Storage Write (the bash token could not list buckets) and Workers Observability Read (the post-deploy rotation check lists the otlp destinations).
     post = bash_calls[2]["body"]
     port_post = port_calls[2]["body"]
     extra = [
@@ -60,8 +67,12 @@ def test_token_mint_sequence_matches_bash(world: h.World) -> None:
         for g in port_post["policies"][0]["permission_groups"]
         if g not in post["policies"][0]["permission_groups"]
     ]
-    assert extra == [{"id": "bf7481a1826f439697cb59a20b22293e"}]
-    port_post["policies"][0]["permission_groups"].remove(extra[0])
+    assert extra == [
+        {"id": "bf7481a1826f439697cb59a20b22293e"},
+        {"id": "66c1ed49f4ed46098b75696a6d4ee3c9"},
+    ]
+    for g in extra:
+        port_post["policies"][0]["permission_groups"].remove(g)
     assert port_calls[2] == {**bash_calls[2], "body": port_post}
     assert post["name"] == "auto-rotation-management"
     assert next(next(iter(p["resources"])) for p in post["policies"]).startswith(
@@ -304,7 +315,7 @@ def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
     rc_b, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["--bogus"], env)
     rc_p, _, err_p = world.port("rediacc_ci.ops.backup_d1", ["--bogus"], env)
     assert rc_b == rc_p == 1
-    # ONE DECLARED DELTA: the usage line names the module the way it is run now. The bash script it named was deleted (882658c69), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
+    # ONE DECLARED DELTA: the usage line names the module the way it is run now. The bash script it named was deleted (363a35892), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     usage_bash = "Usage: backup-d1.sh "
     usage_port = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 "
     assert usage_bash in h.strip(err_b), err_b
@@ -419,7 +430,8 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
     redeploy_port = (
-        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench\n"
+        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench "
+        "(it also seeds the ROOT_EMAIL user the reset removed)\n"
     )
     assert redeploy_bash in out_b, out_b
     assert out_b.replace(redeploy_bash, redeploy_port) == out_p
@@ -443,7 +455,7 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
 
     assert shape(bash_calls) == shape(port_calls)
     npx = [c for c in port_calls if c["tool"] == "npx"]
-    assert npx[0]["argv"][:4] == ["wrangler", "d1", "migrations", "apply"]
+    assert npx[0]["argv"][:5] == ["--no-install", "wrangler", "d1", "migrations", "apply"]
     assert {"CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"} <= set(npx[0]["cf_env"])
     assert not {"CF_GLOBAL_API_KEY", "CF_EMAIL", "CF_API_KEY"} & set(npx[0]["cf_env"])
     # The "Dropping N tables: ..." line lists them in drop order, which is the delta pinned below.
@@ -697,8 +709,27 @@ R2_TO_BACKUP = {
 
 
 def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
-    """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names."""
-    return {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
+    """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names, and the stored root password the port's seed reads (DECLARED DELTA: the retired bash seeded nothing)."""
+    bound = {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
+    bound["BENCH_ROOT_PASSWORD"] = "bench-root-password-1"
+    # PLAN-config-server-key K2: the port reads the bench-only key the deploy-bench profile binds; the retired bash never did, so its env (and every golden key) is unchanged. A fake value, never a real key.
+    bound["ACCOUNT_CONFIG_SERVER_KEY"] = "fake-config-server-key-for-tests"
+    # PLAN-free-license F2 (2fc16b442): the port pushes the FREE licence HMAC key the account Worker reads; the retired bash never held it. A fake value, never a real key.
+    bound["FREE_LICENSE_HMAC_KEY"] = "fake-free-license-hmac-key-for-tests"
+    return bound
+
+
+# The secrets the port pushes and the retired bash never held: dropped from the compared body, each asserted present first in `test_deploy_bench_matches_bash`.
+PORT_ONLY_SECRETS = ("ACCOUNT_CONFIG_SERVER_KEY", "FREE_LICENSE_HMAC_KEY")
+
+
+# DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.
+SEED_PATH = "/account/api/v1/auth/register"
+SEED_ROUTE = {"method": "POST", "match": SEED_PATH, "body": {"user": {}}, "status": 201}
+
+
+def _is_seed_call(call: dict) -> bool:
+    return call.get("tool") == "curl" and SEED_PATH in (call.get("url") or "")
 
 
 def _deploy_shape(calls: list[dict]) -> list[dict]:
@@ -707,8 +738,29 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
     for raw in h.normalise_calls(calls):
         if raw["tool"] == "sleep":
             continue
-        kept = [n for n in raw.get("cf_env") or () if n not in R2_TO_BACKUP]
-        out.append({**raw, "cf_env": kept} if raw.get("cf_env") else raw)
+        # DECLARED DELTA (d08509063): the port prints the D1 bookmark before migrating, a `wrangler d1 time-travel info` call the retired bash never made.
+        if raw["tool"] == "npx" and raw["argv"][2:5] == ["d1", "time-travel", "info"]:
+            continue
+        if _is_seed_call(raw):
+            continue
+        # DECLARED DELTA (b8601cfde): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
+        if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
+            continue
+        call = dict(raw)
+        # DECLARED DELTA (2026-10-28): the keyless bench portal builds into bench/dist, never into the dist a production deploy uploads; the bash built into dist/account.
+        if call["tool"] == "npx" and "vite" in call["argv"]:
+            call["argv"] = [
+                a.replace("/workers/account/bench/dist/", "/workers/account/dist/")
+                for a in call["argv"]
+            ]
+        # DECLARED DELTA: the port runs `npx --no-install vite build` so npx never downloads vite; the retired bash ran a bare `npx vite build`, which is what the golden recorded. The flag is dropped here, only for vite, so every other argv still compares verbatim.
+        if call["tool"] == "npx" and call["argv"][:2] == ["--no-install", "vite"]:
+            call["argv"] = call["argv"][1:]
+        # DECLARED DELTA (PLAN-config-server-key K2, PLAN-free-license F2): the port pushes PORT_ONLY_SECRETS, which the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts each present first.
+        if isinstance(call.get("stdin"), dict):
+            call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in PORT_ONLY_SECRETS}
+        kept = [n for n in call.get("cf_env") or () if n not in R2_TO_BACKUP]
+        out.append({**call, "cf_env": kept} if call.get("cf_env") else call)
     return out
 
 
@@ -717,10 +769,24 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     rc_b, out_b, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     bash_calls = world.calls()
     world.reset_log()
+    world.add_routes(SEED_ROUTE)
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
-    assert out_b == out_p
+    assert any(_is_seed_call(c) for c in port_calls)
+    # DECLARED DELTA (b8601cfde): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
+    version_line = "Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d\n"
+    assert out_p.count(version_line) == 1
+    # DECLARED DELTA (dd0c34018): the closing hint names the eu-bench config and its agent-run login, where the bash named a `bench` config that does not exist. Each port line is asserted once, then mapped back to the bash's.
+    hint_delta = {
+        "  npm run login:bench\n": "  ./rdc.sh --config bench subscription login\n",
+        "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
+    }
+    out_mapped = out_p.replace(version_line, "", 1)
+    for port_text, bash_text in hint_delta.items():
+        assert out_mapped.count(port_text) == 1
+        out_mapped = out_mapped.replace(port_text, bash_text)
+    assert out_b == out_mapped
     assert _deploy_shape(bash_calls) == _deploy_shape(port_calls)
     secrets = next(c["stdin"] for c in port_calls if c["tool"] == "npx" and c["stdin"])
     assert list(secrets)[:3] == [
@@ -729,6 +795,8 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "ACCOUNT_X25519_PRIVATE_KEY",
     ]
     assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
+    assert secrets["ACCOUNT_CONFIG_SERVER_KEY"] == "fake-config-server-key-for-tests"
+    assert secrets["FREE_LICENSE_HMAC_KEY"] == "fake-free-license-hmac-key-for-tests"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).
     bash_secrets = next(c["stdin"] for c in bash_calls if c["tool"] == "npx" and c["stdin"])
@@ -742,9 +810,27 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
     bash_lines = _quiet_selfdestruct(err_b)
     assert bash_lines.count(bash_build) == 1
-    assert [port_build if ln == bash_build else ln for ln in bash_lines] == _quiet_selfdestruct(
-        err_p
-    )
+    # DECLARED DELTAS since the bash was retired (d08509063 and the portal-health step): the port reports the D1 bookmark (here a missing one, the fake wrangler prints none). The live-host line is no delta: both outputs carry it once and it stays in the comparison.
+    all_port_lines = _quiet_selfdestruct(err_p)
+    # The delta is asserted before it is filtered, so a port that stops printing the bookmark warning, or drops the live-host line, still fails here.
+    assert sum(ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") for ln in all_port_lines) == 1
+    assert sum(ln.startswith("✓ bench is live") for ln in all_port_lines) == 1
+    seed_lines = ("→ Seeding the root user", "✓ root user created")
+    assert sum(ln.startswith(seed_lines) for ln in all_port_lines) == 2
+    port_lines = [
+        ln
+        for ln in all_port_lines
+        if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith(seed_lines)
+    ]
+    # DECLARED DELTA (b8601cfde): the port records the live bench version; asserted once, then dropped.
+    recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench.json"
+    assert port_lines.count(recorded) == 1
+    port_lines.remove(recorded)
+    # DECLARED DELTA (2026-10-28): the build line names bench/dist/account, where the bash named dist/account.
+    port_lines = [
+        ln.replace("/workers/account/bench/dist/", "/workers/account/dist/") for ln in port_lines
+    ]
+    assert [port_build if ln == bash_build else ln for ln in bash_lines] == port_lines
     assert "r2-secret" not in err_p
     assert "ses-secret" not in err_p
 
@@ -757,7 +843,7 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
     bash_calls = world.calls()
     assert any(c["tool"] == "sleep" for c in bash_calls)  # the control: the bash slept a fixed 5 s
     world.reset_log()
-    world.add_routes(*h.PROBE_ROUTES)  # after the twin: the route table keys its golden
+    world.add_routes(*h.PROBE_ROUTES, SEED_ROUTE)  # after the twin: the route table keys its golden
     rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc == 0, err
     # The port probes instead: the probe block sits between the mint and the first wrangler call.
@@ -789,7 +875,8 @@ def test_delta_arguments_are_rejected_not_ignored(world: h.World) -> None:
     rc_b, _, _ = world.twin_run("scripts/ops/deploy-bench.sh", ["--dry-run"], env)
     assert rc_b == 0
     assert any(
-        c["tool"] == "npx" and c["argv"][:2] == ["wrangler", "deploy"] for c in world.calls()
+        c["tool"] == "npx" and c["argv"][:3] == ["--no-install", "wrangler", "deploy"]
+        for c in world.calls()
     )
     world.reset_log()
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", ["--dry-run"], env)
@@ -805,7 +892,8 @@ def test_delta_secrets_are_validated_before_the_first_remote_write(world: h.Worl
     assert rc_b == 1
     assert "ROOT_EMAIL is EMPTY" in h.strip(err_b)
     assert any(
-        c["tool"] == "npx" and c["argv"][:2] == ["wrangler", "deploy"] for c in world.calls()
+        c["tool"] == "npx" and c["argv"][:3] == ["--no-install", "wrangler", "deploy"]
+        for c in world.calls()
     )  # the control: deployed first
     world.reset_log()
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
@@ -821,7 +909,10 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     env = world.env(**TOKEN_ENV, **DEPLOY_ENV)
     assert "ACCOUNT_BACKUP_S3_ENDPOINT" not in env
     assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    # Only the R2 trio stays untranslated: the port-only secrets are the port's own, so neither may be what refuses.
+    bound = _port_deploy_env(env)
+    keyed = {**env, **{name: bound[name] for name in PORT_ONLY_SECRETS}}
+    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], keyed)
     assert rc_p == 1
     assert "ACCOUNT_BACKUP_S3_ENDPOINT is EMPTY for bench" in h.strip(err_p)
     assert "r2-secret" not in err_p
@@ -862,7 +953,7 @@ def test_deploy_bench_refuses_on_a_check_that_could_not_run_and_never_pushes(
     assert "rotation drift detected" not in text
     assert "rotation rotate" not in text
     assert not any(
-        c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
+        c["tool"] == "npx" and c["argv"][:4] == ["--no-install", "wrangler", "secret", "bulk"]
         for c in world.calls()
     )  # nothing was pushed
 
@@ -875,6 +966,46 @@ def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) ->
     assert rc == 1
     assert "rotation drift detected" in h.strip(err)
     assert not any(
-        c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
+        c["tool"] == "npx" and c["argv"][:4] == ["--no-install", "wrangler", "secret", "bulk"]
         for c in world.calls()
     )
+
+
+# PLAN-backup-presign-bucket-require-and-wrangler-vars B4: the bench bucket is the BACKUP_BUCKET binding in wrangler.bench.toml, not an env override or a literal.
+def _bench_repo(monkeypatch: pytest.MonkeyPatch, tmp_path, toml_text: str) -> None:
+    worker = tmp_path / "workers" / "account"
+    worker.mkdir(parents=True)
+    (worker / deploy_bench.CONFIG).write_text(toml_text, encoding="utf-8")
+    monkeypatch.setattr(deploy_bench.paths, "repo_root", lambda: tmp_path)
+
+
+BENCH_TOML = (
+    'name = "rediacc-account-bench"\n\n'
+    "[[r2_buckets]]\n"
+    'binding = "BACKUP_BUCKET"\n'
+    'bucket_name = "bound-backups-bench"\n'
+)
+
+
+def test_deploy_bench_bucket_comes_from_the_binding(monkeypatch, tmp_path) -> None:
+    _bench_repo(monkeypatch, tmp_path, BENCH_TOML)
+    monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    assert deploy_bench.bench_bucket() == "bound-backups-bench"
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_BUCKET", "bound-backups-bench")
+    assert deploy_bench.bench_bucket() == "bound-backups-bench"
+
+
+def test_deploy_bench_refuses_an_env_bucket_that_differs_from_the_binding(
+    monkeypatch, tmp_path
+) -> None:
+    _bench_repo(monkeypatch, tmp_path, BENCH_TOML)
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_BUCKET", "some-other-bucket")
+    with pytest.raises(deploy_bench.DeployError, match="bound-backups-bench"):
+        deploy_bench.bench_bucket()
+
+
+def test_deploy_bench_refuses_a_config_with_no_backup_binding(monkeypatch, tmp_path) -> None:
+    _bench_repo(monkeypatch, tmp_path, 'name = "rediacc-account-bench"\n')
+    monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    with pytest.raises(deploy_bench.DeployError, match="BACKUP_BUCKET"):
+        deploy_bench.bench_bucket()

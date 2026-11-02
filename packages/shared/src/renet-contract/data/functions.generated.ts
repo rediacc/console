@@ -30,13 +30,23 @@ export interface BackupBrowseAtParams {
   limit?: string;
 }
 
-/** Delete one or more backups from storage or machine */
+/** Compare a restored copy with the source repository's backup anchor, byte for byte */
+export interface BackupCompareParams {
+  /** The source repository GUID whose anchor the copy is held to */
+  againstAnchor: string;
+  /** Read cap across both files, same units as backup_snapshot's bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
+}
+
+/** Delete one or more backups from a machine's datastore */
 export interface BackupDeleteParams {
-  /** Target type: machine (SSH); storage is retired */
+  /** Target type: machine (SSH) */
   sourceType: string;
-  /** Target machine or storage name */
+  /** Target machine name */
   from: string;
-  /** Subdirectory within the storage root (e.g., 'hot' or 'cold') */
+  /** Subdirectory within the datastore backup root */
   path?: string;
   /** Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement. */
   repositories?: string[];
@@ -44,7 +54,7 @@ export interface BackupDeleteParams {
 
 /** List backup artifacts in a machine's own datastore */
 export interface BackupListParams {
-  /** Source type: local (this machine's datastore) or machine (SSH); storage is retired */
+  /** Source type: local (this machine's datastore) or machine (SSH) */
   sourceType: string;
   /** The machine whose datastore is listed; for sourceType=machine, the remote source */
   from: string;
@@ -52,34 +62,36 @@ export interface BackupListParams {
   path?: string;
 }
 
-/** Pull repository from remote source (machine or storage) */
+/** Pull repository from another machine over SSH */
 export interface BackupPullParams {
-  /** Source type: machine (SSH); storage is retired */
+  /** Source type: machine (SSH) */
   sourceType: string;
-  /** Source machine or storage name */
+  /** Source machine name */
   from: string;
+  /** Source repository GUID on the source machine (defaults to the destination repository) */
+  src?: string;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
   /** Overwrite existing repository */
   force?: boolean;
-  /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
+  /** Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited */
   bwlimit?: string;
   /** Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos) */
   deltaBase?: string;
   /** Delta strategy: auto|physical|shared */
   strategy?: string;
+  /** Place the pulled image even though the repository passphrase did not open it */
+  allowUnopenable?: boolean;
 }
 
-/** Push repository to remote destination (machine or storage) */
+/** Push repository to another machine over SSH */
 export interface BackupPushParams {
-  /** Destination type: machine (SSH); storage is retired */
+  /** Destination type: machine (SSH) */
   destinationType: string;
-  /** Single destination (machine or storage name) */
+  /** Single destination machine name */
   to?: string;
   /** Target machines for parallel deployment */
   machines?: string[];
-  /** Target storage systems for parallel backup */
-  storages?: string[];
   /** Backup filename */
   dest: string;
   /** Deployment/version tag */
@@ -92,7 +104,7 @@ export interface BackupPushParams {
   override?: boolean;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
-  /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
+  /** Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited */
   bwlimit?: string;
   /** Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos) */
   deltaBase?: string;
@@ -104,6 +116,18 @@ export interface BackupPushParams {
   retainBasePrune?: string;
 }
 
+/** Re-upload chunks from this machine's backup anchor */
+export interface BackupRepairParams {
+  /** Chunk hashes to re-upload, separated by commas or whitespace */
+  hashes: string;
+  /** Upload cap, same units as backup_snapshot's bwlimit. Empty = unlimited */
+  bwlimit?: string;
+  /** Anchor read cap, same units as backup_snapshot's bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
+}
+
 /** Restore a repository image from a chunk-store snapshot */
 export interface BackupRestoreParams {
   /** Lineage (grand) GUID the snapshot belongs to */
@@ -112,22 +136,68 @@ export interface BackupRestoreParams {
   at: string;
   /** Resolve the manifest chain and report what would be fetched; write nothing */
   dryRun?: boolean;
+  /** Fetch every chunk from the store instead of reusing local anchors or images */
+  noSeed?: boolean;
+  /** Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one */
+  allowUnopenable?: boolean;
+  /** Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image */
+  salvage?: boolean;
+}
+
+/** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
+export interface BackupRestorePathParams {
+  /** Lineage (grand) GUID the snapshot belongs to */
+  lineage: string;
+  /** Snapshot id to restore from (a TIME is resolved by the CLI, never here) */
+  at: string;
+  /** File or directory to restore, relative to the repository root */
+  path: string;
+  /** Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>) */
+  to?: string;
 }
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
 export interface BackupSnapshotParams {
   /** Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota) */
   reseed?: boolean;
+  /** Take this image as the new baseline when its LUKS identity moved or it shrank. Forces a full manifest with no parent */
+  acceptIdentityChange?: boolean;
   /** Plan only: no session, no grant, no upload; report what would move */
   dryRun?: boolean;
   /** Quiesce first: stop each repository's containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run */
   cold?: boolean;
+  /** Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited */
+  bwlimit?: string;
+  /** Concurrent chunk uploads (0 = engine default) */
+  parallelism?: number;
+  /** Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16 */
+  hashParallelism?: number;
+  /** Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
+}
+
+/** Inspect or install a repository's browse-listing public key */
+export interface BackupTocKeyParams {
+  /** status prints the stored key and licence lineage; install stores a public key */
+  action: string;
+  /** Lineage (grand) GUID the key was derived under; install only */
+  lineage?: string;
+  /** The public line, rediacc-toc-x25519 <base64>; install only */
+  publicKey?: string;
+  /** Overwrite a different stored key. Sends the repository passphrase, which has to open the repository and derive this line */
+  replace?: boolean;
 }
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */
 export interface BackupVerifyParams {
   /** Verification level: spot (sampled cells) or full (re-hash every recorded cell) */
   level?: string;
+  /** Read cap for the full level, same units as backup_snapshot's bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
 }
 
 /** Mount RBD image on client */
@@ -498,6 +568,23 @@ export interface KubeKubeconfigParams {
   mountPath: string;
 }
 
+/** Restart stale repository daemons onto the current runtime layout */
+export interface MachineConvergeRuntimeParams {
+  /** Print the plan without restarting anything */
+  dryRun?: boolean;
+  /** Restart policy */
+  policy?: string;
+  /** Also converge stale repositories missing from the payload */
+  includeUnknown?: boolean;
+  /** Keep going after a repository fails */
+  continueOnError?: boolean;
+  /** Deadline of one repository's restart (Go duration, e.g. 15m) */
+  repoTimeout?: string;
+}
+
+/** List the machine's GPUs, CDI devices and device grants */
+export interface MachineGpuListParams {}
+
 /** Test SSH connectivity */
 export interface MachinePingParams {}
 
@@ -606,6 +693,20 @@ export interface RepositoryDiffParams {
   maxBytes?: number;
 }
 
+/** Report and reclaim a repository's Docker storage, orphan overlay2 directories included */
+export interface RepositoryDockerPruneParams {
+  /** Repository GUID (empty = the repository in context) */
+  name?: string;
+  /** Reclaim; without it the run only reports */
+  apply?: boolean;
+  /** Stop the daemon and quarantine orphan directories (requires apply) */
+  offline?: boolean;
+  /** Also remove tagged images no container uses */
+  allImages?: boolean;
+  /** Skip the fstrim after an apply */
+  noTrim?: boolean;
+}
+
 /** Stop repository services */
 export interface RepositoryDownParams {
   /** Shutdown options */
@@ -640,6 +741,20 @@ export interface RepositoryForkParams {
   tag: string;
   /** Mark the fork read-only (refuses to mount; frozen commit/base) */
   immutable?: boolean;
+}
+
+/** Grant a CDI device (GPU) to the repository's containers */
+export interface RepositoryGpuGrantParams {
+  /** Fully qualified CDI device name (e.g. nvidia.com/gpu=all) */
+  device: string;
+  /** Reserve the device for this repository: no other repository may be granted it meanwhile */
+  exclusive?: boolean;
+}
+
+/** Revoke a CDI device (GPU) from the repository's containers */
+export interface RepositoryGpuRevokeParams {
+  /** Fully qualified CDI device name (e.g. nvidia.com/gpu=all) */
+  device: string;
 }
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
@@ -825,12 +940,16 @@ export interface SetupParams {
 export const RENET_FUNCTIONS = [
   'backup_browse',
   'backup_browse_at',
+  'backup_compare',
   'backup_delete',
   'backup_list',
   'backup_pull',
   'backup_push',
+  'backup_repair',
   'backup_restore',
+  'backup_restore_path',
   'backup_snapshot',
+  'backup_toc_key',
   'backup_verify',
   'ceph_client_mount',
   'ceph_client_unmount',
@@ -868,6 +987,8 @@ export const RENET_FUNCTIONS = [
   'container_unpause',
   'kube_health',
   'kube_kubeconfig',
+  'machine_converge_runtime',
+  'machine_gpu_list',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
@@ -884,11 +1005,14 @@ export const RENET_FUNCTIONS = [
   'repository_create',
   'repository_delete',
   'repository_diff',
+  'repository_docker_prune',
   'repository_down',
   'repository_down_all',
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_gpu_grant',
+  'repository_gpu_revoke',
   'repository_health',
   'repository_info',
   'repository_list',
@@ -912,19 +1036,23 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v1.2.25';
+export const RENET_FUNCTIONS_VERSION = 'dev';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
 export const RENET_BRIDGE_FUNCTIONS = [
   'backup_browse',
   'backup_browse_at',
+  'backup_compare',
   'backup_delete',
   'backup_list',
   'backup_pull',
   'backup_push',
+  'backup_repair',
   'backup_restore',
+  'backup_restore_path',
   'backup_snapshot',
+  'backup_toc_key',
   'backup_verify',
   'ceph_bootstrap_cluster',
   'ceph_client_config_export',
@@ -1035,7 +1163,9 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'machine_check_system',
   'machine_check_tools',
   'machine_check_users',
+  'machine_converge_runtime',
   'machine_fix_groups',
+  'machine_gpu_list',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
@@ -1045,9 +1175,6 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'network_prune',
   'network_ps_status',
   'network_used',
-  'plugin_start',
-  'plugin_status',
-  'plugin_stop',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',
@@ -1059,17 +1186,22 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_create',
   'repository_delete',
   'repository_diff',
+  'repository_docker_prune',
   'repository_down',
   'repository_down_all',
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_gc',
+  'repository_gpu_grant',
+  'repository_gpu_revoke',
   'repository_health',
   'repository_info',
   'repository_list',
   'repository_log',
   'repository_logs',
   'repository_merge',
+  'repository_migrate',
   'repository_mount',
   'repository_ownership',
   'repository_policy_get',
@@ -1092,12 +1224,16 @@ export type RenetBridgeFunctionName = (typeof RENET_BRIDGE_FUNCTIONS)[number];
 export type FunctionParamsMap = {
   backup_browse: BackupBrowseParams;
   backup_browse_at: BackupBrowseAtParams;
+  backup_compare: BackupCompareParams;
   backup_delete: BackupDeleteParams;
   backup_list: BackupListParams;
   backup_pull: BackupPullParams;
   backup_push: BackupPushParams;
+  backup_repair: BackupRepairParams;
   backup_restore: BackupRestoreParams;
+  backup_restore_path: BackupRestorePathParams;
   backup_snapshot: BackupSnapshotParams;
+  backup_toc_key: BackupTocKeyParams;
   backup_verify: BackupVerifyParams;
   ceph_client_mount: CephClientMountParams;
   ceph_client_unmount: CephClientUnmountParams;
@@ -1135,6 +1271,8 @@ export type FunctionParamsMap = {
   container_unpause: ContainerUnpauseParams;
   kube_health: KubeHealthParams;
   kube_kubeconfig: KubeKubeconfigParams;
+  machine_converge_runtime: MachineConvergeRuntimeParams;
+  machine_gpu_list: MachineGpuListParams;
   machine_ping: MachinePingParams;
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
@@ -1151,11 +1289,14 @@ export type FunctionParamsMap = {
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_diff: RepositoryDiffParams;
+  repository_docker_prune: RepositoryDockerPruneParams;
   repository_down: RepositoryDownParams;
   repository_down_all: RepositoryDownAllParams;
   repository_exec: RepositoryExecParams;
   repository_expand: RepositoryExpandParams;
   repository_fork: RepositoryForkParams;
+  repository_gpu_grant: RepositoryGpuGrantParams;
+  repository_gpu_revoke: RepositoryGpuRevokeParams;
   repository_health: RepositoryHealthParams;
   repository_info: RepositoryInfoParams;
   repository_list: RepositoryListParams;
@@ -1184,25 +1325,37 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_browse_at': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_compare': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_delete': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_list': {
-    requirements: { machine: true, team: true, storage: true },
+    requirements: { machine: true, team: true },
   },
   'backup_pull': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_push': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_repair': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_restore': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_restore_path': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_snapshot': {
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_toc_key': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'backup_verify': {
     requirements: { machine: true, team: true, repository: true },
@@ -1315,6 +1468,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'kube_kubeconfig': {
     requirements: { machine: true, team: true },
   },
+  'machine_converge_runtime': {
+    requirements: { machine: true },
+  },
+  'machine_gpu_list': {
+    requirements: { machine: true },
+  },
   'machine_ping': {
     requirements: { machine: true, team: true },
   },
@@ -1363,6 +1522,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'repository_diff': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_docker_prune': {
+    requirements: { machine: true },
+  },
   'repository_down': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1376,6 +1538,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_fork': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_gpu_grant': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_gpu_revoke': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_health': {
@@ -1539,7 +1707,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_browse_at',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       lineage: {
         type: 'string',
@@ -1569,30 +1737,52 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'backup_compare': {
+    name: 'backup_compare',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      againstAnchor: {
+        type: 'string',
+        required: true,
+        help: 'The source repository GUID whose anchor the copy is held to',
+        minLength: 1,
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Read cap across both files, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+    },
+  },
   'backup_delete': {
     name: 'backup_delete',
     category: 'backup',
     showInMenu: false,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       sourceType: {
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Target type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        help: 'Target type: machine (SSH)',
+        options: ['machine'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['machine'],
       },
       from: {
         type: 'string',
         required: true,
-        help: 'Target machine or storage name',
+        help: 'Target machine name',
         minLength: 1,
       },
       path: {
         type: 'string',
-        help: 'Subdirectory within the storage root (e.g., \'hot\' or \'cold\')',
+        help: 'Subdirectory within the datastore backup root',
       },
       repositories: {
         type: 'array',
@@ -1604,16 +1794,16 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_list',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, storage: true },
+    requirements: { machine: true, team: true },
     params: {
       sourceType: {
         type: 'string',
         required: true,
         default: 'local',
-        help: 'Source type: local (this machine\'s datastore) or machine (SSH); storage is retired',
-        options: ['local', 'machine', 'storage'],
+        help: 'Source type: local (this machine\'s datastore) or machine (SSH)',
+        options: ['local', 'machine'],
         ui: 'dropdown',
-        enum: ['local', 'machine', 'storage'],
+        enum: ['local', 'machine'],
       },
       from: {
         type: 'string',
@@ -1631,24 +1821,28 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     name: 'backup_pull',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       sourceType: {
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Source type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        help: 'Source type: machine (SSH)',
+        options: ['machine'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['machine'],
       },
       from: {
         type: 'string',
         required: true,
-        help: 'Source machine or storage name',
+        help: 'Source machine name',
         ui: 'source-dropdown',
         dependsOn: 'sourceType',
         minLength: 1,
+      },
+      src: {
+        type: 'string',
+        help: 'Source repository GUID on the source machine (defaults to the destination repository)',
       },
       seed: {
         type: 'string',
@@ -1662,7 +1856,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
       bwlimit: {
         type: 'string',
-        help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+        help: 'Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited',
       },
       deltaBase: {
         type: 'string',
@@ -1676,26 +1870,31 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         ui: 'dropdown',
         enum: ['auto', 'physical', 'shared'],
       },
+      allowUnopenable: {
+        type: 'bool',
+        default: 'false',
+        help: 'Place the pulled image even though the repository passphrase did not open it',
+      },
     },
   },
   'backup_push': {
     name: 'backup_push',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       destinationType: {
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Destination type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        help: 'Destination type: machine (SSH)',
+        options: ['machine'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['machine'],
       },
       to: {
         type: 'string',
-        help: 'Single destination (machine or storage name)',
+        help: 'Single destination machine name',
         ui: 'destination-dropdown',
         dependsOn: 'destinationType',
       },
@@ -1704,12 +1903,6 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         help: 'Target machines for parallel deployment',
         ui: 'machine-multiselect',
         label: 'Target Machines',
-      },
-      storages: {
-        type: 'array',
-        help: 'Target storage systems for parallel backup',
-        ui: 'storage-multiselect',
-        label: 'Target Storage Systems',
       },
       dest: {
         type: 'string',
@@ -1746,7 +1939,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
       bwlimit: {
         type: 'string',
-        help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+        help: 'Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited',
       },
       deltaBase: {
         type: 'string',
@@ -1770,11 +1963,37 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'backup_repair': {
+    name: 'backup_repair',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      hashes: {
+        type: 'string',
+        required: true,
+        help: 'Chunk hashes to re-upload, separated by commas or whitespace',
+        minLength: 1,
+      },
+      bwlimit: {
+        type: 'string',
+        help: 'Upload cap, same units as backup_snapshot\'s bwlimit. Empty = unlimited',
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Anchor read cap, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+    },
+  },
   'backup_restore': {
     name: 'backup_restore',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       lineage: {
         type: 'string',
@@ -1793,18 +2012,68 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Resolve the manifest chain and report what would be fetched; write nothing',
       },
+      noSeed: {
+        type: 'bool',
+        default: 'false',
+        help: 'Fetch every chunk from the store instead of reusing local anchors or images',
+      },
+      allowUnopenable: {
+        type: 'bool',
+        default: 'false',
+        help: 'Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one',
+      },
+      salvage: {
+        type: 'bool',
+        default: 'false',
+        help: 'Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image',
+      },
+    },
+  },
+  'backup_restore_path': {
+    name: 'backup_restore_path',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      lineage: {
+        type: 'string',
+        required: true,
+        help: 'Lineage (grand) GUID the snapshot belongs to',
+        placeholder: 'the repo\'s grand GUID',
+      },
+      at: {
+        type: 'string',
+        required: true,
+        help: 'Snapshot id to restore from (a TIME is resolved by the CLI, never here)',
+        placeholder: 'e.g., 20260814T120000Z-0011223344556677',
+      },
+      path: {
+        type: 'string',
+        required: true,
+        help: 'File or directory to restore, relative to the repository root',
+        minLength: 1,
+      },
+      to: {
+        type: 'string',
+        help: 'Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)',
+      },
     },
   },
   'backup_snapshot': {
     name: 'backup_snapshot',
     category: 'backup',
     showInMenu: true,
-    requirements: { machine: true, team: true, repository: true, storage: true },
+    requirements: { machine: true, team: true, repository: true },
     params: {
       reseed: {
         type: 'bool',
         default: 'false',
         help: 'Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)',
+      },
+      acceptIdentityChange: {
+        type: 'bool',
+        default: 'false',
+        help: 'Take this image as the new baseline when its LUKS identity moved or it shrank. Forces a full manifest with no parent',
       },
       dryRun: {
         type: 'bool',
@@ -1815,6 +2084,55 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'bool',
         default: 'false',
         help: 'Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run',
+      },
+      bwlimit: {
+        type: 'string',
+        help: 'Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited',
+      },
+      parallelism: {
+        type: 'int',
+        help: 'Concurrent chunk uploads (0 = engine default)',
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      hashParallelism: {
+        type: 'int',
+        help: 'Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota',
+      },
+    },
+  },
+  'backup_toc_key': {
+    name: 'backup_toc_key',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      action: {
+        type: 'string',
+        required: true,
+        help: 'status prints the stored key and licence lineage; install stores a public key',
+        options: ['status', 'install'],
+        ui: 'dropdown',
+        enum: ['status', 'install'],
+      },
+      lineage: {
+        type: 'string',
+        help: 'Lineage (grand) GUID the key was derived under; install only',
+      },
+      publicKey: {
+        type: 'string',
+        help: 'The public line, rediacc-toc-x25519 <base64>; install only',
+      },
+      replace: {
+        type: 'bool',
+        default: 'false',
+        help: 'Overwrite a different stored key. Sends the repository passphrase, which has to open the repository and derive this line',
       },
     },
   },
@@ -1831,6 +2149,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         options: ['spot', 'full'],
         ui: 'dropdown',
         enum: ['spot', 'full'],
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Read cap for the full level, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
       },
     },
   },
@@ -2656,6 +2982,48 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'machine_converge_runtime': {
+    name: 'machine_converge_runtime',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      dryRun: {
+        type: 'bool',
+        help: 'Print the plan without restarting anything',
+        options: ['true', 'false'],
+      },
+      policy: {
+        type: 'string',
+        default: 'epoch',
+        help: 'Restart policy',
+        options: ['epoch', 'always'],
+        enum: ['epoch', 'always'],
+      },
+      includeUnknown: {
+        type: 'bool',
+        help: 'Also converge stale repositories missing from the payload',
+        options: ['true', 'false'],
+      },
+      continueOnError: {
+        type: 'bool',
+        help: 'Keep going after a repository fails',
+        options: ['true', 'false'],
+      },
+      repoTimeout: {
+        type: 'string',
+        help: 'Deadline of one repository\'s restart (Go duration, e.g. 15m)',
+      },
+    },
+  },
+  'machine_gpu_list': {
+    name: 'machine_gpu_list',
+    category: 'machine',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+    },
+  },
   'machine_ping': {
     name: 'machine_ping',
     category: 'machine',
@@ -2903,6 +3271,38 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_docker_prune': {
+    name: 'repository_docker_prune',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      name: {
+        type: 'string',
+        help: 'Repository GUID (empty = the repository in context)',
+      },
+      apply: {
+        type: 'bool',
+        help: 'Reclaim; without it the run only reports',
+        options: ['true', 'false'],
+      },
+      offline: {
+        type: 'bool',
+        help: 'Stop the daemon and quarantine orphan directories (requires apply)',
+        options: ['true', 'false'],
+      },
+      allImages: {
+        type: 'bool',
+        help: 'Also remove tagged images no container uses',
+        options: ['true', 'false'],
+      },
+      noTrim: {
+        type: 'bool',
+        help: 'Skip the fstrim after an apply',
+        options: ['true', 'false'],
+      },
+    },
+  },
   'repository_down': {
     name: 'repository_down',
     category: 'repository',
@@ -2984,6 +3384,40 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Mark the fork read-only (refuses to mount; frozen commit/base)',
         options: ['true', 'false'],
+      },
+    },
+  },
+  'repository_gpu_grant': {
+    name: 'repository_gpu_grant',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      device: {
+        type: 'string',
+        required: true,
+        help: 'Fully qualified CDI device name (e.g. nvidia.com/gpu=all)',
+        placeholder: 'nvidia.com/gpu=all',
+        pattern: '^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$',
+      },
+      exclusive: {
+        type: 'bool',
+        help: 'Reserve the device for this repository: no other repository may be granted it meanwhile',
+      },
+    },
+  },
+  'repository_gpu_revoke': {
+    name: 'repository_gpu_revoke',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      device: {
+        type: 'string',
+        required: true,
+        help: 'Fully qualified CDI device name (e.g. nvidia.com/gpu=all)',
+        placeholder: 'nvidia.com/gpu=all',
+        pattern: '^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$',
       },
     },
   },
@@ -3432,12 +3866,16 @@ export type QueueFunctionsType = {
 export const queueFunctions: QueueFunctionsType = {
   backup_browse: (params) => ({ functionName: 'backup_browse', params }),
   backup_browse_at: (params) => ({ functionName: 'backup_browse_at', params }),
+  backup_compare: (params) => ({ functionName: 'backup_compare', params }),
   backup_delete: (params) => ({ functionName: 'backup_delete', params }),
   backup_list: (params) => ({ functionName: 'backup_list', params }),
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
   backup_push: (params) => ({ functionName: 'backup_push', params }),
+  backup_repair: (params) => ({ functionName: 'backup_repair', params }),
   backup_restore: (params) => ({ functionName: 'backup_restore', params }),
+  backup_restore_path: (params) => ({ functionName: 'backup_restore_path', params }),
   backup_snapshot: (params) => ({ functionName: 'backup_snapshot', params }),
+  backup_toc_key: (params) => ({ functionName: 'backup_toc_key', params }),
   backup_verify: (params) => ({ functionName: 'backup_verify', params }),
   ceph_client_mount: (params) => ({ functionName: 'ceph_client_mount', params }),
   ceph_client_unmount: (params) => ({ functionName: 'ceph_client_unmount', params }),
@@ -3475,6 +3913,8 @@ export const queueFunctions: QueueFunctionsType = {
   container_unpause: (params) => ({ functionName: 'container_unpause', params }),
   kube_health: (params) => ({ functionName: 'kube_health', params }),
   kube_kubeconfig: (params) => ({ functionName: 'kube_kubeconfig', params }),
+  machine_converge_runtime: (params) => ({ functionName: 'machine_converge_runtime', params }),
+  machine_gpu_list: (params) => ({ functionName: 'machine_gpu_list', params }),
   machine_ping: (params) => ({ functionName: 'machine_ping', params }),
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
@@ -3491,11 +3931,14 @@ export const queueFunctions: QueueFunctionsType = {
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_diff: (params) => ({ functionName: 'repository_diff', params }),
+  repository_docker_prune: (params) => ({ functionName: 'repository_docker_prune', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),
   repository_down_all: (params) => ({ functionName: 'repository_down_all', params }),
   repository_exec: (params) => ({ functionName: 'repository_exec', params }),
   repository_expand: (params) => ({ functionName: 'repository_expand', params }),
   repository_fork: (params) => ({ functionName: 'repository_fork', params }),
+  repository_gpu_grant: (params) => ({ functionName: 'repository_gpu_grant', params }),
+  repository_gpu_revoke: (params) => ({ functionName: 'repository_gpu_revoke', params }),
   repository_health: (params) => ({ functionName: 'repository_health', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
   repository_list: (params) => ({ functionName: 'repository_list', params }),

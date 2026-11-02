@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: zh
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # 监控
@@ -201,7 +201,7 @@ rdc machine status server-1
 提供的信息：
 - 主机名和运行时间
 - 内存、磁盘和数据存储使用情况
-- 仓库总数、已挂载数量和运行中的 Docker 数量
+- 仓库总数、已挂载数量，以及 Docker daemon 正常响应的仓库数量
 - 每个仓库的详细信息
 
 使用 `--output json` 获取机器可读的输出。

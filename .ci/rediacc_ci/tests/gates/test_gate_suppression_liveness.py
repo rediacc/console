@@ -100,7 +100,7 @@ def make_fixture(gate, root):
         src = paths.from_root(*rel.split("/"))
         if src.is_file():
             shutil.copyfile(src, root / rel)
-    # THE WORKSPACE MANIFESTS TOO. The deps probe's oracle reads packages/*/package.json beside the root (declaredPackageNames) and refuses below 20 names. The root alone carried that many until the eslint toolchain left it (eca7ef3d9, 13 names), after which every deps case here SKIPPED and the dead-entry controls went green for the wrong reason.
+    # THE WORKSPACE MANIFESTS TOO. The deps probe's oracle reads packages/*/package.json beside the root (declaredPackageNames) and refuses below 20 names. The root alone carried that many until the eslint toolchain left it (7ee0f07f4, 13 names), after which every deps case here SKIPPED and the dead-entry controls went green for the wrong reason.
     for src in sorted(paths.from_root("packages").glob("*/package.json")):
         dest = root / "packages" / src.parent.name / "package.json"
         dest.parent.mkdir(parents=True, exist_ok=True)

@@ -262,3 +262,16 @@ To query in Grafana:
 - **Do not over-instrument.** Every span adds overhead. Instrument operations that are meaningful to debug (I/O calls, external APIs, complex business logic). Do not wrap every function in a span.
 - **Add attributes, not spans.** If you just need to record a value (a user ID, a count, a flag), add it as an attribute on the existing span rather than creating a new child span.
 - **Custom attributes are searchable.** Any attribute you set on a span can be searched in Tempo. Use this to add domain-specific context that helps you filter traces later.
+
+---
+
+## 5. A Sender Goes Silent
+
+A sender that stops delivering shows as empty panels, not as an error. Work through these in order, for the (service, environment, region) pair that is silent.
+
+1. **Delivery check.** `python3 -m rediacc_ci.ops.telemetry_delivery` probes each account host (and the proxy) with `X-Rediacc-Probe` and prints `PASS` or `SILENT <host> <signal>` per host and signal. It runs every 6 hours in `.github/workflows/telemetry-probe.yml` and on dispatch. A `SILENT` line names the host and whether traces or logs are missing. Until the live acceptance (T15) passes, the proxy and its executor are listed as expected but silent senders ([Proxy Telemetry](../signals/proxy.md)), so a `SILENT` line for them is not yet a fault.
+2. **Grafana alert.** One rule per expected pair fires when `increase(traces_spanmetrics_calls_total{...}[6h])` is absent or 0, and notifies the operator by email. The rule is listed by `GET /api/v1/provisioning/alert-rules`.
+3. **Destination status.** For Workers senders, the destination `otlp-<r>-traces` or `otlp-<r>-logs` reports `configuration.jobStatus` (`last_complete`, `last_error`, `error_message`). A set `last_error` means Cloudflare could not deliver. `rotation check` reports it without printing header values.
+4. **Traefik 401.** A `401` for `otlp.rediacc.io/v1/traces` in the Traefik log means the destination's Basic header no longer matches an entry in the observability repo's `OTLP_BASIC_AUTH`, usually after a rotation or a deactivated grace entry.
+5. **Rotation state.** `./run.sh rotation status otlp-<r>` shows the active credential versions. Rotating `otlp-<r>` upserts the destination headers again and repairs a mismatch; a failing destination does not block a deploy.
+6. **Pipeline.** If every sender is silent, check the OTLP Pipeline panel of the [Platform Overview](../dashboards/platform-overview.md) dashboard for refused or unexported spans.

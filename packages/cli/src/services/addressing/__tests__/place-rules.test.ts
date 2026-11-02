@@ -14,7 +14,7 @@ import {
 
 describe('REPO_VERBS_ACCEPTING_PLACE', () => {
   it('is exactly the §3.1 third-row verb set (a drift pin)', () => {
-    expect([...REPO_VERBS_ACCEPTING_PLACE].sort()).toEqual(
+    expect([...REPO_VERBS_ACCEPTING_PLACE].sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
       [
         'admin',
         'branch',
@@ -41,7 +41,7 @@ describe('REPO_VERBS_ACCEPTING_PLACE', () => {
         'trim',
         'tunnel',
         'up',
-      ].sort()
+      ].sort((a, b) => Number(a > b) - Number(a < b))
     );
   });
 });

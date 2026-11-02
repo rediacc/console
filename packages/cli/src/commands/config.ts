@@ -15,6 +15,7 @@ import { registerAuditCommands } from './config/audit.js';
 import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
+import { registerAccessCommands } from './config-access.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
@@ -25,16 +26,13 @@ async function buildSelfHostedDisplay(
   name: string
 ): Promise<Record<string, unknown>> {
   let machineCount = 0;
-  let storageCount = 0;
   let repoCount = 0;
   try {
     const state = await configService.getResourceState();
     machineCount = Object.keys(state.getMachines()).length;
-    storageCount = Object.keys(state.getStorages()).length;
     repoCount = Object.keys(state.getRepositories()).length;
   } catch {
     machineCount = Object.keys(config.resources?.machines ?? {}).length;
-    storageCount = Object.keys(config.resources?.storages ?? {}).length;
     repoCount = Object.keys(config.resources?.repositories ?? {}).length;
   }
 
@@ -47,7 +45,6 @@ async function buildSelfHostedDisplay(
     sshKey: config.credentials?.ssh?.privateKey ? '(inline)' : '-',
     renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_PATH,
     machines: machineCount,
-    storages: storageCount,
     repositories: repoCount,
   };
   if (config.remote) {
@@ -135,7 +132,7 @@ export async function buildInitAccountUpdate(
   try {
     const { fetchServerInfo } = await import('../services/account/account-client.js');
     const info = await fetchServerInfo(accountServer);
-    const e2ePublicKey = info.e2e.keys[0]?.publicKeySpki;
+    const e2ePublicKey = info.e2e?.keys?.[0]?.publicKeySpki;
     if (e2ePublicKey) return { accountServer, e2ePublicKey };
     outputService.warn(t('commands.config.init.serverKeyMissing', { server: accountServer }));
   } catch (error) {
@@ -344,9 +341,22 @@ async function runReconcileInner(program: Command, options: ReconcileCliOptions)
       placementsFilled: report.placementsFilled,
       placementsAccepted: report.placementsAccepted,
       conflicts: report.conflicts,
+      networkIdsRebuilt: report.networkIdsRebuilt,
+      networkIdsDiverged: report.networkIdsDiverged,
     },
     format
   );
+  // D4(a): the machine's ID replaced a differing recorded one; one line per repo says so.
+  for (const d of report.networkIdsDiverged) {
+    outputService.info(
+      t('errors.repo.networkIdDiverged', {
+        repository: d.repository,
+        localId: d.previous,
+        machineId: d.networkId,
+        machine: d.machine,
+      })
+    );
+  }
   // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
   if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
     setExitCode(6);
@@ -380,7 +390,7 @@ ${t('help.examples')}
     .option('--server <url>', t('options.serverUrl'))
     .action(async (name: string | undefined, options) => {
       try {
-        const configName = name ?? DEFAULTS.CONTEXT.CONFIG_NAME;
+        const configName = name ?? configService.getEffectiveConfigName();
 
         // The default config auto-creates on first use; `config init` is for
         // named configs. A bare, flagless invocation teaches that and exits 2.
@@ -621,6 +631,7 @@ ${t('help.examples')}
 
   // Register nested sub-command groups
   registerSSHCommands(config, program);
+  registerAccessCommands(config, program);
   registerRemoteCommands(config);
   registerFieldCommands(config, program);
   registerEditCommands(config, program);

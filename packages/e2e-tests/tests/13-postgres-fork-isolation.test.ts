@@ -6,8 +6,9 @@ import {
   FORK_NETWORK_ID_B,
   TEST_PASSWORD,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { log } from '../src/utils/log';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * PostgreSQL Fork Isolation Tests
@@ -37,14 +38,14 @@ import { log } from '../src/utils/log';
 
 test.describe
   .serial('PostgreSQL Data Persistence @bridge @integration', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `postgres-persist-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
     const containerName = `postgres-persist-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemon here: repositoryUp below claims `networkId` and brings up its own per-network daemon. A daemonSetup/daemonStart pre-start races that claim with a bare, repo-less one on the SAME id -- "network ID 9152 is already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -178,9 +179,9 @@ test.describe
 
 test.describe
   .serial('Repository Fork Data Inheritance @bridge @integration', () => {
-    let runner: BridgeTestRunner;
-    const parentRepoName = `postgres-parent-${Date.now()}`;
-    const forkRepoName = `postgres-fork-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    const parentRepoName = e2eRepoGuid();
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-parent-${Date.now()}`;
     const forkContainerName = `postgres-fork-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -188,7 +189,7 @@ test.describe
     const forkNetworkId = FORK_NETWORK_ID_A;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('12G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -454,11 +455,11 @@ test.describe
 
 test.describe
   .serial('Multiple Fork Independence @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `postgres-multi-parent-${timestamp}`;
-    const forkARepoName = `postgres-fork-a-${timestamp}`;
-    const forkBRepoName = `postgres-fork-b-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkARepoName = e2eRepoGuid();
+    const forkBRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-multi-parent-${timestamp}`;
     const forkAContainerName = `postgres-fork-a-${timestamp}`;
     const forkBContainerName = `postgres-fork-b-${timestamp}`;
@@ -468,7 +469,7 @@ test.describe
     const forkBNetworkId = FORK_NETWORK_ID_B;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or a fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -664,10 +665,10 @@ test.describe
 
 test.describe
   .serial('Fork Data Integrity @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `postgres-integrity-parent-${timestamp}`;
-    const forkRepoName = `postgres-integrity-fork-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-integrity-parent-${timestamp}`;
     const forkContainerName = `postgres-integrity-fork-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -677,7 +678,7 @@ test.describe
     let parentHashBeforeFork: string;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -782,10 +783,10 @@ test.describe
 
 test.describe
   .serial('Large Data Volume Fork @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `postgres-bulk-parent-${timestamp}`;
-    const forkRepoName = `postgres-bulk-fork-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `postgres-bulk-parent-${timestamp}`;
     const forkContainerName = `postgres-bulk-fork-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -795,7 +796,7 @@ test.describe
     const BULK_RECORD_COUNT = 500; // Reduced for faster testing, still validates the concept
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -916,14 +917,14 @@ test.describe
 
 test.describe
   .serial('Service Restart Persistence @bridge @integration', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `postgres-restart-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
     const containerName = `postgres-restart-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemon here: repositoryUp below claims `networkId` and brings up its own per-network daemon. A daemonSetup/daemonStart pre-start races that claim with a bare, repo-less one on the SAME id -- "network ID 9152 is already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.

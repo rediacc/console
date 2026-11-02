@@ -24,7 +24,8 @@ import {
 } from './update-state.js';
 import { compareVersions, computeSha256, downloadFile, fetchManifest } from './updater.js';
 
-const WORKER_TIMEOUT_MS = 30_000;
+// Sized for a real download: the staged binary is ~225 MB, which a 30 s timer never let finish.
+const WORKER_TIMEOUT_MS = 20 * 60_000;
 const RENAME_RETRIES = 2;
 const RENAME_RETRY_DELAY_MS = 500;
 const MAX_APPLY_ATTEMPTS = 5;
@@ -63,6 +64,38 @@ function markSuccessfulCheck(state: CliUpdateState): void {
 }
 
 /**
+ * Remove `rdc-*.tmp` partials left by workers that were killed mid-download. The update lock is
+ * held by the caller, so no other worker is writing one. Best-effort, never throws.
+ */
+async function removeOrphanedTmpFiles(): Promise<void> {
+  try {
+    const entries = await fs.readdir(STAGED_UPDATE_DIR);
+    for (const entry of entries) {
+      if (entry.startsWith('rdc-') && entry.endsWith('.tmp')) {
+        await fs.unlink(join(STAGED_UPDATE_DIR, entry)).catch(() => {});
+      }
+    }
+  } catch {
+    // Best-effort cleanup
+  }
+}
+
+/**
+ * Record a failed attempt so the cooldown backs off. Never throws.
+ */
+async function recordFailedAttempt(err: unknown): Promise<void> {
+  try {
+    const state = await readUpdateState();
+    state.lastAttemptAt = new Date().toISOString();
+    state.consecutiveFailures += 1;
+    state.lastError = err instanceof Error ? err.message : String(err);
+    await writeUpdateState(state);
+  } catch {
+    // Cannot even write state, give up silently
+  }
+}
+
+/**
  * Download, verify, and stage a new binary for the given manifest.
  */
 async function downloadAndStage(
@@ -79,7 +112,13 @@ async function downloadAndStage(
   const stagedPath = getStagedBinaryPath(manifest.version);
   const tmpPath = `${stagedPath}.tmp`;
 
-  await downloadFile(binaryInfo.url, tmpPath);
+  await removeOrphanedTmpFiles();
+  try {
+    await downloadFile(binaryInfo.url, tmpPath);
+  } catch (err) {
+    await fs.unlink(tmpPath).catch(() => {});
+    throw err;
+  }
 
   const actualHash = await computeSha256(tmpPath);
   if (actualHash !== binaryInfo.sha256) {
@@ -115,7 +154,12 @@ async function downloadAndStage(
  * fs.rename into staged-update/. Holding the lock here serializes the two.
  */
 export async function runBackgroundUpdateWorker(): Promise<void> {
-  const safetyTimer = setTimeout(() => process.exit(1), WORKER_TIMEOUT_MS);
+  const safetyTimer = setTimeout(() => {
+    // Record the attempt first, or the cooldown never backs off and every run restarts the download.
+    void recordFailedAttempt(new Error('Background update timed out')).finally(() =>
+      process.exit(1)
+    );
+  }, WORKER_TIMEOUT_MS);
   safetyTimer.unref();
 
   try {
@@ -142,15 +186,7 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
       await releaseLock();
     }
   } catch (err) {
-    try {
-      const state = await readUpdateState();
-      state.lastAttemptAt = new Date().toISOString();
-      state.consecutiveFailures += 1;
-      state.lastError = err instanceof Error ? err.message : String(err);
-      await writeUpdateState(state);
-    } catch {
-      // Cannot even write state, give up silently
-    }
+    await recordFailedAttempt(err);
   }
 }
 

@@ -10,8 +10,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: ja
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 問題はこうです：AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）は存在しない `rdc` フラグを作り出し続け、どの Rediacc リポジトリ名がどの GUID に対応するかを毎回あなたに尋ねずにはいられません。このテンプレートがそれを解決します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、またはあなたのツールが使用するエージェント設定ファイルに貼り付けてください。
@@ -73,7 +73,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

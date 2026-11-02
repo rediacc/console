@@ -295,7 +295,7 @@ interface GeneratedStep {
   titleKey: string;
   docsPath: string;
   command: string;
-  optional: boolean;
+  optional?: boolean;
   prose: Record<string, string>;
 }
 

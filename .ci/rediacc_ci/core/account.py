@@ -74,7 +74,7 @@ DB_BROWSER_SCAN_SPAN = 40
 # `.ci/lib/account.sh:628`.
 DEFAULT_TOTP_EMAIL = DEV_USER_EMAIL
 
-# The six environment names the account server reads its DEV keypair and session secrets under, the six `account_reset` pushes to Bitwarden (`.ci/lib/account.sh:794-799`). `mint_dev_keys()` writes exactly these, in this order.
+# The seven environment names the account server reads its signing keypairs, session secrets and free-licence HMAC key under, and the seven REQUIRED names of the `account-dev` profile (.ci/config/secret-supply.json). The dev gateway binds the production entries of the same names; `account_reset` pushes none of them since agent/plans/PLAN-production-key-only.md K3, so every one must already be in the Bitwarden store. `mint_dev_keys()` writes exactly these, in this order.
 CRYPTO_KEYS = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -82,6 +82,7 @@ CRYPTO_KEYS = (
     "ACCOUNT_X25519_PUBLIC_KEY",
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
+    "FREE_LICENSE_HMAC_KEY",
 )
 
 
@@ -297,7 +298,7 @@ KEYPAIR_JS = """
 
 
 class CryptoKeys:
-    """The six values `account_generate_crypto_keys` leaves in the shell."""
+    """The six values `account_generate_crypto_keys` leaves in the shell: the first six `CRYPTO_KEYS`. The seventh, `FREE_LICENSE_HMAC_KEY`, is one more `random_secret()`, which `mint_dev_keys()` draws itself."""
 
     __slots__ = ("api_key", "ed25519_priv", "ed25519_pub", "jwt", "x25519_priv", "x25519_pub")
 
@@ -321,7 +322,7 @@ class CryptoKeys:
 def _keygen_child(argv: list[str], strict: bool) -> str:
     """Run one keygen program and return its stdout.
 
-    STRICT IS THE TWIN, and the default is not. `keys=$(node --eval ...)` and `JWT_SEC=$(openssl ... | tr ... | cut ...)` are bare assignments under errexit and pipefail, so a failing `node` or `openssl` ends `account_reset` before anything is pushed to Bitwarden. `strict=True` raises `AccountError` with that status, and `account_lifecycle.reset()` uses it: without it a missing `node` would reach `store-from-env` with six empty values.
+    STRICT IS THE TWIN, and the default is not. `keys=$(node --eval ...)` and `JWT_SEC=$(openssl ... | tr ... | cut ...)` were bare assignments under errexit and pipefail, so a failing `node` or `openssl` ended the twin's `account_reset` before anything reached Bitwarden. `strict=True` raises `AccountError` with that status; `account_lifecycle.reset()` generates no key since agent/plans/PLAN-production-key-only.md K3, and the on-premise backup drill (`rediacc_ci.drills.backup_onprem`) is the caller that needs it, so a missing `node` stops the drill instead of booting a server on empty keys.
     `mint_dev_keys()` keeps the lenient default and refuses empty values itself, because it has no twin to die the same way as.
     """
     try:
@@ -507,6 +508,98 @@ def _kill_quiet(pid: str, sig: int) -> None:
         os.kill(int(pid), sig)
 
 
+def _children(pid: int) -> list[int]:
+    """Direct children of `pid`, from /proc, or from `pgrep -P` where there is no /proc (macOS)."""
+    found: list[int] = []
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        try:
+            proc = subprocess.run(
+                ["pgrep", "-P", str(pid)], capture_output=True, text=True, check=False
+            )
+        except OSError:
+            return found
+        return [int(line) for line in proc.stdout.split() if line.isdigit()]
+    for entry in entries:
+        if not entry.isdigit():
+            continue
+        try:
+            stat = pathlib.Path("/proc/%s/stat" % entry).read_text(encoding="utf-8")
+            # `pid (comm) state ppid ...`: comm may hold spaces and parentheses, so split after the LAST `)`.
+            if int(stat.rsplit(")", 1)[1].split()[1]) == pid:
+                found.append(int(entry))
+        except (OSError, ValueError, IndexError):
+            continue
+    return found
+
+
+def _tree(pid: str) -> list[int]:
+    """`pid` and every descendant, collected while the tree is still intact (a dead leader orphans its children to init)."""
+    try:
+        target = int(pid)
+    except ValueError:
+        return []
+    if target <= 1:
+        return []
+    seen: list[int] = []
+    queue = [target]
+    while queue:
+        current = queue.pop()
+        if current in seen:
+            continue
+        seen.append(current)
+        queue.extend(_children(current))
+    return seen
+
+
+def _start_time(pid: int) -> str | None:
+    """The process start time from /proc/<pid>/stat (field 22), or None where there is no /proc or no such pid."""
+    try:
+        stat = pathlib.Path("/proc/%d/stat" % pid).read_text(encoding="utf-8")
+        return stat.rsplit(")", 1)[1].split()[19]
+    except (OSError, IndexError):
+        return None
+
+
+def _still_same(members: list[int], started: dict[int, str | None]) -> list[int]:
+    """The members that are still the processes collected earlier: a pid whose start time changed was reused and is dropped. Without /proc (start time None) nothing can be compared and the member is kept."""
+    kept: list[int] = []
+    for pid in members:
+        before = started.get(pid)
+        if before is None or _start_time(pid) == before:
+            kept.append(pid)
+    return kept
+
+
+def _kill_tree(pid: str, sig: int, members: list[int] | None = None) -> None:
+    """Signal a process tree: without `members`, `pid` and every descendant; with them, only those. Either way the group of the first member is signalled too when it leads one other than ours.
+
+    With `members` (the tree collected earlier, filtered by _still_same), ONLY those members are signalled and `pid` itself is not: an escalation after SIGTERM still reaches children whose leader exited and were reparented, while a leader pid that was reused, and so dropped from `members`, is never touched.
+    """
+    tree = members if members is not None else _tree(pid)
+    if not tree:
+        return
+    target = tree[0]
+    with contextlib.suppress(OSError):
+        if os.getpgid(target) == target != os.getpgrp():
+            os.killpg(target, sig)
+    for victim in tree:
+        if victim != os.getpid():
+            _kill_quiet(str(victim), sig)
+
+
+def _lsof_port_pids(port: str) -> list[str]:
+    """Every pid `lsof -ti:PORT` lists; empty on a closed port or a missing `lsof`."""
+    try:
+        proc = subprocess.run(
+            ["lsof", "-ti:%s" % port], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return []
+    return [line for line in proc.stdout.split("\n") if line]
+
+
 def _lsof_port_pid(port: str) -> str:
     """`lsof -ti:"$old_gateway" 2>/dev/null | head -1`. Empty on a closed port, a missing `lsof`, or no match."""
     try:
@@ -535,16 +628,28 @@ def stop(env: dict[str, str] | None = None) -> int:
         if old_pids and state_owned(text, path):
             # `for pid in ${old_pids//,/ }`: unquoted, so word-splitting drops any empty field the comma substitution leaves behind.
             pids = old_pids.replace(",", " ").split()
+            # Every recorded job leads its own process group (`spawn_background`), so the group signal ends the whole tree (npm exec -> sh -> vite/astro -> node), not only the pid. The trees are collected BEFORE the SIGTERM, so the SIGKILL pass still reaches a child that ignored it after its leader exited.
+            trees = {pid: _tree(pid) for pid in pids}
+            started = {member: _start_time(member) for tree in trees.values() for member in tree}
             for pid in pids:
-                _kill_quiet(pid, signal.SIGTERM)
+                _kill_tree(pid, signal.SIGTERM, trees[pid])
             time.sleep(1)
             for pid in pids:
-                _kill_quiet(pid, signal.SIGKILL)
+                # Only members that are still the same process: a pid that exited during the sleep and was reused is not ours to kill.
+                survivors = _still_same(trees[pid], started)
+                if survivors:
+                    _kill_tree(pid, signal.SIGKILL, survivors)
 
         if old_gateway:
-            port_pid = _lsof_port_pid(old_gateway)
-            if port_pid:
-                _kill_quiet(port_pid, signal.SIGKILL)
+            # The gateway, Vite and Astro hold consecutive ports from the gateway's. Only a state file this worktree wrote licenses killing the whole tree under each; one another writer stamped (or no writer) gets the old behaviour, the gateway occupant alone.
+            if old_gateway.isdigit() and state_owned(text, path):
+                for offset in (0, 1, 2):
+                    for port_pid in _lsof_port_pids(str(int(old_gateway) + offset)):
+                        _kill_tree(port_pid, signal.SIGKILL)
+            else:
+                port_pid = _lsof_port_pid(old_gateway)
+                if port_pid:
+                    _kill_quiet(port_pid, signal.SIGKILL)
 
     # `(cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true` and the container stop/rm loop below both run unconditionally in the twin, relying on `2>/dev/null || true` to swallow even a missing `docker` binary.
     # Gating the whole section on `shutil.which("docker")` produces the identical observable outcome (no output, nothing torn down) without needing to catch `FileNotFoundError` at every one of the four call sites below.
@@ -680,7 +785,9 @@ def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
         return 1
     try:
         proc = subprocess.run(
-            ["npx", "tsx", "scripts/rotation/index.ts", *argv], cwd=directory, check=False
+            ["npx", "--no-install", "tsx", "scripts/rotation/index.ts", *argv],
+            cwd=directory,
+            check=False,
         )
     except FileNotFoundError:
         log.error("npx: command not found")
@@ -802,7 +909,16 @@ def db_launch(plan: DbPlan, env: dict[str, str] | None = None) -> int:
         log.warn("Chrome blocks that hosted page from reaching a local server unless you enable")
         log.warn('"Local network access" for local.drizzle.studio in Site information.')
         child = subprocess.run(
-            ["npx", "drizzle-kit", "studio", "--port", str(plan.port), "--host", bind],
+            [
+                "npx",
+                "--no-install",
+                "drizzle-kit",
+                "studio",
+                "--port",
+                str(plan.port),
+                "--host",
+                bind,
+            ],
             cwd=directory,
             env={**environ, "DATABASE_PATH": plan.database},
             check=False,
@@ -845,19 +961,19 @@ def db(argv: list[str], env: dict[str, str] | None = None) -> int:
 
 
 def mint_dev_keys(env: dict[str, str] | None = None) -> int:
-    """`mint-dev-keys`: append a THROWAWAY set of the six `CRYPTO_KEYS` to the file `$GITHUB_ENV` names. Returns an exit code.
+    """`mint-dev-keys`: append a THROWAWAY set of the seven `CRYPTO_KEYS` to the file `$GITHUB_ENV` names. Returns an exit code.
 
     NEW, NOT PORTED: the twin has no counterpart. It exists for CI legs with no Bitwarden access, the Drills job in `.github/workflows/ct-tests.yml` first, which used to get a throwaway key set from `account_ensure_env` writing `private/account/.env`.
-    That file is gone. With no token, `bws_env exec` proceeds when every REQUIRED name of the profile is already in the environment and names the optional ones it left unset (`rediacc_ci.core.bws_env.hydrate`); the `account-dev` profile's six required names are exactly `CRYPTO_KEYS`, so six freshly minted values in the JOB environment let `./run.sh account dev` run with no token, and with no file in the tree.
+    That file is gone. With no token, `bws_env exec` proceeds when every REQUIRED name of the profile is already in the environment and names the optional ones it left unset (`rediacc_ci.core.bws_env.hydrate`); the `account-dev` profile's seven required names are exactly `CRYPTO_KEYS`, so seven freshly minted values in the JOB environment let `./run.sh account dev` run with no token, and with no file in the tree.
     GitHub reads `$GITHUB_ENV` into the environment of every LATER step of the job, which is the only place these values go.
 
     REFUSES WITH 2 when `GITHUB_ENV` is unset or empty: without it there is nowhere to put the values that is not a stream or a file in the tree, and printing them is exactly what this must never do.
 
     REFUSES WITH 1, WRITING NOTHING, when any generated value is empty (a missing `node` or `openssl` yields an empty capture, not an error) or carries a line break, which would inject a second assignment into the file.
 
-    MASKS EVERY VALUE BEFORE WRITING IT. `$GITHUB_ENV` values are not secrets to the runner, so every later step's `env:` block printed all six in clear in this public repository's logs (Drills job, 2026-09-30). Throwaway values leak nothing, but a change that fed real keys through here would leak the same way, so stdout carries exactly one `::add-mask::<value>` workflow command per value, which the runner consumes and never displays. Nothing else ever goes to stdout, and a refusal prints no mask.
+    MASKS EVERY VALUE BEFORE WRITING IT. `$GITHUB_ENV` values are not secrets to the runner, so every later step's `env:` block printed every one in clear in this public repository's logs (Drills job, 2026-09-30). Throwaway values leak nothing, but a change that fed real keys through here would leak the same way, so stdout carries exactly one `::add-mask::<value>` workflow command per value, which the runner consumes and never displays. Nothing else ever goes to stdout, and a refusal prints no mask.
 
-    Reports the six NAMES and a count on stderr, never a value.
+    Reports the seven NAMES and a count on stderr, never a value.
     """
     environ = os.environ if env is None else env
     target = environ.get("GITHUB_ENV", "")
@@ -874,6 +990,7 @@ def mint_dev_keys(env: dict[str, str] | None = None) -> int:
         keys.x25519_pub,
         keys.api_key,
         keys.jwt,
+        random_secret(),
     )
     bad = [
         name

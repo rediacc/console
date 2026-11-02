@@ -16,7 +16,12 @@ import {
   ProxyStreamTruncatedError,
   ProxyVersionMismatchError,
 } from '../proxy-client.js';
-import { assertDetachable, assertProxyCapable, paramsFromCommand } from '../proxy-command.js';
+import {
+  assertDetachable,
+  assertProxyCapable,
+  BACKGROUND_UNSAFE,
+  paramsFromCommand,
+} from '../proxy-command.js';
 
 /**
  * Parse argv with a throwaway Commander tree and hand back the action command.
@@ -116,9 +121,25 @@ describe('assertProxyCapable', () => {
 
 describe('assertDetachable', () => {
   it('allows a detachable command through', () => {
-    const entry = getCommand('repo up');
+    const entry = getCommand('repo down');
     expect(entry?.detachable).toBe(true);
-    expect(() => assertDetachable('repo up', entry)).not.toThrow();
+    expect(() => assertDetachable('repo down', entry)).not.toThrow();
+  });
+
+  it('refuses a detachable verb that is unsafe with --background, naming why', () => {
+    // Iterates the table itself: a renamed verb (getCommand undefined) or one the contract stops marking detachable fails here instead of silently leaving the table. Empty once every J0 verb is converted (PLAN-detached-jobs J22).
+    for (const verb of Object.keys(BACKGROUND_UNSAFE)) {
+      const entry = getCommand(verb);
+      expect(entry?.detachable, verb).toBe(true);
+      expect(() => assertDetachable(verb, entry), verb).toThrow(/cannot run with --background yet/);
+    }
+  });
+
+  it('accepts a verb whose conversion landed (PLAN-detached-jobs J4): it runs as one job with its steps on the ticket', () => {
+    for (const verb of ['repo up', 'repo migrate', 'backup restore']) {
+      expect(BACKGROUND_UNSAFE[verb], verb).toBeUndefined();
+      expect(() => assertDetachable(verb, getCommand(verb)), verb).not.toThrow();
+    }
   });
 
   it('refuses a job command with a circular-detach message', () => {

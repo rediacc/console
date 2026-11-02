@@ -386,12 +386,14 @@ def test_m5_with_an_unreachable_cap_the_saturated_case_is_judged_again(wl):
 # ---- the concurrency-saturated wait (agent/plans/PLAN-plan-priority-concurrency.md section 5c) ----
 
 
-def held_queue(fix, unheld: bool = False) -> None:
-    """One live writer of EXCLUSIVE plan E and two queue leases on plan F, which E's mutex holds: three slots free and nothing startable. `unheld` adds a queue lease on E itself, which the mutex does not hold."""
+def held_queue(fix, unheld: bool = False, f_owns: str = "src/e/golden/**") -> None:
+    """One live writer of EXCLUSIVE plan E and two queue leases on plan F, which E's mutex holds: three slots free and nothing startable. `unheld` adds a queue lease on E itself, which the mutex does not hold.
+
+    F's Owns overlap E's by default: an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28), so only an overlapping F is held, and `f_owns` sets a disjoint one for the twin."""
     fix.brief_now()
     fix.hand_now()
     e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
-    f = write_plan(fix, "f")
+    f = write_plan(fix, "f", owns=f_owns)
     mk_sub(fix, W1, "general-purpose", 0, prompt="Plan: %s" % e)
     plant_lease(fix, "e2000001", W1, text=linked(e, "regenerate goldens"))
     for i in range(2):
@@ -422,6 +424,14 @@ def test_c11_control_one_unheld_queued_item_blocks_on_the_free_slot(wl):
     assert "CONCURRENCY-SATURATED WAIT" not in got.out, got.out[:900]
 
 
+def test_c11_control_a_disjoint_plan_is_not_held_and_blocks_on_the_free_slot(wl):
+    """The overlap rule's twin of c11 (711841c55): F disjoint from the live exclusive E holds nothing, so the queue is startable and the free slot blocks."""
+    held_queue(wl, f_owns="src/f/**")
+    v = verdict(wl)
+    assert v["queue_conc_held"] == [], v["queue_conc_held"]
+    assert v["queue_start"] == ["f2000000", "f2000001"], v["queue_start"]
+
+
 def test_c11_the_verdict_says_every_queued_item_is_held(wl):
     held_queue(wl)
     v = verdict(wl)
@@ -432,6 +442,11 @@ def test_c11_the_verdict_says_every_queued_item_is_held(wl):
 
 def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):
     held_queue(wl)
+    # The world's plans carry open boxes, so the STATE.md must name a big piece or the `bigpieces` drift check blocks before the judge is reached (agent/plans/PLAN-stop-hook-rulings-campaign.md section 5).
+    body = wlfix.STATE_BODY.replace(
+        "none: the fixture project carries no plan with an open box.", "- PLAN-e.md"
+    )
+    assert wl.cli("--state", wlfix.ME, stdin=body).rc == 0
     capturing_judge(wl, CONTINUE)
     mutated_hook(
         wl,

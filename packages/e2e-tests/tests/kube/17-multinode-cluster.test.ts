@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import type { ExecResult } from '../../src/utils/bridge/types';
+import { installRepoLicence } from '../../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../../src/utils/renet-functions/types';
 
 // Suite 17 (`Bridge K8s Multinode` job): a multi-node k3s cluster + whole-cluster fork/migrate on the DATASTORE-CLUSTER model (redesign spec 06 §17). It ports the wave-7 proof off the DELETED per-namespace bring-up (`kube apply --ceph-pool`, `kube_namespace_*`) onto the surviving anchor+rejoin surface,
 // while KEEPING the multinode fork/migrate PROOF SHAPE:
@@ -41,7 +42,8 @@ const DATA_DS = 'mnshop';
 const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
 // Timestamped per run so parallel/consecutive runs never collide — except under KEEP, where the whole point is finding the SAME pool again next run.
 const POOL = KEEP ? 'mnkeep' : `mn${Date.now().toString(36)}`;
-const REPO = 'shop';
+// A fixed GUID, not a name: renet licenses a repository by its name and the account server signs UUIDs only (src/utils/licence.ts). The namespace mirrors the name, and a GUID is a valid namespace label.
+const REPO = '5c0b15a0-1717-4a17-8a17-000000000001';
 const REPO_NET = '3200';
 const NS = REPO;
 const SC = `rediacc-ds-${DATA_DS}`;
@@ -144,19 +146,19 @@ test.describe
     test.skip(!canRun, 'Requires K8S_MODE=1, VM_CEPH_NODES, and TWO worker VMs');
     test.setTimeout(900_000);
 
-    let w1: BridgeTestRunner; // control plane node
-    let w2: BridgeTestRunner; // agent node
-    let cephNode: BridgeTestRunner;
+    let w1: RenetFunctionsTestRunner; // control plane node
+    let w2: RenetFunctionsTestRunner; // agent node
+    let cephNode: RenetFunctionsTestRunner;
 
     const kubectlOn = async (
-      runner: BridgeTestRunner,
+      runner: RenetFunctionsTestRunner,
       kc: string,
       args: string
     ): Promise<ExecResult> =>
       runner.executeViaBridge(`sudo ${K3S} kubectl --kubeconfig ${kc} ${args}`);
 
     const writeFileOn = async (
-      runner: BridgeTestRunner,
+      runner: RenetFunctionsTestRunner,
       path: string,
       content: string
     ): Promise<void> => {
@@ -209,7 +211,7 @@ test.describe
       return res.code === 0 && /\sRunning\s/.test(res.stdout) && res.stdout.includes(node);
     };
 
-    const stageCephClient = async (runner: BridgeTestRunner): Promise<void> => {
+    const stageCephClient = async (runner: RenetFunctionsTestRunner): Promise<void> => {
       for (const f of ['ceph.conf', 'ceph.client.admin.keyring']) {
         const read = await cephNode.executeViaBridge(`sudo base64 -w0 /etc/ceph/${f}`);
         expect(read.code, `read /etc/ceph/${f}`).toBe(0);
@@ -236,7 +238,10 @@ test.describe
     //
     // Match the datastore path ANYWHERE on the /proc/mounts line (mountpoint, device, OR overlay options), take the MOUNTPOINT field, exclude the datastore mount itself (that one is `datastore detach`'s to release cleanly), and detach deepest-first. Repeat, because unwinding one layer can expose another. NOTE ON SHELL FORM: executeViaBridge relays through THREE shells (local sh →
     // bridge sh → target sh) and escapeForNestedSSH escapes only backslashes and quotes, NOT `$` — a shell variable or `$(...)` here would be expanded on the LOCAL host, not on the VM. So the selection is kept variable-free and every path is interpolated by TypeScript.
-    const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
+    const unwindSubmounts = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<void> => {
       const root = mount.replace(/\/[^/]+$/, ''); // /mnt/rediacc-ds
       // Holders = (a) every mountpoint strictly UNDER our datastore mount, plus
       // (b) every mountpoint OUTSIDE the datastore root whose line references our mount (the /run/k3s containerd overlays). Excluding `^<root>/` from (b) keeps a SIBLING datastore (e.g. the fork's `<mount>-f1`, which matches our path as a prefix) out of the list — lazily unmounting another datastore's mountpoint would strand its dm device.
@@ -255,7 +260,10 @@ test.describe
     // NOTE (#26, product-fixed): the node CSI units (rediacc-csi / -provisioner / -snapshotter) are host daemons whose socket + --kubelet-root live INSIDE the cluster's control datastore, so while they run the datastore cannot be released ("target is busy", with NO mount holder to find). `renet kube install` auto-STARTS them; nothing STOPPED them. The product now owns both halves
     // — `datastore detach` stops the units hosted on the datastore it is releasing and `kube uninstall` takes a leaving node's units with it — so this suite carries NO test-side CSI teardown on purpose: a green migrate (test 6) and a green teardown (test 7) here ARE the live proof of the #26 fold, including that the fenced re-attach restarts CSI (which is what heals migrate by
     // construction). The THIRD holder class, after mounts (#20) and the CSI daemons (#26): a loop device whose BACKING FILE sits on the datastore (the per-volume LUKS stack the repo's PV rides). It pins the filesystem with no mountpoint to find, so the mount-level unwind reports "clean" while `umount` still returns EBUSY. Listing it turns that dead end into evidence.
-    const deviceHolders = async (runner: BridgeTestRunner, mount: string): Promise<string[]> => {
+    const deviceHolders = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<string[]> => {
       const res = await runner.executeViaBridge(
         `sudo bash -c 'losetup -a | grep -F "${mount}"' 2>/dev/null; true`
       );
@@ -293,9 +301,9 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      w1 = BridgeTestRunner.forWorker(1);
-      w2 = BridgeTestRunner.forWorker(2);
-      cephNode = BridgeTestRunner.forCeph();
+      w1 = RenetFunctionsTestRunner.forWorker(1);
+      w2 = RenetFunctionsTestRunner.forWorker(2);
+      cephNode = RenetFunctionsTestRunner.forCeph();
       await teardownAll();
     });
 
@@ -366,8 +374,9 @@ test.describe
       expect(token, 'join token').toBeTruthy();
       const join = await w2.executeViaBridge(
         `sudo renet kube join --mount-path ${CTRL_MOUNT} --network-id ${AGT_NET} --role agent ` +
-          `--token ${token} --server https://${W1_IP}:6443 --bind-ip ${W2_IP}`,
-        540_000
+          `--token-stdin --server https://${W1_IP}:6443 --bind-ip ${W2_IP}`,
+        540_000,
+        { stdin: `${token}\n` }
       );
       expect(join.code, join.stderr).toBe(0);
       expect(await poll(() => readyNodeCount(KC).then((n) => n >= 2), 150_000)).toBe(true);
@@ -410,6 +419,15 @@ test.describe
         )
       ).toBe(true);
       await writeRepoFolder();
+      // `repository up` keeps the full licence tier, and the test-mode executor no longer skips it.
+      const grandLicence = await installRepoLicence(w1.executeViaBridge.bind(w1), {
+        repositoryGuid: REPO,
+        kind: 'grand',
+        datastorePath: DATA_MOUNT,
+      });
+      expect(grandLicence.code, `grand licence: ${grandLicence.stdout}${grandLicence.stderr}`).toBe(
+        0
+      );
 
       // repository up (kube arm) — replaces the deleted `kube apply --ceph-pool`
       // + kube_namespace_create: ApplyIsolation → ProvisionVolumes → InjectSecrets
@@ -513,8 +531,9 @@ test.describe
       expect(token, 'fork join token (fresh CA)').toBeTruthy();
       const join = await w2.executeViaBridge(
         `sudo renet kube join --mount-path ${FORK_CTRL_MOUNT} --network-id ${FORK_NET} --role agent ` +
-          `--token ${token} --server https://${W1_FORK_IP}:6443 --bind-ip ${W2_IP}`,
-        540_000
+          `--token-stdin --server https://${W1_FORK_IP}:6443 --bind-ip ${W2_IP}`,
+        540_000,
+        { stdin: `${token}\n` }
       );
       expect(join.code, `fresh agent join: ${join.stderr}`).toBe(0);
       expect(await poll(() => readyNodeCount(FKC).then((n) => n >= 2), 150_000)).toBe(true);

@@ -46,12 +46,13 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const ROUTES_TS = 'private/account/src/routes/backups.ts';
 const DTO_TS = 'private/account/src/dto/backup.dto.ts';
 const CLIENT_GO = 'private/renet/pkg/chunkstore/session.go';
+const REPAIR_GO = 'private/renet/pkg/chunkstore/repair.go';
 
 interface Leg {
   /** Route path as mounted in the account's backups router. */
   path: string;
-  /** Zod request schema name in backup.dto.ts. */
-  requestSchema: string;
+  /** Zod request schema name in backup.dto.ts; null for a route that takes no body. */
+  requestSchema: string | null;
   /**
    * Zod response schema name in backup.dto.ts. Until 2026-08-14 this did not
    * exist and `responseKeys` was checked against the Go client ONLY, while the
@@ -65,6 +66,19 @@ interface Leg {
   requestKeys: string[];
   /** Response keys renet must read and the account must declare. */
   responseKeys: string[];
+  /**
+   * How the client spells a parameterised path, which it composes and so can never
+   * hold as one literal. Matched against the client with comments dropped, so prose
+   * that mentions the route cannot stand in for the call. Absent means the client
+   * must hold `path` itself.
+   */
+  clientCall?: RegExp;
+  /**
+   * A second proof for a leg only one caller makes: the pattern must appear, comments
+   * dropped, in `file`, so a helper or a log string that merely holds the path cannot
+   * stand in for the code that sends the request.
+   */
+  callerCall?: { file: string; pattern: RegExp };
 }
 
 /** The protocol, declared once. Both sides are checked against THIS. */
@@ -82,7 +96,7 @@ const LEGS: Leg[] = [
     requestSchema: 'backupStreamRequest',
     responseSchema: 'backupStreamResponse',
     requestKeys: ['repositoryGuid', 'lineageGuid'],
-    responseKeys: ['streamId'],
+    responseKeys: ['streamId', 'previous'],
   },
   {
     path: '/exists',
@@ -97,7 +111,17 @@ const LEGS: Leg[] = [
     path: '/grants',
     requestSchema: 'backupGrantRequest',
     responseSchema: 'backupGrantResponse',
-    requestKeys: ['snapshotId', 'lineageGuid', 'declaredBytes', 'hashes'],
+    // `chunkBytes` (plan S5): the size of every requested hash, so the account signs each presigned PUT with its Content-Length and x-amz-checksum-sha256. A spelling the schema does not accept is stripped silently and every URL goes back to unbounded.
+    // `manifestBytes` and `indexBytes` (hardening R1): the exact byte lengths of the manifest and the sealed browse index, required whenever the grant names that key, so the account signs those presigned PUTs with a Content-Length as it does for chunks. A spelling the schema does not accept is stripped silently and the grant refuses or goes unbounded for those two objects.
+    requestKeys: [
+      'snapshotId',
+      'lineageGuid',
+      'declaredBytes',
+      'hashes',
+      'chunkBytes',
+      'manifestBytes',
+      'indexBytes',
+    ],
     // The write grant's own fields (manifestKey, and indexKey/indexPutUrl for the listing object) live in a nested schema this leg's response check does not reach; the listing is pinned where it is read back (/read-grants) and committed (/commit).
     responseKeys: ['grant', 'leaseId'],
   },
@@ -148,8 +172,30 @@ const LEGS: Leg[] = [
     requestSchema: 'backupCommitRequest',
     responseSchema: 'backupCommitResponse',
     // hasIndex is the client's claim that the listing object is stored; the server refuses it when the object is absent.
-    requestKeys: ['snapshotId', 'lineageGuid', 'streamId', 'cellSizeBytes', 'hasIndex'],
+    requestKeys: [
+      'snapshotId',
+      'lineageGuid',
+      'streamId',
+      'cellSizeBytes',
+      'hasIndex',
+      'cellsRoot',
+      'luksUuid',
+      'luksKeyDigest',
+      'identityChangeAccepted',
+      'chunksAlreadyPresent',
+    ],
     responseKeys: [],
+  },
+  {
+    // Ends a repair's lease, which nothing else ends before its TTL: until then the lineage's GC is suspended and the next repair is refused. No body; the snapshot id is the path parameter. A client that stopped calling it fails nothing at run time, since a failed release only warns, so this leg is what notices.
+    path: '/leases/:snapshotId/release',
+    requestSchema: null,
+    responseSchema: 'backupLeaseReleaseResponse',
+    requestKeys: [],
+    responseKeys: ['released'],
+    clientCall: /"\/leases\/"\s*\+[^\n]*\+\s*"\/release"/,
+    // The request reaches the server through ReleaseLease, which RepairUpload calls on its way out.
+    callerCall: { file: REPAIR_GO, pattern: /\breleaser\.ReleaseLease\(/ },
   },
 ];
 
@@ -161,7 +207,10 @@ const SESSION_HEADER = 'X-Backup-Session';
  * a revert, and each one was individually fatal.
  */
 const RETIRED: { needle: string; why: string }[] = [
-  { needle: '/chunks/exists', why: 'route does not exist; the account mounts /exists' },
+  {
+    needle: '/chunks/exists',
+    why: 'route does not exist; the account mounts /exists',
+  },
   {
     needle: '/manifests"',
     why: 'commit posts a field set to /commit, not a document to /manifests',
@@ -215,12 +264,18 @@ function read(rel: string): string {
   }
 }
 
-/** Top-level keys of a `export const <name> = z.object({...})` declaration. */
+/**
+ * Top-level keys of a `export const <name> = z.object({...})` declaration.
+ * The formatter splits a refined schema as `z\n  .object({...})\n  .superRefine(fn)`
+ * (backupGrantRequest since plan S5), so whitespace around `.object(` is allowed;
+ * the walk below still starts at the object literal and ignores the refinement.
+ */
 function zodKeys(source: string, schema: string): string[] | null {
-  const at = source.indexOf(`export const ${schema} = z.object({`);
-  if (at === -1) return null;
+  const decl = new RegExp(`export const ${schema} = z\\s*\\.object\\(\\{`).exec(source);
+  if (!decl) return null;
   // Walk braces from the opening of the object literal so nested objects and unions do not truncate the scan early.
-  const open = source.indexOf('{', source.indexOf('z.object(', at));
+  // The opener is the match's last character: searching for the literal `z.object(` again would skip a split chain and land in the NEXT schema.
+  const open = decl.index + decl[0].length - 1;
   let depth = 0;
   let end = open;
   for (let i = open; i < source.length; i++) {
@@ -304,16 +359,41 @@ function declaredKeys(schemaBody: string): Set<string> {
   return keys;
 }
 
-function checkLegs(legs: Leg[], routes: string, dto: string, client: string): string[] {
+/** Whether the client holds the leg's call, comments dropped. */
+function clientCalls(leg: Leg, client: string): boolean {
+  return leg.clientCall
+    ? leg.clientCall.test(stripGoComments(client))
+    : client.includes(`"${leg.path}"`);
+}
+
+/** Whether the leg's second proof is present: true when the leg declares none. */
+function callerCalls(leg: Leg, sources: Record<string, string>): boolean {
+  if (!leg.callerCall) return true;
+  return leg.callerCall.pattern.test(stripGoComments(sources[leg.callerCall.file] ?? ''));
+}
+
+function checkLegs(
+  legs: Leg[],
+  routes: string,
+  dto: string,
+  client: string,
+  sources: Record<string, string> = {}
+): string[] {
   const problems: string[] = [];
   for (const leg of legs) {
     if (!routes.includes(`'${leg.path}'`)) {
       problems.push(`    ${leg.path}\n      declared here but ${ROUTES_TS} mounts no such route.`);
     }
-    if (!client.includes(`"${leg.path}"`)) {
+    if (!clientCalls(leg, client)) {
       problems.push(`    ${leg.path}\n      declared here but ${CLIENT_GO} never calls it.`);
     }
-    const accepted = zodKeys(dto, leg.requestSchema);
+    if (!callerCalls(leg, sources) && leg.callerCall) {
+      problems.push(
+        `    ${leg.path}\n      ${leg.callerCall.file} no longer calls ${leg.callerCall.pattern}, ` +
+          'so nothing sends this request.'
+      );
+    }
+    const accepted = leg.requestSchema === null ? [] : zodKeys(dto, leg.requestSchema);
     if (accepted === null) {
       problems.push(
         `    ${leg.path}\n      request schema ${leg.requestSchema} not found in ${DTO_TS}.`
@@ -323,7 +403,7 @@ function checkLegs(legs: Leg[], routes: string, dto: string, client: string): st
         if (!accepted.includes(key)) {
           problems.push(
             `    ${leg.path} request key "${key}"\n` +
-              `      the client sends it, but ${leg.requestSchema} does not accept it,\n` +
+              `      the client sends it, but ${leg.requestSchema ?? 'this bodyless route'} does not accept it,\n` +
               `      so the route answers 400. Accepted: ${accepted.join(', ')}`
           );
         }
@@ -453,6 +533,102 @@ if (controlProblems.some((p) => p.includes('"declaredKey"'))) {
   process.exit(1);
 }
 
+/**
+ * Fourth control, for the whitespace-tolerant declaration match in zodKeys. A refined schema is
+ * formatted as `z\n  .object({...})\n  .superRefine(fn)`; a regression back to the literal
+ * `z.object(` search would not find it and would land in the NEXT schema's body.
+ */
+const SPLIT_CHAIN_DTO = `
+export const splitSchema = z
+  .object({ onlyKey: z.string() })
+  .superRefine((v, ctx) => v);
+export const nextSchema = z.object({ nextKey: z.string() });
+`;
+const splitKeys = zodKeys(SPLIT_CHAIN_DTO, 'splitSchema');
+if (splitKeys === null || splitKeys.join(',') !== 'onlyKey') {
+  console.error(
+    `✗ split-chain control did not fire: a schema declared as z\\n.object({...}) read as [${splitKeys}], expected [onlyKey].`
+  );
+  process.exit(1);
+}
+
+/**
+ * Fifth control, for a parameterised route with no body. The call has to be found
+ * in code (a comment naming it is the same as no call), a bodyless route must not
+ * report a missing request schema, and a key declared on one must still be reported.
+ */
+const PARAM_CALL = /"\/control\/"\s*\+[^\n]*\+\s*"\/go"/;
+const CONTROL_PARAM: Leg = {
+  path: '/control/:id/go',
+  requestSchema: null,
+  responseSchema: null,
+  requestKeys: [],
+  responseKeys: [],
+  clientCall: PARAM_CALL,
+};
+const paramRoute = `'/control/:id/go'`;
+const paramCall = 'c.endpoint("/control/" + id + "/go")';
+if (checkLegs([CONTROL_PARAM], paramRoute, '', paramCall).length !== 0) {
+  console.error(
+    '✗ parameterised control over-fired: a bodyless route whose call exists was reported.'
+  );
+  process.exit(1);
+}
+if (checkLegs([CONTROL_PARAM], paramRoute, '', `// ${paramCall}`).length === 0) {
+  console.error('✗ parameterised control did not fire: a comment stood in for the client call.');
+  process.exit(1);
+}
+if (checkLegs([CONTROL_PARAM], '', '', paramCall).length === 0) {
+  console.error('✗ parameterised control did not fire: a route nobody mounts went unreported.');
+  process.exit(1);
+}
+const bodylessKey = checkLegs(
+  [{ ...CONTROL_PARAM, requestKeys: ['bodyKey'] }],
+  paramRoute,
+  '',
+  `${paramCall} "bodyKey"`
+);
+if (!bodylessKey.some((p) => p.includes('"bodyKey"'))) {
+  console.error('✗ parameterised control did not fire: a bodyless route took a request key.');
+  process.exit(1);
+}
+
+/**
+ * Sixth control, on the REAL release leg rather than a synthetic one: its own patterns
+ * must accept the code that sends the request and refuse a comment, a log string and a
+ * lookalike. A regex nobody exercised can match nothing, or everything, and stay green.
+ */
+const releaseLeg = LEGS.find((leg) => leg.path === '/leases/:snapshotId/release');
+if (!releaseLeg?.clientCall || !releaseLeg.callerCall) {
+  console.error('✗ release-leg control: the leg lost its clientCall or callerCall proof.');
+  process.exit(1);
+}
+const releaseSend = 'c.endpoint("/leases/"+url.PathEscape(snapshotID)+"/release")';
+const releaseCaller = 'released, err := releaser.ReleaseLease(ctx, snapshotID)';
+const releaseSources = (text: string) => ({ [releaseLeg.callerCall?.file ?? '']: text });
+if (
+  !clientCalls(releaseLeg, releaseSend) ||
+  !callerCalls(releaseLeg, releaseSources(releaseCaller))
+) {
+  console.error('✗ release-leg control over-fired: the real call shapes were not recognised.');
+  process.exit(1);
+}
+for (const decoy of [
+  `// ${releaseCaller}`,
+  'log.Printf("ReleaseLease failed")',
+  'func (c *X) ReleaseLease(ctx context.Context) {}',
+  'releaseLease(ctx, snapshotID)',
+]) {
+  if (callerCalls(releaseLeg, releaseSources(decoy))) {
+    console.error(`✗ release-leg control did not fire: ${decoy} counted as the call.`);
+    process.exit(1);
+  }
+}
+if (clientCalls(releaseLeg, `// ${releaseSend}`) || clientCalls(releaseLeg, 'log("/release")')) {
+  console.error('✗ release-leg control did not fire: a comment or log string counted as the send.');
+  process.exit(1);
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);
@@ -463,7 +639,7 @@ if (routes.length === 0 || dto.length === 0 || client.length === 0) {
   process.exit(1);
 }
 
-const problems = checkLegs(LEGS, routes, dto, client);
+const problems = checkLegs(LEGS, routes, dto, client, { [REPAIR_GO]: read(REPAIR_GO) });
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {
   problems.push(`    auth\n      ${ROUTES_TS} no longer reads ${SESSION_HEADER}.`);

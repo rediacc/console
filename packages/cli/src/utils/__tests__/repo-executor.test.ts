@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
@@ -6,6 +7,11 @@ import { executeRepoFunction } from '../repo-executor.js';
 
 // The failure renderer exits the process outright in an agent environment; these tests read the exit code instead.
 vi.mock('../agent-guard.js', () => ({ isAgentEnvironment: () => false }));
+// The network ID is assumed recorded; discovery has its own suite (network-id-discovery.test.ts).
+vi.mock('../../services/config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: () => Promise.resolve(2816),
+}));
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -22,7 +28,6 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
       credential: 'cred',
       networkId: 2816,
     });
-    vi.spyOn(configService, 'ensureRepositoryNetworkId').mockResolvedValue(undefined as never);
     const exec = vi
       .spyOn(localExecutorService, 'execute')
       .mockResolvedValue({ success: true, allSteps: [] } as never);
@@ -51,7 +56,6 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
       credential: 'cred',
       networkId: 2816,
     });
-    vi.spyOn(configService, 'ensureRepositoryNetworkId').mockResolvedValue(undefined as never);
     const exec = vi
       .spyOn(localExecutorService, 'execute')
       .mockResolvedValue({ success: true, allSteps: [] } as never);
@@ -96,7 +100,6 @@ describe('executeRepoFunction declares the recorded datastore (#74)', () => {
       credential: 'cred',
       networkId: 2816,
     });
-    vi.spyOn(configService, 'ensureRepositoryNetworkId').mockResolvedValue(undefined as never);
     return vi
       .spyOn(localExecutorService, 'execute')
       .mockResolvedValue({ success: true, allSteps: [] } as never);
@@ -172,7 +175,6 @@ describe('executeRepoFunction fails closed on a failed result', () => {
       credential: 'cred',
       networkId: 2816,
     });
-    vi.spyOn(configService, 'ensureRepositoryNetworkId').mockResolvedValue(undefined as never);
     vi.spyOn(localExecutorService, 'execute').mockResolvedValue({
       success: false,
       exitCode,
@@ -185,5 +187,57 @@ describe('executeRepoFunction fails closed on a failed result', () => {
     expect(result.success).toBe(false);
     expect(process.exitCode).toBe(expected);
     expect(rendered).toHaveBeenCalledWith('boom');
+  });
+});
+
+/**
+ * `repo up` / `repo mount` of an existing repo must not re-allocate on renet's network-ID refusal: the
+ * refusal surfaces as a STATE_MISMATCH naming the holder and the reconcile fix, not the generic text.
+ */
+describe('executeRepoFunction on a network-ID refusal', () => {
+  const refusal = JSON.stringify({
+    code: 'network_id_in_use',
+    network_id: 2816,
+    holder: { kind: 'repository', name: 'mail', datastore: WK_DATASTORE_PATH },
+  });
+
+  function failWith(stderr: string): void {
+    vi.spyOn(configService, 'getRepository').mockResolvedValue({
+      repositoryGuid: 'g',
+      tag: 'latest',
+      credential: 'cred',
+      networkId: 2816,
+    });
+    vi.spyOn(localExecutorService, 'execute').mockResolvedValue({
+      success: false,
+      exitCode: 1,
+      stderr,
+      error: 'boom',
+    } as never);
+    vi.spyOn(outputService, 'error').mockImplementation(() => undefined);
+  }
+
+  it.each(['repository_up', 'repository_mount'])(
+    'throws the holder-naming text on %s',
+    async (fn) => {
+      failWith(`[relay] ${refusal}`);
+      const call = executeRepoFunction(fn, 'shop', 'server-1', {}, {}, msgs);
+      await expect(call).rejects.toMatchObject({ code: 'STATE_MISMATCH' });
+      await expect(executeRepoFunction(fn, 'shop', 'server-1', {}, {}, msgs)).rejects.toThrow(
+        /repository mail[\s\S]*rdc config reconcile/
+      );
+    }
+  );
+
+  it('keeps the generic failure for a verb that is not up or mount', async () => {
+    failWith(refusal);
+    const result = await executeRepoFunction('repository_status', 'shop', 'server-1', {}, {}, msgs);
+    expect(result.success).toBe(false);
+  });
+
+  it('keeps the generic failure for an up that failed for another reason', async () => {
+    failWith('compose: no such service');
+    const result = await executeRepoFunction('repository_up', 'shop', 'server-1', {}, {}, msgs);
+    expect(result.success).toBe(false);
   });
 });

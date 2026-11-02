@@ -1444,12 +1444,16 @@ def private_stop(fix, filename: str, old: str, new: str):
     return dest
 
 
-def mutex_world(fix, holder_running: bool = True) -> tuple[str, str]:
-    """W1 is a live writer of EXCLUSIVE plan E (its prompt says `Plan: PLAN-e.md`, and it holds a lease on an E item). Two queue leases: the OLDER one serves plan F, which the mutex holds; the newer serves E itself, which it does not."""
+def mutex_world(
+    fix, holder_running: bool = True, f_owns: str = "src/e/golden/**"
+) -> tuple[str, str]:
+    """W1 is a live writer of EXCLUSIVE plan E (its prompt says `Plan: PLAN-e.md`, and it holds a lease on an E item). Two queue leases: the OLDER one serves plan F, which the mutex holds; the newer serves E itself, which it does not.
+
+    F's Owns overlap E's by default, because an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28): it holds an overlapping F and admits a disjoint one, which `f_owns` sets for the twin."""
     fix.brief_now()
     fix.hand_now()
     e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
-    f = write_plan(fix, "f")
+    f = write_plan(fix, "f", owns=f_owns)
     if holder_running:
         mk_sub(fix, W1, "general-purpose", 1, prompt="Plan: %s\nregenerate the goldens" % e)
     else:
@@ -1473,6 +1477,14 @@ def test_q1_a_queued_item_of_a_held_plan_is_skipped_and_the_next_unheld_one_is_n
         in held["f1000001"]
     ), held
     assert v["plan_error"] == "", v["plan_error"]
+
+
+def test_q1d_control_a_disjoint_plan_is_not_held_by_a_live_exclusive_one(wl):
+    """The overlap rule's twin of q1 (711841c55): the same world with F's Owns disjoint from E's names both queued items and holds neither."""
+    mutex_world(wl, f_owns="src/f/**")
+    v = verdict(wl)
+    assert v["queue_start"] == ["f1000001", "e1000002"], v["queue_start"]
+    assert v["queue_conc_held"] == [], v["queue_conc_held"]
 
 
 def test_q1c_control_once_the_holder_finishes_the_held_item_is_named(wl):
@@ -1521,12 +1533,13 @@ def test_q1s_queue_slot_names_the_held_item_on_a_held_back_line(wl):
     assert "held back: #f1000001 [P-] -- PLAN-e.md is exclusive" in got.out, got.out[:2000]
 
 
-def conflict_world(fix, second: str) -> None:
+def conflict_world(fix, second: str, f_owns: str = "src/e/golden/**") -> None:
+    """Two live writers: W1 on E (exclusive) or P, W2 on `second`. F overlaps E's Owns by default, so the mutex binds both writers; `f_owns` makes it disjoint for the twin."""
     fix.brief_now()
     fix.hand_now()
     write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
     write_plan(fix, "p", owns="src/a/**")
-    write_plan(fix, "f", owns="src/f/**")
+    write_plan(fix, "f", owns=f_owns)
     write_plan(fix, "q", owns="src/a/b.py")
     first = "e" if second == "f" else "p"
     mk_sub(fix, W1, "general-purpose", 1, prompt="Plan: PLAN-%s.md" % first)
@@ -1544,6 +1557,13 @@ def test_q3_two_live_writers_breaking_a_mutex_are_a_roster_concurrency_block(wl)
     got = wl.run()
     assert "PLAN CONCURRENCY BROKEN: 2 live writer(s)" in got.out, got.out[:2000]
     assert "writer %s serving PLAN-e.md" % W1 in got.out, got.out[:2000]
+
+
+def test_q3g_a_disjoint_writer_beside_a_live_exclusive_plan_is_not_in_conflict(wl):
+    """The overlap rule's twin of q3 (711841c55). Two rules, judged per writer: E's writer is a conflict under the mutex-own rule (an exclusive plan cannot start while other plans are live, and F is live); F's writer is judged under the overlap rule (a live exclusive plan refuses only a writer whose files meet its Owns), and with F's Owns disjoint from E's it is not a conflict (review 8959ce94.3)."""
+    conflict_world(wl, "f", f_owns="src/f/**")
+    v = verdict(wl)
+    assert {aid for aid, _plans, _lines in v["plan_conflicts"]} == {W1}, v["plan_conflicts"]
 
 
 def test_q3b_two_live_writers_whose_owns_overlap_are_a_block_too(wl):
@@ -1568,6 +1588,29 @@ def test_q3c_control_two_live_writers_on_disjoint_parallel_plans_are_not(wl):
     assert v["plan_conflicts"] == [], v["plan_conflicts"]
     wl.say("working\n\n## Remaining\n- two writers")
     assert "PLAN CONCURRENCY BROKEN" not in wl.run().out
+
+
+def declared_world(wl, owns1: str, owns2: str):
+    """Two live writers on two parallel plans whose WHOLE Owns overlap on `src/a/**`; each prompt may declare a narrower `Owns:`."""
+    wl.brief_now()
+    wl.hand_now()
+    write_plan(wl, "p", owns="src/a/**")
+    write_plan(wl, "r", owns="src/a/**")
+    mk_sub(wl, W1, "general-purpose", 1, prompt="Plan: PLAN-p.md\n%s" % owns1)
+    mk_sub(wl, W2, "general-purpose", 1, prompt="Plan: PLAN-r.md\n%s" % owns2)
+    plant_lease(wl, "d1000001", W1, text=linked("PLAN-p.md", "one"))
+    plant_lease(wl, "d1000002", W2, text=linked("PLAN-r.md", "two"))
+
+
+def test_q3e_roster_judges_writers_on_their_declared_owns(wl):
+    """The `plan_declared` wiring in `roster()` itself (483392a8.2): disjoint declared subsets of overlapping plans are no conflict. Passing no declared map restores whole-plan comparison and fails this."""
+    declared_world(wl, "Owns: src/a/x.py", "Owns: src/a/y.py")
+    assert verdict(wl)["plan_conflicts"] == []
+
+
+def test_q3f_control_roster_without_declared_owns_compares_whole_plans(wl):
+    declared_world(wl, "", "")
+    assert {aid for aid, _p, _l in verdict(wl)["plan_conflicts"]} == {W1, W2}
 
 
 def test_q3d_a_peers_lease_is_never_a_roster_concurrency_conflict(wl):
@@ -1675,7 +1718,7 @@ def test_r11_an_in_place_edit_is_read_by_the_guards_parse(tmp_path, cmd, want):
     assert json.loads(proc.stdout) == want, cmd
 
 
-# #97ed76a7: a redirect target is read as bash expands it (`shellscan`'s `xwrites`), joined to the directory its run executes in. Each row names a path that must be among the answer and one that must not. The second and third answered `["other/a.md"]` at 2672ed8f6, a file bash never writes (`for` and `read` assign `src`), and the last `["g.md"]`: a group's redirect sat on no run, so its `cd` was lost.
+# #97ed76a7: a redirect target is read as bash expands it (`shellscan`'s `xwrites`), joined to the directory its run executes in. Each row names a path that must be among the answer and one that must not. The second and third answered `["other/a.md"]` at 434eb6c5f, a file bash never writes (`for` and `read` assign `src`), and the last `["g.md"]`: a group's redirect sat on no run, so its `cd` was lost.
 EXPANDED_REDIRECT_CASES = [
     ("cd agent && D=plans; echo x > $D/a.md", "agent/plans/a.md", "plans/a.md"),
     ("D=other; for D in src; do echo x > $D/a.md; done", "src/a.md", "other/a.md"),
@@ -1684,7 +1727,7 @@ EXPANDED_REDIRECT_CASES = [
     ("cd docs && { echo x; } > g.md", "docs/g.md", "g.md"),
 ]
 
-# #b53f586d: a `for` variable is read once per word its loop walks. Each row answered `[]` at 6238f04a6 (the `cd` row `["docs"]`), while bash 5.3 writes every listed path; a word naming no loop variable keeps its literal-directory reading.
+# #b53f586d: a `for` variable is read once per word its loop walks. Each row answered `[]` at af677c6a9 (the `cd` row `["docs"]`), while bash 5.3 writes every listed path; a word naming no loop variable keeps its literal-directory reading.
 LOOP_VALUE_CASES = [
     ("D=other; for D in src; do echo x > $D/a.md; done", ["src/a.md"]),
     ('for f in docs/a.md docs/b.md; do rm "$f"; done', ["docs/a.md", "docs/b.md"]),
@@ -1708,7 +1751,7 @@ def test_b53f586d_a_loop_variable_is_each_word_it_walks(tmp_path, cmd, want):
 
 _D65 = " ".join("d%02d" % i for i in range(65))
 _F65 = " ".join("f%02d" % i for i in range(65))
-# 8ef78586.2: past the 64-combination cap the first loop variable is still read once per value. The first two rows answered `[]` at 8ef785864 (the target cut to the root), the third `["docs"]`, while bash 5.3 writes under every `dNN`; the last is a control under the cap.
+# 8ef78586.2: past the 64-combination cap the first loop variable is still read once per value. The first two rows answered `[]` at 6ea3efd3a (the target cut to the root), the third `["docs"]`, while bash 5.3 writes under every `dNN`; the last is a control under the cap.
 LOOP_CAP_CASES = [
     (
         "for D in %s; do for f in a b; do echo > $D/$f; done; done" % _D65,
@@ -1756,7 +1799,7 @@ def test_97ed76a7_a_redirect_lands_where_bash_writes_it(tmp_path, cmd, landing, 
     assert not_landing not in got, (cmd, got)
 
 
-# #78afdc0b: a Python run's program is `shellscan.interpreter_program`'s reading, the one the guards share. The private reader took a bare `-c` only and added every heredoc in the command to every Python run: a script run BY PATH was never read, `-Ic` was missed, and a heredoc written to a notes file counted as the program of an unrelated script. Each row marked `was` answered that at c5c3036c3.
+# #78afdc0b: a Python run's program is `shellscan.interpreter_program`'s reading, the one the guards share. The private reader took a bare `-c` only and added every heredoc in the command to every Python run: a script run BY PATH was never read, `-Ic` was missed, and a heredoc written to a notes file counted as the program of an unrelated script. Each row marked `was` answered that at c72518af1.
 PROGRAM_CASES = [
     # (command, the paths written, what the private reader answered)
     ("python3 scratch/writes.py", ["docs/out.md"], []),
@@ -1788,3 +1831,95 @@ def test_78afdc0b_a_python_program_is_read_as_the_guards_read_it(tmp_path, cmd, 
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == want, (cmd, "was", was)
+
+
+# 2026-10-23: a heredoc that edited only wl_planpreflight.py but whose replacement TEXT named agent/INDEX.md, .ci/config/plan-boxes.json and agent/plans/QUEUE.md as string literals was read as writing all four, and the live-writer commit guard refused the lead's commit of the three. A path counts only as the target of a write-shaped call.
+PY_TARGET_CASES = [
+    (
+        (
+            "python3 - <<'EOF'\np='.claude/hooks/stop/wl_planpreflight.py'\ns=open(p).read()\n"
+            "s=s.replace('a', 'x', ['agent/INDEX.md', '.ci/config/plan-boxes.json', 'agent/plans/QUEUE.md'])\n"
+            "open(p,'w').write(s)\nEOF"
+        ),
+        [".claude/hooks/stop/wl_planpreflight.py"],
+    ),
+    ("python3 - <<'EOF'\nopen('docs/x.md','w').write('see docs/other.md')\nEOF", ["docs/x.md"]),
+    (
+        "python3 - <<'EOF'\nf='docs/x.md'\nwith open(f, 'a') as h:\n    h.write('docs/o.md')\nEOF",
+        ["docs/x.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nfrom pathlib import Path\nPath('docs/y.md').write_text('docs/o.md')\nEOF",
+        ["docs/y.md"],
+    ),
+    ("python3 - <<'EOF'\nprint(open('docs/in.md').read(), 'docs/o.md')\nEOF", []),
+    (
+        "python3 - <<'EOF'\nimport io\nio.open('docs/x.md','w').write('docs/o.md')\nEOF",
+        ["docs/x.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport tarfile\ntarfile.open('docs/out.tar','w').close()\nEOF",
+        ["docs/out.tar"],
+    ),
+    ("python3 - <<'EOF'\nimport gzip\nprint(gzip.open('docs/in.gz').read(), 'docs/o.md')\nEOF", []),
+    (
+        "python3 - <<'EOF'\nimport os\nos.open('docs/f.bin', os.O_WRONLY | os.O_CREAT)\nEOF",
+        ["docs/f.bin"],
+    ),
+    # An unresolvable target keeps the conservative reading: every path literal counts.
+    (
+        "python3 - <<'EOF'\nimport sys\nopen(sys.argv[1],'w').write('docs/o.md')\nEOF",
+        ["docs/o.md"],
+    ),
+    # A compressed tarfile mode writes (4a39d8be.1); a compressed READ mode does not, though `r:xz` holds an `x`.
+    (
+        "python3 - <<'EOF'\nimport tarfile\ntarfile.open('docs/out.tar.gz','w:gz').close()\nEOF",
+        ["docs/out.tar.gz"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport tarfile\nprint(tarfile.open('docs/in.tar.xz','r:xz'), 'docs/o.md')\nEOF",
+        [],
+    ),
+    # `os.unlink(x)` resolves its argument instead of reading the bare name `os` as unresolved (43119d35.3).
+    (
+        "python3 - <<'EOF'\nimport os\nos.unlink('docs/a.md')\nprint('docs/b.md')\nEOF",
+        ["docs/a.md"],
+    ),
+    # A write API with no resolver here keeps the conservative reading (43119d35.2).
+    (
+        "python3 - <<'EOF'\nimport pandas\ndf.to_csv('docs/x.csv')\nEOF",
+        ["docs/x.csv"],
+    ),
+    (
+        "python3 - <<'EOF'\nfrom shutil import copy\ncopy('src/a.md','docs/y.md')\nEOF",
+        ["docs/y.md", "src/a.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport os\nos.symlink('src/a','docs/l')\nEOF",
+        ["docs/l", "src/a"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['tee','docs/z.md'])\nEOF",
+        ["docs/z.md"],
+    ),
+    (
+        "python3 - <<'EOF'\nfrom pathlib import Path\nPath('docs/d').rmdir()\nprint('docs/b.md')\nEOF",
+        ["docs/d"],
+    ),
+    (
+        "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['git','status'])\nprint('docs/b.md')\nEOF",
+        [],
+    ),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), PY_TARGET_CASES)
+def test_a_python_heredoc_writes_only_the_targets_of_write_calls(tmp_path, cmd, want):
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == sorted(want), cmd

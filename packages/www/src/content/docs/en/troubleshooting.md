@@ -119,7 +119,7 @@ Each repository has its own Docker daemon. When running Docker commands manually
 rdc term connect my-app -c "docker ps"
 
 # Or manually with the socket:
-docker -H unix:///var/run/rediacc/docker-2816.sock ps
+docker -H unix:///var/run/rediacc/net-2816/docker-2816.sock ps
 ```
 
 Replace `2816` with your repository's network ID (found in `rediacc.json` or `rdc repo status`).

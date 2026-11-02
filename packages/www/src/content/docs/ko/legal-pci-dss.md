@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: ko
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 사실 카드 소유자 데이터를 다루면 PCI DSS v4.0.1은 선택사항이 아닙니다. PCI DSS v4.0.1은 한 가지 요구사항으로 귀결됩니다: 다른 모든 것으로부터의 인프라 수준 격리입니다.
@@ -35,7 +35,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 PCI DSS는 분리를 강하게 요구합니다. 실무에서 부족한 격리 위에 iptables 규칙을 겹겹이 쌓는 팀들을 많이 봅니다. 이 방법은 작동하지 않습니다. 감사를 통과하는 팀들은 분리가 아키텍처에 내장되어 있습니다. Rediacc는 기본적으로 이를 제공합니다:
 
-- 각 저장소는 `/var/run/rediacc/docker-<networkId>.sock`에서 자체 Docker 데몬으로 실행됩니다
+- 각 저장소는 `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`에서 자체 Docker 데몬으로 실행됩니다
 - 저장소는 격리된 루프백 IP 서브넷을 갖습니다(127.0.x.x/26, 네트워크당 61개의 사용 가능한 IP)
 - renet이 적용하는 iptables 규칙이 모든 교차 데몬 트래픽을 차단합니다
 - 서로 다른 저장소의 컨테이너는 네트워크 수준에서 통신할 수 없습니다

@@ -45,7 +45,6 @@ export const OPTION_KINDS_BY_NAME: Readonly<Record<string, readonly ResourceKind
   'control-node': ['machine'],
   container: ['container'],
   datastore: ['datastore'],
-  storage: ['storage'],
   cluster: ['cluster'],
   repo: ['repo'],
   provider: ['provider'],
@@ -64,9 +63,10 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   // ── Directional flags whose long says nothing about the noun ────────────
   'datastore attach --to': ['machine'],
   'datastore fork --attach-to': ['machine'],
-  'repo push --to': ['machine', 'storage'],
-  'repo pull --from': ['machine', 'storage'],
+  'repo push --to': ['machine'],
+  'repo pull --from': ['machine'],
   'repo migrate --to': ['machine', 'cluster'],
+  'backup upload --to': ['machine'],
   'cluster fork --to': ['cluster'],
   'cluster migrate --to': ['cluster'],
   'cluster rehearse --on': ['cluster'],
@@ -99,6 +99,14 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   'backup strategy remove --destination': {
     waived:
       'a destination is a named sub-entry INSIDE the strategy being edited, not one of the contract resource kinds',
+  },
+  'backup restore --to': {
+    waived:
+      'a directory path on the target machine that receives the restored files, not a repository, machine or other contract resource',
+  },
+  'backup download --to': {
+    waived:
+      'a local directory or external drive on the operator machine that receives the image, not a repository, machine or other contract resource',
   },
   'repo merge --base': {
     waived:
@@ -142,8 +150,6 @@ export const SENSITIVE_BY_NAME: ReadonlySet<string> = new Set([
 export const SENSITIVE_OVERRIDES: Readonly<Record<string, boolean>> = {
   // The secret plaintext itself; `--key` beside it is just the secret's name.
   'repo secret set --value': true,
-  // Rclone credentials as a JSON blob: a secret in run history even though the long says nothing secret-sounding.
-  'storage add --vault': true,
 };
 
 // ---------- Format hints (console picks a control, validates client-side) --

@@ -17,7 +17,7 @@ There is no global `server.json`, no mode env vars, no shared mutable state betw
 ```bash
 ./rdc.sh repo up app                  # default config 'rediacc' -> production
 ./rdc.sh --config dev repo up app     # 'dev' config -> local dev gateway
-./rdc.sh --config bench repo list     # 'bench' config -> bench.rediacc.com
+./rdc.sh --config eu-bench repo list  # 'eu-bench' config -> bench.rediacc.com
 ```
 
 Consequences by construction:
@@ -44,11 +44,11 @@ Everything else (token, machines, channel) lives in `dev.json` like any other co
 
 ## Bench
 
-Bench is just a config:
+Bench is just a config, `eu-bench`. `npm run login:bench` logs it in headlessly with the operator's bench account (docs/agent-reference/bench-login.md), and is the same remedy when a command answers that the login is tied to another network address:
 
 ```bash
-./rdc.sh --config bench subscription login --server https://bench.rediacc.com   # once
-./rdc.sh --config bench machine status test-1
+npm run login:bench
+./rdc.sh --config eu-bench machine status hostinger
 ```
 
 ## Production testing from source
@@ -73,20 +73,11 @@ A machine managed by more than one universe (e.g. production and bench both depl
 `keyId` is a 16-hex fingerprint of the signing server's Ed25519 public key. Each universe's renet build validates only the file its baked key (or a delegation cert chained to it) can verify; other universes' files are inert. Switching universes therefore never invalidates licenses: the first operation in a new universe issues that universe's license once (`missing` -> auto-issue),
 and both coexist afterwards.
 
-Dev builds of renet are compiled with the `nolicense` tag by default (no enforcement). To reproduce license-flow bugs locally, rebuild with enforcement:
-
-```bash
-ACCOUNT_ED25519_PUBLIC_KEY="<paste the value>" \
-RDC_RENET_LICENSE=1 ./rdc.sh --config <name> ...
-```
+Dev builds of renet are the one licence-enforcing build, with the production public key baked in, written to `private/renet/bin/renet`. `./rdc.sh` supplies the key from bws and runs the key gate on the result; a build without `ACCOUNT_ED25519_PUBLIC_KEY` fails. Licences for local work come from the dev or bench account server, which signs with the production key.
 
 `ACCOUNT_ED25519_PUBLIC_KEY` must match the server that signs the licenses you are testing against; it is baked in at build time (runtime setting has no effect).
 
-**Paste the value; there is no URL to fetch it from.** This block used to read `"$(curl -fsS https://www.rediacc.com/api/public/account-key)"`. That endpoint returns 404 -- verified again 2026-08-05 -- and the account API is not served from `www.rediacc.com` at all. Because the substitution is not checked, `curl -f` exits 22 and the variable is assigned the EMPTY string, the build
-succeeds, and every prod-signed license then fails as `invalid_signature`: precisely the symptom this variable exists to prevent. Drop the `-f` and it is worse, since the 404's HTML body gets baked into `keys.ProductionPublicKey` via ldflags.
-
-Never pipe an unchecked HTTP response into this variable. CI does not need to: `ACCOUNT_ED25519_PUBLIC_KEY` already exists as an organisation secret, so a workflow references it directly. Locally the value must be pasted -- GitHub secrets are write-only, so no command can fetch it, and the old one-liner was not merely pointing at a dead URL but at a shape of solution that cannot
-exist for a secret. Same correction as `CLAUDE.md`'s licensing section, which fixed its own copy on 2026-07-29 while this one was missed.
+**Never fetch the key over HTTP.** An old recipe read `"$(curl -fsS https://www.rediacc.com/api/public/account-key)"`; that endpoint returns 404, `curl -f` then assigns the empty string, the build succeeds, and every prod-signed license fails as `invalid_signature`. Without `-f` the 404's HTML body gets baked into `keys.ProductionPublicKey` via ldflags. CI references the `ACCOUNT_ED25519_PUBLIC_KEY` organisation secret directly, and locally `./rdc.sh` reads it from bws by name, so no build needs an HTTP fetch or a pasted value.
 
 ## Remote config store and offline behavior
 

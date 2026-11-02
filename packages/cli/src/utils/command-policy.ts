@@ -55,6 +55,8 @@ export const CMD = {
   REPO_ADMIN_AUTOSTART_DISABLE: 'repo admin autostart disable',
   REPO_RESIZE: 'repo resize',
   REPO_EXPAND: 'repo expand',
+  // Carries REPO_DOWN's guards: `--offline` stops the repository's Docker daemon, so it is as disruptive as `repo down`.
+  REPO_PRUNE: 'repo prune',
   REPO_PROMOTE: 'repo promote',
   REPO_TUNNEL: 'repo tunnel',
   REPO_EXEC: 'repo exec',
@@ -77,6 +79,11 @@ export const CMD = {
   VSCODE_CONNECT: 'vscode connect',
   RUN: 'run',
   BACKUP_RESTORE: 'backup restore',
+  // Client-side image transfers (PLAN-backup-local-image): download only reads a reflink snapshot, upload registers a NEW repo behind the agent create-gate.
+  BACKUP_DOWNLOAD: 'backup download',
+  BACKUP_UPLOAD: 'backup upload',
+  // Deletes a grand repository's whole backup lineage from the chunk store; the repository itself is kept.
+  BACKUP_PURGE: 'backup purge',
   CLUSTER_CREATE: 'cluster create',
   CLUSTER_DESTROY: 'cluster destroy',
   CLUSTER_SCALE: 'cluster scale',

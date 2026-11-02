@@ -110,7 +110,7 @@ export function findRegressions(errors, backlog, fileOf = (e) => e.file, noun = 
     }
   }
 
-  return regressions.sort();
+  return regressions.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /**

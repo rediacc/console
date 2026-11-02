@@ -30,6 +30,7 @@ import sys
 import urllib.parse
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.ops import cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
@@ -158,8 +159,7 @@ def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
     _npm_install_if_needed(worker_dir, env)
     _run(
         [
-            "npx",
-            "wrangler",
+            *wrangler.ARGV,
             "d1",
             "migrations",
             "apply",
@@ -350,7 +350,8 @@ def main(argv: list[str]) -> int:
         log.info("bench has been reset")
         print(
             "  Worker code is unchanged. To redeploy fresh code: "
-            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"
+            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench "
+            "(it also seeds the ROOT_EMAIL user the reset removed)"
         )
         return 0
     except cf_auth.CfAuthError as exc:

@@ -310,9 +310,12 @@ async function planCrds(
       ? (listing as Array<{ name?: string }>)
           .map((x) => x.name ?? '')
           .filter((n) => n.startsWith('snapshot.storage.k8s.io_') && n.endsWith('.yaml'))
-          .sort()
+          .sort((a, b) => Number(a > b) - Number(a < b))
       : [];
-    if (upstreamNames.join(',') !== [...v.names].sort().join(','))
+    if (
+      upstreamNames.join(',') !==
+      [...v.names].sort((a, b) => Number(a > b) - Number(a < b)).join(',')
+    )
       throw none(
         `${tag} ships [${upstreamNames.join(', ')}], not the vendored set [${v.names.join(', ')}]`
       );

@@ -26,6 +26,8 @@ glob has no literal basenames for `referencing_files` to find, so the files it n
 
 That admits a reference from an unreachable caller -- but a caller that is itself unreachable is a manifest problem, which is precisely what the other two gates DO see. The gaps are complementary on purpose.
 
+DRILL LEGS are judged too (box J5 of agent/plans/PLAN-backup-program.md): every leg a drill declares in `KNOWN_LEGS` must be run by a workflow line (`./run.sh drill <name>` runs its `DEFAULT_LEGS`, `--legs` names others) or be named in `DRILL_LEG_EXEMPT` with a `BLOCKER:` reason; see `check_drill_legs`.
+
 ANTI-VACUITY. Zero discovered files is a failure, not a pass: a glob that stops matching would otherwise report success having checked nothing. The success line prints the counts so a collapse is visible rather than silent.
 
 ---- gate ----
@@ -36,6 +38,7 @@ lane: quality-security
 ---- end gate ----
 """
 
+import ast
 import json
 import pathlib
 import re
@@ -242,7 +245,169 @@ def referencing_files(name):
     return [ln for ln in r.stdout.splitlines() if ln.strip() and ln.endswith(REF_SUFFIXES)]
 
 
+# --------------------------------------------------------------------------- drill legs
+#
+# A DRILL LEG IS A TEST TOO (box J5 of agent/plans/PLAN-backup-program.md), and the same question applies: is it reached by something CI runs? A drill declares its legs as a module-level `KNOWN_LEGS` list and, when some are opt-in, the default subset as `DEFAULT_LEGS` (a comma string); a workflow line that runs `./run.sh drill <name>` or `rediacc_ci.drills.<name>` runs the default legs, or exactly the `--legs` it names. A
+# known leg no workflow runs must be named in DRILL_LEG_EXEMPT with a `BLOCKER:` reason; an exempt leg that a workflow does run, or that the drill no longer declares, fails as stale, so the list only shrinks. When box J8 adds leg `l` to the backup drill's defaults, the CI drill job reaches it with no edit here.
+DRILLS_DIR = REPO / ".ci" / "rediacc_ci" / "drills"
+WORKFLOWS_DIR = REPO / ".github" / "workflows"
+DRILL_RUN_RE = re.compile(r"(?:\brun\.sh\s+drill\s+|\brediacc_ci\.drills\.)([a-z_]+)\b")
+LEGS_FLAG_RE = re.compile(r"--legs[=\s]+([a-z0-9,]+)")
+DRILL_REASON_MIN = 40
+_LICENSE_DRILL_BLOCKER = (
+    "BLOCKER: the license drill needs an ops VM worker running an enforcing renet build, "
+    "which no CI job provides; legs c-f run under `npm run vm:check` (account phase A2.3) "
+    "and its push receipt, legs a and b by hand"
+)
+# drill -> {leg: reason}. Each reason starts with `BLOCKER:`.
+DRILL_LEG_EXEMPT = {
+    "backup": {
+        "i": (
+            "BLOCKER: leg i runs `rdc backup verify` on a real repository and needs an ops VM; "
+            "the CI drill job has no machine, so the leg is opt-in (`--legs i`) and runs by hand"
+        ),
+    },
+    "license": dict.fromkeys(("a", "b", "c", "d", "e", "f"), _LICENSE_DRILL_BLOCKER),
+}
+
+
+def _module_legs(path):
+    """(KNOWN_LEGS, default legs) a drill module declares, or None when it declares no KNOWN_LEGS."""
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return None
+    values = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            if isinstance(target, ast.Name) and target.id in ("KNOWN_LEGS", "DEFAULT_LEGS"):
+                try:
+                    values[target.id] = ast.literal_eval(node.value)
+                except ValueError:
+                    continue
+    known = values.get("KNOWN_LEGS")
+    if not isinstance(known, list) or not all(isinstance(x, str) for x in known):
+        return None
+    default = values.get("DEFAULT_LEGS", known)
+    if isinstance(default, str):
+        default = [x for x in default.split(",") if x]
+    return list(known), [x for x in default if x in known]
+
+
+def declared_drills(drills_dir=DRILLS_DIR):
+    """{drill name: (known legs, default legs)} for every drill module that declares KNOWN_LEGS."""
+    out = {}
+    for path in sorted(drills_dir.glob("*.py")):
+        legs = _module_legs(path)
+        if legs is not None:
+            out[path.stem] = legs
+    return out
+
+
+def ci_drill_runs(text, drills):
+    """{drill name: legs a workflow line runs} over one workflow's text; comment lines are skipped and a backslash continuation is read as one line."""
+    runs: dict[str, set[str]] = {}
+    joined = re.sub(r"\\\n", " ", text)
+    for line in joined.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        for match in DRILL_RUN_RE.finditer(line):
+            name = match.group(1)
+            if name not in drills:
+                continue
+            known, default = drills[name]
+            flag = LEGS_FLAG_RE.search(line[match.end() :])
+            legs = [x for x in flag.group(1).split(",") if x] if flag else default
+            runs.setdefault(name, set()).update(x for x in legs if x in known)
+    return runs
+
+
+def drill_leg_findings(drills, runs, exempt):
+    """(unreached legs, problems, exempted count): every declared leg no workflow runs and no exemption names, and every stale or reasonless exemption."""
+    unreached, problems, exempted = [], [], 0
+    for name, (known, _default) in sorted(drills.items()):
+        reached = runs.get(name, set())
+        named = exempt.get(name, {})
+        for leg in known:
+            if leg in reached:
+                if leg in named:
+                    problems.append(
+                        "drill %s leg %s is exempt but a CI job runs it (debt paid: delete the entry)"
+                        % (name, leg)
+                    )
+                continue
+            if leg in named:
+                exempted += 1
+                continue
+            unreached.append("%s:%s" % (name, leg))
+    for name, legs in sorted(exempt.items()):
+        known = drills.get(name, ([], []))[0]
+        for leg, reason in sorted(legs.items()):
+            if leg not in known:
+                problems.append(
+                    "drill %s declares no leg %s, yet DRILL_LEG_EXEMPT names it (stale: delete it)"
+                    % (name, leg)
+                )
+            if not (
+                isinstance(reason, str)
+                and reason.startswith("BLOCKER:")
+                and len(reason) >= DRILL_REASON_MIN
+            ):
+                problems.append(
+                    "drill %s leg %s needs a reason starting `BLOCKER:` of %d+ characters"
+                    % (name, leg, DRILL_REASON_MIN)
+                )
+    return unreached, problems, exempted
+
+
+def check_drill_legs():
+    """0 when every declared drill leg is reached by a workflow or exempt by BLOCKER, else 1; prints the shape either way."""
+    drills = declared_drills()
+    if not drills:
+        print(
+            "✗ found ZERO drills declaring KNOWN_LEGS under %s -- the drill-leg check is not"
+            % DRILLS_DIR.relative_to(REPO).as_posix()
+        )
+        print("  seeing the tree, so its green would mean nothing.")
+        return 1
+    runs: dict[str, set[str]] = {}
+    workflows = sorted(WORKFLOWS_DIR.glob("*.yml"))
+    for wf in workflows:
+        for name, legs in ci_drill_runs(wf.read_text(encoding="utf-8"), drills).items():
+            runs.setdefault(name, set()).update(legs)
+    unreached, problems, exempted = drill_leg_findings(drills, runs, DRILL_LEG_EXEMPT)
+    total = sum(len(known) for known, _ in drills.values())
+    if problems or unreached:
+        if problems:
+            print("✗ DRILL_LEG_EXEMPT in %s is stale:\n" % pathlib.Path(__file__).name)
+            for p in problems:
+                print("  %s" % p)
+            print()
+        if unreached:
+            print("✗ drill leg(s) that no CI job runs:\n")
+            for leg in unreached:
+                print("  %s" % leg)
+            print("\n  Run the leg from a workflow (`./run.sh drill <name>` runs the drill's")
+            print("  DEFAULT_LEGS, `--legs` names others), or, only when CI genuinely cannot run")
+            print("  it, name it in DRILL_LEG_EXEMPT with a `BLOCKER:` reason.")
+        return 1
+    print(
+        "✓ all %d drill leg(s) of %d drill(s) are reached by a CI job or exempt by BLOCKER "
+        "(%d run by %d workflow file(s), %d exempt)"
+        % (total, len(drills), total - exempted, len(workflows), exempted)
+    )
+    return 0
+
+
 def main():
+    """Both checks run, so one red never hides the other."""
+    drills = check_drill_legs()
+    files = check_test_files()
+    return 1 if drills or files else 0
+
+
+def check_test_files():
     files = discover()
     if not files:
         print(

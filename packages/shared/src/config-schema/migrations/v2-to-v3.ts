@@ -108,7 +108,7 @@ type TagEntry = { tag: string; grandish: boolean; rec: Obj };
 
 /** Choose a grand tag when no bare/latest record survived (lexicographic + warn). */
 function fallbackGrand(base: string, tags: Obj): string {
-  const grand = [...Object.keys(tags)].sort()[0];
+  const grand = [...Object.keys(tags)].sort((a, b) => Number(a > b) - Number(a < b))[0];
   warn(`repository "${base}" has no grand (production) record; pointing grand at tag "${grand}".`);
   return grand;
 }
@@ -281,6 +281,21 @@ function dropMachineCeph(cfg: Obj): void {
   }
 }
 
+/**
+ * Transform 11: drop the retired `storages` family. The v3 schema refuses the key by name,
+ * so carrying it forward would turn every v2 config that ever registered a storage into an
+ * unloadable one. Backup targets are now strategy destinations of kind hosted-service.
+ */
+function dropRetiredStorages(cfg: Obj): void {
+  if (!isObj(cfg.resources) || cfg.resources.storages === undefined) return;
+  const storages = cfg.resources.storages;
+  const names = isObj(storages) ? Object.keys(storages) : [];
+  delete cfg.resources.storages;
+  warn(
+    `dropped the retired storages family${names.length > 0 ? ` (${names.join(', ')})` : ''}. Backup targets are backup strategy destinations of kind hosted-service.`
+  );
+}
+
 export async function migrateV2ToV3(raw: Obj, ctx: MigrationContext): Promise<Obj> {
   const cfg = structuredClone(raw);
   cfg.schemaVersion = 3; // 1. Stamp version.
@@ -294,6 +309,7 @@ export async function migrateV2ToV3(raw: Obj, ctx: MigrationContext): Promise<Ob
 
   extractStateBuckets(cfg, state); // 4 (rest)
   residueSweep(cfg); // 6
+  dropRetiredStorages(cfg); // 11
   dropMachineCeph(cfg); // 7
   revalidateSecretCaps(cfg); // 8
   splitDeletedRepoNames(cfg); // 9

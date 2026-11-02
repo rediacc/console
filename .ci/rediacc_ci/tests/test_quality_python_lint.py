@@ -77,10 +77,13 @@ def build(
     extra: dict[str, tuple[str, int]],
     *,
     with_padding: bool = True,
+    host_toolchain: bool = True,
 ) -> pathlib.Path:
     """A sealed git specimen holding both implementations, the config, and `extra`.
 
     `extra` maps a path to (text, octal mode). The MODE is a subject of this gate (EXE001/EXE002 read the GIT mode), so it is explicit at every call site.
+
+    `host_toolchain=False` leaves the fixture without the bootstrap toolchain, for the case that proves a missing ruff is 77.
 
     `with_padding=False` leaves the specimen at 8 files, BELOW `MIN_PY_FILES`, which is how the floor case gets the gate to refuse. Every other case wants it True. See `PAD_FILES` for why the padding is synthetic.
     """
@@ -94,6 +97,12 @@ def build(
     shutil.copy2(src / ".devcontainer" / "toolchain.env", root / ".devcontainer" / "toolchain.env")
     # `.ci/cache/` holds the planted control file. Gitignored on purpose: "a crashed run cannot leave a stray .py that enumerate_py would pick up".
     (root / ".gitignore").write_text(".ci/cache/\n", encoding="utf-8")
+    if host_toolchain:
+        # The port's last resolver rungs read the bootstrap toolchain under the fixture's own root, which holds none, so a host whose PATH ruff is not at the pin (a pin bump lands before every host reinstalls) answered 77 for every case. The real toolchain is linked in, under the gitignored `.ci/cache/`; the missing-ruff case builds without it.
+        real_toolchain = src / ".ci" / "cache" / "toolchain"
+        if real_toolchain.is_dir():
+            (root / ".ci" / "cache").mkdir(parents=True, exist_ok=True)
+            (root / ".ci" / "cache" / "toolchain").symlink_to(real_toolchain)
     for name in PACKAGE_FILES:
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
     if with_padding:
@@ -265,7 +274,9 @@ def test_a_missing_ruff_is_77_and_not_1(tmp_path):
     Driven by handing the gate a PATH with neither ruff nor uvx on it, which is an ENVIRONMENT difference rather than a tree difference and therefore cannot be a ledger row.
     """
     want_exit, want_out, want_err = split_golden(frozen.read(SLUG, slug(NO_RUFF_CASE)))
-    returncode, stdout, stderr = run_port(build(tmp_path, {}), prefix="PATH=/usr/bin:/bin")
+    returncode, stdout, stderr = run_port(
+        build(tmp_path, {}, host_toolchain=False), prefix="PATH=/usr/bin:/bin"
+    )
     assert want_exit == gate.EXIT_CANNOT_RUN, want_err
     assert returncode == want_exit, stderr
     assert stdout == want_out

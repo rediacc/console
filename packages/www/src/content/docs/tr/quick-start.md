@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: tr
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Hızlı Başlangıç
@@ -75,7 +75,7 @@ rdc machine setup my-server  # renet kurulumu + veri deposu oluşturma
 
 ```bash
 rdc config show                            # Okunabilir özet
-cat ~/.config/rediacc/rediacc.json         # Ham JSON: makineler, repolar, depolar, SSH anahtarı
+cat ~/.config/rediacc/rediacc.json         # Ham JSON: makineler, repolar, yedekleme hedefleri, SSH anahtarı
 ```
 
 **Tek dosya = tek ortam.** Başka bir dizüstü bilgisayara kopyalayın ve hazırsınız.
@@ -223,7 +223,7 @@ rdc backup usage
 
 Anlık görüntüler parça depolamaya yüklenir; bunun için bir hesap sunucusu ve lisanslı bir depo gerekir. Yalnızca değişen veriler saklanır, bu yüzden aynı deponun ikinci anlık görüntüsü tüm imaj yerine yalnızca farkı maliyet olarak taşır.
 
-`--to <storage>` ile bir depoyu bulut depolamaya gönderme kaldırılmıştır ve artık reddedilir. Bu değişiklikten önce yazılmış bir arşivi okumak için `rdc storage browse` hâlâ çalışır ve PATH'inizde `rclone` gerektirir.
+Yedeklerin tek bir hedef türü vardır: hizmet tarafından barındırılan chunk deposu; `repo push` üzerindeki `--to` yalnızca bir makine adı alır. Saklama süresi, `rdc backup retention set` ile depo soy hattı başına bildirilir; zamanlanmış çalıştırmalar `rdc backup strategy set` ve `rdc backup schedule` ile gelir. Bkz. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore).
 
 ### 4. Uzaktan Çekme
 

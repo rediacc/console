@@ -66,7 +66,7 @@ def test_an_unreachable_upstream_is_red(gate):
         "UPSTREAM REACHABILITY FAILURE (127.0.0.1:%d)" % port,
         "the finding says what kind of red this is",
     )
-    gate.assert_contains(result.out, "attempt 2 of 3 failed", "the retries are visible")
+    gate.assert_contains(result.err, "attempt 2 of 3 failed", "the retries are visible")
     gate.assert_not_contains(result.out, "All GitHub Actions are up-to-date", "no green line")
     assert_no_token(gate, result)
     gate.log_pass("an unreachable upstream is red after three attempts")
@@ -97,7 +97,7 @@ def test_a_persistent_503_is_red_and_a_cleared_one_is_green(gate):
         green = run_gate(gate, stub.base)
         gate.assert_eq(stub.asked(CHECKOUT), 2, "the second attempt answered")
     gate.assert_exit(0, green, "a 503 that clears inside the budget passes")
-    gate.assert_contains(green.out, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
+    gate.assert_contains(green.err, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
     gate.log_pass("the retry budget holds in both directions")
 
 

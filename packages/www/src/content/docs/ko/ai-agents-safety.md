@@ -10,8 +10,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: ko
-sourceHash: "e008783008d8e887"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "34d12ee4f0a3791c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 당신의 인프라에 AI 코딩 어시스턴트를 배치하려고 합니다. Claude Code, Cursor, Gemini CLI, Copilot CLI 또는 유사한 것이 `rdc`를 구동할 때, CLI는 이를 감지하여 키보드 앞의 사람과는 다른 규칙 집합을 적용합니다. 이 페이지에서는 에이전트가 할 수 있는 것, 할 수 없는 것, 그리고 에이전트가 스스로 가드레일을 벗어나려 해도 가드레일이 유지되는 방법을 설명합니다.
@@ -215,7 +215,7 @@ rdc config audit verify
 
 기본 완화책이 내장되어 있습니다. **[레포별 시크릿](/en/docs/repositories#secrets)**은 암호화된 레포지토리 이미지와 별도의 평면에 저장되며 포크 경계를 넘어 복사되지 않습니다. 포크의 컨테이너는 빈 시크릿 맵으로 부팅하고 부모와 다른 외부 주체로 식별됩니다. `rdc repo secret set`으로 설정하세요(compose 보간을 위한 env 모드, tmpfs `secrets:` 블록을 위한 file 모드). 변경 게이트는 대칭적입니다. 사람과 에이전트 모두 기존 값을 덮어쓰거나 삭제하려면 `--current`(passwd 스타일 전제 조건) 또는 `--rotate-secret`(감사된 교체)을 제공해야 합니다.
 
-**크로스 레포 격리가 적용됩니다.** 레포 B의 악의적이거나 부주의한 compose 파일은 레포 A의 시크릿 디렉토리를 참조할 수 없습니다. Renet의 compose 검증기는 현재 레포의 `${REDIACC_NETWORK_ID}` 디렉토리 밖을 가리키는 `secrets: file:`, `configs: file:`, `env_file:` 경로를 강하게 거부하며, 이 거부는 `--unsafe`로 재정의할 수 없습니다. 심층 방어: Rediaccfile bash 서브프로세스 주변의 Landlock 샌드박스는 파일시스템 읽기를 현재 네트워크의 시크릿 디렉토리로만 제한하므로, 악의적인 Rediaccfile에서의 `cat /var/run/rediacc/secrets/<other>/X`는 커널 계층에서 EACCES로 실패합니다.
+**크로스 레포 격리가 적용됩니다.** 레포 B의 악의적이거나 부주의한 compose 파일은 레포 A의 시크릿 디렉토리를 참조할 수 없습니다. Renet의 compose 검증기는 현재 레포의 `${REDIACC_NETWORK_ID}` 디렉토리 밖을 가리키는 `secrets: file:`, `configs: file:`, `env_file:` 경로를 강하게 거부하며, 이 거부는 `--unsafe`로 재정의할 수 없습니다. 심층 방어: Rediaccfile bash 서브프로세스 주변의 Landlock 샌드박스는 파일시스템 읽기를 현재 네트워크의 시크릿 디렉토리로만 제한하므로, 악의적인 Rediaccfile에서의 `cat /var/run/rediacc/net-<other>/secrets/X`는 커널 계층에서 EACCES로 실패합니다. Docker API에서도 마찬가지입니다. 각 레포의 Docker 소켓은 renet 정책 프록시가 처리하며, 이 프록시는 `--privileged`, 호스트 `pid`, `ipc`, `uts`, 장치 요청, 다른 레포의 런타임이나 데이터에 닿는 바인드를 `403`으로 거부합니다. 따라서 `${DOCKER_SOCKET}`을 가진 컨테이너가 API로 다른 레포에 접근할 수 없으며, compose 파일만 검사하는 것이 아닙니다. 바인드 규칙은 이름을 지정한 호스트 디렉토리에 한해 운영자만 넓힐 수 있고, 방법은 어떤 컨테이너도 쓸 수 없는 root 소유의 허용 파일입니다.
 
 두 가지 추가 패턴이 엣지 케이스를 해소합니다.
 

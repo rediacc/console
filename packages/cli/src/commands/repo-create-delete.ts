@@ -1,71 +1,161 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { handleRepoDelete, renderTimelineTotal } from './repo-create-delete-teardown.js';
+
+export { handleDeleteSuccess } from './repo-create-delete-teardown.js';
+
 import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import {
-  generateConnectionName,
-  removePersistedKeys,
-  removeSSHConfigEntry,
-} from '../remote/vscode/index.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import {
+  allocateNetworkIdWithFloor,
+  type NetworkIdTarget,
+  targetFloor,
+} from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import { writeStdout } from '../services/core/request-context.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { setExitCode } from '../services/core/request-context.js';
+import { requestNetworkIdAuto } from '../services/executor/executor-factory.js';
+import type { ExecuteOptions } from '../services/executor/types.js';
+import {
+  type CommandJobOutcome,
+  JobDispatchedError,
+  pendingExitCode,
+  runCommandJob,
+} from '../services/jobs/command-job.js';
+import { outstandingSteps } from '../services/jobs/run-job.js';
+import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { recordedDatastoreMount } from '../utils/repo-executor.js';
-import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
-import { formatStepDuration } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
-
-/** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
-async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Promise<void> {
-  const teamName = (await configService.applyDefaults({})).team ?? '';
-  const connectionName = generateConnectionName(teamName, machineName, repoName);
-  removeSSHConfigEntry(connectionName);
-  removePersistedKeys(teamName, machineName, repoName);
-}
 
 function generateCredential(): string {
   return randomBytes(24).toString('base64');
 }
 
-/** Log total step duration and mark timeline as rendered. */
-function renderTimelineTotal(steps: { duration_ms: number }[]): void {
-  const totalMs = steps.reduce((sum, s) => sum + s.duration_ms, 0);
-  writeStdout(`\nTotal: ${formatStepDuration(totalMs)}\n`);
-  outputService.setTimelineRendered();
-}
-
-/** Rollback a created repo registration if it exists. */
-async function rollbackCreateRepo(name: string): Promise<void> {
+/**
+ * Rollback the registration this create made. The GUID is the identity: a same-named repo registered since the failure
+ * (the step can run after a later command, from the finished notice) carries another GUID and is left alone.
+ */
+async function rollbackCreateRepo(name: string, guid: string): Promise<void> {
   const exists = await configService.getRepository(name);
-  if (exists) {
+  if (exists?.repositoryGuid === guid) {
     await configService.removeRepository(name);
     outputService.warn(t('commands.repo.create.rollback', { repository: name }));
   }
 }
 
-/** Render the create result: timeline/success on success, rollback + failure otherwise. */
-async function renderCreateResult(
-  name: string,
-  result: import('../services/executor/local-executor.js').ExecuteResult
-): Promise<void> {
-  if (result.success) {
-    if (result.allSteps && result.allSteps.length > 0) {
-      renderTimelineTotal(result.allSteps);
-    } else {
-      outputService.success(t('commands.repo.create.completed'));
+bindStepHandler('rollbackCreate', async ({ params }) => {
+  for (const key of ['repo', 'guid'] as const) {
+    if (typeof params[key] !== 'string' || params[key] === '') {
+      throw new Error(`step param "${key}" is missing`);
     }
-  } else {
-    await rollbackCreateRepo(name);
-    renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
   }
+  await rollbackCreateRepo(String(params.repo), String(params.guid));
+});
+
+/**
+ * The steps a create job owes (PLAN-detached-jobs J16). A failed or cancelled job rolls the registration back; a
+ * succeeded one refreshes the licence identity with the size it was created with and re-renders the backup units.
+ * They ride the job's ticket, so a `--background` create or a lost tail still settles them from `rdc job wait`.
+ */
+function createSteps(
+  name: string,
+  guid: string,
+  machine: string,
+  size: string | undefined
+): PlannedStep[] {
+  return [
+    planStep('rollbackCreate', { repo: name, guid }),
+    planStep('identityRefresh', {
+      function: 'repository_create',
+      repository: name,
+      ...(size ? { size } : {}),
+    }),
+    planStep('reconcileBackupSchedules', { machine }),
+  ];
+}
+
+/**
+ * Run the create as one machine job and render its outcome. The steps (rollback, identity refresh, schedule
+ * re-render) already ran inside the job's attach window when this returns a finished outcome; a pending one owes them
+ * to the ticket. `network_id: "auto"` replaces the client's allocation and its conflict retry (J0b finding 8), so
+ * there is exactly one job and a refused start leaves the registration for the caller's catch to roll back.
+ */
+async function runCreateJob(
+  name: string,
+  guid: string,
+  machine: string,
+  size: string | undefined,
+  options: ExecuteOptions
+): Promise<void> {
+  // A plain rejection here means the job did not start, so the caller rolls the registration back.
+  let outcome: CommandJobOutcome;
+  try {
+    outcome = await runCommandJob(
+      'repo create',
+      { ...options, deferIdentityRefresh: true },
+      createSteps(name, guid, machine, size)
+    );
+  } catch (error) {
+    if (!(error instanceof JobDispatchedError)) throw error;
+    // The job was dispatched and recording it failed: the repo exists on the machine, so the registration stays.
+    // error.message already names the job and the ticket, so nothing is repeated here.
+    outputService.warn(
+      `repo create: ${name} was created, but its record could not be completed: ${error.message}. Run \`rdc repo status ${name}\` to check it and \`rdc job wait\` to settle any open steps.`
+    );
+    setExitCode(1);
+    return;
+  }
+  // A failed job renders outside the finishing guard: its rendering is the failure report, not a post-create step.
+  if (outcome.kind !== 'pending' && !outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, t('commands.repo.create.failed'));
+    return;
+  }
+  // From here the repo exists on the machine (or the job still runs): nothing below may reach the caller's rollback.
+  try {
+    settleCreateOutcome(name, outcome);
+  } catch (error) {
+    outputService.warn(
+      `repo create: ${name} was created, but finishing it failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+    setExitCode(1);
+  }
+}
+
+/** Render the pending or succeeded create, and name the success-side steps that did not finish. */
+function settleCreateOutcome(name: string, outcome: CommandJobOutcome): void {
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  const { result } = outcome;
+  if (result.allSteps && result.allSteps.length > 0) {
+    renderTimelineTotal(result.allSteps);
+  } else {
+    outputService.success(t('commands.repo.create.completed'));
+  }
+  const unfinished = outstandingSteps(outcome.steps);
+  if (unfinished.length > 0) {
+    outputService.warn(
+      `repo create: ${name} was created, but the step(s) ${unfinished.join(', ')} did not finish; rdc job wait settles them.`
+    );
+  }
+}
+
+/** Ask the create job to have renet allocate the network ID, and record it in the config once it has. */
+function requestCreateNetworkId(name: string, guid: string, machine: string): void {
+  requestNetworkIdAuto({
+    machine,
+    aliases: [name, `${name}:latest`, guid],
+    repoGuid: guid,
+    repoName: name,
+    recordAs: `${name}:latest`,
+  });
 }
 
 /** A resolved named-datastore placement: where the repo's data lives + how to reach it. */
@@ -108,11 +198,14 @@ async function resolveDatastorePlacement(datastore: string): Promise<DatastorePl
  * (spec 03 §2.3: the R2-F1 tagged union derived-machine ops resolve through).
  * Throws if a repo of this name already exists.
  */
-async function registerNewRepo(
+export async function registerNewRepo(
   name: string,
   placement: Placement,
-  extra: { sshPrivateKey?: string; sshPublicKey?: string }
-): Promise<{ repositoryGuid: string; networkId: number }> {
+  extra: { sshPrivateKey?: string; sshPublicKey?: string },
+  target: NetworkIdTarget,
+  /** The create job asks renet for the ID (`network_id: "auto"`): no ID is allocated here and the record carries none. */
+  networkIdAuto = false
+): Promise<{ repositoryGuid: string; networkId?: number }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
@@ -121,16 +214,22 @@ async function registerNewRepo(
     throw new Error(t('commands.repo.create.alreadyExists', { name }));
   }
   const repositoryGuid = randomUUID();
-  const networkId = await configService.allocateNetworkId();
+  // D3(a): the floor is the target machine's used set, so a lagging counter skips IDs other devices placed there.
+  const networkId = networkIdAuto
+    ? undefined
+    : await allocateNetworkIdWithFloor(await targetFloor(target));
   await configService.addRepository(compositeKey(name, 'latest'), {
     repositoryGuid,
     tag: 'latest',
     credential: generateCredential(),
-    networkId,
+    ...(networkId === undefined || networkId <= 0 ? {} : { networkId }),
     placement,
     ...extra,
   });
-  return { repositoryGuid, networkId };
+  // In auto mode renet allocates the ID inside the job, so none is returned here.
+  return networkId === undefined || networkId <= 0
+    ? { repositoryGuid }
+    : { repositoryGuid, networkId };
 }
 
 /** `repo create <name> --machine <m>`: a docker repo on the machine's default datastore. */
@@ -144,7 +243,7 @@ async function handleRepoCreateOnMachine(
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
-  let registered = false;
+  let createdGuid: string | undefined;
   try {
     await assertAgentRepoCreate(name, { machine: options.machine });
     await assertMachineExists(options.machine);
@@ -165,18 +264,21 @@ async function handleRepoCreateOnMachine(
     }
 
     const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
-    const { repositoryGuid, networkId } = await registerNewRepo(
+    const target: NetworkIdTarget = { machine: options.machine };
+    const { repositoryGuid } = await registerNewRepo(
       name,
       { machine: options.machine },
-      { sshPrivateKey, sshPublicKey }
+      { sshPrivateKey, sshPublicKey },
+      target,
+      true
     );
-    registered = true;
+    createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {
         repository: name,
         guid: repositoryGuid.slice(0, 8),
-        networkId,
+        networkId: 'auto',
       })
     );
     outputService.info(
@@ -187,23 +289,22 @@ async function handleRepoCreateOnMachine(
       })
     );
 
-    const result = await getExecutor().execute({
+    // No network_id in the params below: requestCreateNetworkId queues a directive the executor seam spends on this dispatch (executor-factory requestNetworkIdAuto -> withDirective), which sends network_id "auto" to renet.
+    requestCreateNetworkId(name, repositoryGuid, options.machine);
+    await runCreateJob(name, repositoryGuid, options.machine, options.size, {
       functionName: 'repository_create',
       machineName: options.machine,
       params: {
         repository: name,
         size: options.size,
         guid: repositoryGuid,
-        network_id: networkId,
         ...(options.noDocker ? { start_docker: false } : {}),
       },
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
     });
-
-    await renderCreateResult(name, result);
   } catch (error) {
-    if (registered) await rollbackCreateRepo(name);
+    if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
     handleError(error);
   }
 }
@@ -223,7 +324,7 @@ async function handleRepoCreateOnDatastore(
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
-  let registered = false;
+  let createdGuid: string | undefined;
   try {
     await assertAgentRepoCreate(name, { datastore: options.datastore });
     const placement = await resolveDatastorePlacement(options.datastore);
@@ -236,18 +337,25 @@ async function handleRepoCreateOnDatastore(
       throw new ValidationError(t('commands.repo.create.sizeRequiredDocker'));
     }
 
-    const { repositoryGuid, networkId } = await registerNewRepo(
+    const target: NetworkIdTarget = {
+      machine: placement.machine,
+      datastore: placement.mountPath,
+      ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
+    };
+    const { repositoryGuid } = await registerNewRepo(
       name,
       { datastore: options.datastore },
-      {}
+      {},
+      target,
+      true
     );
-    registered = true;
+    createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {
         repository: name,
         guid: repositoryGuid.slice(0, 8),
-        networkId,
+        networkId: 'auto',
       })
     );
     outputService.info(
@@ -258,7 +366,9 @@ async function handleRepoCreateOnDatastore(
       })
     );
 
-    const result = await getExecutor().execute({
+    // No network_id in the params below: see the machine form, where the executor seam sends network_id "auto" from the directive.
+    requestCreateNetworkId(name, repositoryGuid, placement.machine);
+    await runCreateJob(name, repositoryGuid, placement.machine, options.size, {
       functionName: 'repository_create',
       machineName: placement.machine,
       ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
@@ -268,7 +378,6 @@ async function handleRepoCreateOnDatastore(
       params: {
         repository: name,
         guid: repositoryGuid,
-        network_id: networkId,
         mount_path: placement.mountPath,
         // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up` does (the #39 assertion channel: renet honors `runtime` as an assertion and errors on a disagreement rather than silently falling to the docker arm).
         //
@@ -282,10 +391,8 @@ async function handleRepoCreateOnDatastore(
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
     });
-
-    await renderCreateResult(name, result);
   } catch (error) {
-    if (registered) await rollbackCreateRepo(name);
+    if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
     handleError(error);
   }
 }
@@ -331,168 +438,21 @@ export function handleRepoCreate(
   });
 }
 
-type DeletedRepoConfig = {
-  repositoryGuid: string;
-  grandGuid?: string;
-  pushState?: Record<string, unknown>;
-};
-
-/** A fork carries a grand lineage distinct from its own GUID. */
-function isFork(repoConfig: DeletedRepoConfig): boolean {
-  return !!repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid;
-}
-
 /**
- * Machines other than the one just deleted from that hold a pushed copy, as
- * recorded by `repo push` in `pushState`. A repo lives on its placement machine
- * only; the push record is the sole evidence of another holder.
+ * Commander stores `--no-docker` as `docker: false` and never sets `noDocker`, so the flag was a no-op;
+ * this maps the parsed options to the shape handleRepoCreate takes (callers other than the CLI pass
+ * `noDocker` directly).
  */
-function otherHolders(repoConfig: DeletedRepoConfig, machineName: string): string[] {
-  return Object.keys(repoConfig.pushState ?? {}).filter((m) => m !== machineName);
-}
-
-/**
- * Settle the config entry after a successful delete and say what happened. The
- * message matches the outcome: archived (moved), dropped (a fork with no other
- * holder, its credential is the parent's so nothing is lost), or retained with
- * the true reason (pushed copies elsewhere, or a grand repo whose credential
- * backups restore with).
- */
-export async function settleConfigEntry(
-  name: string,
-  machineName: string,
-  repoConfig: DeletedRepoConfig,
-  archiveConfig: boolean
-): Promise<void> {
-  // A fork with no other holder is archived like --archive-config rather than removed: the name is free for a re-fork, and the archived record keeps the repository GUID that a restore of the fork's backups needs.
-  const holders = otherHolders(repoConfig, machineName);
-  if (archiveConfig || (holders.length === 0 && isFork(repoConfig))) {
-    await configService.archiveRepository(name);
-    outputService.info(t('commands.repo.delete.archived', { repository: name }));
-    outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
-    return;
-  }
-  if (holders.length > 0) {
-    outputService.info(
-      t('commands.repo.delete.configRetainedElsewhere', {
-        repository: name,
-        machines: holders.join(', '),
-      })
-    );
-  } else {
-    outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
-  }
-  outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
-}
-
-/** Handle post-delete success: cleanup, timeline, config-entry settlement, hints. */
-async function handleDeleteSuccess(
-  name: string,
-  machineName: string,
-  repoConfig: DeletedRepoConfig,
-  archiveConfig: boolean,
-  result: import('../services/executor/local-executor.js').ExecuteResult,
-  originalRef?: string
-): Promise<void> {
-  await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
-  // When the user invoked `repo delete --name app` and the resolver returned `app:latest`, VS Code SSH artifacts persisted under the original bare alias survive the cleanup above. Sweep that name too.
-  if (originalRef && originalRef !== name) {
-    await cleanupDeletedRepoSSH(machineName, originalRef).catch(() => {});
-  }
-
-  if (result.allSteps && result.allSteps.length > 0) {
-    renderTimelineTotal(result.allSteps);
-  } else {
-    outputService.success(t('commands.repo.delete.completed'));
-  }
-  await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
-  outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
-}
-
-/**
- * Handle the repo delete action body (spec 03 §5.4): derive the machine (and the
- * kube arm) from the ref's placement, then resolve the STRICT destructive key so
- * a bare ambiguous ref fails closed (#495) rather than deleting the wrong repo.
- */
-async function handleRepoDelete(
-  ref: string,
-  options: {
-    archiveConfig?: boolean;
-    yes?: boolean;
-    debug?: boolean;
-    skipRouterRestart?: boolean;
-    dryRun?: boolean;
-  }
-): Promise<void> {
-  try {
-    // Converge-to-absent (#45/#95): delete RETAINS the config family by design ("may exist on other machines"), so a delete whose image is already gone is a legitimate sequence, resolve with absentOk and skip the machine dispatch on a definite absence instead of refusing with exit 12.
-    const { name, repoKey, machineName, kubeCluster, imageAbsent } = await resolveRepoRef(ref, {
-      absentOk: true,
-    });
-    const { key: target, config: repoConfig } =
-      await configService.resolveDestructiveTarget(repoKey);
-    await assertCommandPolicy(CMD.REPO_DELETE, target);
-
-    await configService.ensureRepositoryNetworkId(target);
-
-    if (options.dryRun) {
-      outputService.print(
-        {
-          dryRun: true,
-          repository: target,
-          machine: machineName,
-          guid: repoConfig.repositoryGuid,
-          archiveConfig: !!options.archiveConfig,
-        },
-        getOutputFormat()
-      );
-      return;
-    }
-
-    if (!options.yes) {
-      const { askConfirm } = await import('../utils/prompt.js');
-      const confirmed = await askConfirm(
-        t('commands.repo.delete.confirm', { repository: target, machine: machineName })
-      );
-      if (!confirmed) {
-        outputService.info(t('status.cancelled'));
-        return;
-      }
-    }
-
-    outputService.info(
-      t('commands.repo.delete.starting', { repository: target, machine: machineName })
-    );
-
-    // Definite machine-arm absence: the image is already gone, converge straight to the config-side completion (retention/archive messaging).
-    const result: import('../services/executor/local-executor.js').ExecuteResult = imageAbsent
-      ? { success: true, stdout: '', stderr: '', exitCode: 0, durationMs: 0 }
-      : await getExecutor().execute({
-          functionName: 'repository_delete',
-          machineName,
-          ...(kubeCluster !== undefined && { kubeCluster }),
-          // #74, the asymmetric half: `repository_create` above already declares the datastore it recorded, and delete said nothing, so a repo created on a named datastore could not be deleted from it, renet looking for the image on the machine's default.
-          datastore: await recordedDatastoreMount(target),
-          params: { repository: target },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        });
-
-    if (result.success) {
-      await handleDeleteSuccess(
-        target,
-        machineName,
-        repoConfig,
-        !!options.archiveConfig,
-        result,
-        name
-      );
-    } else {
-      renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
-    }
-  } catch (error) {
-    handleError(error);
-  }
+export function repoCreateOptions(options: {
+  machine?: string;
+  datastore?: string;
+  size?: string;
+  docker?: boolean;
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+}): Parameters<typeof handleRepoCreate>[1] {
+  const { docker, ...rest } = options;
+  return { ...rest, noDocker: docker === false };
 }
 
 /** Register `repo create` and `repo delete` subcommands. */
@@ -509,7 +469,7 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (name: string, options) => {
-      await handleRepoCreate(name, options);
+      await handleRepoCreate(name, repoCreateOptions(options));
     });
 
   // repo delete <ref>
@@ -519,6 +479,7 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
     .description(t('commands.repo.delete.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--archive-config', t('commands.repo.delete.archiveOption'))
+    .option('--purge-backups', t('commands.repo.delete.purgeBackupsOption'))
     .option('-y, --yes', t('options.yes'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))

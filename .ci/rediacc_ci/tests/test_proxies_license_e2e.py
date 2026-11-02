@@ -111,17 +111,17 @@ def test_count_matches_each_control_class_independently() -> None:
         "[enforcing] scenario A PASS\n"
         "[enforcing] scenario B PASS\n"
         "[enforcing] scenario C FAIL\n"
-        "[nolicense] scenario D FAIL\n"
-        "[nolicense] scenario E FAIL\n"
+        "[keyless] scenario D FAIL\n"
+        "[keyless] scenario E FAIL\n"
         "[wrong-key] scenario F FAIL\n"
         "unrelated chatter line"
     )
     assert license_e2e._count(license_e2e._ENFORCING_PASS_RE, both) == 2
     assert license_e2e._count(license_e2e._ENFORCING_FAIL_RE, both) == 1
-    assert license_e2e._count(license_e2e._NOLICENSE_FAIL_RE, both) == 2
+    assert license_e2e._count(license_e2e._KEYLESS_FAIL_RE, both) == 2
     assert license_e2e._count(license_e2e._WRONGKEY_FAIL_RE, both) == 1
 
 
 def test_count_is_zero_on_text_with_no_matches() -> None:
     assert license_e2e._count(license_e2e._ENFORCING_PASS_RE, "nothing here") == 0
-    assert license_e2e._count(license_e2e._NOLICENSE_FAIL_RE, "") == 0
+    assert license_e2e._count(license_e2e._KEYLESS_FAIL_RE, "") == 0

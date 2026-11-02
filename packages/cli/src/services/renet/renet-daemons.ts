@@ -1,0 +1,275 @@
+/**
+ * Moving renet daemons onto a replaced binary (C2) and saying which still run an old one (C4).
+ *
+ * After `machine setup` replaces renet, `renet daemons upgrade --json` restarts the hub units on the
+ * new binary; when the remote renet predates that verb, a /proc probe still reports what is stale.
+ * `machine status` and `machine health` read the same probe.
+ */
+
+import type { SFTPClient } from '../../remote/sftp/index.js';
+import { shellQuote } from '../../utils/shell-quote.js';
+import { outputService } from '../core/output.js';
+import { isRenetFlagUnsupported, renetOlderThanCliMessage } from '../executor/job-client.js';
+
+/** A renet process and the binary it runs. */
+export interface RenetProcess {
+  pid: number;
+  /** The systemd unit the process belongs to, or '-' when it is outside one. */
+  unit: string;
+  /** /proc/<pid>/exe target; ends in " (deleted)" when the file was replaced under it. */
+  exe: string;
+}
+
+/**
+ * One exec that lists every renet process with its unit and binary, plus the binary `current`
+ * resolves to. Reads /proc only (no renet call), so it answers on a machine whose renet predates
+ * `daemons upgrade`. Output: one `pid<TAB>unit<TAB>exe<TAB>current` line per process.
+ */
+export function buildRenetProcessProbeCommand(currentPath: string): string {
+  const script = [
+    `cur=$(readlink -f ${currentPath} 2>/dev/null || true)`,
+    'for d in /proc/[0-9]*; do',
+    '  exe=$(readlink "$d/exe" 2>/dev/null) || continue',
+    '  case "$exe" in */renet|*"/renet (deleted)") ;; *) continue ;; esac',
+    `  unit=$(sed -n 's#^.*/\\([^/]*\\.service\\)$#\\1#p' "$d/cgroup" 2>/dev/null | head -n 1)`,
+    '  printf "%s\\t%s\\t%s\\t%s\\n" "${d#/proc/}" "${unit:--}" "$exe" "$cur"',
+    'done',
+    'true',
+  ].join('\n');
+  return `sudo sh -c ${shellQuote(script)}`;
+}
+
+/**
+ * The stale processes in a probe's output: those whose binary was deleted under them, or that run a
+ * binary other than the one `current` resolves to. With no `current` link only deletion counts.
+ */
+export function parseStaleRenetProcesses(output: string): RenetProcess[] {
+  const stale: RenetProcess[] = [];
+  for (const line of output.split('\n')) {
+    const [pidText, unit, exe, current] = line.split('\t');
+    const pid = Number(pidText);
+    if (!Number.isInteger(pid) || pid <= 0 || !exe) continue;
+    const deleted = exe.endsWith(' (deleted)');
+    const differs = Boolean(current) && exe !== current;
+    if (deleted || differs) stale.push({ pid, unit: unit || '-', exe });
+  }
+  return stale.sort((a, b) => a.pid - b.pid);
+}
+
+/** The renet processes on a machine still running a replaced binary (machine status, health). */
+export async function probeStaleRenetProcesses(
+  sftp: Pick<SFTPClient, 'exec'>,
+  currentPath: string
+): Promise<RenetProcess[]> {
+  return parseStaleRenetProcesses(await sftp.exec(buildRenetProcessProbeCommand(currentPath)));
+}
+
+/** One container of a repository after its supervisor restart. */
+interface RepoContainerHealth {
+  id: string;
+  name: string;
+  /** docker state: running, exited, ..., or `missing` when the container is gone. */
+  state: string;
+  /** healthcheck status, or `none` when the container has no healthcheck. */
+  health: string;
+}
+
+/**
+ * A repository after its `rediacc-docker-N` supervisor restart: the containers that ran before it,
+ * started again by renet, and whether each is running (and healthy where it has a healthcheck).
+ */
+interface RepoHealth {
+  unit: string;
+  networkId: number;
+  healthy: boolean;
+  containers: RepoContainerHealth[];
+  error?: string;
+}
+
+/** What `renet daemons upgrade --json` did, or what is still stale when it could not run. */
+export interface DaemonUpgradeReport {
+  /** False when the remote renet has no `daemons upgrade` or it failed; `stale` then comes from the probe. */
+  ran: boolean;
+  restarted: RenetProcess[];
+  /** `reason` says why a unit was left stale, e.g. that an earlier unit in the rolling restart failed. */
+  stale: (RenetProcess & { reason?: string })[];
+  failed: (RenetProcess & { error?: string })[];
+  /** Per-repo health after each supervisor restart (`--include-docker`); empty from an older renet. */
+  repos: RepoHealth[];
+}
+
+interface DaemonUpgradeEntry {
+  pid?: unknown;
+  unit?: unknown;
+  exe?: unknown;
+  action?: unknown;
+  error?: unknown;
+}
+
+/**
+ * Parse `renet daemons upgrade --json`: `{"processes":[{"pid","unit","exe","action","error"?}]}`
+ * where action is `restarted` (a hub unit restarted on the new binary), `stale` (reported, not
+ * restarted: a per-repo supervisor without --include-docker) or `failed`. Unknown actions count as
+ * stale, so nothing a newer renet reports is dropped silently.
+ */
+export function parseDaemonUpgradeJson(output: string): Omit<DaemonUpgradeReport, 'ran'> {
+  const parsed: unknown = JSON.parse(output);
+  const entries: DaemonUpgradeEntry[] = Array.isArray(parsed)
+    ? (parsed as DaemonUpgradeEntry[])
+    : (((parsed as { processes?: unknown }).processes ?? []) as DaemonUpgradeEntry[]);
+  const report: Omit<DaemonUpgradeReport, 'ran'> = {
+    restarted: [],
+    stale: [],
+    failed: [],
+    repos: Array.isArray(parsed) ? [] : parseRepoHealth((parsed as { repos?: unknown }).repos),
+  };
+  for (const e of entries) if (isRecord(e)) sortEntry(report, e);
+  return report;
+}
+
+/** File one process entry under restarted, failed or stale, keeping renet's error or reason. */
+function sortEntry(report: Omit<DaemonUpgradeReport, 'ran'>, e: DaemonUpgradeEntry): void {
+  const proc = toRenetProcess(e);
+  const detail = typeof e.error === 'string' && e.error ? e.error : undefined;
+  if (e.action === 'restarted') report.restarted.push(proc);
+  else if (e.action === 'failed') report.failed.push({ ...proc, ...(detail && { error: detail }) });
+  else if (e.action !== 'current')
+    report.stale.push({ ...proc, ...(detail && { reason: detail }) });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+/** The `repos` array of the report: one entry per supervisor restarted with --include-docker. */
+function parseRepoHealth(value: unknown): RepoHealth[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((entry) => ({
+    unit: text(entry.unit) || '-',
+    networkId: Number(entry.network_id),
+    healthy: entry.healthy === true,
+    containers: (Array.isArray(entry.containers) ? entry.containers : [])
+      .filter(isRecord)
+      .map((c) => ({
+        id: text(c.id),
+        name: text(c.name),
+        state: text(c.state),
+        health: text(c.health) || 'none',
+      })),
+    ...(typeof entry.error === 'string' && entry.error && { error: entry.error }),
+  }));
+}
+
+function toRenetProcess(e: DaemonUpgradeEntry): RenetProcess {
+  return {
+    pid: Number(e.pid),
+    unit: typeof e.unit === 'string' && e.unit ? e.unit : '-',
+    exe: typeof e.exe === 'string' ? e.exe : '',
+  };
+}
+
+function describeProcesses(procs: RenetProcess[]): string {
+  return procs.map((p) => `${p.unit} (pid ${p.pid})`).join(', ');
+}
+
+/** One warning per repository left unhealthy, with its containers; the error is said once, so a failed process entry for the same unit that printed it is not repeated. */
+function warnUnhealthyRepos(report: DaemonUpgradeReport): void {
+  for (const r of report.repos.filter((repo) => !repo.healthy)) {
+    const said = report.failed.some((f) => f.unit === r.unit && f.error === r.error);
+    const containers = r.containers.map((c) => `${c.name} ${c.state}/${c.health}`).join(', ');
+    const error = r.error && !said ? `: ${r.error}` : '';
+    outputService.warn(
+      `Repository not healthy after the restart: ${r.unit}${error} (containers: ${containers || 'none'})`
+    );
+  }
+}
+
+/** Say what a daemon upgrade restarted and what is still stale. */
+export function reportDaemonUpgrade(report: DaemonUpgradeReport): void {
+  if (report.restarted.length > 0) {
+    outputService.info(
+      `Restarted renet daemons on the new binary: ${describeProcesses(report.restarted)}`
+    );
+  }
+  const healthy = report.repos.filter((r) => r.healthy);
+  if (healthy.length > 0) {
+    const repos = healthy
+      .map(
+        (r) => `${r.unit} (${r.containers.length} container${r.containers.length === 1 ? '' : 's'})`
+      )
+      .join(', ');
+    outputService.info(`Repositories running and healthy after the restart: ${repos}`);
+  }
+  for (const f of report.failed) {
+    outputService.warn(
+      `renet daemon restart failed: ${f.unit} (pid ${f.pid})${f.error ? `: ${f.error}` : ''}`
+    );
+  }
+  warnUnhealthyRepos(report);
+  if (report.stale.length > 0) {
+    const how = report.ran
+      ? 'Restart them with: rdc machine restart-services <machine> --include-docker'
+      : 'This renet has no `daemons upgrade`; they keep the old binary until restarted';
+    outputService.warn(
+      `renet processes still running a replaced binary: ${describeProcesses(report.stale)}. ${how}`
+    );
+  }
+}
+
+/**
+ * `renet daemons upgrade --json`: restart hub units still on a replaced binary one at a time and
+ * report per-repo supervisors. When the remote renet cannot run it (an older binary, or a failure),
+ * the /proc probe still says what is stale. Never throws: the binary update already happened.
+ */
+export async function upgradeDaemons(
+  sftp: Pick<SFTPClient, 'exec'>,
+  remoteInstallPath: string,
+  currentPath: string
+): Promise<DaemonUpgradeReport> {
+  try {
+    const output = await sftp.exec(
+      `sudo ${shellQuote(remoteInstallPath)} daemons upgrade --json 2>/dev/null`
+    );
+    return { ran: true, ...parseDaemonUpgradeJson(output) };
+  } catch {
+    let stale: RenetProcess[] = [];
+    try {
+      stale = await probeStaleRenetProcesses(sftp, currentPath);
+    } catch {
+      stale = [];
+    }
+    return { ran: false, restarted: [], stale, failed: [], repos: [] };
+  }
+}
+
+/** The exec line for `renet daemons upgrade --json`; --keep-slots 0 leaves slot pruning to the install. */
+export function buildDaemonsRestartCommand(renetPath: string, includeDocker: boolean): string {
+  return `sudo ${shellQuote(renetPath)} daemons upgrade --json --keep-slots 0${includeDocker ? ' --include-docker' : ''}`;
+}
+
+/**
+ * `machine restart-services`: roll every renet daemon still on a replaced binary onto the installed one. renet restarts one unit at a time and confirms each (active, main process on the current binary, stable across two polls) before the next; per-repo `rediacc-docker-N` supervisors join only with `includeDocker`, one repo at a time, which restarts that repo's containers.
+ * Unlike {@link upgradeDaemons} this throws: an operator asked for the restart, so a renet that cannot run it is an error. A renet without the verb or flag answers with the version-skew message.
+ */
+export async function restartDaemons(
+  sftp: Pick<SFTPClient, 'exec'>,
+  machineName: string,
+  renetPath: string,
+  includeDocker: boolean
+): Promise<DaemonUpgradeReport> {
+  let output: string;
+  try {
+    output = await sftp.exec(buildDaemonsRestartCommand(renetPath, includeDocker));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isRenetFlagUnsupported(message) || /unknown command/i.test(message)) {
+      throw new Error(renetOlderThanCliMessage(machineName));
+    }
+    throw error;
+  }
+  return { ran: true, ...parseDaemonUpgradeJson(output) };
+}

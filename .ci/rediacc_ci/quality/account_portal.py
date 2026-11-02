@@ -81,11 +81,11 @@ OUTPUT_REL = "workers/account/dist/account/index.html"
 
 # Every external command, as an argv vector. Named rather than inlined so the ORDER and the ARGUMENTS are both readable in one place -- the order is the gate's control flow and the arguments are what it actually asserts.
 NPM_CI = ["npm", "ci", "--ignore-scripts"]
-TSC = ["npx", "tsc", "--noEmit"]
-TSC_E2E = ["npx", "tsc", "--noEmit", "-p", "e2e/tsconfig.json"]
-BIOME = ["npx", "biome", "check", "private/account/web/src/"]
+TSC = ["npx", "--no-install", "tsc", "--noEmit"]
+TSC_E2E = ["npx", "--no-install", "tsc", "--noEmit", "-p", "e2e/tsconfig.json"]
+BIOME = ["npx", "--no-install", "biome", "check", "private/account/web/src/"]
 ONBOARDING = ["npm", "run", "build:account-onboarding"]
-VITE_BUILD = ["npx", "vite", "build"]
+VITE_BUILD = ["npx", "--no-install", "vite", "build"]
 
 
 def run(argv: list[str], cwd: pathlib.Path) -> int:
@@ -201,6 +201,7 @@ def main(argv: list[str] | None = None) -> int:
 
 _NPX_STUB = """#!/usr/bin/env bash
 # Stub npx. Exit codes come from the environment so one script serves every case.
+[ "$1" = "--no-install" ] && shift
 case "$1 $2 $3" in
     "tsc --noEmit -p") echo "stub: e2e tsc"; exit "${STUB_E2E_RC:-0}" ;;
 esac
@@ -356,11 +357,15 @@ def selftest() -> int:
         write_stubs(bindir)
 
         # THE COMMAND VECTORS THEMSELVES. A port that ran `tsc` without `--noEmit` would EMIT files into the tree and still exit 0, and every control above would stay green. Asserted directly.
-        ctl.check("ARGV: the typecheck really passes --noEmit", TSC, ["npx", "tsc", "--noEmit"])
+        ctl.check(
+            "ARGV: the typecheck really passes --noEmit",
+            TSC,
+            ["npx", "--no-install", "tsc", "--noEmit"],
+        )
         ctl.check(
             "ARGV: the e2e typecheck points at its own tsconfig",
             TSC_E2E,
-            ["npx", "tsc", "--noEmit", "-p", "e2e/tsconfig.json"],
+            ["npx", "--no-install", "tsc", "--noEmit", "-p", "e2e/tsconfig.json"],
         )
         ctl.check(
             "ARGV: the install states --ignore-scripts at the call site",

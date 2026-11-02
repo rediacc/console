@@ -56,7 +56,7 @@ REASON = "x" * 90
 
 # ---- the real job's lines (job 112766678846), trimmed --------------------------------------------
 PREV_TAIL = (
-    "2026-10-07T11:23:20.4084012Z ✓ transitions: 275 box(es) open at 97f3917c0 all survive at HEAD"
+    "2026-10-07T11:23:20.4084012Z ✓ transitions: 275 box(es) open at 47da580b2 all survive at HEAD"
 )
 
 

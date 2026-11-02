@@ -319,7 +319,7 @@ def docker(
 ) -> DockerResult:
     """Run `docker <args>`, bounded. Never raises for a non-zero exit.
 
-    `host` sets DOCKER_HOST for this call only, which is how every repo in this product is addressed: each one has its own daemon at `/var/run/rediacc/docker-<networkId>.sock`. Passing it here rather than exporting it means two repos can be queried from one process without either of them inheriting the other's socket.
+    `host` sets DOCKER_HOST for this call only, which is how every repo in this product is addressed: each one has its own daemon at `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`. Passing it here rather than exporting it means two repos can be queried from one process without either of them inheriting the other's socket.
     """
     environ = dict(os.environ if env is None else env)
     environ.update(NONINTERACTIVE)

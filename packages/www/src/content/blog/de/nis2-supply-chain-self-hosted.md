@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: de
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -84,7 +84,7 @@ Der Operator meldet sich nie in der Infrastruktur von Rediacc als Unternehmen an
 
 1. **Workstation des Operators.** Führt `rdc` aus. Hält den LUKS-Credential.
 2. **Eigener Server des Operators.** Führt `renet` aus. Hält die LUKS-verschlüsselten Repositories.
-3. **Eigenes Backup-Ziel des Operators.** Jeder rclone-kompatible Speicher (S3, B2, OneDrive, On-Prem-MinIO). Empfängt verschlüsselte Volumes.
+3. **Backup-Ziel.** Entweder eine zweite Maschine, die der Operator kontrolliert (`rdc repo push`), oder der gehostete Chunk-Store (`rdc backup snapshot`), der nur Chiffretext-Zellen hält, adressiert über ihren SHA-256. Das LUKS-Credential erreicht keines von beiden.
 
 Es gibt keine Ebene 4. Rediacc als Unternehmen ist kein Unterauftragsverarbeiter für Operatoren, die nicht den experimentellen [Cloud-Adapter](/de/docs/architecture) nutzen. Für Self-hosted-Operatoren ist die Beziehung zu Rediacc als Unternehmen eine Softwarelizenz, kein Auftragsverarbeitungsvertrag.
 
@@ -129,7 +129,7 @@ Nach dem Wechsel zu Rediacc auf Hetzner:
 | Unterauftragsverarbeiter | (1) Keine für Self-Hosted; (2) Nur Hetzner-intern, im Hetzner-AVV aufgelistet |
 | Vertragsstatus | (1) Softwarelizenz, kein AVV erforderlich; (2) Hetzner-AVV + SCCs bereits vorhanden |
 | Schlüsselgewahrsam | Kunde (LUKS-Credential in Operator-Konfiguration, nicht auf dem Server) |
-| Exit-Plan | "rdc repo pull von einem beliebigen rclone-kompatiblen Ziel. Volumes sind LUKS-verschlüsselt; Operator hält Credential." |
+| Exit-Plan | "rdc repo pull von der zweiten Maschine oder rdc backup restore aus einem beliebigen gespeicherten Snapshot. Volumes sind LUKS-verschlüsselt; Operator hält Credential." |
 | Letzte Bewertung | (2) durch bestehende IaaS-Bewertung abgedeckt |
 
 Zwei Registereinträge statt einem. Der kritische Eintrag gilt für den IaaS-Anbieter, bei dem der Einkäufer bereits einen AVV und einen getesteten Exit-Plan hatte, weil IaaS eine Beziehung ist, die die meisten Teams zu managen wissen. Der Rediacc-Eintrag ist nicht kritisch, weil es sich um eine Softwarelizenz handelt, nicht um einen Auftragsverarbeitungsvertrag.

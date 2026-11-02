@@ -41,7 +41,6 @@ IT FAILS OPEN, LOUDLY, on a missing engine, exactly as its sibling does and for 
 
 import pathlib
 import re
-import shlex
 import sys
 
 from rediacc_hooks import commit_policy, hookio, shellscan
@@ -203,17 +202,14 @@ def messages(command, cwd=None):
 
     EXPORTED SO THE SUITE CAN DRIVE IT DIRECTLY, without building a payload and running a chain. The parsing is the interesting half of this guard and the half most likely to be wrong, so it is a function rather than an inlined block inside `run`.
 
-    `shlex.split` RATHER THAN A REGEX OVER `-m`. A regex has to decide what a quote means, and the answers differ between `-m "a b"`, `-m'a b'`, `-m"a b"`
-    and `--message=a\\ b`. shlex is the shell's own answer to that question. It
-    RAISES on an unbalanced quote, which is a command the shell would reject too, and the caller treats that as nothing-to-examine rather than as a finding.
+    THE SHELL LEXER'S WORDS RATHER THAN A REGEX OVER `-m`. A regex has to decide what a quote means, and the answers differ between `-m "a b"`, `-m'a b'`, `-m"a b"`
+    and `--message=a\\ b`. `shellscan`'s lexer is the shell's own answer to that question, and `commit_policy.target_segments` hands each target over with its launchers (`timeout N`, `env VAR=...`, `nice`, `nohup`, `sudo`, a bare assignment) already stripped. An unlexable command raises, which is a command the shell would reject too.
     """
     out: list[tuple[str, str]] = []
-    # THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO (#91c4716c): `commit_policy.target_segments` says why, and the commit guards read their `-F -` message through the same walk. The flag arms are scoped the same way: `tail -F log` or `grep -m 5` chained beside a commit is not a message either, so only the target's own source span is shlex-split.
+    # THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO (#91c4716c): `commit_policy.target_segments` says why, and the commit guards read their `-F -` message through the same walk. The flag arms are scoped the same way: `tail -F log` or `grep -m 5` chained beside a commit is not a message either, so only the target's own words are read.
+    # THE WORDS, NOT A SHLEX SPLIT OF THE SOURCE SPAN (#736c233b). `segment.text` starts at the stage's FIRST word, launcher included, so `timeout 600 git commit -F msg` split to a head of `timeout`, `_parsed` answered None, and the message went unread: `block_unproven_bulk_transform` refused a proven 57-file commit as carrying no proof, and this guard linted nothing behind `env X=1`, `nice`, `nohup`, `sudo` or a bare `X=1`. `segment.words` is the same stage after `shellscan._strip_prefixes`, the launcher set `every_run` resolves, with quotes already removed by the lexer.
     for segment in commit_policy.target_segments(command, _is_target_stage):
-        try:
-            tokens = shlex.split(segment.text, comments=False)
-        except ValueError:
-            tokens = []
+        tokens = segment.words
         if _reads_stdin(tokens):
             out.extend(("heredoc", body) for body in segment.stdin)
         out.extend(("heredoc", body) for body in segment.inner)
@@ -314,7 +310,7 @@ PARAM = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
 def _expand_assigned(word, command):
     """`word` with the command's own earlier `NAME=value` statements expanded, as bash would before reading `-F $S/msg`.
 
-    shlex returns `$S/msg` verbatim, so without this `-F` read a file literally named `$S/msg`, got nothing, and every guard reading `messages()` judged an EMPTY message: a commit carrying its `PR-TASK:` trailer and proof line was refused for lacking them (#09fd19cd, 2026-09-25). Only statements BEFORE the verb count (`shellscan.assignments_before`); a word that still carries `$` or a backtick afterwards is returned unchanged, and reading it fails open as before.
+    The lexer returns `$S/msg` verbatim, so without this `-F` read a file literally named `$S/msg`, got nothing, and every guard reading `messages()` judged an EMPTY message: a commit carrying its `PR-TASK:` trailer and proof line was refused for lacking them (#09fd19cd, 2026-09-25). Only statements BEFORE the verb count (`shellscan.assignments_before`); a word that still carries `$` or a backtick afterwards is returned unchanged, and reading it fails open as before.
     """
     if "$" not in word:
         return word

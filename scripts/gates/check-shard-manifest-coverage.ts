@@ -29,9 +29,9 @@
  * one.
  *
  * THE ENVIRONMENT IS PINNED, NOT INHERITED. `playwright.config.ts` gates projects on `CI`,
- * `FULL_INTEGRATION`, `CLI_SUITE`, `BACKUP_STORAGE_SUITE` and `BACKUP_BROWSE_AT_SUITE`, and it loads the untracked
+ * `FULL_INTEGRATION`, `CLI_SUITE`, `BACKUP_STORAGE_SUITE`, `BACKUP_BROWSE_AT_SUITE` and `BACKUP_LARGE_REPO_SUITE`, and it loads the untracked
  * `packages/e2e-tests/.env`, which sets `CI` on at least one dev box. The sharded E2E
- * Workers legs run with `CI` set and those four flags unset (the full-integration suites
+ * Workers legs run with `CI` set and those flags unset (the full-integration suites
  * ride `--also`, not the manifest), so this gate sets exactly that before enumerating, and
  * dotenv does not override a variable that is already present. The verdict therefore
  * does not depend on whose `.env` it runs beside.
@@ -100,6 +100,7 @@ export const PINNED_ENV: Readonly<Record<string, string>> = {
   CLI_SUITE: '',
   BACKUP_STORAGE_SUITE: '',
   BACKUP_BROWSE_AT_SUITE: '',
+  BACKUP_LARGE_REPO_SUITE: '',
 };
 
 export interface Finding {

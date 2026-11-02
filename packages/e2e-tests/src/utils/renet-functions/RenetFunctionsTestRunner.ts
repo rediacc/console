@@ -1,0 +1,1614 @@
+// RenetFunctionsTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
+import { exec } from 'node:child_process';
+import { userInfo } from 'node:os';
+import { promisify } from 'node:util';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import {
+  DEFAULT_NETWORK_ID,
+  FORK_NETWORK_ID_A,
+  FORK_NETWORK_ID_B,
+  RENET_SETUP_TIMEOUT_MS,
+} from '../../constants';
+import { e2eRepoGuid, installRepoLicence } from '../licence';
+import { log } from '../log';
+import { getSSHExecutor, SSHExecutor } from '../ssh';
+import type { VaultBuilder } from '../vault/VaultBuilder';
+import { RepositoryHelpers } from './helpers/RepositoryHelpers';
+import { SqlHelpers } from './helpers/SqlHelpers';
+import { TestHelpers } from './helpers/TestHelpers';
+import { BackupMethods } from './methods/BackupMethods';
+import { CephMethods } from './methods/CephMethods';
+import { ContainerMethods } from './methods/ContainerMethods';
+import { DaemonMethods } from './methods/DaemonMethods';
+import type {
+  DatastoreAttachOptions,
+  DatastoreCreateOptions,
+  DatastoreForkOptions,
+  DatastoreSnapshotOptions,
+} from './methods/DatastoreMethods';
+import { DatastoreMethods } from './methods/DatastoreMethods';
+import type {
+  KubeIdentityRewriteOptions,
+  KubeInstallOptions,
+  KubeJoinOptions,
+  KubeNodeLabelOptions,
+  KubeNodeRemoveOptions,
+  KubePrepForkOptions,
+  KubeTargetOptions,
+  KubeUpgradeOptions,
+} from './methods/KubeMethods';
+import { KubeMethods } from './methods/KubeMethods';
+import type { RegistryUpOptions, RegistryWireOptions } from './methods/RegistryMethods';
+import { RegistryMethods } from './methods/RegistryMethods';
+import type {
+  DockerPruneFunctionOptions,
+  RepositoryDockerPruneOptions,
+  RepositoryPolicyGetOptions,
+  RepositoryPolicySetOptions,
+  RepositoryTrimOptions,
+} from './methods/RepositoryMethods';
+import { RepositoryMethods } from './methods/RepositoryMethods';
+import { SetupMethods } from './methods/SetupMethods';
+import { SystemCheckMethods } from './methods/SystemCheckMethods';
+import { getOpsManager, OpsManager } from './OpsManager';
+import { formatExecutionLog } from './outputRedaction';
+import { buildPasswordVault } from './passwordVault';
+import { feedStdin } from './stdinFeed';
+import { buildTokenVault } from './tokenVault';
+import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
+
+const execAsync = promisify(exec);
+
+/**
+ * Capture buffer for every SSH command this runner issues.
+ *
+ * WHY THIS EXISTS. `child_process.exec` defaults to a 1 MB stdout/stderr buffer
+ * and KILLS the child the moment it overflows. Every bridge and VM command in
+ * every E2E suite goes through the two execAsync calls below, so any command
+ * chatty enough to produce a megabyte of output was being killed mid-flight --
+ * not failing, killed -- and the test saw a nonsense result instead of the
+ * command's real outcome.
+ *
+ * Observed 2026-07-27 on run 30307775327, `Tests + Infra / E2E Migrate` test 4:
+ * `renet backup push --strategy physical` streams transfer progress, overflowed
+ * the default, and the assertion read
+ * `Expected: 0  Received: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"`.
+ *
+ * 64 MB, above the 32 MB in CliRunner and the 50 MB in ImageTestHelper, because
+ * this path carries whole-image transfer logs rather than CLI output.
+ */
+export const EXEC_MAX_BUFFER = 64 * 1024 * 1024;
+
+/**
+ * Map a child_process failure onto an ExecResult exit code plus a stderr prefix.
+ *
+ * `ExecResult.code` is typed `number`, but Node reports some failures with a
+ * STRING code (`ERR_CHILD_PROCESS_STDIO_MAXBUFFER`, `ERR_CHILD_PROCESS_EPIPE`).
+ * Both call sites used `err.code ?? 1`, which passed that string straight
+ * through as the exit status and produced assertion messages comparing a number
+ * against an error name. Worse, both treated `killed` as proof of a timeout,
+ * so a buffer kill was reported as "Command timed out" and sent the reader
+ * looking for a slow command that was in fact merely verbose.
+ */
+export function describeExecFailure(
+  err: { code?: number | string; killed?: boolean },
+  cmdTimeout: number
+): { code: number; prefix: string } {
+  if (err.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+    return {
+      code: 125,
+      prefix:
+        `Command produced more than ${EXEC_MAX_BUFFER} bytes of output and was killed by the ` +
+        `capture buffer (not a timeout, not a command failure). Raise EXEC_MAX_BUFFER or make ` +
+        `the command quieter.\n`,
+    };
+  }
+  if (err.killed) {
+    return { code: 124, prefix: `Command timed out after ${cmdTimeout}ms\n` };
+  }
+  if (typeof err.code === 'number') {
+    return { code: err.code, prefix: '' };
+  }
+  if (typeof err.code === 'string') {
+    return { code: 1, prefix: `Command failed with ${err.code}\n` };
+  }
+  return { code: 1, prefix: '' };
+}
+const DEFAULT_DATASTORE_PATH = WK_DATASTORE_PATH;
+
+// Re-export types for backwards compatibility
+export type { ExecResult };
+
+/** Test-mode verbs that open an ssh connection to another VM. */
+const CROSS_VM_FUNCTIONS: ReadonlySet<string> = new Set([
+  'backup_push',
+  'backup_pull',
+  'repository_migrate',
+]);
+
+/**
+ * Bridge test runner for executing renet commands on VMs via SSH.
+ *
+ * EXECUTION MODEL:
+ * Host Machine → SSH → Bridge VM → SSH → Target VM → renet command
+ *
+ * All commands execute on the target VM, never locally.
+ * Uses: renet functions once --test-mode --function <name>
+ *
+ * VM IPs are calculated dynamically via OpsManager:
+ * - VM_NET_BASE (required)
+ * - VM_NET_OFFSET (required)
+ * - VM_BRIDGE (required)
+ * - VM_WORKERS (required)
+ * - VM_CEPH_NODES (required)
+ */
+export class RenetFunctionsTestRunner {
+  private readonly defaultTimeout: number;
+  private readonly opsManager: OpsManager;
+  private readonly bridgeVM: string;
+  private readonly targetVM: string;
+  private readonly sshExecutor: SSHExecutor;
+
+  // Method groups
+  private readonly systemCheckMethods: SystemCheckMethods;
+  private readonly setupMethods: SetupMethods;
+  private readonly datastoreMethods: DatastoreMethods;
+  private readonly registryMethods: RegistryMethods;
+  private readonly kubeMethods: KubeMethods;
+  private readonly repositoryMethods: RepositoryMethods;
+  private readonly cephMethods: CephMethods;
+  private readonly containerMethods: ContainerMethods;
+  private readonly daemonMethods: DaemonMethods;
+  private readonly backupMethods: BackupMethods;
+
+  // Helper utilities
+  private readonly testHelpers: TestHelpers;
+  private readonly repositoryHelpers: RepositoryHelpers;
+  private readonly sqlHelpers: SqlHelpers;
+
+  constructor(config: RunnerConfig) {
+    if (!config.targetVM) {
+      throw new Error('targetVM is required - no default execution target');
+    }
+
+    this.opsManager = getOpsManager();
+    this.bridgeVM = this.opsManager.getBridgeVMIp();
+    this.targetVM = this.resolveTargetVM(config.targetVM);
+
+    // Use SSHExecutor for all SSH operations - computes options fresh each time to ensure SSH keys created by `ops up` are always detected
+    this.sshExecutor = getSSHExecutor();
+
+    const timeoutStr = process.env.BRIDGE_TIMEOUT;
+    if (!timeoutStr) {
+      throw new Error('BRIDGE_TIMEOUT environment variable is required');
+    }
+    this.defaultTimeout = Number.parseInt(timeoutStr, 10);
+
+    // Initialize method groups
+    this.systemCheckMethods = new SystemCheckMethods(this.testFunction.bind(this));
+    this.setupMethods = new SetupMethods(this.testFunction.bind(this));
+    this.datastoreMethods = new DatastoreMethods(this.testFunction.bind(this));
+    this.registryMethods = new RegistryMethods(this.testFunction.bind(this));
+    this.kubeMethods = new KubeMethods(this.testFunction.bind(this));
+    this.repositoryMethods = new RepositoryMethods(
+      this.testFunction.bind(this),
+      this.executeViaBridge.bind(this)
+    );
+    this.cephMethods = new CephMethods(this.cephTestFunction.bind(this));
+    this.containerMethods = new ContainerMethods(this.testFunction.bind(this));
+    this.daemonMethods = new DaemonMethods(this.testFunction.bind(this));
+    this.backupMethods = new BackupMethods(
+      this.testFunction.bind(this),
+      this.testFunctionWithVault.bind(this)
+    );
+
+    // Initialize helpers
+    this.testHelpers = new TestHelpers();
+    this.repositoryHelpers = new RepositoryHelpers(this.executeViaBridge.bind(this));
+    this.sqlHelpers = new SqlHelpers(this.executeViaBridge.bind(this));
+  }
+
+  /**
+   * The Ceph functions that keep a repository licence tier (renet tiermap.go): called with no
+   * repository they refuse with LICENSE_REQUIRED, while the build-out functions (pool, cluster,
+   * client config) need none.
+   */
+  private static readonly LICENSED_CEPH_FUNCTIONS = new Set([
+    'ceph_client_mount',
+    'ceph_clone_create',
+    'ceph_clone_flatten',
+    'ceph_clone_image',
+    'ceph_clone_mount',
+    'ceph_image_create',
+    'ceph_image_format',
+    'ceph_image_map',
+    'ceph_image_resize',
+    'ceph_snapshot_create',
+    'ceph_snapshot_protect',
+    'ceph_snapshot_rollback',
+    'ceph_snapshot_unprotect',
+  ]);
+
+  /** One licensed repository per datastore; a failed attempt is not kept, so a later call tries again. */
+  private readonly cephLicensedRepositories = new Map<
+    string,
+    Promise<ExecResult & { guid: string }>
+  >();
+
+  private licenseCephRepository(
+    datastorePath: string | undefined,
+    datastore: string
+  ): Promise<ExecResult & { guid: string }> {
+    // Every tiered Ceph function but ceph_image_create size-checks the repository image before it runs, and the runner cannot know which comes first, so the stand-in image is made up front.
+    return this.licenseRepository(e2eRepoGuid(), { datastorePath, datastore });
+  }
+
+  /**
+   * License a repository GUID on the target and give it a sparse stand-in image, so a tiered
+   * `renet functions once` call naming it passes the executor's licence gate and its image-size
+   * preflight (`<datastore>/repositories/<guid>`). For suites that drive a function against a
+   * network or datastore without ever creating a real repository (GPU grants).
+   */
+  async licenseRepository(
+    guid: string = e2eRepoGuid(),
+    opts: { datastorePath?: string; datastore?: string } = {}
+  ): Promise<ExecResult & { guid: string }> {
+    const datastore = opts.datastore ?? opts.datastorePath ?? DEFAULT_DATASTORE_PATH;
+    const licence = await installRepoLicence(this.executeViaBridge.bind(this), {
+      repositoryGuid: guid,
+      kind: 'grand',
+      datastorePath: opts.datastorePath,
+    });
+    if (licence.code !== 0) return { ...licence, guid };
+    // Never over an existing file: `truncate` would shrink it.
+    const image = `${datastore}/repositories/${guid}`;
+    const stub = await this.executeViaBridge(
+      `sudo mkdir -p ${datastore}/repositories && (sudo test -e ${image} || sudo truncate -s 1G ${image})`
+    );
+    return { ...stub, guid };
+  }
+
+  /**
+   * Run a Ceph function, naming a licensed repository when its tier asks for one. One grand
+   * licence per runner covers every call; explicit images stay explicit because the harness
+   * always passes `--image`, so the repository only supplies the licence identity.
+   */
+  private async cephTestFunction(opts: TestFunctionOptions): Promise<ExecResult> {
+    if (opts.repository || !RenetFunctionsTestRunner.LICENSED_CEPH_FUNCTIONS.has(opts.function)) {
+      return this.testFunction(opts);
+    }
+    const datastore = opts.datastorePath ?? DEFAULT_DATASTORE_PATH;
+    let pending = this.cephLicensedRepositories.get(datastore);
+    if (pending === undefined) {
+      pending = this.licenseCephRepository(opts.datastorePath, datastore);
+      this.cephLicensedRepositories.set(datastore, pending);
+    }
+    const licensed = await pending;
+    if (licensed.code !== 0) {
+      // Only this attempt's entry: another caller may already have started a newer one.
+      if (this.cephLicensedRepositories.get(datastore) === pending) {
+        this.cephLicensedRepositories.delete(datastore);
+      }
+      return licensed;
+    }
+    return this.testFunction({ ...opts, repository: licensed.guid });
+  }
+
+  /** The ssh user the runner connects as on the bridge and the targets. */
+  private sshUser(): string {
+    // USER is unset in some non-login shells (cron, containers); the account database still answers.
+    return process.env.USER || userInfo().username;
+  }
+
+  /** The mesh key renet's `sudo` child must use for cross-VM transfers (root has none of ours). */
+  private sshKeyPath(): string {
+    return `/home/${this.sshUser()}/.ssh/id_rsa`;
+  }
+
+  /**
+   * Resolve VM target name to IP address.
+   */
+  private resolveTargetVM(target: VMTarget): string {
+    switch (target) {
+      case 'worker1': {
+        const workers = this.opsManager.getWorkerVMIps();
+        if (workers.length === 0) {
+          throw new Error(
+            'No worker VMs configured - cannot target worker1 in a Ceph-only topology'
+          );
+        }
+        return workers[0];
+      }
+      case 'worker2': {
+        const workers = this.opsManager.getWorkerVMIps();
+        if (workers.length < 2) {
+          throw new Error('Less than 2 worker VMs configured - cannot target worker2');
+        }
+        return workers[1];
+      }
+      case 'ceph1':
+        return this.opsManager.getCephVMIps()[0];
+      case 'ceph2':
+        return this.opsManager.getCephVMIps()[1];
+      case 'ceph3':
+        return this.opsManager.getCephVMIps()[2];
+      default:
+        // Assume it's an IP address
+        return target;
+    }
+  }
+
+  /**
+   * Factory method to create a runner for worker VMs.
+   */
+  static forWorker(num: 1 | 2 = 1): RenetFunctionsTestRunner {
+    return new RenetFunctionsTestRunner({ targetVM: `worker${num}` });
+  }
+
+  /**
+   * Factory method to create a runner for Ceph VMs.
+   */
+  static forCeph(num: 1 | 2 | 3 = 1): RenetFunctionsTestRunner {
+    return new RenetFunctionsTestRunner({ targetVM: `ceph${num}` });
+  }
+
+  // ===========================================================================
+  // VM Information & Management
+  // ===========================================================================
+
+  /**
+   * Get the OpsManager for VM operations.
+   */
+  getOpsManager(): OpsManager {
+    return this.opsManager;
+  }
+
+  /**
+   * Get the current target VM IP.
+   */
+  getTargetVM(): string {
+    return this.targetVM;
+  }
+
+  /**
+   * Get bridge VM IP (calculated from ops config).
+   */
+  getBridgeVM(): string {
+    return this.bridgeVM;
+  }
+
+  /**
+   * Get first worker VM IP (calculated from ops config).
+   * Throws if no worker VMs are configured (a Ceph-only topology).
+   */
+  getWorkerVM(): string {
+    const workers = this.opsManager.getWorkerVMIps();
+    if (workers.length === 0) {
+      throw new Error('No worker VMs configured - cannot get worker VM in a Ceph-only topology');
+    }
+    return workers[0];
+  }
+
+  /**
+   * Get second worker VM IP (calculated from ops config).
+   * Throws if less than 2 worker VMs are configured.
+   */
+  getWorkerVM2(): string {
+    const workers = this.opsManager.getWorkerVMIps();
+    if (workers.length < 2) {
+      throw new Error('Less than 2 worker VMs configured - cannot get worker2');
+    }
+    return workers[1];
+  }
+
+  /**
+   * Get all worker VM IPs (calculated from ops config).
+   */
+  getWorkerVMs(): string[] {
+    return this.opsManager.getWorkerVMIps();
+  }
+
+  /**
+   * Get all Ceph VM IPs.
+   */
+  getCephVMs(): string[] {
+    return this.opsManager.getCephVMIps();
+  }
+
+  /**
+   * Get all VM IPs including bridge (calculated from ops config).
+   */
+  getAllVMs(): string[] {
+    return this.opsManager.getVMIps();
+  }
+
+  /**
+   * Check if a VM is reachable (ping + SSH).
+   */
+  async isVMReachable(ip: string): Promise<boolean> {
+    const reachable = await this.opsManager.isVMReachable(ip);
+    if (!reachable) return false;
+    return this.opsManager.isSSHReady(ip);
+  }
+
+  /**
+   * Ensure VMs are running (starts them if not).
+   * Uses ops scripts to manage VMs.
+   */
+  ensureVMsRunning(
+    options: { basic?: boolean } = {}
+  ): Promise<{ success: boolean; message: string }> {
+    return this.opsManager.ensureVMsRunning(options);
+  }
+
+  // ===========================================================================
+  // Command Execution
+  // ===========================================================================
+
+  /**
+   * Log command execution outputs for Playwright capture.
+   */
+  private logExecutionResult(stdout: string, stderr: string, code: number, redact = false): void {
+    for (const line of formatExecutionLog(stdout, stderr, code, redact)) {
+      log(line);
+    }
+  }
+
+  /**
+   * Execute a command on target VM via Bridge VM (two-hop SSH).
+   * Pattern: Host → SSH → Bridge → SSH → Target → command
+   * Outputs are logged to console so Playwright can capture them.
+   *
+   * `options.redactOutput` logs only the byte counts of stdout and stderr while still returning them, for a command whose output is a secret.
+   *
+   * `options.stdin` is the secret channel: the text is written to the command's standard input through both SSH hops and never appears in the command line or the log (only its length does). Secrets (repository passphrases) go here, never into `command`.
+   */
+  async executeViaBridge(
+    command: string,
+    timeout?: number,
+    options?: { stdin?: string; redactOutput?: boolean }
+  ): Promise<ExecResult> {
+    const cmdTimeout = timeout ?? this.defaultTimeout;
+    const escapedForBridge = this.sshExecutor.escapeForNestedSSH(command);
+
+    // Get SSH options fresh each time (never cache - keys may be created after instantiation)
+    const outerOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const innerOpts = this.sshExecutor.getInnerSSHOptions({ connectTimeout: 10, batchMode: true });
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
+
+    // Two-hop SSH command: Host → Bridge → Target
+    // Outer hop uses host identity file ({RENET_DATA_DIR}/staging/.ssh/id_rsa).
+    // Inner hop runs on the bridge where that host path is invalid, so drop `-i` and let ssh fall back to ~/.ssh/id_rsa (set up by renet mesh).
+    const sshCmd = `ssh ${outerOpts} ${user}@${this.bridgeVM} "ssh ${innerOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
+
+    // Log the command being executed
+    log(`\n[SSH ${this.bridgeVM} → ${this.targetVM}] ${command}`);
+    if (options?.stdin !== undefined) {
+      log(`[STDIN] ${options.stdin.length} bytes (redacted)`);
+    }
+
+    const fallbackDirect = (reason: string): Promise<ExecResult> => {
+      log(`[RenetFunctionsTestRunner] Falling back to direct SSH to ${this.targetVM}: ${reason}`);
+      if (options?.stdin !== undefined) {
+        // executeOnVM has no stdin channel; refuse rather than drop the secret or inline it.
+        return Promise.resolve({
+          stdout: '',
+          stderr: `${reason}; no stdin-capable fallback`,
+          code: 1,
+        });
+      }
+      return this.executeOnVM(this.targetVM, command, timeout, {
+        redactOutput: options?.redactOutput,
+      });
+    };
+
+    try {
+      const pending = execAsync(sshCmd, {
+        timeout: cmdTimeout,
+        maxBuffer: EXEC_MAX_BUFFER,
+      });
+      if (options?.stdin !== undefined) {
+        feedStdin(pending.child.stdin, options.stdin);
+      }
+      const { stdout, stderr } = await pending;
+      this.logExecutionResult(stdout, stderr, 0, options?.redactOutput);
+      return { stdout, stderr, code: 0 };
+    } catch (error: unknown) {
+      const err = error as Error & {
+        stdout?: string;
+        stderr?: string;
+        // Node reports some failures with a STRING code, e.g. ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
+        code?: number | string;
+        killed?: boolean;
+      };
+      const stdout = err.stdout ?? '';
+      const failure = describeExecFailure(err, cmdTimeout);
+      const stderr = failure.prefix + (err.stderr ?? '');
+      const code = failure.code;
+
+      this.logExecutionResult(stdout, stderr, code, options?.redactOutput);
+
+      if (/renet: command not found|No such file or directory/.test(stderr)) {
+        return fallbackDirect('renet not found on target via bridge');
+      }
+
+      return { stdout, stderr, code };
+    }
+  }
+
+  /**
+   * Execute a command on a remote VM via SSH.
+   * Outputs are logged to console so Playwright can capture them.
+   */
+  async executeOnVM(
+    host: string,
+    command: string,
+    timeout?: number,
+    options?: { redactOutput?: boolean }
+  ): Promise<ExecResult> {
+    const cmdTimeout = timeout ?? this.defaultTimeout;
+
+    // Get SSH options fresh each time (never cache - keys may be created after instantiation)
+    const sshOpts = this.sshExecutor.getSSHOptions({ connectTimeout: 10, batchMode: true });
+    const user = process.env.USER;
+    if (!user) {
+      throw new Error('USER environment variable is not set');
+    }
+
+    // Always use user@host format for consistency
+    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${command.replaceAll('"', '\\"')}"`;
+
+    // Log the command being executed
+    log(`\n[SSH ${host}] ${command}`);
+
+    try {
+      const { stdout, stderr } = await execAsync(sshCmd, {
+        timeout: cmdTimeout,
+        maxBuffer: EXEC_MAX_BUFFER,
+      });
+      this.logExecutionResult(stdout, stderr, 0, options?.redactOutput);
+      return { stdout, stderr, code: 0 };
+    } catch (error: unknown) {
+      const err = error as Error & {
+        stdout?: string;
+        stderr?: string;
+        // Node reports some failures with a STRING code, e.g. ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
+        code?: number | string;
+        killed?: boolean;
+      };
+      const stdout = err.stdout ?? '';
+      const failure = describeExecFailure(err, cmdTimeout);
+      const stderr = failure.prefix + (err.stderr ?? '');
+      const code = failure.code;
+
+      this.logExecutionResult(stdout, stderr, code);
+      return { stdout, stderr, code };
+    }
+  }
+
+  /**
+   * Execute on bridge VM via SSH.
+   */
+  executeOnBridge(command: string, timeout?: number): Promise<ExecResult> {
+    return this.executeOnVM(this.getBridgeVM(), command, timeout);
+  }
+
+  /**
+   * Execute on worker VM via SSH.
+   * Stays async: getWorkerVM throws in a Ceph-only topology, and callers expect a rejection.
+   */
+  async executeOnWorker(command: string, timeout?: number): Promise<ExecResult> {
+    return await this.executeOnVM(this.getWorkerVM(), command, timeout);
+  }
+
+  /**
+   * Execute on second worker VM via SSH.
+   * Stays async: getWorkerVM2 throws with fewer than 2 workers, and callers expect a rejection.
+   */
+  async executeOnWorker2(command: string, timeout?: number): Promise<ExecResult> {
+    return await this.executeOnVM(this.getWorkerVM2(), command, timeout);
+  }
+
+  /**
+   * Execute a command on the target Ceph VM.
+   * Alias for executeViaBridge for clarity in Ceph-specific tests.
+   */
+  executeOnCeph(command: string, timeout?: number): Promise<ExecResult> {
+    return this.executeViaBridge(command, timeout);
+  }
+
+  /**
+   * Execute a command on all worker VMs in parallel.
+   */
+  async executeOnAllWorkers(command: string, timeout?: number): Promise<Map<string, ExecResult>> {
+    const workers = this.getWorkerVMs();
+    const results = new Map<string, ExecResult>();
+
+    const promises = workers.map(async (vm) => {
+      const result = await this.executeOnVM(vm, command, timeout);
+      results.set(vm, result);
+    });
+
+    await Promise.all(promises);
+    return results;
+  }
+
+  // ===========================================================================
+  // Test Function Execution
+  // ===========================================================================
+
+  /**
+   * Build common renet command flags for test functions.
+   */
+  private buildCommonFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.datastorePath) {
+      flags += ` --datastore-path ${opts.datastorePath}`;
+    }
+    if (opts.repository) {
+      flags += ` --repository ${opts.repository}`;
+    }
+    const networkId = opts.networkId ?? DEFAULT_NETWORK_ID;
+    if (networkId) {
+      flags += ` --network-id ${networkId}`;
+    }
+    // opts.password never becomes a flag: testFunction routes a password-carrying call through a vault file on stdin.
+    if (opts.size) {
+      flags += ` --size ${opts.size}`;
+    }
+    if (opts.newSize) {
+      flags += ` --new-size ${opts.newSize}`;
+    }
+
+    return flags;
+  }
+
+  /**
+   * Build Ceph-related command flags.
+   */
+  private buildCephFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.pool) {
+      flags += ` --pool ${opts.pool}`;
+    }
+    if (opts.pgNum) {
+      flags += ` --pg-num ${opts.pgNum}`;
+    }
+    if (opts.image) {
+      flags += ` --image ${opts.image}`;
+    }
+    if (opts.snapshot) {
+      flags += ` --snapshot ${opts.snapshot}`;
+    }
+    if (opts.clone) {
+      flags += ` --clone ${opts.clone}`;
+    }
+    if (opts.mountPoint) {
+      flags += ` --mount-point ${opts.mountPoint}`;
+    }
+    if (opts.cowSize) {
+      flags += ` --cow-size ${opts.cowSize}`;
+    }
+    if (opts.keepCow) {
+      flags += ` --keep-cow`;
+    }
+    flags += this.buildCephDatastoreFlags(opts);
+
+    return flags;
+  }
+
+  /**
+   * Build Ceph datastore fork/unfork flags (source/dest/cluster).
+   */
+  private buildCephDatastoreFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.source) {
+      flags += ` --source ${opts.source}`;
+    }
+    if (opts.dest) {
+      flags += ` --dest ${opts.dest}`;
+    }
+    if (opts.cluster) {
+      flags += ` --cluster ${opts.cluster}`;
+    }
+
+    return flags;
+  }
+
+  /**
+   * Build container and checkpoint flags.
+   */
+  private buildContainerFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.container) {
+      flags += ` --container ${opts.container}`;
+    }
+    if (opts.command) {
+      flags += ` --command '${opts.command}'`;
+    }
+    if (opts.lines) {
+      flags += ` --lines ${opts.lines}`;
+    }
+    if (opts.parent) {
+      flags += ` --parent ${opts.parent}`;
+    }
+    if (opts.fork) {
+      flags += ` --fork ${opts.fork}`;
+    }
+    if (opts.checkpointName) {
+      flags += ` --checkpoint-name ${opts.checkpointName}`;
+    }
+    // The verb runs under `sudo -n`, so renet's inner ssh would otherwise connect as root with
+    // root's keys. Name the bridge's ssh user and its mesh key explicitly.
+    flags += this.buildCrossVMFlags(opts);
+
+    return flags;
+  }
+
+  /** Source and destination machine flags; only the verbs that open an ssh connection to another VM accept the user and key flags. */
+  private buildCrossVMFlags(opts: TestFunctionOptions): string {
+    const crossVM = CROSS_VM_FUNCTIONS.has(opts.function);
+    const identity = ` --ssh-key ${this.sshKeyPath()}`;
+    let flags = '';
+    if (opts.sourceMachine) {
+      flags += ` --source-machine ${opts.sourceMachine}`;
+      if (crossVM) flags += ` --source-user ${this.sshUser()}${identity}`;
+    }
+    if (opts.destMachine) {
+      flags += ` --dest-machine ${opts.destMachine}`;
+      if (crossVM) flags += ` --dest-user ${this.sshUser()}${identity}`;
+    }
+    return flags;
+  }
+
+  /**
+   * Build filesystem flags.
+   */
+  private buildFilesystemFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.format) {
+      flags += ` --format ${opts.format}`;
+    }
+    if (opts.filesystem) {
+      flags += ` --filesystem ${opts.filesystem}`;
+    }
+    if (opts.label) {
+      flags += ` --label ${opts.label}`;
+    }
+    if (opts.force) {
+      flags += ` --force`;
+    }
+    if (opts.uid) {
+      flags += ` --uid ${opts.uid}`;
+    }
+    return flags;
+  }
+
+  /**
+   * Build installation flags.
+   */
+  private buildInstallationFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.installSource) {
+      flags += ` --install-source ${opts.installSource}`;
+    }
+    if (opts.dockerSource) {
+      flags += ` --docker-source ${opts.dockerSource}`;
+    }
+    if (opts.installAmdDriver) {
+      flags += ` --install-amd-driver ${opts.installAmdDriver}`;
+    }
+    if (opts.installNvidiaDriver) {
+      flags += ` --install-nvidia-driver ${opts.installNvidiaDriver}`;
+    }
+    if (opts.installCriu) {
+      flags += ` --install-criu ${opts.installCriu}`;
+    }
+
+    return flags;
+  }
+
+  /**
+   * Build registry (kube_registry_*) flags for the zot pull-through cache.
+   */
+  private buildRegistryFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+
+    if (opts.upstreams) {
+      flags += ` --upstreams ${opts.upstreams}`;
+    }
+    if (opts.scope) {
+      flags += ` --scope ${opts.scope}`;
+    }
+    if (opts.endpoint) {
+      flags += ` --endpoint ${opts.endpoint}`;
+    }
+
+    return flags;
+  }
+
+  /**
+   * Build kube distribution + namespace/PV lifecycle (kube_* function) flags.
+   * Only the params NOT already emitted by the common/ceph/registry builders
+   * are added here (cluster/endpoint/size/network-id come from those), so a
+   * kube bridge-once invocation carries every flag its command builder reads.
+   */
+  private buildKubeFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+    const add = (flag: string, val: string | number | undefined) => {
+      if (val !== undefined && val !== '') {
+        flags += ` ${flag} ${val}`;
+      }
+    };
+    add('--mount-path', opts.mountPath);
+    add('--namespace', opts.namespace);
+    add('--datastore', opts.datastore);
+    add('--tag', opts.tag);
+    add('--role', opts.role);
+    add('--distro', opts.distro);
+    add('--version', opts.version);
+    add('--api-port', opts.apiPort);
+    add('--airgap-bundle', opts.airgapBundle);
+    add('--registries-yaml', opts.registriesYaml);
+    add('--disable-components', opts.disableComponents);
+    add('--node', opts.node);
+    // opts.token never becomes a flag: testFunction routes a token-carrying call through a vault file on stdin.
+    add('--ceph-pool', opts.cephPool);
+    add('--ceph-cluster', opts.cephCluster);
+    // datastore_* + cluster fork/migrate (identity-rewrite / node-label) params.
+    add('--name', opts.name);
+    add('--backend', opts.backend);
+    add('--writes', opts.writes);
+    add('--group', opts.group);
+    add('--operation', opts.operation);
+    add('--mode', opts.mode);
+    add('--new-node-ip', opts.newNodeIp);
+    add('--new-network-id', opts.newNetworkId);
+    add('--bind-ip', opts.bindIp);
+    add('--server', opts.server);
+    if (opts.noAuto) flags += ' --no-auto';
+    if (opts.discard) flags += ' --discard';
+    if (opts.quiesce) flags += ' --quiesce';
+    if (opts.keepThirdParty) flags += ' --keep-third-party-secrets';
+    if (opts.removeLabel) flags += ' --remove';
+    return flags;
+  }
+
+  /**
+   * Build repository size-policy + trim flags (repository_policy_set / _get /
+   * repository_trim, renet#76). Tri-state booleans carry an explicit value so
+   * the renet side's cobra Changed() detection fires; docker/report-only are
+   * plain boolean flags.
+   */
+  private buildRepositoryPolicyFlags(opts: DockerPruneFunctionOptions): string {
+    let flags = '';
+    if (opts.autoGrow !== undefined) flags += ` --auto-grow ${String(opts.autoGrow)}`;
+    if (opts.maxQuota) flags += ` --max-quota ${opts.maxQuota}`;
+    if (opts.growThreshold) flags += ` --grow-threshold ${opts.growThreshold}`;
+    if (opts.growStep) flags += ` --grow-step ${opts.growStep}`;
+    if (opts.autoTrim !== undefined) flags += ` --auto-trim ${String(opts.autoTrim)}`;
+    if (opts.trimInterval) flags += ` --trim-interval ${opts.trimInterval}`;
+    if (opts.docker) flags += ` --docker`;
+    if (opts.dockerVolumes) flags += ` --docker-volumes`;
+    if (opts.reportOnly) flags += ` --report-only`;
+    // machine_converge_runtime: derived from the renet ParamDef registry as a boolean flag.
+    if (opts.dryRun) flags += ` --dry-run`;
+    return flags + this.buildDockerPruneFlags(opts);
+  }
+
+  /** repository_docker_prune: plain boolean flags. */
+  private buildDockerPruneFlags(opts: DockerPruneFunctionOptions): string {
+    let flags = '';
+    if (opts.apply) flags += ` --apply`;
+    if (opts.offline) flags += ` --offline`;
+    if (opts.allImages) flags += ` --all-images`;
+    if (opts.noTrim) flags += ` --no-trim`;
+    return flags;
+  }
+
+  /**
+   * Test a renet function on target VM via two-hop SSH.
+   * Uses: renet functions once --test-mode --function <name>
+   * Executes: Host → Bridge → Target VM
+   */
+  testFunction(opts: TestFunctionOptions): Promise<ExecResult> {
+    // Use renet from PATH on the VM (deployed by InfrastructureManager) Always use --debug in e2e tests for full logging visibility
+    if (opts.password) {
+      // The passphrase rides in a vault file uploaded over stdin, never in a logged command line.
+      return this.runVaultJSON(
+        opts.function,
+        () => buildPasswordVault(opts, DEFAULT_NETWORK_ID),
+        opts.timeout
+      );
+    }
+    if (opts.token) {
+      // The join token rides in a vault file uploaded over stdin, never in a logged command line.
+      return this.runVaultJSON(
+        opts.function,
+        () => buildTokenVault(opts, DEFAULT_NETWORK_ID),
+        opts.timeout
+      );
+    }
+    let cmd = `sudo -n renet functions once --test-mode --debug --function ${opts.function}`;
+
+    cmd += this.buildCommonFlags(opts);
+    cmd += this.buildCephFlags(opts);
+    cmd += this.buildContainerFlags(opts);
+    cmd += this.buildFilesystemFlags(opts);
+    cmd += this.buildInstallationFlags(opts);
+    cmd += this.buildRegistryFlags(opts);
+    cmd += this.buildKubeFlags(opts);
+    cmd += this.buildRepositoryPolicyFlags(opts);
+
+    // Execute via two-hop SSH: Host → Bridge → Target
+    return this.executeViaBridge(cmd, opts.timeout, { redactOutput: opts.redactOutput });
+  }
+
+  /**
+   * Test a simple function (ping, nop, hello) with minimal options.
+   */
+  testSimpleFunction(functionName: string): Promise<ExecResult> {
+    return this.testFunction({ function: functionName });
+  }
+
+  /**
+   * Get renet version on target VM to verify it's working.
+   */
+  getRenetVersion(): Promise<ExecResult> {
+    return this.executeViaBridge('renet version');
+  }
+
+  /**
+   * Check if renet is available and working on target VM.
+   */
+  async isRenetAvailable(): Promise<boolean> {
+    const result = await this.getRenetVersion();
+    return result.code === 0;
+  }
+
+  /**
+   * Test a renet function on a specific machine via SSH.
+   * Uses `renet` directly (assumes it's in PATH on the VM).
+   */
+  testFunctionOnMachine(host: string, opts: TestFunctionOptions): Promise<ExecResult> {
+    // Always use --debug in e2e tests for full logging visibility
+    let cmd = `sudo -n renet functions once --test-mode --debug --function ${opts.function}`;
+
+    if (opts.datastorePath) {
+      cmd += ` --datastore-path ${opts.datastorePath}`;
+    }
+    if (opts.repository) {
+      cmd += ` --repository ${opts.repository}`;
+    }
+    if (opts.networkId) {
+      cmd += ` --network-id ${opts.networkId}`;
+    }
+    if (opts.size) {
+      cmd += ` --size ${opts.size}`;
+    }
+    if (opts.force) {
+      cmd += ` --force`;
+    }
+
+    return this.executeOnVM(host, cmd, opts.timeout);
+  }
+
+  /**
+   * Execute a direct renet CLI command on a specific machine via SSH.
+   * For commands that aren't available through functions once (e.g., setup, datastore).
+   */
+  executeRenetOnMachine(host: string, renetCommand: string, timeout?: number): Promise<ExecResult> {
+    return this.executeOnVM(host, `renet ${renetCommand}`, timeout);
+  }
+
+  /**
+   * Check setup status on a specific machine.
+   */
+  checkSetupOnMachine(host: string): Promise<ExecResult> {
+    // machine_check_system is available through functions once
+    return this.executeOnVM(
+      host,
+      'renet functions once --test-mode --function machine_check_system'
+    );
+  }
+
+  /**
+   * Check datastore status on a specific machine.
+   */
+  checkDatastoreOnMachine(host: string, datastorePath: string): Promise<ExecResult> {
+    // check_datastore may need direct CLI call
+    return this.executeOnVM(
+      host,
+      `renet datastore status --path ${datastorePath} 2>&1 || echo "datastore check completed"`
+    );
+  }
+
+  /**
+   * List repositories on a specific machine.
+   */
+  listRepositoriesOnMachine(host: string, datastorePath: string): Promise<ExecResult> {
+    return this.executeOnVM(
+      host,
+      `renet repository list --datastore ${datastorePath} 2>&1 || echo "list completed"`
+    );
+  }
+
+  // ===========================================================================
+  // Vault-Based Testing
+  // ===========================================================================
+
+  /**
+   * Test a function with a full vault configuration.
+   * Uses --vault-file flag for complete parameter testing.
+   *
+   * This enables testing ALL backup_push/pull parameters that aren't
+   * available as CLI flags in test mode. The vault simulates what
+   * middleware would construct for queue items.
+   */
+  private testFunctionWithVault(
+    functionName: string,
+    vault: VaultBuilder,
+    timeout?: number
+  ): Promise<ExecResult> {
+    return this.runVaultJSON(functionName, () => vault.toJSON(), timeout);
+  }
+
+  /**
+   * Cross-VM verbs run under `sudo -n`, where the invoking user's ssh keys are not discovered:
+   * give the vault an explicit `ssh_key` param, plus `dest_user` / `source_user` params when a machine is named without one.
+   */
+  private withCrossVMSSHKey(functionName: string, vaultJSON: string): string {
+    if (!CROSS_VM_FUNCTIONS.has(functionName)) return vaultJSON;
+    const vault = JSON.parse(vaultJSON) as { params?: Record<string, unknown> };
+    const params: Record<string, unknown> = { ssh_key: this.sshKeyPath(), ...vault.params };
+    if (params.dest_machine && !params.dest_user) params.dest_user = this.sshUser();
+    if (params.source_machine && !params.source_user) params.source_user = this.sshUser();
+    vault.params = params;
+    return JSON.stringify(vault);
+  }
+
+  /**
+   * Upload vault JSON to the target VM over stdin (it can hold repository credentials, so it never
+   * rides in the logged command text) and run the function against it.
+   *
+   * The vault arrives as a builder so that a refusal it throws (an option the vault cannot carry) surfaces as a rejected promise, like every other failure of this async method, and not as a synchronous throw from testFunction.
+   */
+  private async runVaultJSON(
+    functionName: string,
+    buildVaultJSON: () => string,
+    timeout?: number
+  ): Promise<ExecResult> {
+    const vaultJSON = this.withCrossVMSSHKey(functionName, buildVaultJSON());
+    const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
+    const uploadResult = await this.executeViaBridge(`umask 077 && cat > ${vaultPath}`, timeout, {
+      stdin: vaultJSON,
+    });
+
+    if (uploadResult.code !== 0) {
+      return uploadResult;
+    }
+
+    try {
+      // Execute function with vault file on target VM
+      const cmd = `sudo -n renet functions once --test-mode --debug --function ${functionName} --vault-file ${vaultPath}`;
+      return await this.executeViaBridge(cmd, timeout);
+    } finally {
+      // Cleanup vault file on target VM
+      await this.executeViaBridge(`rm -f ${vaultPath}`);
+    }
+  }
+
+  /**
+   * Execute any function with vault configuration.
+   */
+  executeWithVault(
+    functionName: string,
+    vault: VaultBuilder,
+    timeout?: number
+  ): Promise<ExecResult> {
+    return this.testFunctionWithVault(functionName, vault, timeout);
+  }
+
+  // ===========================================================================
+  // Test Isolation
+  // ===========================================================================
+
+  /**
+   * Reset worker VM to clean state for test isolation.
+   * Tears down daemon, unmounts datastore, removes backing file.
+   * Call in test.beforeAll() for groups that need fresh datastore.
+   */
+  async resetWorkerState(datastorePath = DEFAULT_DATASTORE_PATH): Promise<void> {
+    log(`\n[Reset] Cleaning worker state at ${datastorePath}...`);
+
+    // 1. Force teardown all daemons (stops containers, unmounts repos)
+    for (const netId of [DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B]) {
+      await this.executeViaBridge(
+        `sudo renet daemon teardown --network-id ${netId} --force 2>/dev/null || true`
+      );
+    }
+
+    // 1b. Close any stale LUKS devices (prevents "storage already open" errors on retry)
+    await this.executeViaBridge(
+      `sudo dmsetup ls --target crypt 2>/dev/null | awk '{print $1}' | xargs -r -I{} sudo cryptsetup close {} 2>/dev/null || true`
+    );
+
+    // 2. Kill any processes using the datastore (prevents busy mount)
+    await this.executeViaBridge(
+      `sudo lsof +D ${datastorePath} 2>/dev/null | awk 'NR>1 {print $2}' | xargs -r sudo kill 2>/dev/null || true`
+    );
+
+    // 3. Sync filesystem before unmount
+    await this.executeViaBridge('sync');
+
+    // 4. Unmount datastore - try normal first, then lazy unmount as fallback
+    await this.executeViaBridge(
+      `mountpoint -q ${datastorePath} && (sudo umount ${datastorePath} 2>/dev/null || sudo umount -l ${datastorePath}) || true`
+    );
+
+    // 5. Detach any loop devices associated with the backing file
+    await this.executeViaBridge(
+      `losetup -j ${datastorePath}.img 2>/dev/null | cut -d: -f1 | xargs -r sudo losetup -d 2>/dev/null || true`
+    );
+
+    // 6. Remove datastore backing file
+    await this.executeViaBridge(`sudo rm -f ${datastorePath}.img`);
+
+    // 7. Clean up any leftover files in datastore directory (including hidden files)
+    await this.executeViaBridge(
+      `sudo rm -rf ${datastorePath}/* ${datastorePath}/.* 2>/dev/null || true`
+    );
+
+    // 8. Remove datastore marker/metadata if any
+    await this.executeViaBridge(`sudo rm -f ${datastorePath}/.datastore 2>/dev/null || true`);
+
+    log('[Reset] Worker state cleaned');
+  }
+
+  /**
+   * Ensures the worker's datastore is actually initialized before a suite
+   * that needs it runs, without depending on which file ran before it.
+   *
+   * The datastore-centric self-heal added to renet (console worklist
+   * ea76a8c5) only repairs a datastore that is still genuinely initialized:
+   * it refuses to fabricate one where `.immovable` (the marker
+   * CreateDatastoreDirectories writes once, at format time) is missing,
+   * because building that skeleton on the root filesystem underneath an
+   * unmounted mount point is worse than the bug it fixes -- every repository
+   * "created" there vanishes the moment the real volume is remounted (the
+   * "BTRFS filesystem required for snapshots" symptom this investigation
+   * also found on `repository resize`).
+   *
+   * resetWorkerState's unmount-then-wipe removes `.immovable` along with
+   * everything else, so any suite that shares a worker VM with one that
+   * calls resetWorkerState (bridge-global-setup runs `renet setup` exactly
+   * ONCE, at the start of the whole Playwright invocation) can find the
+   * datastore uninitialized purely because of file/project execution order,
+   * not because of anything that suite itself did. Call this in the
+   * top-level `beforeAll` of any suite that needs the datastore but does NOT
+   * itself call resetWorkerState.
+   *
+   * Cheap when already ready: one `test -e` round trip, no `renet setup` at
+   * all. Deliberately does NOT run unconditionally -- 03-datastore-lifecycle
+   * relies on resetWorkerState leaving a bare, uninitialized datastore behind
+   * for its own setup tests, and unconditionally healing it here would
+   * undermine that.
+   */
+  async ensureDatastoreReady(datastorePath = DEFAULT_DATASTORE_PATH): Promise<void> {
+    const marker = `${datastorePath}/.immovable`;
+    const check = await this.executeViaBridge(`test -e ${marker}`);
+    if (check.code === 0) {
+      console.warn(`[EnsureDatastoreReady] ${marker} present, datastore already initialized`);
+      return;
+    }
+
+    console.warn(
+      `[EnsureDatastoreReady] ${marker} missing (datastore was wiped by an earlier suite's resetWorkerState) -- running 'sudo renet setup --datastore ${datastorePath}' to reinitialize it`
+    );
+    // --datastore is NOT optional here: on a machine whose setup already completed once (every worker, after bridge-global-setup's one-time pass), `renet setup` takes its idempotent "already completed" fast path, and that path only touches the datastore/sandbox directories when --datastore is non-empty (cmd/renet/setup_command.go's runSetup reads the --datastore FLAG, no fallback default). A bare `sudo renet setup` -- 22-setup-command.test.ts's "missing datastore-path" case, tested there on purpose -- is a complete no-op for exactly the state this function exists to repair.
+    const result = await this.executeViaBridge(
+      `sudo renet setup --datastore ${datastorePath}`,
+      RENET_SETUP_TIMEOUT_MS
+    );
+    if (result.code !== 0) {
+      throw new Error(
+        `ensureDatastoreReady: 'sudo renet setup --datastore ${datastorePath}' failed (exit ${result.code}): ${result.stderr || result.stdout}`
+      );
+    }
+    console.warn('[EnsureDatastoreReady] renet setup completed, datastore reinitialized');
+  }
+
+  // ===========================================================================
+  // Method Group Delegations (for backwards compatibility)
+  // ===========================================================================
+
+  // System Check Methods
+  ping = () => this.systemCheckMethods.ping();
+  nop = () => this.systemCheckMethods.nop();
+  hello = () => this.systemCheckMethods.hello();
+  networkUsed = () => this.systemCheckMethods.networkUsed();
+  sshTest = () => this.systemCheckMethods.sshTest();
+  checkKernelCompatibility = () => this.systemCheckMethods.checkKernelCompatibility();
+  checkSetup = () => this.systemCheckMethods.checkSetup();
+  checkMemory = () => this.systemCheckMethods.checkMemory();
+  checkSudo = () => this.systemCheckMethods.checkSudo();
+  checkTools = () => this.systemCheckMethods.checkTools();
+  checkRenet = () => this.systemCheckMethods.checkRenet();
+  checkCriu = () => this.systemCheckMethods.checkCriu();
+  checkBtrfs = () => this.systemCheckMethods.checkBtrfs();
+  checkDrivers = () => this.systemCheckMethods.checkDrivers();
+  checkSystem = () => this.systemCheckMethods.checkSystem();
+  checkUsers = () => this.systemCheckMethods.checkUsers();
+  checkRediaccCli = () => this.systemCheckMethods.checkRediaccCli();
+  convergeRuntimeDryRun = () => this.systemCheckMethods.convergeRuntimeDryRun();
+  checkDatastore = (datastorePath?: string) =>
+    this.systemCheckMethods.checkDatastore(datastorePath);
+
+  // Setup Methods
+  setup = (datastorePath?: string, uid?: string) => this.setupMethods.setup(datastorePath, uid);
+  osSetup = (datastorePath?: string, uid?: string) => this.setupMethods.osSetup(datastorePath, uid);
+  setupWithOptions = (options: Parameters<SetupMethods['setupWithOptions']>[0]) =>
+    this.setupMethods.setupWithOptions(options);
+  fixUserGroups = (uid?: string) => this.setupMethods.fixUserGroups(uid);
+
+  // Datastore Methods
+  /**
+   * Lay down the machine's BASE datastore pool.
+   *
+   * The `datastore_init` BRIDGE verb was deleted by the datastore-centric redesign
+   * (only the named-registry verbs are registered now), so this shells out to the
+   * surviving path: the root CLI, exactly as OpsManager does during global setup.
+   * Dispatching the dead verb failed at runtime with "no command builder registered".
+   */
+  datastoreInitPool = (size: string, datastorePath = DEFAULT_DATASTORE_PATH, force = true) =>
+    this.executeViaBridge(
+      `sudo renet datastore init --path ${datastorePath} --size ${size}${force ? ' --force' : ''}`
+    );
+  // `datastorePath` is NOT a function param — the harness turns it into `renet functions once --datastore-path <p>`, which sets the DATASTORE CONTEXT the command's RequireDatastore(vault) reads. Dropping it strips the context and datastore_expand fails outright. It was never "passed into the void".
+  /**
+   * Mount / unmount the machine's BASE pool.
+   *
+   * The datastore_mount / datastore_unmount BRIDGE verbs were deleted by the
+   * datastore-centric redesign, but the CLI still has them — and the base pool's
+   * MOUNT STATE is a PRECONDITION of the surviving verbs, not a test of the dead ones:
+   * `datastore resize` REFUSES while mounted ("must be unmounted for resize"), and
+   * `datastore validate` needs it mounted. The old suite spelled those preconditions out
+   * as mount/unmount tests; when the verbs moved, the CALLS were carried across and the
+   * PRECONDITIONS they were carrying were dropped. That is what these two restore.
+   */
+  datastoreMountPool = (datastorePath = DEFAULT_DATASTORE_PATH) =>
+    this.executeViaBridge(`sudo renet datastore mount --path ${datastorePath}`);
+  datastoreUnmountPool = (datastorePath = DEFAULT_DATASTORE_PATH) =>
+    this.executeViaBridge(`sudo renet datastore unmount --path ${datastorePath}`);
+  datastoreExpand = (newSize: string, datastorePath?: string) =>
+    this.datastoreMethods.datastoreExpand(newSize, datastorePath);
+  datastoreResize = (newSize: string, datastorePath?: string) =>
+    this.datastoreMethods.datastoreResize(newSize, datastorePath);
+  datastoreValidate = (datastorePath?: string) =>
+    this.datastoreMethods.datastoreValidate(datastorePath);
+
+  // Named-datastore lifecycle (datastore_create/attach/detach/fork/snapshot/delete/list)
+  datastoreCreate = (opts: DatastoreCreateOptions) => this.datastoreMethods.datastoreCreate(opts);
+  datastoreAttach = (opts: DatastoreAttachOptions) => this.datastoreMethods.datastoreAttach(opts);
+  datastoreDetach = (name: string, discard?: boolean) =>
+    this.datastoreMethods.datastoreDetach(name, discard);
+  datastoreDelete = (name: string) => this.datastoreMethods.datastoreDelete(name);
+  datastoreList = () => this.datastoreMethods.datastoreList();
+  datastoreFork = (opts: DatastoreForkOptions) => this.datastoreMethods.datastoreFork(opts);
+  datastoreSnapshotCreate = (opts: DatastoreSnapshotOptions) =>
+    this.datastoreMethods.datastoreSnapshotCreate(opts);
+  datastoreSnapshotDelete = (opts: DatastoreSnapshotOptions) =>
+    this.datastoreMethods.datastoreSnapshotDelete(opts);
+
+  // Registry Methods (kube_registry_up / _wire — zot pull-through cache)
+  kubeRegistryUp = (opts?: RegistryUpOptions) => this.registryMethods.kubeRegistryUp(opts);
+  kubeRegistryWire = (opts?: RegistryWireOptions) => this.registryMethods.kubeRegistryWire(opts);
+
+  // Kube Methods (kube_* — k3s distribution lifecycle)
+  kubeInstall = (opts: KubeInstallOptions) => this.kubeMethods.kubeInstall(opts);
+  kubeJoinToken = (opts: KubeTargetOptions) => this.kubeMethods.kubeJoinToken(opts);
+  kubeJoin = (opts: KubeJoinOptions) => this.kubeMethods.kubeJoin(opts);
+  kubeNodeRemove = (opts: KubeNodeRemoveOptions) => this.kubeMethods.kubeNodeRemove(opts);
+  kubeUpgrade = (opts: KubeUpgradeOptions) => this.kubeMethods.kubeUpgrade(opts);
+  kubeUninstall = (opts: KubeTargetOptions) => this.kubeMethods.kubeUninstall(opts);
+  kubeKubeconfig = (opts: KubeTargetOptions) => this.kubeMethods.kubeKubeconfig(opts);
+  kubeHealth = (opts: KubeTargetOptions) => this.kubeMethods.kubeHealth(opts);
+
+  // Whole-cluster fork/migrate primitives (kube_prep_fork / kube_identity_rewrite) + local-PV topology label (kube_node_label). The per-namespace kube verbs (kube_namespace_*/kube_pv_*/kube_deploy) are DELETED — kube repo lifecycle now rides the runtime-generic repository_* verbs via the datastore dispatch.
+  kubePrepFork = (opts: KubePrepForkOptions) => this.kubeMethods.kubePrepFork(opts);
+  kubeIdentityRewrite = (opts: KubeIdentityRewriteOptions) =>
+    this.kubeMethods.kubeIdentityRewrite(opts);
+  kubeNodeLabel = (opts: KubeNodeLabelOptions) => this.kubeMethods.kubeNodeLabel(opts);
+  kubeForkDestPrep = () => this.kubeMethods.kubeForkDestPrep();
+
+  // Repository Methods
+  repositoryNew = (name: string, size: string, password?: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryNew(name, size, password, datastorePath);
+  repositoryRm = (name: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryRm(name, datastorePath, networkId);
+  repositoryMount = (name: string, password?: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryMount(name, password, datastorePath, networkId);
+  repositoryUnmount = (name: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryUnmount(name, datastorePath, networkId);
+  repositoryUp = (name: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryUp(name, datastorePath, networkId);
+  repositoryDown = (name: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryDown(name, datastorePath, networkId);
+  repositoryList = (datastorePath?: string) => this.repositoryMethods.repositoryList(datastorePath);
+  repositoryResize = (name: string, newSize: string, password?: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryResize(name, newSize, password, datastorePath);
+  repositoryInfo = (name: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryInfo(name, datastorePath);
+  repositoryStatus = (name: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryStatus(name, datastorePath);
+  repositoryValidate = (name: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryValidate(name, datastorePath);
+  repositoryGrow = (name: string, newSize: string, password?: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryGrow(name, newSize, password, datastorePath);
+  repositoryHealth = (name: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryHealth(name, datastorePath);
+  repositoryPolicySet = (opts?: RepositoryPolicySetOptions) =>
+    this.repositoryMethods.repositoryPolicySet(opts);
+  repositoryPolicyGet = (opts?: RepositoryPolicyGetOptions) =>
+    this.repositoryMethods.repositoryPolicyGet(opts);
+  repositoryTrim = (opts?: RepositoryTrimOptions) => this.repositoryMethods.repositoryTrim(opts);
+  repositoryDockerPrune = (opts?: RepositoryDockerPruneOptions) =>
+    this.repositoryMethods.repositoryDockerPrune(opts);
+  repositoryLogs = (
+    name: string,
+    opts?: { container?: string; lines?: string; datastorePath?: string }
+  ) => this.repositoryMethods.repositoryLogs(name, opts);
+  repositoryExec = (
+    name: string,
+    command: string,
+    opts?: { container?: string; datastorePath?: string }
+  ) => this.repositoryMethods.repositoryExec(name, command, opts);
+  repositoryPromote = (parent: string, fork: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryPromote(parent, fork, datastorePath);
+
+  // Ceph Methods
+  cephHealth = () => this.cephMethods.cephHealth();
+  cephPoolCreate = (pool: string, pgNum?: string) => this.cephMethods.cephPoolCreate(pool, pgNum);
+  cephPoolDelete = (pool: string) => this.cephMethods.cephPoolDelete(pool);
+  cephPoolList = () => this.cephMethods.cephPoolList();
+  cephPoolInfo = (pool: string) => this.cephMethods.cephPoolInfo(pool);
+  cephPoolStats = (pool: string) => this.cephMethods.cephPoolStats(pool);
+  cephImageCreate = (pool: string, image: string, size: string) =>
+    this.cephMethods.cephImageCreate(pool, image, size);
+  cephImageDelete = (pool: string, image: string) => this.cephMethods.cephImageDelete(pool, image);
+  cephImageList = (pool: string) => this.cephMethods.cephImageList(pool);
+  cephImageInfo = (pool: string, image: string) => this.cephMethods.cephImageInfo(pool, image);
+  cephImageResize = (pool: string, image: string, newSize: string) =>
+    this.cephMethods.cephImageResize(pool, image, newSize);
+  cephImageMap = (pool: string, image: string) => this.cephMethods.cephImageMap(pool, image);
+  cephImageUnmap = (pool: string, image: string) => this.cephMethods.cephImageUnmap(pool, image);
+  cephImageFormat = (pool: string, image: string, filesystem?: string, label?: string) =>
+    this.cephMethods.cephImageFormat(pool, image, filesystem, label);
+  cephSnapshotCreate = (pool: string, image: string, snapshot: string) =>
+    this.cephMethods.cephSnapshotCreate(pool, image, snapshot);
+  cephSnapshotDelete = (pool: string, image: string, snapshot: string) =>
+    this.cephMethods.cephSnapshotDelete(pool, image, snapshot);
+  cephSnapshotList = (pool: string, image: string) =>
+    this.cephMethods.cephSnapshotList(pool, image);
+  cephSnapshotProtect = (pool: string, image: string, snapshot: string) =>
+    this.cephMethods.cephSnapshotProtect(pool, image, snapshot);
+  cephSnapshotUnprotect = (pool: string, image: string, snapshot: string) =>
+    this.cephMethods.cephSnapshotUnprotect(pool, image, snapshot);
+  cephSnapshotRollback = (pool: string, image: string, snapshot: string) =>
+    this.cephMethods.cephSnapshotRollback(pool, image, snapshot);
+  cephCloneCreate = (pool: string, image: string, snapshot: string, clone: string) =>
+    this.cephMethods.cephCloneCreate(pool, image, snapshot, clone);
+  cephCloneDelete = (pool: string, clone: string) => this.cephMethods.cephCloneDelete(pool, clone);
+  cephCloneList = (pool: string, image: string, snapshot: string) =>
+    this.cephMethods.cephCloneList(pool, image, snapshot);
+  cephCloneFlatten = (pool: string, clone: string) =>
+    this.cephMethods.cephCloneFlatten(pool, clone);
+  cephCloneMount = (clone: string, mountPoint: string, cowSize?: string, pool?: string) =>
+    this.cephMethods.cephCloneMount(clone, mountPoint, cowSize, pool);
+  cephCloneUnmount = (clone: string, keepCow?: boolean, pool?: string, force?: boolean) =>
+    this.cephMethods.cephCloneUnmount(clone, keepCow, pool, force);
+
+  // Container Methods
+  containerStart = (
+    name: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerStart(name, repository, datastorePath, networkId);
+  containerStop = (name: string, repository?: string, datastorePath?: string, networkId?: string) =>
+    this.containerMethods.containerStop(name, repository, datastorePath, networkId);
+  containerRestart = (
+    name: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerRestart(name, repository, datastorePath, networkId);
+  containerLogs = (name: string, repository?: string, datastorePath?: string, networkId?: string) =>
+    this.containerMethods.containerLogs(name, repository, datastorePath, networkId);
+  containerExec = (
+    name: string,
+    command: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerExec(name, command, repository, datastorePath, networkId);
+  containerInspect = (
+    name: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerInspect(name, repository, datastorePath, networkId);
+  containerStats = (
+    name: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerStats(name, repository, datastorePath, networkId);
+  containerList = (repository?: string, datastorePath?: string, networkId?: string) =>
+    this.containerMethods.containerList(repository, datastorePath, networkId);
+  containerKill = (name: string, repository?: string, datastorePath?: string, networkId?: string) =>
+    this.containerMethods.containerKill(name, repository, datastorePath, networkId);
+  containerPause = (
+    name: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerPause(name, repository, datastorePath, networkId);
+  containerUnpause = (
+    name: string,
+    repository?: string,
+    datastorePath?: string,
+    networkId?: string
+  ) => this.containerMethods.containerUnpause(name, repository, datastorePath, networkId);
+
+  // Daemon Methods
+  daemonSetup = (networkId?: string) => this.daemonMethods.daemonSetup(networkId);
+  daemonTeardown = (networkId?: string) => this.daemonMethods.daemonTeardown(networkId);
+  daemonStart = (repository?: string, datastorePath?: string, networkId?: string) =>
+    this.daemonMethods.daemonStart(repository, datastorePath, networkId);
+  daemonStop = (repository?: string, datastorePath?: string, networkId?: string) =>
+    this.daemonMethods.daemonStop(repository, datastorePath, networkId);
+  daemonStatus = (repository?: string, datastorePath?: string, networkId?: string) =>
+    this.daemonMethods.daemonStatus(repository, datastorePath, networkId);
+  daemonRestart = (repository?: string, datastorePath?: string, networkId?: string) =>
+    this.daemonMethods.daemonRestart(repository, datastorePath, networkId);
+  daemonLogs = (repository?: string, datastorePath?: string, networkId?: string) =>
+    this.daemonMethods.daemonLogs(repository, datastorePath, networkId);
+  renetStart = (networkId?: string) => this.daemonMethods.renetStart(networkId);
+  renetStop = (networkId?: string) => this.daemonMethods.renetStop(networkId);
+  renetStatus = (networkId?: string) => this.daemonMethods.renetStatus(networkId);
+
+  // Backup Methods
+  push = (repository: string, destMachine: string, datastorePath?: string) =>
+    this.backupMethods.push(repository, destMachine, datastorePath);
+  pull = (repository: string, sourceMachine: string, datastorePath?: string) =>
+    this.backupMethods.pull(repository, sourceMachine, datastorePath);
+  pushWithOptions = (
+    repository: string,
+    options: Parameters<BackupMethods['pushWithOptions']>[1]
+  ) => this.backupMethods.pushWithOptions(repository, options);
+  pullWithOptions = (
+    repository: string,
+    options: Parameters<BackupMethods['pullWithOptions']>[1]
+  ) => this.backupMethods.pullWithOptions(repository, options);
+
+  checkpointCreate = (
+    repository: string,
+    checkpointName: string,
+    datastorePath?: string,
+    networkId?: string | number
+  ) => this.backupMethods.checkpointCreate(repository, checkpointName, datastorePath, networkId);
+  checkpointRestore = (
+    repository: string,
+    checkpointName: string,
+    datastorePath?: string,
+    networkId?: string | number
+  ) => this.backupMethods.checkpointRestore(repository, checkpointName, datastorePath, networkId);
+  pushWithVault = (vault: VaultBuilder, timeout?: number) =>
+    this.backupMethods.pushWithVault(vault, timeout);
+  pullWithVault = (vault: VaultBuilder, timeout?: number) =>
+    this.backupMethods.pullWithVault(vault, timeout);
+  restorePathWithVault = (vault: VaultBuilder, timeout?: number) =>
+    this.backupMethods.restorePathWithVault(vault, timeout);
+
+  // Helper Methods
+  getCombinedOutput = (result: ExecResult) => this.testHelpers.getCombinedOutput(result);
+  hasValidCommandSyntax = (result: ExecResult) => this.testHelpers.hasValidCommandSyntax(result);
+  isSuccess = (result: ExecResult) => this.testHelpers.isSuccess(result);
+  isNotImplemented = (result: ExecResult) => this.testHelpers.isNotImplemented(result);
+  getErrorMessage = (result: ExecResult) => this.testHelpers.getErrorMessage(result);
+  readFixture = (relativePath: string) => this.testHelpers.readFixture(relativePath);
+
+  // Repository Helper Methods
+  writeFileToRepository = (
+    repositoryName: string,
+    filePath: string,
+    content: string,
+    datastorePath: string
+  ) =>
+    this.repositoryHelpers.writeFileToRepository(repositoryName, filePath, content, datastorePath);
+  isContainerRunning = (containerName: string, networkId: string) =>
+    this.repositoryHelpers.isContainerRunning(containerName, networkId);
+  createRepositoryFork = (
+    parentRepo: string,
+    tag: string,
+    datastorePath: string,
+    networkId?: string
+  ) => this.repositoryHelpers.createRepositoryFork(parentRepo, tag, datastorePath, networkId);
+  repositoryCommit = (
+    workingFork: string,
+    commitGuid: string,
+    message: string,
+    datastorePath: string,
+    commitParent?: string
+  ) =>
+    this.repositoryHelpers.repositoryCommit(
+      workingFork,
+      commitGuid,
+      message,
+      datastorePath,
+      commitParent
+    );
+  repositoryCheckout = (commitGuid: string, tag: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryCheckout(commitGuid, tag, datastorePath);
+  repositoryLog = (startGuid: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryLog(startGuid, datastorePath);
+  repositoryMerge = (
+    target: string,
+    source: string,
+    datastorePath: string,
+    opts?: { force?: boolean; resolve?: 'ours' | 'theirs'; base?: string; password?: string }
+  ) => this.repositoryHelpers.repositoryMerge(target, source, datastorePath, opts);
+  repositoryForkImmutable = (parentRepo: string, tag: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryForkImmutable(parentRepo, tag, datastorePath);
+  deltaPushToMachine = (
+    repoGuid: string,
+    destHost: string,
+    datastorePath: string,
+    opts?: { destUser?: string; deltaBase?: string; retainBase?: string }
+  ) => this.repositoryHelpers.deltaPushToMachine(repoGuid, destHost, datastorePath, opts);
+  deltaPullFromMachine = (
+    repoGuid: string,
+    srcHost: string,
+    datastorePath: string,
+    opts?: { srcUser?: string; deltaBase?: string; force?: boolean }
+  ) => this.repositoryHelpers.deltaPullFromMachine(repoGuid, srcHost, datastorePath, opts);
+  repositoryImageSha256 = (repoGuid: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryImageSha256(repoGuid, datastorePath);
+  repositoryExists = (repositoryName: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryExists(repositoryName, datastorePath);
+  waitForPostgresReady = (
+    containerName: string,
+    networkId: string,
+    maxAttempts?: number,
+    intervalMs?: number
+  ) =>
+    this.repositoryHelpers.waitForPostgresReady(containerName, networkId, maxAttempts, intervalMs);
+
+  // SQL Helper Methods
+  executeSql = (containerName: string, sql: string, networkId: string) =>
+    this.sqlHelpers.executeSql(containerName, sql, networkId);
+  insertUserRecord = (containerName: string, username: string, origin: string, networkId: string) =>
+    this.sqlHelpers.insertUserRecord(containerName, username, origin, networkId);
+  recordExistsByOrigin = (containerName: string, origin: string, networkId: string) =>
+    this.sqlHelpers.recordExistsByOrigin(containerName, origin, networkId);
+  getUserRecordCount = (containerName: string, networkId: string) =>
+    this.sqlHelpers.getUserRecordCount(containerName, networkId);
+  getUsersDataHash = (containerName: string, networkId: string) =>
+    this.sqlHelpers.getUsersDataHash(containerName, networkId);
+  insertBulkUserRecords = (
+    containerName: string,
+    count: number,
+    origin: string,
+    networkId: string
+  ) => this.sqlHelpers.insertBulkUserRecords(containerName, count, origin, networkId);
+}

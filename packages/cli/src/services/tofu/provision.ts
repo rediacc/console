@@ -11,10 +11,15 @@ import { join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
 import { t } from '../../i18n/index.js';
+import { accountServerFetch } from '../account/account-client.js';
+import { readRemoteMachineId } from '../account/license-machine.js';
+import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { machineConnections } from '../machine/machine-connection.js';
 import { pushInfraConfig, removeMachineDnsRecords } from '../provision/infra-provision.js';
 import { bootstrapMachine, scanHostKeys, waitForSSH } from '../renet/machine-bootstrap.js';
+import { readSSHKey } from '../renet/renet-execution.js';
 import { TofuExecutor } from './executor.js';
 import { resolveProviderMapping } from './provider-resolver.js';
 import { generateTfJson } from './tf-generator.js';
@@ -198,6 +203,55 @@ async function cleanupMachineResources(machineName: string): Promise<void> {
 }
 
 /**
+ * Read the machine id the account server activated, while the machine still answers over SSH.
+ * Returns undefined when there is no account token (no activation was made from this config) or
+ * the id cannot be read; the destroy proceeds either way.
+ */
+async function readActivatedMachineId(machineName: string): Promise<string | undefined> {
+  if (getSubscriptionTokenState().kind !== 'ready') return undefined;
+  try {
+    const localConfig = await configService.getLocalConfig();
+    const machine = localConfig.machines[machineName];
+    if (!machine) return undefined;
+    const sshPrivateKey =
+      localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+    const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+    try {
+      return await readRemoteMachineId(lease.sftp);
+    } finally {
+      lease.release();
+    }
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Free the machine's activation slot on the account server. Best effort: the machine is already
+ * destroyed, so a failure warns and never fails the deprovision. The route's own 404 means no
+ * activation held the slot, which is the state wanted.
+ */
+async function releaseActivationSlot(machineName: string, machineId: string): Promise<void> {
+  try {
+    await accountServerFetch(
+      `/account/api/v1/licenses/machines/${encodeURIComponent(machineId)}/deactivate`,
+      { method: 'POST' }
+    );
+  } catch (error) {
+    // Only the route's own JSON 404 (it carries a code) means no activation held the slot; a
+    // plain-text router 404 means the server lacks the route and the slot stays held.
+    const failure = error as { status?: number; code?: string } | null;
+    if (failure?.status === 404 && failure.code) return;
+    outputService.warn(
+      t('commands.machine.deprovision.deactivateFailed', {
+        name: machineName,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
+
+/**
  * Destroy a cloud-provisioned machine via OpenTofu and remove from config.
  */
 export async function destroyCloudMachine(
@@ -213,6 +267,7 @@ export async function destroyCloudMachine(
   outputService.info(t('commands.machine.deprovision.destroying', { name: machineName }));
 
   const executor = new TofuExecutor(tofuDir);
+  const activatedMachineId = await readActivatedMachineId(machineName);
 
   try {
     await executor.destroy({ debug: options.debug });
@@ -226,6 +281,8 @@ export async function destroyCloudMachine(
       })
     );
   }
+
+  if (activatedMachineId) await releaseActivationSlot(machineName, activatedMachineId);
 
   await cleanupMachineResources(machineName);
 

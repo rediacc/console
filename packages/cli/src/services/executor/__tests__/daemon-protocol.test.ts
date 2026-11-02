@@ -8,7 +8,6 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { ExecuteOptions } from '../types.js';
 import {
   createFrameReader,
   encodeFrame,
@@ -16,6 +15,7 @@ import {
   isDaemonSerializable,
   toWireOptions,
 } from '../daemon/protocol.js';
+import type { ExecuteOptions } from '../types.js';
 
 function collect(chunks: string[]): Frame[] {
   const frames: Frame[] = [];

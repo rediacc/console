@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import type { ExecResult } from '../../src/utils/bridge/types';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../../src/utils/renet-functions/types';
 
 // Suite 16 (`Bridge Datastore Cluster` job, flagship): the datastore-cluster GROUP-SNAP FORK proof (redesign spec 06 §16; CONTRACT.md CT-01k/CT-02k). The old per-namespace ceph-csi/RADOS-namespace subject is DELETED — the NEW subject is a whole cluster-attached, ceph-group-backed datastore forked atomically:
 //
@@ -62,21 +62,21 @@ test.describe
     test.skip(!canRun, 'Requires K8S_MODE=1, VM_CEPH_NODES, and TWO worker VMs');
     test.setTimeout(900_000);
 
-    let w1: BridgeTestRunner; // control plane host
-    let w2: BridgeTestRunner; // fork dest host
-    let cephNode: BridgeTestRunner;
+    let w1: RenetFunctionsTestRunner; // control plane host
+    let w2: RenetFunctionsTestRunner; // fork dest host
+    let cephNode: RenetFunctionsTestRunner;
 
     let parentCaFingerprint = '';
 
     const kubectlOn = async (
-      runner: BridgeTestRunner,
+      runner: RenetFunctionsTestRunner,
       kc: string,
       args: string
     ): Promise<ExecResult> =>
       runner.executeViaBridge(`sudo ${K3S} kubectl --kubeconfig ${kc} ${args}`);
 
     const writeFileOn = async (
-      runner: BridgeTestRunner,
+      runner: RenetFunctionsTestRunner,
       path: string,
       content: string
     ): Promise<void> => {
@@ -96,13 +96,16 @@ test.describe
       return fn();
     };
 
-    const readyOn = async (runner: BridgeTestRunner, kc: string): Promise<boolean> => {
+    const readyOn = async (runner: RenetFunctionsTestRunner, kc: string): Promise<boolean> => {
       const res = await kubectlOn(runner, kc, 'get nodes --no-headers');
       return res.code === 0 && /\sReady\b/.test(res.stdout);
     };
 
     // The k3s server-ca fingerprint identifies the cluster PKI. A fork MUST NOT share it (F1); a migrate MUST preserve it.
-    const caFingerprintOn = async (runner: BridgeTestRunner, mount: string): Promise<string> => {
+    const caFingerprintOn = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<string> => {
       const res = await runner.executeViaBridge(
         `sudo openssl x509 -in ${mount}/.rediacc/k3s/data/server/tls/server-ca.crt -noout -fingerprint -sha256`
       );
@@ -110,7 +113,7 @@ test.describe
     };
 
     // Stage the ceph admin keyring + ceph.conf on a worker (renet shells rbd for clones), plus load krbd.
-    const stageCephClient = async (runner: BridgeTestRunner): Promise<void> => {
+    const stageCephClient = async (runner: RenetFunctionsTestRunner): Promise<void> => {
       for (const f of ['ceph.conf', 'ceph.client.admin.keyring']) {
         const read = await cephNode.executeViaBridge(`sudo base64 -w0 /etc/ceph/${f}`);
         expect(read.code, `read /etc/ceph/${f}`).toBe(0);
@@ -125,7 +128,7 @@ test.describe
     };
 
     // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore, and NO verb ever stops them (`renet kube csi-node-down` exists with zero callers) → every storage release hits EBUSY with no mount holder to find. Gate finding #26. The suite stops what the product started.
-    const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
+    const csiNodeDown = async (runner: RenetFunctionsTestRunner): Promise<void> => {
       await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
     };
 
@@ -153,9 +156,9 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      w1 = BridgeTestRunner.forWorker(1);
-      w2 = BridgeTestRunner.forWorker(2);
-      cephNode = BridgeTestRunner.forCeph();
+      w1 = RenetFunctionsTestRunner.forWorker(1);
+      w2 = RenetFunctionsTestRunner.forWorker(2);
+      cephNode = RenetFunctionsTestRunner.forCeph();
       await teardownAll();
     });
 
@@ -234,16 +237,20 @@ test.describe
       );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create secret generic rediacc-env ` +
-          `--from-literal=APP_SECRET=${APP_SECRET_VALUE} --dry-run=client -o yaml | ` +
-          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
+          `--from-file=APP_SECRET=/dev/stdin --dry-run=client -o yaml | ` +
+          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`,
+        undefined,
+        { stdin: APP_SECRET_VALUE }
       );
       await kubectlParent(
         `-n shop label secret rediacc-env ${WK_INFRA_DOMAIN}/injected=true --overwrite`
       );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create secret generic operator-db-pass ` +
-          `--from-literal=PASSWORD=hunter2 --dry-run=client -o yaml | ` +
-          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
+          `--from-file=PASSWORD=/dev/stdin --dry-run=client -o yaml | ` +
+          `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`,
+        undefined,
+        { stdin: 'hunter2' }
       );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create configmap app-data ` +

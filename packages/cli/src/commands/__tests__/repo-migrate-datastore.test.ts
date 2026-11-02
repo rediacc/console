@@ -24,13 +24,16 @@ const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockGetLocalConfig = vi.hoisted(() => vi.fn());
 const mockSetRepositoryPlacement = vi.hoisted(() => vi.fn());
 
+vi.mock('../../services/config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
     getCurrent: mockGetCurrent,
     getLocalConfig: mockGetLocalConfig,
     setRepositoryPlacement: mockSetRepositoryPlacement,
-    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -41,6 +44,10 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
 
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../services/repo-migrate-license.js', () => ({
+  ensureTargetRepoLicense: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../repo-batch-utils.js', () => ({
@@ -122,33 +129,35 @@ beforeEach(() => {
     machines: { 'src-machine': { ip: '10.0.0.1' }, 'dst-machine': { ip: '10.0.0.2' } },
   });
   mockSetRepositoryPlacement.mockResolvedValue(undefined);
-  mockExecute.mockResolvedValue({ success: true, stdout: '', allSteps: [], steps: [] });
+  mockExecute.mockImplementation((options: { functionName: string }) =>
+    Promise.resolve({
+      success: true,
+      stdout: '',
+      allSteps: [],
+      // The source job (PLAN-detached-jobs J4) ends with the cutover marker the placement rewrite waits on.
+      steps:
+        options.functionName === 'repository_migrate'
+          ? [{ name: 'cutover_complete', duration_ms: 1 }]
+          : [],
+    })
+  );
   mockGetCurrent.mockResolvedValue({
     resources: { repositories: { app: { grand: 'latest', tags: { latest: {} } } } },
   });
 });
 
 describe('repo migrate — source datastore declaration (#74)', () => {
-  it('declares the named datastore on every SOURCE-side leg', async () => {
+  it('declares the named datastore on the SOURCE job', async () => {
     placeOnNamedDatastore();
 
     await migrateRepo('app', { to: 'dst-machine', skipDns: true });
 
-    // Phase 1 bulk push and phase 2 delta push both run on the source.
-    const pushes = calls().filter((c) => c.functionName === 'backup_push');
-    expect(pushes).toHaveLength(2);
-    for (const push of pushes) {
-      expect(push.machineName).toBe('src-machine');
-      expect(push.datastore).toBe(NAMED_MOUNT);
-    }
-
-    // Phase 2 stops, then unmounts, the source.
-    const downs = calls().filter((c) => c.functionName === 'repository_down');
-    expect(downs).toHaveLength(2);
-    for (const down of downs) {
-      expect(down.machineName).toBe('src-machine');
-      expect(down.datastore).toBe(NAMED_MOUNT);
-    }
+    // The push, the stop, the delta push and the unmount all run inside the one repository_migrate job on the source.
+    const jobs = calls().filter((c) => c.functionName === 'repository_migrate');
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].machineName).toBe('src-machine');
+    expect(jobs[0].datastore).toBe(NAMED_MOUNT);
+    expect(calls().filter((c) => c.functionName === 'backup_push')).toHaveLength(0);
   });
 
   it('leaves the TARGET-side start on the machine default', async () => {

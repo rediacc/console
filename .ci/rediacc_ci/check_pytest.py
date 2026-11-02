@@ -421,6 +421,17 @@ def verdict(
 DOCTOR_TIMEOUT_S = 120
 
 
+# Filled by resolve_pytest when the doctor reports a pytest at another version than the pin, so the exit-77 message can say "found at X, pin is Y" instead of "not available".
+WRONG_VERSION_NOTE: list[str] = []
+
+
+def unavailable_reason(default: str) -> str:
+    """`default`, or, when the bootstrap saw a pytest at the wrong version, that finding instead."""
+    if WRONG_VERSION_NOTE:
+        return "%s; the bootstrap resolved none at the pin." % WRONG_VERSION_NOTE[-1].strip("()")
+    return default
+
+
 def resolve_pytest(root: pathlib.Path) -> str | None:
     """The pytest binary the bootstrap resolves, or None.
 
@@ -463,6 +474,13 @@ def resolve_pytest(root: pathlib.Path) -> str | None:
     stdout = result.stdout
     for line in ANSI_RE.sub("", stdout).splitlines():
         fields = line.split()
+        if (
+            len(fields) > 3
+            and fields[0] == "pytest"
+            and fields[2] == "ABSENT"
+            and "found at" in line
+        ):
+            WRONG_VERSION_NOTE.append(line.split("ABSENT", 1)[1].strip())
         if len(fields) == 3 and fields[0] == "pytest":
             candidate = fields[2]
             # ABSENT is a word, not a path. Checking executability rather than matching the word means a doctor that changes its wording cannot quietly turn a missing tool into an attempted exec.
@@ -634,7 +652,7 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         ["a/b.py", "c.py"],
     )
     c.check(
-        "shard_file_relpaths keeps manifest order: an interleaved gates/ file keeps its conftest fixtures through rediacc_ci.pytest_conftest_rebind (#6b5becd7), not through reordering",
+        "shard_file_relpaths keeps manifest order: an interleaved gates/ file keeps its conftest fixtures, since pytest 9.2.0 binds them for every collector of a directory (#6b5becd7), not through reordering",
         shard_file_relpaths(["pytest:t/gates/x.py", "pytest:t/y.py", "pytest:t/gates/z.py"]),
         ["t/gates/x.py", "t/y.py", "t/gates/z.py"],
     )
@@ -1138,7 +1156,7 @@ def shard_file_relpaths(ids: list[str]) -> list[str]:
                 "shard id %r is not a quality-pytest unit (want 'pytest:<relpath>')" % uid
             )
         out.append(uid[len("pytest:") :])
-    # Manifest order, interleaved directories included. The `fixture 'gate' not found` this once reordered around (#ebb52614: gates/x, tests/y, gates/z) is pytest 9 binding a conftest's fixtures to the FIRST collector of its directory only; rediacc_ci.pytest_conftest_rebind (root conftest.py) binds them to every collector, so any order works (#6b5becd7).
+    # Manifest order, interleaved directories included. The `fixture 'gate' not found` this once reordered around (#ebb52614: gates/x, tests/y, gates/z) was pytest before 9.2.0 binding a conftest's fixtures to the FIRST collector of its directory only; 9.2.0 binds them to every collector, so any order works (#6b5becd7).
     return out
 
 
@@ -1240,7 +1258,9 @@ def main(argv: list[str]) -> int:
         return EXIT_OK if selftest(pytest_bin, verbose=True) else EXIT_FAIL
 
     if pytest_bin is None:
-        return cannot_run("pytest is not available and the bootstrap did not resolve one.")
+        return cannot_run(
+            unavailable_reason("pytest is not available and the bootstrap did not resolve one.")
+        )
 
     # The controls run BEFORE the real suite is judged, and a control failure refuses to judge it at all. Same order and same reason as check-python-lint.sh: a verdict from an instrument that cannot fail is worse than no verdict.
     if not selftest(pytest_bin):
@@ -1263,6 +1283,8 @@ def main(argv: list[str]) -> int:
         junit_path = junit_xml_path(root, shard_index=index)
         # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
         (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
+        # A run that dies before pytest writes its junit (the timeout, a crash) must emit no finding: a previous run's file left here would name its failures as this run's.
+        (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
         returncode, out = run_pytest(
             pytest_bin,
             root,
@@ -1322,6 +1344,8 @@ def main(argv: list[str]) -> int:
     junit_path = junit_xml_path(root)
     # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
     (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
+    # A run that writes no junit (a timeout, a crash) emits no finding: a junit left by an earlier run would name its failures as this run's, so the file is removed first.
+    (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
     returncode, out = run_pytest(
         pytest_bin,
         root,

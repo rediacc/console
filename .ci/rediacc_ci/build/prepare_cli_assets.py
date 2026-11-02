@@ -358,6 +358,7 @@ def main(argv: list[str]) -> int:
         status = subprocess.run(
             [
                 "npx",
+                "--no-install",
                 "tsx",
                 str(root / GENERATOR_REL),
                 "--repo-root",

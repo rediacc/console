@@ -24,6 +24,7 @@ vi.mock('../../utils/agent-guard.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../utils/agent-guard.js')>()),
   isAgentEnvironment: () => false,
 }));
+
 import type { ExecuteResult } from '../../services/executor/types.js';
 
 await vi.hoisted(async () => {
@@ -82,7 +83,6 @@ const CONFIG = {
         },
       },
     },
-    storages: {},
   },
   encryption: { mode: 'plaintext' },
 } as unknown as RdcConfig;

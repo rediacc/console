@@ -108,7 +108,18 @@ CLEAN_ROSTER = "live0001 0.5 live\nabandon1 400 dead\nrecent01 100 dead\n"
 #: in a checkout with no `.claude/`, and `test_quality_agent_session_archival.py`
 #: compares the two in both directions. A mirror nobody compares is a second set.
 RESERVED_MIRROR = frozenset(
-    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
+    {
+        "archive",
+        "programs",
+        "worklist",
+        "reggate",
+        "plans",
+        "ledgers",
+        "pr",
+        "legacy",
+        "reviews",
+        "rulings",
+    }
 )
 
 

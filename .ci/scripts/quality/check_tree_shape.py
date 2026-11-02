@@ -99,6 +99,7 @@ RESERVED = {
     "pr",
     "legacy",
     "reviews",
+    "rulings",
 }
 TOP_NAMES = {"agent", "docs", "scripts", ".ci", ".claude", "packages"}
 CALLEES = {"open", "os.listdir", "os.scandir"}

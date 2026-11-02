@@ -164,6 +164,20 @@ jobs:
       - name: Assert no OTLP credentials baked into the built binaries
         run: .ci/scripts/quality/check_no_otlp_creds.py
 
+      # H15 (PLAN-backup-program): rclone is decommissioned, and its payload is a
+      # go:embed asset that a stale embed cache or a lockfile merge could bring
+      # back with every other gate green. Scans the lockfile, the staged assets
+      # and these release binaries; the env makes an empty binary glob a failure.
+      # The gate is TypeScript (tsx), and this job is otherwise python and go only.
+      # Placed after the build so the restored node_modules cannot touch it.
+      - name: Set up node workspace for the rclone payload gate
+        uses: ./.github/actions/setup-workspace
+
+      - name: Assert no rclone payload in the embed lockfile, staged assets or built binaries
+        env:
+          RCLONE_GATE_REQUIRE_BINARIES: '1'
+        run: npm run check:ci-no-rclone-embedded
+
       # Save only a tree the receipt vouches for, and only after a restore that ran
       # and missed. The key is immutable, so a skeleton saved by a job that failed
       # before staging is served as a "hit" to every later job (#591, 2026-09-30:
@@ -199,6 +213,112 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  # The ONE renet every test leg of this run deploys (agent/plans/PLAN-free-license.md
+  # R2, F2): a licence-enforcing dev build (`build.sh dev`, version `-dev`, so
+  # `renet functions once --test-mode` works) baking the PRODUCTION public key,
+  # uploaded as the small linux-amd64-only artifact renet-test-linux-amd64-<sha>.
+  # ct-tests.yml, ct-e2e-probe.yml and ci-ops-test.yml install it through
+  # .github/actions/renet-test-binary instead of each building their own; their
+  # per-run account servers sign with the production private key, so the
+  # licences they issue verify under this binary. The release binaries above are
+  # not usable for this: a clean semver version refuses --test-mode. It runs on
+  # both paths (built or extracted), because the extracted bridge binary is a
+  # release build too. It is also this workflow's embed-assets stager on a miss
+  # (check-lane-budget.ts check 8), racing build-renet's own save harmlessly:
+  # the key is immutable and both save only a tree the receipt vouches for.
+  renet-embed-assets:
+    # The display name every renet-embed-assets job carries: the watchdog caps
+    # and the lane gate's ruled timeout (#23e93715, p90 13 / timeout 15) are
+    # keyed on it (test_gate_watchdog_budget.py).
+    name: Renet embed assets
+    # Checkout, with the private submodules on the readonly-preset App token,
+    # and Docker Hub pulls for a staging build. No registry write, no GitHub API.
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Login to Docker Hub
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build the test renet
+        id: build-renet
+        env:
+          # The production PUBLIC key: build.sh fails closed without one, and
+          # build_renet's key gate refuses a binary that does not bake it.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # The stripped linux-amd64 twin build.sh dev staged beside the host binary
+      # (same version, same key ldflag), so the artifact stays one binary.
+      # Console is public, so anyone signed in to GitHub can download this
+      # artifact. That is acceptable only because renet has one build and it
+      # enforces licensing on every path: `functions once --test-mode` no longer
+      # skips the tier check (renet 23c0c03b, guarded by
+      # TestExecutorHasNoLicenceSwitch), so this dev-versioned binary grants
+      # nothing a licence would not. Never upload a binary with a licence bypass.
+      - name: Stage the test renet artifact
+        run: |
+          mkdir -p "$RUNNER_TEMP/renet-test"
+          cp private/renet/bin/renet-linux-amd64 "$RUNNER_TEMP/renet-test/renet-linux-amd64"
+          cd "$RUNNER_TEMP/renet-test" && sha256sum renet-linux-amd64 > checksums.sha256
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: renet-test-linux-amd64-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/renet-test/renet-linux-amd64
+            ${{ runner.temp }}/renet-test/checksums.sha256
+          retention-days: 1
+          if-no-files-found: error
+
   # Extract renet binaries from existing bridge image when build is skipped.
   # Linux binaries come from the cached bridge image; Darwin and Windows binaries
   # are cross-compiled with embedded assets (CRIU/rsync) extracted from the image.
@@ -227,7 +347,7 @@ jobs:
           persist-credentials: false
 
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -271,6 +391,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
@@ -293,14 +414,17 @@ jobs:
           cache-dependency-path: private/renet/go.sum
 
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
       - name: Stage assets + cross-compile Darwin/Windows
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.extract_renet_from_image --tag "${{ inputs.renet_tag }}" --output ./private/bin --only cross
+        env:
+          # The cross builds bake the production key and version exactly as build_renet does; extract_renet_from_image refuses without both (PLAN-local-release W1-E). The check of the result against the production key is the local release's `renet-key-gate` step (rediacc_ci/release/local.py), which runs over private/bin/renet-* before anything is staged; this workflow only builds.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.extract_renet_from_image --tag "${{ inputs.renet_tag }}" --version "${{ inputs.next_version }}" --output ./private/bin --only cross
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
@@ -451,6 +575,25 @@ jobs:
         shell: bash
         run: cd private/renet && go test -race -count=1 ./pkg/procwalk/...
 
+      # The chunkstore hole punch twins (darwin F_PUNCHHOLE, windows
+      # FSCTL_SET_ZERO_DATA) behind rdc backup download --store's incremental
+      # update; like procwalk they run only on their native OS
+      # (PLAN-backup-download-from-store R2).
+      - name: Test chunkstore hole punching (native syscalls)
+        shell: bash
+        # Every TestPunchHole* test that compiles on the OS runs (punch_native_test.go
+        # and fetch_plane_test.go's ZerosTheRange). A -run pattern that matches
+        # nothing exits 0, so the step also requires both PASS lines (GitHub's
+        # bash runs with -eo pipefail).
+        run: |
+          cd private/renet
+          go test -count=1 -v -run '^TestPunchHole' ./pkg/chunkstore/ | tee "$RUNNER_TEMP/punch.log"
+          grep -q '^--- PASS: TestPunchHole_NativeZeroesOnlyTheRange' "$RUNNER_TEMP/punch.log"
+          grep -q '^--- PASS: TestPunchHole_ZerosTheRangeAndKeepsTheSize' "$RUNNER_TEMP/punch.log"
+          # A skip here means the native filesystem could not punch, which is
+          # the failure this job exists to catch.
+          if grep -qE '^ *--- SKIP: TestPunchHole' "$RUNNER_TEMP/punch.log"; then exit 1; fi
+
   # Cross-compile smoke: every GOOS/GOARCH target compiles WITHOUT the embed
   # payload (committed BPF .o objects satisfy linux; committed .gitkeep
   # placeholders satisfy the go:embed globs; darwin/windows resolve pkg/ebpf
@@ -505,6 +648,58 @@ jobs:
           cd private/renet
           for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
             echo "::group::$t"
-            CGO_ENABLED=0 GOOS="${t%/*}" GOARCH="${t#*/}" go build -tags nolicense -o /dev/null ./cmd/renet/
+            CGO_ENABLED=0 GOOS="${t%/*}" GOARCH="${t#*/}" go build -o /dev/null ./cmd/renet/
             echo "::endgroup::"
           done
+
+  # check:ci-proxy-image-smoke. The executor image (workers/proxy/Dockerfile) is
+  # built by `wrangler deploy` and by nothing in CI, and two boot blockers shipped
+  # in it unnoticed (PLAN-cloudflare-proxy.md 1.3: B1 no REDIACC_TOKEN, B2 no
+  # renet). The image must carry a release renet-linux-amd64, which exists only
+  # once this workflow has built (or extracted) one, so the smoke lives here and
+  # not in a quality lane. Runs on BOTH the full and cached paths: exactly one of
+  # build-renet / extract-renet runs, and the other is skipped.
+  # No submodule checkout: the build context is workers/proxy/stage/, filled by
+  # stage-local from this job's CLI bundle, node_modules natives and the
+  # downloaded private/bin/renet-linux-amd64.
+  proxy-image-smoke:
+    name: Proxy image smoke
+    runs-on: ubuntu-latest
+    needs: [build-renet, extract-renet]
+    # Plain checkout and an artifact from this same run. No registry, no secrets.
+    permissions:
+      contents: read
+    if: ${{ !cancelled() && (needs.build-renet.result == 'success' || needs.extract-renet.result == 'success') }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The Dockerfile builds nothing: the gate stages the image's inputs through
+      # `executor_artifacts stage-local`, which reads the tree's CLI bundle
+      # (built below, the same step ci-build-docker.yml runs; its cli-bundle
+      # artifact belongs to a sibling reusable workflow, so this job cannot
+      # order itself after it) and the lockfile-pinned ssh2 and cpu-features
+      # from node_modules (natives: true runs install:natives, which
+      # ignore-scripts=true otherwise skips). The gate's controls also start a
+      # fake account server under node before any build.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          natives: 'true'
+          build-packages: 'true'
+
+      - name: Build the CLI bundle for the image stage
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      # Artifacts drop the executable bit; the Dockerfile asserts `test -x`.
+      - name: Make the downloaded renet executable
+        run: chmod +x private/bin/renet-linux-amd64
+
+      - name: Proxy image smoke
+        run: .ci/scripts/quality/check_proxy_image_smoke.py

@@ -918,3 +918,18 @@ describe('provision uploadGuard', () => {
     expect(commands.some((command) => /flock|find |command -v rsync/.test(command))).toBe(false);
   });
 });
+
+describe('buildRouterRefreshCommand', () => {
+  // The router unit carries the Docker socket glob, so an upgraded router gets its unit re-rendered by the new binary before the restart, or it keeps scanning the old socket layout.
+  it('re-installs an active router from the updated binary before restarting it', async () => {
+    const { buildRouterRefreshCommand } = await import('../renet/renet-provisioner.js');
+    const cmd = buildRouterRefreshCommand('/usr/lib/rediacc/renet/1.2.3/renet');
+    const active = cmd.indexOf('sudo systemctl is-active --quiet rediacc-router && ');
+    const install = cmd.indexOf("sudo '/usr/lib/rediacc/renet/1.2.3/renet' proxy install");
+    const restart = cmd.indexOf('&& sudo systemctl restart rediacc-router && echo RESTARTED');
+    expect(active).toBe(0);
+    expect(install).toBeGreaterThan(active);
+    expect(restart).toBeGreaterThan(install);
+    expect(cmd.endsWith('|| true')).toBe(true);
+  });
+});

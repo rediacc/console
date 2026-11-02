@@ -84,11 +84,14 @@ sys.stdout.write(json.dumps({{"success": False, "errors": [{{"message": "no fake
 FAKE_NPX = """#!{py}
 import json, os, sys
 argv = sys.argv[1:]
+raw = argv
+assert raw[:1] == ["--no-install"], raw
+argv = raw[1:]
 stdin = None
 if argv[:3] == ["wrangler", "secret", "bulk"]:
     stdin = sys.stdin.read()
 with open(os.environ["FAKE_LOG"], "a") as fh:
-    fh.write(json.dumps({{"tool": "npx", "argv": argv, "cwd": os.path.relpath(os.getcwd(), os.environ["FAKE_ROOT"]),
+    fh.write(json.dumps({{"tool": "npx", "argv": raw, "cwd": os.path.relpath(os.getcwd(), os.environ["FAKE_ROOT"]),
                           "stdin": json.loads(stdin) if stdin else None,
                           "cf_env": sorted(k for k in os.environ if k.startswith(("CLOUDFLARE_", "CF_")))}}) + "\\n")
 if argv[:3] == ["wrangler", "d1", "export"] and "--remote" in argv:
@@ -99,6 +102,11 @@ if argv[:3] == ["wrangler", "d1", "export"] and "--remote" in argv:
     print("Upload to https://x.r2.cloudflarestorage.com/abc?sig=SECRET")
     print("The link is valid for one hour")
     print("Done")
+# deploy_bench records the version wrangler printed and the 100% version it lists after the secrets push (deploy_record.worker_version, b8601cfde); a fake that printed neither failed every full deploy with RecordError.
+if argv[:2] == ["wrangler", "deploy"]:
+    print("Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+if argv[:3] == ["wrangler", "deployments", "list"]:
+    print(json.dumps([{{"created_on": "2026-10-28T00:00:00Z", "versions": [{{"version_id": "bb3e1ba3-0000-4000-8000-000000000000", "percentage": 100}}]}}]))
 if argv[:4] == ["wrangler", "r2", "bucket", "list"]:
     print("name:           rediacc-configs-bench")
     print("name:           rediacc-backups-bench")
@@ -208,7 +216,8 @@ class World:
             shutil.copy2(ROOT / rel, dest)
         (self.root / "workers/account/node_modules").mkdir(parents=True)
         (self.root / "workers/account/wrangler.bench.toml").write_text(
-            '[[r2_buckets]]\nbucket_name = "rediacc-configs-bench"\n'
+            # The [assets] line deploy_bench.bench_assets_refusal requires: the keyless bench portal builds outside ./dist.
+            '[assets]\ndirectory = "./bench/dist"\n\n[[r2_buckets]]\nbucket_name = "rediacc-configs-bench"\n'
         )
         (self.root / "private/account/web/node_modules").mkdir(parents=True)
         (self.root / "private/account").mkdir(parents=True, exist_ok=True)

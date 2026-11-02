@@ -255,6 +255,25 @@ describe('MCP tool definitions', () => {
     });
   });
 
+  describe('job_wait', () => {
+    const tool = TOOLS.find((t) => t.name === 'job_wait')!;
+
+    it('requires a timeout, so an MCP call can never wait without a bound', () => {
+      expect(tool).toBeDefined();
+      expect(z.object(tool.schema).safeParse({ 'job-id': 'j1', machine: 'm1' }).success).toBe(
+        false
+      );
+      expect(
+        z.object(tool.schema).safeParse({ 'job-id': 'j1', machine: 'm1', timeout: '2m' }).success
+      ).toBe(true);
+    });
+
+    it('runs on the write budget and hides --debug', () => {
+      expect(tool.timeoutMs).toBeGreaterThanOrEqual(300_000);
+      expect(Object.keys(tool.schema)).not.toContain('debug');
+    });
+  });
+
   describe('timeouts', () => {
     it('all tools have explicit timeoutMs', () => {
       for (const tool of TOOLS) {

@@ -8,12 +8,12 @@
  * check:ci-toolchain-env-dockerfile-sync gate over it (REDIACC_CI_ROOT), and runs the same gate
  * over a tree where only toolchain.env moved, to show the gate can fail on what the plan prevents.
  */
+import { isEntryPoint } from '../../entry-point.js';
 import '../driver.js';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import {
   WK_GH_API_BASE,
   WK_GO_DL_BASE,
@@ -48,7 +48,7 @@ const LOCKS = [
   'private/account/e2e/package-lock.json',
 ];
 
-function tree(): string {
+function tree(locks: string[] = LOCKS): string {
   return makeTree(
     [
       ENV,
@@ -58,11 +58,13 @@ function tree(): string {
       'workers/proxy/Dockerfile',
       'package.json',
       'packages/cli/package.json',
+      // The second toolchain:wrangler site (.ci/config/pins.json).
+      'workers/account/package.json',
       'private/renet/go.mod',
       '.ci/scripts/private/license-mint/go.mod',
     ],
     {
-      ...Object.fromEntries(LOCKS.map((l) => [l, '{}\n'])),
+      ...Object.fromEntries(locks.map((l) => [l, '{}\n'])),
       'private/account/Dockerfile': fs.readFileSync(
         path.join(LIVE_ROOT, 'private/account/Dockerfile'),
         'utf8'
@@ -123,7 +125,7 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     to: string,
     answers: Record<string, string | object>,
     root = tree()
-  ) => {
+  ): Promise<{ root: string; plan?: PinPlan; refused?: string }> => {
     const drv = createToolchainDriver(stubUpstream(answers), mutant);
     try {
       return {
@@ -249,12 +251,13 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     const p = r.plan;
     const npmSteps = p?.steps ?? [];
     add(
-      'npm bump: toolchain.env and the three Dockerfiles restating NPM_VERSION move',
+      // The proxy image runs no npm since PLAN-proxy-cd-six-targets A2 (it copies a staged bundle), so it restates no NPM_VERSION and the bump must not touch it.
+      'npm bump: toolchain.env and the two Dockerfiles restating NPM_VERSION move, the proxy image is untouched',
       !!p &&
         envVal(textOf(p, ENV) ?? '', 'NPM_VERSION') === next &&
         arg(textOf(p, 'Dockerfile') ?? '', 'NPM_VERSION') === next &&
-        arg(textOf(p, 'workers/proxy/Dockerfile') ?? '', 'NPM_VERSION') === next &&
-        arg(textOf(p, 'private/account/Dockerfile') ?? '', 'NPM_VERSION') === next,
+        arg(textOf(p, 'private/account/Dockerfile') ?? '', 'NPM_VERSION') === next &&
+        textOf(p, 'workers/proxy/Dockerfile') === undefined,
       r.refused
     );
     add(
@@ -402,12 +405,63 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
       (sk.refused ?? '').includes('publishes no sha256 digest'),
       sk.refused ?? 'a plan was returned'
     );
-    const wr = (live(CONSTANTS).match(/^readonly WRANGLER_VERSION="([^"]+)"/m) ?? [])[1] ?? '';
+    const wr = (/^readonly WRANGLER_VERSION="([^"]+)"/m.exec(live(CONSTANTS)) ?? [])[1] ?? '';
     const w = await plan('toolchain:wrangler', patchOf(wr), {});
     add(
       'wrangler: the constants.sh version moves',
       (textOf(w.plan, CONSTANTS) ?? '').includes(`WRANGLER_VERSION="${patchOf(wr)}"`),
       w.refused
+    );
+    add(
+      'wrangler: the workers/account lockfile gets the canonical pass under the pinned npm, so npm ci accepts the moved pin',
+      (w.plan?.steps ?? []).some(
+        (st) =>
+          st.cwd === 'workers/account' &&
+          st.writes.some((x) => x.file === 'workers/account/package-lock.json') &&
+          st.run ===
+            `npx -y npm@${envVal(env, 'NPM_VERSION')} install --package-lock-only --ignore-scripts`
+      ),
+      (w.plan?.steps ?? []).map((st) => `${st.cwd}: ${st.run}`).join(' | ') ||
+        (w.refused ?? 'no steps')
+    );
+    add(
+      'wrangler: the workers/account/package.json pin moves with it',
+      (textOf(w.plan, 'workers/account/package.json') ?? '').includes(
+        `"wrangler": "${patchOf(wr)}"`
+      ),
+      w.refused
+    );
+    const noLock = await plan(
+      'toolchain:wrangler',
+      patchOf(wr),
+      {},
+      tree(LOCKS.filter((l) => l !== 'workers/account/package-lock.json'))
+    );
+    add(
+      'wrangler: a package.json site with no lockfile beside it gets no lockfile pass, so none is created',
+      noLock.plan !== undefined &&
+        !noLock.plan.steps.some(
+          (st) =>
+            st.cwd === 'workers/account' ||
+            st.writes.some((x) => x.file === 'workers/account/package-lock.json')
+        ),
+      noLock.refused ?? (noLock.plan?.steps ?? []).map((st) => `${st.cwd}: ${st.run}`).join(' | ')
+    );
+    const noNpmRoot = tree();
+    const envPath = path.join(noNpmRoot, ENV);
+    fs.writeFileSync(
+      envPath,
+      fs
+        .readFileSync(envPath, 'utf8')
+        .split('\n')
+        .filter((l) => !l.startsWith('NPM_VERSION='))
+        .join('\n')
+    );
+    const noNpm = await plan('toolchain:wrangler', patchOf(wr), {}, noNpmRoot);
+    add(
+      'wrangler: a toolchain.env without NPM_VERSION refuses the plan rather than planning an ambient npm',
+      (noNpm.refused ?? '').includes('NPM_VERSION is missing'),
+      noNpm.refused ?? 'a plan was returned'
     );
     const node = createToolchainDriver(stubUpstream({}), mutant);
     let why = '';
@@ -438,5 +492,4 @@ async function main(): Promise<number> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
-  main().then((n) => process.exit(n === 0 ? 0 : 1));
+if (isEntryPoint(import.meta.filename)) main().then((n) => process.exit(n === 0 ? 0 : 1));

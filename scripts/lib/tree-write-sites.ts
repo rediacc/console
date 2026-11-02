@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseSync } from 'oxc-parser';
 import { loadScripts, resolveInvocations, type ScriptUniverse } from '../gates/check-ci-parity.js';
+import { isEntryPoint } from './entry-point.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(HERE, '..', '..');
@@ -632,7 +633,7 @@ class GroupWalk {
       if (name !== null) this.request(m, name, work);
       this.drain(m, work);
     }
-    for (const file of [...this.all].sort()) {
+    for (const file of [...this.all].sort((a, b) => Number(a > b) - Number(a < b))) {
       const m = this.a.module(file);
       const units = this.live.get(file) ?? new Set<string>();
       this.out.modules.push(file);
@@ -1906,7 +1907,9 @@ function distribute(perRef: Clause[][], bound = 64): Clause[] {
   let out: Clause[] = [[]];
   for (const clauses of perRef) {
     if (out.length * clauses.length > bound) return [];
-    out = out.flatMap((a) => clauses.map((cl) => [...new Set([...a, ...cl])].sort()));
+    out = out.flatMap((a) =>
+      clauses.map((cl) => [...new Set([...a, ...cl])].sort((a, b) => Number(a > b) - Number(a < b)))
+    );
   }
   return out.filter((cl) => cl.length > 0);
 }
@@ -1923,7 +1926,10 @@ function mutatorTargets(mt: Mutators, words0: Word[], cwd: Val): MutTarget[] {
   const text = (w: Word | undefined): string => w?.text ?? '';
   let words = words0;
   let prog = path.posix.basename(text(words[0]));
-  if (prog === 'npx' && !(mt.install['npx'] ?? []).includes(text(words[1]))) {
+  if (
+    prog === 'npx' &&
+    !((mt.install as Partial<Record<string, string[]>>).npx ?? []).includes(text(words[1]))
+  ) {
     words = words.slice(1);
     while (words.length > 0 && text(words[0]).startsWith('-')) words = words.slice(1);
     prog = path.posix.basename(text(words[0]));
@@ -2251,6 +2257,6 @@ function main(argv: string[]): number {
   return 2;
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   process.exitCode = main(process.argv.slice(2));
 }

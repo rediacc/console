@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 6
 language: et
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Võrgundus
@@ -40,7 +40,7 @@ Internet → Traefik (pordid 80/443/TCP/UDP)
                ↓ küsib iga 5s
            Marsruutimisserver (avastab konteinereid)
                ↓ kontrollib silte
-           Dockeri daemonid (/var/run/rediacc/docker-*.sock)
+           Dockeri daemonid (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Konteinerid (seotud 127.x.x.x loopback-IP-dega)
 ```
@@ -206,7 +206,14 @@ Täielik tee, mille Let's Encrypt sert väljastamisest iga hoidla konteineriteni
 
 1. **Väljastamine hostil.** Masinataseme Traefiku konteiner (`rediacc-proxy`, juurutatud asukohta `/opt/rediacc/proxy/`) omab ACME uuendamist. See salvestab kogu oleku faili `/opt/rediacc/proxy/letsencrypt/acme.json` hostil. Uuendamine käivitub automaatselt ~30 päeva enne aegumist -- operaatori tegevust pole vaja, kuni `--cf-dns-token` on seadistatud.
 
-2. **Hoidlapõhine väljapumpamine (valikuline).** Teenused, mis vajavad serdi faile oma konteineri sees (näiteks meiliserverid, mis loevad `.pem` faili otse), juurutavad kõrval väikese `traefik-certs-dumper` konteineri. Väljapumpaja ühendab kirjutuskaitstult `/opt/rediacc/proxy/letsencrypt` ja kirjutab ekstraheeritud serdi + võtme hoidla andmemahtu failidena `cert.pem` / `key.pem`. Selleks peab hoidlapõhine Dockeri daemon omama `/opt/rediacc/proxy` oma mount-nimeruumi lubamisloendis. See on vaikimisi juba lisatud.
+2. **Hoidlapõhine eksport (valikuline).** Teenus, mis vajab sertifikaadifaile oma konteineris (näiteks meiliserver, mis loeb `.pem` faili otse), liitub sildiga `rediacc.cert_export=true` oma marsruuditaval konteineril. `renet cert export` töötab masinas root-õigustes: 5-minutilise taimeriga ja uuesti iga kord, kui ruuteri marsruudid muutuvad (mõlemad paigaldab `renet cert export-install` masina seadistamisel). See loeb faili `acme.json` ja kirjutab hoidla enda sertifikaadid, ainult hostidele, mida selle Traefiki `Host`/`HostSNI` reeglid nimetavad, asukohta `<repo mount>/data/tls/<domain>/cert.pem` ja `key.pem`. Failid kirjutatakse aatomiliselt ja need kuuluvad monteerimispunkti omanikule. Peatatud hoidla hostid loetakse endiselt tema omaks, seega ükski hoidla ei saa teise sertifikaati. Ükski konteiner ei vaja ligipääsu kataloogile `/opt/rediacc/proxy`: hoidlapõhine Docker API värav keeldub sellest bind-ühendusest, mistõttu `traefik-certs-dumper` ei saa enam töötada.
+
+   Kataloog ühendatakse compose-failist kirjutuskaitstuna. Eksport kirjutab hoidla monteerimispunkti juurde, seega alamkataloogis (nt `mail/`) asuv compose-fail jõuab selleni teega `../data/tls/<domain>/`:
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **Kliendipoolne vahemälu (`rediacc.json`).** CLI vahemälustab `acme.json` tihendatud koopia `acmeCertCache` alla oma konfiguratsioonifailis, võtmena `baseDomain`. See võimaldab mitmel masinal serte jagada (läbi `rdc machine infra cert push <machine>`) ja toimib offline-inventuurina.
 
@@ -222,7 +229,7 @@ Täielik tee, mille Let's Encrypt sert väljastamisest iga hoidla konteineriteni
 - Serdid, mille `notAfter` on rohkem kui 7 päeva minevikus, eemaldatakse täielikult. Need on passiivsed ja ainult paisutavad vahemälu.
 - `rdc config prune --certs-only` kustutab kõik; `rdc config prune --certs-only` näitab inventuuri.
 
-**Tõrkeotsing:** kui `traefik-certs-dumper` jookseb kokku veateatega `/traefik/acme.json: no such file or directory`, ei näe hoidlapõhine daemon hosti letsencrypt-poodi. Kontrolli, et (a) `/opt/rediacc/proxy/letsencrypt/acme.json` eksisteerib hostil (see on hostitseme `rediacc-proxy` vastutus) ja (b) hoidlapõhine daemon käivitati piisavalt uue renet-versiooniga, mis lubab `/opt/rediacc/proxy`. Renet'i uuendamisel rakenda muudatused käsuga `rdc repo up`.
+**Tõrkeotsing:** kui `data/tls/<domain>/` jääb tühjaks, kontrollige, et (a) marsruuditaval konteineril on silt `rediacc.cert_export=true`, (b) domeen esineb ühes selle Traefiki `Host`/`HostSNI` reeglis ja sellel on sertifikaat hostis failis `/opt/rediacc/proxy/letsencrypt/acme.json`, ning (c) `systemctl status rediacc-cert-export.timer` näitab taimerit aktiivsena. `sudo renet cert export-install` paigaldab üksused uuesti ja `sudo systemctl start rediacc-cert-export.service` ekspordib kohe.
 
 > **Eksperimentaalne:** Auto-sünkroonimise sagedus ja aegumispõhine puhastamine laevati renet 0.9-ga. Vanemad CLI/renet versioonid kasutavad ainult käsitsi sünkroniseerimist `rdc config prune --certs-only` kaudu.
 

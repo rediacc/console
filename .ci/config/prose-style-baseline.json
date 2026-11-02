@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2813,
- "files": 686,
+ "count": 2753,
+ "files": 676,
  "by_rule": {
-  "R1": 1538,
-  "R11": 148,
+  "R1": 1504,
+  "R11": 142,
   "R14": 1,
-  "R18": 13,
-  "R19": 62,
-  "R2": 605,
-  "R7": 446
+  "R18": 12,
+  "R19": 55,
+  "R2": 602,
+  "R7": 437
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -51,9 +51,6 @@
    "R1": [
     "e5e889d4f2fe355d",
     "eed5959eed0aa435"
-   ],
-   "R18": [
-    "8bb5a32b576a2a01"
    ]
   },
   ".ci/config/prose-style-rules.json": {
@@ -258,11 +255,6 @@
    "R2": [
     "9e2cedcb715f97ba",
     "b39a8ca9e061ef7c"
-   ]
-  },
-  ".ci/rediacc_ci/infra/build_renet.py": {
-   "R2": [
-    "a5ab50fecaf8d1de"
    ]
   },
   ".ci/rediacc_ci/paths.py": {
@@ -1098,8 +1090,7 @@
   },
   ".claude/agents/backup-storage.md": {
    "R1": [
-    "039e9ca8f63b0ad8",
-    "48ad336d8c2713a5"
+    "039e9ca8f63b0ad8"
    ],
    "R7": [
     "6b6b1675c93e1f2f"
@@ -1145,7 +1136,6 @@
    "R1": [
     "8e085624238f51b5",
     "b8db33010389f15f",
-    "ba91f48c5cc58178",
     "fe2600188d515a92"
    ],
    "R7": [
@@ -1345,7 +1335,6 @@
    "R1": [
     "0c724f799be1e4e6",
     "0f64577679602af0",
-    "4293a2d76ef325cd",
     "5c71dcb3f1a209de",
     "abca684229274a70",
     "afdea05da4477b19",
@@ -1501,7 +1490,6 @@
     "83968b3f5230faad",
     "8e420aaf6cda9d55",
     "91c4e1ce7e12565a",
-    "a6b9be16836499a6",
     "ab0e2a5a4b5d38a3",
     "b196e55d4213c5c8",
     "b39e0ac731af8072",
@@ -1523,7 +1511,6 @@
     "1c58b05eee9b8ed1",
     "2f3da51105c7810e",
     "34235d150448d68a",
-    "4824b2336549bd98",
     "7a99d09f2d6a94bf",
     "9e3469c0fa5de048",
     "a0a43f06e2f04623",
@@ -2054,7 +2041,6 @@
   ".claude/skills/rdc/reference.md": {
    "R1": [
     "132255f118bc59d1",
-    "1c4da19c974e5026",
     "2c458aba3b8f45c7",
     "4969aaaa41701de5",
     "4c50a25929008886",
@@ -2063,14 +2049,10 @@
     "9bba1b69f52c348a",
     "9bdd694614531526",
     "ab9c43b025075c80",
-    "b003a1c04cf8df41",
-    "daa3697d25fd3829"
+    "b003a1c04cf8df41"
    ],
    "R11": [
-    "00b1ea3f79677893",
     "2240654d087beb10",
-    "279c74d892f0f391",
-    "2ee3efefb7311675",
     "300623f876f80c38",
     "3a41b7c6c7380263",
     "3f8bf66b833ea9d2",
@@ -3310,16 +3292,7 @@
   },
   "docs/agent-reference/local-env.md": {
    "R1": [
-    "16da0cafbb0540a2",
-    "5c452038ccd7edfe",
-    "74f3f5b5d17a2f0b",
-    "79a69b1c6b54e876",
-    "7b5cce7faae0460a",
-    "ac64938c069d6528",
-    "d2e67eee8ca179aa"
-   ],
-   "R11": [
-    "4776016d1c512370"
+    "16da0cafbb0540a2"
    ]
   },
   "docs/agent-reference/loop-prompt.md": {
@@ -3355,16 +3328,6 @@
   "docs/agent-reference/worklist-v10-brief.md": {
    "R1": [
     "3afc937f8ced5fe9"
-   ]
-  },
-  "docs/backup-storage/01-verified-context.md": {
-   "R1": [
-    "b4775abd199629c7"
-   ]
-  },
-  "docs/backup-storage/06-execution-guide.md": {
-   "R1": [
-    "f823a2157ef2ed85"
    ]
   },
   "docs/backup-storage/07-execution-record.md": {
@@ -3413,12 +3376,6 @@
   "docs/backup-storage/CHECKLIST.md": {
    "R2": [
     "9a18bd2b6c008ad9"
-   ]
-  },
-  "docs/backup-storage/PROMPT.md": {
-   "R1": [
-    "2d13fa8ae96b125c",
-    "89de28a268ff01cf"
    ]
   },
   "docs/caption-sync-flat-cues.md": {
@@ -4102,8 +4059,6 @@
   },
   "packages/cli/src/commands/backup-strategy.ts": {
    "R1": [
-    "5c5d0c8d1f1f2bf9",
-    "7ec8bfff0d77872c",
     "a9542010ac36c542"
    ]
   },
@@ -4183,16 +4138,6 @@
     "66745f5f8ddcb747"
    ]
   },
-  "packages/cli/src/services/backup/backup-schedule-reconcile.ts": {
-   "R7": [
-    "54898adab488243f"
-   ]
-  },
-  "packages/cli/src/services/backup/backup-schedule-unit-generator.ts": {
-   "R7": [
-    "f5a9726a71818801"
-   ]
-  },
   "packages/cli/src/services/backup/backup-schedule.ts": {
    "R7": [
     "4b26b74817b94f77"
@@ -4239,11 +4184,6 @@
   "packages/cli/src/services/core/mutation-gate.ts": {
    "R2": [
     "7bc01db9543641cb"
-   ]
-  },
-  "packages/cli/src/services/executor/__tests__/background-flag.test.ts": {
-   "R7": [
-    "9ce99d1da824b91e"
    ]
   },
   "packages/cli/src/services/executor/daemon/lifecycle.ts": {
@@ -4353,16 +4293,6 @@
    "R7": [
     "35c53c26b50f49b2",
     "587a822182f6bff6"
-   ]
-  },
-  "packages/e2e-tests/src/utils/bridge/BridgeTestRunner.ts": {
-   "R2": [
-    "66b2f4e18d830042"
-   ]
-  },
-  "packages/e2e-tests/src/utils/bridge/__tests__/describeExecFailure.test.ts": {
-   "R7": [
-    "d7f0fcad90f6b471"
    ]
   },
   "packages/e2e-tests/tests/03-datastore-lifecycle.test.ts": {
@@ -4488,7 +4418,6 @@
   },
   "packages/shared/src/cli-contract/validation.ts": {
    "R7": [
-    "10bc4a170c6fb9d0",
     "10f65d1bd85ed450"
    ]
   },
@@ -4523,11 +4452,6 @@
     "45555480992775db"
    ]
   },
-  "packages/shared/src/config-schema/schemas.ts": {
-   "R7": [
-    "49d2141c92213b6b"
-   ]
-  },
   "packages/shared/src/config-schema/state-schema.ts": {
    "R1": [
     "d159a4353ed08eed"
@@ -4535,7 +4459,6 @@
   },
   "packages/shared/src/config/defaults.ts": {
    "R7": [
-    "33f8e18a3777ed02",
     "966830a15d2d2f85"
    ]
   },
@@ -4934,20 +4857,16 @@
   },
   "packages/www/src/content/docs/en/backup-restore.md": {
    "R1": [
-    "03a04c6221046ceb",
     "0c23fee8bb2db9fe",
     "0df7ed4398a29654",
     "0e32dc67b27b3811",
     "110f328f930f955b",
     "1a2afbc0a8828f13",
     "28f065528ec625e5",
-    "29ceb8c72bfb51ce",
     "2ca94070959c966c",
     "2e9a95194b3973bc",
-    "2f5f39cfe0f70188",
     "35313a1c338ad970",
     "35674c5bbc0f8a35",
-    "35d420a2fbe00b77",
     "3683e8caf492ff2e",
     "3907f05184f8c23b",
     "3b38e2ea3c770378",
@@ -4959,29 +4878,22 @@
     "5086b426cf266dec",
     "515f320c7b217072",
     "535bdbafcedc0503",
-    "53ec1ec5098fae94",
-    "54937a95a570ddf8",
     "57d521c9266329d8",
     "5ee2a6559b5b694d",
     "6723fb297666644b",
     "6caeec215e3f6940",
-    "6db6c9ffbcfb3b53",
     "70fed2d087c5198c",
     "746e1023885c7094",
     "77f3a781b2d00b87",
     "84035717a818711d",
     "8c21900e8dc22509",
-    "8da4ea64a7173d17",
     "920c51d62adebebb",
-    "9386bc229911756d",
     "a1e9cb4a3d870dd9",
     "a4b4fb7985ad87e9",
-    "af42a3a8b6c4ff9a",
     "b7cc71d3928da9e4",
     "b824bf50d944b94f",
     "ca2c7591c035e4ef",
     "cd9631811adc4263",
-    "d82d2be2d5c495b8",
     "e3a8ab2102d4d810",
     "f5996192b80b6380",
     "f67c68e248e6c99a",
@@ -4990,40 +4902,32 @@
    "R11": [
     "0c8b36eb2d1f2a02",
     "6bc676a06863465f",
-    "ac1285caaf2fd137",
     "c43e904f72f1ce30"
    ],
    "R19": [
     "088223725ea98314",
     "0d6aa5c6ae8736db",
-    "1107555bb1b6816c",
     "1dc456a575a675ac",
     "1fe519ed0ba575c1",
     "26a203f1f10e765b",
     "306a54424d105442",
     "38fb71f75f96da6d",
     "4746738baf4aefca",
-    "4d4c0746631c1f28",
-    "57bea0a1acef06cd",
     "581db0a693431aa1",
     "59d5933c777a1a94",
     "5d34b2c33e4c121f",
     "6db04fa1840ff583",
-    "7147ecf63eae0b37",
     "7625a38c372b78c4",
     "7eb502e15babeeed",
     "87d09c743d5521da",
-    "89418921deefcca9",
     "930159fdd574a3e4",
     "a10406a8e98b2c2e",
     "a1b47b15c7fd7ba0",
     "aaf66dc7ba9e2ad5",
     "ba24a7d7df04784d",
     "bd7247bc0596ed18",
-    "be3220a1e1870151",
     "d3dc314b535ed6de",
     "d40ad2fd3ef2e905",
-    "e2abe3a06f8893c7",
     "ed2d1d6b83b7b2c3",
     "ee2af7f5d105c154",
     "ffe1c7c7d85a65a9"
@@ -5350,15 +5254,10 @@
     "3be9720115454c96",
     "3ed3403c402084a5",
     "5d46502300563f09",
-    "779fde3c1b8c8cc8",
-    "7da29bdf05971193",
     "83c48fff726820fc",
-    "a47ea58bdd92ff2f",
-    "b381331b629438c8",
-    "e751218023fd1bbf"
+    "b381331b629438c8"
    ],
    "R7": [
-    "20b69b0488be3e6b",
     "82aa0775a4a75a81"
    ]
   },
@@ -5370,7 +5269,6 @@
     "3454faf4acb94809",
     "577b5cec5eebc7b1",
     "71c0c893553f7904",
-    "8041d3b0bda2bc2c",
     "9b489eefa80b86e3",
     "9d6662de95f2392f",
     "af0c88f819448e31",
@@ -5484,7 +5382,6 @@
    "R1": [
     "0ef9cb864ceef504",
     "11555a70d1289657",
-    "1a1751c6e38a7d89",
     "7950671fd3fdd1bd",
     "80f9986e60270332",
     "a8f680369753197e",
@@ -5508,7 +5405,6 @@
     "dbaf851ef3d2d643"
    ],
    "R11": [
-    "316f7455f33f5ce1",
     "3a64990065735514",
     "54619a2ce0a1fe49",
     "7441f0cdca731b09"

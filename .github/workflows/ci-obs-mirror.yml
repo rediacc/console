@@ -88,14 +88,14 @@ jobs:
         run: git submodule update --init --depth 1 private/renet
 
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       # opensuse/leap:16.0 comes from Docker Hub.
       - name: Login to Docker Hub
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ env.BWS_DOCKERHUB_USERNAME }}
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}

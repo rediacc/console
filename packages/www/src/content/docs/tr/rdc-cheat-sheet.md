@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: tr
-sourceHash: "14ed5791afa44326"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # RDC CLI Hızlı Referans
@@ -59,8 +59,12 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc backup snapshot <repo> --dry-run` | Anlık görüntüyü yüklemeden planla; nelerin taşınacağını bildir |
 | `rdc backup verify <repo>` | Bir deponun yedek çıpasını parça depolamaya karşı doğrula |
 | `rdc backup usage` | Parça depolamada saklanan bayt sayısını kotanıza göre göster |
-| `rdc backup manifests <repo>` | Sunucuda kayıtlı anlık görüntü manifestlerini listele |
-| `rdc storage browse <storage>` | Depolama içeriğine göz at |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | Bir chunk deposu anlık görüntüsünü yeni bir adla geri yükle |
+| `rdc backup retention <repo>` | Sunucunun bir depo soy hattı için uyguladığı saklama politikasını göster |
+| `rdc backup retention preview <repo>` | Bir sonraki taramanın neyi sileceğini ve ne kadar yer açacağını göster |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | Bir soy hattı veya tek bir yedek akışı için saklama süresini bildir |
+| `rdc backup retention clear <repo> [--stream <id>]` | Politikayı kaldır; her anlık görüntü saklanır |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | Bir anlık görüntüyü sil; özel verisini sonraki GC boşaltır |
 
 ## Depo Taşıma
 
@@ -76,7 +80,7 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 
 | Komut | Açıklama |
 |-------|----------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Adlandırılmış yedekleme stratejisi oluştur veya güncelle |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | Adlandırılmış yedekleme stratejisi oluştur veya güncelle |
 | `rdc backup strategy list` | Tanımlanmış tüm yedekleme stratejilerini listele |
 | `rdc backup strategy show <name>` | Strateji ayrıntılarını göster |
 | `rdc backup strategy remove <name>` | Stratejiyi kaldır |
@@ -137,8 +141,6 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc config list` | Bu makinedeki tüm yapılandırmaları listele |
 | `rdc config set machine <alias>` | Bir takma adı farklı bir makineye yönlendir |
 | `rdc machine add <machine> --ip <host> --user <user>` | Yapılandırmaya makine ekle |
-| `rdc storage import rclone.conf` | rclone yapılandırmasından depolama sağlayıcıları içe aktar |
-| `rdc storage list` | Yapılandırılmış depolama sağlayıcılarını listele |
 | `rdc backup strategy set ...` | Adlandırılmış yedekleme stratejisi tanımla |
 | `rdc --config <name> <command>` | Adlandırılmış yapılandırma dosyası kullan |
 

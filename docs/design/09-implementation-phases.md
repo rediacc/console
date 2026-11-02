@@ -12,7 +12,7 @@ completion is the highest-risk class in the tree, regardless of its test coverag
 3. **Models**: Fable = P0 spec, group-snap/identity seams, phase reviews, gnarly debugging.
 Opus = bulk Go/TS implementation, examples, CI YAML, harness, English docs. Sonnet = ALL naturalization/translation batches.
 4. **User prerequisites before launching agents** (ancestry-verified overrides cannot be set
-later): `export REDIACC_ALLOW_GRAND_REPO='*' REDIACC_ALLOW_CLUSTER_OPS='*'`; passwordless sudo for virsh/virt-install; roughly 20GB+ free RAM and disk for the 6-VM fleet. Also `REDIACC_SKIP_MACHINE_ACTIVATION=1` on every call against ops VMs.
+later): `export REDIACC_ALLOW_GRAND_REPO='*' REDIACC_ALLOW_CLUSTER_OPS='*'`; passwordless sudo for virsh/virt-install; roughly 20GB+ free RAM and disk for the 6-VM fleet. Ops VMs are licensed like any other machine: the activation skip switch was removed (PLAN-free-license F1).
 5. Local dev conventions: use `./rdc.sh` (hooks block direct cli-bundle invocation);
 renet builds stay `--nolicense`; ops fleet on `renet11`/192.168.111, cluster work on `renet12`/192.168.112; VMs persist, so `ops down` at phase ends; sleep >20s is hook-blocked (use background watch patterns).
 6. **Agent process rules learned the hard way in P3** (recorded because each one nearly cost
@@ -235,7 +235,7 @@ failure mode is **silent** (pods sit Pending forever with no error naming the mi
 
 **10. Test-mode dispatcher flag drift.** `functions once --test-mode` flags are hand-listed and lagged every redesigned verb (harness bugs H1, H2, and H3 were all this class). Derive the dispatcher flags from the bridge `ParamDef` registry so they cannot drift.
 
-**11. Minor sweeps still open** (from spec/08 carry-in 9): the stale self-heal comment at `node_lifecycle_unit.go:87`; reconsider the `--operation` default (recommend required, no default); a teaching error naming `REDIACC_SKIP_MACHINE_ACTIVATION=1`; and `installCeph`'s 2-OSD `size 2 / min_size 1` accommodation must stay **test-only** and never become a product default.
+**11. Minor sweeps still open** (from spec/08 carry-in 9): the stale self-heal comment at `node_lifecycle_unit.go:87`; reconsider the `--operation` default (recommend required, no default); a teaching error for a failed licence issuance (the activation skip switch it once named is removed); and `installCeph`'s 2-OSD `size 2 / min_size 1` accommodation must stay **test-only** and never become a product default.
 
 **12. i18n.** The 12 locales x 58 untranslated CLI-surface strings are deferred to **P7 by standing ruling**, because P4 reshapes exactly that surface and naturalizing now is throwaway. **P4 must not try to clear it. P7 must.**
 

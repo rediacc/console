@@ -52,14 +52,13 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // schedule/run/status/cancel/list/restore all reach a machine (systemd timers, renet, SSH). Only the `strategy` subgroup is config-only (see below).
   backup: { plane: 'machine' },
   config: { plane: 'config' },
-  // Mostly CRUD over the local storage list; only `prune` reaches a machine and only `browse` shells out to a local rclone.
-  storage: { plane: 'config' },
   // login/logout/status are account-server HTTPS; the -m subcommands are not.
   subscription: { plane: 'other' },
   // Local KVM/QEMU dev VMs, driven by spawning the *local* renet binary (services/executor/ops-executor). Never uses the machine-plane services.
   ops: { plane: 'other' },
   doctor: { plane: 'other' },
   credits: { plane: 'other' },
+  tools: { plane: 'other' },
   update: { plane: 'other' },
   mcp: { plane: 'other' },
 
@@ -71,6 +70,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'machine provider': { plane: 'config' },
   'machine infra set': { plane: 'config' },
   'machine infra show': { plane: 'config' },
+  'machine access set': { plane: 'config' },
+  'machine access remove': { plane: 'config' },
+  'machine access show': { plane: 'config' },
   'machine infra cert status': { plane: 'config' },
   'machine infra cert clear': { plane: 'config' },
 
@@ -78,13 +80,21 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'backup strategy': { plane: 'config' },
   // `backup usage`/`backup manifests` are account-tunnel READS (accountServerFetch), not machine executor commands, control-plane, so `other` (like `subscription`). `backup verify` DOES reach a machine (backup_verify verb), so it keeps the backup-domain machine default.
   'backup usage': { plane: 'other' },
+  'backup reconcile': { plane: 'other' },
   'backup manifests': { plane: 'other' },
   // `backup retention` (and its set/clear children) is the same shape: it reads and writes the policy through accountServerFetch and never touches a machine. Without these entries it inherits the backup-domain MACHINE default and becomes proxyCapable, which would offer a policy that decides what gets DELETED for execution against the wrong target.
   'backup retention': { plane: 'other' },
   'backup retention set': { plane: 'other' },
   'backup retention clear': { plane: 'other' },
+  // `preview` reads the policy and manifests through accountServerFetch; `snapshots delete` deletes manifests through it. Neither touches a machine.
+  'backup retention preview': { plane: 'other' },
+  'backup snapshots delete': { plane: 'other' },
+  // `purge` deletes a whole lineage through accountServerFetch, the same control-plane call as `snapshots delete`; no machine is reached.
+  'backup purge': { plane: 'other' },
 
   // ── repo: config-side ref and secret ops, and the local template catalog ─ The one git-like ref op that never leaves the config: it rewrites the repository's `branches` map. (`repo log`, `commit`, `checkout`, `merge`, `gc` and `fsck` all read or write objects on the machine.)
+  // Docker-storage classification and reclaim run through renet on the machine (`repository_docker_prune`).
+  'repo prune': { plane: 'machine' },
   'repo branch': { plane: 'config' },
   // The store IS the encrypted config (repo-secrets-store imports no executor or SSH). Values reach the machine later, via `repo up`.
   'repo secret': { plane: 'config' },
@@ -100,11 +110,6 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'repo admin template list': { plane: 'other' },
   // Holds an SSH tunnel open until Ctrl+C.
   'repo tunnel': { interactive: true },
-
-  // ── storage ───────────────────────────────────────────────────────────
-  'storage prune': { plane: 'machine' },
-  // Lists a bucket by spawning the operator's local rclone against the vault credentials, it reaches the storage backend, never a machine.
-  'storage browse': { plane: 'other' },
 
   // ── cluster ─────────────────────────────────────────────────────────── Prints the cluster's config block (configService.listClusters); it does not query the live cluster, so it is the one config-plane leaf in the domain.
   'cluster status': { plane: 'config' },

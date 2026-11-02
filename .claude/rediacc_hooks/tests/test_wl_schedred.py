@@ -210,7 +210,10 @@ def test_discovery_pins_this_repos_scheduled_workflows():
         "promote-stable",
         "ci-obs-mirror",
         "ci-vm-bake",
+        "ct-backup-perf",
         "pins-soaked",
+        "cf-usage-report",
+        "telemetry-probe",
     }
 
 
@@ -298,6 +301,97 @@ def test_a_workflow_missing_from_the_page_gets_one_fallback_call(repo, tmp_path,
     serve(gh, [run(RED_RUN), run(5, file="housekeeping.yml")])
     SR.refresh(repo, tmp_path / "wl.md", force=True)
     assert gh.calls("runs?event=schedule&status=completed") == []
+
+
+REGISTERED = [
+    {
+        "workflows": [
+            {"path": ".github/workflows/ci.yml"},
+            {"path": ".github/workflows/housekeeping.yml"},
+        ]
+    }
+]
+
+
+def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_verdict(
+    repo, tmp_path, gh
+):
+    # A scheduled workflow added on the live branch is not registered on main, so its per-workflow fallback answers HTTP 404. On 2026-10-24 that 404 (cf-usage-report.yml) made the whole `ci-trace.py --scheduled` read unreadable, hiding five red Console CI nightlies.
+    (repo / ".github" / "workflows" / "branchonly.yml").write_text(
+        HK_YML.replace("Housekeeping", "Branch Only"), encoding="utf-8"
+    )
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "branch-only workflow")
+
+    def routes(err):
+        gh.reset()
+        gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+        gh.route("/jobs", {"jobs": []})
+        gh.route("/actions/workflows/branchonly.yml/", rc=1, err=err)
+        gh.route("/actions/workflows/", {"workflow_runs": []})
+        gh.route("actions/workflows?per_page", REGISTERED)
+        gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+
+    routes("gh: Not Found (HTTP 404)")
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    bo = row_of(doc, "branchonly")
+    assert bo["run_id"] is None
+    assert bo["red"] is False
+    assert bo["not_on_main"] is True
+    assert row_of(doc, "ci")["run_id"] == RED_RUN
+    assert row_of(doc, "ci")["red"] is True
+    # Control: any other fallback error still makes the read unreadable, never a silent pass.
+    routes("gh: Bad credentials (HTTP 401)")
+    doc = SR.refresh(repo, tmp_path / "wl2.md", force=True)
+    assert doc["state"] == "unreadable", doc
+    assert "HTTP 401" in doc["error"], doc
+
+
+def test_a_404_for_a_registered_workflow_stays_unreadable(repo, tmp_path, gh):
+    # GitHub lists housekeeping.yml as registered, so a 404 runs read for it is a wrong owner or a deleted workflow, not a branch-only file (reviews e9054dfa.1, bebb89ad.1).
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("actions/workflows?per_page", REGISTERED)
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "unreadable", doc
+    assert "HTTP 404" in doc["error"], doc
+
+
+def test_an_unreadable_workflow_list_keeps_the_404_unreadable(repo, tmp_path, gh):
+    # Only a readable registered-workflow list that lacks the file proves absence; a failed list read keeps the scheduled read unreadable.
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("actions/workflows?per_page", rc=1, err="gh: Bad credentials (HTTP 401)")
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "unreadable", doc
+    assert "HTTP 404" in doc["error"], doc
+
+
+def test_the_workflow_list_is_read_once_per_refresh(repo, tmp_path, gh):
+    # Two branch-only workflows cost one list read, not one call each (review bebb89ad.2).
+    for stem in ("bo1", "bo2"):
+        (repo / ".github" / "workflows" / ("%s.yml" % stem)).write_text(
+            HK_YML.replace("Housekeeping", stem), encoding="utf-8"
+        )
+    gh.reset()
+    gh.route("runs?event=push&branch=main", {"workflow_runs": []})
+    gh.route("/jobs", {"jobs": []})
+    gh.route("/actions/workflows/bo", rc=1, err="gh: Not Found (HTTP 404)")
+    gh.route("/actions/workflows/", {"workflow_runs": []})
+    gh.route("actions/workflows?per_page", REGISTERED)
+    gh.route("actions/runs?event=schedule", {"workflow_runs": [run(RED_RUN)]})
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    assert row_of(doc, "bo1")["not_on_main"] is True
+    assert row_of(doc, "bo2")["not_on_main"] is True
+    assert len(gh.calls("actions/workflows?per_page")) == 1
 
 
 def test_an_in_flight_rerun_is_reported_without_becoming_the_verdict(repo, tmp_path, gh):
@@ -706,7 +800,7 @@ def test_no_scheduled_workflow_means_zero_calls(tmp_path, gh):
 
 # --------------------------------------------------------------------------- Console CI's push run on main
 #
-# Run 37394654719 (PR #595's merge, e6fc817f6, 2026-10-06) went red twice on main and no stop said so: every CI read in the hook was scoped to a PR head or a scheduled run. The push read is served here from that run's own recorded answers (the ci_diagnose fixtures), so the root cause the block names is computed by the real diagnosis, not asserted into a stub.
+# Run 37394654719 (PR #595's merge, 185fde683, 2026-10-06) went red twice on main and no stop said so: every CI read in the hook was scoped to a PR head or a scheduled run. The push read is served here from that run's own recorded answers (the ci_diagnose fixtures), so the root cause the block names is computed by the real diagnosis, not asserted into a stub.
 
 DIAG_FIX = wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "tests" / "fixtures" / "ci_diagnose"
 MAIN_RUN = 37394654719
@@ -859,7 +953,7 @@ def push_doc(conclusion="cancelled"):
         ("see run:%d" % MAIN_RUN, True),
         # THE INCIDENT'S OWN ITEM (#17109e43): a release item that names the run in passing does not own its red.
         (
-            "Release of PR #595 (bump-minor): Console CI on main run %d for e6fc817f6, then Release to Edge"
+            "Release of PR #595 (bump-minor): Console CI on main run %d for 185fde683, then Release to Edge"
             % MAIN_RUN,
             False,
         ),
@@ -882,7 +976,7 @@ def test_the_push_red_blocks_the_claimant_and_a_bare_mention_does_not_silence_it
         "id": "17109e43",
         "state": ">",
         "owner": "aaaaaaaa",
-        "text": "Release of PR #595: Console CI on main run %d for e6fc817f6, then Release to Edge"
+        "text": "Release of PR #595: Console CI on main run %d for 185fde683, then Release to Edge"
         % MAIN_RUN,
     }
     got = SR.assess(wlp, [release], "aaaaaaaa-1", push_doc())

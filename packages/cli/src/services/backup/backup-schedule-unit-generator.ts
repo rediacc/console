@@ -14,6 +14,17 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import { envFilePath } from './backup-env-file.js';
+import type { UnitScope } from './backup-schedule-targets.js';
+import {
+  assertStrategySchedulable,
+  cpuQuotaValue,
+  DEFAULT_CPU_LIMIT_PERCENT,
+  effectiveBandwidthLimit,
+  invalidCronReason,
+  parseCpuLimitPercent,
+  readCapBytesPerSecond,
+  STRATEGY_UPLOAD_PARALLELISM,
+} from './backup-strategy-validate.js';
 
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {
@@ -22,10 +33,9 @@ export function sha256Hex(content: string): string {
 
 /** Convert a 5-field cron expression to systemd OnCalendar format. */
 export function cronToOnCalendar(cron: string): string {
+  const invalid = invalidCronReason(cron);
+  if (invalid) throw new Error(invalid);
   const parts = cron.trim().split(/\s+/);
-  if (parts.length !== 5) {
-    throw new Error(`Invalid cron expression: "${cron}" (expected 5 fields)`);
-  }
 
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
   const dowMap: Record<string, string> = {
@@ -73,58 +83,23 @@ function toTimerField(value: string): string {
 }
 
 /**
- * Redact sensitive values in rendered commands, covers legacy argv form
- * (`--rclone-param key=value`) and the `systemd-run --setenv=KEY=value`
- * form used by on-demand backups. Safe to print in dry-run, debug, and
- * agent contexts.
+ * Redact sensitive values in rendered commands: the
+ * `systemd-run --setenv=KEY=value` form used by on-demand backups. Safe to
+ * print in dry-run, debug, and agent contexts.
  */
 export function sanitizeBackupOutput(content: string): string {
-  let out = content.replaceAll(
-    /--rclone-param '([^=]+)=([^']*)'/g,
-    (_match, key: string, _value: string) => {
-      return isSensitiveKey(key) ? `--rclone-param '${key}=[REDACTED]'` : _match;
-    }
-  );
-  const rcloneKey = (envName: string): string =>
-    envName.startsWith('RCLONE_') ? envName.slice('RCLONE_'.length).toLowerCase() : envName;
-  out = out.replaceAll(
+  return content.replaceAll(
     /--setenv=([A-Z0-9_]+)=(?:'([^']*)'|(\S+))/g,
     (_m, key: string, quoted: string | undefined, _bare: string | undefined) => {
-      if (!isSensitiveKey(rcloneKey(key))) return _m;
+      if (!isSensitiveKey(key.toLowerCase())) return _m;
       return quoted === undefined ? `--setenv=${key}=[REDACTED]` : `--setenv=${key}='[REDACTED]'`;
     }
   );
-  return out;
 }
 
 interface BackupBuild {
   commands: string[];
   envVars: Record<string, string>;
-}
-
-/**
- * Why a destination cannot be scheduled, or undefined when it can.
- *
- * Also exported for `backup strategy set`, which warns with it at creation
- * time rather than letting the operator discover at deploy time that the
- * destination they just made can never run.
- *
- * `kind` is OPTIONAL on the parameter on purpose: a destination that came from
- * the config loader has been through the schema and always carries one, but a
- * hand-edited entry (and the operator's live config) has no `kind` field at
- * all, and this must name it correctly rather than print "undefined".
- */
-export function unschedulableDestinationReason(dest: {
-  name: string;
-  kind?: string;
-}): string | undefined {
-  const kind = dest.kind ?? BACKUP_DEFAULTS.DESTINATION_KIND;
-  if (kind === BACKUP_DEFAULTS.NEW_DESTINATION_KIND) return undefined;
-  return (
-    `Backup destination "${dest.name}" has kind "${kind}". The ` +
-    'rclone/OneDrive path was removed on 2026-08-15; change it to a ' +
-    '`hosted-service` destination so the schedule uses the chunk store.'
-  );
 }
 
 /**
@@ -135,87 +110,82 @@ export function unschedulableDestinationReason(dest: {
  * hands back a short-lived grant, so nothing sensitive reaches the unit file
  * or its EnvironmentFile.
  *
- * `strategy.exclude` is REFUSED rather than dropped. `backup snapshot` filters
- * by repeated --repo and has no exclude flag, so honouring an exclude list
- * would mean silently backing up repositories the operator asked to leave out
- * the same silent-wrong-scope failure this branch exists to fix.
+ * Repositories reach argv as GUIDs only: `--repo <guid>` for an include scope,
+ * `--exclude-repo <guid>` otherwise. The scope is resolved from the config by
+ * backup-schedule-targets.ts; a name never reaches renet, which refuses one.
  */
 function buildChunkStoreCommand(
   strategy: BackupStrategyConfig,
+  destinations: BackupStrategyDestination[],
   datastore: string,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  scope: UnitScope,
+  cpuCount?: number
 ): string {
-  if (strategy.exclude?.length) {
-    throw new Error(
-      'This backup strategy sets exclude, which a hosted-service destination ' +
-        'cannot express: `backup snapshot` selects ' +
-        'repositories with --repo and has no exclude flag. List the repositories ' +
-        'to back up with include instead, so the scheduled scope is explicit.'
-    );
-  }
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
   //
   // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be deployed to a machine BEFORE a unit carrying --cold is written to it. An older renet dies at cobra's flag parse, and the failure surfaces as a backup that silently never ran. `backup schedule` seeds the binary first, which is what keeps this in the right order.
   if ((strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold') parts.push('--cold');
-  for (const repo of strategy.include ?? []) parts.push(`--repo ${repo}`);
-  const bwlimit = bandwidthToBytesPerSecond(strategy.bandwidthLimit);
+  if (scope.include) {
+    for (const guid of scope.include) parts.push(`--repo ${guid}`);
+  } else {
+    for (const guid of scope.exclude) parts.push(`--exclude-repo ${guid}`);
+  }
+  // The cap is the tightest of the strategy's and its destinations' (effectiveBandwidthLimit), in bytes/second. Parallelism is always pinned: a capped run fanned over renet's default workers only queues them on the one budget.
+  const bwlimit = effectiveBandwidthLimit(strategy, destinations);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
+  parts.push(`--parallelism ${STRATEGY_UPLOAD_PARALLELISM}`);
+  // The read cap is strategy level (the read is local, not tied to a destination) and is emitted ONLY when set, so every other unit gets the verb's gentle default and an older renet is not handed a flag it does not know. --hash-parallelism is never emitted: the verb default (1) stands.
+  const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
+  if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
+  parts.push(...cpuFlags(strategy, cpuCount));
   return parts.join(' ');
 }
 
-/**
- * `bandwidthLimit` is an RCLONE-STYLE STRING ('6M'), because that is what the
- * old rclone path took and what the schema still declares
- * (config-schema/schemas.ts:434,505). `renet backup snapshot --bwlimit` is an
- * Int64 in BYTES PER SECOND (cmd/renet/backup_snapshot.go:132), so passing the
- * string through unchanged emits `--bwlimit 6M`, which dies at cobra's flag
- * parse, at RUN time, inside a systemd timer, not at deploy time.
- *
- * Measured on the operator's live config 2026-08-15: both strategies carry
- * '6M', so every unit generated for them would have failed this way.
- *
- * Suffixes follow rclone's convention (binary: 6M = 6 MiB/s). A value that
- * cannot be parsed is REFUSED rather than dropped or passed through: dropping
- * it silently lifts a cap the operator set deliberately.
- */
-function bandwidthToBytesPerSecond(limit: string | undefined): number | undefined {
-  if (!limit) return undefined;
-  const m = /^(\d+(?:\.\d+)?)\s*([KMGTkmgt])?i?[Bb]?$/.exec(limit.trim());
-  if (!m) {
-    throw new Error(
-      `Backup strategy bandwidthLimit "${limit}" is not a size this can convert. ` +
-        'Use a plain number of bytes/second, or a suffixed value such as "6M". ' +
-        'Refusing rather than dropping it, because dropping would silently remove ' +
-        'a cap you set.'
-    );
-  }
-  const scale: Record<string, number> = { k: 1024, m: 1024 ** 2, g: 1024 ** 3, t: 1024 ** 4 };
-  // .at(2) rather than m[2]: the group is OPTIONAL, and this repo does not set noUncheckedIndexedAccess, so m[2] is typed as always-present and lint calls the guard redundant. .at() returns string | undefined, which is the truth.
-  const unit = m.at(2)?.toLowerCase() ?? '';
-  return Math.round(Number(m[1]) * (unit ? scale[unit] : 1));
+/** The `--cpu-limit` and `--cpu-quota` flags of a scheduled command. The ceiling itself is the unit's CPUQuota= (cpuQuotaDirective); the flags only make the snapshot record say what bound it. Emitted only with a resolved core count, like the directive. */
+function cpuFlags(strategy: BackupStrategyConfig, cpuCount: number | undefined): string[] {
+  if (cpuCount === undefined) return [];
+  const limit = cpuLimitOf(strategy);
+  const quota = cpuQuotaValue(limit, cpuCount);
+  return quota === undefined
+    ? [`--cpu-limit ${limit}`]
+    : [`--cpu-limit ${limit}`, `--cpu-quota ${quota}`];
 }
 
-/** One command per destination + merged RCLONE_* env-vars for the whole unit. */
+/**
+ * The scope of a strategy with no include or exclude list. A strategy that has
+ * either must be resolved through the config first (strategyUnitSpecs), so this
+ * default refuses rather than emitting names or widening to everything.
+ */
+function unresolvedScope(strategy: BackupStrategyConfig): UnitScope {
+  if (strategy.include?.length || strategy.exclude?.length) {
+    throw new Error(
+      'This backup strategy selects repositories by name; resolve them to GUIDs through the config (strategyUnitSpecs) before rendering a command.'
+    );
+  }
+  return { exclude: [] };
+}
+
+/** One command per strategy run + the env-vars for the whole unit. */
 export function buildBackupCommands(
   strategy: BackupStrategyConfig,
   destinations: BackupStrategyDestination[],
   datastore: string,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  scope: UnitScope = unresolvedScope(strategy),
+  cpuCount?: number
 ): BackupBuild {
-  const commands: string[] = [];
   const envVars: Record<string, string> = {};
 
-  for (const dest of destinations) {
-    // A HARD ERROR, not a skip. Emitting nothing is exactly the defect the hosted-service branch was written to fix: an operator declared a destination, deployed the schedule, and got a timer that backed up nothing with no error anywhere. If this path is reached, the strategy still names an rclone/storage destination and must be migrated.
-    const reason = unschedulableDestinationReason(dest);
-    if (reason) {
-      throw new Error(`${reason} Refusing to generate a unit that would back up nothing.`);
-    }
-    // The CHUNK STORE is now the only destination kind. The rclone/OneDrive emission was removed 2026-08-15 on an explicit operator decision.
-    commands.push(buildChunkStoreCommand(strategy, datastore, remoteRenetPath));
-  }
-  return { commands, envVars };
+  // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. One run is ONE snapshot whatever the number of destinations: a second identical command would upload the same cells again and commit a second manifest for the same point in time.
+  assertStrategySchedulable(strategy, destinations);
+  return {
+    commands: [
+      buildChunkStoreCommand(strategy, destinations, datastore, remoteRenetPath, scope, cpuCount),
+    ],
+    envVars,
+  };
 }
 
 /**
@@ -246,10 +216,52 @@ function licenseRenewCommand(remoteRenetPath: string): string {
   return `-${remoteRenetPath} license renew --jitter ${LICENSE_RENEW_JITTER}`;
 }
 
+/**
+ * A backup is background work and runs below the repositories it protects, on CPU and on disk: a hosting provider once took a machine offline over a backup's CPU load (operator order 2026-10-29). These are the unit-file form of the `nice -n 10 ionice -c 2 -n 7` prefix (best-effort I/O at its lowest level; the idle class can starve a snapshot without bound) that the renet function puts on an ad-hoc snapshot; the ad-hoc strategy run passes the same three properties to systemd-run. The I/O properties are a no-op under the mq-deadline and none schedulers (the default on virtio and NVMe); there the read cap on the verb (`--read-bwlimit`) carries the bound.
+ */
+const LOW_PRIORITY_PROPERTIES = [
+  'Nice=10',
+  'IOSchedulingClass=best-effort',
+  'IOSchedulingPriority=7',
+] as const;
+const LOW_PRIORITY_DIRECTIVES = LOW_PRIORITY_PROPERTIES.join('\n');
+
+/** A strategy's CPU ceiling in percent of all cores: its own, validated, or the default of 50. */
+function cpuLimitOf(strategy: BackupStrategyConfig): number {
+  return strategy.cpuLimit === undefined
+    ? DEFAULT_CPU_LIMIT_PERCENT
+    : parseCpuLimitPercent(strategy.cpuLimit);
+}
+
+/**
+ * The `CPUQuota=` line of a scheduled unit, or '' when no ceiling applies. systemd has no "share of all cores" syntax, only a percent of ONE core, so the quota is percent x cores and the core count has to be known when the unit is written. It is read on the machine itself (`nproc`, the count renet's own scope uses, see resolveMachineCpuCount in backup-schedule.ts), because the operator's workstation, a config field or an inventory number can each name a different machine's size. Without a count no directive is written: a guessed core count would be a wrong quota, and the deploy path refuses to render without one.
+ */
+function cpuQuotaDirective(strategy: BackupStrategyConfig, cpuCount: number | undefined): string {
+  if (cpuCount === undefined) return '';
+  const quota = cpuQuotaValue(cpuLimitOf(strategy), cpuCount);
+  return quota === undefined ? '' : `CPUQuota=${quota}\n`;
+}
+
+/**
+ * The `systemd-run` line `backup run` uses when a strategy has no deployed unit: the strategy's commands (which carry its cap and parallelism) inside a transient unit at the same low priority a scheduled unit gets.
+ */
+export function buildAdhocSystemdRun(
+  unit: string,
+  commands: string[],
+  cpuLimit: number = DEFAULT_CPU_LIMIT_PERCENT
+): string {
+  // The core count is resolved by the machine's own shell when the line runs (`$(nproc)`), so the quota is right for whichever machine executes it, with no extra round trip. 100 asks for no ceiling and writes no property.
+  const limit = parseCpuLimitPercent(cpuLimit);
+  const cpuProp = limit >= 100 ? '' : ` -p CPUQuota=$(( $(nproc) * ${limit} ))%`;
+  const props = LOW_PRIORITY_PROPERTIES.map((p) => `-p ${p}`).join(' ') + cpuProp;
+  const fullCmd = commands.join(' && ');
+  return `sudo systemd-run --unit=${unit} --remain-after-exit ${props} /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+}
+
 interface ServiceUnitBuild {
   /** Full systemd .service file content. */
   serviceContent: string;
-  /** RCLONE_* env vars to write to a 0600 EnvironmentFile= sidecar. */
+  /** Env vars to write to a 0600 EnvironmentFile= sidecar. */
   envVars: Record<string, string>;
 }
 
@@ -263,13 +275,17 @@ export function generateServiceUnit(
   strategy: BackupStrategyConfig,
   destinations: BackupStrategyDestination[],
   datastore: string,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  scope?: UnitScope,
+  cpuCount?: number
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
     destinations,
     datastore,
-    remoteRenetPath
+    remoteRenetPath,
+    scope,
+    cpuCount
   );
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
   const envFileLine =
@@ -292,7 +308,8 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-TimeoutStartSec=infinity
+${LOW_PRIORITY_DIRECTIVES}
+${cpuQuotaDirective(strategy, cpuCount)}TimeoutStartSec=infinity
 TimeoutStopSec=${stopTimeout}
 ${envFileLine}${renewLine}${execLines.join('\n')}
 

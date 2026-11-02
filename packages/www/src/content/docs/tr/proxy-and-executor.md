@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: tr
-sourceHash: "39ec44d8efc3f9b5"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "e56214cd4086bafa"
+sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
 ---
 
 # Proxy ve Executor
@@ -49,6 +49,19 @@ Web konsolu, bir komutun Çalıştır düğmesi alıp almayacağına karar verme
 ## Sahte (mock) executor
 
 Geliştirme ortamında, gerçek bir executor yapılandırılmadığında, hesap sunucusu komut isteklerini kendisi, sahte akışlar ve açıkça uydurma verilerle (kaynak adları `mock-` önekiyle) yanıtlar. Bu, bir makine veya kilit açma olmadan konsolun tamamının, formlar, akış ve sonuç render'ı dahil, denenebilir olmasını sağlar. Gerçek çalıştırma gerçek bir executor gerektirir.
+
+## Executor'ın hangi adreslerden bağlanacağını kısıtlama
+
+Yapılandırmanın `access` bölümü, SSH anahtarları için izin verilen IPv4 ve IPv6 kaynak aralıklarını tutar. Aralıklar yapılandırma genelinde, anahtar başına ve makine başına belirlenebilir; böylece bir makine bir anahtarı yalnızca kendi executor'ının bağlandığı adreslerden kabul eder.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` bir anahtarı kaydeder ve barındırılan executor'ın iki aralığını ekler: `104.28.0.0/16` ve `2a09:bac0::/29`. İkisi de gözlemlenmiş Cloudflare çıkış aralıklarıdır; Cloudflare'in yayımladığı bir liste değildir, bu yüzden değişebilirler.
+- `rdc machine access set <machine> --key <key>` bir makineye anahtar atar; `--ipv4`, `--ipv6` ve `--clear-ranges` o makinenin aralıklarını ayarlar.
+- `rdc machine access push <machine>` erişim satırlarını makineye yazar; `--dry-run` hiçbir şeyi değiştirmeden sonucu gösterir.
+- `rdc machine access show <machine>` geçerli erişim satırlarını yazdırır.
+
+`machine setup` erişim satırlarını yeniden uygular, böylece yeniden kurulan bir makine kısıtlamalarına geri kavuşur.
+
+Mevcut SSH oturumunu dışarıda bırakacak bir push, adresi kullanılan anahtarın aralıklarının dışında kaldığı için `ACCESS_LOCKOUT` ile reddedilir ve hiçbir şey yazılmaz. Dosya makinede bu arada değiştiyse push `ACCESS_FILE_CHANGED` ile reddedilir; hiçbir şey uygulanmadığından push güvenle yeniden denenebilir.
 
 ## İlgili
 

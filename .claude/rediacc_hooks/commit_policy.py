@@ -264,7 +264,7 @@ def ff_fallback_refusal(repo_root: str, remote: str, live: str, sha: str, base: 
 
     Box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): when GitHub cannot rebase the open PR, `main` may move by ONE direct push, and only as a fast-forward to a live branch's pushed tip. The local facts, shared by the pre-bash guard and the git-level `pre-push` hook: `sha` is exactly the tip of an `MMDD-N` branch on `remote` (what a PR's head is, once pushed), and `base` (the remote's current `main`) is an ancestor of `sha`. The pre-bash guard adds the facts only `gh` holds: that branch's open PR has `sha` as its head, with CI Complete green on it.
 
-    THE BRANCH IS READ FROM THE PUSHED COMMIT, NOT FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although PR #599's head 1861b2726 met every condition. `live` is the branch the caller names (the guard's refspec source, or the checkout's branch, which is all the git-level hook can see; "" when the source is a sha, since the guard passes `named or ""`), and it only sharpens the refusal: any `MMDD-N` branch whose pushed tip is `sha` admits it.
+    THE BRANCH IS READ FROM THE PUSHED COMMIT, NOT FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although PR #599's head 6779389a9 met every condition. `live` is the branch the caller names (the guard's refspec source, or the checkout's branch, which is all the git-level hook can see; "" when the source is a sha, since the guard passes `named or ""`), and it only sharpens the refusal: any `MMDD-N` branch whose pushed tip is `sha` admits it.
     """
     branches = pushed_live_branches(repo_root, remote, sha)
     if not branches:
@@ -674,6 +674,14 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
     lexer = shellscan._Lexer(cmd)
     out: list[Segment] = []
 
+    # A COMMAND SUBSTITUTION RUNS ITS COMMANDS TOO (#736c233b): `R=$(timeout 5 git commit -m ...)` commits, and `shellscan._Walker.parts` walks it the same way. `part.sub` is not a substring: it is the TOKEN list this same lexer built for the body (`shellscan._Lexer._sub` for `$(...)`, `_nested` for backticks, both over `self.src`), and `_parse` only arranges tokens, so their offsets index `lexer.src` and the segment's span and heredocs stay right (review 63863ef6.2).
+    def walk_parts(parts):
+        for part in parts:
+            if part.sub is not None:
+                walk(shellscan._parse(part.sub))
+            if part.parts:
+                walk_parts(part.parts)
+
     def walk(items):
         for item in items:
             if item[0] != "pipe":
@@ -684,6 +692,8 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
                     walk(stage[1])
                     continue
                 all_words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
+                for word in all_words:
+                    walk_parts(word.parts)
                 words, _ = shellscan._strip_prefixes(all_words)
                 if not words or not is_target(words):
                     continue

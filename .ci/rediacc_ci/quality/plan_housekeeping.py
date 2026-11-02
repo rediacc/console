@@ -295,11 +295,15 @@ def first_seen(path: pathlib.Path) -> str:
     return ""
 
 
-def plan_age_date(path: pathlib.Path, committed: str) -> str:
-    """The OLDER of `First-Seen:` and the last commit touching the path.
+def plan_age_date(path: pathlib.Path, committed: str, modified: str = "") -> str:
+    """The last MODIFICATION at the path when there is one, else the OLDER of `First-Seen:` and the last commit touching the path.
+
+    `modified` is the `%cI` of the last commit that changed the file at THIS path (`--diff-filter=M`). Without `--follow`, a move reaches the new path as an add, never as a modification, so a modification is real work on the plan and resets the clock, which is what the gate's first remedy promises. Measured 2026-10-24: PLAN-renet-fetch-retries.md was rewritten under an operator ruling on 2026-10-23 and still read 36 days old, because the older-of rule let its 2026-09-17 `First-Seen:` outrank every later commit, so no work could clear it.
 
     `committed` is the `%cI` this gate has always read; "" means git has no date for the path at all, which is the state of every plan between a `git mv` and the commit that lands it. Returning `First-Seen:` there is what keeps an in-flight migration measurable instead of dropping the whole corpus out of the age loop and reporting a clean tree for files nobody aged.
     """
+    if modified:
+        return modified
     seen = first_seen(path)
     if not seen:
         return committed
@@ -611,7 +615,10 @@ def main(argv: list[str] | None = None) -> int:
             committed = gitx.git(
                 ["log", "-1", "--format=%cI", "--", plan], root=root
             ).stdout.strip()
-            when = plan_age_date(pathlib.Path(plan), committed)
+            modified = gitx.git(
+                ["log", "-1", "--format=%cI", "--diff-filter=M", "--", plan], root=root
+            ).stdout.strip()
+            when = plan_age_date(pathlib.Path(plan), committed, modified)
             if not when:
                 undated.append(plan)
                 continue
@@ -907,6 +914,11 @@ def selftest() -> int:
             "CLOCK MIRROR: an OLDER commit still wins over a later First-Seen",
             plan_age_date(record, "2025-05-05T10:00:00+00:00"),
             "2025-05-05T10:00:00+00:00",
+        )
+        ctl.check(
+            "CLOCK: a modification at the path is work and resets the clock past First-Seen",
+            plan_age_date(record, "2026-10-23T10:00:00+00:00", "2026-10-23T10:00:00+00:00"),
+            "2026-10-23T10:00:00+00:00",
         )
         ctl.check(
             "CLOCK: an uncommitted rename falls back to First-Seen rather than dropping out",

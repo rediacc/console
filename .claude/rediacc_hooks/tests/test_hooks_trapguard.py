@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 
 import pytest
+from rediacc_ci.ops import login_bench
 
 from rediacc_hooks.tests import hookblocks, hookcases
 
@@ -377,6 +378,55 @@ CASES = [
         inject_json("echo x | bws secret list", "error: the access token could not be validated"),
         "trapguard: a real pipe into bws still counts as a bws run",
     ),
+    # bench-login-is-the-agents-step (operator order 2026-10-30). The firing output is the measured one, .ci/cache/live-proof/lp-d70f12649b8f.log.
+    inject(
+        ("check_inject fires", "npm run login:bench"),
+        inject_json(
+            "./rdc.sh --config eu-bench machine status hostinger -o json",
+            '{"success":false,"errors":[{"message":"The config token could not be renewed because this device\'s login is tied to another network address. Your IP address changed, and this login only works from the old one."}]}',
+        ),
+        "trapguard: an eu-bench IP-rebind failure names npm run login:bench",
+    ),
+    inject(
+        ("check_inject fires", "bench-login-is-the-agents-step"),
+        inject_json(
+            "cd /x && REDIACC_CONFIG=eu-bench ./rdc.sh subscription status",
+            "Not logged in. Humans should run `rdc subscription login`.",
+        ),
+        "trapguard: a REDIACC_CONFIG=eu-bench prefix with no login fires too",
+    ),
+    inject(
+        ("check_inject fires", "bench-login-is-the-agents-step"),
+        inject_json(
+            "./rdc.sh --config=eu-bench term connect hostinger -c true 2>&1 | tail -5",
+            "Your IP address changed, and this login only works from the old one.",
+        ),
+        "trapguard: the --config= spelling and a pipe after it still fire",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "./rdc.sh --config eu-remote machine status hostinger",
+            "this device's login is tied to another network address. Your IP address changed",
+        ),
+        "trapguard CONTROL: another config keeps human login and says nothing",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            'echo "./rdc.sh --config eu-bench failed: tied to another network address"',
+            "./rdc.sh --config eu-bench failed: tied to another network address",
+        ),
+        "trapguard CONTROL: eu-bench named inside a string is not an eu-bench run",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "./rdc.sh --config eu-bench machine status hostinger -o json",
+            '{"success":true,"data":{"machine":"hostinger"}}',
+        ),
+        "trapguard CONTROL: an eu-bench run that worked is never warned about",
+    ),
 ]
 
 
@@ -709,3 +759,14 @@ def test_verify_rebase_names_every_same_subject_candidate(tmp_path):
     said = _worklist_git(repo, "verify-rebase", str(snap), "main")
     assert "REFUSED" in said, said
     assert "same subject in the new range: %s" % ", ".join(shorts) in said, said
+
+
+def test_the_bench_login_markers_are_the_login_bench_markers():
+    """Review dae87b66.5: the hook cannot import `.ci/`, so it keeps a copy of `login_bench.LOGIN_NEEDED_MARKERS`; the two must stay the same tuple, in order."""
+    spec = importlib.util.spec_from_file_location("trapguard_dispatch_markers", TRAPGUARD)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.BENCH_LOGIN_MARKERS, "the hook's copy is empty; the parity pin compared nothing"
+    assert tuple(module.BENCH_LOGIN_MARKERS) == tuple(login_bench.LOGIN_NEEDED_MARKERS)

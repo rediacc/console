@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: pt
-sourceHash: "39ec44d8efc3f9b5"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "e56214cd4086bafa"
+sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
 ---
 
 # Proxy e Executor
@@ -49,6 +49,19 @@ A consola web lê a mesma flag para decidir se um comando recebe ou não um bot�
 ## O executor fictício
 
 Em desenvolvimento, quando não está configurado nenhum executor real, o servidor da conta responde ele próprio aos pedidos de comando com streams fictícios e dados claramente falsos (nomes de recursos com o prefixo `mock-`). Isto torna toda a consola utilizável, incluindo formulários, streaming e renderização de resultados, sem necessidade de uma máquina ou de um desbloqueio. A execução real requer um executor real.
+
+## Restringir de onde o executor se liga
+
+O bucket `access` da configuração guarda os intervalos de origem IPv4 e IPv6 permitidos para as chaves SSH. Os intervalos podem ser definidos para toda a configuração, por chave e por máquina, de modo que uma máquina só aceite uma chave a partir dos endereços de onde o respetivo executor se liga.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` regista uma chave e associa os dois intervalos do executor alojado: `104.28.0.0/16` e `2a09:bac0::/29`. Ambos são intervalos de saída da Cloudflare observados, e não uma lista publicada pela Cloudflare, pelo que podem mudar.
+- `rdc machine access set <machine> --key <key>` atribui uma chave a uma máquina; `--ipv4`, `--ipv6` e `--clear-ranges` ajustam os intervalos dessa máquina.
+- `rdc machine access push <machine>` escreve as linhas de acesso na máquina, e `--dry-run` mostra o resultado sem alterar nada.
+- `rdc machine access show <machine>` mostra as linhas de acesso em vigor.
+
+`machine setup` volta a aplicar as linhas de acesso, pelo que uma máquina reconstruída recupera as suas restrições.
+
+Um push que bloquearia a sessão SSH atual, porque o respetivo endereço fica fora dos intervalos da chave em uso, é recusado com `ACCESS_LOCKOUT` e nada é escrito. Um push é recusado com `ACCESS_FILE_CHANGED` quando o ficheiro mudou na máquina entretanto; nada foi aplicado, por isso o push pode ser repetido em segurança.
 
 ## Relacionados
 

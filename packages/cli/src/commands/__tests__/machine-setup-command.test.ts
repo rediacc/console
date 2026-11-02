@@ -16,11 +16,16 @@ vi.mock('../../services/core/output.js', () => ({
 vi.mock('../../services/core/request-context.js', () => ({
   setExitCode: vi.fn(),
   writeStdout: vi.fn(),
+  // errors.ts extends DispatchExit (DispatchFailure), so the mock must carry it.
+  DispatchExit: class extends Error {},
+  currentRequestContext: vi.fn(),
+  exitProcess: vi.fn(),
 }));
 vi.mock('../../services/machine/machine-remove-guard.js', () => ({ guardMachineRemoval: vi.fn() }));
 vi.mock('../../services/provision/infra-provision.js', () => ({ pushInfraConfig: vi.fn() }));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({ deployAllRepoKeys: vi.fn() }));
-vi.mock('../../utils/errors.js', () => ({
+vi.mock('../../utils/errors.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/errors.js')>()),
   handleError: (e: unknown) => {
     throw e;
   },

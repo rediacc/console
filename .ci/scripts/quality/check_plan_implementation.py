@@ -44,13 +44,18 @@ import re
 import subprocess
 import sys
 import tempfile
+import types
 from typing import Any
 from unittest import mock
 
 import _cipath
 from rediacc_ci import log, paths
 from rediacc_ci.controls import plant
-from rediacc_ci.review import clean_ledger
+from rediacc_ci.review.successor import (  # the rebase successor map lives in one shared module
+    lazy_successor_of,
+    make_successor_of,
+    review_records,
+)
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
@@ -82,6 +87,7 @@ def load_modules():
     try:
         import wl_planenforce as E
         import wl_planfile as PF
+        import wl_planpreflight as PP
         import wl_planrec as R
     except ImportError as exc:
         die(
@@ -92,6 +98,7 @@ def load_modules():
         ("wl_planenforce", E, ("load_clock", "ceiling", "CLOCK_KEYS")),
         ("wl_planrec", R, ("resolve", "read_investigations", "ledger_at", "box_sig")),
         ("wl_planfile", PF, ("FINISHED_STATES",)),
+        ("wl_planpreflight", PP, ("revalidation_state", "FRESH")),
     ):
         for fn in fns:
             if not hasattr(mod, fn):
@@ -122,7 +129,7 @@ def load_modules():
                 f"check_plan_boxes.{fn} is missing. P-A0 and P-A5 both read that gate rather "
                 "than duplicating it; fix the wiring deliberately."
             )
-    return E, PF, R, boxes_gate
+    return E, PF, R, boxes_gate, PP
 
 
 # --------------------------------------------------------------------------- P-A1, the clock. No threshold (2026-09-26), scoped to the PR's plan and the plans this branch ticked (2026-10-02); each piece is a pure function, so the controls drive the same code main() runs.
@@ -153,7 +160,7 @@ def in_scope(ledger_plans, finished_states):
 def clock_key(rel):
     """`P-A1:<rel>`, the key one plan's open boxes are carried under.
 
-    PER PLAN, NEVER OVER THE SET. Until 2026-10-13 P-A1 was one finding naming every plan on the clock, keyed by a hash of that message, so the key belonged to the set. Commit 36a1325fb ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd` although no plan the carry named had changed.
+    PER PLAN, NEVER OVER THE SET. Until 2026-10-13 P-A1 was one finding naming every plan on the clock, keyed by a hash of that message, so the key belonged to the set. Commit 2b147e4a6 ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd` although no plan the carry named had changed.
 
     Keyed by its own path, a plan's key holds while the plan has an open box and goes when the last one closes. A tick therefore removes a carried key or leaves it alone. The one key a tick can add belongs to a plan that was not on the clock before, and a carry is right to refuse that one.
     """
@@ -445,7 +452,7 @@ def moved_to_done(base_plans, head_plans):
 
     It is NOT a false-positive surface, because the date cut still applies downstream: a plan imported with boxes already ticked has `done_commit` dates at or before `baseline_at` and is exempt for the same reason every other pre-landing tick is. What is caught is the case that matters -- a box ticked on this branch AFTER the rule arrived.
 
-    A FOLDER MOVE IS NOT A NEW PLAN. `check:ci-plan-folders --move` relocates a finished plan into `_done/` (or `_removed/`) and leaves a stub at the old path, so the head row sits at a path the base never had while the base row for the same plan sits beside it. Measured on 0930-1 (3490aa3e3): PLAN-b2-emit-matrix had all 13 boxes ticked on main, and after its move 7 of them read as "closed on this branch" with no evidence, 14 false P-A2 findings. The base row is looked up under every plan folder by basename before the plan is treated as new.
+    A FOLDER MOVE IS NOT A NEW PLAN. `check:ci-plan-folders --move` relocates a finished plan into `_done/` (or `_removed/`) and leaves a stub at the old path, so the head row sits at a path the base never had while the base row for the same plan sits beside it. Measured on 0930-1 (59a5fff2c): PLAN-b2-emit-matrix had all 13 boxes ticked on main, and after its move 7 of them read as "closed on this branch" with no evidence, 14 false P-A2 findings. The base row is looked up under every plan folder by basename before the plan is treated as new.
     """
     out: list[Any] = []
     by_name: dict[str, Any] = {}
@@ -497,40 +504,6 @@ def bound_by_the_rule(judged, done_commit_of, date_of, baseline_at):
         for rel, sig in judged
         if after_baseline(baseline_at, date_of(done_commit_of(rel, sig)))
     ]
-
-
-def make_successor_of(records, branch_pids, reachable_fn, parent_fn):
-    """successor_of(sha) for a branch that was REBASED after its rows were written.
-
-    WHY. Every repository here merges by rebase, so the `head` an investigation row recorded and the `commit:<sha>` pointers it cites are rewritten the moment the branch is rebased onto a moved `main`: the old shas stay reachable from nothing on the branch locally and do not exist at all in CI's clone. The ledger is append-only, so the rows cannot be re-pointed. The per-commit
-    review records (`agent/reviews/<branch>/<sha40>.md`, written by `wl_review.py` at commit time and committed on the branch) are the surviving map: each one names its `Commit:`, its `Parent:` and its `Patch-Id:`, and the rebased commit carrying the same `git patch-id --stable` in `<base>..HEAD` is its successor -- the match `wl_review.uncovered` already makes.
-
-    `records` is [{commit, parent, patch}], `branch_pids` {patch_id: sha} over `<base>..HEAD`, `reachable_fn(sha)` answers the FULL sha when `merge-base --is-ancestor <sha> HEAD` holds and "" otherwise, and `parent_fn(sha)` the full sha of `<sha>^`. The answer is the sha's own full spelling when it was never rewritten (reachable from HEAD), its successor when a record maps it, and None when it was rewritten and nothing maps it. A
-    recorded head that is itself a commit with no record (a `chore(reviews)` commit is never reviewed) is mapped through a CHILD's record: a record whose `Parent:` is that head, whose successor's parent is then the head's successor.
-    """
-
-    def by_prefix(field, sha):
-        if len(sha) < 7:
-            return None
-        hits = [r for r in records if str(r.get(field) or "").startswith(sha)]
-        return hits[0] if len({r.get(field) for r in hits}) == 1 else None
-
-    def successor_of(sha):
-        sha = str(sha or "").strip().lower()
-        if not sha:
-            return None
-        here = reachable_fn(sha)
-        if here:
-            return here
-        own = by_prefix("commit", sha)
-        if own is not None and branch_pids.get(own.get("patch")):
-            return branch_pids[own["patch"]]
-        child = by_prefix("parent", sha)
-        if child is not None and branch_pids.get(child.get("patch")):
-            return parent_fn(branch_pids[child["patch"]]) or None
-        return None
-
-    return successor_of
 
 
 def written_before(at, authored):
@@ -689,7 +662,7 @@ def tick_findings(
     return out
 
 
-def _late_print_is_unconditional(source=None):
+def _late_print_is_unconditional(source=None, fn="late_rows_line"):
     """True when main() prints `late_rows_line(...)` OUTSIDE every `if`/`for`/`while`/`try`, i.e. on every run (fe588087.1: it was indented under `if base_plans is not None:` and vanished on a run without a base)."""
 
     if source is None:
@@ -708,8 +681,7 @@ def _late_print_is_unconditional(source=None):
             and isinstance(node.value, ast.Call)
             and getattr(node.value.func, "id", "") == "print"
             and any(
-                isinstance(a, ast.Call) and getattr(a.func, "id", "") == "late_rows_line"
-                for a in node.value.args
+                isinstance(a, ast.Call) and getattr(a.func, "id", "") == fn for a in node.value.args
             )
         )
 
@@ -739,6 +711,48 @@ def late_rows_line(late_rows, judged=True):
         "--plan-investigate FIRST, then implement, then --plan-tick."
         % (len(late_rows), shape, boxes)
     )
+
+
+# --------------------------------------------------------------------------- P-A9, the revalidation backstop (agent/plans/PLAN-plan-preflight.md PF6). ADVISORY under the operator ruling of 2026-10-23 ("Lean first, enforcement warns"): printed on every run, red or green, the same channel as the P-A2 late records, and never a finding.
+
+
+def revalidation_advisories(judged, done_commit_of, date_of, revalidation_at, state_of, fresh):
+    """One ADVISORY line per plan holding a box this branch ticked after `revalidation_at` whose plan is not `fresh`; [] when every such plan is.
+
+    `state_of(rel)` is `wl_planpreflight.revalidation_state` over the plan's head copy against the CI merge base, imported and never restated, so the backstop and `plan_tick`'s warning cannot disagree about one tree. A missing header, a sha that is not an ancestor of the base, and a stale range are each reported; the cut is strict, like `baseline_at`'s, so the landing day is silent.
+    """
+    plans: dict[str, int] = {}
+    for rel, _sig in bound_by_the_rule(judged, done_commit_of, date_of, revalidation_at):
+        plans[rel] = plans.get(rel, 0) + 1
+    out = []
+    for rel in sorted(plans):
+        st = state_of(rel)
+        if st.state == fresh:
+            continue
+        stale = ", ".join(c[:12] for c in st.commits[:5])
+        out.append(
+            "ADVISORY P-A9 %s: %d box(es) ticked on this branch after %s in a plan that is not "
+            "revalidated (state %s: %s%s). Run `worklist.py --plan-preflight <me> %s --write`."
+            % (
+                rel,
+                plans[rel],
+                revalidation_at,
+                st.state,
+                st.detail,
+                "; stale commits %s" % stale if stale else "",
+                rel,
+            )
+        )
+    return out
+
+
+def revalidation_line(advisories, judged=True):
+    """The P-A9 summary printed on EVERY run: "not judged" without a base ledger, a count of 0 when silent, else the advisories one per line."""
+    if not judged:
+        return "  P-A9 revalidation: not judged (no base ledger on this run, so no closed box was read)"
+    if not advisories:
+        return "  P-A9 revalidation: 0 plan(s) with a box ticked after the cut and a stale or missing `Revalidated:`"
+    return "\n".join("  " + a for a in advisories)
 
 
 def vacuity_findings(n_plans_total, n_boxes_total, raw_ledger_rows):
@@ -778,7 +792,7 @@ def _clock(base=100, at="2026-01-01", rate=7, slack=20, floor=0):
     }
 
 
-def controls_fired(enforce, planfile, planrec=None):
+def controls_fired(enforce, planfile, planrec=None, preflight=None):
     """([missed], n_driven). `missed` names every planted defect that was NOT caught.
 
     THE COUNT IS DERIVED, NEVER A LITERAL. A constant in the success line saying "18 plants" is a claim about this function that nothing checks, and a plant deleted from the middle would leave the constant asserting coverage that is gone. `plant` both records and counts, so the two cannot disagree.
@@ -1432,7 +1446,7 @@ def controls_fired(enforce, planfile, planrec=None):
         moved_to_done({}, {"new.md": {"open_sigs": [], "done_sigs": ["bbbbbbbb"]}})
         == [("new.md", "bbbbbbbb")],
     )
-    # A FOLDER MOVE IS NOT A NEW PLAN (3490aa3e3: 14 false P-A2 findings on PLAN-b2-emit-matrix).
+    # A FOLDER MOVE IS NOT A NEW PLAN (59a5fff2c: 14 false P-A2 findings on PLAN-b2-emit-matrix).
     caught(
         "a plan moved into _done/ had its boxes ticked at the base judged as closed on this branch",
         moved_to_done(
@@ -1563,7 +1577,7 @@ def controls_fired(enforce, planfile, planrec=None):
         )
         is None,
     )
-    # RE-SPELLED CITATIONS (53ae662a4, box V3): a row keyed to the box's pre-rewrite sig still answers for it; a changed TASK does not, and neither does another plan's row.
+    # RE-SPELLED CITATIONS (26577164b, box V3): a row keyed to the box's pre-rewrite sig still answers for it; a changed TASK does not, and neither does another plan's row.
     v3_old = (
         "V3 Stall removal: `Review Complete` leaves the ruleset's required checks (part of M4's single diff); "
         "pr-merge.md:108 and pr-babysitter.md:16,110 drop the claude-reviewed marker and thread preconditions"
@@ -1593,13 +1607,13 @@ def controls_fired(enforce, planfile, planrec=None):
         "GR0 Precondition: the CI-Complete-only push guard (72eb06b56, f8dcd7973) is on the branch "
         "this plan ships on, and reachable from a remote ref before GR11. Files: none owned"
     )
-    gr0_new = plant(plant(gr0_old, "72eb06b56", "28c1bb4dc"), "f8dcd7973", "2fea9d223")
+    gr0_new = plant(plant(gr0_old, "72eb06b56", "1442ce94c"), "f8dcd7973", "d54b2d279")
     gr0_rows = [{"plan": "agent/plans/PLAN-g.md", "sig": "5186d28c", "box": gr0_old}]
     gr0_map = {
         "72eb06b56": "28" * 20,
-        "28c1bb4dc": "28" * 20,
+        "1442ce94c": "28" * 20,
         "f8dcd7973": "2f" * 20,
-        "2fea9d223": "2f" * 20,
+        "d54b2d279": "2f" * 20,
     }
 
     def gr0_canon_full(token):
@@ -1619,7 +1633,7 @@ def controls_fired(enforce, planfile, planrec=None):
             "agent/plans/PLAN-g.md",
             "6f6a5f0f",
             (),
-            plant(gr0_new, "28c1bb4dc", "99c1bb4dc"),
+            plant(gr0_new, "1442ce94c", "99c1bb4dc"),
             gr0_canon_full,
         )
         is None,
@@ -1690,11 +1704,56 @@ def controls_fired(enforce, planfile, planrec=None):
         "C11: CONTROL: two different message-hashed findings shared one key",
         key_of("P-A6 FLOOR: 3 plan(s) in the ledger") != key_of("P-A6 VACUOUS: 3 plan rows"),
     )
+
+    # P-A9, ADVISORY (PLAN-plan-preflight.md PF6): three plants, each with its healthy pair. The state oracle is injected; main() injects wl_planpreflight.revalidation_state itself.
+    fresh = getattr(preflight, "FRESH", "fresh")
+    a9_judged = [("agent/plans/PLAN-r.md", "aaaaaaaa")]
+
+    def a9(state, when="2026-10-25", commits=()):
+        st = types.SimpleNamespace(state=state, detail="planted %s" % state, commits=commits)
+        return revalidation_advisories(
+            a9_judged, lambda _r, _s: "C9", lambda _c: when, "2026-10-23", lambda _r: st, fresh
+        )
+
+    caught(
+        "A9a: a tick after the cut in a plan with no `Revalidated:` was not reported",
+        bool(a9("missing")),
+    )
+    caught("A9a: CONTROL: a fresh plan was reported", a9(fresh) == [])
+    stale_sha = "5" * 40
+    got_stale = a9("stale", commits=(stale_sha,))
+    caught(
+        "A9b: a stale range was not reported with its commit",
+        len(got_stale) == 1
+        and stale_sha[:12] in got_stale[0]
+        and "--plan-preflight" in got_stale[0],
+    )
+    caught("A9b: CONTROL: the same plan, fresh, was reported", a9(fresh, commits=()) == [])
+    caught(
+        "A9c: CONTROL: a tick before the cut was reported", a9("missing", when="2026-10-20") == []
+    )
+    caught(
+        "A9c: a tick the day after the cut went unreported", bool(a9("missing", when="2026-10-24"))
+    )
+    caught(
+        "A9d: the advisory is a finding rather than a printed ADVISORY line",
+        all(a.startswith("ADVISORY P-A9 ") for a in got_stale)
+        and "ADVISORY P-A9" in revalidation_line(got_stale)
+        and "0 plan(s)" in revalidation_line([])
+        and "not judged" in revalidation_line(got_stale, False),
+    )
+    caught(
+        "A9e: the P-A9 print sits under a conditional in main(), so it is skipped on some run",
+        _late_print_is_unconditional(fn="revalidation_line"),
+    )
+    DRIVEN_LABELS[:] = driven
     return missed, len(driven)
 
 
 #: BOUND AT RUN TIME FROM THE STOP-HOOK MODULES, never restated as literals here, and C10 asserts the binding is by IDENTITY rather than by equality. A copied tuple satisfies an equality test and still drifts the day one half is renamed; a shared object cannot.
 BOUND: dict = {"CLOCK_KEYS": None, "FINISHED_STATES": None}
+#: Every control label the last `controls_fired` drove, so main() can name the P-A9 plants it printed as PASS.
+DRIVEN_LABELS: list[str] = []
 
 #: A FLOOR under the number of plants, not the number itself. The count is derived from `controls_fired` and printed, so a collapse is visible; this catches the other direction, where a plant loop silently stops running and reports a small honest number nobody reads.
 MIN_CONTROLS = 15
@@ -1821,7 +1880,7 @@ def main(argv=None) -> int:
         )
         return 1
 
-    enforce, planfile, planrec, boxes_gate = load_modules()
+    enforce, planfile, planrec, boxes_gate, preflight = load_modules()
     if not selftest_only:
         _note = prefetch_partial_clone(REPO_ROOT)
         if _note:
@@ -1830,7 +1889,7 @@ def main(argv=None) -> int:
     BOUND["FINISHED_STATES"] = planfile.FINISHED_STATES
 
     print("plan implementation clock: controls first, then the verdict")
-    missed, n_driven = controls_fired(enforce, planfile, planrec)
+    missed, n_driven = controls_fired(enforce, planfile, planrec, preflight)
     if missed:
         print(
             f"{RED}x{NC} CONTROLS DID NOT FIRE, so this gate cannot detect what it exists for; "
@@ -1852,6 +1911,10 @@ def main(argv=None) -> int:
     print(
         f"  {n_driven} planted defect(s) were driven and every one was caught, before anything real was read"
     )
+    for label in DRIVEN_LABELS:
+        if label.startswith("A9"):
+            kind = "healthy pair silent" if "CONTROL:" in label else "plant caught"
+            print(f"  PASS  P-A9 {label.split(':', 1)[0]} {kind}")
     # `--selftest` STOPS HERE. The controls are the claim that this instrument can fail; the verdict below is a claim about the tree, and a caller that wants only the first must not be made to pay for the second. test-planenforce.py's C10e drives exactly this mode.
     if selftest_only:
         return 0
@@ -1943,6 +2006,7 @@ def main(argv=None) -> int:
     judged = []
     bound = []
     late_rows: list[tuple[str, str, str]] = []
+    revalidation: list[str] = []
     if base_plans is not None:
         judged = moved_to_done(base_plans, head_plans)
         history = planrec.ledger_history(REPO_ROOT)
@@ -1986,7 +2050,18 @@ def main(argv=None) -> int:
                 late_rows,
             )
         )
+        with open(cfg, encoding="utf-8") as fh:
+            revalidation_at = (json.load(fh) or {}).get("revalidation_at")
+        revalidation = revalidation_advisories(
+            judged,
+            lambda rel, sig: planrec.done_commit(history, rel, sig),
+            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
+            revalidation_at,
+            lambda rel: preflight.revalidation_state(REPO_ROOT, rel, base=base),
+            preflight.FRESH,
+        )
     print(late_rows_line(late_rows, base_plans is not None))
+    print(revalidation_line(revalidation, base_plans is not None))
 
     # P-A1's scope, printed on red and green alike so a collapsed scope is visible rather than read as a drained corpus.
     if not scope_problem:
@@ -2059,9 +2134,9 @@ CITE_LINE_RE = re.compile(r"(\.[A-Za-z0-9]{1,6}):\d+(?:[-,]\d+)*")
 def cite_key(text, canon=None):
     """The box text with every citation reduced to its basename: directory prefixes and line suffixes dropped, markdown emphasis removed, whitespace folded. PURE when `canon` is None.
 
-    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 19c9bb919 replaced GR0's pre-rebase shas (72eb06b56, f8dcd7973) with their rebased successors (28c1bb4dc, 2fea9d223), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
+    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 5159ee73a replaced GR0's pre-rebase shas (72eb06b56, f8dcd7973) with their rebased successors (1442ce94c, d54b2d279), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
 
-    A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 53ae662a4 rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
+    A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 26577164b rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
     """
     t = re.sub(r"[*_`]+", "", str(text or ""))
     t = CITE_LINE_RE.sub(r"\1", CITE_DIR_RE.sub(r"\1", t))
@@ -2130,89 +2205,6 @@ def follow_names(rel):
         out = r.stdout.strip()
         _FOLLOW[rel] = tuple(sorted({ln.strip() for ln in out.splitlines() if ln.strip()} - {rel}))
     return _FOLLOW[rel]
-
-
-REVIEW_HEADERS = ("Commit", "Parent", "Patch-Id")
-
-
-def review_records(root):
-    """[{commit, parent, patch}] from the header block of every per-commit review record under agent/reviews/, every branch directory included: a record written on another branch name still maps its sha. Headers only, the same first-lines read `wl_review.review_index` makes, plus every line of each directory's `clean.jsonl` ledger (read through `clean_ledger`)."""
-    out: list[dict[str, str]] = []
-    top = os.path.join(root, "agent", "reviews")
-    if not os.path.isdir(top):
-        return out
-    sha40 = re.compile(r"^[0-9a-f]{40}$")
-    for branch in sorted(os.listdir(top)):
-        d = os.path.join(top, branch)
-        if not os.path.isdir(d):
-            continue
-        for name in sorted(os.listdir(d)):
-            if not name.endswith(".md") or not sha40.match(name[:-3]):
-                continue
-            got = {}
-            try:
-                with open(os.path.join(d, name), encoding="utf-8") as fh:
-                    for _ in range(12):
-                        key, sep, val = fh.readline().partition(": ")
-                        if sep and key in REVIEW_HEADERS:
-                            got[key] = val.strip()
-            except OSError:
-                continue
-            if sha40.match(got.get("Patch-Id", "")):
-                out.append(
-                    {
-                        "commit": got.get("Commit") or name[:-3],
-                        "parent": got.get("Parent", ""),
-                        "patch": got["Patch-Id"],
-                    }
-                )
-        # A clean full-coverage verdict is a line of the branch's ledger, not a file (agent/plans/PLAN-clean-review-ledger.md).
-        out.extend(
-            {
-                "commit": doc["sha"],
-                "parent": str(doc.get("parent") or ""),
-                "patch": doc["patch_id"],
-            }
-            for doc in clean_ledger.read(os.path.join(d, clean_ledger.NAME))
-            if sha40.match(str(doc.get("patch_id") or ""))
-        )
-    return out
-
-
-def lazy_successor_of(root, base, planrec):
-    """The real `successor_of` for tick_findings, built on first use: a run whose heads were never rewritten pays no `git patch-id` at all.
-
-    THE PATCH-ID IS `wl_review.patch_id`, imported rather than restated, because the records' `Patch-Id:` lines were written by that function and a second spelling of the computation (a different diff command, a different flag) would map nothing and read as a rewritten head with no record.
-    """
-    built = {}
-
-    def build():
-        import wl_review
-
-        pids: dict[str, str] = {}
-        if base:
-            listing = planrec._git_out(root, "rev-list", "--no-merges", "%s..HEAD" % base)
-            for sha in listing.split():
-                pid = wl_review.patch_id(root, sha)
-                if pid:
-                    pids.setdefault(pid, sha)
-        return make_successor_of(
-            review_records(root),
-            pids,
-            lambda c: (
-                planrec._git_out(root, "rev-parse", "--verify", "--quiet", c + "^{commit}")
-                if planrec._git_ok(root, "merge-base", "--is-ancestor", c, "HEAD")
-                else ""
-            ),
-            lambda c: planrec._git_out(root, "rev-parse", "--verify", "--quiet", c + "^"),
-        )
-
-    def successor_of(sha):
-        if "fn" not in built:
-            built["fn"] = build()
-        return built["fn"](sha)
-
-    return successor_of
 
 
 def absent_submodules(root):

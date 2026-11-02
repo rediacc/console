@@ -25,7 +25,8 @@ export function registerCloudCommands(machine: Command, _program: Command): void
           image: options.image,
           sshUser: options.sshUser,
           baseDomain: options.baseDomain,
-          noInfra: options.noInfra,
+          // Commander stores `--no-infra` as `infra: false`; `noInfra` is never set.
+          noInfra: options.infra === false,
           debug: options.debug,
         });
       } catch (error) {

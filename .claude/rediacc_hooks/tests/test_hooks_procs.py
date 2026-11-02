@@ -16,7 +16,9 @@ concurrently, its anti-vacuity controls both went red --
 -- and the same test passed in isolation (`-k test_the_differential_can_fail`, 1 passed in 316.07s). Sharing the group serialises them onto one worker, which costs about ten seconds against that file's five minutes.
 """
 
+import contextlib
 import os
+import signal
 import subprocess
 import time
 
@@ -93,6 +95,14 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
     block.done()
 
 
+def _stop_group(fixture):
+    """Kill a fixture shell's whole session-led group and collect it. Killing the shell alone orphans its child until that expires, since `bash` here is a wrapper over the real interpreter."""
+    # The group is gone already when the fixture's child finished first.
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(fixture.pid, signal.SIGKILL)
+    fixture.wait()
+
+
 @pytest.mark.xdist_group(test_guards_process_table.XDIST_GROUP)
 def test_block_edit_of_running_script(tmp_path):
     block = hookblocks.Block("running-script")
@@ -103,6 +113,7 @@ def test_block_edit_of_running_script(tmp_path):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         stdin=subprocess.DEVNULL,
+        start_new_session=True,
     )
     try:
         time.sleep(SPAWN_SETTLE_S)
@@ -110,6 +121,13 @@ def test_block_edit_of_running_script(tmp_path):
             "check 2 guards/block_edit_of_running_script.py",
             path_json(fixture),
             "running-script: editing a .sh a live process is executing is refused",
+        )
+        (tmp_path / "samename").mkdir()
+        (tmp_path / "samename" / "running-fixture.sh").write_text("", encoding="utf-8")
+        block.check(
+            "check 0 guards/block_edit_of_running_script.py",
+            path_json(tmp_path / "samename" / "running-fixture.sh"),
+            "running-script CONTROL: a same-named .sh in ANOTHER directory is untouched",
         )
         block.check(
             "check 0 guards/block_edit_of_running_script.py",
@@ -146,6 +164,7 @@ def test_block_edit_of_running_script(tmp_path):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,
+            start_new_session=True,
         )
         try:
             time.sleep(SPAWN_SETTLE_S)
@@ -155,8 +174,7 @@ def test_block_edit_of_running_script(tmp_path):
                 "running-script: an edit through the link name a live process was started under is refused",
             )
         finally:
-            via_link.kill()
-            via_link.wait()
+            _stop_group(via_link)
         block.check(
             "check 0 guards/block_edit_of_running_script.py",
             path_json(tmp_path / "running-fixture.ts"),
@@ -220,8 +238,7 @@ def test_block_edit_of_running_script(tmp_path):
             finally:
                 prose.kill()
     finally:
-        live.kill()
-        live.wait()
+        _stop_group(live)
     # CONTROL THAT MATTERS: once the process is gone the guard must go QUIET, or it would block every edit to any script that was ever run.
     block.check(
         "check 0 guards/block_edit_of_running_script.py",
@@ -248,6 +265,7 @@ def test_block_bash_write_to_running_script(tmp_path):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         stdin=subprocess.DEVNULL,
+        start_new_session=True,
     )
     try:
         time.sleep(SPAWN_SETTLE_S)
@@ -287,6 +305,38 @@ def test_block_bash_write_to_running_script(tmp_path):
             "check 0 guards/block_bash_write_to_running_script.py",
             bash_json("echo x > %s/never-run.sh" % tmp_path),
             "bash-write CONTROL: a .sh nothing is running is untouched",
+        )
+        # SAME BASENAME, DIFFERENT DIRECTORY (2026-10-23): a sub-agent's write to /tmp/smtpwork/run.sh was refused because an unrelated /tmp/t9deploy/run.sh was running. The pgrep pattern is basename-only, so the full path is compared after realpath on both sides.
+        (tmp_path / "elsewhere").mkdir()
+        (tmp_path / "elsewhere" / "bw-fixture.sh").write_text("", encoding="utf-8")
+        block.check(
+            "check 0 guards/block_bash_write_to_running_script.py",
+            bash_json("echo x > %s/elsewhere/bw-fixture.sh" % tmp_path),
+            "bash-write CONTROL: a same-named script in ANOTHER directory is not the running one",
+        )
+        block.check(
+            "check 2 guards/block_bash_write_to_running_script.py",
+            bash_json("echo x > %s/elsewhere/../bw-fixture.sh" % tmp_path),
+            "bash-write: the same path spelled through .. is still the running script",
+        )
+        in_tmp = hookcases._j(
+            {"tool_input": {"command": "echo x > bw-fixture.sh"}, "cwd": str(tmp_path)}
+        )
+        block.check(
+            "check 2 guards/block_bash_write_to_running_script.py",
+            in_tmp,
+            "bash-write: a RELATIVE path that resolves to the running script is refused",
+        )
+        in_elsewhere = hookcases._j(
+            {
+                "tool_input": {"command": "echo x > bw-fixture.sh"},
+                "cwd": str(tmp_path / "elsewhere"),
+            }
+        )
+        block.check(
+            "check 0 guards/block_bash_write_to_running_script.py",
+            in_elsewhere,
+            "bash-write CONTROL: a relative path resolving to a same-named OTHER script",
         )
         # THE TARGET NAME ITSELF BECAME A WILDCARD, round six and a different mechanism from the five before it. `pat` interpolated the basename RAW, so a one-letter name plus the shell suffix produced `[x].sh` -- and `.` is a regex wildcard, so for the letter `b` that matches /bin/bash, i.e. every bash process alive. Measured 2026-09-01.
         block.check(
@@ -386,8 +436,7 @@ def test_block_bash_write_to_running_script(tmp_path):
             "bash-write CONTROL: a name CONTAINING the live one is not the live one",
         )
     finally:
-        live.kill()
-        live.wait()
+        _stop_group(live)
     # THE CONTROL THAT MATTERS: liveness, not the filename. Without this the guard could be keyed on the name and every case above would still pass.
     block.check(
         "check 0 guards/block_bash_write_to_running_script.py",

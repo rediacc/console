@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 6
 language: tr
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Ağ
@@ -42,7 +42,7 @@ Akış şu şekildedir:
                ↓ her 5 saniyede sorgular
            Route Server (konteynerleri keşfeder)
                ↓ etiketleri inceler
-           Docker Daemon'ları (/var/run/rediacc/docker-*.sock)
+           Docker Daemon'ları (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Konteynerler (127.x.x.x geri döngü IP'lerine bağlı)
 ```
@@ -208,7 +208,14 @@ Let's Encrypt sertifikasının verilmesinden her deponun konteynerlerine ulaşma
 
 1. **Konakta verilme.** Makine seviyesinde bir Traefik konteyneri (`rediacc-proxy`, `/opt/rediacc/proxy/`'ye dağıtılmış) ACME yenilemeye sahiptir. Tüm durumu konaktaki `/opt/rediacc/proxy/letsencrypt/acme.json`'da saklar. Yenileme, sona ermeden yaklaşık 30 gün önce otomatik olarak tetiklenir; `--cf-dns-token` yapılandırıldığı sürece operatör eylemi gerekmez.
 
-2. **Depo başına dökme (isteğe bağlı).** Kendi konteyneri içinde sertifika dosyalarına ihtiyaç duyan servisler (örneğin, doğrudan bir `.pem` okuyan bir posta sunucusu), yanlarına küçük bir `traefik-certs-dumper` konteyneri dağıtır. Dökücü `/opt/rediacc/proxy/letsencrypt`'i salt okunur olarak bağlar ve çıkarılan sertifika ile anahtarı deponun veri birimine `cert.pem` / `key.pem` olarak yazar. Bunun çalışması için, depo başına Docker daemon'ının bağlama ad alanı izin listesinde `/opt/rediacc/proxy` bulunmalıdır. Bu varsayılan olarak zaten dahildir.
+2. **Depo başına dışa aktarma (isteğe bağlı).** Kendi konteyneri içinde sertifika dosyalarına ihtiyaç duyan bir hizmet (örneğin `.pem` dosyasını doğrudan okuyan bir posta sunucusu), yönlendirilen konteynerine `rediacc.cert_export=true` etiketini ekleyerek katılır. `renet cert export` makinede root olarak çalışır: 5 dakikalık bir zamanlayıcıyla ve yönlendiricinin rotaları her değiştiğinde yeniden (ikisini de makine kurulumu sırasında `renet cert export-install` yükler). `acme.json` dosyasını okur ve deponun kendi sertifikalarını, yalnızca Traefik `Host`/`HostSNI` kurallarının adını verdiği ana makineler için, `<repo mount>/data/tls/<domain>/cert.pem` ve `key.pem` dosyalarına yazar. Dosyalar atomik olarak yazılır ve bağlama noktasının sahibine aittir. Durdurulmuş bir deponun ana makineleri yine de ona ait sayılır, bu yüzden hiçbir depo bir başkasının sertifikasını alamaz. Hiçbir konteynerin `/opt/rediacc/proxy` erişimine ihtiyacı yoktur: depo başına Docker API geçidi bu bind işlemini reddeder, bu nedenle `traefik-certs-dumper` artık çalışamaz.
+
+   Dizin, compose dosyasından salt okunur olarak bağlanır. Dışa aktarma depo bağlama noktasının köküne yazar; bu yüzden `mail/` gibi bir alt dizindeki compose dosyası ona `../data/tls/<domain>/` ile ulaşır:
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **İstemci tarafı önbellek (`rediacc.json`).** CLI, yapılandırma dosyanızda `acmeCertCache` altında `acme.json`'ın sıkıştırılmış bir kopyasını `baseDomain`'e göre anahtarlanmış olarak önbelleğe alır. Bu, birden fazla makinenin sertifikaları paylaşmasına olanak tanır (`rdc machine infra cert push <machine>` aracılığıyla) ve çevrimdışı envanter olarak işlev görür.
 
@@ -224,7 +231,7 @@ Let's Encrypt sertifikasının verilmesinden her deponun konteynerlerine ulaşma
 - `notAfter`'ı 7 günden fazla geçmişte olan sertifikalar tamamen kaldırılır. Bunlar etkisizdir ve yalnızca önbelleği şişirir.
 - `rdc config prune --certs-only` her şeyi siler; `rdc config prune --certs-only` envanteri gösterir.
 
-**Sorun giderme:** `traefik-certs-dumper` `/traefik/acme.json: no such file or directory` ile çöküyor ise, depo başına daemon konağın letsencrypt deposunu göremiyordur. (a) `/opt/rediacc/proxy/letsencrypt/acme.json`'ın konakta mevcut olduğunu doğrulayın (bu, konak seviyesindeki `rediacc-proxy`'nin sorumluluğudur), ve (b) depo başına daemon'ın `/opt/rediacc/proxy`'yi izin listesine alan yeterince yeni bir renet ile başlatıldığını doğrulayın. renet'i yükselttikten sonra uygulamak için `rdc repo up` ile depoyu yeniden dağıtın.
+**Sorun giderme:** `data/tls/<domain>/` boş kalırsa şunları doğrulayın: (a) yönlendirilen konteynerde `rediacc.cert_export=true` etiketi var, (b) alan adı Traefik `Host`/`HostSNI` kurallarından birinde geçiyor ve ana makinede `/opt/rediacc/proxy/letsencrypt/acme.json` içinde sertifikası var, (c) `systemctl status rediacc-cert-export.timer` zamanlayıcıyı etkin gösteriyor. `sudo renet cert export-install` birimleri yeniden yükler, `sudo systemctl start rediacc-cert-export.service` hemen dışa aktarır.
 
 > **Deneysel:** Otomatik eşitleme sıklığı ve son kullanma tarihine dayalı temizlik renet 0.9+'da gelmiştir. Eski CLI/renet sürümleri yalnızca `rdc config prune --certs-only` aracılığıyla manuel eşitleme kullanır.
 

@@ -446,7 +446,7 @@ function main(): void {
   const hard = findings.filter((f) => f.rule !== 'static-nowrap');
   if (argv.includes('--write-baseline')) {
     // COMPOSITION. "Shrink-only" was enforced on the read path only, so a reseed could drop several nowrap entries, absorb one fresh one, and still print a smaller number. Keys carry the SELECTOR, so a rewritten rule re-keys its entry.
-    const entries = nowrapFound.map(nowrapKey).sort();
+    const entries = nowrapFound.map(nowrapKey).sort((a, b) => Number(a > b) - Number(a < b));
     const had = fs.existsSync(NOWRAP_BASELINE);
     const previous: string[] = had
       ? JSON.parse(fs.readFileSync(NOWRAP_BASELINE, 'utf8')).entries

@@ -273,7 +273,7 @@ def _offending(engine, cmd, cwd):
             # A script by path is read like the heredoc above, under `shellscan.interpreter_program`'s rules (tracked exempt, unreadable fails open).
             script, kind = shellscan.interpreter_program(run, cmd, cwd)
             code = " ".join(argv)
-            # Whether the program arrives on stdin is the interpreter's own option parse (#a2599946). This guard asked it of the first word not starting with `-`, so an option's value hid the `-`: `python3 -W ignore - <<EOF` and `deno run - <<EOF` with a marker in the body were allowed (rc 0, 2026-10-15 at bd4ead963).
+            # Whether the program arrives on stdin is the interpreter's own option parse (#a2599946). This guard asked it of the first word not starting with `-`, so an option's value hid the `-`: `python3 -W ignore - <<EOF` and `deno run - <<EOF` with a marker in the body were allowed (rc 0, 2026-10-15 at 2f3430b60).
             if kind == "stdin":
                 code += "\n" + script
             # A program this hook cannot read (review b922f15c.1, .4) is refused rather than run unread; the pre-filter already matched.

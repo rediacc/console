@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 50
 language: zh
-sourceHash: "7592f803f8caf5f4"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "9a95c20ff97fdf3f"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 问题所在：AI 编程助手（Claude Code、Cursor、Cline、Windsurf）会不断发明不存在的 `rdc` 标志，而且每次都需要询问你某个 Rediacc 仓库名称对应哪个 GUID。这个模板解决了这个问题。将下面的内容粘贴到你项目的 `CLAUDE.md`、`.cursorrules` 或你的工具所使用的任何智能体配置文件中。
@@ -71,7 +71,7 @@ rdc repo sync download <repo>@<machine> --local ./local-path
 rdc --help-all
 
 ### Architecture
-- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
+- **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/net-<networkId>/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
 - One adapter: **local** (SSH-based)
 

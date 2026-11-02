@@ -29,7 +29,15 @@ elif [[ $- != *i* ]] && {
     # that depends on the caller's PATH would silently profile nothing.
     __bashcov_bin="$HOME/.local/share/rediacc/bin/bashcov-sup"
     [[ -x $__bashcov_bin ]] || __bashcov_bin=/usr/local/bin/bashcov-sup
-    [[ -x $__bashcov_bin ]]
+    [[ -x $__bashcov_bin ]] &&
+        # THE RE-EXEC RUNS "$BASH", AND "$BASH" IS DERIVED FROM argv[0]. A bash started
+        # as `exec -a python3 bash -c ...` gets BASH=<python3 on PATH>, and the re-exec
+        # below would replace the shell with that program, which then reads the -c
+        # string as its own (measured 2026-10-27: a SyntaxError from python3). So the
+        # shell is profiled only when "$BASH" is the very binary running, by inode
+        # (`-ef` follows /proc/self/exe to the executable, with no fork); otherwise it
+        # runs unprofiled, never as another program. No /proc means no profiling.
+        [[ -n ${BASH:-} && $BASH -ef /proc/self/exe ]]
 }; then
     # Records go to the time-based corpus: ~/.claude/resprofile/<repo-slug>/<day>/bash.jsonl,
     # keyed on the repo this file lives in so a second worktree gets its own folder.

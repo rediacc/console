@@ -3,7 +3,7 @@
  *
  * `npm run pins -- bump npm` moves a `.syncpackrc.json` versionGroup's `pinVersion` when a member
  * package moves (scripts/lib/deps/pin-sync.ts), but `npm update` never rewrites a declared range,
- * so on 2026-10-19 (394935a1f) the "Pin i18next for CLI" group went to ^26.5.2 while
+ * so on 2026-10-19 (4ba8aab48) the "Pin i18next for CLI" group went to ^26.5.2 while
  * packages/cli/package.json still declared ^26.4.4, and `check:version` (syncpack lint) went red
  * only in the next ci:quick (`DiffersToPin`). This module plans the second half of that move: every
  * manifest the group covers declares the group's new pin.
@@ -131,7 +131,7 @@ export function sourceManifests(root: string, rcText: string | null): string[] {
   for (const g of globs)
     for (const f of globSync(g, { cwd: root, nodir: true, posix: true }))
       if (path.basename(f) === 'package.json') out.add(f);
-  return [...out].sort();
+  return [...out].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 const readManifest = (m: ManifestText): Record<string, unknown> | null => {
@@ -241,4 +241,26 @@ export function lockfileOf(root: string, manifest: string): string | null {
     if (dir === '.') return null;
     dir = path.posix.dirname(dir);
   }
+}
+
+/** The package whose version biome.json's `$schema` URL names. */
+export const BIOME_PACKAGE = '@biomejs/biome';
+export const BIOME_CONFIG = 'biome.json';
+const BIOME_SCHEMA_RE = /("\$schema":\s*"https:\/\/biomejs\.dev\/schemas\/)[^/"]+(\/schema\.json")/;
+
+/**
+ * biome.json with its `$schema` moved to the version a plan installs, or null when the plan does not move @biomejs/biome (or the file carries no schema URL of that shape, or it already names the version). Biome prints a schema-version mismatch note on every run when the two differ, so the bump and the URL move in one plan.
+ */
+export function planBiomeSchema(
+  text: string,
+  steps: ReadonlyArray<{ packages: ReadonlyArray<{ name: string; latest: string }> }>
+): string | null {
+  const to = steps
+    .flatMap((s) => s.packages)
+    .filter((p) => p.name === BIOME_PACKAGE)
+    .map((p) => p.latest)
+    .at(-1);
+  if (to === undefined || !BIOME_SCHEMA_RE.test(text)) return null;
+  const after = text.replace(BIOME_SCHEMA_RE, `$1${to}$2`);
+  return after === text ? null : after;
 }

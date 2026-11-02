@@ -179,7 +179,7 @@ export function judge(
 
 /** `owner/repo#N` to its REST path. Throws on anything else: a guessed path would be a guessed answer. */
 export function pullsPath(ref: string): string {
-  const m = ref.match(/^([\w.-]+)\/([\w.-]+)#(\d+)$/);
+  const m = /^([\w.-]+)\/([\w.-]+)#(\d+)$/.exec(ref);
   if (!m) throw new Error(`not an owner/repo#N reference: ${JSON.stringify(ref)}`);
   return `/repos/${m[1]}/${m[2]}/pulls/${m[3]}`;
 }
@@ -381,7 +381,9 @@ async function main(): Promise<number> {
       : { format: 1, refreshed_at: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), prs: {} };
 
   const named = new Set(scan.conditions.map((c) => c.ref));
-  const refs = [...new Set([...named, ...Object.keys(ledger.prs)])].sort();
+  const refs = [...new Set([...named, ...Object.keys(ledger.prs)])].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   const shape = `${scan.filesRead}/${BLOCKER_FILES.length} BLOCKER file(s), ${scan.conditions.length} clause(s) naming ${named.size} PR(s), ${Object.keys(ledger.prs).length} recorded`;
 
   if (refs.length === 0) {

@@ -145,7 +145,7 @@ def test_an_absent_sentinel_matches_bash(world: h.World) -> None:
 def test_argument_errors_match_bash(world: h.World, args: list[str], want: int) -> None:
     b, p, _, _ = _run_both(world, args)
     if not args:
-        # ONE DECLARED DELTA (the missing-version case only): the usage line names the module the way it is run now. The bash script it named was deleted (882658c69), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
+        # ONE DECLARED DELTA (the missing-version case only): the usage line names the module the way it is run now. The bash script it named was deleted (363a35892), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
         usage_bash = "usage: scrub-sentinel.sh "
         usage_port = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel "
         assert usage_bash in h.strip(b[2]), b[2]

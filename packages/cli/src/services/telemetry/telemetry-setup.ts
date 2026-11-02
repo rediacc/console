@@ -28,6 +28,7 @@ export function setupOtelSdk(opts: {
   serviceVersion: string;
   environment: string;
   updateChannel?: string;
+  region?: string;
   headers: Record<string, string>;
   sessionId: string;
 }): SdkSetupResult {
@@ -43,6 +44,7 @@ export function setupOtelSdk(opts: {
     [ATTR_SERVICE_NAME]: opts.serviceName,
     [ATTR_SERVICE_VERSION]: opts.serviceVersion,
     'deployment.environment': opts.environment,
+    ...(opts.region ? { 'rediacc.region': opts.region } : {}),
     'update.channel': opts.updateChannel ?? UPDATE_DEFAULTS.CHANNEL,
     'service.platform': 'cli',
     'os.type': process.platform,

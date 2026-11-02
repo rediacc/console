@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 6
 language: ko
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # 네트워킹
@@ -40,7 +40,7 @@ Internet → Traefik (ports 80/443/TCP/UDP)
                ↓ polls every 5s
            Route Server (discovers containers)
                ↓ inspects labels
-           Docker Daemons (/var/run/rediacc/docker-*.sock)
+           Docker Daemons (/var/run/rediacc/net-*/docker-*.sock)
                ↓
            Containers (bound to 127.x.x.x loopback IPs)
 ```
@@ -206,7 +206,14 @@ Let's Encrypt 인증서가 발급에서 각 저장소의 컨테이너까지 거�
 
 1. **호스트에서 발급.** 머신 수준 Traefik 컨테이너(`rediacc-proxy`, `/opt/rediacc/proxy/`에 배포됨)가 ACME 갱신을 담당합니다. 모든 상태를 호스트의 `/opt/rediacc/proxy/letsencrypt/acme.json`에 저장합니다. 갱신은 만료 약 30일 전에 자동으로 트리거됩니다. `--cf-dns-token`이 구성된 한 운영자 조치가 필요하지 않습니다.
 
-2. **저장소별 덤핑(선택사항).** 자체 컨테이너 내부에 인증서 파일이 필요한 서비스(예: `.pem`을 직접 읽는 메일 서버)는 소형 `traefik-certs-dumper` 컨테이너를 함께 배포합니다. 덤퍼는 `/opt/rediacc/proxy/letsencrypt`를 읽기 전용으로 바인드 마운트하고 추출된 인증서 + 키를 `cert.pem` / `key.pem`으로 저장소의 데이터 볼륨에 씁니다. 이를 위해 저장소별 Docker 데몬이 마운트 네임스페이스 허용 목록에 `/opt/rediacc/proxy`가 있어야 합니다. 이는 기본적으로 이미 포함되어 있습니다.
+2. **저장소별 내보내기(선택사항).** 자체 컨테이너 안에 인증서 파일이 필요한 서비스(예: `.pem`을 직접 읽는 메일 서버)는 라우팅되는 컨테이너에 `rediacc.cert_export=true` 레이블을 달아 참여합니다. `renet cert export`는 머신에서 root로 실행되며, 5분 간격 타이머와 라우터의 경로가 바뀔 때마다 다시 실행됩니다(둘 다 머신 설정 중 `renet cert export-install`이 설치합니다). `acme.json`을 읽어 해당 저장소 자체의 인증서(Traefik `Host`/`HostSNI` 규칙이 지정한 호스트만)를 `<repo mount>/data/tls/<domain>/cert.pem`과 `key.pem`에 원자적으로 기록합니다. 파일은 마운트 소유자의 소유입니다. 중지된 저장소의 호스트도 계속 그 저장소의 것으로 취급되므로, 어떤 저장소도 다른 저장소의 인증서를 받을 수 없습니다. 컨테이너는 `/opt/rediacc/proxy`에 접근할 필요가 없습니다. 저장소별 Docker API 게이트가 해당 바인드를 거부하므로 `traefik-certs-dumper`는 더 이상 실행할 수 없습니다.
+
+   디렉터리는 compose 파일에서 읽기 전용으로 마운트합니다. 내보내기는 저장소 마운트 루트에 기록하므로, `mail/` 같은 하위 디렉터리에 있는 compose 파일은 `../data/tls/<domain>/`로 접근합니다.
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **클라이언트 측 캐시(`rediacc.json`).** CLI는 `acme.json`의 압축 복사본을 `baseDomain`으로 키잉된 구성 파일의 `acmeCertCache` 아래에 캐시합니다. 이를 통해 여러 머신이 인증서를 공유(`rdc machine infra cert push <machine>`)하고 오프라인 인벤토리로 활용할 수 있습니다.
 
@@ -222,7 +229,7 @@ Let's Encrypt 인증서가 발급에서 각 저장소의 컨테이너까지 거�
 - `notAfter`가 7일 이상 지난 인증서는 완전히 제거됩니다. 비활성 상태이며 캐시를 불필요하게 부풀릴 뿐입니다.
 - `rdc config prune --certs-only`로 모든 것을 지웁니다. `rdc config prune --certs-only`는 인벤토리를 표시합니다.
 
-**문제 해결:** `traefik-certs-dumper`가 `/traefik/acme.json: no such file or directory`로 충돌 루프하는 경우 저장소별 데몬이 호스트의 letsencrypt 저장소를 볼 수 없습니다. (a) `/opt/rediacc/proxy/letsencrypt/acme.json`이 호스트에 존재하는지(이는 호스트 수준 `rediacc-proxy`의 책임입니다) 및 (b) 저장소별 데몬이 `/opt/rediacc/proxy`를 허용 목록에 포함하는 충분히 최신의 renet으로 시작되었는지 확인하십시오. renet을 업그레이드한 후 `rdc repo up`으로 저장소를 재배포하여 적용하십시오.
+**문제 해결:** `data/tls/<domain>/`이 비어 있으면 (a) 라우팅되는 컨테이너에 `rediacc.cert_export=true`가 있는지, (b) 도메인이 Traefik `Host`/`HostSNI` 규칙 중 하나에 있고 호스트의 `/opt/rediacc/proxy/letsencrypt/acme.json`에 인증서가 있는지, (c) `systemctl status rediacc-cert-export.timer`에서 타이머가 활성 상태인지 확인하세요. `sudo renet cert export-install`로 유닛을 다시 설치하고, `sudo systemctl start rediacc-cert-export.service`로 즉시 내보낼 수 있습니다.
 
 > **실험적:** 자동 동기화 주기 및 만료 기반 정리는 renet 0.9+에서 출시되었습니다. 이전 CLI/renet 버전은 `rdc config prune --certs-only`을 통한 순수 수동 동기화를 사용합니다.
 

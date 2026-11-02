@@ -344,6 +344,21 @@ def test_refresh_preserves_comment_and_refuses_without_captures(tmp_path: Path):
     assert json.loads(target.read_text(encoding="utf-8"))["$comment"] == ["kept"]
 
 
+def test_refresh_dry_run_stdout_is_the_payload_alone(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The summary line once led stdout, so `--refresh --dry-run > f.json` wrote a file no JSON reader could open. The summary goes to stderr; the file is left untouched."""
+    write_lock(tmp_path, ["g"])
+    target = tmp_path / "gate-costs.json"
+    target.write_text(json.dumps({"$comment": ["kept"]}), encoding="utf-8")
+    collect = _collect([capture([gate("g", 1, 1)])])
+    assert gc.refresh(target, "o/r", tmp_path, dry_run=True, collect=collect) == 0
+    out, err = capsys.readouterr()
+    assert json.loads(out)["gates"].keys() == {"g"}
+    assert "gate(s) measured" in err
+    assert json.loads(target.read_text(encoding="utf-8")) == {"$comment": ["kept"]}
+
+
 # --------------------------------------------------------------------------- collect_captures ---------------------------------------------------------------------------
 
 
@@ -446,7 +461,7 @@ def test_validate_capture(tmp_path: Path):
 
 # --------------------------------------------------------------------------- diff-sampled (slow) gates ---------------------------------------------------------------------------
 #
-# FIRES-if-unfixed, MEASURED 2026-10-07. The capture is `run.ts --quick`, which runs every fast gate and ONLY the slow gates the captured commit's diff touches (run.ts quickDiffAdmit; capture 37294996911 reads "--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)"). check:ci-format-scope (slow) entered the baseline from capture 37192382851, whose diff touched it, and every PR went red with "has a baseline but no capture measured it (absent in the newest)" once that capture left the window. 365933af3 was the same red for check:ci-proxy-rdc-update.
+# FIRES-if-unfixed, MEASURED 2026-10-07. The capture is `run.ts --quick`, which runs every fast gate and ONLY the slow gates the captured commit's diff touches (run.ts quickDiffAdmit; capture 37294996911 reads "--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)"). check:ci-format-scope (slow) entered the baseline from capture 37192382851, whose diff touched it, and every PR went red with "has a baseline but no capture measured it (absent in the newest)" once that capture left the window. a33693828 was the same red for check:ci-proxy-rdc-update.
 
 
 def test_sampled_gates_are_the_slow_fixpoint_over_needs():

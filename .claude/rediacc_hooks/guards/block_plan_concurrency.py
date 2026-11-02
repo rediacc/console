@@ -49,7 +49,9 @@ _PLAN = "# PLAN: %s\n\nStatus: in-progress\nOwner: %s\nDepends-On: no-dep -- a f
 
 
 def _conc_world(_unused):
-    """WORLD/tree (a plan tree: E exclusive, F parallel) and WORLD/store (a peer's fresh lease on an E-linked item)."""
+    """WORLD/tree (a plan tree: E exclusive, F parallel with Owns inside E's) and WORLD/store (a peer's fresh lease on an E-linked item).
+
+    F overlaps E because an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28): a disjoint F would be admitted, and the mutex refusal the DEFECT removes would never be reached."""
     tree = pathlib.Path(WORLD) / "tree"
     plans = tree / "agent" / "plans"
     plans.mkdir(parents=True, exist_ok=True)
@@ -58,7 +60,9 @@ def _conc_world(_unused):
         plans / "PLAN-e.md",
         _PLAN % ("e", _PEER, "exclusive -- regenerates every golden file", "docs/e/**"),
     )
-    hookio.write_world_file(plans / "PLAN-f.md", _PLAN % ("f", _SID[:8], "parallel", "docs/f/**"))
+    hookio.write_world_file(
+        plans / "PLAN-f.md", _PLAN % ("f", _SID[:8], "parallel", "docs/e/golden/**")
+    )
     store = pathlib.Path(WORLD) / "store"
     store.mkdir(parents=True, exist_ok=True)
     (pathlib.Path(WORLD) / "tmp").mkdir(parents=True, exist_ok=True)
@@ -105,6 +109,7 @@ EDGE_CASES = [
     ("writer-for-another-plan-under-a-live-mutex", _spawn("general-purpose", "work #f0f0f0f0")),
     ("writer-for-the-exclusive-plan-itself", _spawn("general-purpose", "Plan: PLAN-e.md")),
     ("reader-under-a-live-mutex", _spawn("Explore", "Plan: PLAN-f.md")),
+    ("planless-writer-with-unknown-files", _spawn("general-purpose", "fix a typo")),
     (
         "planless-writer-with-disjoint-owns",
         _spawn("general-purpose", "fix a typo\nOwns: docs/zz/**"),
@@ -213,7 +218,7 @@ def run(event):
             )
         )
         return hookio.ALLOW
-    verdict = X.spawn_verdict(serving, live, lambda base: X.plan_x(root, base), declared)
+    verdict = X.spawn_verdict(serving, live, lambda base: X.plan_x(root, base), declared, root=root)
     if verdict.kind in ("mutex", "mutex-own"):
         return _refuse(event, verdict, kind, MUTEX_EXITS)
     if not verdict.allow:

@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: fr
-sourceHash: "14ed5791afa44326"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Aide-mémoire RDC CLI
@@ -59,8 +59,12 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc backup snapshot <repo> --dry-run` | Planifier l'instantané sans l'envoyer ; indique ce qui serait déplacé |
 | `rdc backup verify <repo>` | Vérifier l'ancre de sauvegarde d'un dépôt par rapport au stockage fragmenté |
 | `rdc backup usage` | Afficher les octets stockés dans le stockage fragmenté par rapport à votre quota |
-| `rdc backup manifests <repo>` | Lister les manifestes d'instantanés enregistrés sur le serveur |
-| `rdc storage browse <storage>` | Parcourir le contenu du stockage |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | Restaurer un instantané du stockage fragmenté sous un nouveau nom |
+| `rdc backup retention <repo>` | Afficher la politique de rétention appliquée par le serveur à une lignée de dépôt |
+| `rdc backup retention preview <repo>` | Afficher ce que le prochain passage supprimerait et l'espace libéré |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | Déclarer la rétention d'une lignée ou d'un flux de sauvegarde |
+| `rdc backup retention clear <repo> [--stream <id>]` | Retirer la politique ; tous les instantanés sont conservés |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | Supprimer un instantané ; ses données exclusives sont libérées par le prochain GC |
 
 ## Migration de dépôt
 
@@ -76,7 +80,7 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 
 | Commande | Description |
 |----------|-------------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Créer ou mettre à jour une stratégie de sauvegarde nommée |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | Créer ou mettre à jour une stratégie de sauvegarde nommée |
 | `rdc backup strategy list` | Lister toutes les stratégies définies |
 | `rdc backup strategy show <name>` | Afficher les détails d'une stratégie |
 | `rdc backup strategy remove <name>` | Supprimer une stratégie |
@@ -137,8 +141,6 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc config list` | Lister toutes les configurations sur cette machine |
 | `rdc config set machine <alias>` | Faire pointer un alias vers une autre machine |
 | `rdc machine add <machine> --ip <host> --user <user>` | Ajouter une machine à la configuration |
-| `rdc storage import rclone.conf` | Importer des fournisseurs de stockage depuis la configuration rclone |
-| `rdc storage list` | Lister les fournisseurs de stockage configurés |
 | `rdc backup strategy set ...` | Définir une stratégie de sauvegarde nommée |
 | `rdc --config <name> <command>` | Utiliser un fichier de configuration nommé |
 

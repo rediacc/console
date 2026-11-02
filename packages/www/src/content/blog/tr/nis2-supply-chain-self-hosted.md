@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: tr
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -85,7 +85,7 @@ Operatör, yedekleme, geri yükleme veya fork işlemi yapmak için Rediacc şirk
 
 1. **Operatör iş istasyonu.** `rdc`'yi çalıştırır. LUKS2 kimlik bilgisini tutar.
 2. **Operatörün kendi sunucusu.** `renet`'i çalıştırır. LUKS2 şifreli depoları tutar.
-3. **Operatörün kendi yedek hedefi.** Herhangi bir rclone uyumlu depolama (S3, B2, OneDrive, şirket içi MinIO). Şifreli birimleri alır.
+3. **Yedek hedefi.** Ya operatörün denetlediği ikinci bir makine (`rdc repo push`) ya da yalnızca SHA-256 ile adreslenen şifreli hücreleri tutan barındırılan chunk deposu (`rdc backup snapshot`). LUKS kimlik bilgisi ikisine de ulaşmaz.
 
 Katman 4 yoktur. Rediacc şirketi, deneysel [Bulut adaptörünü](/tr/docs/architecture) etkinleştirmemiş hiçbir operatör için alt işlemci değildir. Self-hosted operatörler için Rediacc şirketiyle ilişki, bir veri işleme sözleşmesi değil, bir yazılım lisansıdır.
 
@@ -130,7 +130,7 @@ Hetzner üzerinde Rediacc'a geçildikten sonra:
 | Alt işlemciler | (1) Self-hosted için hiçbiri; (2) Yalnızca Hetzner dahili, kendi DPA'larında listelenmiş |
 | Sözleşme durumu | (1) Yazılım lisansı, DPA gerekmiyor; (2) Hetzner DPA + SCC'ler zaten mevcut |
 | Anahtar yönetimi | Müşteri (LUKS2 kimlik bilgisi operatör yapılandırmasında, sunucuda değil) |
-| Çıkış planı | "rdc repo pull ile herhangi bir rclone uyumlu hedeften. Birimler LUKS2 şifreli; operatör kimlik bilgisini tutar." |
+| Çıkış planı | "rdc repo pull ile ikinci makineden ya da rdc backup restore ile saklanan herhangi bir anlık görüntüden. Birimler LUKS2 şifreli; operatör kimlik bilgisini tutar." |
 | Son değerlendirme | (2) mevcut IaaS incelemesiyle kapsanmış |
 
 Bir yerine iki kayıt girişi. Kritik katman girişi, alıcının zaten DPA ve test edilmiş çıkış planı mevcut olan IaaS sağlayıcısı içindir; çünkü IaaS, çoğu ekibin nasıl yöneteceğini bildiği bir ilişkidir. Rediacc girişi, veri işleyici değil yazılım lisansı olduğu için kritik olmayan olarak sınıflandırılmıştır.

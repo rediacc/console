@@ -29,10 +29,12 @@
  */
 
 import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
-import { fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
+import { ENVELOPE_VERSION, fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { decryptConfigPullPayload } from '@rediacc/shared/config-schema';
+import { deadlineFetch } from './account-fetch.js';
+import { AuthError } from './auth.js';
 import { SessionError, type SessionPrincipal, SessionStore } from './sessions.js';
 
 /** What the account server hands an executor so it can fetch a member's config. */
@@ -73,7 +75,7 @@ export function createContainerConfigLoader(
   options: ContainerConfigLoaderOptions
 ): (principal: SessionPrincipal) => Promise<RdcConfig> {
   const accountUrl = options.accountUrl.replace(/\/+$/, '');
-  const doFetch = options.fetchImpl ?? globalThis.fetch;
+  const doFetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
   const { sessions, executorToken } = options;
 
   /** sessionId -> decrypted config. RAM only; never serialized, never written. */
@@ -111,8 +113,8 @@ export function createContainerConfigLoader(
     const cached = cache.get(sessionId);
     if (cached) return cached;
 
-    // Minted for THIS principal. The account server checks they are in the executor's org and are an active config-store member before answering.
-    const grant = await mintExecutorGrant(principal.userId);
+    // Minted for THIS principal under THIS session. The account server checks they are in the executor's org, an active config-store member, and the recorded grantor of the session (recordGrant below) before answering.
+    const grant = await mintExecutorGrant(principal.userId, sessionId);
     const target = pickConfig(grant.configs, principal.teamId);
 
     const pull = await pullConfig(grant.token, target.configId, target.teamId);
@@ -135,14 +137,14 @@ export function createContainerConfigLoader(
     return config;
   };
 
-  async function mintExecutorGrant(userId: string): Promise<ExecutorGrant> {
+  async function mintExecutorGrant(userId: string, sessionId: string): Promise<ExecutorGrant> {
     const response = await doFetch(`${accountUrl}/account/api/v1/configs/executor-token`, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${executorToken}`,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ userId, sessionId }),
     });
     if (!response.ok) {
       throw new SessionError(await describe(response, 'could not obtain a config token'));
@@ -158,13 +160,59 @@ export function createContainerConfigLoader(
     const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : '';
     const response = await doFetch(
       `${accountUrl}/account/api/v1/configs/${encodeURIComponent(configId)}${query}`,
-      { headers: { 'X-Config-Token': configToken } }
+      {
+        headers: { 'X-Config-Token': configToken, 'x-config-envelope': String(ENVELOPE_VERSION) },
+      }
     );
     if (!response.ok) {
       throw new SessionError(await describe(response, 'could not fetch the config'));
     }
     return (await response.json()) as PullResponse;
   }
+}
+
+export interface ExecutorGrantRecorderOptions {
+  /** Account server base URL, e.g. https://eu.rediacc.com */
+  accountUrl: string;
+  /** The executor's own account token. Must carry proxy:exec. */
+  executorToken: string;
+  fetchImpl?: typeof fetch;
+}
+
+/**
+ * Build the `recordGrant` the container tier injects into ServeDeps.
+ *
+ * The account server mints a config token for a user only under a session that
+ * user granted (PLAN-backup-program S7). The proof is the user's own bearer at
+ * the moment it completes the CEK grant leg: the executor presents it (the same
+ * token it just introspected) next to its own credential, and the server
+ * records {session, executor token, grantor} for one idle window. Without that
+ * record an admin-created executor could mint a config token for any member.
+ */
+export function createExecutorGrantRecorder(
+  options: ExecutorGrantRecorderOptions
+): (sessionId: string, bearerToken: string) => Promise<void> {
+  const accountUrl = options.accountUrl.replace(/\/+$/, '');
+  const doFetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
+
+  return async function recordGrant(sessionId: string, bearerToken: string): Promise<void> {
+    const response = await doFetch(`${accountUrl}/account/api/v1/configs/executor-grant`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${options.executorToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ sessionId, token: bearerToken }),
+    });
+    if (!response.ok) {
+      const message = await describe(response, 'could not record the key grant');
+      // Only a refusal is a 401/403; an unavailable account server (5xx, 429) surfaces as a server fault, not as a refused grant.
+      if (response.status === 401 || response.status === 403) {
+        throw new AuthError(message, response.status);
+      }
+      throw new Error(message);
+    }
+  };
 }
 
 /**

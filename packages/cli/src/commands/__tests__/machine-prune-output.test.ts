@@ -7,6 +7,8 @@ const KNOWN = 'b9521afd-0cbd-4481-92ed-f798268a69dd';
 const mocks = vi.hoisted(() => ({
   format: 'json' as 'json' | 'table' | 'yaml',
   fail: false,
+  repos: [] as Record<string, unknown>[],
+  deletes: [] as string[],
 }));
 
 vi.mock('../../utils/errors.js', () => ({
@@ -18,7 +20,10 @@ vi.mock('../../utils/errors.js', () => ({
 vi.mock('../_validate.js', () => ({ assertMachineExists: async () => undefined }));
 vi.mock('../../services/executor/executor-factory.js', () => ({
   getExecutor: () => ({
-    execute: (req: { functionName: string }) => {
+    execute: (req: { functionName: string; params?: { repository?: string } }) => {
+      if (req.functionName === 'repository_delete') {
+        mocks.deletes.push(String(req.params?.repository));
+      }
       if (mocks.fail) return Promise.resolve({ success: false, error: 'boom' });
       if (req.functionName === 'repository_prune') {
         return Promise.resolve({
@@ -37,7 +42,7 @@ vi.mock('../../utils/local-execution-failures.js', () => ({
   renderLocalExecutionFailure: vi.fn(),
 }));
 vi.mock('../../services/machine/machine-status.js', () => ({
-  fetchMachineStatus: async () => ({ repositories: [] }),
+  fetchMachineStatus: async () => ({ repositories: mocks.repos }),
 }));
 vi.mock('@rediacc/shared/renet-contract/data/list-types.generated', () => ({
   getRepositories: () => [{ name: KNOWN }, { name: ORPHAN }],
@@ -67,6 +72,8 @@ let stdout = '';
 beforeEach(() => {
   stdout = '';
   mocks.fail = false;
+  mocks.repos = [];
+  mocks.deletes = [];
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
     stdout += String(chunk);
     return true;
@@ -113,5 +120,28 @@ describe('machine prune output', () => {
     mocks.fail = true;
     await run('--orphaned-repos', '--dry-run');
     expect(stdout).not.toContain('orphaned_repos');
+  });
+
+  // docker_running is the repo's daemon answering, with or without containers.
+  // A live daemon holding zero containers still protects an unmounted repo.
+  it('refuses an unmounted unknown repo whose daemon answers with zero containers', async () => {
+    mocks.format = 'json';
+    mocks.repos = [{ name: ORPHAN, mounted: false, docker_running: true, container_count: 0 }];
+    await run('--prune-unknown');
+    expect(mocks.deletes).toEqual([]);
+  });
+
+  it('deletes that repo once --force-delete-mounted is passed', async () => {
+    mocks.format = 'json';
+    mocks.repos = [{ name: ORPHAN, mounted: false, docker_running: true, container_count: 0 }];
+    await run('--prune-unknown', '--force-delete-mounted');
+    expect(mocks.deletes).toEqual([ORPHAN]);
+  });
+
+  it('deletes an unmounted unknown repo whose daemon is down', async () => {
+    mocks.format = 'json';
+    mocks.repos = [{ name: ORPHAN, mounted: false, docker_running: false, container_count: 0 }];
+    await run('--prune-unknown');
+    expect(mocks.deletes).toEqual([ORPHAN]);
   });
 });

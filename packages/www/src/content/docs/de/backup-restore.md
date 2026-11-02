@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "243d934efa7d9d54"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Backup & Wiederherstellung
@@ -59,9 +59,9 @@ Maschine-zu-Maschine-Push und -Pull brauchen keins von beidem. Sie sind eine dir
 - **Es ist keine kontinuierliche Replikation.** Ein Snapshot ist ein Zeitpunkt, den Sie erfasst haben, und Sie können alles verlieren, was seit dem letzten geschrieben wurde. Wie viel das ist, hängt davon ab, wie oft Sie laufen lassen.
 - **Gespeicherte Objekte sind write-once, nicht zertifiziertes WORM.** Zellen werden mit einer Nur-Erstellen-Bedingung geschrieben, die Berechtigung, die eine Maschine erhält, kann nichts löschen, und Löschungen geschehen serverseitig nach Aufbewahrungsrichtlinie. Das ist eine echte Barriere dagegen, dass eine kompromittierte Maschine ihre eigenen Backups zerstört. Es ist keine Compliance-Zertifizierung, und es wird nicht als eine geprüft.
 
-### Der rclone-Speicherpfad ist verschwunden
+### Eine einzige Zielart
 
-`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Wenn Sie noch ein auf diese Weise geschriebenes Archiv lesen müssen, siehe [Ein vor der Umstellung geschriebenes Archiv lesen](#reading-an-archive-written-before-the-retirement).
+Chunk-Store-Backups haben genau eine Zielart: einen gehosteten Chunk-Store, der über den Account-Server erreicht wird. Es gibt keine Registry externer Speicher-Endpunkte, daher nennen `--to` und `--from` bei `repo push` und `repo pull` nur eine Maschine.
 
 ### Chunk-Storage-Befehle
 
@@ -92,7 +92,11 @@ rdc backup usage
 | `--dry-run` | Nur planen: kein Upload. Zeigt, was sich bewegen würde |
 | `--cold` | Container stoppen, einfrieren, neu starten, dann hochladen. Nicht mit `--dry-run` kombinierbar |
 | `--reseed` | Dem lokalen Anker misstrauen und ein vollständiges Inventar hochladen. Lädt alles neu hoch und belastet das Kontingent erneut |
+| `--read-bwlimit <limit>` | Obergrenze, wie schnell der Snapshot das Image von der Platte liest, in denselben Einheiten wie `--bwlimit` (Standard `50M`, `0` = unbegrenzt) |
+| `--hash-parallelism <n>` | Anzahl der Hash-Worker (Standard `1`, `0` = einer pro CPU, bis zu `16`) |
 | `--debug` | Ausführliche Ausgabe aktivieren |
+
+Upload-Limit und Lese-Limit sind getrennt. `--bwlimit` begrenzt, was gesendet wird, und ist standardmäßig unbegrenzt; `--read-bwlimit` begrenzt, wie schnell das Image von der Platte gelesen und gehasht wird. `ionice` wirkt nur auf den BFQ-I/O-Scheduler. Unter `mq-deadline` oder `none` begrenzt daher das Lese-Limit die Plattenlast.
 
 ## Cold-Snapshots (`--cold`)
 
@@ -264,22 +268,34 @@ Die übertragene Kopie erscheint unter ihrem eigenen Namen. Eine zweite Zeile mi
 | `Size` | Menschenlesbare Größe der Backup-Datei |
 | `Modified` | UTC-Zeitstempel der Datei auf der Maschine |
 
-Das Auflisten eines Storage-Backends wurde eingestellt, zusammen mit dem rclone-Zweig; der Befehl verweigert die Ausführung und nennt diese beiden Ersatzbefehle.
-
 ## Aufbewahrung
 
-Der Server erzwingt eine Aufbewahrungsrichtlinie pro Repository über den Chunk-Store, sodass alte Snapshots bereinigt werden, ohne dass Sie von Hand etwas löschen. Ohne deklarierte Richtlinie wird jeder Snapshot behalten.
+Der Server erzwingt eine Aufbewahrungsrichtlinie über den Chunk-Store, sodass alte Snapshots bereinigt werden, ohne dass von Hand etwas gelöscht wird. Eine Richtlinie gehört zur Lineage eines Repositorys: Ein Repository und seine Forks teilen sich einen Verlauf, und eine Richtlinie, die auf den Repository-Namen gesetzt wird, deckt die ganze Familie ab. Innerhalb einer Lineage ist zudem jeder Backup-Stream (ein Repository auf einer Maschine) für sich geschützt: Die Aufbewahrung lässt einen Stream nie ohne seine neuesten Snapshots oder seinen aktuellen Anker zurück, was auch immer die Richtlinie sagt. Eine zweite Maschine oder ein Fork, der den eigenen Verlauf bereinigt, kann die Untergrenze eines anderen Streams nicht aufbrauchen.
+
+Ohne deklarierte Richtlinie gilt ein Server-Standard (bei Tarifen mit eigenem Standard dieser), und die neuesten Snapshots jedes Streams werden behalten.
 
 ```bash
-# Was gerade durchgesetzt wird.
+# Was gerade durchgesetzt wird und woher es stammt.
 rdc backup retention my-app
+
+# Was der nächste Durchlauf löschen würde und wie viel Speicher er freigibt. Es wird nichts gelöscht.
+rdc backup retention preview my-app
 
 # Ein rollierendes Fenster behalten: 7 täglich, 4 wöchentlich, 6 monatlich.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Zurück dazu, alles zu behalten.
+# Eine abweichende Richtlinie nur für einen Backup-Stream anwenden.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Die deklarierte Richtlinie entfernen.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Einen Snapshot sofort löschen. Daten, die nur dieser Snapshot nutzte, gibt die nächste GC frei.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+Eine Strategie kann die Richtlinie für die Repositories festlegen, die sie abdeckt: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` entfernt sie).
 
 | Option | Beschreibung |
 |--------|-------------|
@@ -289,8 +305,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Den neuesten Snapshot aus jeder dieser Wochen behalten |
 | `--keep-monthly <n>` | Den neuesten Snapshot aus jedem dieser Monate behalten |
 | `--keep-yearly <n>` | Den neuesten Snapshot aus jedem dieser Jahre behalten |
+| `--stream <id>` | Die Richtlinie auf einen Backup-Stream statt auf den repositoryweiten Standard anwenden |
 
-Geben Sie mindestens eine Regel an. `set` ohne Regeln wird zurückgewiesen statt als "nichts behalten" behandelt zu werden, denn eine Richtlinie zu löschen ist es, wofür `clear` da ist.
+Geben Sie mindestens eine Regel an. `set` ersetzt jeden Parameter, statt zu mischen, daher wird die gesamte Richtlinie jedes Mal übergeben. `set` ohne Regeln wird zurückgewiesen statt als "nichts behalten" behandelt zu werden, denn eine Richtlinie zu löschen ist es, wofür `clear` da ist. `clear` entfernt die festgelegte Richtlinie, sodass wieder der Standard des Tarifs bzw. Servers gilt; es bedeutet weder "nichts behalten" noch "alles behalten".
 
 ## Wiederherstellung
 
@@ -306,6 +323,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` nimmt eine Snapshot-ID von `rdc backup manifests`, oder eine RFC-3339-Zeit wie `2026-08-14T12:00:00Z`, die zum neuesten Snapshot aufgelöst wird, der zu diesem Zeitpunkt oder davor genommen wurde. Eine Zeit ohne Snapshot zu diesem Zeitpunkt oder davor wird zurückgewiesen statt aufgerundet.
 
+Eine Zeit wird nur unter den Snapshots dieses Repositorys auf seiner Quellmaschine aufgelöst. Snapshots anderer Maschinen oder von Forks derselben Lineage bleiben unberücksichtigt, es sei denn, `--any-stream` weitet die Suche bewusst aus. Lässt sich der eigene Stream des Repositorys nicht bestimmen, wird die Wiederherstellung zurückgewiesen und verlangt `--any-stream`, statt zu raten.
+
 Die Wiederherstellung unter einem neuen Namen mit `--as` überschreibt nichts, sodass eine Wiederherstellungsübung gefahrlos gegen eine Live-Maschine läuft. Die Wiederherstellung auf einen bereits vorhandenen Namen wird zurückgewiesen.
 
 | Option | Beschreibung |
@@ -315,6 +334,7 @@ Die Wiederherstellung unter einem neuen Namen mit `--as` überschreibt nichts, s
 | `-m, --machine <machine>` | Maschine, auf die wiederhergestellt wird |
 | `--datastore <name>` | In diesen benannten Datastore wiederherstellen, dessen angeschlossene Maschine ihn hostet |
 | `--at <time>` | Einen Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC-3339-Zeit |
+| `--any-stream` | Mit `--at` auch Snapshots von anderen Maschinen und Forks dieser Lineage berücksichtigen |
 | `--up` | Wiederhergestelltes Repository nach der Übertragung bereitstellen |
 | `--health-window <seconds>` | Wie lange das bereitgestellte Repository auf Gesundheit beobachtet wird |
 | `--health-timeout <seconds>` | Wie lange gewartet wird, bis es gesund wird |
@@ -351,7 +371,7 @@ Die vollständigen Optionslisten finden Sie unter [Ein Backup auf eine andere Ma
 
 ## Geplante Backups
 
-Rediacc verwendet benannte Backup-Strategien. Jede Strategie definiert einen Zeitplan, einen Backup-Modus, ein optionales Bandbreitenlimit und Dateifilter. Sie binden Strategienamen an Maschinen, um zu steuern, welche Backups dort ausgeführt werden.
+Rediacc verwendet benannte Backup-Strategien. Jede Strategie definiert einen Zeitplan, einen Backup-Modus, ein optionales Bandbreitenlimit, Repository-Filter und die Snapshot-Aufbewahrung. Strategienamen werden an Maschinen gebunden, um zu steuern, welche Backups dort ausgeführt werden.
 
 ### Backup-Modi
 
@@ -450,7 +470,7 @@ Der kanonische Standard ist eine Aufteilung in zwei Strategien: ein schneller st
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -459,28 +479,28 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` benennt das Ziel innerhalb der Strategie; es ist ein von Ihnen gewähltes Label und beschreibt den Chunk-Store. `--include` listet die zu sichernden Repositories auf, und wiederholtes Angeben fügt weitere hinzu. Weglassen deckt mit der Strategie jedes Repository auf dem Datastore ab. Namen entsprechen dem lokalen Konfigurationsnamen des Repositorys (ohne `:tag`).
+`--destination <name>` benennt das Ziel innerhalb der Strategie; es ist ein pro Strategie gewähltes Label, und das Ziel ist immer der gehostete Chunk-Store. `--include` nimmt eine kommagetrennte Liste der zu sichernden Repositories (`--include shop,mail`). Weglassen deckt mit der Strategie jedes Repository auf dem Datastore ab. Ein bloßer Name deckt das Repository und alle seine Forks ab; `name:tag` deckt einen Fork ab. Unbekannte Namen werden beim Speichern der Strategie zurückgewiesen, sodass ein Tippfehler kein Backup von nichts einplanen kann.
 
-`--exclude` wird bei einem Chunk-Store-Ziel zurückgewiesen statt still verworfen, weil das zugrundeliegende `backup snapshot` Repositories auswählt, indem es sie benennt, und selbst kein Exclude hat. Es zu respektieren würde bedeuten, Repositories zu sichern, die Sie ausschließen wollten. Grenzen Sie eine Strategie stattdessen mit `--include` ein, damit schriftlich festgehalten statt erschlossen wird, was ein geplanter Lauf abdeckt.
+`--exclude` hat dieselbe kommagetrennte Form und überspringt die genannten Repositories. `--include` und `--exclude` schließen einander aus: Das Setzen des einen löscht das andere, und der Wert `none` löscht einen Filter.
 
 | Option | Beschreibung |
 |--------|-------------|
 | `<strategy>` (positional) | Strategie-Name (wird zur Maschinenbindung verwendet) |
-| `--destination <name>` | Ziel-Name innerhalb der Strategie. Standard ist der Chunk-Store |
-| `--storage <name>` | Sich für die eingestellte rclone-Zielart entscheiden. Ein Zeitplan, der es nutzt, kann nicht deployt werden |
+| `--destination <name>` | Ziel-Name innerhalb der Strategie. Immer ein gehosteter Chunk-Store |
 | `--cron <expression>` | Cron-Ausdruck (z. B. `"0 2 * * *"` für täglich um 2 Uhr) |
 | `--mode <hot\|cold>` | Backup-Modus |
 | `--bwlimit <limit>` | Bandbreitenlimit für Uploads (z. B. `10M`) |
-| `--include <repos>` | Von dieser Strategie abgedeckte Repositories (wiederholbar) |
-| `--exclude <repos>` | Zu überspringende Repositories (wiederholbar). Bei einem Chunk-Store-Ziel zurückgewiesen |
-| `--folder <path>` | Unterordner innerhalb eines rclone-Buckets. Bei einem Chunk-Store-Ziel zurückgewiesen |
+| `--read-bwlimit <limit>` | Obergrenze, wie schnell Snapshots das Image von der Platte lesen (z. B. `50M`, `0` = unbegrenzt). `none` entfernt sie |
+| `--include <repos>` | Von dieser Strategie abgedeckte Repositories (kommagetrennt) |
+| `--exclude <repos>` | Zu überspringende Repositories (kommagetrennt) |
+| `--retention <spec>` | Snapshot-Aufbewahrung, zum Beispiel `last=7,daily=7,weekly=4,monthly=6`. `none` entfernt sie |
 | `--enable` / `--disable` | Strategie aktivieren oder deaktivieren |
 
 ### Strategien anzeigen
@@ -539,12 +559,12 @@ Beide Modi schreiben in denselben Chunk-Store, und der Modus betrifft, wie das R
 
 ### Repos pro Strategie eingrenzen
 
-Eine Strategie ohne `--include` deckt jedes Repository auf dem Datastore ab. Wiederholtes `--include` grenzt sie auf die von Ihnen genannten Repositories ein, abgeglichen gegen den lokalen Konfigurationsnamen des Repositorys (ohne `:tag`).
+Eine Strategie ohne `--include` deckt jedes Repository auf dem Datastore ab. `--include` grenzt sie auf die kommagetrennt genannten Repositories ein, abgeglichen gegen den lokalen Konfigurationsnamen des Repositorys.
 
 ```bash
 # Hot-Strategie: alles stündlich sichern
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -552,10 +572,10 @@ rdc backup strategy set hourly-hot \
 
 # Cold-Strategie: wöchentlich, und nur die Repositories, die stillgelegt werden müssen
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
@@ -637,25 +657,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | Bandbreitenlimit für die Übertragung (z. B. `50M`) |
 
 Die Migration überträgt die verschlüsselten Repository-Daten in zwei Phasen per rsync: eine Massenübertragung, während das Repository weiterläuft, dann ein kurzer Stopp für das Delta. Die Migration **verschiebt** das Repository, sodass die Quell-Images gelöscht werden, sobald der Umzug gelingt. Übergeben Sie `--keep-source`, um sie zu behalten. Das ist der Unterschied zwischen `repo migrate` und `repo push`: Push lässt die Quelle laufend und unangetastet.
-
-## Ein vor der Umstellung geschriebenes Archiv lesen
-
-`rdc storage` ist das, was vom rclone-Zweig übrig ist, und es ist schreibgeschützt. Es kann kein Backup-Ziel mehr sein, kommt aber weiterhin an ein Archiv heran, das auf diesem Weg geschrieben wurde.
-
-```bash
-# Ein Remote registrieren, das Sie bereits für rclone konfiguriert haben.
-rdc storage import rclone.conf
-rdc storage list
-
-# Ansehen, was darin liegt. Dies führt das rclone auf Ihrem PATH aus.
-rdc storage browse my-storage
-```
-
-`import` liest eine rclone-Konfigurationsdatei und erfasst die Remotes in Ihrer Konfiguration; unterstützte Typen sind S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
-
-**`browse` benötigt `rclone` auf Ihrem PATH.** Es führt das rclone aus, das auf der Maschine installiert ist, an der Sie gerade tippen; eine gebündelte Kopie gibt es nicht mehr. Ohne eine sagt es Ihnen das und tut sonst nichts.
-
-Das Übertragen zu, Abrufen von, Auflisten und Wiederherstellen eines Storage-Backends sind eingestellt; jeder verweigert die Ausführung und nennt den Befehl, der ihn ersetzt.
 
 ## Bewährte Methoden
 

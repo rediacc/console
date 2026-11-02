@@ -48,14 +48,21 @@ enabled = true
 [observability.logs]
 enabled = true
 head_sampling_rate = 1
-invocation_logs = true
+invocation_logs = false
+destinations = ["otlp-bench-logs"]
+persist = false
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
+destinations = ["otlp-bench-traces"]
+persist = false
 
+# The keyless bench portal (no Turnstile site key) is built into ./bench/dist, never ./dist: every production and
+# edge config uploads ./dist, and a bench build left there shipped a widgetless login to stable on 2026-10-28.
+# rediacc_ci.ops.deploy_bench refuses to build when this directory changes (bench_assets_refusal).
 [assets]
-directory = "./dist"
+directory = "./bench/dist"
 binding = "ASSETS"
 not_found_handling = "404-page"
 run_worker_first = ["/*"]
@@ -77,3 +84,12 @@ bucket_name = "rediacc-configs-bench"
 [[r2_buckets]]
 binding = "BACKUP_BUCKET"
 bucket_name = "rediacc-backups-bench"
+
+# The web console reaches the executor proxy through this binding, not a public fetch: both Workers
+# share the rediacc.com zone, and a same-zone subrequest never reaches another Worker. CD sets
+# EXECUTOR_MODE as a secret only after rediacc-proxy-bench passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
+# Design item 2). wrangler refuses a deploy whose binding names a Worker that does not exist yet, so the
+# first deploy of a target bootstraps the proxy (workers/proxy/wrangler.bench.toml) before this Worker.
+[[services]]
+binding = "EXECUTOR"
+service = "rediacc-proxy-bench"

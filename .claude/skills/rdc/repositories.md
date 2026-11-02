@@ -21,7 +21,7 @@ Repositories are isolated application deployments. Each gets an encrypted LUKS v
 `rdc repo down <ref>` runs Rediaccfile `down()`. Stops containers but does NOT unmount: the repo stays mounted and can be restarted with `repo up`. Use `--unmount` to also close the LUKS volume (this folded in the retired `repo unmount`).
 
 ### Delete
-`rdc repo delete <ref>` destroys containers, volumes, and encrypted image. The config entry is preserved by default; pass `--archive-config` to move the credentials into the archive, recoverable with `rdc repo admin archive restore <name>`. A bare name resolves to the grand line and is refused when several repos share the base name, so pass `name:tag` to target a fork.
+`rdc repo delete <ref>` destroys containers, volumes, and encrypted image. The config entry is preserved by default; pass `--archive-config` to move the credentials into the archive, recoverable with `rdc repo admin archive restore <name>`. `--purge-backups` also deletes the repository's cloud backups now instead of letting them expire. A bare name resolves to the grand line and is refused when several repos share the base name, so pass `name:tag` to target a fork.
 
 ### Prune orphaned resources
 `rdc machine prune <machine>` removes empty mount dirs, orphan immovable markers, and stale lock files left behind by deleted repos or failed operations. Only removes resources with no matching repository image. Non-empty mount directories are never removed. Add `--orphaned-repos` to also delete repo images that are in no config.

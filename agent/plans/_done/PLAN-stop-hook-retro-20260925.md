@@ -1,6 +1,6 @@
 # PLAN: Stop-hook retro, 2026-09-25 (band late, lead session d778be9d)
 
-Status: done -- 2026-10-15, every box ticked (10 of 10); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: ready -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- 2026-10-15, every box ticked (10 of 10); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: ready -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-25
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)

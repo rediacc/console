@@ -17,13 +17,27 @@
     "plan_baseline is SHRINK-ONLY debt: live plans that named a term on the day this gate",
     "landed. A new (plan, term) pair is a refusal and is never added here; a baselined pair",
     "that stops firing is a refusal too, drained with --write-baseline (which only ever removes).",
-    "Each entry carries a BLOCKER reason, checked by rediacc_ci.core.allowlist.validate_reason."
+    "Each entry carries a BLOCKER reason, checked by rediacc_ci.core.allowlist.validate_reason.",
+    "",
+    "FILES. Every checked-out submodule's tracked text files are a third subject. A file gets",
+    "no retired_by excuse: it is the shipped system, not a plan for changing it.",
+    "file_baseline is SHRINK-ONLY debt keyed {path, term, count, blocker}, never a line number:",
+    "a count above its ceiling, or an unlisted (path, term), is NEW; a count below it is STALE",
+    "until --write-baseline lowers it (that verb lowers and removes, never raises or adds, and",
+    "refuses while a submodule is NOT CHECKED). file_exclusions {prefix, blocker} drops a",
+    "subtree; a prefix matching no tracked file of a checked-out submodule is CANNOT RUN.",
+    "Both carry a BLOCKER reason checked by validate_reason.",
+    "",
+    "THE MARKER. A line that must keep naming a term (a history comment recording the",
+    "removal) carries `retired-term-ok(<term id>): <reason>` under any comment leader. It",
+    "suppresses only that term on that line, and is refused with no reason, a low-effort",
+    "reason, an unknown term id, or when the text before it no longer names the term."
   ],
   "terms": [
     {
       "id": "rclone",
-      "pattern": "rclone",
-      "case_sensitive": false,
+      "pattern": "rclone|R(?i:clone)",
+      "case_sensitive": true,
       "retired": "2026-10-15",
       "reason": "rclone is being removed completely, payload and feature: backups move to the S3/R2 chunk store and nothing may plan new rclone work (operator 2026-10-15).",
       "retired_by": [
@@ -34,10 +48,13 @@
       "must_match": [
         "bake rclone into the E2E VM image",
         "RCLONE_CONFIG",
-        "ensureRclone"
+        "ensureRclone",
+        "Rclone remote",
+        "myrclone"
       ],
       "must_not_match": [
-        "a plain backup to the chunk store"
+        "a plain backup to the chunk store",
+        "discoverCloneState"
       ]
     },
     {
@@ -85,7 +102,7 @@
     },
     {
       "id": "edge-rediacc-configs",
-      "pattern": "(?<![A-Za-z0-9-])edge-rediacc-configs(?![A-Za-z0-9_]|-[A-Za-z0-9])",
+      "pattern": "(?<![A-Za-z0-9-])edge-rediacc-configs(?![A-Za-z0-9_]|-[A-Za-z0-9<{$])",
       "case_sensitive": true,
       "retired": "2026-10-15",
       "reason": "the bare R2 bucket edge-rediacc-configs is deleted; the regional buckets edge-rediacc-configs-<region> are live and are not this term.",
@@ -103,7 +120,9 @@
         "edge-rediacc-configs-us",
         "edge-rediacc-configs-asia",
         "edge-rediacc-configs-bench",
-        "edge-rediacc-configs-staging"
+        "edge-rediacc-configs-staging",
+        "edge-rediacc-configs-<region>",
+        "edge-rediacc-configs-${region}"
       ]
     },
     {
@@ -126,26 +145,63 @@
       ]
     }
   ],
-  "plan_baseline": [
+  "plan_baseline": [],
+  "file_baseline": [
     {
-      "plan": "agent/plans/PLAN-pins-command.md",
+      "path": "private/renet/cmd/renet/backup_list_test.go",
       "term": "rclone",
-      "blocker": "BLOCKER: the plan predates the 2026-10-15 retirement and lists rclone among the embedded assets; private/renet/embed-assets.lock.json no longer carries it, so the line is stale text for the session running that plan to drop, and a gate change does not edit another plan's prose."
+      "count": 9,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_list_test.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
     },
     {
-      "plan": "agent/plans/PLAN-renet-fetch-hardening.md",
+      "path": "private/renet/cmd/renet/backup_pull_test.go",
       "term": "rclone",
-      "blocker": "BLOCKER: the plan predates the 2026-10-15 retirement and its open Site 6 box hardens ensureRclone, which private/renet/pkg/infra/docker/service.go still calls at three sites; the box is withdrawn when the decommission deletes those calls."
+      "count": 9,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_pull_test.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
     },
     {
-      "plan": "agent/plans/PLAN-secret-namespace-migration.md",
-      "term": "BACKUP_S3_pre-rename",
-      "blocker": "BLOCKER: the plan is still executing with three open boxes (the growth and generative renames), and its BACKUP_S3_* lines record the 2026-09 rename as history; they leave the live corpus when the plan closes into _done."
+      "path": "private/renet/cmd/renet/backup_push_test.go",
+      "term": "rclone",
+      "count": 8,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/cmd/renet/backup_push_test.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
     },
     {
-      "plan": "agent/plans/PLAN-secret-namespace-migration.md",
-      "term": "R2_TOKEN_AUTH_API",
-      "blocker": "BLOCKER: the plan is still executing with three open boxes (the growth and generative renames), and its R2_TOKEN_AUTH_API lines record the 2026-09 secret audit as history; they leave the live corpus when the plan closes into _done."
+      "path": "private/renet/pkg/functions/commands/backup.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone code and tests in private/renet/pkg/functions/commands/backup.go are removed by agent/plans/PLAN-backup-program.md H7 with the rclone pull and push paths"
+    },
+    {
+      "path": "private/renet/pkg/i18n/rules.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone strings in private/renet/pkg/i18n/rules.go are locale catalog entries that agent/plans/PLAN-backup-program.md H11 rewrites with the catalog sweep"
+    },
+    {
+      "path": "private/renet/pkg/infra/ceph/provisioner.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone install and packaging in private/renet/pkg/infra/ceph/provisioner.go is removed by agent/plans/PLAN-backup-program.md H8 with the image and package set cleanup"
+    },
+    {
+      "path": "private/renet/pkg/output/progress.go",
+      "term": "rclone",
+      "count": 1,
+      "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/output/progress.go is removed by agent/plans/PLAN-backup-program.md H9"
+    }
+  ],
+  "file_exclusions": [
+    {
+      "prefix": "private/account/drizzle/0034_partner_offers.sql",
+      "blocker": "BLOCKER: 0034_partner_offers.sql is an applied, append-only drizzle migration that keeps its rclone text forever and agent/plans/PLAN-backup-program.md H13 supersedes it with a new migration"
+    },
+    {
+      "prefix": "private/account/drizzle/0037_exam_question_seed.sql",
+      "blocker": "BLOCKER: 0037_exam_question_seed.sql is an applied, append-only drizzle migration that keeps its rclone text forever and agent/plans/PLAN-backup-program.md H13 supersedes it with a new migration"
+    },
+    {
+      "prefix": "private/account/drizzle/0064_backup_policy_scope.sql",
+      "blocker": "BLOCKER: 0064_backup_policy_scope.sql is an applied, append-only drizzle migration that keeps its rcloneBackup text forever and agent/plans/PLAN-backup-program.md H13 supersedes it with a new migration"
     }
   ]
 }

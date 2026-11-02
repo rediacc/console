@@ -8,8 +8,8 @@ A SIBLING MODULE AND NOT MORE OF `account.py`, because that file is the determin
 --------------------------------------------------------------------------
 HOW IT IS PROVED: A STUB-FARM TRANSCRIPT, NOT A LIVE STACK
 --------------------------------------------------------------------------
-`core/stubfarm.py` puts a directory of scripted programs first on PATH for BOTH sides (`docker`, `curl`, `npx`, `npm`, `stripe`, `lsof`, `pgrep`, `kill`, `sleep`, `ss`, `openssl`, `hostname`, `python3` for the Bitwarden calls), each appending its argv to one transcript. The driver compares rc, both streams, the ordered transcript and the files left behind, so this port has to make the same calls with the same arguments in the same order as the twin.
-That is why it calls PROGRAMS where a Python programmer would reach for a library: `sleep`, `kill` (where the twin reaches it through `xargs`), `date +%s`, `jq` and `python3 -m rediacc_ci.core.bws_env` are the twin's calls, and a scenario answers them through the stubs. `kill` the BUILTIN (a bare `kill "$pid"`) has no program behind it, so those stay `os.kill`.
+`core/stubfarm.py` puts a directory of scripted programs first on PATH for BOTH sides (`docker`, `curl`, `npx`, `npm`, `stripe`, `lsof`, `pgrep`, `kill`, `sleep`, `ss`, `openssl`, `hostname`, and `python3` as a tripwire in the reset cases, which call no Bitwarden verb since agent/plans/PLAN-production-key-only.md K3), each appending its argv to one transcript. The driver compares rc, both streams, the ordered transcript and the files left behind, so this port has to make the same calls with the same arguments in the same order as the twin.
+That is why it calls PROGRAMS where a Python programmer would reach for a library: `sleep`, `kill` (where the twin reaches it through `xargs`), `date +%s` and `jq` are the twin's calls, and a scenario answers them through the stubs. `kill` the BUILTIN (a bare `kill "$pid"`) has no program behind it, so those stay `os.kill`.
 
 THE SHELL ENVIRONMENT IS `os.environ`. Every `export` in the twin is an assignment to it, and every child inherits it, which is what a bash child inherits. `ACCOUNT_PIDS` is `PIDS` below.
 
@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import http.client
 import json
 import os
 import pathlib
@@ -73,19 +74,8 @@ DEV_PARTNER_EMAIL = "dev-partner@rediacc.io"
 # `.ci/lib/account.sh:558`. A CONSTANT on purpose: an idempotent re-seed cannot re-wrap the CEK without the prior password.
 STORE_PASSWORD = "DevConsole123!"
 
-# The six Bitwarden specs `account_reset` pushes (`.ci/lib/account.sh:802-807`) and the two it caches (`:816-817`).
-RESET_STORE_SPECS = (
-    "ACCOUNT_ED25519_PRIVATE_KEY_DEV > ACCOUNT_ED25519_PRIVATE_KEY",
-    "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
-    "ACCOUNT_X25519_PRIVATE_KEY_DEV > ACCOUNT_X25519_PRIVATE_KEY",
-    "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY",
-    "ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET",
-    "ACCOUNT_SERVER_API_KEY_DEV > ACCOUNT_SERVER_API_KEY",
-)
-RESET_CACHE_SPECS = (
-    "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
-    "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY",
-)
+# The dev database files `reset()` deletes: the SQLite file and its three sidecars. Nothing else: the account keys are the production six in Bitwarden, and nothing local writes them (agent/plans/PLAN-production-key-only.md K3).
+DB_SUFFIXES = ("", "-shm", "-wal", "-journal")
 
 SEED_USAGE = "Usage: ./run.sh account seed-demo <email> [--port N]"
 
@@ -412,7 +402,7 @@ def stripe_auto() -> int:
     log.info("Syncing Stripe products/prices...")
     try:
         _tail(
-            ["npx", "tsx", "scripts/stripe-sync.ts"],
+            ["npx", "--no-install", "tsx", "scripts/stripe-sync.ts"],
             5,
             cwd=account.account_dir(),
             extra_env={"STRIPE_SECRET_KEY": key},
@@ -644,6 +634,51 @@ def _arith(value: str) -> int:
     return int(value)
 
 
+SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True  # EPERM: it exists
+    return True
+
+
+def _server_info_ok(port: int) -> bool:
+    """True when the gateway on loopback `port` answers server-info with 200. In-process, so it adds no call to a stub farm's transcript."""
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+    try:
+        conn.request("GET", SERVER_INFO_PATH)
+        return conn.getresponse().status == 200
+    except (OSError, http.client.HTTPException):
+        return False
+    finally:
+        conn.close()
+
+
+def live_stack_port(state: str) -> int | None:
+    """The gateway port of a LIVE stack this worktree's state file names, else None.
+
+    Live means: the file is stamped by this writer (a pid is only meaningful in its own pid namespace), it records at least one pid and EVERY recorded pid is alive, and the gateway port answers server-info 200. Anything else is stale and the caller replaces it.
+    """
+    try:
+        text = pathlib.Path(state).read_text(encoding="utf-8", errors="surrogateescape")
+    except OSError:
+        return None
+    writer = grep_cut(text, "writer")
+    port = grep_cut(text, "gateway_port")
+    pids = grep_cut(text, "pids").replace(",", " ").split()
+    if not writer or writer != account.writer_stamp() or not port.isdigit():
+        return None
+    # A pid of 0 or 1 is never a recorded job: os.kill(0, 0) signals our own group and would read as alive.
+    if not pids or not all(p.isdigit() and int(p) > 1 and _pid_alive(int(p)) for p in pids):
+        return None
+    return int(port) if _server_info_ok(int(port)) else None
+
+
 def _stop_previous(state: str) -> None:
     """`.ci/lib/account.sh:330-360`: the previous instance from this worktree's state file."""
     text = pathlib.Path(state).read_text(encoding="utf-8", errors="surrogateescape")
@@ -834,13 +869,23 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     log_dir = account.log_directory()
     log.step("Starting Astro dev server on :%d..." % astro_port)
     astro_pid = spawn_background(
-        ["npx", "astro", "dev", "--port", str(astro_port), "--host", dev_bind, "--ignore-lock"],
+        [
+            "npx",
+            "--no-install",
+            "astro",
+            "dev",
+            "--port",
+            str(astro_port),
+            "--host",
+            dev_bind,
+            "--ignore-lock",
+        ],
         cwd=os.path.join(root, "packages", "www"),
         log_path=os.path.join(log_dir, "astro.log"),
     )
     log.step("Starting Vite dev server on :%d..." % vite_port)
     vite_pid = spawn_background(
-        ["npx", "vite", "--port", str(vite_port), "--host", dev_bind],
+        ["npx", "--no-install", "vite", "--port", str(vite_port), "--host", dev_bind],
         cwd=os.path.join(account.account_dir(), "web"),
         log_path=os.path.join(log_dir, "vite.log"),
     )
@@ -870,7 +915,7 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     directory = account.account_dir()
     _cd_or_die(directory)
     status = _run(
-        ["npx", "tsx", "src/entry/dev-gateway.ts"],
+        ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"],
         cwd=directory,
         extra_env={
             "GATEWAY_PORT": str(gateway_port),
@@ -900,10 +945,19 @@ def dev() -> int:
 
     FROM THE TRAP ON, EVERY EXIT RUNS `cleanup()`. The twin arms `trap account_cleanup EXIT INT TERM` after the shared packages are built, so a death before that point just ends the process, and every exit after it (a normal return included, because the process then exits) kills the remembered jobs and removes the state file.
     """
+    state = account.state_file()
+    # IDEMPOTENT PER WORKTREE: a state file naming a live stack (this writer's, every recorded pid alive, the gateway answering server-info) is reused. A second start used to overwrite the file and orphan the first stack's gateway, Vite and Astro. A restart is `./run.sh account stop` and then `dev`.
+    reused = live_stack_port(state)
+    if reused is not None:
+        log.info("Account dev stack already running for this worktree (gateway:%d)" % reused)
+        print("  Account dev gateway: http://localhost:%d" % reused)
+        print("    Account portal (React):  http://localhost:%d/account/" % reused)
+        print("  To restart it: ./run.sh account stop && ./run.sh account dev")
+        return 0
+
     account.bws_exec("account-dev", ["account", "dev"])
     _check_node()
 
-    state = account.state_file()
     if os.path.isfile(state):
         _stop_previous(state)
 
@@ -953,7 +1007,7 @@ def test(args: list[str]) -> int:
     log.step("Running account tests")
     directory = account.account_dir()
     _cd_or_die(directory)
-    status = _run(["npx", "vitest", "run", *args], cwd=directory)
+    status = _run(["npx", "--no-install", "vitest", "run", *args], cwd=directory)
     if status != 0:
         raise ErrexitError(status, "vitest exited %d" % status)
     return 0
@@ -1018,7 +1072,16 @@ def test_e2e(args: list[str]) -> int:
     log.step("Running account E2E tests (gateway on :%s)" % gateway_port)
     _cd_or_die(e2e_dir)
     status = _run(
-        ["npx", "playwright", "test", "--project=chromium", "--reporter=list", *args], cwd=e2e_dir
+        [
+            "npx",
+            "--no-install",
+            "playwright",
+            "test",
+            "--project=chromium",
+            "--reporter=list",
+            *args,
+        ],
+        cwd=e2e_dir,
     )
     if status != 0:
         raise ErrexitError(status, "playwright exited %d" % status)
@@ -1028,55 +1091,16 @@ def test_e2e(args: list[str]) -> int:
 # --------------------------------------------------------------------------- reset ---------------------------------------------------------------------------
 
 
-def _bws(verb: str, *args: str, extra_env: dict[str, str] | None = None) -> int:
-    """`PYTHONPATH="$ACCOUNT_CI_DIR..." python3 -m rediacc_ci.core.bws_env VERB ARGS...`, as a PROGRAM like the twin's, so the secrets it pushes live in that child's environment and nowhere else."""
-    existing = os.environ.get("PYTHONPATH", "")
-    pythonpath = account.ci_dir() + (":" + existing if existing else "")
-    return _run(
-        ["python3", "-m", "rediacc_ci.core.bws_env", verb, *args],
-        extra_env={**(extra_env or {}), "PYTHONPATH": pythonpath},
-    )
-
-
 def reset() -> int:
-    """`account_reset`, `.ci/lib/account.sh:784-836`.
+    """`account_reset`, `.ci/lib/account.sh:784-836`, DB-only since agent/plans/PLAN-production-key-only.md K3.
 
-    Mints a fresh DEV keypair and session secrets, pushes them to the six `ACCOUNT_*_DEV` Bitwarden entries, refreshes this machine's public-key cache, and deletes the dev database. A failed push is a refusal BEFORE anything is deleted.
+    Deletes the dev database and nothing else. The twin minted a fresh DEV keypair and pushed it to the six `ACCOUNT_*_DEV` Bitwarden entries; the dev gateway now signs with the production keypair, so a mint here would overwrite the production keys of every region. No key is generated, pushed or cached: only the rotation tool rotates the six.
     """
-    _check_node()
     log.step("Resetting account development environment")
-    log.info("Generating a fresh DEV keypair and session secrets...")
-    keys = account.generate_crypto_keys(strict=True)
-    pushed = _bws(
-        "store-from-env",
-        *RESET_STORE_SPECS,
-        extra_env={
-            "ACCOUNT_ED25519_PRIVATE_KEY": keys.ed25519_priv,
-            "ACCOUNT_ED25519_PUBLIC_KEY": keys.ed25519_pub,
-            "ACCOUNT_X25519_PRIVATE_KEY": keys.x25519_priv,
-            "ACCOUNT_X25519_PUBLIC_KEY": keys.x25519_pub,
-            "ACCOUNT_JWT_SECRET": keys.jwt,
-            "ACCOUNT_SERVER_API_KEY": keys.api_key,
-        },
-    )
-    del keys
-    if pushed != 0:
-        log.error("Pushing the DEV keys to Bitwarden failed; the database was NOT reset")
-        raise ErrexitError(1, "store-from-env failed")
+    log.info("Account keys: the production entries in Bitwarden, untouched by a reset")
 
-    directory = account.account_dir()
-    os.makedirs(os.path.join(directory, ".cache"), exist_ok=True)
-    if (
-        _bws("cache-to", os.path.join(directory, ".cache", "public-keys.env"), *RESET_CACHE_SPECS)
-        != 0
-    ):
-        log.warn("Could not refresh the public-key cache; run ./run.sh setup")
-    log.warn("The DEV keys are shared: every machine's dev database holds licences")
-    log.warn("signed by the OLD key, and every OTHER machine's cached public key is now stale.")
-    log.warn("On each of them: ./run.sh setup")
-
-    db_path = os.path.join(directory, "account.db")
-    for path in (db_path, db_path + "-shm", db_path + "-wal", db_path + "-journal"):
+    db_path = os.path.join(account.account_dir(), "account.db")
+    for path in (db_path + suffix for suffix in DB_SUFFIXES):
         if os.path.isfile(path):
             log.info("Removing %s" % os.path.basename(path))
             with contextlib.suppress(FileNotFoundError):
@@ -1200,7 +1224,7 @@ USAGE = """rediacc_ci.core.account_lifecycle -- the side-effecting half of .ci/l
   dev                 start the account dev stack (gateway + portal + www)
   test [args]         run the account vitest suite
   test e2e [args]     run the account Playwright suite against the running gateway
-  reset               fresh DEV keys to Bitwarden, then delete the dev database
+  reset               delete the dev database (the production keys are untouched)
   seed-demo <email> [--port N]
                       seed a demo partner org through the running gateway
 

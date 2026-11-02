@@ -48,7 +48,7 @@ export const DEFAULT_NETWORK_ID = TEST_ENV.network.defaultId;
 /**
  * Fork network IDs for repository isolation tests.
  * Each fork needs its own network ID to have isolated Docker daemon.
- * Docker socket path: /var/run/rediacc/docker-{networkId}.sock
+ * Docker socket path: /var/run/rediacc/net-{networkId}/docker-{networkId}.sock (repoDockerSocketPath)
  */
 export const FORK_NETWORK_ID_A = TEST_ENV.network.forkA;
 export const FORK_NETWORK_ID_B = TEST_ENV.network.forkB;

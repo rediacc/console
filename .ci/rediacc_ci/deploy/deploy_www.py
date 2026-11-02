@@ -89,7 +89,8 @@ import sys
 import typing
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
+from rediacc_ci.deploy import deploy_record
 from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 
 if typing.TYPE_CHECKING:
@@ -126,7 +127,7 @@ PRODUCTION_GUARD_IS_UNREACHABLE = True
 A_VALUELESS_NAME_DEPLOYS_A_WORKER_CALLED_TRUE = True
 A_NON_PR_NAME_IS_ACCEPTED_VERBATIM = True
 
-# The generated preview config (twin :90-133), byte for byte after expansion.
+# The generated preview config (twin :90-133), byte for byte after expansion, with ONE Rule-T change: the `[observability]` tables. The twin enabled logs and traces, which Cloudflare persists by default; PLAN-telemetry-export T15 turns them off with persist = false, and the golden records carry that change as `intentional`.
 #
 # THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an escape rather than as the character itself, for the reason in the module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the twin's UNQUOTED heredoc, which bash renders as bare backticks; there is no command substitution in the emitted bytes.
 #
@@ -151,16 +152,19 @@ ALLOWED_EMAIL_DOMAINS = \""""
 # off the wrong channel. See private/account/src/types/env.ts.
 ENVIRONMENT = "preview"
 
+# A preview has no OTLP destination, and Cloudflare must store nothing from it
+# (persist = false), so logs and traces are off. Mirrors wrangler.toml.
 [observability]
-enabled = true
+enabled = false
 
 [observability.logs]
-enabled = true
-invocation_logs = false # Disabled to reduce high-volume per-request log noise/cost.
+enabled = false
+invocation_logs = false
+persist = false
 
 [observability.traces]
-enabled = true
-head_sampling_rate = 1
+enabled = false
+persist = false
 
 [assets]
 directory = "./dist"
@@ -211,24 +215,23 @@ def is_protected(db_name: str) -> bool:
 
 def info_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 info "$db_name" --json` (twin :44)."""
-    return ["npx", "wrangler", "d1", "info", db_name, "--json"]
+    return [*wrangler.ARGV, "d1", "info", db_name, "--json"]
 
 
 def delete_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 delete "$DB_NAME" --skip-confirmation` (twin :77)."""
-    return ["npx", "wrangler", "d1", "delete", db_name, "--skip-confirmation"]
+    return [*wrangler.ARGV, "d1", "delete", db_name, "--skip-confirmation"]
 
 
 def create_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 create "$DB_NAME" --location eeur` (twin :82)."""
-    return ["npx", "wrangler", "d1", "create", db_name, "--location", D1_LOCATION]
+    return [*wrangler.ARGV, "d1", "create", db_name, "--location", D1_LOCATION]
 
 
 def migrations_argv(db_name: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config ...` (twin :137)."""
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "d1",
         "migrations",
         "apply",
@@ -241,12 +244,12 @@ def migrations_argv(db_name: str) -> list[str]:
 
 def preview_deploy_argv() -> list[str]:
     """`npx wrangler deploy --config wrangler.preview.toml` (twin :140)."""
-    return ["npx", "wrangler", "deploy", "--config", PREVIEW_CONFIG]
+    return [*wrangler.ARGV, "deploy", "--config", PREVIEW_CONFIG]
 
 
 def production_deploy_argv() -> list[str]:
     """`npx wrangler deploy` (twin :146). No config flag at all."""
-    return ["npx", "wrangler", "deploy"]
+    return [*wrangler.ARGV, "deploy"]
 
 
 def preview_toml(worker_name: str, db_name: str, db_uuid: str) -> str:
@@ -415,7 +418,9 @@ def main(argv: list[str]) -> int:
         return _preview(worker_name, worker_dir)
 
     log.step("Deploying www production worker...")
-    return _run(production_deploy_argv())
+    return deploy_record.record_www_deploy(
+        worker_dir, PRODUCTION_CONFIG, "www-stable", lambda: _run(production_deploy_argv())
+    )
 
 
 if __name__ == "__main__":

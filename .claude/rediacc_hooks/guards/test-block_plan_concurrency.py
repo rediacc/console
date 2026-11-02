@@ -148,12 +148,13 @@ def run_case(proj, doc):
 
 EXCL = "Concurrency: exclusive -- regenerates every golden file\nOwns: docs/e/**\n"
 PAR_F = "Concurrency: parallel\nOwns: docs/f/**\n"
+PAR_EO = "Concurrency: parallel\nOwns: docs/e/one.md\n"
 PAR_A = "Concurrency: parallel\nOwns: a/**\n"
 PAR_AB = "Concurrency: parallel\nOwns: a/b.py\n"
 PAR_C = "Concurrency: parallel\nOwns: c/**\n"
 NO_OWNS = "Concurrency: parallel\n"
 NONE = "Concurrency: parallel\nOwns: none -- an operator-action fixture plan\n"
-BASIC = {"e": EXCL, "f": PAR_F}
+BASIC = {"e": EXCL, "f": PAR_F, "o": PAR_EO}
 E_ITEM = ("e0e0e0e0", SID[:8], "regenerate PLAN-e.md [e1e1e1e1]")
 P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 
@@ -161,16 +162,16 @@ P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 # (name, world kwargs, spawn payload, expected rc, stderr needles)
 CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
     (
-        "m1 a live exclusive writer refuses another plan",
+        "m1 a live exclusive writer refuses a plan whose Owns overlap its own",
         {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
-        payload("Plan: PLAN-f.md"),
+        payload("Plan: PLAN-o.md"),
         2,
         ["PLAN-e.md is exclusive", "writer a0000000000000001", "worker:queue"],
     ),
     (
         "m1 the holder is found through its #item",
         {"plans": BASIC, "writers": ["work #e0e0e0e0"], "items": [E_ITEM]},
-        payload("Plan: PLAN-f.md"),
+        payload("Plan: PLAN-o.md"),
         2,
         ["PLAN-e.md is exclusive"],
     ),
@@ -179,11 +180,18 @@ CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
         {
             "plans": BASIC,
             "writers": ["Plan: PLAN-e.md"],
-            "items": [("f0f0f0f0", SID[:8], "docs PLAN-f.md [f1f1f1f1]")],
+            "items": [("f0f0f0f0", SID[:8], "docs PLAN-o.md [f1f1f1f1]")],
         },
         payload("do #f0f0f0f0"),
         2,
         ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "m1b a live exclusive writer admits a plan whose Owns are disjoint (operator ruling 2026-10-28)",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("Plan: PLAN-f.md"),
+        0,
+        [],
     ),
     (
         "m1c the exclusive writer finished",

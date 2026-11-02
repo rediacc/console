@@ -36,6 +36,8 @@ import type { Release } from '../driver.js';
  *   os-ignore-series       a Leap EVR of another Ceph series is taken
  *   ceph-ignore-host       a dated tag of another Ceph patch level is taken
  *   docker-no-drain        a bumped pin stays in the shrink-only baseline
+ *   docker-keep-digest     a bumped tag keeps the digest of the old tag beside it
+ *   docker-skip-redigest   a pinned tag whose served digest moved offers no re-digest
  */
 export const T8_MUTANTS = [
   'actions-skip-sites',
@@ -47,6 +49,8 @@ export const T8_MUTANTS = [
   'os-ignore-series',
   'ceph-ignore-host',
   'docker-no-drain',
+  'docker-keep-digest',
+  'docker-skip-redigest',
 ] as const;
 export type T8Mutant = (typeof T8_MUTANTS)[number];
 
@@ -215,7 +219,9 @@ export function listFiles(root: string, repo: string, globs: string[]): string[]
       `VACUOUS: ${dir} lists no file at all (git and the directory walk both found none), so a match of ${globs.join(', ')} proves nothing`
     );
   const res2 = globs.map(globRe);
-  return all.filter((f) => res2.some((re) => re.test(f))).sort();
+  return all
+    .filter((f) => res2.some((re) => re.test(f)))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 export const shq = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`;
@@ -230,9 +236,30 @@ const hostPinFile = { repo: 'private/renet', file: '.ceph-image-pin' };
 /** `host-version=` of renet's .ceph-image-pin: the Ceph series every Ceph pin must stay on. */
 export function hostVersionOf(read: (p: { repo: string; file: string }) => string | null): string {
   const text = read(hostPinFile);
-  const v = text === null ? null : /^host-version=(\S+)$/m.exec(text)?.[1];
+  const v = text === null ? null : /^host-version[ \t]*=[ \t]*(\S+)[ \t]*$/m.exec(text)?.[1];
   if (!v) throw new Error('private/renet/.ceph-image-pin has no host-version= line');
   return v;
+}
+
+/**
+ * The Ceph series one host target must stay on: its `host-version.<target>` override when the pin file carries one WITH a
+ * `host-version-reason.<target>` line, else the shared `host-version=`. An override without a reason is ignored, so the gate's refusal stands.
+ */
+export function hostVersionFor(
+  read: (p: { repo: string; file: string }) => string | null,
+  target: string
+): string {
+  const text = read(hostPinFile);
+  const esc = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const override =
+    text === null
+      ? null
+      : new RegExp(`^host-version\\.${esc}[ \\t]*=[ \\t]*(\\S+)[ \\t]*$`, 'm').exec(text)?.[1];
+  const reason =
+    text === null
+      ? null
+      : new RegExp(`^host-version-reason\\.${esc}[ \\t]*=[ \\t]*\\S`, 'm').test(text);
+  return override && reason ? override : hostVersionOf(read);
 }
 
 /** Throw the BLOCKER reason of a `source: none` entry, so the pin reads "not compared: <reason>". */

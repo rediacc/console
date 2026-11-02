@@ -118,7 +118,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.clone_d1"
@@ -238,14 +238,13 @@ def config_flag_words(wrangler_config: str) -> list[str]:
 
 def export_argv(source_db: str, out_path: str) -> list[str]:
     """`npx wrangler d1 export "$SOURCE_DB" --remote --output=...` (twin :94)."""
-    return ["npx", "wrangler", "d1", "export", source_db, "--remote", "--output=%s" % out_path]
+    return [*wrangler.ARGV, "d1", "export", source_db, "--remote", "--output=%s" % out_path]
 
 
 def execute_file_argv(target_db: str, config_words: list[str], file_path: str) -> list[str]:
     """`npx wrangler d1 execute "$TARGET_DB" --remote $CONFIG_FLAG --file=...` (twin :144)."""
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "d1",
         "execute",
         target_db,
@@ -258,8 +257,7 @@ def execute_file_argv(target_db: str, config_words: list[str], file_path: str) -
 def fk_check_argv(target_db: str, config_words: list[str]) -> list[str]:
     """`npx wrangler d1 execute ... --command="PRAGMA foreign_key_check" --json` (twin :151)."""
     return [
-        "npx",
-        "wrangler",
+        *wrangler.ARGV,
         "d1",
         "execute",
         target_db,

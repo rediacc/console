@@ -47,6 +47,7 @@ import pathlib
 import secrets
 import socket
 import time
+from typing import Any
 
 from rediacc_ci import core_lease, paths
 
@@ -237,6 +238,44 @@ GROUP_LOCK_POLL_S = 0.2
 def group_lock_dir() -> pathlib.Path:
     """`groups/` beside the core lease's tokens, so a devbox and its host share one set (the lease directory is bound into the devbox)."""
     return core_lease.lease_dir() / "groups"
+
+
+# --------------------------------------------------------------------------
+# THE GROUP HAS TO REACH THE NODE ID, AND SINCE PYTEST 9.2 XDIST NO LONGER PUTS IT THERE
+# --------------------------------------------------------------------------
+# `--dist loadgroup` schedules on the node id's `@<group>` suffix, read in the controller, which only ever sees the id strings a worker sends. xdist 3.8.0 (xdist/remote.py:254) writes that suffix with `item._nodeid = ...`. pytest 9.2.0 replaced `_nodeid` with a structured `_id`, so the assignment now lands on an attribute nothing reads, and raises nothing.
+#
+# MEASURED 2026-11-01 on one test module, eight items, four of them in one group, `-n 3 --dist loadgroup`: pytest 9.1.1 ran the group on gw0 alone under `test_g[0]@g`; pytest 9.2.0 (4ecbce4dd, 2026-10-31) ran it on gw0, gw1 and gw2 under `test_g[0]`. No test failed, because MachineGroupLock still serialised the group: every worker handed one group item sat in time.sleep on that one flock. ci:quick run 40 read 19 of 20 workers in hrtimer_nanosleep with hooks-guards.lock open while the machine showed under 3 busy cores, and run 39 spent 735 s like that.
+#
+# THE ASSIGNMENT IS RE-CHECKED BECAUSE THE FAILURE IT REPAIRS WAS SILENT. A later pytest that moves the id again must fail the run naming the cause, not bring the tail back green.
+#
+# THE STAMP LIVES ONLY FOR THE MOMENT THE IDS ARE SENT. The controller matches a finished item by its index, so nothing later needs the suffix, and every report carries the id it was given: pytest 9.2's junit parses a report's id back into its parts, which would print a parametrised test as `t[x]@g]`, and that name would become the finding key on a red. Taking it off again gives a test the same name under xdist as in a serial run.
+
+
+def stamp_group_ids(items: list, group_of) -> list[tuple[Any, Any]]:
+    """Give every grouped item the `@<group>` node id `--dist loadgroup` schedules on, returning `(item, its id before)` for `unstamp_group_ids`. `group_of(item)` is the caller's reader, the same one that takes the machine-wide lock, so the schedule and the lock cannot disagree."""
+    stamped: list[tuple[Any, Any]] = []
+    for item in items:
+        group = group_of(item)
+        if group is None:
+            continue
+        before = item._id
+        wanted = "%s@%s" % (item.nodeid, group)
+        item._id = type(before).parse(wanted)
+        if item.nodeid != wanted:
+            raise RuntimeError(
+                "xdist group %r did not reach the node id of %s: `--dist loadgroup` would spread the group over every worker and each would wait on its machine-wide lock. "
+                "Read how this pytest stores a node id and fix xdist_groups.stamp_group_ids."
+                % (group, item.nodeid)
+            )
+        stamped.append((item, before))
+    return stamped
+
+
+def unstamp_group_ids(stamped: list[tuple[Any, Any]]) -> None:
+    """Put back the ids `stamp_group_ids` replaced."""
+    for item, before in stamped:
+        item._id = before
 
 
 class MachineGroupLock:

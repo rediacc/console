@@ -133,3 +133,51 @@ export function parseBrowseResult(stdout: string | undefined): BrowseListing | u
 
   return found;
 }
+
+/** What `renet backup restore` measured, as its one JSON record carries it. Fields a renet predating a stat omit come back undefined. */
+export interface RestoreStats {
+  snapshotId?: string;
+  cellsTotal?: number;
+  cellsZero?: number;
+  cellsKnown?: number;
+  cellsPunched?: number;
+  chunksWanted?: number;
+  chunksFetched?: number;
+  chunksReused?: number;
+  bytesFetched?: number;
+  cellBytes?: number;
+  seed?: string;
+  seedGuid?: string;
+  seedsSkipped?: string[];
+  seedProbeBytes?: number;
+}
+
+function isRestoreRecord(parsed: unknown): parsed is RestoreStats {
+  return (
+    parsed !== null &&
+    typeof parsed === 'object' &&
+    'cellsTotal' in parsed &&
+    'chunksFetched' in parsed
+  );
+}
+
+/**
+ * Recover the restore record from the verb's captured stdout, scanning for the LAST line that has
+ * the restore shape (as parseBrowseResult does for a listing). Undefined when the buffer carries no
+ * record, so a restore that succeeded still reports success without the numbers.
+ */
+export function parseRestoreStats(stdout: string | undefined): RestoreStats | undefined {
+  if (!stdout) return undefined;
+  let found: RestoreStats | undefined;
+  for (const raw of stdout.split('\n')) {
+    for (const candidate of browseJsonCandidates(raw.trim())) {
+      try {
+        const parsed: unknown = JSON.parse(candidate);
+        if (isRestoreRecord(parsed)) found = parsed;
+      } catch {
+        // Not JSON, or a partial line: keep scanning.
+      }
+    }
+  }
+  return found;
+}

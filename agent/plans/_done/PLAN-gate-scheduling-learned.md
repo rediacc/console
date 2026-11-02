@@ -255,33 +255,33 @@ After `executeInstalls` succeeds (`scripts/gates/check-deps.ts:2240`), `check-de
 ## Boxes
 
 - [x] T1 W3: reproduce the fail-fast receipt hole (the guard accepts a `--quick --fail-fast` receipt with a carried red), fixture plus control; W2 adds the flags to `narrowingFlags`
-    (ticked) 2026-10-08T08:54:33Z by d778be9d: commit:e4915e81c guard unjudged_blocked (143 cases rc0) and commit:fbcf08d5f runner flags (run.ts --selftest 369 assertions ok)
+    (ticked) 2026-10-08T08:54:33Z by d778be9d: commit:903de767c guard unjudged_blocked (143 cases rc0) and commit:73eb13b08 runner flags (run.ts --selftest 369 assertions ok)
 - [x] T2 W1: `jsonl_append.py` lifted from wl_store, with wl_store importing it; concurrency and torn-tail tests with controls
-    (ticked) 2026-10-08T08:54:34Z by d778be9d: commit:fbcf08d5f jsonl_append.py loaded by .claude/hooks/stop/wl_store.py:649; concurrency and torn-tail tests pass (test_gate_ledger.py)
+    (ticked) 2026-10-08T08:54:34Z by d778be9d: commit:73eb13b08 jsonl_append.py loaded by .claude/hooks/stop/wl_store.py:649; concurrency and torn-tail tests pass (test_gate_ledger.py)
 - [x] T3 W1: `gate_ledger` append/backfill/fold-ci/rotation; backfill of the 50+ receipts here and in the push clone
-    (ticked) 2026-10-08T08:54:35Z by d778be9d: commit:fbcf08d5f gate_ledger append/backfill/fold-ci/rotation with tests; live ledger 357 rows
+    (ticked) 2026-10-08T08:54:35Z by d778be9d: commit:73eb13b08 gate_ledger append/backfill/fold-ci/rotation with tests; live ledger 357 rows
 - [x] T4 W1: path classes and the classification (real/flaky/clock/infra/chronic, per-finding descent); the replay fixture from 2026-10-08 passes with its controls
-    (ticked) 2026-10-08T08:54:37Z by d778be9d: commit:fbcf08d5f test_gate_model_replay.py replays the 2026-10-08 receipts with controls (59 passed)
+    (ticked) 2026-10-08T08:54:37Z by d778be9d: commit:73eb13b08 test_gate_model_replay.py replays the 2026-10-08 receipts with controls (59 passed)
 - [x] T5 W1: clusters, associations, companions; `model.json` v1; `refresh` with TTL, report, worklist items with token dedup
-    (ticked) 2026-10-08T08:54:38Z by d778be9d: commit:fbcf08d5f clusters/associations/companions, model.json v1, refresh TTL (.ci/rediacc_ci/ci/gate_model.py:86); tests pass
+    (ticked) 2026-10-08T08:54:38Z by d778be9d: commit:73eb13b08 clusters/associations/companions, model.json v1, refresh TTL (.ci/rediacc_ci/ci/gate_model.py:86); tests pass
 - [x] T6 W2: `ledger.ts` writing rows from `onFinish`; loud degradation
-    (ticked) 2026-10-08T08:54:39Z by d778be9d: commit:fbcf08d5f ledger.ts writes rows from onFinish; runner and learned selftests rc0
+    (ticked) 2026-10-08T08:54:39Z by d778be9d: commit:73eb13b08 ledger.ts writes rows from onFinish; runner and learned selftests rc0
 - [x] T7 W2: `rank.ts` plus the `pool.ts` two-key rank, the `sim.ts` `predictMakespan` safety check, preflight/stage 1 and the cold-start fallback; property test over the archived timelines with a control
-    (ticked) 2026-10-08T08:54:40Z by d778be9d: commit:fbcf08d5f rank.ts + pool two-key rank + sim predictMakespan; 15/15 mixes ranked, control 10 slower unpinned
+    (ticked) 2026-10-08T08:54:40Z by d778be9d: commit:73eb13b08 rank.ts + pool two-key rank + sim predictMakespan; 15/15 mixes ranked, control 10 slower unpinned
 - [x] T8 W2: RED streaming, the `--events` stream, `--stop-on-stage-red` (exit 3, no receipt), `--narrow [--print]`
-    (ticked) 2026-10-08T08:54:41Z by d778be9d: commit:fbcf08d5f RED lines scripts/ci-runner/report.ts:475, --events, --stop-on-stage-red (scripts/ci-runner/run.ts:352), --narrow --print live rc0
+    (ticked) 2026-10-08T08:54:41Z by d778be9d: commit:73eb13b08 RED lines scripts/ci-runner/report.ts:475, --events, --stop-on-stage-red (scripts/ci-runner/run.ts:352), --narrow --print live rc0
 - [x] T9: no gate id in gate_model.py, gate_ledger.py, ledger.ts or rank.ts; a test with a planted control
-    (ticked) 2026-10-08T08:54:43Z by d778be9d: commit:fbcf08d5f T9 scan .ci/rediacc_ci/tests/test_gate_model.py:530 with planted-id control :563
+    (ticked) 2026-10-08T08:54:43Z by d778be9d: commit:73eb13b08 T9 scan .ci/rediacc_ci/tests/test_gate_model.py:530 with planted-id control :563
 - [x] T10 W4: check-deps `--upgrade` moves the syncpack pinVersion groups (#3b831146); selftest plus control
-    (ticked) 2026-10-08T08:54:44Z by d778be9d: commit:ae33d4639 planPinSync/syncPinGroups in check-deps.ts, selftest section 13 with the skip-pin-sync mutant
+    (ticked) 2026-10-08T08:54:44Z by d778be9d: commit:a15f054ce planPinSync/syncPinGroups in check-deps.ts, selftest section 13 with the skip-pin-sync mutant
 - [x] T11 lead: the ci-trace fold-in hook, `prepush.sh` streaming plus `TRIAGE=1`, the pr-babysitter loop docs
-    (ticked) 2026-10-08T09:12:23Z by d778be9d: commit:b2143ae77 ci-trace folds a final verdict into the gate ledger (detached gate_model refresh; selftest probes) and commit:3987e931f pr-babysitter narrow-then-full loop; the scratchpad pre-push wrapper streams RED/STAGE lines and TRIAGE=1 exits 3 with no receipt
+    (ticked) 2026-10-08T09:12:23Z by d778be9d: commit:94414782f ci-trace folds a final verdict into the gate ledger (detached gate_model refresh; selftest probes) and commit:cc82d9f2a pr-babysitter narrow-then-full loop; the scratchpad pre-push wrapper streams RED/STAGE lines and TRIAGE=1 exits 3 with no receipt
 - [x] T12 lead: a live run on the real tree. Backfill, refresh, then one triage pre-push. Record time-to-first-red against 10-08 (459-975 s) and confirm the receipt and guard behaviour
-    (ticked) 2026-10-08T10:17:44Z by d778be9d: commit:d9d1ef36b made the refresh finish (3m51s; model.json 12 clusters, 158 runs); then a TRIAGE=1 pre-push at 2026-10-08T12:08Z: ranking ON, first RED check:ci-pr-task-trailers at 7.0s into ci:quick (10-08 baseline 459-975 s); stopped rc=3, prepush-receipt.json mtime unchanged (no receipt written)
+    (ticked) 2026-10-08T10:17:44Z by d778be9d: commit:4e7ad3c8b made the refresh finish (3m51s; model.json 12 clusters, 158 runs); then a TRIAGE=1 pre-push at 2026-10-08T12:08Z: ranking ON, first RED check:ci-pr-task-trailers at 7.0s into ci:quick (10-08 baseline 459-975 s); stopped rc=3, prepush-receipt.json mtime unchanged (no receipt written)
 
 ## Record corrections
 
-- The T12 tick cites a pre-push at "2026-10-08T12:08Z". That clock reading is local time (+0200, commit d9d1ef36b is dated 12:08:25 +0200), so the run was at 10:08Z, before the 10:17:44Z tick.
+- The T12 tick cites a pre-push at "2026-10-08T12:08Z". That clock reading is local time (+0200, commit 4e7ad3c8b is dated 12:08:25 +0200), so the run was at 10:08Z, before the 10:17:44Z tick.
 
 ## Risks
 

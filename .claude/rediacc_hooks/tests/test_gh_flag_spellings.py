@@ -631,7 +631,7 @@ def test_the_walk_records_the_environment_a_gh_call_gets(cmd, repo):
     assert shellscan.gh_named_repo(runs[-1]) == repo
 
 
-# --- the five residues of fad446748 (#9de9a8e9), each a long-form control beside the spelling it must equal ---
+# --- the five residues of d0188d058 (#9de9a8e9), each a long-form control beside the spelling it must equal ---
 
 # The machine's LOCAL today, as block_stale_pr_branch_date reads it. It is a token in the rows and is filled when the test RUNS (#0f87655f): a date frozen at collection is yesterday's for a run that crosses midnight.
 TODAY = hookcases.TODAY_MARK

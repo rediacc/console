@@ -5,28 +5,12 @@ import type { RenetVault } from '@rediacc/shared/renet-contract';
 // Re-export for convenience
 
 /**
- * Storage configuration for S3-compatible backends.
- * Used as input for withStorage() - converted to StorageSection internally.
- */
-export interface StorageConfig {
-  name: string;
-  type: 's3' | 'b2' | 'azure' | 'gcs' | 'sftp';
-  endpoint?: string;
-  bucket: string;
-  accessKey?: string;
-  secretKey?: string;
-  region?: string;
-  folder?: string;
-}
-
-/**
  * Push function parameters.
  */
 export interface PushParams {
-  destinationType?: 'machine' | 'storage';
+  destinationType?: 'machine';
   to?: string;
   machines?: string[];
-  storages?: string[];
   dest?: string;
   tag?: string;
   state?: 'online' | 'offline';
@@ -39,7 +23,7 @@ export interface PushParams {
  * Pull function parameters.
  */
 export interface PullParams {
-  sourceType?: 'machine' | 'storage';
+  sourceType?: 'machine';
   from?: string;
   grand?: string;
 }
@@ -55,7 +39,7 @@ export interface PullParams {
  *   .withTeam('Private Team')
  *   .withRepository('repo-guid', 'repo-name')
  *   .withMachine('192.168.111.11', 'muhammed', '/mnt/rediacc')
- *   .withPushParams({ destinationType: 'storage', dest: 'backup.tar' })
+ *   .withPushParams({ destinationType: 'machine', machines: ['192.168.111.12'] })
  *   .build();
  * ```
  */
@@ -190,35 +174,6 @@ export class VaultBuilder {
   }
 
   /**
-   * Add a storage system configuration.
-   */
-  withStorage(config: StorageConfig): this {
-    this.vault.storage_systems ??= {};
-    this.vault.storage_systems[config.name] = {
-      backend: config.type,
-      bucket: config.bucket,
-      region: config.region,
-      folder: config.folder,
-      parameters: {
-        endpoint: config.endpoint,
-        access_key_id: config.accessKey,
-        secret_access_key: config.secretKey,
-      },
-    };
-    return this;
-  }
-
-  /**
-   * Add multiple storage system configurations.
-   */
-  withStorages(configs: StorageConfig[]): this {
-    for (const config of configs) {
-      this.withStorage(config);
-    }
-    return this;
-  }
-
-  /**
    * Set backup_push specific parameters.
    */
   withPushParams(params: PushParams): this {
@@ -264,9 +219,6 @@ export class VaultBuilder {
   private setPushArrayParams(params: PushParams): void {
     if (params.machines && params.machines.length > 0) {
       this.vault.params!.machines = params.machines.join(',');
-    }
-    if (params.storages && params.storages.length > 0) {
-      this.vault.params!.storages = params.storages.join(',');
     }
   }
 

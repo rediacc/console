@@ -232,9 +232,9 @@ def test_default_run_installs_then_typechecks_every_worker_in_order(tmp_path) ->
     # PRINT THE SHAPE. Two workers, each contributing one install and one tsc, interleaved per worker rather than batched, and `alpha` before `beta` because `sort` says so.
     assert _calls(calls) == [
         f"npm ci --prefix workers/alpha --ignore-scripts {NPM_NET_TAIL}",
-        "npx tsc --noEmit -p workers/alpha/tsconfig.json",
+        "npx --no-install tsc --noEmit -p workers/alpha/tsconfig.json",
         f"npm install --prefix workers/beta --ignore-scripts {NPM_NET_TAIL}",
-        "npx tsc --noEmit -p workers/beta/tsconfig.json",
+        "npx --no-install tsc --noEmit -p workers/beta/tsconfig.json",
     ], _calls(calls)
     assert proc.stdout.splitlines() == [
         "typecheck-workers: installing workers/alpha (npm ci)",
@@ -326,7 +326,7 @@ def test_a_failing_tsc_ends_the_run_with_tscs_own_status(tmp_path) -> None:
     proc, calls = old
     assert proc.returncode == 2
     # alpha completed, beta's tsc is the last call, and the summary never prints.
-    assert _calls(calls)[-1] == "npx tsc --noEmit -p workers/beta/tsconfig.json"
+    assert _calls(calls)[-1] == "npx --no-install tsc --noEmit -p workers/beta/tsconfig.json"
     assert "typechecked clean" not in proc.stdout
 
 
@@ -351,7 +351,7 @@ def test_defect_a_an_unknown_argument_is_silently_a_full_run(tmp_path) -> None:
 
     proc, calls = old
     assert proc.returncode == 0
-    assert "npx tsc --noEmit -p workers/alpha/tsconfig.json" in _calls(calls)
+    assert "npx --no-install tsc --noEmit -p workers/alpha/tsconfig.json" in _calls(calls)
     assert (
         proc.stdout.splitlines()[-1] == "typecheck-workers: 2 worker project(s) typechecked clean"
     )
@@ -459,6 +459,7 @@ def test_npm_argv_picks_the_verb_from_the_lockfile_and_keeps_the_flag_order() ->
 def test_tsc_argv_is_the_twins_words() -> None:
     assert port.tsc_argv("workers/x/tsconfig.json") == [
         "npx",
+        "--no-install",
         "tsc",
         "--noEmit",
         "-p",

@@ -1,5 +1,5 @@
 /**
- * Which renet access each bridge function needs, see {@link RenetAccess}.
+ * Which renet access each renet function needs, see {@link RenetAccess}.
  *
  * A `Record` over the generated {@link RenetFunctionName} union, so a renet
  * function added to the contract breaks tsc here until someone classifies it.
@@ -17,12 +17,16 @@ import type { RenetAccess } from '../renet/renet-execution.js';
 export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   backup_browse: 'read-only',
   backup_browse_at: 'provision',
+  backup_compare: 'read-only',
   backup_delete: 'provision',
   backup_list: 'read-only',
+  backup_repair: 'provision',
   backup_pull: 'provision',
   backup_push: 'provision',
   backup_restore: 'provision',
+  backup_restore_path: 'provision',
   backup_snapshot: 'provision',
+  backup_toc_key: 'provision',
   backup_verify: 'read-only',
   ceph_client_mount: 'provision',
   ceph_client_unmount: 'provision',
@@ -60,6 +64,8 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   container_unpause: 'provision',
   kube_health: 'read-only',
   kube_kubeconfig: 'read-only',
+  machine_converge_runtime: 'provision',
+  machine_gpu_list: 'read-only',
   machine_ping: 'read-only',
   machine_ssh_test: 'read-only',
   machine_uninstall: 'provision',
@@ -76,11 +82,14 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   repository_create: 'provision',
   repository_delete: 'provision',
   repository_diff: 'read-only',
+  repository_docker_prune: 'provision',
   repository_down: 'provision',
   repository_down_all: 'provision',
   repository_exec: 'provision',
   repository_expand: 'provision',
   repository_fork: 'provision',
+  repository_gpu_grant: 'provision',
+  repository_gpu_revoke: 'provision',
   repository_health: 'read-only',
   repository_info: 'read-only',
   repository_list: 'read-only',
@@ -109,8 +118,14 @@ const KNOWN_FUNCTIONS: ReadonlySet<string> = new Set<string>(RENET_FUNCTIONS);
 /**
  * The access a dispatch of `functionName` needs. A name outside the contract is
  * `'read-only'`: an unclassified function must never swap the machine's binary.
+ * A converge dispatched with `dry_run` only plans, so it runs the remote renet
+ * as it is (an upload would mutate the machine the dry run promised to leave alone).
  */
-export function renetAccessFor(functionName: string | undefined): RenetAccess {
+export function renetAccessFor(
+  functionName: string | undefined,
+  params?: Record<string, unknown>
+): RenetAccess {
   if (functionName === undefined || !KNOWN_FUNCTIONS.has(functionName)) return 'read-only';
+  if (functionName === 'machine_converge_runtime' && params?.dry_run === true) return 'read-only';
   return RENET_FUNCTION_ACCESS[functionName as RenetFunctionName];
 }

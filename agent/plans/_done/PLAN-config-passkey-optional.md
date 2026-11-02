@@ -1,6 +1,6 @@
 # PLAN: config storage without a PRF passkey, and a virtual-authenticator E2E matrix
 
-Status: done -- 2026-10-15, every box ticked (4 of 4); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: approved -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: done -- 2026-10-15, every box ticked (4 of 4); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: approved -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: no-dep -- touches only private/account server, portal and e2e plus run-account-e2e.sh; no open plan edits those files
@@ -118,7 +118,7 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
   - Deploy, 2026-10-08T07:14Z: stable eu `rediacc-account-eu` version `c36ae376-2cbf-408b-86a4-991321ed584a` from private/account f3f6fea (contains T1 c443954, T2 3ba7016, T3 1a5d9eb), no pending migrations. Rollback: `npx wrangler rollback 2d1520d3-fd29-4519-ad6d-6e7eeb030a9b --config workers/account/wrangler.eu.toml -y`; D1 bookmark `00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212`.
   - Verified: server-info 200, portal 200, `verify_stable_endpoints` rc=0, and the served `index-DxH36Ubo.js` carries `prf-missing` and no `setupPasskeyAlways`.
   - Open: the Bitwarden walk-through is operator-only. eu answers `POST /auth/login` without a captcha token with 400 `Captcha verification required`, and the walk needs the Bitwarden extension and vault, so no headless run stands in for it. Steps: log in at https://eu.rediacc.com/account, set up config storage with a Bitwarden passkey, expect the `prf-missing` notice, continue with a master password, then unlock and run `rdc config remote enable`.
-    (ticked) 2026-10-13T19:50:40Z by d778be9d: commit:fe6562736 account 12c02c9: spec 20-12 (real Bitwarden extension 2026.9.3, no PRF) green on a hosted runner, PR 600 run 38451759370 job 115485526847, 1 expected 0 skipped; operator rulings 2026-10-13 (real provider in CI, required from day one); bench walk passed 2026-10-13
+    (ticked) 2026-10-13T19:50:40Z by d778be9d: commit:5c0922b35 account 12c02c9: spec 20-12 (real Bitwarden extension 2026.9.3, no PRF) green on a hosted runner, PR 600 run 38451759370 job 115485526847, 1 expected 0 skipped; operator rulings 2026-10-13 (real provider in CI, required from day one); bench walk passed 2026-10-13
 
 ## 4. CI wiring
 

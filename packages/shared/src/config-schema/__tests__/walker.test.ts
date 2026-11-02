@@ -36,10 +36,17 @@ describe('walker', () => {
         'web-1': { ip: '10.0.0.1', user: 'deploy', port: 22 },
         'web-2': { ip: '10.0.0.2', user: 'deploy', port: 22 },
       },
-      storages: {
-        's3-prod': {
-          provider: 's3',
-          vaultContent: { endpoint: 'https://s3.example.com', key: 'AKID' },
+      backupStrategies: {
+        nightly: {
+          schedule: '0 2 * * *',
+          destinations: [
+            {
+              kind: 'hosted-service' as const,
+              name: 's3-prod',
+              endpoint: 'https://s3.example.com',
+              vaultContent: { accessKeyId: 'AKID', secretAccessKey: 'SECRET' },
+            },
+          ],
         },
       },
       repositories: {
@@ -69,21 +76,21 @@ describe('walker', () => {
 
   it('walkSensitive yields entries for every registered concrete path in the config', () => {
     const entries = Array.from(walkSensitive(sampleConfig));
-    const pointers = entries.map((e) => e.pointer).sort();
+    const pointers = entries.map((e) => e.pointer).sort((a, b) => Number(a > b) - Number(a < b));
     expect(pointers).toContain('/account/userEmail');
     expect(pointers).toContain('/credentials/ssh/privateKey');
     expect(pointers).toContain('/credentials/cfDnsApiToken');
     expect(pointers).toContain('/resources/machines/web-1/ip');
     expect(pointers).toContain('/resources/machines/web-1/user');
     expect(pointers).toContain('/resources/machines/web-2/ip');
-    expect(pointers).toContain('/resources/storages/s3-prod/vaultContent');
+    expect(pointers).toContain('/resources/backupStrategies/nightly/destinations/0/vaultContent');
     expect(pointers).toContain('/resources/repositories/app/tags/latest/credential');
     expect(pointers).toContain('/resources/repositories/app/tags/latest/repositoryGuid');
   });
 
   it('pathsToCommit excludes public fields and returns sorted pointers', () => {
     const paths = pathsToCommit(sampleConfig);
-    expect(paths).toEqual([...paths].sort()); // sorted
+    expect(paths).toEqual([...paths].sort((a, b) => Number(a > b) - Number(a < b))); // sorted
     expect(paths).not.toContain('/schemaVersion');
     expect(paths).not.toContain('/version');
     expect(paths).toContain('/resources/machines/web-1/ip');

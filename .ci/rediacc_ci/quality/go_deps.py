@@ -301,7 +301,7 @@ class ReleaseAge:
         if os.access(str(local_tsx), os.X_OK):
             self._runner = [str(local_tsx)]
             return self._runner
-        self._runner = ["npx", "tsx"]
+        self._runner = ["npx", "--no-install", "tsx"]
         return self._runner
 
     def _capture(self, argv: list[str], *args: str) -> str | None:

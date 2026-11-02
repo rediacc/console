@@ -11,8 +11,8 @@ tags:
   - caso-studio
 featured: true
 language: it
-sourceHash: "4658b7226eb1e696"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "2b10e7d64d0ce38d"
+sourceCommit: "c8a8908f7412252e302fe5280980c35d5cae82da"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -124,7 +124,7 @@ Total: 6.3s
 
 Il passo di clone del fork da 2 GB ha impiegato 573 millisecondi. Il passo di clone del fork da 128 GB ha impiegato 2,3 secondi. Quindi il clone dei dati è sub-lineare, non strettamente costante. Ma il tempo totale del fork è quasi identico (6,3 s vs 7,2 s) perché la maggior parte dell'attesa è la danza SSH e delle licenze, non i dati. Dal punto di vista dell'utente, un fork è una pausa da 6 a 7 secondi indipendentemente dalla dimensione del repo.
 
-Ora sto operando sul fork. Ha il suo GUID (`22c57178-...`). Il suo networkId (`21760`). Il suo percorso di mount. Il suo socket del daemon Docker (`/var/run/rediacc/docker-21760.sock`). I dati del parent sono condivisi tramite reflink. Il parent stesso rimane in esecuzione per tutto il tempo.
+Ora sto operando sul fork. Ha il suo GUID (`22c57178-...`). Il suo networkId (`21760`). Il suo percorso di mount. Il suo socket del daemon Docker (`/var/run/rediacc/net-21760/docker-21760.sock`). I dati del parent sono condivisi tramite reflink. Il parent stesso rimane in esecuzione per tutto il tempo.
 
 Quando faccio `term connect` nel fork, questo è ciò che vedo:
 

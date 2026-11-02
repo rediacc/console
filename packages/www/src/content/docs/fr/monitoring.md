@@ -9,8 +9,8 @@ tags:
 subcategory: operations
 order: 9
 language: fr
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # Supervision
@@ -203,7 +203,7 @@ rdc machine status server-1
 Ceci fournit :
 - Nom d'hôte et temps de fonctionnement
 - Utilisation de la mémoire, du disque et du datastore
-- Nombre total de dépôts, nombre de montés, nombre de démons Docker actifs
+- Nombre total de dépôts, nombre de montés, nombre de dépôts dont le démon Docker répond
 - Informations détaillées par dépôt
 
 Utilisez `--output json` pour une sortie lisible par les machines.

@@ -159,19 +159,6 @@ export function assertResourceName(name: string): void {
 
 // ── Cross-reference checks ────────────────────────────────────────
 
-export async function assertStorageExists(storageName: string): Promise<void> {
-  const storages = await configService.listStorages();
-  const names = storages.map((s) => s.name);
-  if (!names.includes(storageName)) {
-    throw new ValidationError(
-      t('errors.config.storageNotFound', {
-        name: storageName,
-        available: names.length > 0 ? names.join(', ') : '(none)',
-      })
-    );
-  }
-}
-
 export async function assertMachineExists(machineName: string): Promise<void> {
   const machines = await configService.listMachines();
   const names = machines.map((m) => m.name);
@@ -228,6 +215,7 @@ export const CONFIG_KEY_ORDER = [
 
   // What it holds
   'resources',
+  'access',
   'state',
 
   // Infrastructure and authorization
@@ -261,10 +249,10 @@ function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
     const inOrder = keys
       .filter((k) => orderMap.has(k))
       .sort((a, b) => orderMap.get(a)! - orderMap.get(b)!);
-    const rest = keys.filter((k) => !orderMap.has(k)).sort();
+    const rest = keys.filter((k) => !orderMap.has(k)).sort((a, b) => Number(a > b) - Number(a < b));
     sortedKeys = [...inOrder, ...rest];
   } else {
-    sortedKeys = [...keys].sort();
+    sortedKeys = [...keys].sort((a, b) => Number(a > b) - Number(a < b));
   }
 
   const sorted: Record<string, unknown> = {};

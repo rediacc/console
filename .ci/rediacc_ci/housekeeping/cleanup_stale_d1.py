@@ -81,7 +81,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 
 # `PREFIX="migration-test-"` (line 25). The trailing dash is part of it.
 PREFIX = "migration-test-"
@@ -198,7 +198,7 @@ def list_databases() -> str:
     with open(os.devnull, "wb") as null:
         try:
             proc = subprocess.run(
-                ["npx", "wrangler", "d1", "list", "--json"],
+                [*wrangler.ARGV, "d1", "list", "--json"],
                 stdout=subprocess.PIPE,
                 stderr=null,
                 check=False,
@@ -217,7 +217,7 @@ def delete_database(name: str) -> bool:
     with open(os.devnull, "wb") as null:
         try:
             code = subprocess.run(
-                ["npx", "wrangler", "d1", "delete", name, "--skip-confirmation"],
+                [*wrangler.ARGV, "d1", "delete", name, "--skip-confirmation"],
                 stderr=null,
                 check=False,
             ).returncode

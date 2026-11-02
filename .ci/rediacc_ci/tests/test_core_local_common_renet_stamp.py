@@ -5,7 +5,12 @@ A rebase-merge replays renet's commits under new SHAs with byte-identical trees.
 
 import subprocess
 
+import pytest
+
 from rediacc_ci.core import local_common
+
+# A syntactically valid ED25519 public key, fixture only.
+KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
 
 
 def _git(cwd, *args):
@@ -32,22 +37,20 @@ def test_two_commits_with_one_tree_share_the_fingerprint_but_not_the_key(tmp_pat
     assert first_fp is not None
     assert first_fp == second_fp
 
-    first = local_common.renet_stamp_key(first_fp, first_head, "nolicense", "")
-    second = local_common.renet_stamp_key(second_fp, second_head, "nolicense", "")
+    first = local_common.renet_stamp_key(first_fp, first_head, "")
+    second = local_common.renet_stamp_key(second_fp, second_head, "")
     assert first != second
 
 
-def test_the_key_still_moves_with_source_license_and_key():
-    base = local_common.renet_stamp_key("src", "abc", "nolicense", "")
-    assert local_common.renet_stamp_key("src2", "abc", "nolicense", "") != base
-    assert local_common.renet_stamp_key("src", "abc", "enforce", "") != base
-    assert local_common.renet_stamp_key("src", "abc", "nolicense", "k") != base
-    assert local_common.renet_stamp_key("src", "abc", "nolicense", "") == base
+def test_the_key_still_moves_with_source_and_key():
+    base = local_common.renet_stamp_key("src", "abc", "")
+    assert local_common.renet_stamp_key("src2", "abc", "") != base
+    assert local_common.renet_stamp_key("src", "abc", "k") != base
+    assert local_common.renet_stamp_key("src", "abc", "") == base
 
 
-def test_an_empty_head_keeps_the_key_the_stamp_held_before():
-    legacy = local_common._hex_of(b"src=s\nlicense=nolicense\nkey=\n")
-    assert local_common.renet_stamp_key("s", "", "nolicense", "") == legacy
+def test_an_empty_head_leaves_the_head_line_out():
+    assert local_common.renet_stamp_key("s", "", "k") == local_common._hex_of(b"src=s\nkey=k\n")
 
 
 def _repo(path):
@@ -56,7 +59,8 @@ def _repo(path):
     _git(path, "config", "user.email", "t@example.com")
     _git(path, "config", "user.name", "t")
     (path / "main.go").write_text("package main\n")
-    _git(path, "add", "main.go")
+    (path / ".gitignore").write_text("bin/\n")  # renet's own checkout ignores its build output
+    _git(path, "add", "main.go", ".gitignore")
     _git(path, "commit", "-q", "-m", "one")
     return _git(path, "rev-parse", "HEAD")
 
@@ -84,11 +88,7 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
     binary = renet / "bin" / "renet"
     binary.parent.mkdir()
     binary.write_text("binary")
-    env = {
-        "LOCAL_ROOT_DIR": str(tmp_path),
-        "RDC_RENET_LICENSE": "0",
-        "ACCOUNT_ED25519_PUBLIC_KEY": "",
-    }
+    env = {"LOCAL_ROOT_DIR": str(tmp_path), "ACCOUNT_ED25519_PUBLIC_KEY": KEY}
     monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
     builds = []
 
@@ -101,9 +101,8 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
     fingerprint = local_common.git_tree_fingerprint(str(renet), ["."], env)
     assert fingerprint is not None
     source = local_common._subst(fingerprint)
-    key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), "nolicense", "")
-    stamp = tmp_path / ".ci" / "cache" / "build-renet.stamp"
-    stamp.parent.mkdir(parents=True)
+    key = local_common.renet_stamp_key(source, local_common.renet_head(str(renet)), KEY)
+    stamp = renet / "bin" / local_common.RENET_STAMP_NAME
     local_common.write_stamp_hash(
         str(stamp), "%s\nbin=%s" % (key, local_common.renet_artifact_fp(str(binary)))
     )
@@ -114,3 +113,73 @@ def test_ensure_renet_built_rebuilds_when_only_head_moves(tmp_path, monkeypatch)
     _git(renet, "commit", "-q", "--allow-empty", "-m", "the same tree under a new commit")
     assert local_common.ensure_renet_built(env) is False
     assert builds == [(["./build.sh", "dev"], str(renet))]
+
+
+def _fake_build_env(tmp_path, monkeypatch, refusal=None):
+    """A renet checkout whose `./build.sh dev` is recorded and writes `bin/renet`, with the key gate answering `refusal`."""
+    renet = tmp_path / "private" / "renet"
+    _repo(renet)
+    monkeypatch.setattr(local_common, "check_go_installed", lambda: None)
+    builds = []
+    gated = []
+
+    def fake_run(argv, **_):
+        builds.append(argv)
+        out = renet / "bin" / "renet"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("built")
+        return 0
+
+    def fake_gate(binary, key):
+        gated.append((binary, key))
+        return refusal
+
+    monkeypatch.setattr(local_common, "_run", fake_run)
+    monkeypatch.setattr(local_common, "renet_key_refusal", fake_gate)
+    return renet, builds, gated
+
+
+def _env(tmp_path):
+    return {"LOCAL_ROOT_DIR": str(tmp_path), "ACCOUNT_ED25519_PUBLIC_KEY": KEY}
+
+
+def test_every_build_is_key_gated_and_stamped_in_bin(tmp_path, monkeypatch):
+    renet, builds, gated = _fake_build_env(tmp_path, monkeypatch)
+    assert local_common.ensure_renet_built(_env(tmp_path)) is True
+    assert builds == [["./build.sh", "dev"]]
+    assert gated == [(str(renet / "bin" / "renet"), KEY)]
+    assert (renet / "bin" / local_common.RENET_STAMP_NAME).is_file()
+    assert not (renet / "bin" / "enforce").exists()
+    # The stamp matches now, so neither a build nor the gate runs again.
+    assert local_common.ensure_renet_built(_env(tmp_path)) is True
+    assert len(builds) == 1
+    assert len(gated) == 1
+
+
+def test_a_refused_build_raises_and_leaves_no_stamp(tmp_path, monkeypatch):
+    renet, builds, _ = _fake_build_env(tmp_path, monkeypatch, refusal="baked key differs")
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(_env(tmp_path))
+    assert builds == [["./build.sh", "dev"]]
+    assert not (renet / "bin" / local_common.RENET_STAMP_NAME).exists()
+    # The next run rebuilds rather than trusting the refused binary.
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(_env(tmp_path))
+    assert len(builds) == 2
+
+
+def test_a_refused_rebuild_drops_the_stamp_of_the_earlier_good_build(tmp_path, monkeypatch):
+    """Review 4adaf800.1: the stamp from a good build must not survive a later refused build that overwrote bin/renet."""
+    renet, builds, _ = _fake_build_env(tmp_path, monkeypatch)
+    assert local_common.ensure_renet_built(_env(tmp_path)) is True
+    stamp = renet / "bin" / local_common.RENET_STAMP_NAME
+    assert stamp.is_file()
+    # The key moves, so the stamp no longer matches and a rebuild runs; the gate now refuses it.
+    monkeypatch.setattr(
+        local_common, "renet_key_refusal", lambda _binary, _key: "baked key differs"
+    )
+    other = dict(_env(tmp_path), ACCOUNT_ED25519_PUBLIC_KEY=KEY[::-1])
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(other)
+    assert len(builds) == 2
+    assert not stamp.exists(), "a refused build left the earlier stamp in place"

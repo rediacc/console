@@ -62,7 +62,7 @@ export interface Finding {
 function computeLineStarts(source: string): number[] {
   const starts = [0];
   for (let i = 0; i < source.length; i++) {
-    if (source[i] === '\n') starts.push(i + 1);
+    if (source.startsWith('\n', i)) starts.push(i + 1);
   }
   return starts;
 }

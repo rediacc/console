@@ -5,6 +5,13 @@ import {
   DEFAULT_RUSTFS_SECRET_KEY,
 } from '../../constants';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
+import {
+  buildS3CurlCommand,
+  parseS3CurlOutput,
+  type S3CurlRequest,
+  type S3CurlResponse,
+  xmlValues,
+} from './s3-curl';
 
 /**
  * S3-compatible storage configuration.
@@ -41,7 +48,7 @@ export interface StorageResult {
 /**
  * Helper for interacting with S3-compatible storage in E2E tests.
  *
- * Uses rclone for all operations, which is available on bridge/worker VMs.
+ * Every operation is one SigV4-signed `curl --aws-sigv4` request, so the VMs need nothing beyond curl 7.75+.
  * Operations are executed via SSH to the bridge VM.
  *
  * DELEGATES TO SSHExecutor:
@@ -81,16 +88,25 @@ export class StorageTestHelper {
   }
 
   /**
-   * Build rclone flags for S3 connection.
+   * Run a shell command on the bridge VM (for fixtures that edit a downloaded object).
    */
-  private getRcloneFlags(): string {
-    return [
-      '--s3-provider Other',
-      `--s3-endpoint ${this.s3Config.endpoint}`,
-      `--s3-access-key-id ${this.s3Config.accessKey}`,
-      `--s3-secret-access-key ${this.s3Config.secretKey}`,
-      '--s3-force-path-style',
-    ].join(' ');
+  runOnBridge(command: string): Promise<StorageResult> {
+    return this.executeOnBridge(command);
+  }
+
+  /**
+   * Run one signed S3 request on the bridge VM.
+   */
+  private async s3(request: S3CurlRequest): Promise<S3CurlResponse & StorageResult> {
+    const result = await this.executeOnBridge(buildS3CurlCommand(this.s3Config, request));
+    const response = parseS3CurlOutput(result, request);
+    return {
+      ...response,
+      success: response.ok,
+      stdout: response.body,
+      stderr: result.stderr,
+      code: result.code,
+    };
   }
 
   /**
@@ -111,59 +127,41 @@ export class StorageTestHelper {
    * List all buckets.
    */
   async listBuckets(): Promise<string[]> {
-    const result = await this.executeRclone('lsd :s3:');
-    if (!result.success) return [];
-
-    return result.stdout
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => {
-        // Parse rclone lsd output: "-1 2024-01-01 00:00:00 -1 bucketname"
-        const parts = line.trim().split(/\s+/);
-        return parts[parts.length - 1];
-      })
-      .filter(Boolean);
+    const result = await this.s3({ method: 'GET' });
+    return result.ok ? xmlValues(result.body, 'Name') : [];
   }
 
   /**
    * Create a new bucket.
    */
   createBucket(name: string): Promise<StorageResult> {
-    return this.executeRclone(`mkdir :s3:${name}`);
+    return this.s3({ method: 'PUT', path: name });
   }
 
   /**
    * Delete a bucket and all its contents.
    */
-  deleteBucket(name: string): Promise<StorageResult> {
-    return this.executeRclone(`purge :s3:${name}`);
+  async deleteBucket(name: string): Promise<StorageResult> {
+    for (const key of await this.listObjects(name)) {
+      await this.deleteObject(name, key);
+    }
+    return this.s3({ method: 'DELETE', path: name });
   }
 
   /**
-   * List objects in a bucket.
+   * List object keys in a bucket (ListObjectsV2, first page).
    */
   async listObjects(bucket = this.s3Config.bucket): Promise<string[]> {
-    const result = await this.executeRclone(`ls :s3:${bucket}`);
-    if (!result.success) return [];
-
-    return result.stdout
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => {
-        // Parse rclone ls output: "size filename"
-        const parts = line.trim().split(/\s+/);
-        return parts.slice(1).join(' ');
-      })
-      .filter(Boolean);
+    const result = await this.s3({ method: 'GET', path: `${bucket}?list-type=2` });
+    return result.ok ? xmlValues(result.body, 'Key') : [];
   }
 
   /**
    * Check if an object exists in a bucket.
    */
   async objectExists(bucket: string, key: string): Promise<boolean> {
-    // Use lsf with --files-only to check if file exists Returns the filename if it exists, empty if not
-    const result = await this.executeRclone(`lsf :s3:${bucket}/${key}`);
-    return result.success && result.stdout.trim().length > 0;
+    const result = await this.s3({ method: 'HEAD', path: `${bucket}/${key}` });
+    return result.ok;
   }
 
   /**
@@ -179,10 +177,8 @@ export class StorageTestHelper {
     if (!writeResult.success) return writeResult;
 
     try {
-      // Upload file to S3 using copyto (not copy) to set exact key name
-      return await this.executeRclone(`copyto ${tmpFile} :s3:${bucket}/${key}`);
+      return await this.uploadFile(bucket, tmpFile, key);
     } finally {
-      // Cleanup temp file
       await this.executeOnBridge(`rm -f ${tmpFile}`);
     }
   }
@@ -191,43 +187,15 @@ export class StorageTestHelper {
    * Download content from a bucket.
    */
   async downloadContent(bucket: string, key: string): Promise<string | null> {
-    const tmpFile = `/tmp/storage-download-${Date.now()}.txt`;
-
-    try {
-      // Use copyto (not copy) to download to exact file path
-      const downloadResult = await this.executeRclone(`copyto :s3:${bucket}/${key} ${tmpFile}`);
-      if (!downloadResult.success) return null;
-
-      const readResult = await this.executeOnBridge(`cat ${tmpFile}`);
-      return readResult.success ? readResult.stdout : null;
-    } finally {
-      await this.executeOnBridge(`rm -f ${tmpFile}`);
-    }
+    const result = await this.s3({ method: 'GET', path: `${bucket}/${key}` });
+    return result.ok ? result.body : null;
   }
 
   /**
    * Delete an object from a bucket.
    */
   deleteObject(bucket: string, key: string): Promise<StorageResult> {
-    return this.executeRclone(`delete :s3:${bucket}/${key}`);
-  }
-
-  /**
-   * Get storage statistics for a bucket.
-   */
-  async getBucketStats(bucket = this.s3Config.bucket): Promise<{ count: number; size: number }> {
-    const result = await this.executeRclone(`size :s3:${bucket} --json`);
-    if (!result.success) return { count: 0, size: 0 };
-
-    try {
-      const stats = JSON.parse(result.stdout);
-      return {
-        count: stats.count ?? 0,
-        size: stats.bytes ?? 0,
-      };
-    } catch {
-      return { count: 0, size: 0 };
-    }
+    return this.s3({ method: 'DELETE', path: `${bucket}/${key}` });
   }
 
   /**
@@ -235,38 +203,14 @@ export class StorageTestHelper {
    */
   uploadFile(bucket: string, localPath: string, remotePath?: string): Promise<StorageResult> {
     const destination = remotePath ?? localPath.split('/').pop();
-    return this.executeRclone(`copy ${localPath} :s3:${bucket}/${destination}`);
+    return this.s3({ method: 'PUT', path: `${bucket}/${destination}`, bodyFile: localPath });
   }
 
   /**
    * Download a file from storage to the bridge VM.
    */
   downloadFile(bucket: string, remotePath: string, localPath: string): Promise<StorageResult> {
-    return this.executeRclone(`copy :s3:${bucket}/${remotePath} ${localPath}`);
-  }
-
-  /**
-   * Sync a local directory to a bucket.
-   */
-  syncToStorage(localDir: string, bucket: string, remotePrefix?: string): Promise<StorageResult> {
-    const destination = remotePrefix ? `:s3:${bucket}/${remotePrefix}` : `:s3:${bucket}`;
-    return this.executeRclone(`sync ${localDir} ${destination}`);
-  }
-
-  /**
-   * Sync a bucket to a local directory.
-   */
-  syncFromStorage(bucket: string, localDir: string, remotePrefix?: string): Promise<StorageResult> {
-    const source = remotePrefix ? `:s3:${bucket}/${remotePrefix}` : `:s3:${bucket}`;
-    return this.executeRclone(`sync ${source} ${localDir}`);
-  }
-
-  /**
-   * Execute an rclone command.
-   */
-  private executeRclone(command: string): Promise<StorageResult> {
-    const fullCommand = `rclone ${command} ${this.getRcloneFlags()}`;
-    return this.executeOnBridge(fullCommand);
+    return this.s3({ method: 'GET', path: `${bucket}/${remotePath}`, outputFile: localPath });
   }
 
   /**
@@ -283,28 +227,5 @@ export class StorageTestHelper {
    */
   async cleanupTestBucket(bucketName: string): Promise<void> {
     await this.deleteBucket(bucketName);
-  }
-
-  /**
-   * Get the S3 config for use in VaultBuilder.
-   */
-  getVaultStorageConfig(): {
-    name: string;
-    type: 's3';
-    endpoint: string;
-    bucket: string;
-    accessKey: string;
-    secretKey: string;
-    region?: string;
-  } {
-    return {
-      name: 'rustfs',
-      type: 's3',
-      endpoint: this.s3Config.endpoint,
-      bucket: this.s3Config.bucket,
-      accessKey: this.s3Config.accessKey,
-      secretKey: this.s3Config.secretKey,
-      region: this.s3Config.region,
-    };
   }
 }

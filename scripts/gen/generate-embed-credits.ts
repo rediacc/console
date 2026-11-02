@@ -27,8 +27,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -158,6 +159,7 @@ function main(): void {
     if (check) {
       stale.push(path.relative(CONSOLE_ROOT, file));
     } else {
+      // tree-write: safe the generator's own output: the gate check:ci-embed-credits imports generatedArtifacts and LOCKFILE only, and this write runs only from main when the script is the entry point without --check
       fs.writeFileSync(file, want);
       console.log(`${GREEN}✓${NC} wrote ${path.relative(CONSOLE_ROOT, file)}`);
     }
@@ -177,6 +179,6 @@ function main(): void {
   console.log(`${GREEN}✓ attribution artifacts match the embed lockfile${NC}`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isEntryPoint(import.meta.filename)) {
   main();
 }

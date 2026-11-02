@@ -1,11 +1,12 @@
 # Release process
 
-Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step, and if CI fails, CD never triggers.
+CI validates and CD publishes. Edge is released two ways, sharing the R2 sentinel lock: CD (`cd-v2.yml`) on every merge to main, and `npm run release:local -- --channel edge` from the operator's machine as the agent's faster extra path. Stable is CI/CD only (`promote-stable.yml`, after the soak) and a stable deploy always needs `RELEASE_ASKED`.
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
 CI on main: ci-complete -> finalize-release-sentinel (seal cli/v<V>/.released, dispatch CD)
 CD: init (git tag v<V>) -> promote Docker -> deploy edge -> smoke + install validation -> submodule tags, Homebrew, GitHub Release
+release:local (edge): version -> gates -> builds -> stage -> seal + tag -> publish -> deploy -> smoke -> tag and release -> record
 ```
 
 Install validation runs pre-publish against R2 staging artifacts. Docker is validated on push-to-main only (PR images are dry-run on a PR).
@@ -14,9 +15,9 @@ Install validation runs pre-publish against R2 staging artifacts. Docker is vali
 
 Two channels, both production-quality:
 
-- **edge** -- tagged and released on every merge to main, downloaded from
+- **edge** -- released by CD on every merge to main, or by `release:local --channel edge`, downloaded from
 `releases.rediacc.com/cli/edge/` (R2 bucket `rediacc-releases`), serving `edge.rediacc.com`.
-- **stable** -- the default, promoted from edge (see Release to Production below),
+- **stable** -- the default, promoted from edge by `promote-stable.yml` (see Release to Production below),
 downloaded from `releases.rediacc.com/cli/stable/`, serving `www.rediacc.com`.
 
 R2 layout: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`.
@@ -24,7 +25,7 @@ R2 layout: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}
 **CORRECTION to a claim that was in CLAUDE.md: edge's D1 is NOT cloned from production daily.** `.github/workflows/edge-clone-d1.yml`'s own header says otherwise: *"Edge D1 databases are now persistent for the beta channel. Daily cloning from production is disabled; use workflow_dispatch for manual runs."* The workflow still exists for a manual, on-demand clone -- it is not
 scheduled.
 
-The mechanical job topology (every workflow, folded to one row per stage of its `needs:` graph) is generated, not hand-maintained: the `job-graph` region in [scripts/data/doc-registry.md](../../scripts/data/doc-registry.md). This file explains the concepts that table cannot show -- what `release_mode` means, when a soak period applies, and the exact commands.
+The mechanical job topology (every workflow, folded to one row per stage of its `needs:` graph) is generated, not hand-maintained: the `job-graph` region in [scripts/data/doc-registry.md](../../scripts/data/doc-registry.md). This file explains the concepts that table cannot show -- what `release_mode` means, when a soak period applies, how the local edge entry orders its steps and which gates refuse it, and how a release is rolled back.
 
 ## Release to Edge (`cd-v2.yml`)
 
@@ -97,6 +98,75 @@ A green scheduled nightly (`Console CI` on `main`) also triggers it through `wor
 
 Both R2 promotes (this one and the `publish_stable` hotfix lane) copy `<dir>/edge/` to `<dir>/stable/` server-side with one `aws s3api copy-object` per object, so no release bytes pass through the runner; only the four channel pointers (`cli/install.sh`, `cli/install.ps1`, `rpm/rediacc.repo`, `archlinux/rediacc.conf`) are fetched, stamped for stable and uploaded after the rest of their tree. `.ci/rediacc_ci/deploy/r2_promote.py` carries the plan and R2's copy limits.
 
+## Local edge release (`release:local`)
+
+```
+npm run release:local -- --channel edge [--dry-run]
+npm run release:local -- --channel edge --workers-only --regions eu,us [--dry-run]
+```
+
+`rediacc_ci.release.local` is one declarative `STEPS` table, the agent's local path to edge, sharing the R2 sentinel lock with CD. `--dry-run` prints every step with profile and key names, reads no secret value and writes nothing. `--workers-only` redeploys the Cloudflare Workers for the listed regions and skips the version, builds, Docker and Release steps.
+
+Edge and bench need no ask. A stable deploy always needs `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z`, the minute of the operator's answer in the transcript, enforced by the `block_unasked_release` guard (`ci-gates.md`, *Never push to `main` or cut a release unasked*).
+
+The version comes from `resolve_version --bump-type` inside the entry, from the labels merged since the last tag (`versioning.md`).
+
+### Steps, in order
+
+1. **Gates** (below), all refusing before any build.
+2. **Builds**, in the release clone, each step timed: renet under the `release-local` bws profile (the production `ACCOUNT_ED25519_PUBLIC_KEY`) followed by the signing-key gate, the CLI bundle and npm tarball, the Linux SEAs (linux-x64, both musl targets, linux-arm64 in a `linux/arm64` node container) and the Docker renet, rdc and server images through buildx.
+3. **Assist dispatch**, started at minute zero: `local-release-assist.yml` builds the mac and win SEAs and runs the mac and win install legs against the staged bytes. The entry awaits it before stage.
+4. **Stage**: signed packages, manifest, pages, package repos, the `:edge` Docker retag, validation and the R2 upload.
+5. **Seal and tag**: `write_release_sentinel` seals `cli/v<V>/.released`, and `rediacc_ci.release.tag` creates `v<V>` at once. The pair is one unit, held by the `STEPS` invariant test: the tag follows the seal at once, and precedes every later step that can fail. A failure before the seal (builds, assist, stage) leaves no sentinel and no tag, so the version stays free. Stage may already have uploaded R2 objects and moved the `:edge` Docker tags; a re-run overwrites both before it seals.
+6. **Publish**: promote to `:V` and `:latest`, the Stripe sync and webhook verify, cleanup of the channel tags.
+7. **Deploys**, each with a deploy record: www and the executor artifacts, then per region the account Worker (behind the order check), the account secrets, the proxy and the console executor.
+8. **Smoke**: `verify_edge_endpoints` and a Linux install quick check in local docker.
+9. **Tag and release**: submodule tags, the Homebrew tap formula commit, the contract-floor ratchet (written into the working tree for the next PR, never pushed to `main`) and the GitHub Release.
+10. **Record**: the release record in R2.
+
+Neither the local entry nor CD pushes console `main` for release state. The tap repository receives its formula commit, admitted at the git layer by the release-run record; the contract floor is an ordinary commit in the next PR, and `cd_preflight --checks c` warns when it lags.
+
+## Gates
+
+`rediacc_ci.release.local_gates` refuses unless every one of these holds:
+
+- a whole, green `ci:quick` receipt exists for the exact `HEAD` tree;
+- every `vm:check` hit since the channel's previous release tag is admitted by a VERIFIED `vm:check` receipt for that tree, and the backup receipt exists when backup paths moved;
+- a fresh clone of `HEAD` with submodules, at `.ci/cache/release/<tree>/`, is clean, with every submodule at its pointer and unmodified;
+- a fresh fetch succeeded and `HEAD` equals `origin/main`; a failed fetch refuses;
+- the release lock is free: the R2 sentinel is absent and `check_existing_release` agrees.
+
+The clean check runs on the clone because the shared checkout always holds other sessions' ledgers. Builds run in the same clone. Both receipts are re-taken on `main` after a merge, since a pointer move changes the tree.
+
+## The order check
+
+`.ci/config/release-requires.json` declares which published CLI an account deploy needs. `rediacc_ci.release.order.account_refusal(channel, account_pointer)` treats an entry as active once its `since` commit is an ancestor of the account pointer. The channel's published CLI counts only when its R2 manifest version V has both the sentinel `cli/v<V>/.released` and the tag `v<V>`, and every `cli_commits` entry must be an ancestor of `v<V>`; otherwise the answer is `cli-behind` and the account Worker is not deployed. The account Worker therefore reaches a channel after the CLI that it requires.
+
+## The signing-key gate
+
+`rediacc_ci.release.renet_key_gate` reads the build info of every renet binary and image with `go version -m` and refuses an empty key, the DEV key fingerprint and `tags=nolicense`. The cached cross-build path builds darwin and windows renet with the production key and version, so the gate has nothing keyless to admit.
+
+## Provenance
+
+A local edge release ships a SHA256 manifest signed with the release GPG key (`RELEASE_GPG_PRIVATE_KEY`, bound by the `release-local` profile). Sigstore provenance needs the GitHub OIDC identity, so it belongs to the CD path. Pushes of the tag and the tap formula use the session's GitHub token.
+
+## Deploy records and the release record
+
+`deploy_record after --sink r2` writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through a write-once guard: worker names, version ids before and after, the D1 bookmark, the smoke rc, artifact manifest sha256s and the rollback command. The www record carries the version id before and after, the `wrangler rollback` command and the smoke rc. The release record, one per version and channel under `release-records/`, lists every step with its outcome and timing, and holds the run id of the main CI run on the released SHA.
+
+## Rollback
+
+The model is fix-forward: cut the corrected release through CD or the entry. For an immediate revert, the deploy record names the previous version id and the exact command, `wrangler rollback <version-id> --config <wrangler config> -y`, run under the `deploy-workers` bws profile. A D1 migration is not undone by a Worker rollback, so the record's D1 bookmark is the restore point. A failed local run after the seal and tag is repaired by running the entry again for the same version; the tag step is idempotent and refuses on an unknown `ls-remote` answer.
+
+## Secrets
+
+The `release-local` bws profile in `.ci/config/secret-supply.json` binds the signing public key, the GPG key and passphrase, the bot identity, the Cloudflare zone id, the R2 credentials, the Stripe key and the www Worker secrets. The GHCR and GitHub tokens are written into the store by the session through `bws_env store-from-env`. The entry checks its host prerequisites (`aws`, `nfpm`) first, and the devbox is the fallback for a missing tool.
+
+## Release-run admission
+
+The entry writes `.ci/cache/release/run-<id>.json`, a record of its pid, start time, command line, tree, version, channel and the exact pushes it will make, and exports `REDIACC_RELEASE_RUN`. The git `pre_push` hook (`.claude/rediacc_hooks/git/release_run.py`) admits a pushed line only when the record's pid is in the hook's parent chain with a matching start time, the tree equals `HEAD^{tree}` and the `(toplevel, remote_ref, oid)` is listed. `block_git_hook_bypass` refuses `REDIACC_RELEASE_RUN` set by an agent.
+
+
 ## Package tree retention
 
 Each Linux package tree (`apt/<channel>/`, `rpm/<channel>/`, `apk/<channel>/`, `archlinux/<channel>/`) keeps only what its index lists (operator ruling 2026-10-06), on `edge`, `stable` and every `pr-N` channel. Pinned old versions stay installable from the immutable `cli/v<semver>/`, which nothing here touches.
@@ -108,5 +178,4 @@ Each Linux package tree (`apt/<channel>/`, `rpm/<channel>/`, `apk/<channel>/`, `
 
 ## Why this is a separate file
 
-`CLAUDE.md`'s own rule is to stay under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). `release_mode`'s semantics, the three less-visible dispatch inputs and the soak-skip behavior did not exist in any `docs/` file before this one -- deleting them from `CLAUDE.md` without first writing them somewhere would have
-discarded their only record. Verified against the two release workflows directly (`.github/workflows/cd-v2.yml`, `.github/workflows/promote-stable.yml`), not copied from `CLAUDE.md`'s prior wording.
+`CLAUDE.md` stays under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). The entry's flags, gates and records are described here and verified against `.github/workflows/cd-v2.yml`, `.github/workflows/promote-stable.yml` and `.ci/rediacc_ci/release/` (`local.py`, `local_gates.py`, `order.py`, `renet_key_gate.py`, `tag.py`) and `agent/plans/PLAN-local-release.md`.

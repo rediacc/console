@@ -117,7 +117,7 @@ def test_a_proxy_nothing_answers_on_is_red(gate, tmp_path):
         "UPSTREAM REACHABILITY FAILURE (127.0.0.1:%d), not an outdated module" % port,
         "the finding says what kind of red this is",
     )
-    gate.assert_contains(result.out, "attempt 2 of 3 failed", "the retries are visible")
+    gate.assert_contains(result.err, "attempt 2 of 3 failed", "the retries are visible")
     gate.assert_not_contains(result.err, "probe FAILED", "an outage is not a toolchain failure")
     gate.log_pass("an unreachable proxy is red after three attempts")
 

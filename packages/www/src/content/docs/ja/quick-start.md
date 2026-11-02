@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: ja
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # クイックスタート
@@ -75,7 +75,7 @@ rdc machine setup my-server  # renet のプロビジョニング + データス�
 
 ```bash
 rdc config show                            # 人間が読みやすい形式の概要
-cat ~/.config/rediacc/rediacc.json         # 生の JSON: マシン、リポジトリ、ストレージ、SSH キー
+cat ~/.config/rediacc/rediacc.json         # 生の JSON: マシン、リポジトリ、バックアップ先、SSH キー
 ```
 
 **1つのファイル = 1つの環境。** 別のラップトップにコピーすればすぐに使えます。
@@ -223,7 +223,7 @@ rdc backup usage
 
 スナップショットはチャンクストレージにアップロードされます。これにはアカウントサーバーとライセンス済みのリポジトリが必要です。変更されたデータのみが保存されるため、同じリポジトリの2回目のスナップショットはイメージ全体ではなく差分のコストで済みます。
 
-`--to <storage>` を使ったリポジトリのクラウドストレージへのプッシュは廃止され、現在は拒否されます。その変更より前に書かれたアーカイブを読むには、`rdc storage browse` が引き続き使用でき、PATH 上に `rclone` が必要です。
+バックアップの宛先の種類は、サービスホスト型のチャンクストアの1つだけで、`repo push` の `--to` はマシンだけを指定します。保持はリポジトリの系統ごとに `rdc backup retention set` で宣言し、スケジュール実行は `rdc backup strategy set` と `rdc backup schedule` で行います。[バックアップとリストア](/ja/docs/backup-restore)を参照してください。
 
 ### 4. リモートからのプル
 

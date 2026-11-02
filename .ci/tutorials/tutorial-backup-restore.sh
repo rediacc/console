@@ -10,10 +10,9 @@
 #
 # WHAT REPLACED THE OLD SCRIPT. This used to teach `rdc storage import`,
 # `rdc repo push my-app --to my-storage`, `rdc backup list --storage` and
-# `rdc repo pull --from my-storage`. The rclone cloud arm was retired, so all
-# four now refuse (packages/cli/src/commands/repo-backup.ts:183
-# refuseRetiredStorage, and renet's errStorageRetired). None of them is used
-# here any more.
+# `rdc repo pull --from my-storage`. The cloud storage arm was retired with
+# `rdc storage`, and `--to`/`--from` now name a machine only. None of them is
+# used here any more.
 #
 # WHY THE CHUNK STORE IS NOT DEMONSTRATED END TO END. Point-in-time backup is
 # `rdc backup snapshot` (upload) and `rdc backup restore --at` (download), both

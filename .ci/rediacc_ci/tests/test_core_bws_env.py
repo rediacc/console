@@ -17,6 +17,7 @@ THE ONE DELIBERATE DIVERGENCE IS PINNED, NOT PAPERED OVER. See `test_unparseable
 ledger deliberately does not carry that case.
 """
 
+import io
 import json
 import os
 import pathlib
@@ -392,29 +393,88 @@ def test_exec_refuses_an_unknown_profile_and_a_missing_required_name(tmp_path) -
     assert code == 0, "no token, but every required name already set: proceed without a fetch"
 
 
-def test_cache_to_accepts_a_paired_dev_alias_and_refuses_an_unpaired_one(tmp_path) -> None:
-    """T15: the allowlist is on the LOCAL name; the store name must be one the pair table allows."""
-    assert (
-        bws_env.cache_refusal(["ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY"])
-        is None
-    )
-    refused = bws_env.cache_refusal(
-        ["ACCOUNT_ED25519_PRIVATE_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY"]
-    )
+def test_cache_to_refuses_the_retired_dev_alias_and_writes_nothing(tmp_path) -> None:
+    """PLAN-production-key-only K1: the pair table maps each cacheable name to itself only, so the retired `_DEV` alias is refused before the store is read and no file appears. Control: the unaliased name is written 0644."""
+    spec = "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY"
+    refused = bws_env.cache_refusal([spec])
     assert refused
     assert "outside the pair table" in refused[0]
+    assert bws_env.cache_refusal(["ACCOUNT_ED25519_PUBLIC_KEY"]) is None
     root = fixture(
         tmp_path / "cache",
-        json.dumps([{"key": "ACCOUNT_ED25519_PUBLIC_KEY_DEV", "value": "pub-dev"}]),
+        json.dumps(
+            [
+                {"key": "ACCOUNT_ED25519_PUBLIC_KEY_DEV", "value": "pub-dev"},
+                {"key": "ACCOUNT_ED25519_PUBLIC_KEY", "value": "pub-prod"},
+            ]
+        ),
     )
     target = root / "public-keys.env"
     code, _out, err = diff.bash_streams(
-        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to '%s' "
-        "'ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY'" % target,
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to '%s' '%s'" % (target, spec),
+        env=env_for(root),
+    )
+    assert code == 1, err
+    assert "outside the pair table" in err
+    assert "pub-dev" not in err
+    assert not target.exists(), "a refused alias must leave no cache file behind"
+    code, _out, err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to '%s' ACCOUNT_ED25519_PUBLIC_KEY"
+        % target,
         env=env_for(root),
     )
     assert code == 0, err
-    assert target.read_text(encoding="utf-8") == "ACCOUNT_ED25519_PUBLIC_KEY=pub-dev\n"
+    assert target.read_text(encoding="utf-8") == (
+        bws_env.PUBLIC_KEY_CACHE_HEADER + "ACCOUNT_ED25519_PUBLIC_KEY=pub-prod\n"
+    )
+    assert stat.S_IMODE(target.stat().st_mode) == 0o644
+
+
+def test_the_pair_table_has_no_alias_left() -> None:
+    """One keypair: every cacheable local name is read from the store entry of the same name and nothing else."""
+    assert {name: (name,) for name in bws_env.CACHEABLE} == bws_env.CACHE_STORE_NAMES
+
+
+def test_parked_specs_are_refused_by_load_exec_and_cache_to(tmp_path) -> None:
+    """A `__` name is a retired entry: `names` (load), `exec` and `cache-to` refuse it before any fetch, and never print its value. Control: the live name resolves."""
+    listing = json.dumps(
+        [
+            {"key": "__ALPHA_TOKEN_DEV", "value": "parked-val"},
+            {"key": "ALPHA_TOKEN", "value": "a-val"},
+        ]
+    )
+    root = fixture(tmp_path / "parked", listing)
+    _supply(
+        root,
+        {
+            "bad": {"required": ["__ALPHA_TOKEN_DEV > ALPHA_TOKEN"]},
+            "good": {"required": ["ALPHA_TOKEN"]},
+        },
+    )
+    env = env_for(root)
+    code, out, err = run_port(["__ALPHA_TOKEN_DEV > ALPHA_TOKEN"], env, root)
+    assert code == 1
+    assert out == ""
+    assert "load refuses 1 parked spec(s): __ALPHA_TOKEN_DEV > ALPHA_TOKEN" in err
+    assert "parked-val" not in out + err
+    code, out, err = run_port(["ALPHA_TOKEN"], env, root)
+    assert (code, out) == (0, "ALPHA_TOKEN\n"), "the control: the live name resolves"
+
+    code, out, err = _exec(env, "--profile bad", "printenv ALPHA_TOKEN")
+    assert code == 1
+    assert "exec refuses 1 parked spec(s)" in err
+    assert "parked-val" not in out + err
+    code, out, _err = _exec(
+        {**env, "ALPHA_TOKEN": "from-shell"}, "--profile bad", "printenv ALPHA_TOKEN"
+    )
+    assert code == 1, "a parked spec is refused even when the shell already holds the name"
+    code, out, _err = _exec(env, "--profile good", "printenv ALPHA_TOKEN")
+    assert (code, out) == (0, "a-val\n"), "the control: a live profile still binds"
+
+    refused = bws_env.cache_refusal(["__ACCOUNT_ED25519_PUBLIC_KEY"])
+    assert refused
+    assert "cache-to refuses 1 parked spec(s)" in refused[0]
+    assert refused[-1] == "  No file was written."
 
 
 def test_a_missing_notice_is_reported_and_never_swallowed(tmp_path) -> None:
@@ -744,3 +804,75 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `bws-env.sh` is deleted, so every refusal names the module a reader can run and find."""
     for line in (bws_env.NO_TOKEN[0], bws_env.LIST_FAILED[0]):
         assert line.startswith("rediacc_ci.core.bws_env: ")
+
+
+def test_names_specs_expands_a_profile_to_its_required_specs() -> None:
+    """`names --profile P` resolves the profile's REQUIRED specs, after any positional SPEC."""
+    specs = bws_env._names_specs(["EXTRA", "--profile", "grafana-smtp"])
+    assert specs == ["EXTRA", "AWS_SES_ACCESS_KEY_ID_EU", "AWS_SES_SMTP_PASSWORD_EU"]
+    assert bws_env._names_specs(["--profile=grafana-smtp"]) == specs[1:]
+
+
+def test_names_specs_refuses_an_unknown_flag_instead_of_looking_it_up() -> None:
+    """A flag is never a store name: `--bogus` refuses rather than reporting `--bogus` absent from the vault."""
+    with pytest.raises(bws_env.RefusalError) as refused:
+        bws_env._names_specs(["--bogus"])
+    assert "--bogus" in refused.value.lines[0]
+
+
+def test_names_specs_refuses_an_unknown_profile() -> None:
+    with pytest.raises(bws_env.RefusalError) as refused:
+        bws_env._names_specs(["--profile", "no-such-profile"])
+    assert "unknown profile" in refused.value.lines[0]
+
+
+def test_names_verb_refusals_exit_2_at_the_cli_boundary(capsys) -> None:
+    """Both refusals reach `main` as exit 2, before any store access."""
+    assert bws_env.main(["names", "--bogus"]) == 2
+    assert bws_env.main(["names", "--profile", "no-such-profile"]) == 2
+    err = capsys.readouterr().err
+    assert "--bogus" in err
+    assert "unknown profile" in err
+
+
+def test_names_profile_with_no_required_spec_resolves_nothing_not_the_whole_map(
+    monkeypatch,
+) -> None:
+    """`None` means the whole map to `load`; a profile with no required spec must hand it an empty list instead."""
+    seen: list[object] = []
+    monkeypatch.setattr(
+        bws_env, "profiles", lambda _env=None: {"opt-only": {"required": [], "optional": ["X"]}}
+    )
+
+    def load(names=None, **_kw):
+        seen.append(names)
+        return {}, [], 0
+
+    monkeypatch.setattr(bws_env, "load", load)
+    assert bws_env.main(["names", "--profile", "opt-only"]) == 0
+    assert bws_env.main(["names"]) == 0
+    assert seen == [[], None]
+
+
+def test_real_load_of_an_empty_list_resolves_nothing_while_none_resolves_the_map(
+    monkeypatch, tmp_path
+) -> None:
+    """The real `load`, not a stub: `[]` must not be read as `None`, or `names --profile <optional-only>` lists the whole map."""
+    mapfile = tmp_path / "map.json"
+    mapfile.write_text("{}")
+    fetched: list[str] = []
+    monkeypatch.setattr(bws_env, "with_token", lambda _env=None: {})
+    monkeypatch.setattr(bws_env, "binary", lambda _env=None: "/bin/true")
+    monkeypatch.setattr(bws_env, "map_path", lambda _env=None: str(mapfile))
+    monkeypatch.setattr(bws_env, "listing", lambda _bws, _env: [])
+    monkeypatch.setattr(bws_env, "mapped_names", lambda _path: ["MAPPED"])
+
+    def pick(_rows, name):
+        fetched.append(name)
+        return "v"
+
+    monkeypatch.setattr(bws_env, "pick", pick)
+    assert bws_env.load([], stderr=io.StringIO())[0] == {}
+    assert fetched == []
+    assert bws_env.load(None, stderr=io.StringIO())[0] == {"MAPPED": "v"}
+    assert fetched == ["MAPPED"]

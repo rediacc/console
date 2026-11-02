@@ -1,28 +1,179 @@
+import { REPO_NET_DIR_PATTERN } from '@rediacc/shared/config/runtime-paths';
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+
 export interface RepoContextPattern {
   label: string;
   pattern: RegExp;
+  /** When true the pattern is tested against whole words of each shell segment (and the command word's basename), not the raw text. */
+  commandWord?: boolean;
 }
 
+const escapedRuntimeDir = WK_RUNTIME_DIR.replaceAll(/[.*+?^${}()|[\]\\/]/g, String.raw`\$&`);
+
+/**
+ * Rule: a command needs repository context only when it would reach a repo's Docker daemon or runtime state.
+ * `docker` and `docker-compose` count as the basename of a segment's command word (`/usr/bin/docker ps`, through
+ * `sudo`/`env`/`timeout`/`xargs` and `sh -c`), or as a whole word after a command that runs its arguments as a
+ * command (`watch`, `eval`, `setsid`, `ionice`, `find -exec`, ...), so `systemctl restart docker`,
+ * `journalctl -u docker`, `systemctl status rediacc-docker-12288` and `ls /var/lib/docker` are machine-level. The repo
+ * mount path alone is not a pattern: reading mount metadata (`ls`, `stat`, `du`, `df`, `findmnt`, `cat`) needs no
+ * DOCKER_HOST, while a docker call naming the mount path is still a docker command word, and `DOCKER_HOST=`,
+ * the repo runtime dir, a repo Docker socket on either layout and `renet compose` stay refused wherever they appear.
+ */
 export const REPO_CONTEXT_PATTERNS: RepoContextPattern[] = [
-  { label: 'docker', pattern: /\bdocker\b/i },
-  { label: 'docker-compose', pattern: /\bdocker-compose\b/i },
+  { label: 'docker', pattern: /^docker$/i, commandWord: true },
+  { label: 'docker-compose', pattern: /^docker-compose$/i, commandWord: true },
   { label: 'DOCKER_HOST', pattern: /\bDOCKER_HOST=/ },
-  { label: 'repo docker socket', pattern: /\/var\/run\/rediacc\/docker-/ },
+  // Any path inside a repo's runtime directory: its Docker socket and its file-mode secrets.
+  { label: 'repo runtime dir', pattern: REPO_NET_DIR_PATTERN },
+  // The flat `docker-<N>.sock` a daemon from before the `net-<N>/` layout still serves (review 60bea783.2).
+  {
+    label: 'repo docker socket',
+    pattern: new RegExp(String.raw`${escapedRuntimeDir}/docker-[1-9]\d*\.sock`),
+  },
   { label: 'renet compose', pattern: /\brenet\s+compose\b/i },
-  { label: 'repo mount path', pattern: /\/mnt\/rediacc\/mounts\/[0-9a-f-]{36}/i },
 ];
 
 /**
  * Detects if a command requires repository context (DOCKER_HOST, repo env vars).
  * Returns the first matching pattern or null if the command is safe for machine-level execution.
+ *
+ * A `docker` segment that names one repo's daemon itself (`-H`/`--host` or a `DOCKER_HOST=` assignment set to a
+ * repo socket, on either socket layout) carries its own context and is admitted; the rest of the command is still
+ * checked. `docker compose` stays refused by {@link detectDockerComposeCommand}, which runs first.
  */
 export function detectRepoContextCommand(command: string): RepoContextPattern | null {
+  const segments = [command, ...commandSubstitutions(command)]
+    .flatMap(splitShellSegments)
+    .filter((segment) => !namesRepoDockerSocket(segment));
+  const unexplained = segments.join('\n');
   for (const entry of REPO_CONTEXT_PATTERNS) {
-    if (entry.pattern.test(command)) {
+    const hit = entry.commandWord
+      ? segments.some((segment) => segmentRunsCommand(segment, entry.pattern))
+      : entry.pattern.test(unexplained);
+    if (hit) {
       return entry;
     }
   }
   return null;
+}
+
+/** The bodies of `$(...)` and backtick substitutions, so `echo $(docker ps)` still shows `docker` as a command word. */
+function commandSubstitutions(command: string): string[] {
+  const bodies = [...command.matchAll(/`([^`]*)`/g)].map((m) => m[1]);
+  for (let i = command.indexOf('$('); i !== -1; i = command.indexOf('$(', i + 2)) {
+    let depth = 0;
+    for (let j = i + 1; j < command.length; j++) {
+      if (command[j] === '(') depth++;
+      else if (command[j] === ')' && --depth === 0) {
+        bodies.push(command.slice(i + 2, j));
+        break;
+      }
+    }
+  }
+  return bodies;
+}
+
+const SHELL_WORDS = new Set(['sh', 'bash', 'zsh', 'dash', 'ash']);
+
+/** Commands whose arguments name another command to run, so a bare `docker` among them is a docker invocation. */
+const RUNNER_WORDS = new Set([
+  'watch',
+  'eval',
+  'setsid',
+  'ionice',
+  'chrt',
+  'taskset',
+  'stdbuf',
+  'unbuffer',
+  'flock',
+  'chroot',
+  'nsenter',
+  'runuser',
+  'strace',
+  'ltrace',
+  'parallel',
+  'su',
+]);
+const FIND_EXEC_FLAGS = new Set(['-exec', '-execdir', '-ok', '-okdir']);
+
+function runsArgumentsAsCommand(cmd: string, words: string[]): boolean {
+  const name = cmd.toLowerCase();
+  if (RUNNER_WORDS.has(name)) return true;
+  return name === 'find' && words.some((w) => FIND_EXEC_FLAGS.has(w));
+}
+
+/**
+ * True when the segment's command word matches; for a runner (`watch`, `su -c`, `flock ... -c`, `find -exec`), when any
+ * word of its arguments does once quotes are dropped; and for a shell given a `-c` flag (alone or in a cluster such as
+ * `-lc` or `-ec`), when a segment of its command string does.
+ */
+function segmentRunsCommand(segment: string, wordPattern: RegExp): boolean {
+  const words = segmentCommandWords(segment);
+  if (words.length === 0) return false;
+  const cmd = basename(words[0]);
+  if (wordPattern.test(cmd)) return true;
+  if (runsArgumentsAsCommand(cmd, words)) {
+    const payload = words.slice(1).join(' ').replaceAll(/['"]/g, ' ');
+    if (payload.split(/\s+/).some((token) => wordPattern.test(basename(token)))) return true;
+  }
+  const flag = words.findIndex((w) => /^-[A-Za-z]*c[A-Za-z]*$/.test(w));
+  if (SHELL_WORDS.has(cmd.toLowerCase()) && flag !== -1) {
+    const inner = words
+      .slice(flag + 1)
+      .join(' ')
+      .replace(/^['"]|['"]$/g, '');
+    return splitShellSegments(inner).some((part) => segmentRunsCommand(part, wordPattern));
+  }
+  return false;
+}
+
+/**
+ * `unix://` plus one repo's Docker socket: `net-<N>/docker-<N>.sock`, or the flat `docker-<N>.sock` a daemon on the
+ * layout before `net-<N>/` still serves (see repoDockerSocketFallbackShell).
+ */
+const REPO_DOCKER_HOST_PATTERN = new RegExp(
+  String.raw`^unix://${escapedRuntimeDir}/(?:net-([1-9]\d*)/docker-\1|docker-[1-9]\d*)\.sock$`
+);
+
+/** Split a command into shell segments on `;`, `&&`, `||`, `|`, `&` and newlines. */
+function splitShellSegments(command: string): string[] {
+  return command.split(/&&|\|\||[;&|\n]/);
+}
+
+function unquote(token: string): string {
+  return token.replace(/^(['"])(.*)\1$/, '$2');
+}
+
+/** The value of a `DOCKER_HOST=` assignment among the tokens before the command word, if any. */
+function assignedDockerHost(tokens: string[]): string | undefined {
+  const assignment = tokens.find((tok) => tok.startsWith('DOCKER_HOST='));
+  return assignment === undefined ? undefined : unquote(assignment.slice('DOCKER_HOST='.length));
+}
+
+/** The value of docker's own `-H`/`--host` flag, read from the global flags before the subcommand. */
+function flaggedDockerHost(dockerArgs: string[]): string | undefined {
+  for (let i = 0; i < dockerArgs.length; i++) {
+    const tok = dockerArgs[i];
+    if (!tok.startsWith('-')) return undefined;
+    if (tok === '-H' || tok === '--host') return unquote(dockerArgs[i + 1] ?? '');
+    const eq = /^(?:-H|--host)=(.*)$/.exec(tok);
+    if (eq) return unquote(eq[1]);
+    // Any other flag may take a value, so the scan stops rather than misread it.
+    return undefined;
+  }
+  return undefined;
+}
+
+/** True when the segment runs `docker` against one repo's socket that the segment itself names. */
+function namesRepoDockerSocket(segment: string): boolean {
+  const tokens = segment.trim().split(/\s+/).filter(Boolean);
+  const words = segmentCommandWords(segment);
+  if (words.length === 0 || basename(words[0]).toLowerCase() !== 'docker') return false;
+  const host =
+    flaggedDockerHost(words.slice(1)) ??
+    assignedDockerHost(tokens.slice(0, tokens.length - words.length));
+  return host !== undefined && REPO_DOCKER_HOST_PATTERN.test(host);
 }
 
 // Wrapper tokens that prefix another command without being the command
@@ -37,6 +188,8 @@ const COMMAND_PREFIXES = new Set([
   'command',
   'exec',
   'doas',
+  'timeout',
+  'xargs',
 ]);
 
 /**
@@ -63,6 +216,8 @@ const PREFIX_FLAGS_WITH_ARGS: Record<string, Set<string>> = {
   nice: new Set(['-n', '--adjustment']),
   time: new Set(['-o', '--output', '-f', '--format']),
   exec: new Set(['-a']),
+  timeout: new Set(['-k', '--kill-after', '-s', '--signal']),
+  xargs: new Set(['-I', '-n', '-P', '-d', '-L', '-s', '-E', '-a', '--max-args', '--max-procs']),
 };
 
 /** Strip a leading path from a command token: `/usr/bin/docker` -> `docker`. */
@@ -121,11 +276,32 @@ function segmentCommandWords(segment: string): string[] {
       i++; // consume the wrapper prefix itself
       const flagsWithArgs = PREFIX_FLAGS_WITH_ARGS[prefixName] ?? new Set<string>();
       i = skipPrefixArgs(tokens, i, flagsWithArgs);
+      if (prefixName === 'timeout') i++; // the positional duration
       continue;
     }
     break;
   }
   return tokens.slice(i);
+}
+
+/** docker's global flags that take a value, so `docker -H <sock> compose` still finds `compose`. */
+const DOCKER_GLOBAL_FLAGS_WITH_ARGS = new Set([
+  '-H',
+  '--host',
+  '-c',
+  '--context',
+  '--config',
+  '-l',
+  '--log-level',
+  '--tlscacert',
+  '--tlscert',
+  '--tlskey',
+]);
+
+/** The subcommand word after docker's global flags, lowercased. */
+function dockerSubcommand(dockerArgs: string[]): string | undefined {
+  const i = skipPrefixArgs(dockerArgs, 0, DOCKER_GLOBAL_FLAGS_WITH_ARGS);
+  return dockerArgs[i]?.toLowerCase();
 }
 
 /**
@@ -146,12 +322,12 @@ function segmentCommandWords(segment: string): string[] {
  * the real enforcement; this guard is an ergonomic guardrail.
  */
 export function detectDockerComposeCommand(command: string): boolean {
-  for (const segment of command.split(/&&|\|\||[;&|\n]/)) {
+  for (const segment of splitShellSegments(command)) {
     const words = segmentCommandWords(segment);
     if (words.length === 0) continue;
     const cmd = basename(words[0]).toLowerCase();
     if (cmd === 'docker-compose') return true;
-    if (cmd === 'docker' && words[1]?.toLowerCase() === 'compose') return true;
+    if (cmd === 'docker' && dockerSubcommand(words.slice(1)) === 'compose') return true;
   }
   return false;
 }

@@ -19,7 +19,7 @@ Six corrections:
 run()` wrapping a **blocking** `subprocess.run` (`step4000_voiceover.py:93`, `step6000_render.py:637` and `:678`, `step8000_teaser.py:41`). A task group over those coroutines yields *zero* concurrency. Overlap requires `anyio.to_thread.run_sync`.
 2. **The `--jobs N` independence claim has a hole.** `generate-tutorial-video.ts:115` uses a
 *language-independent* cache, `public/assets/tutorials/browser-segments/`, keyed `${tutorial}.${scene.id}.${hash}.mp4`. The pair loop is **tutorial-major**, so `--jobs 4` across langs puts four langs of the same tutorial in flight; on a cold cache all four record and `copyFileSync` to the same path, and all four run the storyboard `setupCommand` live-lab hook concurrently.
-Pre-existing; fix is a per-tutorial `flock`.
+Pre-existing; fix is a per-tutorial `flock`. (Since narrowed 2026-10-24: the lock now lives in `generate-tutorial-video.ts` and is held only while a render live-records, so warm locales render concurrently.)
 3. **The R2 clobber risk is narrower than feared, but the bypass is still better.** Clip
 filenames are content-addressed (`<id>.<textHash[:8]>.mp3`) and `aws s3 sync` has no `--delete`, so *changed* narration lands under a new name. The real exposure is a `--force` re-synthesis of unchanged text: same name, different bytes, size differs, sync overwrites. Bypass the call path rather than relying on unset env vars.
 4. **The readiness signal is vacuous for ar/tr/et today.** `validate-tutorial-audio.js:46`

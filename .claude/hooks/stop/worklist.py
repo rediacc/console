@@ -907,6 +907,221 @@ def _plantick_cli(argv):
     )
 
 
+def _liveproof_cli(argv):
+    """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
+
+    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    import wl_liveproof as LP
+
+    if len(argv) < 2:
+        die(LP.USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    root = pathlib.Path(C.project_root(C.project_start()))
+    if len(argv) == 2:
+        print(LP.listing(root, CK.plan_records(root)))
+        return
+
+    def tick(rel, sig, evidence):
+        try:
+            _plantick_cli(["--plan-tick", me, rel, sig, evidence, "--write"])
+        except SystemExit as exc:
+            return exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 2)
+        return 0
+
+    sys.exit(LP.run(root, me, argv[2:], tick=tick))
+
+
+PREFLIGHT_LIST_CAP = 40
+
+
+def _preflight_report(pf, me, rel):
+    """The five-part dry-run report of `--plan-preflight` (agent/plans/PLAN-plan-preflight.md, PF4), one string."""
+    import wl_planpreflight as PP
+
+    who = me[:8]
+    out = ["PLAN PREFLIGHT %s @ %s" % (rel, (pf.base or "(merge base unresolvable)")[:12])]
+    st = pf.state
+    out.append("state: %s -- %s" % (st.state, st.detail))
+    out.extend("  stale: %s" % c[:12] for c in st.commits[:5])
+    if len(st.commits) > 5:
+        out.append("  ... and %d more" % (len(st.commits) - 5))
+
+    current = [b for b in pf.survey if b.current]
+    present = [b for b in current if b.verdict == "present"]
+    out.append("")
+    out.append(
+        "1. SURVEY: %d open box(es), %d with a current row, %d uncovered or taken before the "
+        "merge base, %d present and still open"
+        % (len(pf.survey), len(current), len(pf.survey) - len(current), len(present))
+    )
+    for b in pf.survey:
+        tag = (b.verdict or "uncovered") if b.current else ("stale row" if b.row else "uncovered")
+        out.append("  %s [%s] %s" % (b.sig, tag, b.body[:80]))
+        if not b.current:
+            out.append(
+                "    worklist.py --plan-investigate %s %s %s <absent|present|partial> "
+                "<kind>:<token> <kind>:<token> -- <note> --write" % (who, rel, b.sig)
+            )
+        elif b.verdict == "present":
+            ptrs = " ".join("%s:%s" % (k, t) for k, t in (b.row or {}).get("pointers") or [])
+            out.append(
+                "    worklist.py --plan-tick %s %s %s '<evidence: %s>' --write"
+                % (who, rel, b.sig, ptrs or "the row's pointers")
+            )
+
+    c = pf.citations
+    out.append("")
+    if c.error:
+        out.append("2. CITATIONS: not judged -- %s" % c.error)
+    else:
+        unres = c.report.get("unresolved", [])
+        drift = c.report.get("drifted", [])
+        out.append(
+            "2. CITATIONS: %d unresolved (%d blocking), %d drifted (%d blocking without a "
+            "relocation, %d relocatable)"
+            % (
+                len(unres),
+                len(c.blocking_unresolved),
+                len(drift),
+                len(c.blocking_drifted),
+                len(c.relocations),
+            )
+        )
+        rows = [
+            "  line %d: unresolved %s `%s` -- %s [%s]"
+            % (
+                u["line"],
+                u.get("kind", "?"),
+                u["token"],
+                u.get("why", ""),
+                "blocking" if u.get("blocking") else "history",
+            )
+            for u in unres
+        ]
+        rows += [
+            "  line %d: drifted `%s` -> %s [%s]"
+            % (
+                d["line"],
+                d["token"],
+                "line %s" % d["relocate_to"] if d.get("relocate_to") is not None else "nowhere",
+                "blocking" if d.get("blocking") else "history",
+            )
+            for d in drift
+        ]
+        out.extend(rows[:PREFLIGHT_LIST_CAP])
+        if len(rows) > PREFLIGHT_LIST_CAP:
+            out.append("  ... and %d more" % (len(rows) - PREFLIGHT_LIST_CAP))
+
+    ov = pf.overlap
+    out.append("")
+    shown = " (first %d shown)" % len(ov.commits) if ov.total > len(ov.commits) else ""
+    out.append(
+        "3. OVERLAP since %s: %d main commit(s) touched the watched paths%s"
+        % ((ov.since or "(no starting point)")[:12], ov.total, shown)
+    )
+    for oc in ov.commits:
+        out.append("  %s %s" % (oc.sha[:12], oc.subject[:100]))
+        out.extend("    plan %s" % p for p in oc.plans)
+
+    out.append("")
+    out.append("4. DEPENDENCIES: %d finding(s)" % len(pf.deps))
+    out.extend("  %s %s -- %s" % (d.level, d.edge, d.why) for d in pf.deps)
+
+    out.append("")
+    if pf.refusals:
+        out.append("5. VERDICT: --write would be REFUSED (%d reason(s)):" % len(pf.refusals))
+        out.extend("  - %s" % r for r in pf.refusals)
+    else:
+        out.append("5. VERDICT: clean; --write may stamp `Revalidated:`")
+    if st.state != PP.FRESH and not pf.refusals:
+        out.append("  (state %s turns fresh once --write stamps the header)" % st.state)
+    return "\n".join(out) + "\n"
+
+
+def _planpreflight_cli(argv):
+    """--plan-preflight <me> <path> [--write] (agent/plans/PLAN-plan-preflight.md, box PF4).
+
+    A DRY RUN BY DEFAULT, and it exits 0 whatever the verdict: the report IS the product, and a loop step that reads it must not be told the read failed. `--write` is the only refusal, and it refuses exactly what `wl_planpreflight.refusals` names.
+
+    NEVER COMMITS, same as every verb in this file. The plan, the investigation rows and the renders land in one commit, and the success message says which.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 3:
+        die(M.CLI_PLANPREFLIGHT_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    rest = argv[2:]
+    write = "--write" in rest
+    rest = [a for a in rest if a != "--write"]
+    for f in rest:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANPREFLIGHT_USAGE))
+    if len(rest) != 1:
+        die(M.CLI_PLANPREFLIGHT_USAGE)
+
+    import wl_planpreflight as PP
+    import wl_planrec as R
+
+    root = C.project_root(C.project_start())
+    rel = rest[0]
+    try:
+        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
+    except ValueError:
+        rel = rel.lstrip("./")
+    path = pathlib.Path(root) / rel
+    if not path.is_file():
+        die("%s does not exist\n\n%s" % (rel, M.CLI_PLANPREFLIGHT_USAGE))
+    text = path.read_text(encoding="utf-8", errors="replace")
+    pf = PP.preflight(root, rel, text)
+    sys.stdout.write(_preflight_report(pf, me, rel))
+    if not write:
+        sys.stdout.write(M.CLI_PLANPREFLIGHT_DRY)
+        return
+    if pf.refusals:
+        die(
+            M.CLI_PLANPREFLIGHT_REFUSED
+            % {"rel": rel, "why": "\n".join("  - %s" % r for r in pf.refusals)}
+        )
+    today = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    try:
+        result = PP.apply(
+            root, rel, text, pf.base, pf.survey, pf.citations, pf.deps, pf.overlap, today
+        )
+    except PP.PreflightError as exc:
+        die(M.CLI_PLANPREFLIGHT_REFUSED % {"rel": rel, "why": "  - %s" % exc})
+        return
+    R.write_atomic(path, result.text)
+    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
+    print(
+        M.CLI_PLANPREFLIGHT_WROTE
+        % {
+            "rel": rel,
+            "base": (pf.base or "")[:12],
+            "relocated": len(result.relocated),
+            "investigation": "/".join(R.INVESTIGATION_REL),
+            "ledger": R.LEDGER_REL,
+            "index": R.INDEX_REL,
+            "queue": PP.QUEUE_REL,
+            "slug": rel.rsplit("/", 1)[-1].removeprefix("PLAN-").removesuffix(".md"),
+        }
+    )
+
+
 def _planinvestigate_cli(argv):
     """--plan-investigate <me> <path> <box> <verdict> <kind>:<tok>... -- <note...> [--write].
 
@@ -1325,6 +1540,17 @@ def _item_cli(argv, worklist):
                 "a [?] without a DEFAULT: is a note, not a decision; append "
                 "'DEFAULT: <what you will do if unanswered>'"
             )
+        # A HOLD IS CHECKED AT WRITE TIME (#f2402dba). An over-cap or impossible NOT-BEFORE was accepted and then silently ignored, so the DEFAULT executed on the ordinary window while the author believed it held; the Stop hook named the problem only stops later. A `NOT-BEFORE:` that is not the `YYYY-MM-DDTHH:MM[:SS]Z` shape holds nothing either.
+        # The Stop hook's wording ends "and is ignored"; at write time nothing is ignored yet, it is refused.
+        hold_problem = C.not_before_problem(rest).replace(" and is ignored", "")
+        if not hold_problem and "NOT-BEFORE:" in rest and not C.NOT_BEFORE.search(rest):
+            hold_problem = "NOT-BEFORE: is not followed by a YYYY-MM-DDTHH:MMZ instant"
+        if hold_problem:
+            die(
+                "%s. A NOT-BEFORE: may hold a DEFAULT at most %d days past the deferral "
+                "(the cap is wl_core.NOT_BEFORE_MAX_DAYS); give an instant within it, or defer "
+                "again nearer the date" % (hold_problem, C.NOT_BEFORE_MAX_DAYS)
+            )
         # v12: a deferral must EARN its seat at creation time, the same way --tick refuses evidence-free completion. The cheap shape gate lives here; whether the WHY is TRUE is the judge audit's question later.
         just = C.parse_justification(rest)
         why, how = just.get("why", ""), just.get("how", "")
@@ -1341,10 +1567,21 @@ def _item_cli(argv, worklist):
         if _ds and _ds.get("verdict") == "settled" and not _ds_err:
             die(M.CLI_DEFER_ALREADY_SETTLED % (_ds["fact_cite"], _ds["reason"]))
         S.set_state(worklist, me, item_id, "?", rest, extra={"j": just})
+        if C.not_before_pending(rest):
+            # The Stop hook demands the DEFAULT only once the window has closed AND the hold has passed (wl_checks `defer-expired`), so the hold is what the confirmation names.
+            when = (
+                "its DEFAULT cannot run before %s (NOT-BEFORE), and executes at the first stop after that instant once the %d min window has also closed"
+                % (
+                    C.NOT_BEFORE.findall(rest)[-1],
+                    S.DEFER_WINDOW_MIN,
+                )
+            )
+        else:
+            when = "its DEFAULT executes after %d min" % S.DEFER_WINDOW_MIN
         print(
             "deferred #%s with its justification on record; it is reported "
-            "every stop, its WHY faces the judge's audit after %d min, and "
-            "its DEFAULT executes after %d min" % (item_id, S.DEFER_AUDIT_MIN, S.DEFER_WINDOW_MIN)
+            "every stop, its WHY faces the judge's audit after %d min, and %s"
+            % (item_id, S.DEFER_AUDIT_MIN, when)
         )
         return
     if mode == "--reopen":
@@ -2084,6 +2321,220 @@ def _batch_body_cli(argv):
     sys.stdout.write(body if body.endswith("\n") else body + "\n")
 
 
+RULE_USAGE = (
+    "usage: --rule <me>\n"
+    "       --rule <me> <check> <subject> <text...> [--until <ISO8601Z>]\n"
+    "       --rule <me> --revoke <id> <reason...>\n"
+)
+
+
+def _vsuppressed_lines():
+    """One line per (session, check key) the Stop hook SILENCED before appending a violation (agent/plans/PLAN-stop-hook-rulings-campaign.md section 3): a ruling or an unchanged subject. Silence needs a denominator, or a ruling could quietly mute a real signal and nothing would ever say so."""
+    out = []
+    try:
+        wl = _local_worklist_path(_local_project_start())
+        for path in sorted(wl.parent.glob(wl.stem + ".state-*.json")):
+            try:
+                doc = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            sup = doc.get("vsuppressed") if isinstance(doc, dict) else None
+            if not isinstance(sup, dict):
+                continue
+            who = path.name.rsplit(".state-", 1)[-1][: -len(".json")]
+            for key in sorted(sup):
+                row = sup[key] if isinstance(sup[key], dict) else {}
+                out.append(
+                    "suppressed %s %s: %d by ruling, %d unchanged subject, last %s"
+                    % (
+                        who,
+                        key,
+                        int(row.get("ruled") or 0),
+                        int(row.get("unchanged") or 0),
+                        row.get("last") or "?",
+                    )
+                )
+    except Exception as exc:
+        out.append("suppression counts unreadable: %s" % exc)
+    return out
+
+
+def _rule_cli(argv):
+    """`--rule`: record, revoke or list an operator ruling (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2).
+
+    The row goes to `agent/rulings/<me>.jsonl` and the `## Rulings (machine-checked)` block of RULES.md is re-rendered from the whole ledger under the same lock (wl_ruling.record). Every argument is validated before anything is written, so a refused call leaves both files as they were. The verb never commits; it prints the `git add` line.
+    """
+    import wl_ruling as RU
+
+    if len(argv) < 2 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(RULE_USAGE)
+        sys.exit(2)
+    me = argv[1]
+    _identity_or_die(me, _die2)
+    root = C.project_root(C.project_start())
+    rest = list(argv[2:])
+    rows, problems = RU.read_ledger(RU.rulings_dir(root))
+    if not rest:
+        live = RU.live_rulings(rows)
+        revoked = sum(1 for _r, rv in RU.fold(rows).values() if rv is not None)
+        print(
+            "operator rulings: %d live, %d revoked, %d malformed row(s)"
+            % (len(live), revoked, len(problems))
+        )
+        for r in live:
+            print(
+                "  %s %s %s: %s (%s, %s%s)"
+                % (
+                    r["id"],
+                    r["check"],
+                    r["subject"],
+                    r["text"],
+                    r["by"],
+                    r["at"],
+                    ", until %s" % r["until"] if r.get("until") else "",
+                )
+            )
+        for prob in problems:
+            print("  MALFORMED %s" % prob)
+        return
+    if rest[0] == "--revoke":
+        if len(rest) < 3:
+            _die2(RULE_USAGE)
+        target, reason = rest[1], " ".join(rest[2:])
+        folded = RU.fold(rows)
+        if target not in folded:
+            _die2("--rule --revoke: no ruling with id %r in %s" % (target, RU.rulings_dir(root)))
+        if folded[target][1] is not None:
+            _die2("--rule --revoke: ruling %s is already revoked" % target)
+        row = RU.revoke_row(me, target, reason)
+    else:
+        until = None
+        if "--until" in rest:
+            i = rest.index("--until")
+            if i + 1 >= len(rest):
+                _die2("--rule: --until needs an ISO8601Z instant")
+            until = rest[i + 1]
+            del rest[i : i + 2]
+            if not RU.valid_until(until):
+                _die2("--rule: --until %r is not a future ISO8601Z instant" % until)
+        if len(rest) < 3:
+            _die2(RULE_USAGE)
+        check, subject, text = rest[0], rest[1], " ".join(rest[2:])
+        if check not in RU.RULABLE_CHECKS:
+            _die2(
+                "--rule: %r is not a check that consults rulings; the ones that do: %s"
+                % (check, ", ".join(sorted(RU.RULABLE_CHECKS)))
+            )
+        row = RU.rule_row(me, check, subject, text, until)
+    why = RU.row_problem(row)
+    if why:
+        _die2("--rule: refused, the row would be malformed (%s)" % why)
+    target_md = RU.record(root, me, row)
+    ledger = RU.rulings_dir(root) / ("%s.jsonl" % RU.writer_slug(me))
+    print(
+        "%s #%s recorded in %s; %s re-rendered.\n  git add -- %s %s"
+        % (
+            "ruling" if row["ev"] == "rule" else "revocation",
+            row["id"],
+            ledger,
+            target_md,
+            ledger,
+            target_md,
+        )
+    )
+
+
+def _plan_record_gate():
+    """`.ci/scripts/quality/check_plan_record.py` loaded as a module, for the RQ-DEPS repair the `--promote` verb shares with `check:ci-plan-record -- --update`. Resolved from THIS file's checkout, never from the project root, the stance the gate takes for its own library: a fixture root must not swap the repair out. Its directory goes on sys.path first, because the gate's `import _cipath` resolves from there."""
+    import importlib.util
+
+    folder = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    hop_spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if hop_spec is None or hop_spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(hop_spec)
+    hop_spec.loader.exec_module(syspath)
+    syspath.on_sys_path(folder)
+    spec = importlib.util.spec_from_file_location(
+        "_wl_check_plan_record", folder / "check_plan_record.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % (folder / "check_plan_record.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _promote_cli(argv):
+    """`--promote <me> <plan> <note...>`: append a live, unfinished plan to `agent/plans/QUEUE.md` `## Promoted` (#dd9b7624, operator 2026-10-23).
+
+    ONE WRITE, THE REPAIR'S PATH. The entry is appended last, then `check_plan_record.promoted_dep_order` (the RQ-DEPS repair `--update` runs) pulls every unfinished prerequisite in ahead of it, deepest first, and the progress block and the generated section are re-rendered, so the file that lands is one check:ci-plan-record accepts. The read is repeated just before the atomic write, as `retire_promoted` does, so a concurrent writer is never overwritten.
+
+    Refused, with nothing written: a path that is not a live `agent/plans/PLAN-<slug>.md`, a moved stub, a finished plan (nothing left to order), a plan already Promoted, and an empty note (a Promoted entry carries who ordered it). The verb never commits; it ends with the `git add` line.
+    """
+    if len(argv) < 4 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(
+            "usage: worklist.py --promote <me> <agent/plans/PLAN-<slug>.md | PLAN-<slug>.md> "
+            "<note: who ordered it and why>\n"
+        )
+        sys.exit(2)
+    me = argv[1]
+    _identity_or_die(me, _die2)
+    import wl_planqueue as PQ
+    import wl_planrec as R
+
+    arg = argv[2].strip().strip("`")
+    rel = arg if "/" in arg else "agent/plans/%s" % arg
+    note = " ".join(" ".join(argv[3:]).split())
+    root = pathlib.Path(C.project_root(C.project_start()) or os.getcwd())
+
+    def refuse(why):
+        sys.stderr.write("--promote refused: %s; nothing was written\n" % why)
+        sys.exit(1)
+
+    if not re.fullmatch(r"agent/plans/PLAN-[A-Za-z0-9._-]+\.md", rel):
+        refuse("%s is not a live agent/plans/PLAN-<slug>.md path" % rel)
+    if not (root / rel).is_file():
+        refuse("%s does not exist" % rel)
+    if not note:
+        refuse("a Promoted entry carries a note naming who ordered it")
+    try:
+        gate = _plan_record_gate()
+        graph = gate.deps_graph(root)
+    except Exception as exc:
+        refuse("the plan dependency graph could not load (%s: %s)" % (type(exc).__name__, exc))
+    info = graph.plans.get(rel)
+    if info is None or info.stub:
+        refuse("%s is a moved stub or not a tracked plan; promote the plan it moved to" % rel)
+    if not gate.unfinished_why(root, graph, rel):
+        refuse("%s is finished, so it has nothing left to order" % rel)
+    path = root / PQ.QUEUE_REL
+    for _attempt in range(2):
+        try:
+            got = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            refuse("%s is unreadable: %s" % (PQ.QUEUE_REL, exc))
+        have = {r: n for n, r in PQ.promoted_numbered(got)}
+        if rel in have:
+            refuse("%s is already Promoted entry %s" % (rel, have[rel]))
+        try:
+            new = PQ.with_promoted_entry(got, rel, note)
+        except ValueError as exc:
+            refuse(str(exc))
+        new, said = gate.promoted_dep_order(root, new, graph)
+        new = PQ.render(PQ.with_fresh_progress(root, new), PQ.live_plans(root))
+        if path.read_text(encoding="utf-8") == got:
+            R.write_atomic(path, new)
+            num = {r: n for n, r in PQ.promoted_numbered(new)}.get(rel, "?")
+            print("promoted %s as Promoted entry %s" % (rel, num))
+            for line in said:
+                print(line)
+            print("  git add %s" % PQ.QUEUE_REL)
+            return
+    refuse("%s changed under both reads" % PQ.QUEUE_REL)
+
+
 def _queue_set_cli(argv):
     """`--queue-set <me> [key=value ...] [--note "<text>"]`: the one writer of `agent/plans/QUEUE.md` `## Settings` (agent/plans/PLAN-stop-hook-turbo.md D9).
 
@@ -2789,10 +3240,16 @@ def main():
         if tgt is not None:
             print("commit it by name:  git add %s" % tgt)
         sys.exit(0 if tgt is not None else 1)
+    if sys.argv[1:2] == ["--rule"]:
+        _rule_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] == ["--doctor"]:
         probs, nfiles, nevents = S.doctor(C.project_root(C.project_start()))
         for msg in probs:
             print(msg)
+        # FIRST, on every exit path: a suppression count is a fact about the Stop hook, not about the store, so an empty or broken store must not hide it.
+        for line in _vsuppressed_lines():
+            print(line)
         if probs:
             print("\n%d problem(s) in %d store file(s)" % (len(probs), nfiles))
             sys.exit(1)
@@ -2844,6 +3301,12 @@ def main():
     if sys.argv[1:2] == ["--plan-investigate"]:
         _planinvestigate_cli(sys.argv[1:])
         return
+    if sys.argv[1:2] == ["--live-proof"]:
+        _liveproof_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--plan-preflight"]:
+        _planpreflight_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
         return
@@ -2868,6 +3331,9 @@ def main():
         return
     if sys.argv[1:2] == ["--queue-set"]:
         _queue_set_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--promote"]:
+        _promote_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--batch-body"]:
         _batch_body_cli(sys.argv[1:])

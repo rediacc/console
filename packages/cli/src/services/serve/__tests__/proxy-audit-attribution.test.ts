@@ -20,6 +20,7 @@
 
 import type { AddressInfo } from 'node:net';
 import { serve } from '@hono/node-server';
+import { AuditEventsRequestSchema } from '@rediacc/shared';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
@@ -33,13 +34,16 @@ import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
 
 // /v1/command dispatches the REAL Commander tree, which would otherwise read the developer's own config off disk. This is the only stub.
+vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
+}));
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
     ),
-    ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
     getLanguage: vi.fn(() => Promise.resolve('en')),
     applyDefaults: vi.fn((o: Record<string, unknown>) => Promise.resolve(o)),
     setRuntimeConfig: vi.fn(),
@@ -62,11 +66,24 @@ vi.mock('../../config/config-resources.js', () => ({
 }));
 process.env.REDIACC_TELEMETRY_DISABLED = '1';
 
+/** When set, dispatchCommand itself throws, the path server.ts answers from its catch block. */
+const dispatch = vi.hoisted(() => ({ throws: false }));
+vi.mock('../command-dispatch.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../command-dispatch.js')>();
+  return {
+    ...real,
+    dispatchCommand: (...args: Parameters<typeof real.dispatchCommand>) =>
+      dispatch.throws
+        ? Promise.reject(new Error('dispatch blew up'))
+        : real.dispatchCommand(...args),
+  };
+});
+
 const EXECUTOR_TOKEN = 'rdt_executor_fleet';
 /** The console user's short-lived proxy:exec token, as workers/proxy forwards it. */
 const SESSION_TOKEN = 'rdt_console_session';
 /** The id /proxy/introspect returns for that token, the attribution anchor. */
-const SESSION_TOKEN_ID = 'tok-console-user';
+const SESSION_TOKEN_ID = '7c3f1a52-4b8e-4d2a-9f61-2e5d8c0b9a13';
 
 /** An owner with no policy document is allowed by MISSING_POLICY_DEFAULT. */
 function allowAllConfig(): RdcConfig {
@@ -112,6 +129,7 @@ describe('proxy audit attribution', () => {
     auditPosts = [];
     auditFailures = [];
     returnTokenId = true;
+    dispatch.throws = false;
 
     const json = (body: unknown): Response =>
       new Response(JSON.stringify(body), {
@@ -221,5 +239,22 @@ describe('proxy audit attribution', () => {
 
     expect(auditPosts).toHaveLength(1);
     expect(auditPosts[0].body.events[0].onBehalfOfTokenId).toBeUndefined();
+  });
+
+  it('a dispatch that throws still ships exactly one schema-valid event, as a failure', async () => {
+    dispatch.throws = true;
+
+    const response = await runCommand();
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('dispatch blew up');
+
+    expect(auditFailures).toEqual([]);
+    expect(auditPosts).toHaveLength(1);
+    const event = auditPosts[0].body.events[0];
+    expect(event.onBehalfOfTokenId).toBe(SESSION_TOKEN_ID);
+    expect(event.data?.success).toBe(false);
+    expect(event.data?.exitCode).toBe(1);
+    const parsed = AuditEventsRequestSchema.safeParse(auditPosts[0].body);
+    expect(parsed.error?.issues ?? [], JSON.stringify(auditPosts[0].body)).toEqual([]);
   });
 });

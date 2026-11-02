@@ -98,9 +98,13 @@ export function reverseFindings(
   const readyToFlip = [...langsSeen.entries()]
     .filter(([lang, n]) => !declared.has(lang) && n === required.length)
     .map(([lang]) => lang)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
-  return { badKeys: badKeys.sort(), readyToFlip, orphanSlugs: orphanSlugs.sort() };
+  return {
+    badKeys: badKeys.sort((a, b) => Number(a > b) - Number(a < b)),
+    readyToFlip,
+    orphanSlugs: orphanSlugs.sort((a, b) => Number(a > b) - Number(a < b)),
+  };
 }
 
 // Exported so check-solution-video-engine.ts asks the SAME question about which slugs require video. Duplicating this would let the two gates disagree about scope, and the fail-safe branches below (an unparseable config counts as required) are exactly the subtlety a second copy would get wrong.
@@ -114,7 +118,7 @@ export function listSlugs(): string[] {
       // index.astro is the solutions LISTING page, not a solution page; it
       // renders no SPSolutionVideo and has no SOLUTION_PAGES entry.
       .filter((slug) => slug !== 'index')
-      .sort()
+      .sort((a, b) => Number(a > b) - Number(a < b))
   );
 }
 
@@ -242,8 +246,10 @@ function main(): number {
     console.error('');
   }
   // Actionable remediation -- exactly what to run next.
-  const langsAffected = [...byLang.keys()].sort().join(',');
-  const slugsAffected = [...new Set(misses.map((m) => m.slug))].sort();
+  const langsAffected = [...byLang.keys()].sort((a, b) => Number(a > b) - Number(a < b)).join(',');
+  const slugsAffected = [...new Set(misses.map((m) => m.slug))].sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   console.error('To fix (from the repo root):');
   console.error('  cd private/growth/video_pipeline');
   console.error(`  # 1) Ensure the source videos exist (regenerate any missing localizations):`);
@@ -276,7 +282,7 @@ function selftest(): number {
   const full = () => Object.fromEntries(F.map((f) => [f, { path: `x.${f}` }]));
   const mk = (solutions: unknown) =>
     ({ generatedAt: '', baseUrl: '', tutorials: {}, solutions }) as unknown as SparseVideoManifest;
-  let fails = 0;
+  let fails = 0 as number;
   const chk = (name: string, got: unknown, want: unknown) => {
     if (JSON.stringify(got) === JSON.stringify(want)) console.log(`  PASS  ${name}`);
     else {

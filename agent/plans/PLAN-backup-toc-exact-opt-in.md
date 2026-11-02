@@ -7,6 +7,7 @@ Owner: d778be9d
 Priority: P3 -- low: restore never reads the index, so restored bytes are already right; only browse-at fidelity improves, and only for repositories whose operator opts in
 Concurrency: parallel -- renet and cli files, disjoint from open chunk-store boxes apart from luks.go; take a lease on luks.go before X3
 Owns: private/renet/pkg/luks/**, private/renet/pkg/credentials/tockeyring.go, private/renet/pkg/repository/mount.go, private/renet/pkg/repodiff/mountset.go, private/renet/cmd/renet/repository_toc_keyring.go, private/renet/cmd/renet/backup_snapshot_toc.go, private/renet/cmd/renet/backup_snapshot_toc_test.go, private/renet/cmd/renet/repository_autostart.go, private/renet/pkg/functions/commands/repository.go, private/renet/pkg/i18n/locales/*.go, packages/cli/src/commands/repo-extended.ts, packages/cli/src/services/executor/renet-function-access.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/data/**, packages/shared/src/renet-contract/data/**, packages/www/src/content/docs/en/cli-application.md, packages/www/src/content/docs/en/rdc-cheat-sheet.md, packages/e2e-tests/tests/25-backup-chunk-store.test.ts
+Live-Proof: bench, hostinger -- the LUKS, TOC keyring and autostart code under private/renet is the renet surface (hostinger only), the regenerated contracts under packages/shared/src/cli-contract/data and packages/shared/src/renet-contract/data are the account surface (bench only), and the repo verbs under packages/cli/src are the cli surface, which both admit.
 
 It builds on the chunk-store plan's Stage-2 TOC writer (sealSnapshotTOC, ListingSource) and keeps that plan's rule that the raw volume key is never extracted.
 
@@ -62,6 +63,11 @@ It builds on the chunk-store plan's Stage-2 TOC writer (sealSnapshotTOC, Listing
 - [ ] X6: replayed staged listing (fixes Finding 3, autostart included; can land first) -- acceptance: root test tier: a journal-only change is missing from the `noload` listing and present in the replayed one; the staged file's sha256 is unchanged
 - [ ] X7: docs in cli-application.md and rdc-cheat-sheet.md: the verbs, off by default, the opt-in threat model with the lockdown warning, how to turn it off and confirm the key is gone, cryptsetup >= 2.7 -- acceptance: www docs, tutorial-parity and CLI-reference gates pass
 - [ ] X8: fleet e2e in 25-backup-chunk-store.test.ts with a password-mounted repository, autostart off, a writer loop running -- acceptance: ON, after enable and a remount, hot then cold snapshots give a `browse --at --json` equal to a restored, replayed mount of the same snapshot in names, sizes and mtimes, listingSource "staged"; OFF (default and after disable), listingSource "live-mount", status keyActive=false, `keyctl search @u logon rediacc:vk:<guid>` fails; the OFF run with the writer loop shows the listings differ (proves the test can fail)
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:16:08Z by d778be9d: live-proof lp-076c620439de bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
 
 ## Rollback
 

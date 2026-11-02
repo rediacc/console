@@ -125,6 +125,8 @@ export interface GateResult {
   overLease?: { granted: number; held: number };
   /** The gate was killed at its kill timer (gate-timeout.ts); the limit in ms. Always with status `fail` and exitCode null. */
   timedOutMs?: number;
+  /** The gate launched into measured idle cores rather than the budget (`reclaimableCores`); the cores it was told. The footer names every one. */
+  borrowed?: number;
 }
 
 /**
@@ -193,6 +195,10 @@ export interface PoolOptions {
   leasePollMs?: number;
   /** The learned order (rank.ts). Absent means today's priority, exactly as before it existed. */
   order?: ScheduleOrder;
+  /** The machine's measured idle (run.ts, over the CPU sampler). Absent means the budget alone decides, as before it existed; honoured by `cores` only. */
+  idleCoreMs?: IdleReader;
+  /** How often a pool with a gate held by the budget re-reads the idle, ms (default RECLAIM_POLL_MS). The selftest shortens it. */
+  reclaimPollMs?: number;
 }
 
 /**
@@ -225,7 +231,7 @@ function withOrder(
   };
 }
 
-/** What the lease reports before a pass. Every field is Infinity when nothing is leased. */
+/** What the lease reports before a pass. `free`, `share` and `total` are Infinity when nothing is leased, and `runs` is absent. */
 export interface LeaseView {
   /** Cores the pool may still start on beyond `inUse`: the broker's free tokens plus the slack of tokens this run already holds. */
   free: number;
@@ -233,6 +239,8 @@ export interface LeaseView {
   share: number;
   /** Tokens in the machine-wide pool. */
   total: number;
+  /** Live runs on the lease, as the broker counts them; absent when nothing is leased. `share` is a ceil, so it cannot be divided back into this. */
+  runs?: number;
 }
 
 /**
@@ -255,6 +263,57 @@ export interface PoolLease {
   available(inUse: number): Promise<LeaseView>;
   /** Hold exactly ceil(cores) tokens, acquiring or releasing the difference; returns the tokens held afterwards (Infinity when nothing is leased). A short acquire is not an error: the caller reads the count. */
   reconcile(cores: number): Promise<number>;
+}
+
+/**
+ * WORK CONSERVATION (agent/plans/PLAN-prepush-full-cpu.md, 2026-11-01). The budget counts declared widths, so a gate holding a 20-core grant while it uses one core keeps every queued gate out: run 39 of ci:quick sat at under 3 busy cores for 735 s with 76 gates ready. A pool whose running gates are measured to be using less than they were granted may therefore start a held gate in what is really idle, which is a BORROW, and these numbers bound it:
+ *
+ *   RECLAIM_WINDOW_MS, in RECLAIM_BUCKET_MS buckets: the idle has to hold in EVERY bucket of the window, so one quiet moment between a gate's phases does not read as spare cores.
+ *   RECLAIM_HEADROOM: one core is left over whatever the reading says, for the runner, other sessions' next process and the sampling's own error.
+ *   BORROW_WALL_MS: only a gate predicted to end within this may borrow. The budget cannot take a core back from a running gate, so this is what makes the debt short: when a wide gate wakes, the machine is oversubscribed by what is borrowed at that moment and for no longer than this, and no new borrow starts because the reading has gone. A minute covers every gate that queued in the measured tail (the longest, check:ci-prose-style, 45 s) and keeps long gates on the budget.
+ *   RECLAIM_POLL_MS: a running wide gate raises no event when it goes quiet, so a pool with a gate held by the budget re-reads the idle on this timer; without it the pool sleeps until some gate ends, which in that tail is the wide gate itself.
+ */
+export const RECLAIM_WINDOW_MS = 10_000;
+const RECLAIM_BUCKET_MS = 2_000;
+export const RECLAIM_HEADROOM = 1;
+export const BORROW_WALL_MS = 60_000;
+export const RECLAIM_POLL_MS = 2_000;
+
+/** Idle core-ms the machine measured over [fromMs, toMs]; undefined when no reading covers it, which never reads as idle. */
+export type IdleReader = (fromMs: number, toMs: number) => number | undefined;
+
+/** One borrow's cores over its life; `to` is unset while it runs. */
+export interface BorrowSpan {
+  from: number;
+  to?: number;
+  cores: number;
+}
+
+/**
+ * The cores this run may borrow now. For each bucket of the window: the machine's measured idle, plus what this run's own borrowers kept busy in it, since cores they used are cores they would give back and counting them as taken would make every borrow throttle the next. The smallest bucket is the sustained figure. It is split between the live runs (each reads the same machine, and two runs spending one idle would double-book it), then the headroom and what this run's borrowers hold right now come off.
+ *
+ * A wide gate that wakes takes the same cores out of the idle with no borrower to add back, so the figure falls by what it took. Other sessions and the VMs count the same way: idle is what nobody is using, whoever they are.
+ */
+export function reclaimableCores(
+  now: number,
+  idleCoreMs: IdleReader,
+  borrows: readonly BorrowSpan[],
+  runs: number
+): number {
+  let least = Number.POSITIVE_INFINITY;
+  for (let end = now; end > now - RECLAIM_WINDOW_MS + FIT_TOLERANCE; end -= RECLAIM_BUCKET_MS) {
+    const from = end - RECLAIM_BUCKET_MS;
+    const idle = idleCoreMs(from, end);
+    if (idle === undefined) return 0;
+    let own = 0;
+    for (const b of borrows) {
+      own += b.cores * Math.max(0, Math.min(b.to ?? now, end) - Math.max(b.from, from));
+    }
+    least = Math.min(least, (idle + own) / RECLAIM_BUCKET_MS);
+  }
+  let holding = 0;
+  for (const b of borrows) if (b.to === undefined) holding += b.cores;
+  return Math.max(0, least / Math.max(1, runs) - RECLAIM_HEADROOM - holding);
 }
 
 /** An elastic declaration as admit() sees it: `max` resolved (`'all'` is Infinity), and what it knows of the gate's work. */
@@ -289,6 +348,8 @@ export interface Candidate {
   elastic?: ElasticPlan;
   /** Set by admit() on every launched gate: the cores exported to its process. */
   grant?: number;
+  /** Set by admit() on a gate it launched into measured idle: the cores it really takes. Its `cores` is then 0, because a borrow holds no budget and no lease token: a reserved gate starts the moment the budget lets it, and a neighbouring run's tokens are untouched. Memory, the process count and claims still count. */
+  borrowed?: number;
   /** Set by admit() on a gate it launched past the lease: its bounded `lease` hold expired, or it is wider than the whole budget and the pool is empty. Only such a gate may start on more cores than the tokens it got (fitToLease). */
   pastLease?: boolean;
   /** Under `cores`: the core-ms of budget the gate occupies at any width, work / perCore for a measured elastic gate and cpuMs otherwise. The horizon's area term (`horizonMs`). */
@@ -322,6 +383,8 @@ export interface AdmitConfig {
   settleUntil?: number;
   /** Epoch ms each gate was first held with `lease`, the start of its bounded hold. A gate absent here starts its bound now. */
   leaseHeldSince?: ReadonlyMap<string, number>;
+  /** Cores this pass may borrow from measured idle (`reclaimableCores`). Absent means none. Honoured by `cores` only. */
+  borrowable?: number;
 }
 
 export interface Admission {
@@ -512,6 +575,8 @@ function sizedAt(g: Candidate, k: number): Candidate {
  *
  * Both rules end in the same progress guarantee: nothing running and nothing admitted means the head of the queue runs anyway, alone, whatever its size. A gate wider than the whole budget would otherwise hang the pool.
  *
+ * A held gate may then BORROW from `borrowable`, the machine's measured idle (`reclaimableCores`, BORROW_WALL_MS): the one way a gate starts past the budget, and `cores` only.
+ *
  * ELASTIC GATES (a declared `cores: {min, max}`) are sized here, not before the run: `elasticGrant` applies the area rule against what is free at this moment, the granted candidate is what every later check and the running set budget, and `grant` on each launched candidate is the number exported to the gate's process. Under `cores` the lease (`leaseFree`) is a fourth dimension: a gate wider than what the machine-wide lease can still give is held with `lease`, and an elastic gate reserves its start at its `min`. On an empty pool an elastic head takes max(min, what is free).
  *
  * THE SHARE (B11, agent/plans/PLAN-prepush-full-cpu.md part 4). Counting free tokens alone is first-come-takes-all: two runs started a second apart measured 23 cores against one. So an elastic grant is capped at `leaseShare`, ceil(T / live runs), and the area rule splits that share rather than the whole budget; fixed-width gates take what is free, so a neighbour's idle cores still get used. An elastic gate the lease would cut below min(its own grant, ceil(share / 2)) is held with `lease` for at most its fair wall (fairWall) and then runs at max(min, what is free), past the lease if it must. The progress guarantee never bypasses such a hold before its bound, and before `settleUntil` no elastic grant exceeds ceil(T / 2), so two runs started together both register before either takes a wide grant. `wakeAt` tells the pool when the earliest of these holds ends.
@@ -616,6 +681,7 @@ export function admit(
     const cap = Math.min(budgetCap, cfg.leaseTotal ?? Number.POSITIVE_INFINITY);
     // What the reserved gate leaves spare at its predicted start, in all three dimensions.
     let spare: { at: number; cores: number; mem: number; procs: number } | undefined;
+    let reservedGate: Candidate | undefined;
     // When g would fit, releasing the running gates' predicted ends in order, and what would be free then. Pure, so the floor can price a wait before deciding to take one.
     const whenFits = (g: Candidate): { at: number; cores: number; mem: number; procs: number } => {
       const ends = live
@@ -646,6 +712,7 @@ export function admit(
         procs: f.procs - 1,
       };
       reservation = { id: g.id, at: f.at };
+      reservedGate = g;
     };
 
     for (const g0 of ready) {
@@ -750,6 +817,54 @@ export function admit(
         spare.procs -= 1;
       }
       go(g);
+    }
+
+    // THE BORROW (reclaimableCores): the budget has had its say, and what it held may still start in cores the machine measures as idle. It holds no budget and no token, so a reserved gate starts the moment the budget lets it; what it could still take from that gate is its exclusive claim, its memory and a process slot, and those are checked against the reservation here.
+    let room = cfg.borrowable ?? 0;
+    if (room >= 0.25 - FIT_TOLERANCE) {
+      const why = new Map(held);
+      const launched = new Set(launch.map((g) => g.id));
+      const claimsOfReserved = reservedGate;
+      const conflictsReserved = (g: Candidate): boolean =>
+        claimsOfReserved !== undefined &&
+        (g.mutex.some(
+          (r) => claimsOfReserved.mutex.includes(r) || claimsOfReserved.reads.includes(r)
+        ) ||
+          g.reads.some((r) => claimsOfReserved.mutex.includes(r)));
+      for (const g0 of ready) {
+        const reason = why.get(g0.id);
+        if (
+          launched.has(g0.id) ||
+          (reason !== 'cpu' && reason !== 'reservation' && reason !== 'lease')
+        )
+          continue;
+        if (blockedByClaim(g0) || conflictsReserved(g0)) continue;
+        const el = g0.elastic;
+        const g =
+          el !== undefined
+            ? sizedAt(
+                g0,
+                Math.max(el.min, Math.min(el.max, share, Math.floor(room + FIT_TOLERANCE)))
+              )
+            : g0;
+        const width = el !== undefined ? g.cores : g0.cores;
+        if (width > room + FIT_TOLERANCE || g.estMs > BORROW_WALL_MS) continue;
+        if (live.length + 1 > b.maxProcs || mem + g.memMb > b.memMb) continue;
+        if (spare !== undefined && now + g.estMs > spare.at) {
+          if (g.memMb > spare.mem || spare.procs < 1) continue;
+          spare.mem -= g.memMb;
+          spare.procs -= 1;
+        }
+        timed.delete(g0.id);
+        go({
+          ...g,
+          grant: g.grant ?? Math.max(1, Math.round(width)),
+          cores: 0,
+          slots: 0,
+          borrowed: width,
+        });
+        room -= width;
+      }
     }
   }
 
@@ -1130,6 +1245,9 @@ export async function runPool(
     for (const r of inFlight.values()) sum += r.gate.cores;
     return sum;
   };
+  // Every borrow still inside the reading's window; a finished one leaves when it ages out of it.
+  const borrows = new Map<string, BorrowSpan>();
+  const reclaimPollMs = opts.reclaimPollMs ?? RECLAIM_POLL_MS;
 
   // `gate` is the candidate admit() launched, carrying its grant. The lease is drawn here, at launch (fitToLease): a short acquire narrows an elastic gate to what was actually got, and below its `min` the tokens go back and the gate waits with `lease`, whether or not anything runs. Only a gate admit() launched past the lease starts on more than it got, and that is recorded.
   const launch = async (spec: GateSpec, admitted: Candidate): Promise<boolean> => {
@@ -1152,6 +1270,7 @@ export async function runPool(
     const now = Date.now();
     inFlight.set(spec.id, { gate, endsAt: now + gate.estMs });
     startAt.set(spec.id, now);
+    if (gate.borrowed !== undefined) borrows.set(spec.id, { from: now, cores: gate.borrowed });
     const grant = gate.grant ?? Math.max(1, Math.round(gate.cores));
     grants.set(spec.id, grant);
     opts.onStart?.(spec);
@@ -1201,12 +1320,19 @@ export async function runPool(
         : undefined;
     const finite = (n: number | undefined): number | undefined =>
       n === undefined || n === Number.POSITIVE_INFINITY ? undefined : n;
+    for (const [id, span] of borrows)
+      if (span.to !== undefined && span.to < now - RECLAIM_WINDOW_MS) borrows.delete(id);
+    const reading = sched === 'cores' && ready.length > 0 ? opts.idleCoreMs : undefined;
     const pass = admit(
       ready.map((spec) => candidate(spec.id)),
       [...inFlight.values()],
       {
         ...cfg,
         pending,
+        borrowable:
+          reading === undefined
+            ? undefined
+            : reclaimableCores(now, reading, [...borrows.values()], view?.runs ?? 1),
         leaseFree: finite(view?.free),
         leaseShare: finite(view?.share),
         leaseTotal: finite(view?.total),
@@ -1246,14 +1372,19 @@ export async function runPool(
 
     if (running.size === 0) continue;
 
+    // A running gate that goes quiet raises no event, so a pool with work the budget holds re-reads the idle on a timer of its own (RECLAIM_POLL_MS).
+    const reclaiming =
+      reading !== undefined &&
+      pass.held.some(([, why]) => why === 'cpu' || why === 'reservation' || why === 'lease');
+    const tick = reclaiming ? Math.min(nap ?? Number.POSITIVE_INFINITY, reclaimPollMs) : nap;
     let timer: NodeJS.Timeout | undefined;
     const settledOrTick = await Promise.race([
       ...running.values(),
-      ...(nap === undefined
+      ...(tick === undefined
         ? []
         : [
             new Promise<undefined>((resolve) => {
-              timer = setTimeout(() => resolve(undefined), nap);
+              timer = setTimeout(() => resolve(undefined), tick);
             }),
           ]),
     ]);
@@ -1264,6 +1395,8 @@ export async function runPool(
     running.delete(id);
     const settled = inFlight.get(id);
     inFlight.delete(id);
+    const span = borrows.get(id);
+    if (span !== undefined) span.to = endAt;
     if (lease !== undefined && sched === 'cores') await lease.reconcile(coresInUse());
 
     const cannotRun = outcome.code === CANNOT_RUN;
@@ -1286,6 +1419,7 @@ export async function runPool(
       elastic: settled?.gate.elastic !== undefined ? true : undefined,
       overLease: overLease.get(id),
       timedOutMs: outcome.timedOutMs,
+      borrowed: settled?.gate.borrowed,
     });
     if (failed && opts.failFast) stopped = true;
   }

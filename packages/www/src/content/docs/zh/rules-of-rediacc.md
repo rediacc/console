@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "d57f030a95892e39"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "e9ad52ea1248d04c"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # Rediacc 规则
@@ -58,7 +58,7 @@ down() {
 - **不要设置 `rediacc.*` 标签**, renet 会自动注入 `rediacc.network_id`、`rediacc.service_ip` 和 `rediacc.service_name`。
 - **`ports:` 映射在主机网络模式下被忽略**。为 HTTP 路由添加 `rediacc.service_port` 标签（没有此标签的服务不会获得 HTTP 路由）。使用 `rediacc.tcp_ports`/`rediacc.udp_ports` 标签进行 TCP/UDP 转发。
 - **重启策略（`restart: always`、`on-failure` 等）可以安全使用**, renet 会自动剥离它们以兼容 CRIU。路由器 watchdog 会根据保存在 `.rediacc.json` 中的原始策略自动恢复已停止的容器。
-- **危险设置默认被阻止**, `privileged: true`、`pid: host`、`ipc: host` 以及对系统路径的绑定挂载会被拒绝。使用 `renet compose --unsafe` 可自行承担风险覆盖此行为。
+- **危险设置默认被阻止**, `privileged: true`、`pid: host`、`ipc: host` 以及对系统路径的绑定挂载会被拒绝。对 `privileged` 以及主机 `pid`、`ipc`、`uts` 的拦截在 Docker API 上同样生效：直接调用 `${DOCKER_SOCKET}` 的容器会因这些选项收到 `403`，任何标志都无法覆盖。`renet compose --unsafe` 只能覆盖只读主机路径的检查。
 
 ### 容器内的环境变量
 
@@ -78,7 +78,7 @@ Renet 会自动将以下变量注入每个容器：
 
 ## 网络
 
-- **每个仓库获得自己的 Docker 守护进程**，位于 `/var/run/rediacc/docker-<networkId>.sock`。
+- **每个仓库获得自己的 Docker 守护进程**，位于 `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`。
 - **每个服务在 /26 子网内获得唯一的回环 IP**（例如 `127.0.24.192/26`）。
 - **绑定是自动的**：服务可以绑定到 `0.0.0.0` 或 `localhost`，内核会透明地将地址重写为分配给服务的回环 IP。显式绑定到 `${SERVICE_IP}` 仍然有效，但不再是必需的。
 - **健康检查可以使用 `localhost`** 或 `${SERVICE_IP}`。示例：`healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
@@ -168,7 +168,7 @@ Renet 会自动将以下变量注入每个容器：
 
 - 使用 `docker compose` 而不是 `renet compose`，容器将无法获得网络隔离。
 - 重启策略是安全的，renet 自动剥离它们，watchdog 处理恢复。
-- 使用 `privileged: true`，没有必要，renet 会改为注入特定的 CRIU capabilities。
+- 使用 `privileged: true`，没有必要，renet 会改为注入特定的 CRIU capabilities。仓库的 Docker 守护进程无论在 compose 中还是在 Docker API 上都会拒绝它。
 - 在持久配置文件中硬编码原始 IP，连接请使用服务名以保持 fork 隔离的完整性。
 - 使用 `rdc term connect -c` 作为失败命令的变通方法，请改为报告 bug。
 - `repo delete` 执行完整清理，包括回环 IP 和 systemd 单元。运行 `rdc machine prune <name>` 清理旧版删除操作遗留的残余。

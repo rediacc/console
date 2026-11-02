@@ -26,6 +26,7 @@ import {
   RULE_INSTANCES,
   type RuleInstance,
 } from '../data/source-rules.ts';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { type Finding, type RuleModule, runJsonRule, runSourceRule } from '../lib/rule-host.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -78,7 +79,7 @@ export function corpus(): string[] {
         'a scan this small would report a clean tree it never read (submodules not checked out?)'
     );
   }
-  return [...seen].sort();
+  return [...seen].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** Every instance whose `files`/`ignores` resolve `posixPath` in scope. */
@@ -609,9 +610,10 @@ function buildProbes(): Probe[] {
 }
 
 const CLI_EN = 'packages/cli/src/i18n/locales/en';
-const EN_CLI_DESCRIPTION = () => (keyPath(readJson(EN_CLI), 'cli.description') as string) ?? '';
+const EN_CLI_DESCRIPTION = () =>
+  (keyPath(readJson(EN_CLI), 'cli.description') as string | undefined) ?? '';
 const EN_TRANSCRIPT_TEXT = () =>
-  (keyPath(readJson(EN_TRANSCRIPT), 'events.0.text') as string) ?? '';
+  (keyPath(readJson(EN_TRANSCRIPT), 'events.0.text') as string | undefined) ?? '';
 
 /**
  * Planted-defect probes for the two NEW host rules (PLAN-biome-only-lint.md's
@@ -675,7 +677,7 @@ function toHeadTuples(findings: TaggedFinding[]): string[] {
   return findings
     .filter((f) => RULE_IDS.includes(f.ruleId))
     .map((f) => `${f.file}:${f.line}:${f.column}:${f.ruleId}`)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 interface Phase0ConfigEntry {
@@ -853,7 +855,7 @@ async function differential(dir: string): Promise<number> {
   let bad = 0;
 
   const headTuples = toHeadTuples(await runWholeTree());
-  const expectedHead = [...raw.head].sort();
+  const expectedHead = [...raw.head].sort((a, b) => Number(a > b) - Number(a < b));
   if (JSON.stringify(headTuples) !== JSON.stringify(expectedHead)) {
     bad++;
     const headSet = new Set(headTuples);
@@ -886,8 +888,12 @@ async function differential(dir: string): Promise<number> {
       ? path.relative(REPO_ROOT, probe.filePath)
       : probe.filePath;
     const tuples = POSITION_ONLY.has(probe.ruleId)
-      ? findings.map((f) => `${f.line}:${f.column}:${probe.ruleId}`).sort()
-      : findings.map((f) => `${relFile}:${f.line}:${f.column}:${probe.ruleId}`).sort();
+      ? findings
+          .map((f) => `${f.line}:${f.column}:${probe.ruleId}`)
+          .sort((a, b) => Number(a > b) - Number(a < b))
+      : findings
+          .map((f) => `${relFile}:${f.line}:${f.column}:${probe.ruleId}`)
+          .sort((a, b) => Number(a > b) - Number(a < b));
     if (JSON.stringify(tuples) !== JSON.stringify(expected)) {
       bad++;
       console.error(
@@ -977,7 +983,7 @@ async function main(): Promise<number> {
   return findings.length === 0 && stale.length === 0 ? 0 : 1;
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   main()
     .then((code) => process.exit(code))
     .catch((error: unknown) => {

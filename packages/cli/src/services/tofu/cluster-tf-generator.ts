@@ -16,6 +16,7 @@
  */
 
 import type { ProviderMapping } from '../../types/index.js';
+import { resolveRequiredEnvAttrs, tfOutputValue } from './tf-generator.js';
 
 interface ClusterTfPool {
   name: string;
@@ -111,6 +112,7 @@ function buildInstanceAttrs(
   if (mapping.defaults) {
     Object.assign(attrs, mapping.defaults);
   }
+  Object.assign(attrs, resolveRequiredEnvAttrs(mapping));
   if (member.pool.size) attrs[mapping.sizeAttr] = member.pool.size;
 
   injectSshKey(attrs, member, mapping, sshPublicKey, resources);
@@ -177,11 +179,11 @@ function buildOutputs(
   const outputs: Record<string, { value: unknown }> = {};
   for (const member of members) {
     outputs[`ipv4_${member.pool.name}_${member.index}`] = {
-      value: `\${${mapping.resource}.${member.name}.${mapping.ipv4Output}}`,
+      value: tfOutputValue(`${mapping.resource}.${member.name}`, mapping.ipv4Output),
     };
     if (mapping.ipv6Output) {
       outputs[`ipv6_${member.pool.name}_${member.index}`] = {
-        value: `\${${mapping.resource}.${member.name}.${mapping.ipv6Output}}`,
+        value: tfOutputValue(`${mapping.resource}.${member.name}`, mapping.ipv6Output),
       };
     }
   }

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_REPOSITORY_NAME } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Backup/Checkpoint Operations Tests
@@ -20,11 +20,11 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * VMs are automatically started via global-setup.ts.
  */
 test.describe('Backup Operations @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testRepo = 'backup-test-repo';
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push should not have shell syntax errors', async () => {
@@ -39,12 +39,12 @@ test.describe('Backup Operations @bridge', () => {
 });
 
 test.describe('Checkpoint Operations @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testRepo = 'checkpoint-test-repo';
   const checkpointName = `ckpt-${Date.now()}`;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('checkpoint_create should not have shell syntax errors', async () => {
@@ -66,14 +66,14 @@ test.describe('Checkpoint Operations @bridge', () => {
  */
 test.describe
   .serial('Checkpoint Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `ckpt-lifecycle-${Date.now()}`;
     const checkpoint1 = `ckpt1-${Date.now()}`;
     const checkpoint2 = `ckpt2-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
     });
 
     test('1. checkpoint_create: create first checkpoint', async () => {
@@ -98,10 +98,10 @@ test.describe
  * Tests error handling for backup and checkpoint operations.
  */
 test.describe('Backup/Checkpoint Error Handling @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push to unreachable machine should handle gracefully', async () => {
@@ -131,11 +131,11 @@ test.describe('Backup/Checkpoint Error Handling @bridge', () => {
  * VMs are automatically started via global-setup.ts.
  */
 test.describe('Multi-Machine Backup Operations @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const repositoryName = `multi-backup-${Date.now()}`;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push from VM1 to VM2', async () => {
@@ -155,11 +155,11 @@ test.describe('Multi-Machine Backup Operations @bridge @multi-machine', () => {
  * Tests various checkpoint name formats.
  */
 test.describe('Checkpoint Naming @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const repositoryName = 'ckpt-naming-test';
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('checkpoint with timestamp name should work', async () => {
@@ -201,11 +201,11 @@ test.describe('Checkpoint Naming @bridge', () => {
  * Full parameter testing requires the queue API integration.
  */
 test.describe('Backup Push - Machine Options @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testRepo = 'push-machine-test';
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push to worker2 should have valid syntax', async () => {
@@ -233,11 +233,11 @@ test.describe('Backup Push - Machine Options @bridge', () => {
  * are passed via vault when queuing tasks, not as CLI flags in test mode.
  */
 test.describe('Backup Pull - Machine Options @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const testRepo = 'pull-machine-test';
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('pull from worker1 should have valid syntax', async () => {

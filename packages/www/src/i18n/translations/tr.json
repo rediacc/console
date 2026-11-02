@@ -520,7 +520,7 @@
         "whatWeDontUse": {
           "content": ["Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"],
           "content2": [
-            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware, Renet Ajanı) çerez kullanmayan ayrı kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (CLI ve Renet Ajanı) çerez kullanmayan ayrı bir kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -1864,6 +1864,11 @@
         "description": "5 dakikada kur. 14 günlük denemeyi başlat.",
         "heading": "Altyapıyı Koruma Zamanı"
       },
+      "freeLicense": {
+        "cta": "Rediacc'ı kurun",
+        "description": "Her makine kayıt olmadan tek bir depo için ücretsiz lisans alabilir: 3 GB'a kadar, 48 saat geçerli ve gerektiği kadar ücretsiz yenilenebilir. Süresi dolduğunda çalışan depolar çalışmaya devam eder; yeni depolar ve barındırılan yedekler için ücretli bir plan gerekir.",
+        "heading": "Hesap açmadan deneyin"
+      },
       "hero": {
         "subtitle": "Ekibine uygun planı seç. Basit fiyatlandırma, hiç gizli ücret yok, istediğin zaman iptal et.",
         "title": "Gerçek İşletmeler İçin Tasarlanmış"
@@ -2155,10 +2160,16 @@
             },
             "productTelemetry": {
               "content": [
-                "Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, tarayıcı türü, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplama öncesinde anonimleştirilir — e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir ve kısaltılır, şifreler veya gizli bilgiler asla toplanmaz.",
-                "Telemetri, Web Uygulamamızda ve CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+                "Yazılım ürünlerimiz (CLI ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplanmadan önce anonimleştirilir: e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenip kısaltılır, parolalar ve gizli bilgiler ise asla toplanmaz. Web sitemizin ve hesap hizmetimizin telemetrisi, Cloudflare'in uç ağından alınan şehir düzeyinde konumu (şehir ve bölge) de içerir ve bu bilgi 7 gün saklanır.",
+                "Telemetri, CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
               ],
               "title": "2.5 Ürün Telemetri Verileri"
+            },
+            "freeLicenseData": {
+              "content": [
+                "Bir makine hesap olmadan ücretsiz lisans istediğinde, isteği yapan IP adresinin (IPv4 adresinin tamamı veya IPv6 adresinin /64 öneki) anahtarlı bir özetini saklarız; adresin kendisini asla saklamayız. Özet yalnızca adrese özgü sayaçta tutulur ve 72 saat sonra silinir. Lisans kaydında istekteki makine ve depo tanımlayıcıları bulunur, IP verisi bulunmaz. Hukuki dayanak, ücretsiz bir hizmetin kötüye kullanılmasını önlemeye yönelik meşru menfaatimizdir."
+              ],
+              "title": "2.6 Ücretsiz Lisans Talepleri"
             }
           },
           "title": "2. Topladığımız Bilgiler"
@@ -9325,7 +9336,7 @@
         "title": "Telemetri Uygulamalarımız"
       },
       "meta": {
-        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, neden topladığı ve nasıl devre dışı bırakılacağı hakkında bilgiler.",
+        "description": "Rediacc ürünlerinin hangi telemetri verilerini topladığı, nedenini, nasıl işlendiğini ve nasıl vazgeçilebileceğini açıklar. CLI ve Renet Ajanı için geçerlidir.",
         "keywords": "telemetri politikası, veri toplama, OpenTelemetry, devre dışı bırakma, gizlilik, GDPR, Rediacc",
         "title": "Telemetri Politikası - Veri Toplama Bilgileri | Rediacc"
       },
@@ -9349,16 +9360,16 @@
                 "<strong>Renet Ajanı yaşam döngüsü:</strong> başlatma, kapatma ve yeniden bağlanma olayları",
                 "<strong>Performans profilleme:</strong> CPU kullanım örnekleri ve bellek tahsis profilleri, otomatik olarak toplanır ve profilleme uç noktamıza gönderilir"
               ],
-              "title": "7.1 Toplanan Veriler"
+              "title": "5.1 Toplanan Veriler"
             },
             "bridgeOptOut": {
               "content": [
                 "Renet Ajanı telemetrisini (profilleme dahil) devre dışı bırakmak için <code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın."
               ],
-              "title": "7.2 Nasıl Devre Dışı Bırakılır"
+              "title": "5.2 Nasıl Devre Dışı Bırakılır"
             }
           },
-          "title": "7. Renet Ajanı Telemetrisi"
+          "title": "5. Renet Ajanı Telemetrisi"
         },
         "ccpa": {
           "content": [
@@ -9366,19 +9377,19 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Toplanan bilgi kategorileri:</strong> İnternet veya elektronik ağ etkinlik bilgileri (tarayıcı türü, etkileşim verileri, hata günlükleri), cihaz tanımlayıcıları (anonimleştirilmiş), coğrafi konum verileri (yalnızca ülke düzeyinde, saklanmayan IP adresinden türetilir)",
+            "<strong>Toplanan bilgi kategorileri:</strong> İnternet veya elektronik ağ etkinlik bilgileri (tarayıcı türü, etkileşim verileri, hata günlükleri), cihaz tanımlayıcıları (anonimleştirilmiş), coğrafi konum verileri (şehir düzeyinde: şehir ve bölge, Cloudflare'in uç ağında IP adresinden türetilir; IP adresinin kendisi saklanmaz, konum 7 gün tutulur)",
             "<strong>Amaç:</strong> Hizmet kalitesini sürdürme ve iyileştirme, hata ayıklama, performans izleme ve güvenlik",
             "<strong>Satış/Paylaşım:</strong> CCPA/CPRA tarafından tanımlandığı şekliyle telemetri verilerini satmıyoruz veya paylaşmıyoruz",
-            "<strong>Devre dışı bırakma hakkı:</strong> Yukarıdaki 4-7 bölümlerinde açıklanan ürüne özgü devre dışı bırakma mekanizmalarını kullanın. Web Uygulamamızda Global Privacy Control (GPC) sinyalini de dikkate alırız."
+            "<strong>Devre dışı bırakma hakkı:</strong> Yukarıdaki 4 ve 5. bölümlerinde açıklanan ürüne özgü devre dışı bırakma mekanizmalarını kullanın. Web Uygulamamızda Global Privacy Control (GPC) sinyalini de dikkate alırız."
           ],
-          "title": "11. Kaliforniya Sakinleri (CCPA/CPRA)"
+          "title": "9. Kaliforniya Sakinleri (CCPA/CPRA)"
         },
         "changes": {
           "content": [
             "Yeni ürünler eklediğimizde, toplanan verileri değiştirdiğimizde veya işleme uygulamalarımızı güncellediğimizde bu Telemetri Politikasını güncelleyebiliriz. Değişiklikler bu sayfada güncellenmiş yürürlük tarihi ile yayınlanacaktır. Kullanıcıları önemli değişiklikler hakkında ürün sürüm notlarımız ve web sitemiz aracılığıyla bilgilendireceğiz."
           ],
           "id": "changes",
-          "title": "12. Bu Politikadaki Değişiklikler"
+          "title": "10. Bu Politikadaki Değişiklikler"
         },
         "cli": {
           "content": [
@@ -9397,7 +9408,7 @@
                 "<strong>Oturum:</strong> rastgele oluşturulmuş oturum kimliği, komut yürütme süresi",
                 "<strong>Performans profilleme:</strong> CPU kullanım örnekleri ve bellek tahsis profilleri, otomatik olarak toplanır ve profilleme uç noktamıza gönderilir"
               ],
-              "title": "5.1 Toplanan Veriler"
+              "title": "4.1 Toplanan Veriler"
             },
             "cliOptOut": {
               "content": [
@@ -9408,10 +9419,10 @@
                 "CLI yapılandırma dosyanızda <code>telemetryEnabled: false</code> olarak ayarlayın",
                 "Telemetri, CI ortamlarında (<code>CI</code> ortam değişkeni aracılığıyla algılanır) <strong>otomatik olarak devre dışı bırakılır</strong>"
               ],
-              "title": "5.2 Nasıl Devre Dışı Bırakılır"
+              "title": "4.2 Nasıl Devre Dışı Bırakılır"
             }
           },
-          "title": "5. CLI Telemetrisi"
+          "title": "4. CLI Telemetrisi"
         },
         "dataProcessing": {
           "content": [
@@ -9425,19 +9436,19 @@
             "<strong>Üçüncü taraflarla paylaşım yok:</strong> Telemetri verileri herhangi bir üçüncü tarafla paylaşılmaz, satılmaz veya erişilemez.",
             "<strong>Altyapı:</strong> Tüm telemetri verileri, Avrupa Birliği içinde bulunan altyapıda işlenir ve saklanır."
           ],
-          "title": "8. Veri İşleme ve Depolama"
+          "title": "6. Veri İşleme ve Depolama"
         },
         "internationalTransfers": {
           "content": [
             "Telemetri verileri yalnızca Avrupa Birliği içindeki sunucularda işlenir ve saklanır. Telemetri verilerinin AB/AEA dışına aktarılmasının gerekebileceği olası olmayan durumlarda (ör. felaket kurtarma), Avrupa Komisyonu tarafından onaylanan Standart Sözleşme Maddeleri (SCCs) dahil uygun güvenceler sağlanacaktır."
           ],
           "id": "international-transfers",
-          "title": "9. Uluslararası Veri Transferleri"
+          "title": "7. Uluslararası Veri Transferleri"
         },
         "introduction": {
           "content": [
             "Rediacc yazılım ürünleri, ürün kalitesini artırmamıza, sorunları teşhis etmemize ve araçlarımızın nasıl kullanıldığını anlamamıza yardımcı olmak için anonimleştirilmiş kullanım telemetrisi toplar. Bu Telemetri Politikası, tam olarak hangi verilerin toplandığını, neden toplandığını, nasıl işlendiğini ve nasıl devre dışı bırakabileceğinizi açıklar.",
-            "Bu politika dört ürünü kapsar: <strong>Rediacc Web Uygulaması</strong>, <strong>Rediacc CLI</strong>, <strong>Rediacc Middleware</strong> ve <strong>Rediacc Renet Ajanı</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
+            "Bu politika iki ürünü kapsar: <strong>Rediacc CLI</strong> ve <strong>Rediacc Renet Ajanı</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
           ],
           "id": "introduction",
           "title": "1. Giriş"
@@ -9445,8 +9456,8 @@
         "legalBasis": {
           "content": [
             "AB Genel Veri Koruma Yönetmeliği (GDPR) ve eGizlilik Yönergesi kapsamında, telemetri toplama için yasal dayanağımız ürün bağlamına bağlıdır:",
-            "<strong>Web Uygulaması</strong> (tarayıcı tabanlı) için: telemetri, hizmet kalitesini sürdürme ve iyileştirme amacıyla <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. İstediğiniz zaman devre dışı bırakabilirsiniz.",
-            "<strong>CLI, Middleware ve Renet Ajanı</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz."
+            "<strong>CLI ve Renet Ajanı</strong> (altyapınıza kurulur) için: telemetri, açık çıkış mekanizmalarıyla birlikte <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz.",
+            "Açık rıza gerektiren hukuk düzenlerindeki kullanıcılar için (örneğin PIPA kapsamında Güney Kore), herhangi bir veri gönderilmeden önce telemetri ürün yapılandırmasından açıkça etkinleştirilmelidir."
           ],
           "id": "legal-basis",
           "title": "3. Toplama için Yasal Dayanak"
@@ -9477,7 +9488,7 @@
             "<strong>Devre dışı bırakma:</strong> Yukarıda açıklanan ürüne özgü mekanizmaları kullanarak telemetriyi istediğiniz zaman devre dışı bırakma",
             "<strong>Şikayet:</strong> Estonya Veri Koruma Müfettişliğine (<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>) veya yerel denetim otoritenize şikayette bulunma"
           ],
-          "title": "10. Haklarınız"
+          "title": "8. Haklarınız"
         }
       },
       "toc": {
@@ -9508,7 +9519,7 @@
             "Bu Şartları kabul etmiyorsanız, Hizmetlere erişmemeli veya kullanmamalısınız. Bu Şartlar, sizinle ofisi Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonya adresinde bulunan, Estonya'da kayıtlı bir şirket olan Rediacc OÜ (sicil kodu 17363830) (\"Rediacc\", \"biz\" veya \"bizim\") arasında yasal olarak bağlayıcı bir sözleşme oluşturur."
           ],
           "id": "acceptance",
-          "title": "1. Koşulların Kabulü"
+          "title": "2. Koşulların Kabulü"
         },
         "accounts": {
           "content": [
@@ -9524,7 +9535,7 @@
             "Yetkili Kullanıcıların bu Şartlara uymasını sağlamak",
             "SSH özel anahtarları ve şifreleme kimlik bilgileri dahil olmak üzere Yapılandırma dosyalarınızın gizliliğini korumak"
           ],
-          "title": "3. Hesaplar ve Kayıt"
+          "title": "4. Hesaplar ve Kayıt"
         },
         "changes": {
           "content": [
@@ -9532,7 +9543,7 @@
             "Güncellenen Şartlar yürürlüğe girdikten sonra Hizmetleri kullanmaya devam etmeniz, revize edilmiş Şartları kabul ettiğiniz anlamına gelir. Güncellenen Şartları kabul etmiyorsanız, değişiklikler yürürlüğe girmeden önce Hizmetleri kullanmayı bırakmalı ve Aboneliğinizi iptal etmelisiniz."
           ],
           "id": "changes",
-          "title": "14. Bu Koşullardaki Değişiklikler"
+          "title": "19. Bu Koşullardaki Değişiklikler"
         },
         "dataOwnership": {
           "content": [
@@ -9541,7 +9552,7 @@
             "AB Veri Yasası (Yönetmelik 2023/2854) uyarınca, Platformun bulut özelliklerini kullanıyorsanız, sağlayıcı değiştirme veya kendi barındırdığınız bir kuruluma geçme hakkınız vardır. Müşteri Verileriniz kendi Makinelerinizde saklanır ve her zaman kontrolünüz altındadır. Platformda saklanan Hesap verileri ve yapılandırma, standart, makine tarafından okunabilir formatlarda dışa aktarılabilir. Talebinizin ardından otuz (30) güne kadar olan geçiş süresinde makul yardım sağlayacağız."
           ],
           "id": "data-ownership",
-          "title": "8. Verileriniz"
+          "title": "11. Verileriniz"
         },
         "definitions": {
           "content": ["Aşağıdaki tanımlar bu Hizmet Şartları boyunca geçerlidir:"],
@@ -9577,7 +9588,7 @@
             "Yukarıdaki hükme rağmen, taraflardan herhangi biri, fikri mülkiyet haklarının veya gizlilik yükümlülüklerinin fiili veya tehdit edilen ihlalini, kötüye kullanımını veya çiğnenmesini önlemek için yetkili herhangi bir mahkemede ihtiyati tedbir veya diğer hakkaniyete dayalı çözümler talep edebilir."
           ],
           "id": "governing-law",
-          "title": "13. Geçerli Hukuk"
+          "title": "18. Geçerli Hukuk"
         },
         "indemnification": {
           "id": "indemnification",
@@ -9597,7 +9608,7 @@
               "title": "16.2 By Rediacc"
             }
           },
-          "title": "11. Tazminat"
+          "title": "16. Tazminat"
         },
         "intellectualProperty": {
           "content": [
@@ -9606,7 +9617,7 @@
             "Hizmetleri kullanımınızdan elde edilen anonimleştirilmiş, toplu verileri (Telemetri Verileri dahil) ürün iyileştirme, analitik ve kıyaslama amacıyla toplayabilir ve kullanabiliriz. Bu tür toplu veriler sizi veya herhangi bir bireysel kullanıcıyı tanımlamaz."
           ],
           "id": "intellectual-property",
-          "title": "7. Fikri Mülkiyet"
+          "title": "12. Fikri Mülkiyet"
         },
         "limitationOfLiability": {
           "content": [
@@ -9615,7 +9626,7 @@
             "BÖLÜM 14 VE 15'TEKİ SINIRLAMALAR VE İSTİSNALAR ŞU DURUMLAR İÇİN GEÇERLİ DEĞİLDİR: (A) İHMALDEN KAYNAKLANAN ÖLÜM VEYA KİŞİSEL YARALANMA SORUMLULUĞU; (B) DOLANDIRICILIK VEYA DOLANDIRICI YANLIŞ BEYAN SORUMLULUĞU; (C) ESTONYA BORÇLAR HUKUKU KANUNU KAPSAMINDAKİ KASITLI İHLAL (TAHTLİK RİKKUMİNE) VEYA AĞIR İHMAL (RASKE HOOLETUS) SORUMLULUĞU; VEYA (D) GEÇERLİ YASA KAPSAMINDAKİ HARİÇ TUTULAMAYAN VEYA SINIRLANAMAYAN DİĞER HERHANGİ BİR SORUMLULUK."
           ],
           "id": "limitation-of-liability",
-          "title": "10. Sorumluluk Sınırlaması"
+          "title": "15. Sorumluluk Sınırlaması"
         },
         "onPremiseLicense": {
           "content": [
@@ -9672,7 +9683,7 @@
             "<strong>Platform:</strong> Abonelik yönetimi, ekip işbirliği ve (mevcut olduğunda) bulut tabanlı altyapı yönetimi için web uygulaması ve hesap portalı",
             "<strong>Profesyonel Hizmetler:</strong> Ayrı hizmet sözleşmelerine tabi isteğe bağlı danışmanlık, geçiş yardımı ve uygulama desteği"
           ],
-          "title": "2. Hizmetlerin Tanımı"
+          "title": "3. Hizmetlerin Tanımı"
         },
         "subscriptions": {
           "content": [
@@ -9722,7 +9733,7 @@
               "title": "5.2 Taxes"
             }
           },
-          "title": "4. Abonelikler ve Ödeme"
+          "title": "5. Abonelikler ve Ödeme"
         },
         "telemetry": {
           "content": [
@@ -9731,7 +9742,7 @@
             "Terminal ekipmanlarında telemetri toplanması için açık onay gerektiren yargı bölgelerinde (yargı bölgenizde uygulandığı şekliyle eGizlilik Direktifi kapsamında dahil), Şirket İçi Yazılımın ilk kullanımından önce telemetri tercihlerinizi yapılandırmalısınız. Telemetri etkinleştirilmiş olarak Hizmetleri kullanmaya devam etmeniz, <a href=\"telemetry-policy\">Telemetri Politikasında</a> açıklanan toplamaya onay verdiğiniz anlamına gelir."
           ],
           "id": "telemetry",
-          "title": "6. Telemetri ve Veri Toplama"
+          "title": "10. Telemetri ve Veri Toplama"
         },
         "termination": {
           "content": [
@@ -9745,7 +9756,7 @@
             "Hesap verileri, dışa aktarmaya izin vermek için otuz (30) gün saklanacak, ardından aktif sistemlerimizden silinecektir",
             "Bölüm 1 (Tanımlar), 11 (Verileriniz), 12 (Fikri Mülkiyet), 14 (Garantiler), 15 (Sorumluluk), 16 (Tazminat) ve 18 (Uygulanacak Hukuk) sonlandırmadan sonra da geçerliliğini korur"
           ],
-          "title": "12. Fesih"
+          "title": "17. Fesih"
         },
         "thirdPartyComponents": {
           "content": [

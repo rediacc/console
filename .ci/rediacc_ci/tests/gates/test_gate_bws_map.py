@@ -10,10 +10,11 @@ at all, and they are about to be the sole guard on every credential once GitHub 
 THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus scan enumerates TRACKED files, so a fixture with an untracked map is a fixture the gate reads as empty -- and it would then fail every case for the wrong reason. `git init` plus one commit is the cheapest way to be a tree the subject can actually see.
 """
 
+import importlib.util
 import json
 
 from rediacc_ci import paths
-from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, JSON_REQUIRED
+from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, JSON_REQUIRED, PARKED_PATTERN
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_bws_map.py")
@@ -73,7 +74,7 @@ def supply(fields) -> dict:
         "consumers": {
             "account-dev": {
                 "why": "fixture",
-                "required": ["ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET"],
+                "required": ["AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID"],
                 "optional": list(fields),
             }
         }
@@ -124,9 +125,11 @@ def fixture(gate, directory) -> None:
         directory / "private/account/scripts/rotation/consumers/bitwarden-sm.ts",
         "export const ARCHIVE_RE = /%s/\n" % ARCHIVE_PATTERN,
     )
+    # ASSERTION 16 reads the same refresher for its PARKED_RE declaration, so the fixture declares both.
     write(
         directory / "scripts/ops/bws-map-refresh.py",
-        'import re\n\nARCHIVE_RE = re.compile(r"%s")\n' % ARCHIVE_PATTERN,
+        'import re\n\nARCHIVE_RE = re.compile(r"%s")\nPARKED_RE = re.compile(r"%s")\n'
+        % (ARCHIVE_PATTERN, PARKED_PATTERN),
     )
     write(directory / ".github/workflows/w.yml", WORKFLOW)
     harness.run([git, "add", "-A"], cwd=directory)
@@ -270,6 +273,49 @@ def test_seller_fields_agree_on_the_real_tree(gate):
     gate.log_pass("assertion 14: the real tree's SELLER fields agree with bws_env")
 
 
+def test_a_mapped_parked_name_reds(gate, tmp_path):
+    """Assertion 16 through the whole gate: a planted mapped `__X` is named and fails. The clean fixture (test_clean_fixture_passes) is the control."""
+    fixture(gate, tmp_path)
+    path = tmp_path / ".ci/config/bws-secret-map.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["secrets"]["__ALPHA_TOKEN_DEV"] = {"id": "aaaaaaaa-0000-4000-8000-000000000009"}
+    path.write_text(json.dumps(data), encoding="utf-8")
+    exempt = tmp_path / ".ci/config/bws-unrequested.json"
+    ex = json.loads(exempt.read_text(encoding="utf-8"))
+    ex["exemptions"]["__ALPHA_TOKEN_DEV"] = {"kind": "no-github-twin", "reason": "fixture"}
+    exempt.write_text(json.dumps(ex), encoding="utf-8")
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(out, "'__ALPHA_TOKEN_DEV' is a parked entry", "assertion 16 names it")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.log_pass("assertion 16: a mapped parked name fails")
+
+
+def test_a_profile_bound_parked_name_reds(gate, tmp_path):
+    fixture(gate, tmp_path)
+    doc = supply(SELLER_FIELDS)
+    doc["consumers"]["account-dev"]["required"].append("__ALPHA_TOKEN_DEV > ALPHA_TOKEN")
+    write(tmp_path / ".ci/config/secret-supply.json", json.dumps(doc))
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(
+        out, "consumers.account-dev binds '__ALPHA_TOKEN_DEV'", "assertion 16 names where"
+    )
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.log_pass("assertion 16: a profile binding a parked name fails")
+
+
+def test_a_drifted_parked_pin_reds(gate, tmp_path):
+    fixture(gate, tmp_path)
+    write(
+        tmp_path / "scripts/ops/bws-map-refresh.py",
+        'import re\n\nARCHIVE_RE = re.compile(r"%s")\nPARKED_RE = re.compile(r"^__")\n'
+        % ARCHIVE_PATTERN,
+    )
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(out, "its PARKED_RE has drifted", "assertion 16 names the drifted pin")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.log_pass("assertion 16: a refresher whose PARKED_RE drifted fails")
+
+
 def test_empty_tree_is_not_a_pass(gate, tmp_path):
     (tmp_path / "empty").mkdir(parents=True, exist_ok=True)
     out = run_gate(gate, tmp_path / "empty")
@@ -293,3 +339,22 @@ def test_the_instrument_runs_before_any_verdict(gate):
     )
     gate.assert_exit(0, result, "the gate's own selftest must pass")
     gate.log_pass("the gate's selftest is green, so its verdicts above were instrumented")
+
+
+def test_the_refresher_drops_parked_names_and_leaves_archives_to_their_own_split():
+    """bws-map-refresh's exclusion, driven directly: a `__NAME` entry is dropped and reported; a live name and an archive clone are not parked (the archive split runs first and owns clones)."""
+    src = paths.from_root("scripts", "ops", "bws-map-refresh.py")
+    spec = importlib.util.spec_from_file_location("bws_map_refresh", src)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    entries = [
+        {"key": "ALPHA", "id": "1", "projectId": "p"},
+        {"key": "__ALPHA_DEV", "id": "2", "projectId": "p"},
+        {"key": "__ALPHA__ROTATED_20260101T000000Z", "id": "3", "projectId": "p"},
+    ]
+    kept, parked = module.split_parked(entries)
+    assert parked == ["__ALPHA_DEV"]
+    assert [e["key"] for e in kept] == ["ALPHA", "__ALPHA__ROTATED_20260101T000000Z"]
+    assert module.PARKED_RE.pattern == PARKED_PATTERN

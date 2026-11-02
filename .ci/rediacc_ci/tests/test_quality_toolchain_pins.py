@@ -147,7 +147,23 @@ def _a1(root: pathlib.Path, capsys: pytest.CaptureFixture[str]) -> tuple[int, st
 
 TMATE = 'readonly BREAKPOINT_TMATE_VERSION="2.4.0"\n'
 
+# The live table is empty since mypy left 2.4.0 (tmate stays there); the mechanism is pinned with the entry it held.
+TMATE_COINCIDENCE = (
+    (
+        ".ci/breakpoint/versions.sh",
+        "MYPY_VERSION",
+        r'^readonly BREAKPOINT_TMATE_VERSION="',
+        "tmate's own pin, equal to mypy's version string by coincidence",
+    ),
+)
 
+
+@pytest.fixture
+def coincidence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(mod, "A1_COINCIDENCES", TMATE_COINCIDENCE)
+
+
+@pytest.mark.usefixtures("coincidence")
 def test_a1_excuses_the_named_coincidence_and_prints_it(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -156,6 +172,7 @@ def test_a1_excuses_the_named_coincidence_and_prints_it(
     assert "A1 coincidence (exempt by name): .ci/breakpoint/versions.sh MYPY_VERSION=2.4.0" in text
 
 
+@pytest.mark.usefixtures("coincidence")
 def test_a1_still_reports_a_real_restatement_beside_the_coincidence(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -164,6 +181,7 @@ def test_a1_still_reports_a_real_restatement_beside_the_coincidence(
     assert ".ci/breakpoint/versions.sh restates MYPY_VERSION=2.4.0" in text
 
 
+@pytest.mark.usefixtures("coincidence")
 def test_a1_reports_a_coincidence_entry_that_excuses_nothing(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -7,7 +7,7 @@ WHO CALLS IT: nobody. It is an operator entry point, invoked by hand, and the on
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem
 
-PREREQUISITES ARE THE TWIN'S, unchanged: npm dependencies installed, both cross-compiled renet binaries present under `private/renet/bin/`, and either `ACCOUNT_ED25519_PUBLIC_KEY` in the environment or an `ACCOUNT_ED25519_PUBLIC_KEY=` line in the public-key cache `private/account/.cache/public-keys.env`, which `./run.sh setup` writes from Bitwarden. The twin read `private/account/.env`; that file is retired (agent/plans/PLAN-account-env-to-bws.md T15), and the cache has the same `KEY=value` shape, so the recorded goldens still describe this module byte for byte.
+PREREQUISITES ARE THE TWIN'S, unchanged: npm dependencies installed, both cross-compiled renet binaries present under `private/renet/bin/`, and either `ACCOUNT_ED25519_PUBLIC_KEY` in the environment or an `ACCOUNT_ED25519_PUBLIC_KEY=` line in the public-key cache `private/account/.cache/public-keys.env`, which `./run.sh setup` writes from the production Bitwarden entry (the one account keypair, agent/plans/PLAN-production-key-only.md). The twin read `private/account/.env`; that file is retired (agent/plans/PLAN-account-env-to-bws.md T15), and the cache has the same `KEY=value` shape, so the recorded goldens still describe this module byte for byte.
 
 PORT NOTES, each driven before it was written down.
 
@@ -40,6 +40,8 @@ import sys
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent.parent
 
 PUBLIC_KEY_CACHE = "private/account/.cache/public-keys.env"
+# `bws_env.PUBLIC_KEY_CACHE_HEADER`, spelled out because this module runs from a scratch root that vendors no `rediacc_ci.core`; test_ops_build_server.py asserts the two are one string.
+PUBLIC_KEY_CACHE_HEADER = "# rediacc public-key cache v2: production store entries only (agent/plans/PLAN-production-key-only.md)\n"
 ACCOUNT_KEY_PREFIX = "ACCOUNT_ED25519_PUBLIC_KEY="
 RENET_ARCHES = ("amd64", "arm64")
 RENET_BIN_DIR = "private/renet/bin"
@@ -87,9 +89,19 @@ def account_key() -> str:
     env_file = ROOT_DIR / PUBLIC_KEY_CACHE
     if not env_file.is_file():
         return ""
+    text = env_file.read_text(encoding="utf-8", errors="surrogateescape")
+    # A cache an older setup wrote may hold the retired DEV key under the production name (review 824f3bd7.2), so one without the v2 header bakes nothing; `./run.sh setup` rewrites it.
+    if not text.replace("\r\n", "\n").startswith(PUBLIC_KEY_CACHE_HEADER):
+        print(
+            "warning: ignoring %s: it predates the one-keypair store; run ./run.sh setup to refresh it"
+            % PUBLIC_KEY_CACHE,
+            file=sys.stderr,
+            flush=True,
+        )
+        return ""
     matched = [
         line[len(ACCOUNT_KEY_PREFIX) :]
-        for line in env_file.read_text(encoding="utf-8", errors="surrogateescape").split("\n")
+        for line in text.split("\n")
         if line.startswith(ACCOUNT_KEY_PREFIX)
     ]
     return "\n".join(matched).replace("\r", "").rstrip("\n")
@@ -190,7 +202,7 @@ def main(argv: list[str]) -> int:
         "private/account/web/dist",
         "account-web-assets",
         "private/account/web",
-        ["npx", "vite", "build", "--outDir", "dist"],
+        ["npx", "--no-install", "vite", "build", "--outDir", "dist"],
     )
     if rc != 0:
         return rc

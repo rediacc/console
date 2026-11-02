@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Git-like branching + delta regression (issue #75) @bridge
@@ -14,7 +15,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  *     (regression for "no keyfile found" and the conflict-report noise)
  *   - cross-machine flag-free delta re-push of a fork + delta pull, byte-identical
  *
- * commit/checkout/log/merge/delta params are not in the bridge once test-mode
+ * commit/checkout/log/merge/delta params are not in the functions once test-mode
  * flag allowlist, so these drive the renet CLI directly via executeViaBridge
  * (the createRepositoryFork pattern). Names are renet on-disk names (the fork's
  * --tag IS its image name; the rdc `name:tag` compositing is a config concern).
@@ -28,14 +29,14 @@ const extractSha = (s: string): string => (/[0-9a-f]{64}/.exec(s) ?? [''])[0];
 
 test.describe
   .serial('Repository Branching @bridge', () => {
-    let runner: BridgeTestRunner;
-    const repo = `branch-e2e-${stamp}`;
-    const commitGuid = 'c0117777-0000-4000-8000-000000000001';
-    const checkoutFork = `${repo}-co`;
+    let runner: RenetFunctionsTestRunner;
+    const repo = e2eRepoGuid();
+    const commitGuid = e2eRepoGuid();
+    const checkoutFork = e2eRepoGuid();
     const commitMessage = 'phase17 bridge commit';
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
       const initResult = await runner.datastoreInitPool('10G', DS, true);
       if (!runner.isSuccess(initResult)) {
@@ -77,13 +78,13 @@ test.describe
 
 test.describe
   .serial('Immutable forks @bridge', () => {
-    let runner: BridgeTestRunner;
-    const parent = `immut-parent-${stamp}`;
-    const immutable = `immut-${stamp}`;
-    const writable = `immut-writable-${stamp}`;
+    let runner: RenetFunctionsTestRunner;
+    const parent = e2eRepoGuid();
+    const immutable = e2eRepoGuid();
+    const writable = e2eRepoGuid();
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(parent, '1G', TEST_PASSWORD, DS);
       await runner.repositoryUnmount(parent, DS).catch(() => {});
@@ -115,14 +116,14 @@ test.describe
 
 test.describe
   .serial('Per-file three-way merge @bridge', () => {
-    let runner: BridgeTestRunner;
-    const work = `tw-work-${stamp}`;
-    const base = `tw-base-${stamp}`; // immutable commit = common ancestor
-    const ours = `tw-ours-${stamp}`;
-    const theirs = `tw-theirs-${stamp}`;
+    let runner: RenetFunctionsTestRunner;
+    const work = e2eRepoGuid();
+    const base = e2eRepoGuid(); // immutable commit = common ancestor
+    const ours = e2eRepoGuid();
+    const theirs = e2eRepoGuid();
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       // Baseline → commit C0 (the common ancestor) → two checkouts.
       await runner.repositoryNew(work, '1G', TEST_PASSWORD, DS);
@@ -164,11 +165,11 @@ test.describe
 
 test.describe
   .serial('Cross-machine delta @bridge @multi-machine', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     let multiMachine = false;
-    const repo = `delta-e2e-${stamp}`;
-    const base1 = `d1-${stamp}`; // retained base after the first push
-    const base2 = `d2-${stamp}`; // retained base after the delta re-push
+    const repo = e2eRepoGuid();
+    const base1 = e2eRepoGuid(); // retained base after the first push
+    const base2 = e2eRepoGuid(); // retained base after the delta re-push
 
     const sha = async (where: 'w1' | 'w2'): Promise<string> => {
       const cmd = `sudo sha256sum "${DS}/repositories/${repo}" | cut -d' ' -f1`;
@@ -178,7 +179,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       multiMachine = runner.getWorkerVMs().length >= 2;
       if (!multiMachine) return;
       await runner.datastoreInitPool('10G', DS, true);
@@ -240,9 +241,9 @@ test.describe
     // repository_promote had no live dispatch site (allowlist-only). Prove the swap (spec 03 §5.4: "make a validated fork the production repository under
     // its parent name"; both records must live in the same datastore) with the
     // delta block's mount-free image-sha technique — remounting the swapped grand over two-hop SSH is the flaky path this suite deliberately avoids.
-    let runner: BridgeTestRunner;
-    const grand = `promo-grand-${stamp}`;
-    const fork = `promo-fork-${stamp}`;
+    let runner: RenetFunctionsTestRunner;
+    const grand = e2eRepoGuid();
+    const fork = e2eRepoGuid();
 
     const imageSha = async (name: string): Promise<string> => {
       const r = await runner.executeViaBridge(
@@ -252,7 +253,7 @@ test.describe
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(grand, '1G', TEST_PASSWORD, DS);
       await runner.writeFileToRepository(grand, 'marker.txt', `grand-v1-${stamp}`, DS);
@@ -268,6 +269,16 @@ test.describe
 
     test('promote swaps a writable fork data into the grand (same-datastore)', async () => {
       // A WRITABLE fork of the grand (no --immutable), diverged with its own data.
+      const forkLicence = await installRepoLicence(runner.executeViaBridge.bind(runner), {
+        repositoryGuid: fork,
+        kind: 'fork',
+        grandGuid: grand,
+        datastorePath: DS,
+      });
+      expect(
+        runner.isSuccess(forkLicence),
+        `fork licence: ${runner.getCombinedOutput(forkLicence)}`
+      ).toBe(true);
       const forkRes = await runner.executeViaBridge(
         `sudo renet repository fork --name "${grand}" --tag "${fork}" --datastore "${DS}"`
       );

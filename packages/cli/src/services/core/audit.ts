@@ -23,6 +23,7 @@ import {
   getSubscriptionTokenState,
   normalizeServerUrl,
 } from '../account/subscription-auth.js';
+import { currentRequestConfig } from './request-context.js';
 
 export { functionNameToEventType };
 
@@ -42,6 +43,8 @@ class AuditService {
   private queue: AuditEvent[] = [];
 
   private hasToken(): boolean {
+    // The container executor holds a placeholder REDIACC_TOKEN, and the proxy refuses its account tunnel. A request config scope exists only there (a daemon reads its config off disk), and services/serve/audit.ts already records each command it dispatches.
+    if (currentRequestConfig() !== undefined) return false;
     try {
       return getSubscriptionTokenState().kind === 'ready';
     } catch {

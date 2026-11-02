@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 3
 language: et
-sourceHash: "a0f69282724c27ea"
+sourceHash: "b79c049c4f216e1a"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -204,7 +204,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ```bash
 rdc machine provider add my-linode \
   --provider linode/linode \
-  --token $LINODE_API_TOKEN \
+  --token-env LINODE_API_TOKEN \
   --region us-east \
   --type g6-standard-2
 ```
@@ -213,7 +213,7 @@ rdc machine provider add my-linode \
 |--------|----------|-------------|
 | `--provider <source>` | Jah* | Tuntud pakkuja allikas (nt `linode/linode`, `hetznercloud/hcloud`) |
 | `--source <source>` | Jah* | Kohandatud OpenTofu pakkuja allikas (tundmatute pakkujate jaoks) |
-| `--token <token>` | Jah | Pilvepakkuja API token |
+| `--token-env <var>` | Jah | Teenusepakkuja API-märki sisaldava keskkonnamuutuja nimi; märki ennast ei panda kunagi käsureale |
 | `--region <region>` | Ei | Uute masinate vaikeregioon |
 | `--type <type>` | Ei | Vaikimisi eksemplari tüüp/suurus |
 | `--image <image>` | Ei | Vaikimisi operatsioonisüsteemi kujutis |

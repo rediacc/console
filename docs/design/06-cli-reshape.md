@@ -19,18 +19,20 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **166 contract commands** (93 machine-plane, 53 config-plane, 20 other; 82 proxyCapable). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **189 contract commands** (105 machine-plane, 55 config-plane, 29 other; 93 proxyCapable). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
+                access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
-                remote {enable disable status refresh versions restore}    ssh {set show remove}
-rdc machine:    add remove list status setup scan-keys health prune
+                remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
+rdc machine:    add remove list status setup scan-keys health prune converge restart-services
                 provision deprovision
-                provider {add remove list}
+                access {set remove show push}
+                provider {add remove list}    gpu {list}
                 infra {set show push  cert {pull push status clear}}
 rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
-rdc repo:       create up down status list delete fork push pull migrate promote
+rdc repo:       create up down status list delete fork push pull migrate promote prune
                 secret {get list set unset}    sync {upload download status}
                 cat diff logs exec tunnel
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
@@ -39,34 +41,47 @@ rdc repo:       create up down status list delete fork push pull migrate promote
                 admin {validate fsck ownership autostart {enable disable list}
                        template {list apply}  archive {list restore purge}}
                 canary {create status weight remove}
+                gpu {grant revoke}
 rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
-rdc backup:     strategy {set remove list show bind unbind}  retention {set clear}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse
-rdc storage:    add remove list import browse prune
+rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
-rdc subscription: login logout status refresh
-rdc job:        list status logs cancel gc          (see §9)
+rdc subscription: login logout status refresh proxy-token
+rdc job:        list status logs cancel gc wait     (see §9)
+rdc tools:      install list
 rdc doctor | credits | update | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Nine differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The last two are a whole program landing after this transcript was drawn.
+Nineteen differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last ten are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
 | `config` with no `current` | `config current` | The config-universe refactor (server.json folded into per-config `account.*`, dev/prod/bench as named configs) added a "where am I connected" surface: active config, resolved account server with winning source, channel, token state, remote-store status. `show` dumps the config document; `current` answers the runtime resolution question `show` cannot. |
-| `storage create \| delete` | `storage add \| remove` | Gate ruling R3, and spec/03 §4.1's own rule: a storage entry REGISTERS an existing external endpoint (an S3 bucket, an rsync target), it does not create one. §4.1 explicitly deferred the rename here to this as-built pass. |
+| `storage create \| delete` | no `storage` noun | Gate ruling R3 first renamed the pair `storage add \| remove`, since a storage entry REGISTERED an existing external endpoint rather than creating one. PLAN-backup-program H1 then deleted the whole noun (`add remove list import browse prune`): backups have one destination kind, the S3-compatible chunk store behind the account server, so a registry of external endpoints, and the rclone that reached them, had nothing left to serve. |
 | `machine` with no `infra` | `machine infra {set show push}` + `machine infra cert {pull push status clear}` | The config exodus (§5.2 / w2a) moved `config infra *` and `config cert-cache *` onto the machine noun. Seven leaves this section simply never listed. |
 | `repo replicate {status remove}` | `repo replicate <ref>` (actionable parent) + `{status remove refresh}` | `refresh` was a CONDITIONAL in the table below: delete it if it only reconciles, keep it if it forces a re-fork. It forces a re-fork, so it stays, and its help says so. The parent keeps its bare create form (spec §5.4), which makes it an actionable parent — that is load-bearing, see §7's Commander note. |
 | `cluster snapshot` | `cluster snapshot {create list}` | R2-F13 landed it as a group, matching `datastore snapshot`. |
 | `machine query` | `machine status` | §5.2. Recorded here because the `--fix` map in `scripts/gates/check-cli-docs.ts` had the rename pointing the WRONG WAY and would have rewritten correct docs into broken ones. |
 | `backup strategy {set remove list show}` | `backup strategy {set remove list show bind unbind}` | `bind`/`unbind` landed with the backup-strategy binding work in #524 and this transcript was not updated with them. Caught only when `check:ci-design-tree` was run locally: that gate is in `npm run ci` but no workflow invokes it, so main merged the drift green. |
 | `backup` with no chunk-store verbs | `backup {snapshot verify manifests usage browse}` + `backup retention {set clear}` | The backup-storage program replaced the rclone/OneDrive push with a content-addressed chunk store, and seven leaves came with it: `snapshot` writes, `verify` checks a stored snapshot end to end, `manifests` and `usage` read the store, `browse` lists what a repository actually contains, and `retention {set clear}` is the policy the pruner reads. `restore` was already drawn, but it now materializes a chunk-store snapshot rather than a pushed image. Not drift in the §1.1 sense: the program is documented at `docs/backup-storage/`, and this transcript simply postdates it. |
-| `storage browse` as the only file listing | `backup browse` (local, read-only) | `storage browse` remains, and browses a live rclone remote. `backup browse` answers a different question — what is inside a REPOSITORY — and it answers it without a server, a network, or credentials, which is what makes it usable in a disaster. It cannot be served from the chunk store: the manifest maps grid cells to the SHA-256 of their CIPHERTEXT and carries no filesystem data at all, so a listing has to come from opening the image. The reasoning and the staged plan are at `agent/plans/PLAN-chunk-store-browse-DECISION.md`. |
+| `storage browse` as the only file listing | `backup browse` (local, read-only; `--at` for a stored snapshot) | `storage browse` listed a live rclone remote and went with the `storage` noun (PLAN-backup-program H1). `backup browse` answers what is inside a REPOSITORY, and without `--at` it answers without a server, a network, or credentials, which is what makes it usable in a disaster. The manifest maps grid cells to the SHA-256 of their CIPHERTEXT and carries no filesystem data, so `--at` reads the encrypted listing `backup snapshot` stores beside the manifest rather than the manifest itself. The reasoning and the staged plan are at `agent/plans/PLAN-chunk-store-browse-DECISION.md`. |
 | `config remote {enable disable status refresh}` | `config remote {enable disable status refresh versions restore}` | PLAN-config-sync-hardening T16 (operator ruling 2026-09-25, "plus versioning"): the server kept every pushed version but no client could reach one. `versions` lists them; `restore <version>` publishes an old version as the NEWEST one through the normal compare-and-swap push, so the rollback defences stay intact. |
+| `subscription {login logout status refresh}` | `subscription {login logout status refresh proxy-token}` | PLAN-cloudflare-proxy: `proxy-token` mints a short-lived `proxy:exec` token from the device's login for `rdc --proxy`; stdout carries only the token. |
+| `machine` with no `converge` | `machine converge` | PLAN-renet-runtime-converge: restarts every repository daemon still on an older runtime layout, one repository at a time, so a renet upgrade moves them onto the current one. The CLI runs it after a renet upload; the verb previews the plan (`--dry-run`) or resumes a failed pass. |
+| `machine` and `repo` with no `gpu` | `machine gpu list` + `repo gpu {grant revoke}` | PLAN-gpu-device-grants C1/C2: `machine gpu list` reads a machine's GPUs, CDI devices and the repositories each device is granted to; `repo gpu grant\|revoke` hand a repository a CDI device (or take it back) and mirror the grant into the config. All three run on the machine, so they are machine-plane and proxy-capable. |
+| `backup retention {set clear}` | `backup retention {set clear preview}` + `backup snapshots delete` | The backup-storage retention work: `retention preview` reads what the next sweep would delete and the space it frees without deleting anything, and `snapshots delete` is the manual single-snapshot delete that runs the same prune as the sweep. Both postdate this transcript. |
+| `machine` with no `restart-services` | `machine restart-services` | PLAN-renet-runtime-converge: restarts the renet daemons that still run a replaced binary, one unit at a time, each confirmed live on the installed binary before the next, and with `--include-docker` also each repository's supervisor. This transcript postdates it. |
+| `config` with no `access` | `config access {add remove ranges list}` | PLAN-ssh-key-source-ranges: the config-wide registry of SSH keys and their allowed IPv4 and IPv6 source ranges. `add --hosted-executor` attaches the ranges of the hosted executor; `ranges` edits a key's ranges and `list` reads them. |
+| `machine` with no `access` | `machine access {set remove show push}` | PLAN-ssh-key-source-ranges: assigns a key to a machine with per-machine range overrides, shows the access lines in effect, and `push` writes them to the machine (`--dry-run` previews; a push that would lock out the current session is refused). All four run on the machine side or edit the config, so they are machine-plane. |
+| `repo` with no `prune` | `repo prune` | PLAN-repo-docker-storage-prune: classifies a repository's Docker storage (unused images, build cache, stopped containers, orphan overlay2 directories) and reclaims it. It is a dry run unless `--apply`, and `--apply --offline` also stops the repository's daemon for the run. It runs on the machine, so it is machine-plane and proxy-capable. |
+| `config remote` with no `master-password` | `config remote master-password change` | Config storage: re-wraps the config key from the device's enrollment under a new password slot, after a re-authentication step, and verifies that the new password unlocks the store. |
+| `backup` with no image transfer | `backup {download upload purge reconcile}` | The backup-local-image work: `download` copies a repository's image from a machine to a local directory or external drive (rsync delta, resumable, sha256-verified) and `upload` sends such an image to a machine and registers it as a new repository. `purge` deletes every stored snapshot of a repository from the chunk store while keeping the repository, and `reconcile` resets the repository's stored-bytes ledger to what the store holds, never deleting a chunk. All four postdate this transcript. |
+| `job {list,status,logs,cancel,gc}` | `job {list,status,logs,cancel,gc,wait}` | `job wait` resumes following a job from its ticket, acknowledges it and exits with the job's own exit code, so a script can follow a `--background` job without polling `job status`. |
+| no `tools` noun | `tools {install list}` | PLAN-cli-tofu-toolchain: `install` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into the CLI and places the binary in the CLI's tools directory; `list` shows the provisioning engine the CLI would run and each OpenTofu version found, with its source. A tool is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
@@ -96,7 +111,7 @@ Four families were built by operator commits AFTER this tree was drawn. They exi
 | `machine create` / `machine delete` | replaced by `machine add` / `machine remove` (the config-CRUD names; one pair, not two) |
 | `config machine {add,remove,list,scan-keys,setup}` | moved to `machine add/remove/list/scan-keys/setup` |
 | `config provider {add,remove,list}` | moved to `machine provider *` |
-| `config storage {import,remove,list,show}` | moved to `storage import/delete/list/browse` |
+| `config storage {import,remove,list,show}` | moved to `storage import/delete/list/browse`, then deleted with the whole `storage` noun (PLAN-backup-program H1) |
 | `config repository {add,remove,list,list-archived,restore-archived,purge-archived}` | `add/remove/list` die with GUID-mapping being internal; archive verbs move to `repo admin archive {list,restore,purge}` |
 | `config cluster {add,list,remove}` | `cluster create` declares + provisions (with `--declare-only` for the old two-phase flow); `cluster status` lists; `cluster destroy` removes |
 | `config infra {set,show,push}` + `cert-cache {pull,push,status,clear}` | moved to `machine infra *` (infra is a machine property) |
@@ -144,7 +159,7 @@ Four families were built by operator commits AFTER this tree was drawn. They exi
 
 ## 5. KEPT AS-IS (unchanged surface)
 
-`repo` daily verbs (create/up/down/status/list/delete/fork/push/pull/cat/diff/tunnel/sync/ secret/commit/branch/checkout/log/merge/gc/resize/expand/trim/policy), `term connect`, `vscode *`, `ops *`, `doctor`, `credits`, `update`, `mcp serve`, hidden `run`, `storage` core verbs, `config` file-level verbs (init/list/show/delete/set/clear/recover/prune/edit/ field/audit/remote/ssh).
+`repo` daily verbs (create/up/down/status/list/delete/fork/push/pull/cat/diff/tunnel/sync/ secret/commit/branch/checkout/log/merge/gc/resize/expand/trim/policy), `term connect`, `vscode *`, `ops *`, `doctor`, `credits`, `update`, `mcp serve`, hidden `run`, `config` file-level verbs (init/list/show/delete/set/clear/recover/prune/edit/ field/audit/remote/ssh).
 
 ## 6. Addressing model: positional names, derived machine, `@place`
 
@@ -205,7 +220,7 @@ skills against the live tree — all documented snippets must be updated in the 
 - Command metadata (`command-metadata.ts`): re-annotate grandGuard/agentBlocked per verb.
 - CLI i18n: en strings for every new/renamed command; 12 locales re-naturalized via the
 i18n pipeline (Sonnet; ledger-driven).
-- Renet bridge functions renamed/added/deleted → `renet functions generate-types --output
+- Renet functions renamed/added/deleted → `renet functions generate-types --output
 packages/shared/src/renet-contract/data`; every generated function name must appear in packages/e2e-tests sources or `check:ci-e2e-coverage` fails.
 - **MCP alignment gate (P4 closing step)**: the existing `mcp-coverage.test.ts`
 (`packages/cli/src/commands/mcp/__tests__/`) is registry-keyed and misses unregistered leaves — verified 2026-07-10: a tree-walking version found **56 drifted commands** with neither `mcp` nor `mcpExcludeReason`. Confirmed still true 2026-07-13 and now worse: it iterates `COMMAND_REGISTRY` (13 domains) while the live tree has 16, so the `job`, `cluster`, `credits` and `serve`

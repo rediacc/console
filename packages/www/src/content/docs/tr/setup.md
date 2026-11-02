@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 3
 language: tr
-sourceHash: "a0f69282724c27ea"
+sourceHash: "b79c049c4f216e1a"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -204,7 +204,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ```bash
 rdc machine provider add my-linode \
   --provider linode/linode \
-  --token $LINODE_API_TOKEN \
+  --token-env LINODE_API_TOKEN \
   --region us-east \
   --type g6-standard-2
 ```
@@ -213,7 +213,7 @@ rdc machine provider add my-linode \
 |---------|---------|----------|
 | `--provider <source>` | Evet* | Bilinen sağlayıcı kaynağı (ör. `linode/linode`, `hetznercloud/hcloud`) |
 | `--source <source>` | Evet* | Özel OpenTofu sağlayıcı kaynağı (bilinmeyen sağlayıcılar için) |
-| `--token <token>` | Evet | Bulut sağlayıcının API anahtarı |
+| `--token-env <var>` | Evet | Sağlayıcı API belirtecini tutan ortam değişkeninin adı; belirtecin kendisi asla komut satırına yazılmaz |
 | `--region <region>` | Hayır | Yeni makineler için varsayılan bölge |
 | `--type <type>` | Hayır | Varsayılan örnek türü/boyutu |
 | `--image <image>` | Hayır | Varsayılan işletim sistemi imajı |

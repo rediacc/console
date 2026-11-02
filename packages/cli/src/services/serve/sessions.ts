@@ -45,6 +45,8 @@ export interface SessionPrincipal {
 interface SessionEntry {
   id: string;
   principal: SessionPrincipal;
+  /** The org that opened the session. A grant or an exec from another org never reaches it. */
+  orgId: string;
   /** Ephemeral X25519 private key, discarded once the CEK arrives. */
   ephemeralPrivateKey?: CryptoKey;
   /** The granted config-encryption key. RAM only, never persisted. */
@@ -68,7 +70,7 @@ export interface SessionStoreOptions {
  */
 export class SessionStore {
   private readonly sessions = new Map<string, SessionEntry>();
-  /** userId -> the session they granted a key through. See sessionFor(). */
+  /** (orgId, userId) -> the session they granted a key through. See sessionFor(). */
   private readonly grantsByUser = new Map<string, string>();
   private readonly ttlMs: number;
   private readonly now: () => number;
@@ -96,6 +98,7 @@ export class SessionStore {
     this.sessions.set(id, {
       id,
       principal,
+      orgId: principal.orgId,
       ephemeralPrivateKey: keyPair.privateKey,
       createdAt: at,
       lastUsedAt: at,
@@ -126,9 +129,9 @@ export class SessionStore {
     grantingPrincipal: SessionPrincipal
   ): Promise<void> {
     const session = this.require(sessionId);
-    if (session.principal.userId !== grantingPrincipal.userId) {
+    if (!ownedBy(session, grantingPrincipal)) {
       // Deliberately the same message require() gives for an unknown session, so a caller cannot probe which session ids exist by whether the error changes from "unknown" to "not yours".
-      throw new SessionError('Unknown or expired session. Open a new one.');
+      throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     if (!session.ephemeralPrivateKey) {
       throw new SessionError('This session has already received its key.');
@@ -139,8 +142,8 @@ export class SessionStore {
     session.ephemeralPrivateKey = undefined;
     session.lastUsedAt = this.now();
 
-    // Index the grant so sessionFor() can find it. See that method for why this is keyed by user and never by org.
-    this.grantsByUser.set(session.principal.userId, sessionId);
+    // Index the grant so sessionFor() can find it. See that method for why the key is (orgId, userId): never org alone, never user alone.
+    this.grantsByUser.set(grantKey(session.orgId, session.principal.userId), sessionId);
   }
 
   /** The CEK for a session, or an error naming the fix if it has none yet. */
@@ -169,31 +172,33 @@ export class SessionStore {
    * answer "which session holds this user's key" is an incomplete store, so the
    * lookup lives here rather than being bolted on from outside.
    *
-   * KEYED BY USER, NEVER BY ORG, and that is a security property, not a detail.
-   * Config-store membership is per user: someone who cannot decrypt the config
-   * on their own must not have it decrypted for them just because a colleague in
-   * the same org happens to have a live session. Matching on org would hand one
-   * member's key to another.
+   * KEYED BY (ORG, USER), NEVER BY ORG ALONE, and that is a security property,
+   * not a detail. Config-store membership is per user: someone who cannot
+   * decrypt the config on their own must not have it decrypted for them just
+   * because a colleague in the same org happens to have a live session. Matching
+   * on org alone would hand one member's key to another. The user id stays part
+   * of the key, and the org id keeps one user's sessions in two orgs apart.
    *
    * Sessions expire, so a hit is re-validated against the live map and a stale
    * index entry is dropped rather than returned.
    */
   sessionFor(principal: SessionPrincipal): string | undefined {
-    const sessionId = this.grantsByUser.get(principal.userId);
+    const key = grantKey(principal.orgId, principal.userId);
+    const sessionId = this.grantsByUser.get(key);
     if (!sessionId) return undefined;
 
     const session = this.sessions.get(sessionId);
     if (!session?.cek) {
-      this.grantsByUser.delete(principal.userId);
+      this.grantsByUser.delete(key);
       return undefined;
     }
-    if (session.principal.userId !== principal.userId) return undefined;
+    if (!ownedBy(session, principal)) return undefined;
 
     // Expiry is enforced by require(), which also evicts.
     try {
       this.require(sessionId);
     } catch {
-      this.grantsByUser.delete(principal.userId);
+      this.grantsByUser.delete(key);
       return undefined;
     }
     return sessionId;
@@ -217,8 +222,8 @@ export class SessionStore {
     if (!requestedId) return this.sessionFor(principal);
 
     const session = this.require(requestedId);
-    if (session.principal.userId !== principal.userId) {
-      throw new SessionError('Unknown or expired session. Open a new one.');
+    if (!ownedBy(session, principal)) {
+      throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     session.lastUsedAt = this.now();
     return requestedId;
@@ -239,7 +244,7 @@ export class SessionStore {
     this.evictExpired();
     const session = this.sessions.get(sessionId);
     if (!session) {
-      throw new SessionError('Unknown or expired session. Open a new one.');
+      throw new SessionError('Unknown or expired session. Open a new one.', SESSION_UNKNOWN_CODE);
     }
     return session;
   }
@@ -262,15 +267,32 @@ export class SessionStore {
    */
   private forget(sessionId: string): void {
     const session = this.sessions.get(sessionId);
-    if (session && this.grantsByUser.get(session.principal.userId) === sessionId) {
-      this.grantsByUser.delete(session.principal.userId);
+    const key = session ? grantKey(session.orgId, session.principal.userId) : undefined;
+    if (key && this.grantsByUser.get(key) === sessionId) {
+      this.grantsByUser.delete(key);
     }
     this.sessions.delete(sessionId);
   }
 }
 
+/** Grant-index key: one slot per (org, user), so a user's live sessions in two orgs stay independently reachable. Still never shared between users. */
+function grantKey(orgId: string, userId: string): string {
+  return `${orgId}\0${userId}`;
+}
+
+/** A session belongs to the user AND the org that opened it; both must match, so another org's principal is refused as an unknown session. */
+function ownedBy(session: SessionEntry, principal: SessionPrincipal): boolean {
+  return session.principal.userId === principal.userId && session.orgId === principal.orgId;
+}
+
+/** Wire code on the 404 for a session id the store does not hold (never opened, expired, wiped by a redeploy, or not the caller's). */
+export const SESSION_UNKNOWN_CODE = 'EXECUTOR_SESSION_UNKNOWN';
+
 export class SessionError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly code?: typeof SESSION_UNKNOWN_CODE
+  ) {
     super(message);
     this.name = 'SessionError';
   }

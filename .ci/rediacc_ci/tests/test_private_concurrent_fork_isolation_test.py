@@ -1016,3 +1016,30 @@ def test_arith_reports_an_unset_name_as_fatal_and_a_bad_shape_as_not_fatal():
         port.arith("08")
     assert bad_base.value.fatal is False
     assert bad_base.value.message == '[[: 08: value too great for base (error token is "08")'
+
+
+def test_a_closed_pipe_after_the_first_socket_is_not_a_failure(monkeypatch):
+    """Run 41348962671: parent and fork both listed, `head -1` gone, ssh 255. The line in hand is the answer."""
+    monkeypatch.setattr(port, "_pipe2", lambda *_a, **_k: (255, b"/run/net-1/docker-1.sock\n"))
+    state = port._State()
+    state.ssh_user, state.vm_ip, state.ssh_key = "u", "h", "k"
+    assert port._first_counter_socket(state) == "/run/net-1/docker-1.sock"
+
+
+def test_an_ssh_failure_with_no_line_still_stops_the_script(monkeypatch):
+    """The control of the test above: an unreachable machine prints nothing and keeps its status."""
+    monkeypatch.setattr(port, "_pipe2", lambda *_a, **_k: (255, b""))
+    state = port._State()
+    state.ssh_user, state.vm_ip, state.ssh_key = "u", "h", "k"
+    with pytest.raises(port._ExitScriptError) as stopped:
+        port._first_counter_socket(state)
+    assert stopped.value.code == 255
+
+
+def test_a_fragment_of_a_line_still_stops_the_script(monkeypatch):
+    """A connection dropped mid-line leaves head a path with no newline, which is no answer."""
+    monkeypatch.setattr(port, "_pipe2", lambda *_a, **_k: (255, b"/run/net-1/dock"))
+    state = port._State()
+    state.ssh_user, state.vm_ip, state.ssh_key = "u", "h", "k"
+    with pytest.raises(port._ExitScriptError):
+        port._first_counter_socket(state)

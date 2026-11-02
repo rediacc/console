@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: ar
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # المراقبة
@@ -201,7 +201,7 @@ rdc machine status server-1
 يوفر هذا:
 - اسم المضيف ووقت التشغيل
 - استخدام الذاكرة والقرص وDatastore
-- إجمالي المستودعات وعدد المثبّتة وعدد Docker قيد التشغيل
+- إجمالي المستودعات، وعدد المثبّتة، وعدد المستودعات التي يستجيب فيها Docker daemon
 - معلومات تفصيلية لكل مستودع
 
 استخدم `--output json` للحصول على مخرجات قابلة للقراءة آليًا.

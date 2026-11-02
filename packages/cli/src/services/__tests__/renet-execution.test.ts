@@ -80,127 +80,9 @@ describe('buildLocalVault', () => {
   });
 
   describe('storage_systems', () => {
-    it('should be empty object when no storages provided', () => {
+    it('is not part of the vault: the storage section was removed', () => {
       const vault = JSON.parse(buildLocalVault(baseOpts()));
-      expect(vault.storage_systems).toEqual({});
-    });
-
-    it('should build entry with backend from provider field', () => {
-      const opts = {
-        ...baseOpts(),
-        storages: {
-          'my-s3': {
-            vaultContent: {
-              provider: 's3',
-              access_key_id: 'AKIA123',
-              secret_access_key: 'secret',
-            },
-          },
-        },
-      };
-      const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.storage_systems['my-s3'].backend).toBe('s3');
-    });
-
-    it('should extract bucket and region to top-level fields', () => {
-      const opts = {
-        ...baseOpts(),
-        storages: {
-          'my-s3': {
-            vaultContent: {
-              provider: 's3',
-              bucket: 'my-bucket',
-              region: 'us-east-1',
-              access_key_id: 'AKIA123',
-            },
-          },
-        },
-      };
-      const vault = JSON.parse(buildLocalVault(opts));
-      const storage = vault.storage_systems['my-s3'];
-      expect(storage.bucket).toBe('my-bucket');
-      expect(storage.region).toBe('us-east-1');
-      // bucket and region should NOT be in parameters
-      expect(storage.parameters?.bucket).toBeUndefined();
-      expect(storage.parameters?.region).toBeUndefined();
-    });
-
-    it('should put remaining fields into parameters sub-object', () => {
-      const opts = {
-        ...baseOpts(),
-        storages: {
-          'my-s3': {
-            vaultContent: {
-              provider: 's3',
-              bucket: 'my-bucket',
-              access_key_id: 'AKIA123',
-              secret_access_key: 'secret',
-              endpoint: 'https://s3.example.com',
-            },
-          },
-        },
-      };
-      const vault = JSON.parse(buildLocalVault(opts));
-      const params = vault.storage_systems['my-s3'].parameters;
-      expect(params.access_key_id).toBe('AKIA123');
-      expect(params.secret_access_key).toBe('secret');
-      expect(params.endpoint).toBe('https://s3.example.com');
-      // provider should NOT be in parameters
-      expect(params.provider).toBeUndefined();
-    });
-
-    it('should handle multiple storages', () => {
-      const opts = {
-        ...baseOpts(),
-        storages: {
-          'my-s3': {
-            vaultContent: { provider: 's3', bucket: 'bucket1' },
-          },
-          'my-drive': {
-            vaultContent: { provider: 'drive', token: { access_token: 'xyz' } },
-          },
-        },
-      };
-      const vault = JSON.parse(buildLocalVault(opts));
-      expect(Object.keys(vault.storage_systems)).toHaveLength(2);
-      expect(vault.storage_systems['my-s3'].backend).toBe('s3');
-      expect(vault.storage_systems['my-drive'].backend).toBe('drive');
-    });
-
-    it('should skip storages with empty provider', () => {
-      const opts = {
-        ...baseOpts(),
-        storages: {
-          'bad-storage': {
-            vaultContent: { provider: '', bucket: 'test' },
-          },
-          'good-storage': {
-            vaultContent: { provider: 's3', bucket: 'test' },
-          },
-        },
-      };
-      const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.storage_systems['bad-storage']).toBeUndefined();
-      expect(vault.storage_systems['good-storage']).toBeDefined();
-    });
-
-    it('should extract folder field to top level', () => {
-      const opts = {
-        ...baseOpts(),
-        storages: {
-          'my-drive': {
-            vaultContent: {
-              provider: 'drive',
-              folder: 'backups/2026',
-              token: { access_token: 'xyz' },
-            },
-          },
-        },
-      };
-      const vault = JSON.parse(buildLocalVault(opts));
-      const storage = vault.storage_systems['my-drive'];
-      expect(storage.folder).toBe('backups/2026');
-      expect(storage.parameters?.folder).toBeUndefined();
+      expect(vault).not.toHaveProperty('storage_systems');
     });
   });
 
@@ -229,19 +111,60 @@ describe('buildLocalVault', () => {
   describe('repositories', () => {
     it('should build repositories section when repository param is set', () => {
       const opts = baseOpts();
+      opts.params = { repository: 'myrepo', guid: 'guid-123' };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.repositories['guid-123']).toBeDefined();
+      expect(vault.repositories['guid-123'].guid).toBe('guid-123');
+      expect(vault.repositories['guid-123'].name).toBe('myrepo');
+      expect(vault.task.repository).toBe('guid-123');
+      expect(vault.task.repo_name).toBe('myrepo');
+    });
+
+    it('throws instead of using the name as the GUID', () => {
+      const opts = baseOpts();
+      opts.params = { repository: 'myrepo' };
+      expect(() => buildLocalVault(opts)).toThrow(/no GUID/);
+    });
+
+    it('accepts a ref that is itself a GUID', () => {
+      const guid = '11111111-2222-3333-4444-555555555555';
+      const opts = baseOpts();
+      opts.params = { repository: guid };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.task.repository).toBe(guid);
+      expect(vault.repositories[guid].guid).toBe(guid);
+    });
+
+    it('resolves a ref given as GUID to the configured friendly name', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: { myrepo: { guid: 'guid-123', name: 'myrepo' } },
+      };
+      opts.params = { repository: 'guid-123' };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.task.repository).toBe('guid-123');
+      expect(vault.task.repo_name).toBe('myrepo');
+    });
+
+    it('resolves a bare family name to the grand, not a fork', () => {
+      const opts = {
+        ...baseOpts(),
+        repositoryConfigs: {
+          'myrepo:fix': { guid: 'guid-fork', name: 'myrepo:fix', grandGuid: 'guid-grand' },
+          'myrepo:latest': { guid: 'guid-grand', name: 'myrepo:latest', grandGuid: 'guid-grand' },
+        },
+      };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo).toBeDefined();
-      expect(vault.repositories.myrepo.guid).toBe('myrepo');
-      expect(vault.repositories.myrepo.name).toBe('myrepo');
-      expect(vault.task.repository).toBe('myrepo');
+      expect(vault.task.repository).toBe('guid-grand');
+      expect(vault.task.repo_name).toBe('myrepo:latest');
     });
 
     it('should include network_id when provided as param', () => {
       const opts = baseOpts();
-      opts.params = { repository: 'myrepo', network_id: 2816 };
+      opts.params = { repository: 'myrepo', guid: 'guid-123', network_id: 2816 };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBe(2816);
+      expect(vault.repositories['guid-123'].network_id).toBe(2816);
     });
 
     it('should include network_id from repositoryConfigs', () => {
@@ -253,8 +176,8 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBe(2880);
-      expect(vault.repositories.myrepo.guid).toBe('guid-123');
+      expect(vault.repositories['guid-123'].network_id).toBe(2880);
+      expect(vault.repositories['guid-123'].guid).toBe('guid-123');
     });
 
     it('should prefer repositoryConfigs.networkId over params.network_id', () => {
@@ -266,14 +189,14 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo', network_id: 2816 };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBe(2944);
+      expect(vault.repositories['guid-123'].network_id).toBe(2944);
     });
 
     it('should not include network_id when 0 or missing', () => {
       const opts = baseOpts();
-      opts.params = { repository: 'myrepo' };
+      opts.params = { repository: 'myrepo', guid: 'guid-123' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBeUndefined();
+      expect(vault.repositories['guid-123'].network_id).toBeUndefined();
     });
 
     it('should not include network_id when repositoryConfigs.networkId is 0', () => {
@@ -283,9 +206,9 @@ describe('buildLocalVault', () => {
           myrepo: { guid: 'guid-123', name: 'myrepo', networkId: 0 },
         },
       };
-      opts.params = { repository: 'myrepo' };
+      opts.params = { repository: 'myrepo', guid: 'guid-123' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.network_id).toBeUndefined();
+      expect(vault.repositories['guid-123'].network_id).toBeUndefined();
     });
 
     // ── secret_files (file-mode), single-repo path ──────────────────
@@ -311,7 +234,7 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.secret_files).toEqual([
+      expect(vault.repositories['guid-123'].secret_files).toEqual([
         { name: 'STRIPE_KEY', value: 'sk_live_x' },
         { name: 'DKIM', value: '----PEM----' },
       ]);
@@ -326,7 +249,7 @@ describe('buildLocalVault', () => {
       };
       opts.params = { repository: 'myrepo' };
       const vault = JSON.parse(buildLocalVault(opts));
-      expect(vault.repositories.myrepo.secret_files).toBeUndefined();
+      expect(vault.repositories['guid-123'].secret_files).toBeUndefined();
     });
 
     it('emits secret_files per-repo in multi-repo (up-all / migrate-all) mode', () => {

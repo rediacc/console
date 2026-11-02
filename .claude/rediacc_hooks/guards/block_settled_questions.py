@@ -43,6 +43,7 @@ import json
 import re
 
 from rediacc_hooks import hookio
+from rediacc_hooks.wellknown import BENCH_ORIGIN
 
 CHAIN = "pre-ask"
 ORDER = 3
@@ -147,11 +148,51 @@ PUSH_REASON_CHOICE = (
 # A sentence ABOUT push timing, not asking it: a speech verb before the timing ("should we explain when to push?") disarms it, the mention-vs-target class the CLAUSE anchor answers for the permission rule.
 PUSH_MENTION = r"(^|[^a-z])(explain|document|describe|record|note|report|mention|write)([^a-z]|$)"
 PUSH_TO_MAIN = r"^( [a-z_]+){0,2} to (origin )?main([^a-z]|$)"
+# ---- A NAMED COMMAND: `rdc machine access push` is a CLI verb, not the git act ----
+# Measured false positive, 2026-10-28 (#24fa4d53): a question asking whether the new `rdc machine access set` and `rdc machine access push` should be kept out of MCP, "the way `machine infra set|push` already are", was refused as a push-timing ask. `push` there is the last word of an rdc subcommand, and `already` after the second one read as a time word. A push (or PR) occurrence is
+# skipped when it sits inside a backtick span that does not start with `git` or `gh` (the span names some other program's command), or when it directly ends an unquoted `rdc <word>...` chain. `git push` in backticks, "push the branch" and every bare spelling of the ruling ("push now?") still count.
+NAMED_SPAN_GIT = r"^\s*(git|gh)(?![a-z_-])"
+NAMED_RDC_CHAIN = r"(^|[^a-z_-])rdc( [a-z_|-]+){1,3} $"
+# A timing word directly after the verb, a condition word (`when`, `until`, `once`), or an alternative that keeps the action open (`or wait`, `or keep`, `or hold`, `or continue`, `or finish`, `or not`) asks WHEN or WHETHER to run it ("should we rdc repo push now?", "... push when ready?"), so the chain is not a named command there (reviews c5695bf5.1, 5071248a.1). A later "now" ("rdc machine access push be barred from MCP now?") still reads as part of the question about the verb.
+NAMED_RDC_TIMING_AFTER = (
+    r"^[a-z]+\s+(now|yet|first|later|today|tonight|soon|immediately|right away|when|until|once"
+    r"|or (wait|keep|hold|continue|finish|not))(?![a-z])"
+)
+
+
+def _named_command(sentence, start):
+    """True when the occurrence starting at `start` is a word of a non-git command name (see A NAMED COMMAND)."""
+    before = sentence[:start]
+    if before.count("`") % 2 == 1:
+        # The span runs from its opening backtick through the occurrence, so `gh pr create` reads its own `gh`.
+        span = sentence[before.rfind("`") + 1 :]
+        return not re.search(NAMED_SPAN_GIT, span)
+    return bool(re.search(NAMED_RDC_CHAIN, before)) and not re.search(
+        NAMED_RDC_TIMING_AFTER, sentence[start:]
+    )
+
+
 # A header that IS the action carries it, as HEADER_OBJECT does for the permission rule: "Push" over "Now, or after the batch?".
 PUSH_HEADER_TIMING = r"(^|[^a-z])(now|yet|when|whether|wait|later|until|first)([^a-z]|$)"
 
 # `tr '[:upper:]' '[:lower:]'` under LC_ALL=C: the 26 ASCII letters, nothing
 # else. See the port note in the module docstring.
+# THE eu-bench LOGIN (operator order 2026-10-30): asking the operator for an eu-bench authenticator code, or to log eu-bench in, is settled the same way. `npm run login:bench` (.ci/rediacc_ci/ops/login_bench.py) logs eu-bench in headlessly with the operator's own bench account and is agent-allowed; on 2026-10-30 an agent read the CLI's "tied to another network address" text, written for a human at a terminal, and asked the operator to type the TOTP anyway.
+# Judged per QUESTION (text plus header), not per sentence, because "eu-bench" and the code often sit in different sentences. All three must hold: bench named, a login or code named, and the question addressed to the operator or asking leave. A question about the vault values (`PLACEHOLDER-operator-fills`, a seed, a bws token) is the operator's genuine door and passes.
+BENCH_NAMED = r"(^|[^a-z0-9_-])(eu-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|$)"
+BENCH_LOGIN_ASK = (
+    r"totp|authenticator|2fa|two-factor|one-time (pass)?code|verification code|"
+    r"(6|six)-digit|(^|[^a-z])otp([^a-z]|$)|"
+    r"(log|sign) (it |eu-bench |bench )?(back )?in(to)?([^a-z]|$)|"
+    r"login(?![ _-]?(test|tests|flow|flows|script|scripts|module|tool|helper|logic|function|handler|bug|doc|docs|code path)([^a-z]|$))|re-?auth"
+)
+# Addressed to the operator, or asking leave: without it "Is the bench TOTP derivation RFC 6238?" is a fact question and "Should the bench login flow support us-bench?" a design one, and both pass.
+BENCH_ASK_SHAPE = r"(^|[^a-z])(you|your|please|operator|(should|shall|may|can) (i|we))([^a-z]|$)"
+# The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool.
+BENCH_OPERATOR_DOOR = (
+    r"placeholder|seed|bitwarden|(^|[^a-z])bws([^a-z]|$)|vault|machine token|rotate|login_bench"
+)
+
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
 
 NO_JQ = (
@@ -187,6 +228,28 @@ If you are NOT asking for permission -- a design question that happens to
 mention branching, or a factual question about a merge -- rephrase it as the
 question it actually is, and this hook will pass it.
 """
+
+BENCH_LOGIN_MESSAGE = (
+    """BLOCKED: logging eu-bench in is the agent's own step, never the operator's
+(operator order 2026-10-30), so it is not a question.
+
+  Run:   npm run login:bench
+  then rerun the command that failed. It logs the eu-bench config in to
+  %s headlessly with the operator's bench account (the
+  bench-login bws profile derives the authenticator code), refreshes the bench
+  IP allowlist, and is safe to repeat. Two TOTP logins inside one 30 s window
+  collide, so a second one waits for the next window.
+
+  The CLI's "tied to another network address ... enter the code from your
+  authenticator app" text is written for a human at a terminal; for eu-bench
+  that code comes from the vault. docs/agent-reference/bench-login.md
+
+The operator's door is only the vault itself: a value still holding
+PLACEHOLDER-operator-fills, or a dead bws machine token. Name that, with the
+entry login_bench printed, and the question passes.
+"""
+    % BENCH_ORIGIN
+)
 
 PUSH_MESSAGE = """BLOCKED: when to push, and when to open the PR, is decided by the hooks, so it is
 never a question for the operator (ruling ASKED:2026-10-08T10:25Z: "It should not
@@ -418,7 +481,7 @@ def _objects(sentence):
     for m in re.finditer(OBJECT, sentence):
         # Every OBJECT alternative contains a letter; `[^a-z]pr...` starts on the non-letter before it.
         core = m.start() + (0 if m.group(0)[0].isalpha() else 1)
-        if re.search(NOUN_MODIFIER, sentence[:core]):
+        if re.search(NOUN_MODIFIER, sentence[:core]) or _named_command(sentence, core):
             continue
         found.append((m.start(), m.end(), m.group(0)))
     return found
@@ -438,6 +501,8 @@ def _push_timing(sentence, header_object):
             else after
         )
         if re.search(NOUN_MODIFIER, before) or re.search(PUSH_NOUN_AFTER, after):
+            continue
+        if _named_command(sentence, m.start()):
             continue
         # A push to `main` is the protected-branch question, not a timing one: the permission rule answers it.
         if re.match(PUSH_TO_MAIN, after):
@@ -465,6 +530,22 @@ def _push_timing(sentence, header_object):
         and not re.search(PUSH_MENTION, sentence)
     ):
         return header_object
+    return None
+
+
+def _bench_login(text):
+    """The matched login phrase when `text` asks the operator for an eu-bench login or code, else None (see THE eu-bench LOGIN).
+
+    The vault door exempts a SENTENCE, not the whole question: a login request in one sentence stays refused when a later sentence mentions the seed, since the seed word excuses only the sentence it sits in (review dae87b66.2). Bench named and the operator-or-leave shape stay question-level, since they often sit in other sentences than the login.
+    """
+    if not re.search(BENCH_NAMED, text) or not re.search(BENCH_ASK_SHAPE, text):
+        return None
+    for sentence in re.split(r"(?<=[.?!])\s+", text):
+        if re.search(BENCH_OPERATOR_DOOR, sentence):
+            continue
+        ask = re.search(BENCH_LOGIN_ASK, sentence)
+        if ask:
+            return ask.group(0)
     return None
 
 
@@ -513,6 +594,11 @@ def run(ev):
         return hookio.ALLOW
 
     for text, header in _entries(ev.doc):
+        bench = _bench_login(text + " " + header)
+        if bench is not None:
+            _record(ev, question, "bench-login", bench)
+            ev.warn_raw(BENCH_LOGIN_MESSAGE)
+            return hookio.DENY
         header_hit = re.search(HEADER_OBJECT, header)
         header_object = header_hit.group(5) if header_hit else ""
         for sentence in [*re.split(SENTENCE_END, text), header]:

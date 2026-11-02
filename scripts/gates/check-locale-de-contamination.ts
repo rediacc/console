@@ -288,7 +288,7 @@ export function findGermanContamination(root: string, layout: 'dir' | 'flat'): F
   const locales = listLocales(root, layout);
   if (!locales.includes(SOURCE_LOCALE) || !locales.includes(ENGLISH_LOCALE)) return [];
 
-  const data: Record<string, LocaleData> = Object.fromEntries(
+  const data: Record<string, LocaleData | undefined> = Object.fromEntries(
     locales.map((l) => [l, readLocale(root, layout, l)])
   );
   const german = data[SOURCE_LOCALE] ?? {};

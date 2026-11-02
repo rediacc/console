@@ -101,6 +101,15 @@ print(json.dumps(doc))
         esac
         ;;
     s3api/list-multipart-uploads) echo "[]" ;;
+    s3/cp)
+        # Phase 8g reads `cli/<channel>/manifest.json` to keep the releases edge and stable serve.
+        case "${3:-}" in
+            */manifest.json)
+                channel="${3%/manifest.json}"
+                fixture "manifest.${channel##*/}"
+                ;;
+        esac
+        ;;
     *) ;;
 esac
 exit 0
@@ -218,6 +227,11 @@ class World:
         # No drift and no branches by default; each case adds only what it needs.
         (self.gh_fixtures / "tags").write_text("", encoding="utf-8")
         (self.aws_fixtures / "sentinels").write_text("", encoding="utf-8")
+        # Both channels name a release, as they do in production; 8g refuses to delete anything when one cannot be read.
+        for channel in ("edge", "stable"):
+            (self.aws_fixtures / ("manifest.%s" % channel)).write_text(
+                '{"version": "v0.0.1"}\n', encoding="utf-8"
+            )
 
     # -- fixture builders, one per twin helper -----------------------------
 

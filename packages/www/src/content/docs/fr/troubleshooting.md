@@ -9,8 +9,8 @@ tags:
 subcategory: operations
 order: 10
 language: fr
-sourceHash: "7a4072220b0985f8"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "5ffc0205fecd8950"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 # Dépannage
@@ -123,7 +123,7 @@ Chaque dépôt dispose de son propre Docker daemon. Lorsque vous exécutez des c
 rdc term connect my-app -c "docker ps"
 
 # Ou manuellement avec le socket :
-docker -H unix:///var/run/rediacc/docker-2816.sock ps
+docker -H unix:///var/run/rediacc/net-2816/docker-2816.sock ps
 ```
 
 Remplacez `2816` par l'identifiant réseau de votre dépôt (disponible dans `rediacc.json` ou `rdc repo status`).

@@ -19,7 +19,7 @@ Verified work is committed right away, in small reviewable commits on the single
 - **A verified unit** serves one stated purpose inside one epic (one `PR-TASK:` id), has had its acceptance check run with the exit code read (a named test, gate or command at `rc=0`, or the lead's spot-check of a writer's output, rule 4), and touches only paths this session owns: its own edits and the file lists its writers reported. Other sessions' uncommitted paths are theirs, and are never committed by inference.
 - **Cadence.** The unit is committed as soon as it is verified, before the next one starts. A worklist item is committed first, then ticked with `commit:<sha>`. Writers never commit: the lead commits each writer's spot-checked output as the report is accepted. Review records of an authorized commit (`agent/reviews/<branch>/`) ride the same branch: `worklist.py --review-commit <me>` commits them, and a push waits until they are committed. A unit above 20 files needs a proof line anyway (`block_unproven_bulk_transform`), which is the signal to split it.
 - **Commit form.** `git add -- <new paths>`, then `git commit -F <msg> -- <paths>` (the pathspec form `block_pathspecless_git_commit` enforces). Conventional Commits subject, the verification commands and their exit codes in the body, a `PR-TASK: <id>` trailer, no Co-Authored-By line, no amending: a mistake gets a new fix commit.
-- **Pushing is separate from committing.** Pushes are backups and CI triggers, never one per commit: <!-- scope: pr.push-cadence -->at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits.<!-- /scope --> <!-- scope: pr.turbo-batch-end -->Under `turbo: on` with `turbo_push: batch-end` (the default) the batch is verified locally and pushed once when it completes; until then `block_turbo_early_push` refuses a push or `gh pr create` that names no operational reason, `TURBO_PUSH_REASON='<kind>: <why>'` with kind `ci-cd`, `red-fix`, `deadline` or `backup`, and a `backup` push, admitted once `backup_push_h` fires, opens no PR.<!-- /scope --> A completed batch pushes and opens its PR with no reason; the hooks decide push timing, so it is never asked. Each push still needs a `ci:quick` receipt (`block_unverified_push`), and a push whose range touches the VM trigger paths (`vm_check_trigger.py`: the deployed renet code, the `private/account` served code, and the CLI remote paths with the drill harness) needs a VERIFIED `npm run vm:check -- --changed` receipt covering each side it touches (`block_vm_unverified_push`), escaped only by `VM_CHECK_PUSH_REASON='<kind>: <why> ASKED:<YYYY-MM-DDTHH:MM>Z'` naming an operator answer.
+- **Pushing is separate from committing.** Pushes are backups and CI triggers, never one per commit: <!-- scope: pr.push-cadence -->at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits.<!-- /scope --> <!-- scope: pr.turbo-batch-end -->Under `turbo: on` with `turbo_push: batch-end` (the default) the batch is verified locally and pushed once when it completes; until then `block_turbo_early_push` refuses a push or `gh pr create` that names no operational reason, `TURBO_PUSH_REASON='<kind>: <why>'` with kind `ci-cd`, `red-fix`, `deadline` or `backup`, and a `backup` push, admitted once `backup_push_h` fires, opens no PR.<!-- /scope --> A completed batch pushes and opens its PR with no reason; the hooks decide push timing, so it is never asked. Each push still needs a `ci:quick` receipt (`block_unverified_push`), and a push whose range touches the VM trigger paths (`.ci/config/proof-tiers.json`: the deployed renet code, the `private/account` served code, and the CLI remote paths with the drill harness) needs a VERIFIED `npm run vm:check -- --changed` receipt covering each side it touches (`block_vm_unverified_push`), escaped only by `VM_CHECK_PUSH_REASON='<kind>: <why> ASKED:<YYYY-MM-DDTHH:MM>Z'` naming an operator answer.
 - **One branch, one PR, and no agent path to a second.** <!-- scope: pr.one-branch-one-pr -->Each repository (the console and each submodule under `private/`) holds at most one live `MMDD-N` branch and at most one open PR, whose head is that branch. `block_second_branch` refuses every spelling of a second branch (`checkout -b`, `switch -c`, `branch <new>`, a push to a new remote name, `gh pr create --head <other>`), and `block_second_open_pr` refuses a second PR.<!-- /scope --> A second branch or PR is the operator's own `!` command; there is nothing to ask for.
 - **`main` moves through the PR merge, takes a commit only as a hotfix, and admits one direct push.** `/pr-merge` and `/pr-babysit` are AI-invokable (operator ruling 2026-10-02), and <!-- scope: pr.merge-condition -->`main` moves by `gh pr merge <n> --rebase --auto` once every plan box is ticked (or the PR body carries an `Operational-Reason:` line, which admits the merge with boxes open), CI Complete is SUCCESS on the head, and `wl_review.py --check` and `check:ci-review-resolutions` exit 0.
 Review Complete is a required check again (operator ruling 2026-10-03): the PR review's summary is answered with `wl_prreview.py` before a fix is pushed, a failed review run is investigated and fixed, and only an LLM outage is excused, so a timeout never lets a PR merge.<!-- /scope -->
@@ -218,7 +218,7 @@ English (`packages/www/src/i18n/translations/en.json`) is the source of truth; t
 
 `./run.sh setup` prepares a machine idempotently and hands back a URL: host tools, docker, the devcontainer image, then ONE devbox container per worktree behind a shared traefik proxy, so the machine publishes exactly one port. `./run.sh devbox up|status|stop|shell|logs` drives it. Servers inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`) or traefik answers 502.
 
-Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./rdc.sh --dev` (or `RDC_DEV=1`); bench is just another config, `./rdc.sh --config bench`. There is no `RDC_PROD` or `RDC_BENCH`.
+Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./rdc.sh --dev` (or `RDC_DEV=1`); bench is just another config, `./rdc.sh --config eu-bench`. There is no `RDC_PROD` or `RDC_BENCH`.
 
 **[docs/agent-reference/local-env.md](docs/agent-reference/local-env.md)** carries the rest, and is worth reading BEFORE fighting any of it rather than after.
 
@@ -261,9 +261,9 @@ Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits;
 
 ## Release Channels
 
-Two channels, both production-quality: **edge** (continuously deployed on every merge to main) and **stable** (the default, promoted from edge after a 7-day soak).
+Two channels, both production-quality: **edge** (released by CD on every merge to main, or by the agent's faster extra path `npm run release:local -- --channel edge`, which shares the R2 sentinel lock) and **stable** (the default, promoted from edge by `promote-stable.yml` after the 7-day soak; CI/CD only, and a stable deploy always needs `RELEASE_ASKED`).
 
-**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries the channel URLs, the R2 layout, and the dispatch commands.
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries the channel URLs, the R2 layout, the dispatch commands, and the local entry's flags, gates and rollback.
 
 ## Media Assets (tutorial/solution videos + tutorial-narration audio)
 
@@ -273,14 +273,17 @@ Tutorial and solution videos and the tutorial-narration audio cache live in Clou
 
 ## CI/CD Pipeline
 
-Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step, and if CI fails, CD never triggers.
+CI validates everything BEFORE publish. CD is a thin promote step, and if CI fails, CD never triggers. Edge also has a local path: `release:local` publishes it from the machine, and the main-branch CI run on the released SHA stays as an after-the-fact check.
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
 CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> deploy edge
+npm run release:local -- --channel edge [--dry-run] [--workers-only --regions <list>]
 ```
 
-**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries `release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix and workers-only dispatch inputs, and the 7-day soak / `force` behavior on the production promote.
+The mac and win SEAs and install legs of a local release run in the dispatched `local-release-assist.yml`.
+
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries `release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix and workers-only dispatch inputs, the 7-day soak / `force` behavior on the production promote, and the local entry's gates, order check, deploy records and rollback.
 
 ## Quality Gates and the BLOCKER convention
 
@@ -304,23 +307,24 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow |
 |---|---|---|---|
-| (all lanes) | 371 | 358 | 64 |
-| local-only (CI never runs it) | 20 | 12 | 5 |
-| step / build-renet | 1 | 1 | 0 |
-| step / quality-branch | 10 | 10 | 4 |
-| step / quality-code | 107 | 107 | 13 |
-| step / quality-content | 46 | 46 | 4 |
-| step / quality-go | 19 | 19 | 4 |
+| (all lanes) | 392 | 376 | 70 |
+| local-only (CI never runs it) | 23 | 12 | 5 |
+| step / build-renet | 2 | 2 | 0 |
+| step / proxy-image-smoke | 1 | 1 | 1 |
+| step / quality-branch | 12 | 12 | 5 |
+| step / quality-code | 108 | 108 | 14 |
+| step / quality-content | 47 | 47 | 4 |
+| step / quality-go | 21 | 21 | 5 |
 | step / quality-i18n | 40 | 38 | 4 |
 | step / quality-packages | 13 | 13 | 5 |
 | step / quality-pytest | 1 | 1 | 1 |
-| step / quality-security | 21 | 21 | 2 |
-| step / quality-static | 65 | 65 | 7 |
+| step / quality-security | 25 | 25 | 2 |
+| step / quality-static | 71 | 71 | 9 |
 | step / quality-wiring | 1 | 1 | 0 |
 | step / quality-www-build | 16 | 13 | 15 |
 | test (a gate test drives it) | 11 | 11 | 0 |
 
-15 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+16 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

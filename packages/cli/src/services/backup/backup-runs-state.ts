@@ -19,8 +19,8 @@ import { configService } from '../config/config-resources.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 
 /**
- * 'snapshot' is the chunk-store write path. 'backup' is the retired rclone
- * push: nothing writes it any more, and it stays in the union only so run
+ * 'snapshot' is the chunk-store write path. 'backup' is the retired
+ * push-to-storage kind: nothing writes it any more, and it stays in the union only so run
  * histories recorded before the cutover still parse. Never emit it.
  */
 type BackupRunKind = 'backup' | 'snapshot' | 'restore' | 'verify';

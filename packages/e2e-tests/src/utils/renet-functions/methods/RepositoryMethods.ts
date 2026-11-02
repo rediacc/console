@@ -1,0 +1,303 @@
+import { type BridgeExec, installRepoLicence } from '../../licence';
+import type { ExecResult, TestFunctionOptions } from '../types';
+
+/** repository_policy_set params (renet#76 auto-grow + scheduled trim). */
+export interface RepositoryPolicySetOptions {
+  /** Repository GUID; omit to address the machine-wide default policy. */
+  name?: string;
+  autoGrow?: boolean;
+  maxQuota?: string;
+  growThreshold?: string;
+  growStep?: string;
+  autoTrim?: boolean;
+  trimInterval?: string;
+  datastorePath?: string;
+}
+
+/** repository_policy_get params. */
+export interface RepositoryPolicyGetOptions {
+  /** Repository GUID; omit for the machine-wide default only. */
+  name?: string;
+  datastorePath?: string;
+}
+
+/** repository_trim params (pool reclaim across mounted repos). */
+export interface RepositoryTrimOptions {
+  /** Repository GUID; omit to cover all mounted repositories. */
+  name?: string;
+  docker?: boolean;
+  dockerVolumes?: boolean;
+  reportOnly?: boolean;
+  datastorePath?: string;
+}
+
+/** repository_docker_prune params (classify and reclaim one repository's Docker storage). */
+export interface RepositoryDockerPruneOptions {
+  /** Repository GUID. */
+  name?: string;
+  datastorePath?: string;
+  /** Reclaim; without it the run only reports. */
+  apply?: boolean;
+  /** Stop the daemon and quarantine orphan overlay2 directories (requires apply). */
+  offline?: boolean;
+  allImages?: boolean;
+  noTrim?: boolean;
+}
+
+/** TestFunctionOptions carrying the docker-prune flags (the flag builder reads them). */
+export type DockerPruneFunctionOptions = TestFunctionOptions &
+  Pick<RepositoryDockerPruneOptions, 'apply' | 'offline' | 'allImages' | 'noTrim'>;
+
+/**
+ * Repository management methods for RenetFunctionsTestRunner.
+ */
+export class RepositoryMethods {
+  constructor(
+    private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>,
+    /** The runner's bridge executor, which installs the licence a create needs on the target. */
+    private readonly bridgeExec: BridgeExec
+  ) {}
+
+  /**
+   * repository_create, preceded by the licence renet demands for it.
+   *
+   * renet's `repository create` refuses with exit 10 LICENSE_REQUIRED unless a
+   * licence for the new repository's GUID is installed, and `functions once
+   * --test-mode` does not lift that gate. The licence is issued for `name`, so
+   * `name` must be a GUID (e2eRepoGuid); a refused issuance comes back as the
+   * code-10 result the create itself would have returned.
+   */
+  async repositoryNew(
+    name: string,
+    size: string,
+    password?: string,
+    datastorePath?: string
+  ): Promise<ExecResult> {
+    const licence = await installRepoLicence(this.bridgeExec, {
+      repositoryGuid: name,
+      kind: 'grand',
+      size,
+      datastorePath,
+    });
+    if (licence.code !== 0) return licence;
+    return this.testFunction({
+      function: 'repository_create',
+      repository: name,
+      size,
+      password,
+      datastorePath,
+    });
+  }
+
+  repositoryRm(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_delete',
+      repository: name,
+      datastorePath,
+      networkId,
+    });
+  }
+
+  repositoryMount(
+    name: string,
+    password?: string,
+    datastorePath?: string,
+    networkId?: string
+  ): Promise<ExecResult> {
+    // networkId matters for FORK mounts: without it the harness's default network-id (the parent's) rides along and the fork's docker daemon starts on the PARENT's network — which wedges the parent's daemon (13b test 7's parent counter read 0 exactly this way).
+    return this.testFunction({
+      function: 'repository_mount',
+      repository: name,
+      password,
+      datastorePath,
+      networkId,
+    });
+  }
+
+  repositoryUnmount(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
+    // Like mount: without networkId the harness default rides along, which is wrong for a repo on another network.
+    return this.testFunction({
+      function: 'repository_unmount',
+      repository: name,
+      datastorePath,
+      networkId,
+    });
+  }
+
+  repositoryUp(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_up',
+      repository: name,
+      datastorePath,
+      networkId,
+    });
+  }
+
+  repositoryDown(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_down',
+      repository: name,
+      datastorePath,
+      networkId,
+    });
+  }
+
+  repositoryList(datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_list',
+      datastorePath,
+    });
+  }
+
+  repositoryResize(
+    name: string,
+    newSize: string,
+    password?: string,
+    datastorePath?: string
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_resize',
+      repository: name,
+      newSize,
+      password,
+      datastorePath,
+    });
+  }
+
+  repositoryInfo(name: string, datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_info',
+      repository: name,
+      datastorePath,
+    });
+  }
+
+  repositoryStatus(name: string, datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_status',
+      repository: name,
+      datastorePath,
+    });
+  }
+
+  repositoryValidate(name: string, datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_validate',
+      repository: name,
+      datastorePath,
+    });
+  }
+
+  repositoryGrow(
+    name: string,
+    newSize: string,
+    password?: string,
+    datastorePath?: string
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_expand',
+      repository: name,
+      newSize,
+      password,
+      datastorePath,
+    });
+  }
+
+  // Runtime-generic verbs (spec 01 §4.3 / 03 §5.4): the same function dispatches to the docker per-repo dockerd or the kube namespace based on the repo's
+  // datastore placement. Exercised on docker repos here; the kube arm rides the
+  // cluster suite live-run.
+
+  repositoryHealth(name: string, datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_health',
+      repository: name,
+      datastorePath,
+    });
+  }
+
+  repositoryLogs(
+    name: string,
+    opts: { container?: string; lines?: string; datastorePath?: string } = {}
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_logs',
+      repository: name,
+      container: opts.container,
+      lines: opts.lines,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  repositoryExec(
+    name: string,
+    command: string,
+    opts: { container?: string; datastorePath?: string } = {}
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_exec',
+      repository: name,
+      command,
+      container: opts.container,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  // repository_promote (formerly repository_takeover): swap a fork's LUKS image over its grand so the fork's data becomes the grand's (spec 06 §2).
+  repositoryPromote(parent: string, fork: string, datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_promote',
+      parent,
+      fork,
+      datastorePath,
+    });
+  }
+
+  // repository_policy_set / _get / repository_trim (renet#76): size policy the storage-maintain timer consumes + on-demand pool reclaim. `name` is a repo
+  // GUID; omitting it addresses the machine-wide default (policy) / all mounted
+  // repos (trim). The renet command emits --output json.
+  repositoryPolicySet(opts: RepositoryPolicySetOptions = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_policy_set',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+      autoGrow: opts.autoGrow,
+      maxQuota: opts.maxQuota,
+      growThreshold: opts.growThreshold,
+      growStep: opts.growStep,
+      autoTrim: opts.autoTrim,
+      trimInterval: opts.trimInterval,
+    });
+  }
+
+  repositoryPolicyGet(opts: RepositoryPolicyGetOptions = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_policy_get',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  repositoryTrim(opts: RepositoryTrimOptions = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_trim',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+      docker: opts.docker,
+      dockerVolumes: opts.dockerVolumes,
+      reportOnly: opts.reportOnly,
+    });
+  }
+
+  repositoryDockerPrune(opts: RepositoryDockerPruneOptions = {}): Promise<ExecResult> {
+    const call: DockerPruneFunctionOptions = {
+      function: 'repository_docker_prune',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+      apply: opts.apply,
+      offline: opts.offline,
+      allImages: opts.allImages,
+      noTrim: opts.noTrim,
+    };
+    return this.testFunction(call);
+  }
+}

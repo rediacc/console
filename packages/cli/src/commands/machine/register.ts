@@ -16,16 +16,37 @@ import { assertResourceName, MachineConfigSchema, parseConfig } from '../../util
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 import { shellQuote } from '../../utils/shell-quote.js';
+import { convergeAfterSetup } from './converge.js';
 
-async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
+/** Exported for tests: re-deploy repo keys, re-apply access keys, and push infra after a successful setup. */
+export async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
   // Deploy all per-repo SSH keys to the newly set up machine
   try {
     const deployed = await deployAllRepoKeys(name);
     if (deployed > 0) {
       outputService.info(`Deployed ${deployed} repo SSH keys to ${name}`);
     }
-  } catch {
-    // non-fatal
+  } catch (error) {
+    // non-fatal, but visible: a repo whose key was not re-deployed keeps a line without --guid
+    outputService.warn(
+      `Repo SSH key deployment to ${name} failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  // Re-apply the config's access keys (PLAN-ssh-key-source-ranges Design 4): non-fatal, but visible, since a machine left without its access lines refuses the hosted executor.
+  try {
+    const { pushAccess } = await import('../../services/machine/access-push.js');
+    const report = await pushAccess(name);
+    if (report.written) {
+      outputService.info(t('commands.machine.access.push.success', { name, path: report.path }));
+    }
+  } catch (error) {
+    outputService.warn(
+      t('commands.machine.access.push.setupFailed', {
+        name,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
   }
 
   // Auto push-infra if machine has infra configured
@@ -274,6 +295,7 @@ function registerSetup(machine: Command): void {
       WK_DATASTORE_PATH
     )
     .option('--datastore-size <size>', t('commands.machine.setup.datastoreSizeOption'), '95%')
+    .option('--no-converge', t('commands.machine.setup.noConvergeOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options) => {
       try {
@@ -284,12 +306,13 @@ function registerSetup(machine: Command): void {
 
         outputService.info(t('commands.machine.setup.starting', { machine: name }));
 
-        const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+        // The router refresh waits for the converge pass after setup (convergeAfterSetup).
+        const { remotePath: remoteRenetPath, routerRefreshDue } = await acquireRemoteRenet(
           'provision',
           localConfig,
           machineObj,
           sshPrivateKey,
-          { debug: options.debug }
+          { debug: options.debug, deferRouterRefresh: true }
         );
 
         const lease = await machineConnections.acquireFor(machineObj, sshPrivateKey);
@@ -313,10 +336,22 @@ function registerSetup(machine: Command): void {
           });
           stderrPump.flush(exitCode !== 0);
 
+          const session = {
+            sftp: lease.sftp,
+            remoteRenetPath,
+            datastore: options.datastorePath,
+            routerRefreshDue: routerRefreshDue === true,
+          };
           if (exitCode === 0) {
             outputService.success(t('commands.machine.setup.completed', { machine: name }));
             await postSetupMachineTasks(name, options.debug);
+            await convergeAfterSetup(name, session, {
+              converge: options.converge,
+              debug: options.debug,
+            });
           } else {
+            // No converge on a failed setup, but the router still follows the installed binary.
+            await convergeAfterSetup(name, session, { converge: false });
             outputService.error(
               t('commands.machine.setup.failed', { machine: name, error: `exit code ${exitCode}` })
             );

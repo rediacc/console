@@ -152,7 +152,10 @@ describe('pruneOrphanStateRepos', () => {
       }
     );
 
-    expect(pruneOrphanStateRepos(cfg).sort()).toEqual(['ghost', 'my-app2']);
+    expect(pruneOrphanStateRepos(cfg).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
+      'ghost',
+      'my-app2',
+    ]);
     expect(Object.keys(cfg.state?.repos ?? {})).toEqual(['marketing']);
   });
 

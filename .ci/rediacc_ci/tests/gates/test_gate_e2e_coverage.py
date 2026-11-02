@@ -66,16 +66,16 @@ def build_fixture(gate, root):
         gate.log_fail("subject under test is missing: %s" % GATE)
     for rel in (
         "e2e/tests",
-        "e2e/src/utils/bridge/methods",
-        "e2e/src/utils/bridge/helpers",
+        "e2e/src/utils/renet-functions/methods",
+        "e2e/src/utils/renet-functions/helpers",
         "workflows",
     ):
         root.joinpath(*rel.split("/")).mkdir(parents=True, exist_ok=True)
     (root / "functions.generated.ts").write_text(FUNCTIONS_TS, encoding="utf-8")
     (root / "e2e" / "playwright.fixture.config.ts").write_text(CONFIG_TS, encoding="utf-8")
-    (root / "e2e" / "src" / "utils" / "bridge" / "methods" / "FixtureMethods.ts").write_text(
-        METHODS_TS, encoding="utf-8"
-    )
+    (
+        root / "e2e" / "src" / "utils" / "renet-functions" / "methods" / "FixtureMethods.ts"
+    ).write_text(METHODS_TS, encoding="utf-8")
     (root / "e2e" / "tests" / "01-live.test.ts").write_text(LIVE_TEST_TS, encoding="utf-8")
     (root / "e2e" / "tests" / "99-dark.test.ts").write_text(DARK_TEST_TS, encoding="utf-8")
     (root / "workflows" / "ci.yml").write_text(WORKFLOW_YML, encoding="utf-8")
@@ -83,7 +83,16 @@ def build_fixture(gate, root):
     return root
 
 
-def run_gate(gate, root, registry: str = "playwright.fixture.config.ts") -> harness.RunResult:
+# The fixture's 99-dark suite is dark on purpose (it is where the uncovered verb lives), so every case but the dark-suite ones names it with a BLOCKER, the way the production list names suite 20.
+DARK_EXEMPT = (
+    '{"tests/99-dark.test.ts": "BLOCKER: the fixture keeps this suite dark on purpose, '
+    'as the one place dead_verb is mentioned"}'
+)
+
+
+def run_gate(
+    gate, root, registry: str = "playwright.fixture.config.ts", dark: str = DARK_EXEMPT
+) -> harness.RunResult:
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE)
     harness.require_tool(
@@ -97,6 +106,7 @@ def run_gate(gate, root, registry: str = "playwright.fixture.config.ts") -> harn
             "E2E_COV_WORKFLOWS_DIR": str(root / "workflows"),
             "E2E_COV_ALLOWLIST": str(root / "allowlist"),
             "E2E_COV_REGISTRY": registry,
+            "E2E_COV_DARK_SUITES": dark,
         },
         timeout=300,
     )
@@ -217,3 +227,56 @@ def test_folded_call_reads_as_one_command(gate, tmp_path):
     result = run_gate(gate, root, "playwright.fixture.config.ts,playwright.config.ts:default")
     gate.assert_exit(1, result, "the folded head line must not read as a bare default call")
     gate.log_pass("CONTROL: the folded head line is not a default call")
+
+
+# ---- dark suites (box J5 of agent/plans/PLAN-backup-program.md): a suite no live config selects fails unless named with a BLOCKER.
+
+
+def test_a_dark_suite_fails_the_gate(gate, tmp_path):
+    root = build_fixture(gate, tmp_path)
+    (root / "allowlist").write_text(
+        "# BLOCKER: dead_verb predates the fixture suite; migration into a live test is "
+        "tracked follow-up work\ndead_verb\n",
+        encoding="utf-8",
+    )
+    result = run_gate(gate, root, dark="{}")
+    gate.assert_exit(1, result, "a suite no live config selects must fail the gate")
+    gate.assert_contains(result.combined, "tests/99-dark.test.ts", "the dark suite is named")
+    gate.assert_contains(result.combined, "NO CI job runs", "the finding says why")
+    gate.log_pass("RED-FIRST: a dark suite fails the gate even with every verb allowlisted")
+    # The twin: the same tree with the suite named by a BLOCKER passes.
+    result = run_gate(gate, root)
+    gate.assert_exit(0, result, "a BLOCKER-named dark suite passes")
+    gate.assert_contains(result.combined, "1 dark by BLOCKER", "the exemption is counted aloud")
+    gate.log_pass("a BLOCKER-named dark suite passes and is counted")
+
+
+def test_a_stale_dark_entry_fails(gate, tmp_path):
+    root = build_fixture(gate, tmp_path)
+    stale = (
+        '{"tests/99-dark.test.ts": "BLOCKER: the fixture keeps this suite dark on purpose, as the '
+        'one place dead_verb is mentioned", "tests/01-live.test.ts": "BLOCKER: live by '
+        'construction, so this entry is stale for the test"}'
+    )
+    result = run_gate(gate, root, dark=stale)
+    gate.assert_exit(1, result, "an entry for a live suite must fail as stale")
+    gate.assert_contains(result.combined, "debt paid", "the stale entry is named as paid")
+    gate.log_pass("a dark-suite entry for a live suite is rejected")
+
+
+def test_a_dark_entry_without_a_blocker_fails(gate, tmp_path):
+    root = build_fixture(gate, tmp_path)
+    result = run_gate(gate, root, dark='{"tests/99-dark.test.ts": "local only"}')
+    gate.assert_exit(1, result, "a dark-suite entry without a BLOCKER reason must fail")
+    gate.assert_contains(result.combined, "'BLOCKER:'", "the finding demands a BLOCKER reason")
+    gate.log_pass("a dark-suite entry without a BLOCKER is rejected")
+
+
+def test_zero_test_files_is_a_failure(gate, tmp_path):
+    root = build_fixture(gate, tmp_path)
+    for test in (root / "e2e" / "tests").iterdir():
+        test.unlink()
+    result = run_gate(gate, root, dark="{}")
+    gate.assert_exit(1, result, "a tree with no test files must not pass")
+    gate.assert_contains(result.combined, "ZERO test files", "the vacuity is named")
+    gate.log_pass("zero discovered test files is a failure, not a pass")

@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import type { ExecResult } from '../../src/utils/bridge/types';
+import { installRepoLicence } from '../../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../../src/utils/renet-functions/types';
 
 // Suite 15 (`E2E K8s` job): a k8s repo end to end on the DATASTORE-CLUSTER model (redesign spec 06 §15). It promotes the wave3b deliverable-5 transcript (scratchpad/reports/p1-wave3b-vm.md) to a suite: a cluster-attached LOCAL datastore + a kube repo with a DECLARED VOLUME and a DECLARED SECRET, brought up through the runtime-generic `repository up` dispatch (kube arm:
 // ApplyIsolation → ProvisionVolumes → InjectSecrets → Deploy).
@@ -38,7 +39,8 @@ const KC = `${CTRL_MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
 // The data datastore the kube repo lives on (cluster backref ⇒ KubeRuntime).
 const DATA_DS = 'shopds';
 const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
-const REPO = 'shop';
+// Fixed GUIDs, not names: renet licenses a repository by its name and the account server signs UUIDs only (src/utils/licence.ts). Fixed so an adopted standing repo is found again on the next run. The namespace mirrors the name, and a GUID is a valid namespace label.
+const REPO = '5c0b15a0-1515-4a15-8a15-000000000001';
 const REPO_NET = '2880';
 const NS = REPO; // the repo's namespace mirrors its name
 const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass (static local PV)
@@ -46,7 +48,7 @@ const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass (s
 const CSI_SC = `rediacc-csi-${DATA_DS}`;
 const VSCLASS = 'rediacc-csi';
 const APP_SECRET_VALUE = 's3cr3t-prod';
-const FORK_REPO = `${REPO}-joseph`;
+const FORK_REPO = '5c0b15a0-1515-4a15-8a15-000000000002';
 const FORK_NET = '2944';
 
 // The kube repo's declared app: an annotated ClusterIP Service (routable), a PVC naming the repo's rediacc StorageClass (the F5 hazard guard — a PVC that omits it is silently adopted by stock k3s local-path), and a restricted-PSA-compliant Deployment that writes a marker into the local PV so fork divergence is observable. `scanDeclaredVolumes` reads the PVC to provision the LUKS
@@ -129,7 +131,7 @@ test.describe
     test.skip(!canRun, 'Requires K8S_MODE=1 and a worker VM');
     test.setTimeout(600_000);
 
-    let w1: BridgeTestRunner;
+    let w1: RenetFunctionsTestRunner;
 
     // --- kubectl-over-SSH helpers (no host kubectl; use the embedded k3s) ---
     const kubectl = async (args: string): Promise<ExecResult> =>
@@ -251,17 +253,32 @@ ${dataSource ?? ''}`;
     };
 
     // Bring the kube repo up carrying its declared secret. Secrets ride the SAME CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque Secret (wave3b). So the up call must carry the env var (bridge-once cannot).
-    const repoUpWithSecret = async (name: string): Promise<ExecResult> =>
-      w1.executeViaBridge(
-        `sudo env REDIACC_SECRET_APP_SECRET=${APP_SECRET_VALUE} renet repository up ` +
-          `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
+    //
+    // xargs is the exit-status source of this pipeline: renet exiting 1-125 comes back as 123 (255 as 124, a signal as 125), so the code is only good for zero versus non-zero. A variable-free pipe cannot do better, because executeViaBridge relays through three shells that expand `$`. A caller that needs renet's real exit code must run it another way, and the stderr prefix below says so when the up fails.
+    const repoUpWithSecret = async (name: string): Promise<ExecResult> => {
+      const res = await w1.executeViaBridge(
+        // The value arrives on stdin and xargs places it in the env, so it is not in the logged command text.
+        `sudo xargs -d '\n' -I{} env REDIACC_SECRET_APP_SECRET={} renet repository up ` +
+          `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`,
+        undefined,
+        { stdin: `${APP_SECRET_VALUE}\n` }
       );
+      return res.code === 0
+        ? res
+        : {
+            ...res,
+            stderr: `[repoUpWithSecret: exit ${res.code}; from xargs, 123 is any renet exit 1-125, 124 is renet's 255 and 125 is a signal; 126/127 is renet not runnable, and 255 comes from the bridge or SSH]\n${res.stderr}`,
+          };
+    };
 
     // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER the datastore mount (kubelet pod volumes) and containerd overlays mounted at /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds neither, so the datastore release is then CORRECTLY refused by the
     // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain is gate finding #20 (4 witnesses).
     //
     // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a SIBLING datastore (a prefix match) out of the list.
-    const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
+    const unwindSubmounts = async (
+      runner: RenetFunctionsTestRunner,
+      mount: string
+    ): Promise<void> => {
       const root = mount.replace(/\/[^/]+$/, '');
       const select =
         `{ cut -d" " -f2 /proc/mounts | grep "^${mount}/"; ` +
@@ -287,7 +304,7 @@ ${dataSource ?? ''}`;
     };
 
     // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore, and NO verb ever stops them (`renet kube csi-node-down` exists with zero callers) → every storage release hits EBUSY with no mount holder to find. Gate finding #26. The suite stops what the product started.
-    const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
+    const csiNodeDown = async (runner: RenetFunctionsTestRunner): Promise<void> => {
       await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
     };
 
@@ -318,7 +335,7 @@ ${dataSource ?? ''}`;
     let adopted = false;
 
     test.beforeAll(async () => {
-      w1 = BridgeTestRunner.forWorker(1);
+      w1 = RenetFunctionsTestRunner.forWorker(1);
       if (KEEP) {
         // The harness's global setup REBOOTS the VMs, so a standing cluster is mid-recovery here (autostart reconciler reattaches the datastores, systemd restarts k3s). A single readiness probe would falsely demote to a full rebuild: check for the control datastore RECORD (cheap, survives reboot) and only then wait out the boot.
         const rec = await w1.executeViaBridge(
@@ -416,6 +433,14 @@ ${dataSource ?? ''}`;
 
       // Author the repo-as-folder: repos/shop/{Rediaccfile, manifests/app.yaml}.
       const repoPath = `${DATA_MOUNT}/repos/${REPO}`;
+      const grandLicence = await installRepoLicence(w1.executeViaBridge.bind(w1), {
+        repositoryGuid: REPO,
+        kind: 'grand',
+        datastorePath: DATA_MOUNT,
+      });
+      expect(grandLicence.code, `grand licence: ${grandLicence.stdout}${grandLicence.stderr}`).toBe(
+        0
+      );
       await w1.executeViaBridge(`sudo mkdir -p ${repoPath}/manifests`);
       await writeFile(`${repoPath}/manifests/app.yaml`, APP_MANIFEST);
       await writeFile(`${repoPath}/Rediaccfile`, REDIACCFILE);
@@ -546,6 +571,15 @@ ${dataSource ?? ''}`;
         expect(seed.code, `seed parent marker: ${seed.stderr}`).toBe(0);
         expect(await marker(NS)).toBe(seeded);
 
+        const forkLicence = await installRepoLicence(w1.executeViaBridge.bind(w1), {
+          repositoryGuid: FORK_REPO,
+          kind: 'fork',
+          grandGuid: REPO,
+          datastorePath: DATA_MOUNT,
+        });
+        expect(forkLicence.code, `fork licence: ${forkLicence.stdout}${forkLicence.stderr}`).toBe(
+          0
+        );
         const fork = await w1.executeViaBridge(
           `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET} --up`
         );

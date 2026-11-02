@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Full Repository Workflow
@@ -11,12 +12,12 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  */
 test.describe
   .serial('Full Repository Workflow @bridge @integration', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `full-workflow-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
     });
@@ -135,14 +136,14 @@ test.describe
  */
 test.describe
   .serial('Container Repository Integration @bridge @integration', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `container-integration-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
     const containerName = 'test-nginx';
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(() => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
     });
 
     test.afterAll(async () => {
@@ -278,14 +279,14 @@ test.describe
  * Tests graceful error handling and recovery.
  */
 test.describe('Error Recovery Integration @bridge @integration', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('should handle sequential operations on nonexistent resources', async () => {
-    const nonexistent = 'nonexistent-resource-xyz';
+    const nonexistent = e2eRepoGuid();
 
     // SEQUENTIAL, as the test's name always claimed: the dark-era body fired all six lifecycle ops in Promise.all — six concurrent operations racing on one resource, whose "tolerant" outcomes were timing artifacts (up passed in a full-suite run and failed in isolation). Sequential ops have deterministic contracts.
     const info = await runner.repositoryInfo(nonexistent, DEFAULT_DATASTORE_PATH);
@@ -309,7 +310,7 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
   test('should recover from failed operation', async () => {
     // Attempt an operation that will fail (mounting nonexistent repository)
     const failResult = await runner.repositoryMount(
-      'likely-nonexistent',
+      e2eRepoGuid(),
       TEST_PASSWORD,
       DEFAULT_DATASTORE_PATH
     );

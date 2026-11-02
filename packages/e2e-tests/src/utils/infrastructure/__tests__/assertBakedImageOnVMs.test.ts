@@ -13,7 +13,7 @@ const { BRIDGE, WORKER, executeOnVM } = vi.hoisted(() => ({
     >(),
 }));
 
-vi.mock('../../bridge/OpsManager', () => ({
+vi.mock('../../renet-functions/OpsManager', () => ({
   getOpsManager: () => ({
     getBridgeVMIp: () => BRIDGE,
     getWorkerVMIps: () => [WORKER],

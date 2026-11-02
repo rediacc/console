@@ -8,7 +8,7 @@ services:
       - "rediacc.service_port=80"
     volumes:
       - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
-      - ${DOCKER_HOST:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ${DOCKER_SOCKET}:/var/run/docker.sock:ro
     environment:
       - APACHE_PORT=${APACHE_PORT:-}
       - APACHE_IP_BINDING=${SERVICE_IP:-}
@@ -19,6 +19,23 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  # Standalone Collabora for the per-repo Docker API gate, which refuses every
+  # capability except CHECKPOINT_RESTORE, SYS_PTRACE and NET_ADMIN. AIO's own
+  # Collabora container is created through the API with cap_add MKNOD and is
+  # refused, so its AIO toggle stays off and this service takes its place.
+  # The image entrypoint is coolwsd; command is appended to its arguments.
+  # security.capabilities=false skips the chroot (landlock isolation instead),
+  # and mount_jail_tree=false drops the bind-mount helper that needs SYS_ADMIN.
+  # Tag matches collabora/code:26.04.5.1.1 (options verified in its coolwsd.xml).
+  collabora:
+    image: collabora/code:26.04.5.1.1
+    restart: always
+    labels:
+      - "rediacc.service_port=9980"
+    command:
+      - "--o:security.capabilities=false"
+      - "--o:mount_jail_tree=false"
 
 volumes:
   nextcloud_aio_mastercontainer:

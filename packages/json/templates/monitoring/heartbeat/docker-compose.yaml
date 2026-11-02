@@ -21,7 +21,7 @@ services:
 
   heartbeat:
     container_name: heartbeat_app
-    image: node:20-alpine
+    image: node:24-alpine
     working_dir: /app
     command: ["sh", "-c", "npm install --production && node heartbeat.mjs"]
     env_file:

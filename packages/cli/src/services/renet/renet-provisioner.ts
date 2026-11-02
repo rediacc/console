@@ -31,6 +31,7 @@ import {
   recordProvisionVerified,
 } from './provision-state.js';
 import { stageRenetBinary } from './renet-binary-transfer.js';
+import { reportDaemonUpgrade, upgradeDaemons } from './renet-daemons.js';
 import {
   classifyInspect,
   matchedInspect,
@@ -38,6 +39,15 @@ import {
   type RenetInspectResult,
 } from './renet-inspect.js';
 import { withLocalProvisionLock } from './renet-provision-lock.js';
+import type {
+  CacheEntry,
+  InstallResult,
+  LocalHashMemo,
+  ProvisionContext,
+  ProvisionOptions,
+  ProvisionResult,
+} from './renet-provisioner-types.js';
+import { buildSlotPruneStep } from './renet-slot-prune.js';
 
 /** Root directory for versioned renet installs on remote machines */
 const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
@@ -60,6 +70,12 @@ const STAGING_PATH_PREFIX = '/tmp/.rdc-staging-renet';
 /** Remote host-scoped lock file for install/restart critical section */
 const REMOTE_LOCK_PATH = '/tmp/.rdc-renet-provision.lock';
 
+/** Versioned renet slots kept after an install, `current` included: current plus the 2 previous. Matches renet's `daemons upgrade --keep-slots` default. */
+const REMOTE_KEEP_SLOTS = 3;
+
+/** Where systemd units that name a renet slot live. */
+const REMOTE_UNIT_DIR = '/etc/systemd/system';
+
 /** flock's `-E` exit status, chosen outside anything the install body emits. */
 const REMOTE_FLOCK_TIMEOUT_EXIT = 75;
 
@@ -69,61 +85,19 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 /** Systemd service name for the route server */
 const ROUTER_SERVICE = 'rediacc-router';
 
-/** Result of a provisioning operation */
-interface ProvisionResult {
-  /** Whether provisioning succeeded */
-  success: boolean;
-  /** Action taken: uploaded new binary, verified existing, or failed */
-  action: 'uploaded' | 'verified' | 'failed' | 'version_rejected';
-  /** Detected architecture (undefined if detection failed) */
-  arch?: RenetArch;
-  /** Error message if failed */
-  error?: string;
-  /** Whether running services were restarted after binary update */
-  servicesRestarted?: boolean;
-  /** Exact remote binary path that was verified or installed */
-  remotePath: string;
-}
-
-/** Cache entry for a provisioned host */
-interface CacheEntry {
-  hash: string;
-  arch: RenetArch;
-  provisionedAt: number;
-}
-
-/** Memoized SHA256 of a local binary, keyed by file identity */
-interface LocalHashMemo {
-  mtimeMs: number;
-  size: number;
-  hash: string;
-}
-
-interface InstallResult {
-  binaryUpdated: boolean;
-  currentUpdated: boolean;
-}
-
-/** Options for {@link RenetProvisionerService.provision}. */
-interface ProvisionOptions {
-  localBinaryPath?: string;
-  /** Restart running services after binary update. Default: false. */
-  restartServices?: boolean;
-  debug?: boolean;
-  /**
-   * Called only when the remote hash differs from the local one, immediately
-   * before the binary is staged. A throw aborts the provision before anything
-   * reaches the machine.
-   */
-  uploadGuard?: () => void | Promise<void>;
-}
-
-interface ProvisionContext {
-  arch: RenetArch;
-  binary: Buffer;
-  localHash: string;
-  cacheKey: string;
-  remoteInstallPath: string;
+/**
+ * The remote command that refreshes an active router after a binary update. A router that is not active is left
+ * alone (`is-active` short-circuits the chain, and `|| true` keeps the command from failing the provision). An
+ * active one is re-installed with `renet proxy install` before the restart: the updated binary re-renders the
+ * rediacc-router unit, whose text carries the Docker socket glob, so a restart alone would leave an upgraded router
+ * scanning the old socket layout (agent/plans/PLAN-renet-cross-repo-isolation.md, D5).
+ */
+export function buildRouterRefreshCommand(remoteRenetPath: string): string {
+  return (
+    `sudo systemctl is-active --quiet ${ROUTER_SERVICE}` +
+    ` && sudo ${shellQuote(remoteRenetPath)} proxy install >/dev/null 2>&1` +
+    ` && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
+  );
 }
 
 /**
@@ -142,6 +116,8 @@ interface ProvisionContext {
  */
 class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
+  /** Hosts trusted from the persisted entry whose remote slot no mutating call has probed yet. */
+  private readonly unprobed = new Set<string>();
   private readonly inflight = new Map<string, Promise<ProvisionResult>>();
   /** Per-host arch memo so partial cache misses skip the remote `uname -m` exec */
   private readonly archByHost = new Map<string, RenetArch>();
@@ -165,12 +141,12 @@ class RenetProvisionerService {
   ): Promise<ProvisionResult> {
     const cacheKey = this.buildCacheKey(config);
     const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
-    if (verified) {
+    if (verified && (await this.remoteSlotStillCurrent(config, cacheKey, verified, sharedSftp))) {
       return this.buildVerifiedResult(verified.arch, REMOTE_INSTALL_PATH);
     }
 
     const inflight = this.inflight.get(cacheKey);
-    if (inflight) {
+    if (inflight !== undefined) {
       return inflight;
     }
 
@@ -230,9 +206,9 @@ class RenetProvisionerService {
   private async lookupVerified(
     cacheKey: string,
     localBinaryPath: string | undefined
-  ): Promise<{ arch: RenetArch; hash: string } | null> {
+  ): Promise<{ arch: RenetArch; hash: string; fromDisk?: boolean } | null> {
     const cached = this.getFreshCacheEntry(cacheKey);
-    if (cached) return cached;
+    if (cached) return { ...cached, fromDisk: this.unprobed.has(cacheKey) };
     const persisted = await getFreshProvisionEntry(cacheKey, localBinaryPath ?? null).catch(
       () => null
     );
@@ -243,7 +219,49 @@ class RenetProvisionerService {
       provisionedAt: persisted.verifiedAt,
     });
     this.archByHost.set(cacheKey, persisted.arch);
-    return { arch: persisted.arch, hash: persisted.hash };
+    this.unprobed.add(cacheKey);
+    return { arch: persisted.arch, hash: persisted.hash, fromDisk: true };
+  }
+
+  /**
+   * A persisted entry only records what an earlier process (possibly another
+   * config) saw. A mutating call confirms with one exec that the slot and
+   * `current` still hold the recorded bytes; a replaced or moved slot drops
+   * the entry so the full path runs. A probe that cannot run counts as
+   * not current. In-process entries were proven by this process and skip it.
+   */
+  private async remoteSlotStillCurrent(
+    config: SFTPClientConfig,
+    cacheKey: string,
+    verified: { hash: string; fromDisk?: boolean },
+    sharedSftp: SFTPClient | undefined
+  ): Promise<boolean> {
+    if (verified.fromDisk !== true) return true;
+    const paths = { slot: REMOTE_INSTALL_PATH, current: REMOTE_CURRENT_PATH };
+    let current = false;
+    try {
+      const probes = await withSharedOrPooledSftp(sharedSftp, config, (sftp) =>
+        probeRemoteSlots(sftp, paths)
+      );
+      current = probes.slot.hash === verified.hash && probes.current.hash === verified.hash;
+    } catch {
+      current = false;
+    }
+    if (current) this.unprobed.delete(cacheKey);
+    else await this.forgetHost(config);
+    return current;
+  }
+
+  /**
+   * Drop what is remembered about a host's remote slot, in memory and on disk.
+   * Callers invoke it when a remote command exits 127 on the renet path: the
+   * binary the cache vouched for is gone.
+   */
+  async forgetHost(config: SFTPClientConfig): Promise<void> {
+    const cacheKey = this.buildCacheKey(config);
+    this.cache.delete(cacheKey);
+    this.unprobed.delete(cacheKey);
+    await dropProvisionEntry(cacheKey).catch(() => undefined);
   }
 
   /** Remember a proven-current host in memory and, best-effort, across processes. */
@@ -254,6 +272,7 @@ class RenetProvisionerService {
     sourcePath: string | undefined
   ): Promise<void> {
     this.cache.set(cacheKey, { hash, arch, provisionedAt: Date.now() });
+    this.unprobed.delete(cacheKey);
     await recordProvisionVerified(cacheKey, { hash, arch, sourcePath: sourcePath ?? null }).catch(
       reportStateWriteRefused
     );
@@ -312,10 +331,12 @@ class RenetProvisionerService {
     );
     this.logInstallResult(config.host, installResult, options?.debug === true);
 
-    // Best-effort: restart route server so it picks up the new binary
+    // Best-effort: restart route server so it picks up the new binary, now or, when deferred, by the caller.
     let servicesRestarted = false;
-    if (options?.restartServices === true && installResult.currentUpdated) {
-      servicesRestarted = await this.restartRunningServices(sftp);
+    const routerRefreshOwed = options?.restartServices === true && installResult.currentUpdated;
+    const routerRefreshDue = routerRefreshOwed && options?.deferRouterRefresh === true;
+    if (routerRefreshOwed && !routerRefreshDue) {
+      servicesRestarted = await this.refreshRouter(sftp, context.remoteInstallPath);
     }
 
     // Remember the proven-current state so consecutive rdc commands skip the whole cold path.
@@ -330,6 +351,7 @@ class RenetProvisionerService {
       action: installResult.binaryUpdated ? 'uploaded' : 'verified',
       arch: context.arch,
       servicesRestarted,
+      routerRefreshDue,
       remotePath: context.remoteInstallPath,
     };
   }
@@ -532,19 +554,22 @@ class RenetProvisionerService {
   }
 
   /**
-   * Restart services that use the renet binary, if they are currently running.
-   * Returns true if any service was restarted.
+   * Re-install and restart an active rediacc-router from `remoteInstallPath`
+   * ({@link buildRouterRefreshCommand}), then move the other renet daemons onto
+   * the new binary (`upgradeDaemons`, renet-daemons.ts). Both halves run after every binary
+   * update, deferred or not, so no hub keeps running a deleted binary.
+   * Best-effort: returns true only when the router was restarted.
    */
-  private async restartRunningServices(sftp: SFTPClient): Promise<boolean> {
+  async refreshRouter(sftp: Pick<SFTPClient, 'exec'>, remoteInstallPath: string): Promise<boolean> {
+    let restarted = false;
     try {
-      // Only restart if the service is active, is-active returns non-zero otherwise, so the && short-circuits and || true ensures the command always succeeds.
-      const output = await sftp.exec(
-        `sudo systemctl is-active --quiet ${ROUTER_SERVICE} && sudo systemctl restart ${ROUTER_SERVICE} && echo RESTARTED || true`
-      );
-      return output.trim().includes('RESTARTED');
+      const output = await sftp.exec(buildRouterRefreshCommand(remoteInstallPath));
+      restarted = output.trim().includes('RESTARTED');
     } catch {
-      return false;
+      restarted = false;
     }
+    reportDaemonUpgrade(await upgradeDaemons(sftp, remoteInstallPath, REMOTE_CURRENT_PATH));
+    return restarted;
   }
 
   /**
@@ -553,6 +578,7 @@ class RenetProvisionerService {
    */
   clearCache(): void {
     this.cache.clear();
+    this.unprobed.clear();
     this.archByHost.clear();
     this.localHashMemo.clear();
     this.embeddedHashMemo.clear();
@@ -641,6 +667,15 @@ class RenetProvisionerService {
       `if [ "$(current_target)" != ${escapedInstallPath} ]; then sudo ln -sfn ${escapedInstallPath} ${escapedCurrentTmpPath}; sudo mv -Tf ${escapedCurrentTmpPath} ${escapedCurrentPath}; if [ -n "$result" ]; then result="$result CURRENT_UPDATED"; else result=CURRENT_UPDATED; fi; fi`,
       // Ensure /usr/bin/renet symlinks to current so "sudo renet" always resolves to the provisioned binary
       `if [ ! -L /usr/bin/renet ] || [ "$(readlink /usr/bin/renet)" != ${escapedCurrentPath} ]; then sudo ln -sf ${escapedCurrentPath} /usr/bin/renet; fi`,
+      // Prune old slots inside the same lock, after current points at the new slot.
+      `(${buildSlotPruneStep({
+        root: REMOTE_INSTALL_ROOT,
+        currentPath: REMOTE_CURRENT_PATH,
+        installPath: remoteInstallPath,
+        unitDir: REMOTE_UNIT_DIR,
+        keep: REMOTE_KEEP_SLOTS,
+        sudo: 'sudo',
+      })}) || true`,
       'if [ -z "$result" ]; then result=VERIFIED; fi',
       'echo "$result"',
     ].join('; ');

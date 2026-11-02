@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # 서비스
@@ -52,7 +52,7 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 | `REDIACC_WORKING_DIR` | 저장소의 마운트 경로 | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | 저장소 GUID | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | 네트워크 ID (정수) | `2816` |
-| `DOCKER_HOST` | 이 저장소의 격리된 데몬을 위한 Docker 소켓 | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | 이 저장소의 격리된 데몬을 위한 Docker 소켓 | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json`에 정의된 각 서비스의 루프백 IP | `POSTGRES_IP=127.0.11.2` |
 
 `{SERVICE}_IP` 변수는 `.rediacc.json`의 슬롯 매핑에서 자동 생성되고 Rediaccfile 함수가 실행되기 전에 내보내집니다. 명명 규칙은 서비스 이름을 대문자로 변환하고 하이픈을 밑줄로 교체한 후 `_IP`를 추가합니다. 예를 들어, 슬롯 `0`의 `listmonk-app`이라는 서비스는 `LISTMONK_APP_IP=127.0.11.2`가 됩니다.
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-`rediacc.wireguard`를 사용하면 서비스가 WireGuard 터널을 구성할 수 있습니다. 예를 들어 특정 프로세스의 트래픽을 원격 엔드포인트를 통해 라우팅할 때 유용합니다. 모든 서비스는 호스트 네트워킹으로 실행되므로, 호스트 라우팅에 영향을 주지 않도록 터널은 컨테이너 내부 네트워크 네임스페이스에 한정해야 합니다. `privileged: true`, `pid: host`, `ipc: host`와 같은 광범위한 특권 옵션은 레이블 여부와 관계없이 유효성 검사에서 계속 거부됩니다.
+`rediacc.wireguard`를 사용하면 서비스가 WireGuard 터널을 구성할 수 있습니다. 예를 들어 특정 프로세스의 트래픽을 원격 엔드포인트를 통해 라우팅할 때 유용합니다. 모든 서비스는 호스트 네트워킹으로 실행되므로, 호스트 라우팅에 영향을 주지 않도록 터널은 컨테이너 내부 네트워크 네임스페이스에 한정해야 합니다. `privileged: true`, `pid: host`, `ipc: host`와 같은 광범위한 특권 옵션은 레이블 여부와 관계없이 compose 유효성 검사와 Docker API 모두에서 계속 거부되며, Docker API에서는 저장소의 데몬이 `403`으로 응답합니다.
 
 ### 다중 서비스 레이아웃
 
@@ -453,7 +453,7 @@ rdc repo admin autostart enable webapp
 
 **`env` 모드.** `environment:` 값에서 `${REDIACC_SECRET_<KEY>}`를 통해 보간합니다. renet 래퍼가 배포 시 컨테이너 환경에 값을 전달합니다.
 
-**`file` 모드.** 값이 `/var/run/rediacc/secrets/<networkID>/<KEY>`의 호스트 측 tmpfs 파일에 저장되며, Docker compose의 표준 `secrets:` 블록을 통해 컨테이너에 마운트합니다. 컨테이너는 `/run/secrets/<key>`를 읽습니다. 민감한 것에는 이 모드를 선호하십시오. 값은 `docker inspect`나 `/proc/<pid>/environ`에 나타나지 않습니다.
+**`file` 모드.** 값이 `/var/run/rediacc/net-<networkID>/secrets/<KEY>`의 호스트 측 tmpfs 파일에 저장되며, Docker compose의 표준 `secrets:` 블록을 통해 컨테이너에 마운트합니다. 컨테이너는 `/run/secrets/<key>`를 읽습니다. 민감한 것에는 이 모드를 선호하십시오. 값은 `docker inspect`나 `/proc/<pid>/environ`에 나타나지 않습니다.
 
 ```yaml
 services:
@@ -466,9 +466,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""`로 값을 설정하십시오. 전체 방법은 [저장소 § 시크릿](/en/docs/repositories#secrets)을 참조하고, 명령 참조는 치트 시트의 [저장소별 시크릿](/en/docs/rdc-cheat-sheet#per-repo-secrets)을 참조하십시오.
 
-> **교차 저장소 경로는 유효성 검사 시 거부됩니다.** 다른 저장소의 `/var/run/rediacc/secrets/<other-networkID>/` 디렉터리를 가리키는 compose `secrets: file:`(또는 `configs: file:`, `env_file:`)은 docker compose가 실행되기 전에 renet 래퍼에 의해 강경히 거부됩니다. `--unsafe`는 이를 재정의하지 않습니다. 심층 방어: Rediaccfile 셸 주변의 Landlock 샌드박스는 읽기를 현재 네트워크의 시크릿 디렉터리로 범위를 제한하므로, Rediaccfile bash에서 `cat /var/run/rediacc/secrets/<other>/X`는 YAML 유효성 검사기를 우회하더라도 EACCES로 실패합니다. 별도로 활성화할 필요가 없습니다. 모든 `repo up`에 기본적으로 적용됩니다.
+> **교차 저장소 경로는 유효성 검사 시 거부됩니다.** 다른 저장소의 `/var/run/rediacc/net-<other-networkID>/secrets/` 디렉터리를 가리키는 compose `secrets: file:`(또는 `configs: file:`, `env_file:`)은 docker compose가 실행되기 전에 renet 래퍼에 의해 강경히 거부됩니다. `--unsafe`는 이를 재정의하지 않습니다. 심층 방어: Rediaccfile 셸 주변의 Landlock 샌드박스는 읽기를 현재 네트워크의 시크릿 디렉터리로 범위를 제한하므로, Rediaccfile bash에서 `cat /var/run/rediacc/net-<other>/secrets/X`는 YAML 유효성 검사기를 우회하더라도 EACCES로 실패합니다. 별도로 활성화할 필요가 없습니다. 모든 `repo up`에 기본적으로 적용됩니다.

@@ -1,13 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { log } from '../src/utils/log';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Check that the datastore on a VM is initialized, laying it down when it is not.
  * Returns whether the datastore is usable on that VM.
  */
-async function ensureDatastoreInitialized(runner: BridgeTestRunner, vm: string): Promise<boolean> {
+async function ensureDatastoreInitialized(
+  runner: RenetFunctionsTestRunner,
+  vm: string
+): Promise<boolean> {
   const result = await runner.testFunctionOnMachine(vm, {
     function: 'datastore_status',
     datastorePath: DEFAULT_DATASTORE_PATH,
@@ -39,14 +43,14 @@ async function ensureDatastoreInitialized(runner: BridgeTestRunner, vm: string):
  */
 test.describe
   .serial('Multi-Machine Integration @bridge @multi-machine @integration', () => {
-    let runner: BridgeTestRunner;
-    const repositoryName = `multi-integration-${Date.now()}`;
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const initializedVMs: string[] = [];
     let crossVMSSHAvailable = false;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
       // Create the repository before attempting to deploy/push

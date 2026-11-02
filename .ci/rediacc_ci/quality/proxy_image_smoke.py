@@ -12,24 +12,27 @@ WHAT IT DOES. `docker build -f workers/proxy/Dockerfile .` from the repo root (t
 
   1. a fake account server, run with the image's own node, answering `/proxy/introspect`;
   2. the executor, from the image's own CMD, with REDIACC_TOKEN and REDIACC_ACCOUNT_SERVER set
-     exactly as the Worker's `executorEnvVars` sets them.
+     exactly as the Worker's `executorEnv` sets them.
 
 and asserts: the process is still running after boot; `/v1/health` answers 200; `/v1/server-info` answers 200 with `mode: "container"` and a `cliVersion` equal to the shipped renet's version; `POST /v1/session` with a caller token answers 200 after the executor introspected it with ITS OWN token; `renet version` runs inside the image. Every HTTP probe runs from inside the network (`docker exec` into the fake account's container), so nothing depends on host port publishing.
 
 THE CONTROL THAT MAKES "STAYS UP" MEAN SOMETHING. The same image is also started WITHOUT REDIACC_TOKEN, and the gate requires that one to exit non-zero naming the variable. A "still running" check that could not tell those two apart would be vacuous.
 
-THE RENET IT SHIPS. The Dockerfile copies `workers/proxy/renet/renet-linux-amd64`, which `rediacc_ci.deploy.deploy_proxy` builds. When none is staged the gate stages one for the run and removes it afterwards: `private/bin/renet-linux-amd64` when present, else a `go build` of `private/renet/cmd/renet` (no embedded assets, fine for a boot test). No staged binary and no way to make one is exit 2: no verdict.
+WHAT IT SHIPS. The Dockerfile builds nothing: it copies `workers/proxy/stage/` (bundle, renet, natives, manifest) and checks every sha256 against the manifest. The gate stages that directory through `rediacc_ci.deploy.executor_artifacts stage-local` (the tree's `packages/cli/dist/cli-bundle.cjs`, `private/bin/renet-linux-amd64` and the lockfile-pinned natives of `node_modules`) and removes it afterwards, unless a manifest was already staged. A tree without those build outputs is exit 2: no verdict.
 
-SLOW. A full image build (npm ci of the workspace, three package builds, the bundle) takes minutes, so the gate is `slow: true` in the manifest and no CI step runs it yet.
+SLOW. Staging and the image build (no npm, no compile; the layers are the base, apt and a 200 MB renet) take a minute or two, so the gate is `slow: true` in the manifest and runs in CI only in `.github/workflows/ci-build-renet.yml` job `proxy-image-smoke`, after the renet build, with that build's renet-linux-amd64 downloaded into private/bin/ for the stage (and the CLI bundle and natives stage-local reads present beside it).
 
-Exit 0 clean, 1 on findings, 2 when the gate's own controls fail or it cannot reach a verdict (docker absent, no renet to stage).
+Exit 0 clean, 1 on findings, 2 when the gate's own controls fail or it cannot reach a verdict (docker absent, nothing to stage).
 """
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -41,14 +44,13 @@ import urllib.request
 from rediacc_ci import paths
 from rediacc_ci.controls import controls_first
 from rediacc_ci.core import https
+from rediacc_ci.deploy import executor_artifacts
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 DOCKERFILE = ("workers", "proxy", "Dockerfile")
-RENET_STAGED = ("workers", "proxy", "renet", "renet-linux-amd64")
-RENET_PREBUILT = ("private", "bin", "renet-linux-amd64")
-RENET_SOURCE = ("private", "renet")
+STAGE_DIR = ("workers", "proxy", "stage")
 
 EXECUTOR_TOKEN = "rdt_image_smoke_executor"
 CALLER_TOKEN = "rdt_image_smoke_caller"
@@ -129,11 +131,19 @@ def verdict(obs: dict) -> list[str]:
             "`renet version` in the image failed (B2): rc %r, output %r"
             % (obs.get("renet_rc"), obs.get("renet_output", "").strip())
         )
-    elif obs.get("server_info_status") == 200 and info.get("cliVersion") != renet:
+    if obs.get("server_info_status") == 200 and info.get("cliVersion") != obs.get("bundle_version"):
         out.append(
-            "the bundle reports cliVersion %r but ships renet %r; the two must match"
-            % (info.get("cliVersion"), renet)
+            "/v1/server-info reports cliVersion %r but `node cli-bundle.cjs --version` says %r"
+            % (info.get("cliVersion"), obs.get("bundle_version"))
         )
+    manifest = obs.get("manifest_version")
+    if manifest != executor_artifacts.LOCAL_VERSION and obs.get("bundle_version") != manifest:
+        out.append(
+            "the image's bundle reports %r but the staged manifest names %r; a released stage must agree"
+            % (obs.get("bundle_version"), manifest)
+        )
+    if manifest != executor_artifacts.LOCAL_VERSION and renet is not None and renet != manifest:
+        out.append("the image ships renet %r but the staged manifest names %r" % (renet, manifest))
     if obs.get("session_status") != 200:
         out.append(
             "POST /v1/session with a caller token answered %r, expected 200"
@@ -162,6 +172,8 @@ HEALTHY = {
     "server_info": {"mode": "container", "cliVersion": "1.2.3"},
     "renet_rc": 0,
     "renet_output": "renet version 1.2.3",
+    "bundle_version": "1.2.3",
+    "manifest_version": "1.2.3",
     "session_status": 200,
     "account_log": "READY\nAUTH Bearer %s POST /account/api/v1/proxy/introspect\n" % EXECUTOR_TOKEN,
     "tokenless_running": False,
@@ -208,7 +220,8 @@ def _fake_account_control() -> bool:
                 with https.urlopen(req, timeout=5, http="loopback") as r:
                     return r.status, json.loads(r.read())
             except urllib.error.HTTPError as e:
-                return e.code, {}
+                with e:
+                    return e.code, {}
 
         caller = ask(EXECUTOR_TOKEN, CALLER_TOKEN)
         wrong = ask("not-the-executor", CALLER_TOKEN)
@@ -248,8 +261,20 @@ def selftest() -> bool:
             {"server_info": {"mode": "daemon", "cliVersion": "1.2.3"}},
         ),
         (
-            "a bundle/renet version mismatch is a finding",
+            "a server-info/bundle version mismatch is a finding",
             {"server_info": {"mode": "container", "cliVersion": "0.0.0-dev"}},
+        ),
+        (
+            "a bundle that disagrees with a released manifest is a finding",
+            {"manifest_version": "9.9.9", "renet_output": "renet version 9.9.9"},
+        ),
+        (
+            "a renet that disagrees with a released manifest is a finding",
+            {
+                "manifest_version": "1.2.4",
+                "bundle_version": "1.2.4",
+                "server_info": {"mode": "container", "cliVersion": "1.2.4"},
+            },
         ),
         ("an executor that never used its token is a finding", {"account_log": "READY\n"}),
         ("a refused session is a finding", {"session_status": 401}),
@@ -273,44 +298,32 @@ def _docker(*args: str, timeout: int = 120, check: bool = False) -> subprocess.C
     )
 
 
-def _stage_renet(root: pathlib.Path) -> tuple[pathlib.Path | None, bool, str]:
-    """(staged path or None, whether THIS run staged it, how)."""
-    staged = root.joinpath(*RENET_STAGED)
-    if staged.is_file():
-        return staged, False, "already staged"
-    prebuilt = root.joinpath(*RENET_PREBUILT)
-    if prebuilt.is_file():
-        shutil.copyfile(prebuilt, staged)
-        staged.chmod(0o755)
-        return staged, True, "copied from %s" % "/".join(RENET_PREBUILT)
-    source = root.joinpath(*RENET_SOURCE)
-    go = shutil.which("go")
-    if go and (source / "cmd" / "renet").is_dir():
-        env = {**os.environ, "CGO_ENABLED": "0", "GOOS": "linux", "GOARCH": "amd64"}
-        built = subprocess.run(
-            [
-                go,
-                "build",
-                "-ldflags=-s -w -X main.Version=0.0.0-image-smoke",
-                "-o",
-                str(staged),
-                "./cmd/renet",
-            ],
-            cwd=source,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=900,
-            check=False,
-        )
-        if built.returncode == 0:
-            return staged, True, "go build of private/renet (no embedded assets)"
-        print(built.stderr[-2000:], file=sys.stderr)
-    return (
-        None,
-        False,
-        "no staged renet, no private/bin build, and no go toolchain + private/renet source",
-    )
+def _stage_local(root: pathlib.Path) -> tuple[bool, str]:
+    """Stage the image's inputs through `executor_artifacts stage-local`: (ok, how or the refusal).
+
+    The Dockerfile builds nothing, so the gate stages the tree's own bundle, renet and natives into `workers/proxy/stage/` exactly as a bench or local deploy does.
+    """
+    dest = root.joinpath(*STAGE_DIR)
+    out = io.StringIO()
+    err = io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        rc = executor_artifacts.main(["stage-local", "--dest", str(dest)])
+    if rc != 0:
+        return False, err.getvalue().strip()
+    return True, out.getvalue().strip()
+
+
+def _unstage(root: pathlib.Path) -> None:
+    """Remove what `stage-local` wrote; the tracked `.gitkeep` and `.gitignore` stay."""
+    dest = root.joinpath(*STAGE_DIR)
+    for name in (*executor_artifacts.FILES, executor_artifacts.MANIFEST):
+        dest.joinpath(name).unlink(missing_ok=True)
+
+
+def staged_version(root: pathlib.Path) -> str:
+    """The version the staged manifest names."""
+    manifest = json.loads(root.joinpath(*STAGE_DIR, executor_artifacts.MANIFEST).read_text())
+    return str(manifest["version"])
 
 
 def _probe(account: str, method: str, url: str, token: str = "") -> dict:
@@ -329,13 +342,13 @@ def _running(name: str) -> tuple[bool, int | None]:
     return running == "true", int(code)
 
 
-def observe(tag: str, suffix: str) -> dict:
+def observe(tag: str, suffix: str, manifest_version: str) -> dict:
     """Run the image and collect what verdict() judges."""
     net = "rediacc-proxy-smoke-%s" % suffix
     account = "rediacc-proxy-smoke-account-%s" % suffix
     executor = "rediacc-proxy-smoke-executor-%s" % suffix
     tokenless = "rediacc-proxy-smoke-tokenless-%s" % suffix
-    obs: dict = {}
+    obs: dict = {"manifest_version": manifest_version}
     try:
         _docker("network", "create", net, check=True)
         _docker(
@@ -345,11 +358,12 @@ def observe(tag: str, suffix: str) -> dict:
             tag, "node", "-e", FAKE_ACCOUNT_JS,
             check=True,
         )  # fmt: skip
-        # The image's own CMD, with the two variables the Worker's executorEnvVars sets.
+        # The image's own CMD, with the variables OrgExecutor's env sets (workers/proxy/src/org-executor-support.ts): the token, the account server and the one org the executor is pinned to, which the fake account's introspection names.
         _docker(
             "run", "-d", "--name", executor, "--network", net, "--network-alias", "executor",
             "-e", "REDIACC_TOKEN=" + EXECUTOR_TOKEN,
             "-e", "REDIACC_ACCOUNT_SERVER=http://account:%d" % ACCOUNT_PORT,
+            "-e", "REDIACC_EXECUTOR_ORG_ID=org-smoke",
             tag,
             check=True,
         )  # fmt: skip
@@ -385,6 +399,8 @@ def observe(tag: str, suffix: str) -> dict:
         renet = _docker("exec", executor, "renet", "version", timeout=30)
         obs["renet_rc"] = renet.returncode
         obs["renet_output"] = renet.stdout + renet.stderr
+        bundle = _docker("exec", executor, "node", "cli-bundle.cjs", "--version", timeout=30)
+        obs["bundle_version"] = bundle.stdout.strip()
 
         deadline = time.monotonic() + BOOT_TIMEOUT_S
         while time.monotonic() < deadline and _running(tokenless)[0]:
@@ -407,6 +423,35 @@ def main(argv: list[str]) -> int:
     rc = controls_first("proxy image smoke", selftest)
     if rc or "--selftest" in argv:
         return rc
+    # SIGTERM becomes an exception so the `finally` blocks that remove the containers, network and image
+    # still run when a runner terminates the gate; a 2026-10-06 run killed this way left all four behind.
+    _SIGTERM_SEEN[0] = False
+    previous = signal.signal(signal.SIGTERM, _on_sigterm)
+    try:
+        return _smoke()
+    except _TerminatedError:
+        print("✗ terminated; teardown ran", file=sys.stderr)
+        return 143
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+class _TerminatedError(Exception):
+    pass
+
+
+_SIGTERM_SEEN = [False]
+
+
+def _on_sigterm(_signum: int, _frame: object) -> None:
+    """The first SIGTERM unwinds into the `finally` teardown; any later one is ignored, or it would raise inside that teardown and skip the removals still to run."""
+    if _SIGTERM_SEEN[0]:
+        return
+    _SIGTERM_SEEN[0] = True
+    raise _TerminatedError("SIGTERM")
+
+
+def _smoke() -> int:
     if shutil.which("docker") is None or _docker("version").returncode != 0:
         print(
             "✗ docker is not available here, so the image cannot be built: no verdict",
@@ -415,11 +460,17 @@ def main(argv: list[str]) -> int:
         return 2
 
     root = paths.repo_root()
-    staged, staged_here, how = _stage_renet(root)
-    if staged is None:
-        print("✗ no renet to ship in the image (%s): no verdict" % how, file=sys.stderr)
-        return 2
-    print("renet for the image: %s" % how)
+    staged_here = False
+    if root.joinpath(*STAGE_DIR, executor_artifacts.MANIFEST).is_file():
+        print("executor artifacts for the image: already staged (left in place)")
+    else:
+        staged_here = True
+        ok, how = _stage_local(root)
+        if not ok:
+            _unstage(root)
+            print("✗ cannot stage the image's inputs (%s): no verdict" % how, file=sys.stderr)
+            return 2
+        print("executor artifacts for the image: %s" % how)
 
     suffix = "%d-%d" % (os.getpid(), int(time.time()))
     tag = "rediacc-proxy-image-smoke:%s" % suffix
@@ -443,11 +494,17 @@ def main(argv: list[str]) -> int:
                     file=sys.stderr,
                 )
                 return 1
-        found = verdict(observe(tag, suffix))
+        manifest_version = staged_version(root)
+        obs = observe(tag, suffix, manifest_version)
+        print(
+            "image `node cli-bundle.cjs --version`: %s; staged manifest version: %s"
+            % (obs.get("bundle_version"), manifest_version)
+        )
+        found = verdict(obs)
     finally:
         _docker("rmi", "-f", tag)
         if staged_here:
-            staged.unlink(missing_ok=True)
+            _unstage(root)
 
     if found:
         print("✗ %d proxy image finding(s):" % len(found), file=sys.stderr)
@@ -456,7 +513,7 @@ def main(argv: list[str]) -> int:
         return 1
     print(
         "✓ the proxy image builds, stays up with its token (and exits without it), serves /v1/health, "
-        "/v1/server-info and /v1/session, and ships a renet matching its bundle"
+        "/v1/server-info and /v1/session, and ships a bundle and renet matching the staged manifest"
     )
     return 0
 

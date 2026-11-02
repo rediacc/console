@@ -1,8 +1,11 @@
+import { WorkerEntrypoint } from 'cloudflare:workers';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
 
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  /** The executor proxy service binding (wrangler.eu.toml); read by the console route. */
+  EXECUTOR?: Fetcher;
   [key: string]: unknown;
 }
 
@@ -62,8 +65,55 @@ function serveAccountPortal(request: Request, url: URL, env: Env): Promise<Respo
   return env.ASSETS.fetch(request);
 }
 
+/**
+ * The account API for Workers in this Cloudflare account, reached ONLY through a service binding that names it (`entrypoint = "CloudflareInternal"` in the caller's `[[services]]` block; workers/proxy is the one caller). Cloudflare routes every internet request to the default export below, never to a named entrypoint, so a request here never left Cloudflare's network, and the app is told so (private/account/src/utils/request.ts markServiceBindingEnv): a 'cloudflare'-bound API token is then accepted although a binding request carries no client address. A binding without `entrypoint` (workers/www's ACCOUNT, which forwards the public contact/newsletter forms on behalf of internet clients) keeps reaching the default export, unmarked.
+ */
+export class CloudflareInternal extends WorkerEntrypoint<Env> {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    if (!url.pathname.startsWith('/account/api/')) {
+      return withSecurityHeaders(new Response('Not Found', { status: 404 }));
+    }
+    return withSecurityHeaders(
+      await accountApp.fetchViaServiceBinding(request, this.env, this.ctx)
+    );
+  }
+}
+
+/**
+ * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Four RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, its tier and its executor placement (`{ orgId, tier, placement }`, tier `high` for a BUSINESS or ENTERPRISE plan and `standard` otherwise), or answers `{ refused: <reason code> }` for a caller it does not accept, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check (the org id is the one `route(bearer)` returned to the bound proxy Worker, the only holder of this binding; the issuer service refuses an unknown, blocked or unentitled org and an empty or non-string id), `relocate(orgId, fromPlacement)` moves the org's executor to the next placement by compare-and-set, at most once per 30 minutes (`{ ok: true, placement }`, or `{ ok: false, reason: 'stale' | 'budget' | 'unknown-org' }` with the current placement for the first two), and `probe()` reports readiness and writes nothing. The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
+ */
+export class ExecutorIssuer extends WorkerEntrypoint<Env> {
+  route(
+    bearer: string
+  ): Promise<
+    { orgId: string; tier: 'standard' | 'high'; placement: number } | { refused: string }
+  > {
+    return accountApp.routeExecutorCaller(this.env, bearer);
+  }
+
+  relocate(
+    orgId: string,
+    fromPlacement: number
+  ): Promise<
+    | { ok: true; placement: number }
+    | { ok: false; reason: 'stale' | 'budget'; placement: number }
+    | { ok: false; reason: 'unknown-org' }
+  > {
+    return accountApp.relocateExecutorPlacement(this.env, orgId, fromPlacement);
+  }
+
+  issue(orgId: string): Promise<{ token: string; expiresAt: string }> {
+    return accountApp.issueExecutorToken(this.env, orgId);
+  }
+
+  probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }> {
+    return accountApp.probeExecutorIssuer(this.env);
+  }
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Account portals (eu/us/asia/bench + edge variants) are logged-in apps, not public content — keep them out of every search index.
@@ -80,7 +130,7 @@ export default {
 
     // Account API: delegate to Hono app (handles auth, billing, configs, webhooks, etc.)
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      return withSecurityHeaders(await accountApp.fetch(request, env));
+      return withSecurityHeaders(await accountApp.fetch(request, env, ctx));
     }
 
     // Account SPA: serve portal assets

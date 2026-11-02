@@ -29,7 +29,7 @@ def _shared():
 
 
 def _own_cases(shared):
-    """Rows measured at 0600a4642: each refusal was allowed (rc 0), because the redirect target was read as typed (`$D/zz.md`, `$L`)."""
+    """Rows measured at e76fe1061: each refusal was allowed (rc 0), because the redirect target was read as typed (`$D/zz.md`, `$L`)."""
     key = shared.K
     return [
         (

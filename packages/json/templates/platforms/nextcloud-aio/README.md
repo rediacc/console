@@ -6,7 +6,7 @@ Official Nextcloud All-in-One deployment with master container orchestration for
 - Master container manages entire Nextcloud stack (web, database, cache, optional services)
 - Built-in PostgreSQL, Redis, Apache with optimized PHP configuration
 - Automatic HTTPS with Let's Encrypt certificate management
-- Optional components: Collabora Office, Talk, ClamAV, Full-text Search
+- Optional components: Talk, ClamAV, Full-text Search; Collabora Office runs as the template's own `collabora` service
 - Web-based management interface with backup/restore capabilities
 
 ## Usage
@@ -38,6 +38,11 @@ Edit `.env` to customize:
 - **Single Domain**: AIO requires one domain for all services (simplifies SSL/TLS management)
 - **Volume Requirements**: Uses named volume with local bind driver pointing to `./aio-config` for portability
 - **First Run**: Complete setup via web interface - configuration is managed through UI, not environment variables
+
+## Collabora
+- The per-repo Docker API gate refuses the `MKNOD` capability that AIO's built-in Collabora container requests, so leave the Collabora toggle in the AIO interface off.
+- The `collabora` service runs `collabora/code` with `--o:security.capabilities=false` and `--o:mount_jail_tree=false` and no `cap_add`. coolwsd then isolates documents with landlock instead of a chroot, which needs a kernel with landlock support.
+- Allow the Nextcloud host by appending `--o:storage.wopi.host[0]=<nextcloud host regex>` to the service `command`, then set the Collabora URL in the Nextcloud Office app.
 
 ## Resources
 - [Official Documentation](https://github.com/nextcloud/all-in-one)

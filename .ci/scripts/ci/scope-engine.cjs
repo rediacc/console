@@ -437,7 +437,50 @@ function resolveBaseline(opts, io) {
   }
 
   const plan = scopeMap.buildPlan(scopeMap.classify(paths, { workflowClosure }));
+  // Say in the plan itself why the renet gitlink kept every VM job.
+  for (const n of notes) if (n.startsWith('renet-gitlink-unexpanded:')) plan.reasons.push(n);
   return { baseline, trail, notes, plan };
+}
+
+// --------------------------------------------------------------------------- Gitlink expansion. `git diff-tree` stops at a submodule and reports the bare gitlink (`private/renet`, mode 160000), which scope-map treats as "every VM job". When both SHAs of the bump are readable, the renet paths changed between them replace the gitlink so the per-area VM selection can take effect. Anything short of that keeps the gitlink (all nine VM jobs) and records WHY through `note`, which resolveBaseline copies into the plan's reasons. ---------------------------------------------------------------------------
+
+const RENET_GITLINK = 'private/renet';
+const ZERO_SHA = /^0+$/;
+
+// expandRenetGitlink(rawText, { submoduleDiff, note }) -> path list text, one path per line, in the shape parseFileList reads. `submoduleDiff(oldSha, newSha)` returns the changed paths relative to the submodule root and THROWS when it cannot (submodule absent, a SHA not fetchable). PURE apart from that callback.
+function expandRenetGitlink(rawText, { submoduleDiff, note }) {
+  const out = [];
+  for (const line of String(rawText).split('\n')) {
+    const fields = line.replace(/\r$/, '').split('\t');
+    const meta = fields[0].startsWith(':') ? fields[0].slice(1).split(' ') : null;
+    const isRenetGitlink =
+      meta &&
+      fields.length === 2 &&
+      fields[1] === RENET_GITLINK &&
+      (meta[0] === '160000' || meta[1] === '160000');
+    if (!isRenetGitlink) {
+      out.push(line);
+      continue;
+    }
+    const [oldSha, newSha] = [meta[2], meta[3]];
+    if (ZERO_SHA.test(oldSha) || ZERO_SHA.test(newSha)) {
+      note('renet-gitlink-unexpanded:gitlink-added-or-removed');
+      out.push(line);
+      continue;
+    }
+    try {
+      const names = submoduleDiff(oldSha, newSha).filter((n) => n.length > 0);
+      if (names.length === 0) throw new Error('empty-expansion');
+      for (const n of names) out.push(`${RENET_GITLINK}/${n}`);
+    } catch (e) {
+      const why = String(e.message || e)
+        .split('\n')[0]
+        .slice(0, 120);
+      note(`renet-gitlink-unexpanded:${why}`);
+      out.push(line);
+    }
+  }
+  return out.join('\n');
 }
 
 // --------------------------------------------------------------------------- The real io: git for history, gh for runs and the attested plan artifact. ---------------------------------------------------------------------------
@@ -649,7 +692,28 @@ function createRepoIo({
 
     // `git diff-tree -r --raw` rather than --name-only: renames carry both sides and parseLine unions them (case 20), which --name-only cannot say.
     diffPaths: (from, to) =>
-      parseFileList(git('diff-tree', '-r', '--raw', '--no-commit-id', from, to)),
+      parseFileList(
+        expandRenetGitlink(git('diff-tree', '-r', '--raw', '--no-commit-id', from, to), {
+          note: (m) => noteSink(m),
+          submoduleDiff: (oldSha, newSha) => {
+            const sub = path.join(repoRoot, RENET_GITLINK);
+            // An uninitialised submodule is an empty directory INSIDE the parent work tree, where `git -C` would silently run against the parent repo. Require its own toplevel.
+            const top = run('git', ['-C', sub, 'rev-parse', '--show-toplevel']).trim();
+            if (fs.realpathSync(top) !== fs.realpathSync(sub))
+              throw new Error('submodule-not-checked-out');
+            return run('git', [
+              '-C',
+              sub,
+              'diff',
+              '--no-renames',
+              '--name-only',
+              '-z',
+              oldSha,
+              newSha,
+            ]).split('\0');
+          },
+        })
+      ),
 
     // The fenced sha walk (candidate C). `^fence` scopes the domain to the commits this PR owns; the valve only guards against a wrong fence. `truncated` is conservative: a branch exactly valve-long reads as truncated, which costs a pinned walk-valve reason instead of a wrong merge-base-reached one.
     walkShas: (head, { fence, valve }) => {
@@ -804,6 +868,7 @@ module.exports = {
   forcedFullPlan,
   resolveBaseline,
   createRepoIo,
+  expandRenetGitlink,
   DIFF_FILE_CAP,
   DEFAULT_CANDIDATE_LIMIT,
   GREEN_ATTEST_BUDGET,

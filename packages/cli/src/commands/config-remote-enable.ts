@@ -5,8 +5,14 @@
  * Validate the enrollment by pulling, seed a fresh store, and turn the local
  * file into a full-content cache (D1/D5):
  *
- * - 404 (fresh store) → push the local config at version 0 (server inserts at
- *   v1), pull it back as round-trip proof, then write the cache.
+ * - 404 → a fresh store ONLY when the store lists no config this token can see:
+ *   push the local config at version 0 (server inserts at v1), pull it back as
+ *   round-trip proof, then write the cache. A 404 beside a non-empty list is an
+ *   enroll that addressed nothing visible (bench 2026-10-28: a token whose
+ *   enroll could not see the org-wide config seeded a second one beside it), so
+ *   it attaches to the single visible config the handoff did not name, and
+ *   refuses otherwise; a headless enable never seeds there. Only an operator's
+ *   interactive "create new" pick seeds beside listed configs.
  * - pull succeeds but the store's synced content differs from non-empty local
  *   synced content → confirm before replacing it (`--force` skips; non-TTY
  *   aborts naming --force).
@@ -15,7 +21,7 @@
  */
 
 import { toFullConfig } from '@rediacc/shared/config-schema';
-import type { RemoteConfigAdapter } from '../adapters/remote-config-adapter.js';
+import type { RemoteConfigAdapter, RemoteConfigEntry } from '../adapters/remote-config-adapter.js';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import {
@@ -25,7 +31,8 @@ import {
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
-import { askConfirm } from '../utils/prompt.js';
+import { omitKey } from '../utils/omit-key.js';
+import { askChoice, askConfirm } from '../utils/prompt.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 
 /** GET /configs/enable-requirements (api-token auth, subscription:read) for the token's own user. */
@@ -265,27 +272,26 @@ function localContentWouldBeReplaced(local: RdcConfig, pulled: RdcConfig): boole
   return hasContent && canonicalJson(mine) !== canonicalJson(syncedContent(pulled));
 }
 
-/**
- * Pull the store's copy; a 404 means a fresh store, which is seeded from the
- * local config and pulled back as round-trip proof before anything is written
- * locally.
- */
-async function pullOrSeed(
-  adapter: RemoteConfigAdapter,
-  local: RdcConfig
-): Promise<{ pulled: { config: RdcConfig; version: number }; seeded: boolean }> {
+type Pulled = { config: RdcConfig; version: number };
+
+/** The store's copy, or null for a 404 (which by itself proves nothing about the store being empty). */
+async function pullOrNull(adapter: RemoteConfigAdapter): Promise<Pulled | null> {
   try {
-    return { pulled: await adapter.pull(), seeded: false };
+    return await adapter.pull();
   } catch (error) {
     const { ConfigServerError } = await import('../services/config/config-server-client.js');
-    if (!(error instanceof ConfigServerError && error.status === 404)) throw error;
-
-    // The push projection sends the document minus the device-local pointers (`remote` among them); `state` seeds the store with this device's network IDs.
-    await adapter.push(local, 0); // server inserts at version 1
-    const pulled = await adapter.pull();
-    outputService.success(t('commands.config.remote.enable.seeded'));
-    return { pulled, seeded: true };
+    if (error instanceof ConfigServerError && error.status === 404) return null;
+    throw error;
   }
+}
+
+/** Seed a store proven empty from the local config, pulled back as round-trip proof before anything is written locally. */
+async function seed(adapter: RemoteConfigAdapter, local: RdcConfig): Promise<Pulled> {
+  // The push projection sends the document minus the device-local pointers (`remote` among them); `state` seeds the store with this device's network IDs.
+  await adapter.push(local, 0); // server inserts at version 1
+  const pulled = await adapter.pull();
+  outputService.success(t('commands.config.remote.enable.seeded'));
+  return pulled;
 }
 
 /**
@@ -316,29 +322,190 @@ async function confirmOverwrite(
   if (!confirmed) throw aborted;
 }
 
+const CREATE_NEW = '__new__';
+
+/**
+ * What enable addresses before its first pull: an existing entry (`attach`), a new entry the
+ * operator chose beside the listed ones or on a store listed empty (`new`), or the handoff's
+ * pointer as-is (`pointer`: no explicit --config-id and no interactive pick, whether or not the
+ * handoff named an id), whose 404 is settled by the list later.
+ */
+type AttachChoice =
+  | { kind: 'attach'; entry: RemoteConfigEntry }
+  | { kind: 'new' }
+  | { kind: 'pointer' };
+
+/**
+ * An explicit `--config-id` must name an entry the caller can see; with none given, an interactive
+ * enable against a store that already holds configs asks. A list that cannot be read is refused
+ * (never downgraded to minting a new entry) whenever the list is needed.
+ */
+async function chooseAttachTarget(
+  adapter: RemoteConfigAdapter,
+  remote: PendingRemoteConfig,
+  explicitId: string | undefined
+): Promise<AttachChoice> {
+  const interactive =
+    !remote.configId && process.stdin.isTTY === true && process.env.REDIACC_YES !== '1';
+  if (!explicitId && !interactive) return { kind: 'pointer' };
+
+  // An id named, or a prompt about to be shown, needs the list: guessing without it would mint a duplicate entry.
+  const entries = await listEntries(adapter, explicitId === undefined);
+  if (explicitId) return { kind: 'attach', entry: requireEntry(entries, explicitId) };
+  if (!entries || entries.length === 0) return { kind: 'new' };
+  const picked = await pickEntry(entries);
+  return picked ? { kind: 'attach', entry: picked } : { kind: 'new' };
+}
+
+/**
+ * The 404 of a pointer nobody chose: the list decides. Empty → seed (null). One visible config and
+ * a handoff that named none → attach to it (the server's own password-enroll rule: exactly one
+ * candidate is the target). Anything else is refused naming what is visible, never seeded beside.
+ */
+async function resolveUnaddressed(
+  adapter: RemoteConfigAdapter,
+  pointerId: string,
+  handoffNamedConfig: boolean
+): Promise<RemoteConfigEntry | null> {
+  const entries = (await listEntries(adapter, true)) ?? [];
+  if (entries.length === 0) return null;
+  const [only] = entries;
+  if (!handoffNamedConfig && entries.length === 1 && only) return only;
+  throw new ValidationError(
+    t('commands.config.remote.enable.configIdNotFound', {
+      id: pointerId,
+      available: entries.map((e) => e.configId).join(', '),
+    })
+  );
+}
+
+/**
+ * The store's entries; a failed list is refused, never downgraded to creating a new entry. The
+ * named error suggests `--config-id` only when none was given (`suggestId`); with an id named, the
+ * list failure itself is the error, since that remedy was already tried.
+ */
+async function listEntries(
+  adapter: RemoteConfigAdapter,
+  suggestId: boolean
+): Promise<RemoteConfigEntry[] | undefined> {
+  try {
+    return await adapter.listConfigs();
+  } catch (error) {
+    if (!suggestId) throw error;
+    throw new ValidationError(
+      t('commands.config.remote.enable.listFailedRefused', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
+
+function requireEntry(entries: RemoteConfigEntry[] | undefined, id: string): RemoteConfigEntry {
+  const found = entries?.find((e) => e.configId === id);
+  if (!found) {
+    throw new ValidationError(
+      t('commands.config.remote.enable.configIdNotFound', {
+        id,
+        available: (entries ?? []).map((e) => e.configId).join(', ') || '-',
+      })
+    );
+  }
+  return found;
+}
+
+async function pickEntry(entries: RemoteConfigEntry[]): Promise<RemoteConfigEntry | undefined> {
+  const picked = await askChoice<string>(t('commands.config.remote.enable.attachPrompt'), [
+    ...entries.map((e) => ({
+      name: t('commands.config.remote.enable.attachEntry', {
+        id: e.configId,
+        version: String(e.version),
+        modified: e.lastModified,
+      }),
+      value: e.configId,
+    })),
+    { name: t('commands.config.remote.enable.attachNew'), value: CREATE_NEW },
+  ]);
+  return entries.find((e) => e.configId === picked);
+}
+
+/** Re-address a pointer at an existing store entry. */
+function pointerFor(pointer: RemoteConfig, entry: RemoteConfigEntry): RemoteConfig {
+  // The team is exactly the entry's: a stale team from the handoff would scope the pull to a team the entry is not in.
+  const withoutTeam = omitKey(pointer, 'teamId');
+  return {
+    ...withoutTeam,
+    configId: entry.configId,
+    ...(entry.teamId ? { teamId: entry.teamId } : {}),
+  };
+}
+
+interface Addressed {
+  pointer: RemoteConfig;
+  /** The existing entry attached to, when one was. */
+  target?: RemoteConfigEntry;
+  pulled: Pulled;
+  seeded: boolean;
+}
+
+/**
+ * Decide which store entry this enable addresses and pull it, seeding only a store whose list is
+ * empty (see the module doc).
+ */
+async function addressAndPull(
+  remote: PendingRemoteConfig,
+  local: RdcConfig,
+  opts: { configId?: string },
+  buildAdapter: (p: RemoteConfig) => RemoteConfigAdapter
+): Promise<Addressed> {
+  // Fresh-store handoffs carry no configId: mint one from the local config's own id (already a stable UUID); it is seeded on an empty store, or beside listed configs only when the operator picked "create new" interactively.
+  const minted: RemoteConfig = { ...remote, configId: remote.configId ?? local.id };
+  const mintedAdapter = buildAdapter(minted);
+  const attach = async (entry: RemoteConfigEntry): Promise<Addressed> => {
+    const pointer = pointerFor(minted, entry);
+    return { pointer, target: entry, pulled: await buildAdapter(pointer).pull(), seeded: false };
+  };
+
+  // Attach to an existing entry of the store (an explicit --config-id, or the operator's pick) instead of creating a new one beside it.
+  // An attach names an entry that exists; its 404 propagates, it is not a fresh store to seed.
+  const choice = await chooseAttachTarget(mintedAdapter, remote, opts.configId);
+  if (choice.kind === 'attach') return attach(choice.entry);
+
+  const pulled = await pullOrNull(mintedAdapter);
+  if (pulled) return { pointer: minted, pulled, seeded: false };
+
+  // Only the headless pointer still needs the list; `new` was already chosen against it.
+  if (choice.kind === 'pointer') {
+    const existing = await resolveUnaddressed(
+      mintedAdapter,
+      minted.configId,
+      remote.configId !== undefined
+    );
+    if (existing) return attach(existing);
+  }
+  return { pointer: minted, pulled: await seed(mintedAdapter, local), seeded: true };
+}
+
 /** See the module doc for the three-way contract this enforces. */
 export async function finalizeEnable(
   remote: PendingRemoteConfig,
   configName: string,
-  opts: { force?: boolean } = {}
+  opts: { force?: boolean; configId?: string } = {}
 ): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const local = await configFileStorage.loadDecrypted(configName);
 
-  // Fresh-store handoffs carry no configId: mint one from the local config's own id (already a stable UUID) and seed the store below.
-  const pointer: RemoteConfig = { ...remote, configId: remote.configId ?? local.id };
-
   const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
   const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
   const { getSecureStorage } = await import('../utils/secure-storage.js');
-  const adapter = new RemoteConfigAdapter(
-    pointer,
-    configName,
-    remoteTokenStorage,
-    getSecureStorage()
-  );
+  const buildAdapter = (p: RemoteConfig) =>
+    new RemoteConfigAdapter(p, configName, remoteTokenStorage, getSecureStorage());
 
-  const { pulled, seeded } = await pullOrSeed(adapter, local);
+  const { pointer, target, pulled, seeded } = await addressAndPull(
+    remote,
+    local,
+    opts,
+    buildAdapter
+  );
 
   const counts = countResources(local);
   if (!seeded && !opts.force && localContentWouldBeReplaced(local, pulled.config)) {
@@ -352,6 +519,8 @@ export async function finalizeEnable(
   // The pointer file write IS the cache write: full server content, host-local sections (encryption mode included) preserved from the pre-enable config.
   const { mergeRemoteIntoCache } = await import('../services/config/remote-cache.js');
   const cached = mergeRemoteIntoCache({ ...local, remote: pointer }, pulled.config, pulled.version);
+  // An attached config takes the store entry's identity: the local id and remote.configId name the same config.
+  if (target) cached.id = target.configId;
   await configFileStorage.save(cached, configName);
 }
 
@@ -363,7 +532,7 @@ export async function finalizeEnable(
 export async function applyHandoff(
   payload: DeviceCredentials,
   configName: string,
-  opts: { force?: boolean }
+  opts: { force?: boolean; configId?: string }
 ): Promise<void> {
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const secretExisted = (await getSecureStorage().get(payload.storageKeyId)) !== null;

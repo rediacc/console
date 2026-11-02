@@ -101,6 +101,25 @@ class _ProcBackend:
             # The process exited between the listing and the read. That is the normal case, not an error: a dead process is not running your script.
             return None
 
+    def zombie(self, pid):
+        try:
+            stat = pathlib.Path("/proc/%d/stat" % pid).read_text(
+                encoding="utf-8", errors="surrogateescape"
+            )
+            return stat.rpartition(")")[2].split()[0] == "Z"
+        except (OSError, IndexError):
+            return False
+
+    def ppid(self, pid):
+        try:
+            stat = pathlib.Path("/proc/%d/stat" % pid).read_text(
+                encoding="utf-8", errors="surrogateescape"
+            )
+            # The fields after the parenthesised comm, which may itself hold spaces: state, then ppid.
+            return int(stat.rpartition(")")[2].split()[1])
+        except (OSError, ValueError, IndexError):
+            return None
+
     def argv(self, pid):
         try:
             raw = pathlib.Path("/proc/%d/cmdline" % pid).read_bytes()
@@ -113,6 +132,13 @@ class _ProcBackend:
         if parts and parts[-1] == b"":
             parts.pop()
         return [p.decode("utf-8", "surrogateescape") for p in parts]
+
+    def cwd(self, pid):
+        try:
+            return os.readlink("/proc/%d/cwd" % pid)
+        except OSError:
+            # Gone, or a process of another user whose cwd this user may not read.
+            return None
 
 
 class _PsBackend:
@@ -148,6 +174,21 @@ class _PsBackend:
         self._table = table
         return table
 
+    def zombie(self, pid):
+        try:
+            return self._run(["ps", "-o", "stat=", "-p", str(pid)]).strip().startswith("Z")
+        except ProcError:
+            return False
+
+    def ppid(self, pid):
+        # One question, so not part of the cached table: only the kill path of a fixture world asks it.
+        try:
+            out = self._run(["ps", "-o", "ppid=", "-p", str(pid)]).strip()
+        except ProcError:
+            # `ps -p` exits 1 for a pid that is gone, the same answer as every other question here.
+            return None
+        return int(out) if out.isdigit() else None
+
     @staticmethod
     def _run(argv):
         try:
@@ -169,6 +210,10 @@ class _PsBackend:
         row = self._read().get(pid)
         return None if row is None else list(row[1])
 
+    def cwd(self, _pid):
+        # `ps` has no working-directory column on either platform, so the answer is "unknown", which a caller already handles as it handles a process that is gone.
+        return None
+
 
 def _backend():
     """A FRESH backend per call.
@@ -188,9 +233,29 @@ def comm(pid):
     return _backend().comm(pid)
 
 
+def ppid(pid):
+    """The process's parent id, or None when the process is gone."""
+    return _backend().ppid(pid)
+
+
+def running(pid):
+    """Whether the process is in the table and not a zombie waiting for its reaper."""
+    return comm(pid) is not None and not _backend().zombie(pid)
+
+
+def children_named(parent, name):
+    """The pids of `parent`'s direct children whose comm is `name`."""
+    return [pid for pid in pids() if ppid(pid) == parent and comm(pid) == name]
+
+
 def argv(pid):
     """The process's arguments as a list, or None when the process is gone."""
     return _backend().argv(pid)
+
+
+def cwd(pid):
+    """The process's working directory (the target of `/proc/<pid>/cwd`), or None when the process is gone, unreadable, or the backend (`ps`) cannot tell."""
+    return _backend().cwd(pid)
 
 
 def cmdline(pid):

@@ -1,16 +1,13 @@
 import { expect, test } from '@playwright/test';
 import {
   DEFAULT_DATASTORE_PATH,
-  DEFAULT_RUSTFS_ACCESS_KEY,
-  DEFAULT_RUSTFS_ENDPOINT,
-  DEFAULT_RUSTFS_SECRET_KEY,
   DEFAULT_WORKER_1_IP,
   DEFAULT_WORKER_2_IP,
   TEST_REPOSITORY_NAME,
   TEST_TEAM,
   TEST_USER,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
@@ -84,70 +81,15 @@ test.describe('VaultBuilder Structure @bridge @vault', () => {
     const vault = new VaultBuilder()
       .withFunction('backup_pull')
       .withPullParams({
-        sourceType: 'storage',
-        from: 'rustfs-storage',
+        sourceType: 'machine',
+        from: DEFAULT_WORKER_2_IP,
         grand: 'grand-repo-guid',
       })
       .build();
 
-    expect(vault.params?.sourceType).toBe('storage');
-    expect(vault.params?.from).toBe('rustfs-storage');
+    expect(vault.params?.sourceType).toBe('machine');
+    expect(vault.params?.from).toBe(DEFAULT_WORKER_2_IP);
     expect(vault.params?.grand).toBe('grand-repo-guid');
-  });
-
-  test('should create vault with storage systems', () => {
-    const vault = new VaultBuilder()
-      .withFunction('backup_push')
-      .withStorage({
-        name: 'rustfs',
-        type: 's3',
-        endpoint: DEFAULT_RUSTFS_ENDPOINT,
-        bucket: 'test-bucket',
-        accessKey: DEFAULT_RUSTFS_ACCESS_KEY,
-        secretKey: DEFAULT_RUSTFS_SECRET_KEY,
-        region: 'us-east-1',
-      })
-      .build();
-
-    expect(vault.storage_systems).toBeDefined();
-    expect(vault.storage_systems!['rustfs']).toEqual({
-      backend: 's3',
-      bucket: 'test-bucket',
-      region: 'us-east-1',
-      folder: undefined,
-      parameters: {
-        endpoint: DEFAULT_RUSTFS_ENDPOINT,
-        access_key_id: DEFAULT_RUSTFS_ACCESS_KEY,
-        secret_access_key: DEFAULT_RUSTFS_SECRET_KEY,
-      },
-    });
-  });
-
-  test('should create vault with multiple storages', () => {
-    const vault = new VaultBuilder()
-      .withFunction('backup_push')
-      .withStorages([
-        {
-          name: 's3-storage',
-          type: 's3',
-          bucket: 'bucket1',
-          accessKey: 'key1',
-          secretKey: 'secret1',
-        },
-        {
-          name: 'b2-storage',
-          type: 'b2',
-          bucket: 'bucket2',
-          accessKey: 'key2',
-          secretKey: 'secret2',
-        },
-      ])
-      .withPushParams({ storages: ['s3-storage', 'b2-storage'] })
-      .build();
-
-    const storageSystems = vault.storage_systems ?? {};
-    expect(Object.keys(storageSystems)).toHaveLength(2);
-    expect(vault.params?.storages).toBe('s3-storage,b2-storage');
   });
 
   test('should create vault with destination machine', () => {
@@ -206,10 +148,10 @@ test.describe('VaultBuilder Structure @bridge @vault', () => {
 });
 
 test.describe('VaultBuilder with Renet @bridge @vault', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push with vault should generate valid command', async () => {
@@ -259,30 +201,6 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
     // Checkpoint flag should be processed without errors
   });
 
-  test('push with storage destination should work', async () => {
-    const vault = new VaultBuilder()
-      .withFunction('backup_push')
-      .withTeam(TEST_TEAM)
-      .withRepository('test-repo-guid', TEST_REPOSITORY_NAME)
-      .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withStorage({
-        name: 'rustfs',
-        type: 's3',
-        endpoint: DEFAULT_RUSTFS_ENDPOINT,
-        bucket: 'test-bucket',
-        accessKey: DEFAULT_RUSTFS_ACCESS_KEY,
-        secretKey: DEFAULT_RUSTFS_SECRET_KEY,
-      })
-      .withPushParams({
-        destinationType: 'storage',
-        dest: 'backup.tar',
-        storages: ['rustfs'],
-      });
-
-    const result = await runner.pushWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
-  });
-
   test('pull with grand param should work', async () => {
     const vault = new VaultBuilder()
       .withFunction('backup_pull')
@@ -301,10 +219,10 @@ test.describe('VaultBuilder with Renet @bridge @vault', () => {
 });
 
 test.describe('VaultBuilder Push Destination Types @bridge @vault', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('push with destinationType=machine should work', async () => {
@@ -321,34 +239,13 @@ test.describe('VaultBuilder Push Destination Types @bridge @vault', () => {
     const result = await runner.pushWithVault(vault);
     expect(runner.hasValidCommandSyntax(result)).toBe(true);
   });
-
-  test('push with destinationType=storage should work', async () => {
-    const vault = VaultBuilder.forPush()
-      .withTeam(TEST_TEAM)
-      .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
-      .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withStorage({
-        name: 'test-storage',
-        type: 's3',
-        bucket: 'test-bucket',
-        accessKey: 'key',
-        secretKey: 'secret',
-      })
-      .withPushParams({
-        destinationType: 'storage',
-        storages: ['test-storage'],
-      });
-
-    const result = await runner.pushWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
-  });
 });
 
 test.describe('VaultBuilder Pull Source Types @bridge @vault', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('pull with sourceType=machine should work', async () => {
@@ -360,27 +257,6 @@ test.describe('VaultBuilder Pull Source Types @bridge @vault', () => {
       .withPullParams({
         sourceType: 'machine',
         from: DEFAULT_WORKER_2_IP,
-      });
-
-    const result = await runner.pullWithVault(vault);
-    expect(runner.hasValidCommandSyntax(result)).toBe(true);
-  });
-
-  test('pull with sourceType=storage should work', async () => {
-    const vault = VaultBuilder.forPull()
-      .withTeam(TEST_TEAM)
-      .withRepository(TEST_REPOSITORY_NAME, TEST_REPOSITORY_NAME)
-      .withMachine(DEFAULT_WORKER_1_IP, TEST_USER, DEFAULT_DATASTORE_PATH)
-      .withStorage({
-        name: 'test-storage',
-        type: 's3',
-        bucket: 'test-bucket',
-        accessKey: 'key',
-        secretKey: 'secret',
-      })
-      .withPullParams({
-        sourceType: 'storage',
-        from: 'test-storage',
       });
 
     const result = await runner.pullWithVault(vault);

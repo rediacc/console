@@ -176,7 +176,9 @@ function main(): void {
   }
 
   const { used, styled } = collect();
-  const orphans = [...used.keys()].filter((c) => !styled.has(c)).sort();
+  const orphans = [...used.keys()]
+    .filter((c) => !styled.has(c))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 
   if (argv.includes('--write-baseline')) {
     // COMPOSITION. The header two dozen lines up says this baseline "only ever shrinks", and until now nothing enforced that on the WRITE path: a reseed could drop ten orphans, absorb one fresh one, and print a smaller number while doing it. The ids

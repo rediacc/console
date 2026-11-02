@@ -1,12 +1,16 @@
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
+import { registerAccessCommands } from './access.js';
+import { registerConvergeCommand } from './converge.js';
+import { registerGpuCommands } from './gpu.js';
 import { registerHealthCommand } from './health.js';
 import { registerInfraCommands } from './infra.js';
 import { registerProviderCommands } from './provider.js';
 import { registerCloudCommands } from './provision.js';
 import { registerPruneCommand } from './prune.js';
 import { registerMachineRegistrationCommands } from './register.js';
+import { registerRestartServicesCommand } from './restart-services.js';
 import { registerStatusCommand } from './status.js';
 
 export function registerMachineCommands(program: Command): void {
@@ -21,8 +25,12 @@ export function registerMachineCommands(program: Command): void {
   registerHealthCommand(machine, program);
   registerCloudCommands(machine, program);
   registerPruneCommand(machine);
+  registerGpuCommands(machine);
+  registerConvergeCommand(machine);
+  registerRestartServicesCommand(machine);
   registerProviderCommands(machine, program);
   registerInfraCommands(machine, program);
+  registerAccessCommands(machine, program);
 
   machine.addHelpText(
     'after',

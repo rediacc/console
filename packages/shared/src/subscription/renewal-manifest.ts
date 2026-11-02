@@ -59,7 +59,7 @@ export interface SignedRenewalRequestManifest {
  */
 export function canonicalManifestBytes(manifest: RenewalRequestManifest): Uint8Array {
   const sorted: Record<string, unknown> = {};
-  for (const key of Object.keys(manifest).sort()) {
+  for (const key of Object.keys(manifest).sort((a, b) => Number(a > b) - Number(a < b))) {
     sorted[key] = (manifest as unknown as Record<string, unknown>)[key];
   }
   return new TextEncoder().encode(JSON.stringify(sorted));

@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: et
-sourceHash: "878b744629cb8b14"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Arhitektuur
@@ -73,12 +73,12 @@ Iga repositoorium saab oma isoleeritud Dockeri daemoni. Kui repositoorium ühend
 ![Dockeri isoleerimine](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Näiteks repositoorium, mille võrgu ID on `2816`, kasutab:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 See tähendab:
@@ -108,7 +108,7 @@ Dockeri andmed ja konfiguratsioon salvestatakse repositooriumi ühenduspunkti si
 
 **Jagatud käitusaegne tee** (muutumatu):
 ```
-/run/rediacc/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 See ühtne paigutus kõrvaldab kirjutuskaitstud/kirjutatavate ühenduspunktide konfliktid, mis tekkisid siis, kui daemoni teed olid jaotatud hosti failisüsteemi ja krüpteeritud köite vahel. Nii repo-kohased kui ka iseseisvad daemonid järgivad sama kataloogistruktuuri, nii et tööriistad ja diagnostika töötavad mõlemal juhul identselt.
@@ -144,11 +144,11 @@ Terve klastri kloonimine ja ümberpaigutamine elavad käskudes `rdc cluster fork
 
 ## Konfiguratsioonistuktuur
 
-Iga konfiguratsioon on JSON-fail, mis on salvestatud `~/.config/rediacc/` alla. Vaikimisi konfiguratsioon on `rediacc.json`; nimetatud konfiguratsioonid kasutavad nime failinimena (nt `production.json`). Väljad on grupeeritud eesmärgi järgi: `resources` hoiab juurutusi, `credentials` hoiab saladusi, `account` hoiab pilve vaikeväärtusi, `infra` hoiab TLS/DNS seadeid ja `encryption` hoiab välja-kohast puhkeoleku olekut. Tippnivoo `schemaVersion: 2` diskriminaator kinnitab edasisuunalise ühilduvuse.
+Iga konfiguratsioon on JSON-fail, mis on salvestatud `~/.config/rediacc/` alla. Vaikimisi konfiguratsioon on `rediacc.json`; nimetatud konfiguratsioonid kasutavad nime failinimena (nt `production.json`). Väljad on grupeeritud eesmärgi järgi: `resources` hoiab juurutusi, `credentials` hoiab saladusi, `account` hoiab pilve vaikeväärtusi, `infra` hoiab TLS/DNS seadeid ja `encryption` hoiab välja-kohast puhkeoleku olekut. Tippnivoo `schemaVersion: 3` diskriminaator kinnitab edasisuunalise ühilduvuse.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -175,10 +175,12 @@ Iga konfiguratsioon on JSON-fail, mis on salvestatud `~/.config/rediacc/` alla. 
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -203,14 +205,14 @@ Iga konfiguratsioon on JSON-fail, mis on salvestatud `~/.config/rediacc/` alla. 
 
 | Grupp | Sisu |
 |---|---|
-| `schemaVersion` | Diskriminaator (praegu `2`). Laadijad lükkavad tundmatud versioonid tagasi. |
+| `schemaVersion` | Diskriminaator (praegu `3`). Laadijad lükkavad tundmatud versioonid tagasi. |
 | `id` / `version` | Muutumatu UUID + monotoonne loendur; kasutatakse optimistliku lukustamise jaoks kaugel konfiguratsioonisalves. |
 | `defaults.*` | Mitte-tundlikud käitusaegse vaikeväärtused (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | Sisseehitatud SSH-võtmepaar + `knownHosts`. Asendab pärandit `ssh.privateKeyPath` (enam pole failiteede kaudsust; sisu lahendatakse laadimisajal ja salvestatakse sisse). |
 | `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME token. |
 | `credentials.masterPasswordVerifier` | Esineb ainult siis, kui `encryption.mode === "master-password"`. |
 | `resources.machines.*` | SSH-ühenduse üksikasjad masina kohta. |
-| `resources.storages.*` | rclone-ühilduv välisvaru varukoopiate volitused. |
+| `resources.backupStrategies.*` | Nimetatud varundusstrateegiad: ajakava, režiim, repositooriumifiltrid, säilitus ja sihtkohad (alati teenuse majutatud tükksalvestus). |
 | `resources.repositories.*` | Repo-kohane GUID + LUKS-volitus + SSH-võti liivakastis isoleeritud agendi juurdepääsuks. |
 | `infra.acmeCertCache.*` | Vahemällu talletatud Traefik acme.json, gzip+base64, domeeni järgi võtmestatud. |
 | `encryption.mode` | `"plaintext"` (vaikimisi) või `"master-password"`. |

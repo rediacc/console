@@ -156,6 +156,43 @@ suite('daemon-backed executor', () => {
     expect(events.map((e) => e.msg)).toEqual(['from the daemon executor']);
   });
 
+  it("carries the client's command name across the socket as the verb", async () => {
+    const socketPath = tmpSocket();
+    const daemon = fakeExecutor();
+    await startServer(socketPath, daemon.executor);
+    const client = daemonClient(fallbackExecutor().executor, {
+      socketPath,
+      identity: SERVER_IDENTITY,
+      spawnDaemon: () => {},
+    });
+    const spy = vi.spyOn(outputService, 'getCommandName').mockReturnValue('repo create');
+    try {
+      await client.execute(OPTIONS);
+    } finally {
+      spy.mockRestore();
+    }
+    // The fake daemon executor records the options exactly as they crossed the socket, so this proves the client set the verb before sending.
+    expect(daemon.calls[0].verb).toBe('repo create');
+  });
+
+  it('sends the function name as the verb when the client process has no command name', async () => {
+    const socketPath = tmpSocket();
+    const daemon = fakeExecutor();
+    await startServer(socketPath, daemon.executor);
+    const client = daemonClient(fallbackExecutor().executor, {
+      socketPath,
+      identity: SERVER_IDENTITY,
+      spawnDaemon: () => {},
+    });
+    const spy = vi.spyOn(outputService, 'getCommandName').mockReturnValue(null);
+    try {
+      await client.execute(OPTIONS);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(daemon.calls[0].verb).toBe(OPTIONS.functionName);
+  });
+
   it('falls back to direct when the token does not match', async () => {
     const socketPath = tmpSocket();
     const daemon = fakeExecutor();

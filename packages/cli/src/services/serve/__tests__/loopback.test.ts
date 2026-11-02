@@ -38,13 +38,16 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // The dispatched command runs the real CLI, which would otherwise read the developer's own config from disk. This is the config the EXECUTOR holds.
+vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../config/network-id-discovery.js')>()),
+  ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
+}));
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
     ),
-    ensureRepositoryNetworkId: vi.fn(() => Promise.resolve(7)),
     getLanguage: vi.fn(() => Promise.resolve('en')),
     applyDefaults: vi.fn((options: Record<string, unknown>) => Promise.resolve(options)),
     setRuntimeConfig: vi.fn(),
@@ -268,12 +271,14 @@ describe('proxy loopback', () => {
 
     // The operator sees the same timeline they would have seen locally, because these are renet's own events rendered through the same helpers.
     expect(stdout).toContain('Snapshot');
-    // ...and renet's output, rendered live as it streamed.
-    expect(stdout).toContain('STATUS: running');
+    // renet's raw `output` events are NOT rendered for `repo status`: a local run drops them too, and the verb prints its own record (here the plain-text capture) once, exactly as a local run does.
+    expect(stdout).not.toContain('STATUS: running');
+    // The record is the one line that is exactly `done`; a substring count would also match any other text containing it.
+    expect(stdout.split('\n').filter((line) => line.trim() === 'done')).toHaveLength(1);
   });
 
-  it('prints the captured output when a run streamed none of it live', async () => {
-    // A run that emits no output events must still show what renet said, rather than ending in silence. It is printed once, never twice.
+  it('repo status prints its record from the captured output when no output event streamed', async () => {
+    // Only the verbs that print a record of their own (here `repo status` through its status record) show the captured text: the raw-capture fallback is gone, so a silent non-status verb prints nothing. The record is printed once, never twice.
     const { executor } = fakeExecutor([], { stdout: 'the whole answer' });
     boot({ executor });
 

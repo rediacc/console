@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   buildPrunePreviewRows,
-  type DatastorePrunableResources,
   countPrunedResources,
+  type DatastorePrunableResources,
   parseDatastorePruneOutput,
 } from '../datastore-prune-parser.js';
 
@@ -13,8 +13,7 @@ const RESOURCES_JSON = JSON.stringify({
   empty_mounts: null,
   orphan_immovables: null,
   stale_locks: null,
-  stale_snapshots: null,
-  stale_backup_snapshots: ['.backup-A', '.backup-B'],
+  stale_snapshots: ['.snapshot-A', '.snapshot-B'],
   orphan_sandboxes: null,
   iptables_chains: [{ name: 'REDIACC_WILDCARD_64', table: 'filter', network_id: 64 }],
   auth_keys: [
@@ -26,7 +25,7 @@ const RESOURCES_JSON = JSON.stringify({
 describe('parseDatastorePruneOutput', () => {
   it('parses a clean prune JSON object', () => {
     const obj = parseDatastorePruneOutput(RESOURCES_JSON);
-    expect(obj.stale_backup_snapshots).toEqual(['.backup-A', '.backup-B']);
+    expect(obj.stale_snapshots).toEqual(['.snapshot-A', '.snapshot-B']);
   });
 
   it('strips the renet "[repository_prune] " line prefix and parses', () => {
@@ -37,7 +36,7 @@ describe('parseDatastorePruneOutput', () => {
       ...pretty.split('\n').map((l) => `[repository_prune] ${l}`),
     ].join('\n');
     const obj = parseDatastorePruneOutput(relayed);
-    expect(obj.stale_backup_snapshots).toEqual(['.backup-A', '.backup-B']);
+    expect(obj.stale_snapshots).toEqual(['.snapshot-A', '.snapshot-B']);
   });
 
   it('survives logrus stderr lines interleaved INSIDE the JSON (relay merge)', () => {
@@ -52,7 +51,7 @@ describe('parseDatastorePruneOutput', () => {
       'time="2026-07-22T08:51:41Z" level=info msg="Complete: repository_trim completed"',
     ].join('\n');
     const obj = parseDatastorePruneOutput(interleaved);
-    expect(obj.stale_backup_snapshots).toEqual(['.backup-A', '.backup-B']);
+    expect(obj.stale_snapshots).toEqual(['.snapshot-A', '.snapshot-B']);
   });
 
   it('throws when no JSON object is present', () => {
@@ -64,8 +63,8 @@ describe('buildPrunePreviewRows', () => {
   it('flattens every category into { type, resource } rows', () => {
     const rows = buildPrunePreviewRows(parseDatastorePruneOutput(RESOURCES_JSON));
     expect(rows).toEqual([
-      { type: 'backup-snapshot', resource: '.backup-A' },
-      { type: 'backup-snapshot', resource: '.backup-B' },
+      { type: 'stale-snapshot', resource: '.snapshot-A' },
+      { type: 'stale-snapshot', resource: '.snapshot-B' },
       { type: 'iptables-chain', resource: 'REDIACC_WILDCARD_64 (network 64)' },
       { type: 'authorized-key', resource: '/home/x/.ssh/authorized_keys:3 (foo)' },
     ]);
@@ -73,7 +72,7 @@ describe('buildPrunePreviewRows', () => {
 
   it('treats null/absent categories as empty', () => {
     expect(buildPrunePreviewRows({})).toEqual([]);
-    expect(buildPrunePreviewRows({ stale_backup_snapshots: null })).toEqual([]);
+    expect(buildPrunePreviewRows({ stale_snapshots: null })).toEqual([]);
   });
 });
 
@@ -82,7 +81,7 @@ describe('buildPrunePreviewRows', () => {
  * so a resource kind renet learns to report stays INVISIBLE in `rdc`'s preview
  * until someone adds a line. Nothing failed when that happened: the JSON is
  * additive, the parse succeeds, and the new kind is simply never shown. Two
- * kinds (`stale_pull_staging`, `stale_churn_probe_bases`) shipped that way.
+ * kinds (a pull-staging kind since retired, and `stale_churn_probe_bases`) shipped that way.
  *
  * So the allowlist is pinned against the Go struct it mirrors. The renet
  * submodule is checked out by the CI job that runs these tests (ci-quality.yml,
@@ -114,9 +113,8 @@ const KIND_FIXTURES: Record<string, unknown[]> = {
   orphan_legacy_interim: ['guid-d'],
   stale_locks: ['.lock-guid-e'],
   stale_snapshots: ['.snapshot-f'],
-  stale_backup_snapshots: ['.backup-g'],
-  stale_pull_staging: ['.pull-guid-h'],
   stale_restore_staging: ['.restore-guid-h'],
+  stale_backup_pull_staging: ['.guid-m'],
   stale_churn_probe_bases: ['.churn-probe-i'],
   stale_backup_anchors: ['.chunk-anchors/guid-k'],
   stale_backup_journals: ['default-guid-l.json'],
@@ -131,7 +129,9 @@ const KIND_FIXTURES: Record<string, unknown[]> = {
 describe('prune resource coverage against renet', () => {
   it('has a fixture for every kind renet reports', () => {
     // Guards the guard: a new Go kind with no fixture would otherwise leave the coverage assertion below silently testing one kind fewer.
-    expect(Object.keys(KIND_FIXTURES).sort()).toEqual(renetPruneResourceTags().sort());
+    expect(Object.keys(KIND_FIXTURES).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
+      renetPruneResourceTags().sort((a, b) => Number(a > b) - Number(a < b))
+    );
   });
 
   it('emits at least one preview row for every kind renet reports', () => {

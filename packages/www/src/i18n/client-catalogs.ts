@@ -29,7 +29,7 @@ export function resolveClientCatalogs(
     byLocale[modulePath.slice(prefix.length, -suffix.length)] = catalog;
   }
 
-  const found = Object.keys(byLocale).sort();
+  const found = Object.keys(byLocale).sort((a, b) => Number(a > b) - Number(a < b));
   const missing = SITE_LOCALES.filter((locale) => !(locale in byLocale));
   const unexpected = found.filter(
     (locale) => !(SITE_LOCALES as readonly string[]).includes(locale)

@@ -1,0 +1,162 @@
+name: OBS Ceph Autobump
+
+run-name: "OBS Ceph autobump: ${{ github.event_name }}"
+
+# Moves the openSUSE Leap 16.0 Ceph pin to each new OBS build once CI - OBS Mirror
+# has captured it (PLAN-plan-per-pr-loop R1, operator /ask 2026-10-23 "Scheduled
+# auto-bump"). OBS filesystems:ceph:squid/16.0 keeps only its latest build and
+# rebuilds every few days; until the pin moves, the nightly's `OBS upstream serves
+# the pin` step is red. rediacc_ci.infra.obs_ceph_autobump holds the logic and the
+# reasons; this file only wires its two subcommands.
+#
+#   plan  contents: read and the read-only checkout token (the pins-soaked shape):
+#         `npm run pins -- bump os:opensuse-16.0-ceph`, which refuses a moved Ceph
+#         series and an EVR with no obs-mirror tag, and runs check:ci-ceph-image-pin.
+#   land  the cd-preset App token for console and renet, and no npm: commits the same
+#         old -> new on the live MMDD-N branch (the one open console PR's head, and
+#         renet's same-named branch) and pushes without force. No open PR is red.
+#
+# Triggers: every completed CI - OBS Mirror run on main (each capture is followed
+# by a bump within minutes), and on demand. `workflow_run` always executes this file
+# from the default branch, but `workflow_dispatch` executes it from whichever branch
+# the dispatcher selects, so both jobs refuse any ref but the default branch. That
+# `if:` stops an accidental dispatch from another branch; it is not a defence against
+# a branch that edits this very file, since the dispatched copy enforces its own check.
+# The write credentials are bounded by the App token's repository scope, not by this
+# guard (per-commit findings e28e2f8d.1 and f8d18480.3).
+
+on:
+  workflow_run:
+    workflows: ["CI - OBS Mirror"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Each job declares its own permissions; a job added without a block gets nothing.
+permissions: {}
+
+concurrency:
+  group: obs-ceph-autobump
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Bump the Leap Ceph pin
+    # A failed mirror run captured nothing new.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # packages: read lets the bump probe the private obs-mirror tag in ghcr.io/rediacc/ci-vm-bake.
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      action: ${{ steps.plan.outputs.action }}
+      old: ${{ steps.plan.outputs.old }}
+      new: ${{ steps.plan.outputs.new }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The pin's sites live in private/renet, so the App token checks it out, read-only.
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet
+      # npm ci and the bump run dependency code, which must never hold the App private key.
+      - name: Drop the App credentials from the job environment
+        run: |
+          echo "BWS_GITHUB_APP_PRIVATE_KEY=" >> "$GITHUB_ENV"
+          echo "BWS_APP_ID=" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+      - name: Init renet submodule
+        run: git submodule update --init --depth 1 private/renet
+      # app-token writes the token into the global git config; remove it and prove it is gone.
+      - name: Drop the App token from the global git config
+        run: |
+          while read -r key; do
+            case "$key" in *x-access-token*) git config --global --unset-all "$key" ;; esac
+          done < <(git config --global --name-only --get-regexp '^url\..*\.insteadof$')
+          if git config --global --get-regexp 'x-access-token' >/dev/null || git config --global --get-regexp '.' 'x-access-token' >/dev/null; then
+            echo "::error::an x-access-token entry is still in the global git config"; exit 1
+          fi
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Login to GHCR
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Install oras
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image install-oras
+
+      - uses: ./.github/actions/setup-node-npm
+
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Run the pin bump
+        id: plan
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_ceph_autobump plan
+
+  land:
+    name: Land the bump on the live branch
+    needs: plan
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.plan.outputs.action == 'bump'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The default token only checks out this file's own code; every write rides the App token.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+      # contents: write on console and renet pushes the two commits; pull_requests (in the preset) reads the open PR.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: cd
+          repositories: console,renet
+      - name: Drop the App credentials from the job environment
+        run: |
+          echo "BWS_GITHUB_APP_PRIVATE_KEY=" >> "$GITHUB_ENV"
+          echo "BWS_APP_ID=" >> "$GITHUB_ENV"
+
+      - name: Commit and push on the live branch
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PIN_OLD: ${{ needs.plan.outputs.old }}
+          PIN_NEW: ${{ needs.plan.outputs.new }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_ceph_autobump land --old "$PIN_OLD" --new "$PIN_NEW"

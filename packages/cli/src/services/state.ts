@@ -6,7 +6,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+import { repoDockerHost, repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { configService } from './config/config-resources.js';
 import { readSSHKey } from './renet/renet-execution.js';
 
@@ -44,13 +44,6 @@ export interface MachineProvider {
   }): Promise<MachineWithVaultStatusData | null>;
 }
 
-export interface StorageProvider {
-  list(params: { teamName: string }): Promise<ResourceRecord[]>;
-  create(params: Record<string, unknown>): Promise<MutationResult>;
-  rename(params: Record<string, unknown>): Promise<MutationResult>;
-  delete(params: Record<string, unknown>): Promise<MutationResult>;
-}
-
 export interface VaultProvider {
   getConnectionVaults(
     teamName: string,
@@ -65,7 +58,6 @@ export interface VaultProvider {
 
 export interface IStateProvider {
   readonly machines: MachineProvider;
-  readonly storage: StorageProvider;
   readonly vaults: VaultProvider;
 }
 
@@ -120,44 +112,6 @@ class LocalMachineProvider implements MachineProvider {
   }
 }
 
-class LocalStorageProvider implements StorageProvider {
-  async list(_params: { teamName: string }): Promise<ResourceRecord[]> {
-    const storages = await configService.listStorages();
-    return storages.map((s) => ({
-      storageName: s.name,
-      provider: s.config.provider,
-    }));
-  }
-
-  async create(params: Record<string, unknown>): Promise<MutationResult> {
-    const storageName = params.storageName as string;
-    const vaultContent = params.vaultContent;
-    if (typeof vaultContent !== 'string' || vaultContent.length === 0) {
-      throw new Error('storage create requires --vault <json> with the storage configuration');
-    }
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(vaultContent) as Record<string, unknown>;
-    } catch {
-      throw new Error('--vault must be valid JSON (e.g. \'{"provider":"s3",...}\')');
-    }
-    await configService.addStorage(storageName, {
-      provider: typeof parsed.provider === 'string' ? parsed.provider : 'unknown',
-      vaultContent: parsed,
-    });
-    return { success: true };
-  }
-
-  rename(_params: Record<string, unknown>): Promise<MutationResult> {
-    return Promise.reject(new UnsupportedOperationError('storage rename'));
-  }
-
-  async delete(params: Record<string, unknown>): Promise<MutationResult> {
-    await configService.removeStorage(params.storageName as string);
-    return { success: true };
-  }
-}
-
 class LocalVaultProvider implements VaultProvider {
   async getConnectionVaults(
     _teamName: string,
@@ -204,13 +158,16 @@ class LocalVaultProvider implements VaultProvider {
         );
       }
       const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-      machineVault.dockerHost = `unix://${WK_RUNTIME_DIR}/docker-${repoConfig.networkId}.sock`;
-      machineVault.dockerSocket = `${WK_RUNTIME_DIR}/docker-${repoConfig.networkId}.sock`;
+      // A repo with no network id gets no socket here; getSSHConnectionDetails refuses it rather than aim the session at the host's system Docker.
+      if (repoConfig.networkId !== undefined) {
+        machineVault.dockerHost = repoDockerHost(repoConfig.networkId);
+        machineVault.dockerSocket = repoDockerSocketPath(repoConfig.networkId);
+      }
 
       // Resolve per-repo secrets into the two delivery channels:
       //   env  → REDIACC_SECRET_<NAME> in the SSH/renet shell; compose
       //          interpolation picks them up via existing ${REDIACC_*} allowlist.
-      // file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<NAME> (materialized by renet at repo-up time). Carried in vault but never leaked into the SSH session env.
+      // file → tmpfs file at /var/run/rediacc/net-<networkId>/secrets/<NAME> (materialized by renet at repo-up time). Carried in vault but never leaked into the SSH session env.
       const envSecrets: Record<string, string> = {};
       const secretFiles: { name: string; value: string }[] = [];
       for (const [name, entry] of Object.entries(repoConfig.secrets ?? {})) {
@@ -237,12 +194,10 @@ class LocalVaultProvider implements VaultProvider {
 
 export class LocalStateProvider implements IStateProvider {
   readonly machines: MachineProvider;
-  readonly storage: StorageProvider;
   readonly vaults: VaultProvider;
 
   constructor() {
     this.machines = new LocalMachineProvider();
-    this.storage = new LocalStorageProvider();
     this.vaults = new LocalVaultProvider();
   }
 }

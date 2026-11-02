@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -112,6 +112,10 @@
       "private/account/src/**/*.ts",
       "private/account/tests/**/*.ts",
       "private/account/scripts/**/*.ts",
+      "private/account/e2e/src/**/*.ts",
+      "private/account/e2e/tests/**/*.ts",
+      "private/account/e2e/scripts/**/*.ts",
+      "private/account/e2e/playwright.config.ts",
       "private/account/web/src/**/*.ts",
       "private/account/web/src/**/*.tsx",
       "private/account/web/src/**/*.css"
@@ -119,7 +123,10 @@
     "ignoreUnknown": true
   },
   "plugins": [
-    { "path": "biome-plugins/no-d1-transaction.grit", "includes": ["**/private/account/**"] },
+    {
+      "path": "biome-plugins/no-d1-transaction.grit",
+      "includes": ["**/private/account/**"]
+    },
     {
       "path": "biome-plugins/no-route-db-dynamic-import.grit",
       "includes": ["**/private/account/src/routes/**", "!**/private/account/src/routes/test.ts"]
@@ -135,7 +142,7 @@
       "linter": {
         "enabled": true,
         "rules": {
-          "recommended": true,
+          "preset": "recommended",
           "nursery": {
             "noFloatingPromises": "error"
           },
@@ -207,7 +214,7 @@
           "react": "none"
         },
         "rules": {
-          "recommended": false,
+          "preset": "none",
           "correctness": {
             "noUnusedVariables": "error",
             "noUnusedImports": "error",
@@ -230,7 +237,8 @@
                   "select": "Use antd Select component."
                 }
               }
-            }
+            },
+            "noComponentHookFactories": "error"
           },
           "suspicious": {
             "noTsIgnore": "error",
@@ -260,7 +268,8 @@
             "noVar": "error",
             "noGlobalIsNan": "error",
             "noGlobalIsFinite": "error",
-            "noDuplicateObjectKeys": "error"
+            "noDuplicateObjectKeys": "error",
+            "noReactStringRefs": "error"
           },
           "complexity": {
             "useOptionalChain": "error",
@@ -279,7 +288,13 @@
             },
             "noUselessFragments": "error",
             "noAdjacentSpacesInRegex": "error",
-            "noUselessEscapeInRegex": "error"
+            "noUselessEscapeInRegex": "error",
+            "noExcessiveNestedCallbacks": {
+              "level": "error",
+              "options": {
+                "max": 3
+              }
+            }
           },
           "nursery": {
             "noFloatingPromises": "error",
@@ -288,15 +303,7 @@
             "useNullishCoalescing": "error",
             "useIncludes": "error",
             "useStringStartsEndsWith": "error",
-            "useRegexpExec": "error",
-            "noComponentHookFactories": "error",
-            "noReactStringRefs": "error",
-            "noExcessiveNestedCallbacks": {
-              "level": "error",
-              "options": {
-                "max": 3
-              }
-            }
+            "useRegexpExec": "error"
           },
           "style": {
             "noInferrableTypes": "error",
@@ -374,7 +381,7 @@
       "includes": ["**/*.js", "**/*.mjs", "**/*.cjs", "!private/account/**"],
       "linter": {
         "rules": {
-          "recommended": true,
+          "preset": "recommended",
           "correctness": {
             "noUndeclaredVariables": "error"
           }
@@ -470,22 +477,22 @@
       ],
       "linter": {
         "rules": {
-          "nursery": {
+          "suspicious": {
+            "noFocusedTests": "error",
             "noPlaywrightWaitForTimeout": "error",
-            "noPlaywrightMissingAwait": "error",
-            "useExpect": "off",
+            "useExpect": "off"
+          },
+          "correctness": {
+            "noRestrictedElements": "off",
+            "noPlaywrightMissingAwait": "error"
+          },
+          "complexity": {
             "noExcessiveNestedCallbacks": {
               "level": "error",
               "options": {
                 "max": 5
               }
             }
-          },
-          "suspicious": {
-            "noFocusedTests": "error"
-          },
-          "correctness": {
-            "noRestrictedElements": "off"
           }
         }
       }
@@ -498,7 +505,7 @@
       ],
       "linter": {
         "rules": {
-          "nursery": {
+          "suspicious": {
             "useExpect": "off"
           }
         }
@@ -558,6 +565,7 @@
         "packages/cli/src/commands/datastore.ts",
         "packages/cli/src/commands/repo.ts",
         "packages/cli/src/commands/repo-create-delete.ts",
+        "packages/cli/src/commands/repo-create-delete-teardown.ts",
         "packages/cli/src/commands/repo-trim.ts",
         "packages/cli/src/commands/mcp/tool-factory.ts",
         "packages/cli/src/commands/mcp/__tests__/argv-acceptance.test.ts"
@@ -661,6 +669,7 @@
         "packages/cli/src/cli.ts",
         "packages/cli/src/commands/backup-ops.ts",
         "packages/cli/src/commands/backup-storage.ts",
+        "packages/cli/src/commands/backup-storage-snapshot.ts",
         "packages/cli/src/commands/backup-strategy.ts",
         "packages/cli/src/commands/backup.ts",
         "packages/cli/src/commands/cluster/declare.ts",
@@ -683,6 +692,7 @@
         "packages/cli/src/commands/repo-container.ts",
         "packages/cli/src/commands/repo-extended.ts",
         "packages/cli/src/commands/repo-fork.ts",
+        "packages/cli/src/commands/repo-fork-timeline.ts",
         "packages/cli/src/commands/repo-maintenance.ts",
         "packages/cli/src/commands/storage-endpoints.ts",
         "packages/cli/src/commands/term.ts",

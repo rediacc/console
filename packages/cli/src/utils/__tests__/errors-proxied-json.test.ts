@@ -56,7 +56,6 @@ const CONFIG: RdcConfig = {
   resources: {
     machines: { m1: { ip: '10.1.1.1', user: 'root', port: 22 } },
     repositories: {},
-    storages: {},
   },
   encryption: { mode: 'plaintext' },
 };

@@ -8,8 +8,8 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ko
-sourceHash: "14ed5791afa44326"
-sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
+sourceHash: "44f85425f17be08c"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # RDC CLI 치트 시트
@@ -59,8 +59,12 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc backup snapshot <repo> --dry-run` | 업로드 없이 스냅샷 계획; 무엇이 이동할지 보고 |
 | `rdc backup verify <repo>` | 레포지토리의 백업 앵커를 청크 스토리지와 대조하여 검증 |
 | `rdc backup usage` | 청크 스토리지에 저장된 바이트를 쿼터와 비교하여 표시 |
-| `rdc backup manifests <repo>` | 서버에 기록된 스냅샷 매니페스트 나열 |
-| `rdc storage browse <storage>` | 스토리지 내용 탐색 |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | 청크 스토어 스냅샷을 새 이름으로 복원 |
+| `rdc backup retention <repo>` | 서버가 저장소 계보에 적용하는 보존 정책 표시 |
+| `rdc backup retention preview <repo>` | 다음 정리에서 삭제될 대상과 확보될 공간 표시 |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | 계보 또는 백업 스트림 하나의 보존 선언 |
+| `rdc backup retention clear <repo> [--stream <id>]` | 정책 제거. 모든 스냅샷 보존 |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | 스냅샷 하나 삭제. 그 스냅샷만 쓰던 데이터는 다음 GC에서 해제 |
 
 ## 리포지터리 마이그레이션
 
@@ -76,7 +80,7 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 
 | 명령 | 설명 |
 |---------|-------------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | 명명된 백업 전략 생성 또는 업데이트 |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | 명명된 백업 전략 생성 또는 업데이트 |
 | `rdc backup strategy list` | 정의된 모든 백업 전략 나열 |
 | `rdc backup strategy show <name>` | 전략의 세부 사항 표시 |
 | `rdc backup strategy remove <name>` | 전략 제거 |
@@ -137,8 +141,6 @@ sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 | `rdc config list` | 이 머신의 모든 config 나열 |
 | `rdc config set machine <alias>` | 별칭이 다른 머신을 가리키도록 설정 |
 | `rdc machine add <machine> --ip <host> --user <user>` | config에 머신 추가 |
-| `rdc storage import rclone.conf` | rclone config에서 스토리지 공급자 가져오기 |
-| `rdc storage list` | 구성된 스토리지 공급자 나열 |
 | `rdc backup strategy set ...` | 명명된 백업 전략 정의 |
 | `rdc --config <name> <command>` | 명명된 config 파일 사용 |
 

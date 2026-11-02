@@ -27,6 +27,7 @@ THE TWO CONTRACTS THIS FILE IS JUDGED ON.
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import sys
@@ -270,6 +271,11 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
         ctx.say("  deps        STALE (dependencies and native modules pending)")
         pending += 1
 
+    # NOT COUNTED, like go: the pin is compiled into the CLI, and asking it means `./rdc.sh`, which builds the CLI and renet first, so `--check` could not stay read-only. The step is a no-op once the pinned version is in rdc's tools dir.
+    ctx.say(
+        "  tofu        setup runs ./rdc.sh tools install tofu (no-op once the pin is installed)"
+    )
+
     image = constants.get("DEVBOX_IMAGE", "")
     if facts.get("image") == "1":
         ctx.say("  image       present (%s)" % image)
@@ -374,6 +380,9 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     # package.json, package-lock.json and .npmrc and skips on a match.
     bridge.call("ensure_deps", ctx.root, ctx.env)
 
+    if _install_tofu(ctx) != 0:
+        return 1
+
     if "account-bws-bootstrap" in selected and _account_bws_bootstrap(ctx) != 0:
         return 1
 
@@ -410,14 +419,46 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
     return 0
 
 
+def _install_tofu(ctx: Ctx) -> int:
+    """Install the pinned OpenTofu through the customer path, `./rdc.sh tools install tofu`.
+
+    The pin lives in `.ci/config/pins.json` (leaf `cli-tool:opentofu`) and is compiled into the CLI, so nothing here names a version or a checksum: the reported version is read from `tools list -o json`. The install is a no-op when the pinned version is already in rdc's tools dir, so a second setup does no work.
+    """
+    ctx.step("OpenTofu (rdc tools)")
+    rdc = str(ctx.root / "rdc.sh")
+    # A cold CLI build can precede the first call, hence the generous deadline.
+    installed = ctx.run([rdc, "tools", "install", "tofu"], timeout=900)
+    if installed.rc != 0:
+        ctx.error(
+            "rdc tools install tofu failed (rc=%d): %s"
+            % (installed.rc, (installed.err.strip() or installed.out.strip())[-400:])
+        )
+        return 1
+    listed = ctx.run([rdc, "tools", "list", "-o", "json"], timeout=300)
+    version = ""
+    if listed.rc == 0:
+        try:
+            pinned = json.loads(listed.out[listed.out.index("{") :])["data"]["pinned"]["tofu"]
+        except (ValueError, KeyError, TypeError):
+            pinned = None
+        # A JSON null or a non-string must not become the text "None".
+        version = pinned if isinstance(pinned, str) else ""
+    if not version:
+        ctx.error("rdc tools list did not report the pinned tofu version (rc=%d)" % listed.rc)
+        return 1
+    ctx.info("OpenTofu %s installed (rdc tools)" % version)
+    ctx.say()
+    return 0
+
+
 # The account's retired local env files. `account-bws-bootstrap` refuses to continue while either still carries anything but the bootstrap token (PLAN-account-env-to-bws T20).
 RETIRED_ENV_FILES = ("private/account/.env", "private/account/.env.bench")
 
-# The PUBLIC-key cache the four build-time readers use (T15): the DEV keys, under the local names the readers expect.
+# The PUBLIC-key cache the build-time readers use (T15): the production public keys, unaliased. There is one account keypair for every build, gateway, bench and drill (agent/plans/PLAN-production-key-only.md), so the cache holds exactly what a released renet bakes.
 PUBLIC_KEY_CACHE = "private/account/.cache/public-keys.env"
 PUBLIC_KEY_SPECS = (
-    "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY",
-    "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY",
+    "ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY",
 )
 
 
@@ -480,7 +521,7 @@ def _account_bws_bootstrap(ctx: Ctx) -> int:
     )
     if result.rc != 0:
         ctx.warn(
-            "Could not refresh %s from Bitwarden; a dev renet build will bake no licence key."
+            "Could not refresh %s from Bitwarden; ./rdc.sh reads the key from Bitwarden on its next renet build instead."
             % PUBLIC_KEY_CACHE
         )
         for line in result.err.strip().splitlines()[:4]:

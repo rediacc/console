@@ -167,8 +167,12 @@ for (const leaf of cli) {
   for (let i = 1; i <= parts.length; i++) cliPrefixes.add(parts.slice(0, i).join(' '));
 }
 
-const phantom = [...doc].filter((leaf) => !cliPrefixes.has(leaf)).sort();
-const omitted = [...cli].filter((leaf) => !doc.has(leaf)).sort();
+const phantom = [...doc]
+  .filter((leaf) => !cliPrefixes.has(leaf))
+  .sort((a, b) => Number(a > b) - Number(a < b));
+const omitted = [...cli]
+  .filter((leaf) => !doc.has(leaf))
+  .sort((a, b) => Number(a > b) - Number(a < b));
 
 if (phantom.length > 0 || omitted.length > 0) {
   console.error(

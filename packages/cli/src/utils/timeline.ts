@@ -37,6 +37,7 @@ const activeLabels: Record<string, string> = {
   repo_delete: 'Deleting repository',
   filesystem_resize: 'Resizing filesystem',
   filesystem_expand: 'Expanding filesystem',
+  sessions_end: 'Ending sessions',
 };
 
 /** Labels shown when step completes (checkmark). */
@@ -72,6 +73,7 @@ const doneLabels: Record<string, string> = {
   repo_delete: 'Repository deleted',
   filesystem_resize: 'Filesystem resized',
   filesystem_expand: 'Filesystem expanded',
+  sessions_end: 'Sessions ended',
 };
 
 /** A single rendered timeline step (CLI-side, renet-side, or orchestrated). */
@@ -128,6 +130,22 @@ export function getActiveLabel(name: string): string {
 /** Get human label for a completed step (checkmark). */
 export function getDoneLabel(name: string): string {
   return doneLabels[name] ?? name;
+}
+
+/**
+ * Completed-step text: the done label, followed by `: detail` when renet
+ * reported one. The parallel marker is not a detail and adds nothing.
+ */
+export function getDoneText(name: string, detail?: string): string {
+  const label = getDoneLabel(name);
+  return detail && detail !== PARALLEL_STEP_DETAIL ? `${label}: ${detail}` : label;
+}
+
+/** A finished step's line text where parallel steps stay visible: a parallel step reads `Label (∥)`, any other detail follows as `Label: detail`. */
+export function getDoneLine(name: string, detail?: string): string {
+  return detail === PARALLEL_STEP_DETAIL
+    ? `${getDoneLabel(name)} (${detail})`
+    : getDoneText(name, detail);
 }
 
 // --------------------------------------------------------------------------- End-of-command timing summary: proportional bars + waterfall.

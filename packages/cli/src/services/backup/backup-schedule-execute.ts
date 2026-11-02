@@ -111,12 +111,29 @@ async function removeOneStrategy(
 ): Promise<void> {
   const remote = diff.remote;
   if (!remote) return;
-  await runRemoteCommand(
-    sftp,
-    `sudo systemctl disable --now rediacc-backup-${diff.name}.timer`,
-    options,
-    `Failed to disable timer for removed strategy "${diff.name}"`
-  );
+  // Only a timer unit that exists can be disabled: systemctl exits 1 on a missing one, and a strategy whose units are already gone but whose env file was left behind (hostinger, 2026-10-30) otherwise aborted the whole schedule before any other strategy's timer was deployed.
+  if (remote.timerFile.exists) {
+    await runRemoteCommand(
+      sftp,
+      `sudo systemctl disable --now rediacc-backup-${diff.name}.timer`,
+      options,
+      `Failed to disable timer for removed strategy "${diff.name}"`
+    );
+  } else if (remote.isActiveTimer || remote.isEnabledTimer) {
+    // A timer systemd still runs or links without its unit file cannot be disabled: stop it and drop the dangling timers.target.wants link, so it never fires again for a strategy that no longer exists. Best-effort with a warning, so one dangling unit never aborts the rest of the schedule.
+    const unit = `rediacc-backup-${diff.name}.timer`;
+    const exitCode = await sftp.execStreaming(
+      // Each step runs whatever the one before did, and the last failing step's own exit code is the
+      // command's: a plain `a; b; c` reports only c, which hid a failed stop.
+      `sudo sh -c 'rc=0; systemctl stop ${unit} || rc=$?; rm -f /etc/systemd/system/timers.target.wants/${unit} || rc=$?; systemctl daemon-reload || rc=$?; exit $rc'`,
+      { onStdout: () => {}, onStderr: (data) => writeStderr(data) }
+    );
+    if (exitCode !== 0) {
+      outputService.warn(
+        `Could not fully stop the dangling timer of removed strategy "${diff.name}" (exit ${exitCode})`
+      );
+    }
+  }
   const paths = collectExistingPaths(remote);
   if (paths.length === 0) return;
   await runRemoteCommand(

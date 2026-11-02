@@ -9,8 +9,8 @@ tags:
 subcategory: operations
 order: 9
 language: tr
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # İzleme
@@ -203,7 +203,7 @@ rdc machine status server-1
 Sağlanan bilgiler:
 - Ana bilgisayar adı ve çalışma süresi
 - Bellek, disk ve datastore kullanımı
-- Toplam depo sayısı, bağlı olan sayısı ve çalışan Docker sayısı
+- Toplam depo sayısı, bağlı olan sayısı ve Docker daemon'ının yanıt verdiği depo sayısı
 - Depo başına ayrıntılı bilgi
 
 Makine tarafından okunabilir çıktı için `--output json` kullanın.

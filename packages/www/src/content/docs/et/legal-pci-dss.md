@@ -8,8 +8,8 @@ tags:
 subcategory: frameworks
 order: 6
 language: et
-sourceHash: "f0349ad8df33656e"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d748e8f6b0b7e064"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Kuula: PCI DSS v4.0.1 pole valikuline, kui käsitlead kaardiomaniku andmeid. Versioon 4.0.1 taandub ühele nõudele: infrastruktuuri tasandi isoleerimisele kõigest muust.
@@ -35,7 +35,7 @@ Viide: [PCI Security Standards Council](https://www.pcisecuritystandards.org/doc
 
 PCI DSS tugineb tugevalt segmenteerimisele. Näen pidevalt meeskondade katset rakendada iptables-reegleid ebapiisavate isolatsioonide peale. See ei tööta. Edukalt auditi läbinud meeskonnad on segmenteerimise üles ehitanud arhitektuuri. Rediacc annab selle sulle vaikimisi:
 
-- Iga hoidla töötab oma Dockeri deemonis aadressil `/var/run/rediacc/docker-<networkId>.sock`
+- Iga hoidla töötab oma Dockeri deemonis aadressil `/var/run/rediacc/net-<networkId>/docker-<networkId>.sock`
 - Hoidlatel on eraldatud loopback-IP-alamvõrgud (127.0.x.x/26, 61 kasutatavat IP-d võrgu kohta)
 - Renet'i poolt jõustatud iptables-reeglid blokeerivad kõik deemoniülese liikluse
 - Eri hoidlate konteinerid ei saa võrgutasandil suhelda

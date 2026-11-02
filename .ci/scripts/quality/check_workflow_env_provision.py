@@ -20,7 +20,7 @@ positives across 124 jobs rather than becoming the kind of noise a gate gets sup
 ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use $RENET_BINARY, which no workflow line defines: the renet build step writes it to $GITHUB_ENV. Without following the script named in the run block this gate reports nine confident findings that are all wrong. (The first version DID -- because `m.lstrip('./')` strips every leading dot AND slash, turning
 `.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine findings looked like a real defect class. `removeprefix` is the fix, and a broken path resolver that reports MORE is the lucky direction; the same bug in a gate that reports less is silent.)
 
-THE HOP HAS TWO SPELLINGS SINCE W7P4-W, and missing the second is the same nine findings back. A cut-over step no longer names a path at all: it runs `PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense`, which the path regex cannot see. `MODULE` resolves that module spec to its file under `.ci/`, so both forms reach the same reader, and the real-tree control below
+THE HOP HAS TWO SPELLINGS SINCE W7P4-W, and missing the second is the same nine findings back. A cut-over step no longer names a path at all: it runs `PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet`, which the path regex cannot see. `MODULE` resolves that module spec to its file under `.ci/`, so both forms reach the same reader, and the real-tree control below
 pins the module form by name rather than the path form it replaced.
 
 A PYTHON WRITER IS RECOGNISED BY A DIFFERENT SHAPE, because a port has no `>> "$GITHUB_ENV"` to match: it opens the path and writes a `NAME=value` line. `GHENV_PY` is therefore the `NAME=` head of a string literal, and it is applied ONLY to a module whose text mentions `GITHUB_ENV` at all and only to a module the step itself names. Both narrowings matter: the pattern is loose, and
@@ -327,7 +327,7 @@ def selftest() -> int:
     check(
         "CONTROL: the module hop finds $RENET_BINARY through the cut-over spelling",
         "RENET_BINARY"
-        in module_names(ROOT, "PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense"),
+        in module_names(ROOT, "PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet"),
     )
     check(
         "CONTROL: a module spec that resolves to nothing provisions nothing",

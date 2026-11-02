@@ -60,11 +60,9 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
             AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
@@ -194,6 +192,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
       - name: Set Worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
@@ -244,7 +251,18 @@ jobs:
           STRIPE_WEBHOOK_SECRET: ${{ inputs.target == 'stable'
             && env.BWS_STRIPE_WEBHOOK_SECRET_EU
             || env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_www_worker_secrets
+        # workers/www holds the only node_modules/.bin/wrangler this job installs, and
+        # `npx --no-install wrangler` resolves a local binary only, so the step runs
+        # there (the same failure took Deploy Preview down in run 41348962671).
+        working-directory: workers/www
+        run: PYTHONPATH="$GITHUB_WORKSPACE/.ci" python3 -m rediacc_ci.deploy.set_www_worker_secrets
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            BWS_ACCOUNT_X25519_PRIVATE_KEY
 
       - name: Verify Stripe webhook
         run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"

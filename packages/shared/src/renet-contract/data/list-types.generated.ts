@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'v1.2.25';
+export const LIST_TYPES_VERSION = 'dev';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {
@@ -133,8 +133,8 @@ export interface RepositoryInfo {
   accessible: boolean;
   autostart: boolean;
   container_count: number;
+  containers_running: boolean;
   disk_space?: DiskInfo;
-  docker_available: boolean;
   docker_running: boolean;
   external_volume_names: string[];
   external_volumes: number;
@@ -159,13 +159,41 @@ export interface RepositoryInfo {
   volume_status: string;
 }
 
+/** Marker written when licensing refuses a repo's backup */
+export interface LicenseBlockedBackup {
+  at: string;
+  code: string;
+  message: string;
+  reason: string;
+  repositoryGuid: string;
+  source: string;
+}
+
+/** One repo's result from the last unattended license renewal */
+export interface LicenseRenewal {
+  code?: string;
+  datastoreId?: string;
+  keyId: string;
+  message?: string;
+  newKeyId?: string;
+  newSequence?: number;
+  outcome: string;
+  overLimit: boolean;
+  repositoryGuid: string;
+}
+
 /** Per-repository license validation status */
 export interface LicenseStatusEntry {
+  blockedBackup?: LicenseBlockedBackup;
+  datastoreId?: string;
+  datastorePath?: string;
+  expiresAt?: string;
   grandGuid?: string;
   hardExpiresAt?: string;
   installed: boolean;
   issuedAt?: string;
   kind?: string;
+  lastRenewal?: LicenseRenewal;
   machineId?: string;
   message?: string;
   refreshRecommendedAt?: string;
@@ -241,13 +269,13 @@ export interface RepositoryStorageHealth {
 
 /** Datastore pool fill level and backup-snapshot pinning */
 export interface PoolStorageHealth {
-  active_backup_snapshots: number;
-  backup_snapshot_pinned_bytes: number;
-  backup_snapshot_pinned_human: string;
+  active_transfer_snapshots: number;
   free_bytes: number;
   free_human: string;
-  stale_backup_snapshots: number;
+  stale_transfer_snapshots: number;
   total_bytes: number;
+  transfer_pinned_bytes: number;
+  transfer_pinned_human: string;
   used_bytes: number;
   used_human: string;
   used_percent: number;
@@ -307,16 +335,52 @@ export interface HealthDriftSummary {
   updated_at: string;
 }
 
+/** Who started a detached job and through which client */
+export interface JobOrigin {
+  actor?: string;
+  client?: string;
+  config_id?: string;
+  config_name?: string;
+  ssh_user?: string;
+  version?: string;
+}
+
+/** One detached job: live, or finished in the last hour */
+export interface JobInfo {
+  attach: string;
+  command?: string;
+  error?: string;
+  exit_code?: number;
+  finished_at?: string;
+  function?: string;
+  job_id: string;
+  lock_class: string;
+  machine?: string;
+  origin?: JobOrigin;
+  repo_guid?: string;
+  started_at: string;
+  state: string;
+}
+
+/** A renet process still running a replaced binary */
+export interface StaleProcess {
+  exe: string;
+  pid: number;
+  unit: string;
+}
+
 /** Complete machine status from 'renet list all --json' */
 export interface ListResult {
   backup_coverage?: BackupCoverage;
   block_devices: BlockDevice[];
   containers?: ContainersResult;
   health_drift?: HealthDriftSummary;
+  jobs: JobInfo[];
   license_statuses?: LicenseStatusEntry[];
   network?: NetworkInfo;
   repositories: RepositoryInfo[];
   services?: ServicesResult;
+  stale_processes?: StaleProcessesSection;
   storage_health?: StorageHealthResult;
   system?: SystemInfo;
   system_containers?: ContainersResult;
@@ -335,7 +399,16 @@ export interface BackupRepoStatus {
   last_skip_reason?: string;
   last_skipped_at?: string;
   last_success_at?: string;
+  last_verify_at?: string;
+  last_verify_status?: string;
   name?: string;
+}
+
+/** StaleProcessesSection (referenced type) */
+export interface StaleProcessesSection {
+  error?: string;
+  processes: StaleProcess[];
+  status: string;
 }
 
 // ============================================

@@ -104,14 +104,9 @@ two machines already in your config.
   compromised machine destroying its own backups. It is not a compliance
   certification, and it is not audited as one.
 
-### The rclone storage path is gone
+### One destination kind
 
-`rdc repo push --to <storage>` and its relatives used to copy a whole backup file
-to a cloud provider you registered yourself. Those now refuse a storage
-destination and name their replacement. Machine-to-machine transfer never went
-through rclone and is unaffected. If you still need to read an archive written
-that way, see [Reading an Archive Written Before the
-Retirement](#reading-an-archive-written-before-the-retirement).
+Chunk-store backups have a single destination kind, a hosted-service chunk store reached through the account server. There is no registry of external storage endpoints, so `--to` and `--from` on `repo push` and `repo pull` name a machine only.
 
 ### Chunk-storage commands
 
@@ -142,7 +137,11 @@ rdc backup usage
 | `--dry-run` | Plan only: no upload. Reports what would move |
 | `--cold` | Stop the containers, freeze, restart, then upload. Cannot be combined with `--dry-run` |
 | `--reseed` | Distrust the local anchor and upload a full inventory. Re-uploads everything and re-charges quota |
+| `--read-bwlimit <limit>` | Cap on how fast the snapshot reads the image from disk, in the same units as `--bwlimit` (default `50M`, `0` = unlimited) |
+| `--hash-parallelism <n>` | Number of hashing workers (default `1`, `0` = one per CPU, up to `16`) |
 | `--debug` | Enable verbose output |
+
+The upload cap and the read cap are separate. `--bwlimit` limits what is sent and is unlimited by default; `--read-bwlimit` limits how fast the image is read and hashed from disk. `ionice` affects only the BFQ I/O scheduler, so under `mq-deadline` or `none` the read cap is what bounds disk load.
 
 ## Cold Snapshots (`--cold`)
 
@@ -329,25 +328,35 @@ there and will show you nothing.
 | `Size` | Human-readable size of the backup file |
 | `Modified` | UTC timestamp of the file on the machine |
 
-Listing a storage backend is retired along with the rclone arm; the command
-refuses and names these two replacements.
-
 ## Retention
 
-The server enforces a per-repository retention policy over the chunk store, so
-old snapshots are pruned without you deleting anything by hand. With no policy
-declared, every snapshot is kept.
+The server enforces a retention policy over the chunk store, so old snapshots are pruned without anything being deleted by hand. A policy belongs to a repository's lineage: a repository and its forks share one history, and a policy set on the repository name covers the whole family. Within a lineage, each backup stream (one repository on one machine) is also protected on its own, so retention never leaves a stream without its newest snapshots or its current anchor, whatever the policy says. A second machine or a fork pruning its own history cannot consume another stream's floor.
+
+With no policy declared, a server default applies (a plan default where the plan
+sets one) and the newest snapshots of every stream are kept.
 
 ```bash
-# What is being enforced right now.
+# What is being enforced right now, and where it comes from.
 rdc backup retention my-app
+
+# What the next sweep would delete, and the space it frees. Nothing is deleted.
+rdc backup retention preview my-app
 
 # Keep a rolling window: 7 daily, 4 weekly, 6 monthly.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Go back to keeping everything.
+# Apply a different policy to one backup stream only.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Remove the declared policy.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Delete one snapshot now. Data only that snapshot used is freed by the next GC.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+A strategy can declare the policy for the repositories it covers: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` removes it).
 
 | Option | Description |
 |--------|-------------|
@@ -357,9 +366,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Keep the newest snapshot from each of this many weeks |
 | `--keep-monthly <n>` | Keep the newest snapshot from each of this many months |
 | `--keep-yearly <n>` | Keep the newest snapshot from each of this many years |
+| `--stream <id>` | Apply the policy to one backup stream instead of the repository-wide default |
 
-Give at least one rule. `set` with no rules is refused rather than treated as
-"keep nothing", because clearing a policy is what `clear` is for.
+Give at least one rule. `set` replaces every knob rather than merging, so the whole policy is passed each time. `set` with no rules is refused rather than treated as "keep nothing", because clearing a policy is what `clear` is for. `clear` removes the declared policy, so the plan or server default applies again; it never means "keep nothing" and never means "keep everything".
 
 ## Restore
 
@@ -379,6 +388,8 @@ as `2026-08-14T12:00:00Z`, which resolves to the newest snapshot taken at or
 before that moment. A time with no snapshot at or before it is refused rather
 than rounded forward.
 
+A time resolves only among the snapshots of this repository on its source machine. Snapshots written by other machines or by forks of the same lineage are not considered unless `--any-stream` widens the search on purpose. When the repository's own stream cannot be determined, the restore is refused and asks for `--any-stream` instead of guessing.
+
 Restoring under a new name with `--as` overwrites nothing, so a restore drill is
 safe to run against a live machine. Restoring onto a name that already exists is
 refused.
@@ -390,6 +401,7 @@ refused.
 | `-m, --machine <machine>` | Machine to restore onto |
 | `--datastore <name>` | Restore into this named datastore, whose attached machine hosts it |
 | `--at <time>` | Restore a point in time: a snapshot id or an RFC 3339 time |
+| `--any-stream` | With `--at`, also consider snapshots from other machines and forks of this lineage |
 | `--up` | Deploy the restored repository after the transfer |
 | `--health-window <seconds>` | How long to watch the deployed repository for health |
 | `--health-timeout <seconds>` | How long to wait for it to become healthy |
@@ -436,7 +448,7 @@ Machine](#pull-a-backup-from-another-machine).
 
 ## Scheduled Backups
 
-Rediacc uses named backup strategies. Each strategy defines a schedule, backup mode, optional bandwidth limit, and file filters. You bind strategy names to machines to control which backups run where.
+Rediacc uses named backup strategies. Each strategy defines a schedule, backup mode, optional bandwidth limit, repository filters and snapshot retention. Strategy names are bound to machines to control which backups run where.
 
 ### Backup Modes
 
@@ -535,7 +547,7 @@ The default setup is a two-strategy split: a fast hourly hot stream that capture
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -544,36 +556,28 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` names the destination inside the strategy; it is a label
-you choose, and it describes the chunk store. `--include` lists the repositories
-to back up, and repeating it adds more. Omit it and the strategy covers every
-repository on the datastore. Names match the local-config repository name
-(no `:tag`).
+`--destination <name>` names the destination inside the strategy; it is a label chosen per strategy, and the destination is always the hosted-service chunk store. `--include` takes a comma-separated list of repositories to back up (`--include shop,mail`). Omit it and the strategy covers every repository on the datastore. A bare name covers the repository and all of its forks; `name:tag` covers one fork. Unknown names are refused when the strategy is saved, so a typo cannot schedule a backup of nothing.
 
-`--exclude` is refused for a chunk-store destination rather than quietly
-dropped, because the underlying `backup snapshot` selects repositories by naming
-them and has no exclude of its own. Honouring it would mean backing up
-repositories you asked to leave out. Scope a strategy with `--include` instead,
-so what a scheduled run covers is written down rather than inferred.
+`--exclude` takes the same comma-separated form and skips the named repositories. `--include` and `--exclude` are mutually exclusive: setting one clears the other, and the value `none` clears a filter.
 
 | Option | Description |
 |--------|-------------|
 | `<strategy>` (positional) | Strategy name (used for machine binding) |
-| `--destination <name>` | Destination name inside the strategy. Defaults to the chunk store |
-| `--storage <name>` | Opt in to the retired rclone destination kind. A schedule using it cannot be deployed |
+| `--destination <name>` | Destination name inside the strategy. Always a hosted-service chunk store |
 | `--cron <expression>` | Cron expression (e.g. `"0 2 * * *"` for daily at 2 AM) |
 | `--mode <hot\|cold>` | Backup mode |
 | `--bwlimit <limit>` | Bandwidth limit for uploads (e.g. `10M`) |
-| `--include <repos>` | Repositories this strategy covers (repeatable) |
-| `--exclude <repos>` | Repositories to skip (repeatable). Refused on a chunk-store destination |
-| `--folder <path>` | Subfolder inside an rclone bucket. Refused on a chunk-store destination |
+| `--read-bwlimit <limit>` | Cap on how fast snapshots read the image from disk (e.g. `50M`, `0` = unlimited). `none` clears it |
+| `--include <repos>` | Repositories this strategy covers (comma-separated) |
+| `--exclude <repos>` | Repositories to skip (comma-separated) |
+| `--retention <spec>` | Snapshot retention, for example `last=7,daily=7,weekly=4,monthly=6`. `none` removes it |
 | `--enable` / `--disable` | Enable or disable the strategy |
 
 ### View Strategies
@@ -636,14 +640,12 @@ the cells they share once rather than twice.
 
 ### Scoping repos per strategy
 
-A strategy with no `--include` covers every repository on the datastore.
-Repeating `--include` narrows it to the repositories you name, matched on the
-local-config repository name (no `:tag`).
+A strategy with no `--include` covers every repository on the datastore. `--include` narrows it to the comma-separated repositories named, matched on the local-config repository name.
 
 ```bash
 # Hot strategy: back up everything hourly
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -651,10 +653,10 @@ rdc backup strategy set hourly-hot \
 
 # Cold strategy: weekly, and only the repositories that need quiescing
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
@@ -741,32 +743,6 @@ transfer while the repository keeps running, then a brief stop for the delta.
 Migration **moves** the repository, so the source images are deleted once the move
 succeeds. Pass `--keep-source` to retain them. This is the difference between
 `repo migrate` and `repo push`: push leaves the source running and untouched.
-
-## Reading an Archive Written Before the Retirement
-
-`rdc storage` is what is left of the rclone arm, and it is read-only. It cannot
-be a backup destination any more, but it can still get at an archive that was
-written to one.
-
-```bash
-# Register a remote you already have configured for rclone.
-rdc storage import rclone.conf
-rdc storage list
-
-# Look at what is in it. This runs the rclone on your PATH.
-rdc storage browse my-storage
-```
-
-`import` reads an rclone config file and records the remotes in your config;
-supported types are S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob
-and Swift.
-
-**`browse` requires `rclone` on your PATH.** It runs the rclone installed on the
-machine you are typing on; there is no bundled copy any more. Without one it
-tells you so and does nothing else.
-
-Pushing to, pulling from, listing and restoring a storage backend are retired;
-each refuses and names the command that replaces it.
 
 ## Best Practices
 

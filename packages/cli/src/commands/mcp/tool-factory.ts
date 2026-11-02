@@ -11,7 +11,7 @@
  * Split of sources: the STRUCTURE (which options/positionals a command has, their
  * value/variadic/choice shape, and their English descriptions) comes from the
  * contract. The MCP-specific SHAPING the contract does not carry, which options
- * to drop (`excludeOptions`), which optional positionals to force-require
+ * to drop (`excludeOptions`), which optional positionals or options to force-require
  * (`requiredArgs`), what to append (`appendArgs`), the LLM-tuned description
  * (`descriptionOverride`), and the MCP policy (destructive/idempotent/timeout/
  * repoArg) still come from COMMAND_METADATA.mcp, which is where they are authored.
@@ -78,7 +78,7 @@ function flagToSchemaKey(long: string): string {
 /**
  * Does a value-taking option take a REQUIRED value (`<v>`) rather than an
  * optional one (`[v]`)? The contract collapses both into `valueTaking`, so the
- * distinction, which decides whether the derived field is required, is read
+ * distinction, which decides whether a mandatory option's field is required, is read
  * back off the raw Commander flags string the contract carries verbatim. This is
  * exactly Commander's own `Option.required`.
  */
@@ -98,13 +98,18 @@ function deriveArgType(pos: ContractPositional, isRequired: boolean): z.ZodType 
 }
 
 /** Derive a Zod type for a single contract option. */
-function deriveOptionType(opt: ContractOption): z.ZodType {
-  if (!opt.valueTaking) return z.boolean().optional().describe(opt.label);
+export function deriveOptionType(opt: ContractOption, forceRequired = false): z.ZodType {
+  if (!opt.valueTaking) {
+    const flag = z.boolean().describe(opt.label);
+    return forceRequired ? flag : flag.optional();
+  }
   const base =
     opt.choices && opt.choices.length > 0
       ? z.enum(opt.choices as [string, ...string[]]).describe(opt.label)
       : z.string().describe(opt.label);
-  return takesRequiredValue(opt) ? base : base.optional();
+  // An option is a required field when the tool's requiredArgs names it (whatever the flag shape: `<v>`, `[v]` or boolean), or when the CLI itself requires it (mandatory with a `<v>` value). `<v>` alone says the flag needs a value WHEN given, not that the flag must be given.
+  const required = forceRequired || (opt.mandatory && takesRequiredValue(opt));
+  return required ? base : base.optional();
 }
 
 /**
@@ -126,10 +131,10 @@ function deriveSchema(
 
   for (const opt of options) {
     const key = flagToSchemaKey(opt.long);
-    if (!argNames.has(key)) schema[key] = deriveOptionType(opt);
+    if (!argNames.has(key)) schema[key] = deriveOptionType(opt, requiredSet.has(opt.long));
   }
 
-  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo verb exposes both, make BOTH optional MCP fields, a value-taking option otherwise derives to a REQUIRED field, so exposing both would demand both. The auto-deriver can't express "exactly one", so the runtime (resolveRepoTarget) enforces it and returns a clear error for neither/both.
+  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo verb exposes both, make BOTH optional MCP fields, so a requiredArgs entry or a mandatory flag can never make the pair demand both. The auto-deriver can't express "exactly one", so the runtime (resolveRepoTarget) enforces it and returns a clear error for neither/both.
   if ('machine' in schema && 'cluster' in schema) {
     schema.machine = (schema.machine as z.ZodType).optional();
     schema.cluster = (schema.cluster as z.ZodType).optional();

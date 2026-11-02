@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "243d934efa7d9d54"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # 备份与恢复
@@ -60,9 +60,9 @@ Rediacc 会备份加密仓库,并在同一台机器或另一台机器上恢复�
 - **这不是持续复制。** 快照是你捕获的某一个时间点,自上次快照以来写入的所有内容都可能丢失,具体丢多少取决于你运行的频率。
 - **存储的对象只写一次,不是经过认证的 WORM。** 单元格是以"仅创建"的条件写入的,机器获得的许可无法删除任何东西,删除操作是按保留策略在服务器端执行的。这对"被攻陷的机器摧毁自己的备份"是一道真实的屏障,但它不是合规认证,也不会按合规标准接受审计。
 
-### rclone 存储路径已经不复存在
+### 只有一种目标类型
 
-`rdc repo push --to <storage>` 及其相关命令过去会把整个备份文件复制到你自己注册的云提供商。现在它们会拒绝存储目标,并指出替代方案的名字。机器到机器的传输从来不经过 rclone,不受影响。如果你仍需要读取以那种方式写入的存档,请参阅[读取废止之前写入的存档](#reading-an-archive-written-before-the-retirement)。
+分块存储备份只有一种目标类型:通过账户服务器访问的、由服务托管的分块存储。不存在外部存储端点的注册表,因此 `repo push` 和 `repo pull` 的 `--to` 与 `--from` 只接受机器名。
 
 ### 分块存储命令
 
@@ -93,7 +93,11 @@ rdc backup usage
 | `--dry-run` | 仅计划:不上传。报告会移动哪些内容 |
 | `--cold` | 停止容器,冻结,重启,然后上传。不能与 `--dry-run` 同时使用 |
 | `--reseed` | 不信任本地锚点,上传完整清单。重新上传所有内容并重新计入配额 |
+| `--read-bwlimit <limit>` | 快照从磁盘读取镜像的速度上限,单位与 `--bwlimit` 相同(默认 `50M`,`0` = 不限速) |
+| `--hash-parallelism <n>` | 哈希工作线程数(默认 `1`,`0` = 每个 CPU 一个,最多 `16`) |
 | `--debug` | 启用详细输出 |
+
+上传上限与读取上限相互独立。`--bwlimit` 限制发送量,默认不限速;`--read-bwlimit` 限制从磁盘读取并计算镜像哈希的速度。`ionice` 只对 BFQ I/O 调度器生效,因此在 `mq-deadline` 或 `none` 下,真正约束磁盘负载的是读取上限。
 
 ## 冷快照(`--cold`)
 
@@ -265,22 +269,34 @@ rdc repo list --machine server-1
 | `Size` | 备份文件的可读大小 |
 | `Modified` | 该文件在机器上的 UTC 时间戳 |
 
-列出存储后端的功能已随 rclone 分支一起废止;该命令会被拒绝,并指出下面这两个替代方案。
-
 ## 保留策略
 
-服务器会对整个分块存储强制执行按仓库设置的保留策略,因此旧快照会被自动清理,无需你手动删除任何内容。如果没有声明任何策略,所有快照都会被保留。
+服务器会对分块存储强制执行保留策略,因此旧快照会被自动清理,无需手动删除任何内容。策略属于仓库的谱系:仓库及其 fork 共享同一份历史,在仓库名上设置的策略会覆盖整个家族。在谱系内部,每个备份流(某台机器上的某个仓库)也会单独受到保护,所以无论策略怎么写,保留机制都不会让某个流失去它最新的快照或当前的锚点。第二台机器或某个 fork 清理自己的历史时,也无法占用其他流的保底份额。
+
+如果没有声明策略,则使用服务器默认值(套餐设置了默认值时使用套餐默认值),并保留每个流最新的快照。
 
 ```bash
-# 当前正在强制执行的策略。
+# 当前生效的策略及其来源。
 rdc backup retention my-app
+
+# 下一次清理会删除什么,以及能释放多少空间。不会删除任何内容。
+rdc backup retention preview my-app
 
 # 保留一个滚动窗口:7 个每日、4 个每周、6 个每月。
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# 恢复为保留一切。
+# 只对一个备份流应用不同的策略。
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# 移除已声明的策略。
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# 立即删除一个快照。只有该快照使用的数据会在下一次 GC 时释放。
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+策略可以为其覆盖的仓库声明保留策略:`rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6`(`--retention none` 可移除)。
 
 | 选项 | 描述 |
 |--------|-------------|
@@ -290,8 +306,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | 在这么多周中,各保留每周最新的一个快照 |
 | `--keep-monthly <n>` | 在这么多个月中,各保留每月最新的一个快照 |
 | `--keep-yearly <n>` | 在这么多年中,各保留每年最新的一个快照 |
+| `--stream <id>` | 把策略应用到一个备份流,而不是整个仓库的默认值 |
 
-至少要给出一条规则。不带规则的 `set` 不会被当作"什么都不保留"来处理,而是会被拒绝,因为清空策略是 `clear` 的职责。
+至少要给出一条规则。`set` 会替换所有参数而不是合并,因此每次都要传入完整的策略。不带规则的 `set` 不会被当作"什么都不保留"来处理,而是会被拒绝,因为清空策略是 `clear` 的职责。`clear` 会移除已声明的策略,改回套餐或服务器的默认设置;它既不表示"什么都不保留",也不表示"全部保留"。
 
 ## 恢复
 
@@ -307,6 +324,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` 接受一个来自 `rdc backup manifests` 的快照 ID,或者一个 RFC 3339 格式的时间,例如 `2026-08-14T12:00:00Z`,它会被解析为该时刻或之前拍摄的最新快照。如果指定的时间之前没有任何快照,该请求会被拒绝,而不是向后舍入。
 
+时间只会在该仓库于其源机器上的快照中解析。其他机器或同一谱系的 fork 写入的快照不在考虑范围内,除非用 `--any-stream` 有意扩大搜索范围。无法确定仓库自己的备份流时,恢复会被拒绝并要求使用 `--any-stream`,而不是猜测。
+
 用 `--as` 以新名称恢复不会覆盖任何东西,因此可以在一台正在运行的机器上安全地做恢复演练。恢复到一个已经存在的名称会被拒绝。
 
 | 选项 | 描述 |
@@ -316,6 +335,7 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 | `-m, --machine <machine>` | 要恢复到的机器 |
 | `--datastore <name>` | 恢复到这个具名数据存储,由与之关联的机器承载 |
 | `--at <time>` | 恢复某个时间点:快照 ID 或 RFC 3339 格式的时间 |
+| `--any-stream` | 配合 `--at`,同时考虑其他机器和该谱系 fork 的快照 |
 | `--up` | 传输完成后部署恢复出的仓库 |
 | `--health-window <seconds>` | 观察已部署仓库健康状况的时长 |
 | `--health-timeout <seconds>` | 等待其变为健康状态的时长 |
@@ -352,7 +372,7 @@ rdc repo pull shop:nightly@server-1 --from server-2
 
 ## 定时备份
 
-Rediacc 使用具名的备份策略。每个策略定义一个时间表、备份模式、可选的带宽限制,以及文件过滤条件。你可以把策略名绑定到机器上,以控制哪些备份在哪里运行。
+Rediacc 使用具名的备份策略。每个策略定义一个时间表、备份模式、可选的带宽限制、仓库过滤条件和快照保留。把策略名绑定到机器上,以控制哪些备份在哪里运行。
 
 ### 备份模式
 
@@ -451,7 +471,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -460,28 +480,28 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` 用来给策略内部的目标命名;这是你自己选择的一个标签,用来描述这个分块存储。`--include` 列出要备份的仓库,重复该参数可以添加更多。省略它时,该策略会覆盖数据存储上的每一个仓库。名称需要与本地配置中的仓库名匹配(不带 `:tag`)。
+`--destination <name>` 用来给策略内部的目标命名;这是每个策略各自选择的标签,目标始终是由服务托管的分块存储。`--include` 接受以逗号分隔的待备份仓库列表(`--include shop,mail`)。省略它时,该策略会覆盖数据存储上的每一个仓库。只写名称会覆盖该仓库及其所有 fork;`name:tag` 只覆盖一个 fork。保存策略时会拒绝未知名称,因此拼写错误不会排出一个什么都不备份的计划。
 
-对于分块存储目标,`--exclude` 会被直接拒绝,而不是被悄悄忽略,因为底层的 `backup snapshot` 是通过指名来选择仓库的,并没有自己的排除机制。如果尊重这个参数,就意味着会把你要求排除在外的仓库也备份进去。请改用 `--include` 来限定策略的范围,这样一次计划运行覆盖了什么就是明文写下来的,而不是靠推断得出的。
+`--exclude` 使用同样的逗号分隔形式,并跳过所列仓库。`--include` 与 `--exclude` 互斥:设置其中一个会清除另一个,值 `none` 会清除过滤条件。
 
 | 选项 | 描述 |
 |--------|-------------|
 | `<strategy>`(位置参数) | 策略名(用于绑定机器) |
-| `--destination <name>` | 策略内部的目标名称。默认为分块存储 |
-| `--storage <name>` | 主动选用已废止的 rclone 目标类型。使用它的调度无法被部署 |
+| `--destination <name>` | 策略内部的目标名称。始终是由服务托管的分块存储 |
 | `--cron <expression>` | cron 表达式(例如 `"0 2 * * *"` 表示每天凌晨 2 点) |
 | `--mode <hot\|cold>` | 备份模式 |
 | `--bwlimit <limit>` | 上传的带宽限制(例如 `10M`) |
-| `--include <repos>` | 该策略覆盖的仓库(可重复) |
-| `--exclude <repos>` | 要跳过的仓库(可重复)。在分块存储目标上会被拒绝 |
-| `--folder <path>` | rclone 存储桶内的子文件夹。在分块存储目标上会被拒绝 |
+| `--read-bwlimit <limit>` | 快照从磁盘读取镜像的速度上限(例如 `50M`,`0` = 不限速)。`none` 表示清除 |
+| `--include <repos>` | 此策略覆盖的仓库(逗号分隔) |
+| `--exclude <repos>` | 要跳过的仓库(逗号分隔) |
+| `--retention <spec>` | 快照保留,例如 `last=7,daily=7,weekly=4,monthly=6`。`none` 表示移除 |
 | `--enable` / `--disable` | 启用或禁用该策略 |
 
 ### 查看策略
@@ -540,12 +560,12 @@ rdc backup strategy unbind weekly-cold --machine hostinger
 
 ### 按策略确定仓库范围
 
-一个没有 `--include` 的策略会覆盖数据存储上的每一个仓库。重复使用 `--include` 会把范围收窄到你指名的那些仓库,匹配依据是本地配置中的仓库名(不带 `:tag`)。
+不带 `--include` 的策略会覆盖数据存储上的每一个仓库。`--include` 会把它缩小到以逗号分隔列出的仓库,并与本地配置中的仓库名进行匹配。
 
 ```bash
 # 热策略:每小时备份所有内容
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -553,10 +573,10 @@ rdc backup strategy set hourly-hot \
 
 # 冷策略:每周,只针对需要静止的仓库
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
@@ -638,25 +658,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | 传输的带宽限制(例如 `50M`) |
 
 迁移会分两个阶段通过 rsync 传输加密的仓库数据:先是在仓库继续运行时进行一次批量传输,然后再短暂停止以完成增量部分。迁移会**移动**仓库,因此一旦迁移成功,源镜像就会被删除。传入 `--keep-source` 可以保留它们。这就是 `repo migrate` 和 `repo push` 的区别:push 会让源仓库继续运行,不做任何改动。
-
-## 读取废止之前写入的存档
-
-`rdc storage` 是 rclone 分支残留下来的部分,而且是只读的。它已经不能再作为备份目标,但仍然可以用来访问以那种方式写入的存档。
-
-```bash
-# 注册一个你已经为 rclone 配置好的远程存储。
-rdc storage import rclone.conf
-rdc storage list
-
-# 查看里面有什么。这会运行你 PATH 中的 rclone。
-rdc storage browse my-storage
-```
-
-`import` 会读取一个 rclone 配置文件,并把其中的远程存储记录到你的配置中;支持的类型有 S3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob 和 Swift。
-
-**`browse` 要求你的 PATH 中存在 `rclone`。** 它运行的是你正在操作的这台机器上安装的 rclone;不再内置任何副本。如果没有安装,它会明确告知你这一点,不会再做其他任何事。
-
-向存储后端推送、拉取、列出和恢复的功能均已废止;每一个都会被拒绝,并指出替代它的命令。
 
 ## 最佳实践
 

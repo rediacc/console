@@ -11,7 +11,7 @@ vi.mock('../../i18n/index.js', () => ({
 
 const mockListRepositories = vi.hoisted(() => vi.fn());
 vi.mock('../config/config-resources.js', () => ({
-  configService: { listRepositories: mockListRepositories },
+  configService: { listRepositories: mockListRepositories, getCurrent: async () => null },
 }));
 
 const mockWarn = vi.hoisted(() => vi.fn());

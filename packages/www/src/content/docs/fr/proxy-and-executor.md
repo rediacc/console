@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 4
 language: fr
-sourceHash: "39ec44d8efc3f9b5"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "e56214cd4086bafa"
+sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
 ---
 
 # Proxy et executor
@@ -51,6 +51,19 @@ La console web lit le même flag pour décider si une commande obtient un bouton
 ## L'executor simulé
 
 En développement, quand aucun executor réel n'est configuré, le serveur de compte répond lui-même aux requêtes de commande avec des flux simulés et des données clairement fictives (noms de ressources préfixés par `mock-`). Cela permet d'exercer l'ensemble de la console, formulaires, flux et rendu des résultats compris, sans machine ni déverrouillage. L'exécution réelle nécessite un véritable executor.
+
+## Restreindre l'origine des connexions de l'executor
+
+Le bucket `access` de la configuration contient les plages sources IPv4 et IPv6 autorisées pour les clés SSH. Les plages peuvent être définies pour toute la configuration, par clé et par machine, de sorte qu'une machine n'accepte une clé que depuis les adresses d'où son executor se connecte.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` enregistre une clé et rattache les deux plages de l'executor hébergé : `104.28.0.0/16` et `2a09:bac0::/29`. Ce sont des plages de sortie Cloudflare observées, et non une liste publiée par Cloudflare ; elles peuvent donc changer.
+- `rdc machine access set <machine> --key <key>` affecte une clé à une machine ; `--ipv4`, `--ipv6` et `--clear-ranges` ajustent les plages de cette machine.
+- `rdc machine access push <machine>` écrit les lignes d'accès sur la machine, et `--dry-run` affiche le résultat sans rien modifier.
+- `rdc machine access show <machine>` affiche les lignes d'accès en vigueur.
+
+`machine setup` réapplique les lignes d'accès, ce qui permet à une machine reconstruite de retrouver ses restrictions.
+
+Un push qui verrouillerait la session SSH en cours, parce que son adresse se situe hors des plages de la clé utilisée, est refusé avec `ACCESS_LOCKOUT`, et rien n'est écrit. Un push est refusé avec `ACCESS_FILE_CHANGED` lorsque le fichier a changé sur la machine entre-temps ; rien n'a été appliqué, le push peut donc être relancé sans risque.
 
 ## Voir aussi
 

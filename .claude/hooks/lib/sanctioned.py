@@ -188,7 +188,7 @@ CI_READ_VERBS = [
     },
     {
         "name": "gh-run-list",
-        # Console CI only: with no `--workflow`/`-w`, or one naming Console CI. Another workflow's runs (the Release to Edge dispatch `/pr-merge` looks up by id) are outside the tracer's `--runs`, so listing them is not refused.
+        # Console CI only: with no `--workflow`/`-w`, or one naming Console CI. Another workflow's runs are not refused here (the guard's own suite pins `gh run list --workflow "Release to Edge"` as admitted), though since 2026-10-23 `--runs --workflow <name>` lists them too and the `why` line says so.
         "match": (
             r"^run list\b(?:(?!.*\s(?:--workflow|-w)[= ]).*"
             r"|.*\s(?:--workflow|-w)[= ](?:Console CI|ci\.yml)(?:\s.*)?)$"
@@ -196,8 +196,9 @@ CI_READ_VERBS = [
         "use": "%s --runs" % CI_TRACE,
         "why": (
             "`gh run list --limit 1` is usually NOT your run: it is recency-sorted and the watchdog's "
-            "workflow_dispatch generations interleave every few minutes. `--runs` lists Console CI runs on "
-            "the branch only (`--ref main` for main); nightly and other scheduled runs: `--scheduled`"
+            "workflow_dispatch generations interleave every few minutes. `--runs` lists the branch's Console CI "
+            "runs (`--ref main` for main), `--runs --workflow <name>` any other workflow's, every event "
+            "merged; nightly and other scheduled runs: `--scheduled`"
         ),
         "example": 'gh run list --branch main --workflow "Console CI" --limit 3',
         "counter": 'gh run list --workflow "Release to Edge" --limit 3',
@@ -314,10 +315,12 @@ CI_READ_VERBS = [
     {
         "name": "gh-api-runs-list",
         "match": r"^api GET " + _REPO_PREFIX + r"actions/(?:workflows/[^/\s]+/)?runs$",
-        "use": "%s --runs" % CI_TRACE,
+        "use": "%s --runs --ref <branch> --workflow <stem|file|name>" % CI_TRACE,
         "why": (
-            "the runs list mixes every workflow and every branch; `--runs` lists the branch's Console CI "
-            "runs (and `--watchdog` the watchdog generations); scheduled runs of every workflow: `--scheduled`"
+            "the runs list mixes every workflow and every branch; `--runs --workflow <name>` lists one "
+            'workflow\'s runs on the branch, every event merged (`--ref main --workflow "Release to Edge"` '
+            "after a merge; no --workflow means Console CI), `--watchdog` the watchdog generations, and "
+            "scheduled runs of every workflow: `--scheduled`"
         ),
         "example": "gh api 'repos/o/r/actions/workflows/ci.yml/runs?branch=0930-1'",
         "counter": "gh api repos/o/r/releases/latest",
@@ -348,7 +351,7 @@ CI_READ_VERBS = [
             "`CI Verdict` and `Publish CI Verdict`; the tracer applies the GREEN rule, and its `--json` "
             "carries the published CI Verdict when one matches the run"
         ),
-        "example": "gh api repos/o/r/commits/a7f30558/check-runs --jq '.check_runs[].name'",
+        "example": "gh api repos/o/r/commits/1e7caef2/check-runs --jq '.check_runs[].name'",
         "counter": "gh api repos/o/r/issues/591/comments",
     },
     {

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: it
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### Autenticazione
@@ -69,6 +69,8 @@ rdc subscription login
 # Visualizza: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # Dopo l'approvazione, la CLI riceve le credenziali automaticamente
 ```
+
+Il collegamento di una configurazione a [Config Storage](/en/docs/config-storage) usa una richiesta separata, che passa anch'essa dal server dell'account. È legata all'account con cui la CLI ha effettuato l'accesso, il link conserva i suoi segreti dopo il `#` così che restino fuori dai log del server, e l'utente digita sulla pagina di approvazione un codice di abbinamento mostrato nel terminale. La richiesta scade dopo 10 minuti.
 
 ### Archiviazione della configurazione
 

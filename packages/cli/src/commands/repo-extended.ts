@@ -14,6 +14,7 @@ import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoPromoteCommand } from './repo-promote.js';
+import { registerRepoPruneCommand } from './repo-prune.js';
 import { registerRepoTrimCommand } from './repo-trim.js';
 
 /**
@@ -159,7 +160,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         }
       ) => {
         try {
-          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_RESIZE, repoKey);
           await executeRepoFunction(
             'repository_resize',
@@ -169,7 +170,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
               starting: t('commands.repo.resize.starting', {
-                repository: name,
+                repository: ref,
                 size: options.size,
                 machine: machineName,
               }),
@@ -202,7 +203,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         }
       ) => {
         try {
-          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_EXPAND, repoKey);
           await executeRepoFunction(
             'repository_expand',
@@ -212,7 +213,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
               starting: t('commands.repo.expand.starting', {
-                repository: name,
+                repository: ref,
                 size: options.size,
                 machine: machineName,
               }),
@@ -228,6 +229,9 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
 
   // repo trim [ref] (no ref = machine-wide, on -m)
   registerRepoTrimCommand(repo);
+
+  // repo prune [ref] (no ref = dry-run survey of every mounted repository, on -m)
+  registerRepoPruneCommand(repo);
 
   // repo policy set|get [ref] (no ref = machine-wide default, on -m)
   registerRepoPolicyCommand(repo);
@@ -251,7 +255,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         }
       ) => {
         try {
-          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_ADMIN_VALIDATE, repoKey);
           await executeRepoFunction(
             'repository_validate',
@@ -261,7 +265,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
               starting: t('commands.repo.admin.validate.starting', {
-                repository: name,
+                repository: ref,
                 machine: machineName,
               }),
               completed: t('commands.repo.admin.validate.completed'),
@@ -298,7 +302,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       ) => {
         try {
           if (ref) {
-            const { name, repoKey, machineName } = await resolveAutostartRef(ref);
+            const { repoKey, machineName } = await resolveAutostartRef(ref);
             await assertCommandPolicy(CMD.REPO_ADMIN_AUTOSTART_ENABLE, repoKey);
             await executeRepoFunction(
               'repository_autostart_enable',
@@ -308,7 +312,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               options,
               {
                 starting: t('commands.repo.admin.autostart.enable.starting', {
-                  repository: name,
+                  repository: ref,
                   machine: machineName,
                 }),
                 completed: t('commands.repo.admin.autostart.enable.completed'),
@@ -352,7 +356,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       ) => {
         try {
           if (ref) {
-            const { name, repoKey, machineName } = await resolveAutostartRef(ref);
+            const { repoKey, machineName } = await resolveAutostartRef(ref);
             await assertCommandPolicy(CMD.REPO_ADMIN_AUTOSTART_DISABLE, repoKey);
             await executeRepoFunction(
               'repository_autostart_disable',
@@ -362,7 +366,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               options,
               {
                 starting: t('commands.repo.admin.autostart.disable.starting', {
-                  repository: name,
+                  repository: ref,
                   machine: machineName,
                 }),
                 completed: t('commands.repo.admin.autostart.disable.completed'),
@@ -422,7 +426,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         }
       ) => {
         try {
-          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_ADMIN_OWNERSHIP, repoKey);
           const params: Record<string, unknown> = {};
           if (options.uid) params.owner_uid = options.uid;
@@ -435,7 +439,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
               starting: t('commands.repo.admin.ownership.starting', {
-                repository: name,
+                repository: ref,
                 machine: machineName,
               }),
               completed: t('commands.repo.admin.ownership.completed'),
@@ -551,7 +555,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             },
             {
               starting: t('commands.repo.admin.template.starting', {
-                repository: resolved.name,
+                repository: ref,
                 machine: resolved.machineName,
               }),
               completed: t('commands.repo.admin.template.completed'),

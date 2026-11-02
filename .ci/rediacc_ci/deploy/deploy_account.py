@@ -39,6 +39,10 @@ this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/w
      common.sh's path and line. The port prints `rediacc_ci.deploy.deploy_account: printf:
      ...` with the same status, following `autopilot/sweep_collect.py:284`.
 
+ONE DIVERGENCE IN BEHAVIOUR, ON PURPOSE: THE SERVICES PREFLIGHT. Before any migration, each `[[services]]` target of the config must be a Worker on the account, as `rediacc_ci.ops.service_bindings_audit` lists them; a MISSING target, or an audit with no verdict (rc 77, an unparseable config included), refuses with exit 1 and nothing is migrated (`check_services`). The twin migrated first and let `wrangler deploy` fail on code 10143 afterwards. A config with no `[[services]]` runs exactly as the twin did.
+
+TWO MORE DIVERGENCES, ON PURPOSE: THE PORTAL CHECKS (2026-10-28, stable served a keyless portal while its Worker enforced captcha). Before any write, the dist on disk must carry the bound TURNSTILE_SITE_KEY (`portal_sitekey_refusal`). After `wrangler deploy`, the host of the config's route must SERVE a portal that renders the captcha its Worker enforces (`portal_smoke`, `rediacc_ci.ops.portal_captcha`), retried briefly for propagation; a red names the rebuild command and the rollback, and exits 1. A config with no route skips the smoke silently, which keeps the twin differential's fixture runs byte-identical.
+
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
 `--region` does. Driven; a port testing only for presence would resolve `wrangler..toml` and report it missing instead.
 
@@ -48,13 +52,19 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-account.observations.jsonl`.
 from __future__ import annotations
 
 import os
+import pathlib
+import re
 import shutil
 import subprocess
 import sys
+import time
+import tomllib
 import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.core import wrangler as wrangler_cmd
+from rediacc_ci.ops import portal_captcha, service_bindings_audit
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -90,6 +100,78 @@ DB_NAME_NEEDLE = "database_name"
 # Blast radius today is zero: all seven `workers/account/wrangler.*.toml` files carry exactly one `database_name` line each, in the canonical shape.
 A_COMMENT_BECOMES_THE_DATABASE_NAME = True
 THE_LAST_QUOTE_WINS = True
+
+
+# A portal built without the Turnstile sitekey renders no widget while the Worker enforces Turnstile, so every login answers "Captcha verification required" (stable eu/us/asia, 2026-10-28: deploy_bench had rebuilt workers/account/dist/account for bench, which has no captcha, and the next production deploy uploaded that keyless portal).
+# This tool uploads whatever dist is on disk, so it proves the dist carries the key before anything is written.
+SITEKEY_SHAPE = re.compile(r"^0x[0-9A-Za-z_-]{16,}$")
+PORTAL_ASSETS = ("dist", "account", "assets")
+REBUILD_HINT = (
+    'rebuild the portal with the key: (cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" '
+    "VITE_CI_MODE=false npx vite build --outDir ../../../workers/account/dist/account), under the "
+    "account-secrets-<region>-<stable|edge> profile"
+)
+
+
+def portal_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, str]) -> str | None:
+    """None when the built portal under `dist/account/assets` carries the Turnstile sitekey the environment binds, else the refusal line."""
+    # TURNSTILE_SITE_KEY only: the refusal below names that binding, and every caller binds it (the deploy-workers profile, the CD step). A `VITE_` fallback let a run with only the build-time name pass a check that says the deploy name must be bound (review a43d7f08.1).
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip()
+    if not key:
+        return "TURNSTILE_SITE_KEY is not bound, so the portal cannot be checked for the captcha widget; run under the account-secrets-<region>-<stable|edge> profile"
+    if not SITEKEY_SHAPE.match(key):
+        return "TURNSTILE_SITE_KEY does not look like a Turnstile sitekey (0x...)"
+    assets = worker_dir.joinpath(*PORTAL_ASSETS)
+    bundles = sorted(assets.glob("*.js")) if assets.is_dir() else []
+    if not bundles:
+        return "no built portal at %s; %s" % (assets, REBUILD_HINT)
+    for bundle in bundles:
+        if key in bundle.read_text(encoding="utf-8", errors="replace"):
+            return None
+    return (
+        "the built portal at %s carries no Turnstile sitekey, so login would show no captcha while the Worker enforces it; %s"
+        % (assets, REBUILD_HINT)
+    )
+
+
+def route_host(config: pathlib.Path) -> str | None:
+    """The first custom-domain route pattern of the deployed wrangler config, or None when it has none (or is not TOML, which `wrangler deploy` would already have refused)."""
+    try:
+        with open(config, "rb") as fh:
+            routes = tomllib.load(fh).get("routes") or []
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    for route in routes:
+        pattern = route if isinstance(route, str) else (route or {}).get("pattern", "")
+        if pattern:
+            return pattern.split("/", 1)[0]
+    return None
+
+
+def portal_smoke(
+    config: pathlib.Path,
+    env: typing.Mapping[str, str],
+    fetch: portal_captcha.Http = portal_captcha.http,
+    sleep: typing.Callable[[float], None] = time.sleep,
+) -> str | None:
+    """After the deploy: None when the served portal renders the captcha its Worker enforces, else the refusal line.
+
+    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
+    """
+    host = route_host(config)
+    if host is None:
+        return None
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip() or None
+    verdict = portal_captcha.check_with_retry(host, fetch, key, sleep=sleep)
+    if verdict.state == portal_captcha.OK:
+        log.info("Portal smoke: %s %s" % (host, verdict.why))
+        return None
+    return "Portal smoke %s on https://%s/account/login: %s. Fix: %s" % (
+        verdict.state,
+        host,
+        verdict.why,
+        portal_captcha.fix_command(host),
+    )
 
 
 def config_name(region: str, target: str) -> str:
@@ -148,14 +230,66 @@ def database_name(config: str) -> str:
     return out.decode("utf-8", "surrogateescape").rstrip("\n")
 
 
+class ServiceBindingError(Exception):
+    """A `[[services]]` target the preflight could not confirm exists. Nothing has been migrated when this is raised."""
+
+
+def check_services(
+    root: pathlib.Path,
+    config_rel: str,
+    env: typing.Mapping[str, str],
+    fetch: service_bindings_audit.Fetch = service_bindings_audit._get,
+) -> None:
+    """Refuse before any migration when a `[[services]]` target of the deployed config is not a Worker on the account, or when the audit gives no verdict (rc 77).
+
+    NOT PART OF THE TWIN. wrangler refuses a Worker whose service binding names a missing Worker only at `wrangler deploy`, after the migrations: the 2026-10-27 eu edge run applied 0060 through 0066 and then died on code 10143 for `edge-rediacc-proxy-eu`. The parsing and the account listing are `rediacc_ci.ops.service_bindings_audit`'s, restricted to this one config (`only`): the sibling configs are not even read, so another config's missing target or parse error never blocks this deploy. A config with no bindings makes no API call, and the run is byte-identical to the twin's.
+    """
+    try:
+        _, bindings = service_bindings_audit.load_configs(root, config_rel)
+    except service_bindings_audit.AuditError as exc:
+        raise ServiceBindingError(
+            "The service-bindings audit cannot read the Worker configs (%s); no migration was applied"
+            % exc
+        ) from None
+    if not any(b.config == config_rel for b in bindings):
+        return
+    report = service_bindings_audit.audit(root, env, fetch, config_rel)
+    if report["rc"] == service_bindings_audit.EX_UNAVAILABLE:
+        raise ServiceBindingError(
+            "The service-bindings audit gave no verdict for %s (%s); no migration was applied"
+            % (config_rel, report["error"])
+        )
+    missing = [
+        r for r in report["bindings"] if r["config"] == config_rel and r["status"] == "MISSING"
+    ]
+    if missing:
+        raise ServiceBindingError(
+            "%s; no migration was applied"
+            % "; ".join(
+                "Service binding %s in %s names Worker %s, which does not exist: deploy %s first, then re-run this deploy"
+                % (r["binding"], config_rel, r["service"], r["service"])
+                for r in missing
+            )
+        )
+
+
 def migrations_argv(db_name: str, config: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config "$CONFIG"` (:60)."""
-    return ["npx", "wrangler", "d1", "migrations", "apply", db_name, "--remote", "--config", config]
+    return [
+        *wrangler_cmd.ARGV,
+        "d1",
+        "migrations",
+        "apply",
+        db_name,
+        "--remote",
+        "--config",
+        config,
+    ]
 
 
 def deploy_argv(config: str) -> list[str]:
     """`npx wrangler deploy --config "$CONFIG"` (:64)."""
-    return ["npx", "wrangler", "deploy", "--config", config]
+    return [*wrangler_cmd.ARGV, "deploy", "--config", config]
 
 
 def _run(argv: list[str]) -> int:
@@ -209,7 +343,17 @@ def main(argv: list[str]) -> int:
         log.error("Could not read database_name from %s" % config)
         return 1
 
+    refusal = portal_sitekey_refusal(worker_dir, os.environ)
+    if refusal:
+        log.error(refusal)
+        return 1
+
     log.step("Deploying account worker: %s %s (%s)" % (target, region, config))
+    try:
+        check_services(common.repo_root(), "/".join((*WORKER_SUBDIR, config)), os.environ)
+    except ServiceBindingError as exc:
+        log.error(str(exc))
+        return 1
     log.step("Applying migrations to %s..." % db_name)
     status = _run(migrations_argv(db_name, config))
     if status != 0:
@@ -220,6 +364,10 @@ def main(argv: list[str]) -> int:
     if status != 0:
         return status  # `set -e`
     log.info("Account worker deployed: %s %s" % (target, region))
+    smoke = portal_smoke(worker_dir / config, os.environ)
+    if smoke:
+        log.error(smoke)
+        return 1
     return 0
 
 

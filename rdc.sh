@@ -54,23 +54,20 @@ if [[ "${1:-}" == "--native" ]]; then
     PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.native "$@"
 fi
 
-if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
-    # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
-    # but ONLY when nothing is already installed there. A real SEA binary (from
-    # `./rdc.sh --native`) installs to ~/.local/share/rediacc/bin/rdc and
-    # points this symlink at it; forcibly repointing it back to the wrapper would
-    # silently undo that install. So we never overwrite an existing rdc on PATH —
-    # we only bootstrap the link when it is entirely absent (no file, no symlink,
-    # not even a dangling one).
-    _local_bin="$HOME/.local/bin"
-    mkdir -p "$_local_bin"
-    if [[ ! -e "$_local_bin/rdc" && ! -L "$_local_bin/rdc" ]]; then
-        ln -s "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
-    fi
-    unset _local_bin
-else
-    log_step "Preparing CLI development environment"
+# Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
+# but ONLY when nothing is already installed there. A real SEA binary (from
+# `./rdc.sh --native`) installs to ~/.local/share/rediacc/bin/rdc and
+# points this symlink at it; forcibly repointing it back to the wrapper would
+# silently undo that install. So we never overwrite an existing rdc on PATH —
+# we only bootstrap the link when it is entirely absent (no file, no symlink,
+# not even a dangling one).
+_local_bin="$HOME/.local/bin"
+mkdir -p "$_local_bin"
+if [[ ! -e "$_local_bin/rdc" && ! -L "$_local_bin/rdc" ]]; then
+    ln -s "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
 fi
+unset _local_bin
+log_step "Preparing CLI development environment"
 
 # Ensure the toolchain is current (node floor, deps, packages, CLI bundle, renet; the
 # order is core/local_common.py prepare_cli). All build/progress output goes to STDERR:
@@ -94,20 +91,19 @@ if [[ ! -f "$ref_file" ]] || [[ "$cli_dist" -nt "$ref_file" ]]; then
 fi
 
 # Add renet binary directory to PATH so CLI can find it
-renet_bin_dir="$ROOT_DIR/private/renet/bin"
-export PATH="$renet_bin_dir:$PATH"
+export PATH="$ROOT_DIR/private/renet/bin:$PATH"
 
 # WHICH UNIVERSE THIS RUNS AGAINST. Production is the default and `--dev` (or
 # RDC_DEV=1) is the one opt-in on top; bench is not a flag, it is the named config
 # `./rdc.sh --config bench <cmd>`. Every universe is a named CLI config carrying its
 # own server, keys and token, so selecting one is the ONLY thing that changes here.
 # The 27 lines of prose that stood here said what docs/agent-reference/local-env.md
-# already says under 'The ./rdc.sh wrappers', including RDC_RENET_LICENSE=1, which is
-# an independent renet build modifier this file does not read at all.
+# already says under 'The ./rdc.sh wrappers'.
 if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift
 fi
+selected_config_name() { local p=""; for a in "$@"; do [[ "$p" == "--config" ]] && { printf '%s' "$a"; return; }; [[ "$a" == --config=* ]] && { printf '%s' "${a#--config=}"; return; }; p="$a"; done; printf '%s' "${REDIACC_CONFIG:-rediacc}"; } # the banner's config: --config <name>|=<name>, then REDIACC_CONFIG, then rediacc (production)
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # Two PUBLIC values only, both from the RUNNING gateway: its port from this
     # worktree's .account-state and its X25519 key from /.well-known/server-info.
@@ -160,20 +156,17 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # The only export the dev path adds: select the "dev" config (server URL and E2E key live inside it).
     export REDIACC_CONFIG=dev
 
-    if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
-        log_info "Renet available at: $renet_bin_dir/renet"
-        log_step "Starting CLI (dev config — $dev_server)"
-    fi
+    log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
+    log_step "Starting CLI (dev config — $dev_server)"
 else
-    log_info "Renet available at: $renet_bin_dir/renet"
-    log_step "Starting CLI (production config)"
+    log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
+    log_step "Starting CLI (config $(selected_config_name "$@"))"
 fi
 
 # Run the compiled CLI bundle, passing through all arguments
 # exec, not a child: signals sent to this wrapper must reach the CLI directly
 # (a bash layer between kill and node defers SIGINT until the child exits,
 # which hangs tutorial prewarm/interrupt patterns — see tutorial-helpers.sh).
-#
 # NODE_COMPILE_CACHE: V8 spends ~120ms compiling the 15MB bundle on EVERY
 # invocation (measured, --cpu-prof); the on-disk compile cache cuts that to a
 # few ms after the first run. Env-var form on purpose — it covers the entry

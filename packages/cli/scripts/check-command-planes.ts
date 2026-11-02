@@ -93,13 +93,13 @@ const DOMAIN_MODULES = new Map<string, string>([
   ['credits', 'commands/credits.ts'],
   ['datastore', 'commands/datastore.ts'],
   ['doctor', 'commands/doctor.ts'],
+  ['tools', 'commands/tools.ts'],
   ['job', 'commands/job.ts'],
   ['machine', 'commands/machine/index.ts'],
   ['mcp', 'commands/mcp/index.ts'],
   ['ops', 'commands/ops/index.ts'],
   ['repo', 'commands/repo.ts'],
   ['serve', 'commands/serve.ts'],
-  ['storage', 'commands/storage.ts'],
   ['subscription', 'commands/subscription.ts'],
   ['term', 'commands/term.ts'],
   ['update', 'commands/update.ts'],
@@ -114,7 +114,29 @@ const DOMAIN_MODULES = new Map<string, string>([
  * Keep this list empty unless a domain genuinely cannot be classified from its
  * imports. Every entry here is a rule this gate stops enforcing.
  */
-const OVERRIDES = new Map<string, { expectMachineTouching: boolean; reason: string }>([
+const OVERRIDES = new Map<
+  string,
+  { expectMachineTouching: boolean; reason: string; excusedModules?: readonly string[] }
+>([
+  [
+    'tools',
+    {
+      expectMachineTouching: false,
+      // The override excuses exactly these modules. Everything else in the graph is still judged against the markers.
+      excusedModules: [
+        'services/tofu/executor',
+        'services/tofu/provider-pins.generated',
+        'services/tofu/tf-generator',
+      ],
+      reason:
+        'Graph says machine-touching via commands/tools.ts -> services/tofu/executor.ts. tools ' +
+        'only uses the executor to resolve and version-check the local OpenTofu binary ' +
+        '(resolveTofu); the executor module also runs tofu apply for machine provision, which ' +
+        'is the edge tools never traverses. provider-pins.generated (the pinned provider lock table) and ' +
+        'tf-generator (pure string rendering of the tofu config) are imported by the executor and reach nothing. Drop this override if the binary lookup moves out ' +
+        'of executor.ts.',
+    },
+  ],
   [
     'doctor',
     {
@@ -133,6 +155,20 @@ const OVERRIDES = new Map<string, { expectMachineTouching: boolean; reason: stri
 // ---------- Check ----------
 
 const reachOf = createReachability(SRC);
+
+/** MACHINE_MARKERS with each excused module removed: a directory marker is expanded to its files, minus the excused ones. */
+function markersExcusing(excused: readonly string[]): string[] {
+  const stem = (file: string): string => file.replace(/\.tsx?$/, '');
+  return MACHINE_MARKERS.flatMap((marker) => {
+    const dir = path.join(SRC, marker);
+    if (!excused.some((m) => m.startsWith(marker)) || !fs.existsSync(dir)) return [marker];
+    if (!fs.statSync(dir).isDirectory()) return [marker];
+    return fs
+      .readdirSync(dir)
+      .map((f) => `${marker}/${stem(f)}`)
+      .filter((m) => !excused.includes(m));
+  });
+}
 const reachability = (entry: string): Reach => reachOf(path.relative(SRC, entry));
 
 const report = process.argv.includes('--report');
@@ -174,6 +210,20 @@ for (const [domain, paths] of [...byDomain].sort(byKey)) {
   const machineTouching = override ? override.expectMachineTouching : reach.machineTouching;
 
   const machineLeaves = paths.filter((p) => getCommandPlane(p) === 'machine');
+
+  // An override that names the module it excuses stops excusing anything else: with that module no longer a marker, the domain must still be isolated.
+  if (override?.excusedModules) {
+    const rest = createReachability(
+      SRC,
+      markersExcusing(override.excusedModules)
+    )(path.relative(SRC, entry));
+    if (rest.machineTouching) {
+      violations.push(
+        `OVERRIDES["${domain}"] excuses ${override.excusedModules.join(', ')} only, but the domain also reaches a machine via ${rest.via.join(' -> ')}.\n` +
+          '  Fix the plane claims for that edge instead of widening the override.'
+      );
+    }
+  }
 
   if (report) {
     const flag = machineTouching ? 'machine-touching' : 'isolated';

@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from typing import TYPE_CHECKING, Any, cast
 
@@ -26,7 +27,8 @@ import pytest
 from rediacc_ci import paths, well_known
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import vm_check
-from rediacc_ci.drills import vm_check_receipt as receipt_mod
+from rediacc_ci.proof import vm_tier as receipt_mod
+from rediacc_ci.well_known import DATASTORE_PATH
 
 if TYPE_CHECKING:
     import types
@@ -44,7 +46,40 @@ GATEWAY_STARTED = "1792000000"
 DRILL_ENV_SCRUB = ("REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER", "RDC_DEV", "DRILL_EXPECT_NO_KEYRING")
 DRILL_NAMES = ("universe", "transfer", "license")
 A_STEPS = ("A1.1", "A1.2", "A1.3", "A1.4", "A0", "A2.1", "A2.2", "A2.3")
-V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7")
+EXTRA_IDS = tuple(step_id for step_id, _deps, _fn in vm_check.EXTRA_RENET_STEPS)
+V_STEPS = ("P5", "V1.1", "V1.2", "V1.3", "V1.4", "V1.5", "V1.6", "V1.7", "U1", *EXTRA_IDS)
+
+
+def stub_u1(check: Any) -> None:
+    """The U1 step a fake-driven run gets: one ok assertion row and no VM call. The live step is `upgrade_converge.run`, and its CLI-free helpers are tested directly in test_drills_upgrade_converge.py."""
+    check.check("U1", "stub U1: a renet upgrade converges the fleet", True)
+
+
+def _stub_extra(step_id: str) -> Any:
+    def stub(check: Any) -> None:
+        check.check(step_id, "stub %s" % step_id, True)
+
+    return stub
+
+
+# Every EXTRA_RENET_STEPS drill a fake-driven run gets: one ok row each and no VM call. The live steps' CLI-free helpers are tested in their own test modules (test_drills_tenant_isolation.py).
+STUB_EXTRA = {step_id: _stub_extra(step_id) for step_id in EXTRA_IDS}
+
+
+def e2e_output(**statuses: str) -> str:
+    """An e2e run's stdout as TextFileReporter logs it: one line per finished test, then the summary path and the skip sentinel. With no argument, two passed tests."""
+    tests = statuses or {"reachable": "passed", "push_pull": "passed"}
+    lines = [
+        "[2026-11-01T08:42:%02d.000Z] 11-multi-machine.test.ts > Multi-Machine > %s (0.3s, %s)"
+        % (n, title, status)
+        for n, (title, status) in enumerate(tests.items())
+    ]
+    skipped = sum(1 for s in tests.values() if s == "skipped")
+    lines += [
+        "[TextFileReporter] Summary: /repo/packages/e2e-tests/reports/bridge-logs/summary.txt",
+        "[TextFileReporter] E2E_SKIPPED=%d" % skipped,
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def drill_passed(name: str, count: int = 12) -> tuple[int, str]:
@@ -75,6 +110,10 @@ PARENT = "vmcheck-base"
 NOW = 1792000800.0
 
 MUTANTS = {
+    "only-writes-receipt-json": (
+        "        if self.tree and self.inputs and (self.lock_lost or self.opts.only):\n",
+        "        if self.tree and self.inputs and self.lock_lost:\n",
+    ),
     "skip-teardown": ("            self._teardown()\n", "            pass\n"),
     "pass-on-zero-steps": ("    if assertions == 0:\n", "    if False:\n"),
     "print-token": (
@@ -218,6 +257,9 @@ class World(vm_check.Host):
         self.alias_written = over.pop("alias_written", True)
         # True: a sync that carries symlinks across, the confinement property V1.5 asserts lost.
         self.sync_keeps_links = over.pop("sync_keeps_links", False)
+        # Directory owners by (fork tag, path under the mount); an absent entry is whatever the sync created. `root_parents` plants the bug: a sync that leaves the directories it creates root-owned.
+        self.owners: dict[tuple[str, str], str] = {}
+        self.root_parents = over.pop("root_parents", False)
         self.written: set[str] = set()
         self.minted_check_err = over.pop("minted_check_err", "")
         # The `repo create` answer: rc and the CLI's JSON error message when it fails.
@@ -248,6 +290,10 @@ class World(vm_check.Host):
         # The private/account checkout: initialized or not, and its HEAD.
         self.account_checked_out = over.pop("account_checked_out", True)
         self.account_checkout = over.pop("account_checkout", APTR)
+        # The external legs' `bash -c` commands: the first scripted (rc, stdout) whose key is a substring of the command answers it; an unscripted `create_e2e_env` exits 0 and an unscripted e2e run passes two tests. `e2e_resets` plants an e2e global setup that recreates the worker, taking every repo with it.
+        self.external: dict[str, tuple[int, str]] = dict(over.pop("external", {}))
+        self.e2e_resets = over.pop("e2e_resets", False)
+        self.bash_cmds: list[str] = []
         assert not over, over
         self.store = root / "remote-store"
         self.mnt = root / "mnt"
@@ -323,9 +369,18 @@ class World(vm_check.Host):
                 return vm_check.Result(0, HASH + "\n")
             if argv[-1] == vm_check.PROBE_OS_RELEASE:
                 return vm_check.Result(0, self.os_release + "\n")
+            if argv[-1].startswith("sudo install -d -o root -g root -m 755 "):
+                path = shlex.split(argv[-1])[-1]
+                guid, rel = path[len(vm_check.MOUNTS) + 1 :].split("/", 1)
+                tag = next(n for n, g in self.repos.items() if g == guid).split(":", 1)[1]
+                (self.store / tag / rel).mkdir(parents=True, exist_ok=True)
+                self.owners[(tag, rel)] = "root:root"
+                return vm_check.Result(0)
             return vm_check.Result(255, "", "unexpected probe")
         if argv[0] == "sftp":
             return self._sftp(argv)
+        if argv[:2] == ["bash", "-c"]:
+            return self._bash(argv[2])
         if argv[0] == self.rdc_path:
             return self._rdc(argv[1:], env or {})
         return vm_check.Result(127, "", "unknown command %s" % argv[0])
@@ -370,7 +425,14 @@ class World(vm_check.Host):
                 return vm_check.Result(
                     self.ops_up_rc, "", "booting\nlibvirt: domain failed to start"
                 )
-            self.running = [BRIDGE, WORKER]
+            # `--basic` is the bridge and worker .11; otherwise VM_WORKERS (renet's default "11 12") and VM_CEPH_NODES. Without --force a running VM is left alone, so the set only grows.
+            if "--basic" in args:
+                ids = ["11"]
+            else:
+                ids = (env.get("VM_WORKERS") or "11 12").split()
+                ids += (env.get("VM_CEPH_NODES") or "").split()
+            wanted = [BRIDGE, *("%s.%s" % (NET, i) for i in ids)]
+            self.running = [*self.running, *(ip for ip in wanted if ip not in self.running)]
             self.vm_net_addr = self.vm_net_after_up
             return ok
         if head == ("ops", "down"):
@@ -487,6 +549,14 @@ class World(vm_check.Host):
                 self.purges.append(args[4])
                 return vm_check.Result(self.purge_rc, self.purge_out)
             return self._shell(args[2], args[4], env)
+        if args[:3] == ["repo", "sync", "upload"] and "--remote-file" in args:
+            local = pathlib.Path(args[args.index("--local") + 1])
+            rel = args[args.index("--remote-file") + 1]
+            self._create_parents(args[3], rel.rsplit("/", 1)[0])
+            shutil.copy(local, self.store / args[3].split(":", 1)[1] / rel)
+            return ok
+        if args[:3] == ["repo", "sync", "upload"] and "--remote" in args:
+            self._create_parents(args[3], args[args.index("--remote") + 1])
         if args[:3] == ["repo", "sync", "upload"]:
             local = pathlib.Path(args[args.index("--local") + 1])
             # A privileged sync passes --no-links and the renet gateway refuses symlinks, so none lands.
@@ -521,6 +591,19 @@ class World(vm_check.Host):
             return vm_check.Result(0, "%s%s/mnt/rediacc/mounts/x\n" % (vm_check.URI_PREFIX, alias))
         return ok
 
+    def _bash(self, command: str) -> vm_check.Result:
+        self.bash_cmds.append(command)
+        for key, (rc, out) in self.external.items():
+            if key in command:
+                return vm_check.Result(rc, out, "", 1000)
+        if "rediacc_ci.env.create_e2e_env" in command:
+            return vm_check.Result(0, "", "-> Creating E2E test environment\n", 100)
+        if "rediacc_ci.testrun.e2e" in command:
+            if self.e2e_resets:
+                self.repos.clear()
+            return vm_check.Result(0, e2e_output(), "", 90000)
+        return vm_check.Result(127, "", "unscripted bash command: %s" % command)
+
     def _repo_data(self) -> list[dict[str, str]]:
         return [
             {"name": n, "guid": g, "networkId": "29%02d" % i}
@@ -543,6 +626,16 @@ class World(vm_check.Host):
     def _json_error(rc: int, message: str) -> vm_check.Result:
         envelope = {"success": False, "errors": [{"code": "ERROR", "message": message}]}
         return vm_check.Result(rc, json.dumps(envelope), "Creating repository...\n")
+
+    def _create_parents(self, ref: str, rel: str) -> None:
+        """Every missing level of `rel` is created and takes the owner the sync gives it; an existing level keeps its own."""
+        tag = ref.split(":", 1)[1]
+        parts = rel.strip("/").split("/")
+        for i in range(1, len(parts) + 1):
+            sub = "/".join(parts[:i])
+            if not (self.store / tag / sub).exists():
+                self.owners[(tag, sub)] = "root:root" if self.root_parents else "rediacc:rediacc"
+        (self.store / tag / rel).mkdir(parents=True, exist_ok=True)
 
     def _remote_dir(self, ref: str, args: list[str]) -> pathlib.Path:
         """A repo's mount in the fake store; `--remote` absent is the mount root, as in buildSyncRemotePaths."""
@@ -614,6 +707,15 @@ class World(vm_check.Host):
             rel = path.split("%s/%s/" % (vm_check.MOUNTS, mine), 1)[1]
             local = self.store / tag / rel
             return vm_check.Result(1 if local.is_symlink() or local.exists() else 0)
+        if command.startswith("stat -c %U:%G -- "):
+            path = shlex.split(command)[-1]
+            rel = path.split("%s/%s/" % (vm_check.MOUNTS, mine), 1)[1]
+            owner = self.owners.get((tag, rel))
+            if owner is None:
+                return vm_check.Result(
+                    1, "", "stat: cannot statx '%s': No such file or directory" % path
+                )
+            return vm_check.Result(0, owner + "\n")
         if command.startswith("stat "):
             return vm_check.Result(0, "644 1700000000\n")
         if command == "ls /dev/shm":
@@ -759,6 +861,7 @@ def run_check(
     env: dict[str, str] | None = None,
     modified: bool | None = False,
     digest: str | None = ADIGEST,
+    inputs: str | None = DIGEST,
 ) -> tuple[int, str, dict[str, Any]]:
     out = io.StringIO()
     environ = {
@@ -775,9 +878,13 @@ def run_check(
         lock=m.Lock(tmp_path / "vm-check.lock"),
         out=out,
         environ=environ,
-        inputs_fn=lambda _root: DIGEST,
+        inputs_fn=lambda _root: inputs,
         account_modified_fn=lambda _root: modified,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
         account_digest_fn=lambda _root: digest,
+        u1_fn=stub_u1,
+        extra_fns=STUB_EXTRA,
     )
     latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
     receipt = json.loads(latest.read_text()) if latest.exists() else {}
@@ -938,7 +1045,9 @@ def scenario_compose_file_is_uploaded_into_fork_a_only(
     rc, out, receipt = run_check(tmp_path, world, m=m)
     assert rc == vm_check.EXIT_VERIFIED, out
     uploads = [
-        c for c in world.rdc_calls() if c[:3] == ["repo", "sync", "upload"] and "--remote" not in c
+        c
+        for c in world.rdc_calls()
+        if c[:3] == ["repo", "sync", "upload"] and "--remote" not in c and "--remote-file" not in c
     ]
     assert len(uploads) == 1, uploads
     assert uploads[0][3] == "%s:%s" % (PARENT, world.forked[0]), uploads
@@ -1065,9 +1174,14 @@ def scenario_account_only_runs_the_account_phase_and_no_renet_step(
         assert [r["verdict"] for r in _rows(receipt, step)] == ["ok"], (step, ids)
     assert not [i for i in ids if i in V_STEPS], ids
     # P1 still ran, so the receipt's renet build is the pointer.
-    assert receipt["renet"]["built"] == receipt["renet"]["pointer"] == PTR
-    assert receipt["account"]["pointer"] == receipt["account"]["checkout"] == APTR
-    assert receipt["account"]["modified"] is False
+    renet_sub = receipt["submodules"]["private/renet"]
+    assert receipt["renet"]["built"] == renet_sub["pointer"] == PTR
+    account_sub = receipt["submodules"]["private/account"]
+    assert account_sub["pointer"] == account_sub["checkout"] == APTR
+    assert account_sub["modified"] is False
+    assert receipt["tier"] == "vm"
+    assert receipt["schema"] == 3
+    assert receipt["surfaces"] == ["account"]
     assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).ok
     refused = receipt_mod.admit(world.root, TREE, DIGEST, {"renet", "account"})
     assert refused.code == "phase-missing", refused
@@ -1112,7 +1226,7 @@ def scenario_a_gateway_older_than_the_account_worktree_is_restarted(
     assert len(account.restarts) == 1, account.restarts
     assert account.restarts[0] == world.root / receipt_mod.CACHE_DIR / vm_check.GATEWAY_LOG
     assert account.detached == 1
-    gateway = receipt["account"]["gateway"]
+    gateway = receipt["gateway"]
     assert gateway["mode"] == "restarted", gateway
     assert gateway["started"] == int(GATEWAY_STARTED) + 600, gateway
     assert gateway["port"] == int(GATEWAY_PORT), gateway
@@ -1154,7 +1268,37 @@ def scenario_no_drill_or_suite_env_carries_a_credential(
             assert TOKEN.encode() not in path.read_bytes(), path
 
 
+def scenario_only_writes_no_receipt_json(m: types.ModuleType, tmp_path: pathlib.Path) -> None:
+    """A `--only` run judges just the named steps, so it must write a run record, never receipt.json."""
+    world = make_world(tmp_path, stored_ok=True)
+    out = io.StringIO()
+    environ = {
+        "HOME": str(tmp_path / "home"),
+        "PATH": os.environ.get("PATH", ""),
+        "VM_NET_BASE": NET,
+    }
+    m.main(
+        ["--only", "U1", "--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=m.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ=environ,
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=lambda check: check.check("U1", "stub U1", True),
+        extra_fns=STUB_EXTRA,
+    )
+    latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
+    assert not latest.exists(), "a --only run must not write receipt.json"
+
+
 SCENARIOS = {
+    "only-writes-receipt-json": scenario_only_writes_no_receipt_json,
     "skip-account-phase": scenario_account_only_runs_the_account_phase_and_no_renet_step,
     "renet-steps-on-account-only": scenario_account_only_runs_the_account_phase_and_no_renet_step,
     "skipped-drill-passes": scenario_a_skipped_drill_is_not_verified,
@@ -1200,6 +1344,21 @@ def load_mutant(name: str, where: pathlib.Path) -> types.ModuleType:
 # --------------------------------------------------------------------------- the flow
 
 
+def test_an_unreadable_inputs_digest_writes_no_receipt_and_never_verifies(
+    tmp_path: pathlib.Path,
+) -> None:
+    """efed615f.1: a receipt carries a sha256 `inputs`, and `receipt.validate` refuses a null one, so a run whose digest is unreadable writes nothing the push guard could read (an `inputs: null` file was unreadable and backed no escape either). It must still exit non-zero, never VERIFIED, and leave no receipt.json or run record."""
+    world = make_world(tmp_path, stored_ok=True)
+    rc, out, receipt = run_check(tmp_path, world, inputs=None)
+    assert rc == vm_check.EXIT_NOT_VERIFIED
+    assert "vm:check VERIFIED" not in out
+    assert receipt == {}
+    cache = world.root / receipt_mod.CACHE_DIR
+    # A cache directory that was never created holds no receipt either (review bd830f6f.4: spelled out, not as a conditional expression).
+    receipts = list(cache.rglob("receipt.json")) if cache.exists() else []
+    assert receipts == []
+
+
 def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathlib.Path) -> None:
     world = make_world(
         tmp_path,
@@ -1216,13 +1375,14 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
     assert receipt
     assert receipt_mod.validate(receipt) == []
     assert receipt["status"] == receipt_mod.VERIFIED
-    assert receipt["renet"] == {
+    assert receipt["renet"] == {"built": PTR, "modified": False, "sha256": "", "deployed": PTR}
+    assert receipt["submodules"]["private/renet"] == {
         "pointer": PTR,
         "checkout": PTR,
-        "built": PTR,
         "modified": False,
-        "deployed": PTR,
     }
+    assert receipt["dirty"] is False
+    assert receipt["inputs"] == DIGEST
     assert receipt["fleet"]["landlock"] == {"status": "enforced", "abi": "6"}
     assert receipt["teardown"] == {"ok": True, "leftovers": []}
     # Case 3: no --changed runs both phases, and the receipt admits either side and both.
@@ -1253,6 +1413,108 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
         for name in ("REDIACC_AGENT", "CLAUDECODE"):
             assert name not in env
         assert not [k for k in env if k.startswith("REDIACC_ALLOW_")]
+
+
+def _run_only(tmp_path: pathlib.Path, world: World, only: str) -> tuple[int, str, dict[str, Any]]:
+    out = io.StringIO()
+    environ = {
+        "HOME": str(tmp_path / "home"),
+        "PATH": os.environ.get("PATH", ""),
+        "VM_NET_BASE": NET,
+    }
+    recorded: list[str] = []
+
+    def stub(check: Any) -> None:
+        recorded.append("U1")
+        check.check("U1", "stub U1", True)
+
+    rc = vm_check.main(
+        ["--only", only, "--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ=environ,
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub,
+        extra_fns=STUB_EXTRA,
+    )
+    latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
+    receipt = json.loads(latest.read_text()) if latest.exists() else {}
+    return rc, out.getvalue(), receipt
+
+
+def test_only_u1_runs_the_infra_and_u1_and_writes_no_receipt_json(tmp_path: pathlib.Path) -> None:
+    """`--only U1` runs P0-P4 plus U1, skips P5 and the V-steps, and writes a run record, never receipt.json, so it can never be VERIFIED."""
+    world = make_world(tmp_path, stored_ok=True)
+    _rc, out, receipt = _run_only(tmp_path, world, "U1")
+    assert receipt == {}, "no receipt.json"
+    assert not (world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST).exists()
+    assert "--only U1" in out
+    assert "vm:check VERIFIED" not in out
+    ids = [ln.split()[0] for ln in out.splitlines() if ln.strip().startswith(("P", "U1"))]
+    assert "U1" in ids
+    # No P5, no V-steps, no account suites.
+    assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+    assert not world.npm_calls()
+
+
+def test_only_an_account_step_runs_just_that_step_and_what_it_drags_in(
+    tmp_path: pathlib.Path,
+) -> None:
+    """`--only A1.1` runs the one suite, not all four and not the drills (review accb48d9.4)."""
+    world = make_world(tmp_path, stored_ok=True)
+    _rc, _out, _ = _run_only(tmp_path, world, "A1.1")
+    assert len(world.npm_calls()) == 1, world.npm_calls()
+    assert not world.drill_calls(), world.drill_calls()
+
+
+def test_only_a_drill_runs_that_drill_alone(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=True)
+    _run_only(tmp_path, world, "A2.2")
+    assert len(world.drill_calls()) == 1, world.drill_calls()
+    assert not world.npm_calls()
+
+
+@pytest.mark.parametrize("typo", ["u1", "V1.9", "U1,nope"])
+def test_only_refuses_an_id_that_names_no_step(
+    typo: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A typo must not silently run just the infra chain (review accb48d9.5)."""
+    with pytest.raises(SystemExit) as stopped:
+        vm_check.parse_args(["--only", typo], {})
+    assert stopped.value.code == 2
+    assert "names no step" in capsys.readouterr().err
+
+
+def test_only_writes_a_run_record_under_its_run_id(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=True)
+    rc, out, _ = _run_only(tmp_path, world, "U1")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    runs = list((world.root / receipt_mod.CACHE_DIR / receipt_mod.RUNS_DIR).glob("vmc-*"))
+    records = [p / "receipt.json" for p in runs if (p / "receipt.json").exists()]
+    assert records, "a run record under the run id"
+    doc = json.loads(records[0].read_text())
+    # Never VERIFIED: either the named set left a required phase un-run, or (every phase run)
+    # the explicit `only-partial` downgrade.
+    assert doc["status"] == receipt_mod.NOT_VERIFIED, doc
+    assert doc["reason"]["class"] in ("phase-not-run", "only-partial"), doc["reason"]
+
+
+def test_only_v13_drags_in_p5_and_v11(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=True)
+    _rc, text, _ = _run_only(tmp_path, world, "V1.3")
+    assert "P5" in text
+    assert "V1.1" in text
+    assert "V1.3" in text
+    # V1.3 forks exist (V1.1 ran); U1 was not named, so the stub U1 row is absent.
+    assert [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+    assert "stub U1" not in text
 
 
 def test_a_writable_neighbour_fails_v12_and_still_tears_down(tmp_path: pathlib.Path) -> None:
@@ -1417,10 +1679,31 @@ def test_ssh_auth_failure_accepts_every_method_list_the_old_grammar_did() -> Non
         assert not vm_check.SSH_AUTH_FAILURE.search(line), line
 
 
+def test_sftp_refused_keeps_a_server_refusal_whose_path_has_a_local_segment() -> None:
+    assert vm_check.sftp_refused('dest open "/srv/local/x": Failure', "/srv/local")
+    assert vm_check.sftp_refused('remote open("/usr/local/x"): Permission denied')
+    assert not vm_check.sftp_refused('local open "/tmp/src": No such file or directory')
+
+
 def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None:
     assert vm_check.sftp_refused('remote open("/mnt/x"): Permission denied')
     assert vm_check.sftp_refused('Couldn\'t setstat on "/x": Operation not permitted')
     assert vm_check.sftp_refused("remote open: Read-only file system")
+    # The private repo view: the server says the other repo's file is not there.
+    assert vm_check.sftp_refused(
+        f'Couldn\'t setstat on "{DATASTORE_PATH}/mounts/g/.rediacc.json": No such file or directory'
+    )
+    assert vm_check.sftp_refused(
+        f'remote open("{DATASTORE_PATH}/mounts/g/vmc-sftp"): No such file or directory'
+    )
+    # A missing LOCAL source is the client's own error, never the server confining A.
+    assert not vm_check.sftp_refused(
+        'Couldn\'t open local file "/tmp/vmc-src" for reading: No such file or directory'
+    )
+    # ssh's own client-side warning is never a server refusal.
+    assert not vm_check.sftp_refused(
+        "Warning: Identity file /home/u/.ssh/id_x not accessible: No such file or directory."
+    )
     assert not vm_check.sftp_refused("u@h: Permission denied (publickey).")
     assert not vm_check.sftp_refused("Received disconnect: Too many authentication failures")
     assert not vm_check.sftp_refused("Connection closed")
@@ -1428,6 +1711,28 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
     assert vm_check.sftp_refused(
         'u@h: Permission denied (publickey).\nremote open("/x"): Permission denied'
     )
+
+
+def test_shell_refused_needs_the_target_path_for_a_not_visible_answer() -> None:
+    t = DATASTORE_PATH + "/mounts/g/.rediacc.json"
+    assert vm_check.shell_refused(
+        "chmod: changing permissions of '%s': Read-only file system" % t, t
+    )
+    assert vm_check.shell_refused("chmod: cannot access '%s': No such file or directory" % t, t)
+    # ssh's identity-file warning is not the server's answer.
+    assert not vm_check.shell_refused(
+        "Warning: Identity file /h/.ssh/id_x not accessible: No such file or directory.", t
+    )
+    # An unrelated missing path is not either.
+    assert not vm_check.shell_refused("touch: cannot touch '/other': No such file or directory", t)
+    assert not vm_check.shell_refused("", t)
+
+
+def test_sftp_denial_is_linear_on_a_long_server_line() -> None:
+    line = "Couldn't x " * 4000 + 'on "/p" '
+    started = time.monotonic()
+    assert not vm_check.sftp_refused(line)
+    assert time.monotonic() - started < 2.0
 
 
 def test_a_valid_stored_token_mints_nothing_and_keeps_the_default_config(
@@ -1892,6 +2197,56 @@ def test_changed_with_a_hit_runs_and_records_the_hits(tmp_path: pathlib.Path) ->
     assert receipt["trigger"]["sides"] == ["renet"]
 
 
+def test_base_overrides_the_push_base_and_is_recorded(tmp_path: pathlib.Path) -> None:
+    """On main origin/main is HEAD, so --changed alone sees nothing; --base <tag> diffs against the tag."""
+    root = fixture_repo(tmp_path)
+    git(root, "tag", "v2.4.0")
+    remote = root / "packages/cli/src/remote"
+    remote.mkdir(parents=True)
+    (remote / "sync.ts").write_text("export {};\n")
+    git(root, "add", "packages")
+    git(root, "commit", "-q", "-m", "hit")
+    git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    world = World(root)
+    rc, out, receipt = run_check(tmp_path, world, "--changed")
+    assert rc == 0, out
+    assert receipt == {}
+    world = World(root)
+    rc, out, receipt = run_check(tmp_path, world, "--changed", "--base", "v2.4.0")
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["trigger"]["base"] == "v2.4.0"
+    assert receipt["trigger"]["via"] == "--base"
+    assert receipt["trigger"]["hits"] == ["packages/cli/src/remote/sync.ts"]
+    assert receipt_mod.validate(receipt) == []
+
+
+def test_base_naming_an_unknown_ref_is_refused_loudly(tmp_path: pathlib.Path) -> None:
+    root = fixture_repo(tmp_path)
+    world = World(root)
+    with pytest.raises(SystemExit) as exc:
+        run_check(tmp_path, world, "--changed", "--base", "v9.9.9")
+    assert "--base v9.9.9 names no commit" in str(exc.value)
+    assert world.rdc_calls() == []
+
+
+def test_base_without_changed_is_a_usage_error() -> None:
+    with pytest.raises(SystemExit):
+        vm_check.parse_args(["--base", "v2.4.0"], {})
+
+
+@pytest.mark.parametrize(
+    "argv", [["--changed", "--base", ""], ["--base", ""], ["--changed", "--base", "  "]]
+)
+def test_an_empty_base_is_a_usage_error_not_the_push_base(argv: list[str]) -> None:
+    with pytest.raises(SystemExit):
+        vm_check.parse_args(argv, {})
+
+
+def test_a_padded_base_ref_is_stripped_before_it_is_used() -> None:
+    options = vm_check.parse_args(["--changed", "--base", "  v2.4.0 "], {})
+    assert options.base == "v2.4.0"
+
+
 # --------------------------------------------------------------------------- the account phase (PLAN-account-vm-check.md AV4)
 
 
@@ -1907,7 +2262,7 @@ def test_a_renet_only_change_runs_no_suite_and_no_drill(tmp_path: pathlib.Path) 
         "renet": {"required": True, "ran": True},
     }
     assert not [i for i in _ids(receipt) if i.startswith("A")], _ids(receipt)
-    assert receipt["account"]["gateway"] == {"mode": None, "port": None, "started": None}
+    assert receipt["gateway"] == {"mode": None, "port": None, "started": None}
     assert account.restarts == []
     assert "A1-A2 not run" in out
     assert receipt_mod.admit(world.root, TREE, DIGEST, {"renet"}).ok
@@ -2033,7 +2388,7 @@ def test_with_no_record_the_gateway_is_started_recorded_and_left_running(
     assert rc == vm_check.EXIT_VERIFIED, out
     assert len(account.restarts) == 1
     assert account.detached == 1
-    assert receipt["account"]["gateway"]["mode"] == "started"
+    assert receipt["gateway"]["mode"] == "started"
     assert read_gateway_record(world.root)["account"] == ADIGEST
     assert "no healthy dev gateway answers; starting it" in out, out
     assert "dev gateway: started on port %s, left running" % GATEWAY_PORT in out, out
@@ -2048,7 +2403,7 @@ def test_a_matching_record_reuses_the_gateway(tmp_path: pathlib.Path) -> None:
     assert rc == vm_check.EXIT_VERIFIED, out
     assert account.restarts == []
     assert account.detached == 0
-    assert receipt["account"]["gateway"] == {
+    assert receipt["gateway"] == {
         "mode": "reused",
         "port": int(GATEWAY_PORT),
         "started": int(GATEWAY_STARTED),
@@ -2067,7 +2422,7 @@ def test_a_gateway_another_writer_restarted_is_restarted_once(tmp_path: pathlib.
     rc, out, receipt = run_check(tmp_path, world, account=account)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert len(account.restarts) == 1
-    assert receipt["account"]["gateway"]["mode"] == "restarted"
+    assert receipt["gateway"]["mode"] == "restarted"
     assert "is not the recorded one (started=1791999000" in out, out
 
 
@@ -2209,13 +2564,12 @@ def test_an_account_checkout_off_its_pointer_is_said_and_its_receipt_does_not_ad
     assert rc == vm_check.EXIT_VERIFIED, out
     assert "is not the pointer %s" % APTR[:12] in out, out
     assert "worktree is modified" in out, out
-    assert receipt["account"] == {
+    assert receipt["submodules"]["private/account"] == {
         "pointer": APTR,
         "checkout": "1" * 40,
         "modified": True,
-        "gateway": receipt["account"]["gateway"],
     }
-    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "account-mismatch"
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "checkout-mismatch"
 
 
 def test_an_uninitialized_account_submodule_records_no_checkout(tmp_path: pathlib.Path) -> None:
@@ -2223,10 +2577,10 @@ def test_an_uninitialized_account_submodule_records_no_checkout(tmp_path: pathli
     world = make_world(tmp_path, account_checked_out=False)
     rc, out, receipt = run_check(tmp_path, world, modified=None)
     assert rc == vm_check.EXIT_VERIFIED, out
-    assert receipt["account"]["checkout"] == ""
-    assert receipt["account"]["modified"] is None
+    assert receipt["submodules"]["private/account"]["checkout"] == ""
+    assert receipt["submodules"]["private/account"]["modified"] is None
     assert not [c for c in world.calls if c[0] == "git" and c[2].endswith("private/account")]
-    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "account-mismatch"
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).code == "checkout-mismatch"
 
 
 def test_receipts_of_an_earlier_schema_are_said_to_no_longer_count(tmp_path: pathlib.Path) -> None:
@@ -2259,14 +2613,6 @@ def test_each_mutant_turns_its_scenario_red(tmp_path: pathlib.Path, name: str) -
 
 
 # --------------------------------------------------------------------------- helpers
-
-
-def test_go_buildinfo_reads_revision_and_modified() -> None:
-    text = (
-        "bin/renet: go1.24\n\tpath\tx\n\tbuild\tvcs.revision=%s\n\tbuild\tvcs.modified=true\n" % PTR
-    )
-    assert vm_check.go_buildinfo(text) == (PTR, True)
-    assert vm_check.go_buildinfo("") == ("", None)
 
 
 @pytest.mark.parametrize(
@@ -2346,7 +2692,7 @@ def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
 ) -> None:
     world = make_world(tmp_path, cli_key="wrong", stored_ok=True)
     rc, out, receipt = run_check(tmp_path, world)
-    assert rc != vm_check.EXIT_VERIFIED, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert world.key_set == [], "a config with a key of its own is never overwritten"
     assert "NOT VERIFIED (worker-ssh-key)" in out, out
     assert "All configured authentication methods failed" in out, out
@@ -2360,7 +2706,7 @@ def test_a_cold_run_missing_the_grand_on_another_worker_says_to_leave_a_warm_fle
     """A cold run's fresh VMs never hold the grand, and `ops down` removes them (2026-10-15T00:27Z); off the ops network the step stays the operator's."""
     world = make_world(tmp_path, running=(), grands=(), machines=NON_OPS_MACHINES, stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world, "--machine", "prod-1")
-    assert rc != vm_check.EXIT_VERIFIED, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up for vm:check to reuse" in out, out
     assert "ops up --basic, then ./rdc.sh repo create" in out, out
@@ -2858,7 +3204,7 @@ def test_an_unreadable_key_state_on_a_keyless_config_sets_nothing_and_p5_names_t
     """Review edb5f14e.2: with a config that really has no key, the early return must set nothing, so the run reaches P5 and stops at the ssh refusal with the fix named."""
     world = make_world(tmp_path, key_show="fail", cli_key="no", stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world)
-    assert rc != vm_check.EXIT_VERIFIED, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert world.key_set == [], "an unreadable key state must not set a key"
     assert "NOT VERIFIED (worker-ssh-key)" in out, out
     assert "config ssh set --key" in out, out
@@ -2883,6 +3229,32 @@ def test_a_present_vi_is_used_and_sed_is_not(tmp_path: pathlib.Path) -> None:
     assert [r["verdict"] for r in _rows(receipt, "V1.3") if r["desc"] == "A: vi writes ~/v"] == [
         "ok"
     ]
+
+
+def test_sync_created_directories_are_owned_and_existing_ones_keep_their_owner(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    rows = {r["desc"]: r["verdict"] for r in _rows(receipt, "V1.5")}
+    run = receipt.get("run_id", "")
+    owned = [d for d in rows if d.startswith("created by --remote")]
+    assert len(owned) == 8, rows
+    assert all(rows[d] == "ok" for d in owned), rows
+    kept = [d for d in rows if d.startswith("an existing directory") and d.endswith("root:root")]
+    assert len(kept) == 1, (rows, run)
+    assert rows[kept[0]] == "ok", (rows, run)
+
+
+def test_a_root_owned_new_directory_fails_v15(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, root_parents=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    failed = [r["desc"] for r in _rows(receipt, "V1.5") if r["verdict"] == "FAIL"]
+    assert any(d.startswith("created by --remote-file") for d in failed), failed
+    assert any(d.startswith("created by --remote:") for d in failed), failed
+    assert not any(d.startswith("an existing directory") for d in failed), failed
 
 
 def test_a_symlink_that_reaches_the_remote_fails_v15(tmp_path: pathlib.Path) -> None:
@@ -3125,3 +3497,260 @@ def test_the_gateway_record_is_not_counted_as_an_old_receipt(tmp_path: pathlib.P
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert "earlier schema" not in out, out
+
+
+def test_p1_reads_the_one_bin_renet(tmp_path: pathlib.Path) -> None:
+    """P1's `go version -m` reads the one licensed `bin/renet` (agent/plans/PLAN-production-key-only.md Design 6); there is no other build directory to read."""
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    read = [c[3] for c in world.calls if c[:3] == ["go", "version", "-m"]]
+    assert read, "P1 never read the binary's build info"
+    assert all(p.endswith("/private/renet/bin/renet") for p in read), read
+
+
+# ----------------------------------------------------------------------------- external area legs
+
+
+def run_areas(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    world: World,
+    areas: set[str],
+) -> tuple[int, str, dict[str, Any]]:
+    """A run on `world` whose trigger is set by hand: the renet side required, the account side not, and `areas` touched (the fake root is no git repository, so no diff names them)."""
+
+    def trigger(self: vm_check.VmCheck) -> bool:
+        self.areas = frozenset(areas)
+        self.phases[vm_check.SIDE_ACCOUNT]["required"] = False
+        self.trigger_info = {
+            "base": "origin/main",
+            "via": "test",
+            "hits": ["private/renet/x.go"],
+            "sides": ["renet"],
+            "areas": [a for a in vm_check.trigger.AREAS if a in areas],
+        }
+        return True
+
+    monkeypatch.setattr(vm_check.VmCheck, "_evaluate_trigger", trigger)
+    return run_check(tmp_path, world, "--changed")
+
+
+def _leg(receipt: dict[str, Any], area: str, leg_id: str) -> dict[str, Any]:
+    return next(leg for leg in receipt["areas"][area]["legs"] if leg["id"] == leg_id)
+
+
+def _call_index(world: World, pred: Any) -> int:
+    return next(i for i, c in enumerate(world.calls) if pred(c))
+
+
+TWO_WORKERS = [BRIDGE, WORKER, NET + ".12"]
+
+
+def test_an_external_leg_is_run_and_its_pass_credits_the_area(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The multi-vm leg's two-worker fleet is not up (only .1 and .11 run): the check brings it up with the recipe's `./rdc.sh ops up`, writes the e2e env, runs suite 11 after the base battery and after its own forks are gone, and the pass makes the run VERIFIED."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "ok", leg
+    assert "2 test(s) passed" in leg["detail"]
+    row = _rows(receipt, "X.multi-machine-11")[0]
+    assert row["verdict"] == "ok"
+    assert row["log"].endswith(".log")
+    # The fleet came up with the recipe's topology: a full `ops up` (no --basic), and .12 now runs.
+    ups = [c for c in world.rdc_calls() if c[:2] == ["ops", "up"]]
+    assert ups == [["ops", "up"]], ups
+    assert set(TWO_WORKERS) <= set(receipt["fleet"]["ips"])
+    # Both commands ran, the env first, from the console root.
+    assert len(world.bash_cmds) == 2
+    assert "rediacc_ci.env.create_e2e_env" in world.bash_cmds[0]
+    assert '--vm-workers "11 12"' in world.bash_cmds[0]
+    assert "--test 11-multi-machine --fail-on-skip" in world.bash_cmds[1]
+    assert all(c.startswith("cd %s && " % shlex.quote(str(world.root))) for c in world.bash_cmds)
+    # After the whole battery, and after this run's forks were deleted.
+    first_bash = _call_index(world, lambda c: c[:2] == ["bash", "-c"])
+    last_delete = max(
+        i
+        for i, c in enumerate(world.calls)
+        if c[0] == world.rdc_path and c[1:3] == ["repo", "delete"]
+    )
+    assert last_delete < first_bash
+    ids = _ids(receipt)
+    assert ids.index("X.multi-machine-11") > max(ids.index(s) for s in V_STEPS)
+    assert world.forks_left() == []
+    # The suite never sees the minted token or the dev-config switch.
+    bash_envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[:2] == ["bash", "-c"]]
+    assert bash_envs
+    assert all(not set(DRILL_ENV_SCRUB) & set(e) for e in bash_envs)
+    # A0 ran for the leg's licensing even though the account side is not required.
+    assert "A0" in ids
+    assert _rows(receipt, "XR")[0]["verdict"] == "ok"
+    assert receipt["status"] == receipt_mod.VERIFIED
+
+
+def test_a_failing_external_leg_fails_the_area_and_names_the_test(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failing = e2e_output(reachable="passed", push_pull="failed")
+    world = make_world(tmp_path, running=TWO_WORKERS, external={"11-multi-machine": (1, failing)})
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_FAILED, out
+    assert receipt["status"] == receipt_mod.FAILED
+    assert "X.multi-machine-11" in receipt["reason"]["detail"]
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "failed", leg
+    assert "1 of 2 test(s) failed" in leg["detail"]
+    assert "--test 11-multi-machine" in leg["detail"]
+    row = _rows(receipt, "X.multi-machine-11")[0]
+    assert row["verdict"] == "FAIL"
+    assert any("push_pull" in f for f in row["failedAssertions"])
+    # A fleet already up is reused, never started again.
+    assert not [c for c in world.rdc_calls() if c[:2] == ["ops", "up"]]
+
+
+def test_a_fleet_that_cannot_be_brought_up_is_a_real_not_verified(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The base fleet runs, so only the leg's `ops up` is tried, and it fails: the leg is NOT_VERIFIED naming the command and its error, the suite never runs, and nothing is skipped quietly."""
+    world = make_world(tmp_path, ops_up_rc=1)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "area-not-verified"
+    assert "multi-vm/multi-machine-11" in receipt["reason"]["detail"]
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified", leg
+    assert "the fleet could not be brought up" in leg["detail"]
+    assert "./rdc.sh ops up rc=1" in leg["detail"]
+    assert "domain failed to start" in leg["detail"]
+    assert world.bash_cmds == []
+    assert receipt["phases"]["renet"]["ran"] is True
+
+
+def test_a_fleet_whose_recipe_is_not_runnable_is_not_verified_and_the_other_leg_still_runs(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The migrate area: cli-migrate-23 runs on the two workers; dual-group-18's second-group recipe is prose, so it is NOT_VERIFIED, saying why, never skipped."""
+    world = make_world(tmp_path, running=TWO_WORKERS)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"migrate"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert _leg(receipt, "migrate", "cli-migrate-23")["status"] == "ok"
+    dual = _leg(receipt, "migrate", "dual-group-18")
+    assert dual["status"] == "not-verified", dual
+    assert "not the machine-runnable shape" in dual["detail"]
+    assert "migrate/dual-group-18" in receipt["reason"]["detail"]
+    assert "migrate/cli-migrate-23" not in receipt["reason"]["detail"]
+
+
+def test_an_e2e_setup_that_resets_the_worker_gets_the_parent_grand_recreated(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(tmp_path, running=TWO_WORKERS, e2e_resets=True)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    restore = _rows(receipt, "XR")
+    assert len(restore) == 1, restore
+    assert restore[0]["verdict"] == "ok", restore
+    assert "created" in restore[0]["desc"]
+    assert PARENT in world.repos
+    first_bash = _call_index(world, lambda c: c[:2] == ["bash", "-c"])
+    create = _call_index(world, lambda c: c[0] == world.rdc_path and c[1:3] == ["repo", "create"])
+    assert create > first_bash
+    # The worker's host keys are pinned again before the grand is looked for: a reset recreates the VM.
+    assert [c for c in world.calls[first_bash:create] if c[1:3] == ["machine", "scan-keys"]]
+
+
+def test_an_e2e_run_that_passed_no_test_is_not_verified(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(
+        tmp_path, running=TWO_WORKERS, external={"11-multi-machine": (0, "Running 0 tests\n")}
+    )
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified"
+    assert "no test reported passed" in leg["detail"]
+
+
+def test_a_failed_env_write_is_not_verified_and_the_suite_never_runs(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(
+        tmp_path, running=TWO_WORKERS, external={"create_e2e_env": (1, "budget exceeded\n")}
+    )
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified"
+    assert "setup command 1 of 2 failed" in leg["detail"]
+    assert len(world.bash_cmds) == 1
+
+
+def test_a_battery_failure_skips_the_external_legs(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(tmp_path, running=TWO_WORKERS, ro_breach=True)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_FAILED, out
+    assert world.bash_cmds == []
+    assert "external leg(s) not run: the base battery already failed" in out
+    assert _leg(receipt, "multi-vm", "multi-machine-11")["status"] == "not-run"
+
+
+@pytest.mark.parametrize(
+    ("up", "want"),
+    [
+        ("./rdc.sh ops up --basic", ({}, ["ops", "up", "--basic"])),
+        ("./rdc.sh ops up", ({}, ["ops", "up"])),
+        (
+            "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up",
+            ({"VM_WORKERS": "11 12", "VM_CEPH_NODES": "21 22 23"}, ["ops", "up"]),
+        ),
+        ("./rdc.sh ops up --os ubuntu-24.04", ({}, ["ops", "up", "--os", "ubuntu-24.04"])),
+        ("./rdc.sh ops up --basic, then group B as ct-tests.yml does", None),
+        ("private/renet/bin/renet ops up --force", None),
+        ("./rdc.sh ops down", None),
+        ("./rdc.sh ops up --os", None),
+        ("./rdc.sh ops up; rm -rf /", None),
+        ("VM_WORKERS='11 ./rdc.sh ops up", None),
+    ],
+)
+def test_fleet_up_plan_admits_only_the_runnable_shape(up: str, want: Any) -> None:
+    fleet = vm_check.trigger.Fleet("f", (BRIDGE,), up)
+    assert vm_check.fleet_up_plan(fleet) == want
+
+
+def test_every_mapped_fleet_but_second_group_is_runnable() -> None:
+    """The live map: the one fleet vm:check cannot bring up is named here, so a new prose recipe is noticed."""
+    unrunnable = sorted(
+        name for name, f in vm_check.trigger.MAP.fleets.items() if vm_check.fleet_up_plan(f) is None
+    )
+    assert unrunnable == ["second-group"]
+
+
+def test_classify_e2e_reads_the_last_attempt_and_refuses_an_empty_or_setup_failed_run() -> None:
+    result = vm_check.Result
+    # A retried test that passed on its second attempt: rc 0 and the last line wins.
+    retried = e2e_output(flaky="failed") + e2e_output(flaky="passed")
+    assert vm_check.classify_e2e(result(0, retried))[0] == "ok"
+    # A global setup that threw: rc 1 and no test line at all.
+    outcome, detail, _ = vm_check.classify_e2e(result(1, "Setup failed: Error: VM reset failed\n"))
+    assert outcome == "not-verified"
+    assert "stopped before its tests" in detail
+    # The zero-skip gate: rc 1 with a skipped test and no failed one.
+    outcome, detail, _ = vm_check.classify_e2e(result(1, e2e_output(a="passed", b="skipped")))
+    assert outcome == "not-verified"
+    assert "1 test(s) skipped under --fail-on-skip" in detail
+    # A timed-out test is a failure, whatever the exit code says.
+    outcome, _detail, failed = vm_check.classify_e2e(
+        result(0, e2e_output(a="passed", b="timedOut"))
+    )
+    assert outcome == "failed"
+    assert failed
+    assert failed[0].endswith("> b")
+    # Colour escapes do not hide a result line.
+    coloured = "\x1b[32m" + e2e_output() + "\x1b[0m"
+    assert vm_check.classify_e2e(result(0, coloured))[0] == "ok"

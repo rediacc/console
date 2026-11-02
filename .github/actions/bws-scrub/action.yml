@@ -1,0 +1,50 @@
+name: Blank step-scoped Bitwarden secrets
+description: >
+  Blanks named BWS_ environment variables for every later step of the job, by
+  appending `NAME=` to GITHUB_ENV. The companion of a step-scoped
+  ./.github/actions/bws-secrets fetch: that fetch sits immediately before the
+  one step that consumes a production signing key, and this action sits
+  immediately after it with `if: always()`, so the value is empty in every
+  later step whether the consumer passed, failed or was cancelled.
+
+  WHY BLANK AND NOT UNSET. GITHUB_ENV has no unset command. A later step
+  inherits the runner's environment file, and the last assignment wins, so an
+  empty assignment is the only way a composite step can take a value away
+  from the steps after it. The mask registered at fetch time stays for the
+  whole job and is not touched here.
+
+  WHAT IT DOES NOT COVER. A process the consumer started and left running
+  (a background server) keeps its own copy of the environment it was started
+  with; blanking GITHUB_ENV cannot reach it.
+
+  The names that must be scoped this way, and the rules a workflow must follow
+  around them, are in .ci/config/bws-step-scoped.json and are enforced by
+  check:ci-bws-step-scope (.ci/scripts/quality/check_bws_step_scope.py).
+  agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md records why.
+
+inputs:
+  names:
+    description: >
+      One environment variable name per line, each matching BWS_[A-Z0-9_]+,
+      exactly as a bws-secrets step exported it (the right-hand side of
+      `NAME > ENV_NAME`). An empty list or a malformed line fails the step.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Blank the named variables in GITHUB_ENV
+      shell: bash
+      env:
+        NAMES: ${{ inputs.names }}
+      run: |
+        set -euo pipefail
+        names=()
+        while read -r line; do
+          [[ -z "$line" ]] && continue
+          [[ "$line" =~ ^BWS_[A-Z0-9_]+$ ]] || { echo "::error::bws-scrub: malformed name '$line' (want one BWS_[A-Z0-9_]+ per line)"; exit 1; }
+          names+=("$line")
+        done <<<"$NAMES"
+        (( ${#names[@]} > 0 )) || { echo "::error::bws-scrub: no names given; a scrub that blanks nothing is a wiring mistake"; exit 1; }
+        printf '%s=\n' "${names[@]}" >>"$GITHUB_ENV"
+        echo "bws-scrub: blanked ${#names[@]} variable(s) for the rest of the job: ${names[*]}"

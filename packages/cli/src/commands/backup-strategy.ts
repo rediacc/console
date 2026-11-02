@@ -1,19 +1,29 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
-import { unschedulableDestinationReason } from '../services/backup/backup-schedule-unit-generator.js';
+import {
+  type CronCadence,
+  hasAccountToken,
+  parseRetentionSpec,
+  pushStrategyRetention,
+  RetentionSpecError,
+  retentionCronMismatches,
+} from '../services/backup/backup-retention.js';
+import {
+  bandwidthToBytesPerSecond,
+  parseCpuLimitPercent,
+  readCapBytesPerSecond,
+  strategyUnschedulableReason,
+} from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
+  removeStrategyChecked,
   unbindBackupStrategy,
 } from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
-import {
-  assertStorageExists,
-  BackupDestinationSchema,
-  parseConfig,
-} from '../utils/config-schema.js';
+import { BackupDestinationSchema, parseConfig } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
 function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | undefined {
@@ -25,57 +35,8 @@ function resolveEnabledFlag(enable?: boolean, disable?: boolean): boolean | unde
 interface UpsertDestOpts {
   strategyName: string;
   destinationName: string;
-  storage?: string;
   enabled?: boolean;
   bwlimit?: string;
-  folder?: string;
-}
-
-type DestinationKind = 'storage' | 'hosted-service';
-
-/**
- * Which kind of destination `--destination <name>` is talking about.
- *
- * THE SURFACE DECISION, and why it is a default rather than a flag. Until
- * 2026-08-15 this command could only make `storage` (rclone) destinations: it
- * hard-required `--storage`. Then the rclone emission was deleted from the unit
- * generator, and the two facts together left NO supported route from
- * `backup strategy set` to a deployable schedule, every path either threw at
- * set time for want of `--storage`, or threw at deploy time because a `storage`
- * destination can no longer be rendered. Only a hand-edited config JSON could
- * produce a working strategy.
- *
- * Three ways to close that were on the table: a `--hosted-service` boolean, a
- * `--kind <storage|hosted-service>` option, or making hosted-service what you
- * get when you do not say. This takes the third:
- *
- *  - The chunk store is the ONLY kind `rdc backup schedule` can deploy. A
- *    default that produces the undeployable kind is a trap, and a REQUIRED flag
- *    whose one useful value is always the same is a toll booth.
- *  - It adds no option, so the CLI contract and command tree do not move, and
- *    the working path is the shortest one to type.
- *  - `--storage <name>` keeps working unchanged and is now also the explicit
- *    opt-IN to the legacy kind, which is exactly the flag an operator who wants
- *    that kind was always going to pass.
- *
- * Precedence, and the reason for the middle rule: an EXISTING destination keeps
- * its kind when `--storage` is absent, so `set s --destination d --disable`
- * against the operator's live rclone destination edits it in place instead of
- * silently converting it to a chunk-store destination and orphaning the backups
- * behind it.
- */
-function resolveDestinationKind(
-  storageFlag: string | undefined,
-  existing: { kind?: string } | undefined
-): DestinationKind {
-  if (storageFlag) return 'storage';
-  // `kind` is declared OPTIONAL on this parameter on purpose. A destination read through the config loader has been schema-parsed and always carries one, but a hand-edited entry (and the operator's live config) has none, and that case must still resolve to what the entry actually is.
-  if (existing) {
-    return (existing.kind ?? BACKUP_DEFAULTS.DESTINATION_KIND) === 'storage'
-      ? 'storage'
-      : 'hosted-service';
-  }
-  return BACKUP_DEFAULTS.NEW_DESTINATION_KIND;
 }
 
 /**
@@ -95,81 +56,29 @@ function definedOnly(o: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
- * Build the destination record to store, from the flags plus whatever is
- * already there. Pure: no config reads, no writes, so a test can drive the
- * exact object the operator's flags produce and hand it straight to the unit
- * generator. That crossing is deliberate, the defects in this stack all came
- * from each side being tested against its own fake.
+ * Build the destination record to store, from the flags. Pure: no config reads,
+ * no writes, so a test can drive the exact object the operator's flags produce
+ * and hand it straight to the unit generator. Every destination is the chunk
+ * store (`hosted-service`); the stored `endpoint` and `vaultContent` of an
+ * existing destination are kept by the merge in `addBackupDestination`.
  */
 export function buildDestination(
-  o: Omit<UpsertDestOpts, 'strategyName'>,
-  existingDest: BackupStrategyDestination | undefined
+  o: Omit<UpsertDestOpts, 'strategyName'>
 ): BackupStrategyDestination {
-  const kind = resolveDestinationKind(o.storage, existingDest);
-  if (kind === 'hosted-service') {
-    // `--folder` is a subfolder inside an rclone bucket. The chunk store names its own keys server-side (the client never composes an object key), so there is nothing for a folder to mean here. Refused rather than dropped: dropping it would put backups somewhere other than where the operator said, which is the failure mode this whole surface keeps producing.
-    if (o.folder !== undefined) {
-      throw new ValidationError(t('commands.backup.strategy.set.storageRequired'));
-    }
-    return parseConfig(
-      BackupDestinationSchema,
-      definedOnly({
-        kind,
-        name: o.destinationName,
-        enabled: o.enabled,
-        bandwidthLimit: o.bwlimit,
-      }),
-      'backup destination'
-    );
-  }
-
-  const existingStorageDest =
-    existingDest && resolveDestinationKind(undefined, existingDest) === 'storage'
-      ? (existingDest as { storage?: string; folder?: string })
-      : undefined;
-  const storageName = o.storage ?? existingStorageDest?.storage;
-  if (!storageName) {
-    throw new ValidationError(t('commands.backup.strategy.set.storageRequired'));
-  }
   return parseConfig(
     BackupDestinationSchema,
     definedOnly({
-      kind,
+      kind: BACKUP_DEFAULTS.NEW_DESTINATION_KIND,
       name: o.destinationName,
-      storage: storageName,
       enabled: o.enabled,
       bandwidthLimit: o.bwlimit,
-      folder: o.folder ?? existingStorageDest?.folder,
     }),
     'backup destination'
   );
 }
 
 async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
-  const existing = await configService.getBackupStrategy(o.strategyName);
-  const existingDest = existing?.destinations.find((d) => d.name === o.destinationName);
-  const dest = buildDestination(o, existingDest);
-
-  if (dest.kind === 'storage') await assertStorageExists(dest.storage);
-
-  // A kind CHANGE cannot go through the merge in addBackupDestination: it spreads the new record over the old one, so flipping hosted-service -> storage would leave `endpoint`/`vaultContent` behind in the file (the schema strips them on the next read, so the junk would be invisible until someone diffed the config). Drop the old record first and write a clean one. Compared through
-  // resolveDestinationKind, not `existingDest.kind`, so a legacy entry with no `kind` at all is not treated as a flip and rewritten
-  // for nothing.
-  if (existingDest && resolveDestinationKind(undefined, existingDest) !== dest.kind) {
-    await configService.removeBackupDestination(o.strategyName, o.destinationName);
-  }
-  await configService.addBackupDestination(o.strategyName, dest);
-
-  // Saved, then flagged. A `storage` destination is still legal to hold on disk and still legal to create, but no unit can be generated for one, and an operator who learns that at deploy time has already bound the strategy and walked away. Say it here, where the decision is.
-  const unschedulable = unschedulableDestinationReason(dest);
-  if (unschedulable) {
-    // Naming the two commands matters: omitting --storage PRESERVES an existing kind (see resolveDestinationKind), so there is no single flag that turns a storage destination into a chunk-store one. "Change it to a hosted-service destination" without the how is the same dead end in a friendlier voice.
-    outputService.warn(
-      `${unschedulable} The destination was saved, but \`rdc backup schedule\` will refuse to deploy a unit for it. ` +
-        `To convert it: rdc backup strategy remove ${o.strategyName} --destination ${o.destinationName} ` +
-        `&& rdc backup strategy set ${o.strategyName} --destination ${o.destinationName}`
-    );
-  }
+  await configService.addBackupDestination(o.strategyName, buildDestination(o));
 }
 
 // parseRepoFilter turns a comma-separated --include/--exclude value into a repo list, or returns undefined to CLEAR the filter. An empty string or the literal "none" (and a value that is only separators/whitespace) clears it, that's how you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
@@ -185,11 +94,33 @@ export function parseRepoFilter(raw: string): string[] | undefined {
   return list.length > 0 ? list : undefined;
 }
 
+/** `--retention` to the stored policy; `none` or an empty value clears it. */
+export function parseRetentionOption(raw: string): BackupStrategyConfig['retention'] {
+  try {
+    return parseRetentionSpec(raw);
+  } catch (error) {
+    if (error instanceof RetentionSpecError) {
+      throw new ValidationError(t('commands.backup.strategy.set.retentionInvalid', { value: raw }));
+    }
+    throw error;
+  }
+}
+
 export function buildStrategyUpdate(
-  opts: { cron?: string; mode?: string; bwlimit?: string; include?: string; exclude?: string },
+  opts: {
+    cron?: string;
+    mode?: string;
+    bwlimit?: string;
+    readBwlimit?: string;
+    cpuLimit?: string;
+    include?: string;
+    exclude?: string;
+    retention?: string;
+  },
   enabled: boolean | undefined
 ): Partial<BackupStrategyConfig> {
   const u: Partial<BackupStrategyConfig> = {};
+  if (opts.retention !== undefined) u.retention = parseRetentionOption(opts.retention);
   if (opts.cron !== undefined) u.schedule = opts.cron;
   if (opts.mode !== undefined) {
     // `--mode cold` used to be refused here, because the scheduled verb could only take a hot snapshot and accepting the flag would have promised a quiesce that never happened. `backup snapshot --cold` exists now, so both modes schedule and there is nothing left to refuse: the schema's
@@ -197,7 +128,38 @@ export function buildStrategyUpdate(
     u.mode = opts.mode as 'hot' | 'cold';
   }
   if (enabled !== undefined) u.enabled = enabled;
-  if (opts.bwlimit !== undefined) u.bandwidthLimit = opts.bwlimit;
+  // Both caps are validated here, at set time: an unparseable value stored now would only surface later as an unschedulable strategy.
+  if (opts.bwlimit !== undefined) {
+    if (opts.bwlimit.trim() === '') {
+      throw new ValidationError(
+        t('commands.backup.snapshot.bwlimitInvalid', { value: opts.bwlimit })
+      );
+    }
+    bandwidthToBytesPerSecond(opts.bwlimit);
+    u.bandwidthLimit = opts.bwlimit;
+  }
+  // `none` clears the read cap, so the verb default applies again.
+  if (opts.readBwlimit !== undefined) {
+    const raw = opts.readBwlimit.trim();
+    if (raw.toLowerCase() === 'none') {
+      u.readBandwidthLimit = undefined;
+    } else {
+      if (raw === '') {
+        throw new ValidationError(
+          t('commands.backup.snapshot.readBwlimitInvalid', { value: opts.readBwlimit })
+        );
+      }
+      readCapBytesPerSecond(raw);
+      u.readBandwidthLimit = opts.readBwlimit;
+    }
+  }
+  // `none` clears the ceiling, so the verb default (50 percent of all cores) applies again.
+  if (opts.cpuLimit !== undefined) {
+    u.cpuLimit =
+      opts.cpuLimit.trim().toLowerCase() === 'none'
+        ? undefined
+        : parseCpuLimitPercent(opts.cpuLimit);
+  }
   // include/exclude are mutually exclusive; setting one clears the other.
   // An empty/"none" value clears the filter entirely.
   if (opts.include !== undefined) {
@@ -211,23 +173,63 @@ export function buildStrategyUpdate(
   return u;
 }
 
-async function applyBackupStrategyOptions(
+/**
+ * Refuse repo names the active config does not know. A typo in --include would otherwise schedule a backup of nothing (or, for exclude, of everything), and surface only as a missing snapshot. Every unknown name is reported at once, and the check runs before anything is written.
+ */
+async function assertKnownRepoNames(names: string[] | undefined): Promise<void> {
+  const unknown: string[] = [];
+  for (const name of names ?? []) {
+    if (!(await configService.getRepository(name))) unknown.push(name);
+  }
+  if (unknown.length > 0) {
+    throw new ValidationError(
+      `Unknown repository ${unknown.length === 1 ? 'name' : 'names'}: ${unknown.map((n) => `"${n}"`).join(', ')}. Names must match repositories in the active config (rdc repo list).`
+    );
+  }
+}
+
+/**
+ * Refuse to bind a strategy `backup schedule` could not turn into a unit, through the same rules schedule applies (strategyUnschedulableReason). Disabled destinations are skipped, as the scheduler skips them.
+ */
+export async function assertStrategyBindable(strategyName: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(strategyName);
+  if (!strategy) return;
+  const reason = strategyUnschedulableReason(
+    strategy,
+    strategy.destinations.filter((d) => d.enabled !== false)
+  );
+  if (reason) {
+    throw new ValidationError(
+      `Strategy "${strategyName}" cannot be scheduled, not bound. ${reason}`
+    );
+  }
+}
+
+export async function applyBackupStrategyOptions(
   name: string,
   options: {
     destination?: string;
-    storage?: string;
     cron?: string;
     mode?: string;
     bwlimit?: string;
+    readBwlimit?: string;
+    cpuLimit?: string;
     include?: string;
     exclude?: string;
-    folder?: string;
+    retention?: string;
     enable?: boolean;
     disable?: boolean;
   }
 ): Promise<void> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
+  if (targetsDestination && options.readBwlimit !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.readBwlimitStrategyOnly'));
+  }
+
+  if (targetsDestination && options.cpuLimit !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.cpuLimitStrategyOnly'));
+  }
 
   // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
   //
@@ -236,6 +238,9 @@ async function applyBackupStrategyOptions(
     { ...options, bwlimit: targetsDestination ? undefined : options.bwlimit },
     targetsDestination ? undefined : enabled
   );
+
+  await assertKnownRepoNames(update.include);
+  await assertKnownRepoNames(update.exclude);
 
   // Order matters: upsertBackupDestination reads the stored strategy to merge destination defaults, so the strategy has to exist before the destination is attached. These cannot run in parallel.
   if (!targetsDestination || Object.keys(update).length > 0) {
@@ -246,11 +251,69 @@ async function applyBackupStrategyOptions(
     await upsertBackupDestination({
       strategyName: name,
       destinationName: options.destination,
-      storage: options.storage,
       enabled,
       bwlimit: options.bwlimit,
-      folder: options.folder,
     });
+  }
+
+  // Warn after the write, from the stored result: `--cron` alone can invalidate a retention set earlier.
+  if (options.retention !== undefined || options.cron !== undefined) {
+    await warnRetentionCronMismatch(name);
+  }
+}
+
+function cadenceLabel(cadence: CronCadence): string {
+  switch (cadence) {
+    case 'weekly':
+      return t('commands.backup.strategy.set.cadence.weekly');
+    case 'monthly':
+      return t('commands.backup.strategy.set.cadence.monthly');
+    default:
+      return t('commands.backup.strategy.set.cadence.daily');
+  }
+}
+
+/** F7: a retention knob the strategy's cron can never fill is saved but called out. */
+async function warnRetentionCronMismatch(name: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(name);
+  if (!strategy?.schedule) return;
+  for (const { knob, cadence } of retentionCronMismatches(strategy.retention, strategy.schedule)) {
+    outputService.warn(
+      t('commands.backup.strategy.set.retentionCronMismatch', {
+        strategy: name,
+        knob,
+        cron: strategy.schedule,
+        cadence: cadenceLabel(cadence),
+      })
+    );
+  }
+}
+
+/**
+ * Apply a just-saved strategy retention to the lineages the strategy covers. The config write has
+ * already happened, so a server that cannot be reached is a warning, not a failed command.
+ */
+async function applyRetentionNow(name: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(name);
+  if (!strategy?.retention) return;
+  if (!hasAccountToken()) {
+    outputService.warn(t('commands.backup.strategy.set.retentionNotPushed', { strategy: name }));
+    return;
+  }
+  try {
+    const { pushed } = await pushStrategyRetention(strategy, { overwrite: true });
+    outputService.info(t('commands.backup.strategy.set.retentionPushed', { count: pushed }));
+  } catch (error) {
+    // A 4xx is the server's verdict on this retention (plan limits, bad values): retrying cannot help, so it fails the command with the server's message. A 408 or 429 is not a verdict, a later run succeeds, so it warns like every other failure (an unreachable server, a 5xx, or a local error with no HTTP status).
+    const status = (error as { status?: unknown } | null)?.status;
+    const transient = status === 408 || status === 429;
+    if (typeof status === 'number' && status >= 400 && status < 500 && !transient) throw error;
+    outputService.warn(
+      t('commands.backup.strategy.set.retentionPushFailed', {
+        strategy: name,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
   }
 }
 
@@ -275,9 +338,33 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
   outputService.info(`  Mode: ${mode}`);
   outputService.info(`  Enabled: ${strategy.enabled !== false}`);
   if (strategy.bandwidthLimit) outputService.info(`  Bandwidth limit: ${strategy.bandwidthLimit}`);
+  if (strategy.readBandwidthLimit) {
+    outputService.info(`  Read bandwidth limit: ${strategy.readBandwidthLimit}`);
+  }
+  if (strategy.cpuLimit !== undefined) {
+    outputService.info(`  CPU limit: ${strategy.cpuLimit}% of all cores`);
+  }
   if (strategy.include) outputService.info(`  Include: ${strategy.include.join(', ')}`);
   if (strategy.exclude) outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
+  if (strategy.retention) {
+    outputService.info(`  Retention: ${formatRetention(strategy.retention)}`);
+  }
   displayStrategyDestinations(strategy);
+}
+
+function formatRetention(retention: NonNullable<BackupStrategyConfig['retention']>): string {
+  const parts: [string, number | undefined][] = [
+    ['last', retention.keepLast],
+    ['hourly', retention.keepHourly],
+    ['daily', retention.keepDaily],
+    ['weekly', retention.keepWeekly],
+    ['monthly', retention.keepMonthly],
+    ['yearly', retention.keepYearly],
+  ];
+  return parts
+    .filter(([, n]) => n !== undefined)
+    .map(([name, n]) => `${name}=${n}`)
+    .join(',');
 }
 
 /**
@@ -301,15 +388,8 @@ function displayStrategyDestinations(strategy: BackupStrategyConfig): void {
 function destinationLine(strategy: BackupStrategyConfig, dest: BackupStrategyDestination): string {
   const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit ?? '-';
   const enabled = dest.enabled !== false;
-  const target =
-    dest.kind === 'storage'
-      ? `storage=${dest.storage}${dest.folder ? `  folder=${dest.folder}` : ''}`
-      : `hosted-service${dest.endpoint ? `  endpoint=${dest.endpoint}` : ''}`;
-  // Same reason the mode marker existed: the operator's live config still holds rclone destinations, and `show` is where they will look first when a backup stops happening. An unmarked line here reads as healthy.
-  const note = unschedulableDestinationReason(dest)
-    ? '  (NOT SCHEDULABLE: rclone path removed)'
-    : '';
-  return `    ${dest.name}  ${target}  bwlimit=${bwlimit}  enabled=${enabled}${note}`;
+  const target = `hosted-service${dest.endpoint ? `  endpoint=${dest.endpoint}` : ''}`;
+  return `    ${dest.name}  ${target}  bwlimit=${bwlimit}  enabled=${enabled}`;
 }
 
 /** Register the `backup strategy` subgroup (named backup strategy records). */
@@ -321,7 +401,6 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.set.description'))
     .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
-    .option('--storage <name>', t('commands.backup.strategy.set.optionStorage'))
     .option('--cron <expression>', t('commands.backup.strategy.set.optionCron'))
     .addOption(
       new Option('--mode <mode>', t('commands.backup.strategy.set.optionMode')).choices([
@@ -330,15 +409,18 @@ export function registerBackupStrategyCommands(backup: Command): void {
       ])
     )
     .option('--bwlimit <limit>', t('commands.backup.strategy.set.optionBwlimit'))
+    .option('--read-bwlimit <limit>', t('commands.backup.strategy.set.optionReadBwlimit'))
+    .option('--cpu-limit <percent>', t('commands.backup.strategy.set.optionCpuLimit'))
     .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
-    .option('--folder <path>', t('commands.backup.strategy.set.optionFolder'))
+    .option('--retention <spec>', t('commands.backup.strategy.set.optionRetention'))
     .option('--enable', t('commands.backup.strategy.set.optionEnable'))
     .option('--disable', t('commands.backup.strategy.set.optionDisable'))
     .action(async (strategy: string, options) => {
       try {
         await applyBackupStrategyOptions(strategy, options);
         outputService.success(t('commands.backup.strategy.set.saved'));
+        if (options.retention !== undefined) await applyRetentionNow(strategy);
       } catch (error) {
         handleError(error);
       }
@@ -351,6 +433,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.bind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
+        await assertStrategyBindable(strategy);
         const bound = await bindBackupStrategy(options.machine, strategy);
         outputService.success(
           bound
@@ -397,12 +480,26 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.remove.description'))
     .option('--destination <name>', t('commands.backup.strategy.remove.optionDestination'))
+    // --unbind applies to removing the whole strategy; with --destination it would be silently ignored.
+    .addOption(
+      new Option('--unbind', t('commands.backup.strategy.remove.optionUnbind')).conflicts(
+        'destination'
+      )
+    )
     .action(async (strategy: string, options) => {
       try {
         if (options.destination) {
           await configService.removeBackupDestination(strategy, options.destination);
         } else {
-          await configService.removeBackupStrategy(strategy);
+          const unbound = await removeStrategyChecked(strategy, options.unbind === true);
+          if (unbound.length > 0) {
+            outputService.warn(
+              t('commands.backup.strategy.remove.unboundWarn', {
+                strategy,
+                machines: unbound.join(', '),
+              })
+            );
+          }
         }
         outputService.success(t('commands.backup.strategy.remove.removed'));
       } catch (error) {

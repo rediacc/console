@@ -40,7 +40,7 @@ What it does:
 - Creates BTRFS datastore for encrypted volumes
 - Installs CRIU from system packages (Ubuntu 24.04 uses OBS repository)
 - Writes `/etc/criu/runc.conf` with `tcp-established` for TCP connection preservation during checkpoint
-- Installs rsync and rclone for backup/sync operations
+- Installs rsync for sync operations
 - Per-repo Docker daemons automatically get `"experimental": true` in their daemon.json (handled by renet, not setup-machine)
 
 Required before creating repositories on a machine.

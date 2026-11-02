@@ -55,7 +55,6 @@ function configWith(policy?: PolicyDocument): RdcConfig {
     resources: {
       machines: { 'web-1': { ip: '10.0.0.1', user: 'deploy' } },
       repositories: {},
-      storages: {},
     },
     encryption: { mode: 'plaintext' },
     ...(policy === undefined ? {} : { policy: structuredClone(policy) }),

@@ -58,7 +58,10 @@ def test_a_transient_failure_is_retried_three_times_then_raises(slept, capsys):
     assert len(calls) == 3
     assert slept == [2, 4]
     assert str(raised.value) == "GET h/p -> HTTP 503, after 3 attempt(s)"
-    notes = capsys.readouterr().out.splitlines()
+    captured = capsys.readouterr()
+    # The note is progress on stderr; stdout stays free for a caller's JSON.
+    assert captured.out == ""
+    notes = captured.err.splitlines()
     assert notes[0] == "? pin: attempt 1 of 3 failed (HTTP 503), asking again in 2 s"
     assert all(ci_diagnose.RETRY_NOTE_RE.search(n) for n in notes), notes
 

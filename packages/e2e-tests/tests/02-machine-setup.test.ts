@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_UID } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Machine Setup Tests
@@ -9,10 +9,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * - setup, machine_fix_groups, machine_check_setup
  */
 test.describe('Machine Setup Functions @bridge @smoke', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('setup should succeed', async () => {
@@ -55,10 +55,10 @@ test.describe('Machine Setup Functions @bridge @smoke', () => {
  * Setup Command Edge Cases
  */
 test.describe('Setup Command Edge Cases @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('setup command should handle compound shell commands', async () => {
@@ -81,10 +81,10 @@ test.describe('Setup Command Edge Cases @bridge', () => {
  * Multi-Machine Setup Tests
  */
 test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(() => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
   });
 
   test('machine_check_setup on worker VM 1', async () => {

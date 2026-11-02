@@ -8,7 +8,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { RdcState } from '@rediacc/shared/config-schema';
+import type { AccessConfig, RdcState } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import {
@@ -25,11 +25,10 @@ import type {
   MachineConfig,
   RdcConfig,
   RepositoryConfig,
-  StorageConfig,
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { currentRequestConfig } from '../core/request-context.js';
-import { ConfigServiceBase } from './config-base.js';
+import { ConfigAccessService, dropAccessBindings } from './config-access.js';
 import {
   assertClusterMembersUnique,
   assertUniqueName,
@@ -50,6 +49,8 @@ import {
   grandTagsOf,
   resolveDestructiveTargetFromRepos,
   resolveRepoKey,
+  restoreArchivedRecord,
+  withGpuDevices,
 } from './config-resources-resolve.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
@@ -63,9 +64,18 @@ async function assertValidResourceName(name: string): Promise<void> {
   assertResourceName(name);
 }
 
+export { dropAccessBindings } from './config-access.js';
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
-class ConfigService extends ConfigServiceBase {
+/** removeMachine of a name the config does not hold; a caller tolerating an already-missing machine tests for this class. */
+export class MachineNotFoundError extends Error {
+  constructor(readonly machine: string) {
+    super(`Machine "${machine}" not found`);
+    this.name = 'MachineNotFoundError';
+  }
+}
+
+class ConfigService extends ConfigAccessService {
   /**
    * The current config. Inside a request-scoped dispatch (the container tier)
    * it is the config decrypted for the session, never a file and never the
@@ -101,7 +111,7 @@ class ConfigService extends ConfigServiceBase {
   /**
    * Load the current (or named) config, failing when none is active.
    */
-  protected async requireSelfHosted(configName?: string): Promise<RdcConfig> {
+  protected override async requireSelfHosted(configName?: string): Promise<RdcConfig> {
     const config = configName ? await configFileStorage.load(configName) : await this.getCurrent();
     if (!config) throw new Error('No active config');
     return config;
@@ -226,9 +236,25 @@ class ConfigService extends ConfigServiceBase {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
     const machines = state.getMachines();
-    if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
+    if (!(machineName in machines)) throw new MachineNotFoundError(machineName);
+    // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
+    // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
+    const access = (await this.getCurrent())?.access;
+    const bound = Object.values(access?.keys ?? {}).some(
+      (key) => key.machines?.[machineName] !== undefined
+    );
+    if (bound) {
+      await this.updateAccess((current) => dropAccessBindings(current, machineName));
+    }
+
     delete machines[machineName];
-    await state.setMachines(machines);
+    try {
+      await state.setMachines(machines);
+    } catch (error) {
+      // The machine stays, so its bindings come back: neither half of the removal is left applied.
+      if (bound && access) await this.restoreAccessAfterFailedRemoval(machineName, access, error);
+      throw error;
+    }
 
     // #89, third site of the class (see dropMachineObservations).
     await dropMachineObservations(this.getEffectiveConfigName(), machineName);
@@ -239,6 +265,23 @@ class ConfigService extends ConfigServiceBase {
       /* non-fatal */
     }
     outputService.info(t('commands.config.machine.remove.sshConfigCleared', { name: machineName }));
+  }
+
+  /** Put the access bucket back after a failed removal; a failed restore must not hide why the removal failed, and says the bindings are gone. */
+  private async restoreAccessAfterFailedRemoval(
+    machineName: string,
+    access: AccessConfig,
+    removalError: unknown
+  ): Promise<void> {
+    try {
+      await this.updateAccess(() => access);
+    } catch (restoreError) {
+      const why = (e: unknown) => (e instanceof Error ? e.message : String(e));
+      throw new Error(
+        `${why(removalError)}; machine "${machineName}" was kept, but restoring its access-key bindings failed: ${why(restoreError)}`,
+        { cause: removalError }
+      );
+    }
   }
 
   async listMachines(): Promise<{ name: string; config: MachineConfig }[]> {
@@ -307,47 +350,6 @@ class ConfigService extends ConfigServiceBase {
   }
 
   // ============================================================================
-  // Storage CRUD
-  // ============================================================================
-
-  async addStorage(storageName: string, config: StorageConfig): Promise<void> {
-    await this.requireSelfHosted();
-    await assertValidResourceName(storageName);
-    const state = await this.getResourceState();
-    const storages = state.getStorages();
-    storages[storageName] = config;
-    await state.setStorages(storages);
-  }
-
-  async removeStorage(storageName: string): Promise<void> {
-    await this.requireSelfHosted();
-    const state = await this.getResourceState();
-    const storages = state.getStorages();
-    if (!(storageName in storages)) throw new Error(`Storage "${storageName}" not found`);
-    delete storages[storageName];
-    await state.setStorages(storages);
-  }
-
-  async listStorages(): Promise<{ name: string; config: StorageConfig }[]> {
-    await this.requireSelfHosted();
-    const state = await this.getResourceState();
-    return Object.entries(state.getStorages())
-      .map(([name, config]) => ({ name, config }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  async getStorage(storageName: string): Promise<StorageConfig> {
-    await this.requireSelfHosted();
-    const state = await this.getResourceState();
-    const storages = state.getStorages();
-    if (!(storageName in storages))
-      throw new Error(
-        `Storage "${storageName}" not found. Available: ${Object.keys(storages).join(', ') || 'none'}`
-      );
-    return storages[storageName];
-  }
-
-  // ============================================================================
   // Repository CRUD
   // ============================================================================
 
@@ -362,12 +364,17 @@ class ConfigService extends ConfigServiceBase {
     await state.setRepositories(repos);
   }
 
-  async removeRepository(repoRef: string): Promise<void> {
+  /** Self-hosted guard, then the ref's config key, the state and the repo map for a mutation that edits one repo in place; throws when the ref names no repo. */
+  private async loadRepositoryForWrite(repoRef: string) {
     await this.requireSelfHosted();
     const key = await this.getRepositoryKey(repoRef);
     if (!key) throw new Error(`Repository "${repoRef}" not found`);
     const state = await this.getResourceState();
-    const repos = state.getRepositories();
+    return { key, state, repos: state.getRepositories() };
+  }
+
+  async removeRepository(repoRef: string): Promise<void> {
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
     delete repos[key];
     await state.setRepositories(repos);
   }
@@ -474,9 +481,7 @@ class ConfigService extends ConfigServiceBase {
       throw new Error(
         `Repository "${restoredName}" already exists. Use --name to specify a different name.`
       );
-    const { name: originalName, deletedAt, ...repoConfig } = archived;
-    void originalName;
-    void deletedAt;
+    const repoConfig = restoreArchivedRecord(archived);
     // This write bypasses addRepository, but the record it makes LIVE is subject to the same GUID-keyed credential map.
     assertNoCredentialCollision(repos, restoredName, repoConfig);
     repos[restoredName] = repoConfig;
@@ -652,25 +657,15 @@ class ConfigService extends ConfigServiceBase {
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  allocateNetworkId(): Promise<number> {
-    return allocateNetworkIdInStore(this.getEffectiveConfigName());
+  allocateNetworkId(options: { floor?: Iterable<number> } = {}): Promise<number> {
+    return allocateNetworkIdInStore(this.getEffectiveConfigName(), options);
   }
 
-  async ensureRepositoryNetworkId(repoRef: string): Promise<number> {
-    await this.requireSelfHosted();
-    const key = await this.getRepositoryKey(repoRef);
-    if (!key) throw new Error(`Repository "${repoRef}" not found`);
-
-    const state = await this.getResourceState();
-    const repos = state.getRepositories();
-    const repo = repos[key];
-
-    if (repo.networkId !== undefined && repo.networkId > 0) return repo.networkId;
-
-    const networkId = await this.allocateNetworkId();
-    repos[key] = { ...repo, networkId };
+  /** Mirror a repository's granted CDI device names into `state.repos` (an empty list clears the mirror). */
+  async setRepositoryGpuDevices(repoRef: string, devices: string[]): Promise<void> {
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
+    repos[key] = withGpuDevices(repos[key], devices);
     await state.setRepositories(repos);
-    return networkId;
   }
 }
 

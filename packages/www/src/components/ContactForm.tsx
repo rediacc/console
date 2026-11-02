@@ -38,7 +38,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
 
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
-  const hasFiredStart = useRef(false);
+  const hasFiredStart = useRef<boolean>(false);
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   // Shared state machine; see useCaptchaGuard for the widget-never-mounted case.

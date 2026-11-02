@@ -24,9 +24,14 @@ TWO CLOCKS, AND NEITHER OF THEM IS `git log` ALONE.
     reset every clock at once and buy 90 days of freshness for 103 plans that
     have not moved in months. `First-Seen:` is written at move time from the
     PRE-move committer date, and taking the older of the two means neither a
-    move nor a re-write of the header can make a plan younger.
+    move nor a re-write of the header can make a plan younger. The one thing
+    that DOES restart it is a `Kept: <date> ASKED:<minute>` header, written by
+    `check_plan_folders.py --keep` when the operator answers the keep-or-archive
+    question below; the clock then counts from the Kept date.
 
-EXPIRY DELETES THE FILE AND KEEPS A TOMBSTONE. The row carries the title, both dates and the git blob id of the full text, and lives in `agent/INDEX.md` under its own section, which is the file `check_plan_record.py` already renders and compares for byte equality. A tombstone is revivable from the blob, so expiry loses no text; it loses a directory entry nobody was reading.
+THE TWO CLOCKS END DIFFERENTLY, by the operator's ruling of 2026-10-28 (ASKED:2026-10-28T10:58Z, "they should be asked to the operator to keep or archive"). A TERMINAL plan past its clock is deleted by the sweep. A BACKLOG plan past its clock is never deleted or moved by any automatic path: it becomes an operator question, keep or archive, answered with `--keep` (a `Kept:` header, the clock restarts) or `--archive` (`Status: removed`, a move into `_removed/`, and from there the terminal clock).
+
+EXPIRY OF A TERMINAL PLAN DELETES THE FILE AND KEEPS A TOMBSTONE. The row carries the title, both dates and the git blob id of the full text, and lives in `agent/INDEX.md` under its own section, which is the file `check_plan_record.py` already renders and compares for byte equality. A tombstone is revivable from the blob, so expiry loses no text; it loses a directory entry nobody was reading.
 
 THE PURE CORE IS PURE ON PURPOSE. `parse_plan`, `classify`, `folder_for`, `retention_days` and every `findings_*` function take data and return data: no git, no filesystem, no clock. That is what lets the gate's controls PLANT a defect into fixture TEXT and assert the finding appears, rather than staging a git repository per control. The impure half is three functions at the bottom, each of which does one thing and is named for it.
 """
@@ -95,6 +100,16 @@ ROOT_ENV = "PLAN_FOLDERS_ROOT"
 
 STATUS_RE = re.compile(r"^\*{0,2}Status\*{0,2}:[ \t]*([A-Za-z-]+)", re.MULTILINE)
 FIRST_SEEN_RE = re.compile(r"^First-Seen:[ \t]*(\d{4}-\d{2}-\d{2})", re.MULTILINE)
+#: The operator's KEEP answer for a backlog plan past `backlog_days`. The date
+#: restarts the backlog clock; the ASKED minute names the answer it rests on.
+KEPT_RE = re.compile(
+    r"^Kept:[ \t]*(\d{4}-\d{2}-\d{2})[ \t]+ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z)[ \t]*$",
+    re.MULTILINE,
+)
+#: Any `Kept:` line, well formed or not, so a rewrite replaces it rather than adding a second.
+KEPT_LINE_RE = re.compile(r"^Kept:.*$", re.MULTILINE)
+#: The one spelling of an operator answer's minute, the same shape the hooks read.
+ASKED_MINUTE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 MOVED_TO_RE = re.compile(r"^Moved-To:[ \t]*(\S+)[ \t]*$", re.MULTILINE)
 REMOVED_WHY_RE = re.compile(r"^Removed-Why:[ \t]*(\S.*)$", re.MULTILINE)
 BLOB_RE = re.compile(r"^Full-Text-Blob:[ \t]*([0-9a-f]{40})[ \t]*$", re.MULTILINE)
@@ -190,6 +205,7 @@ class Plan:
     rel: str
     status: str
     first_seen: str = ""
+    kept: str = ""
     moved_to: str = ""
     removed_why: str = ""
     blob: str = ""
@@ -246,6 +262,7 @@ def parse_plan(rel: str, text: str, **clocks: str) -> Plan:
         rel=rel,
         status=(_first(STATUS_RE, head) or "UNKNOWN").lower(),
         first_seen=_first(FIRST_SEEN_RE, head),
+        kept=_first(KEPT_RE, head),
         moved_to=_first(MOVED_TO_RE, head),
         removed_why=_first(REMOVED_WHY_RE, head),
         blob=_first(BLOB_RE, text),
@@ -366,12 +383,18 @@ def as_date(value: str) -> dt.date | None:
 
 
 def last_touch(plan: Plan) -> dt.date | None:
-    """The OLDER of `First-Seen:` and the last commit touching the path.
+    """The OLDER of `First-Seen:` and the last commit touching the path, unless a later `Kept:` restarts it.
 
     Risk 1 of the plan in one function. `git log` does not follow renames, so a move resets `%cI`; taking the older of the two means the move cannot buy freshness, and neither can re-writing the header, because the commit date is still in the minimum.
+
+    `Kept:` is the one header that may make a plan younger. `--keep` writes it only with a well-formed ASKED minute, but nothing here checks that minute against an operator answer: a hand-typed `Kept:` line is honoured the same way, so the header is trusted as written, like every other header in this family, and a review of the commit that adds it is what catches a forged one. A Kept date OLDER than the minimum changes nothing, so a stale answer cannot age a plan either.
     """
     dates = [d for d in (as_date(plan.first_seen), as_date(plan.last_commit)) if d is not None]
-    return min(dates) if dates else None
+    base = min(dates) if dates else None
+    kept = as_date(plan.kept)
+    if kept is not None and (base is None or kept > base):
+        return kept
+    return base
 
 
 def age_days(when: dt.date | None, today: dt.date) -> int | None:
@@ -451,8 +474,11 @@ def finding_f3(plans: list[Plan], config: dict, today: dt.date) -> list[Finding]
     return out
 
 
-def finding_f4(plans: list[Plan], config: dict, today: dt.date) -> list[Finding]:
-    """F4 -- a not-started plan untouched past `backlog_days`."""
+def stale_backlog(plans: list[Plan], config: dict, today: dt.date) -> list[tuple[Plan, int]]:
+    """Every backlog plan past `backlog_days`, with its age. The keep-or-archive question's ONE predicate.
+
+    F4 and the sweep's question list both read this, so the gate cannot red on a plan the question omits. Nothing here deletes: the ruling of ASKED:2026-10-28T10:58Z puts every one of these in front of the operator instead.
+    """
     limit = int(config["backlog_days"])
     out = []
     for plan in plans:
@@ -461,15 +487,68 @@ def finding_f4(plans: list[Plan], config: dict, today: dt.date) -> list[Finding]
         age = age_days(last_touch(plan), today)
         if age is None or age <= limit:
             continue
-        out.append(
-            Finding(
-                "F4",
-                plan.rel,
-                "%s has not been started or touched for %d day(s), past the %d-day backlog "
-                "retention. Start it, close it with `Status: removed` and a `Removed-Why:`, "
-                "or let the sweeper expire it into a tombstone." % (plan.rel, age, limit),
-            )
+        out.append((plan, age))
+    return out
+
+
+def finding_f4(plans: list[Plan], config: dict, today: dt.date) -> list[Finding]:
+    """F4 -- a not-started plan untouched past `backlog_days`, which is an open operator question."""
+    limit = int(config["backlog_days"])
+    return [
+        Finding(
+            "F4",
+            plan.rel,
+            "%s has not been started or touched for %d day(s), past the %d-day backlog "
+            "retention. It is an OPERATOR question, keep or archive, and is never deleted: "
+            "`check_plan_folders.py --sweep` lists it, and the answer is recorded with "
+            "`check_plan_folders.py --keep %s --asked <YYYY-MM-DDTHH:MMZ>` (restarts the clock) or "
+            "`check_plan_folders.py --archive %s --asked <YYYY-MM-DDTHH:MMZ>` (Status: removed, "
+            "into _removed/). Starting the plan also clears it."
+            % (plan.rel, age, limit, plan.rel, plan.rel),
         )
+        for plan, age in stale_backlog(plans, config, today)
+    ]
+
+
+def asked_minute(value: str) -> dt.datetime | None:
+    """The UTC instant of a well-formed ASKED minute, or None.
+
+    The shape alone is not enough: `2026-13-40T25:99Z` matches the digits and names no minute, so the value is also parsed.
+    """
+    if not ASKED_MINUTE_RE.match(value or ""):
+        return None
+    try:
+        return dt.datetime.strptime(value, "%Y-%m-%dT%H:%MZ").replace(tzinfo=dt.UTC)
+    except ValueError:
+        return None
+
+
+def _insert_under_status(text: str, line: str) -> str:
+    """`line` directly under the `Status:` line, the slot `First-Seen:` takes, or at the top when there is none."""
+    lines = text.splitlines(keepends=True)
+    for i, current in enumerate(lines):
+        if STATUS_RE.match(current):
+            lines.insert(i + 1, line + "\n")
+            return "".join(lines)
+    return "%s\n%s" % (line, text)
+
+
+def with_kept(text: str, kept_on: str, asked: str) -> str:
+    """`text` carrying exactly one `Kept: <kept_on> ASKED:<asked>` line, replaced in place when one exists."""
+    line = "Kept: %s ASKED:%s" % (kept_on, asked)
+    if KEPT_LINE_RE.search(_head(text)):
+        return KEPT_LINE_RE.sub(line, text, count=1)
+    return _insert_under_status(text, line)
+
+
+def with_archived(text: str, why: str) -> str:
+    """`text` with its `Status:` word set to `removed` and a `Removed-Why:` under it when it carries none."""
+    m = STATUS_RE.search(_head(text))
+    if m is None:
+        return "Status: %s\nRemoved-Why: %s\n%s" % (REMOVED_STATUS, why, text)
+    out = text[: m.start(1)] + REMOVED_STATUS + text[m.end(1) :]
+    if not REMOVED_WHY_RE.search(_head(out)):
+        out = _insert_under_status(out, "Removed-Why: %s" % why)
     return out
 
 
@@ -1008,6 +1087,7 @@ __all__ = [
     "Tombstone",
     "apply_remap",
     "as_date",
+    "asked_minute",
     "citable_token",
     "classify",
     "enumerate_plans",
@@ -1025,6 +1105,9 @@ __all__ = [
     "remap_verdict",
     "render_tombstones",
     "retention_days",
+    "stale_backlog",
     "stub_text",
     "unfenced_tokens",
+    "with_archived",
+    "with_kept",
 ]

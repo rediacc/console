@@ -5,39 +5,28 @@
  * This is used by Electron for the direct file browser feature.
  */
 
+import { isIP } from 'node:net';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { FileEntry, SFTPWrapper, Stats } from 'ssh2';
+import type { FileEntry, SFTPWrapper } from 'ssh2';
 import { type ConnectConfig, Client as SSHClient } from 'ssh2';
-import { fingerprint, keyBlobAlgorithm, parseKnownHosts } from '../../utils/host-keys.js';
+import { parseKnownHosts } from '../../utils/host-keys.js';
 import type { FileInfo } from '../types/index.js';
+import { classifySshConnectFailure, SshConnectError } from './connect-error.js';
+import {
+  AAAA_LOOKUP_TIMEOUT_MS,
+  buildHostKeyMismatchMessage,
+  resolveAaaa,
+  resolveWithin,
+} from './connect-helpers.js';
+import { execCommand, execStreaming, openExecSession } from './exec.js';
+import { fileEntryToFileInfo, statsToFileInfo } from './file-info.js';
+import type { ExecSessionHandle, Ipv6Resolver, SFTPClientConfig } from './types.js';
 
-/**
- * Configuration for SFTP client connection
- */
-export interface SFTPClientConfig {
-  /** SSH host */
-  host: string;
-  /** SSH port (default: 22) */
-  port?: number;
-  /** SSH username */
-  username: string;
-  /** SSH private key (PEM format) */
-  privateKey: string;
-  /** SSH private key passphrase */
-  passphrase?: string;
-  /** Connection timeout in ms (default: 10000) */
-  timeout?: number;
-  /** Keep-alive interval in ms (default: 10000) */
-  keepaliveInterval?: number;
-  /**
-   * Machine name as configured, used only to make a host-key mismatch error
-   * actionable (it names the machine to pass to `rdc machine scan-keys`).
-   * Falls back to `host` when absent.
-   */
-  machineName?: string;
-  /** Known hosts entries for host-key verification (OpenSSH format) */
-  knownHosts?: string;
-}
+export {
+  buildHostKeyMismatchMessage,
+  resolveWithin,
+} from './connect-helpers.js';
+export type { ExecSessionHandle, Ipv6Resolver, SFTPClientConfig } from './types.js';
 
 /**
  * SFTP Client for direct file operations over SSH
@@ -59,30 +48,78 @@ export interface SFTPClientConfig {
  * ```
  */
 export class SFTPClient {
-  private readonly ssh: SSHClient;
+  /** Replaced once by the IPv6 retry: an ssh2 client that failed to connect is never reused. */
+  private ssh: SSHClient;
   private sftp: SFTPWrapper | null = null;
-  private connected = false;
+  private connected = false as boolean;
 
-  constructor(private readonly config: SFTPClientConfig) {
-    this.ssh = new SSHClient();
+  /** `createClient` and `resolveIpv6` let a test plant an ssh2 client and a resolver; production takes the defaults. */
+  constructor(
+    private readonly config: SFTPClientConfig,
+    private readonly createClient: () => SSHClient = () => new SSHClient(),
+    private readonly resolveIpv6: Ipv6Resolver = resolveAaaa
+  ) {
+    this.ssh = createClient();
   }
 
   /**
-   * Establish SSH connection and open SFTP subsystem
+   * Establish SSH connection and open SFTP subsystem.
+   *
+   * A connect that never completes (kind `unreachable`) is retried once over the
+   * machine's IPv6 address when it has one; every other failure is reported as is.
+   * The retry gets the same readyTimeout, so a machine that is down on both
+   * addresses fails after two timeout periods, not one.
    */
   async connect(): Promise<void> {
     if (this.connected) {
       return;
     }
+    try {
+      await this.connectTo(this.config.host);
+    } catch (error) {
+      if (!(error instanceof SshConnectError) || error.kind !== 'unreachable') throw error;
+      const ipv6 = await this.ipv6Fallback();
+      if (!ipv6) throw error;
+      try {
+        this.ssh.end();
+      } catch {
+        // Best effort: the failed client is already closed.
+      }
+      this.ssh = this.createClient();
+      try {
+        await this.connectTo(ipv6);
+      } catch (retryError) {
+        throw error.withIpv6Attempt(ipv6, retryError);
+      }
+    }
+  }
 
+  /**
+   * The IPv6 address to retry over: the configured one when it is an IPv6 literal, else the AAAA
+   * record of a hostname. A configured value that is not an IPv6 literal is never a retry target.
+   */
+  private async ipv6Fallback(): Promise<string | undefined> {
+    const { host, ipv6 } = this.config;
+    if (ipv6 && ipv6 !== host && isIP(ipv6) === 6) return ipv6;
+    if (isIP(host) !== 0) return undefined;
+    const resolved = await resolveWithin(this.resolveIpv6, host, AAAA_LOOKUP_TIMEOUT_MS);
+    return resolved && resolved !== host && isIP(resolved) === 6 ? resolved : undefined;
+  }
+
+  private connectTo(host: string): Promise<void> {
+    const ssh = this.ssh;
     return new Promise((resolve, reject) => {
+      const port = this.config.port ?? DEFAULTS.SSH.PORT;
+      const readyTimeout = this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT;
+      // ssh2 emits `connect` once the TCP socket is up; its absence is what separates an unanswered connect from a silent peer.
+      let tcpConnected = false;
       const connectConfig: ConnectConfig = {
-        host: this.config.host,
-        port: this.config.port ?? DEFAULTS.SSH.PORT,
+        host,
+        port,
         username: this.config.username,
         privateKey: this.config.privateKey,
         passphrase: this.config.passphrase,
-        readyTimeout: this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT,
+        readyTimeout,
         keepaliveInterval: this.config.keepaliveInterval ?? DEFAULTS.SSH.KEEPALIVE_INTERVAL,
       };
 
@@ -100,10 +137,19 @@ export class SFTPClient {
         };
       }
 
-      this.ssh.on('ready', () => {
-        this.ssh.sftp((err, sftp) => {
+      ssh.on('connect', () => {
+        tcpConnected = true;
+      });
+
+      ssh.on('ready', () => {
+        // A late ready from the client the IPv6 retry replaced must not overwrite the live session.
+        if (ssh !== this.ssh) {
+          ssh.end();
+          return;
+        }
+        ssh.sftp((err, sftp) => {
           if (err) {
-            this.ssh.end();
+            ssh.end();
             reject(new Error(`Failed to open SFTP subsystem: ${err.message}`));
           } else {
             this.sftp = sftp;
@@ -113,20 +159,35 @@ export class SFTPClient {
         });
       });
 
-      this.ssh.on('error', (err) => {
+      ssh.on('error', (err) => {
         if (offeredKey) {
           reject(new Error(this.hostKeyMismatchMessage(offeredKey)));
           return;
         }
-        reject(new Error(`SSH connection error: ${err.message}`));
+        const failure = err as Error & { level?: string; code?: string };
+        reject(
+          new SshConnectError({
+            kind: classifySshConnectFailure({
+              level: failure.level,
+              code: failure.code,
+              tcpConnected,
+            }),
+            host,
+            port,
+            timeoutMs: readyTimeout,
+            cause: err.message,
+          })
+        );
       });
 
-      this.ssh.on('close', () => {
+      ssh.on('close', () => {
+        // A late close from the client the IPv6 retry replaced must not tear down the live session.
+        if (ssh !== this.ssh) return;
         this.connected = false;
         this.sftp = null;
       });
 
-      this.ssh.connect(connectConfig);
+      ssh.connect(connectConfig);
     });
   }
 
@@ -161,7 +222,7 @@ export class SFTPClient {
         if (err) {
           reject(new Error(`Failed to list directory '${path}': ${err.message}`));
         } else {
-          const files = list.map((entry: FileEntry) => this.fileEntryToFileInfo(path, entry));
+          const files = list.map((entry: FileEntry) => fileEntryToFileInfo(path, entry));
           // Sort: directories first, then by name
           files.sort((a, b) => {
             if (a.isDirectory !== b.isDirectory) {
@@ -350,7 +411,7 @@ export class SFTPClient {
         if (err) {
           reject(new Error(`Failed to stat '${path}': ${err.message}`));
         } else {
-          resolve(this.statsToFileInfo(path, stats));
+          resolve(statsToFileInfo(path, stats));
         }
       });
     });
@@ -419,41 +480,7 @@ export class SFTPClient {
    * @throws Error if command fails or returns non-zero exit code
    */
   async exec(command: string): Promise<string> {
-    if (!this.connected) {
-      throw new Error('SFTP client is not connected');
-    }
-
-    return new Promise((resolve, reject) => {
-      this.ssh.exec(command, (err, channel) => {
-        if (err) {
-          reject(new Error(`Failed to execute command: ${err.message}`));
-          return;
-        }
-
-        let stdout = '';
-        let stderr = '';
-
-        channel.on('data', (data: Buffer) => {
-          stdout += data.toString();
-        });
-
-        channel.stderr.on('data', (data: Buffer) => {
-          stderr += data.toString();
-        });
-
-        channel.on('close', (code: number) => {
-          if (code === 0) {
-            resolve(stdout);
-          } else {
-            reject(new Error(`Command exited with code ${code}: ${stderr || stdout}`));
-          }
-        });
-
-        channel.on('error', (channelErr: Error) => {
-          reject(new Error(`Channel error: ${channelErr.message}`));
-        });
-      });
-    });
+    return execCommand(this.requireSsh(), command);
   }
 
   /**
@@ -472,45 +499,26 @@ export class SFTPClient {
       onStderr?: (data: Buffer) => void;
     }
   ): Promise<number> {
+    return execStreaming(this.requireSsh(), command, options);
+  }
+
+  /**
+   * Open an exec channel whose stdin stays open, for a line protocol with a long-lived remote helper (`renet backup export|import`).
+   * See `openExecSession` for the line protocol.
+   */
+  async execSession(
+    command: string,
+    options: { onStderr?: (data: Buffer) => void } = {}
+  ): Promise<ExecSessionHandle> {
+    return openExecSession(this.requireSsh(), command, options);
+  }
+
+  /** The live ssh2 client, or a throw when not connected. */
+  private requireSsh(): SSHClient {
     if (!this.connected) {
       throw new Error('SFTP client is not connected');
     }
-
-    return new Promise((resolve, reject) => {
-      this.ssh.exec(command, (err, channel) => {
-        if (err) {
-          reject(new Error(`Failed to execute command: ${err.message}`));
-          return;
-        }
-
-        if (options.stdin) {
-          channel.write(options.stdin);
-          channel.end();
-        } else {
-          channel.end();
-        }
-
-        channel.on('data', (data: Buffer) => {
-          if (options.onStdout) {
-            options.onStdout(data);
-          }
-        });
-
-        channel.stderr.on('data', (data: Buffer) => {
-          if (options.onStderr) {
-            options.onStderr(data);
-          }
-        });
-
-        channel.on('close', (code: number) => {
-          resolve(code);
-        });
-
-        channel.on('error', (channelErr: Error) => {
-          reject(new Error(`Channel error: ${channelErr.message}`));
-        });
-      });
-    });
+    return this.ssh;
   }
 
   /**
@@ -526,66 +534,6 @@ export class SFTPClient {
     this.connected = false;
   }
 
-  /**
-   * Convert ssh2 FileEntry to our FileInfo type
-   */
-  private fileEntryToFileInfo(parentPath: string, entry: FileEntry): FileInfo {
-    const fullPath = parentPath.endsWith('/')
-      ? `${parentPath}${entry.filename}`
-      : `${parentPath}/${entry.filename}`;
-
-    // Check file type from mode bits
-    // S_IFMT = 0o170000 (file type mask)
-    // S_IFDIR = 0o040000 (directory)
-    // S_IFREG = 0o100000 (regular file)
-    // S_IFLNK = 0o120000 (symbolic link)
-    const mode = entry.attrs.mode;
-    const fileTypeMask = mode & 0o170000;
-    const isDirectory = fileTypeMask === 0o040000;
-    const isFile = fileTypeMask === 0o100000;
-    const isSymlink = fileTypeMask === 0o120000;
-
-    return {
-      name: entry.filename,
-      path: fullPath,
-      isDirectory,
-      isFile,
-      isSymlink,
-      size: entry.attrs.size,
-      modifiedAt: new Date(entry.attrs.mtime * 1000),
-      permissions: this.formatPermissions(mode),
-      owner: entry.attrs.uid.toString(),
-      group: entry.attrs.gid.toString(),
-    };
-  }
-
-  /**
-   * Convert ssh2 Stats to our FileInfo type
-   */
-  private statsToFileInfo(path: string, stats: Stats): FileInfo {
-    const name = path.split('/').pop() ?? '';
-
-    return {
-      name,
-      path,
-      isDirectory: stats.isDirectory(),
-      isFile: stats.isFile(),
-      isSymlink: stats.isSymbolicLink(),
-      size: stats.size,
-      modifiedAt: new Date(stats.mtime * 1000),
-      permissions: this.formatPermissions(stats.mode),
-      owner: stats.uid.toString(),
-      group: stats.gid.toString(),
-    };
-  }
-
-  /**
-   * Format mode number to permission string (e.g., "755")
-   */
-  private formatPermissions(mode: number): string {
-    return (mode & 0o777).toString(8);
-  }
-
   /** Build the host-key mismatch message for this connection's config. */
   private hostKeyMismatchMessage(offeredKey: string): string {
     return buildHostKeyMismatchMessage({
@@ -595,50 +543,4 @@ export class SFTPClient {
       offeredKey,
     });
   }
-}
-
-/**
- * Explain a host-key mismatch in terms the operator can act on.
- *
- * Deliberately not a "tip: run scan-keys" hint. Pinning exists to make exactly
- * this failure loud, and an unconditional remedy trains the reflex of re-pinning
- * on every mismatch, which defeats the point. The remedy is stated
- * conditionally, after the causes and the fingerprints needed to tell them
- * apart.
- *
- * A stale local config is listed as a cause because it is a real and easily
- * missed one: several divergent copies of the config file will present an old
- * pin against an unchanged host, which looks identical to key rotation.
- */
-export function buildHostKeyMismatchMessage(params: {
-  machineName: string;
-  host: string;
-  knownHosts: string;
-  offeredKey: string;
-}): string {
-  const { machineName, host, knownHosts, offeredKey } = params;
-
-  const offeredType = keyBlobAlgorithm(offeredKey);
-  const pinned = parseKnownHosts(knownHosts);
-
-  // Compare like with like: a host offers one key per algorithm, so the meaningful comparison is against the pin of the same algorithm. Falling back to listing every pin keeps the message useful when the offered blob cannot be decoded.
-  const sameAlgorithm = offeredType ? pinned.filter((e) => e.type === offeredType) : [];
-  const toShow = sameAlgorithm.length ? sameAlgorithm : pinned;
-
-  const pinnedSummary = toShow.length
-    ? toShow.map((e) => `  pinned:   ${e.type} ${fingerprint(e.key)}`).join('\n')
-    : '  pinned:   (none recorded)';
-
-  return [
-    `Host key mismatch for "${machineName}" (${host})`,
-    '',
-    pinnedSummary,
-    `  offered:  ${offeredType || '(unknown algorithm)'} ${fingerprint(offeredKey)}`,
-    '',
-    'A rebuilt, reinstalled, or migrated machine will do this. So will a stale',
-    'local config, and so will a man-in-the-middle. Confirm the fingerprint out',
-    'of band before trusting it.',
-    '',
-    `If the change is expected: rdc machine scan-keys ${machineName}`,
-  ].join('\n');
 }

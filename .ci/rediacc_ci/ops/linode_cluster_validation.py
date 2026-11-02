@@ -216,7 +216,7 @@ class Validation:
             harness = work / "gen.mts"
             harness.write_text(HARNESS, encoding="utf-8")
             self._run(
-                ["npx", "tsx", str(harness), str(work / "spec.json")],
+                ["npx", "--no-install", "tsx", str(harness), str(work / "spec.json")],
                 cwd=self.root,
                 what="tf.json generation",
             )

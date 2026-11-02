@@ -14,28 +14,6 @@ export async function assertMachineExists(machineName: string): Promise<void> {
 }
 
 /**
- * Assert that a storage exists in the current config.
- * Throws a repository-hint error when the name matches a known repository,
- * otherwise rethrows the original storage-not-found error.
- */
-export async function assertStorageExists(storageName: string): Promise<void> {
-  try {
-    await configService.getStorage(storageName);
-  } catch (storageErr) {
-    const base = storageName.split(':')[0];
-    const repos = await configService.listRepositories().catch(() => []);
-    // Any tag of the family counts: the grand is not necessarily stored as `:latest`.
-    const repoBases = new Set(repos.map((r) => r.name.split(':')[0]));
-    if (repoBases.has(base)) {
-      throw new Error(
-        `"${storageName}" is a repository, not a storage. To delete a repository image use: rdc repo delete ${base}`
-      );
-    }
-    throw storageErr;
-  }
-}
-
-/**
  * Assert that a repository exists in the current config.
  * Throws `Repository "<ref>" not found. Available: …` when absent.
  */

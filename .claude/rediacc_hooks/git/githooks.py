@@ -7,7 +7,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
   pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
+  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -51,6 +51,7 @@ def _load(name: str, path: pathlib.Path):
 
 cp = _load("commit_policy", HERE.parent / "commit_policy.py")
 ga = _load("githook_artifacts", HERE / "artifacts.py")
+rr = _load("githook_release_run", HERE / "release_run.py")
 
 SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
@@ -77,6 +78,32 @@ def _repo() -> str:
 # --------------------------------------------------------------------------- commit-msg ---------------------------------------------------------------------------
 
 
+# A CLAUDE SESSION LINK OR SESSION TRAILER (operator incident 2026-10-30, PR-TASK 9f92c43e): console is PUBLIC, and 80 commits carried `Claude-Session: https://claude.ai/code/session_<id>`, four of them pushed. The pre-bash guard `block_commit_meta` refuses it in an agent's own commands; these two hooks refuse it for a commit or a push made any other way. The two patterns are
+# the guard's own (`block_commit_meta.SESSION_TRAILER` / `SESSION_LINK`), copied because this module is loaded by file and cannot import the guard package; `test-block_commit_meta.py` fails if the copies differ. `CLAUDE_FOOTER` is the attribution footer, line-anchored the way the guard anchors it, and narrowed to `[Claude` so an honest "Generated with npm" line is not refused.
+SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
+SESSION_LINK = r"claude\.(?:ai|com)/(?:code/sessions?[_-][A-Za-z0-9]|(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?(?:[_/]|-(?=[A-Za-z0-9]*[0-9]))[A-Za-z0-9])"
+CLAUDE_FOOTER = r"^[ \t]*(?:[^0-9A-Za-z\s]{0,4}[ \t]*)?Generated with \[?Claude"
+SESSION_LEAK = re.compile(
+    "%s|%s|%s" % (SESSION_TRAILER, SESSION_LINK, CLAUDE_FOOTER), re.IGNORECASE | re.MULTILINE
+)
+SESSION_ADVICE = (
+    "console is a PUBLIC repository: never put a Claude session link (claude.ai/code/session_...,\n"
+    "claude.ai/chat/..., an artifact or share link), a Claude-Session trailer or the\n"
+    "Generated-with-Claude-Code footer in a commit message. Strip that line."
+)
+SCISSORS = "# ------------------------ >8 ------------------------"
+
+
+def session_leak(msg: str) -> str:
+    """The first line of `msg` that carries a session link, a session trailer or the footer, "" when none."""
+    match = SESSION_LEAK.search(msg)
+    if not match:
+        return ""
+    start = msg.rfind("\n", 0, match.start()) + 1
+    end = msg.find("\n", match.end())
+    return msg[start : end if end >= 0 else len(msg)].strip()[:200]
+
+
 def commit_msg(argv: list[str]) -> int:
     if not argv:
         return 0
@@ -84,7 +111,12 @@ def commit_msg(argv: list[str]) -> int:
         raw = pathlib.Path(argv[0]).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return 0
+    # `git commit -v` appends the diff below the scissors line, and git drops it; a diff of THIS file would otherwise read as the message carrying what it bans.
+    raw = raw.split("\n" + SCISSORS, 1)[0] if not raw.startswith(SCISSORS) else ""
     msg = "\n".join(line for line in raw.split("\n") if not line.startswith("#"))
+    leaked = session_leak(msg)
+    if leaked:
+        return _refuse("the message carries `%s`.\n%s" % (leaked, SESSION_ADVICE))
     cfg = cp.load_config(CONSOLE_ROOT)
     found = cp.skip_tokens(msg, cfg)
     if found:
@@ -294,11 +326,103 @@ def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
     return mirror_main_refusal(repo, local_oid)
 
 
+# THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, that provably ran the console's tracked, unmodified entry, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote, remote_ref, oid)`, `remote` being the first argument git hands this hook; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set, a failed record says why on stderr at once, and a line the record does not list says so beside the refusal of that line, and only then: a tag or an ordinary branch push the rules admit anyway prints no release-run noise.
+def _release_admitted(
+    repo: str, remote: str, lines: list[list[str]]
+) -> tuple[set[int], dict[int, str]]:
+    """The `id()`s of the pushed lines a live release run admits, and for each line a valid record does not list, the note `_refuse_lines` prints if that line is refused; both empty when the variable is unset or the record fails."""
+    if not os.environ.get(rr.ENV) or not repo:
+        return set(), {}
+    try:
+        keys = rr.admitted_pushes(CONSOLE_ROOT)
+    except rr.RecordError as exc:
+        sys.stderr.write("commit-policy: the release run admits nothing (%s)\n" % exc)
+        return set(), {}
+    admitted: set[int] = set()
+    notes: dict[int, str] = {}
+    for line in lines:
+        if rr.admits(keys, repo, remote, line[2], line[1]):
+            admitted.add(id(line))
+            continue
+        notes[id(line)] = (
+            "commit-policy: the release run does not list (%s, %s, %s, %s); this line meets the ordinary rules\n"
+            % rr.admission_key(repo, remote, line[2], line[1])
+        )
+    return admitted, notes
+
+
+def _refuse_lines(notes: dict[int, str], refused: list[list[str]], message: str) -> int:
+    """`_refuse(message)`, after the release-run note of each refused line a valid record did not list."""
+    for line in refused:
+        if id(line) in notes:
+            sys.stderr.write(notes[id(line)])
+    return _refuse(message)
+
+
+def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str], str]:
+    """`(offenders, unchecked)`: each outgoing commit or annotated tag whose message carries a session link, a session trailer or the footer (`session_leak`), as `<sha12> <subject>: <line>`, and a non-empty `unchecked` when the range could not be read.
+
+    OUTGOING MEANS NO REMOTE HAS IT YET: each pushed tip's commits `--not --remotes`, so a commit some remote-tracking ref already holds (the four that reached GitHub before this hook existed) does not block every later push, while every NEW one does, whichever remote it is going to. A deleted ref sends nothing. An unreadable range is UNCHECKED and refused by the caller: an unknown is not a pass.
+    """
+    if not repo:
+        return [], "the repository cannot be read"
+    offenders: list[str] = []
+    tips: list[str] = []
+    for _local_ref, local_oid, remote_ref, _remote_oid in lines:
+        if local_oid == cp.ZERO_OID:
+            continue
+        kind = cp.git(["cat-file", "-t", local_oid], cwd=repo)
+        if kind is None:
+            return [], "`git cat-file -t %s` failed" % local_oid[:12]
+        if kind == "tag":
+            body = cp.git(["cat-file", "tag", local_oid], cwd=repo)
+            if body is None:
+                return [], "the tag object %s cannot be read" % local_oid[:12]
+            leaked = session_leak(body.split("\n\n", 1)[-1])
+            if leaked:
+                offenders.append("%s %s: %s" % (local_oid[:12], remote_ref, leaked))
+        tips.append(local_oid)
+    if not tips:
+        return offenders, ""
+    log = cp.git(["log", "--format=%H%x1f%s%x1f%B%x1e", *tips, "--not", "--remotes"], cwd=repo)
+    if log is None:
+        return [], "`git log <tips> --not --remotes` failed"
+    for record in log.split("\x1e"):
+        fields = record.strip("\n").split("\x1f", 2)
+        if len(fields) != 3:
+            continue
+        sha, subject, body = fields
+        leaked = session_leak(body)
+        if leaked:
+            offenders.append("%s %s: %s" % (sha[:12], subject[:60], leaked))
+    return offenders, ""
+
+
 def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
     remote = argv[0] if argv else "origin"
     lines = [line.split() for line in stdin.split("\n") if len(line.split()) == 4]
+    # FIRST, before every admission below (the mirror push, a release run): none of them makes a session link fit to publish.
+    leaks, unchecked = outgoing_session_leaks(repo, lines)
+    if unchecked:
+        return _refuse(
+            "UNCHECKED: the outgoing commit messages could not be read for Claude session links (%s).\n"
+            "An unknown is not a pass." % unchecked
+        )
+    if leaks:
+        return _refuse(
+            "%d outgoing commit(s) carry a Claude session link, Claude-Session trailer or\n"
+            "Claude Code footer:\n  %s%s\n%s\n"
+            "These commits are not on any remote yet: reword each one (a history rewrite of the\n"
+            "unpushed range is the operator's call) before this push can go."
+            % (
+                len(leaks),
+                "\n  ".join(leaks[:20]),
+                "\n  ... and %d more" % (len(leaks) - 20) if len(leaks) > 20 else "",
+                SESSION_ADVICE,
+            )
+        )
     if remote == MIRROR_REMOTE and any(line[2] == "refs/heads/main" for line in lines):
         reason = _mirror_push_refusal(repo, argv[1] if len(argv) > 1 else "", lines)
         if reason:
@@ -310,31 +434,127 @@ def pre_push(argv: list[str], stdin: str) -> int:
                 % (MIRROR_REMOTE, reason)
             )
         return 0
+    released, notes = _release_admitted(repo, remote, lines)
     for line in lines:
         _local_ref, local_oid, remote_ref, remote_oid = line
         if not remote_ref.startswith("refs/heads/"):
+            continue
+        if id(line) in released:
             continue
         name = remote_ref[len("refs/heads/") :]
         if name == "main":
             reason = _main_push_refusal(repo, remote, current, lines, line)
             if reason:
-                return _refuse(
+                return _refuse_lines(
+                    notes,
+                    [line],
                     "this pushes to `main` and is not the fast-forward fallback (%s).\n"
                     "Landings go through `gh pr merge <n> --rebase --auto`. The one direct push\n"
                     "(operator ruling 2026-10-02) is a fast-forward of the live branch's pushed tip\n"
                     "that is the open PR's head with CI Complete green:\n"
                     "`git push origin origin/<live MMDD-N branch>:main`, one refspec, nothing forced."
-                    % reason
+                    % reason,
                 )
             continue
         if local_oid == cp.ZERO_OID:
             continue
         if remote_oid == cp.ZERO_OID and name != current:
-            return _refuse(
+            return _refuse_lines(
+                notes,
+                [line],
                 "this creates the remote branch `%s`, and the one live branch is `%s`."
-                % (name, current or "(detached)")
+                % (name, current or "(detached)"),
             )
+    unreleased = [line for line in lines if id(line) not in released]
+    reason = backup_receipt_refusal(repo, unreleased)
+    if reason:
+        return _refuse_lines(
+            notes,
+            [line for line in unreleased if line[2].startswith("refs/heads/")],
+            "this push touches the backup paths and no VERIFIED backup receipt covers it.\n"
+            "%s\n"
+            "The pre-bash guard `block_backup_unverified_push` admits the same push with an\n"
+            "operator answer: %s='<drill-unavailable|not-runtime|deadline>: <why, %d+ chars>\n"
+            "ASKED:<YYYY-MM-DDTHH:MM>Z' on the push. This hook checks its shape only; the guard\n"
+            "proves the ASKED minute." % (reason, BACKUP_REASON_ENV, BACKUP_MIN_WHY),
+        )
     return 0
+
+
+# THE BACKUP RECEIPT AT THE GIT LAYER (box J10 of agent/plans/PLAN-backup-program.md). `block_backup_unverified_push` (box J4) refuses an agent's Bash `git push` of the backup paths without a VERIFIED backup receipt; a push from the operator's terminal or from a subprocess never reaches it, so this hook asks the same question of every pushed `refs/heads/*` commit.
+#
+# ONE DEFINITION, RUN AS A PROCESS. The trigger and the admission rule are `rediacc_ci.drills.backup_check_trigger`, and this module adds no `sys.path` entry (`test_canonical_sys_path_hop.py`), so it runs `python3 -m rediacc_ci.drills.backup_check_trigger check` with `.ci` of THIS checkout on `PYTHONPATH`, against the pushing repository. Exit 0 admits; 1 is the refusal it prints; anything else, a timeout included, is UNCHECKED and refused too, never a pass.
+#
+# WHAT IS NOT JUDGED: a submodule push (the console pointer push carries its range), a delete, a non-branch ref, and a commit some remote-tracking ref already contains (it was judged when it was first pushed; the fast-forward of `main` and the mirror copy are such pushes). The base is the remote's old tip when it is a commit here, else the merge-base with `refs/remotes/origin/main`.
+#
+# THE ESCAPE is the guard's own variable, checked for shape (a kind, a why of `BACKUP_MIN_WHY`+ characters, an `ASKED:` minute). No transcript reaches a git hook, so the minute is proven only by the guard for an agent's push; from the operator's terminal it is the operator's own word, like `COMMIT_POLICY_OK=1`.
+BACKUP_MODULE = "rediacc_ci.drills.backup_check_trigger"
+BACKUP_REASON_ENV = "BACKUP_CHECK_PUSH_REASON"
+BACKUP_KINDS = ("drill-unavailable", "not-runtime", "deadline")
+BACKUP_MIN_WHY = 40
+BACKUP_TIMEOUT = 120
+_BACKUP_REASON_RE = re.compile(r"^\s*([A-Za-z-]+)\s*:\s*(.*?)\s*$", re.DOTALL)
+_BACKUP_ASKED_RE = re.compile(r"\bASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
+
+
+def backup_escape_shaped(reason: str) -> bool:
+    """True when `reason` has the shape the guard's escape needs: a known kind, a why of `BACKUP_MIN_WHY`+ characters once the `ASKED:` token is removed, and the token itself."""
+    m = _BACKUP_REASON_RE.match(reason or "")
+    if not m or m.group(1).lower() not in BACKUP_KINDS:
+        return False
+    why = re.sub(r"\s*\bASKED:\S*", "", m.group(2)).strip()
+    return len(why) >= BACKUP_MIN_WHY and bool(_BACKUP_ASKED_RE.search(reason))
+
+
+def _published(repo: str, oid: str) -> bool:
+    return bool(
+        cp.git(
+            ["for-each-ref", "--contains", oid, "--format=%(refname)", "refs/remotes/"], cwd=repo
+        )
+    )
+
+
+def backup_receipt_refusal(repo: str, lines: list[list[str]]) -> str:
+    """ "" when no pushed branch commit needs the backup receipt or a receipt admits each, else the refusal text."""
+    if not repo or cp.superproject(repo):
+        return ""
+    if backup_escape_shaped(os.environ.get(BACKUP_REASON_ENV, "")):
+        return ""
+    env = dict(os.environ, PYTHONPATH=str(CONSOLE_ROOT / ".ci"))
+    for _local_ref, local_oid, remote_ref, remote_oid in lines:
+        if not remote_ref.startswith("refs/heads/") or local_oid == cp.ZERO_OID:
+            continue
+        if _published(repo, local_oid):
+            continue
+        argv = [sys.executable, "-m", BACKUP_MODULE, "check", "--root", repo, "--tip", local_oid]
+        if (
+            remote_oid != cp.ZERO_OID
+            and cp.git(["cat-file", "-e", "%s^{commit}" % remote_oid], cwd=repo) is not None
+        ):
+            argv += ["--base", remote_oid]
+        try:
+            proc = subprocess.run(
+                argv,
+                cwd=repo,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=BACKUP_TIMEOUT,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return "UNCHECKED: the backup check of %s did not run (%s)" % (local_oid[:12], exc)
+        if proc.returncode == 0:
+            continue
+        said = (proc.stderr.strip() or proc.stdout.strip())[-2000:]
+        if proc.returncode != 1:
+            return "UNCHECKED: the backup check of %s exited %d: %s" % (
+                local_oid[:12],
+                proc.returncode,
+                said or "(no output)",
+            )
+        return said
+    return ""
 
 
 # --------------------------------------------------------------------------- pre-commit ---------------------------------------------------------------------------

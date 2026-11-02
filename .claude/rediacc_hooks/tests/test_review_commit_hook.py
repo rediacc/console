@@ -371,6 +371,8 @@ def test_the_same_sha_triggered_twice_starts_one_reviewer(world):
     _rc, out2, _e, _t = world.hook("git commit -m x -- f.py")
     assert "started for console %s" % sha[:8] in _context(out1)
     assert "started for" not in _context(out2), "a second trigger for a live sha spawned again"
+    # #52978244: a commit that starts no review says so in the same result, naming the repository HEAD.
+    assert "none due for console, HEAD %s" % sha[:7] in _context(out2)
     assert world.wait_for(world.review_file(sha))
     assert world.calls.read_text().count("call") == 1
 
@@ -520,6 +522,29 @@ def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
     assert rc == 0, err
     assert "started for sub %s" % sha[:8] in _context(out)
     assert world.wait_for(world.review_file(sha))
+
+
+def test_a_commit_behind_a_cd_that_returns_still_starts_its_review(world):
+    """Pins that a commit behind `cd sub && git commit ... && cd ..` starts its submodule review. Written for #52978244 as a suspected cause; it passes on the current hook, and so does commit_repos on the exact command that missed, so this guards the behaviour and does not reproduce that miss."""
+    sub = _submodule(world)
+    sha = world.commit("f.py", repo=sub)
+    rc, out, err, _t = world.hook("cd sub && git commit -m x -- f.py && cd ..")
+    assert rc == 0, err
+    assert "started for sub %s" % sha[:8] in _context(out)
+    assert world.wait_for(world.review_file(sha))
+
+
+def test_a_cd_into_a_non_submodule_still_starts_nothing(world):
+    """CONTROL: a commit behind a cd into a repository that `.gitmodules` does not register (a plain nested repo, here `growth`, standing in for the real tree's private/growth) starts no review; membership is `.gitmodules`, not location."""
+    _submodule(world, "registered")
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    sha = world.commit("f.py", repo=other)
+    rc, out, err, _t = world.hook("cd growth && git commit -m x -- f.py && cd ..")
+    assert rc == 0, err
+    assert "growth" not in _context(out)
+    assert not world.review_file(sha).exists()
 
 
 def test_a_commit_in_a_nested_repo_that_is_not_a_submodule_starts_nothing(world):
@@ -1589,3 +1614,82 @@ def test_drop_foreign_reviews_reports_a_partial_delete_and_rewrites_the_ledger_f
     assert "%s.md" % shas[1] in text, text
     assert not world.review_file(shas[0]).exists()
     assert world.review_file(shas[1]).exists()
+
+
+def test_mark_fixed_admits_a_test_file_for_a_missing_test_finding(world):
+    """2026-10-23: a "no test for this bump" finding anchored at one file was refused ("does not touch") for the fix that necessarily adds a test elsewhere. A test path among the fix's files, or an explicit `--test <path>` the fix touches, now closes it; an unrelated sha is still refused."""
+    world.answer(
+        [{"severity": "high", "file": "f.py", "line": 2, "claim": "no test covers this bump"}]
+    )
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    test_fix = world.commit("tests/test_f.py", body="def test_f():\n    assert True\n")
+    # --test names a path the fix did not touch: refused, and an unrelated sha with a named test too.
+    with pytest.raises(ValueError, match="does not touch the named test"):
+        R.mark(
+            world.repo, BRANCH, fid, "fixed", [unrelated, "--test", "tests/test_f.py"], "deadbeef"
+        )
+    with pytest.raises(ValueError, match="not a test path"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated, "--test", "other.py"], "deadbeef")
+    R.mark(world.repo, BRANCH, fid, "fixed", [test_fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)
+
+
+def test_mark_fixed_test_flag_admits_a_test_for_any_claim(world):
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    test_fix = world.commit("tests/test_f.py", body="def test_f():\n    assert True\n")
+    # The default claim ("returns None") is not about tests: the bare sha is refused, `--test` admits it.
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [test_fix], "deadbeef")
+    R.mark(world.repo, BRANCH, fid, "fixed", [test_fix, "--test", "tests/test_f.py"], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % test_fix)
+
+
+def test_a_standalone_selftest_is_a_test_path():
+    assert R.is_test_path("scripts/lib/entry-point-selftest.ts")
+    assert R.is_test_path("scripts/lib/pins/drivers/toolchain-selftest.ts")
+    assert R.related_test("scripts/lib/entry-point-selftest.ts", "scripts/lib/entry-point.ts")
+    assert not R.is_test_path("scripts/lib/selftest-runner.ts")
+    assert not R.is_test_path("scripts/lib/entry-point.ts")
+
+
+def test_related_test_matches_the_stem_as_a_whole_token():
+    assert R.related_test("tests/test_wl_roster.py", "hooks/wl_roster.py")
+    assert R.related_test("tests/test_wl_roster_plans.py", "hooks/wl_roster.py")
+    assert R.related_test("tests/test_io.py", "pkg/io.py")
+    assert not R.related_test("tests/test_radio.py", "pkg/io.py")
+
+
+def test_mark_fixed_refuses_an_unrelated_test_file(world):
+    """79cf9eed.1/.2: a test of some OTHER module closes nothing, neither through `--test` nor through a claim that mentions a test; a claim that a test is missing is admitted only by a test whose name carries the anchored file's stem."""
+    world.answer(
+        [{"severity": "high", "file": "f.py", "line": 2, "claim": "no test covers this bump"}]
+    )
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    other = world.commit("tests/test_other.py", body="def test_o():\n    assert True\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [other], "deadbeef")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(
+            world.repo, BRANCH, fid, "fixed", [other, "--test", "tests/test_other.py"], "deadbeef"
+        )
+
+
+def test_a_claim_that_merely_mentions_a_test_is_not_a_missing_test_claim():
+    assert R.TEST_CLAIM_RE.search("no test covers this bump")
+    assert R.TEST_CLAIM_RE.search("the new path is untested")
+    assert R.TEST_CLAIM_RE.search("lacks coverage for the empty list")
+    assert not R.TEST_CLAIM_RE.search(
+        "the guard returns the wrong value when the test fixture is stale"
+    )
+    assert not R.TEST_CLAIM_RE.search("calls load() twice, which the existing test hides")

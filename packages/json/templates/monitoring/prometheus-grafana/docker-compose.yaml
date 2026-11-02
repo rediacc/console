@@ -45,24 +45,3 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: ${CONTAINER_NAME}-node-exporter
-    restart: always
-    command:
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --path.rootfs=/host
-      - --web.listen-address=${SERVICE_IP:-0.0.0.0}:9100
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/host:ro
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet http://$${SERVICE_IP:-localhost}:9100/"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 15s

@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "Cloudflare rate-limiting rules for the account Workers, applied by",
+    "`PYTHONPATH=.ci python3 -m rediacc_ci.ops.apply_cf_waf_rules [--dry-run]`.",
+    "Each rule is keyed by its `ref`, so a re-run updates the rule in place and never",
+    "duplicates it. The hostnames are not listed here: the applier derives them from",
+    "the `routes` of workers/account/wrangler.*.toml, so a new region is covered the",
+    "moment its Worker config exists.",
+    "free-license-rate is agent/plans/PLAN-free-license.md R10 and F8: the D1 counter",
+    "(8 new FREE licences per IP key per 72 h) is the real bound, and this rule stops a",
+    "flood before it reaches D1.",
+    "A zone is named by its zoneId; its display name is the apex domain (WK_APEX_DOMAIN) unless a `name` is given."
+  ],
+  "zones": [
+    {
+      "zoneId": "9e802649c143c9cefd811d8fd671d31c"
+    }
+  ],
+  "rules": [
+    {
+      "ref": "free-license-rate",
+      "description": "Free License issuance: 20 requests per 10 minutes per IP, blocked for 1 hour",
+      "method": "POST",
+      "path": "/account/api/v1/licenses/free",
+      "requestsPerPeriod": 20,
+      "periodSeconds": 600,
+      "mitigationTimeoutSeconds": 3600,
+      "action": "block"
+    }
+  ]
+}

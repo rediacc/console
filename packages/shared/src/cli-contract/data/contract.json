@@ -173,6 +173,167 @@
     {
       "path": [
         "backup",
+        "download"
+      ],
+      "pathKey": "backup download",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.download.description",
+      "label": "Copy repository images from a machine to a local directory or an external drive. Each run takes a fresh snapshot held only while the session lives, updates the local copy in place by rsync delta, resumes after an interruption, and verifies the result by sha256.",
+      "options": [
+        {
+          "flags": "--to <dir>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.backup.download.optionTo",
+          "label": "Existing, writable directory that receives <machine>/<name>.<tag>.img (never created)"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionAll",
+          "label": "Copy every grand repository placed on the machine named by -m"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--include-forks",
+          "long": "include-forks",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionIncludeForks",
+          "label": "With --all, also copy forks"
+        },
+        {
+          "flags": "--bwlimit <rate>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionBwlimit",
+          "label": "Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)"
+        },
+        {
+          "flags": "--checkpoint",
+          "long": "checkpoint",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionCheckpoint",
+          "label": "Checkpoint and freeze the repository before the snapshot (hot backup)"
+        },
+        {
+          "flags": "--retries <n>",
+          "long": "retries",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionRetries",
+          "label": "In-run retries after a network failure (default: 3)"
+        },
+        {
+          "flags": "--skip-verify",
+          "long": "skip-verify",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionSkipVerify",
+          "label": "Skip the sha256 comparison after rsync; rsync's own checksum still runs"
+        },
+        {
+          "flags": "--skip-space-check",
+          "long": "skip-space-check",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionSkipSpaceCheck",
+          "label": "Warn instead of refusing when the target may not have enough free space"
+        },
+        {
+          "flags": "--store",
+          "long": "store",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionStore",
+          "label": "Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN"
+        },
+        {
+          "flags": "--at <time|snapshot>",
+          "long": "at",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionAt",
+          "label": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "refs",
+          "kind": "plain",
+          "required": false,
+          "variadic": true,
+          "descriptionKey": "commands.backup.download.argRefs",
+          "label": "Repositories to copy (name, name:tag, optionally @machine)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Copies the repository image to a local directory with a client-side rsync; a remote executor would write the image onto its own disk. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
         "list"
       ],
       "pathKey": "backup list",
@@ -318,6 +479,123 @@
     {
       "path": [
         "backup",
+        "purge"
+      ],
+      "pathKey": "backup purge",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.purge.description",
+      "label": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.dryRun",
+          "label": "Show what would be done without making changes"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "reconcile"
+      ],
+      "pathKey": "backup reconcile",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.reconcile.description",
+      "label": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.reconcile.optionDryRun",
+          "label": "Report the figures without changing the ledger"
+        },
+        {
+          "flags": "--check",
+          "long": "check",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.reconcile.optionCheck",
+          "label": "Dry run that exits 1 when the ledger differs from the store"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.backup.reconcile.argRepoRef",
+          "label": "Repository to reconcile (default: every repository in the token's scope)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "restore"
       ],
       "pathKey": "backup restore",
@@ -377,6 +655,51 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.restore.optionAt",
           "label": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
+        },
+        {
+          "flags": "--any-stream",
+          "long": "any-stream",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionAnyStream",
+          "label": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
+        },
+        {
+          "flags": "--no-seed",
+          "long": "no-seed",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionNoSeed",
+          "label": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)"
+        },
+        {
+          "flags": "--path <file-or-dir>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionPath",
+          "label": "Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)"
+        },
+        {
+          "flags": "--to <dir>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionTo",
+          "label": "Directory to place the restored path under (default: the machine's restores folder for the snapshot)"
         },
         {
           "flags": "--up",
@@ -535,8 +858,20 @@
       "group": "INFRASTRUCTURE",
       "plane": "other",
       "descriptionKey": "commands.backup.retention.clear.description",
-      "label": "Remove the policy, so every snapshot of this repository is kept.",
-      "options": [],
+      "label": "Remove the declared policy, so the plan or server default applies again.",
+      "options": [
+        {
+          "flags": "--stream <id>",
+          "long": "stream",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionStream",
+          "label": "Apply to this backup stream only (a stream id); without it, the repository-wide default"
+        }
+      ],
       "positionals": [
         {
           "name": "repo-ref",
@@ -549,6 +884,43 @@
       ],
       "hasSubcommands": false,
       "mcpExcludeReason": "Removes the policy entirely; the blast radius of getting it wrong is the operator keeping or losing every snapshot of a repository.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "retention",
+        "preview"
+      ],
+      "pathKey": "backup retention preview",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.retention.preview.description",
+      "label": "Show which snapshots the next sweep would delete and the space it would free.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -636,6 +1008,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.retention.optionKeepYearly",
           "label": "Keep the newest snapshot from each of this many years"
+        },
+        {
+          "flags": "--stream <id>",
+          "long": "stream",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionStream",
+          "label": "Apply to this backup stream only (a stream id); without it, the repository-wide default"
         }
       ],
       "positionals": [
@@ -867,6 +1250,62 @@
           "label": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run"
         },
         {
+          "flags": "--bwlimit <rate>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionBwlimit",
+          "label": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+        },
+        {
+          "flags": "--parallelism <n>",
+          "long": "parallelism",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionParallelism",
+          "label": "Number of chunks uploaded at once (default 4)"
+        },
+        {
+          "flags": "--read-bwlimit <rate>",
+          "long": "read-bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionReadBwlimit",
+          "label": "Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited"
+        },
+        {
+          "flags": "--hash-parallelism <n>",
+          "long": "hash-parallelism",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionHashParallelism",
+          "label": "Cells hashed at once (default 1; 0 = one per CPU, up to 16)"
+        },
+        {
+          "flags": "--cpu-limit <percent>",
+          "long": "cpu-limit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionCpuLimit",
+          "label": "CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -896,6 +1335,48 @@
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "snapshots",
+        "delete"
+      ],
+      "pathKey": "backup snapshots delete",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.snapshots.delete.description",
+      "label": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "name": "snapshot-id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.backup.snapshots.snapshotIdArgument",
+          "label": "Snapshot id (see rdc backup manifests)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -1064,6 +1545,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.remove.optionDestination",
           "label": "Remove only this destination (keeps other destinations)"
+        },
+        {
+          "flags": "--unbind",
+          "long": "unbind",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.remove.optionUnbind",
+          "label": "Also drop the strategy from every machine that binds it"
         }
       ],
       "positionals": [
@@ -1109,21 +1601,7 @@
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionDestination",
-          "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given"
-        },
-        {
-          "flags": "--storage <name>",
-          "long": "storage",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "kinds": [
-            "storage"
-          ],
-          "tier": "common",
-          "descriptionKey": "commands.backup.strategy.set.optionStorage",
-          "label": "Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled"
+          "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination"
         },
         {
           "flags": "--cron <expression>",
@@ -1162,7 +1640,29 @@
           "format": "bandwidth",
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionBwlimit",
-          "label": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")"
+          "label": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")"
+        },
+        {
+          "flags": "--read-bwlimit <limit>",
+          "long": "read-bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionReadBwlimit",
+          "label": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it"
+        },
+        {
+          "flags": "--cpu-limit <percent>",
+          "long": "cpu-limit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionCpuLimit",
+          "label": "CPU ceiling for this strategy's snapshots: percent of all cores, 1-100 (default 50); none clears it"
         },
         {
           "flags": "--include <repos>",
@@ -1187,16 +1687,15 @@
           "label": "Exclude these repos from backup (comma-separated names)"
         },
         {
-          "flags": "--folder <path>",
-          "long": "folder",
+          "flags": "--retention <spec>",
+          "long": "retention",
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "format": "path",
           "tier": "advanced",
-          "descriptionKey": "commands.backup.strategy.set.optionFolder",
-          "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage"
+          "descriptionKey": "commands.backup.strategy.set.optionRetention",
+          "label": "Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 (\"none\" removes it)"
         },
         {
           "flags": "--enable",
@@ -1234,14 +1733,14 @@
       "hasSubcommands": false,
       "examples": [
         {
-          "command": "rdc backup strategy set nightly --storage backups-s3 --mode hot",
+          "command": "rdc backup strategy set nightly --cron \"0 3 * * *\" --mode hot",
           "values": {
             "strategy": "nightly",
-            "storage": "backups-s3",
+            "cron": "0 3 * * *",
             "mode": "hot"
           },
           "descriptionKey": "commands.backup.strategy.set.examples.configure",
-          "label": "Configure a backup strategy's storage and mode."
+          "label": "Configure a backup strategy's schedule and mode."
         },
         {
           "command": "rdc backup strategy set nightly --disable",
@@ -1359,6 +1858,147 @@
     {
       "path": [
         "backup",
+        "upload"
+      ],
+      "pathKey": "backup upload",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.upload.description",
+      "label": "Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.",
+      "options": [
+        {
+          "flags": "--to <machine>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.backup.upload.optionTo",
+          "label": "Machine that receives the image"
+        },
+        {
+          "flags": "--as <name>",
+          "long": "as",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionAs",
+          "label": "Name for the new repository (default: the image's repository name)"
+        },
+        {
+          "flags": "--datastore <name>",
+          "long": "datastore",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "datastore"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.backup.upload.optionDatastore",
+          "label": "Place the image on this named datastore instead of the machine's default"
+        },
+        {
+          "flags": "--from-repo <name>",
+          "long": "from-repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionFromRepo",
+          "label": "Config repository that supplies the credential and lineage when the state file is lost or names an unknown repository"
+        },
+        {
+          "flags": "--bwlimit <rate>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionBwlimit",
+          "label": "Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)"
+        },
+        {
+          "flags": "--retries <n>",
+          "long": "retries",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionRetries",
+          "label": "In-run retries after a network failure (default: 3)"
+        },
+        {
+          "flags": "--up",
+          "long": "up",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionUp",
+          "label": "Start the repository once it is registered"
+        },
+        {
+          "flags": "--skip-verify",
+          "long": "skip-verify",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.upload.optionSkipVerify",
+          "label": "Skip comparing the local image with the sha256 recorded when it was downloaded"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "image-file",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.backup.upload.argImage",
+          "label": "Local image file (<name>.<tag>.img) with its .state.json beside it"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
         "usage"
       ],
       "pathKey": "backup usage",
@@ -1405,6 +2045,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.verify.optionDeep",
           "label": "Re-hash every recorded cell (full verification) instead of a sampled check"
+        },
+        {
+          "flags": "--store",
+          "long": "store",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.verify.optionStore",
+          "label": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one"
         },
         {
           "flags": "--debug",
@@ -1754,7 +2405,8 @@
       "mcpExcludeReason": "Destroys cloud/VM infrastructure, not an agent operation",
       "interactive": false,
       "proxyCapable": true,
-      "detachable": true,
+      "detachable": false,
+      "detachBlockedReason": "Tears the cluster down with local OpenTofu or ops calls and never reaches a machine over SSH, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -2382,6 +3034,228 @@
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "add"
+      ],
+      "pathKey": "config access add",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.add.description",
+      "label": "Add an access key, or update an existing one in place while keeping its machine bindings. Ranges given here apply to the key on every machine unless a binding sets its own; without ranges the config-wide ranges apply",
+      "options": [
+        {
+          "flags": "--public-key <key>",
+          "long": "public-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.config.access.add.optionPublicKey",
+          "label": "OpenSSH public key line, or a path to a file holding it"
+        },
+        {
+          "flags": "--hosted-executor",
+          "long": "hosted-executor",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionHostedExecutor",
+          "label": "Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)"
+        },
+        {
+          "flags": "--ipv4 <cidrs>",
+          "long": "ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv4",
+          "label": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)"
+        },
+        {
+          "flags": "--ipv6 <cidrs>",
+          "long": "ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv6",
+          "label": "IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)"
+        },
+        {
+          "flags": "--no-restrict",
+          "long": "no-restrict",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.add.optionNoRestrict",
+          "label": "Write from= alone, without the no-forwarding, no-pty and no-user-rc restrictions"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "key",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.access.argKey",
+          "label": "Access key name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Declares an SSH access key and its source ranges, which decides who may log in once bound and pushed. Access changes are an operator decision.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "list"
+      ],
+      "pathKey": "config access list",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.list.description",
+      "label": "List the config's access keys",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "ranges"
+      ],
+      "pathKey": "config access ranges",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.ranges.description",
+      "label": "Set the source ranges every access key uses unless the key or its machine binding sets its own. Without options, show them",
+      "options": [
+        {
+          "flags": "--hosted-executor",
+          "long": "hosted-executor",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionHostedExecutor",
+          "label": "Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)"
+        },
+        {
+          "flags": "--ipv4 <cidrs>",
+          "long": "ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv4",
+          "label": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)"
+        },
+        {
+          "flags": "--ipv6 <cidrs>",
+          "long": "ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv6",
+          "label": "IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)"
+        },
+        {
+          "flags": "--clear",
+          "long": "clear",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.ranges.optionClear",
+          "label": "Remove the config-wide ranges"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "access",
+        "remove"
+      ],
+      "pathKey": "config access remove",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.access.remove.description",
+      "label": "Remove an access key from the config",
+      "options": [],
+      "positionals": [
+        {
+          "name": "key",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.access.argKey",
+          "label": "Access key name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Removes an SSH access key from the config, which changes who may log in once pushed. Access changes are an operator decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -3366,15 +4240,27 @@
       "label": "Link this config to remote encrypted storage",
       "options": [
         {
-          "flags": "--password",
-          "long": "password",
+          "flags": "--master-password",
+          "long": "master-password",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionPassword",
+          "sensitive": true,
+          "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
           "label": "Enroll headlessly with a pre-provisioned password slot (no browser)"
+        },
+        {
+          "flags": "--master-password-stdin",
+          "long": "master-password-stdin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
+          "label": "Like --master-password, reading the master password from stdin"
         },
         {
           "flags": "--api-url <url>",
@@ -3398,6 +4284,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.config.remote.enable.optionForce",
           "label": "Replace differing local content with the server copy without confirmation"
+        },
+        {
+          "flags": "--config-id <id>",
+          "long": "config-id",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.enable.optionConfigId",
+          "label": "Attach to this existing config of the store instead of creating a new entry"
         }
       ],
       "positionals": [],
@@ -3405,6 +4302,43 @@
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "remote",
+        "master-password",
+        "change"
+      ],
+      "pathKey": "config remote master-password change",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.config.remote.masterPassword.change.description",
+      "label": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
+      "options": [
+        {
+          "flags": "--new-master-password-stdin",
+          "long": "new-master-password-stdin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
+          "label": "Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3517,7 +4451,19 @@
       "plane": "other",
       "descriptionKey": "commands.config.remote.versions.description",
       "label": "List the earlier versions of this config kept on the server",
-      "options": [],
+      "options": [
+        {
+          "flags": "--explain",
+          "long": "explain",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.versions.optionExplain",
+          "label": "Show the JSON pointers each version changed, from the versions the server kept"
+        }
+      ],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
@@ -3751,7 +4697,7 @@
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.credits.description",
-      "label": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync, rclone), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
+      "label": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
       "options": [
         {
           "flags": "--licenses",
@@ -4389,7 +5335,8 @@
       "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
-      "detachable": true,
+      "detachable": false,
+      "detachBlockedReason": "Reads the local config and state only and makes no machine call, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -4651,14 +5598,14 @@
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
         },
         {
           "flags": "-y, --yes",
@@ -4797,14 +5744,14 @@
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.list.machineOption",
+          "label": "Target machine name (omit to list this config's pending job tickets)"
         }
       ],
       "positionals": [],
@@ -4866,14 +5813,14 @@
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
         },
         {
           "flags": "-f, --follow",
@@ -4978,14 +5925,14 @@
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "kinds": [
             "machine"
           ],
           "tier": "common",
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
         }
       ],
       "positionals": [
@@ -5026,6 +5973,293 @@
       "machineOption": "machine",
       "repoOption": null,
       "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "job",
+        "wait"
+      ],
+      "pathKey": "job wait",
+      "domain": "job",
+      "group": "EXECUTION",
+      "plane": "machine",
+      "descriptionKey": "commands.job.wait.description",
+      "label": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.job.ticketMachineOption",
+          "label": "Target machine name (optional when this config holds a ticket for the job)"
+        },
+        {
+          "flags": "--timeout <duration>",
+          "long": "timeout",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
+          "descriptionKey": "commands.job.wait.timeoutOption",
+          "label": "Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running."
+        }
+      ],
+      "positionals": [
+        {
+          "name": "job-id",
+          "kind": "job-id",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.job.idOption",
+          "label": "Job ID"
+        }
+      ],
+      "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc job wait 12345",
+          "values": {
+            "job-id": "12345"
+          },
+          "descriptionKey": "commands.job.wait.examples.basic",
+          "label": "Wait for a job to finish and exit with its exit code."
+        }
+      ],
+      "keywords": [
+        "follow",
+        "resume",
+        "block",
+        "attach"
+      ],
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "push"
+      ],
+      "pathKey": "machine access push",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.access.push.description",
+      "label": "Write the access keys bound to a machine into its authorized_keys, adopting an existing line with the same key, and remove this config's lines for keys no longer bound. Refuses a change that would lock rdc's own session out, and writes nothing when the file changed during the push",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.access.push.optionDryRun",
+          "label": "Show the changes without writing"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "remove"
+      ],
+      "pathKey": "machine access remove",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "config",
+      "descriptionKey": "commands.machine.access.remove.description",
+      "label": "Unbind an access key from a machine. The next 'machine access push' removes its line",
+      "options": [
+        {
+          "flags": "--key <key>",
+          "long": "key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.machine.access.optionKey",
+          "label": "Access key name (see 'config access list')"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "set"
+      ],
+      "pathKey": "machine access set",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "config",
+      "descriptionKey": "commands.machine.access.set.description",
+      "label": "Bind an access key to a machine. Ranges given here replace the key's ranges on this machine only. Apply with 'machine access push'",
+      "options": [
+        {
+          "flags": "--key <key>",
+          "long": "key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.machine.access.optionKey",
+          "label": "Access key name (see 'config access list')"
+        },
+        {
+          "flags": "--ipv4 <cidrs>",
+          "long": "ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv4",
+          "label": "IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)"
+        },
+        {
+          "flags": "--ipv6 <cidrs>",
+          "long": "ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.access.optionIpv6",
+          "label": "IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)"
+        },
+        {
+          "flags": "--clear-ranges",
+          "long": "clear-ranges",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.access.set.optionClearRanges",
+          "label": "Drop this machine's own ranges, so the key's or the config's ranges apply"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Binds an SSH key to a machine, which decides who `machine access push` lets in. Access changes are an operator decision.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "access",
+        "show"
+      ],
+      "pathKey": "machine access show",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "config",
+      "descriptionKey": "commands.machine.access.show.description",
+      "label": "Show the access keys bound to a machine and the ranges each resolves to there",
+      "options": [],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
       "repoPositional": null
     },
     {
@@ -5131,6 +6365,113 @@
     {
       "path": [
         "machine",
+        "converge"
+      ],
+      "pathKey": "machine converge",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.converge.description",
+      "label": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change.",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.dryRunOption",
+          "label": "Print the plan without restarting anything"
+        },
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.jsonOption",
+          "label": "Print the converge report as JSON"
+        },
+        {
+          "flags": "--include-unknown",
+          "long": "include-unknown",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.includeUnknownOption",
+          "label": "Also restart stale repositories missing from the local config (their env secrets are unknown)"
+        },
+        {
+          "flags": "--policy <policy>",
+          "long": "policy",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "epoch",
+          "choices": [
+            "epoch",
+            "always"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.machine.converge.policyOption",
+          "label": "Restart policy: epoch (layout changes only) or always (also any renet binary change)"
+        },
+        {
+          "flags": "--continue-on-error",
+          "long": "continue-on-error",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.converge.continueOnErrorOption",
+          "label": "Keep going after a repository fails instead of stopping the pass"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
         "deprovision"
       ],
       "pathKey": "machine deprovision",
@@ -5178,6 +6519,55 @@
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "detachBlockedReason": "Destroys the machine with local OpenTofu and has no SSH leg, so there is no machine job to detach. Run it without --background.",
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "gpu",
+        "list"
+      ],
+      "pathKey": "machine gpu list",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.gpu.list.description",
+      "label": "List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'.",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -5358,7 +6748,8 @@
       "mcpExcludeReason": "Moves TLS key material onto the machine. Key material is not agent surface.",
       "interactive": false,
       "proxyCapable": true,
-      "detachable": true,
+      "detachable": false,
+      "detachBlockedReason": "Writes the local certificate cache to the machine in one raw file write, with no renet call to run as a job. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "machine",
@@ -5728,16 +7119,15 @@
           "label": "Custom OpenTofu provider source (e.g., vultr/vultr)"
         },
         {
-          "flags": "--token <token>",
-          "long": "token",
+          "flags": "--token-env <var>",
+          "long": "token-env",
           "valueTaking": true,
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
           "tier": "common",
-          "sensitive": true,
-          "descriptionKey": "commands.machine.provider.add.optionToken",
-          "label": "API token for the cloud provider"
+          "descriptionKey": "commands.machine.provider.add.optionTokenEnv",
+          "label": "Name of the environment variable holding the provider API token; the token itself never goes on the command line"
         },
         {
           "flags": "--region <region>",
@@ -6301,7 +7691,7 @@
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.machine.remove.forceOption",
-          "label": "Remove the machine even if repositories are still placed on it, leaving those placements dangling."
+          "label": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling."
         }
       ],
       "positionals": [
@@ -6329,6 +7719,64 @@
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
       "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "restart-services"
+      ],
+      "pathKey": "machine restart-services",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.restartServices.description",
+      "label": "Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers.",
+      "options": [
+        {
+          "flags": "--include-docker",
+          "long": "include-docker",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.restartServices.includeDockerOption",
+          "label": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)"
+        },
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.restartServices.jsonOption",
+          "label": "Print the report as JSON"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "name",
@@ -6404,6 +7852,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.machine.setup.datastoreSizeOption",
           "label": "Datastore size (e.g., 95%, 100G)"
+        },
+        {
+          "flags": "--no-converge",
+          "long": "no-converge",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.setup.noConvergeOption",
+          "label": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)"
         },
         {
           "flags": "--debug",
@@ -8420,6 +9879,17 @@
           "label": "Move config entry to deletedRepositories for later recovery"
         },
         {
+          "flags": "--purge-backups",
+          "long": "purge-backups",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.delete.purgeBackupsOption",
+          "label": "Also delete the repository's cloud backups now, instead of letting them expire"
+        },
+        {
           "flags": "-y, --yes",
           "long": "yes",
           "short": "y",
@@ -9228,6 +10698,127 @@
     {
       "path": [
         "repo",
+        "gpu",
+        "grant"
+      ],
+      "pathKey": "repo gpu grant",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.gpu.grant.description",
+      "label": "Allow the repository's containers to request a CDI device. Device names come from 'rdc machine gpu list'.",
+      "options": [
+        {
+          "flags": "--device <cdi-name>",
+          "long": "device",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.repo.gpu.deviceOption",
+          "label": "Fully qualified CDI device name (e.g. nvidia.com/gpu=all)"
+        },
+        {
+          "flags": "--exclusive",
+          "long": "exclusive",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.gpu.grant.exclusiveOption",
+          "label": "Reserve the device for this repository: no other repository can be granted it meanwhile"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "gpu",
+        "revoke"
+      ],
+      "pathKey": "repo gpu revoke",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.gpu.revoke.description",
+      "label": "Withdraw a CDI device from the repository's containers. Containers that already hold it keep it until they restart.",
+      "options": [
+        {
+          "flags": "--device <cdi-name>",
+          "long": "device",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.repo.gpu.deviceOption",
+          "label": "Fully qualified CDI device name (e.g. nvidia.com/gpu=all)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "list"
       ],
       "pathKey": "repo list",
@@ -9663,8 +11254,8 @@
           "defaultValue": null,
           "format": "bandwidth",
           "tier": "advanced",
-          "descriptionKey": "commands.repo.migrate.optionBwlimit",
-          "label": "Bandwidth limit for rsync transfer (e.g., 10M)"
+          "descriptionKey": "commands.repo.push.optionBwlimit",
+          "label": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
         },
         {
           "flags": "--checkpoint",
@@ -10082,6 +11673,122 @@
     {
       "path": [
         "repo",
+        "prune"
+      ],
+      "pathKey": "repo prune",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.prune.description",
+      "label": "Classify a repository's Docker storage and reclaim it: unused images, build cache, stopped containers, and overlay2 directories no image or container references. A dry run unless --apply. --apply reclaims through the Docker API with the repository online; --apply --offline also stops the repository's Docker daemon for the run and quarantines the orphan directories. Without a ref, surveys every mounted repository on -m (dry run only)",
+      "options": [
+        {
+          "flags": "--apply",
+          "long": "apply",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.applyOption",
+          "label": "Reclaim; without it the run only reports"
+        },
+        {
+          "flags": "--offline",
+          "long": "offline",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.offlineOption",
+          "label": "Stop the repository's Docker daemon and quarantine orphan directories (requires --apply)"
+        },
+        {
+          "flags": "--all-images",
+          "long": "all-images",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.allImagesOption",
+          "label": "Also remove tagged images no container uses"
+        },
+        {
+          "flags": "--no-trim",
+          "long": "no-trim",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.prune.noTrimOption",
+          "label": "Skip the fstrim after an apply"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.repo.machineOption",
+          "label": "Target machine name"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "pull"
       ],
       "pathKey": "repo pull",
@@ -10099,8 +11806,7 @@
           "mandatory": false,
           "defaultValue": null,
           "kinds": [
-            "machine",
-            "storage"
+            "machine"
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.pull.optionFrom",
@@ -10152,7 +11858,7 @@
           "format": "bandwidth",
           "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionBwlimit",
-          "label": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")"
+          "label": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
         },
         {
           "flags": "--delta-base <guid>",
@@ -10277,8 +11983,7 @@
           "mandatory": false,
           "defaultValue": null,
           "kinds": [
-            "machine",
-            "storage"
+            "machine"
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.push.optionTo",
@@ -10344,7 +12049,7 @@
           "format": "bandwidth",
           "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionBwlimit",
-          "label": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")"
+          "label": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
         },
         {
           "flags": "--delta-base <guid>",
@@ -12003,397 +13708,6 @@
     },
     {
       "path": [
-        "storage",
-        "add"
-      ],
-      "pathKey": "storage add",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.add.description",
-      "label": "Register a storage endpoint.",
-      "options": [
-        {
-          "flags": "--vault <json>",
-          "long": "vault",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "tier": "common",
-          "sensitive": true,
-          "descriptionKey": "options.vaultContent",
-          "label": "Vault content as JSON string"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "name",
-          "kind": "plain",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "examples": [
-        {
-          "command": "rdc storage add backups-s3 --vault '{\"type\":\"s3\"}'",
-          "values": {
-            "name": "backups-s3",
-            "vault": "{\"type\":\"s3\"}"
-          },
-          "descriptionKey": "commands.storage.add.examples.basic",
-          "label": "Register a storage backend from a vault definition."
-        }
-      ],
-      "keywords": [
-        "register",
-        "s3",
-        "bucket",
-        "endpoint",
-        "remote"
-      ],
-      "destructive": false,
-      "idempotent": false,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "browse"
-      ],
-      "pathKey": "storage browse",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "other",
-      "descriptionKey": "commands.storage.browse.description",
-      "label": "Browse files in a storage system",
-      "options": [
-        {
-          "flags": "--path <subpath>",
-          "long": "path",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "",
-          "format": "path",
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.browse.pathOption",
-          "label": "Subdirectory path to list"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "storage",
-          "kind": "storage",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.storageRef",
-          "label": "Storage ref: the name of a registered storage endpoint (for example s3-main)"
-        }
-      ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Interactive file browser: requires TTY",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "import"
-      ],
-      "pathKey": "storage import",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.import.description",
-      "label": "Import a storage endpoint from a definition file.",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.import.optionName",
-          "label": "Import only this named section"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "file",
-          "kind": "file",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.file",
-          "label": "Path to file"
-        }
-      ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Reads a local rclone definition file; use CLI directly.",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "list"
-      ],
-      "pathKey": "storage list",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.list.description",
-      "label": "List storage endpoints. Give a name for full detail.",
-      "options": [
-        {
-          "flags": "--reveal",
-          "long": "reveal",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.list.optionReveal",
-          "label": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "name",
-          "kind": "plain",
-          "required": false,
-          "variadic": false,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "output": {
-        "primaryKey": "name",
-        "columns": [
-          "name",
-          "provider"
-        ]
-      },
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "read",
-      "timeoutMs": 120000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "prune"
-      ],
-      "pathKey": "storage prune",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "machine",
-      "descriptionKey": "commands.storage.prune.description",
-      "label": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "kinds": [
-            "machine"
-          ],
-          "tier": "common",
-          "descriptionKey": "commands.storage.prune.machineOption",
-          "label": "Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config."
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.dryRun",
-          "label": "Show what would be done without making changes"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.force",
-          "label": "Skip confirmation prompts"
-        },
-        {
-          "flags": "--force-delete-mounted",
-          "long": "force-delete-mounted",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.storage.prune.forceDeleteMountedOption",
-          "label": "Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos)."
-        },
-        {
-          "flags": "--grace-days <days>",
-          "long": "grace-days",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "format": "integer",
-          "tier": "advanced",
-          "descriptionKey": "options.graceDays",
-          "label": "Grace period in days for recently archived repos (default: 7)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "storage",
-          "kind": "storage",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.storageRef",
-          "label": "Storage ref: the name of a registered storage endpoint (for example s3-main)"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": true,
-      "idempotent": true,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": true,
-      "detachable": true,
-      "machineOption": "machine",
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "storage",
-        "remove"
-      ],
-      "pathKey": "storage remove",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "plane": "config",
-      "descriptionKey": "commands.storage.remove.description",
-      "label": "Remove a storage endpoint from the config.",
-      "options": [
-        {
-          "flags": "-y, --yes",
-          "long": "yes",
-          "short": "y",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.yes",
-          "label": "Skip confirmation prompt"
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.dryRun",
-          "label": "Show what would be done without making changes"
-        }
-      ],
-      "positionals": [
-        {
-          "name": "name",
-          "kind": "plain",
-          "required": true,
-          "variadic": false,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": true,
-      "idempotent": false,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
         "subscription",
         "login"
       ],
@@ -12416,6 +13730,17 @@
           "sensitive": true,
           "descriptionKey": "options.apiToken",
           "label": "API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list)."
+        },
+        {
+          "flags": "--password-stdin",
+          "long": "password-stdin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.login.optionPasswordStdin",
+          "label": "Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)"
         },
         {
           "flags": "--server <url>",
@@ -12453,6 +13778,41 @@
       "descriptionKey": "commands.subscription.logout.description",
       "label": "Clear stored subscription token",
       "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
+        "proxy-token"
+      ],
+      "pathKey": "subscription proxy-token",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.proxyToken.description",
+      "label": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
+      "options": [
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.proxyToken.jsonOption",
+          "label": "Print JSON with the token and its expiresAt"
+        }
+      ],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
@@ -12650,6 +14010,75 @@
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "tools",
+        "install"
+      ],
+      "pathKey": "tools install",
+      "domain": "tools",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.tools.install.description",
+      "label": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+      "options": [
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.tools.install.optionForce",
+          "label": "Reinstall even when the pinned version is already present"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "tool",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.tools.install.argTool",
+          "label": "Tool to install (tofu)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Installs a local binary on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "tools",
+        "list"
+      ],
+      "pathKey": "tools list",
+      "domain": "tools",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.tools.list.description",
+      "label": "List the provisioning engine this CLI would run (OpenTofu or Terraform) and every OpenTofu version in its tools directory, each with its version, where it came from, and its path.",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Lists local binaries on the MCP host. Run it from the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -13066,7 +14495,8 @@
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
-      "detachable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs a script as the repository user, not as root, so it cannot run as a root job unit. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -13114,7 +14544,8 @@
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
-      "detachable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs a script as the repository user, not as root, so it cannot run as a root job unit. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,

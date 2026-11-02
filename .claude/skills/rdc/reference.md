@@ -9,7 +9,7 @@ List detached jobs on a machine, newest first
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (omit to list this config's pending job tickets)
 
 > MCP tool
 
@@ -19,7 +19,7 @@ Show a detached job's status
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 
 > MCP tool
 
@@ -29,7 +29,7 @@ Replay or follow a detached job's event log
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `-f, --follow`: Stream until the job finishes
 - `--since-line <n>`: Resume after this many lines (the count you already received)
 - `--debug`: Enable debug output
@@ -42,8 +42,19 @@ Cancel a running detached job
 
 **Options:**
 
-- `-m, --machine <name>`: Target machine name
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `-y, --yes`: Skip confirmation prompt
+
+> MCP tool
+
+### rdc job wait <job-id>
+
+Resume following a job from its ticket, then acknowledge it and exit with the job's exit code
+
+**Options:**
+
+- `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
+- `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
 
 > MCP tool
 
@@ -92,7 +103,7 @@ Remove a machine from the config. Does not touch the machine itself.
 **Options:**
 
 - `-y, --yes`: Skip confirmation prompt
-- `--force`: Remove the machine even if repositories are still placed on it, leaving those placements dangling.
+- `--force`: Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.
 
 > MCP tool
 
@@ -122,6 +133,7 @@ Install renet and prepare a registered machine for repositories.
 
 - `--datastore-path <path>`: Datastore path on remote machine (default: /mnt/rediacc)
 - `--datastore-size <size>`: Datastore size (e.g., 95%, 100G) (default: 95%)
+- `--no-converge`: Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -204,6 +216,42 @@ Remove orphaned datastore resources and stale snapshots from a machine. The base
 
 > MCP tool
 
+### rdc machine gpu list <name>
+
+List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'.
+
+**Options:**
+
+- `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc machine converge <name>
+
+Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change.
+
+**Options:**
+
+- `--dry-run`: Print the plan without restarting anything
+- `--json`: Print the converge report as JSON
+- `--include-unknown`: Also restart stale repositories missing from the local config (their env secrets are unknown)
+- `--policy <policy>`: Restart policy: epoch (layout changes only) or always (also any renet binary change) (default: epoch)
+- `--continue-on-error`: Keep going after a repository fails instead of stopping the pass
+- `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc machine restart-services <name>
+
+Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers.
+
+**Options:**
+
+- `--include-docker`: Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)
+- `--json`: Print the report as JSON
+
+> MCP tool
+
 ### rdc machine provider add <name>
 
 Add a cloud provider
@@ -212,7 +260,7 @@ Add a cloud provider
 
 - `--provider <source>`: Known provider source (e.g., linode/linode, hetznercloud/hcloud)
 - `--source <source>`: Custom OpenTofu provider source (e.g., vultr/vultr)
-- `--token <token>`: API token for the cloud provider
+- `--token-env <var>`: Name of the environment variable holding the provider API token; the token itself never goes on the command line
 - `--region <region>`: Default region for new machines
 - `--type <type>`: Default instance type/size
 - `--image <image>`: Default OS image
@@ -307,20 +355,60 @@ Remove the certificate cache
 
 > MCP excluded: Destroys cached TLS key material. Irreversible, and it is key material.
 
+### rdc machine access set <machine>
+
+Bind an access key to a machine. Ranges given here replace the key's ranges on this machine only. Apply with 'machine access push'
+
+**Options:**
+
+- `--key <key>`: Access key name (see 'config access list')
+- `--ipv4 <cidrs>`: IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)
+- `--ipv6 <cidrs>`: IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)
+- `--clear-ranges`: Drop this machine's own ranges, so the key's or the config's ranges apply
+
+> MCP excluded: Binds an SSH key to a machine, which decides who `machine access push` lets in. Access changes are an operator decision.
+
+### rdc machine access remove <machine>
+
+Unbind an access key from a machine. The next 'machine access push' removes its line
+
+**Options:**
+
+- `--key <key>`: Access key name (see 'config access list')
+
+> MCP excluded: Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.
+
+### rdc machine access show <machine>
+
+Show the access keys bound to a machine and the ranges each resolves to there
+
+> MCP tool
+
+### rdc machine access push <machine>
+
+Write the access keys bound to a machine into its authorized_keys, adopting an existing line with the same key, and remove this config's lines for keys no longer bound. Refuses a change that would lock rdc's own session out, and writes nothing when the file changed during the push
+
+**Options:**
+
+- `--dry-run`: Show the changes without writing
+
+> MCP excluded: Rewrites the machine's authorized_keys from the config's access bindings. Who can log in is an operator decision.
+
 ### rdc backup strategy set <strategy>
 
 Create or update a backup strategy
 
 **Options:**
 
-- `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given
-- `--storage <name>`: Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled
+- `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination
 - `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
 - `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
-- `--bwlimit <limit>`: Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
+- `--bwlimit <limit>`: Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., "6M", "500K")
+- `--read-bwlimit <limit>`: Read cap for this strategy's snapshots: same units as --bwlimit; none clears it
+- `--cpu-limit <percent>`: CPU ceiling for this strategy's snapshots: percent of all cores, 1-100 (default 50); none clears it
 - `--include <repos>`: Only back up these repos (comma-separated names)
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
-- `--folder <path>`: Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage
+- `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
 - `--enable`: Enable the strategy or destination
 - `--disable`: Disable the strategy or destination
 
@@ -353,6 +441,7 @@ Remove a backup strategy or destination
 **Options:**
 
 - `--destination <name>`: Remove only this destination (keeps other destinations)
+- `--unbind`: Also drop the strategy from every machine that binds it
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -434,6 +523,7 @@ Verify a repository's backup anchor against the chunk store
 **Options:**
 
 - `--deep`: Re-hash every recorded cell (full verification) instead of a sampled check
+- `--store`: Have the server re-hash every stored chunk of this repository and name any missing or corrupt one
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -461,7 +551,18 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 - `--reseed`: Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)
 - `--dry-run`: Plan only: no upload. Reports what would move
 - `--cold`: Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run
+- `--bwlimit <rate>`: Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
+- `--parallelism <n>`: Number of chunks uploaded at once (default 4)
+- `--read-bwlimit <rate>`: Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited
+- `--hash-parallelism <n>`: Cells hashed at once (default 1; 0 = one per CPU, up to 16)
+- `--cpu-limit <percent>`: CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)
 - `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc backup retention preview <repo-ref>
+
+Show which snapshots the next sweep would delete and the space it would free.
 
 > MCP tool
 
@@ -477,14 +578,36 @@ Declare how many snapshots to keep. Every knob is replaced, not merged.
 - `--keep-weekly <n>`: Keep the newest snapshot from each of this many weeks
 - `--keep-monthly <n>`: Keep the newest snapshot from each of this many months
 - `--keep-yearly <n>`: Keep the newest snapshot from each of this many years
+- `--stream <id>`: Apply to this backup stream only (a stream id); without it, the repository-wide default
 
 > MCP excluded: Declares what the server deletes, and replaces every knob rather than merging, so a partial call silently discards retained snapshots.
 
 ### rdc backup retention clear <repo-ref>
 
-Remove the policy, so every snapshot of this repository is kept.
+Remove the declared policy, so the plan or server default applies again.
+
+**Options:**
+
+- `--stream <id>`: Apply to this backup stream only (a stream id); without it, the repository-wide default
 
 > MCP excluded: Removes the policy entirely; the blast radius of getting it wrong is the operator keeping or losing every snapshot of a repository.
+
+### rdc backup snapshots delete <repo-ref> <snapshot-id>
+
+Delete one stored snapshot; its exclusive data is freed by the next garbage collection.
+
+> MCP excluded: Deletes snapshots outright; like a retention mutation, a wrong call discards backups the operator meant to keep.
+
+### rdc backup reconcile [repo-ref]
+
+Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)
+
+**Options:**
+
+- `--dry-run`: Report the figures without changing the ledger
+- `--check`: Dry run that exits 1 when the ledger differs from the store
+
+> MCP tool
 
 ### rdc backup list [artifact-ref]
 
@@ -498,6 +621,44 @@ List backup artifacts on a machine.
 
 > MCP tool
 
+### rdc backup download [refs]
+
+Copy repository images from a machine to a local directory or an external drive. Each run takes a fresh snapshot held only while the session lives, updates the local copy in place by rsync delta, resumes after an interruption, and verifies the result by sha256.
+
+**Options:**
+
+- `--to <dir>`: Existing, writable directory that receives <machine>/<name>.<tag>.img (never created)
+- `--all`: Copy every grand repository placed on the machine named by -m
+- `-m, --machine <name>`: Machine name
+- `--include-forks`: With --all, also copy forks
+- `--bwlimit <rate>`: Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)
+- `--checkpoint`: Checkpoint and freeze the repository before the snapshot (hot backup)
+- `--retries <n>`: In-run retries after a network failure (default: 3)
+- `--skip-verify`: Skip the sha256 comparison after rsync; rsync's own checksum still runs
+- `--skip-space-check`: Warn instead of refusing when the target may not have enough free space
+- `--store`: Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN
+- `--at <time|snapshot>`: With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)
+
+> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+
+### rdc backup upload <image-file>
+
+Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.
+
+**Options:**
+
+- `--to <machine>`: Machine that receives the image
+- `--as <name>`: Name for the new repository (default: the image's repository name)
+- `--datastore <name>`: Place the image on this named datastore instead of the machine's default
+- `--from-repo <name>`: Config repository that supplies the credential and lineage when the state file is lost or names an unknown repository
+- `--bwlimit <rate>`: Network bandwidth cap such as 100Mbps or 12.5M (default: unlimited)
+- `--retries <n>`: In-run retries after a network failure (default: 3)
+- `--up`: Start the repository once it is registered
+- `--skip-verify`: Skip comparing the local image with the sha256 recorded when it was downloaded
+- `--debug`: Enable debug output
+
+> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+
 ### rdc backup restore <artifact-ref>
 
 Turn a backup artifact into a live repository. Placement is stated here.
@@ -508,6 +669,10 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-m, --machine <name>`: Machine name
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
+- `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
+- `--no-seed`: Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)
+- `--path <file-or-dir>`: Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)
+- `--to <dir>`: Directory to place the restored path under (default: the machine's restores folder for the snapshot)
 - `--up`: Deploy the restored repository after the transfer
 - `--health-window <seconds>`: Total health-gate window in seconds (default 300)
 - `--health-timeout <seconds>`: Per-attempt health-check timeout in seconds (default 30)
@@ -516,72 +681,16 @@ Turn a backup artifact into a live repository. Placement is stated here.
 
 > MCP tool | agent: fork-only
 
-### rdc storage add <name>
+### rdc backup purge <repo-ref>
 
-Register a storage endpoint.
-
-**Options:**
-
-- `--vault <json>`: Vault content as JSON string
-
-> MCP tool
-
-### rdc storage remove <name>
-
-Remove a storage endpoint from the config.
+Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.
 
 **Options:**
 
+- `--dry-run`: Show what would be done without making changes
 - `-y, --yes`: Skip confirmation prompt
-- `--dry-run`: Show what would be done without making changes
 
-> MCP tool
-
-### rdc storage list [name]
-
-List storage endpoints. Give a name for full detail.
-
-**Options:**
-
-- `--reveal`: Reveal the storage configuration in plaintext (interactive TTY only; audited)
-
-> MCP tool
-
-### rdc storage import <file>
-
-Import a storage endpoint from a definition file.
-
-**Options:**
-
-- `--name <name>`: Import only this named section
-
-> MCP excluded: Reads a local rclone definition file; use CLI directly.
-
-### rdc storage browse <storage>
-
-Browse files in a storage system
-
-**Options:**
-
-- `--path <subpath>`: Subdirectory path to list (default: )
-
-> MCP excluded: Interactive file browser: requires TTY
-
-### rdc storage prune <storage>
-
-Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.
-
-**Options:**
-
-- `-m, --machine <name>`: Executor machine that runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
-- `--dry-run`: Show what would be done without making changes
-- `--force`: Skip confirmation prompts
-- `--force-delete-mounted`: Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos).
-- `--grace-days <days>`: Grace period in days for recently archived repos (default: 7)
-- `--debug`: Enable debug output
-- `--skip-router-restart`: Skip restarting the route server after binary update
-
-> MCP tool
+> agent: fork-only | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
 
 ### rdc cluster create <cluster>
 
@@ -920,6 +1029,7 @@ Delete a repository and its data. A fork's config entry moves to deletedReposito
 **Options:**
 
 - `--archive-config`: Move config entry to deletedRepositories for later recovery
+- `--purge-backups`: Also delete the repository's cloud backups now, instead of letting them expire
 - `-y, --yes`: Skip confirmation prompt
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
@@ -1268,6 +1378,22 @@ Reclaim datastore pool space from mounted repositories (online, zero downtime). 
 
 > MCP tool
 
+### rdc repo prune [ref]
+
+Classify a repository's Docker storage and reclaim it: unused images, build cache, stopped containers, and overlay2 directories no image or container references. A dry run unless --apply. --apply reclaims through the Docker API with the repository online; --apply --offline also stops the repository's Docker daemon for the run and quarantines the orphan directories. Without a ref, surveys every mounted repository on -m (dry run only)
+
+**Options:**
+
+- `--apply`: Reclaim; without it the run only reports
+- `--offline`: Stop the repository's Docker daemon and quarantine orphan directories (requires --apply)
+- `--all-images`: Also remove tagged images no container uses
+- `--no-trim`: Skip the fstrim after an apply
+- `-y, --yes`: Skip confirmation prompt
+- `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
+
+> agent: fork-only | MCP excluded: Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.
+
 ### rdc repo policy set [ref]
 
 Set size policy fields. Only the flags you pass are changed; other stored fields keep their values. Enabling auto-grow requires --max-quota: the ceiling is your explicit consent to over-provision the pool
@@ -1303,7 +1429,7 @@ Push repository to another machine. Storage destinations are retired; use `rdc b
 - `--provision <provider>`: Auto-provision target machine via cloud provider if it doesn't exist
 - `--checkpoint`: Create CRIU checkpoint before backup (captures process memory state for live migration)
 - `--force`: Force overwrite existing backup
-- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--bwlimit <limit>`: Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--delta-base <guid>`: Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
 - `--strategy <strategy>`: Block-delta strategy when using a delta base: auto, physical, or shared
 - `--debug`: Enable debug output
@@ -1321,7 +1447,7 @@ Pull repository from another machine. Storage sources are retired; use `rdc back
 - `--from-machine <machine>`: 
 - `--force`: Force overwrite existing repository
 - `--up`: After pull, mount and deploy repository on this machine
-- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--bwlimit <limit>`: Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--delta-base <guid>`: Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)
 - `--strategy <strategy>`: Block-delta strategy when using a delta base: auto, physical, or shared
 - `--debug`: Enable debug output
@@ -1337,7 +1463,7 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 
 - `--to <place>`: Destination machine or cluster
 - `--provision <provider>`: Auto-provision target via cloud provider (e.g., hetzner, linode)
-- `--bwlimit <limit>`: Bandwidth limit for rsync transfer (e.g., 10M)
+- `--bwlimit <limit>`: Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited
 - `--checkpoint`: CRIU live migration: capture and restore process memory state
 - `--delta-base <guid>`: Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)
 - `--strategy <strategy>`: Block-delta strategy for the cutover: auto, physical, or shared
@@ -1539,6 +1665,25 @@ Delete a secret. Under agent context, requires --current digest match.
 - `--current <value>`: Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret.
 - `--rotate-secret`: Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value.
 
+### rdc repo gpu grant <ref>
+
+Allow the repository's containers to request a CDI device. Device names come from 'rdc machine gpu list'.
+
+**Options:**
+
+- `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
+- `--exclusive`: Reserve the device for this repository: no other repository can be granted it meanwhile
+- `--debug`: Enable debug output
+
+### rdc repo gpu revoke <ref>
+
+Withdraw a CDI device from the repository's containers. Containers that already hold it keep it until they restart.
+
+**Options:**
+
+- `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
+- `--debug`: Enable debug output
+
 ## Tools
 
 ### rdc config init [name]
@@ -1659,15 +1804,56 @@ Show current SSH key configuration
 
 Remove SSH key from the current config
 
+### rdc config access add <key>
+
+Add an access key, or update an existing one in place while keeping its machine bindings. Ranges given here apply to the key on every machine unless a binding sets its own; without ranges the config-wide ranges apply
+
+**Options:**
+
+- `--public-key <key>`: OpenSSH public key line, or a path to a file holding it
+- `--hosted-executor`: Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)
+- `--ipv4 <cidrs>`: IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)
+- `--ipv6 <cidrs>`: IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)
+- `--no-restrict`: Write from= alone, without the no-forwarding, no-pty and no-user-rc restrictions
+
+> MCP excluded: Declares an SSH access key and its source ranges, which decides who may log in once bound and pushed. Access changes are an operator decision.
+
+### rdc config access remove <key>
+
+Remove an access key from the config
+
+> MCP excluded: Removes an SSH access key from the config, which changes who may log in once pushed. Access changes are an operator decision.
+
+### rdc config access ranges
+
+Set the source ranges every access key uses unless the key or its machine binding sets its own. Without options, show them
+
+**Options:**
+
+- `--hosted-executor`: Add the observed hosted-executor egress ranges (104.28.0.0/16 and 2a09:bac0::/29)
+- `--ipv4 <cidrs>`: IPv4 ranges in CIDR notation (comma-separated, e.g., 203.0.113.0/24)
+- `--ipv6 <cidrs>`: IPv6 ranges in CIDR notation (comma-separated, e.g., 2001:db8::/32)
+- `--clear`: Remove the config-wide ranges
+
+> MCP excluded: Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.
+
+### rdc config access list
+
+List the config's access keys
+
+> MCP tool
+
 ### rdc config remote enable
 
 Link this config to remote encrypted storage
 
 **Options:**
 
-- `--password`: Enroll headlessly with a pre-provisioned password slot (no browser)
+- `--master-password`: Enroll headlessly with a pre-provisioned password slot (no browser)
+- `--master-password-stdin`: Like --master-password, reading the master password from stdin
 - `--api-url <url>`: Account server URL
 - `--force`: Replace differing local content with the server copy without confirmation
+- `--config-id <id>`: Attach to this existing config of the store instead of creating a new entry
 
 ### rdc config remote disable
 
@@ -1686,6 +1872,10 @@ Show remote connection status
 
 List the earlier versions of this config kept on the server
 
+**Options:**
+
+- `--explain`: Show the JSON pointers each version changed, from the versions the server kept
+
 ### rdc config remote restore <version>
 
 Publish an earlier version of this config as its newest version
@@ -1693,6 +1883,14 @@ Publish an earlier version of this config as its newest version
 **Options:**
 
 - `-y, --yes`: Skip confirmation prompt
+
+### rdc config remote master-password change
+
+Change the master password: re-wrap the config key from this device's enrollment under a new password slot
+
+**Options:**
+
+- `--new-master-password-stdin`: Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)
 
 ### rdc config remote refresh
 
@@ -1795,7 +1993,7 @@ Run diagnostic checks on the CLI environment: Node.js version, renet binary avai
 
 ### rdc credits
 
-Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync, rclone), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.
+Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.
 
 **Options:**
 
@@ -1860,6 +2058,26 @@ Check VS Code installation and configuration
 
 - `--insiders`: Use VS Code Insiders settings
 
+### rdc tools install <tool>
+
+Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.
+
+**Options:**
+
+- `--force`: Reinstall even when the pinned version is already present
+
+> MCP excluded: Installs a local binary on the MCP host. Run it from the CLI.
+
+### rdc tools list
+
+List the provisioning engine this CLI would run (OpenTofu or Terraform) and every OpenTofu version in its tools directory, each with its version, where it came from, and its path.
+
+**Options:**
+
+- `--output <format>`: Output format (json)
+
+> MCP excluded: Lists local binaries on the MCP host. Run it from the CLI.
+
 ### rdc update
 
 Check for new CLI versions and apply updates. Supports --check-only to check without installing, and --force to update even if already on the latest version.
@@ -1881,11 +2099,20 @@ Authenticate via browser or API token
 **Options:**
 
 - `-t, --token <token>`: API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list).
+- `--password-stdin`: Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)
 - `--server <url>`: Account server URL
 
 ### rdc subscription logout
 
 Clear stored subscription token
+
+### rdc subscription proxy-token
+
+Mint a short-lived proxy:exec token from this device's login, for --proxy
+
+**Options:**
+
+- `--json`: Print JSON with the token and its expiresAt
 
 ### rdc subscription status
 

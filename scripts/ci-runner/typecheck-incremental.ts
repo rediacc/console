@@ -31,6 +31,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evaluate, parse as momoaParse } from '@humanwhocodes/momoa';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { grantedCores } from './lease-client';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -528,7 +529,7 @@ async function selftest(): Promise<number> {
 
   // THE REAL SCRIPT PARSES, and into the projects named. A parser that returned [] would turn this gate green over nothing.
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf-8')) as {
-    scripts: Record<string, string>;
+    scripts: Partial<Record<string, string>>;
   };
   const www = JSON.parse(
     fs.readFileSync(path.join(REPO_ROOT, 'packages', 'www', 'package.json'), 'utf-8')
@@ -944,10 +945,7 @@ async function main(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
-if (
-  process.argv[1] !== undefined &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-) {
+if (isEntryPoint(import.meta.filename)) {
   main(process.argv.slice(2))
     .then((code) => {
       process.exitCode = code;

@@ -15,7 +15,7 @@ tags:
   - mittelstand
 featured: false
 language: de
-sourceHash: "d5f6a7108f614b9b"
+sourceHash: "b1569f9c0bab2b54"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -95,13 +95,13 @@ Die Lücken sind interessanter als die Überschneidungen, denn die Lücken sind 
 
 Rediacc ist eine Control Plane mit einem einheitlichen Audit-Log, die die Kernfunktionen von vier der fünf Kategorien für selbst gehostete Infrastruktur ersetzt.
 
-**Backup** läuft in zwei Modi. Hot ist ein crash-konsistenter BTRFS-Snapshot. Kein Ausfallzeit. Cold macht einen Stop-Snapshot-Start-Zyklus. Beide planen auf systemd-Timern. Beide liefern an viele Ziele via rclone. Volumes sind LUKS-verschlüsselt. Der Betreiber hält den Schlüssel. Rediacc OÜ sieht niemals Klartext. Siehe [Backup & Restore](/de/docs/backup-restore) und [Cross Backup Strategy](/de/docs/cross-backup).
+**Backup** läuft in zwei Modi. Hot ist ein crash-konsistenter BTRFS-Snapshot. Kein Ausfallzeit. Cold macht einen Stop-Snapshot-Start-Zyklus. Beide planen auf systemd-Timern. Beide schreiben in einen inhaltsadressierten Chunk-Store, in den nur geänderte Zellen hochgeladen werden, und die Aufbewahrung wird pro Repository-Lineage festgelegt. Volumes sind LUKS-verschlüsselt. Der Betreiber hält den Schlüssel. Rediacc OÜ sieht niemals Klartext. Siehe [Backup & Restore](/de/docs/backup-restore) und [Cross Backup Strategy](/de/docs/cross-backup).
 
 **DR**: Gleiche Primitive wie beim Backup, plus `rdc repo migrate` für maschinenübergreifende Datenbewegung, plus das Fork-Primitiv für den schnellen Aufbau des wiederhergestellten Zustands auf einer parallelen Maschine. Der DR-Standort kann eine andere Hetzner-Maschine, eine OVH-Maschine, ein On-Premises-Rack oder jeder andere per SSH erreichbare Standort sein. Kein DR-Anbieter-Cloud in der Datenpfad.
 
 **Testdaten und Full-Stack-Klonen** läuft auf BTRFS-Reflink. Der Fork ist zeitkonstant, unabhängig von der Repository-Größe. Full-Stack bedeutet Daten, Konfigurationen, Container und Dienste. Ein 128-GB-Repository wurde in 7,2 Sekunden in unserem [PocketOS-Test](/de/blog/i-tested-rediacc-against-the-pocketos-incident) geforkt. Der Fork ist aktuelle Produktion, keine abgespeckte Staging-Kopie. Siehe [Risikofreie Upgrades](/de/docs/risk-free-upgrades).
 
-**Sofortwiederherstellung**: `rdc repo pull` von einem beliebigen rclone-Ziel in einen frischen Fork, der unter einer Fork-spezifischen Subdomain bereitgestellt wird, die durch das Wildcard-Zertifikat des übergeordneten Repositorys abgedeckt ist. Kein DNS-Durcheinander, kein Zertifikatstanz.
+**Sofortwiederherstellung**: `rdc backup restore --at <snapshot>` aus dem Chunk-Store oder `rdc repo pull` von einer zweiten Maschine in einen frischen Fork, der unter einer Fork-spezifischen Subdomain bereitgestellt wird, die durch das Wildcard-Zertifikat des übergeordneten Repositorys abgedeckt ist. Kein DNS-Durcheinander, kein Zertifikatstanz.
 
 **Einheitliches Audit-Log.** Mehr als 70 Ereignistypen über die gesamte Control Plane. Sie erfassen Anmeldungen, API-Token, Konfigurations-Writes, Repository-Lifecycle, Backup, Sync, Terminal-Sitzungen und Maschinenoperationen. Die Kette ist hash-verknüpft auf der Workstation des Betreibers. `rdc config audit verify` prüft sie von Ende zu Ende.
 

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "ccced160d151eeeb"
-sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
+sourceHash: "060357b48d8c7154"
+sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
 ---
 
 # Konfigurationsspeicher
@@ -69,7 +69,7 @@ Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. 
 Eine Maschine ohne Browser (ein Server, ein CI-Runner, ein Executor-Daemon) kann sich mit der Master-Passwort-Methode in einen bestehenden Speicher einbinden:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Voraussetzungen:
@@ -78,6 +78,23 @@ Voraussetzungen:
 - Ein **API-Token mit dem Scope `config:enroll`**, um den Aufruf zu authentifizieren
 
 Die Einbindung ist ein Lesevorgang: Die CLI ruft die öffentlichen KDF-Parameter des Slots und den verpackten Schlüssel ab, leitet das Passwort-Geheimnis lokal ab und entschlüsselt die CEK auf dem Gerät. Sie gewährt dem Gerät die Fähigkeit, die Konfiguration zu entschlüsseln und zu synchronisieren; der Speicher selbst wird dabei nicht verändert.
+
+## Wie die Schlüssel zu Ihrer CLI gelangen
+
+`rdc config remote enable` (und `rdc config rotate-cek`) übergeben das Entsperrgeheimnis über den Account-Server an die CLI. CLI und Browser sprechen nie direkt miteinander, deshalb funktioniert das auf einem Server ohne Browser genauso wie in WSL mit dem Browser unter Windows oder auf einem Smartphone.
+
+1. Melden Sie zuerst die CLI mit `rdc subscription login` an. Der Server bindet die Anfrage an dieses Konto.
+2. Die CLI erstellt eine kurzlebige Anfrage und gibt einen Link sowie einen **Kopplungscode** wie `7KQ2-M9XD-P4RT` aus. Alles, was der Link trägt, steht hinter dem `#`, und Browser senden diesen Teil nie an einen Server.
+3. Öffnen Sie den Link in einem beliebigen Browser, der mit demselben Konto angemeldet ist. Eine Anfrage von einem anderen Konto wird abgelehnt.
+4. Geben Sie den Kopplungscode aus Ihrem Terminal ein, sobald die Seite danach fragt. Die Schaltfläche zum Entsperren bleibt deaktiviert, bis er übereinstimmt.
+5. Entsperren Sie mit Ihrem Passkey oder Master-Passwort. Der Browser versiegelt den Schlüssel für die CLI, und der Server leitet einen Datenblock weiter, den er nicht lesen kann.
+6. Die CLI entschlüsselt den Datenblock, legt das Geheimnis im Schlüsselbund des Betriebssystems ab und meldet den Erfolg.
+
+Die Anfrage läuft nach 10 Minuten ab. Mit **Ctrl+C** in der CLI brechen Sie sie ab: Die CLI fordert den Server auf, den Link zu verwerfen, der dann sofort nicht mehr funktioniert, und die Seite weist darauf hin, den Befehl erneut auszuführen. Kommt diese Anfrage nicht an, bleibt der Link bis zum Ablauf der Anfrage nutzbar. Wird der Link nach Ablauf geöffnet oder hat eine Weiterleitung nach der Anmeldung den Teil nach dem `#` verloren, führen Sie den Befehl einfach noch einmal aus.
+
+Der Kopplungscode wird aus dem Schlüssel im Link abgeleitet. Tauscht jemand den Link gegen einen eigenen aus, stimmt der Code in Ihrem Terminal nicht mit dem überein, was die Seite erwartet, und es wird nichts freigegeben.
+
+Das schützt vor manipulierten Links und vor einem Relay, das einen Datenblock austauscht oder fälscht. Es schützt nicht vor einem Server, der veränderten Seitencode ausliefert: Die Seite, die Sie öffnen, kommt vom Account-Server, und die Schlüssel sind nur so sicher wie dieser Code. Dasselbe Vertrauen gilt für jede Portalseite, die den Konfigurationsschlüssel verarbeitet.
 
 ## Aktivierung und Offline-Lesezugriffe
 

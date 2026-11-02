@@ -7,7 +7,7 @@ Five steps, each fatal on failure (the drill `drills.backup_local_plane` only wa
 
   1. RustFS on port 9100 (`account_lifecycle.start_rustfs`, published on every interface, so the bridge address below reaches it) and the `rediacc-backups-probe` bucket. NEVER `rediacc-backups`, the production name.
   2. The bridge address of the VM network (`wire.bridge_host("192.168.111")`). It is the host in the published account server URL (the licence's renewalUrl is stamped from it) and in ACCOUNT_BACKUP_S3_ENDPOINT, since SigV4 signs the Host header and the presigned URLs are dialled from the VM.
-  3. ONE ED25519 signing pair, generated here (`start_account.generate_keys`) and handed to the account server through ACCOUNT_ED25519_PRIVATE_KEY / ACCOUNT_ED25519_PUBLIC_KEY. `rdc repo create` files the licence blob under the SIGNER's fingerprint (`/var/lib/rediacc/license/repos/<guid>/<fingerprint>.json`) and renet's license-status, snapshot and restore verbs look up the fingerprint of the key the build BAKED (private/renet/pkg/license/preferred.go), so a server with a throwaway key of its own signs licences no renet build can find. With `--rebuild-renet` (the default off Actions; in CI the workflow rebuilds after this step) renet is rebuilt `--nolicense` with the public half exported, and every staged binary is checked to bake it (`--verify-renet`, below).
+  3. ONE ED25519 signing pair, generated here (`start_account.generate_keys`) and handed to the account server through ACCOUNT_ED25519_PRIVATE_KEY / ACCOUNT_ED25519_PUBLIC_KEY. `rdc repo create` files the licence blob under the SIGNER's fingerprint (`/var/lib/rediacc/license/repos/<guid>/<fingerprint>.json`) and renet's license-status, snapshot and restore verbs look up the fingerprint of the key the build BAKED (private/renet/pkg/license/preferred.go), so a server with a throwaway key of its own signs licences no renet build can find. With `--rebuild-renet` (the default off Actions; in CI the workflow rebuilds after this step) renet is rebuilt with the public half exported, and every staged binary is checked to bake it (`--verify-renet`, below).
   4. `start_account` with the backup scopes, `--advertise-host <bridge>` and the ACCOUNT_BACKUP_S3_* environment. It publishes the public half as ACCOUNT_ED25519_PUBLIC_KEY (in `$GITHUB_ENV` under Actions, where the rebuild step reads it). The private half is never printed or written.
   5. Two requests from the worker VM over SSH: `/health` on the advertised URL, and any HTTP answer from ACCOUNT_BACKUP_S3_ENDPOINT (RustFS answers 403 to an anonymous GET). No CI job had a VM call a service on the runner before, so an unreachable account server or RustFS fails here instead of as a timeout inside a test.
 
@@ -18,13 +18,9 @@ The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_S
 
 from __future__ import annotations
 
-import base64
-import binascii
 import dataclasses
-import hashlib
 import os
 import pathlib
-import re
 import shlex
 import signal
 import subprocess
@@ -34,6 +30,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths
 from rediacc_ci.core import account, account_lifecycle
 from rediacc_ci.drills import backup_local_plane, vm_ssh, wire
+from rediacc_ci.release import renet_key_gate
 from rediacc_ci.testrun import start_account
 
 if TYPE_CHECKING:
@@ -52,9 +49,8 @@ PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
 PRIVATE_KEY_ENV = "ACCOUNT_ED25519_PRIVATE_KEY"
 # The binaries a local rebuild stages: the host one and the two the CLI pushes to a machine of either architecture.
 STAGED_RENETS = ("renet", "renet-linux-amd64", "renet-linux-arm64")
-BAKED_KEY = re.compile(r"keys\.ProductionPublicKey=([A-Za-z0-9+/=]+)")
-# DER header of an SPKI-wrapped ED25519 public key; the raw 32-byte key follows it.
-SPKI_ED25519_HEADER = bytes.fromhex("302a300506032b6570032100")
+# The build-info reader is shared with the release gate (`rediacc_ci.release.renet_key_gate`).
+SPKI_ED25519_HEADER = renet_key_gate.SPKI_ED25519_HEADER
 
 
 class PlaneError(Exception):
@@ -98,42 +94,21 @@ def parse(argv: Sequence[str]) -> Options:
 
 
 def key_fingerprint(public_key: str) -> str:
-    """renet's publicKeyId (pkg/subscription/fingerprint.go): the first 8 bytes of SHA-256 over the raw 32-byte key, in hex. Takes the raw key or its SPKI wrapping, base64."""
+    """renet's publicKeyId, through the shared reader in `renet_key_gate`."""
     try:
-        der = base64.b64decode(public_key, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise PlaneError(f"not a base64 ED25519 public key: {exc}") from exc
-    if len(der) == len(SPKI_ED25519_HEADER) + 32 and der.startswith(SPKI_ED25519_HEADER):
-        der = der[len(SPKI_ED25519_HEADER) :]
-    if len(der) != 32:
-        raise PlaneError(f"not an ED25519 public key ({len(der)} bytes after decoding)")
-    return hashlib.sha256(der).hexdigest()[:16]
+        return renet_key_gate.key_fingerprint(public_key)
+    except renet_key_gate.KeyGateError as exc:
+        raise PlaneError(str(exc)) from exc
 
 
 def baked_public_key(
     binary: str, run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 ) -> str:
-    """The key `-X .../keys.ProductionPublicKey=` baked into `binary`, read from its build info."""
+    """The key `-X .../keys.ProductionPublicKey=` baked into `binary`, read from its build info by the shared reader."""
     try:
-        done = run(
-            ["go", "version", "-m", binary],
-            capture_output=True,
-            text=True,
-            check=False,
-            stdin=subprocess.DEVNULL,
-        )
-    except OSError as exc:
-        raise PlaneError(f"cannot run `go version -m {binary}`: {exc}") from exc
-    if done.returncode != 0 or not done.stdout:
-        raise PlaneError(
-            f"cannot read the build info of {binary} (missing, or not a Go binary): {(done.stderr or '').strip()}"
-        )
-    found = BAKED_KEY.search(done.stdout)
-    if found is None:
-        raise PlaneError(
-            f"{binary} bakes no licence key (its build info carries no keys.ProductionPublicKey ldflag): every repository licence reads as not installed. Rebuild with {PUBLIC_KEY_ENV} exported."
-        )
-    return found.group(1)
+        return renet_key_gate.baked_public_key(binary, run)
+    except renet_key_gate.KeyGateError as exc:
+        raise PlaneError(str(exc)) from exc
 
 
 def verify_renet(
@@ -148,7 +123,7 @@ def verify_renet(
         raise PlaneError(
             f"{binary} bakes key {have}, but the account server signs with {want}: "
             f"every licence it issues is filed as /var/lib/rediacc/license/repos/<guid>/{want}.json and this renet looks up {have}.json. "
-            f"Rebuild renet with {PUBLIC_KEY_ENV} exported (PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense)."
+            f"Rebuild renet with {PUBLIC_KEY_ENV} exported (PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet)."
         )
     log.info(f"{binary} bakes the signing key {want}")
 
@@ -165,15 +140,15 @@ def signing_pair() -> tuple[str, str]:
 def rebuild_renet(
     public_key: str, run: Callable[..., subprocess.CompletedProcess] = subprocess.run
 ) -> None:
-    """`build_renet --nolicense` with the signing key's public half exported. The private half is kept out of the build's environment."""
+    """`build_renet` with the signing key's public half exported. The private half is kept out of the build's environment."""
     root = paths.repo_root()
     env = {k: v for k, v in os.environ.items() if k != PRIVATE_KEY_ENV}
     env[PUBLIC_KEY_ENV] = public_key
     env["PYTHONPATH"] = str(root / ".ci")
-    log.step(f"Rebuilding renet --nolicense with the signing key {key_fingerprint(public_key)}...")
+    log.step(f"Rebuilding renet with the signing key {key_fingerprint(public_key)}...")
     try:
         done = run(
-            [sys.executable, "-m", "rediacc_ci.infra.build_renet", "--nolicense"],
+            [sys.executable, "-m", "rediacc_ci.infra.build_renet"],
             cwd=str(root),
             env=env,
             check=False,
@@ -182,7 +157,7 @@ def rebuild_renet(
     except OSError as exc:
         raise PlaneError(f"could not run build_renet: {exc}") from exc
     if done.returncode != 0:
-        raise PlaneError(f"build_renet --nolicense exited {done.returncode}")
+        raise PlaneError(f"build_renet exited {done.returncode}")
 
 
 def staged_renets() -> list[str]:

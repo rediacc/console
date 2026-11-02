@@ -89,13 +89,13 @@ The gaps are more interesting than the overlaps, because the gaps are what NIS2 
 
 Rediacc is one control plane with a unified audit log, replacing four of the five categories' core capability for self-hosted infrastructure.
 
-**Backup** runs in two modes. Hot is a crash-consistent BTRFS snapshot. No downtime. Cold does a stop, snapshot, start cycle. Both schedule on systemd timers. Both ship to many destinations via rclone. Volumes are LUKS-encrypted. The operator holds the key. Rediacc-the-company never sees plaintext. See [Backup & Restore](/en/docs/backup-restore) and [Cross Backup Strategy](/en/docs/cross-backup).
+**Backup** runs in two modes. Hot is a crash-consistent BTRFS snapshot. No downtime. Cold does a stop, snapshot, start cycle. Both schedule on systemd timers. Both write into a content-addressed chunk store where only changed cells are uploaded, and retention is declared per repository lineage. Volumes are LUKS-encrypted. The operator holds the key. Rediacc-the-company never sees plaintext. See [Backup & Restore](/en/docs/backup-restore) and [Cross Backup Strategy](/en/docs/cross-backup).
 
 **DR**: same primitive as backup, plus `rdc repo migrate` for cross-machine data movement, plus the fork primitive for fast bring-up of recovered state on a parallel machine. The DR site can be another Hetzner machine, an OVH machine, an on-prem rack, anywhere SSH reaches. No DR-vendor cloud in the data path.
 
 **Test data and full-stack cloning** runs on BTRFS reflink. The fork is constant-time, no matter the repo size. Full-stack means data, configs, containers, and services. We forked a 128 GB repo in 7.2 seconds in our [PocketOS test](/en/blog/i-tested-rediacc-against-the-pocketos-incident). The fork is current production, not a stripped-down staging copy. See [Risk-Free Upgrades](/en/docs/risk-free-upgrades).
 
-**Instant restore**: `rdc repo pull` from any rclone target into a fresh fork, brought up under a fork-specific subdomain covered by the parent repository's wildcard certificate. No DNS scramble, no certificate dance.
+**Instant restore**: `rdc backup restore --at <snapshot>` from the chunk store, or `rdc repo pull` from a second machine, into a fresh name, brought up under a fork-specific subdomain covered by the parent repository's wildcard certificate. No DNS scramble, no certificate dance.
 
 **Unified audit log.** 70+ event types across the control plane. They cover sign-ins, API tokens, config writes, repo lifecycle, backup, sync, terminal sessions, and machine ops. The chain is hash-linked on the operator workstation. `rdc config audit verify` checks it end to end.
 

@@ -31,6 +31,20 @@ Standard OpenTelemetry HTTP attributes set by the account server instrumentation
 | HTTP Duration | `http.duration_ms` | `42` |
 | HTTP User Agent | `http.user_agent` | `rdc/1.5.0` |
 
+## Workers Identity and Routing Attributes
+
+Set on spans and logs of the account and proxy Workers (target design, PLAN-telemetry-export.md). Identity attributes are written by the Alloy transform (the account middleware also sets `deployment.environment` and `rediacc.region` from its bindings); the rest by the Workers' `ctx.tracing`.
+
+| Attribute | Key | Example |
+|-----------|-----|---------|
+| Deployment Environment | `deployment.environment` | `edge` |
+| Region | `rediacc.region` | `us` |
+| Worker Script | `rediacc.worker` | `edge-rediacc-account-us` |
+| Route | `http.route` | `/account/api/v1/health` |
+| Response Status | `http.response.status_code` | `200` |
+| Probe | `rediacc.probe` | UUID from `X-Rediacc-Probe` |
+| Proxy Outcome | `rediacc.proxy.outcome` | `health`, `refused:<reason>`, `forwarded` |
+
 ## Error Attributes
 
 Set on spans that encounter errors:

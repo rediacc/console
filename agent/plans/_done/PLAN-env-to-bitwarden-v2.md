@@ -1,4 +1,4 @@
-Status: done -- 2026-10-08, every box ticked (v1:20-25 last, c706c4feb)
+Status: done -- 2026-10-08, every box ticked (v1:20-25 last, f44ea9a61)
 Depends-On: no-dep -- related, not ordered: PLAN-account-env-to-bws.md took over its boxes; PLAN-secret-namespace-migration.md is cited as history
 First-Seen: 2026-09-17
 Owner: d778be9d (adoption handed back 2026-10-03: not the PR's plan and not in the operator's Promoted picks, so it is owned and advisory, not this session's mission)

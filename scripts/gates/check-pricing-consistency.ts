@@ -51,6 +51,9 @@ const PLAN_ID_BY_CODE: Record<string, string> = {
 // contact for more); Community is a fixed free-tier cap, no suffix.
 const PAID_PLAN_CODES = PLAN_ORDER.filter((code) => code !== 'COMMUNITY');
 
+// FREE is a plan code but not a priced card: it has no technicalSummary column and no row in either docs table, so a loop over PLAN_ORDER would report its absence as drift. Its limits are judged where they are defined, in packages/shared; this gate ties the DISPLAYED numbers of the priced plans to them.
+const PRICED_PLAN_CODES = PLAN_ORDER.filter((code) => code !== 'FREE');
+
 let failures = 0;
 
 function fail(message: string): void {
@@ -93,7 +96,7 @@ function checkEnJson(): void {
 
   // 1. technicalSummary.values[plan].jobsPerMonth / floatingLicenses
   const tsValues = pricing.technicalSummary?.values ?? {};
-  for (const code of PLAN_ORDER) {
+  for (const code of PRICED_PLAN_CODES) {
     const planId = PLAN_ID_BY_CODE[code];
     const entry = tsValues[planId];
     if (!entry) {
@@ -134,7 +137,7 @@ function checkEnJson(): void {
   // They read `comparison.categories.infrastructure.rows` and the "N server setups per month" bullet in `plans.*.features`. Both were hand-maintained duplicates of the numbers already in `technicalSummary.values` above: the comparison table reprinted what the pricing card prints, and `plans.*.features` rendered nowhere at all -- 40 English strings across 13 catalogs that no
   // component read. The www-simplification pass deleted both, so the drift these checks existed to catch is now structurally impossible rather than merely detected.
   //
-  // Check 1 above is unchanged and still covers every plan in PLAN_ORDER, including COMMUNITY, against PLAN_LIMITS and PLAN_MAX_MACHINES. The docs tables below are still checked too. If a fourth copy of these numbers ever appears, add a check for it here rather than re-adding these.
+  // Check 1 above is unchanged and still covers every priced plan in PLAN_ORDER (all but FREE), including COMMUNITY, against PLAN_LIMITS and PLAN_MAX_MACHINES. The docs tables below are still checked too. If a fourth copy of these numbers ever appears, add a check for it here rather than re-adding these.
 }
 
 interface MarkdownTableSpec {
@@ -147,7 +150,7 @@ interface MarkdownTableSpec {
 function checkMarkdownTable(fileName: string, spec: MarkdownTableSpec): void {
   const filePath = path.join(WWW_DOCS_EN_DIR, fileName);
   const content = fs.readFileSync(filePath, 'utf8');
-  for (const code of PLAN_ORDER) {
+  for (const code of PRICED_PLAN_CODES) {
     const rowLabel = spec.rowLabelStyle === 'upper' ? code : code[0] + code.slice(1).toLowerCase();
     const rowRegex = new RegExp(`\\|\\s*${rowLabel}\\s*\\|([^\\n]+)\\|`, 'i');
     const rowMatch = rowRegex.exec(content);

@@ -45,10 +45,10 @@ function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
   };
 }
 
-/** The authoritative family list, straight from the schema. */
+/** The authoritative family list, straight from the schema. `storages` is a removed field the schema refuses (z.never), not a family. */
 function resourceFamilyKeys(): string[] {
   const resources = RdcConfigSchema.shape.resources as z.ZodOptional<z.ZodObject<z.ZodRawShape>>;
-  return Object.keys(resources.unwrap().shape);
+  return Object.keys(resources.unwrap().shape).filter((key) => key !== 'storages');
 }
 
 /**
@@ -64,6 +64,7 @@ const CARRIED_SECTIONS = [
   'defaults',
   'credentials',
   'resources',
+  'access',
   'infra',
   'policy',
   'state',
@@ -94,6 +95,16 @@ function allFamiliesConfig(): RdcConfig {
     renetPath: '/opt/bin/renet',
     state: { datastores: { ds1: { mounted: true } } },
     policy: { version: 1, defaults: { commands: { allow: ['repo *'] } } },
+    access: {
+      sourceRanges: { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] },
+      keys: {
+        probe: {
+          publicKey:
+            'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f fixture',
+          machines: { m1: true },
+        },
+      },
+    },
     credentials: { ssh: { privateKey: 'PRIV' } },
     resources: {
       machines: { m1: { ip: '10.0.0.1', user: 'root' } },
@@ -105,7 +116,6 @@ function allFamiliesConfig(): RdcConfig {
           parent: { datastore: 'ds1', snapshot: 'snap-1' },
         },
       },
-      storages: { s1: { provider: 's3', vaultContent: { accessKey: 'AKID', secret: 'SEC' } } },
       repositories: {
         shop: {
           grand: 'base',
@@ -136,10 +146,10 @@ function allFamiliesConfig(): RdcConfig {
         nightly: {
           destinations: [
             {
-              kind: 'storage',
+              kind: 'hosted-service',
               name: 'offsite',
-              storage: 's1',
-              folder: 'backups/shop',
+              endpoint: 'https://s3.example.com',
+              vaultContent: { accessKeyId: 'AKID', secretAccessKey: 'SEC' },
               enabled: true,
             },
           ],
@@ -197,6 +207,16 @@ async function pushPullRoundTrip(config: RdcConfig): Promise<RdcConfig> {
 }
 
 describe('resource families round trip', () => {
+  it('refuses a config carrying the removed resources.storages, naming the field', () => {
+    const config = allFamiliesConfig();
+    (config.resources as Record<string, unknown>).storages = {
+      s1: { provider: 's3', vaultContent: {} },
+    };
+    const result = RdcConfigSchema.safeParse(config);
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain('resources.storages was removed');
+  });
+
   it('fixture is schema-valid and populates every family and top-level section', () => {
     const config = allFamiliesConfig();
     expect(() => RdcConfigSchema.parse(config)).not.toThrow();
@@ -222,7 +242,9 @@ describe('resource families round trip', () => {
   it('every top-level section is classified envelope, carried, or host-local', () => {
     const classified = [...ENVELOPE_SECTIONS, ...CARRIED_SECTIONS, ...HOST_LOCAL_SECTIONS];
     // If this fails, a NEW top-level section was added to RdcConfigSchema: decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS + both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and make sure none of its leaves are committed in sensitivity.ts).
-    expect([...Object.keys(RdcConfigSchema.shape)].sort()).toEqual([...classified].sort());
+    expect(
+      [...Object.keys(RdcConfigSchema.shape)].sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual([...classified].sort((a, b) => Number(a > b) - Number(a < b)));
   });
 
   it('every family survives push → pull field-by-field', async () => {
@@ -250,6 +272,7 @@ describe('resource families round trip', () => {
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.policy).toEqual(original.policy);
+    expect(rebuilt.access).toEqual(original.access);
     // Runtime state is shared by every device of a store (T17): networkIds above all.
     expect(rebuilt.state).toEqual(original.state);
 

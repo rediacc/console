@@ -156,9 +156,31 @@ def test_main_runs_the_gateway_under_the_backup_plane_profile_in_the_account_dir
         "backup-plane",
         "--",
         "npx",
+        "--no-install",
         "tsx",
         "src/entry/dev-gateway.ts",
     ]
     assert seen["cwd"] == str(paths.repo_root() / "private" / "account")
     assert seen["bucket"] == "rediacc-backups-probe"
     assert docker.exists()
+
+
+def test_help_exits_zero_without_starting_anything(
+    docker: pathlib.Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(plane.bws_env, "main", lambda *_a, **_k: pytest.fail("gateway started"))
+    with pytest.raises(SystemExit) as exc:
+        plane.main(["--help"])
+    assert exc.value.code == 0
+    assert "environment variable" in capsys.readouterr().out
+    assert not docker.exists()
+
+
+def test_unknown_argument_is_refused_before_any_side_effect(
+    docker: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(plane.bws_env, "main", lambda *_a, **_k: pytest.fail("gateway started"))
+    with pytest.raises(SystemExit) as exc:
+        plane.main(["--bogus"])
+    assert exc.value.code == 2
+    assert not docker.exists()

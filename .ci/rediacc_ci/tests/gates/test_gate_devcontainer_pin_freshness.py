@@ -155,7 +155,7 @@ def run_gate(gate, directory, dockerfile, fixture: str, *args: str) -> harness.R
     npx = harness.require_tool(
         "npx", "install node; the subject is a TypeScript program driven through tsx"
     )
-    # The cases do not read live policy: without this the gate reads the tracked blocklist, and a real hold (gopls, cddf1b670) turned "5 of 5 compared" into "4 of 5, 1 held".
+    # The cases do not read live policy: without this the gate reads the tracked blocklist, and a real hold (gopls, 8c5018d80) turned "5 of 5 compared" into "4 of 5, 1 held".
     holds = directory / "blocklist-none"
     holds.write_text("# no holds; the cases do not read live policy\n", encoding="utf-8")
     return harness.run(
@@ -332,7 +332,7 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
         "UPSTREAM REACHABILITY FAILURE (127.0.0.1:%d), not a stale pin" % port,
         "the finding says what kind of red this is and names the host",
     )
-    gate.assert_contains(result.out, "attempt 2 of 3 failed", "the retries are visible")
+    gate.assert_contains(result.err, "attempt 2 of 3 failed", "the retries are visible")
     gate.assert_not_contains(result.out, "Every devcontainer pin", "no green line is printed")
     gate.assert_not_contains(result.err, "per_page", "the query string is not printed")
     assert_no_token(gate, result)
@@ -385,7 +385,7 @@ def test_a_transient_failure_then_success_is_green(gate, tmp_path):
         gate.assert_eq(stub.asked(route(dlv)), 2, "the 503 is asked again once")
         gate.assert_eq(stub.asked(route(bw)), 2, "the 429 is asked again once")
     gate.assert_exit(0, result, "a failure that clears inside the retry budget passes")
-    gate.assert_contains(result.out, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
+    gate.assert_contains(result.err, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
     gate.assert_contains(
         result.out, "%d of %d compared with upstream" % (count, count), "every pin was compared"
     )

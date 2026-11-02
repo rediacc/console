@@ -47,7 +47,6 @@ import {
   walkContractCommands,
 } from './lib/command-tree-lib.js';
 import { parseExampleValues } from './lib/example-parse.js';
-import { at } from './lib/table.js';
 import {
   collectClassificationProblems,
   resolveOptionFormat,
@@ -55,6 +54,7 @@ import {
   resolveOptionSensitive,
   resolveOptionTier,
 } from './lib/option-classification.js';
+import { at } from './lib/table.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -85,6 +85,10 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   // Registered as a dry-run download: it still shells out to a client-side rsync that diffs against the operator's local tree.
   'repo sync status':
     'Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.',
+  'backup download':
+    'Copies the repository image to a local directory with a client-side rsync; a remote executor would write the image onto its own disk. Run it without --proxy.',
+  'backup upload':
+    'Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.',
 
   // ── Local effect ──────────────────────────────────────────────────────
   'machine infra cert pull':
@@ -95,27 +99,46 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
     "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
   'config reconcile':
     "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
+  'machine access push':
+    "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
+
+  // ── Caller-held secrets ───────────────────────────────────────────────
+  'machine converge':
+    "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
 };
 
 /**
- * Machine-plane commands that are proxyable but must NOT be detached, keyed by
- * command path, with the reason.
+ * Proxyable machine-plane commands that do NOT run as a machine job, keyed by
+ * command path, with the reason (agent/plans/PLAN-detached-jobs.md section 24
+ * and the J0b audit). Every other proxyable, non-`job` command is `detachable`:
+ * its renet calls run as one machine job (section 14), and `--background`
+ * returns the ticket at once.
  *
- * Empty for now: `detachable = proxyCapable && domain !== 'job'` already covers
- * every current case (the classes proxyCapable excludes are exactly the ones
- * that break under detach, and `rdc job *` manages jobs rather than doing
- * machine work). This table exists as the escape hatch for a proxyable,
- * non-job command that a future reshape must keep synchronous: the analog of
- * PROXY_EXCLUSIONS one layer up.
+ * Each reason is user-facing: `--background` prints it when it refuses the
+ * command (`detachBlockedReason` in the contract), so it says why and what to
+ * run instead.
  */
-const DETACH_EXCLUSIONS: Record<string, string> = {};
+const DETACH_EXCLUSIONS: Record<string, string> = {
+  'cluster destroy':
+    'Tears the cluster down with local OpenTofu or ops calls and never reaches a machine over SSH, so there is no machine job to detach. Run it without --background.',
+  'datastore list':
+    'Reads the local config and state only and makes no machine call, so there is no machine job to detach. Run it without --background.',
+  'machine deprovision':
+    'Destroys the machine with local OpenTofu and has no SSH leg, so there is no machine job to detach. Run it without --background.',
+  'machine infra cert push':
+    'Writes the local certificate cache to the machine in one raw file write, with no renet call to run as a job. Run it without --background.',
+  'vscode serve status':
+    'Runs a script as the repository user, not as root, so it cannot run as a root job unit. Run it without --background.',
+  'vscode serve stop':
+    'Runs a script as the repository user, not as root, so it cannot run as a root job unit. Run it without --background.',
+};
 
 /**
  * What a positional token names, keyed by its argument name.
  *
  * The addressing grammar (docs/design/spec/03-cli-contracts.md §2.2) names each
  * noun's positional so that the NAME already signals the kind: a repo verb's
- * `<repo-ref>`, a datastore verb's `<datastore-ref>`, `storage import`'s
+ * `<repo-ref>`, a datastore verb's `<datastore-ref>`, a file argument's
  * `<file>`. So the classifier keys on the argument name, with a couple of
  * domain refinements where the same bare name means different things.
  */
@@ -134,7 +157,6 @@ const POSITIONAL_KIND_BY_NAME: Record<string, PositionalKind> = {
   strategy: 'strategy',
   artifact: 'artifact-ref',
   'artifact-ref': 'artifact-ref',
-  storage: 'storage',
   file: 'file',
   target: 'target',
   'job-id': 'job-id',
@@ -493,9 +515,10 @@ const commands: ContractCommand[] = walked.map((w) => {
     ? undefined
     : proxyBlockedReason(w.pathKey, plane, interactive);
 
-  // Detach is the same predicate as proxy, minus jobs (they manage jobs, not machine work) and an escape-hatch table. The serve dispatch turns it on for
-  // a proxied command; `--background` turns it on for a local one.
+  // Every proxyable machine-plane command runs as one machine job (PLAN-detached-jobs section 14), minus the `job *` verbs (they read the spool) and the
+  // section 24 exceptions in DETACH_EXCLUSIONS. `--background` is accepted exactly where this is true.
   const detachable = proxyCapable && domain !== 'job' && !(w.pathKey in DETACH_EXCLUSIONS);
+  const detachBlockedReason = proxyCapable ? DETACH_EXCLUSIONS[w.pathKey] : undefined;
 
   return {
     path: w.path,
@@ -526,6 +549,7 @@ const commands: ContractCommand[] = walked.map((w) => {
     proxyCapable,
     ...(blockedReason ? { proxyBlockedReason: blockedReason } : {}),
     detachable,
+    ...(detachBlockedReason ? { detachBlockedReason } : {}),
 
     machineOption: resolveMachineOption(domain, options),
     repoOption: resolveRepoOption(domain, options, mcp?.repoArg),

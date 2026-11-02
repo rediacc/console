@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "8eef0f7b9e1dcd39"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "4769afb97c2b885d"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # الخدمات
@@ -52,7 +52,7 @@ sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 | `REDIACC_WORKING_DIR` | مسار تحميل المستودع | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | معرّف GUID للمستودع | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | معرّف الشبكة (عدد صحيح) | `2816` |
-| `DOCKER_HOST` | مقبس Docker للعملية المعزولة لهذا المستودع | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | مقبس Docker للعملية المعزولة لهذا المستودع | `unix:///var/run/rediacc/net-2816/docker-2816.sock` |
 | `{SERVICE}_IP` | عنوان IP الحلقي لكل خدمة معرّفة في `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 
 يتم إنشاء متغيرات `{SERVICE}_IP}` تلقائياً من خلال تعيينات الفتحات في `.rediacc.json` وتُصدّر قبل تنفيذ دوال Rediaccfile. تحوّل قاعدة التسمية اسم الخدمة إلى أحرف كبيرة مع استبدال الشرطات بشرطات سفلية، ثم تضيف `_IP`. على سبيل المثال، الخدمة باسم `listmonk-app` مع فتحة `0` تصبح `LISTMONK_APP_IP=127.0.11.2`.
@@ -98,7 +98,7 @@ services:
       - "rediacc.wireguard=true"
 ```
 
-تتيح `rediacc.wireguard` للخدمة إنشاء نفق WireGuard، لتوجيه عملية واحدة مثلاً عبر نقطة نهاية بعيدة. بما أن كل خدمة تعمل بشبكة المضيف، احصر النفق في نطاق شبكة داخل الحاوية حتى لا يُغير توجيه المضيف. خيارات الامتياز الواسعة كـ `privileged: true` و`pid: host` و`ipc: host` تبقى مرفوضة بالتحقق بصرف النظر عن التسميات.
+تتيح `rediacc.wireguard` للخدمة إنشاء نفق WireGuard، لتوجيه عملية واحدة مثلاً عبر نقطة نهاية بعيدة. بما أن كل خدمة تعمل بشبكة المضيف، احصر النفق في نطاق شبكة داخل الحاوية حتى لا يُغير توجيه المضيف. خيارات الامتياز الواسعة كـ `privileged: true` و`pid: host` و`ipc: host` تبقى مرفوضة بصرف النظر عن التسميات، سواء عند التحقق من compose أو على واجهة Docker البرمجية، حيث يرد خادم المستودع بالرمز `403`.
 
 ### تخطيط متعدد الخدمات
 
@@ -453,7 +453,7 @@ rdc repo admin autostart enable webapp
 
 **نمط `env`.** قم بالاستيفاء عبر `${REDIACC_SECRET_<KEY>}` في أي قيمة `environment:`. يمرر غلاف renet القيمة إلى بيئة الحاوية عند النشر.
 
-**نمط `file`.** تنزل القيمة إلى ملف tmpfs على جانب المضيف في `/var/run/rediacc/secrets/<networkID>/<KEY>`، وتحمّله في الحاوية عبر كتلة `secrets:` القياسية لـ Docker compose. تقرأ الحاوية `/run/secrets/<key>`. فضّل هذا النمط لأي شيء حساس. القيم لا تظهر أبداً في `docker inspect` أو `/proc/<pid>/environ`.
+**نمط `file`.** تنزل القيمة إلى ملف tmpfs على جانب المضيف في `/var/run/rediacc/net-<networkID>/secrets/<KEY>`، وتحمّله في الحاوية عبر كتلة `secrets:` القياسية لـ Docker compose. تقرأ الحاوية `/run/secrets/<key>`. فضّل هذا النمط لأي شيء حساس. القيم لا تظهر أبداً في `docker inspect` أو `/proc/<pid>/environ`.
 
 ```yaml
 services:
@@ -466,9 +466,9 @@ services:
 
 secrets:
   stripe_live_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_LIVE_KEY
 ```
 
 ازرع القيم باستخدام `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` والمعادل لنمط الملف. راجع [المستودعات § الأسرار](/ar/docs/repositories#secrets) للحصول على طريقة شاملة و [أسرار المستودع](/ar/docs/rdc-cheat-sheet#per-repo-secrets) في ورقة الغش للحصول على مرجع الأمر.
 
-> **يتم رفض مسارات متعددة المستودعات في وقت التحقق.** تصريح compose `secrets: file:` (أو `configs: file:` أو `env_file:`) يشير إلى دليل `/var/run/rediacc/secrets/<other-networkID>/` لمستودع آخر يتم رفضه بشدة بواسطة غلاف renet قبل تشغيل docker compose. `--unsafe` لا تعكس. دفاع متعدد الطبقات: sandbox الـ Landlock حول شل Rediaccfile ينطاق القراءات إلى دليل الأسرار لشبكة حالية، لذا `cat /var/run/rediacc/secrets/<other>/X` من bash Rediaccfile يفشل مع EACCES حتى إذا تجاوز مدقق YAML. لا تحتاج إلى الانضمام؛ هذا بالفعل مفعّل بشكل افتراضي لكل `repo up`.
+> **يتم رفض مسارات متعددة المستودعات في وقت التحقق.** تصريح compose `secrets: file:` (أو `configs: file:` أو `env_file:`) يشير إلى دليل `/var/run/rediacc/net-<other-networkID>/secrets/` لمستودع آخر يتم رفضه بشدة بواسطة غلاف renet قبل تشغيل docker compose. `--unsafe` لا تعكس. دفاع متعدد الطبقات: sandbox الـ Landlock حول شل Rediaccfile ينطاق القراءات إلى دليل الأسرار لشبكة حالية، لذا `cat /var/run/rediacc/net-<other>/secrets/X` من bash Rediaccfile يفشل مع EACCES حتى إذا تجاوز مدقق YAML. لا تحتاج إلى الانضمام؛ هذا بالفعل مفعّل بشكل افتراضي لكل `repo up`.

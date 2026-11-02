@@ -4,10 +4,17 @@
  * the opportunistic batch refresh, and the post-create identity refresh.
  */
 
+import { isValidGuid } from '@rediacc/shared/validation';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { ValidationError } from '../../utils/errors.js';
+import {
+  issueFreeRepoLicense,
+  type LicenseAuthority,
+  renewInstalledLicenses,
+  resolveLicenseAuthority,
+} from '../account/free-license.js';
 import {
   issueRepoLicense,
   type RepoBatchRecoveryFailureMode,
@@ -22,7 +29,7 @@ import {
 import { isRefreshDue, markRefreshAttempted } from '../account/license-refresh-state.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from '../account/subscription-device-auth.js';
-import type { configService } from '../config/config-resources.js';
+import { configService } from '../config/config-resources.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
@@ -33,6 +40,7 @@ import {
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
 import { telemetryService } from '../telemetry/telemetry.js';
+import { resolveLicenseRecoveryGuidance } from './license-recovery-guidance.js';
 import {
   type RepoLicenseContext,
   resolveRepoLicenseContext,
@@ -56,11 +64,7 @@ import type { ExecuteOptions, ExecuteResult } from './types.js';
  * LICENSE_REQUIRED payload confirms it. Do not act on this function alone.
  */
 export function needsLicenseRecovery(result: ExecuteResult): boolean {
-  return (
-    !result.success &&
-    result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE &&
-    process.env.REDIACC_SKIP_MACHINE_ACTIVATION !== '1'
-  );
+  return !result.success && result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE;
 }
 
 type LicenseIssuanceOutcome =
@@ -88,7 +92,7 @@ export async function resolveLicenseFailure(
     );
   }
   try {
-    await maybeOnboardSubscription(failure.reason);
+    await maybeOnboardSubscription(failure.reason, options.functionName);
   } catch (error) {
     return buildRecoveryFailureResult(
       result,
@@ -173,12 +177,14 @@ async function maybeIssueLicense(
       };
     }
   }
-  // For all other licensed operations, batch refresh existing repo licenses
+  // For all other licensed operations, batch refresh existing repo licenses. A success needs the REFUSED repo licensed, not just any repo on the machine, or the retry meets the same refusal.
+  const requiredGuid = await refusedRepoGuid(options);
   const batchResult = await refreshRepoLicensesBatch(
     machine,
     sshPrivateKey,
     remoteRenetPath,
-    sftp
+    sftp,
+    requiredGuid
   ).catch((err: unknown) => {
     telemetryService.trackError(err, { operation: 'executor.batch_refresh' });
     return {
@@ -191,11 +197,63 @@ async function maybeIssueLicense(
     return batchResult;
   }
   if (batchResult.recoveryFailureMode === null) return { kind: 'success' };
+  // No login: the batch needs a token, but an installed blob renews itself through renet's blob-authenticated path, which is how a FREE licence (or any licence on a machine whose operator is not logged in here) is renewed, without limit (PLAN-free-license R6).
+  if (batchResult.recoveryFailureMode === 'token_not_ready') {
+    return renewWithoutToken(machine, sshPrivateKey, remoteRenetPath, sftp, requiredGuid);
+  }
   return {
     kind: 'failure',
     failureMode: batchResult.recoveryFailureMode,
     serverErrorSample: batchResult.serverErrorSample,
   };
+}
+
+/**
+ * The GUID of the repo a refused run named, or undefined for a machine-wide verb
+ * (or a name the config does not know), where recovery keeps machine-wide semantics.
+ */
+async function refusedRepoGuid(options: ExecuteOptions): Promise<string | undefined> {
+  if (!options.functionName.startsWith('repository_') || options.functionName.endsWith('_all')) {
+    return undefined;
+  }
+  const name = options.params?.repository;
+  if (typeof name !== 'string' || !name) return undefined;
+  // A tag-targeted verb names the SOURCE in `repository` while the licence it needs is the tag's, so it keeps machine-wide semantics.
+  if (typeof options.params?.tag === 'string' && options.params.tag) return undefined;
+  if (isValidGuid(name)) return name.toLowerCase();
+  try {
+    return (await configService.getRepository(name))?.repositoryGuid?.toLowerCase() || undefined;
+  } catch (err) {
+    telemetryService.trackError(err, { operation: 'executor.refused_repo_guid' });
+    return undefined;
+  }
+}
+
+/** Recovery with no token: renet renews every installed blob now; a success is a renewal of the refused repo (any renewal when none is named). */
+async function renewWithoutToken(
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+  sshPrivateKey: string,
+  remoteRenetPath: string,
+  sftp: SFTPClient,
+  requiredGuid?: string
+): Promise<LicenseIssuanceOutcome> {
+  try {
+    const { renewed, results } = await renewInstalledLicenses(machine, sshPrivateKey, {
+      force: true,
+      remoteRenetPath,
+      sftp,
+    });
+    const recovered = requiredGuid
+      ? results.some(
+          (r) =>
+            r.repositoryGuid.toLowerCase() === requiredGuid.toLowerCase() && r.outcome === 'renewed'
+        )
+      : renewed > 0;
+    if (recovered) return { kind: 'success' };
+  } catch (err) {
+    telemetryService.trackError(err, { operation: 'executor.renew_without_token' });
+  }
+  return { kind: 'failure', failureMode: 'token_not_ready' };
 }
 
 /**
@@ -222,11 +280,15 @@ export async function maybeRefreshRepoLicenses(
 ): Promise<void> {
   // The ENTIRE body is best-effort. This runs on every machine-touching command as a side-effect of doing something else, so nothing in here, token lookup, local state IO, the network call, may surface as a failure of the command the operator actually asked for.
   try {
-    if (getSubscriptionTokenState().kind !== 'ready') return;
-
     if (!(await isRefreshDue(machineName))) return;
     // Marked before the attempt, not after: a refresh that throws must still consume its cooldown slot, or an unreachable machine would be retried on every single command.
     await markRefreshAttempted(machineName);
+
+    // No login: renet's own renewal keeps the installed blobs alive, FREE licences included (they renew without limit, R6). Only due blobs are sent.
+    if (getSubscriptionTokenState().kind !== 'ready') {
+      await renewInstalledLicenses(machine, sshPrivateKey, { remoteRenetPath, sftp });
+      return;
+    }
 
     const result = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath, sftp);
     if (result.invalidSignatureDetected > 0) {
@@ -248,8 +310,12 @@ export async function maybeRefreshRepoLicenses(
   }
 }
 
-async function maybeOnboardSubscription(reason: string): Promise<boolean> {
+async function maybeOnboardSubscription(reason: string, functionName: string): Promise<boolean> {
   if (reason !== 'missing') {
+    return false;
+  }
+  // The single-repo reissue (provisioning, restore) resolves its own authority, where the free licence is offered; logging in here first would pre-empt that offer.
+  if (singleRepoReissueFor(functionName)) {
     return false;
   }
   const tokenState = getSubscriptionTokenState();
@@ -282,21 +348,8 @@ export async function ensureRepoLicenseForProvisioning(
   remoteRenetPath: string,
   sftp?: SFTPClient
 ): Promise<void> {
-  // Allow bypassing activation for nolicense/CI builds where no subscription server exists
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') {
-    return;
-  }
-
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    if (isAgentEnvironment()) {
-      throw new ValidationError(t('errors.subscription.tokenRequired'));
-    }
-    await authorizeSubscriptionViaDeviceCode(undefined, {
-      interactive: process.stdin.isTTY && process.stdout.isTTY,
-      announceIntro: true,
-    });
-  }
+  // No login: a human is offered a login or a free licence, an agent or --yes takes the free licence (PLAN-free-license R11).
+  const authority = await resolveLicenseAuthority(loginViaDeviceCode);
 
   const repoLicenseCtx = await resolveRepoLicenseContext(
     options.functionName,
@@ -309,7 +362,8 @@ export async function ensureRepoLicenseForProvisioning(
     throw new Error(t('errors.subscription.activationFailed'));
   }
 
-  const issued = await issueOrExplainSlotLimit(
+  const issued = await issueFor(
+    authority,
     machine,
     sshPrivateKey,
     repoLicenseCtx,
@@ -359,21 +413,8 @@ export async function ensureRepoLicenseForRestore(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<void> {
-  // Allow bypassing activation for nolicense/CI builds where no subscription server exists
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') {
-    return;
-  }
-
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    if (isAgentEnvironment()) {
-      throw new ValidationError(t('errors.subscription.tokenRequired'));
-    }
-    await authorizeSubscriptionViaDeviceCode(undefined, {
-      interactive: process.stdin.isTTY && process.stdout.isTTY,
-      announceIntro: true,
-    });
-  }
+  // No login: a human is offered a login or a free licence, an agent or --yes takes the free licence (PLAN-free-license R11).
+  const authority = await resolveLicenseAuthority(loginViaDeviceCode);
 
   const params = options.params ?? {};
   const base = await resolveRestoreLicenseContext(options.machineName, params, sftp, {
@@ -388,7 +429,8 @@ export async function ensureRepoLicenseForRestore(
     return;
   }
 
-  const issued = await issueOrExplainSlotLimit(
+  const issued = await issueFor(
+    authority,
     machine,
     sshPrivateKey,
     {
@@ -401,6 +443,42 @@ export async function ensureRepoLicenseForRestore(
   if (!issued) {
     throw new Error(t('errors.subscription.activationFailed'));
   }
+}
+
+/** The device-code login the licence paths ran before the free licence existed. */
+async function loginViaDeviceCode(): Promise<void> {
+  await authorizeSubscriptionViaDeviceCode(undefined, {
+    interactive: process.stdin.isTTY && process.stdout.isTTY,
+    announceIntro: true,
+  });
+}
+
+/** Issue through the account (`token`) or take a FREE licence (`free`) for the same repo context. */
+async function issueFor(
+  authority: LicenseAuthority,
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+  sshPrivateKey: string,
+  repoLicenseCtx: RepoLicenseContext,
+  remoteRenetPath: string,
+  sftp?: SFTPClient
+): Promise<boolean> {
+  if (authority === 'token') {
+    return issueOrExplainSlotLimit(machine, sshPrivateKey, repoLicenseCtx, remoteRenetPath, sftp);
+  }
+  await issueFreeRepoLicense(
+    machine,
+    sshPrivateKey,
+    {
+      repositoryGuid: repoLicenseCtx.repositoryGuid,
+      grandGuid: repoLicenseCtx.grandGuid,
+      kind: repoLicenseCtx.kind,
+      requestedSizeGb: repoLicenseCtx.requestedSizeGb,
+      datastoreId: repoLicenseCtx.datastoreId,
+    },
+    remoteRenetPath,
+    sftp
+  );
+  return true;
 }
 
 /**
@@ -449,123 +527,6 @@ async function issueOrExplainSlotLimit(
   }
 }
 
-function buildMissingLicenseMessage(
-  outcome: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string } | undefined,
-  machineName: string
-): string {
-  const base = ((): string => {
-    switch (outcome?.failureMode) {
-      case 'token_not_ready':
-        return t('errors.license.recoveryFailedTokenNotReady');
-      case 'no_known_repos':
-        return t('errors.license.recoveryFailedNoKnownRepos', { machine: machineName });
-      case 'server_rejected_all': {
-        const errorDetail = outcome.serverErrorSample ?? '';
-        return t('errors.license.recoveryFailedServerRejected', {
-          error: errorDetail,
-          machine: machineName,
-        });
-      }
-      default:
-        return (
-          `A repo license is required for this operation, and automatic issuance did not succeed. ` +
-          `Run: rdc subscription refresh -m ${machineName}`
-        );
-    }
-  })();
-  // Name the dev/test escape here (read by needsLicenseRecovery): it has bitten three agents who hit a license wall on a throwaway machine and did not know they could bypass activation entirely.
-  return `${base} ${t('errors.license.skipActivationHint')}`;
-}
-
-function resolveLicenseRecoveryGuidance(
-  failure: RenetLicenseFailure,
-  machineName: string,
-  outcome?: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string }
-): {
-  errorCode?: string;
-  guidance?: string;
-  failFastMessage?: string;
-  recoveryFailedMessage?: string;
-} {
-  switch (failure.reason) {
-    case 'missing': {
-      const recoveryFailedMessage = buildMissingLicenseMessage(outcome, machineName);
-      return {
-        errorCode: 'REPO_LICENSE_ISSUANCE_REQUIRED',
-        guidance: `Issue repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
-        recoveryFailedMessage,
-      };
-    }
-    case 'expired':
-      return {
-        errorCode: 'REPO_LICENSE_REFRESH_REQUIRED',
-        guidance: `Refresh repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
-        recoveryFailedMessage:
-          `The installed repo license must be refreshed before this operation can continue. ` +
-          `Run: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'machine_mismatch':
-      return {
-        errorCode: 'REPO_LICENSE_MACHINE_MISMATCH',
-        guidance: `Reissue repo licenses from this machine context with: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The installed repo license belongs to a different machine. ` +
-          `Reissue it from this machine context with: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'repository_mismatch':
-      return {
-        errorCode: 'REPO_LICENSE_REPOSITORY_MISMATCH',
-        guidance: `Refresh repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The installed repo license does not match the target repository. ` +
-          `Refresh repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'sequence_regression':
-      return {
-        errorCode: 'REPO_LICENSE_INTEGRITY_ERROR',
-        guidance: `Replace the installed repo license with: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The installed repo license is older than the latest accepted sequence. ` +
-          `Replace it with a newer repo license using: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'invalid_signature':
-      return {
-        errorCode: 'REPO_LICENSE_INTEGRITY_ERROR',
-        guidance: `Replace the installed repo license with: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The installed repo license could not be trusted. ` +
-          `Replace it with a newly issued repo license using: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'identity_mismatch':
-      return {
-        errorCode: 'REPO_LICENSE_IDENTITY_MISMATCH',
-        guidance: `Reissue repo licenses with: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The repository identity does not match the installed repo license. ` +
-          `Reissue repo licenses with: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'cert_expired':
-      return {
-        errorCode: 'REPO_LICENSE_DELEGATION_CERT_EXPIRED',
-        guidance: `Renew the on-prem delegation cert, then: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The on-prem delegation cert covering this license has expired. ` +
-          `Renew it on the on-prem account server (auto-renew or the portal renew flow), ` +
-          `then run: rdc subscription refresh -m ${machineName}`,
-      };
-    case 'cert_invalid':
-      return {
-        errorCode: 'REPO_LICENSE_DELEGATION_CERT_INVALID',
-        guidance: `Fix the on-prem delegation cert, then: rdc subscription refresh -m ${machineName}`,
-        failFastMessage:
-          `The delegation cert attached to the installed repo license could not be trusted. ` +
-          `Fix the on-prem cert, then reissue with: rdc subscription refresh -m ${machineName}`,
-      };
-    default:
-      return {};
-  }
-}
-
 export async function maybeRefreshRepoIdentity(
   options: ExecuteOptions,
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
@@ -573,7 +534,6 @@ export async function maybeRefreshRepoIdentity(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<void> {
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
   if (!isRepoProvisioningFunction(options.functionName)) return;
   const repoLicense = await resolveRepoLicenseContext(
     options.functionName,
@@ -598,7 +558,6 @@ export async function refreshRepoIdentityFor(
   machineName: string,
   params: Record<string, unknown>
 ): Promise<void> {
-  if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
   const lease = await machineConnections.acquire(machineName);
   try {
     const repoLicense = await resolveRepoLicenseContext(

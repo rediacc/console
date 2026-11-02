@@ -18,16 +18,21 @@ import shutil
 import subprocess
 import sys
 import typing
+from urllib.parse import urlparse
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_account as port
+from rediacc_ci.ops import portal_captcha as pc
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN
+
+EU_HOST = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    import pytest
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "deploy-account.sh"
@@ -78,6 +83,8 @@ sys.stdout.write("added 1 package\\n")
 
 # A `wrangler` that is never invoked. Its only job is to be FOUND by `command -v` / `shutil.which`, which is half of the npm-install condition.
 FAKE_WRANGLER = "#!/usr/bin/python3\nraise SystemExit('the fake wrangler must never run')\n"
+
+FIXTURE_SITEKEY = "0x4AAAAAAAfixtureSiteKey01"
 
 BASE_ENV = {
     "CLOUDFLARE_API_TOKEN": "tok",
@@ -176,6 +183,17 @@ def _run_live(
     **extra: str,
 ):
     side = "old" if subject.suffix == ".sh" else "new"
+    assets = root / "workers" / "account" / "dist" / "account" / "assets"
+    planted = side == "new" and (root / "workers" / "account").is_dir() and not assets.exists()
+    # The topmost directory the planting creates, and only that, is removed after the run: a `dist` the fixture already held keeps its content (review a43d7f08.2).
+    created = None
+    if planted:
+        created = next(d for d in (assets.parent.parent, assets.parent, assets) if not d.exists())
+        # A built portal that carries the sitekey, as a correct build leaves it. Only the live port reads it, and it is removed after the run, so the tree the golden key hashes stays the same.
+        assets.mkdir(parents=True)
+        (assets / "index-fixture.js").write_text(
+            'const k="%s";' % FIXTURE_SITEKEY, encoding="utf-8"
+        )
     call_log = tmp_path / f"{side}-calls.log"
     call_log.write_text("", encoding="utf-8")
     env = {
@@ -188,6 +206,8 @@ def _run_live(
         "REDIACC_CI_ROOT": str(root),
         "FAKE_CALL_LOG": str(call_log),
         **BASE_ENV,
+        # The live port proves the built portal carries the Turnstile sitekey before any write; the fixture root holds one that does.
+        "TURNSTILE_SITE_KEY": FIXTURE_SITEKEY,
     }
     env.update(extra)
     for name in drop_env:
@@ -203,6 +223,8 @@ def _run_live(
         timeout=120,
         input="",
     )
+    if created is not None:
+        shutil.rmtree(created)
     return proc, call_log.read_text(encoding="utf-8")
 
 
@@ -281,10 +303,10 @@ def test_the_two_wrangler_calls_are_pinned_in_full(tmp_path: pathlib.Path) -> No
     assert old_calls == (
         "npm\tinstall\n"
         "  cwd=account\n"
-        "npx\twrangler\td1\tmigrations\tapply\taccount-db-eu\t--remote\t--config\twrangler.eu.toml\n"
+        "npx\t--no-install\twrangler\td1\tmigrations\tapply\taccount-db-eu\t--remote\t--config\twrangler.eu.toml\n"
         "  cwd=account\n"
         "  token='tok'\n"
-        "npx\twrangler\tdeploy\t--config\twrangler.eu.toml\n"
+        "npx\t--no-install\twrangler\tdeploy\t--config\twrangler.eu.toml\n"
         "  cwd=account\n"
         "  token='tok'\n"
     )
@@ -498,7 +520,11 @@ def test_the_first_of_two_database_blocks_wins(tmp_path: pathlib.Path) -> None:
     assert old.returncode == 0, old.stderr
     assert "apply\tfirst-db\t--remote" in old_calls
     assert "second-db" not in old_calls
-    _assert_agree(old, new, "two-blocks", old_calls, new_calls)
+    # THE SERVICES PREFLIGHT DIVERGES HERE ON PURPOSE: a duplicate key is not TOML, so `service_bindings_audit` gives no verdict (rc 77) and the port refuses before migrating, where the twin migrated `first-db`.
+    assert new.returncode == 1
+    assert "npx" not in new_calls
+    assert "cannot read the Worker configs" in new.stderr
+    assert "no migration was applied" in new.stderr
 
 
 def test_a_tab_indented_unspaced_assignment_still_parses(tmp_path: pathlib.Path) -> None:
@@ -558,3 +584,343 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.deploy_account"
     assert port.__name__ == port.SELF
+
+
+# --------------------------------------------------------------------------- The services preflight (port only: the twin had none) ---------------------------------------------------------------------------
+
+SERVICES_TOML = (
+    'name = "edge-rediacc-account-eu"\n'
+    + FIXTURE_TOML
+    + '\n[[services]]\nbinding = "EXECUTOR"\nservice = "edge-rediacc-proxy-eu"\n'
+)
+
+# The Cloudflare Workers listing `service_bindings_audit` reads, answered from FAKE_CF_WORKERS (comma list); FAKE_CF_FAIL makes the API refuse. It logs the URL, never a header.
+FAKE_CURL = """#!/usr/bin/python3
+import json
+import os
+import sys
+
+with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
+    fh.write("curl\\t" + sys.argv[-1] + "\\n")
+if os.environ.get("FAKE_CF_FAIL"):
+    sys.stdout.write(json.dumps({"success": False, "result": []}))
+    sys.exit(0)
+names = [n for n in os.environ.get("FAKE_CF_WORKERS", "").split(",") if n]
+sys.stdout.write(json.dumps({"success": True, "result": [{"id": n} for n in names]}))
+"""
+
+
+def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: typing.Any):
+    curl = tmp_path / "new-bin" / "curl"
+    curl.parent.mkdir(parents=True, exist_ok=True)
+    curl.write_text(FAKE_CURL, encoding="utf-8")
+    curl.chmod(0o755)
+    return _run(
+        PORT,
+        tmp_path,
+        root,
+        ("--region", "eu", "--target", "edge"),
+        with_wrangler=True,
+        **extra,
+    )
+
+
+def test_a_missing_service_worker_refuses_before_any_migration(tmp_path: pathlib.Path) -> None:
+    """The 2026-10-27 eu edge run: the twin applied 0060-0066, then wrangler refused the deploy with code 10143 because EXECUTOR named a proxy Worker that did not exist. The preflight refuses first, and no migration runs."""
+    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu")
+    assert new.returncode == 1, new.stderr
+    assert "curl\thttps://api.cloudflare.com/client/v4/accounts/acct/workers/scripts" in calls
+    assert "npx" not in calls, "wrangler ran before the refusal"
+    assert "names Worker edge-rediacc-proxy-eu, which does not exist" in new.stderr
+    assert "deploy edge-rediacc-proxy-eu first" in new.stderr
+    assert "no migration was applied" in new.stderr
+    assert "Applying migrations" not in new.stderr
+
+
+def test_an_audit_with_no_verdict_refuses_too(tmp_path: pathlib.Path) -> None:
+    """rc 77: an account listing that answers nothing confirms nothing, so it refuses as a missing Worker does."""
+    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_FAIL="1")
+    assert new.returncode == 1
+    assert "npx" not in calls
+    assert "gave no verdict for workers/account/wrangler.edge-eu.toml" in new.stderr
+
+
+def test_an_existing_service_worker_lets_the_deploy_run(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(
+        tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
+    )
+    assert new.returncode == 0, new.stderr
+    order = [line.split("\t")[0:4] for line in calls.splitlines() if not line.startswith("  ")]
+    assert [o[0] for o in order] == ["curl", "npx", "npx"]
+    assert order[1][1:] == ["--no-install", "wrangler", "d1"]
+    assert order[2][1:] == ["--no-install", "wrangler", "deploy"]
+
+
+def test_an_unreadable_sibling_config_does_not_block_a_deploy_without_services(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review d127ac64.1: only the deployed config is read, so a sibling that is not TOML cannot block a deploy whose own config binds no service, and that deploy makes no API call."""
+    root = _fixture_root(
+        tmp_path,
+        configs={
+            "wrangler.edge-eu.toml": 'name = "edge-rediacc-account-eu"\n' + FIXTURE_TOML,
+            "wrangler.eu.toml": "this = is = not toml\n",
+        },
+    )
+    new, calls = _run_with_curl(tmp_path, root)
+    assert new.returncode == 0, new.stderr
+    assert "curl" not in calls
+    assert "cannot read the Worker configs" not in new.stderr
+
+
+def test_an_unreadable_sibling_config_does_not_block_a_deploy_with_services(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(
+        tmp_path,
+        configs={
+            "wrangler.edge-eu.toml": SERVICES_TOML,
+            "wrangler.eu.toml": "this = is = not toml\n",
+        },
+    )
+    new, calls = _run_with_curl(
+        tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
+    )
+    assert new.returncode == 0, new.stderr
+    assert "curl" in calls
+
+
+def test_an_unreadable_own_config_still_refuses(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(
+        tmp_path,
+        configs={"wrangler.edge-eu.toml": 'database_name = "db"\nthis = is = not toml\n'},
+    )
+    new, calls = _run_with_curl(tmp_path, root)
+    assert new.returncode == 1
+    assert "npx" not in calls
+    assert "cannot read the Worker configs" in new.stderr
+
+
+def test_an_unreadable_sibling_config_never_blocks_a_config_without_bindings(
+    tmp_path: pathlib.Path,
+) -> None:
+    acc = tmp_path / "workers" / "account"
+    acc.mkdir(parents=True)
+    (acc / "wrangler.edge-eu.toml").write_text('name = "edge-rediacc-account-eu"\n')
+    (acc / "wrangler.edge-us.toml").write_text("not = = toml\n")
+
+    def no_api(_url: str, _token: str) -> dict:
+        raise AssertionError("a config with no [[services]] makes no API call")
+
+    port.check_services(tmp_path, "workers/account/wrangler.edge-eu.toml", {}, no_api)
+    with pytest.raises(port.ServiceBindingError, match="cannot read the Worker configs"):
+        port.check_services(tmp_path, "workers/account/wrangler.edge-us.toml", {}, no_api)
+
+
+def test_a_portal_without_the_sitekey_refuses_before_any_write(tmp_path: pathlib.Path) -> None:
+    """The 2026-10-28 stable incident: a keyless portal on disk (built for bench) must never be uploaded to a captcha-enforcing Worker."""
+    worker = tmp_path / "workers" / "account"
+    (worker / "dist" / "account" / "assets").mkdir(parents=True)
+    bundle = worker / "dist" / "account" / "assets" / "index-a.js"
+    bundle.write_text("const turnstileToken=undefined;", encoding="utf-8")
+    refusal = port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY})
+    assert refusal is not None
+    assert "carries no Turnstile sitekey" in refusal
+    bundle.write_text('const k="%s";' % FIXTURE_SITEKEY, encoding="utf-8")
+    assert port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) is None
+
+
+def test_an_unbound_or_malformed_sitekey_refuses(tmp_path: pathlib.Path) -> None:
+    worker = tmp_path / "w"
+    assert "not bound" in (port.portal_sitekey_refusal(worker, {}) or "")
+    # Review a43d7f08.1: the build-time name alone does not bind the deploy check.
+    assert "not bound" in (
+        port.portal_sitekey_refusal(worker, {"VITE_TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) or ""
+    )
+    assert "does not look like" in (
+        port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": "abc"}) or ""
+    )
+    assert "no built portal" in (
+        port.portal_sitekey_refusal(worker, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}) or ""
+    )
+
+
+# --------------------------------------------------------------------------- The post-deploy portal smoke (2026-10-28) ---------------------------------------------------------------------------
+
+ROUTED_TOML = 'routes = [\n  { pattern = "%s", custom_domain = true }\n]\n' % EU_HOST + FIXTURE_TOML
+LOGIN_HTML = '<script type="module" src="/account/assets/index-AbC123.js"></script>'
+
+
+def _fake_site(bundle: str, login_answer: str, calls: list, *, unreachable: int = 0):
+    """A served portal: the login page, its index bundle and the login API. The first `unreachable` requests get no answer."""
+
+    def fetch(method, url, _body):
+        calls.append((method, url))
+        if len(calls) <= unreachable:
+            return pc.Reply(0, error="URLError")
+        if url.endswith("/account/login"):
+            return pc.Reply(200, LOGIN_HTML)
+        if url.endswith("/account/assets/index-AbC123.js"):
+            return pc.Reply(200, bundle)
+        if url.endswith("/account/api/v1/auth/login") and method == "POST":
+            return pc.Reply(400, login_answer)
+        return pc.Reply(404, "")
+
+    return fetch
+
+
+ENFORCED = '{"error":"Captcha verification required"}'
+
+
+def test_the_smoke_passes_a_served_portal_that_carries_the_deployed_key(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    calls: list = []
+    fetch = _fake_site('const k="%s";' % FIXTURE_SITEKEY, ENFORCED, calls)
+    assert (
+        port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None)
+        is None
+    )
+    assert ("POST", ACCOUNT_DEFAULT_ORIGIN + "/account/api/v1/auth/login") not in calls
+    assert calls[0] == ("GET", ACCOUNT_DEFAULT_ORIGIN + "/account/login")
+
+
+def test_the_smoke_refuses_the_2026_10_28_keyless_portal_on_an_enforcing_worker(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    calls: list = []
+    slept: list = []
+    fetch = _fake_site('const k="";', ENFORCED, calls)
+    refusal = port.portal_smoke(
+        config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, slept.append
+    )
+    assert refusal is not None
+    assert "BROKEN" in refusal
+    assert EU_HOST in refusal
+    # The rebuild command and the rollback are both named.
+    # Inside the single-quoted `sh -c` script the quotes are plain, so the inner shell binds the bare key (review 760ca2d1.1).
+    assert '\'(cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" ' in refusal
+    assert '\\"' not in refusal
+    assert "deploy_account --region eu" in refusal
+    assert "wrangler rollback" in refusal
+    assert "wrangler.eu.toml" in refusal
+    # It retried for propagation before refusing, and never printed the key.
+    assert len(slept) == 5
+    assert FIXTURE_SITEKEY not in refusal
+
+
+def test_the_smoke_refuses_a_bundle_carrying_another_key_than_the_deployed_one(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    fetch = _fake_site('const k="0x4AAAAAAAsomeOtherKey99";', ENFORCED, [])
+    refusal = port.portal_smoke(
+        config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None
+    )
+    assert refusal is not None
+    assert "BROKEN" in refusal
+
+
+def test_a_keyless_portal_on_a_worker_without_captcha_passes(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    fetch = _fake_site('const k="";', '{"error":"Invalid credentials"}', [])
+    assert (
+        port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None)
+        is None
+    )
+
+
+def test_the_smoke_retries_through_propagation(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    calls: list = []
+    slept: list = []
+    fetch = _fake_site('const k="%s";' % FIXTURE_SITEKEY, ENFORCED, calls, unreachable=2)
+    assert (
+        port.portal_smoke(config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, slept.append)
+        is None
+    )
+    assert len(slept) == 2
+
+
+def test_an_unreachable_host_is_a_refusal_not_a_pass(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(ROUTED_TOML)
+    fetch = _fake_site("", "", [], unreachable=10_000)
+    refusal = port.portal_smoke(
+        config, {"TURNSTILE_SITE_KEY": FIXTURE_SITEKEY}, fetch, lambda _s: None
+    )
+    assert refusal is not None
+    assert "UNKNOWN" in refusal
+
+
+def test_a_config_without_a_route_is_not_smoked(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "wrangler.eu.toml"
+    config.write_text(FIXTURE_TOML)
+
+    def never(*_a):
+        raise AssertionError("no route, no request")
+
+    assert port.portal_smoke(config, {}, never, lambda _s: None) is None
+
+
+def test_every_production_and_edge_config_has_a_route_to_smoke() -> None:
+    worker = ROOT / "workers" / "account"
+    for region in ("eu", "us", "asia"):
+        for target in ("production", "edge"):
+            name = port.config_name(region, target)
+            assert port.route_host(worker / name) == (
+                "%s.%s" % (region, APEX_DOMAIN)
+                if target == "production"
+                else "edge-%s.%s" % (region, APEX_DOMAIN)
+            ), name
+
+
+def test_main_fails_a_deploy_whose_served_portal_is_broken(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In process: the smoke runs AFTER `wrangler deploy` and its refusal is exit 1."""
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": ROUTED_TOML})
+    (root / "workers" / "account" / "node_modules").mkdir()
+    order: list[str] = []
+    monkeypatch.setattr(port.common, "repo_root", lambda: root)
+    monkeypatch.setattr(port, "portal_sitekey_refusal", lambda *_a: None)
+    monkeypatch.setattr(port, "check_services", lambda *_a: None)
+
+    def fake_run(argv):
+        order.append(argv[-3] if "deploy" in argv else "migrate")
+        return 0
+
+    def fake_smoke(*_a):
+        order.append("smoke")
+        return "Portal smoke BROKEN"
+
+    monkeypatch.setattr(port, "_run", fake_run)
+    monkeypatch.setattr(port, "portal_smoke", fake_smoke)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    monkeypatch.chdir(tmp_path)
+    assert port.main(["--region", "eu"]) == 1
+    assert order == ["migrate", "deploy", "smoke"]
+    monkeypatch.setattr(port, "portal_smoke", lambda *_a: None)
+    assert port.main(["--region", "eu"]) == 0
+
+
+def test_the_live_run_removes_only_what_it_planted(tmp_path: pathlib.Path) -> None:
+    """Review a43d7f08.2: a fixture `dist` that already holds other content keeps it after the live run plants and removes the portal assets."""
+    root = _fixture_root(tmp_path)
+    keep = root / "workers" / "account" / "dist" / "other.txt"
+    keep.parent.mkdir(parents=True, exist_ok=True)
+    keep.write_text("keep", encoding="utf-8")
+    _run(PORT, tmp_path, root, ("--region", "eu", "--target", "edge"))
+    assert keep.read_text(encoding="utf-8") == "keep"
+    assert not (root / "workers" / "account" / "dist" / "account").exists()

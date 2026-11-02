@@ -146,6 +146,10 @@
       {
         "name": "reviews",
         "why": "Per-commit review records, written by the haiku reviewer: a clean full-coverage verdict is one line of agent/reviews/<branch>/clean.jsonl, every other verdict is agent/reviews/<branch>/<sha40>.md, closed only through worklist.py --review-mark. Keyed by branch on purpose: a finding is about the branch's diff, not about a session."
+      },
+      {
+        "name": "rulings",
+        "why": "The append-only operator-ruling ledger, agent/rulings/<session8>.jsonl, written by worklist.py --rule and consulted by the Stop hook's checks before they fire (wl_ruling). check:ci-operator-rulings holds the block it renders into agent/RULES.md byte-equal."
       }
     ]
   },

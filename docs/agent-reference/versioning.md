@@ -4,6 +4,8 @@ Source of truth: **git tags** (e.g. `v0.8.3`). No version bump commits — every
 
 ## Resolving the version
 
+`release:local` calls `resolve_version --bump-type` itself, from the labels merged since the last tag, so the version is never passed in by hand. CD's `initialize` step resolves it the same way.
+
 `rediacc_ci.version.resolve_version` reads the latest `v*` tag via `git tag -l --sort=-v:refname`, not `git describe`, because `describe` requires the tag to be reachable from `HEAD`, which fails in a shallow CI clone.
 
 ```

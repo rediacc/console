@@ -150,6 +150,19 @@ def parse(argv: list[str]) -> Config:
     return cfg
 
 
+POWERSHELL_SINGLE_QUOTES = frozenset("'\u2018\u2019\u201a\u201b")
+
+
+def powershell_version_command(binary: pathlib.PurePath) -> str:
+    """`& '<binary>' --version` for PowerShell, with the path single-quoted and each single-quote character in it doubled, PowerShell's only escape inside a single-quoted string. PowerShell reads U+2018, U+2019, U+201A and U+201B as single quotes too, so a profile name like O’Brien is doubled the same way as an ASCII `'`.
+
+    The call operator and an absolute path, because the local binary sits under the mkdtemp test dir, which is absolute: the twin's `.\\<dir>\\rdc.exe` named a path PowerShell cannot resolve.
+    """
+    return "& '%s' --version" % "".join(
+        ch * 2 if ch in POWERSHELL_SINGLE_QUOTES else ch for ch in str(binary)
+    )
+
+
 def verify_version(output: str, expected: str) -> bool:
     """There is ALWAYS a version, or this fails. Exact token match; never a silent pass.
 
@@ -421,7 +434,7 @@ class Runner:
                         "Local Windows binary copied but no powershell.exe to run it; SKIPPING the version assertion rather than reporting a pass."
                     )
                     return SKIPPED
-                output = self.powershell(f".\\{download_dir}\\{binary_name} --version")
+                output = self.powershell(powershell_version_command(target))
             else:
                 output = self.run_binary(target, "--version")
             if not verify_version(output, cfg.version):

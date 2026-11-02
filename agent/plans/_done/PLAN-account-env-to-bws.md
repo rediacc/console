@@ -1,5 +1,5 @@
 # PLAN: private/account/.env to Bitwarden -- the store is the only source of truth
-Status: done -- 2026-10-08, every box ticked (T16 last, c706c4feb)
+Status: done -- 2026-10-08, every box ticked (T16 last, f44ea9a61)
 Depends-On: no-dep -- split out of PLAN-env-to-bitwarden-v2.md, which keeps only the orthogonal v1:20-25 rotation boxes
 Owner: d778be9d
 First-Seen: 2026-09-24

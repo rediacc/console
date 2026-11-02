@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { cleanRelayLine, isLogrusLine, stripRelayPrefix } from '../output-lines.js';
 
 describe('stripRelayPrefix', () => {
-  it('removes a bridge function prefix', () => {
+  it('removes a renet function prefix', () => {
     expect(stripRelayPrefix('[container_exec] hello')).toBe('hello');
   });
 

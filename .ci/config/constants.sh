@@ -174,7 +174,7 @@ readonly DEVBOX_OFFSET_TERM=5
 # base-path configuration. Chrome resolves *.localhost to 127.0.0.1 itself, so a
 # single forwarded port covers every worktree -- which is the whole point on
 # ChromeOS, where each published port otherwise needs its own manual forward.
-readonly DEVBOX_PROXY_IMAGE="traefik:v3.6" # same major the product proxy pins
+readonly DEVBOX_PROXY_IMAGE="traefik:v3.7.16" # same tag the product proxy pins
 readonly DEVBOX_PROXY_NAME="rediacc-devbox-proxy"
 readonly DEVBOX_PROXY_PORT=8090
 readonly DEVBOX_NETWORK="rediacc-devbox"
@@ -307,7 +307,7 @@ readonly SHFMT_SHA256_DARWIN_ARM64="b7c872db63553ccffc7253aba3ed7d4885a27d83f1ba
 
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.
-readonly WRANGLER_VERSION="4.151.3"
+readonly WRANGLER_VERSION="4.156.0"
 
 # Homebrew tap configuration
 readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"

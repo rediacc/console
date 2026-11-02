@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_REPOSITORY_NAME } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Daemon Operations Tests (5 functions)
@@ -17,10 +17,10 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  * Daemons are background services that run within a repository context.
  */
 test.describe('Daemon Operations @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
     // Setup daemon before all tests (required for start/stop/restart operations)
     const result = await runner.daemonSetup(DEFAULT_NETWORK_ID);
@@ -110,13 +110,13 @@ test.describe('Daemon Operations @bridge', () => {
  */
 test.describe
   .serial('Daemon Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const repositoryName = `daemon-lifecycle-${Date.now()}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
     });
 
@@ -173,11 +173,11 @@ test.describe
  */
 test.describe
   .serial('System Daemon Lifecycle @bridge @lifecycle', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const networkId = DEFAULT_NETWORK_ID;
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       await runner.resetWorkerState();
     });
 
@@ -223,11 +223,11 @@ test.describe
  * Tests error handling for daemon operations.
  */
 test.describe('Daemon Error Handling @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const networkId = DEFAULT_NETWORK_ID;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
     // Setup daemon before all error handling tests
     const result = await runner.daemonSetup(networkId);
@@ -276,12 +276,12 @@ test.describe('Daemon Error Handling @bridge', () => {
  * Tests multiple start/stop cycles.
  */
 test.describe('Daemon Multiple Cycles @bridge', () => {
-  let runner: BridgeTestRunner;
+  let runner: RenetFunctionsTestRunner;
   const repositoryName = `multi-daemon-${Date.now()}`;
   const networkId = DEFAULT_NETWORK_ID;
 
   test.beforeAll(async () => {
-    runner = BridgeTestRunner.forWorker();
+    runner = RenetFunctionsTestRunner.forWorker();
     await runner.resetWorkerState();
     // Setup daemon before all cycle tests
     const result = await runner.daemonSetup(networkId);

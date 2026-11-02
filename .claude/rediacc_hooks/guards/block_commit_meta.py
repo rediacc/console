@@ -71,6 +71,48 @@ TRAILER_OR_FOOTER = hookio.rx(
     r"Co-Authored-By[{S}]*[:=]|^[{S}]*([^0-9A-Za-z]{0,4}[{S}]*)?Generated with\b"
 )
 
+# A CLAUDE SESSION LINK OR A SESSION TRAILER IN A PUBLIC REPOSITORY (operator incident 2026-10-30, PR-TASK 9f92c43e). The harness's attribution text asks for a `Claude-Session: https://claude.ai/code/session_<id>` trailer on every commit, and console is PUBLIC: 80 commits carried one, four of them reached GitHub (origin/main c2c94778c and 2cdef1712, and two on the
+# 1023-1 branch), each a link to a private session. This half is wider than the trailer rule above in two ways, both deliberate. It covers every channel that PUBLISHES text (a PR or issue comment, a review, a release, any `gh api` write), not only the ones that author a commit or a PR description, because a session link in a comment leaks exactly as far. And it reads every
+# place a body can come from: the command itself, the message files, `$(cat <file>)` and `$(< <file>)`, and the inherited value of each `$NAME` the command expands.
+#
+# THE AUDIT SHAPES STAY LEGAL, by the same two rules the trailer above earned. The publish gate: `git log --grep claude.ai`, `grep -rn 'Claude-Session:' .` and `echo` prose publish nothing, so they are never read. The pattern: a trailer needs its separator (`[:=]`), and a link needs an id character right after `session_`, `chat/`, `artifact/` or `share/`, or after `code/session-` (the code-session path takes either separator); `chat-`, `share-`, `artifact-` and `session-` count too when the token right after the hyphen holds a digit, so a public slug such as `share-your-work` or a blog `chat-` slug whose digit comes later passes (review 801f5209.2), so prose that NAMES the rule
+# (`the Claude-Session trailer`, `claude.ai/code/session_<id>`) passes inside a real commit too. A real link always carries its id, so the id requirement costs nothing. Any spelling with `Session` after a `Claude` word counts (`Claude-Session`, `Claude-Code-Session`, `claude_session`), in any case.
+#
+# THE SAME TWO PATTERNS LIVE IN `.claude/rediacc_hooks/git/githooks.py` (`SESSION_TRAILER`, `SESSION_LINK`), which git loads by file with no package context and so cannot import this module. `test-block_commit_meta.py` asserts the two spellings are identical, so they cannot drift apart.
+SESSION_TRAILER = r"claude[\w-]*session[\w-]*[ \t]*[:=]"
+SESSION_LINK = r"claude\.(?:ai|com)/(?:code/sessions?[_-][A-Za-z0-9]|(?:[\w.~%-]+/)*(?:session|chat|artifact|share)s?(?:[_/]|-(?=[A-Za-z0-9]*[0-9]))[A-Za-z0-9])"
+SESSION_LEAK = re.compile("%s|%s" % (SESSION_TRAILER, SESSION_LINK), re.IGNORECASE)
+
+# The publishing verbs that do not author a commit, tag or PR description, so the gate above does not see them. A text fallback for the walk, which reads `gh issue` and `gh release` only as operands.
+PUBLISHES_TEXT = hookio.rx(
+    r"(^|[;&|(]|[{S}])gh[{S}]+((pr|issue)[{S}]+(comment|review|close|create|edit)|release[{S}]+(create|edit)|gist[{S}]+create)\b"
+)
+
+# `$(cat <file>)`, `` `cat <file>` `` and `$(< <file>)`: a message body read from a file by the shell rather than by git or gh (`git commit -m "$(cat msg.txt)"`).
+CAT_FILE = re.compile(
+    r"\$\(\s*(?:cat[ \t]+|<[ \t]*)([^\s)]+)[ \t]*\)|`[ \t]*cat[ \t]+([^\s`]+)[ \t]*`"
+)
+
+# THE FILE A `-` (STDIN) BODY IS FED FROM: `cat leak.txt | gh pr comment 5 --body-file -` and `gh pr comment 5 --body-file - < leak.txt`. The flag names no file (`-`), so the bytes live in the file the pipeline or the redirect names; a command that reads stdin gets those files judged as bodies too (review a86b7a88.2). Over-reads on purpose: every `cat <file>` that opens a pipeline segment and every `< <file>` redirect of the command counts, since a wider read only ever finds MORE session links.
+STDIN_FEEDER = re.compile(
+    r"(?:^|[;&|(]|&&|\|\|)[ \t]*cat[ \t]+([^\s|;&<>()`$\"']+)|(?<![<(])<[ \t]*([^\s|;&<>()`$\"']+)"
+)
+
+
+def _stdin_feeders(cmd, names):
+    """The files `cmd` feeds to stdin (`cat <file> |`, `< <file>`) when one of the body-file `names` is `-`, else []."""
+    if "-" not in names:
+        return []
+    return [(m.group(1) or m.group(2)) for m in STDIN_FEEDER.finditer(cmd)]
+
+
+MESSAGE_SESSION = (
+    "❌ BLOCKED: console is a PUBLIC repository. Never put a Claude session link "
+    "(claude.ai/code/session_..., claude.ai/chat/..., an artifact or share link) or a "
+    "Claude-Session trailer in a commit, tag, PR, issue, comment or review. Strip that line "
+    "from the message or body and run the command again."
+)
+
 # THE COMMAND STRING IS NOT WHERE THE MESSAGE LIVES for `-F <file>` / `--file=<file>` / `--file <file>`. The established convention for a commit body long enough to need reflow (`git commit -q -F <file> -- <paths>`, written to dodge the heredoc/prose-wrapping trap) is exactly that shape: the trailer sat in the file's bytes, `cmd` never contained it.
 # Two commits carrying `Co-Authored-By: Claude Sonnet 5` reached a real push before this was caught. `block_untagged_commit.py` already solved this exact problem for its own trailer, so `FILE_ARGS` is that guard's pattern verbatim rather than a second, independently-drifting spelling of the same idea.
 #
@@ -113,6 +155,8 @@ def _home_fixture(path):
     footer = "\U0001f916 " + "Generated" + " with [Claude Code](u)"
     (bodies / "footer.md").write_text("prose\n\n%s\n" % footer, encoding="utf-8")
     (bodies / "clean.md").write_text("prose\n\nConsole PR: x.\n", encoding="utf-8")
+    session = "Claude-" + "Session: https://claude" + ".ai/code/session_01AbCd"
+    (bodies / "session.md").write_text("prose\n\n%s\n" % session, encoding="utf-8")
     return path
 
 
@@ -197,6 +241,53 @@ EDGE_CASES = [
         "an inherited $HOME body file without the footer",
         "gh pr create --title t --body-file $HOME/%s/clean.md" % HOME_BODIES,
     ),
+    # 2026-10-30 (PR-TASK 9f92c43e): a Claude session link or session trailer, through every publishing channel; the audit shapes stay legal. Assembled, so no source line is itself one.
+    ("a session trailer in an inline commit", "git commit -m fix -m 'Claude-" + "Session: x' -- a"),
+    (
+        "the Claude-Code-Session spelling as a --trailer",
+        "git commit -m fix --trailer Claude-Code-" + "Session=x",
+    ),
+    (
+        "a chat link in a PR body",
+        "gh pr create -t t --body 'see https://claude" + ".ai/chat/1a2b-3c4d'",
+    ),
+    (
+        "a session link in a PR comment",
+        "gh pr comment 5 -b 'https://claude" + ".ai/code/session_01Ab'",
+    ),
+    (
+        "a session link in an issue comment",
+        "gh issue comment 5 --body 'claude" + ".ai/code/session_01Ab'",
+    ),
+    (
+        "a share link in a gh api comment field",
+        "gh api repos/o/r/issues/5/comments -f body='claude" + ".ai/share/ab1'",
+    ),
+    (
+        "a session trailer in a PR comment body file",
+        "gh pr comment 5 --body-file $HOME/%s/session.md" % HOME_BODIES,
+    ),
+    (
+        "a session trailer in a commit -F file",
+        "git commit -F $HOME/%s/session.md -- a" % HOME_BODIES,
+    ),
+    (
+        "a session trailer in a gh api -F body=@ file",
+        "gh api repos/o/r/pulls/7 -X PATCH -F body=@$HOME/%s/session.md" % HOME_BODIES,
+    ),
+    (
+        "a session trailer read through $(cat)",
+        'git commit -m "$(cat $HOME/%s/session.md)" -- a' % HOME_BODIES,
+    ),
+    ("searching the log for claude.ai is an audit", "git log --oneline --grep claude" + ".ai"),
+    ("grepping for the session trailer is an audit", "grep -rn 'Claude-" + "Session:' docs/"),
+    (
+        "a commit naming the session rule is prose",
+        (
+            "git commit -m 'fix: refuse the Claude-"
+            "Session trailer and claude.ai/code/session_<id> links' -- a"
+        ),
+    ),
     # Unset in every environment the differential runs: the name stays unresolved and fails open.
     (
         "an unset variable's body file is admitted",
@@ -258,7 +349,7 @@ def _api_pr_patch(parsed):
 
 
 def _commit_file_bodies(cmd, root, env):
-    """Every message-file target's bytes, read off disk: `git commit -F`, `git tag -F`, `gh pr ... --body-file`, `gh api ... -F body=@<path>` and `--input <path>`, each in every spelling its tool accepts (`_walked_message_files`). `-F -` (stdin) is skipped: stdin at hook time is the hook's OWN payload, not the commit's, so there is nothing here to read.
+    """Every message-file target's bytes, read off disk: `git commit -F`, `git tag -F`, `gh pr ... --body-file`, `gh api ... -F body=@<path>` and `--input <path>`, each in every spelling its tool accepts (`_walked_message_files`). `-F -` (stdin) is not read as a file: stdin at hook time is the hook's OWN payload, not the commit's. The files the same command pipes or redirects into it are (`_stdin_feeders`).
 
     Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason. `env(name, None)` answers a variable the command does not assign (see `_expand`). A command the walk finds no message-writing call in keeps the text reader, `FILE_ARGS`, which knows the long spellings and a spaced `-F`.
     """
@@ -267,7 +358,7 @@ def _commit_file_bodies(cmd, root, env):
         names.update(shellscan.assignments_before(cmd, verb))
     authors, walked = _walked_message_files(cmd)
     if authors:
-        return _bodies_for(walked, cmd, root, names, env)
+        return _bodies_for(walked + _stdin_feeders(cmd, walked), cmd, root, names, env)
     bodies = []
     written = False
     for pattern, strip in FILE_ARGS:
@@ -328,6 +419,101 @@ def _bodies_for(raws, cmd, root, names, env):
     return bodies, written
 
 
+def _argv_values(argv, longs, shorts):
+    """Every value of the flags `longs` (`--body-file x`, `--body-file=x`) and the single-letter `shorts` (`-F x`, `-Fx`) in `argv`, for the gh verbs `shellscan.gh_args` reads only as operands (`gh issue`, `gh release`)."""
+    out = []
+    i = 0
+    while i < len(argv):
+        word = argv[i]
+        i += 1
+        if word == "--":
+            break
+        for name in longs:
+            if word == "--" + name and i < len(argv):
+                out.append(argv[i])
+                i += 1
+            elif word.startswith("--%s=" % name):
+                out.append(word.split("=", 1)[1])
+        if len(word) > 1 and word[0] == "-" and word[1] != "-":
+            for short in shorts:
+                at = word.find(short, 1)
+                if at < 0:
+                    continue
+                if at + 1 < len(word):
+                    out.append(word[at + 1 :])
+                elif i < len(argv):
+                    out.append(argv[i])
+                    i += 1
+                break
+    return out
+
+
+def _published_files(cmd):
+    """`(publishes, names)`: whether any walked call of `cmd` publishes text anywhere a reader of the public repository sees it, and every body-file name those calls read.
+
+    Wider than `_walked_message_files`, which it includes: a PR comment or review, an issue, a release, a gist, and any `gh api` call that is not a GET (gh sends POST once a field is given). For `gh api` every `-F <key>=@<path>` is a body, not only `body=`, since a comment endpoint names its field however it likes.
+    """
+    publishes, names = _walked_message_files(cmd)
+    names = list(names)
+    for run in commit_policy.runs(cmd):
+        if shellscan._base(run.name) != "gh" or not run.argv:
+            continue
+        verb = tuple(run.argv[:2])
+        if run.argv[0] == "api":
+            parsed = shellscan.gh_args(run.argv)
+            if shellscan.gh_api_method(parsed) == "GET":
+                continue
+            publishes = True
+            names.extend(v.split("=@", 1)[1] for n, v in parsed.flags if n == "field" and "=@" in v)
+            names.extend(parsed.values("input"))
+        elif run.argv[0] == "pr":
+            parsed = shellscan.gh_args(run.argv)
+            if parsed.command in (("pr", "comment"), ("pr", "review"), ("pr", "close")):
+                publishes = True
+                names.extend(parsed.values("body-file"))
+        elif verb in (
+            ("issue", "create"),
+            ("issue", "edit"),
+            ("issue", "comment"),
+            ("issue", "close"),
+        ):
+            publishes = True
+            names.extend(_argv_values(run.argv[2:], ("body-file",), ("F",)))
+        elif verb in (("release", "create"), ("release", "edit")):
+            publishes = True
+            names.extend(_argv_values(run.argv[2:], ("notes-file",), ("F",)))
+        elif verb == ("gist", "create"):
+            publishes = True
+    return publishes, names
+
+
+def _session_leak(ev, cmd, scan):
+    """Does a command that publishes text carry a Claude session link or a session trailer, in its own bytes, a body file, a `$(cat <file>)` or an inherited variable it expands? (`SESSION_LEAK`)"""
+    publishes, names_read = _published_files(cmd)
+    if not (publishes or _authors_a_message(scan) or hookio.grep_q(PUBLISHES_TEXT, scan)):
+        return False
+    if SESSION_LEAK.search(cmd):
+        return True
+    root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(
+        ["rev-parse", "--show-toplevel"], cwd=ev.cwd, want_rc=True
+    )
+    assigned = {}
+    for verb in (*MESSAGE_VERBS, "gh issue", "gh release"):
+        assigned.update(shellscan.assignments_before(cmd, verb))
+    cats = [(m.group(1) or m.group(2)).strip("'\"") for m in CAT_FILE.finditer(cmd)]
+    bodies, _ = _bodies_for(
+        names_read + cats + _stdin_feeders(cmd, names_read), cmd, root, assigned, ev.env
+    )
+    # The inherited value of every `$NAME` the command expands and does not assign itself: `git commit -m "$MSG"` with MSG exported by an earlier command carries MSG's bytes, which are nowhere in `cmd`.
+    for match in SHELL_VAR.finditer(cmd):
+        key = match.group(2) or match.group(3)
+        if key not in assigned:
+            value = ev.env(key, None)
+            if value:
+                bodies.append(value)
+    return any(SESSION_LEAK.search(body) for body in bodies)
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd == "":
@@ -339,6 +525,10 @@ def run(ev):
     # Bypass-resistant VERB detection (unwraps sh -c/eval payloads, strips heredocs+prose): worklist evidence or a python script's own argument text MENTIONING "git commit" or "gh pr create" must not trip this gate, only a real invocation.
     # TRAILER_OR_FOOTER below still reads the RAW cmd, because for a real commit the message body IS the command string and stripping it would hide the content this guard exists to check.
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    # FIRST, and on its own wider gate (`_session_leak`): a session link leaks from a comment as far as from a commit.
+    if _session_leak(ev, cmd, scan):
+        ev.warn(MESSAGE_SESSION)
+        return hookio.DENY
     # The walk is asked too, because the text gate knows `-X PATCH`'s spellings only as far as its regex does (`-iXPATCH` is a PATCH) and never sees a `pr`-level flag before the verb (`gh pr -R x create`).
     if not (_authors_a_message(scan) or _walked_message_files(cmd)[0]):
         return hookio.ALLOW
@@ -360,6 +550,13 @@ def run(ev):
             ev.warn_raw(refusal)
             return hookio.DENY
     bodies, written = _commit_file_bodies(cmd, root, ev.env)
+    # `git commit -m "$(cat msg.txt)"` reads its message off disk through the shell, past every flag reader above (found 2026-10-30 alongside the session-link half).
+    cats = [(m.group(1) or m.group(2)).strip("'\"") for m in CAT_FILE.finditer(cmd)]
+    if cats:
+        names = {}
+        for verb in MESSAGE_VERBS:
+            names.update(shellscan.assignments_before(cmd, verb))
+        bodies = bodies + _bodies_for(cats, cmd, root, names, ev.env)[0]
     for body in bodies:
         if hookio.grep_q(TRAILER_OR_FOOTER, body, ignore_case=True):
             ev.warn(MESSAGE)

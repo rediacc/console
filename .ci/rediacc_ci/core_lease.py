@@ -16,7 +16,7 @@ WHERE THE POOL LIVES, and why it is never `.ci/cache`. `.ci/cache` is per checko
 3. `/run/user/<uid>/rediacc-cores`, when that exists and is this user's: it is what `XDG_RUNTIME_DIR` names on a systemd host, named directly so a process whose environment lost the variable still joins the same pool;
 4. `/tmp/rediacc-cores-<uid>`, the literal /tmp and NOT `$TMPDIR`, because runtmp and the test fixtures redirect `TMPDIR` per run, and a pool keyed on it would split into one pool per run, each believing it owns every core.
 
-A lease directory owned by another user is refused (exit 69), never shared: its tokens would be someone else's to forge.
+A lease directory owned by another user is refused (exit 69), never shared: its tokens would be someone else's to forge. Items 2 and 3 skip a `rediacc-cores` that exists and is another user's, so a root-owned pool Docker left behind at boot (the devbox bind source) falls through to item 4 instead of refusing every run.
 
 THE POOL SIZE is `$REDIACC_CORE_LEASE_TOKENS` when set to a positive integer (the tests use 4), else `available_cores()`.
 
@@ -182,6 +182,14 @@ def _owned_dir(path: str) -> bool:
     return os.path.isdir(path) and st.st_uid == os.getuid()
 
 
+def _foreign_owned(path: pathlib.Path) -> bool:
+    """True when `path` (followed through a symlink) exists and another user owns it; False when it is this user's or cannot be stat'ed at all, which leaves the refusal to Pool.ensure."""
+    try:
+        return path.stat().st_uid != os.getuid()
+    except OSError:
+        return False
+
+
 def lease_dir(environ: Mapping[str, str] | None = None) -> pathlib.Path:
     """Where the pool lives; the order and its reasons are in the module docstring."""
     env = os.environ if environ is None else environ
@@ -191,7 +199,11 @@ def lease_dir(environ: Mapping[str, str] | None = None) -> pathlib.Path:
     uid = os.getuid()
     for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
         if runtime and _owned_dir(runtime):
-            return pathlib.Path(runtime) / "rediacc-cores"
+            pool = pathlib.Path(runtime) / "rediacc-cores"
+            # A pool ANOTHER user owns inside this user's runtime dir is skipped, not refused: a container restarted at boot can have its missing bind source recreated as root by the engine. A symlink is judged by its target; anything else this user owns (even a non-directory) is still returned and judged by Pool.ensure.
+            if _foreign_owned(pool):
+                continue
+            return pool
     # The literal /tmp on purpose, never $TMPDIR (module docstring, item 4); the owner check in Pool.ensure covers what S108 warns about.
     return pathlib.Path("/tmp") / ("rediacc-cores-%d" % uid)
 

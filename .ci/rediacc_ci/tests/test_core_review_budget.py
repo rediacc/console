@@ -257,7 +257,7 @@ class SequenceGh:
 
 
 def test_report_count_retries_a_transient_502_and_not_a_404(monkeypatch):
-    """The reads behind Review Complete ride core.gh_retry (f09fca116): a GitHub 502 is retried with backoff instead of failing the required check, and a 404 fails at once instead of paying the retries. Against the pre-fix `ghx.gh(..., attempts=3)` the 502 case raises on its first answer."""
+    """The reads behind Review Complete ride core.gh_retry (1c3be5dc2): a GitHub 502 is retried with backoff instead of failing the required check, and a 404 fails at once instead of paying the retries. Against the pre-fix `ghx.gh(..., attempts=3)` the 502 case raises on its first answer."""
     monkeypatch.setattr(rb.gh_retry.time, "sleep", lambda _s: None)
     flaky = SequenceGh((1, "", "gh: Server Error (HTTP 502)"), (0, COMMENTS, ""))
     monkeypatch.setattr(rb.ghx, "gh", flaky)

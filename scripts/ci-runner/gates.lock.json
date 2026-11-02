@@ -1414,6 +1414,7 @@
     "id": "check:ci-standalone-selftests",
     "run": "npm run check:ci-standalone-selftests",
     "gate": true,
+    "slow": true,
     "leaves": [
       "scripts/gates/check-standalone-selftests.ts"
     ],
@@ -1752,6 +1753,20 @@
     }
   },
   {
+    "id": "check:ci-config-server-key-constant",
+    "run": "npm run check:ci-config-server-key-constant",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_config_server_key_constant.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Config server key constant confined"
+    }
+  },
+  {
     "id": "check:ci-bws-rotation-notice",
     "run": "npm run check:ci-bws-rotation-notice",
     "gate": true,
@@ -1787,7 +1802,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
+      "job": "quality-security",
       "step": "Retired terms"
     }
   },
@@ -1899,6 +1914,7 @@
     "id": "check:ci-env-manifest",
     "run": "npm run check:ci-env-manifest",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_env_manifest.py"
     ],
@@ -2166,6 +2182,136 @@
     }
   },
   {
+    "id": "check:ci-proxy-cost-guard",
+    "run": "npm run check:ci-proxy-cost-guard",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_proxy_cost_guard.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Proxy cost guard"
+    }
+  },
+  {
+    "id": "check:ci-worker-observability-budget",
+    "run": "npm run check:ci-worker-observability-budget",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_worker_observability_budget.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Worker observability budget"
+    }
+  },
+  {
+    "id": "check:ci-settings-registry",
+    "run": "npm run check:ci-settings-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_settings_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Settings registry"
+    }
+  },
+  {
+    "id": "check:ci-de-orthography",
+    "run": "npm run check:ci-de-orthography",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-de-orthography.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "German orthography"
+    }
+  },
+  {
+    "id": "check:ci-bws-step-scope",
+    "run": "npm run check:ci-bws-step-scope",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bws_step_scope.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Bitwarden step-scoped secrets"
+    }
+  },
+  {
+    "id": "check:ci-region-consistency",
+    "run": "npm run check:ci-region-consistency",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_region_consistency.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Region consistency"
+    }
+  },
+  {
+    "id": "check:ci-proxy-configs",
+    "run": "npm run check:ci-proxy-configs",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/deploy/proxy_configs.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Proxy configs"
+    }
+  },
+  {
+    "id": "check:ci-proxy-deploy-dry-run",
+    "run": "npm run check:ci-proxy-deploy-dry-run",
+    "gate": true,
+    "slow": true,
+    "leaves": [
+      ".ci/scripts/quality/check_proxy_deploy_dry_run.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Proxy deploy dry run"
+    }
+  },
+  {
+    "id": "check:ci-commit-citations",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-commit-citations",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_commit_citations.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Commit citations"
+    }
+  },
+  {
     "id": "check:ci-plan-citations",
     "env": {
       "GITHUB_BASE_REF": "${{ github.base_ref }}"
@@ -2262,6 +2408,24 @@
     }
   },
   {
+    "id": "check:ci-plan-live-proof",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-live-proof",
+    "gate": true,
+    "slow": true,
+    "leaves": [
+      ".ci/scripts/quality/check_plan_live_proof.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan live proof"
+    }
+  },
+  {
     "id": "check:ci-agent-session-archival",
     "env": {
       "GH_TOKEN": "${{ github.token }}"
@@ -2295,6 +2459,26 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Review resolutions"
+    }
+  },
+  {
+    "id": "check:ci-operator-rulings",
+    "run": "npm run check:ci-operator-rulings",
+    "gate": true,
+    "paths": [
+      "agent/RULES.md",
+      ".ci/scripts/quality/check_operator_rulings.py",
+      ".claude/hooks/stop/wl_ruling.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_operator_rulings.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Operator rulings"
     }
   },
   {
@@ -2412,6 +2596,18 @@
     }
   },
   {
+    "id": "settings",
+    "run": "npm run settings",
+    "gate": false,
+    "leaves": [
+      "scripts/settings/settings.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a writer, not a validation. CI judges the registry through check:ci-settings-registry and the verb through its --selftest run by check:ci-standalone-selftests; a quality step here would claim CI changes tunables on behalf of the author."
+    }
+  },
+  {
     "id": "vm:check",
     "run": "npm run vm:check",
     "gate": false,
@@ -2421,6 +2617,30 @@
     "ci": {
       "kind": "local-only",
       "blocker": "BLOCKER: needs KVM, the ops VM fleet and a dev account gateway, none of which a CI runner has. Its flow is judged in CI by the vm_check pytest suite through a fake host; the live run is what the push guard receipt records."
+    }
+  },
+  {
+    "id": "release:local",
+    "run": "npm run release:local",
+    "gate": false,
+    "leaves": [
+      ".ci/rediacc_ci/release/local.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a publisher, not a validation. CI releases edge through cd-v2.yml on a green main run; this is the agent path beside it, and its flow is judged in CI by test_release_local and test_release_local_gates. A quality step here would claim CI publishes a release on every run."
+    }
+  },
+  {
+    "id": "login:bench",
+    "run": "npm run login:bench",
+    "gate": false,
+    "leaves": [
+      ".ci/rediacc_ci/ops/login_bench.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: needs the bench-login Bitwarden profile and a reachable bench account server, neither of which a CI runner holds. Its flow is judged in CI by test_ops_login_bench through fakes."
     }
   },
   {
@@ -3767,6 +3987,20 @@
     }
   },
   {
+    "id": "check:ci-gate-mutations",
+    "run": "npm run check:ci-gate-mutations",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-gate-mutations.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate mutations"
+    }
+  },
+  {
     "id": "check:ci-test-scripts-reachable",
     "run": "npm run check:ci-test-scripts-reachable",
     "gate": true,
@@ -3879,8 +4113,7 @@
     "run": "npm run check:ci-account-no-node-env-routes",
     "gate": true,
     "leaves": [
-      "grep",
-      "echo"
+      "scripts/gates/check-account-no-node-env-routes.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3894,8 +4127,7 @@
     "run": "npm run check:ci-account-no-admin-role",
     "gate": true,
     "leaves": [
-      "grep",
-      "echo"
+      "scripts/gates/check-account-no-admin-role.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4180,6 +4412,64 @@
       "workflow": ".github/workflows/ci-build-renet.yml",
       "job": "build-renet",
       "step": "Assert no OTLP credentials baked into the built binaries"
+    }
+  },
+  {
+    "id": "check:ci-no-rclone-embedded",
+    "env": {
+      "RCLONE_GATE_REQUIRE_BINARIES": "1"
+    },
+    "run": "npm run check:ci-no-rclone-embedded",
+    "gate": true,
+    "mutex": [
+      "renet-bin",
+      "build-artifacts"
+    ],
+    "leaves": [
+      "scripts/gates/check-no-rclone-embedded.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-build-renet.yml",
+      "job": "build-renet",
+      "step": "Assert no rclone payload in the embed lockfile, staged assets or built binaries"
+    }
+  },
+  {
+    "id": "check:ci-renet-test-map",
+    "run": "npm run check:ci-renet-test-map",
+    "gate": true,
+    "slow": true,
+    "leaves": [
+      "scripts/gates/check-renet-test-map.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Renet test map and mapped Go tests"
+    }
+  },
+  {
+    "id": "check:ci-account-backup",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-backup",
+    "gate": true,
+    "mutex": [
+      "account-vitest"
+    ],
+    "cores": {
+      "min": 1,
+      "max": "all"
+    },
+    "heavy": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Run account backup tests"
     }
   },
   {
@@ -4828,6 +5118,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-security",
       "step": "BLOCKER validator — package.json overrides"
+    }
+  },
+  {
+    "id": "check:ci-override-ranges",
+    "run": "npm run check:ci-override-ranges",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-override-ranges.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Override ranges"
     }
   },
   {
@@ -5845,8 +6149,28 @@
       ".ci/scripts/quality/check_proxy_image_smoke.py"
     ],
     "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-build-renet.yml",
+      "job": "proxy-image-smoke",
+      "step": "Proxy image smoke"
+    }
+  },
+  {
+    "id": "check:ci-proxy-wrangler-dev-e2e",
+    "run": "npm run check:ci-proxy-wrangler-dev-e2e",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY) when none is staged",
+    "leaves": [
+      ".ci/scripts/quality/check_proxy_wrangler_dev_e2e.py"
+    ],
+    "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)"
+      "blocker": "BLOCKER: needs docker and wrangler containers: the gate runs the proxy Worker under `wrangler dev`, whose Containers runtime builds workers/proxy/Dockerfile and starts the executor on a local docker daemon. No ci-quality.yml lane has a docker daemon for wrangler to drive, and the image half alone already runs in CI as check:ci-proxy-image-smoke (ci-build-renet.yml proxy-image-smoke). Exits 77 (blocked, never green) on a host without docker or wrangler."
     }
   },
   {

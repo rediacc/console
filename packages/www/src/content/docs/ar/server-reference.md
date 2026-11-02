@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ar
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # مرجع الخادم
@@ -44,7 +44,7 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 يمكنك أيضًا استخدام مقبس Docker مباشرةً:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > قم دائمًا بتشغيل compose من المجلد الذي يحتوي على `docker-compose.yml`، وإلا لن يتمكن Docker من العثور على الملف.
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # Daemon logs
 
 ### النسخ الاحتياطي والاستعادة
 
-إرسال النسخ الاحتياطية إلى جهاز آخر أو إلى التخزين السحابي:
+أرسل النسخ الاحتياطية إلى جهاز آخر. تُؤخذ لقطات التخزين المجزّأ باستخدام `rdc backup snapshot` أو `renet backup snapshot`:
 
 ```bash
 # Push to remote machine (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Push to cloud storage (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Pull from remote
 renet backup pull --name {uuid} --network-id {id} --source machine \
@@ -316,7 +312,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### العثور على مقبس Docker الذي يشغّل حاوية
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +338,7 @@ renet list containers
 - الفاصل `--` مطلوب قبل تمرير الوسائط إلى `renet compose` و `renet docker`
 - قم بتشغيل compose من المجلد الذي يحتوي على `docker-compose.yml`
 - تعيينات فتحات `.rediacc.json` ثابتة، لا تغيّرها بعد النشر
-- استخدم مسارات `/run/rediacc/docker-{id}.sock` (قد يغيّر systemd مسارات `/var/run/` القديمة)
+- استخدم مسارات `/run/rediacc/net-{id}/docker-{id}.sock` (قد يغيّر systemd مسارات `/var/run/` القديمة)
 - قم بتشغيل `renet prune --dry-run` من وقت لآخر للعثور على الموارد المعزولة
 - لقطات BTRFS (`renet backup`) سريعة وقليلة التكلفة، استخدمها قبل إجراء تغييرات محفوفة بالمخاطر
 - المستودعات مشفرة بـ LUKS، فقدان كلمة المرور يعني فقدان البيانات

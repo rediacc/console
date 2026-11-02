@@ -12,8 +12,8 @@ tags:
   - vastavus
 featured: false
 language: et
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -84,7 +84,7 @@ Operaator ei logi kunagi Rediacc OÜ taristusse varukoopia, taastamise või harg
 
 1. **Operaatori tööjaam.** Käivitab `rdc`. Hoiab LUKS2 mandaati.
 2. **Operaatori enda server.** Käivitab `renet`. Hoiab LUKS2-krüptitud hoidlaid.
-3. **Operaatori enda varukoopiasisend.** Mis tahes rclone-ühilduv salvestusruum (S3, B2, OneDrive, kohapealne MinIO). Saab krüptitud mahte.
+3. **Varukoopia sihtkoht.** Kas operaatori kontrollitav teine masin (`rdc repo push`) või majutatud tükksalvestus (`rdc backup snapshot`), mis hoiab ainult šifreeritud rakke, mida adresseeritakse nende SHA-256 järgi. LUKS-mandaat ei jõua ei ühegi ega teiseni.
 
 Kihti 4 pole. Rediacc OÜ ei ole alluttöötleja ühelegi operaatorile, kes pole katsetuslikku [Pilveadapterisse](/et/docs/architecture) registreerunud. Ise majutavate operaatorite jaoks on suhe Rediacc OÜ-ga tarkvaralitsents, mitte andmetöötlusleping.
 
@@ -129,7 +129,7 @@ Pärast Rediaccile üleminekut Hetzneris:
 | Alluttöötlejad | (1) Ise majutavatele puuduvad; (2) Ainult Hetzner-sisesed, loetletud nende DPA-s |
 | Lepingu staatus | (1) Tarkvaralitsents, DPA pole vajalik; (2) Hetzner DPA + SCC-d juba paigas |
 | Võtmehaldus | Klient (LUKS2 mandaat operaatori konfiguratsioonis, mitte serveris) |
-| Väljumisplaan | "rdc repo pull mis tahes rclone-ühilduvast sihtmärgist. Mahud on LUKS2-krüptitud; operaator hoiab mandaati." |
+| Väljumisplaan | "rdc repo pull teiselt masinalt või rdc backup restore mis tahes salvestatud hetktõmmisest. Mahud on LUKS2-krüptitud; operaator hoiab mandaati." |
 | Viimane hindamine | (2) kaetud olemasoleva IaaS-i ülevaatusega |
 
 Kaks registrikirjet ühe asemel. Kriitilise taseme kanne on IaaS-i pakkuja jaoks, kellel oli ostjal juba DPA paigas ja testitud väljumisplaan, sest IaaS on suhe, mida enamik tiime oskab hallata. Rediacc'i kanne on mittekriitiline, sest see on tarkvaralitsents, mitte andmetöötleja.

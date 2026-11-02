@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: ko
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "243d934efa7d9d54"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # 백업 및 복원
@@ -60,9 +60,9 @@ Rediacc는 암호화된 저장소를 백업하고, 같은 머신 또는 다른 �
 - **지속적인 복제가 아닙니다.** 스냅샷은 여러분이 찍은 한 시점이며, 마지막 스냅샷 이후 기록된 모든 것을 잃을 수 있습니다. 그 양은 실행 빈도에 따라 달라집니다.
 - **저장된 오브젝트는 한 번만 쓰이며, 인증된 WORM은 아닙니다.** 셀은 생성 전용 조건부로 기록되며, 머신이 받는 권한으로는 아무것도 삭제할 수 없고, 삭제는 보존 정책에 따라 서버 측에서 이루어집니다. 이는 침해된 머신이 자신의 백업을 파괴하는 것에 대한 실질적인 장벽이지만, 컴플라이언스 인증은 아니며 그렇게 감사받지도 않습니다.
 
-### rclone 스토리지 경로는 사라졌습니다
+### 대상 종류는 하나뿐
 
-`rdc repo push --to <storage>`와 그 관련 명령들은 예전에는 직접 등록한 클라우드 프로바이더로 백업 파일 전체를 복사했습니다. 이제는 스토리지 대상을 거부하고 대체 경로의 이름을 알려줍니다. 머신 간 전송은 애초에 rclone을 거친 적이 없으므로 영향을 받지 않습니다. 그 방식으로 작성된 아카이브를 아직 읽어야 한다면 [폐지 이전에 작성된 아카이브 읽기](#reading-an-archive-written-before-the-retirement)를 참조하세요.
+청크 스토어 백업의 대상 종류는 하나뿐이며, 계정 서버를 통해 접근하는 서비스 호스팅 청크 스토어입니다. 외부 스토리지 엔드포인트 레지스트리는 없으므로 `repo push`와 `repo pull`의 `--to`와 `--from`은 머신만 지정합니다.
 
 ### 청크 스토리지 명령
 
@@ -93,7 +93,11 @@ rdc backup usage
 | `--dry-run` | 계획만: 업로드 없음. 무엇이 이동할지 보고 |
 | `--cold` | 컨테이너를 멈추고, 동결하고, 재시작한 뒤 업로드. `--dry-run`과 함께 쓸 수 없음 |
 | `--reseed` | 로컬 앵커를 신뢰하지 않고 전체 인벤토리를 업로드. 모든 것을 다시 업로드하고 할당량을 다시 소진 |
+| `--read-bwlimit <limit>` | 스냅샷이 디스크에서 이미지를 읽는 속도의 상한. 단위는 `--bwlimit`과 같음(기본값 `50M`, `0` = 무제한) |
+| `--hash-parallelism <n>` | 해시 워커 수(기본값 `1`, `0` = CPU당 하나, 최대 `16`) |
 | `--debug` | 상세 출력 활성화 |
+
+업로드 상한과 읽기 상한은 별개다. `--bwlimit`은 전송량을 제한하며 기본값은 무제한이다. `--read-bwlimit`은 이미지를 디스크에서 읽고 해시하는 속도를 제한한다. `ionice`는 BFQ I/O 스케줄러에만 영향을 주므로, `mq-deadline`이나 `none`에서는 읽기 상한이 디스크 부하를 제한한다.
 
 ## 콜드 스냅샷(`--cold`)
 
@@ -265,22 +269,34 @@ rdc repo list --machine server-1
 | `Size` | 백업 파일의 사람이 읽기 쉬운 크기 |
 | `Modified` | 머신에 있는 파일의 UTC 타임스탬프 |
 
-스토리지 백엔드 목록 보기는 rclone 계열과 함께 폐지되었습니다. 명령은 거부되며 대체할 이 두 가지를 알려줍니다.
-
 ## 보존 정책
 
-서버가 청크 스토어 전체에 대해 저장소별 보존 정책을 강제하므로, 손으로 아무것도 지우지 않아도 오래된 스냅샷이 정리됩니다. 정책이 선언되지 않으면 모든 스냅샷이 보존됩니다.
+서버가 청크 스토어에 대해 보존 정책을 강제하므로, 손으로 아무것도 지우지 않아도 오래된 스냅샷이 정리됩니다. 정책은 저장소의 계보에 속합니다. 저장소와 그 fork는 하나의 이력을 공유하고, 저장소 이름에 설정한 정책이 그 가족 전체에 적용됩니다. 계보 안에서는 각 백업 스트림(한 머신의 저장소 하나)도 따로 보호되므로, 정책이 무엇이든 보존 작업이 스트림에서 최신 스냅샷이나 현재 앵커를 없애는 일은 없습니다. 자기 이력을 정리하는 다른 머신이나 fork도 다른 스트림의 최소 보존분을 소모할 수 없습니다.
+
+정책이 선언되지 않으면 서버 기본값(플랜에 기본값이 있으면 그 값)이 적용되고, 모든 스트림의 최신 스냅샷이 보존됩니다.
 
 ```bash
-# 지금 강제되고 있는 정책.
+# 지금 적용되고 있는 정책과 그 출처.
 rdc backup retention my-app
+
+# 다음 정리에서 삭제될 대상과 확보될 공간. 아무것도 삭제하지 않습니다.
+rdc backup retention preview my-app
 
 # 롤링 윈도우를 유지한다: 일간 7, 주간 4, 월간 6.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# 모든 것을 보존하는 상태로 되돌린다.
+# 백업 스트림 하나에만 다른 정책을 적용합니다.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# 선언한 정책을 제거합니다.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# 스냅샷 하나를 지금 삭제합니다. 그 스냅샷만 쓰던 데이터는 다음 GC에서 해제됩니다.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+전략은 자신이 포함하는 저장소의 정책을 선언할 수 있습니다: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none`으로 제거).
 
 | 옵션 | 설명 |
 |--------|-------------|
@@ -290,8 +306,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | 이 주 수만큼, 각 주의 최신 스냅샷을 유지 |
 | `--keep-monthly <n>` | 이 월 수만큼, 각 월의 최신 스냅샷을 유지 |
 | `--keep-yearly <n>` | 이 연 수만큼, 각 연의 최신 스냅샷을 유지 |
+| `--stream <id>` | 저장소 전체 기본값 대신 백업 스트림 하나에 정책을 적용 |
 
-규칙을 최소 하나는 지정하세요. 규칙 없이 `set`을 실행하면 "아무것도 보존하지 않음"으로 취급되지 않고 거부됩니다. 정책을 비우는 것은 `clear`의 역할이기 때문입니다.
+규칙을 최소 하나는 지정하세요. `set`은 병합하지 않고 모든 항목을 교체하므로, 매번 전체 정책을 전달합니다. 규칙 없이 `set`을 실행하면 "아무것도 보존하지 않음"으로 취급되지 않고 거부됩니다. 정책을 비우는 것은 `clear`의 역할이기 때문입니다. `clear`는 선언한 정책을 제거하므로 플랜 또는 서버 기본값이 다시 적용됩니다. "아무것도 보존하지 않음"을 뜻하지도, "모두 보존"을 뜻하지도 않습니다.
 
 ## 복원
 
@@ -307,6 +324,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at`은 `rdc backup manifests`가 알려주는 스냅샷 ID나, `2026-08-14T12:00:00Z`와 같은 RFC 3339 시각을 받습니다. 시각을 지정하면 그 시점 또는 그 이전 중 가장 최신 스냅샷으로 해석됩니다. 그 이전에 스냅샷이 없는 시각을 지정하면 앞으로 반올림되는 대신 거부됩니다.
 
+시각은 소스 머신에 있는 이 저장소의 스냅샷 중에서만 해석됩니다. 다른 머신이나 같은 계보의 fork가 기록한 스냅샷은 `--any-stream`으로 일부러 검색 범위를 넓히지 않는 한 고려되지 않습니다. 저장소 자체의 스트림을 확인할 수 없으면 복원은 추측하지 않고 거부되며 `--any-stream`을 요구합니다.
+
 `--as`로 새 이름 아래 복원하면 아무것도 덮어쓰지 않으므로, 운영 중인 머신에서도 복원 드릴을 안전하게 실행할 수 있습니다. 이미 존재하는 이름으로 복원하는 것은 거부됩니다.
 
 | 옵션 | 설명 |
@@ -316,6 +335,7 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 | `-m, --machine <machine>` | 복원할 머신 |
 | `--datastore <name>` | 이 이름의 데이터스토어로 복원(연결된 머신이 이를 호스팅) |
 | `--at <time>` | 특정 시점을 복원: 스냅샷 ID 또는 RFC 3339 시각 |
+| `--any-stream` | `--at`과 함께 쓰면 다른 머신과 이 계보의 fork에서 온 스냅샷도 고려 |
 | `--up` | 전송 후 복원된 저장소를 배포 |
 | `--health-window <seconds>` | 배포된 저장소의 상태를 관찰할 시간 |
 | `--health-timeout <seconds>` | 정상 상태가 될 때까지 기다릴 시간 |
@@ -352,7 +372,7 @@ rdc repo pull shop:nightly@server-1 --from server-2
 
 ## 예약 백업
 
-Rediacc는 이름이 지정된 백업 전략을 사용합니다. 각 전략은 일정, 백업 모드, 선택적 대역폭 제한, 파일 필터를 정의합니다. 전략 이름을 머신에 바인딩해서 어디서 어떤 백업이 실행될지 제어합니다.
+Rediacc는 이름이 지정된 백업 전략을 사용합니다. 각 전략은 일정, 백업 모드, 선택적 대역폭 제한, 저장소 필터, 스냅샷 보존을 정의합니다. 전략 이름을 머신에 바인딩해서 어디서 어떤 백업이 실행될지 제어합니다.
 
 ### 백업 모드
 
@@ -451,7 +471,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -460,28 +480,28 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>`은 전략 내부의 대상에 이름을 붙입니다. 이는 직접 고르는 라벨이며, 청크 스토어를 나타냅니다. `--include`는 백업할 저장소를 나열하며, 반복할수록 추가됩니다. 생략하면 전략은 데이터스토어의 모든 저장소를 대상으로 합니다. 이름은 로컬 설정의 저장소 이름(`:tag` 제외)과 일치해야 합니다.
+`--destination <name>`은 전략 내부의 대상에 이름을 붙입니다. 이는 전략마다 고르는 라벨이며, 대상은 항상 서비스 호스팅 청크 스토어입니다. `--include`는 백업할 저장소를 쉼표로 구분해 받습니다(`--include shop,mail`). 생략하면 전략은 데이터스토어의 모든 저장소를 대상으로 합니다. 이름만 쓰면 저장소와 그 모든 fork를 포함하고, `name:tag`는 fork 하나만 포함합니다. 알 수 없는 이름은 전략을 저장할 때 거부되므로, 오타로 아무것도 백업하지 않는 일정이 만들어지지 않습니다.
 
-`--exclude`는 청크 스토어 대상에서는 조용히 무시되는 대신 거부됩니다. 기반이 되는 `backup snapshot`이 저장소를 이름으로 선택하는 방식이며 자체 제외 기능이 없기 때문입니다. 이를 존중한다면 제외하려던 저장소까지 백업해버리는 셈이 됩니다. 대신 `--include`로 전략의 범위를 좁히세요. 그러면 예약 실행이 무엇을 다루는지가 추측이 아니라 명시된 값이 됩니다.
+`--exclude`도 같은 쉼표 구분 형식을 받으며, 지정한 저장소를 건너뜁니다. `--include`와 `--exclude`는 함께 쓸 수 없습니다. 하나를 설정하면 다른 하나가 지워지고, 값 `none`은 필터를 지웁니다.
 
 | 옵션 | 설명 |
 |--------|-------------|
 | `<strategy>`(위치 인자) | 전략 이름(머신 바인딩에 사용) |
-| `--destination <name>` | 전략 내부의 대상 이름. 기본값은 청크 스토어 |
-| `--storage <name>` | 폐지된 rclone 대상 종류를 옵트인. 이를 사용하는 스케줄은 배포할 수 없음 |
+| `--destination <name>` | 전략 내부의 대상 이름. 항상 서비스 호스팅 청크 스토어 |
 | `--cron <expression>` | cron 표현식(예: `"0 2 * * *"`는 매일 오전 2시) |
 | `--mode <hot\|cold>` | 백업 모드 |
 | `--bwlimit <limit>` | 업로드 대역폭 제한(예: `10M`) |
-| `--include <repos>` | 이 전략이 다루는 저장소(반복 가능) |
-| `--exclude <repos>` | 건너뛸 저장소(반복 가능). 청크 스토어 대상에서는 거부됨 |
-| `--folder <path>` | rclone 버킷 내 하위 폴더. 청크 스토어 대상에서는 거부됨 |
+| `--read-bwlimit <limit>` | 스냅샷이 디스크에서 이미지를 읽는 속도의 상한(예: `50M`, `0` = 무제한). `none`으로 해제 |
+| `--include <repos>` | 이 전략이 포함하는 저장소(쉼표로 구분) |
+| `--exclude <repos>` | 건너뛸 저장소(쉼표로 구분) |
+| `--retention <spec>` | 스냅샷 보존. 예: `last=7,daily=7,weekly=4,monthly=6`. `none`으로 제거 |
 | `--enable` / `--disable` | 전략 활성화 또는 비활성화 |
 
 ### 전략 보기
@@ -540,12 +560,12 @@ rdc backup strategy unbind weekly-cold --machine hostinger
 
 ### 전략별 저장소 범위 지정
 
-`--include`가 없는 전략은 데이터스토어의 모든 저장소를 대상으로 합니다. `--include`를 반복하면 지정한 이름의 저장소로만 범위가 좁혀지며, 로컬 설정의 저장소 이름(`:tag` 제외)과 일치시킵니다.
+`--include`가 없는 전략은 데이터스토어의 모든 저장소를 대상으로 합니다. `--include`를 쓰면 쉼표로 구분해 지정한 저장소로 좁혀지며, 로컬 설정의 저장소 이름과 대조됩니다.
 
 ```bash
 # 핫 전략: 모든 것을 매시간 백업
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -553,10 +573,10 @@ rdc backup strategy set hourly-hot \
 
 # 콜드 전략: 매주, 정지가 필요한 저장소만
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
@@ -638,25 +658,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | 전송 대역폭 제한(예: `50M`) |
 
 마이그레이션은 rsync를 통해 두 단계에 걸쳐 암호화된 저장소 데이터를 전송합니다. 저장소가 계속 실행되는 동안의 대량 전송과, 그 뒤에 이어지는 델타를 위한 짧은 정지입니다. 마이그레이션은 저장소를 **이동**시키므로, 이동이 성공하면 소스 이미지는 삭제됩니다. 이를 보존하려면 `--keep-source`를 넘기세요. 이것이 `repo migrate`와 `repo push`의 차이입니다. 푸시는 소스를 실행 중인 상태 그대로 건드리지 않고 남겨둡니다.
-
-## 폐지 이전에 작성된 아카이브 읽기
-
-`rdc storage`는 rclone 계열 중 남은 부분이며, 읽기 전용입니다. 더 이상 백업 대상이 될 수는 없지만, 그 방식으로 작성된 아카이브에는 여전히 접근할 수 있습니다.
-
-```bash
-# 이미 rclone용으로 설정해둔 리모트를 등록한다.
-rdc storage import rclone.conf
-rdc storage list
-
-# 안에 무엇이 있는지 본다. 이는 여러분의 PATH에 있는 rclone을 실행한다.
-rdc storage browse my-storage
-```
-
-`import`는 rclone 설정 파일을 읽어 그 리모트들을 여러분의 설정에 기록합니다. 지원되는 종류는 S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob, Swift입니다.
-
-**`browse`는 PATH에 `rclone`이 있어야 합니다.** 이는 여러분이 명령을 입력하는 머신에 설치된 rclone을 실행합니다. 더 이상 번들 사본은 없습니다. 없다면 그렇게 알려주고 그 이상 아무것도 하지 않습니다.
-
-스토리지 백엔드로의 푸시, 풀, 목록 보기, 복원은 폐지되었으며, 각각 거부된 뒤 대체 명령을 알려줍니다.
 
 ## 모범 사례
 

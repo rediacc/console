@@ -26,10 +26,15 @@ enabled = true
 [observability.logs]
 enabled = true
 invocation_logs = false
+head_sampling_rate = 1
+destinations = ["otlp-eu-logs"]
+persist = false
 
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
+destinations = ["otlp-eu-traces"]
+persist = false
 
 [assets]
 directory = "./dist"
@@ -55,3 +60,13 @@ jurisdiction = "eu"
 binding = "BACKUP_BUCKET"
 bucket_name = "rediacc-backups-eu"
 jurisdiction = "eu"
+
+# The web console reaches the executor proxy through this binding, not a public fetch: this
+# Worker and rediacc-proxy-eu share the rediacc.com zone, and a same-zone subrequest never
+# reaches another Worker (the proxy's own ACCOUNT binding fixed the same 401 the other way).
+# private/account/src/routes/console.ts uses it when bound; EXECUTOR_MODE still decides
+# whether the console runs against it at all (mock until box C2 of PLAN-cloudflare-proxy).
+# DEPLOY ORDER: this Worker deploys before rediacc-proxy-eu (the proxy's ACCOUNT binding needs the CloudflareInternal entrypoint this Worker exports), so the proxy named here may not exist yet at the first deploy of this block; deploy the proxy next (workers/proxy/wrangler.eu.toml).
+[[services]]
+binding = "EXECUTOR"
+service = "rediacc-proxy-eu"

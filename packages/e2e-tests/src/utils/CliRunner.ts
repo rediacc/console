@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { type ChildProcess, execFile, spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -45,7 +45,7 @@ function resolveDevRenet(): string | undefined {
 /**
  * CliRunner — the e2e harness's FIRST rdc-driving surface.
  *
- * Every existing suite goes through BridgeTestRunner (SSH → `sudo renet …`). The
+ * Every existing suite goes through RenetFunctionsTestRunner (SSH → `sudo renet …`). The
  * two-VM `repo migrate` routing family, however, is CLI logic (config placement
  * rewrite, `config reconcile`) that renet-side tests structurally cannot cover
  * (07 §1-9). CliRunner shells the real `rdc` binary so suite 23 can drive it; it
@@ -73,19 +73,6 @@ export interface CliRunnerOptions {
    * mutations.
    */
   readonly configName?: string;
-  /**
-   * Keep CLI-side license issuance and recovery ENABLED.
-   *
-   * The default sets `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which is right for
-   * every suite that only wants the fleet to work — but it does not merely
-   * quieten licensing, it removes it: `ensureRepoLicenseForProvisioning`
-   * returns immediately (`local-executor.ts:1095-1097`), so no slot is ever
-   * claimed, and `needsLicenseRecovery` refuses to act on renet's exit 10
-   * (`local-executor.ts:760`), so nothing is ever reissued. A licensing suite
-   * that inherited the default would assert against a system with the
-   * behaviour under test switched off.
-   */
-  readonly licensing?: boolean;
   /** Extra environment for the spawned CLI (e.g. REDIACC_ALLOW_CLUSTER_OPS). */
   readonly env?: NodeJS.ProcessEnv;
 }
@@ -114,15 +101,11 @@ export class CliRunner {
     const configName = options.configName ?? E2E_CLI_CONFIG;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      // License-less ops VMs (07 §2). CI shells have no agent ancestor, so the REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
-      ...(options.licensing ? {} : { REDIACC_SKIP_MACHINE_ACTIVATION: '1' }),
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',
       REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
       ...options.env,
     };
-    // An inherited value would defeat `licensing: true` silently, since the spread above only omits the key rather than clearing it.
-    if (options.licensing) delete env.REDIACC_SKIP_MACHINE_ACTIVATION;
 
     if (process.env.E2E_CLI_BIN) {
       return new CliRunner(process.env.E2E_CLI_BIN, [], env, undefined, configName);
@@ -167,6 +150,20 @@ export class CliRunner {
         stderr: e.stderr ?? '',
       };
     }
+  }
+
+  /**
+   * Start `rdc --config <namespace> <args>` and hand back the live process, for a command that
+   * must keep running (an `rdc serve` executor) where run() waits for exit. Same binary, prefix and
+   * environment as run(); an `undefined` value in envOverrides removes that variable.
+   */
+  spawn(args: string[], envOverrides: NodeJS.ProcessEnv = {}): ChildProcess {
+    const env: NodeJS.ProcessEnv = { ...this.env, ...envOverrides };
+    for (const [key, value] of Object.entries(env)) if (value === undefined) delete env[key];
+    return spawn(this.bin, [...this.binPrefixArgs, '--config', this.configName, ...args], {
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   }
 
   /** Run `rdc --config <namespace> <args>`. */

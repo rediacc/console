@@ -58,7 +58,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
   const emailRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
-  const hasFiredStart = useRef(false);
+  const hasFiredStart = useRef<boolean>(false);
   // Shared state machine; see useCaptchaGuard for the widget-never-mounted case.
   const captcha = useCaptchaGuard();
 

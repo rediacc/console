@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: zh
-sourceHash: "cbfa1730b069f73c"
-sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
+sourceHash: "48538a4c661c9f72"
+sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
 ---
 
 ### 身份验证
@@ -69,6 +69,8 @@ rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```
+
+将配置关联到[Config Storage](/en/docs/config-storage)时，会使用另一个同样经由账户服务器的请求。该请求绑定到CLI当前登录的账户；链接把密钥放在 `#` 之后，因此不会进入服务器日志；用户则在批准页面输入终端中显示的配对码。请求在10分钟后过期。
 
 ### Config Storage
 

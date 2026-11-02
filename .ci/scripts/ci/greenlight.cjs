@@ -71,15 +71,19 @@ const VM_E2E_PATHS = [
   '.ci/rediacc_ci/infra/wait_for_vm_ssh.py',
   '.ci/rediacc_ci/env/create_e2e_env.py',
   '.ci/rediacc_ci/ci_signal/create_complete.py',
-  // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 3ed5836f7, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
+  // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 27055771d, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
   // Used by ONE leg each and carried by all eight: the two private scripts by fork_isolation. Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing. The concurrent-fork isolation test is `python3 -m rediacc_ci.private.concurrent_fork_isolation_test`, carried by the `.ci/rediacc_ci` entry above; its bash twin was retired under PLAN-retire-bash-oracles B3.
   '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
   // Added 4b5a52d9f (spec W T2.1-T2.3, T2.6): every VM/E2E leg now `uses:` this local composite before its build steps, which resolves from the WORKSPACE exactly like bws-secrets above, so a change to the action does not re-run these legs unless it is in the closure. Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/free-disk-space',
   '.github/actions/setup-workspace',
   '.github/actions/app-token',
-  // Added c883a8653 (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which, on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
+  // Added 25f90b7ac (2026-10-22): every 'Setup KVM Host' and 'Install clang' step is preceded by this composite, which, on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com (actions/runner-images#14823). Found by test_gate_greenlight_closure_trace.py.
   '.github/actions/apt-mirror',
+  // Added 2fc16b442 and f39c7fbda (PLAN-free-license F2, PLAN-scope-bws-signing-key-to-consuming-step): every leg installs the run's shared renet through renet-test-binary and blanks its step-scoped signing key through bws-scrub, both local composites that resolve from the WORKSPACE. The binary itself is the renet-test-linux-amd64-<sha> artifact ci-build-renet.yml builds, so that recipe is an input to what the legs test. Found by test_gate_greenlight_closure_trace.py.
+  '.github/actions/renet-test-binary',
+  '.github/actions/bws-scrub',
+  '.github/workflows/ci-build-renet.yml',
   // `npm ci` resolves the lockfile and reads .npmrc (which turns off lifecycle scripts repo-wide, so it changes what gets installed).
   'package.json',
   'package-lock.json',
@@ -187,7 +191,8 @@ const CLOSURES = {
     paths: VM_E2E_PATHS,
   },
   // ct-tests.yml `test-renet-go` / `test-renet-integration`, gated on
-  // `inputs.full_suite == 'true' && inputs.run_renet != 'false'`.
+  // `(inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true'`
+  // (J9: a push that moves the private/renet pointer runs them too).
   renet: {
     // The API job name is the CALLER's job name plus the callee's, joined by " / ": a live run shows "Tests + Infra / Renet (go, 1/2)". Matching is on the last segment, which is the only part ct-tests.yml controls. Exactness matters here: the same run also carries "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker", and a prefix or substring match would accept either as evidence for a suite neither of them runs.
     //
@@ -215,6 +220,14 @@ const CLOSURES = {
       // that gate
       // exists for.
       '.github/actions/app-token',
+      // Added f39c7fbda: the step-scoped signing-key fetch is followed by this composite. And the legs now start with setup-workspace, whose `npm ci` reads the root manifest, the lockfile and .npmrc. Found by test_gate_greenlight_closure_trace.py.
+      '.github/actions/bws-scrub',
+      '.github/actions/setup-workspace',
+      // The integration legs install the run's key-gated renet through this composite (PR 602: licensing is enforced in every lane), so an edit to it must re-run them.
+      '.github/actions/renet-test-binary',
+      'package.json',
+      'package-lock.json',
+      '.npmrc',
       '.github/workflows/ct-tests.yml',
     ],
   },
@@ -252,8 +265,11 @@ const CLOSURES = {
       '.ci/rediacc_ci/infra/verify_ssh.py',
       '.github/actions/setup-workspace',
       '.github/actions/app-token',
-      // Before its 'Setup KVM Host' (c883a8653): on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com.
+      // Before its 'Setup KVM Host' (25f90b7ac): on GitHub-hosted runners only, rewrites the runner's apt sources to archive.ubuntu.com.
       '.github/actions/apt-mirror',
+      // Added 2fc16b442 and f39c7fbda: the shared renet install and the step-scoped signing-key blanking, both local composites. Found by test_gate_greenlight_closure_trace.py.
+      '.github/actions/renet-test-binary',
+      '.github/actions/bws-scrub',
       'package.json',
       'package-lock.json',
       '.npmrc',
@@ -320,6 +336,8 @@ const CLOSURES = {
       '.github/actions/setup-workspace',
       // Both jobs mint a submodule-capable token through it before checkout.
       '.github/actions/app-token',
+      // Added f39c7fbda: blanks the step-scoped signing key after its one consuming step. Found by test_gate_greenlight_closure_trace.py.
+      '.github/actions/bws-scrub',
       // package.json defines build:packages (package.json:21); the lockfile is
       // what `npm ci` resolves and what keys the node_modules cache.
       'package.json',
@@ -619,7 +637,7 @@ function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) 
 // iteration order cannot change the answer, and NUL-delimited so no path can forge a different map's serialization by containing the delimiter.
 function closureHashOf(shaByPath) {
   const h = createHash('sha256');
-  for (const p of Object.keys(shaByPath).sort()) {
+  for (const p of Object.keys(shaByPath).sort((a, b) => Number(a > b) - Number(a < b))) {
     h.update(p);
     h.update('\0');
     h.update(String(shaByPath[p]));

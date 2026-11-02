@@ -74,14 +74,245 @@ export function buildRenetEnv(params: RenetEnvParams): RenetEnv {
  * precedence over any credentials the caller may have pre-fetched.
  */
 export function buildRemoteRenetCommand(
-  params: RenetEnvParams & { remoteRenetPath: string; eventsMode?: boolean }
+  params: RenetEnvParams & { remoteRenetPath: string; eventsMode?: boolean; timeoutMs?: number }
 ): RenetLaunch {
-  const { remoteRenetPath, eventsMode, ...envParams } = params;
+  const { remoteRenetPath, eventsMode, timeoutMs, ...envParams } = params;
   const eventsFlag = eventsMode ? ' --events' : '';
+  const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
   return sudoRenet(
     buildRenetEnv(envParams),
-    `${shellQuote(remoteRenetPath)} execute --executor local${eventsFlag}`
+    `${shellQuote(remoteRenetPath)} execute --executor local${eventsFlag}${timeoutFlag}`
   );
+}
+
+/** The ceiling for a function whose run time grows with the data it moves or waits on a health gate. */
+export const DATA_TRANSFER_TIMEOUT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The two timeout classes of agent/plans/PLAN-detached-jobs.md section 20, with
+ * the J0b additions (machine_converge_runtime, repository_trim,
+ * repository_docker_prune, and the renet daemons upgrade behind
+ * `daemons-restart`). A function gets 24 hours when its run time grows with the
+ * data it moves, or when it waits on a health gate; every other one keeps
+ * renet's 10-minute default. There is no middle class.
+ *
+ * The two sets together name EVERY function in
+ * packages/shared/src/renet-contract/data/license-tiers.generated.ts, and
+ * renet-timeout-classes.test.ts fails on a function in neither (or both), so a
+ * new renet function forces a decision instead of inheriting one silently.
+ */
+export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
+  // The data-moving backup functions (fix(cli): data-moving backup verbs carry a renet --timeout above the 10-minute default).
+  'backup_snapshot',
+  'backup_push',
+  'backup_pull',
+  'backup_restore',
+  'backup_restore_path',
+  'backup_verify',
+  'backup_compare',
+  'backup_repair',
+  // Health-gated repository lifecycle, and the ones that grow with the image.
+  'repository_up',
+  'repository_up_all',
+  'repository_fork',
+  'repository_create',
+  'repository_resize',
+  'repository_expand',
+  'repository_trim',
+  'repository_docker_prune',
+  // Two backup pushes to the destination machine, sized by the image.
+  'repository_migrate',
+  // CRIU checkpoints grow with the memory they dump and restore.
+  'checkpoint_create',
+  'checkpoint_restore',
+  // The datastore lifecycle.
+  'datastore_create',
+  'datastore_delete',
+  'datastore_fork',
+  'datastore_resize',
+  'datastore_expand',
+  'datastore_attach',
+  'datastore_detach',
+  'datastore_adopt',
+  // The cluster lifecycle (ceph and kube install, join, upgrade, data copies).
+  'ceph_bootstrap_cluster',
+  'ceph_cluster_create',
+  'ceph_cluster_destroy',
+  'ceph_install_prerequisites',
+  'ceph_clone_image',
+  'ceph_clone_flatten',
+  'ceph_image_resize',
+  'kube_install',
+  'kube_uninstall',
+  'kube_upgrade',
+  'kube_join',
+  'kube_registry_up',
+  'kube_prep_fork',
+  'kube_fork_dest_prep',
+  // Machine setup and the runtime converge restart daemons and wait on their stability.
+  'setup',
+  'machine_converge_runtime',
+]);
+
+/** Every other function: renet's 10-minute default. */
+export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
+  'backup_browse',
+  'backup_browse_at',
+  'backup_delete',
+  'backup_list',
+  'backup_toc_key',
+  'ceph_client_config_export',
+  'ceph_client_config_install',
+  'ceph_client_mount',
+  'ceph_client_unmount',
+  'ceph_clone_cleanup',
+  'ceph_clone_create',
+  'ceph_clone_delete',
+  'ceph_clone_list',
+  'ceph_clone_mount',
+  'ceph_clone_unmount',
+  'ceph_cluster_dashboard',
+  'ceph_cluster_status',
+  'ceph_health',
+  'ceph_image_create',
+  'ceph_image_delete',
+  'ceph_image_format',
+  'ceph_image_info',
+  'ceph_image_list',
+  'ceph_image_map',
+  'ceph_image_unmap',
+  'ceph_pool_create',
+  'ceph_pool_delete',
+  'ceph_pool_info',
+  'ceph_pool_list',
+  'ceph_pool_stats',
+  'ceph_snapshot_create',
+  'ceph_snapshot_delete',
+  'ceph_snapshot_list',
+  'ceph_snapshot_protect',
+  'ceph_snapshot_rollback',
+  'ceph_snapshot_unprotect',
+  'checkpoint_check_compat',
+  'checkpoint_cleanup',
+  'checkpoint_validate',
+  'container_exec',
+  'container_inspect',
+  'container_kill',
+  'container_list',
+  'container_logs',
+  'container_pause',
+  'container_remove',
+  'container_restart',
+  'container_start',
+  'container_stats',
+  'container_stop',
+  'container_unpause',
+  'daemon_logs',
+  'daemon_nop',
+  'daemon_restart',
+  'daemon_setup',
+  'daemon_start',
+  'daemon_status',
+  'daemon_stop',
+  'daemon_teardown',
+  'daemon_wait_docker',
+  'datastore_forget',
+  'datastore_list',
+  'datastore_snapshot_create',
+  'datastore_snapshot_delete',
+  'datastore_snapshot_list',
+  'datastore_status',
+  'datastore_validate',
+  'datastore_volumes_close',
+  'datastore_volumes_open',
+  'kube_apply',
+  'kube_delete',
+  'kube_health',
+  'kube_identity_rewrite',
+  'kube_join_token',
+  'kube_kubeconfig',
+  'kube_node_label',
+  'kube_node_remove',
+  'kube_registry_wire',
+  'machine_check_btrfs',
+  'machine_check_cli',
+  'machine_check_criu',
+  'machine_check_drivers',
+  'machine_check_kernel',
+  'machine_check_memory',
+  'machine_check_renet',
+  'machine_check_setup',
+  'machine_check_sudo',
+  'machine_check_system',
+  'machine_check_tools',
+  'machine_check_users',
+  'machine_fix_groups',
+  'machine_gpu_list',
+  'machine_ping',
+  'machine_ssh_test',
+  'machine_uninstall',
+  'machine_version',
+  'network_cleanup_ips',
+  'network_ensure_ips',
+  'network_prune',
+  'network_ps_status',
+  'network_used',
+  'repository_autostart_disable',
+  'repository_autostart_disable_all',
+  'repository_autostart_enable',
+  'repository_autostart_enable_all',
+  'repository_autostart_list',
+  'repository_cat',
+  'repository_commit',
+  'repository_commit_meta',
+  'repository_delete',
+  'repository_diff',
+  'repository_down',
+  'repository_down_all',
+  'repository_exec',
+  'repository_gc',
+  'repository_gpu_grant',
+  'repository_gpu_revoke',
+  'repository_health',
+  'repository_info',
+  'repository_list',
+  'repository_log',
+  'repository_logs',
+  'repository_merge',
+  'repository_mount',
+  'repository_ownership',
+  'repository_policy_get',
+  'repository_policy_set',
+  'repository_promote',
+  'repository_prune',
+  'repository_status',
+  'repository_template_apply',
+  'repository_unmount',
+  'repository_validate',
+]);
+
+/**
+ * The command-kind jobs (`job start --command`, section 14) and their class.
+ * `setup` installs packages and `backup-unit` runs a whole backup inside the
+ * job; `daemons-restart` is the renet daemons upgrade (J0b finding 5); a
+ * `list-all` read keeps the default.
+ */
+export const COMMAND_KIND_TIMEOUT_MS: Readonly<Record<string, number | undefined>> = {
+  setup: DATA_TRANSFER_TIMEOUT_MS,
+  'backup-unit': DATA_TRANSFER_TIMEOUT_MS,
+  'daemons-restart': DATA_TRANSFER_TIMEOUT_MS,
+  'list-all': undefined,
+};
+
+/**
+ * The `--timeout` a renet run carries. Both `renet execute` and `renet job start` cancel at 10 minutes when none is passed, which killed the hostinger seed's foreground snapshot of mautic at duration_ms=600019 with `signal: terminated` (2026-10-29), mid-upload under a 100 Mbps cap. A function in LONG_TIMEOUT_FUNCTIONS gets a ceiling sized for the transfer or the health gate instead: a 200 GB repo at 12.5 MB/s needs about 4.5 hours, and 24 hours leaves room for a slower link. The cost is that a hung job holds its overlap lock until that ceiling, which `rdc job cancel` ends sooner. An explicit caller value always wins.
+ */
+export function resolveRenetTimeoutMs(
+  functionName: string,
+  explicitMs: number | undefined
+): number | undefined {
+  if (explicitMs) return explicitMs;
+  return LONG_TIMEOUT_FUNCTIONS.has(functionName) ? DATA_TRANSFER_TIMEOUT_MS : undefined;
 }
 
 /**

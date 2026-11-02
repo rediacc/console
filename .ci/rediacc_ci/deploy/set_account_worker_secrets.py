@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-Pushes twenty-nine runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not twenty-nine `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
+Pushes thirty runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
 THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, four times over, and every decision is a place a port can be quietly wrong:
 
@@ -33,6 +33,12 @@ THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the o
      is also set; the unsuffixed pair is never read (a divergence from the twin,
      which read one unsuffixed pair for every Worker:
      agent/plans/PLAN-backup-credential-isolation.md B2).
+  5. THE CONFIG SERVER KEY. `ACCOUNT_CONFIG_SERVER_KEY` encrypts layer 3 of the
+     config store. Its vault name is built from the region AND the channel,
+     `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_<STABLE|EDGE>`, so no two Workers share
+     one key, and a run refuses when the other channel's name for its region is
+     also set (agent/plans/PLAN-config-server-key.md K2). The Worker secret
+     itself is never spelled `CONFIG_SERVER_KEY`.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN, and the OTLP shape probe reads its value on jq's stdin too. No child's argv carries a value (a divergence from the twin, which passed all twenty-nine as `jq --arg` pairs; worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
 
@@ -101,7 +107,7 @@ import re
 import subprocess
 import sys
 
-from rediacc_ci.core import common
+from rediacc_ci.core import common, wrangler
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_account_worker_secrets"
@@ -152,6 +158,12 @@ BACKUP_PAIR_EDGE = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
 )
 
+# The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names cd-deploy-account.yml exports.
+SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = ("ACCOUNT_CONFIG_SERVER_KEY",)
+CONFIG_KEY_PREFIX = SUFFIXED_CHANNEL_PREFIXES[0]
+CHANNEL_STABLE = "STABLE"
+CHANNEL_EDGE = "EDGE"
+
 # The lines under a backup-pair refusal; the first is dynamic. Names only, never a value.
 BACKUP_PAIR_REFUSAL: tuple[str, ...] = (
     "  Each channel's Workers take only that channel's bucket-scoped backup key pair",
@@ -178,9 +190,9 @@ GUARD_EXPLANATION: tuple[str, ...] = (
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# The twenty-nine `--arg <var> <value>` pairs (:219-247) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
+# The thirty `--arg <var> <value>` pairs (the twin's twenty-nine at :219-247, plus the config server key) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
-# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the nine values this script COMPUTES rather than reads, and those nine are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name.
+# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the ten values this script COMPUTES rather than reads, and those ten are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv", "ACCOUNT_ED25519_PRIVATE_KEY"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
@@ -188,6 +200,8 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_X25519_PUBLIC_KEY", "x25519_pub", "ACCOUNT_X25519_PUBLIC_KEY"),
     ("ACCOUNT_SERVER_API_KEY", "api_key", "ACCOUNT_SERVER_API_KEY"),
     ("ACCOUNT_JWT_SECRET", "jwt", "ACCOUNT_JWT_SECRET"),
+    ("FREE_LICENSE_HMAC_KEY", "free_license_hmac", "FREE_LICENSE_HMAC_KEY"),
+    ("ACCOUNT_CONFIG_SERVER_KEY", "config_server_key", ""),
     ("STRIPE_SECRET_KEY", "stripe", ""),
     ("STRIPE_WEBHOOK_SECRET", "stripe_wh", ""),
     ("ROOT_EMAIL", "admin", "ROOT_EMAIL"),
@@ -213,7 +227,7 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("SELLER_EMAIL", "seller_email", "SELLER_EMAIL"),
 )
 
-# The fifteen unconditional `_require_nonempty` calls (:198-212), in order. The FIRST empty one ends the run, so the order is observable in the message.
+# The sixteen unconditional `_require_nonempty` calls (the twin's fifteen at :198-212, plus the config server key last), in order. The FIRST empty one ends the run, so the order is observable in the message.
 #
 # WHY THESE, in the twin's own words (:167-197): the Worker schema marks most of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off -- email stops with requests still returning 200, Turnstile disables itself, telemetry goes dark, backups 503. `required: true` on the GitHub side used to be the guard, and a job-start
 # Bitwarden fetch has no equivalent: a correct UUID pointing at an empty value injects "" without complaint.
@@ -227,6 +241,7 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_X25519_PUBLIC_KEY",
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
+    "FREE_LICENSE_HMAC_KEY",
     "ROOT_EMAIL",
     "AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY",
@@ -236,6 +251,7 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_BACKUP_S3_ENDPOINT",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+    "ACCOUNT_CONFIG_SERVER_KEY",
 )
 
 # The two demanded on the stable channel only (:213-216). On edge the twin has already blanked both, so demanding them there would refuse every edge deploy.
@@ -273,21 +289,26 @@ class ScriptRefusalError(Exception):
 
 
 class GuardError(ScriptRefusalError):
-    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1."""
+    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1; four for ACCOUNT_CONFIG_SERVER_KEY, whose fourth line names its per-region, per-channel store entry."""
 
     def __init__(self, name: str, worker: str, target: str, suffix: str) -> None:
         self.name = name
-        super().__init__(
+        lines = [
             "%s: %s is EMPTY for WORKER_NAME=%s TARGET=%s SUFFIX=%s."
             % (SELF, name, worker, target, suffix),
             *GUARD_EXPLANATION,
-        )
+        ]
+        if name == "ACCOUNT_CONFIG_SERVER_KEY":
+            # The Worker key is fed from a per-region, per-channel store entry, so the name above is not one the store holds.
+            channel = CHANNEL_STABLE if target == STABLE else CHANNEL_EDGE
+            lines.append("  Its store entry is %s_%s_%s." % (CONFIG_KEY_PREFIX, suffix, channel))
+        super().__init__(*lines)
 
 
 def read_env() -> dict[str, str]:
     """Every variable the twin reads, ONE EXPLICIT `os.environ.get` PER NAME.
 
-    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-two names by hand plus four it constructs.
+    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-two names by hand plus six it constructs.
 
     UNSET AND EMPTY ARE THE SAME CASE THROUGHOUT, so a plain `str` per name is
     faithful: every read in the twin is `"${NAME:-}"`, `"${NAME:?...}"` or a
@@ -310,6 +331,7 @@ def read_env() -> dict[str, str]:
         "ACCOUNT_X25519_PUBLIC_KEY": os.environ.get("ACCOUNT_X25519_PUBLIC_KEY", ""),
         "ACCOUNT_SERVER_API_KEY": os.environ.get("ACCOUNT_SERVER_API_KEY", ""),
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET", ""),
+        "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY", ""),
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL", ""),
         "AWS_SES_REGION": os.environ.get("AWS_SES_REGION", ""),
         "AWS_SES_FROM": os.environ.get("AWS_SES_FROM", ""),
@@ -346,6 +368,11 @@ def read_env() -> dict[str, str]:
     for prefix in SUFFIXED_PREFIXES:
         name = "%s_%s" % (prefix, suffix)
         env[name] = os.environ.get(name, "")
+    # BOTH channels' config server key names for this region, so that `resolve` can REFUSE the other one.
+    for prefix in SUFFIXED_CHANNEL_PREFIXES:
+        for channel in (CHANNEL_STABLE, CHANNEL_EDGE):
+            key_name = "%s_%s_%s" % (prefix, suffix, channel)
+            env[key_name] = os.environ.get(key_name, "")
     return env
 
 
@@ -393,6 +420,26 @@ def backup_pair(env: dict[str, str], target: str) -> tuple[str, str]:
     return env.get(own[0], ""), env.get(own[1], "")
 
 
+def config_server_key(env: dict[str, str], target: str, suffix: str) -> str:
+    """The ACCOUNT_CONFIG_SERVER_KEY for TARGET's channel and SUFFIX's region: `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE` on stable, `_EDGE` on every other TARGET.
+
+    Raises `ScriptRefusalError` when the other channel's name for this region carries a value. An EMPTY own name is not refused here: `check_nonempty` names the Worker key, in its turn.
+    """
+    own_channel, other_channel = (
+        (CHANNEL_STABLE, CHANNEL_EDGE) if target == STABLE else (CHANNEL_EDGE, CHANNEL_STABLE)
+    )
+    own = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, own_channel)
+    other = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, other_channel)
+    if env.get(other, ""):
+        raise ScriptRefusalError(
+            "%s: TARGET=%s takes its config server key from %s only, and %s is also set."
+            % (SELF, target, own, other),
+            "  Each channel and region has its own key (the deploy workflow fetches one name",
+            "  per run). Refusing to deploy with a key that belongs to another environment.",
+        )
+    return env.get(own, "")
+
+
 def resolve(env: dict[str, str]) -> dict[str, str]:
     """The four decisions, in the twin's order, as jq variable -> value.
 
@@ -430,6 +477,8 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
 
     backup_akid, backup_secret = backup_pair(env, target)
 
+    config_key = config_server_key(env, target, suffix)
+
     backup_endpoint = apply_jurisdiction(
         env.get("ACCOUNT_BACKUP_S3_ENDPOINT", ""), env.get("R2_JURISDICTION", "")
     )
@@ -446,13 +495,14 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "backup_bucket": backup_bucket,
             "backup_akid": backup_akid,
             "backup_secret": backup_secret,
+            "config_server_key": config_key,
         }
     )
     return values
 
 
 def check_nonempty(values: dict[str, str], env: dict[str, str]) -> None:
-    """The fifteen guards, plus two more on stable. Raises on the FIRST empty one.
+    """The sixteen guards, plus two more on stable. Raises on the FIRST empty one.
 
     An ABSENT variable and an EMPTY one are the same case: every value reaching
     here was read as `"${NAME:-}"` or through `${!var:-}`.
@@ -531,7 +581,7 @@ def _jq(argv: list[str], document: str) -> tuple[int, str]:
 
 def wrangler_argv(worker_name: str) -> list[str]:
     """`npx wrangler secret bulk --name "$WORKER_NAME"` (:278)."""
-    return ["npx", "wrangler", "secret", "bulk", "--name", worker_name]
+    return [*wrangler.ARGV, "secret", "bulk", "--name", worker_name]
 
 
 def _wrangler(argv: list[str], payload: str) -> int:

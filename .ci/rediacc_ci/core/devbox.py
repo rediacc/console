@@ -150,7 +150,7 @@ DEVBOX_OFFSET_VSCODE = 0
 DEVBOX_OFFSET_STUDIO = 3
 DEVBOX_OFFSET_TERM = 5
 # ONE published port for every worktree and every service. Routing is by Host header, so each app still believes it is at "/" and needs no base-path configuration; Chrome resolves *.localhost to 127.0.0.1 itself, which is the whole point on ChromeOS, where each published port otherwise needs its own manual forward.
-DEVBOX_PROXY_IMAGE = "traefik:v3.6"
+DEVBOX_PROXY_IMAGE = "traefik:v3.7.16"
 DEVBOX_PROXY_NAME = "rediacc-devbox-proxy"
 DEVBOX_PROXY_PORT = 8090
 DEVBOX_NETWORK = "rediacc-devbox"
@@ -174,7 +174,7 @@ SCRIPT_BINDS = (
     "devbox-bws.sh:/etc/profile.d/zz-devbox-bws.sh",
 )
 
-# `DEVBOX_CORE_LEASE_DEST`, `.ci/lib/devbox.sh` (commit 606f7daac): where the host's core lease pool is bound inside the container.
+# `DEVBOX_CORE_LEASE_DEST`, `.ci/lib/devbox.sh` (commit c09452412): where the host's core lease pool is bound inside the container.
 DEVBOX_CORE_LEASE_DEST = "/run/rediacc-cores"
 # `devbox_home_binds`, `.ci/lib/devbox.sh:478-490`: host files bound by NAME into the container user's home, "<path relative to $HOME>:<mode>" (mode empty for read-write). Credentials and agent config are named rather than the whole $HOME: ~/.ssh and cloud credentials stay out of the container.
 # .config/rediacc/bws-access-token is the console's own bootstrap credential. Its directory is the rdc CLI's READ-WRITE state, so the FILE is bound read-only on top of that directory bind (listed after it): a CLI or E2E run in the container can neither delete nor rewrite it.
@@ -1467,7 +1467,7 @@ class Devbox:
         return os.path.isdir(path)
 
     def core_lease_src(self, *_argv: str) -> int:
-        """`devbox_core_lease_src`, `.ci/lib/devbox.sh` (commit 606f7daac): the host directory of the machine-wide core lease pool, `/run/user/<uid>/rediacc-cores`.
+        """`devbox_core_lease_src`, `.ci/lib/devbox.sh` (commit c09452412): the host directory of the machine-wide core lease pool, `/run/user/<uid>/rediacc-cores`.
 
         Printed only when `/run/user/<uid>` is a directory this user owns (a systemd host); nothing otherwise. Status 0 on every path.
         """
@@ -1904,7 +1904,8 @@ class Devbox:
         status, lease_src = self.sub(self.core_lease_src)
         self.checked(status)
         if lease_src and self.lease_dir_ready(lease_src):
-            binds += ["-v", "%s:%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
+            # --mount, not -v: on a boot-time restart (unless-stopped) the engine would recreate a missing -v source as root inside /run/user/<uid>, and every host run then met a root-owned pool; --mount refuses a missing source instead.
+            binds += ["--mount", "type=bind,src=%s,dst=%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
             lease_env = ["-e", "REDIACC_CORE_LEASE_DIR=%s" % DEVBOX_CORE_LEASE_DEST]
 
         status, slug = self.sub(self.slug)

@@ -170,7 +170,7 @@ def test_the_exempt_set_matches_the_twins_block_entry_for_entry() -> None:
     """
     twin_pairs = allowlist.pairs(allowlist.parse_text(TWIN_EXEMPT_BLOCK))
     assert len(twin_pairs) == 5
-    # DECLARED additions after the twin retired: pr-labels (83a41dbc9), downstream of the aggregator by design, and duplicate-run (62794367e), upstream of initialize with no verdict to aggregate. Any other difference, an addition or a reworded reason, still fails.
+    # DECLARED additions after the twin retired: pr-labels (d16bc52d2), downstream of the aggregator by design, and duplicate-run (ad738360a), upstream of initialize with no verdict to aggregate. Any other difference, an addition or a reworded reason, still fails.
     declared = {"pr-labels", "duplicate-run"}
     port = ja.exempt_entries()
     assert {k: v for k, v in port.items() if k not in declared} == twin_pairs

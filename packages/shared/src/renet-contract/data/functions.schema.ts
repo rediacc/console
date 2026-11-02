@@ -25,61 +25,69 @@ export const BackupBrowseAtParamsSchema = z.object({
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
 });
 
-/** Delete one or more backups from storage or machine */
+/** Compare a restored copy with the source repository's backup anchor, byte for byte */
+export const BackupCompareParamsSchema = z.object({
+  againstAnchor: z.string().min(1).describe('The source repository GUID whose anchor the copy is held to'),
+  readBwlimit: z.string().optional().describe('Read cap across both files, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+});
+
+/** Delete one or more backups from a machine's datastore */
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
-    .enum(['machine', 'storage'])
+    .enum(['machine'])
     .default('machine')
-    .describe('Target type: machine (SSH); storage is retired'),
-  from: z.string().min(1).describe('Target machine or storage name'),
-  path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
+    .describe('Target type: machine (SSH)'),
+  from: z.string().min(1).describe('Target machine name'),
+  path: z.string().optional().describe('Subdirectory within the datastore backup root'),
   repositories: z.array(z.string()).optional().describe('Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement.'),
 });
 
 /** List backup artifacts in a machine's own datastore */
 export const BackupListParamsSchema = z.object({
   sourceType: z
-    .enum(['local', 'machine', 'storage'])
+    .enum(['local', 'machine'])
     .default('local')
-    .describe('Source type: local (this machine\'s datastore) or machine (SSH); storage is retired'),
+    .describe('Source type: local (this machine\'s datastore) or machine (SSH)'),
   from: z.string().min(1).describe('The machine whose datastore is listed; for sourceType=machine, the remote source'),
   path: z.string().optional().describe('Limit the listing to one subdirectory; omit to enumerate the whole datastore'),
 });
 
-/** Pull repository from remote source (machine or storage) */
+/** Pull repository from another machine over SSH */
 export const BackupPullParamsSchema = z.object({
   sourceType: z
-    .enum(['machine', 'storage'])
+    .enum(['machine'])
     .default('machine')
-    .describe('Source type: machine (SSH); storage is retired'),
-  from: z.string().min(1).describe('Source machine or storage name'),
+    .describe('Source type: machine (SSH)'),
+  from: z.string().min(1).describe('Source machine name'),
+  src: z.string().optional().describe('Source repository GUID on the source machine (defaults to the destination repository)'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
   force: z.boolean().default(false).optional().describe('Overwrite existing repository'),
-  bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
+  bwlimit: z.string().optional().describe('Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
   deltaBase: z.string().optional().describe('Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos)'),
   strategy: z
     .enum(['auto', 'physical', 'shared'])
     .default('auto')
     .optional()
     .describe('Delta strategy: auto|physical|shared'),
+  allowUnopenable: z.boolean().default(false).optional().describe('Place the pulled image even though the repository passphrase did not open it'),
 });
 
-/** Push repository to remote destination (machine or storage) */
+/** Push repository to another machine over SSH */
 export const BackupPushParamsSchema = z.object({
   destinationType: z
-    .enum(['machine', 'storage'])
+    .enum(['machine'])
     .default('machine')
-    .describe('Destination type: machine (SSH); storage is retired'),
-  to: z.string().optional().describe('Single destination (machine or storage name)'),
+    .describe('Destination type: machine (SSH)'),
+  to: z.string().optional().describe('Single destination machine name'),
   machines: z.array(z.string()).optional().describe('Target machines for parallel deployment'),
-  storages: z.array(z.string()).optional().describe('Target storage systems for parallel backup'),
   dest: z.string().min(1).describe('Backup filename'),
   tag: z.string().optional().describe('Deployment/version tag'),
   state: z.enum(['online', 'offline']).optional().describe('Repository state validation'),
   checkpoint: z.boolean().default(false).optional().describe('CRIU hot backup (zero-downtime)'),
   override: z.boolean().optional().describe('Overwrite existing backup'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
-  bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
+  bwlimit: z.string().optional().describe('Transfer cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
   deltaBase: z.string().optional().describe('Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos)'),
   strategy: z
     .enum(['auto', 'physical', 'shared'])
@@ -90,18 +98,51 @@ export const BackupPushParamsSchema = z.object({
   retainBasePrune: z.string().optional().describe('Delete this prior retained base on both machines after a successful push'),
 });
 
+/** Re-upload chunks from this machine's backup anchor */
+export const BackupRepairParamsSchema = z.object({
+  hashes: z.string().min(1).describe('Chunk hashes to re-upload, separated by commas or whitespace'),
+  bwlimit: z.string().optional().describe('Upload cap, same units as backup_snapshot\'s bwlimit. Empty = unlimited'),
+  readBwlimit: z.string().optional().describe('Anchor read cap, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+});
+
 /** Restore a repository image from a chunk-store snapshot */
 export const BackupRestoreParamsSchema = z.object({
   lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
   at: z.string().min(1).describe('Snapshot id to restore (a TIME is resolved by the CLI, never here)'),
   dryRun: z.boolean().default(false).optional().describe('Resolve the manifest chain and report what would be fetched; write nothing'),
+  noSeed: z.boolean().default(false).optional().describe('Fetch every chunk from the store instead of reusing local anchors or images'),
+  allowUnopenable: z.boolean().default(false).optional().describe('Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one'),
+  salvage: z.boolean().default(false).optional().describe('Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image'),
+});
+
+/** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
+export const BackupRestorePathParamsSchema = z.object({
+  lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
+  at: z.string().min(1).describe('Snapshot id to restore from (a TIME is resolved by the CLI, never here)'),
+  path: z.string().min(1).describe('File or directory to restore, relative to the repository root'),
+  to: z.string().optional().describe('Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)'),
 });
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
 export const BackupSnapshotParamsSchema = z.object({
   reseed: z.boolean().default(false).optional().describe('Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)'),
+  acceptIdentityChange: z.boolean().default(false).optional().describe('Take this image as the new baseline when its LUKS identity moved or it shrank. Forces a full manifest with no parent'),
   dryRun: z.boolean().default(false).optional().describe('Plan only: no session, no grant, no upload; report what would move'),
   cold: z.boolean().default(false).optional().describe('Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run'),
+  bwlimit: z.string().optional().describe('Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
+  parallelism: z.number().int().optional().describe('Concurrent chunk uploads (0 = engine default)'),
+  readBwlimit: z.string().optional().describe('Read cap for hashing and cell reads, same units as bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  hashParallelism: z.number().int().optional().describe('Cells hashed at once. Empty = the verb default (1); 0 = one per CPU, up to 16'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota'),
+});
+
+/** Inspect or install a repository's browse-listing public key */
+export const BackupTocKeyParamsSchema = z.object({
+  action: z.enum(['status', 'install']).describe('status prints the stored key and licence lineage; install stores a public key'),
+  lineage: z.string().optional().describe('Lineage (grand) GUID the key was derived under; install only'),
+  publicKey: z.string().optional().describe('The public line, rediacc-toc-x25519 <base64>; install only'),
+  replace: z.boolean().default(false).optional().describe('Overwrite a different stored key. Sends the repository passphrase, which has to open the repository and derive this line'),
 });
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */
@@ -111,6 +152,8 @@ export const BackupVerifyParamsSchema = z.object({
     .default('spot')
     .optional()
     .describe('Verification level: spot (sampled cells) or full (re-hash every recorded cell)'),
+  readBwlimit: z.string().optional().describe('Read cap for the full level, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
 });
 
 /** Mount RBD image on client */
@@ -369,6 +412,22 @@ export const KubeKubeconfigParamsSchema = z.object({
   mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
 });
 
+/** Restart stale repository daemons onto the current runtime layout */
+export const MachineConvergeRuntimeParamsSchema = z.object({
+  dryRun: z.boolean().optional().describe('Print the plan without restarting anything'),
+  policy: z
+    .enum(['epoch', 'always'])
+    .default('epoch')
+    .optional()
+    .describe('Restart policy'),
+  includeUnknown: z.boolean().optional().describe('Also converge stale repositories missing from the payload'),
+  continueOnError: z.boolean().optional().describe('Keep going after a repository fails'),
+  repoTimeout: z.string().optional().describe('Deadline of one repository\'s restart (Go duration, e.g. 15m)'),
+});
+
+/** List the machine's GPUs, CDI devices and device grants */
+export const MachineGpuListParamsSchema = z.object({});
+
 /** Test SSH connectivity */
 export const MachinePingParamsSchema = z.object({});
 
@@ -450,6 +509,15 @@ export const RepositoryDiffParamsSchema = z.object({
   maxBytes: z.number().int().optional().describe('Content-diff per-side read cap (default 1 MiB, ceiling 50 MiB)'),
 });
 
+/** Report and reclaim a repository's Docker storage, orphan overlay2 directories included */
+export const RepositoryDockerPruneParamsSchema = z.object({
+  name: z.string().optional().describe('Repository GUID (empty = the repository in context)'),
+  apply: z.boolean().optional().describe('Reclaim; without it the run only reports'),
+  offline: z.boolean().optional().describe('Stop the daemon and quarantine orphan directories (requires apply)'),
+  allImages: z.boolean().optional().describe('Also remove tagged images no container uses'),
+  noTrim: z.boolean().optional().describe('Skip the fstrim after an apply'),
+});
+
 /** Stop repository services */
 export const RepositoryDownParamsSchema = z.object({
   option: z.string().optional().describe('Shutdown options'),
@@ -476,6 +544,17 @@ export const RepositoryExpandParamsSchema = z.object({
 export const RepositoryForkParamsSchema = z.object({
   tag: z.string().min(1).describe('Fork repository name'),
   immutable: z.boolean().default(false).optional().describe('Mark the fork read-only (refuses to mount; frozen commit/base)'),
+});
+
+/** Grant a CDI device (GPU) to the repository's containers */
+export const RepositoryGpuGrantParamsSchema = z.object({
+  device: z.string().min(1).regex(/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$/).describe('Fully qualified CDI device name (e.g. nvidia.com/gpu=all)'),
+  exclusive: z.boolean().optional().describe('Reserve the device for this repository: no other repository may be granted it meanwhile'),
+});
+
+/** Revoke a CDI device (GPU) from the repository's containers */
+export const RepositoryGpuRevokeParamsSchema = z.object({
+  device: z.string().min(1).regex(/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\/[A-Za-z0-9]([A-Za-z0-9_.-]*[A-Za-z0-9])?=[A-Za-z0-9]([A-Za-z0-9_.:-]*[A-Za-z0-9])?$/).describe('Fully qualified CDI device name (e.g. nvidia.com/gpu=all)'),
 });
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
@@ -636,12 +715,16 @@ export const SetupParamsSchema = z.object({
 export const FUNCTION_SCHEMAS = {
   backup_browse: BackupBrowseParamsSchema,
   backup_browse_at: BackupBrowseAtParamsSchema,
+  backup_compare: BackupCompareParamsSchema,
   backup_delete: BackupDeleteParamsSchema,
   backup_list: BackupListParamsSchema,
   backup_pull: BackupPullParamsSchema,
   backup_push: BackupPushParamsSchema,
+  backup_repair: BackupRepairParamsSchema,
   backup_restore: BackupRestoreParamsSchema,
+  backup_restore_path: BackupRestorePathParamsSchema,
   backup_snapshot: BackupSnapshotParamsSchema,
+  backup_toc_key: BackupTocKeyParamsSchema,
   backup_verify: BackupVerifyParamsSchema,
   ceph_client_mount: CephClientMountParamsSchema,
   ceph_client_unmount: CephClientUnmountParamsSchema,
@@ -679,6 +762,8 @@ export const FUNCTION_SCHEMAS = {
   container_unpause: ContainerUnpauseParamsSchema,
   kube_health: KubeHealthParamsSchema,
   kube_kubeconfig: KubeKubeconfigParamsSchema,
+  machine_converge_runtime: MachineConvergeRuntimeParamsSchema,
+  machine_gpu_list: MachineGpuListParamsSchema,
   machine_ping: MachinePingParamsSchema,
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,
@@ -695,11 +780,14 @@ export const FUNCTION_SCHEMAS = {
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_diff: RepositoryDiffParamsSchema,
+  repository_docker_prune: RepositoryDockerPruneParamsSchema,
   repository_down: RepositoryDownParamsSchema,
   repository_down_all: RepositoryDownAllParamsSchema,
   repository_exec: RepositoryExecParamsSchema,
   repository_expand: RepositoryExpandParamsSchema,
   repository_fork: RepositoryForkParamsSchema,
+  repository_gpu_grant: RepositoryGpuGrantParamsSchema,
+  repository_gpu_revoke: RepositoryGpuRevokeParamsSchema,
   repository_health: RepositoryHealthParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
   repository_list: RepositoryListParamsSchema,

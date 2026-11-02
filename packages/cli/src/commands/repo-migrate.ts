@@ -15,11 +15,18 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import type { RepoFamily } from '@rediacc/shared/config-schema';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { outstandingSteps } from '../services/jobs/run-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
+import { telemetryService } from '../services/telemetry/telemetry.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatBytes } from '../utils/format.js';
@@ -28,10 +35,10 @@ import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
-import { autoProvisionTarget, buildPushParams } from './repo-backup.js';
+import { assertBwlimit, bwlimitParam } from './bwlimit-param.js';
+import { autoProvisionTarget } from './repo-backup.js';
 import { postRepoUpTasks } from './repo-batch-utils.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
-import { extractPushResult, type PushResultStats } from './repo-push-stats.js';
 
 export function registerRepoMigrateCommand(repoCommand: Command): void {
   repoCommand
@@ -96,53 +103,6 @@ interface MigrateOptions {
  */
 type SourceDatastore = string | undefined;
 
-/** Execute backup_push with extraMachines resolution (needed for cross-machine rsync).
- * Returns the parsed transfer stats from renet's push_result stdout line, when present. */
-async function executePush(
-  repoName: string,
-  machineName: string,
-  params: Record<string, unknown>,
-  datastore: SourceDatastore,
-  debug?: boolean
-): Promise<PushResultStats | undefined> {
-  await configService.ensureRepositoryNetworkId(repoName);
-  const result = await getExecutor().execute({
-    functionName: 'backup_push',
-    machineName,
-    datastore,
-    params: { repository: repoName, ...params },
-    debug,
-    quietSpinners: true,
-  });
-  if (!result.success) {
-    throw new Error(`backup_push failed: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`);
-  }
-  return extractPushResult(result.stdout);
-}
-
-/** Execute a repo bridge function quietly (spinner managed by caller). */
-async function executeQuiet(
-  functionName: string,
-  repoName: string,
-  machineName: string,
-  params: Record<string, unknown>,
-  datastore: SourceDatastore,
-  debug?: boolean
-): Promise<void> {
-  await configService.ensureRepositoryNetworkId(repoName);
-  const result = await getExecutor().execute({
-    functionName,
-    machineName,
-    datastore,
-    params: { repository: repoName, ...params },
-    debug,
-    quietSpinners: true,
-  });
-  if (!result.success) {
-    throw new Error(`${functionName} failed: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`);
-  }
-}
-
 /** Check that the repo is not already mounted on the target machine. */
 async function assertNotMountedOnTarget(
   repoName: string,
@@ -154,6 +114,8 @@ async function assertNotMountedOnTarget(
     machineName: targetMachine,
     params: {},
     captureOutput: true,
+    // A probe: the listing decides whether the migrate may go on, so `--background` must not hand back a ticket here.
+    probe: true,
   });
   if (!targetCheck.success || !targetCheck.stdout) return;
   try {
@@ -173,147 +135,65 @@ async function assertNotMountedOnTarget(
   }
 }
 
-/** Execute Phase 1: hot pre-copy (bulk transfer while source stays running). */
-async function executePhase1(
-  name: string,
-  repoConfig: Awaited<ReturnType<typeof configService.getRepository>> & object,
-  from: string,
+/**
+ * The params of the `repository_migrate` source job: the hot push retains `retainBase` on both machines, the cutover
+ * push deltas against `deltaBase` (an explicit `--delta-base`, never pruned) or that base, and prunes it. The seeds
+ * pre-seed the destination with the closest relatives first.
+ */
+function migrateParams(
+  repoKey: string,
+  repoConfig: { repositoryGuid: string; parentGuid?: string; grandGuid?: string },
   to: string,
-  bwlimit: string | undefined,
-  strategy: string | undefined,
   retainBase: string,
-  datastore: SourceDatastore,
-  debug: boolean | undefined
-): Promise<void> {
-  outputService.info(`\n${t('commands.repo.migrate.phase1')}`);
-
-  const pushParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
-    force: true,
-  });
-  const seeds = [repoConfig.repositoryGuid, repoConfig.parentGuid, repoConfig.grandGuid].filter(
-    (g): g is string => !!g
-  );
-  const uniqueSeeds = [...new Set(seeds)];
-  if (uniqueSeeds.length > 0) pushParams.params.seed = uniqueSeeds.join(',');
-  if (bwlimit) pushParams.params.bwlimit = bwlimit;
-  if (strategy) pushParams.params.strategy = strategy;
-  // Retain the hot pre-copy as an immutable base so the Phase-2 cutover ships only the bytes that changed during Phase 1 (FIEMAP delta, not a full scan).
-  pushParams.params.retainBase = retainBase;
-
-  await deployRepoKeyIfNeeded(name, to);
-  const stats = await withSpinner(
-    t('commands.repo.migrate.phase1'),
-    () => executePush(name, from, pushParams.params, datastore, debug),
-    t('commands.repo.migrate.phase1Done')
-  );
-  renderPhaseStats('commands.repo.migrate.phase1Stats', stats);
-}
-
-/** Print real transfer numbers for a migration phase, when renet reported them. */
-function renderPhaseStats(key: string, stats: PushResultStats | undefined): void {
-  if (!stats || stats.transferredBytes < 0) return;
-  outputService.info(
-    `  ${t(key, {
-      transferred: formatBytes(stats.transferredBytes),
-      duration: formatStepDuration(stats.transferMs),
-    })}`
-  );
-}
-
-/** Execute Phase 2: cutover (stop source, delta sync, unmount). */
-async function executePhase2(
-  name: string,
-  repoConfig: Awaited<ReturnType<typeof configService.getRepository>> & object,
-  from: string,
-  to: string,
-  bwlimit: string | undefined,
-  checkpoint: boolean | undefined,
-  delta: { base: string; prune: string; strategy?: string },
-  datastore: SourceDatastore,
-  debug: boolean | undefined
-): Promise<number> {
-  outputService.info(`\n${t('commands.repo.migrate.phase2')}`);
-  const cutoverStart = Date.now();
-
-  // Cutover ships only the changes since the delta base, then prunes the temporary Phase-1 base from both machines (migration is a move, not an ongoing link). An explicit --delta-base is never pruned.
-  const applyDelta = (params: Record<string, unknown>): void => {
-    if (bwlimit) params.bwlimit = bwlimit;
-    params.deltaBase = delta.base;
-    params.retainBasePrune = delta.prune;
-    if (delta.strategy) params.strategy = delta.strategy;
+  options: MigrateOptions
+): Record<string, unknown> {
+  const seeds = [
+    ...new Set(
+      [repoConfig.repositoryGuid, repoConfig.parentGuid, repoConfig.grandGuid].filter(
+        (g): g is string => !!g
+      )
+    ),
+  ];
+  return {
+    repository: repoKey,
+    to,
+    retainBase,
+    ...(options.deltaBase ? { deltaBase: options.deltaBase } : {}),
+    ...(seeds.length > 0 ? { seed: seeds.join(',') } : {}),
+    ...(options.strategy ? { strategy: options.strategy } : {}),
+    ...(options.checkpoint ? { checkpoint: true } : {}),
+    ...(options.bwlimit === undefined ? {} : { bwlimit: bwlimitParam(options.bwlimit) }),
   };
-
-  let cutoverStats: PushResultStats | undefined;
-  if (checkpoint) {
-    cutoverStats = await withSpinner(
-      t('commands.repo.migrate.checkpointing'),
-      () => {
-        const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
-          force: true,
-          checkpoint: true,
-        });
-        applyDelta(deltaParams.params);
-        return executePush(name, from, deltaParams.params, datastore, debug);
-      },
-      t('commands.repo.migrate.deltaDone')
-    );
-  } else {
-    await withSpinner(
-      t('commands.repo.migrate.stoppingSource'),
-      () => executeQuiet('repository_down', name, from, {}, datastore, debug),
-      t('commands.repo.migrate.sourceStopped')
-    );
-
-    cutoverStats = await withSpinner(
-      t('commands.repo.migrate.deltaSync'),
-      () => {
-        const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
-          force: true,
-        });
-        applyDelta(deltaParams.params);
-        return executePush(name, from, deltaParams.params, datastore, debug);
-      },
-      t('commands.repo.migrate.deltaDone')
-    );
-  }
-  renderPhaseStats('commands.repo.migrate.phase2Stats', cutoverStats);
-
-  await withSpinner(
-    t('commands.repo.migrate.unmountingSource'),
-    () => executeQuiet('repository_down', name, from, { unmount: true }, datastore, debug),
-    t('commands.repo.migrate.sourceUnmounted')
-  );
-
-  return Date.now() - cutoverStart;
 }
 
-/** Execute Phase 3: start on target + DNS switch. */
-async function executePhase3(
-  name: string,
+/** Phase 3: start on the target and switch DNS. Throws when the target does not come up. */
+async function startOnTarget(
+  repoKey: string,
   to: string,
-  skipDns: boolean | undefined,
-  debug: boolean | undefined
+  skipDns: boolean,
+  debug: boolean
 ): Promise<void> {
-  outputService.info(`\n${t('commands.repo.migrate.phase3')}`);
-
-  await withSpinner(
-    t('commands.repo.migrate.startingTarget'),
-    async () => {
-      await deployRepoKeyIfNeeded(name, to);
-      // Target side: the push landed the image in the TARGET's default datastore (buildExtraMachines gives a peer with no recorded datastore the default
-      // mount), and placement has already been rewritten to `{machine: to}` to
-      // match. So this leg declares no datastore ON PURPOSE, the source's named mount does not exist here.
-      await executeQuiet('repository_up', name, to, {}, undefined, debug);
-    },
-    t('commands.repo.migrate.targetStarted')
-  );
-
+  outputService.info(`  ${t('commands.repo.migrate.startingTarget')}`);
+  await deployRepoKeyIfNeeded(repoKey, to);
+  // The target's licence store holds nothing for this GUID (a licence is bound to its machine, and the push carries none), and renet licenses every `repository_up`. See ensureTargetRepoLicense.
+  await ensureTargetRepoLicense(repoKey, to);
+  // Target side: the push landed the image in the TARGET's default datastore (buildExtraMachines gives a peer with no recorded datastore the default
+  // mount), and placement has already been rewritten to `{machine: to}` to
+  // match. So this leg declares no datastore ON PURPOSE, the source's named mount does not exist here.
+  const result = await getExecutor().execute({
+    functionName: 'repository_up',
+    machineName: to,
+    params: { repository: repoKey },
+    debug,
+    quietSpinners: true,
+  });
+  if (!result.success) {
+    throw new Error(`repository_up failed: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`);
+  }
+  outputService.info(`  ${t('commands.repo.migrate.targetStarted')}`);
   if (!skipDns) {
-    await withSpinner(
-      t('commands.repo.migrate.switchingDns'),
-      () => postRepoUpTasks(name, to),
-      t('commands.repo.migrate.switchingDns')
-    );
+    outputService.info(`  ${t('commands.repo.migrate.switchingDns')}`);
+    await postRepoUpTasks(repoKey, to);
   }
 }
 
@@ -395,7 +275,7 @@ function assertFamilyMigratable(name: string, tag: string, family: RepoFamily | 
   }
   const forks = Object.keys(family.tags)
     .filter((tg) => tg !== family.grand)
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   if (forks.length > 0) {
     throw new ValidationError(
       t('commands.repo.migrate.familyHasForks', { name, forks: forks.join(', ') })
@@ -404,54 +284,174 @@ function assertFamilyMigratable(name: string, tag: string, family: RepoFamily | 
 }
 
 /**
- * The cutover tail, split out of migrateRepo to stay under the complexity
- * budget: rewrite routing to the target (R1), run phase 3, then dispose of the
- * source (R3).
+ * The successor of the source job, once it succeeded (PLAN-detached-jobs J4): start on the target and switch DNS,
+ * then dispose of the source (R3), strictly in that order and in one step, so a target that did not come up never
+ * loses the source copy. The placement rewrite (R1) already ran on the `cutover_complete` marker: after the final
+ * delta and the source unmount the target holds the single authoritative copy, so the operator's natural recovery
+ * (`rdc repo up <name>`) lands there, and a failure here says so and keeps the source images as recovery material.
  *
- * R1: the cutover IS the authority transfer. After phase 2's final delta sync
- * and source unmount, the target holds the single authoritative copy, so routing
- * must point there NOW, before phase 3. Rewriting here (not after phase 3) is
- * what makes a post-cutover failure safe: the data's home is the target, so the
- * operator's natural recovery (`rdc repo up <name>`) lands on the target, not on
- * the stale source copy, the exact wrong-host redeploy this closes. A
- * pre-cutover failure never reaches this function, so placement still names the
- * source (spec/03 §5.4 exit-14 row). placementUpdated is emitted before phase 3
- * so it stays on screen even if phase 3 then fails: both failure windows are
- * stated in output.
+ * R3: migrate is a MOVE. Only after the target is up is the source image a nameless orphan, so it is deleted here,
+ * strictly LAST. `--keep-source` opts out and warns the leftover is a stray reconcile will flag. The delete fails SAFE:
+ * a failed cleanup warns and names `machine prune` as the sweep, and never fails the migrate.
  */
-async function finalizeCutover(
-  name: string,
-  repoKey: string,
-  from: string,
-  to: string,
-  skipDns: boolean | undefined,
-  keepSource: boolean | undefined,
-  sourceDatastore: SourceDatastore,
-  debug: boolean | undefined
-): Promise<void> {
-  await configService.setRepositoryPlacement(name, { machine: to });
-  outputService.info(`  ${t('commands.repo.migrate.placementUpdated', { name, machine: to })}`);
-
+async function completeOnTarget(params: {
+  name: string;
+  repoKey: string;
+  from: string;
+  to: string;
+  skipDns: boolean;
+  keepSource: boolean;
+  sourceDatastore: SourceDatastore;
+  debug: boolean;
+}): Promise<void> {
+  const { name, repoKey, from, to } = params;
+  outputService.info(`\n${t('commands.repo.migrate.phase3')}`);
   try {
-    await executePhase3(repoKey, to, skipDns, debug);
+    await startOnTarget(repoKey, to, params.skipDns, params.debug);
   } catch (err) {
-    // Post-cutover failure: routing already points at the destination, so recovery lands there. State it, keep the source images as recovery material (R3 deletion below is skipped by the throw), and rethrow.
     outputService.warn(t('commands.repo.migrate.placementRetryHint', { name, machine: to }));
     throw err;
   }
-
-  // R3: migrate is a MOVE. Only after phase 3 fully succeeds is the source image a nameless orphan (the target is a superset, final delta synced at cutover, source down since), so delete it here, strictly LAST. --keep-source opts out and warns the leftover is a stray reconcile will flag.
-  if (from === to) return;
-  if (keepSource) {
-    outputService.warn(t('commands.repo.migrate.sourceRetained', { name, machine: from }));
-    return;
+  if (from !== to) {
+    if (params.keepSource) {
+      outputService.warn(t('commands.repo.migrate.sourceRetained', { name, machine: from }));
+    } else {
+      await deleteSourceImage(repoKey, from, params.sourceDatastore, params.debug);
+    }
+    // G4: the repo left `from`, so its backup units re-render (the hook warns, never throws).
+    await reconcileBackupSchedules(from);
   }
-  await deleteSourceImage(repoKey, from, sourceDatastore, debug);
+  // G4: the repo joined `to`, so its backup units re-render.
+  await reconcileBackupSchedules(to);
+  outputService.success(t('commands.repo.migrate.complete', { name, from, to }));
 }
 
+/** One transfer of the migrate as renet recorded it in the job's `migrate_result` line. */
+interface MigratePhaseResult {
+  name: string;
+  transferredBytes: number;
+  transferMs: number;
+}
+
+interface MigrateJobResult {
+  phases: MigratePhaseResult[];
+  /** Undefined when renet's value is missing or invalid; the Downtime line is then omitted, the phase lines still print. */
+  downtimeMs?: number;
+}
+
+const MIGRATE_PHASE_NAMES = new Set(['bulk', 'cutover']);
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** A phase entry with a known name and finite numbers. Bytes of -1 (renet could not measure) stay; other negatives do not. */
+function validPhase(raw: unknown): MigratePhaseResult | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined;
+  const { name, transferredBytes, transferMs } = raw as Record<string, unknown>;
+  if (typeof name !== 'string' || !MIGRATE_PHASE_NAMES.has(name)) return undefined;
+  if (!isFiniteNumber(transferredBytes) || !isFiniteNumber(transferMs)) return undefined;
+  if (transferredBytes < -1 || transferMs < 0) return undefined;
+  return { name, transferredBytes, transferMs };
+}
+
+function parseResultLine(rawLine: string): MigrateJobResult | undefined {
+  const start = rawLine.indexOf('{');
+  if (start < 0) return undefined;
+  try {
+    const parsed = JSON.parse(rawLine.slice(start)) as {
+      migrate_result?: { phases?: unknown; downtimeMs?: unknown };
+    };
+    const result = parsed.migrate_result;
+    if (!result || !Array.isArray(result.phases)) return undefined;
+    const downtimeMs =
+      isFiniteNumber(result.downtimeMs) && result.downtimeMs >= 0 ? result.downtimeMs : undefined;
+    const phases = result.phases.map(validPhase).filter((p) => p !== undefined);
+    return { phases, downtimeMs };
+  } catch {
+    // Not the result line (log text, a partial line).
+    return undefined;
+  }
+}
+
+/** The `migrate_result` line renet's `repository migrate` prints last: per-phase bytes and time, and the downtime window. Invalid phase entries are dropped. */
+export function extractMigrateResult(output: string | undefined): MigrateJobResult | undefined {
+  if (!output) return undefined;
+  for (const rawLine of output.split('\n')) {
+    const result = parseResultLine(rawLine);
+    if (result) return result;
+  }
+  return undefined;
+}
+
+/** Renet reports -1 when the push could not tell; 0 is a genuine measurement (a cutover with nothing left to send). */
+function phaseStatsLine(key: string, phase: MigratePhaseResult | undefined): string | undefined {
+  if (!phase || phase.transferredBytes < 0) return undefined;
+  return `  ${t(key, {
+    transferred: formatBytes(phase.transferredBytes),
+    duration: formatStepDuration(phase.transferMs),
+  })}`;
+}
+
+/**
+ * Print what the migrate job measured: the hot transfer, the cutover transfer and the downtime window, as a summary
+ * of finished work. renet prints the result after the cutover marker, so it cannot run earlier than the job's success
+ * step. It runs there so the same lines appear when the migrate finished in the foreground and when
+ * `rdc job wait <id>` reads the result later. An observer that has no output prints nothing. A rendering failure
+ * never aborts the migrate: the report is informational and the steps after it switch DNS and delete the source.
+ */
+export function renderMigrateResult(output: string | undefined): void {
+  try {
+    const result = extractMigrateResult(output);
+    if (!result) return;
+    const lines = [
+      phaseStatsLine(
+        'commands.repo.migrate.phase1Stats',
+        result.phases.find((p) => p.name === 'bulk')
+      ),
+      phaseStatsLine(
+        'commands.repo.migrate.phase2Stats',
+        result.phases.find((p) => p.name === 'cutover')
+      ),
+      result.downtimeMs === undefined
+        ? undefined
+        : `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(result.downtimeMs) })}`,
+    ];
+    for (const line of lines) if (line !== undefined) outputService.info(line);
+  } catch (err) {
+    // Omit the lines; the migrate continues. The failure is still recorded, so a broken output sink is not silent.
+    telemetryService.trackError(err, { operation: 'repo.migrate.report_result' });
+  }
+}
+
+bindStepHandler('reportMigrateResult', ({ output }) => {
+  renderMigrateResult(output);
+  return Promise.resolve();
+});
+
+bindStepHandler('migrateComplete', async ({ params }) => {
+  const text = (key: string) =>
+    typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
+  const [name, repoKey, from, to] = ['repo', 'ref', 'source', 'target'].map(text);
+  if (!name || !repoKey || !from || !to) {
+    throw new Error('step param "repo", "ref", "source" or "target" is missing');
+  }
+  await completeOnTarget({
+    name,
+    repoKey,
+    from,
+    to,
+    skipDns: params.skipDns === true,
+    keepSource: params.keepSource === true,
+    sourceDatastore: text('datastore'),
+    debug: params.debug === true,
+  });
+});
+
 export async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> {
-  const { provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, keepSource, debug } =
-    options;
+  const { provision, bwlimit, debug } = options;
+  // Refused before any provisioning or transfer, not at the first phase that reads it.
+  assertBwlimit(bwlimit);
 
   // Source is DERIVED from the repo's config placement (spec/03 §2.3): `machineName` is the ref's home machine (a cluster repo's home is its control node). Migrate's data plane (CoW images + rsync/FIEMAP) is runtime-agnostic, so it operates machine<->machine and does not thread kubeCluster (see resolveMigrateEndpoint).
   // `repoKey` (name or name:tag) drives config + renet; `name` is for messages.
@@ -498,46 +498,66 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
     await assertNotMountedOnTarget(repoKey, repoConfig.repositoryGuid, to);
   }
 
-  // Captured BEFORE finalizeCutover rewrites placement to `{machine: to}`: every
-  // source-side leg (both pushes, both downs, the source delete) must dispatch against the datastore the repo actually lives in. See SourceDatastore.
+  await runMigrateJob({ name, repoKey, repoConfig, from, to, options, migrationStart });
+}
+
+/** Run the source job with its steps and settle what it answers: the ticket, a pre-cutover failure, or the summary. */
+async function runMigrateJob(args: {
+  name: string;
+  repoKey: string;
+  repoConfig: { repositoryGuid: string; parentGuid?: string; grandGuid?: string };
+  from: string;
+  to: string;
+  options: MigrateOptions;
+  migrationStart: number;
+}): Promise<void> {
+  const { name, repoKey, repoConfig, from, to, options } = args;
+  const { skipDns, keepSource, debug } = options;
+  // Captured BEFORE the cutover rewrites placement to `{machine: to}`: every source-side leg (both pushes, both downs, the source delete) must dispatch against the datastore the repo actually lives in. See SourceDatastore.
   const sourceDatastore = await recordedDatastoreMount(repoKey);
 
-  // Phase 1 retains this base; Phase 2 deltas against it (or an explicit
-  // --delta-base override) and prunes it.
-  const phase1Base = randomUUID();
-  await executePhase1(
-    repoKey,
-    repoConfig,
-    from,
-    to,
-    bwlimit,
-    strategy,
-    phase1Base,
-    sourceDatastore,
-    debug
-  );
-  const downtimeMs = await executePhase2(
-    repoKey,
-    repoConfig,
-    from,
-    to,
-    bwlimit,
-    checkpoint,
+  // The source job (renet repository_migrate): the hot push retaining a fresh base, the source stop (or the CRIU checkpoint), the delta push against that base, the source unmount, then the `cutover_complete` marker. The placement rewrite fires on the marker; the target up, DNS and the source delete run once the job succeeded.
+  await deployRepoKeyIfNeeded(repoKey, to);
+  outputService.info(`\n${t('commands.repo.migrate.phase1')}`);
+  const outcome = await runCommandJob(
+    'repo migrate',
     {
-      base: deltaBase ?? phase1Base,
-      prune: phase1Base,
-      strategy,
+      functionName: 'repository_migrate',
+      machineName: from,
+      datastore: sourceDatastore,
+      params: migrateParams(repoKey, repoConfig, to, randomUUID(), options),
+      ...(debug === undefined ? {} : { debug }),
     },
-    sourceDatastore,
-    debug
+    [
+      planStep('migratePlacement', { repo: name, machine: to }),
+      planStep('reportMigrateResult'),
+      planStep('migrateComplete', {
+        repo: name,
+        ref: repoKey,
+        source: from,
+        target: to,
+        skipDns: skipDns === true,
+        keepSource: keepSource === true,
+        ...(sourceDatastore === undefined ? {} : { datastore: sourceDatastore }),
+        debug: debug === true,
+      }),
+    ]
   );
-  await finalizeCutover(name, repoKey, from, to, skipDns, keepSource, sourceDatastore, debug);
-
-  const totalMs = Date.now() - migrationStart;
-  outputService.info('');
-  outputService.success(t('commands.repo.migrate.complete', { name, from, to }));
-  outputService.info(`  Total: ${formatStepDuration(totalMs)}`);
-  outputService.info(
-    `  ${t('commands.repo.migrate.downtime', { duration: formatStepDuration(downtimeMs) })}`
-  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    // A pre-cutover failure never reaches the marker, so placement still names the source (spec/03 §5.4 exit-14 row).
+    throw new Error(
+      `repository_migrate failed: ${outcome.result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
+    );
+  }
+  // A step that failed (the target did not come up) already said why and kept the source; the migrate did not complete.
+  const unfinished = outstandingSteps(outcome.steps);
+  if (unfinished.length > 0) {
+    throw new Error(`repo migrate did not complete: ${unfinished.join(', ')} failed`);
+  }
+  outputService.info(`  Total: ${formatStepDuration(Date.now() - args.migrationStart)}`);
 }

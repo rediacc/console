@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import datetime
+import inspect
 import json
 import os
 import pathlib
@@ -340,7 +341,7 @@ def _run(
     return _mask_result((code, out.encode("utf-8"), err.encode("utf-8"), calls))
 
 
-# THE CONTRACT FLOOR IS THE FIXTURE'S, NEVER THE REPOSITORY'S. Phase 8d prints the floor `rsv.pre_contract_floor` computes, and its ratchet candidate is `<root>/.ci/config/release-contract-floor.txt`. The twin's goldens were recorded while the repository's file read this value; every release advances that file (v1.3.1 -> v1.3.2 with 3ce2c1994 reddened 14 cases on 2026-10-11, as v1.2.21 -> v1.2.22 had on 2026-09-30), so a case that read the real file judged the release chain's progress rather than the port.
+# THE CONTRACT FLOOR IS THE FIXTURE'S, NEVER THE REPOSITORY'S. Phase 8d prints the floor `rsv.pre_contract_floor` computes, and its ratchet candidate is `<root>/.ci/config/release-contract-floor.txt`. The twin's goldens were recorded while the repository's file read this value; every release advances that file (v1.3.1 -> v1.3.2 with c1775da51 reddened 14 cases on 2026-10-11, as v1.2.21 -> v1.2.22 had on 2026-09-30), so a case that read the real file judged the release chain's progress rather than the port.
 # The port runs with `REDIACC_CI_ROOT` at its own fixture directory, which holds its own copy of the file at this value, so the floor comes through the port's real candidate search, from a root the test owns. A case that sets `RSV_FLOOR_FILE` or `RSV_GRANDFATHER_BEFORE` still overrides it, as the library documents.
 FIXTURE_CONTRACT_FLOOR = "v1.3.1"
 
@@ -2631,6 +2632,118 @@ def test_phase_8f_never_reaches_a_package_tree() -> None:
             assert not any(
                 listed in c and "--recursive" in c for c in calls_of(result[3], "aws")
             ), listed
+
+
+# --------------------------------------------------------------------------- PHASE 8g: R2 RELEASE FOLDERS (not in the twin) ---------------------------------------------------------------------------
+
+
+def _port_only_env(phase: str, *, argv: tuple[str, ...] = (), fixture: dict, env: dict) -> tuple:
+    """`_port_only` with extra environment (the delete budget)."""
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        return _run("python", phase, argv, fixture, dict(R2_ENV, **env), base)
+
+
+def _version_names(count: int) -> list[str]:
+    """`v1.0.0` .. `v1.<count-1>.0`: minor 9 -> 10 is where a lexical sort and a semver sort part ways."""
+    return ["v1.%d.0" % i for i in range(count)]
+
+
+def _versions_fixture(
+    names: list[str], *, stable: str | None = "1.2.0", edge: str | None = "1.0.0"
+) -> dict:
+    manifests = []
+    for channel, version in (("stable", stable), ("edge", edge)):
+        if version is None:
+            manifests.append(rule("cp", "cli/%s/manifest.json" % channel, rc=1, stderr="404\n"))
+        else:
+            manifests.append(
+                rule("cp", "cli/%s/manifest.json" % channel, raw='{"version":"%s"}' % version)
+            )
+    return r2_fixture(
+        *manifests,
+        rule(
+            ("ls s3://" + RELEASES_BUCKET + "/cli/v1.1.0/ --recursive"),
+            raw=_sized("cli/v1.1.0/rdc", 5_000_000_000),
+        ),
+        rule(
+            ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+            raw="".join(pre_line(n + "/") for n in [*names, "edge", "stable"]),
+        ),
+    )
+
+
+def _sized(key: str, size: int) -> str:
+    return "2026-01-01 00:00:00 %d %s\n" % (size, key)
+
+
+def _deleted_prefixes(calls: list[str]) -> list[str]:
+    return [
+        c[2].removeprefix("s3://%s/" % RELEASES_BUCKET)
+        for c in _rm_calls(calls)
+        if c[:2] == ["s3", "rm"]
+    ]
+
+
+def test_phase_8g_keeps_the_newest_20_and_the_channel_releases_and_deletes_the_rest() -> None:
+    """25 folders, keep 20: v1.0.0..v1.4.0 are outside the window. v1.0.0 (edge) and v1.2.0 (stable) are outside it too but survive only because the channels name them, so exactly v1.1.0, v1.3.0 and v1.4.0 go. The order is semver (v1.10.0 > v1.9.0), not lexical."""
+    result = _port_only("cleanup_r2_versions", fixture=_versions_fixture(_version_names(25)))
+    err = result[2].decode()
+    assert result[0] == 0, err
+    assert sorted(_deleted_prefixes(result[3])) == ["cli/v1.1.0/", "cli/v1.3.0/", "cli/v1.4.0/"]
+    assert "8g: edge serves v1.0.0 (never deleted)" in err
+    assert "8g: stable serves v1.2.0 (never deleted)" in err
+    assert "8g: deleted 3 release folder(s), 5.00 GB" in err
+    assert cv.DEFAULT_KEEP_VERSIONS == "20"
+
+
+def test_phase_8g_deletes_nothing_when_a_format_holds_no_more_than_the_window() -> None:
+    result = _port_only("cleanup_r2_versions", fixture=_versions_fixture(_version_names(20)))
+    assert _deleted_prefixes(result[3]) == []
+    assert "8g: deleted 0 release folder(s)" in result[2].decode()
+
+
+def test_phase_8g_stops_at_the_delete_budget_and_leaves_the_rest_for_the_next_run() -> None:
+    result = _port_only_env(
+        "cleanup_r2_versions",
+        fixture=_versions_fixture(_version_names(25), stable="1.24.0", edge="1.23.0"),
+        env={"MAX_DELETES_PER_RUN": "2"},
+    )
+    err = result[2].decode()
+    assert len(_deleted_prefixes(result[3])) == 2
+    assert "Phase 8g: hit MAX_DELETES_PER_RUN=2; remaining R2 release folders deferred" in err
+
+
+def test_phase_8g_dry_run_names_the_deletes_and_makes_none() -> None:
+    result = _port_only(
+        "cleanup_r2_versions", argv=("--dry-run",), fixture=_versions_fixture(_version_names(25))
+    )
+    err = result[2].decode()
+    assert _rm_calls(result[3]) == []
+    assert "[DRY-RUN] Would delete s3://%s/cli/v1.1.0/" % RELEASES_BUCKET in err
+    assert "8g: would delete 3 release folder(s), 5.00 GB" in err
+
+
+def test_phase_8g_fails_closed_when_a_channel_manifest_cannot_be_read() -> None:
+    """A stable that cannot be read could be any folder in the window, so nothing is deleted and the run is latched as failed."""
+    result = _port_only_env(
+        "cleanup_r2_versions",
+        fixture=_versions_fixture(_version_names(25), stable=None),
+        env={"GITHUB_ACTIONS": "true"},
+    )
+    assert _deleted_prefixes(result[3]) == []
+    assert "8g: could not read a version from cli/stable/manifest.json" in result[2].decode()
+    assert b"::error title=R2 release folders unchecked::" in result[1], "the run is latched"
+
+
+def test_phase_8g_is_part_of_the_production_run_and_not_of_the_differential_one() -> None:
+    source = PORT.read_text(encoding="utf-8")
+    assert "run_all_phases(r2_versions=True)" in source
+    default = inspect.signature(cv.Housekeeping.run_all_phases).parameters["r2_versions"].default
+    assert default is False, (
+        "the differential run drives run_all_phases() bare, so 8g must stay off by default"
+    )
 
 
 def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:

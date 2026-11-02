@@ -112,7 +112,7 @@ def test_a_persistent_503_is_red_and_a_cleared_one_is_green(gate, tmp_path):
     with stub_upstream({"/a": [status(503), ok("page")]}) as stub:
         green = run_gate(gate, fixture(tmp_path / "green", [stub.base + "/a"]))
     gate.assert_exit(0, green, "a 503 that clears inside the budget passes")
-    gate.assert_contains(green.out, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
+    gate.assert_contains(green.err, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
     gate.log_pass("the retry budget holds in both directions")
 
 

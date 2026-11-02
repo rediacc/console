@@ -448,6 +448,8 @@ def test_sc5_dropped_checks_stand_down_and_are_named(wl):
             + "\n"
         )
     wl.say("work done, nothing left")
+    # The unchanged-subject window is off for `bigpieces` (agent/plans/PLAN-stop-hook-rulings-campaign.md section 3): this case compares the key SETS of two consecutive stops, and a key the first stop surfaced would otherwise be suppressed on the second and never reach the stand-down line.
+    wl.env["WORKLIST_BIGPIECES_LATCH_MIN"] = "0"
     off = keys_of(
         wl,
         wl.run(

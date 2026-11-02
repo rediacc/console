@@ -7,9 +7,15 @@ the real branch. `_origin_last_content` closes this by walking the origin's own 
 """
 
 import importlib.util
+import json
+import os
 import pathlib
+import re
 import shutil
+import subprocess
 import sys
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -229,7 +235,7 @@ def _side_commit(root: pathlib.Path, branch: str) -> str:
 def _spelled(sha: str, *, forced: bool = False) -> str:
     """How a plan cites `sha`: its nine-character abbreviation, or `commit:<abbrev>` when the abbreviation is all digits or `forced`.
 
-    The extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). About 1 in 69 abbreviations is all digits and the fixture's sha moves with the clock, so a draw that lands there needs the `commit:` spelling (PR 600 run on 078a550ad drew one and the gate answered VACUOUS INPUT).
+    The extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). About 1 in 69 abbreviations is all digits and the fixture's sha moves with the clock, so a draw that lands there needs the `commit:` spelling (PR 600 run on 7e0a61520 drew one and the gate answered VACUOUS INPUT).
     """
     short = sha[:9]
     return "commit:%s" % short if forced or short.isdigit() else short
@@ -378,3 +384,301 @@ def test_a_cited_tree_only_this_clone_holds_reds_and_a_committed_one_passes(gate
     ok = _gate(root, base_sha)
     gate.assert_exit(0, ok, "a committed tree citation still passes")
     gate.log_pass("a cited tree is judged by reachability, not presence")
+
+
+# WHOLE-PLAN MODE (PLAN-plan-preflight PF2). `--plan <rel> --json` judges every line of one plan, classes each line as blocking or history, and reports a fileline citation whose cited text changed since the commit that last wrote the citing plan line. PF3 parses the JSON, so its shape is pinned here as well as its verdicts.
+
+_CONTRACT_KEYS = ["plan", "unresolved", "drifted"]
+_UNRESOLVED_KEYS = ["line", "kind", "token", "why", "blocking"]
+_DRIFTED_KEYS = ["line", "token", "relocate_to", "blocking"]
+
+
+def _plan_gate(root: pathlib.Path, rel: str, *extra: str) -> harness.RunResult:
+    env = {"PLAN_CITATIONS_ROOT": str(root)}
+    return harness.run(
+        [sys.executable, str(GATE), "--plan", rel, *extra], cwd=paths.repo_root(), env=env
+    )
+
+
+def _plan_json(gate, result: harness.RunResult) -> dict:
+    try:
+        data = json.loads(result.out)
+    except ValueError:
+        gate.log_fail(
+            "stdout is not one JSON object: %r / stderr %r" % (result.out[:400], result.err[-400:])
+        )
+    if list(data) != _CONTRACT_KEYS:
+        gate.log_fail("top-level keys drifted from the frozen contract: %s" % list(data))
+    for u in data["unresolved"]:
+        if list(u) != _UNRESOLVED_KEYS:
+            gate.log_fail("an unresolved row's keys drifted from the contract: %s" % list(u))
+    for d in data["drifted"]:
+        if list(d) != _DRIFTED_KEYS:
+            gate.log_fail("a drifted row's keys drifted from the contract: %s" % list(d))
+    return data
+
+
+_PLAN = "agent/plans/PLAN-drift.md"
+
+
+def _drift_fixture(tmp_path, body: str, after: str) -> pathlib.Path:
+    """`lib/a.txt` committed as alpha..delta, a plan citing it committed, then `lib/a.txt` rewritten to `after` and committed."""
+    root = _init(tmp_path)
+    _write(root, "lib/a.txt", "alpha\nbravo\ncharlie\ndelta\n")
+    _write(root, _PLAN, "# PLAN: drift\nStatus: in-progress\n\n" + body)
+    _commit(root, "base")
+    _write(root, "lib/a.txt", after)
+    _commit(root, "the cited file changes under the plan")
+    return root
+
+
+def test_plan_mode_a_blocking_rewritten_line_reds_with_the_contract(gate, tmp_path):
+    root = _drift_fixture(
+        tmp_path, "- [ ] T1 see `lib/a.txt:3`\n", "alpha\nbravo\nCHARLIE-rewritten\ndelta\n"
+    )
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(1, result, "a blocking drift with nowhere to relocate is a finding")
+    data = _plan_json(gate, result)
+    want = [{"line": 4, "token": "lib/a.txt:3", "relocate_to": None, "blocking": True}]
+    if data["drifted"] != want or data["unresolved"] or data["plan"] != _PLAN:
+        gate.log_fail("unexpected report: %s" % data)
+    gate.log_pass("a rewritten cited line on an open box is blocking drift, relocate_to null")
+
+
+def test_plan_mode_a_moved_line_is_relocatable_and_does_not_red(gate, tmp_path):
+    root = _drift_fixture(
+        tmp_path, "- [ ] T1 see `lib/a.txt:2`\n", "alpha\nINSERTED\nbravo\ncharlie\ndelta\n"
+    )
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(0, result, "a uniquely relocatable drift is repairable, not a refusal")
+    data = _plan_json(gate, result)
+    want = [{"line": 4, "token": "lib/a.txt:2", "relocate_to": 3, "blocking": True}]
+    if data["drifted"] != want:
+        gate.log_fail("expected one relocatable drift to :3, got %s" % data["drifted"])
+    gate.log_pass("a moved cited line carries relocate_to with its new line")
+
+
+def test_plan_mode_an_unchanged_citation_is_silent(gate, tmp_path):
+    """CONTROL for both drift cases: the same history, citing a line that did not change."""
+    root = _drift_fixture(
+        tmp_path, "- [ ] T1 see `lib/a.txt:4`\n", "alpha\nbravo\nCHARLIE-rewritten\ndelta\n"
+    )
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(0, result, "an unchanged cited line is clean")
+    data = _plan_json(gate, result)
+    if data["drifted"] or data["unresolved"]:
+        gate.log_fail("expected an empty report, got %s" % data)
+    gate.assert_contains(result.err, "1 fileline(s) drift-checked", "and it really was checked")
+    gate.log_pass("an unchanged citation is silent, and the shape line proves it was read")
+
+
+def test_plan_mode_history_lines_are_reported_not_judged(gate, tmp_path):
+    body = "- [x] T1 done, see `lib/a.txt:3`\n    (ticked) evidence `lib/nope.txt:1`\n"
+    root = _drift_fixture(tmp_path, body, "alpha\nbravo\nCHARLIE-rewritten\ndelta\n")
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(0, result, "drift and a dead pointer on history lines do not block")
+    data = _plan_json(gate, result)
+    if [d["blocking"] for d in data["drifted"]] != [False] or [
+        u["blocking"] for u in data["unresolved"]
+    ] != [False]:
+        gate.log_fail("expected one non-blocking drift and one non-blocking unresolved: %s" % data)
+    gate.log_pass("a done box and a (ticked) line are reported as history")
+
+
+def test_plan_mode_a_blocking_dead_pointer_reds(gate, tmp_path):
+    """CONTROL for the history case: the same dead pointer in prose blocks."""
+    root = _drift_fixture(
+        tmp_path, "Prose cites `lib/nope.txt:1`.\n", "alpha\nbravo\ncharlie\ndelta\nepsilon\n"
+    )
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(1, result, "a dead pointer in prose blocks")
+    data = _plan_json(gate, result)
+    if [(u["kind"], u["token"], u["blocking"]) for u in data["unresolved"]] != [
+        ("fileline", "lib/nope.txt:1", True)
+    ]:
+        gate.log_fail("expected one blocking unresolved fileline: %s" % data)
+    gate.log_pass("a blocking unresolved citation reds")
+
+
+def test_plan_mode_an_uncommitted_line_cannot_have_drifted(gate, tmp_path):
+    root = _drift_fixture(tmp_path, "", "alpha\nINSERTED\nbravo\ncharlie\ndelta\n")
+    (root / _PLAN).write_text(
+        (root / _PLAN).read_text(encoding="utf-8") + "Today `lib/a.txt:3` reads bravo.\n",
+        encoding="utf-8",
+    )
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(0, result, "a line written against today's tree has not drifted")
+    data = _plan_json(gate, result)
+    if data["drifted"]:
+        gate.log_fail("an uncommitted line was reported as drifted: %s" % data)
+    gate.assert_contains(result.err, "1 on uncommitted line(s)", "and the shape line says why")
+    gate.log_pass("an uncommitted citing line is compared with the tree it was written against")
+
+
+def test_plan_mode_a_non_utf8_cited_blob_does_not_crash(gate, tmp_path):
+    """A cited file in a legacy encoding is decoded leniently; strict decoding raised UnicodeDecodeError and printed no verdict."""
+    root = _init(tmp_path)
+    (root / "lib").mkdir()
+    (root / "lib/a.txt").write_bytes(b"caf\xe9\nbravo\n")
+    _write(root, _PLAN, "# PLAN: enc\nStatus: in-progress\n\n- [ ] T1 see `lib/a.txt:2`\n")
+    _commit(root, "base")
+    (root / "lib/a.txt").write_bytes(b"caf\xe9\nBRAVO-rewritten\n")
+    _commit(root, "the cited file changes")
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(1, result, "the drift is judged, not a traceback")
+    data = _plan_json(gate, result)
+    if len(data["drifted"]) != 1:
+        gate.log_fail("expected one drifted row: %s" % data)
+    gate.log_pass("non-UTF-8 cited blobs are decoded leniently")
+
+
+def test_plan_mode_an_unreadable_blob_fails_closed(gate, tmp_path):
+    """The partial-clone shape: the tree names the old blob and the blob is not in the clone. The mode must refuse (rc 2), never report "no drift"."""
+    root = _drift_fixture(
+        tmp_path, "- [ ] T1 see `lib/a.txt:4`\n", "alpha\nbravo\nCHARLIE-rewritten\ndelta\n"
+    )
+    old = _git(root, "rev-parse", "HEAD~1:lib/a.txt").strip()
+    obj = root / ".git" / "objects" / old[:2] / old[2:]
+    if not obj.is_file():
+        gate.log_fail(
+            "the fixture blob is not a loose object, so the plant cannot be made: %s" % obj
+        )
+    obj.chmod(0o644)
+    obj.unlink()
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(2, result, "an unreadable history blob is a refusal")
+    gate.assert_contains(
+        result.err, "cannot read the history", "and it says what it could not read"
+    )
+    if result.out.strip():
+        gate.log_fail("no JSON may be printed when the answer is unknown: %r" % result.out[:200])
+    gate.log_pass("a missing history blob fails closed, it does not read as clean")
+
+
+def test_plan_mode_refuses_a_plan_it_cannot_see(gate, tmp_path):
+    root = _drift_fixture(tmp_path, "", "alpha\n")
+    for rel in ("agent/plans/PLAN-absent.md", "docs/not-a-plan.md"):
+        result = _plan_gate(root, rel, "--json")
+        gate.assert_exit(2, result, "%s is not a judgeable plan" % rel)
+    gate.log_pass("a missing or out-of-scope plan is a refusal, not an empty report")
+
+
+def _absent_from_partial_clone(blob: str) -> bool:
+    """True only when this checkout is a promisor (partial) clone AND the named blob is truly not in it, read with lazy fetch off, so a gate that merely prints the message cannot earn the skip."""
+    root = str(paths.repo_root())
+    promisor = subprocess.run(
+        ["git", "-C", root, "config", "--get", "remote.origin.promisor"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    if promisor != "true":
+        return False
+    present = subprocess.run(
+        ["git", "-C", root, "cat-file", "-e", blob],
+        capture_output=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    return present.returncode != 0
+
+
+def test_plan_mode_on_the_real_tree_prints_valid_json(gate):
+    """The box's acceptance, on this repository: the command prints one JSON object in the contract's shape."""
+    rel = "agent/plans/PLAN-plan-per-pr-loop.md"
+    if not (paths.repo_root() / rel).is_file():
+        gate.log_fail("%s is gone; pick another in-scope plan for this acceptance" % rel)
+    result = harness.run(
+        [sys.executable, str(GATE), "--plan", rel, "--json"], cwd=paths.repo_root()
+    )
+    # The gate reads history with GIT_NO_LAZY_FETCH=1 on purpose, so in a `filter: blob:none` checkout (CI's quality-pytest lane) blame cannot reach the blobs of older revisions. That is the checkout, not the gate: it is declared, counted and named by check:ci-pytest.
+    missing = re.search(r"Cannot read blob ([0-9a-f]{7,40})", result.err)
+    if result.rc == 2 and missing and _absent_from_partial_clone(missing.group(1)):
+        pytest.skip(
+            "CANNOT RUN (1 of 1 requirement(s) missing): the history blobs of %s, which a "
+            "blob:none partial clone omits and the gate never lazy-fetches" % rel
+        )
+    if result.rc not in (0, 1):
+        gate.log_fail("rc %d: %s" % (result.rc, result.err[-600:]))
+    data = _plan_json(gate, result)
+    if data["plan"] != rel:
+        gate.log_fail("plan key %r" % data["plan"])
+    gate.log_pass("the real plan yields contract-shaped JSON (rc %d)" % result.rc)
+
+
+def test_plan_mode_a_ticked_line_is_history_even_under_an_open_box(gate, tmp_path):
+    """A partially worked open box carries `(ticked)` evidence for its finished half; that line is history by its own marker, while the open box's plain continuation still blocks."""
+    body = (
+        "- [ ] T1 open box\n"
+        "    (ticked) half done, see `lib/nope.txt:1`\n"
+        "    still open, see `lib/gone.txt:1`\n"
+    )
+    root = _drift_fixture(tmp_path, body, "alpha\nbravo\ncharlie\ndelta\nepsilon\n")
+    result = _plan_gate(root, _PLAN, "--json")
+    gate.assert_exit(1, result, "the plain continuation's dead pointer still blocks")
+    data = _plan_json(gate, result)
+    got = [(u["token"], u["blocking"]) for u in data["unresolved"]]
+    if got != [("lib/nope.txt:1", False), ("lib/gone.txt:1", True)]:
+        gate.log_fail(
+            "expected the (ticked) line as history and the continuation as blocking: %s" % got
+        )
+    gate.log_pass("(ticked) marks history on its own; an open box's continuation blocks")
+
+
+def test_unimportable_resolvers_exit_2_in_plan_mode_and_1_in_the_diff_gate(tmp_path) -> None:
+    """`--plan` documents 2 for "the instrument could not answer"; the diff-scoped gate keeps 1 (worklist #d8634506)."""
+    env = {**os.environ, "PLAN_CITATIONS_ROOT": str(tmp_path)}
+    plan_mode = harness.run(
+        [sys.executable, str(GATE), "--plan", "agent/plans/PLAN-p.md", "--json"],
+        cwd=paths.repo_root(),
+        env=env,
+    )
+    diff_mode = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root(), env=env)
+    assert "VACUOUS INPUT" in plan_mode.err
+    assert plan_mode.rc == 2, plan_mode
+    assert diff_mode.rc == 1, diff_mode
+
+
+def _citations_fn():
+    spec = importlib.util.spec_from_file_location("_plan_citations_snapshot_test", GATE)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    already = str(GATE.parent.resolve()) in sys.path
+    added = paths.on_sys_path(GATE.parent)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if not already:
+            sys.path.remove(added)
+    return module.citations
+
+
+def test_a_backup_snapshot_id_is_not_an_object_citation_but_a_bare_hex_run_still_is(gate):
+    """Red before SNAPSHOT_ID_RE: a renet snapshot id's 16-hex tail read as a dead git object, and a writer shortened the ids to get past it."""
+    citations = _citations_fn()
+    if citations("snapshot 20261030T020208Z-75f3a8f270363707 stored"):
+        gate.log_fail("a snapshot id after its timestamp prefix must not be cited as an object")
+    if ("object", "75f3a8f270363707") not in citations("a bare run 75f3a8f270363707 here"):
+        gate.log_fail("control: the same 16 hex without the timestamp prefix must still be judged")
+    gate.log_pass("snapshot ids are exempt only behind their timestamp prefix")
+
+
+def test_a_live_proof_receipt_id_is_not_an_object_citation_but_a_bare_hex_run_still_is(gate):
+    """Red before RECEIPT_ID_RE: the evidence worklist.py --live-proof writes (`live-proof lp-<12hex> ...`) was refused by this gate."""
+    citations = _citations_fn()
+    if citations("live-proof lp-96f7f22b87b4 bench account-smoke rc=0"):
+        gate.log_fail("a receipt id after its lp- prefix must not be cited as an object")
+    if ("object", "96f7f22b87b4") not in citations("a bare run 96f7f22b87b4 here"):
+        gate.log_fail("control: the same 12 hex without the lp- prefix must still be judged")
+    gate.log_pass("live-proof receipt ids are exempt only behind their lp- prefix")
+
+
+def test_an_lp_prefixed_sha_that_no_ledger_row_carries_is_still_judged(gate):
+    """Review 5c159bcf.1: the `lp-` prefix alone must not launder a dead commit; only an id that is a row of agent/ledgers/live-proof.jsonl is exempt."""
+    citations = _citations_fn()
+    if ("object", "abcdef012345") not in citations("see commit lp-abcdef012345 for the fix"):
+        gate.log_fail("a dead sha written as lp-<sha> outside the ledger must still be judged")
+    if ("object", "abcdef012345") not in citations("live-proof lp-abcdef012345 bench smoke rc=0"):
+        gate.log_fail("a live-proof line naming an id the ledger lacks must still be judged")
+    gate.log_pass("an lp- prefix exempts only ids the live-proof ledger carries")

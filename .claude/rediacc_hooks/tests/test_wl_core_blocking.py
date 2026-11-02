@@ -17,7 +17,10 @@ from rediacc_hooks.tests import wlfix
 PEER_BODY = """Session cafe1234 owns packages/cli/src/services/licensing and the two drill scripts under scripts/dev, all of them uncommitted. A git add -A from any other session in this checkout would sweep them into somebody else s commit, which is the cross-session fact that has no home in a per-session file.
 
 ## Next action
-Finish the renewal drill and report the soft-claim slot count."""
+Finish the renewal drill and report the soft-claim slot count.
+
+## Big pieces
+none: this fixture carries no plan with an open box."""
 
 
 def test_01_an_open_item_blocks(wl):
@@ -347,9 +350,9 @@ def test_29_a_bloated_state_document_is_rejected(wl):
     wl.brief_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.task(7, "pending", "thing")
-    wl.plant_state("## Next action\ngo\n" + "x" * 4100 + "\n")
+    wl.plant_state("## Next action\ngo\n## Big pieces\nnone\n" + "x" * 4100 + "\n")
     wl.check("block", "STATE.md is bloated", "an over-long STATE.md blocks")
-    wl.plant_state("## Next action\ngo\n" + "x" * 3900 + "\n")
+    wl.plant_state("## Next action\ngo\n## Big pieces\nnone\n" + "x" * 3880 + "\n")
     wl.check("allow", "", "3900-odd chars sits inside the new 4000 budget")
 
 
@@ -370,6 +373,7 @@ def test_30_a_state_document_without_a_next_action_is_aimless(wl):
         "where the immediate job is to watch the running CI round and diagnose any red from its "
         "complete failed-step log before changing anything at all.\n\n## Next action\n\n"
         "Diagnose the red from its complete failed-step log, then fix the gate it names."
+        "\n\n## Big pieces\n\nnone"
     )
     wl.check("allow", "", "the same document WITH a Next action section is fine")
 
@@ -377,7 +381,7 @@ def test_30_a_state_document_without_a_next_action_is_aimless(wl):
 def test_30_the_next_action_heading_is_matched_case_insensitively():
     """Probed as a UNIT assertion rather than a third stop: three consecutive stops on an unmoved world trip the stuck detector, which would make this test the wrong gate."""
     store = wlfix.import_wl("wl_store")
-    verdict, _ = store.agent_state_shape("x" * 260 + "\n## NEXT ACTION\ngo")
+    verdict, _ = store.agent_state_shape("x" * 260 + "\n## NEXT ACTION\ngo\n## Big pieces\nnone")
     assert verdict == "ok", "a shouted '## NEXT ACTION' heading was not recognised"
 
 
@@ -401,7 +405,9 @@ WAITLED_CONTROLS = (
 
 def shape_of(lead: str) -> str:
     store = wlfix.import_wl("wl_store")
-    return store.agent_state_shape("x" * 300 + "\n\n## Next action\n\n" + lead)[0]
+    return store.agent_state_shape(
+        "x" * 300 + "\n\n## Big pieces\n\nnone\n\n## Next action\n\n" + lead
+    )[0]
 
 
 def test_v21_waitled_refuses_a_next_action_that_leads_with_a_wait():

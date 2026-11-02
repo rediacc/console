@@ -23,7 +23,6 @@ import type { ResourceKind } from './types.js';
 export type DiscoveryFamily =
   | 'machines'
   | 'datastores'
-  | 'storages'
   | 'repositories'
   | 'clusters'
   | 'cloudProviders'
@@ -53,7 +52,6 @@ export const RESOURCE_KINDS = [
   'machine',
   'repo',
   'datastore',
-  'storage',
   'cluster',
   'provider',
   'container',
@@ -68,7 +66,6 @@ export const RESOURCE_KINDS = [
 export const DISCOVERY_FAMILIES = [
   'machines',
   'datastores',
-  'storages',
   'repositories',
   'clusters',
   'cloudProviders',
@@ -80,7 +77,6 @@ export const RESOURCE_DISCOVERY: Record<ResourceKind, DiscoverySource> = {
   machine: { source: 'config', family: 'machines' },
   repo: { source: 'config', family: 'repositories' },
   datastore: { source: 'config', family: 'datastores' },
-  storage: { source: 'config', family: 'storages' },
   cluster: { source: 'config', family: 'clusters' },
   provider: { source: 'config', family: 'cloudProviders' },
   // The 6 strategy positionals bind here; `backupStrategies` is a real
@@ -121,8 +117,8 @@ export const RESOURCE_DISCOVERY: Record<ResourceKind, DiscoverySource> = {
   },
   // `backup list` honors `-o json`, emitting the standard success envelope whose
   // `data` is the rendered rows array `{ mode, name, guid, size, modified }`
-  // (renderBackupList, commands/repo-backup-list.ts). `name` is the resolved display name that `backup restore <artifact-ref>` resolves against a repository, so `[].name` offers each artifact. A console may pass --storage
-  // from context. Artifact refs use the shared ref grammar.
+  // (renderBackupList, commands/repo-backup-list.ts). `name` is the resolved display name that `backup restore <artifact-ref>` resolves against a repository, so `[].name` offers each artifact. Artifact refs use the shared ref
+  // grammar.
   artifact: {
     source: 'command',
     pathKey: 'backup list',

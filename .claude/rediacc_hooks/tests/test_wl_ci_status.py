@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import time
 
 from rediacc_hooks.tests import wlfix
 
@@ -585,3 +586,18 @@ def test_133b_control_an_unattributed_cancel_stays_silent(wl):
     out = trouble(wl)
     assert out[0] == "cancelled", out
     assert not "".join(out[1:]).strip(), out
+
+
+def test_130b_a_cached_string_info_is_not_a_lookup_failure(wl):
+    """A cached no-PR read stores `info` as the plain string "origin/<ref>"; the cache-hit path read `.get("contexts")` off it, raised AttributeError, and reported a blind lookup on every stop (2026-10-31, branch 1023-1 before its PR existed)."""
+    ci_setup(wl)
+    ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
+    tip = wl.git("rev-parse", "refs/remotes/origin/pub").stdout.strip()
+    wl.stem(".cistate-deadbeef").write_text(
+        json.dumps(
+            {"sha": tip, "state": "no-pr", "info": "origin/pub", "at": time.time(), "final": False}
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    cichk(wl, "a cached string info reads as the cached state", "no", "PR CI-status lookup failed")

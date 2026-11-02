@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 3
 language: fr
-sourceHash: "a0f69282724c27ea"
+sourceHash: "b79c049c4f216e1a"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -204,7 +204,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ```bash
 rdc machine provider add my-linode \
   --provider linode/linode \
-  --token $LINODE_API_TOKEN \
+  --token-env LINODE_API_TOKEN \
   --region us-east \
   --type g6-standard-2
 ```
@@ -213,7 +213,7 @@ rdc machine provider add my-linode \
 |--------|--------|-------------|
 | `--provider <source>` | Oui* | Source de fournisseur connu (par ex., `linode/linode`, `hetznercloud/hcloud`) |
 | `--source <source>` | Oui* | Source de fournisseur OpenTofu personnalisée (pour les fournisseurs inconnus) |
-| `--token <token>` | Oui | Jeton API du fournisseur cloud |
+| `--token-env <var>` | Oui | Nom de la variable d'environnement qui contient le jeton d'API du fournisseur ; le jeton lui-même ne passe jamais par la ligne de commande |
 | `--region <region>` | Non | Région par défaut pour les nouvelles machines |
 | `--type <type>` | Non | Type/taille d'instance par défaut |
 | `--image <image>` | Non | Image OS par défaut |

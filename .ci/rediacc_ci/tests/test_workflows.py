@@ -8,12 +8,11 @@ TWO DIFFERENTIALS, because the module replaces two different kinds of parser.
      projection, not a sample -- across `.github/workflows/*.yml`,
      `.github/actions/*/action.yml` and `.ci/breakpoint/workflow/*.yml`.
 
-     PyYAML RUNS IN A SUBPROCESS UNDER THE SYSTEM INTERPRETER, and that is not
-     stylistic. `.ci/bootstrap.sh` provisions pytest with `uv tool install`,
-     which builds an isolated virtual environment: `import yaml` FAILS inside
-     this suite while `python3 -c "import yaml"` succeeds on the same machine
-     (PyYAML 6.0.3, measured 2026-09-06). A differential that needed the import
-     could not run here at all.
+     PyYAML RUNS IN A SUBPROCESS UNDER THE SYSTEM INTERPRETER, because the
+     contract is the `python3` the gates run under, not pytest's own venv. Until
+     2026-10-31 `import yaml` failed inside this suite; `.ci/bootstrap.sh` now
+     installs pytest `--with PyYAML==$PYYAML_VERSION` (36 tests importing it
+     failed without), and the module itself still takes no dependency.
 
   2. AGAINST `scripts/ci-runner/lanes.ts`, the only TypeScript parser of these
      files, through `npx tsx`. That one is run over a COMMITTED FIXTURE rather
@@ -132,13 +131,21 @@ def test_pyyaml_is_reachable_through_the_system_interpreter():
     assert probe.stdout.strip().startswith("6.")
 
 
-def test_the_suites_own_interpreter_cannot_import_yaml():
-    """THE REASON THE PARSER HAS NO DEPENDENCY, asserted rather than asserted-in-prose.
+def test_the_suites_own_interpreter_imports_the_pinned_yaml():
+    """The bootstrap's `--with PyYAML` is what this suite runs under, at the toolchain pin.
 
-    `uv tool install pytest` builds an isolated environment. If this ever starts passing -- because the bootstrap grew `--with PyYAML` -- the constraint has changed and the design decision above deserves re-examining. That is a conversation, not a silent drift, so it is pinned here.
+    The parser module still takes no dependency; this pins the environment, so a bootstrap that drops `--with PyYAML` or drifts off the pin fails here rather than as 36 unrelated import errors.
     """
-    with pytest.raises(ImportError):
-        importlib.import_module("yaml")
+    pin = None
+    for line in (
+        (pathlib.Path(__file__).resolve().parents[3] / ".devcontainer" / "toolchain.env")
+        .read_text()
+        .splitlines()
+    ):
+        if line.startswith("PYYAML_VERSION="):
+            pin = line.split("=", 1)[1].strip()
+    assert pin, "PYYAML_VERSION is missing from .devcontainer/toolchain.env"
+    assert importlib.import_module("yaml").__version__ == pin
 
 
 def test_the_corpus_is_derived_and_covers_every_tracked_workflow():

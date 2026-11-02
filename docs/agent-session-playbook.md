@@ -56,7 +56,7 @@ Brief agents with: exact paths, env vars, iteration command, success criteria, w
 ./run.sh www tutorials validate                                 # casts + transcripts + audio + parity
 
 # Video render with live browser scenes (from packages/www)
-REDIACC_CONFIG=tutorial TUTORIAL_MACHINE_NAME=machine-11 REDIACC_SKIP_MACHINE_ACTIVATION=1 \
+REDIACC_CONFIG=tutorial TUTORIAL_MACHINE_NAME=machine-11 \
   npx tsx scripts/generate-tutorial-video.ts --cast <tutorial> --lang en --keep-temp --debug
 # --debug → <out>/<tutorial>.debug-frames/ (segstart/segend boundary frames + sidecar)
 
@@ -87,7 +87,7 @@ npm run ci                                                  # full local gate su
 - Config: `--config tutorial` (never default). Machines: `machine-11`
 (192.168.111.11), `machine-12` (192.168.111.12), bridge `192.168.111.1`. After re-provisioning: `rdc machine scan-keys <m>`.
 - Env: `REDIACC_ALLOW_GRAND_REPO=*` must be exported by the USER before the
-session (agents can't self-set it: ancestry verification). `REDIACC_SKIP_MACHINE_ACTIVATION=1` on unlicensed VMs. `REDIACC_SKIP_FILE_WRITE_GUARD=1` for `>` redirects in `term -c`.
+session (agents can't self-set it: ancestry verification). Licence issuance always runs; the activation skip switch is removed (console `396436490`). `REDIACC_SKIP_FILE_WRITE_GUARD=1` for `>` redirects in `term -c`.
 - Tutorial repos on the lab: `my-app`, `app(:work/:rollback)`, `demo-pgadmin
 (:experiment)`, staged idempotently by `.ci/tutorials/lib/stage-*.sh` (storyboard setupCommands). Throwaway work uses `verify-*` names + cleanup (`repo delete <ref> --archive-config`, which moves the config row to the archive; `repo admin archive purge <name>` drops it for good).
 - Recording happens on the BRIDGE cluster (fresh machines), not the persistent

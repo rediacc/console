@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: de
-sourceHash: "39ec44d8efc3f9b5"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "e56214cd4086bafa"
+sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
 ---
 
 # Proxy & Executor
@@ -49,6 +49,19 @@ Die Web-Konsole liest dasselbe Flag, um zu entscheiden, ob ein Befehl überhaupt
 ## Der Mock-Executor
 
 In der Entwicklung, wenn kein echter Executor konfiguriert ist, beantwortet der Account-Server Befehlsanfragen selbst mit Mock-Streams und eindeutig erfundenen Daten (Ressourcennamen mit dem Präfix `mock-`). Dadurch lässt sich die gesamte Konsole durchspielen, einschließlich Formulare, Streaming und Ergebnisdarstellung, ganz ohne Maschine oder Entsperrung. Eine echte Ausführung braucht einen echten Executor.
+
+## Einschränken, von wo der Executor sich verbindet
+
+Der `access`-Bereich der Konfiguration enthält die erlaubten IPv4- und IPv6-Quellbereiche für SSH-Schlüssel. Die Bereiche lassen sich konfigurationsweit, pro Schlüssel und pro Maschine festlegen, sodass eine Maschine einen Schlüssel nur von den Adressen akzeptiert, von denen sich der Executor verbindet.
+
+- `rdc config access add <key> --public-key ... --hosted-executor` registriert einen Schlüssel und hängt die beiden Bereiche des gehosteten Executors an: `104.28.0.0/16` und `2a09:bac0::/29`. Beide sind beobachtete Cloudflare-Egress-Bereiche und keine von Cloudflare veröffentlichte Liste, sie können sich daher ändern.
+- `rdc machine access set <machine> --key <key>` weist einer Maschine einen Schlüssel zu; mit `--ipv4`, `--ipv6` und `--clear-ranges` lassen sich die Bereiche für diese Maschine anpassen.
+- `rdc machine access push <machine>` schreibt die Zugriffszeilen auf die Maschine, `--dry-run` zeigt das Ergebnis, ohne etwas zu ändern.
+- `rdc machine access show <machine>` gibt die geltenden Zugriffszeilen aus.
+
+`machine setup` wendet die Zugriffszeilen erneut an, sodass eine neu aufgebaute Maschine ihre Einschränkungen zurückerhält.
+
+Ein Push, der die aktuelle SSH-Sitzung aussperren würde, weil deren Adresse außerhalb der Bereiche des verwendeten Schlüssels liegt, wird mit `ACCESS_LOCKOUT` abgelehnt, und es wird nichts geschrieben. Ein Push wird mit `ACCESS_FILE_CHANGED` abgelehnt, wenn sich die Datei auf der Maschine zwischenzeitlich geändert hat; es wurde nichts angewendet, daher kann der Push gefahrlos wiederholt werden.
 
 ## Verwandte Seiten
 

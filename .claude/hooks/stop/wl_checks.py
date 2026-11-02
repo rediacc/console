@@ -73,6 +73,13 @@ try:
 except ImportError:  # absent here just means the notice line stays silent
     onboard = None
 
+# GUARDED for the same reason: an unimportable ruling module must restore the behaviour checks had before rulings existed (every subject fires), never take the hook down (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2).
+wl_ruling: _types.ModuleType | None
+try:
+    import wl_ruling
+except Exception:
+    wl_ruling = None
+
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
 REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
 
@@ -198,7 +205,7 @@ CITE_RE = re.compile(
     # a live refusal: `agent/worklist/<prefix>.jsonl` and `agent/ledgers/*.jsonl` are this hook's own store and investigation ledger, cited constantly in evidence lines and tick messages, and every one of those citations was silently unresolvable to citation_state -- `json` matched the shorter prefix nowhere near far enough, since the alternation requires an EXACT trailing match up to `:`.
     # EVERY TRACKED TEXT EXTENSION, 2026-10-20 (worklist #6522a5ba): `private/account/drizzle/0059_backup_manifest_index.sql:1` was refused as evidence-free, the seventh time this alternation was found one format short. The tracked text extensions of the console and its submodules were added at once, and test_wl_cite_extensions.py::test_every_tracked_text_extension_is_citable re-derives that set from `git ls-files` on every run, so the next new format fails a test instead of a tick. Binaries and the empty .gitkeep placeholder stay out (that test's UNCITABLE set names them).
     r"(?<![\w./-])("
-    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt|sql|golden|list|log|grit|conf|service|html|xml|template|sum|mod|snap|ps1|patch|c|asc|awk|b64|bats|cfg|cmd|cql|csv|env|example|excalidraw|fixture|ini|jsonc|mts|nginx|postgresql|pub|sha256|tmpl|tsv|uid|webmanifest|lock|map)"
+    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt|sql|golden|list|log|grit|conf|service|html|xml|template|sum|mod|snap|ps1|patch|c|asc|awk|b64|bats|cfg|cmd|cql|csv|env|example|excalidraw|fixture|ini|jsonc|mts|nginx|postgresql|pub|sha256|tmpl|tsv|uid|webmanifest|lock|map|path|timer|hcl|pem|sig)"
     # NESTED DOTFILES, 2026-09-24: the optional directory prefix below. `private/account/.env:12` and `.ci/policy/.dead-bash-allowlist:19` could not be cited at all, because the lookbehind refuses a dot right after `/` and the branch had no way to consume the directories in front of it. Found while building wl_defersettle, whose settle evidence cites an env key's line.
     r"|(?:\.?[\w][\w.-]*/)*\.[\w][\w-]*"
     # EXTENSIONLESS BUILD FILES, 2026-09-30, the same class again: `.devcontainer/Dockerfile:1` was refused by --plan-investigate as "carries no <path>:<line> citation", so no Dockerfile or Makefile in the repo could be cited (worklist #ebd1753c). Named, not open-ended: a bare `word:3` in prose must not start matching.
@@ -1037,6 +1044,65 @@ def plans_block(root):
     return head + "\n".join(lines), [(r[0], r[1], r[2]) for r in live]
 
 
+def census_big_pieces(root):
+    """(big, known): the plan paths the census marks big right now, and every plan path the census knows. The same rows, status filter and fallback `plans_block` uses, so the drift check and the listing a session copies from always agree."""
+    stats = PI.plan_stats(root)
+    if not stats:
+        return set(), set()
+    rows, state, _detail = PI.index_census(root, stats=stats)
+    if state != PI.CENSUS_FRESH or {r[0] for r in rows} != {s[0] for s in stats}:
+        rows = PI.census_rows(root, plan_records=plan_records, plan_box_census=plan_box_census)
+    live = [r for r in rows if r[1] not in PLAN_DONE_STATES]
+    return PI.big_pieces(live), {r[0] for r in rows}
+
+
+#: How long one unchanged big-pieces drift stays silent after it was surfaced.
+BIGPIECES_LATCH_MIN = int(os.environ.get("WORKLIST_BIGPIECES_LATCH_MIN", "60"))
+# The `.md` is optional: a section naming `PLAN-backup-program` means the same file as one naming `PLAN-backup-program.md`.
+_PLAN_NAME_RE = re.compile(r"PLAN-[A-Za-z0-9._-]*[A-Za-z0-9_-]")
+_HEADING_RE = re.compile(r"^\s*#{1,6}\s", re.MULTILINE)
+
+
+def big_pieces_section(body):
+    """The text under STATE.md's `## Big pieces` heading, up to the next heading, or None when there is no such heading."""
+    m = S.AGENT_BIG_RE.search(body or "")
+    if not m:
+        return None
+    rest = body[m.end() :]
+    rest = rest.split("\n", 1)[1] if "\n" in rest else ""
+    nxt = _HEADING_RE.search(rest)
+    return rest[: nxt.start()] if nxt else rest
+
+
+def bigpieces_drift(root, body):
+    """(report text, subjects) when the `## Big pieces` section disagrees with the census, None when it agrees or there is no section.
+
+    DRIFT IS TWO THINGS. A named plan that is not a big piece now (finished, gone, or shrunk out of the mark), and a section naming NONE of the current big pieces while there are some. Naming only some of them is not drift: ties at the Nth place can make the mark wide, and the section is a focus list, not a copy of the census.
+    """
+    section = big_pieces_section(body)
+    if section is None:
+        return None
+    big, known = census_big_pieces(root)
+    by_base = {pathlib.PurePath(r).name: r for r in known}
+    big_base = {pathlib.PurePath(r).name for r in big}
+    named = sorted({n if n.endswith(".md") else n + ".md" for n in _PLAN_NAME_RE.findall(section)})
+    lines, subjects = [], []
+    for name in named:
+        if name in big_base:
+            continue
+        why = "not a plan the census knows" if name not in by_base else "not a big piece now"
+        lines.append("%s: %s" % (name, why))
+        subjects.append("stale:%s" % name)
+    if big and not (set(named) & big_base):
+        lines.append("the section names none of the %d current big piece(s)" % len(big))
+        subjects.append("none-of:%s" % ",".join(sorted(big_base)))
+    if not lines:
+        return None
+    # ONE LINE, first: a rotating check that loses the pick is NAMED by its first line alone, so the finding has to be on it.
+    lines.append("the census marks big now: %s" % (", ".join(sorted(big_base)) or "(none)"))
+    return "; ".join(lines), subjects
+
+
 def _plan_census_summary(rows):
     """The two tree-wide totals lines, or [] when no plan carries a box.
 
@@ -1115,91 +1181,9 @@ def triage_context(root, worklist, session_id=""):
 # BOUNDED HARD, because the live store folds 831 items (550 KB as a raw --list) and this hook fires on every stop: only the ACTIONABLE slice is emitted (open, in-flight, deferrals and expired leases -- never [x]), at most GUIDE_MAX lines, each capped, and a cap that drops anything SAYS SO with the count, because a silent cap reads as "that is everything".
 
 GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
-# How long a SUBMODULE POINTER MOVED warning stays latched for one (path, sha) signature. Time-boxed on purpose: a permanent acknowledgement would go silent on a pointer somebody forgot, and a forgotten pointer ships whatever the parent last recorded. A move to a new sha re-fires immediately regardless.
+# How long a SUBMODULE POINTER MOVED warning stays silent for one unchanged set of (path, sha) subjects, through `vadd(..., subject=, latch_min=)`. Time-boxed on purpose: a permanent acknowledgement would go silent on a pointer somebody forgot, and a forgotten pointer ships whatever the parent last recorded. A move to a new sha changes the subject and re-fires at once. A
+# DECISION is no longer read out of item prose (the substring scan that was `submodule_decision_recorded`): it is an operator ruling, `worklist.py --rule <me> submodule <path>@<sha> '<why>'`, which every session's check consults before firing (wl_ruling).
 SUBMODULE_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_LATCH_MIN", "15"))
-# How long the same warning stays latched once a session has RECORDED a decision about that exact (path, sha). Longer than the bare latch by a lot, and still NOT permanent, because the reason the bare latch is time-boxed applies here too: a decision can go stale, and a pointer nobody revisits ships whatever the parent last recorded. A day means a decided pointer stops interrupting
-# a working session and still gets re-examined tomorrow.
-SUBMODULE_DECIDED_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_DECIDED_LATCH_MIN", "1440"))
-
-
-def _json_or_none(line):
-    """One JSONL row, or None when the line is not a row. A ledger is append-only under a lock, so a torn final line is possible and is not an error worth propagating."""
-    try:
-        return json.loads(line)
-    except (ValueError, TypeError):
-        return None
-
-
-# A decision word in an item's note (R20260924.23), upper case as the lead writes it.
-_DECISION_RE = re.compile(r"\b(?:KEEP|DROP)\b")
-_SHA_PREFIX_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
-
-
-def _open_item_decides(rec, path, sha, session_id):
-    """True when `rec` is an open or `[>]` item this session owns whose latest note carries KEEP or DROP, `path`, and a sha prefix of 7 or more characters of `sha` (R20260924.23)."""
-    if rec.get("state") not in (" ", ">") or not C.owned_by_me(rec.get("owner"), session_id):
-        return False
-    note = str(rec.get("lastnote") or rec.get("basetext") or rec.get("text") or "")
-    if path not in note or not _DECISION_RE.search(note):
-        return False
-    target = str(sha).lower()
-    return any(
-        target.startswith(tok) or tok.startswith(target)
-        for tok in _SHA_PREFIX_RE.findall(note.lower())
-    )
-
-
-def submodule_decision_recorded(root, path, sha, fold=None, session_id=None):
-    """Has ANY session ticked an item naming this submodule path and target sha, or has THIS session recorded KEEP or DROP for it in an open item?
-
-    THE OPEN-ITEM ARM (R20260924.23): with `fold` and `session_id`, an owned open or `[>]` item whose latest note carries KEEP or DROP, the path, and a sha prefix of 7+ characters counts too (`_open_item_decides`). On 2026-09-24 the move `private/account 9fda8c7c2 -> aea435154` blocked twice, 17.5 minutes apart, while #f2dd1732's note already read "9fda8c7 -> aea4351 ...: KEEP"; the lead then staged the gitlink only to silence the check. Only THIS session's items: a decision in a peer's open item is still in flight, while a TICKED one below binds everyone.
-
-    The check offers two doors, KEEP (stage it) and DROP (`git submodule update --checkout`), and there is a third that is often the right one: leave the worktree alone and never stage it, which is correct when the parent's HEAD already matches and the checkout belongs to a peer session. Nothing in the warning could see that such a decision existed, so a session that had decided,
-    ticked and documented it was told off every fifteen minutes.
-
-    Reads the ledgers of EVERY session, not just this one, because a submodule pointer is shared state: a peer's ruling on it is as binding as ours.
-
-    FAIL-SAFE BY CONSTRUCTION. Any error at all returns False, which restores exactly the previous behaviour. This function runs inside the stop hook of every session in the worktree, so the cost of it being wrong is not local, and the safe direction is to warn too often rather than too rarely.
-    """
-    if fold is not None and session_id:
-        with contextlib.suppress(AttributeError, TypeError):
-            if any(_open_item_decides(rec, path, sha, session_id) for rec in fold.by_id.values()):
-                return True
-    try:
-        store = pathlib.Path(root) / "agent" / "worklist"
-        if not store.is_dir():
-            return False
-        short = str(sha)[:9]
-        for led in store.glob("*.jsonl"):
-            try:
-                text = led.read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-            # TWO PASSES, because the decision is the ITEM and not any one event. A tick is `ev: state` with `s: "x"` -- that is the schema, not a guess: the store has no "tick" or "done" event kind at all, and a first draft looking for one matched nothing and would have shipped a predicate that could never fire. The other state value is "?" for a deferral, and a deferral is
-            # explicitly NOT a decision.
-            #
-            # The sha usually appears in the item's TITLE, on its `add` event, rather than in the tick evidence, and that is not an accident: a submodule commit is a gitlink and never an object in this repository, so `completion_evidence` REFUSES a tick whose only evidence is such a sha. The tick therefore describes the decision in prose while the title carries the pair. Matching
-            # one line at a time misses that, which a both-direction test caught here.
-            ticked = set()
-            events = []
-            for line in text.splitlines():
-                ev = _json_or_none(line)
-                if ev is None:
-                    continue
-                events.append(ev)
-                if ev.get("ev") == "state" and ev.get("s") == "x" and ev.get("id"):
-                    ticked.add(ev["id"])
-            for ev in events:
-                if ev.get("id") not in ticked:
-                    continue
-                blob = " ".join(v for v in ev.values() if isinstance(v, str))
-                if path in blob and short in blob:
-                    return True
-        return False
-    except (OSError, ValueError, TypeError):
-        # NARROW ON PURPOSE, and still fail-safe: these are what a missing store, an unreadable ledger or a malformed row can raise. A blind `except` here would also swallow a real programming error in this function and report "no decision", which is the safe DIRECTION but hides the bug forever. This runs in the stop hook of every session in the worktree, so a mistake is not local,
-        # but neither is a defect nobody can see.
-        return False
 
 
 GUIDE_TEXT_CHARS = 90
@@ -2186,6 +2170,11 @@ def _agent_state_because(astate, aage):
             " not the next action -- put the real work first)"
         )
 
+    if astate == "unfocused":
+        return (
+            " (it carries no '## Big pieces' section; copy the plans the SessionStart"
+            " block marks ! BIG PIECE !, or write 'none' when no plan has an open box)"
+        )
     return ""
 
 
@@ -2570,6 +2559,16 @@ def _soaked_pins_report(worklist, session_id, state_doc):
             outq_add(worklist, session_id, state_doc, "soaked-pins", text, 3)
 
 
+def _renet_tests_report(worklist, session_id, state_doc):
+    """Advise the renet test command when renet Go code changed and no receipt covers it (PLAN-renet-change-test-triggers M4). NEVER blocks and never raises."""
+    with contextlib.suppress(Exception):
+        import wl_renettests
+
+        text = wl_renettests.advisory(C.project_root(C.project_start()))
+        if text:
+            outq_add(worklist, session_id, state_doc, "renet-tests", text, 3)
+
+
 def _resprofile_report(worklist, session_id, state_doc):
     """Report-only structural findings from the previous CI run's captures, and the tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must not be an escape, but this describes how work was done, so "we did not measure" must never become "the stop is refused". Every failure is swallowed; the off switch is
     WORKLIST_PROFILE=off. See agent/plans/PLAN-shell-resource-profiling.md section 3."""
@@ -2608,7 +2607,16 @@ def _resprofile_report(worklist, session_id, state_doc):
 
 
 # The STATE.md verdicts that, inside the late context band, make compaction due: the recovery document is not current (wl_floor.FLOOR_WHEN_COMPACTING, and the stand-down profiles' compaction keys).
-_COMPACTION_ASTATES = ("missing", "thin", "bloated", "aimless", "stale", "waitled", "no-dir")
+_COMPACTION_ASTATES = (
+    "missing",
+    "thin",
+    "bloated",
+    "aimless",
+    "stale",
+    "waitled",
+    "unfocused",
+    "no-dir",
+)
 
 
 def _ctx_late_band(session_id):
@@ -3168,6 +3176,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     state_doc = S.load_state(worklist, session_id)
     _resprofile_report(worklist, session_id, state_doc)
     _soaked_pins_report(worklist, session_id, state_doc)
+    _renet_tests_report(worklist, session_id, state_doc)
     if _cfg_problems:
         outq_add(
             worklist,
@@ -3827,12 +3836,54 @@ def run_stop(event, event_ok, worklist, hook_file):
     def carried_through_pause(key):
         return check_tier(key) == T_OWED
 
-    def vadd(key, always, text):
+    def vadd(key, always, text, subject=None, latch_min=None):
+        # IDEMPOTENCE (agent/plans/PLAN-stop-hook-rulings-campaign.md section 3). A check that names WHAT it is about (`subject`, a string or a list of strings) is suppressed BEFORE it reaches `violations` when a live operator ruling covers every subject, or when the same subject set was surfaced less than `latch_min` minutes ago. Appending first and latching later was the
+        # three-identical-stops mechanism: a non-empty list blocks whether or not the text won rotation.
+        if subject is not None and vsuppress(key, subject, latch_min):
+            return
         violations.append((key, always, text))
+
+    # Keys whose display latch is a subject signature: spent when the key is SURFACED at all, quoted OR named in the rotating tail, because the named line carries the subject on its first line. The older one-shot latches (`solo-grind`) still spend only when quoted.
+    vsig_keys = set()
+
+    def vsuppress_count(key, why):
+        row = state_doc.setdefault("vsuppressed", {}).setdefault(key, {})
+        row[why] = int(row.get(why) or 0) + 1
+        row["last"] = C.stamp_now()
+
+    def vsuppress(key, subject, latch_min):
+        """True when this subject is ruled on or unchanged inside its window. Every error is False, the pre-ruling behaviour: the check fires."""
+        try:
+            subjects = [subject] if isinstance(subject, str) else [str(s) for s in subject]
+            if not subjects:
+                return False
+            if wl_ruling is not None and all(
+                wl_ruling.settled(root, key, wl_ruling.subject_sig(s)) for s in subjects
+            ):
+                vsuppress_count(key, "ruled")
+                return True
+            sig = hashlib.sha1("\n".join(sorted(subjects)).encode("utf-8")).hexdigest()[:16]
+            seen = (state_doc.get("vsig") or {}).get(key) or {}
+            if latch_min and seen.get("sig") == sig:
+                age = C.stamp_age_min(seen.get("at"))
+                if age is not None and age < latch_min:
+                    vsuppress_count(key, "unchanged")
+                    return True
+            vsig_keys.add(key)
+            display_latch[key] = lambda: state_doc.setdefault("vsig", {}).__setitem__(
+                key, {"sig": sig, "at": C.stamp_now()}
+            )
+            return False
+        except Exception:
+            return False
+
+    def vsig_clear(key):
+        with contextlib.suppress(Exception):
+            (state_doc.get("vsig") or {}).pop(key, None)
 
     # ---- LATCHES THAT MUST BE SPENT AT DISPLAY TIME, NOT COMPUTE TIME.
     #
-    # A handful of checks suppress themselves after speaking once: `submodule` writes a time-boxed `subptr` window, `solo-grind` writes `solognd` and never asks again. Both used to stamp that state inside their vadd block -- i.e. on the stop that COMPUTED them, whether or not the session ever saw a word of it. So a rotation miss (or, since the cadence landed, a paused stop)
+    # A handful of checks suppress themselves after speaking once: `submodule` writes a time-boxed `vsig` window (through vadd's subject= door), `solo-grind` writes `solognd` and never asks again. Both used to stamp that state inside their vadd block -- i.e. on the stop that COMPUTED them, whether or not the session ever saw a word of it. So a rotation miss (or, since the cadence landed, a paused stop)
     # silently opened a suppression window for a message nobody read, and the mechanism was strictly worse than having no latch at all: it went quiet about a real pointer AND left no trace of having done so.
     #
     # This is the tier comment's I1 corollary in code. Rather than promote these two to the invariant tier -- which would fix the swallowing by making them unskippable, at the cost of the scarcity that tier depends on -- the latch moves to the moment the text is actually rendered. Register the mutation here; `spend_display_latches` runs it for the keys this stop really shows.
@@ -4291,7 +4342,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _on_loop:
             _pf_rows = [r for r in _pf_rows if r["rel"] in _loop_plans]
         if not _pf_rows:
-            # A finished plan has no row at all, so the empty-text drop below never ran for exactly the plan that had just closed; eaf8611a9 put it there and the stale "29 open box(es), 0 ticked" kept being delivered.
+            # A finished plan has no row at all, so the empty-text drop below never ran for exactly the plan that had just closed; 4d9ea38b0 put it there and the stale "29 open box(es), 0 ticked" kept being delivered.
             outq_drop(state_doc, "plan-tasks")
         if _pf_rows:
             # S2: up to PLAN_PLANS_SHOW plans, sharing ONE quote budget. `render_all` owns both the cap and the remainder line that `render`'s n_more_plans used to carry, so the call site no longer does that arithmetic. THE ORDER, distinct from the advisory below and keyed apart from it on purpose: `plan-tasks` must never become a `vadd` (test-planfile.py pins that), because a plan
@@ -4389,41 +4440,30 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("diverged", False, M.V_DIVERGED % (pref, pahead, pref))
     # Before the PR checks, because a moved pointer changes what the PR IS.
     moves = wl_ci.submodule_pointer_moves(root)
+    # The pre-ruling latch's litter in a state doc written before this change; nothing reads it any more.
+    state_doc.pop("subptr", None)
     if moves:
-        # LATCHED PER (path, target sha), NOT silenced. Before this, an unpushed pointer re-fired on EVERY stop, including after a deliberate decision to keep it unpushed for now -- so a session doing exactly the right thing was told off once a minute, which is how a real warning becomes wallpaper.
-        #
-        # The latch is TIME-BOXED, never permanent, and that distinction is the whole design. A permanent "I acknowledged this" flag would go silent on a pointer somebody genuinely forgot, which is worse than the noise it removes: the check exists because a forgotten pointer ships whatever the parent last recorded. So it re-fires every SUBMODULE_LATCH_MIN, and a pointer moving to a
-        # NEW sha re-fires immediately because the signature changes.
-        _sub_sig = hashlib.sha1(
-            "|".join("%s@%s" % (p, b) for p, _a, b, _w in moves).encode("utf-8")
-        ).hexdigest()[:12]
-        _sub = state_doc.get("subptr") or {}
-        _same = _sub.get("sig") == _sub_sig
-        _sub_age = C.stamp_age_min(_sub.get("at")) if _same else None
-        # A RECORDED DECISION LENGTHENS THE LATCH; it never removes it. See submodule_decision_recorded: the third door (leave it, never stage it) is invisible to this warning, so a session that decided correctly was told off every fifteen minutes. A day is long enough to stop interrupting the work and short enough that a stale decision is re-examined rather than enshrined.
-        _decided = all(
-            submodule_decision_recorded(root, p, b, fold=fold, session_id=session_id)
-            for p, _a, b, _w in moves
-        )
-        _latch = SUBMODULE_DECIDED_LATCH_MIN if _decided else SUBMODULE_LATCH_MIN
-        _due = (not _same) or _sub_age is None or _sub_age >= _latch
-        if _due:
-            vadd(
-                "submodule",
-                False,
-                M.V_SUBMODULE_POINTER
-                % (
-                    len(moves),
-                    "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
+        # ONE SUBJECT PER (path, target sha), through vadd's subject= door (agent/plans/PLAN-stop-hook-rulings-campaign.md section 3). Suppressed BEFORE it reaches `violations` when every subject carries a live operator ruling (any session's, wl_ruling.settled) or when the same subject set was already shown less than SUBMODULE_LATCH_MIN ago. The window opens only on a stop that
+        # SURFACED the text, quoted or named (the display latch), and a new sha is a new subject, so it fires at once.
+        _sub_subjects = ["%s@%s" % (p, b) for p, _a, b, _w in moves]
+        vadd(
+            "submodule",
+            False,
+            M.V_SUBMODULE_POINTER
+            % (
+                len(moves),
+                "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
+                "\n".join(
+                    "        worklist.py --rule %s submodule %s '<why>'" % (me8, s)
+                    for s in _sub_subjects
                 ),
-            )
-            # DISPLAY-TIME, see spend_display_latches: stamping here used to open the suppression window on a stop that rotated the text away.
-            display_latch["submodule"] = lambda sig=_sub_sig: state_doc.__setitem__(
-                "subptr", {"sig": sig, "at": C.stamp_now()}
-            )
-    elif state_doc.get("subptr"):
-        # Pointers match again (pushed, or reverted): drop the latch so the next genuine move fires at once rather than inheriting a stale window.
-        state_doc.pop("subptr", None)
+            ),
+            subject=_sub_subjects,
+            latch_min=SUBMODULE_LATCH_MIN,
+        )
+    else:
+        # Pointers match again (pushed, or reverted): drop the window so the next genuine move fires at once rather than inheriting a stale one.
+        vsig_clear("submodule")
     # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before the freshness check because a saturated queue changes what that check should say. A slack-granter must fail toward pressure: any error here reads as "unknown", which is exactly today's behavior.
     try:
         qstate, qdetail = wl_ci.ci_queue_state(root, worklist, session_id)
@@ -5027,6 +5067,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         "aimless",
         "stale",
         "waitled",
+        "unfocused",
     ):
         vadd(
             "agent-state",
@@ -5058,6 +5099,24 @@ def run_stop(event, event_ok, worklist, hook_file):
                 False,
                 M.V_AGENT_STILL_ABSENT % S.agent_session_slug(session_id),
             )
+    # ---- THE BIG PIECES DRIFT (agent/plans/PLAN-stop-hook-rulings-campaign.md section 5). A well-shaped STATE.md carries `## Big pieces`; what it names is compared against the census's derived mark, so a section remembered across a rewrite rather than re-derived fires here. Rotating, idempotent per drift subject, and silent on any error.
+    if something_remains and astate == "ok" and _atext:
+        with contextlib.suppress(Exception):
+            _bp = bigpieces_drift(root, _atext)
+            if _bp is not None:
+                _bp_text, _bp_subjects = _bp
+                vadd(
+                    "bigpieces",
+                    False,
+                    M.V_BIGPIECES_DRIFT
+                    % {
+                        "slug": S.agent_session_slug(session_id),
+                        "body": _bp_text,
+                        "me": me8,
+                    },
+                    subject=_bp_subjects,
+                    latch_min=BIGPIECES_LATCH_MIN,
+                )
     # NO PEER LISTING since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.3): the `agent-peers`, `others` and `others-items` advisories had no reader under the single-terminal ruling. Orphaned items and handoff candidates -- work nobody present owns -- are still reported below.
     # v18: unread sub-agent reports, on ORDINARY stops as well as at the two boundaries wl_report already covers by hook. SessionStart and PostCompact catch a fresh or compacted session; this catches the far commoner case of a long-running session whose teammate finished twenty minutes ago and whose SendMessage has since scrolled out of reach.
     #
@@ -5367,20 +5426,30 @@ def run_stop(event, event_ok, worklist, hook_file):
         _deflect_fired, _deflect_text = False, ""
     if _deflect_fired:
         vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
+    # BACKGROUND SHELL HYGIENE (wl_bgsweep.findings): undeclared orphans, plus the declared shells no declaration excuses -- pure wait loops past BGSWEEP_AGE_MIN, duplicate waiters on one target, and shells a finished sub-agent left running. Kept by the PR loop's stand-down (wl_standdown._PR_LOOP_ONLY): hygiene of this session's own process tree is not plan scope.
     try:
-        _bg_orphans = wl_bgsweep.sweep(live_ids={str(b.get("id")) for b in live_bg})
-    except Exception:
-        _bg_orphans = []
-    if _bg_orphans:
-        _rows = "\n".join(
-            "    pid %d, %s min old: %s"
-            % (pid, ("%.1f" % age_min) if age_min is not None else "unknown", cmdline[:70])
-            for pid, age_min, cmdline in _bg_orphans
+        _bg_find = wl_bgsweep.findings(
+            live_ids={str(b.get("id")) for b in live_bg},
+            owners=lambda ages: wl_bgsweep.owner_context(event, event.get("cwd"), session_id, ages),
         )
+    except Exception:
+        _bg_find = []
+    if _bg_find:
+        _bg_rows = [
+            M.V_BG_ORPHAN_ROW
+            % {
+                "pid": _f.pid,
+                "age": ("%.1f" % _f.age_min) if _f.age_min is not None else "unknown",
+                "why": wl_bgsweep.describe(_f),
+                "cmd": _f.cmd[:160],
+                "kill": wl_bgsweep.kill_command(_f),
+            }
+            for _f in _bg_find
+        ]
         vadd(
             "bg-orphan",
             False,
-            M.V_BG_ORPHAN % (len(_bg_orphans), wl_bgsweep.BGSWEEP_AGE_MIN, _rows + "\n"),
+            M.V_BG_ORPHAN % (len(_bg_find), wl_bgsweep.BGSWEEP_AGE_MIN, "".join(_bg_rows)),
         )
     if unstated:
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
@@ -5791,6 +5860,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         spend_display_latches(
             [k for k, a, _t in violations if a] + ([pick[0]] if pick is not None else [])
         )
+        # A subject latch is spent by a NAMED line too (see vsig_keys): every rotating key is named in the tail below.
+        spend_display_latches([k for k, _a, _t in rot if k in vsig_keys])
         # THE ROTATING HINT RIDES A BLOCK TOO, at most once per BLOCK_HINT_MIN (agent/plans/PLAN-stop-hook-continuity.md P0.5). wl_hints says a hint "rides an output the stop was already going to produce", and a block is such an output; allow-only placement meant a busy session saw none of the corpus. Same ledger as the allow path, so the round-robin is shared.
         _block_hint = ""
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop

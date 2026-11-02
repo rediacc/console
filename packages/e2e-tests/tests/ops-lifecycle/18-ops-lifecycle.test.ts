@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getOpsManager } from '../../src/utils/bridge/OpsManager';
+import { getOpsManager } from '../../src/utils/renet-functions/OpsManager';
 import { InfrastructureManager } from '../../src/utils/infrastructure/InfrastructureManager';
 
 /**

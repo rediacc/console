@@ -9,6 +9,7 @@ import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 import {
   buildKeyDeploymentScript,
   buildKeyRemovalScript,
+  COUNT_UNGUIDED_KEY_LINES_SCRIPT,
   deployAllRepoKeys,
   deployRepoKey,
   deployRepoKeyIfNeeded,
@@ -56,7 +57,6 @@ vi.mock('../../utils/repo-executor.js', () => ({
 const DS = WK_DATASTORE_PATH;
 
 const PUB_KEY = `ssh-ed25519 ${'A'.repeat(60)} test@rediacc`;
-const KEY_PREFIX = PUB_KEY.slice(0, 50);
 
 describe('buildKeyDeploymentScript', () => {
   it('produces the exact deployment script (byte-identical snapshot)', () => {
@@ -68,8 +68,8 @@ describe('buildKeyDeploymentScript', () => {
       'SSH_DIR="$HOME/.ssh"',
       'AUTH_KEYS="$SSH_DIR/authorized_keys"',
       'mkdir -p "$SSH_DIR" && chmod 700 "$SSH_DIR"',
-      `KEY_PREFIX="${KEY_PREFIX}"`,
-      `if [ -f "$AUTH_KEYS" ] && grep -qF "$KEY_PREFIX" "$AUTH_KEYS"; then TEMP=$(mktemp) && grep -vF "$KEY_PREFIX" "$AUTH_KEYS" > "$TEMP" 2>/dev/null || true && mv "$TEMP" "$AUTH_KEYS"; fi`,
+      `KEY_BLOB="${PUB_KEY.split(' ')[1]}"`,
+      `if [ -f "$AUTH_KEYS" ] && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) f = 1 } END { exit !f }' "$AUTH_KEYS"; then TEMP=$(mktemp) && awk -v b="$KEY_BLOB" '{ for (i = 1; i <= NF; i++) if ($i == b) next } 1' "$AUTH_KEYS" > "$TEMP" && mv "$TEMP" "$AUTH_KEYS" || { rm -f "$TEMP"; echo "authorized_keys rewrite failed; key not appended" >&2; exit 1; }; fi`,
       `echo 'command="${REMOTE_RENET_PATH} sandbox-gateway myrepo --guid guid-123 --datastore ${DS}" ${PUB_KEY}' >> "$AUTH_KEYS"`,
       'chmod 600 "$AUTH_KEYS"',
     ].join('; ');
@@ -78,11 +78,70 @@ describe('buildKeyDeploymentScript', () => {
     expect(script).toMatchSnapshot();
   });
 
-  it('omits the --guid flag when no repository GUID is given', () => {
-    const script = buildKeyDeploymentScript('myrepo', PUB_KEY, undefined, DS);
-    expect(script).toContain(`sandbox-gateway myrepo --datastore ${DS}" ${PUB_KEY}`);
-    expect(script).not.toContain('--guid');
-    expect(script).toMatchSnapshot();
+  it('replaces only the line holding the same blob, not a key sharing its first 50 characters, in a real shell', () => {
+    const head = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI';
+    const keyA = `${head}AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
+    const keyB = `${head}AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB`;
+    expect(keyA.slice(0, 50)).toBe(keyB.slice(0, 50));
+    const home = mkdtempSync(join(tmpdir(), 'keydeploy-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      const keys = join(home, '.ssh', 'authorized_keys');
+      const lineB = `command="renet sandbox-gateway other --guid g2 --datastore /mnt/x" ${keyB} other`;
+      writeFileSync(keys, `ssh-rsa team\n${lineB}\n`);
+
+      execFileSync('bash', ['-c', buildKeyDeploymentScript('repoa', keyA, 'g1', DS)], {
+        env: { ...process.env, HOME: home },
+      });
+      execFileSync('bash', ['-c', buildKeyDeploymentScript('repoa', keyA, 'g1', DS)], {
+        env: { ...process.env, HOME: home },
+      });
+
+      const lines = readFileSync(keys, 'utf8').trim().split('\n');
+      expect(lines).toContain(lineB);
+      expect(lines.filter((l) => l.includes(keyA))).toHaveLength(1);
+      expect(lines).toHaveLength(3);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('fails without appending when rewriting the old line fails, so the key never lands twice', () => {
+    const key = `ssh-ed25519 ${'B'.repeat(60)}`;
+    const home = mkdtempSync(join(tmpdir(), 'keydeploy-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      mkdirSync(join(home, 'bin'));
+      const keys = join(home, '.ssh', 'authorized_keys');
+      const before = `ssh-rsa team\ncommand="old" ${key}\n`;
+      writeFileSync(keys, before);
+      // An awk whose rewrite pass (the program with `next`) fails, as on a full disk.
+      writeFileSync(
+        join(home, 'bin', 'awk'),
+        '#!/bin/bash\ncase "$*" in *next*) exit 2;; *) exec /usr/bin/env -i PATH=/usr/bin:/bin awk "$@";; esac\n',
+        { mode: 0o755 }
+      );
+      expect(() =>
+        execFileSync('bash', ['-c', buildKeyDeploymentScript('repoa', key, 'g1', DS)], {
+          env: { ...process.env, HOME: home, PATH: `${join(home, 'bin')}:${process.env.PATH}` },
+          stdio: 'pipe',
+        })
+      ).toThrow(/authorized_keys rewrite failed/);
+      expect(readFileSync(keys, 'utf8')).toBe(before);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a public key without a base64 blob', () => {
+    expect(() => buildKeyDeploymentScript('r', 'ssh-ed25519', 'g', DS)).toThrow(/no base64 blob/);
+    expect(() => buildKeyDeploymentScript('r', 'ssh-ed25519 a"b', 'g', DS)).toThrow(
+      /no base64 blob/
+    );
+  });
+
+  it('refuses to build a key line without a repository GUID', () => {
+    expect(() => buildKeyDeploymentScript('myrepo', PUB_KEY, '', DS)).toThrow(/without a GUID/);
   });
 
   it('binds a custom datastore after the --guid flag', () => {
@@ -195,7 +254,10 @@ describe('deployRepoKeyIfNeeded', () => {
   });
 
   it('releases the lease and warns instead of throwing when exec fails', async () => {
-    mockConfigService.getRepository.mockResolvedValue({ sshPublicKey: PUB_KEY });
+    mockConfigService.getRepository.mockResolvedValue({
+      sshPublicKey: PUB_KEY,
+      repositoryGuid: 'guid-123',
+    });
     mockExec.mockRejectedValueOnce(new Error('boom'));
     const warnSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
@@ -219,19 +281,17 @@ describe('deployAllRepoKeys', () => {
     mockConfigService.listRepositories.mockResolvedValue([
       { name: 'a', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-a' } },
       { name: 'no-key', config: {} },
-      { name: 'b', config: { sshPublicKey: PUB_KEY } },
+      { name: 'b', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-x' } },
     ]);
 
     const deployed = await deployAllRepoKeys('m1');
 
     expect(deployed).toBe(2);
     expect(mockAcquire).toHaveBeenCalledExactlyOnceWith('m1');
-    expect(mockExec).toHaveBeenCalledTimes(2);
+    expect(mockExec).toHaveBeenCalledTimes(3);
+    expect(mockExec).toHaveBeenNthCalledWith(3, COUNT_UNGUIDED_KEY_LINES_SCRIPT);
     expect(mockExec).toHaveBeenNthCalledWith(1, buildKeyDeploymentScript('a', PUB_KEY, 'g-a', DS));
-    expect(mockExec).toHaveBeenNthCalledWith(
-      2,
-      buildKeyDeploymentScript('b', PUB_KEY, undefined, DS)
-    );
+    expect(mockExec).toHaveBeenNthCalledWith(2, buildKeyDeploymentScript('b', PUB_KEY, 'g-x', DS));
     expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 
@@ -246,8 +306,8 @@ describe('deployAllRepoKeys', () => {
 
   it('continues past per-repo failures and still releases once', async () => {
     mockConfigService.listRepositories.mockResolvedValue([
-      { name: 'a', config: { sshPublicKey: PUB_KEY } },
-      { name: 'b', config: { sshPublicKey: PUB_KEY } },
+      { name: 'a', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-x' } },
+      { name: 'b', config: { sshPublicKey: PUB_KEY, repositoryGuid: 'g-x' } },
     ]);
     mockExec.mockRejectedValueOnce(new Error('transient'));
 
@@ -255,6 +315,31 @@ describe('deployAllRepoKeys', () => {
 
     expect(deployed).toBe(1);
     expect(mockRelease).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('COUNT_UNGUIDED_KEY_LINES_SCRIPT', () => {
+  it('counts only sandbox-gateway lines without --guid, in a real shell', () => {
+    const home = mkdtempSync(join(tmpdir(), 'keycount-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      writeFileSync(
+        join(home, '.ssh', 'authorized_keys'),
+        [
+          'command="renet sandbox-gateway a --guid g1 --datastore /d" ssh-ed25519 A',
+          'command="renet sandbox-gateway b --datastore /d" ssh-ed25519 B',
+          'command="renet sandbox-gateway c" ssh-ed25519 C',
+          'ssh-rsa team',
+          '',
+        ].join('\n')
+      );
+      const out = execFileSync('bash', ['-c', COUNT_UNGUIDED_KEY_LINES_SCRIPT], {
+        env: { ...process.env, HOME: home },
+      });
+      expect(out.toString().trim()).toBe('2');
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });
 

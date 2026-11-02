@@ -10,6 +10,7 @@ WHAT DID NOT MOVE. Each guard keeps its own `run()`, its own `MESSAGE`, its own 
 scan are one piece of logic now instead of two.
 """
 
+import os
 import re
 
 from rediacc_hooks import hookio, proc
@@ -35,10 +36,34 @@ def pattern_for(base):
     return hookio.rx(r"(^|[/{S}])[") + base[:1] + r"]" + esc
 
 
-def live_shells(pat, limit):
+def _same_script(rargs_first4, base, target, target_cwd, pid):
+    """Whether a running shell's script argument IS `target`, by resolved full path.
+
+    The pgrep pattern matches on the BASENAME alone, so `/tmp/smtpwork/run.sh` was refused while an unrelated `/tmp/t9deploy/run.sh` ran (2026-10-23). Both sides go through `os.path.realpath`: the target against the hook's cwd, a relative argv word against the process's own working directory (`proc.cwd`). A word whose directory cannot be resolved (process gone, cwd unreadable) still counts as a match, the direction this guard fails safe in.
+    """
+    # `~` is the shell's to expand, so a target spelled `~/run.sh` is expanded here and in each argv word before either side is resolved.
+    want = os.path.realpath(os.path.join(target_cwd, os.path.expanduser(target)))
+    for word in rargs_first4.split(" "):
+        if word.rsplit("/", 1)[-1] != base:
+            continue
+        expanded = os.path.expanduser(word)
+        if os.path.isabs(expanded):
+            root = "/"
+        else:
+            root = proc.cwd(pid)
+            if root is None:
+                return True
+        if os.path.realpath(os.path.join(root, expanded)) == want:
+            return True
+    return False
+
+
+def live_shells(pat, limit, target, cwd=None):
     """The `for RPID in $(pgrep -f -- "$PAT")` loop, as its accumulated text.
 
     `pgrep -af` matches any process whose ARGUMENTS mention the name, which is the very trap this guard exists to prevent, wearing a different hat: a running `claude -p '<huge prompt text>'` invocation can carry a filename embedded in its prompt and be scored as "executing" it, though no interpreter is running the script at all.
+
+    `target` is REQUIRED: a caller that omitted it would silently fall back to the basename-only scan this function stopped doing, so the omission is a TypeError instead of a quiet regression.
 
     A process is RUNNING the script only if an interpreter is executing it. So require the matching process to BE a shell, and the name to sit in the first few argv slots where a script argument lives, rather than buried in a prose payload.
     """
@@ -59,6 +84,8 @@ def live_shells(pat, limit):
         if not hookio.grep_q(pat, first4):
             continue
         if hookio.grep_q(HOOK_CHAIN, rargs):
+            continue
+        if not _same_script(first4, target.rsplit("/", 1)[-1], target, cwd or os.getcwd(), rpid):
             continue
         running += "%d %s\n" % (rpid, rargs[:80])
     # `$(printf '%s' "$running" | head -N)`

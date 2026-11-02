@@ -176,7 +176,7 @@ sudo bash -c '
 set -e
 for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
     [ -S "$sock" ] || continue
     projects=$(docker -H unix://$sock ps -a --format "{{index .Labels \\"com.docker.compose.project\\"}}" 2>/dev/null | sort -u | grep -v "^$" || true)
     project_count=$(echo "$projects" | grep -c . || true)
@@ -198,7 +198,7 @@ COUNTER_SOCKETS_CMD = (
     """sudo bash -c '
       for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
         [ -S "$sock" ] || continue
         if [ -n "$(docker -H unix://$sock ps --filter name=counter --format "{{.Names}}" 2>/dev/null | grep counter)" ]; then
           echo "$sock"
@@ -216,7 +216,7 @@ DIAG_DB_LOGS = (
     """sudo bash -c '
       for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
         echo "=== $sock ==="
         docker -H unix://$sock ps -a --format "{{.ID}} {{.Names}} {{.Status}}" 2>/dev/null || true
         cid=$(docker -H unix://$sock ps -a --filter name=db --format "{{.ID}}" 2>/dev/null | head -1)
@@ -819,9 +819,11 @@ def _first_counter_socket(state: _State) -> str:
     """`counter_sockets | head -1`, with pipefail.
 
     A real pipeline rather than a slice of the captured list, because `head` is an external and the call log is what the differential compares.
+
+    A line in hand is the answer, whatever ssh then reports: once the parent and the fork both run a counter, the remote writes a second line after `head` has gone, and ssh exits 255 on the closed pipe (run 41348962671; `ssh <vm> 'echo one; sleep 0.5; echo two' | head -1` measured 255,0 on a dev VM). An empty or partial line keeps the failure, since a connection dropped mid-line yields a fragment.
     """
     code, out = _pipe2(state.ssh_argv(COUNTER_SOCKETS_CMD), ["head", "-1"], capture=True)
-    if code != 0:
+    if code != 0 and not out.endswith(b"\n"):
         raise _ExitScriptError(code)
     return out.decode("utf-8", "surrogateescape").rstrip("\n")
 

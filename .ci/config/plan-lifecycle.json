@@ -89,8 +89,19 @@
     "not buy a plan ninety days of freshness it did not earn.",
     "",
     "Both live here rather than inlined for the reason the whole file exists: the",
-    "sweeper DELETES on them and the gate REPORTS on them, so a second copy would",
-    "let one half delete what the other half still called current."
+    "sweeper and the gate both read them, so a second copy would let one half act",
+    "on what the other half still called current.",
+    "",
+    "THE TWO CLOCKS END DIFFERENTLY, by the operator's ruling of 2026-10-28",
+    "(ASKED:2026-10-28T10:58Z, 'they should be asked to the operator to keep or",
+    "archive'). A terminal plan past terminal_days is DELETED by",
+    "`check_plan_folders.py --sweep --write`, leaving a tombstone. A backlog plan",
+    "past backlog_days is NEVER deleted or moved by the sweep: F4 reds on it and",
+    "the sweep lists it as an operator keep-or-archive question. The answer is",
+    "recorded with `--keep <plan> --asked <minute>`, which writes a `Kept:` header",
+    "and restarts the backlog clock from that date, or `--archive <plan> --asked",
+    "<minute>`, which sets `Status: removed`, moves the plan into _removed/ and",
+    "hands it to terminal_days."
   ],
   "archive_dir": "agent/archive/plans",
   "plan_globs": [

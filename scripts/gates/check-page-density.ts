@@ -100,10 +100,10 @@ interface Probe {
   ctaInFold: boolean;
   ctaLabel: string;
   ctaDepthPct: number;
-  media: { sel: string; deadFraction: number; mountH: number; videoH: number }[];
+  media?: { sel: string; deadFraction: number; mountH: number; videoH: number }[];
   techDiff: { cells: number; visibleLabels: number; headerVisible: boolean } | null;
-  hiddenOverflow: { sel: string; right: number; clientWidth: number }[];
-  overlayCentring: { sel: string; centre: number; viewportCentre: number; offset: number }[];
+  hiddenOverflow?: { sel: string; right: number; clientWidth: number }[];
+  overlayCentring?: { sel: string; centre: number; viewportCentre: number; offset: number }[];
 }
 
 /**

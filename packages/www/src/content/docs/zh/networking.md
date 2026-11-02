@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 6
 language: zh
-sourceHash: "6c5538c8919e9089"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "bbb1852c28d70d69"
+sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
 # 网络
@@ -40,7 +40,7 @@ Rediacc 使用双组件代理系统将外部流量路由到容器：
                ↓ 每 5 秒轮询
            路由服务器（发现容器）
                ↓ 检查标签
-           Docker 守护进程（/var/run/rediacc/docker-*.sock）
+           Docker 守护进程（/var/run/rediacc/net-*/docker-*.sock）
                ↓
            容器（绑定到 127.x.x.x 回环 IP）
 ```
@@ -206,7 +206,14 @@ Let's Encrypt 证书从签发到到达每个仓库容器的完整路径：
 
 1. **在宿主机签发。** 机器级 Traefik 容器（`rediacc-proxy`，部署于 `/opt/rediacc/proxy/`）负责 ACME 续期。它将所有状态存储在宿主机上的 `/opt/rediacc/proxy/letsencrypt/acme.json` 中。续期在到期前约 30 天自动触发；只要配置了 `--cf-dns-token`，无需任何操作员干预。
 
-2. **按仓库转储（可选）。**需要在其自身容器内存放证书文件的服务（例如直接读取 `.pem` 文件的邮件服务器），会在自身旁边部署一个小型 `traefik-certs-dumper` 容器。转储器以只读方式绑定挂载 `/opt/rediacc/proxy/letsencrypt`，并将提取的证书和密钥作为 `cert.pem` / `key.pem` 写入仓库的数据卷。为使其正常工作，每个仓库的 Docker 守护进程必须在其挂载命名空间允许列表中包含 `/opt/rediacc/proxy`。默认情况下已包含此项。
+2. **按仓库导出（可选）。** 需要在自身容器内使用证书文件的服务（例如直接读取 `.pem` 的邮件服务器），在其被路由的容器上添加标签 `rediacc.cert_export=true` 即可加入。`renet cert export` 在机器上以 root 身份运行，由 5 分钟定时器触发，路由器的路由发生变化时也会再次触发（两者均由 `renet cert export-install` 在机器设置时安装）。它读取 `acme.json`，把该仓库自己的证书（仅限其 Traefik `Host`/`HostSNI` 规则所指定的主机）以原子方式写入 `<repo mount>/data/tls/<domain>/cert.pem` 和 `key.pem`，文件归挂载点所有者所有。已停止仓库的主机仍算作它自己的，因此任何仓库都不会拿到别的仓库的证书。容器无需访问 `/opt/rediacc/proxy`：每个仓库的 Docker API 网关会拒绝该绑定，所以 `traefik-certs-dumper` 已无法运行。
+
+   在 compose 文件中以只读方式挂载该目录。导出写在仓库挂载点根目录，因此位于 `mail/` 等子目录中的 compose 文件通过 `../data/tls/<domain>/` 访问它：
+
+   ```yaml
+   volumes:
+     - ../data/tls/mail.example.com/:/etc/dms/tls-acme/:ro
+   ```
 
 3. **客户端缓存（`rediacc.json`）。** CLI 在配置文件的 `acmeCertCache` 下缓存 `acme.json` 的压缩副本，以 `baseDomain` 为键。这使多台机器可以共享证书（通过 `rdc machine infra cert push <machine>`），并充当离线清单。
 
@@ -222,7 +229,7 @@ Let's Encrypt 证书从签发到到达每个仓库容器的完整路径：
 - `notAfter` 超过 7 天的证书将被彻底删除。它们已失效，只会使缓存膨胀。
 - `rdc config prune --certs-only` 清除所有内容；`rdc config prune --certs-only` 显示清单。
 
-**故障排查：** 如果 `traefik-certs-dumper` 以 `/traefik/acme.json: no such file or directory` 崩溃，说明每个仓库的守护进程看不到宿主机的 letsencrypt 存储。请验证 (a) 宿主机上存在 `/opt/rediacc/proxy/letsencrypt/acme.json`（这是宿主机级 `rediacc-proxy` 的职责），以及 (b) 每个仓库的守护进程是以足够新版本的 renet 启动的（该版本将 `/opt/rediacc/proxy` 加入允许列表）。升级 renet 后使用 `rdc repo up` 重新部署仓库以应用更改。
+**故障排查：** 如果 `data/tls/<domain>/` 一直为空，请检查：(a) 被路由的容器带有 `rediacc.cert_export=true`；(b) 域名出现在其某条 Traefik `Host`/`HostSNI` 规则中，且主机上的 `/opt/rediacc/proxy/letsencrypt/acme.json` 里有它的证书；(c) `systemctl status rediacc-cert-export.timer` 显示定时器处于活动状态。`sudo renet cert export-install` 可重新安装单元，`sudo systemctl start rediacc-cert-export.service` 可立即导出。
 
 > **实验性：** 自动同步节奏和基于过期的清理在 renet 0.9+ 中推出。旧版 CLI/renet 仅使用通过 `rdc config prune --certs-only` 的纯手动同步。
 

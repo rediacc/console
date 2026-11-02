@@ -147,7 +147,7 @@ const DAEMON_LOCAL_ENV = new Set([
 export function environmentIdentity(env: NodeJS.ProcessEnv = process.env): string {
   const lines = Object.keys(env)
     .filter((k) => k.startsWith('REDIACC_') && !DAEMON_LOCAL_ENV.has(k))
-    .sort()
+    .sort((a, b) => Number(a > b) - Number(a < b))
     .map((k) => `${k}=${env[k] ?? ''}`);
   return crypto.createHash('sha256').update(lines.join('\n')).digest('hex').slice(0, 16);
 }

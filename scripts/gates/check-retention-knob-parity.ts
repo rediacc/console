@@ -9,7 +9,7 @@
  *   2. private/account/src/dto/backup.dto.ts          what PUT /retention accepts
  *   3. private/account/src/services/backup-gc.service.ts
  *                                                     what the sweep HONOURS
- *   4. packages/cli/src/commands/backup-storage.ts    the --keep-* flags
+ *   4. packages/cli/src/commands/backup-retention-commands.ts    the --keep-* flags
  *
  * Add a knob to 1, 2 and 4 but forget 3 and the operator declares a rule that
  * silently does nothing: the CLI accepts it, the DTO validates it, the row is
@@ -96,7 +96,7 @@ const LAYERS: Layer[] = [
   },
   {
     name: 'CLI flags (how the operator sets it)',
-    file: 'packages/cli/src/commands/backup-storage.ts',
+    file: 'packages/cli/src/commands/backup-retention-commands.ts',
     // keepLast -> '--keep-last <n>'. The trailing argument placeholder and the quote are load-bearing: a bare `--keep-last` is a SUBSTRING of a renamed `--keep-lastXX`, so renaming a flag left the gate green.
     spell: (k) => `'--${k.replace(/([A-Z])/g, '-$1').toLowerCase()} <n>'`,
   },

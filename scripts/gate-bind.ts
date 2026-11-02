@@ -285,7 +285,7 @@ export function bind(file: string, source: string): Bound | null {
   const denied = new Set(h.needsNot);
   const needs = [...new Set([...h.needs, ...inferredNeeds(source)])]
     .filter((n) => !denied.has(n))
-    .sort();
+    .sort((a, b) => Number(a > b) - Number(a < b));
   return {
     file,
     id: h.id ?? derivedId(file),
@@ -699,7 +699,7 @@ export function emitReceiptStep(
 }
 
 /**
- * The repository's artifact retention, from the record check:ci-workflows judges every `retention-days` against (operator ruling 2026-10-07, "Keep 3 days"). Read, not restated: a literal here was rewritten to 7 by the next `--write` after 19ec49414 set it to 3 by hand, and check:ci-workflows refused the generated line.
+ * The repository's artifact retention, from the record check:ci-workflows judges every `retention-days` against (operator ruling 2026-10-07, "Keep 3 days"). Read, not restated: a literal here was rewritten to 7 by the next `--write` after 0cba2d0a2 set it to 3 by hand, and check:ci-workflows refused the generated line.
  */
 function retentionDays(): number {
   const days = (JSON.parse(read(RETENTION_RECORD)) as { days?: unknown }).days;
@@ -760,7 +760,7 @@ export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[
       ? [
           '        env:',
           ...Object.keys(b.env)
-            .sort()
+            .sort((a, b) => Number(a > b) - Number(a < b))
             .map((k) => `          ${k}: ${(b.env as Record<string, string>)[k]}`),
         ]
       : [];
@@ -811,7 +811,12 @@ export function classifyDrops(
   manifest: string
 ): { claimed: string[]; unclaimed: string[] } {
   const stepOf = (d: string) => d.slice(d.indexOf(': ') + 2);
-  const live = dropped.filter((d) => !emitted.has(d) && !allowDrop.has(stepOf(d)));
+  // MOVED, not dropped: the same rewrite emits the step into another lane where it was NOT before. `dropped` lists every step the rewritten regions held before the rewrite, so an emitted `<lane>: <step>` absent from it is new to that lane. A same-named step another lane already had (a generic `Lint`) excuses nothing, and `emitted` comes from one workflow's lanes, so the step is regenerated from its gate in the new lane.
+  const before = new Set(dropped);
+  const arrived = new Set([...emitted].filter((e) => !before.has(e)).map(stepOf));
+  const live = dropped.filter(
+    (d) => !emitted.has(d) && !arrived.has(stepOf(d)) && !allowDrop.has(stepOf(d))
+  );
   return {
     claimed: live.filter((d) => manifest.includes(`step: '${stepOf(d)}'`)),
     unclaimed: live.filter((d) => !manifest.includes(`step: '${stepOf(d)}'`)),
@@ -1090,7 +1095,7 @@ export function headerLines(
   // `tsx X --selftest && tsx X`, and `tsx X && tsx <a different control file>`. The
   // second is `selftest: true`; the other two are genuinely per-gate, and inventing
   // derivation rules for them would encode five gates' habits as a convention.
-  const wanted = r.run ?? '';
+  const wanted = r.run;
   // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on the flag only there. For a .sh or .py gate derivedRun(f, true) equals derivedRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
   // occurrences of --selftest. Roughly 30 headers claimed a leg that does not exist. Inert for binding, and a declaration that lies is worse than a missing one, because the next reader trusts it.
   const selftestIsReal = r.file.endsWith('.ts');
@@ -1517,7 +1522,7 @@ function selftest(endToEnd = false): number {
       kind: 'step',
       step: 'Unused exports (knip)',
       needs: [],
-    }).some((l) => l === '        run: npm run lint:unused')
+    }).includes('        run: npm run lint:unused')
   );
 
   // The guard step is a PER-LANE fact. quality-www-build's gates hang on
@@ -1867,6 +1872,26 @@ function selftest(endToEnd = false): number {
   ck(
     'CONTROL: --allow-drop matches the STEP, not a prefix of it, so it cannot over-silence',
     classifyDrops(DROP, none, new Set(['Check']), '').unclaimed.length === 1
+  );
+  ck(
+    'a step dropped from one lane and emitted into another lane MOVED, in neither bucket',
+    classifyDrops(DROP, new Set(['quality-security: Check X']), none, MANIFEST_WITH).claimed
+      .length === 0 &&
+      classifyDrops(DROP, new Set(['quality-security: Check X']), none, '').unclaimed.length === 0
+  );
+  ck(
+    'CONTROL: a same-named step another lane ALREADY held does not excuse a real drop',
+    classifyDrops(
+      [...DROP, 'quality-security: Check X'],
+      new Set(['quality-security: Check X']),
+      none,
+      MANIFEST_WITH
+    ).claimed.length === 1
+  );
+  ck(
+    'CONTROL: a different step emitted elsewhere does not excuse the drop',
+    classifyDrops(DROP, new Set(['quality-security: Check Y']), none, MANIFEST_WITH).claimed
+      .length === 1
   );
   ck(
     'CONTROL: an empty drop list is silent, so the guard cannot fire on a clean rewrite',
@@ -2842,7 +2867,7 @@ function main(argv: string[]): void {
     if (onlyLane !== undefined && scoped.size === 0) {
       console.error(
         `✗ --lane ${onlyLane}: no declared gate places into that lane. Lanes holding ` +
-          `declared gates right now: ${[...byLane.keys()].sort().join(', ')}`
+          `declared gates right now: ${[...byLane.keys()].sort((a, b) => Number(a > b) - Number(a < b)).join(', ')}`
       );
       process.exit(1);
     }

@@ -82,6 +82,16 @@ for repo in (REPO, OUTSIDE):
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "seed")
 
+# A submodule root: a `.git` file makes `subm` a gitlink-shaped directory (#e59c13a0).
+(REPO / "subm").mkdir()
+git(REPO / "subm", "init", "-q", "--initial-branch=main")
+(REPO / "subm/inner.ts").write_text("writer edit\n", encoding="utf-8")
+# A submodule one directory down: a directory pathspec over `wrap` contains it without naming it.
+(REPO / "wrap/nested").mkdir(parents=True)
+git(REPO / "wrap/nested", "init", "-q", "--initial-branch=main")
+(REPO / "wrap/nested/inner.ts").write_text("writer edit\n", encoding="utf-8")
+(REPO / ".git/info/exclude").write_text("subm/\nwrap/\n", encoding="utf-8")
+
 SESSION = "c0ffee00-live-writer-suite-000000000000"
 CONFIG = pathlib.Path(tempfile.mkdtemp(prefix="config-", dir=RUN_TMP))
 LIVE, DONE, CHILD = "asuitelivewriter00001", "asuitedonewriter00002", "asuitechildwriter0003"
@@ -91,8 +101,21 @@ guard.write_session(
     REPO,
     SESSION,
     [
-        (LIVE, "suite live writer", [str(REPO / "src/live.ts"), str(REPO / "out")], True, ""),
+        (
+            LIVE,
+            "suite live writer",
+            [str(REPO / "src/live.ts"), str(REPO / "out"), str(REPO / "subm/inner.ts")],
+            True,
+            "",
+        ),
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
+        (
+            "asuitenestwriter00005",
+            "suite nested-submodule writer",
+            [str(REPO / "wrap/nested/inner.ts")],
+            True,
+            "",
+        ),
         # Finished, but its parent is live: its edit is part of unfinished work.
         (CHILD, "suite sub-writer", [str(REPO / "lib/child.py")], False, LIVE),
         # Finished under a finished parent, two levels below the live writer.
@@ -153,6 +176,57 @@ CASES = [
         SESSION,
     ),
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
+    # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
+    (
+        "a submodule root pathspec does not cover its files",
+        "git commit -F m -- subm",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    (
+        "a submodule root with a trailing slash does not cover its files",
+        "git commit -F m -- subm/",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    (
+        "an absolute submodule root does not cover its files",
+        "git commit -F m -- %s/subm" % REPO,
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    # A directory pathspec that CONTAINS a submodule takes the gitlink, not the files inside it (a2e29702.2).
+    (
+        "a directory containing a submodule does not cover the submodule's files",
+        "git commit -F m -- wrap",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    (
+        "CONTROL: the same file named directly inside the nested submodule",
+        "git commit -F m -- wrap/nested/inner.ts",
+        None,
+        True,
+        "asuitenestwriter00005",
+        SESSION,
+    ),
+    # CONTROL: a writer's file named INSIDE the submodule is still that writer's file.
+    (
+        "a file inside the submodule named directly",
+        "git commit -F m -- subm/inner.ts",
+        None,
+        True,
+        LIVE,
+        SESSION,
+    ),
     ("an absolute pathspec", "git commit -F m -- %s/src/live.ts" % REPO, None, True, LIVE, SESSION),
     (
         "named from a subdirectory",

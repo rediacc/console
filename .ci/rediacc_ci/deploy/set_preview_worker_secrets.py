@@ -50,9 +50,13 @@ import json
 import os
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
-from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci import log, paths
+from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    import pathlib
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_preview_worker_secrets"
@@ -180,14 +184,19 @@ def _jq(argv: list[str], document: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout
 
 
+def worker_dir() -> pathlib.Path:
+    """`workers/www`, the one directory whose `node_modules/.bin/wrangler` the deploy job installs (`Install www worker dependencies`). `wrangler.ARGV` is `npx --no-install`, which resolves a local binary only, and the repo root has none (run 41348962671: `npx canceled due to missing packages`), so wrangler starts here, as `deploy_www` does."""
+    return paths.repo_root() / "workers" / "www"
+
+
 def wrangler_argv(worker: str) -> list[str]:
     """`npx wrangler secret bulk --name "$WORKER"` (:103)."""
-    return ["npx", "wrangler", "secret", "bulk", "--name", worker]
+    return [*wrangler.ARGV, "secret", "bulk", "--name", worker]
 
 
 def _wrangler(argv: list[str], payload: str) -> int:
     """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own progress is what a workflow log shows for this step."""
-    proc = subprocess.run(argv, input=payload, text=True, check=False)
+    proc = subprocess.run(argv, input=payload, text=True, check=False, cwd=worker_dir())
     return proc.returncode
 
 

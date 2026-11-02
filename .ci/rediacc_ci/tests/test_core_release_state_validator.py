@@ -479,6 +479,21 @@ def test_sentinel_exists_only_calls_404_an_absence(
     assert rsv.sentinel_exists("cli", "v1.0.0", "https://example.invalid") is expected
 
 
+@pytest.mark.parametrize(
+    "stderr_text", ["aws: command not found\n", "the aws CLI is not installed: not found on PATH\n"]
+)
+def test_sentinel_exists_without_aws_is_unknown_not_absent(
+    monkeypatch: pytest.MonkeyPatch, stderr_text: str
+) -> None:
+    """A missing aws binary (rc 127 from _run) answers nothing; its "not found" text must not read as a 404."""
+
+    def fake(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess:
+        return subprocess.CompletedProcess(argv, 127, "", stderr_text)
+
+    monkeypatch.setattr(rsv, "_run", fake)
+    assert rsv.sentinel_exists("cli", "v1.0.0", "https://example.invalid") is rsv.Probe.UNKNOWN
+
+
 def test_sentinel_exists_success_is_yes(monkeypatch: pytest.MonkeyPatch) -> None:
     """The control for the case above: something must also come back YES."""
 

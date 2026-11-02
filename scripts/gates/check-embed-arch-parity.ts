@@ -135,7 +135,7 @@ function main(): void {
   if (!requireSubmodule('embed arch parity', [LOCKFILE])) return;
 
   const lock = JSON.parse(fs.readFileSync(LOCKFILE, 'utf-8')) as {
-    components: Record<string, Component>;
+    components?: Record<string, Component>;
   };
   const components = Object.entries(lock.components ?? {});
   const errors: string[] = [];
@@ -148,7 +148,9 @@ function main(): void {
 
   // The arch set of the first component is the reference; every other component
   // must match it exactly. A component quietly losing an arch is the shape of the defect this gate is for.
-  const reference = Object.keys(components[0][1].arches ?? {}).sort();
+  const reference = Object.keys(components[0][1].arches ?? {}).sort(
+    (a, b) => Number(a > b) - Number(a < b)
+  );
   if (reference.length === 0) {
     console.error(`${RED}✗ component '${components[0][0]}' declares no architectures${NC}`);
     process.exit(1);
@@ -180,7 +182,7 @@ function main(): void {
     }
     if (!c.version) errors.push(`${name}: no version`);
 
-    const arches = Object.keys(c.arches ?? {}).sort();
+    const arches = Object.keys(c.arches ?? {}).sort((a, b) => Number(a > b) - Number(a < b));
     if (arches.join(',') !== reference.join(',')) {
       errors.push(
         `${name}: architectures [${arches.join(', ') || '<none>'}] != [${reference.join(', ')}] declared by '${components[0][0]}'`

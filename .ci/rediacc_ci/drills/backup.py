@@ -1,14 +1,14 @@
 """Port of `scripts/drills/backup.sh` (1505 lines): the live chunk-store battery.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup [--legs a,b,c,d,e,f,g,h,j,k] [--selftest] [--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]
+    PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup [--legs a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s] [--selftest] [--renet] [--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]
 
 WHAT IT IS FOR. The backup-storage program replaces whole-image pushes with a content-addressed chunk store: a fixed cell grid over the LUKS image, SHA-256 of the ciphertext cell as object key and dedup key, a manifest per snapshot, and a control plane that mints sessions, answers which of a set of hashes are already held, mints delete-free write grants under a byte quota and commits manifests. This drill drives the whole path with real bytes over a real wire.
 
 COST. No virtual machines for the default legs. It runs against `./run.sh account dev` (restarted by the drill) and the RustFS that script starts on :9100, and uploads a few hundred kilobytes. Leg i (`rdc backup verify` on a real repo) is opt-in and refuses itself by name when no machine is there.
 
-LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window.
+LEGS, one claim each. a: a session mints from a license blob alone (with a tampered-blob control). b: seed upload, real PUTs through presigned URLs, a ledger that moved by exactly the bytes that moved. c: incremental upload, one changed cell transfers. d: both snapshots restore byte-identically through a read grant. e: the quota refuses at mint time, with the control that one byte of headroom lets the same request through. f: `rdc backup usage` and `rdc backup manifests` against the live server. g: the real `renet repository prune --output json` through the real CLI parser. h: the shapes renet's session client sends, against the live server. i: opt-in machine leg. j: a write session cannot read and a read session cannot write. k: a lapsed subscription still restores inside the retention window. l: GC and retention through the test-only `/test/backup/maintenance` seam: a keep-last-1 policy prunes down to the per-stream floor of 3, the freed chunks stay until the grace passes, then the stored bytes go down by exactly the orphaned cells, and the kept snapshots (the collapsed oldest included) restore byte-identically. m: the scheduled verify (levels b and c of `runMaintenance`) against the real store: a control pass reports two checked chunks and nothing missing or corrupt, then one chunk object is deleted and another overwritten straight in RustFS, and the next pass names the first as missing and the second as corrupt. n: a presigned chunk PUT is bound to its declared size and checksum: a body one byte too long and a same-length body with other bytes are both refused by the store, then the exact body through the same URL is accepted (the control, last, because the PUT is create-only). o: a twin tenant on its own subscription cannot reach this one's lineage: not through the license (guid ownership), the session binding, a path rewritten inside a signed URL, an object planted under the shared lineage id in its own prefix, or the manifest list. p: the LUKS identity a commit declares is held to the licence and to the stream's previous row, each refusal by name (uuid-changed, key-digest-changed, identity-undeclared, accepted-change-has-parent, licence-uuid-mismatch), and the manifest body to the commit (`BACKUP_MANIFEST_BODY_MISMATCH`); with `--renet` a swapped image is refused by real renet with a lost journal too, and a wrong passphrase places nothing. q: retention keeps a verified snapshot through a run of bad nights, against a twin lineage with no verdict that loses it. r: a corrupt chunk is named by the store pass, deleted by the repair route, put back, and the next pass is clean with the head's root checked; a live lease refuses the repair and a released one does not; with `--renet` real `renet backup repair` does the re-upload. s: a duplicate create-only PUT answers 412 and a wrong checksum is refused BY THE STORE, printed as one `STORE-PROOF` line so a tier B run (`--legs a,s`) reads as that store's proof.
 
-NOT PROVEN HERE, said plainly: no machine runs `renet backup snapshot` or `renet backup restore` in this host-only drill (the FIEMAP/anchor half is renet's btrfs tier, restore is e2e suite 26). Legs b-d produce their own cells.
+NOT PROVEN HERE, said plainly: by default no machine runs `renet backup snapshot` or `renet backup restore` in this host-only drill, and legs b-d produce their own cells. `--renet` (with `--vm`) swaps legs b-d for the real thing: a repository on the worker is snapshotted, one cell is rewritten, it is snapshotted again, and both are restored by renet and byte-compared (`rediacc_ci.drills.backup_renet`); the FIEMAP/anchor half is still renet's btrfs tier.
 
 THE OFFLINE CONTROL is `private/account/tests/integration/backup-lifecycle.test.ts`, the VM-less twin: if a leg fails here and its twin passes there, the difference is the environment.
 
@@ -17,8 +17,8 @@ TIER B: `DRILL_STORE_ENDPOINT` plus `DRILL_STORE_BUCKET`/`DRILL_STORE_KEY`/`DRIL
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_drills_backup_license.py`).
 
   1. NO `curl`, `node`, `uuidgen`, `awk` AND NO `--aws-sigv4` PRECONDITION. HTTP is `urllib`, the fixture image and its cell arithmetic are Python (`make_image`, `plan_of`, `assemble`) pinned to the node helper's exact bytes and hashes by a differential, and the one store request the drill signs itself (the bucket create, and the manifest fallback) is signed in-process (`wire.sigv4_headers`). The bash refused to start on a curl older than 7.75.
-  2. THE GATEWAY GETS THE STORE ENVIRONMENT AND NOT THE SANDBOX. The bash exported the chunk-store variables and the throwaway `XDG_CONFIG_HOME` into its own environment before restarting the gateway, so the gateway inherited both (the sandbox half is the defect fixed in `rediacc_ci.drills.lib`). Here the store variables reach the gateway through `BackupDrill.gateway_env` and the sandbox reaches only the `rdc` commands under test.
-  3. A TRANSPORT FAILURE ENDS THE DRILL WITH ITS CAUSE. In the bash a failed `curl` inside `$(...)` killed the shell under `set -e` with no message when the failure was an assignment, and was swallowed when it was a pipeline stage. Here every transport failure raises `OSError` naming the method and URL, and the drill exits 1 reporting it.
+  2. THE GATEWAY GETS THE STORE ENVIRONMENT, A DATABASE OF THE RUN'S OWN, AND NOT THE SANDBOX. The bash exported the chunk-store variables and the throwaway `XDG_CONFIG_HOME` into its own environment before restarting the gateway, so the gateway inherited both (the sandbox half is the defect fixed in `rediacc_ci.drills.lib`). Here the store variables reach the gateway through `BackupDrill.gateway_env` and the sandbox reaches only the `rdc` commands under test.
+  3. A TRANSPORT FAILURE ENDS ITS LEG WITH ITS CAUSE. In the bash a failed `curl` inside `$(...)` killed the shell under `set -e` with no message when the failure was an assignment, and was swallowed when it was a pipeline stage. Here every transport failure raises `OSError` naming the method and URL, the leg stops with that cause as a named failure, the remaining legs still run and report, and the drill exits 1. A leg whose earlier step produced nothing to read (an empty presigned URL) stops the same way, through `LegStoppedError`.
   4. AN EMPTY LEG ITEM IS REFUSED BY NAME. `--legs a,,b` ran silently as `a,b` in the bash (its `${LEGS//,/ }` split dropped the empty item); the unknown-leg refusal now covers it.
 """
 
@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import base64
 import contextlib
+import datetime
+import functools
 import hashlib
 import http.cookiejar
 import json
@@ -37,23 +39,74 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.parse
 import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
-from rediacc_ci.drills import lib, vm_ssh, wire
+from rediacc_ci.drills import (
+    backup_check_trigger,
+    backup_renet,
+    backup_roundtrip,
+    lib,
+    vm_ssh,
+    wire,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-KNOWN_LEGS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
-DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k"
+KNOWN_LEGS = [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+]
+DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s"
 CELL_BYTES = 65536
 CELLS = 8
 # Cell 2 and cell 6 are holes: all-zero, elided from the manifest as "" the way FIEMAP-driven ZERO detection elides an unwritten extent.
 HOLES = frozenset({2, 6})
+# Leg l commits this many snapshots into one chain; the per-stream retention floor (3) keeps them from being pruned down to the declared keepLast of 1.
+L_SNAPSHOTS = 5
+# Leg m seeds exactly two non-zero cells (the sample of 3 always covers both), and its two maintenance clocks sit past leg l's +17 days plus the 7-day verify interval.
+M_CELLS = (0, 1)
+M_CONTROL_DAYS = 25
+M_TAMPER_DAYS = 33
+# Leg q's chain: the second snapshot takes the verified verdict and every later one a bad night. Its clocks sit past leg m's, the second past the 7-day grace.
+Q_SNAPSHOTS = 6
+Q_VERIFIED = 1
+Q_SWEEP_DAYS = 41
+Q_GC_DAYS = 49
+# Renet's own known answers for the Merkle root, read from the checkout so the drill is held to the same oracle as the Go and TypeScript sides.
+CELLS_ROOT_VECTORS = (
+    "private",
+    "renet",
+    "pkg",
+    "chunkstore",
+    "testdata",
+    "cells_root_vectors.json",
+)
+# Pages one store pass may take before the drill calls it stuck (the first page of a large lineage can be a building page).
+VERIFY_MAX_PAGES = 10
+HTTP_OK = "200"
 USAGE = (
-    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k] [--selftest] "
+    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s] [--selftest] [--renet] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillBackup123!"
@@ -78,8 +131,65 @@ def make_image(path: str | os.PathLike, version: str) -> None:
     pathlib.Path(path).write_bytes(bytes(image))
 
 
+def make_unique_image(path: str | os.PathLike, step: int) -> None:
+    """The leg l fixture: the same grid as `make_image`, but every cell derives from a hash no other fixture shares, and `step` rewrites cell 3 only. Image `step` holds exactly one cell (3) that differs from image `step - 1`, and no cell equals one of leg b or c's."""
+    image = bytearray(CELLS * CELL_BYTES)
+    for cell in range(CELLS):
+        if cell in HOLES:
+            continue
+        tag = "leg-l|cell-3|%d" % step if cell == 3 else "leg-l|cell-%d" % cell
+        block = hashlib.sha256(tag.encode()).digest() * (CELL_BYTES // 32)
+        image[cell * CELL_BYTES : (cell + 1) * CELL_BYTES] = block
+    pathlib.Path(path).write_bytes(bytes(image))
+
+
+def make_two_cell_image(path: str | os.PathLike) -> dict:
+    """The leg m fixture: the same grid with only cells `M_CELLS` non-zero (the rest are holes, elided as ""). Writes the image and returns its plan, which cannot come from `plan_of` because that hashes every non-`HOLES` cell."""
+    image = bytearray(CELLS * CELL_BYTES)
+    cells = [""] * CELLS
+    for cell in M_CELLS:
+        block = hashlib.sha256(("leg-m|cell-%d" % cell).encode()).digest() * (CELL_BYTES // 32)
+        image[cell * CELL_BYTES : (cell + 1) * CELL_BYTES] = block
+        cells[cell] = sha256_hex(block)
+    pathlib.Path(path).write_bytes(bytes(image))
+    return {
+        "cellBytes": CELL_BYTES,
+        "imageBytes": len(image),
+        "cells": cells,
+        "unique": [c for c in cells if c],
+    }
+
+
 def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def cells_root(cells: list[str], cell_bytes: int, image_bytes: int) -> str:
+    """The Merkle root of a resolved inventory, as `pkg/chunkstore/cellsroot.go` and `services/backup-merkle.ts` compute it (leaf 0x00, node 0x01 with the RFC 6962 split, root 0x03 over both sizes). A third implementation on purpose: the server recomputes this root on a store pass, so a drill root that disagreed would surface there, and leg p holds this one to renet's vector file."""
+    zero = hashlib.sha256(b"rediacc-zero-cell-v1").digest()
+    leaves = [
+        hashlib.sha256(
+            b"\x00"
+            b"rediacc-cells-v1"
+            + index.to_bytes(8, "big")
+            + (bytes.fromhex(digest) if digest else zero)
+        ).digest()
+        for index, digest in enumerate(cells)
+    ]
+
+    def tree(nodes: list[bytes]) -> bytes:
+        if not nodes:
+            return hashlib.sha256(b"").digest()
+        if len(nodes) == 1:
+            return nodes[0]
+        split = 1
+        while split * 2 < len(nodes):
+            split *= 2
+        return hashlib.sha256(b"\x01" + tree(nodes[:split]) + tree(nodes[split:])).digest()
+
+    return sha256_hex(
+        b"\x03" + cell_bytes.to_bytes(8, "big") + image_bytes.to_bytes(8, "big") + tree(leaves)
+    )
 
 
 def plan_of(path: str | os.PathLike) -> dict:
@@ -131,7 +241,41 @@ def manifest_body(
     return wire.compact({**base, "cells": plan["cells"]})
 
 
+def plan_root(plan: dict) -> str:
+    """The root a snapshot of this plan commits to."""
+    return cells_root(plan["cells"], plan["cellBytes"], plan["imageBytes"])
+
+
+def identity_fields(identity: tuple[str, str] | None) -> dict[str, str]:
+    """The two wire fields of a declared LUKS identity; the account takes both halves or neither."""
+    return {"luksUuid": identity[0], "luksKeyDigest": identity[1]} if identity else {}
+
+
+def wire_manifest(
+    snapshot: str,
+    plan: dict,
+    lineage: str,
+    parent: str = "",
+    parent_plan: dict | None = None,
+    identity: tuple[str, str] | None = None,
+) -> str:
+    """`manifest_body` plus the fields the account compares with the commit: the root over the RESOLVED inventory (a delta's root covers the whole image, not its changed cells) and the declared identity. `manifest_body` itself stays the shape the frozen node twin pins."""
+    doc = json.loads(manifest_body(snapshot, plan, lineage, parent, parent_plan))
+    doc["cellsRoot"] = plan_root(plan)
+    doc.update(identity_fields(identity))
+    return wire.compact(doc)
+
+
+def fake_identity() -> tuple[str, str]:
+    """A declared identity no image has: a v4 UUID and a key digest in LUKS1's hex shape."""
+    return str(uuid.uuid4()), secrets.token_hex(20)
+
+
 # ---------------------------------------------------------------------- the drill
+
+
+class LegStoppedError(Exception):
+    """A step the rest of the leg reads produced nothing to read. The leg ends as one named failure instead of feeding the emptiness to the next call."""
 
 
 class BackupDrill(lib.Drill):
@@ -152,6 +296,7 @@ class BackupDrill(lib.Drill):
 class Options:
     def __init__(self) -> None:
         self.restart_gateway = True
+        self.renet = False
         self.legs = DEFAULT_LEGS
         self.net_base = os.environ.get("VM_NET_BASE") or "192.168.111"
         self.vm_ip = self.net_base + ".11"
@@ -174,9 +319,14 @@ class Options:
     def enabled(self, leg: str) -> bool:
         return leg in self.leg_set()
 
+    def legs_with(self, *required: str) -> str:
+        """The selected legs with `required` added in front, each leg named once (the suggestion a refusal prints)."""
+        legs = list(dict.fromkeys([*required, *self.leg_set()]))
+        return ",".join(legs)
+
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
-        return any(self.enabled(leg) for leg in "abcdefhjk")
+        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrs")
 
     def using_real_store(self) -> bool:
         return bool(self.store_endpoint)
@@ -189,6 +339,8 @@ def parse_args(argv: list[str], opts: Options) -> int | None:
         arg = argv[i]
         if arg == "--no-restart":
             opts.restart_gateway = False
+        elif arg == "--renet":
+            opts.renet = True
         elif arg in ("--legs", "--vm", "--ssh-user", "--ssh-key"):
             i += 1
             value = argv[i] if i < len(argv) else ""
@@ -269,6 +421,11 @@ class Backup:
         self.stream_id = ""
         self.lineage = ""
         self.seed_stored_bytes = 0
+        # The lineage the chunks of legs b-d live under, and the digests the restores compare against: leg a's own lineage and the fixture images on the host path, the source repository's under --renet.
+        self.stored_lineage = ""
+        self.seed_sha = ""
+        self.incr_sha = ""
+        self.renet_legs: backup_renet.RenetLegs | None = None
         self.quota_lowered = False
         self.lapsed_subscription = False
         self.license_blob: dict = {}
@@ -278,6 +435,8 @@ class Backup:
         self.incr_plan: dict = {}
         self.grant: dict = {}
         self.status = "none"
+        self.manage_token_value = ""
+        self.integrity_machine_id = ""
 
     # ------------------------------------------------------------------ small helpers
 
@@ -368,7 +527,7 @@ class Backup:
         self.d.out.write(
             "\n  This drill runs against ./run.sh account dev and the RustFS it starts on\n"
             "  :%s. It provisions NOTHING and needs NO virtual machines.\n\n"
-            "    legs a,b,c,d,e,f,h,j,k  the dev gateway (restarted by this drill) + Docker for\n"
+            "    legs a,b,c,d,e,f,h,j,k,l,m,n,o,p,q,r,s the dev gateway (restarted by this drill) + Docker for\n"
             "                        the RustFS chunk store. A few hundred KB uploaded into\n"
             "                        bucket %s, under this run's own tenant prefix.\n"
             "    leg  g              the LOCAL renet binary and a throwaway datastore\n"
@@ -385,7 +544,9 @@ class Backup:
         ok = True
         if o.needs_plane() and not _docker_ok():
             log.error("Docker is not available, so ./run.sh account dev cannot start RustFS.")
-            log.error("Legs a,b,c,d,e,f,h,j,k all need the chunk store; only leg g can run here:")
+            log.error(
+                "Legs a,b,c,d,e,f,h,j,k,l,m,n,o,p,q,r,s all need the chunk store; only leg g can run here:"
+            )
             log.error("    ./run.sh drill backup --legs g")
             ok = False
         if o.enabled("g"):
@@ -394,7 +555,9 @@ class Backup:
                 log.error(
                     "Build it:  (cd private/renet && ./build.sh dev), or run any ./rdc.sh command."
                 )
-                log.error("Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k")
+                log.error(
+                    "Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k,l,m,n,o,p,q,r,s"
+                )
                 ok = False
             if not shutil.which("npx"):
                 log.error("Leg g runs the CLI's own parser through tsx and needs npx on PATH.")
@@ -411,9 +574,9 @@ class Backup:
     def preflight_machines(self) -> None:
         """Leg i is the only machine-dependent leg, and it refuses itself BY NAME rather than failing nine assertions deep on an empty box."""
         d, o = self.d, self.o
-        if not o.enabled("i"):
+        if not (o.enabled("i") or o.renet):
             return
-        d.step("Preflight: machine availability (leg i)")
+        d.step("Preflight: machine availability (%s)" % ("--renet" if o.renet else "leg i"))
         proc = subprocess.run(
             [self.rdc, "ops", "status", "-o", "json"],
             capture_output=True,
@@ -438,6 +601,14 @@ class Backup:
     def announce_unrunnable(self) -> None:
         d = self.d
         d.step("Not covered by this run, and why (read this before trusting a green)")
+        if self.o.renet:
+            d.note("renet-driven backup: legs b-d run `renet backup snapshot` and")
+            d.note("  `renet backup restore` on the worker (--renet); legs e-l then read the")
+            d.note("  state those legs left, so a green here covers the machine path.")
+            d.note("  legs p and r add the real identity refusal, passphrase gate and repair verb.")
+            d.note("The CLI repair and check verbs: this drill drives their account and")
+            d.note("  renet halves; the CLI verbs themselves are not run here.")
+            return
         for line in (
             "renet-driven backup: the verb EXISTS (renet backup snapshot), but this",
             "  host-only drill does not run it: that needs a machine with a real",
@@ -447,6 +618,10 @@ class Backup:
             "  does, but no machine RUNS renet backup restore here; that is e2e suite 26.",
             "cross-machine restore: byte-identity across two machines is suite 26's",
             "  RESTORE tier, which needs a two-worker fleet this host-only drill has not.",
+            "identity and repair on real renet: legs p and r prove the account half here;",
+            "  the swapped image, the passphrase gate and `renet backup repair` need --renet.",
+            "The CLI repair and check verbs: this drill drives their account and",
+            "  renet halves; the CLI verbs themselves are not run here.",
         ):
             d.note(line)
 
@@ -496,6 +671,8 @@ class Backup:
             extra["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] = o.rustfs_secret
         # The maintenance timer would run GC underneath the drill's own objects.
         extra["BACKUP_MAINTENANCE_INTERVAL_MS"] = "0"
+        # A database of this run's own. One maintenance pass spends 800 store calls across EVERY tenant in the database, from a persisted cursor, so on the shared dev database, full of earlier runs' tenants, whether legs l, m and q get reached at all turned on where the cursor happened to stand.
+        extra["DATABASE_PATH"] = str(self.work / "drill-account.db")
         d.note(
             "chunk store: %s/%s"
             % (extra["ACCOUNT_BACKUP_S3_ENDPOINT"], extra["ACCOUNT_BACKUP_S3_BUCKET"])
@@ -529,6 +706,32 @@ class Backup:
             )
         code, _ = wire.http_call("PUT", url, payload, headers, json_body=False)
         return str(code)
+
+    def s3_creds(self) -> tuple[str, str, str]:
+        """(region, access key, secret) of the store credentials the drill itself holds."""
+        o = self.o
+        if o.using_real_store():
+            return o.store_region, o.store_key, o.store_secret
+        return S3_REGION, o.rustfs_key, o.rustfs_secret
+
+    def s3_delete(self, url: str) -> str:
+        region, key, secret = self.s3_creds()
+        headers = wire.sigv4_headers("DELETE", url, b"", region, key, secret)
+        code, _ = wire.http_call("DELETE", url, b"", headers, json_body=False)
+        return str(code)
+
+    def chunk_url(self, lineage: str, digest: str) -> str:
+        return self.chunk_url_in(self.subscription_id, lineage, digest)
+
+    def chunk_url_in(self, subscription: str, lineage: str, digest: str) -> str:
+        """The store URL of one chunk under an explicit tenant prefix (leg o plants objects under a tenant that is not this one's)."""
+        return "%s/%s/t/%s/l/%s/c/%s" % (
+            self.store_url(),
+            self.bucket,
+            subscription,
+            lineage,
+            digest,
+        )
 
     def setup_store_bucket(self) -> None:
         d = self.d
@@ -598,8 +801,46 @@ class Backup:
         if not d.account_admin_session(self.email, DRILL_PASSWORD, self.admin_jar):
             raise SystemExit(1)
 
+    def setup_renet(self) -> None:
+        """`--renet`: wire legs b-d to the worker. The worker must answer ssh with renet on PATH, and the gateway must be addressed by the VM-network bridge address (the licence the worker installs names the gateway the session client later dials)."""
+        d, o = self.d, self.o
+        if not o.renet:
+            return
+        d.step("Setup: renet on the worker for legs b-d (--renet)")
+        bridge = wire.bridge_host(o.net_base)
+        if not bridge:
+            log.error(
+                "--renet needs this host on the %s.0/24 VM network (no interface there)."
+                % o.net_base
+            )
+            raise SystemExit(1)
+
+        def vm(command: str, stdin_data: str | None = None) -> backup_roundtrip.VmResult:
+            return backup_roundtrip.ssh_vm(o.ssh_user, o.ssh_key, o.vm_ip, command, stdin_data)
+
+        refusal = backup_roundtrip.preflight_vm(vm, o.vm_ip, o.ssh_user, o.ssh_key)
+        if refusal:
+            log.error(refusal)
+            raise SystemExit(1)
+        self.renet_legs = backup_renet.build(
+            self,
+            user=o.ssh_user,
+            key=o.ssh_key,
+            vm_host=o.vm_ip,
+            bridge=bridge,
+            port=d.gateway_port(),
+            work=self.work,
+            say=d.note,
+        )
+        d.note("legs b-d run renet on %s against %s:%s" % (o.vm_ip, bridge, d.gateway_port()))
+
     def teardown_hook(self) -> None:
         """Restore what the drill changed on the SUBSCRIPTION, because those edits outlive the work directory: a low quota or a suspended subscription left behind fails the NEXT run for a reason nothing explains. A failed restore is reported (Rule T), not swallowed."""
+        if self.renet_legs is not None:
+            try:
+                self.renet_legs.teardown()
+            except (OSError, backup_roundtrip.StepError) as exc:
+                log.warn("teardown: removing the --renet repositories failed: %s" % exc)
         if self.admin_jar is None or not self.subscription_id:
             return
         for flag, patch in (
@@ -660,7 +901,7 @@ class Backup:
             "presigned-s3",
             "the server reports a configured data plane (presigned S3 over the local store)",
         )
-        # dataPlaneUrl is where CHUNK BYTES go and is NOT an API root; renet says so at session.go:43-47 after mistaking it for one cost a 100% mint failure.
+        # dataPlaneUrl is where CHUNK BYTES go and is NOT an API root; renet says so at session.go's `DataPlaneURL` comment after mistaking it for one cost a 100% mint failure.
         self.aj(
             "dataPlaneUrl",
             self.store_url(),
@@ -703,7 +944,11 @@ class Backup:
                 failures += 1
                 continue
             # If-None-Match is MANDATORY: the account presigns these URLs with IfNoneMatch, SigV4 signs the headers a request carries, and dropping it answers 403 SignatureDoesNotMatch. This drill IS the machine's stand-in, so it sends exactly what pkg/chunkstore/grants.go sends.
-            code, _ = wire.http_call("PUT", url, data, {"If-None-Match": "*"}, json_body=False)
+            headers = {"If-None-Match": "*"}
+            # A size-bound URL (every chunk grant since chunkBytes became required) also signs x-amz-checksum-sha256, the base64 of the hash the grant was minted for; renet sends it only when the URL names it (grants.go signsChunkChecksum), and so does this stand-in.
+            if "x-amz-checksum-sha256" in self.signed_header_names(url):
+                headers["x-amz-checksum-sha256"] = base64.b64encode(bytes.fromhex(digest)).decode()
+            code, _ = wire.http_call("PUT", url, data, headers, json_body=False)
             if code != 200:
                 failures += 1
         return failures
@@ -725,13 +970,42 @@ class Backup:
             body.encode(),
         )
 
+    def adopt_renet_lineage(self) -> None:
+        """Under --renet the chunks live on the source repository's lineage, not leg a's, so legs e, h and j take a session of THAT licence: on leg a's they would be asking another lineage about a snapshot of this one. The stream comes back as renet's own, which also proves the session names the same machine."""
+        d = self.d
+        minted = self.api(
+            "POST",
+            self.session_mint_url,
+            {"license": self.license_blob, "machineId": self.machine_id},
+        )
+        self.capture("POST /backups/session (the source repository's licence)", minted)
+        d.assert_equal("200", self.status, "the source repository's licence mints a session")
+        self.session_token = wire.jstr(self.field("token"))
+        self.lineage = self.stored_lineage
+        stream = self.session_api(
+            "POST", "/streams", {"repositoryGuid": self.lineage, "lineageGuid": self.lineage}
+        )
+        self.capture("POST /backups/streams (the source repository)", stream)
+        self.aj("created", False, "and finds the stream renet opened")
+        self.stream_id = wire.jstr(self.field("streamId"))
+
+    def leg_b_then_adopt(self) -> None:
+        self.leg_b_seed_upload()
+        if self.renet_legs is not None:
+            self.adopt_renet_lineage()
+
     def leg_b_seed_upload(self) -> None:
+        if self.renet_legs is not None:
+            self.renet_legs.leg_b()
+            return
         d = self.d
         d.step("Leg b: the seed upload, with real bytes in the store")
         image = self.work / "image-v1.bin"
         make_image(image, "1")
         self.seed_plan = plan_of(image)
         lineage = self.lineage
+        self.stored_lineage = lineage
+        self.seed_sha = _sha_file(image)
 
         stream = self.session_api(
             "POST", "/streams", {"repositoryGuid": lineage, "lineageGuid": lineage}
@@ -752,6 +1026,8 @@ class Backup:
 
         missing = unique
         declared = len(missing) * CELL_BYTES
+        # Built before the grant: the grant declares its byte length, and manifest_body stamps createdAt, so a second build would change the length.
+        manifest = wire_manifest(self.snap_seed, self.seed_plan, lineage)
         grant_text = self.session_api(
             "POST",
             "/grants",
@@ -760,6 +1036,8 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": declared,
                 "hashes": missing,
+                "manifestBytes": len(manifest.encode()),
+                "chunkBytes": dict.fromkeys(missing, CELL_BYTES),
             },
         )
         self.grant = _as_dict(grant_text)
@@ -806,7 +1084,6 @@ class Backup:
             "the server now HEADs every one of them in the store: the bytes really landed",
         )
 
-        manifest = manifest_body(self.snap_seed, self.seed_plan, lineage)
         status = self.put_manifest(self.snap_seed, manifest)
         d.last_cmd = "PUT the manifest object through the grant's manifestPutUrl"
         d.assert_equal(
@@ -824,6 +1101,7 @@ class Backup:
             "totalBytes": self.seed_plan["imageBytes"],
             "addedBytes": declared,
             "addedChunkCount": len(missing),
+            "cellsRoot": plan_root(self.seed_plan),
         }
         commit = self.session_api("POST", "/commit", commit_body)
         self.capture("POST /backups/commit (seed)", commit)
@@ -839,12 +1117,16 @@ class Backup:
     # ------------------------------------------------------------------ leg c
 
     def leg_c_incremental_upload(self) -> None:
+        if self.renet_legs is not None:
+            self.renet_legs.leg_c()
+            return
         d = self.d
         d.step("Leg c: the second run moves only what changed")
         image = self.work / "image-v2.bin"
         make_image(image, "2")
         self.incr_plan = plan_of(image)
         lineage = self.lineage
+        self.incr_sha = _sha_file(image)
 
         unique = self.incr_plan["unique"]
         exists = self.session_api("POST", "/exists", {"lineageGuid": lineage, "hashes": unique})
@@ -865,6 +1147,9 @@ class Backup:
         d.assert_equal("1", str(len(missing)), "one cell changed, so exactly one cell transfers")
 
         declared = CELL_BYTES
+        manifest = wire_manifest(
+            self.snap_incr, self.incr_plan, lineage, self.snap_seed, self.seed_plan
+        )
         grant_text = self.session_api(
             "POST",
             "/grants",
@@ -873,6 +1158,8 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": declared,
                 "hashes": missing,
+                "manifestBytes": len(manifest.encode()),
+                "chunkBytes": dict.fromkeys(missing, CELL_BYTES),
             },
         )
         self.grant = _as_dict(grant_text)
@@ -883,9 +1170,6 @@ class Backup:
         d.last_cmd = "PUT the single changed cell"
         d.assert_equal("0", str(failures), "the changed cell uploads")
 
-        manifest = manifest_body(
-            self.snap_incr, self.incr_plan, lineage, self.snap_seed, self.seed_plan
-        )
         status = self.put_manifest(self.snap_incr, manifest)
         d.last_cmd = "PUT the DELTA manifest object"
         d.assert_equal("200", status, "the delta manifest reaches the bucket")
@@ -902,6 +1186,7 @@ class Backup:
                 "totalBytes": self.incr_plan["imageBytes"],
                 "addedBytes": declared,
                 "addedChunkCount": 1,
+                "cellsRoot": plan_root(self.incr_plan),
             },
         )
         self.capture("POST /backups/commit (incremental)", commit)
@@ -924,15 +1209,27 @@ class Backup:
         self.restore_session_token = wire.jstr(self.field("token", response))
         return bool(self.restore_session_token)
 
-    def read_grant(self, snapshot: str, hashes: list[str] | None = None) -> str:
+    def read_grant(
+        self,
+        snapshot: str,
+        hashes: list[str] | None = None,
+        lineage: str = "",
+        token: str = "",
+    ) -> str:
         return self.api(
             "POST",
             "%s/read-grants" % self.backup_api(),
-            {"lineageGuid": self.lineage, "snapshotId": snapshot, "hashes": hashes or []},
-            {"X-Backup-Session": self.restore_session_token},
+            {
+                "lineageGuid": lineage or self.lineage,
+                "snapshotId": snapshot,
+                "hashes": hashes or [],
+            },
+            {"X-Backup-Session": token or self.restore_session_token},
         )
 
-    def restore_snapshot(self, snapshot: str, out: pathlib.Path) -> bool:
+    def restore_snapshot(
+        self, snapshot: str, out: pathlib.Path, lineage: str = "", token: str = ""
+    ) -> bool:
         """Restore AS A MACHINE DOES IT: through a read grant, never with the store's own credentials.
 
         Two grants per restore, and that is the protocol: the first is minted with NO hashes to learn `manifestChain` (which the machine cannot derive), and the second presigns the chunks once the composed inventory says which are wanted.
@@ -940,7 +1237,7 @@ class Backup:
         directory = self.work / ("restore-%s" % snapshot)
         (directory / "chunks").mkdir(parents=True, exist_ok=True)
 
-        chain_grant = self.read_grant(snapshot)
+        chain_grant = self.read_grant(snapshot, None, lineage, token)
         chain = self.field("manifestChain", chain_grant)
         if not isinstance(chain, list) or not chain:
             return False
@@ -967,7 +1264,7 @@ class Backup:
         if cells is None:
             return False
         wanted = list(dict.fromkeys(h for h in cells if h != ""))
-        chunk_grant = self.read_grant(snapshot, wanted)
+        chunk_grant = self.read_grant(snapshot, wanted, lineage, token)
         get_chunk = self.field("getUrls", chunk_grant)
         for digest in wanted:
             # Keyed by BARE HASH, never by object key: the write path already paid for the other choice and every lookup missed.
@@ -982,6 +1279,9 @@ class Backup:
         return True
 
     def leg_d_point_in_time_restore(self) -> None:
+        if self.renet_legs is not None:
+            self.renet_legs.leg_d()
+            return
         d = self.d
         d.step("Leg d: both snapshots restore byte-identically, THROUGH A READ GRANT")
         self.run_fn("restore_session_token", self.mint_restore_session)
@@ -1043,6 +1343,7 @@ class Backup:
             "lineageGuid": self.lineage,
             "declaredBytes": 1,
             "hashes": [],
+            "manifestBytes": 1,
         }
         refused = self.session_api("POST", "/grants", probe)
         self.capture("POST /backups/grants (one byte over the quota)", refused)
@@ -1099,7 +1400,7 @@ class Backup:
         lineages = self.field("data.lineages")
         self.av(
             any(
-                isinstance(x, dict) and x.get("lineageGuid") == self.lineage
+                isinstance(x, dict) and x.get("lineageGuid") == self.stored_lineage
                 for x in (lineages if isinstance(lineages, list) else [])
             ),
             True,
@@ -1182,9 +1483,15 @@ class Backup:
             "the journal key is present in the contract (empty here: the journal dir is machine-local)",
         )
         self.av(
-            "stale_pull_staging" in keys and "stale_churn_probe_bases" in keys,
+            "stale_churn_probe_bases" in keys,
             True,
-            "together with wave 0's two keys",
+            "together with wave 0's churn-probe key",
+        )
+        # H16 retired the .pull-* and .backup-* subsets: renet's own test (private/renet/pkg/prune/datastore_json_test.go) refuses the key, so the drill does too.
+        self.av(
+            "stale_pull_staging" in keys or "stale_backup_snapshots" in keys,
+            False,
+            "and the keys H16 retired (stale_pull_staging, stale_backup_snapshots) are gone",
         )
 
         # The other half of the contract: the CLI's parser turns THIS output into preview rows. Reading the struct tags cannot catch a parser that never sees real output.
@@ -1207,7 +1514,7 @@ class Backup:
         )
         # tsx is resolved from the CLI package, where its devDependency and tsconfig live: the cwd moves only for this command.
         with _cwd(d.root / "packages" / "cli"):
-            d.run(["npx", "tsx", str(script), str(self.work / "prune.json")])
+            d.run(["npx", "--no-install", "tsx", str(script), str(self.work / "prune.json")])
         d.assert_exit(0, "the CLI parser consumes renet's real output")
         found = self.field("rows")
         rows = [r for r in (found if isinstance(found, list) else []) if isinstance(r, dict)]
@@ -1225,32 +1532,32 @@ class Backup:
         lineage = self.lineage
         header = {"X-Backup-Session": self.session_token}
 
-        # 1. The API root: the client derives it as the mint URL minus its /session suffix (session.go:134).
+        # 1. The API root: the client derives it as the mint URL minus its /session suffix (session.go `MintSession`, the `apiBase` TrimSuffix).
         derived = self.session_mint_url.removesuffix("/session")
-        d.last_cmd = "derive the API root the way session.go:134 does"
+        d.last_cmd = "derive the API root the way session.go's `MintSession` does"
         d.assert_equal(
             self.backup_api(),
             derived,
-            "the mint URL minus /session IS the control-plane root (session.go:134)",
+            "the mint URL minus /session IS the control-plane root (session.go `MintSession`, the `apiBase` TrimSuffix)",
         )
 
-        # 2. exists: path, header and body, exactly as ExistsBatch sends them (session.go:256-261). The header is X-Backup-Session, never a bearer.
+        # 2. exists: path, header and body, exactly as ExistsBatch sends them (session.go `ExistsBatch`). The header is X-Backup-Session, never a bearer.
         exists = self.api(
             "POST",
             "%s/exists" % self.backup_api(),
             {"lineageGuid": lineage, "hashes": ["a" * 64]},
             header,
         )
-        self.capture("POST /exists as ExistsBatch sends it (session.go:256-261)", exists)
+        self.capture("POST /exists as ExistsBatch sends it (session.go `ExistsBatch`)", exists)
         d.assert_equal("200", self.status, "renet's exists call is accepted verbatim")
-        # The client computes the MISSING set as the complement of `existing` (session.go:266-289): a missing key would be a silent zero-chunk backup.
+        # The client computes the MISSING set as the complement of `existing` (session.go `ExistsBatch`): a missing key would be a silent zero-chunk backup.
         self.av(
             isinstance(self.field("existing"), list),
             True,
             "the answer carries an 'existing' array (a missing key = a silent zero-chunk backup)",
         )
 
-        # 3. grants: the body MintGrant sends (session.go:293-299).
+        # 3. grants: the body MintGrant sends (session.go `MintGrant`). It carries `manifestBytes` whenever DeclareObjectBytes ran, which every backup does before its first grant, and the account refuses a grant without it (review f710ed4e.1); cited by function, since line ranges drift.
         grant = self.api(
             "POST",
             "%s/grants" % self.backup_api(),
@@ -1259,45 +1566,55 @@ class Backup:
                 "lineageGuid": lineage,
                 "declaredBytes": 0,
                 "hashes": [],
+                "manifestBytes": 1,
             },
             header,
         )
-        self.capture("POST /grants as MintGrant sends it (session.go:293-299)", grant)
+        self.capture("POST /grants as MintGrant sends it (session.go `MintGrant`)", grant)
         d.assert_equal("200", self.status, "renet's grant body satisfies the route's schema")
         self.at("grant.kind", "string", "the response nests the grant under 'grant', with a kind")
         self.at("leaseId", "string", "and carries the leaseId the client stamps")
 
-        # 4. commit: the FIELD SET CommitManifest sends (session.go:341-352).
-        commit = self.api(
-            "POST",
-            "%s/commit" % self.backup_api(),
-            {
-                "snapshotId": self.snap_incr,
-                "lineageGuid": lineage,
-                "streamId": self.stream_id,
-                "cellSizeBytes": CELL_BYTES,
-                "totalBytes": 0,
-                "addedBytes": 0,
-                "addedChunkCount": 0,
-            },
-            header,
+        # 4. commit: the FIELD SET CommitManifest sends (session.go `CommitManifest`). The replay answers before any body comparison, so under --renet (no plan in hand) a well-formed root is enough.
+        replay_body = {
+            "snapshotId": self.snap_incr,
+            "lineageGuid": lineage,
+            "streamId": self.stream_id,
+            "cellSizeBytes": CELL_BYTES,
+            "totalBytes": 0,
+            "addedBytes": 0,
+            "addedChunkCount": 0,
+            "cellsRoot": plan_root(self.incr_plan) if self.incr_plan else "0" * 64,
+        }
+        commit = self.api("POST", "%s/commit" % self.backup_api(), replay_body, header)
+        self.capture(
+            "POST /commit as CommitManifest sends it (session.go `CommitManifest`)", commit
         )
-        self.capture("POST /commit as CommitManifest sends it (session.go:341-352)", commit)
         d.assert_equal("200", self.status, "renet's commit field set is accepted")
         self.aj(
             "idempotent",
             True,
             "and replaying leg c's snapshot is idempotent, so this probe bills nothing",
         )
+        # The planted half: a client that predates the root fails its commit on the missing field, even on a replay (D-wire: the rollout order prevents this, and no shim exists).
+        old_client = {k: v for k, v in replay_body.items() if k != "cellsRoot"}
+        stale = self.api("POST", "%s/commit" % self.backup_api(), old_client, header)
+        self.capture(
+            "POST /commit with the field set from before cellsRoot (planted control)", stale
+        )
+        d.assert_equal("400", self.status, "planted control: a commit with no cellsRoot is refused")
+        d.assert_stdout_contains("cellsRoot", "and the refusal names the missing field")
 
-        # 5. streams: GetOrCreateStream's body (session.go:148-151).
+        # 5. streams: GetOrCreateStream's body (session.go `GetOrCreateStream`).
         stream = self.api(
             "POST",
             "%s/streams" % self.backup_api(),
             {"repositoryGuid": lineage, "lineageGuid": lineage},
             header,
         )
-        self.capture("POST /streams as GetOrCreateStream sends it (session.go:148-151)", stream)
+        self.capture(
+            "POST /streams as GetOrCreateStream sends it (session.go `GetOrCreateStream`)", stream
+        )
         d.assert_equal("200", self.status, "renet's stream call is accepted")
         self.aj(
             "streamId",
@@ -1359,6 +1676,7 @@ class Backup:
             "%s/grants" % self.backup_api(),
             {
                 "hashes": [],
+                "manifestBytes": 1,
                 "declaredBytes": 1,
                 "lineageGuid": self.lineage,
                 "snapshotId": self.snap_seed,
@@ -1372,6 +1690,1533 @@ class Backup:
             "BACKUP_SESSION_READ_ONLY",
             "and it is refused BY NAME, not as a generic 403 that could be anything",
         )
+
+    # ------------------------------------------------------------------ leg l
+
+    def mint_lineage_session(
+        self, lineage: str, luks_uuid: str = "", machine_id: str = ""
+    ) -> tuple[dict, str, str]:
+        """A fresh machine, license and backup-intent session for ONE new lineage: leg l's snapshots live beside the seed and incremental ones without ever touching them. `luks_uuid` makes the license name an image, which the commit is then held to. `machine_id` reuses a machine, since each new one takes one of the plan's machine slots. Returns (license blob, machine id, session token)."""
+        machine_id = machine_id or secrets.token_hex(32)
+        issued = self.api(
+            "POST",
+            "%s/licenses/activate-repo" % self.d.api_base(),
+            {
+                "machineId": machine_id,
+                "clientMachineId": machine_id,
+                "repositoryGuid": lineage,
+                "kind": "grand",
+                "requestedSizeGb": 1,
+                **({"luksUuid": luks_uuid} if luks_uuid else {}),
+            },
+            self.bearer(),
+        )
+        self.capture("POST /licenses/activate-repo (leg l lineage)", issued)
+        self.d.assert_equal("200", self.status, "a license is issued for the leg's own lineage")
+        blob = self.field("license", issued)
+        license_blob = blob if isinstance(blob, dict) else {}
+        session = self.api(
+            "POST", self.session_mint_url, {"license": license_blob, "machineId": machine_id}
+        )
+        self.capture("POST /backups/session (leg l lineage)", session)
+        self.d.assert_equal("200", self.status, "and mints a backup-intent session of its own")
+        return license_blob, machine_id, wire.jstr(self.field("token"))
+
+    def mint_lineage_restore_session(self, machine_id: str, blob: dict) -> str:
+        """A restore-intent session for leg l's lineage, minted AFTER the maintenance passes (a pass at a future clock sweeps the sessions that existed before it)."""
+        response = self.api(
+            "POST",
+            self.session_mint_url,
+            {"license": blob, "machineId": machine_id, "intent": "restore"},
+        )
+        self.capture("POST /backups/session (leg l, restore intent)", response)
+        self.d.assert_equal("200", self.status, "a restore-intent session mints for the lineage")
+        return wire.jstr(self.field("token"))
+
+    def commit_l_snapshot(
+        self,
+        step: int,
+        snapshot: str,
+        stream_id: str,
+        image: pathlib.Path,
+        parent: tuple[str, dict] | None,
+        plan: dict | None = None,
+        identity: tuple[str, str] | None = None,
+    ) -> dict:
+        """Upload the cells the lineage lacks, write the manifest through the grant and commit, as one machine run (on `self.lineage` and `self.session_token`). Returns the image's plan (`plan_of(image)` unless the caller built one)."""
+        d = self.d
+        plan = plan if plan is not None else plan_of(image)
+        lineage = self.lineage
+        exists = self.session_api(
+            "POST", "/exists", {"lineageGuid": lineage, "hashes": plan["unique"]}
+        )
+        held = set(_as_list(self.field("existing", exists)))
+        missing = [h for h in plan["unique"] if h not in held]
+        declared = len(missing) * CELL_BYTES
+        manifest = wire_manifest(
+            snapshot,
+            plan,
+            lineage,
+            parent[0] if parent else "",
+            parent[1] if parent else None,
+            identity,
+        )
+        grant_text = self.session_api(
+            "POST",
+            "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": lineage,
+                "declaredBytes": declared,
+                "hashes": missing,
+                "manifestBytes": len(manifest.encode()),
+                "chunkBytes": dict.fromkeys(missing, CELL_BYTES),
+            },
+        )
+        self.grant = _as_dict(grant_text)
+        self.capture("POST /backups/grants (leg l snapshot %d)" % step, grant_text)
+        d.assert_equal("200", self.status, "snapshot %d: a write grant is minted" % step)
+        failures = self.upload_cells(plan, image, missing)
+        d.last_cmd = "PUT the missing cells of leg l snapshot %d" % step
+        d.assert_equal("0", str(failures), "snapshot %d: every cell PUT returns 200" % step)
+        d.last_cmd = "PUT the manifest of leg l snapshot %d" % step
+        d.assert_equal(
+            "200", self.put_manifest(snapshot, manifest), "snapshot %d: the manifest lands" % step
+        )
+        body: dict = {
+            "snapshotId": snapshot,
+            "lineageGuid": lineage,
+            "streamId": stream_id,
+            "cellSizeBytes": CELL_BYTES,
+            "totalBytes": plan["imageBytes"],
+            "addedBytes": declared,
+            "addedChunkCount": len(missing),
+            "cellsRoot": plan_root(plan),
+            **identity_fields(identity),
+        }
+        if parent:
+            body["parentSnapshotId"] = parent[0]
+        commit = self.session_api("POST", "/commit", body)
+        self.capture("POST /backups/commit (leg l snapshot %d)" % step, commit)
+        d.assert_equal("200", self.status, "snapshot %d commits" % step)
+        return plan
+
+    def run_maintenance(self, days_ahead: int) -> dict:
+        """One maintenance pass at a clock `days_ahead` days in the future (the test seam: the gateway's own timer is off). Returns the report."""
+        when = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=days_ahead)
+        body = self.api(
+            "POST",
+            "%s/test/backup/maintenance" % self.d.api_base(),
+            {"now": when.strftime("%Y-%m-%dT%H:%M:%S.000Z")},
+        )
+        self.capture("POST /test/backup/maintenance (now + %d days)" % days_ahead, body)
+        self.d.assert_equal("200", self.status, "maintenance at now + %d days runs" % days_ahead)
+        report = self.field("report")
+        failed = [
+            f
+            for f in _as_list(wire.lookup(report, "failures"))
+            if isinstance(f, dict) and f.get("subscriptionId") == self.subscription_id
+        ]
+        self.av(len(failed), 0, "and no phase failed for the drill subscription")
+        return report if isinstance(report, dict) else {}
+
+    def stored_bytes(self) -> int:
+        usage = self.api("GET", "%s/usage" % self.backup_api(), None, self.bearer())
+        return _as_number(wire.jstr(self.field("storedBytes", usage)))
+
+    def lineage_snapshots(self, lineage: str) -> list[str]:
+        """The snapshot ids the manifest index holds for a lineage, newest first."""
+        listed = self.api(
+            "GET", "%s/manifests?lineage=%s" % (self.backup_api(), lineage), None, self.bearer()
+        )
+        found = self.field("manifests", listed)
+        return [wire.jstr(m.get("snapshotId")) for m in _as_list(found) if isinstance(m, dict)]
+
+    def deleted_by(self, report: dict, lineage: str) -> list[str]:
+        """The snapshots a maintenance report says the retention sweep deleted from one lineage."""
+        return sorted(
+            wire.jstr(snap)
+            for entry in _as_list(report.get("retentionPolicy"))
+            if isinstance(entry, dict) and entry.get("lineageGuid") == lineage
+            for snap in _as_list(entry.get("deletedSnapshots"))
+        )
+
+    def leg_l_gc_and_retention(self) -> None:
+        d = self.d
+        d.step("Leg l: GC and retention through /test/backup/maintenance, bytes down, floor held")
+        if self.admin_jar is None:
+            raise RuntimeError("self.admin_jar is not set")
+        lineage = str(uuid.uuid4())
+        blob, machine_id, token = self.mint_lineage_session(lineage)
+        stamp = int(time.time())
+        saved = (self.lineage, self.session_token)
+        self.lineage, self.session_token = lineage, token
+        # Five snapshots in one chain (a full root and four deltas): each rewrites cell 3 to a chunk no other snapshot holds, so every snapshot owns exactly one unique cell.
+        snaps = ["snap-l%d-%d" % (n, stamp) for n in range(L_SNAPSHOTS)]
+        shas: list[str] = []
+        try:
+            stream = self.session_api(
+                "POST", "/streams", {"repositoryGuid": lineage, "lineageGuid": lineage}
+            )
+            d.assert_equal("200", self.status, "a stream opens on the new lineage")
+            stream_id = wire.jstr(self.field("streamId", stream))
+            parent: tuple[str, dict] | None = None
+            for n, snap in enumerate(snaps):
+                image = self.work / ("image-l%d.bin" % n)
+                make_unique_image(image, n)
+                shas.append(_sha_file(image))
+                parent = (snap, self.commit_l_snapshot(n, snap, stream_id, image, parent))
+        finally:
+            self.lineage, self.session_token = saved
+        d.last_cmd = "sha256 of the five source images"
+        d.assert_equal(
+            str(L_SNAPSHOTS), str(len(set(shas))), "control: the five source images all differ"
+        )
+        d.assert_equal(
+            ",".join(reversed(snaps)),
+            ",".join(self.lineage_snapshots(lineage)),
+            "the index lists all five snapshots, newest first",
+        )
+        before = self.stored_bytes()
+
+        # CONTROL: under the DEFAULT policy (keep the last 7) nothing is prunable, so a pass at a far-future clock deletes nothing and frees nothing. Otherwise the deletions below could be the pass rather than the policy.
+        control = self.run_maintenance(8)
+        self.av(
+            self.deleted_by(control, lineage),
+            [],
+            "CONTROL: the default keep-last-7 policy prunes nothing from five snapshots",
+        )
+        d.assert_equal(str(before), str(self.stored_bytes()), "and the stored bytes did not move")
+
+        manage = d.account_mint_token(
+            self.admin_jar,
+            self.subscription_id,
+            "drill-backup-manage",
+            ["backup:read", "backup:manage"],
+        )
+        policy = self.api(
+            "PUT",
+            "%s/retention" % self.backup_api(),
+            {"lineageGuid": lineage, "keepLast": 1},
+            {"Authorization": "Bearer %s" % manage},
+        )
+        self.capture("PUT /backups/retention (keepLast 1)", policy)
+        d.assert_equal("200", self.status, "a keep-last-1 policy is declared for the lineage")
+
+        preview = self.api(
+            "GET",
+            "%s/retention/preview?lineage=%s" % (self.backup_api(), lineage),
+            None,
+            self.bearer(),
+        )
+        self.capture("GET /backups/retention/preview", preview)
+        d.assert_equal("200", self.status, "the dry run answers")
+        named = sorted(
+            wire.jstr(x.get("snapshotId"))
+            for x in _as_list(self.field("deleted"))
+            if isinstance(x, dict)
+        )
+        self.av(
+            named,
+            sorted(snaps[:2]),
+            "the dry run names the two oldest only: the per-stream floor of 3 outranks keepLast 1",
+        )
+        self.aj("keptSnapshots", L_SNAPSHOTS - 2, "and keeps three")
+
+        # The prune pass: manifests go, and the chunks they orphaned are pinned for the 7-day grace counted from this pass.
+        sweep = self.run_maintenance(9)
+        self.av(
+            self.deleted_by(sweep, lineage),
+            sorted(snaps[:2]),
+            "the sweep deletes exactly the snapshots the dry run named",
+        )
+        d.assert_equal(
+            ",".join(reversed(snaps[2:])),
+            ",".join(self.lineage_snapshots(lineage)),
+            "FLOOR: the three newest snapshots remain, whatever keepLast says",
+        )
+        d.assert_equal(
+            str(before),
+            str(self.stored_bytes()),
+            "the orphaned chunks are inside their grace, so the bytes have not moved yet",
+        )
+
+        # The GC pass, past the grace: only now do the bytes go down.
+        gc = self.run_maintenance(17)
+        freed = sum(
+            _as_number(wire.jstr(g.get("freedBytes")))
+            for g in _as_list(gc.get("gc"))
+            if isinstance(g, dict) and g.get("subscriptionId") == self.subscription_id
+        )
+        after = self.stored_bytes()
+        d.last_cmd = "stored bytes before and after the GC pass"
+        d.assert_equal(
+            str(2 * CELL_BYTES),
+            str(before - after),
+            "BYTES DOWN: the ledger fell by exactly the two cells only the pruned snapshots held",
+        )
+        d.assert_equal(
+            str(before - after), str(freed), "and the GC report accounts for the same bytes"
+        )
+
+        # The kept snapshots still restore: the newest, and the oldest kept one (a delta before the prune, a collapsed full root after it).
+        restore_token = self.mint_lineage_restore_session(machine_id, blob)
+        for index in (L_SNAPSHOTS - 1, 2):
+            out = self.work / ("restored-l%d.bin" % index)
+            self.run_fn(
+                "restore_snapshot %s %s" % (snaps[index], out),
+                functools.partial(self.restore_snapshot, snaps[index], out, lineage, restore_token),
+            )
+            d.assert_exit(0, "snapshot %d is read back after the prune and the GC" % index)
+            d.last_cmd = "sha256 of the restored snapshot %d" % index
+            d.assert_equal(
+                shas[index], _sha_file(out), "and is byte-identical to what was uploaded"
+            )
+
+    # ------------------------------------------------------------------ leg m
+
+    def verify_entries(self, report: dict, lineage: str, level: str) -> list[dict]:
+        """The verify results a maintenance report holds for one lineage and level."""
+        return [
+            e
+            for e in _as_list(report.get("verify"))
+            if isinstance(e, dict) and e.get("lineageGuid") == lineage and e.get("level") == level
+        ]
+
+    def leg_m_scheduled_verify(self) -> None:
+        d = self.d
+        d.step("Leg m: the scheduled verify (head and sample) names a chunk tampered in the store")
+        lineage = str(uuid.uuid4())
+        _blob, _machine_id, token = self.mint_lineage_session(lineage)
+        saved = (self.lineage, self.session_token)
+        self.lineage, self.session_token = lineage, token
+        snapshot = "snap-m-%d" % int(time.time())
+        image = self.work / "image-m.bin"
+        plan = make_two_cell_image(image)
+        try:
+            stream = self.session_api(
+                "POST", "/streams", {"repositoryGuid": lineage, "lineageGuid": lineage}
+            )
+            d.assert_equal("200", self.status, "a stream opens on the new lineage")
+            stream_id = wire.jstr(self.field("streamId", stream))
+            self.commit_l_snapshot(0, snapshot, stream_id, image, None, plan)
+        finally:
+            self.lineage, self.session_token = saved
+        chunk_a, chunk_b = (plan["cells"][i] for i in M_CELLS)
+        d.assert_equal("2", str(len(plan["unique"])), "control: the lineage holds two chunks")
+
+        # CONTROL: an untampered store verifies clean, so the findings below are the tampering and not the pass.
+        control = self.run_maintenance(M_CONTROL_DAYS)
+        heads = self.verify_entries(control, lineage, "head")
+        samples = self.verify_entries(control, lineage, "sample")
+        self.av(len(heads), 1, "CONTROL: one head result for the lineage")
+        if heads:
+            self.av(heads[0].get("checked"), 2, "and it HEADed both chunks")
+            self.av(heads[0].get("missing"), [], "and found none missing")
+        self.av(len(samples), 1, "CONTROL: one sample result for the lineage")
+        if samples:
+            self.av(samples[0].get("corrupt"), [], "and the sample found nothing corrupt")
+            self.av(samples[0].get("missing"), [], "nor missing")
+
+        # Tamper in the store with the admin key: chunk A is deleted, chunk B is overwritten with other bytes of the same length (no If-None-Match, so the PUT replaces it).
+        d.last_cmd = "DELETE the object of chunk A in the store"
+        d.assert_equal(
+            "204", self.s3_delete(self.chunk_url(lineage, chunk_a)), "chunk A is deleted"
+        )
+        d.last_cmd = "PUT other bytes over the object of chunk B in the store"
+        d.assert_equal(
+            "200",
+            self.s3_put(self.chunk_url(lineage, chunk_b), b"\xff" * CELL_BYTES),
+            "chunk B is overwritten with different bytes",
+        )
+
+        later = self.run_maintenance(M_TAMPER_DAYS)
+        heads = self.verify_entries(later, lineage, "head")
+        samples = self.verify_entries(later, lineage, "sample")
+        self.av(len(heads), 1, "one head result after the tampering")
+        if heads:
+            self.av(heads[0].get("missing"), [chunk_a], "the head pass names exactly chunk A")
+        self.av(len(samples), 1, "one sample result after the tampering")
+        if samples:
+            self.av(
+                chunk_a in _as_list(samples[0].get("missing")),
+                True,
+                "the sample names chunk A as missing",
+            )
+            self.av(samples[0].get("corrupt"), [chunk_b], "and chunk B as corrupt, by hash")
+
+    # ------------------------------------------------------------------ legs n and o
+
+    @staticmethod
+    def require_url(url: str, what: str) -> str:
+        """`url`, or the leg stops by name: an absent presigned URL means the grant before it failed, and that assertion already holds the cause."""
+        if not url.startswith("http"):
+            raise LegStoppedError("%s: the server named no URL (got %r)" % (what, url))
+        return url
+
+    def require_status(self, want: str, what: str) -> None:
+        """The last call answered `want`, or the leg stops by name: every later step would read a refusal body as if it were the answer."""
+        if self.status != want:
+            raise LegStoppedError("%s: HTTP %s, wanted %s" % (what, self.status, want))
+
+    def presigned_put(self, url: str, body: bytes, headers: dict[str, str]) -> int:
+        """One PUT through a presigned URL, the way a machine sends it (no store credentials). Returns the HTTP status."""
+        code, _ = wire.http_call(
+            "PUT", self.require_url(url, "presigned PUT"), body, headers, json_body=False
+        )
+        return code
+
+    def presigned_get(self, url: str) -> int:
+        code, _ = wire.http_bytes("GET", self.require_url(url, "presigned GET"))
+        return code
+
+    @staticmethod
+    def signed_header_names(url: str) -> set[str]:
+        """The header names a presigned URL's signature covers (`X-Amz-SignedHeaders`)."""
+        query = {
+            k.lower(): v for k, v in urllib.parse.parse_qs(urllib.parse.urlsplit(url).query).items()
+        }
+        return set((query.get("x-amz-signedheaders") or [""])[0].split(";"))
+
+    @staticmethod
+    def accepted(code: int) -> bool:
+        return 200 <= code < 300
+
+    def refusal(self, desc: str, code: int) -> None:
+        """Assert a store answer is a refusal, and log the exact code so a store-specific status (403 vs 400) is on the record."""
+        self.d.note("%s: the store answered %d" % (desc, code))
+        self.d.last_cmd = desc
+        # A refusal is a 4xx answer to the request itself; a 5xx or a dropped connection (code 0) is a failing store, not a bound that held.
+        self.av(400 <= code < 500, True, "%s is REFUSED with a 4xx (got %d)" % (desc, code))
+
+    def leg_n_bounded_put(self) -> None:
+        d = self.d
+        d.step("Leg n: a presigned chunk PUT is bound to its declared size and checksum")
+        lineage = str(uuid.uuid4())
+        _blob, _machine_id, token = self.mint_lineage_session(lineage)
+        header = {"X-Backup-Session": token}
+        image = self.work / "image-n.bin"
+        plan = make_two_cell_image(image)
+        chunk_a, chunk_b = (plan["cells"][i] for i in M_CELLS)
+        cell_a = slice_cell(image, M_CELLS[0])
+        stream = self.api(
+            "POST",
+            self.backup_api() + "/streams",
+            {"repositoryGuid": lineage, "lineageGuid": lineage},
+            header,
+        )
+        self.capture("POST /backups/streams (leg n)", stream)
+        d.assert_equal("200", self.status, "a stream opens on the new lineage")
+
+        snapshot = "snap-n-%d" % int(time.time())
+        grant_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": lineage,
+                "declaredBytes": CELL_BYTES,
+                "hashes": [chunk_a],
+                "manifestBytes": 1,
+                "chunkBytes": {chunk_a: CELL_BYTES},
+            },
+            header,
+        )
+        self.capture("POST /backups/grants (leg n, sized)", grant_text)
+        d.assert_equal("200", self.status, "a SIZED write grant (chunkBytes) is minted")
+        url = wire.jstr(self.field("grant.putUrls.%s" % chunk_a, grant_text))
+        self.av(url.startswith("http"), True, "and presigns a PUT URL for the chunk")
+        signed = self.signed_header_names(url)
+        self.av("content-length" in signed, True, "the signature covers content-length (the size)")
+        self.av(
+            "x-amz-checksum-sha256" in signed,
+            True,
+            "and x-amz-checksum-sha256 (the content), as an unhoistable header",
+        )
+
+        checksum = base64.b64encode(bytes.fromhex(chunk_a)).decode()
+        headers = {"If-None-Match": "*", "x-amz-checksum-sha256": checksum}
+        landed = False
+        # 1. One byte too long, with the true checksum header: only the size is wrong.
+        oversize = self.presigned_put(url, cell_a + b"\x00", headers)
+        landed = landed or self.accepted(oversize)
+        self.refusal("PUT of the chunk plus ONE extra byte", oversize)
+        # 2. The same length, other bytes, with the true checksum header: only the content is wrong.
+        flipped = bytes([cell_a[0] ^ 0xFF]) + cell_a[1:]
+        wrong = self.presigned_put(url, flipped, headers)
+        landed = landed or self.accepted(wrong)
+        self.refusal("PUT of same-length bytes that do not hash to the signed checksum", wrong)
+
+        exists = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": lineage, "hashes": [chunk_a]},
+            header,
+        )
+        self.capture("POST /backups/exists (after the two refused PUTs)", exists)
+        self.av(_as_list(self.field("existing", exists)), [], "nothing landed in the store")
+
+        # CONTROL, last: the PUT is create-only, so in the other order the refusals above would be 412s and prove nothing.
+        control = self.presigned_put(url, cell_a, headers)
+        d.last_cmd = "PUT of the exact chunk through the same URL and headers"
+        d.assert_equal(
+            "200",
+            str(control),
+            "CONTROL: the exact body through the SAME URL is accepted, so the refusals were the bound",
+        )
+        exists = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": lineage, "hashes": [chunk_a]},
+            header,
+        )
+        self.capture("POST /backups/exists (after the control PUT)", exists)
+        self.av(_as_list(self.field("existing", exists)), [chunk_a], "and the chunk is now held")
+        if landed:
+            # A refusal that did not happen left a wrong object under the key; the bucket is disposable, but the next run must not inherit it.
+            with contextlib.suppress(OSError):
+                self.s3_delete(self.chunk_url(lineage, chunk_a))
+
+        # An UNSIZED grant (hashes without chunkBytes) is closed for good: the route answers 400, so no chunk is ever presigned without a size bound.
+        legacy_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": lineage,
+                "declaredBytes": CELL_BYTES,
+                "hashes": [chunk_b],
+                "manifestBytes": 1,
+            },
+            header,
+        )
+        self.capture("POST /backups/grants (unsized, no chunkBytes)", legacy_text)
+        d.assert_equal("400", self.status, "an UNSIZED grant (hashes, no chunkBytes) is refused")
+
+    def a_seed_digest(self, restore_token: str) -> str:
+        """One non-zero chunk hash of this tenant's seed snapshot, read from its root manifest through a read grant (the same way in the host-only and the --renet drill)."""
+        chain_grant = self.read_grant(self.snap_seed, None, self.stored_lineage, restore_token)
+        chain = self.field("manifestChain", chain_grant)
+        urls = self.field("manifestGetUrls", chain_grant)
+        if not isinstance(chain, list) or not chain or not isinstance(urls, dict):
+            return ""
+        url = urls.get(chain[0]) or ""
+        if not url:
+            return ""
+        code, raw = wire.http_bytes("GET", url)
+        if code >= 400:
+            return ""
+        cells = json.loads(raw.decode()).get("cells") or []
+        return next((c for c in cells if c), "")
+
+    def leg_o_twin_tenant_isolation(self) -> None:
+        d = self.d
+        d.step("Leg o: a twin tenant cannot reach this tenant's lineage")
+        a_sub, a_lineage = self.subscription_id, self.stored_lineage
+        d.assert_not_equal("", a_lineage, "leg b stored a lineage for this tenant to protect")
+
+        # The twin: its own login, subscription and API token.
+        twin_email = "drill-backup-twin-%d@rediacc.io" % int(time.time())
+        d.account_ensure_login(twin_email, DRILL_PASSWORD)
+        d.account_ensure_subscription(twin_email, "PROFESSIONAL")
+        jar = http.cookiejar.MozillaCookieJar(str(self.work / "twin-cookies.txt"))
+        if not d.account_session(twin_email, DRILL_PASSWORD, jar):
+            raise SystemExit(1)
+        twin_sub = d.account_subscription_id(jar)
+        twin_bearer = d.account_mint_token(
+            jar,
+            twin_sub,
+            "drill-backup-twin",
+            ["license:read", "license:activate", "subscription:read", "backup:read"],
+        )
+        d.last_cmd = "twin tenant setup"
+        d.assert_not_equal(a_sub, twin_sub, "control: the twin is a different subscription")
+        twin_headers = {"Authorization": "Bearer %s" % twin_bearer}
+
+        # 1. The licence: a lineage is licensed to ONE subscription.
+        taken = self.api(
+            "POST",
+            "%s/licenses/activate-repo" % d.api_base(),
+            {
+                "machineId": secrets.token_hex(32),
+                "clientMachineId": secrets.token_hex(32),
+                "repositoryGuid": a_lineage,
+                "kind": "grand",
+                "requestedSizeGb": 1,
+            },
+            twin_headers,
+        )
+        self.capture("POST /licenses/activate-repo (twin, this tenant's lineage)", taken)
+        d.assert_equal(
+            "403", self.status, "the twin is REFUSED a license for this tenant's lineage"
+        )
+        self.aj("code", "REPO_GUID_OWNERSHIP_CONFLICT", "and it is refused BY NAME")
+
+        # The twin's own lineage, and one committed snapshot under it (its own control for every call below).
+        saved_bearer = (self.api_token, self.subscription_id)
+        self.api_token, self.subscription_id = twin_bearer, twin_sub
+        twin_lineage = str(uuid.uuid4())
+        try:
+            twin_blob, twin_machine, twin_token = self.mint_lineage_session(twin_lineage)
+        finally:
+            self.api_token, self.subscription_id = saved_bearer
+        twin_snapshot = "snap-o-%d" % int(time.time())
+        image = self.work / "image-o.bin"
+        plan = make_two_cell_image(image)
+        saved_session = (self.lineage, self.session_token)
+        self.lineage, self.session_token = twin_lineage, twin_token
+        try:
+            stream = self.session_api(
+                "POST", "/streams", {"repositoryGuid": twin_lineage, "lineageGuid": twin_lineage}
+            )
+            d.assert_equal("200", self.status, "the twin opens a stream on its own lineage")
+            stream_id = wire.jstr(self.field("streamId", stream))
+            self.commit_l_snapshot(0, twin_snapshot, stream_id, image, None, plan)
+        finally:
+            self.lineage, self.session_token = saved_session
+        twin_restore = self.mint_lineage_restore_session(twin_machine, twin_blob)
+        twin_chunk = plan["unique"][0]
+
+        # This tenant's side: a backup session and a restore session on the lineage leg b stored, and one of its chunk hashes.
+        minted = self.api(
+            "POST",
+            self.session_mint_url,
+            {"license": self.license_blob, "machineId": self.machine_id},
+        )
+        self.capture("POST /backups/session (this tenant, leg o)", minted)
+        d.assert_equal("200", self.status, "this tenant's backup session mints")
+        a_token = wire.jstr(self.field("token", minted))
+        self.run_fn("restore_session_token", self.mint_restore_session)
+        d.assert_exit(0, "this tenant's restore session mints")
+        a_restore = self.restore_session_token
+        a_digest = self.a_seed_digest(a_restore)
+        d.last_cmd = "read this tenant's seed manifest"
+        d.assert_not_equal("", a_digest, "control: this tenant's seed snapshot names a chunk")
+        if not a_digest:
+            raise LegStoppedError(
+                "this tenant's seed snapshot could not be read, so nothing is left to protect"
+            )
+
+        # 2. The session binding: the twin's sessions name THIS lineage and are refused; the same calls on its own lineage are served.
+        twin_session = {"X-Backup-Session": twin_token}
+        twin_read_session = {"X-Backup-Session": twin_restore}
+        for desc, path, body, headers in (
+            (
+                "exists",
+                "/exists",
+                {"lineageGuid": a_lineage, "hashes": [a_digest]},
+                twin_session,
+            ),
+            (
+                "grants",
+                "/grants",
+                {
+                    "snapshotId": "snap-o-x-%d" % int(time.time()),
+                    "lineageGuid": a_lineage,
+                    "declaredBytes": CELL_BYTES,
+                    "hashes": [a_digest],
+                    "manifestBytes": 1,
+                    "chunkBytes": {a_digest: CELL_BYTES},
+                },
+                twin_session,
+            ),
+            (
+                "read-grants",
+                "/read-grants",
+                {"lineageGuid": a_lineage, "snapshotId": self.snap_seed, "hashes": [a_digest]},
+                twin_read_session,
+            ),
+        ):
+            text = self.api("POST", self.backup_api() + path, body, headers)
+            self.capture("POST /backups%s (twin session, this tenant's lineage)" % path, text)
+            d.assert_equal("403", self.status, "twin session on this lineage: %s is refused" % desc)
+            self.aj("code", "BACKUP_LINEAGE_MISMATCH", "and refused BY NAME")
+        control = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": twin_lineage, "hashes": [twin_chunk]},
+            twin_session,
+        )
+        self.capture("POST /backups/exists (twin session, its own lineage)", control)
+        d.assert_equal(
+            "200", self.status, "CONTROL: the same twin session is served on its own lineage"
+        )
+        self.av(_as_list(self.field("existing", control)), [twin_chunk], "and sees its own chunk")
+
+        # 3. The prefix: every URL the twin is handed lies under its own tenant and lineage.
+        fresh = hashlib.sha256(("leg-o|tamper|%d" % time.time_ns()).encode()).digest()
+        fresh_cell = fresh * (CELL_BYTES // 32)
+        fresh_hash = sha256_hex(fresh_cell)
+        put_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": "snap-o-r-%d" % int(time.time()),
+                "lineageGuid": twin_lineage,
+                "declaredBytes": CELL_BYTES,
+                "hashes": [fresh_hash],
+                "manifestBytes": 1,
+                "chunkBytes": {fresh_hash: CELL_BYTES},
+            },
+            twin_session,
+        )
+        self.capture("POST /backups/grants (twin, its own lineage)", put_text)
+        d.assert_equal("200", self.status, "CONTROL: the twin is granted a PUT on its own lineage")
+        put_url = wire.jstr(self.field("grant.putUrls.%s" % fresh_hash, put_text))
+        read_text = self.read_grant(twin_snapshot, [twin_chunk], twin_lineage, twin_restore)
+        self.capture("POST /backups/read-grants (twin, its own lineage)", read_text)
+        d.assert_equal("200", self.status, "CONTROL: the twin is granted a read on its own lineage")
+        self.require_status(HTTP_OK, "the twin's read grant on its own lineage")
+        urls = [put_url, wire.jstr(self.field("grant.manifestPutUrl", put_text))]
+        for key in ("getUrls", "manifestGetUrls"):
+            mapping = self.field(key, read_text)
+            urls += [str(u) for u in (mapping.values() if isinstance(mapping, dict) else [])]
+        urls = [u for u in urls if u.startswith("http")]
+        own = "/t/%s/l/%s/" % (twin_sub, twin_lineage)
+        d.last_cmd = "inspect every URL minted for the twin"
+        self.av(len(urls) >= 3, True, "control: the twin's grants carry at least three URLs")
+        self.av([u for u in urls if own not in u], [], "every URL is under the twin's own prefix")
+        self.av(
+            [u for u in urls if "/t/%s/" % a_sub in u], [], "and none names this tenant's prefix"
+        )
+
+        # 4. The signature binds the key: the twin's PUT URL, path rewritten onto this tenant's lineage.
+        checksum = base64.b64encode(bytes.fromhex(fresh_hash)).decode()
+        headers = {"If-None-Match": "*", "x-amz-checksum-sha256": checksum}
+        mine = "/t/%s/l/%s/c/%s" % (a_sub, a_lineage, fresh_hash)
+        theirs = "/t/%s/l/%s/c/%s" % (twin_sub, twin_lineage, fresh_hash)
+        rewritten = put_url.replace(theirs, mine)
+        d.last_cmd = "rewrite the twin's presigned PUT path onto this tenant"
+        self.av(rewritten != put_url, True, "control: the rewrite changed the URL path")
+        self.refusal(
+            "PUT through the twin's URL rewritten onto this tenant's lineage",
+            self.presigned_put(rewritten, fresh_cell, headers),
+        )
+        landed = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": a_lineage, "hashes": [fresh_hash]},
+            {"X-Backup-Session": a_token},
+        )
+        self.capture("POST /backups/exists (this tenant, after the rewritten PUT)", landed)
+        self.av(_as_list(self.field("existing", landed)), [], "nothing landed under this tenant")
+        d.last_cmd = "PUT through the untampered URL"
+        d.assert_equal(
+            "200",
+            str(self.presigned_put(put_url, fresh_cell, headers)),
+            "CONTROL: the untampered URL accepts the same bytes",
+        )
+
+        # 5. The same for a read: a twin GET URL rewritten onto one of this tenant's chunks.
+        get_url = wire.jstr(self.field("getUrls.%s" % twin_chunk, read_text))
+        d.last_cmd = "GET through the twin's untampered read URL"
+        d.assert_equal(
+            "200", str(self.presigned_get(get_url)), "CONTROL: the twin reads its own chunk"
+        )
+        stolen = get_url.replace(
+            "/t/%s/l/%s/c/%s" % (twin_sub, twin_lineage, twin_chunk),
+            "/t/%s/l/%s/c/%s" % (a_sub, a_lineage, a_digest),
+        )
+        self.av(stolen != get_url, True, "control: the rewrite changed the URL path")
+        self.refusal(
+            "GET through the twin's read URL rewritten onto this tenant's chunk",
+            self.presigned_get(stolen),
+        )
+
+        # 6. Shared ids in the store: an object planted under THIS lineage id inside the twin's prefix is invisible to this tenant.
+        planted = hashlib.sha256(("leg-o|plant|%d" % time.time_ns()).encode()).digest() * (
+            CELL_BYTES // 32
+        )
+        planted_hash = sha256_hex(planted)
+        twin_plant = self.chunk_url_in(twin_sub, a_lineage, planted_hash)
+        own_plant = self.chunk_url_in(a_sub, a_lineage, planted_hash)
+        d.last_cmd = "plant an object under the twin's prefix with the lineage id of this tenant"
+        d.assert_equal("200", self.s3_put(twin_plant, planted), "the object is planted")
+        seen = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": a_lineage, "hashes": [planted_hash]},
+            {"X-Backup-Session": a_token},
+        )
+        self.capture("POST /backups/exists (this tenant, object planted under the twin)", seen)
+        self.av(_as_list(self.field("existing", seen)), [], "it is NOT visible to this tenant")
+        d.last_cmd = "plant the same object under this tenant's own prefix"
+        d.assert_equal(
+            "200", self.s3_put(own_plant, planted), "CONTROL: planted under its own prefix"
+        )
+        seen = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": a_lineage, "hashes": [planted_hash]},
+            {"X-Backup-Session": a_token},
+        )
+        self.capture("POST /backups/exists (this tenant, object planted under itself)", seen)
+        self.av(_as_list(self.field("existing", seen)), [planted_hash], "and it IS visible there")
+        d.last_cmd = "remove both planted objects"
+        d.assert_equal("204", self.s3_delete(own_plant), "the own-prefix plant is removed")
+        d.assert_equal("204", self.s3_delete(twin_plant), "and the twin-prefix plant is removed")
+
+        # 7. The manifest list: scoped to the token's subscription.
+        listed = self.api(
+            "GET", "%s/manifests?lineage=%s" % (self.backup_api(), a_lineage), None, twin_headers
+        )
+        self.capture("GET /backups/manifests (twin bearer, this tenant's lineage)", listed)
+        leaked = [
+            m
+            for m in _as_list(self.field("manifests", listed))
+            if isinstance(m, dict)
+            and (m.get("lineageGuid") == a_lineage or m.get("snapshotId") == self.snap_seed)
+        ]
+        self.av(leaked, [], "the twin's manifest list holds nothing of this tenant")
+        mine_listed = self.api(
+            "GET", "%s/manifests?lineage=%s" % (self.backup_api(), a_lineage), None, self.bearer()
+        )
+        self.capture("GET /backups/manifests (this tenant's bearer)", mine_listed)
+        self.av(
+            self.snap_seed
+            in [
+                m.get("snapshotId")
+                for m in _as_list(self.field("manifests", mine_listed))
+                if isinstance(m, dict)
+            ],
+            True,
+            "CONTROL: this tenant's own bearer lists its seed snapshot",
+        )
+
+        # This tenant's data is intact after all of the above.
+        restored = self.work / "restored-after-twin.bin"
+        self.run_fn(
+            "restore_snapshot %s %s" % (self.snap_seed, restored),
+            lambda: self.restore_snapshot(self.snap_seed, restored, a_lineage, a_restore),
+        )
+        d.assert_exit(0, "this tenant's seed snapshot still restores")
+        d.last_cmd = "sha256 of the image restored after the twin's attempts"
+        d.assert_equal(self.seed_sha, _sha_file(restored), "byte-identically")
+
+    # ------------------------------------------------------------------ shared by legs p to s
+
+    @contextlib.contextmanager
+    def on_lineage(self, lineage: str, token: str) -> Iterator[None]:
+        """Run with `self.lineage` and `self.session_token` on another lineage, restored whatever happens."""
+        saved = (self.lineage, self.session_token)
+        self.lineage, self.session_token = lineage, token
+        try:
+            yield
+        finally:
+            self.lineage, self.session_token = saved
+
+    def integrity_session(self, lineage: str, luks_uuid: str = "") -> tuple[dict, str, str]:
+        """A session on a new lineage from the ONE machine legs p to s share: PROFESSIONAL holds 5 machines, and these legs open more lineages than that."""
+        if not self.integrity_machine_id:
+            self.integrity_machine_id = secrets.token_hex(32)
+        return self.mint_lineage_session(lineage, luks_uuid, self.integrity_machine_id)
+
+    def open_stream(self) -> str:
+        stream = self.session_api(
+            "POST", "/streams", {"repositoryGuid": self.lineage, "lineageGuid": self.lineage}
+        )
+        self.capture("POST /backups/streams", stream)
+        self.d.assert_equal("200", self.status, "a stream opens on the new lineage")
+        self.require_status(HTTP_OK, "the stream on %s" % self.lineage)
+        return wire.jstr(self.field("streamId", stream))
+
+    def commit_attempt(
+        self,
+        snapshot: str,
+        plan: dict,
+        stream_id: str,
+        *,
+        identity: tuple[str, str] | None = None,
+        parent: tuple[str, dict] | None = None,
+        accept: bool = False,
+        manifest_patch: dict | None = None,
+        commit_root: str = "",
+    ) -> str:
+        """Everything a run does except upload: a zero-chunk grant, the manifest through it, and the commit. The chunks already exist, so what a refusal says can only be about the fields under test. The refused attempt's lease stays until it expires, which is what happens to a machine's. Returns the commit's body; `self.status` holds its status."""
+        manifest = wire_manifest(
+            snapshot,
+            plan,
+            self.lineage,
+            parent[0] if parent else "",
+            parent[1] if parent else None,
+            identity,
+        )
+        if manifest_patch:
+            manifest = wire.compact({**json.loads(manifest), **manifest_patch})
+        grant_text = self.session_api(
+            "POST",
+            "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": self.lineage,
+                "declaredBytes": 0,
+                "hashes": [],
+                "manifestBytes": len(manifest.encode()),
+            },
+        )
+        self.require_status(HTTP_OK, "the grant for %s" % snapshot)
+        self.grant = _as_dict(grant_text)
+        placed = self.put_manifest(snapshot, manifest)
+        if placed != HTTP_OK:
+            raise LegStoppedError("the manifest of %s: store answered %s" % (snapshot, placed))
+        body: dict = {
+            "snapshotId": snapshot,
+            "lineageGuid": self.lineage,
+            "streamId": stream_id,
+            "cellSizeBytes": CELL_BYTES,
+            "totalBytes": plan["imageBytes"],
+            "addedBytes": 0,
+            "addedChunkCount": 0,
+            "cellsRoot": commit_root or plan_root(plan),
+            **identity_fields(identity),
+        }
+        if parent:
+            body["parentSnapshotId"] = parent[0]
+        if accept:
+            body["identityChangeAccepted"] = True
+        return self.session_api("POST", "/commit", body)
+
+    def manage_token(self) -> str:
+        """A token that may write retention and repair; the routes also ask that its creator is a current owner or admin, which the admin session is."""
+        if not self.manage_token_value:
+            if self.admin_jar is None:
+                raise LegStoppedError("no admin session, so no backup:manage token")
+            self.manage_token_value = self.d.account_mint_token(
+                self.admin_jar,
+                self.subscription_id,
+                "drill-backup-manage-integrity",
+                ["backup:read", "backup:manage"],
+            )
+        return self.manage_token_value
+
+    def repair(self, lineage: str, hashes: list[str], dry_run: bool, token: str = "") -> str:
+        """POST /backups/chunks/repair; `self.status` holds the status."""
+        return self.api(
+            "POST",
+            "%s/chunks/repair" % self.backup_api(),
+            {"lineageGuid": lineage, "hashes": hashes, "dryRun": dry_run},
+            {"Authorization": "Bearer %s" % (token or self.manage_token())},
+        )
+
+    def store_pass(self, lineage: str) -> dict:
+        """One whole in-order store pass (`rdc backup verify --store`'s wire): pages until the cursor ends. Returns the findings together with the last page's `roots`."""
+        missing: list[str] = []
+        corrupt: list[str] = []
+        checked = 0
+        roots: object = {}
+        after = ""
+        for _ in range(VERIFY_MAX_PAGES):
+            body = {
+                "level": "chunks",
+                "lineageGuid": lineage,
+                **({"after": after} if after else {}),
+            }
+            text = self.api("POST", "%s/verify" % self.backup_api(), body, self.bearer())
+            self.capture("POST /backups/verify (level chunks)", text)
+            self.require_status(HTTP_OK, "the store pass on %s" % lineage)
+            page = self.field("chunks", text)
+            if not isinstance(page, dict):
+                raise LegStoppedError("the store pass answered no chunks object")
+            missing += _as_list(page.get("missing"))
+            corrupt += _as_list(page.get("corrupt"))
+            checked += _as_number(wire.jstr(page.get("checked")))
+            roots = page.get("roots") or roots
+            after = wire.jstr(page.get("nextAfter"))
+            if not after:
+                return {
+                    "checked": checked,
+                    "missing": missing,
+                    "corrupt": corrupt,
+                    "roots": roots if isinstance(roots, dict) else {},
+                }
+        raise LegStoppedError(
+            "the store pass on %s took over %d pages" % (lineage, VERIFY_MAX_PAGES)
+        )
+
+    def verification_state(self, lineage: str, snapshot: str) -> str:
+        listed = self.api(
+            "GET", "%s/manifests?lineage=%s" % (self.backup_api(), lineage), None, self.bearer()
+        )
+        for row in _as_list(self.field("manifests", listed)):
+            if isinstance(row, dict) and row.get("snapshotId") == snapshot:
+                return wire.jstr(row.get("verificationState"))
+        return ""
+
+    def held(self, token: str, lineage: str, digests: list[str]) -> list[str]:
+        """Which of `digests` the store holds for a lineage, by the session's own exists call."""
+        text = self.api(
+            "POST",
+            self.backup_api() + "/exists",
+            {"lineageGuid": lineage, "hashes": digests},
+            {"X-Backup-Session": token},
+        )
+        self.require_status(HTTP_OK, "exists on %s" % lineage)
+        return _as_list(self.field("existing", text))
+
+    def release_lease(self, token: str, snapshot: str) -> str:
+        return self.api(
+            "POST",
+            "%s/leases/%s/release" % (self.backup_api(), snapshot),
+            "",
+            {"X-Backup-Session": token},
+        )
+
+    def release_probe_leases(self) -> None:
+        """Legs e and h mint grants that never commit. Under --renet those leases sit on the source repository's lineage, where a live one refuses a repair, so they end before leg r does one."""
+        for snapshot in ("snap-over-quota", "wire-probe-%d" % os.getpid()):
+            self.release_lease(self.session_token, snapshot)
+            self.require_status(HTTP_OK, "releasing the probe lease %s" % snapshot)
+
+    def assert_refused_identity(self, text: str, reason: str, desc: str) -> None:
+        d = self.d
+        self.capture("POST /backups/commit (%s)" % desc, text)
+        d.assert_equal("409", self.status, "%s is refused" % desc)
+        self.aj("code", "BACKUP_IDENTITY_CHANGED", "with the identity code")
+        self.aj("reason", reason, "and the reason %s" % reason)
+
+    # ------------------------------------------------------------------ leg p
+
+    def check_root_vectors(self) -> None:
+        """The drill's root against renet's known answers, with a control: a vector with one cell moved must not match, or the comparison proves nothing."""
+        d = self.d
+        d.last_cmd = "cells_root over renet's cells_root_vectors.json"
+        vectors = json.loads(d.root.joinpath(*CELLS_ROOT_VECTORS).read_text())["vectors"]
+        wrong = [
+            v["name"]
+            for v in vectors
+            if cells_root(v["cells"], v["cellBytes"], v["imageBytes"]) != v["root"]
+        ]
+        self.av(wrong, [], "the drill's cellsRoot gives renet's known answer for every vector")
+        self.av(len(vectors) > 0, True, "control: the vector file holds vectors")
+        moved = next(v for v in vectors if len(v["cells"]) > 1)
+        swapped = list(reversed(moved["cells"]))
+        self.av(
+            cells_root(swapped, moved["cellBytes"], moved["imageBytes"]) != moved["root"]
+            or swapped == moved["cells"],
+            True,
+            "control: the root moves when the cells change order",
+        )
+
+    def leg_p_identity(self) -> None:
+        d = self.d
+        d.step("Leg p: the declared LUKS identity is held to the stream and the licence")
+        self.check_root_vectors()
+        stamp = int(time.time())
+        first, other = fake_identity(), fake_identity()
+        image = self.work / "image-p.bin"
+        plan = make_two_cell_image(image)
+
+        lineage = str(uuid.uuid4())
+        _blob, _machine, token = self.integrity_session(lineage)
+        with self.on_lineage(lineage, token):
+            stream_id = self.open_stream()
+            self.at("previous", "object", "a new stream reports a previous slot")
+            self.aj("previous", "", "and nothing in it: this run is the baseline")
+            base = "snap-p0-%d" % stamp
+            self.commit_l_snapshot(0, base, stream_id, image, None, plan, first)
+            parent = (base, plan)
+
+            again = self.session_api(
+                "POST", "/streams", {"repositoryGuid": lineage, "lineageGuid": lineage}
+            )
+            self.capture("POST /backups/streams (after the baseline)", again)
+            self.aj("previous.snapshotId", base, "the stream now answers the baseline snapshot")
+            self.aj("previous.luksUuid", first[0], "with its UUID")
+            self.aj("previous.luksKeyDigest", first[1], "and its key digest")
+
+            # The commit is the second line behind the machine's own check: these are the refusals a machine that lost its journal meets.
+            for label, reason, identity, accept in (
+                ("another UUID", "uuid-changed", (other[0], first[1]), False),
+                ("another key digest", "key-digest-changed", (first[0], other[1]), False),
+                ("no identity after one was recorded", "identity-undeclared", None, False),
+                ("an accepted change with a parent", "accepted-change-has-parent", other, True),
+            ):
+                text = self.commit_attempt(
+                    "snap-p-%s-%d" % (reason, stamp),
+                    plan,
+                    stream_id,
+                    identity=identity,
+                    parent=parent,
+                    accept=accept,
+                )
+                self.assert_refused_identity(text, reason, label)
+
+            # CONTROL: the same delta with the recorded identity commits, so the four above were the identity and not the shape.
+            text = self.commit_attempt(
+                "snap-p1-%d" % stamp, plan, stream_id, identity=first, parent=parent
+            )
+            self.capture("POST /backups/commit (the recorded identity, planted control)", text)
+            d.assert_equal("200", self.status, "CONTROL: the recorded identity commits as a delta")
+            self.aj("idempotent", False, "as a real commit")
+
+            # The one way past: accepted, full, and it moves what later commits are held to.
+            accepted = "snap-p2-%d" % stamp
+            text = self.commit_attempt(accepted, plan, stream_id, identity=other, accept=True)
+            self.capture("POST /backups/commit (accepted change, full)", text)
+            d.assert_equal("200", self.status, "an accepted change commits as a full manifest")
+            text = self.commit_attempt(
+                "snap-p3-%d" % stamp, plan, stream_id, identity=first, parent=(accepted, plan)
+            )
+            self.assert_refused_identity(
+                text, "uuid-changed", "the old identity after an accepted change"
+            )
+
+            # The body and the row must describe one snapshot.
+            for label, field, patch, root in (
+                ("the image size", "imageBytes", {"imageBytes": plan["imageBytes"] + 1}, ""),
+                ("the repository", "repositoryGuid", {"repositoryGuid": str(uuid.uuid4())}, ""),
+                ("the root", "cellsRoot", {}, "e" * 64),
+            ):
+                text = self.commit_attempt(
+                    "snap-p-body-%s-%d" % (field, stamp),
+                    plan,
+                    stream_id,
+                    identity=other,
+                    parent=(accepted, plan),
+                    manifest_patch=patch,
+                    commit_root=root,
+                )
+                self.capture("POST /backups/commit (manifest disagrees on %s)" % label, text)
+                d.assert_equal(
+                    "409", self.status, "a manifest that disagrees on %s is refused" % label
+                )
+                self.aj("code", "BACKUP_MANIFEST_BODY_MISMATCH", "as a body mismatch")
+                self.aj("field", field, "naming %s" % field)
+
+        # A licence that names a UUID binds the first commit, where the stream has no row.
+        licensed = fake_identity()
+        lineage = str(uuid.uuid4())
+        _blob, _machine, token = self.integrity_session(lineage, licensed[0])
+        with self.on_lineage(lineage, token):
+            stream_id = self.open_stream()
+            text = self.commit_attempt("snap-p-lic0-%d" % stamp, plan, stream_id)
+            self.assert_refused_identity(
+                text, "identity-undeclared", "no identity under a naming licence"
+            )
+            text = self.commit_attempt("snap-p-lic1-%d" % stamp, plan, stream_id, identity=other)
+            self.assert_refused_identity(
+                text, "licence-uuid-mismatch", "a UUID the licence does not name"
+            )
+            text = self.commit_attempt("snap-p-lic2-%d" % stamp, plan, stream_id, identity=licensed)
+            self.capture("POST /backups/commit (the licensed UUID, planted control)", text)
+            d.assert_equal("200", self.status, "CONTROL: the UUID the licence names commits")
+
+        if self.renet_legs is not None:
+            self.renet_legs.leg_p()
+
+    # ------------------------------------------------------------------ leg q
+
+    def seed_q_lineage(
+        self, label: str, stamp: int
+    ) -> tuple[str, str, list[str], list[str], dict, str]:
+        """One lineage holding the leg's chain. Returns (lineage, session token, snapshots, image digests, license blob, machine id)."""
+        lineage = str(uuid.uuid4())
+        blob, machine, token = self.integrity_session(lineage)
+        snaps = ["snap-q%s%d-%d" % (label, n, stamp) for n in range(Q_SNAPSHOTS)]
+        shas: list[str] = []
+        with self.on_lineage(lineage, token):
+            stream_id = self.open_stream()
+            parent: tuple[str, dict] | None = None
+            for n, snap in enumerate(snaps):
+                image = self.work / ("image-q%s%d.bin" % (label, n))
+                make_unique_image(image, n)
+                shas.append(_sha_file(image))
+                parent = (snap, self.commit_l_snapshot(n, snap, stream_id, image, parent))
+        return lineage, token, snaps, shas, blob, machine
+
+    def report_verify(self, token: str, snapshot: str, status: str) -> None:
+        text = self.api(
+            "POST",
+            self.backup_api() + "/reports",
+            {"kind": "verify", "snapshotId": snapshot, "level": "deep", "status": status},
+            {"X-Backup-Session": token},
+        )
+        self.capture("POST /backups/reports (%s, %s)" % (snapshot, status), text)
+
+    def leg_q_verified_retention(self) -> None:
+        d = self.d
+        d.step("Leg q: retention keeps a verified snapshot through a run of bad nights")
+        stamp = int(time.time())
+        lineage, token, snaps, shas, blob, machine = self.seed_q_lineage("v", stamp)
+        twin, _twin_token, twin_snaps, _shas, _blob, _machine = self.seed_q_lineage("c", stamp)
+
+        verified = snaps[Q_VERIFIED]
+        self.report_verify(token, verified, "verified")
+        d.assert_equal("200", self.status, "the machine reports a verified run")
+        self.aj("verificationState", "verified", "and the snapshot takes the verdict")
+        for bad in snaps[Q_VERIFIED + 1 :]:
+            self.report_verify(token, bad, "mismatch")
+            self.aj("verificationState", "failed", "a bad night marks %s failed" % bad)
+
+        policy = {"Authorization": "Bearer %s" % self.manage_token()}
+        for target in (lineage, twin):
+            text = self.api(
+                "PUT",
+                "%s/retention" % self.backup_api(),
+                {"lineageGuid": target, "keepLast": 1},
+                policy,
+            )
+            self.capture("PUT /backups/retention (keepLast 1)", text)
+            d.assert_equal("200", self.status, "keep-last-1 is declared")
+
+        # The newest three are the positional floor, and every one of them failed, which is the case this leg exists for: position alone would keep only bad versions.
+        doomed = sorted(s for i, s in enumerate(snaps[:3]) if i != Q_VERIFIED)
+        preview = self.api(
+            "GET",
+            "%s/retention/preview?lineage=%s" % (self.backup_api(), lineage),
+            None,
+            self.bearer(),
+        )
+        self.capture("GET /backups/retention/preview (verified lineage)", preview)
+        d.assert_equal("200", self.status, "the dry run answers")
+        self.av(
+            sorted(
+                wire.jstr(x.get("snapshotId"))
+                for x in _as_list(self.field("deleted"))
+                if isinstance(x, dict)
+            ),
+            doomed,
+            "the dry run spares the verified snapshot, older than the floor",
+        )
+        reasons: object = next(
+            (
+                x.get("reasons")
+                for x in _as_list(self.field("kept"))
+                if isinstance(x, dict) and x.get("snapshotId") == verified
+            ),
+            [],
+        )
+        self.av("last-verified" in _as_list(reasons), True, "and names why: last-verified")
+
+        # CONTROL: the same chain with no verdict loses that snapshot, so the verdict is what kept it.
+        preview = self.api(
+            "GET",
+            "%s/retention/preview?lineage=%s" % (self.backup_api(), twin),
+            None,
+            self.bearer(),
+        )
+        self.capture("GET /backups/retention/preview (no verdict, planted control)", preview)
+        self.av(
+            sorted(
+                wire.jstr(x.get("snapshotId"))
+                for x in _as_list(self.field("deleted"))
+                if isinstance(x, dict)
+            ),
+            sorted(twin_snaps[:3]),
+            "CONTROL: with no verdict the same snapshot is doomed",
+        )
+
+        sweep = self.run_maintenance(Q_SWEEP_DAYS)
+        self.av(self.deleted_by(sweep, lineage), doomed, "the sweep deletes what the dry run named")
+        self.av(
+            self.deleted_by(sweep, twin),
+            sorted(twin_snaps[:3]),
+            "CONTROL: and takes the same snapshot from the lineage with no verdict",
+        )
+        d.last_cmd = "the manifest index after the sweep"
+        self.av(
+            verified in self.lineage_snapshots(lineage),
+            True,
+            "the verified snapshot survives the bad nights",
+        )
+        self.av(
+            twin_snaps[Q_VERIFIED] in self.lineage_snapshots(twin),
+            False,
+            "CONTROL: its twin does not",
+        )
+
+        # It must still be a version that restores, past the grace of the chunks the sweep orphaned.
+        self.run_maintenance(Q_GC_DAYS)
+        restore_token = self.mint_lineage_restore_session(machine, blob)
+        out = self.work / "restored-q.bin"
+        self.run_fn(
+            "restore_snapshot %s %s" % (verified, out),
+            functools.partial(self.restore_snapshot, verified, out, lineage, restore_token),
+        )
+        d.assert_exit(0, "the verified snapshot is read back after the prune and the GC")
+        d.last_cmd = "sha256 of the restored verified snapshot"
+        d.assert_equal(shas[Q_VERIFIED], _sha_file(out), "byte-identically")
+
+    # ------------------------------------------------------------------ leg r
+
+    def leg_r_repair(self) -> None:
+        d = self.d
+        d.step("Leg r: repair deletes a corrupt chunk, it goes back, and the store pass is clean")
+        stamp = int(time.time())
+        lineage = str(uuid.uuid4())
+        blob, machine, token = self.integrity_session(lineage)
+        image = self.work / "image-r.bin"
+        plan = make_two_cell_image(image)
+        good, bad = (plan["cells"][i] for i in M_CELLS)
+        bad_cell = slice_cell(image, M_CELLS[1])
+        snapshot = "snap-r-%d" % stamp
+        with self.on_lineage(lineage, token):
+            stream_id = self.open_stream()
+            self.commit_l_snapshot(0, snapshot, stream_id, image, None, plan)
+        source_sha = _sha_file(image)
+
+        # CONTROL: the pass is clean first, and a clean pass checks the root this drill computed.
+        clean = self.store_pass(lineage)
+        self.av(clean["checked"], 2, "CONTROL: the store pass reads both chunks")
+        self.av([clean["missing"], clean["corrupt"]], [[], []], "and finds nothing wrong")
+        self.av(
+            wire.jstr(clean["roots"].get("checked")),
+            "1",
+            "and recomputes the head's root from the manifest",
+        )
+        self.av(_as_list(clean["roots"].get("mismatched")), [], "which equals the one committed")
+        self.aj_value(
+            self.verification_state(lineage, snapshot), "verified", "a clean pass marks it verified"
+        )
+
+        d.last_cmd = "PUT other bytes over one chunk in the store"
+        d.assert_equal(
+            "200",
+            self.s3_put(self.chunk_url(lineage, bad), b"\xff" * CELL_BYTES),
+            "one chunk is overwritten with other bytes in the store",
+        )
+        found = self.store_pass(lineage)
+        self.av(found["corrupt"], [bad], "the store pass names exactly that chunk as corrupt")
+        self.aj_value(
+            self.verification_state(lineage, snapshot), "failed", "and marks the snapshot failed"
+        )
+
+        # The route is privileged: a read-only token writes nothing.
+        text = self.repair(lineage, [bad], False, self.api_token)
+        self.capture("POST /backups/chunks/repair (backup:read token)", text)
+        d.assert_equal("403", self.status, "a token without backup:manage is refused the repair")
+        self.av(self.held(token, lineage, [bad]), [bad], "and the object is still there")
+
+        text = self.repair(lineage, [bad], True)
+        self.capture("POST /backups/chunks/repair (dry run)", text)
+        d.assert_equal("200", self.status, "the dry run answers")
+        self.av(self.field("deleted"), [bad], "and names the corrupt chunk")
+        self.av(self.field("affectedSnapshots"), [snapshot], "and the snapshot it damages")
+        self.av(self.held(token, lineage, [bad]), [bad], "and deletes nothing")
+
+        # CONTROL: a sound object is never deleted, so the deletion below is the bad bytes.
+        text = self.repair(lineage, [good], False)
+        self.capture("POST /backups/chunks/repair (a sound chunk, planted control)", text)
+        d.assert_equal("200", self.status, "CONTROL: repair of a sound chunk answers")
+        self.av(self.field("stillGood"), [good], "and calls it stillGood")
+        self.av(self.field("deleted"), [], "and deletes nothing")
+        self.av(self.held(token, lineage, [good]), [good], "and the object stays")
+
+        # A create-only PUT cannot replace the bad object, which is why the delete must come first.
+        checksum = base64.b64encode(bytes.fromhex(bad)).decode()
+        headers = {"If-None-Match": "*", "x-amz-checksum-sha256": checksum}
+        first_run = "snap-r-run1-%d" % stamp
+        grant_body = {
+            "lineageGuid": lineage,
+            "declaredBytes": CELL_BYTES,
+            "hashes": [bad],
+            "manifestBytes": 1,
+            "chunkBytes": {bad: CELL_BYTES},
+        }
+        session = {"X-Backup-Session": token}
+        run_grant = self.api(
+            "POST", self.backup_api() + "/grants", {"snapshotId": first_run, **grant_body}, session
+        )
+        self.capture("POST /backups/grants (a machine's repair run)", run_grant)
+        d.assert_equal("200", self.status, "a repair run takes a grant for the chunk")
+        self.require_status(HTTP_OK, "the first repair grant")
+        url = wire.jstr(self.field("grant.putUrls.%s" % bad, run_grant))
+        d.last_cmd = "PUT the right bytes over the bad object"
+        d.assert_equal(
+            "412",
+            str(self.presigned_put(url, bad_cell, headers)),
+            "CONTROL: while the bad object sits there the right bytes cannot land",
+        )
+
+        # The live lease refuses a repair, and the release is what ends that.
+        text = self.repair(lineage, [bad], False)
+        self.capture("POST /backups/chunks/repair (a run holds the lease)", text)
+        d.assert_equal("409", self.status, "a live upload lease refuses the repair")
+        self.aj("code", "BACKUP_LINEAGE_UPLOADING", "by name")
+        self.av(self.held(token, lineage, [bad]), [bad], "and nothing was deleted")
+        released = self.release_lease(token, first_run)
+        self.capture("POST /backups/leases/:id/release", released)
+        d.assert_equal("200", self.status, "the run releases its lease")
+        self.aj("released", True, "and the server says one was released")
+        released = self.release_lease(token, first_run)
+        self.capture("POST /backups/leases/:id/release (again)", released)
+        self.aj("released", False, "CONTROL: a second release finds none")
+
+        text = self.repair(lineage, [bad], False)
+        self.capture("POST /backups/chunks/repair", text)
+        d.assert_equal("200", self.status, "with the lease released the repair goes through")
+        self.av(self.field("deleted"), [bad], "and deletes the corrupt object")
+        self.av(self.field("affectedSnapshots"), [snapshot], "and names the damage")
+        self.av(self.held(token, lineage, [bad]), [], "the object is gone from the store")
+        broken = self.work / "restored-r-broken.bin"
+        restore_token = self.mint_lineage_restore_session(machine, blob)
+        self.run_fn(
+            "restore_snapshot %s %s" % (snapshot, broken),
+            functools.partial(self.restore_snapshot, snapshot, broken, lineage, restore_token),
+        )
+        d.assert_exit(1, "CONTROL: with the chunk gone the snapshot does not restore")
+
+        second_run = "snap-r-run2-%d" % stamp
+        run_grant = self.api(
+            "POST", self.backup_api() + "/grants", {"snapshotId": second_run, **grant_body}, session
+        )
+        self.capture("POST /backups/grants (the re-upload)", run_grant)
+        d.assert_equal("200", self.status, "the re-upload takes a grant")
+        self.require_status(HTTP_OK, "the second repair grant")
+        url = wire.jstr(self.field("grant.putUrls.%s" % bad, run_grant))
+        d.last_cmd = "PUT the right bytes under the now empty key"
+        d.assert_equal(
+            "200", str(self.presigned_put(url, bad_cell, headers)), "the right bytes land"
+        )
+        released = self.release_lease(token, second_run)
+        self.capture("POST /backups/leases/:id/release (the re-upload)", released)
+        self.aj("released", True, "and the re-upload releases its lease too")
+
+        after = self.store_pass(lineage)
+        self.av([after["missing"], after["corrupt"]], [[], []], "the store pass is clean again")
+        self.av(after["checked"], 2, "over both chunks")
+        self.av(_as_list(after["roots"].get("mismatched")), [], "with the root matching")
+        self.aj_value(
+            self.verification_state(lineage, snapshot),
+            "verified",
+            "and a clean pass clears the failure",
+        )
+        restored = self.work / "restored-r.bin"
+        restore_token = self.mint_lineage_restore_session(machine, blob)
+        self.run_fn(
+            "restore_snapshot %s %s" % (snapshot, restored),
+            functools.partial(self.restore_snapshot, snapshot, restored, lineage, restore_token),
+        )
+        d.assert_exit(0, "the snapshot restores")
+        d.last_cmd = "sha256 of the repaired snapshot"
+        d.assert_equal(source_sha, _sha_file(restored), "byte-identically")
+
+        # CONTROL: the pass compares roots for real. A head whose manifest and commit agree on a wrong root is named by it.
+        wrong_root = "c" * 64
+        head = "snap-r-badroot-%d" % stamp
+        with self.on_lineage(lineage, token):
+            text = self.commit_attempt(
+                head,
+                plan,
+                stream_id,
+                parent=(snapshot, plan),
+                manifest_patch={"cellsRoot": wrong_root},
+                commit_root=wrong_root,
+            )
+        self.capture("POST /backups/commit (a wrong root both sides agree on)", text)
+        d.assert_equal(
+            "200", self.status, "a head with a wrong root commits, since both sides agree"
+        )
+        planted = self.store_pass(lineage)
+        self.av(
+            _as_list(planted["roots"].get("mismatched")),
+            [head],
+            "CONTROL: the store pass recomputes it and names that head",
+        )
+
+        if self.renet_legs is not None:
+            self.renet_legs.leg_r()
+
+    def aj_value(self, actual: str, expected: str, desc: str) -> None:
+        self.d.last_cmd = desc
+        self.d.assert_equal(expected, actual, desc)
+
+    # ------------------------------------------------------------------ leg s
+
+    def s3_get(self, url: str) -> tuple[int, bytes]:
+        region, key, secret = self.s3_creds()
+        headers = wire.sigv4_headers("GET", url, b"", region, key, secret)
+        return wire.http_bytes("GET", url, None, headers, json_body=False)
+
+    def leg_s_store_conformance(self) -> None:
+        d = self.d
+        store = "%s/%s" % (self.store_url(), self.bucket)
+        tier = "B" if self.o.using_real_store() else "A"
+        d.step("Leg s: what the store itself does with a duplicate PUT and a wrong checksum")
+        d.note("store under test: %s (tier %s)" % (store, tier))
+        lineage = str(uuid.uuid4())
+        _blob, _machine, token = self.integrity_session(lineage)
+        with self.on_lineage(lineage, token):
+            self.open_stream()
+
+        # Both cells are new to this run: a leftover object would turn the first PUT into a 412 and prove nothing.
+        def make_cell(tag: str) -> bytes:
+            seed = "leg-s|%s|%d" % (tag, time.time_ns())
+            return hashlib.sha256(seed.encode()).digest() * (CELL_BYTES // 32)
+
+        kept_cell, signed_cell = make_cell("kept"), make_cell("signed")
+        kept, signed = sha256_hex(kept_cell), sha256_hex(signed_cell)
+        snapshot = "snap-s-%d" % int(time.time())
+        grant_text = self.api(
+            "POST",
+            self.backup_api() + "/grants",
+            {
+                "snapshotId": snapshot,
+                "lineageGuid": lineage,
+                "declaredBytes": 2 * CELL_BYTES,
+                "hashes": [kept, signed],
+                "manifestBytes": 1,
+                "chunkBytes": {kept: CELL_BYTES, signed: CELL_BYTES},
+            },
+            {"X-Backup-Session": token},
+        )
+        self.capture("POST /backups/grants (leg s)", grant_text)
+        d.assert_equal("200", self.status, "a sized grant is minted for two new chunks")
+        self.require_status(HTTP_OK, "the leg s grant")
+        kept_url = wire.jstr(self.field("grant.putUrls.%s" % kept, grant_text))
+        signed_url = wire.jstr(self.field("grant.putUrls.%s" % signed, grant_text))
+
+        def checksum_headers(digest: str) -> dict[str, str]:
+            return {
+                "If-None-Match": "*",
+                "x-amz-checksum-sha256": base64.b64encode(bytes.fromhex(digest)).decode(),
+            }
+
+        d.last_cmd = "the first create-only PUT"
+        d.assert_equal(
+            "200",
+            str(self.presigned_put(kept_url, kept_cell, checksum_headers(kept))),
+            "CONTROL: the first create-only PUT is accepted, so the next answer is about the duplicate",
+        )
+        duplicate = self.presigned_put(kept_url, kept_cell, checksum_headers(kept))
+        d.last_cmd = "the same PUT again"
+        d.assert_equal("412", str(duplicate), "the duplicate PUT answers 412, not 409 and not 200")
+
+        wrong = bytes([signed_cell[0] ^ 0xFF]) + signed_cell[1:]
+        refused = self.presigned_put(signed_url, wrong, checksum_headers(signed))
+        self.refusal("PUT of bytes that do not hash to the signed checksum", refused)
+        self.av(
+            self.held(token, lineage, [signed]),
+            [],
+            "and nothing landed under that key",
+        )
+        # CONTROL, last, because the PUT is create-only: the same URL with the right bytes is accepted, so the refusal was the checksum.
+        d.last_cmd = "the right bytes through the same URL"
+        d.assert_equal(
+            "200",
+            str(self.presigned_put(signed_url, signed_cell, checksum_headers(signed))),
+            "CONTROL: the right bytes through the SAME URL are accepted",
+        )
+        code, stored = self.s3_get(self.chunk_url(lineage, signed))
+        d.last_cmd = "read the object back with the store's own credentials"
+        d.assert_equal("200", str(code), "the object reads back")
+        d.assert_equal(signed, sha256_hex(stored), "and holds exactly the right bytes")
+        # The line a tier B run files as that store's proof (box P3).
+        d.note(
+            "STORE-PROOF store=%s tier=%s duplicate_put=%d wrong_checksum=%d"
+            % (store, tier, duplicate, refused)
+        )
+
+        released = self.release_lease(token, snapshot)
+        self.capture("POST /backups/leases/:id/release (leg s)", released)
+        self.aj("released", True, "the leg releases its lease")
+        d.last_cmd = "remove the two objects of leg s"
+        for digest in (kept, signed):
+            d.assert_equal(
+                "204",
+                self.s3_delete(self.chunk_url(lineage, digest)),
+                "an object of leg s is removed",
+            )
 
     # ------------------------------------------------------------------ leg k
 
@@ -1416,10 +3261,10 @@ class Backup:
         restored = self.work / "restored-lapsed.bin"
         self.run_fn(
             "restore_snapshot %s %s" % (self.snap_seed, restored),
-            lambda: self.restore_snapshot(self.snap_seed, restored),
+            lambda: self.restore_snapshot(self.snap_seed, restored, self.stored_lineage),
         )
         d.assert_exit(0, "and the data actually comes back through it")
-        want = _sha_file(self.work / "image-v1.bin")
+        want = self.seed_sha
         got = _sha_file(restored)
         d.last_cmd = "sha256 of the image restored on a lapsed subscription"
         d.assert_equal(
@@ -1436,6 +3281,27 @@ class Backup:
             d.note("selftest mode: stopping before any server or store work")
             return d.summary()
 
+        # Leg dependencies are refused before any setup: the gateway restart alone costs 20s or more.
+        # Legs b-f, h, j, k, l, m, n and o all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
+        if o.needs_plane() and not o.enabled("a"):
+            log.error(
+                "Legs b-f, h, j, k, l, m, n and o all run inside the session leg a mints, and there is no"
+            )
+            log.error("session on disk to inherit. Include leg a:  --legs %s" % o.legs_with("a"))
+            raise SystemExit(1)
+
+        # Leg o reads the lineage and snapshot leg b stored: without them it would test an empty tenant and pass.
+        if o.enabled("o") and not o.enabled("b"):
+            log.error("Leg o reaches for the lineage and snapshot leg b stores. Include leg b:")
+            log.error("    --legs %s" % o.legs_with("a", "b"))
+            raise SystemExit(1)
+
+        # The real-renet half of p and r works on the source repository legs b-d leave.
+        if o.renet and any(o.enabled(leg) for leg in "pr") and not o.enabled("b"):
+            log.error("With --renet, legs p and r act on the repository leg b creates. Include it:")
+            log.error("    --legs %s" % o.legs_with("a", "b"))
+            raise SystemExit(1)
+
         self.preflight_tools()
         self.preflight_machines()
         self.announce_unrunnable()
@@ -1445,18 +3311,11 @@ class Backup:
         self.setup_gateway()
         self.setup_store_bucket()
         self.setup_account()
-
-        # Legs b-f, h, j and k all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
-        if o.needs_plane() and not o.enabled("a"):
-            log.error(
-                "Legs b-f, h, j and k all run inside the session leg a mints, and there is no"
-            )
-            log.error("session on disk to inherit. Include leg a:  --legs a,%s" % o.legs)
-            raise SystemExit(1)
+        self.setup_renet()
 
         for leg, fn in (
             ("a", self.leg_a_session_mint),
-            ("b", self.leg_b_seed_upload),
+            ("b", self.leg_b_then_adopt),
             ("c", self.leg_c_incremental_upload),
             ("d", self.leg_d_point_in_time_restore),
             ("e", self.leg_e_quota_refusal),
@@ -1465,11 +3324,40 @@ class Backup:
             ("h", self.leg_h_machine_wire_conformance),
             ("i", self.leg_i_machine_verify),
             ("j", self.leg_j_write_grant_cannot_read),
+            # Leg l runs before k: k suspends the subscription, and l needs an entitled one to commit snapshots.
+            ("l", self.leg_l_gc_and_retention),
+            # Leg m needs an entitled subscription too (it commits), and runs its clock past leg l's.
+            ("m", self.leg_m_scheduled_verify),
+            # Legs n and o commit or license on an entitled subscription, so both run before k lapses it.
+            ("n", self.leg_n_bounded_put),
+            ("o", self.leg_o_twin_tenant_isolation),
+            # Legs p to s commit and mint grants on an entitled subscription too.
+            ("p", self.leg_p_identity),
+            ("q", self.leg_q_verified_retention),
+            ("r", self.leg_r_repair),
+            ("s", self.leg_s_store_conformance),
             ("k", self.leg_k_lapsed_restore),
         ):
             if o.enabled(leg):
-                fn()
+                self.run_leg(leg, fn)
         return d.summary()
+
+    def run_leg(self, leg: str, fn: Callable[[], None]) -> None:
+        """One leg, whatever becomes of it: a crash here would lose every later leg's result and the summary, so it becomes one named failure and the run goes on. The exit stays non-zero through that failure."""
+        try:
+            fn()
+        except (
+            LegStoppedError,
+            OSError,
+            ValueError,
+            KeyError,
+            RuntimeError,
+            SystemExit,
+            backup_roundtrip.StepError,
+        ) as exc:
+            self.d.last_cmd = "leg %s" % leg
+            why = "%s: %s" % (type(exc).__name__, exc)
+            self.d.assert_equal("the leg ran to its end", why, "leg %s stopped early" % leg)
 
 
 # ---------------------------------------------------------------------- small utilities
@@ -1530,6 +3418,8 @@ def main(argv: list[str]) -> int:
         with contextlib.suppress(Exception):
             backup.teardown_hook()
         drill.teardown()
+    # The legs half of the backup receipt (box J4): the legs this run selected, VERIFIED only on a clean, non-empty pass.
+    backup_check_trigger.record_drill(drill, backup_check_trigger.LEGS_HALF, rc, opts.leg_set())
     return rc
 
 

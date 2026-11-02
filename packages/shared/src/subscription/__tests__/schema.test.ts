@@ -7,6 +7,7 @@ import {
   getPlanLimits,
   hasFeature,
   isValidPlanCode,
+  PLAN_BACKUP_RETENTION,
   PLAN_FEATURES,
   PLAN_LIMITS,
   PLAN_ORDER,
@@ -151,15 +152,16 @@ describe('Subscription Schema Constants', () => {
   });
 
   describe('PLAN_ORDER', () => {
-    it('should have exactly 4 plans', () => {
-      expect(PLAN_ORDER).toHaveLength(4);
+    it('should have exactly 5 plans', () => {
+      expect(PLAN_ORDER).toHaveLength(5);
     });
 
     it('should be ordered from lowest to highest tier', () => {
-      expect(PLAN_ORDER[0]).toBe('COMMUNITY');
-      expect(PLAN_ORDER[1]).toBe('PROFESSIONAL');
-      expect(PLAN_ORDER[2]).toBe('BUSINESS');
-      expect(PLAN_ORDER[3]).toBe('ENTERPRISE');
+      expect(PLAN_ORDER[0]).toBe('FREE');
+      expect(PLAN_ORDER[1]).toBe('COMMUNITY');
+      expect(PLAN_ORDER[2]).toBe('PROFESSIONAL');
+      expect(PLAN_ORDER[3]).toBe('BUSINESS');
+      expect(PLAN_ORDER[4]).toBe('ENTERPRISE');
     });
   });
 });
@@ -269,5 +271,33 @@ describe('Subscription Schema Helper Functions', () => {
     it('should return 0 for same plan', () => {
       expect(comparePlans('BUSINESS', 'BUSINESS')).toBe(0);
     });
+  });
+});
+
+describe('PLAN_BACKUP_RETENTION', () => {
+  const knobs = [
+    'keepLast',
+    'keepHourly',
+    'keepDaily',
+    'keepWeekly',
+    'keepMonthly',
+    'keepYearly',
+  ] as const;
+
+  const checkKnob = (label: string, value: number | null, limit: number | null) => {
+    if (value === null) {
+      // An unset default is the plan offering none (limit 0) or no per-knob cap; it never hides a positive limit.
+      expect([0, null], `${label} unset default vs limit ${limit}`).toContain(limit);
+      return;
+    }
+    if (limit === null) return;
+    expect(value, label).toBeLessThanOrEqual(limit);
+  };
+
+  it('keeps every default at or below its limit, and unset where the plan offers none', () => {
+    for (const [plan, entry] of Object.entries(PLAN_BACKUP_RETENTION)) {
+      for (const knob of knobs)
+        checkKnob(`${plan}.${knob}`, entry.default[knob], entry.limit[knob]);
+    }
   });
 });

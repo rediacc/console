@@ -7,6 +7,15 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 const mockAccountServerFetch = vi.hoisted(() => vi.fn());
+// These verbs read the hosted backup plane, which needs a login (PLAN-free-license R13); a logged-in operator is the case under test.
+vi.mock('../../services/account/subscription-auth.js', () => ({
+  getSubscriptionTokenState: () => ({
+    kind: 'ready',
+    token: { token: 't' },
+    serverUrl: 'https://acct.example',
+  }),
+  getSubscriptionServerUrl: () => 'https://acct.example',
+}));
 vi.mock('../../services/account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
 }));
@@ -51,18 +60,21 @@ vi.mock('../../utils/guid-resolver.js', () => ({
   createGuidResolver: () => (guid: string) => (guid === 'lin-1' ? 'shop' : guid),
 }));
 
+const outputFormat = vi.hoisted(() => ({ value: 'table' }));
+
 vi.mock('../../utils/errors.js', async () => {
   const actual =
     await vi.importActual<typeof import('../../utils/errors.js')>('../../utils/errors.js');
   return {
     ...actual,
-    getOutputFormat: () => 'table',
+    getOutputFormat: () => outputFormat.value,
     handleError: (e: unknown) => {
       throw e;
     },
   };
 });
 
+const { outputService } = await import('../../services/core/output.js');
 const { registerBackupStorageCommands } = await import('../backup-storage.js');
 
 async function run(argv: string[]): Promise<void> {
@@ -75,6 +87,7 @@ async function run(argv: string[]): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  outputFormat.value = 'table';
 });
 
 afterEach(() => {
@@ -120,17 +133,27 @@ describe('backup verify', () => {
     mockResolveRepoRef.mockResolvedValue({ repoKey: 'shop', machineName: 'm1', tag: 'latest' });
   });
 
-  it('maps --deep to level=full and records a verified run on success', async () => {
+  /** The step plan the verify job carries (PLAN-detached-jobs J4): its records and the verdict print run once the job is seen finished. */
+  const plannedSteps = (call: unknown[]) =>
+    (call[4] as { job: { steps: { name: string; params: Record<string, unknown> }[] } }).job.steps;
+
+  it('maps --deep to level=full and plans the verdict and a verified run on the job ticket', async () => {
     mockExecuteRepoFunction.mockResolvedValue({ success: true });
     await run(['verify', 'shop', '--deep']);
 
     const call = mockExecuteRepoFunction.mock.calls[0];
     expect(call[0]).toBe('backup_verify');
     expect(call[3]).toEqual({ level: 'full' });
-    expect(mockRecordBackupRun).toHaveBeenCalledWith('shop', {
-      kind: 'verify',
-      status: 'verified',
-    });
+    const steps = plannedSteps(call);
+    expect(steps.map((s) => s.name)).toEqual([
+      'reportVerifyVerdict',
+      'recordBackupRun',
+      'recordBackupRunFailed',
+    ]);
+    expect(steps[1].params).toEqual({ repo: 'shop', kind: 'verify', status: 'verified' });
+    // Nothing is recorded or printed outside the job's steps.
+    expect(mockRecordBackupRun).not.toHaveBeenCalled();
+    expect(mockPrint).not.toHaveBeenCalled();
     expect(process.exitCode).not.toBe(1);
   });
 
@@ -144,8 +167,10 @@ describe('backup verify', () => {
 
     expect(mockPrint).not.toHaveBeenCalled();
 
-    expect(mockExecuteRepoFunction.mock.calls[0][3]).toEqual({ level: 'spot' });
-    expect(mockRecordBackupRun).toHaveBeenCalledWith('shop', {
+    const call = mockExecuteRepoFunction.mock.calls[0];
+    expect(call[3]).toEqual({ level: 'spot' });
+    expect(plannedSteps(call)[2].params).toEqual({
+      repo: 'shop',
       kind: 'verify',
       status: 'mismatch',
     });
@@ -171,6 +196,96 @@ describe('backup manifests', () => {
     await run(['manifests']);
     expect(mockAccountServerFetch).toHaveBeenCalledWith('/account/api/v1/backups/manifests');
   });
+
+  const entry = (over: Record<string, unknown>) => ({
+    snapshotId: 'snap-aaaaaaaaaaaa',
+    lineageGuid: 'lin-1',
+    streamId: 's-1',
+    cellSizeBytes: 1048576,
+    totalBytes: 2147483648,
+    addedBytes: 1048576,
+    addedChunkCount: 3,
+    createdAt: '2026-10-01T10:00:00.000Z',
+    ...over,
+  });
+
+  it('renders newest first with repo name, short parent, humanized sizes and index', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        entry({
+          snapshotId: '20261001T100000Z-aaaaaaaabbbbbbbb',
+          createdAt: '2026-10-01T10:00:00Z',
+        }),
+        entry({
+          snapshotId: '20261002T100000Z-ccccccccdddddddd',
+          lineageGuid: 'lin-9',
+          parentSnapshotId: '20261001T100000Z-aaaaaaaabbbbbbbb',
+          hasIndex: true,
+          createdAt: '2026-10-02T10:00:00Z',
+        }),
+      ],
+    });
+    await run(['manifests']);
+    const rows = JSON.parse(mockPrint.mock.calls[0]?.[0] as string);
+    expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'aaaaaaaa']);
+    expect(rows[0]).toMatchObject({
+      repo: 'lin-9'.slice(0, 8),
+      parent: 'aaaaaaaa',
+      snapshot: '2026-10-02 10:00:00',
+      index: 'yes',
+      added: '1M / 3',
+    });
+    expect(rows[1]).toMatchObject({ repo: 'shop', parent: '-', index: 'no', total: '2G' });
+  });
+
+  it('orders mixed fractional and whole-second timestamps by time', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        entry({ snapshotId: 'a-aaaaaaaa', createdAt: '2026-10-01T10:00:00.500Z' }),
+        entry({ snapshotId: 'b-bbbbbbbb', createdAt: '2026-10-01T10:00:00Z' }),
+        entry({ snapshotId: 'c-cccccccc', createdAt: '2026-10-01T10:00:01Z' }),
+      ],
+    });
+    await run(['manifests']);
+    const rows = JSON.parse(mockPrint.mock.calls[0]?.[0] as string);
+    expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'aaaaaaaa', 'bbbbbbbb']);
+  });
+
+  it('places a manifest with an unparseable createdAt last instead of scrambling the order', async () => {
+    mockAccountServerFetch.mockResolvedValue({
+      manifests: [
+        entry({ snapshotId: 'a-aaaaaaaa', createdAt: 'x' }),
+        entry({ snapshotId: 'b-bbbbbbbb', createdAt: '2026-10-01T10:00:00Z' }),
+        entry({ snapshotId: 'c-cccccccc', createdAt: '2026-10-02T10:00:00Z' }),
+      ],
+    });
+    await run(['manifests']);
+    const rows = JSON.parse(mockPrint.mock.calls[0]?.[0] as string);
+    expect(rows.map((r: { id: string }) => r.id)).toEqual(['cccccccc', 'bbbbbbbb', 'aaaaaaaa']);
+  });
+
+  it('json keeps every wire field, adds repo (full GUID never truncated, null when unknown) and sorts newest first', async () => {
+    outputFormat.value = 'json';
+    mockAccountServerFetch.mockResolvedValue({
+      truncated: false,
+      manifests: [
+        entry({ snapshotId: 'old-1', createdAt: '2026-10-01T10:00:00Z' }),
+        entry({
+          snapshotId: 'new-2',
+          lineageGuid: 'lineage-unknown-0123456789',
+          createdAt: '2026-10-02T10:00:00Z',
+        }),
+      ],
+    });
+    await run(['manifests']);
+    const [payload, format] = mockPrint.mock.calls[0] as [Record<string, unknown>, string];
+    expect(format).toBe('json');
+    expect(payload.truncated).toBe(false);
+    const manifests = payload.manifests as Record<string, unknown>[];
+    expect(manifests.map((m) => m.snapshotId)).toEqual(['new-2', 'old-1']);
+    expect(manifests[0]).toMatchObject({ repo: null, lineageGuid: 'lineage-unknown-0123456789' });
+    expect(manifests[1]).toMatchObject({ repo: 'shop', streamId: 's-1', totalBytes: 2147483648 });
+  });
 });
 
 /**
@@ -187,13 +302,101 @@ describe('backup retention', () => {
   it('shows the policy the SERVER is enforcing, scoped to the lineage', async () => {
     mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
     mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
-    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+    mockAccountServerFetch.mockResolvedValue({ policies: [], streams: [] });
 
     await run(['retention', 'shop']);
 
     // Read back from the server, never printed from local config: what is shown has to be what is enforced, on the surface that decides what is deleted.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
       '/account/api/v1/backups/retention?lineage=lin-1'
+    );
+  });
+
+  it('names the effective policy and where it came from (F5)', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    const knobs = {
+      keepLast: 3,
+      keepHourly: null,
+      keepDaily: 7,
+      keepWeekly: null,
+      keepMonthly: null,
+      keepYearly: null,
+    };
+    mockAccountServerFetch.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('/retention/preview')
+          ? {
+              lineageGuid: 'lin-1',
+              policySource: 'plan',
+              streams: [{ streamId: 's-1', policySource: 'plan', policy: knobs }],
+              deleted: [],
+              keptSnapshots: 4,
+              freedBytes: 0,
+              freedChunks: 0,
+            }
+          : { policies: [] }
+      )
+    );
+
+    await run(['retention', 'shop']);
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/backups/retention/preview?lineage=lin-1'
+    );
+    const infos = vi.mocked(outputService.info).mock.calls.map((c) => String(c[0]));
+    expect(infos.join('\n')).toContain('commands.backup.retention.effective');
+    expect(infos.join('\n')).toContain('commands.backup.retention.source.plan');
+    // The per-stream rows carry the same source and the knob counts.
+    const printed = mockPrint.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(printed).toContain('"stream":"s-1"');
+    expect(printed).toContain('"daily":7');
+  });
+
+  it('retention preview lists the snapshots the next sweep deletes and the bytes freed (F6)', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({
+      lineageGuid: 'lin-1',
+      policySource: 'default',
+      streams: [],
+      deleted: [{ snapshotId: 'snap-old', streamId: 's-1', createdAt: '2026-01-01T00:00:00.000Z' }],
+      keptSnapshots: 7,
+      freedBytes: 4096,
+      freedChunks: 1,
+    });
+
+    await run(['retention', 'preview', 'shop']);
+
+    expect(mockAccountServerFetch).toHaveBeenCalledWith(
+      '/account/api/v1/backups/retention/preview?lineage=lin-1'
+    );
+    expect(mockPrint.mock.calls.map((c) => String(c[0])).join('\n')).toContain('snap-old');
+    const infos = vi.mocked(outputService.info).mock.calls.map((c) => String(c[0]));
+    expect(infos.join('\n')).toContain('commands.backup.retention.preview.summary');
+  });
+
+  it('set --stream declares the policy for that stream alone (F1)', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+
+    await run(['retention', 'set', 'shop', '--keep-daily', '3', '--stream', 's-1']);
+
+    // accountServerFetch serializes the body itself, so the command passes the object.
+    const [, init] = mockAccountServerFetch.mock.calls[0] as [string, { body: unknown }];
+    expect(init.body).toEqual({ lineageGuid: 'lin-1', streamId: 's-1', keepDaily: 3 });
+  });
+
+  it('clear --stream scopes the delete to that stream', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValue({ policies: [] });
+
+    await run(['retention', 'clear', 'shop', '--stream', 's-1']);
+
+    expect(mockAccountServerFetch.mock.calls[0][0]).toBe(
+      '/account/api/v1/backups/retention?lineage=lin-1&stream=s-1'
     );
   });
 
@@ -206,11 +409,11 @@ describe('backup retention', () => {
 
     const [url, init] = mockAccountServerFetch.mock.calls[0] as [
       string,
-      { method: string; body: string },
+      { method: string; body: unknown },
     ];
     expect(url).toBe('/account/api/v1/backups/retention');
     expect(init.method).toBe('PUT');
-    const body = JSON.parse(init.body) as Record<string, unknown>;
+    const body = init.body as Record<string, unknown>;
     // THE DEFECT: a flag mapped to the wrong field, or sent as a STRING. Zod would reject a string, but a mis-mapped field is accepted and silently changes which snapshots survive.
     expect(body).toEqual({ lineageGuid: 'lin-1', keepLast: 7, keepMonthly: 12 });
   });
@@ -243,5 +446,44 @@ describe('backup retention', () => {
     // THE DEFECT: an UNSCOPED delete. Without the lineage this clears the policy for a repository the operator did not name.
     expect(url).toBe('/account/api/v1/backups/retention?lineage=lin-1');
     expect(init.method).toBe('DELETE');
+  });
+});
+
+/**
+ * `backup snapshots delete <repo> <id>` (plan F10): the manual delete the quota error's "prune old
+ * snapshots" points at. The id is checked against the named repository's history first, so an id
+ * from another repository never reaches the delete route.
+ */
+describe('backup snapshots delete', () => {
+  const history = {
+    manifests: [{ snapshotId: 'snap-1', lineageGuid: 'lin-1', streamId: 's-1', createdAt: 'x' }],
+  };
+
+  it('deletes through the account route once the id is in the repository history', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch
+      .mockResolvedValueOnce(history)
+      .mockResolvedValueOnce({ deleted: ['snap-1'] });
+
+    await run(['snapshots', 'delete', 'shop', 'snap-1']);
+
+    expect(mockAccountServerFetch.mock.calls[0][0]).toBe(
+      '/account/api/v1/backups/manifests?lineage=lin-1'
+    );
+    const [url, init] = mockAccountServerFetch.mock.calls[1] as [string, { method: string }];
+    expect(url).toBe('/account/api/v1/backups/snapshots/snap-1');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('refuses an id that is not in the named repository, without calling the delete route', async () => {
+    mockResolveRepoRefLocal.mockResolvedValue({ repoKey: 'shop', name: 'shop', tag: 'latest' });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'repo-1', grandGuid: 'lin-1' });
+    mockAccountServerFetch.mockResolvedValueOnce(history);
+
+    await expect(run(['snapshots', 'delete', 'shop', 'snap-other'])).rejects.toThrow(
+      'commands.backup.snapshots.delete.notInRepo'
+    );
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
   });
 });

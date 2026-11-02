@@ -210,7 +210,7 @@ SEAMS = {
 PROBE_FLAG = "--probe-payload"
 
 # THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal the floor frozen in `goldens/twins/quality.check-trap-registry.jsonl` unless re-recorded with a reason.
-TRAP_FLOOR_DEFAULT = 109
+TRAP_FLOOR_DEFAULT = 110
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
 

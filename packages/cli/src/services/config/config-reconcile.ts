@@ -31,6 +31,22 @@ interface ObservedRepo {
   repoName?: string;
   mounted: boolean;
   mountPath?: string;
+  /** renet's persisted network ID for this repo (from its state mirror), when recorded. */
+  networkId?: number;
+}
+
+/** A repo whose network ID reconcile wrote from the machine. */
+interface NetworkIdRebuilt {
+  /** The composite key, `name:tag`. */
+  repository: string;
+  networkId: number;
+  machine: string;
+}
+
+/** A repo whose recorded network ID differed from the machine's; the machine wins (D4(a)). */
+interface NetworkIdDiverged extends NetworkIdRebuilt {
+  /** The ID the config held before reconcile. */
+  previous: number;
 }
 
 /**
@@ -39,7 +55,7 @@ interface ObservedRepo {
  * can type its conflict formatter without indexing ReconcileReport internals.
  */
 export interface ReconcileConflict {
-  kind: 'placement' | 'duplicate';
+  kind: 'placement' | 'duplicate' | 'network-id';
   repository: string;
   message: string;
 }
@@ -63,6 +79,10 @@ export interface ReconcileReport {
    */
   placementsAccepted: AcceptedPlacement[];
   conflicts: ReconcileConflict[];
+  /** Repos whose missing `state.repos[*][*].networkId` was rebuilt from the machine by GUID. */
+  networkIdsRebuilt: NetworkIdRebuilt[];
+  /** Repos whose recorded ID differed from the machine's; state now holds the machine's. */
+  networkIdsDiverged: NetworkIdDiverged[];
 }
 
 export interface ReconcileOptions {
@@ -195,6 +215,8 @@ async function collectObserved(
         repoName: repo.repo_name,
         mounted: repo.mounted,
         mountPath: repo.mount_path,
+        ...(typeof repo.network_id === 'number' &&
+          repo.network_id > 0 && { networkId: repo.network_id }),
       };
       const list = observed.get(repo.name) ?? [];
       list.push(entry);
@@ -202,6 +224,70 @@ async function collectObserved(
     }
   }
   return { observed, seen, unreachable };
+}
+
+/** The one network ID observation gives a GUID, preferring the declared machine's copy. */
+function observedNetworkId(
+  sightings: ObservedRepo[],
+  declaredMachine: string | undefined
+): { networkId: number; machine: string } | 'ambiguous' | undefined {
+  const withId = sightings.filter((s) => s.networkId !== undefined);
+  const declared = withId.find((s) => s.machine === declaredMachine);
+  if (declared) return { networkId: declared.networkId as number, machine: declared.machine };
+  const ids = new Set(withId.map((s) => s.networkId));
+  if (ids.size > 1) return 'ambiguous';
+  const only = withId[0];
+  return only ? { networkId: only.networkId as number, machine: only.machine } : undefined;
+}
+
+interface NetworkIdPlan {
+  rebuilt: NetworkIdRebuilt[];
+  diverged: NetworkIdDiverged[];
+  conflicts: ReconcileConflict[];
+}
+
+/**
+ * spec 04 §4.2: rebuild `state.repos[*][*].networkId` by GUID from what renet reports. A missing ID is filled; a differing one is replaced by the machine's (D4(a)); a GUID seen with different IDs on several machines (none of them the declared one) is a conflict, never a guess.
+ */
+function planNetworkIds(config: RdcConfig, observed: Map<string, ObservedRepo[]>): NetworkIdPlan {
+  const plan: NetworkIdPlan = { rebuilt: [], diverged: [], conflicts: [] };
+  for (const [name, family] of Object.entries(config.resources?.repositories ?? {})) {
+    const declaredMachine =
+      family.placement && 'machine' in family.placement ? family.placement.machine : undefined;
+    for (const [tag, record] of Object.entries(family.tags)) {
+      const repository = `${name}:${tag}`;
+      const seen = observedNetworkId(observed.get(record.repositoryGuid) ?? [], declaredMachine);
+      if (seen === undefined) continue;
+      if (seen === 'ambiguous') {
+        plan.conflicts.push({
+          kind: 'network-id',
+          repository,
+          message: `repository "${repository}" (guid ${record.repositoryGuid.slice(0, 8)}) carries different network IDs on several machines; its network ID is left as recorded.`,
+        });
+        continue;
+      }
+      const previous = config.state?.repos?.[name]?.[tag]?.networkId;
+      if (previous === seen.networkId) continue;
+      const entry = { repository, networkId: seen.networkId, machine: seen.machine };
+      if (previous === undefined || previous <= 0) plan.rebuilt.push(entry);
+      else plan.diverged.push({ ...entry, previous });
+    }
+  }
+  return plan;
+}
+
+/** Write the planned network IDs into `state.repos`, keeping every sibling runtime key (D5(a)). */
+function applyNetworkIds(state: RdcState, plan: NetworkIdPlan): void {
+  const changes = [...plan.rebuilt, ...plan.diverged];
+  if (changes.length === 0) return;
+  const repos: NonNullable<RdcState['repos']> = { ...(state.repos ?? {}) };
+  for (const { repository, networkId } of changes) {
+    const idx = repository.indexOf(':');
+    const name = repository.slice(0, idx);
+    const tag = repository.slice(idx + 1);
+    repos[name] = { ...(repos[name] ?? {}), [tag]: { ...(repos[name]?.[tag] ?? {}), networkId } };
+  }
+  state.repos = repos;
 }
 
 /**
@@ -239,7 +325,10 @@ export async function reconcileState(
     }
   }
 
-  // Rebuild state.machines observations. state.repos.networkId reconciliation requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7, a P1 renet addition); until it lands, networkId is left as-is.
+  const networkIds = planNetworkIds(config, observed);
+  conflicts.push(...networkIds.conflicts);
+
+  // Rebuild state.machines observations and state.repos network IDs (by GUID, the machine wins).
   await deps.writeState((cfg) => {
     const state: RdcState = { ...(cfg.state ?? {}) };
     const machines: NonNullable<RdcState['machines']> = { ...(state.machines ?? {}) };
@@ -248,6 +337,7 @@ export async function reconcileState(
     }
     state.machines = machines;
     state.reconciledAt = reconciledAt;
+    applyNetworkIds(state, networkIds);
 
     const repositories = { ...(cfg.resources?.repositories ?? {}) };
     for (const [name, placement] of pendingPlacement) {
@@ -282,6 +372,8 @@ export async function reconcileState(
     placementsFilled,
     placementsAccepted,
     conflicts,
+    networkIdsRebuilt: networkIds.rebuilt,
+    networkIdsDiverged: networkIds.diverged,
   };
 }
 

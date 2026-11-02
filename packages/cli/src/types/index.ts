@@ -28,7 +28,6 @@ export type {
   RepositoryConfig,
   SecretEntry,
   SecretMode,
-  StorageConfig,
 } from '@rediacc/shared/config-schema';
 
 export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-schema';
@@ -39,6 +38,7 @@ export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-sc
  * for grep-continuity with existing call sites.
  */
 type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
+
 export type { SSHContent };
 
 // ============================================================================
@@ -90,6 +90,8 @@ export const EXIT_CODES = {
   HEALTH_GATE_FAILED: 13,
   INFRA_FAILED: 14,
   BUSY: 15,
+  /** A follow was lost (transport gone, or `job wait --timeout` expired) while the job keeps running and its ticket is kept. 16 is the first number past the refusal classes. */
+  FOLLOW_LOST: 16,
   DETACHED: 130,
 } as const;
 
@@ -220,6 +222,8 @@ export interface ProviderMapping {
   sshKey: ProviderSSHKeyConfig;
   firewall?: ProviderFirewallConfig;
   defaults?: Record<string, string>;
+  /** Required resource arguments with no rdc input: argument name to the environment variable that supplies it. */
+  requiredEnvAttrs?: Record<string, string>;
   /** Private-network block (cluster provisioning only). */
   network?: ProviderNetworkConfig;
   /** Disk class hint for OSD/data pools. */

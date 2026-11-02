@@ -15,7 +15,7 @@ tags:
   - mid-market
 featured: false
 language: tr
-sourceHash: "d5f6a7108f614b9b"
+sourceHash: "b1569f9c0bab2b54"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -95,13 +95,13 @@ Boşluklar örtüşmelerden daha ilginç, çünkü boşluklar NIS2'nin gün yüz
 
 Rediacc, kendi altyapısını barındıran yapılar için beş kategorinin dördünün temel kapasitesini tek bir denetim günlüğüyle tek bir kontrol düzlemine indirgiyor.
 
-**Yedekleme** iki modda çalışır. Sıcak, çökme tutarlı bir BTRFS anlık görüntüsüdür. Kesinti yok. Soğuk ise durdur, anlık görüntüle, başlat döngüsü yapar. Her ikisi de sistemd zamanlayıcılarıyla planlanır. Her ikisi de rclone üzerinden birçok hedefe gönderir. Birimler LUKS şifreli. Operatör anahtarı tutar. Rediacc şirketi hiçbir zaman düz metin görmez. Bkz. [Backup & Restore](/tr/docs/backup-restore) ve [Cross Backup Strategy](/tr/docs/cross-backup).
+**Yedekleme** iki modda çalışır. Sıcak, çökme tutarlı bir BTRFS anlık görüntüsüdür. Kesinti yok. Soğuk ise durdur, anlık görüntüle, başlat döngüsü yapar. Her ikisi de sistemd zamanlayıcılarıyla planlanır. Her ikisi de yalnızca değişen hücrelerin yüklendiği, içerik adresli bir chunk deposuna yazar ve saklama süresi depo soy hattı başına bildirilir. Birimler LUKS şifreli. Operatör anahtarı tutar. Rediacc şirketi hiçbir zaman düz metin görmez. Bkz. [Backup & Restore](/tr/docs/backup-restore) ve [Cross Backup Strategy](/tr/docs/cross-backup).
 
 **DR:** yedeklemeyle aynı ilkel, artı makineler arası veri taşımak için `rdc repo migrate`, artı paralel bir makinede kurtarılmış durumun hızla ayağa kaldırılması için fork ilkeli. DR merkezi başka bir Hetzner makinesi, bir OVH makinesi, bir yerel raf; SSH'ın ulaştığı her yer olabilir. Veri yolunda DR satıcısı bulutu yok.
 
 **Test verisi ve tam yığın klonlama** BTRFS reflink üzerinde çalışır. Fork sabit zamanlıdır, depo boyutundan bağımsız. Tam yığın: veri, yapılandırmalar, konteynerler ve servisler. [PocketOS testimizde](/tr/blog/i-tested-rediacc-against-the-pocketos-incident) 128 GB deposunu 7,2 saniyede fork ettik. Fork mevcut üretimdir, sadeleştirilmiş bir test kopyası değil. Bkz. [Risk-Free Upgrades](/tr/docs/risk-free-upgrades).
 
-**Anlık geri yükleme:** herhangi bir rclone hedefinden `rdc repo pull` ile yeni bir fork'a; üst deponun wildcard sertifikasıyla kapsanan fork'a özgü bir alt alan adı altında ayağa kaldırılır. DNS karmaşası yok, sertifika dansı yok.
+**Anlık geri yükleme:** `rdc backup restore --at <snapshot>` ile chunk deposundan veya `rdc repo pull` ile ikinci bir makineden yeni bir fork'a; üst deponun wildcard sertifikasıyla kapsanan fork'a özgü bir alt alan adı altında ayağa kaldırılır. DNS karmaşası yok, sertifika dansı yok.
 
 **Birleşik denetim günlüğü.** Kontrol düzleminde 70'ten fazla olay türü. Oturum açmalar, API token'ları, yapılandırma yazmaları, depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları ve makine işlemleri. Zincir operatör iş istasyonunda hash'le bağlı. `rdc config audit verify` baştan sona kontrol eder.
 

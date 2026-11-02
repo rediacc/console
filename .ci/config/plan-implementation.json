@@ -106,11 +106,20 @@
     "per-plan exemption and no allowlist anywhere in this gate.",
     "docs/agent-reference/suppressions.md governs every escape hatch in this repo",
     "and this one deliberately ships with none, because an allowlist here would be",
-    "an allowlist against 'implement the plan', which is the whole ask."
+    "an allowlist against 'implement the plan', which is the whole ask.",
+    "",
+    "revalidation_at IS P-A9's CUT (agent/plans/PLAN-plan-preflight.md PF6), the",
+    "same strict landing-date device as baseline_at: a box ticked on a branch",
+    "after this date sits in a plan whose `Revalidated:` header must name an",
+    "ancestor of the merge base with no main commit since touching the paths the",
+    "plan cites. P-A9 is an ADVISORY line under the operator ruling of",
+    "2026-10-23 (lean first, enforcement warns), never a finding, so this key",
+    "moves no verdict."
   ],
   "baseline_open": 189,
   "baseline_at": "2026-09-22",
   "drain_per_day": 11,
   "warn_slack": 35,
-  "floor_open": 0
+  "floor_open": 0,
+  "revalidation_at": "2026-10-23"
 }

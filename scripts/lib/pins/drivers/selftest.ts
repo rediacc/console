@@ -17,17 +17,34 @@ import path from 'node:path';
 import process from 'node:process';
 import { WK_CEPH_IMAGE_REPO } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { runControls } from '../../controls.js';
+import { isEntryPoint } from '../../entry-point.js';
 import { policyPath } from '../../policy-paths.js';
 import { REPO_ROOT } from '../../repo-root.js';
 // driver.js first: the driver modules use its exports only inside functions, but a driver as
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
 import { type DriverContext, type PinPlan, PlanRefused } from '../driver.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../registry.js';
+import { majorLineOf } from '../status.js';
 import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
 import { gomodDriver } from './gomod.js';
+import {
+  deferredCount,
+  deferredNames,
+  inRangePlan,
+  inRangeReleases,
+  judgeOverrides,
+  keptMoves,
+  type NpmPlanJson,
+  type OverrideJudgement,
+  overrideDrift,
+  overrideTarget,
+  type Packument,
+  stepsOf,
+} from './npm.js';
 import { osCephHostDriver } from './os.js';
+import { planBiomeSchema } from './pin-manifests.js';
 import { realProviderDriver } from './realprovider.js';
 import { type Deps, T8_MUTANTS, type T8Mutant } from './shared.js';
 
@@ -113,7 +130,7 @@ const rejects = async (p: Promise<unknown>): Promise<Error | null> => {
 };
 
 /** What a plan wrote, by file. */
-const written = (plan: PinPlan): Record<string, string> =>
+const written = (plan: PinPlan): Partial<Record<string, string>> =>
   Object.fromEntries(plan.writes.map((w) => [`${w.repo}:${w.file}`, w.after]));
 
 // ---- actions --------------------------------------------------------------------------------
@@ -531,7 +548,7 @@ async function osCases(
         insp.releases[0]?.verdict?.eligible === true &&
         insp.releases[0].publishedMs === null &&
         Object.keys(w).length === 3 &&
-        Object.values(w).every((t) => t.includes(NEW) && !t.includes('lp160.4.1')),
+        Object.values(w).every((t) => t?.includes(NEW) === true && !t.includes('lp160.4.1')),
       detail: JSON.stringify(insp) + Object.keys(w).join(','),
     });
   }
@@ -562,6 +579,31 @@ async function osCases(
         err instanceof PlanRefused &&
         !d.cmds.some((c) => c.includes('mirror-tag')),
       detail: JSON.stringify(insp) + d.cmds.join('|'),
+    });
+  }
+  {
+    const withOverride = (reason: boolean) =>
+      ctxOf(
+        tree({
+          'private/renet/.ceph-image-pin': `${PIN_FILE('19.2.3-lp160.4.1')}host-version.opensuse-16.0=20.1.0\n${reason ? 'host-version-reason.opensuse-16.0=ruling\n' : ''}`,
+          'private/renet/pkg/infra/cephpkg/cephpkg.go': `var hostPins = map[string]string{\n\t"opensuse-16.0": "19.2.3-lp160.4.1",\n}\n`,
+          'private/renet/cmd/renet/ceph_install_profile_test.go': `want := "zypper -n install --no-recommends ceph-common=19.2.3-lp160.4.1"\n`,
+        })
+      );
+    const ok = await osCephHostDriver(
+      () => deps({ run: obs('20.1.0-lp160.1.1', 'present') }).deps,
+      mutant
+    ).inspect(e, withOverride(true));
+    const noReason = await osCephHostDriver(
+      () => deps({ run: obs('20.1.0-lp160.1.1', 'present') }).deps,
+      mutant
+    ).inspect(e, withOverride(false));
+    out.push({
+      name: 'os:leap: a host-version.opensuse-16.0 override with a reason admits that series; without a reason it is ignored',
+      ok:
+        ok.releases[0]?.verdict?.eligible === true &&
+        noReason.releases[0]?.verdict?.eligible === false,
+      detail: JSON.stringify([ok, noReason]),
     });
   }
   {
@@ -861,10 +903,547 @@ async function dockerCases(
       NOW - 6 * DAY,
     detail: JSON.stringify(fresh.releases),
   });
+
+  // THE DIGEST MOVES WITH THE TAG (#d4b2a051): a FROM pinned by tag AND index digest gets both rewritten.
+  const pn = entry('image:proxy-node');
+  const dA = `sha256:${'a'.repeat(64)}`;
+  const dB = `sha256:${'b'.repeat(64)}`;
+  const dC = `sha256:${'c'.repeat(64)}`;
+  const proxyTree = () =>
+    tree({
+      'workers/proxy/Dockerfile': `FROM node:26.12.0-slim AS build\nFROM node:26.12.0-slim@${dA}\nCMD ["node"]\n`,
+      'scripts/data/docker-image-freshness-baseline.json': '[]\n',
+    });
+  const listing = {
+    results: [
+      { name: '26.13.0-slim', last_updated: iso(OLD) },
+      { name: '26.12.0-slim', last_updated: iso(OLD) },
+    ],
+    next: null,
+  };
+  const pnHub =
+    (tagAnswer: () => unknown): ((u: string) => unknown) =>
+    (u) =>
+      u.includes('/tags/26.13.0-slim')
+        ? tagAnswer()
+        : u.includes('/tags/26.12.0-slim')
+          ? { digest: dA, tag_last_pushed: iso(OLD) }
+          : listing;
+  const pc = ctxOf(proxyTree());
+  const pd = dockerDriver(
+    () => deps({ json: pnHub(() => ({ digest: dB, images: [{ digest: dC }] })) }).deps,
+    mutant
+  );
+  const pi = await pd.inspect(pn, pc);
+  const target = pi.releases.find((r) => r.version === 'node:26.13.0-slim');
+  out.push({
+    name: 'docker: CONTROL a pinned tag whose digest matches what Hub serves offers no re-digest, only the newer tag',
+    ok: pi.releases.map((r) => r.version).join(',') === 'node:26.13.0-slim',
+    detail: JSON.stringify(pi.releases),
+  });
+  const pp = target ? await pd.plan(pn, target, pc).catch(() => null) : null;
+  const pw = pp ? (written(pp)['.:workers/proxy/Dockerfile'] ?? '') : '';
+  out.push({
+    name: "docker: a tag+digest FROM moves both: the tag to the target and the digest to Hub's top-level index digest for it, never images[] and never the old one",
+    ok:
+      pw.split('\n')[1] === `FROM node:26.13.0-slim@${dB}` &&
+      pw.split('\n')[0] === 'FROM node:26.12.0-slim AS build' &&
+      (pp?.changes ?? []).some((c) => c.includes('digest')),
+    detail: JSON.stringify({ pw, changes: pp?.changes }),
+  });
+  const noDigest: [string, () => unknown][] = [
+    ['no digest at all', () => ({ name: '26.13.0-slim' })],
+    ['an images[]-only digest', () => ({ images: [{ digest: dC }] })],
+    ['a malformed digest', () => ({ digest: 'sha256:abc' })],
+    [
+      'a failed lookup',
+      () => {
+        throw new Error('HTTP 429');
+      },
+    ],
+  ];
+  for (const [why, answer] of noDigest) {
+    const err = target
+      ? await rejects(
+          dockerDriver(() => deps({ json: pnHub(answer) }).deps, mutant).plan(
+            pn,
+            target,
+            ctxOf(proxyTree())
+          )
+        )
+      : null;
+    out.push({
+      name: `docker: Hub answering ${why} for the target tag refuses the whole plan, naming the tag`,
+      ok: err instanceof PlanRefused && err.message.includes('node:26.13.0-slim'),
+      detail: String(err),
+    });
+  }
+  const versionOnly: PinEntry = { ...pn, sites: pn.sites.filter((x) => x.role === 'version') };
+  const gap = target
+    ? await rejects(
+        dockerDriver(() => deps({ json: pnHub(() => ({ digest: dB })) }).deps, mutant).plan(
+          versionOnly,
+          target,
+          ctxOf(proxyTree())
+        )
+      )
+    : null;
+  out.push({
+    name: 'docker: a version site whose line carries @sha256: in an entry with no digest site is refused, so a registry gap cannot keep the old digest',
+    ok: gap instanceof PlanRefused && gap.message.includes('workers/proxy/Dockerfile:2'),
+    detail: String(gap),
+  });
+
+  // THE RE-DIGEST: the tag is Hub's newest, and Hub re-pushed it, so the digest beside it is stale.
+  const rdTree = () =>
+    tree({
+      'workers/proxy/Dockerfile': `FROM node:26.13.0-slim AS build\nFROM node:26.13.0-slim@${dA}\nCMD ["node"]\n`,
+      'scripts/data/docker-image-freshness-baseline.json': '[\n  "node:26.13.0-slim"\n]\n',
+    });
+  const rdHub =
+    (served: string, pushed = OLD): ((u: string) => unknown) =>
+    (u) =>
+      u.includes('/tags/26.13.0-slim')
+        ? { digest: served, tag_last_pushed: iso(pushed), images: [{ digest: dC }] }
+        : { results: [{ name: '26.13.0-slim', last_updated: iso(pushed) }], next: null };
+  const rdLabel = `node:26.13.0-slim@${'b'.repeat(12)}`;
+  const rc = ctxOf(rdTree());
+  const rd = dockerDriver(() => deps({ json: rdHub(dB) }).deps, mutant);
+  const ri = await rd.inspect(pn, rc);
+  const redig = ri.releases.find((r) => r.version === rdLabel);
+  out.push({
+    name: 'docker: a pinned tag Hub re-pushed with another index digest is offered again as a re-digest, eligible once past the window, on the same major line',
+    ok:
+      ri.current === 'node:26.13.0-slim' &&
+      ri.releases.length === 1 &&
+      redig?.verdict?.eligible === true &&
+      majorLineOf(rdLabel) === 26,
+    detail: JSON.stringify(ri),
+  });
+  const rp = redig ? await rd.plan(pn, redig, rc).catch((e: Error) => e) : null;
+  const rw = rp && !(rp instanceof Error) ? (written(rp)['.:workers/proxy/Dockerfile'] ?? '') : '';
+  out.push({
+    name: 'docker: a re-digest rewrites the digest alone: the tag and every other line unchanged, no version change named, no baseline drain',
+    ok:
+      rw === `FROM node:26.13.0-slim AS build\nFROM node:26.13.0-slim@${dB}\nCMD ["node"]\n` &&
+      !(rp instanceof Error) &&
+      rp?.changes.length === 1 &&
+      rp.changes[0].includes('digest') &&
+      rp.steps.length === 0,
+    detail: JSON.stringify(
+      rp instanceof Error ? String(rp) : { rw, changes: rp?.changes, steps: rp?.steps }
+    ),
+  });
+  const same = await dockerDriver(() => deps({ json: rdHub(dA) }).deps, mutant).inspect(
+    pn,
+    ctxOf(rdTree())
+  );
+  out.push({
+    name: 'docker: CONTROL a pinned tag whose digest matches is current, with no candidate',
+    ok: same.releases.length === 0,
+    detail: JSON.stringify(same.releases),
+  });
+  const again = redig
+    ? await rejects(
+        dockerDriver(() => deps({ json: rdHub(dC) }).deps, mutant).plan(pn, redig, ctxOf(rdTree()))
+      )
+    : null;
+  out.push({
+    name: 'docker: a re-digest label whose digest Hub has since moved again is refused, naming the status command',
+    ok: again instanceof PlanRefused && again.message.includes('pins -- status image:proxy-node'),
+    detail: String(again),
+  });
+  const freshRd = await dockerDriver(() => deps({ json: rdHub(dB, FRESH) }).deps, mutant).inspect(
+    pn,
+    ctxOf(rdTree())
+  );
+  out.push({
+    name: 'docker: a re-push inside the release-age window is offered but not eligible',
+    ok: freshRd.releases.length === 1 && freshRd.releases[0].verdict?.eligible === false,
+    detail: JSON.stringify(freshRd.releases),
+  });
   return out;
 }
 
 // ---- the run --------------------------------------------------------------------------------
+
+function biomeSchemaCases(): Array<{ name: string; ok: boolean; detail?: string }> {
+  const doc = (v: string): string =>
+    `{\n  "$schema": "https://biomejs.dev/schemas/${v}/schema.json",\n  "vcs": { "enabled": true }\n}\n`;
+  const step = (name: string, latest: string) => [{ packages: [{ name, latest }] }];
+  const bumped = planBiomeSchema(doc('2.6.2'), step('@biomejs/biome', '2.6.3'));
+  const other = planBiomeSchema(doc('2.6.2'), step('typescript', '6.0.1'));
+  const same = planBiomeSchema(doc('2.6.3'), step('@biomejs/biome', '2.6.3'));
+  // The wiring of stepsOf: the biome.json read, the write pushed into `writes`, and the note.
+  const root = tree({ 'biome.json': doc('2.6.2'), 'package.json': '{}' });
+  const wired = (name: string, latest: string) =>
+    stepsOf(
+      ctxOf(root),
+      entry('npm'),
+      [
+        {
+          cwd: root,
+          args: ['install', `${name}@${latest}`],
+          label: 'root',
+          packages: [{ name, current: '2.6.2', latest }],
+        } as never,
+      ],
+      '11.0.0'
+    );
+  const wiredBump = wired('@biomejs/biome', '2.6.3');
+  const wiredOther = wired('typescript', '6.0.1');
+  const biomeWrite = wiredBump.writes.find((w) => w.file === 'biome.json');
+  return [
+    {
+      name: 'biome schema: stepsOf pushes the biome.json write and its note for an @biomejs/biome bump, and neither for another package',
+      ok:
+        biomeWrite?.after === doc('2.6.3') &&
+        wiredBump.notes.some((n) => n.includes('biome.json')) &&
+        !wiredOther.writes.some((w) => w.file === 'biome.json') &&
+        !wiredOther.notes.some((n) => n.includes('biome.json')),
+      detail: JSON.stringify({
+        writes: wiredBump.writes.map((w) => w.file),
+        notes: wiredBump.notes,
+      }),
+    },
+    {
+      name: 'biome schema: a planned @biomejs/biome bump writes the new version into biome.json $schema and nothing else',
+      ok: bumped === doc('2.6.3'),
+      detail: String(bumped),
+    },
+    {
+      name: 'biome schema: a bump of any other package leaves biome.json untouched',
+      ok: other === null,
+      detail: String(other),
+    },
+    {
+      name: 'biome schema: a schema already at the planned version is not rewritten',
+      ok: same === null,
+    },
+  ];
+}
+
+// ---- npm: override ranges the lockfile does not meet (worklist #c97a62d9) ---------------------
+
+async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; detail?: string }>> {
+  // The 2026-10-31 shape: the root vite override floor raised to >=8.3.5 by hand while the lock
+  // holds 8.3.4, eleven unrelated packages inside the window, and gray-matter's nested js-yaml ^3
+  // copy below a top-level js-yaml >=4.3.2 <5 override (the real tree carries both).
+  const ON = Date.parse('2026-10-31T12:00:00Z');
+  const WINDOW = 1440 * 60_000;
+  const CUTOFF = '2026-10-29T23:59:59.999Z';
+  const manifest = (vite: string, scoped = true): string =>
+    `${JSON.stringify(
+      {
+        name: 'fixture',
+        overrides: {
+          vite,
+          'js-yaml': '>=4.3.2 <5.0.0',
+          ...(scoped ? { 'gray-matter': { 'js-yaml': '^3.15.2' } } : {}),
+          zod: '$zod',
+        },
+      },
+      null,
+      2
+    )}\n`;
+  const lock = (vite: string): string =>
+    `${JSON.stringify(
+      {
+        lockfileVersion: 3,
+        packages: {
+          '': { name: 'fixture' },
+          'node_modules/vite': { version: vite },
+          'node_modules/astro/node_modules/vite': { version: vite },
+          'node_modules/js-yaml': { version: '4.3.2' },
+          'node_modules/gray-matter': { version: '4.0.3' },
+          'node_modules/gray-matter/node_modules/js-yaml': { version: '3.15.2' },
+        },
+      },
+      null,
+      2
+    )}\n`;
+  const npmTree = (vite: string, locked: string): string =>
+    tree({
+      '.devcontainer/toolchain.env': 'NPM_VERSION=11.21.0\n',
+      'package.json': manifest(vite),
+      'package-lock.json': lock(locked),
+    });
+  const viteDoc = (fresh855: boolean): Packument => ({
+    versions: { '8.3.4': {}, '8.3.5': {}, '8.3.6': {}, '9.0.0': {}, '8.4.0-beta.1': {} },
+    time: {
+      '8.3.4': '2026-10-10T00:00:00Z',
+      '8.3.5': fresh855 ? '2026-10-30T09:00:00Z' : '2026-10-21T08:00:00Z',
+      '8.3.6': '2026-10-30T10:00:00Z',
+      '9.0.0': '2026-09-01T00:00:00Z',
+      '8.4.0-beta.1': '2026-09-01T00:00:00Z',
+    },
+    'dist-tags': { latest: '8.3.6' },
+  });
+  const asked: string[] = [];
+  const docsOf =
+    (doc: Packument) =>
+    (name: string): Promise<Packument> => {
+      asked.push(name);
+      // js-yaml answers too, so a lost nested-scope skip shows as a named red control (a second move), not as a crash.
+      return name === 'vite'
+        ? Promise.resolve(doc)
+        : name === 'js-yaml'
+          ? Promise.resolve({
+              versions: { '4.3.2': {} },
+              time: { '4.3.2': '2026-09-01T00:00:00Z' },
+              'dist-tags': { latest: '4.3.2' },
+            })
+          : Promise.reject(new Error(`no document for ${name}`));
+    };
+  const tooNew = Array.from({ length: 11 }, (_, i) => ({
+    pkg: { name: `fresh-${i}`, current: '1.0.0', latest: '1.0.1' },
+    manifest: '',
+  }));
+  const basePlan = (steps: NpmPlanJson['steps'] = []): NpmPlanJson => ({
+    nowMs: ON,
+    minReleaseAgeMs: WINDOW,
+    steps,
+    majors: [],
+    tooNew,
+    manifests: ['.'],
+  });
+  const refusal = (f: () => unknown): string | null => {
+    try {
+      f();
+      return null;
+    } catch (err) {
+      return err instanceof PlanRefused ? err.message : `NOT A REFUSAL: ${String(err)}`;
+    }
+  };
+
+  // A: the vite case.
+  const viteRoot = npmTree('>=8.3.5 <9', '8.3.4');
+  const viteOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(viteRoot),
+    ON,
+    WINDOW,
+    docsOf(viteDoc(false))
+  );
+  const viteRel = inRangeReleases(basePlan(), viteOv);
+  let vitePlan: PinPlan | null = null;
+  const viteRefused = refusal(() => {
+    vitePlan = inRangePlan(entry('npm'), ctxOf(viteRoot), basePlan(), viteOv);
+  });
+  const vp = vitePlan as PinPlan | null;
+  const viteRuns = vp?.steps.map((x) => x.run) ?? [];
+
+  // B: the same floor whose only admitted release is inside the window.
+  const freshOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(viteRoot),
+    ON,
+    WINDOW,
+    docsOf({
+      versions: { '8.3.4': {}, '8.3.5': {} },
+      time: { '8.3.4': '2026-10-10T00:00:00Z', '8.3.5': '2026-10-30T09:00:00Z' },
+      'dist-tags': { latest: '8.3.5' },
+    })
+  );
+  const freshRel = inRangeReleases(basePlan(), freshOv);
+  const inRangeStep = {
+    cwd: viteRoot,
+    args: ['update', 'typescript', `--before=${CUTOFF}`],
+    label: 'root',
+    packages: [{ name: 'typescript', current: '6.0.0', latest: '6.0.1' }],
+  };
+  const freshRefused = refusal(() =>
+    inRangePlan(entry('npm'), ctxOf(viteRoot), basePlan(), freshOv)
+  );
+  const freshWithSteps = refusal(() =>
+    inRangePlan(entry('npm'), ctxOf(viteRoot), basePlan([inRangeStep]), freshOv)
+  );
+
+  // C: a lock that meets every override, and only deferrals: the registry is never asked.
+  const metRoot = npmTree('>=8.3.5 <9', '8.3.5');
+  const askedBefore = asked.length;
+  const metOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(metRoot),
+    ON,
+    WINDOW,
+    docsOf(viteDoc(false))
+  );
+  const metRel = inRangeReleases(basePlan(), metOv);
+  const metRefused = refusal(() => inRangePlan(entry('npm'), ctxOf(metRoot), basePlan(), metOv));
+
+  // D: a move check-deps already plans is not planned twice.
+  const dupOv = await judgeOverrides(
+    entry('npm'),
+    ctxOf(viteRoot),
+    ON,
+    WINDOW,
+    docsOf(viteDoc(false)),
+    new Set([`${viteRoot}\0vite`])
+  );
+
+  const nestedOn = overrideDrift(manifest('>=8.3.5 <9', true), lock('8.3.5'));
+  const nestedOff = overrideDrift(manifest('>=8.3.5 <9', false), lock('8.3.5'));
+  const cut = Date.parse(CUTOFF);
+  const tagPick = overrideTarget('>=8.3.5 <9', viteDoc(false), Date.parse('2026-10-31T00:00:00Z'));
+  const undated = overrideTarget(
+    '>=8.3.5 <9',
+    { versions: { '8.3.5': {} }, time: {}, 'dist-tags': {} },
+    cut
+  );
+  const noneAdmitted = overrideTarget('>=10', viteDoc(false), cut);
+  const empty: OverrideJudgement = { moves: [], deferred: [], notes: [] };
+  return [
+    {
+      name: 'npm override: a hand-raised transitive floor (vite >=8.3.5, lock 8.3.4) beside eleven deferrals plans npm update vite --before=<cutoff> and its guard, and is not refused',
+      ok:
+        viteRefused === null &&
+        viteOv.moves.length === 1 &&
+        viteOv.deferred.length === 0 &&
+        viteRel.length === 1 &&
+        viteRel[0].version === '1.1' &&
+        viteRel[0].verdict?.eligible === true &&
+        /override range/.test(viteRel[0].verdict.why) &&
+        viteRuns.some(
+          (r) => r === `npx -y npm@11.21.0 update vite --before=${CUTOFF} --loglevel=notice`
+        ) &&
+        viteRuns.some((r) => / guard /.test(r)) &&
+        (vp?.changes.includes('root: vite 8.3.4 -> 8.3.5') ?? false) &&
+        (vp?.changes.some((c) =>
+          /overrides\["vite"\] >=8\.3\.5 <9: the lock holds 8\.3\.4/.test(c)
+        ) ??
+          false),
+      detail: JSON.stringify({ viteRefused, viteOv, viteRel, viteRuns, changes: vp?.changes }),
+    },
+    {
+      name: 'npm override: the deferred packages stay deferred and are named in the run label and the release verdict',
+      ok:
+        /11 deferred package\(s\) left \(fresh-0, fresh-1, fresh-2, fresh-3, fresh-4 and 6 more\)/.test(
+          vp?.to.version ?? ''
+        ) &&
+        deferredNames(tooNew.slice(0, 3)) === 'fresh-0, fresh-1, fresh-2' &&
+        /11 package\(s\) stay deferred/.test(viteRel[0]?.verdict?.why ?? '') &&
+        !viteRuns.some((r) => /fresh-/.test(r)),
+      detail: JSON.stringify({ to: vp?.to.version, why: viteRel[0]?.verdict?.why }),
+    },
+    {
+      name: 'npm override: the target is the release npm picks under --before (8.3.5), never the newer latest tag (8.3.6) inside the window nor the 9.x major the bound excludes',
+      ok:
+        viteOv.moves[0]?.packages[0]?.latest === '8.3.5' &&
+        tagPick.kind === 'target' &&
+        tagPick.version === '8.3.6' &&
+        noneAdmitted.kind === 'none',
+      detail: JSON.stringify({ move: viteOv.moves[0], tagPick, noneAdmitted }),
+    },
+    {
+      name: 'npm override: a target inside the release-age window is refused, alone and beside in-range packages, and the release is not eligible',
+      ok:
+        freshOv.moves.length === 0 &&
+        freshOv.deferred.length === 1 &&
+        freshRel.length === 1 &&
+        freshRel[0].verdict?.eligible === false &&
+        /vite/.test(freshRel[0].verdict.why) &&
+        freshRefused !== null &&
+        /overrides\["vite"\].*inside the release-age window/.test(freshRefused) &&
+        freshWithSteps !== null &&
+        /inside the release-age window/.test(freshWithSteps),
+      detail: JSON.stringify({ freshOv, freshRel, freshRefused, freshWithSteps }),
+    },
+    {
+      name: 'npm override: a release with no publish time is never old enough (fail closed)',
+      ok: undated.kind === 'deferred',
+      detail: JSON.stringify(undated),
+    },
+    {
+      name: 'npm override: CONTROL a lock that meets every override, with only deferrals, still answers the 1.1 deferral as before and asks the registry nothing',
+      ok:
+        metOv.moves.length === 0 &&
+        metOv.deferred.length === 0 &&
+        asked.length === askedBefore &&
+        metRel.length === 1 &&
+        metRel[0].version === '1.1' &&
+        metRel[0].verdict?.eligible === false &&
+        metRel[0].verdict.why ===
+          '11 package(s) newer than the lockfiles, all inside the release-age window' &&
+        metRefused === `npm: nothing past the window to bump` &&
+        inRangeReleases({ ...basePlan(), tooNew: [] }, empty).length === 0,
+      detail: JSON.stringify({ metOv, metRel, metRefused, asked }),
+    },
+    {
+      name: 'npm override: CONTROL a nested copy a scoped override governs (gray-matter js-yaml ^3) is not judged against the top-level range; without the scope it is',
+      ok:
+        nestedOn.length === 0 &&
+        nestedOff.length === 1 &&
+        nestedOff[0].name === 'js-yaml' &&
+        nestedOff[0].outside.join() === '3.15.2',
+      detail: JSON.stringify({ nestedOn, nestedOff }),
+    },
+    {
+      name: 'npm override: a major run that already moves vite drops the vite override move and its note, and an in-range run keeps both',
+      ok: (() => {
+        const majorMove = {
+          ...inRangeStep,
+          packages: [{ name: 'vite', current: '8.3.4', latest: '9.0.0' }],
+        };
+        const dropped = keptMoves([majorMove], viteOv);
+        const kept = keptMoves([inRangeStep], viteOv);
+        return (
+          dropped.moves.length === 0 &&
+          dropped.notes.length === 0 &&
+          kept.moves.length === 1 &&
+          kept.notes.length === 1 &&
+          kept.notes[0] === viteOv.notes[0]
+        );
+      })(),
+      detail: JSON.stringify({ notes: viteOv.notes }),
+    },
+    {
+      name: 'npm override: of two moves where the plan already makes one, exactly the kept move and its own note survive (an all-notes keptMoves fails this)',
+      ok: (() => {
+        // Two moves, two notes (one per move, in order); the plan already makes the first.
+        const mv = (name: string) => ({
+          ...inRangeStep,
+          packages: [{ name, current: '1.0.0', latest: '1.1.0' }],
+        });
+        const two: OverrideJudgement = {
+          moves: [mv('alpha'), mv('beta')],
+          deferred: [],
+          notes: ['note-alpha', 'note-beta'],
+        };
+        const kept = keptMoves([mv('alpha')], two);
+        // The buggy variant returns every note; it must fail the assertion below.
+        const buggyNotes = two.notes;
+        const assertion = (notes: string[]) => notes.length === 1 && notes[0] === 'note-beta';
+        return (
+          kept.moves.length === 1 &&
+          kept.moves[0].packages[0].name === 'beta' &&
+          assertion(kept.notes) &&
+          !assertion(buggyNotes)
+        );
+      })(),
+      detail: JSON.stringify({
+        moves: ['alpha', 'beta'],
+        notes: ['note-alpha', 'note-beta'],
+        planned: 'alpha',
+      }),
+    },
+    {
+      name: 'npm override: a package deferred in two projects is counted once, matching the one name listed',
+      ok: (() => {
+        const t = [
+          { pkg: { name: 'dup' }, manifest: 'a/package.json' },
+          { pkg: { name: 'dup' }, manifest: 'b/package.json' },
+        ];
+        return deferredCount(t) === 1 && deferredNames(t) === 'dup' && t.length === 2;
+      })(),
+    },
+    {
+      name: 'npm override: a package check-deps already moves in the same project is not planned a second time',
+      ok: dupOv.moves.length === 0 && viteOv.moves.length === 1,
+      detail: JSON.stringify(dupOv),
+    },
+  ];
+}
 
 async function allCases(mutant?: T8Mutant) {
   return [
@@ -874,6 +1453,8 @@ async function allCases(mutant?: T8Mutant) {
     ...(await cephImageCases(mutant)),
     ...(await realProviderCases()),
     ...(await dockerCases(mutant)),
+    ...biomeSchemaCases(),
+    ...(await npmOverrideCases()),
   ];
 }
 
@@ -903,7 +1484,7 @@ async function main(): Promise<number> {
   return failed === 0 ? 0 : 1;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   main().then(
     (rc) => process.exit(rc),
     (err) => {

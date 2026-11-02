@@ -122,7 +122,7 @@ function namespaceVarsInUse(): string[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(content)) !== null) names.add(m[1]);
   }
-  return [...names].sort();
+  return [...names].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** Run the gate against the MIRROR through its KEY_USAGE_WWW_SRC seam. */

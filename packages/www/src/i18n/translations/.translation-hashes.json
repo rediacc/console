@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 5686,
-    "sourceCommit": "44eb6f118fe3fd9365e63d1d2aceefa30ea34d13"
+    "keyCount": 5691,
+    "sourceCommit": "34e20a1f5fe5ed667462a24f7c01dc454a21bbd7"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -1070,6 +1070,9 @@
     "pages.pricing.finalCta.buttons.talkToSales": "baa24cd4",
     "pages.pricing.finalCta.description": "69699f31",
     "pages.pricing.finalCta.heading": "d8d2842b",
+    "pages.pricing.freeLicense.cta": "005f049f",
+    "pages.pricing.freeLicense.description": "abda0bbb",
+    "pages.pricing.freeLicense.heading": "37afe79a",
     "pages.pricing.hero.subtitle": "a724b14e",
     "pages.pricing.hero.title": "04885cd8",
     "pages.pricing.meta.description": "03c32708",
@@ -1220,7 +1223,9 @@
     "pages.privacyPolicy.sections.informationWeCollect.subsections.contactFormData.title": "2be60e06",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.cookies.content.0": "1d48b16b",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.cookies.title": "2d3a8ee4",
-    "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.0": "bfa5b74d",
+    "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.content.0": "095a4797",
+    "pages.privacyPolicy.sections.informationWeCollect.subsections.freeLicenseData.title": "becd4bcd",
+    "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.0": "b880f23f",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.content.1": "afc06e17",
     "pages.privacyPolicy.sections.informationWeCollect.subsections.productTelemetry.title": "72dd3730",
     "pages.privacyPolicy.sections.informationWeCollect.title": "e0e0e19f",
@@ -5440,7 +5445,7 @@
     "pages.telemetryPolicy.sections.bridge.title": "eebb0750",
     "pages.telemetryPolicy.sections.ccpa.content.0": "e3a656ba",
     "pages.telemetryPolicy.sections.ccpa.id": "57ccdab0",
-    "pages.telemetryPolicy.sections.ccpa.items.0": "7e2dc8e4",
+    "pages.telemetryPolicy.sections.ccpa.items.0": "08de3813",
     "pages.telemetryPolicy.sections.ccpa.items.1": "e420f0d2",
     "pages.telemetryPolicy.sections.ccpa.items.2": "6cb6bf36",
     "pages.telemetryPolicy.sections.ccpa.items.3": "7b79070c",

@@ -1,4 +1,4 @@
-import { type ChildProcess, spawn } from 'node:child_process';
+import { type ChildProcess, type StdioOptions, spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { writeStderr } from '../../services/core/request-context.js';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
@@ -282,7 +282,7 @@ export class SSHConnection {
   private readonly preferAgent: boolean;
   private readonly forceTTY: boolean;
   private setupResult: SSHSetupResult | null = null;
-  private isSetup = false;
+  private isSetup = false as boolean;
 
   /**
    * Creates an SSH connection context
@@ -465,7 +465,7 @@ export function spawnSSH(
   options?: {
     cwd?: string;
     env?: NodeJS.ProcessEnv;
-    stdio?: 'inherit' | 'pipe';
+    stdio?: StdioOptions;
     agentSocketPath?: string;
   }
 ): ChildProcess {

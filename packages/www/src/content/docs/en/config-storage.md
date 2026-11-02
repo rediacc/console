@@ -67,7 +67,7 @@ A passkey can be added later from the Config Storage page. Keep at least two unl
 A machine with no browser (a server, a CI runner, an executor daemon) can enroll into an existing store with the master password method:
 
 ```bash
-rdc config remote enable --password
+rdc config remote enable --master-password
 ```
 
 Requirements:
@@ -76,6 +76,23 @@ Requirements:
 - An **API token with the `config:enroll` scope** to authenticate the call
 
 Enrollment is a read: the CLI fetches the slot's public KDF parameters and the wrapped key, derives the password secret locally, and unwraps the CEK on the device. It grants the device the ability to decrypt and sync the config; it does not modify the store.
+
+## How the keys reach your CLI
+
+`rdc config remote enable` (and `rdc config rotate-cek`) hand the unlock secret to the CLI through the account server. The CLI and the browser never talk to each other, so it works the same on a server with no browser, in WSL with the browser on Windows, or on a phone.
+
+1. Sign in the CLI first with `rdc subscription login`. The server ties the request to that account.
+2. The CLI creates a short-lived request and prints a link and a **pairing code** such as `7KQ2-M9XD-P4RT`. The link keeps everything it carries after the `#`, which browsers never send to a server.
+3. Open the link in any browser signed in as the same account. A request from another account is refused.
+4. Type the pairing code from the terminal when the page asks. The unlock button stays disabled until it matches.
+5. Unlock with a passkey or the master password. The browser seals the key to the CLI, and the server relays a blob it cannot read.
+6. The CLI decrypts the blob, stores the secret in the OS keyring and reports success.
+
+The request expires after 10 minutes. Press **Ctrl+C** in the CLI to cancel it: the CLI asks the server to drop the link, which then stops working at once, and the page says to run the command again. If that request does not get through, the link stays usable until the request expires. If the link is opened after it expired, or after a login redirect dropped the part after `#`, run the command again.
+
+The pairing code is derived from the key inside the link. If someone swaps the link for their own, the code on the terminal will not match what the page expects, so nothing is released.
+
+This protects against link tampering and against a relay that swaps or forges a blob. It does not protect against a server that ships modified page code: the page that opens is served by the account server, and the keys are as safe as that code is. The same trust applies to every portal page that handles the config key.
 
 ## Enabling and offline reads
 

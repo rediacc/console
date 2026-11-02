@@ -921,7 +921,7 @@ def status_curl(host: str, code: str, rc: int = 0, **kw) -> dict:
     )
 
 
-# Every destination a fully bound container reports: the repo, the four scripts, and the three home files the fixture HOME holds, and the core lease pool (606f7daac; reported only where the host has /run/user/<uid>).
+# Every destination a fully bound container reports: the repo, the four scripts, and the three home files the fixture HOME holds, and the core lease pool (c09452412; reported only where the host has /run/user/<uid>).
 ALL_MOUNTS = "".join(
     line + "\n"
     for line in (

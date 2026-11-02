@@ -1,3 +1,4 @@
+import { repoDockerSocketFallbackShell } from '@rediacc/shared/config/runtime-paths';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
@@ -40,6 +41,7 @@ import {
 } from '../utils/secret-env.js';
 import { shellQuote } from '../utils/shell-quote.js';
 import { withSpinner } from '../utils/spinner.js';
+import { buildSSHExitErrorMessage, teeStderrTail } from './term-ssh-exit.js';
 
 /**
  * `term connect <target>` (spec/03 §5.8). The target is a place (machine shell)
@@ -78,6 +80,10 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
 
   const exports = buildExports(connectionDetails?.environment);
   if (exports) parts.push(exports.slice(0, -2));
+
+  // A daemon still on the flat socket layout (an older renet, or one not restarted since renet moved) keeps the session working.
+  const socketFallback = repoDockerSocketFallbackShell(connectionDetails?.environment ?? {});
+  if (socketFallback) parts.push(socketFallback);
 
   // Pin the kubectl current-context to the repo's namespace for a cluster-placed repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
   // exported by the loop, so this runs against the cluster's kubeconfig; the
@@ -174,7 +180,8 @@ export function buildRemoteCommand(
   const rcfile = `--rcfile <(echo "source ~/.bashrc 2>/dev/null; ${sourceCmd}")`;
 
   if (userCmd) {
-    return `${envPrefix}${ensureBashSetup}; ${sourceCmd} && ${userCmd}`;
+    // `;`, not `&&`: sourceCmd already ends in `|| true`, and `&&` made the user's first command part of one AND-list with it, so `X & Y` backgrounded `source … || true && X` as a SUBSHELL that kept the channel's stdout and stderr and waited on X, and the ssh channel never closed (vm:check I1.8, 2026-10-24).
+    return `${envPrefix}${ensureBashSetup}; ${sourceCmd}; ${userCmd}`;
   }
   return `${envPrefix}${ensureBashSetup}; exec bash ${rcfile}`;
 }
@@ -291,10 +298,19 @@ async function executeSSH(
   title: string,
   connectionDetails: ConnectionDetails,
   useExternal: boolean,
-  quiet: boolean
+  quiet: boolean,
+  machineName: string
 ): Promise<void> {
   if (!useExternal) {
-    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails, quiet);
+    await runInlineSSH(
+      sshConnection,
+      destination,
+      remoteCommand,
+      title,
+      connectionDetails,
+      quiet,
+      machineName
+    );
     return;
   }
 
@@ -310,7 +326,15 @@ async function executeSSH(
     debugLog(
       `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
     );
-    await runInlineSSH(sshConnection, destination, remoteCommand, title, connectionDetails, quiet);
+    await runInlineSSH(
+      sshConnection,
+      destination,
+      remoteCommand,
+      title,
+      connectionDetails,
+      quiet,
+      machineName
+    );
   }
 }
 
@@ -415,7 +439,8 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       title,
       connectionDetails,
       shouldUseExternalTerminal(options),
-      quietOutput
+      quietOutput,
+      machineName
     );
   } catch (err) {
     success = false;
@@ -512,48 +537,35 @@ export function buildHandoffArgv(
   return ['sh', '-c', script, 'sh', ...sshArgv];
 }
 
-const sshExitCodeMessages: Record<number, string> = {
-  1: 'sshCode1',
-  126: 'sshCode126',
-  127: 'sshCode127',
-  130: 'sshCode130',
-  255: 'sshCode255',
-};
-
-function buildSSHExitErrorMessage(code: number): string {
-  let message = t('errors.term.sshExitCode', { code });
-  const codeKey = sshExitCodeMessages[code];
-  if (codeKey) {
-    message += `\n  ${t(`errors.term.${codeKey}`)}`;
-  }
-  return message;
-}
-
 async function runInlineSSH(
   sshConnection: SSHConnection,
   destination: string,
   remoteCommand: string | undefined,
   title: string,
   connectionDetails: ConnectionDetails,
-  quiet: boolean
+  quiet: boolean,
+  machineName: string
 ): Promise<void> {
   if (!quiet) {
     // Progress message on stderr, keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
     writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
+  // stderr is piped rather than inherited so its tail can explain a failure; every chunk is still teed to the terminal as it arrives.
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
     env: { ...process.env, ...splitSecretEnv(connectionDetails.environment).plain },
-    stdio: 'inherit',
+    stdio: ['inherit', 'inherit', 'pipe'],
     agentSocketPath: sshConnection.agentSocketPath,
   });
 
+  const stderrTail = teeStderrTail(child.stderr);
+
   await new Promise<void>((resolve, reject) => {
-    child.on('exit', (code: number | null) => {
+    child.on('close', (code: number | null) => {
       if (code === 0 || code === null) {
         resolve();
       } else {
-        reject(new Error(buildSSHExitErrorMessage(code)));
+        reject(new Error(buildSSHExitErrorMessage(code, stderrTail(), machineName)));
       }
     });
     child.on('error', reject);

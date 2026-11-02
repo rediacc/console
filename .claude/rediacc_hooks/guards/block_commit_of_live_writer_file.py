@@ -35,8 +35,8 @@ ORDER = 59
 
 # The overlap test itself. With it never matching, a live writer's file rides a commit again, which is the 252e5e1d1 shape.
 DEFECT = (
-    'if writer == spec or writer.startswith(spec.rstrip("/") + "/"):',
-    "if False:",
+    "if writer == spec or (",
+    "if False and (",
 )
 
 # What a roster read can raise, including TypeError and AttributeError for a transcript or meta file of an unexpected shape. Each one fails open, and the stderr note carries the exception text, so a bug in this guard's own code inside the same read is visible there rather than silent; any other exception type is reported as a crash by the dispatcher.
@@ -213,12 +213,25 @@ def live_writers(cwd, session_id, now=None):
     return root, out
 
 
+def _in_nested_repo(spec, writer):
+    """Whether a directory between `spec` (exclusive) and `writer` is a repository root, a submodule `.git` file or directory. A directory pathspec over it commits the gitlink, never the files inside."""
+    here = os.path.dirname(writer)
+    top = spec.rstrip("/")
+    while here != top and here.startswith(top + "/"):
+        if os.path.exists(os.path.join(here, ".git")):
+            return True
+        here = os.path.dirname(here)
+    return False
+
+
 def overlap(committed, writer_paths):
-    """The writer paths a commit takes: equal to a committed path, or under a committed directory pathspec."""
+    """The writer paths a commit takes: equal to a committed path, or under a committed directory pathspec that does not cross into a nested repository."""
     hits = []
     for writer in sorted(writer_paths):
         for spec in committed:
-            if writer == spec or writer.startswith(spec.rstrip("/") + "/"):
+            if writer == spec or (
+                writer.startswith(spec.rstrip("/") + "/") and not _in_nested_repo(spec, writer)
+            ):
                 hits.append(writer)
                 break
     return hits
@@ -233,7 +246,9 @@ def committed_paths(commit, cmd, repo, base):
         if spec.startswith(":") or any(ch in spec for ch in "*?["):
             continue
         out.add(os.path.normpath(spec if spec.startswith("/") else os.path.join(here, spec)))
-    return out
+    # A submodule's root is a gitlink: committing it records the submodule's commit pointer and never takes a file of the submodule's working tree, so it must not act as a prefix over a writer's files inside the submodule (#e59c13a0: `git commit -- workers/... private/account` was refused for a writer editing private/account/scripts/rotation/*).
+    repo_root = os.path.normpath(repo)
+    return {p for p in out if p == repo_root or not os.path.exists(os.path.join(p, ".git"))}
 
 
 def _shown(path, root):

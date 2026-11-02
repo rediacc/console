@@ -153,7 +153,7 @@ export async function accountE2eUnits(repoRoot: string): Promise<Unit[]> {
   if (files.length === 0) {
     throw new Error(`VACUOUS: accountE2eUnits: ${dir} holds no *.test.ts file.`);
   }
-  files.sort();
+  files.sort((a, b) => Number(a > b) - Number(a < b));
   return files.map((f) => ({
     id: `account-e2e:${f}`,
     // 10-stripe and 12-stripe-e2e both drive the one real Stripe sandbox, so they share a leg (CI run 36277725732 scattered 12-stripe-e2e with no webhook forwarder).
@@ -205,7 +205,9 @@ export async function e2eWorkersUnits(repoRoot: string): Promise<Unit[]> {
   if (files.size === 0) {
     throw new Error('e2eWorkersUnits: playwright --list enumerated zero spec files.');
   }
-  return [...files].sort().map((f) => ({ id: `e2e-workers:${f}` }));
+  return [...files]
+    .sort((a, b) => Number(a > b) - Number(a < b))
+    .map((f) => ({ id: `e2e-workers:${f}` }));
 }
 
 const TESTPATHS_RE = /testpaths\s*=\s*\[([^\]]*)\]/;
@@ -298,10 +300,12 @@ export async function qualityPytestUnits(repoRoot: string): Promise<Unit[]> {
   for (const [group, rels] of Object.entries(PYTEST_XDIST_MUTEX_GROUPS)) {
     for (const rel of rels) relToMutex.set(rel, group);
   }
-  return [...seen.values()].sort().map((rel) => {
-    const mutex = relToMutex.get(rel);
-    return mutex === undefined ? { id: `pytest:${rel}` } : { id: `pytest:${rel}`, mutex };
-  });
+  return [...seen.values()]
+    .sort((a, b) => Number(a > b) - Number(a < b))
+    .map((rel) => {
+      const mutex = relToMutex.get(rel);
+      return mutex === undefined ? { id: `pytest:${rel}` } : { id: `pytest:${rel}`, mutex };
+    });
 }
 
 /** The T2.7 test lanes, each to its enumerator. A lane absent here has no enumerator yet. */
@@ -319,7 +323,9 @@ export async function unitsFrom(lane: string, repoRoot: string): Promise<Unit[]>
   if (enumerator === undefined) {
     throw new Error(
       `unitsFrom: lane "${lane}" has no declared enumerator. Known lanes: ` +
-        `${Object.keys(LANE_ENUMERATORS).sort().join(', ')}.`
+        `${Object.keys(LANE_ENUMERATORS)
+          .sort((a, b) => Number(a > b) - Number(a < b))
+          .join(', ')}.`
     );
   }
   return enumerator(repoRoot);

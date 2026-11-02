@@ -10,8 +10,9 @@ import {
   type SnapshotRecord,
   verbIsRegistered,
 } from '../backupStorage';
-import { BridgeTestRunner } from '../bridge/BridgeTestRunner';
 import { CliRunner } from '../CliRunner';
+import { loginCliToAccount } from '../licence';
+import { RenetFunctionsTestRunner } from '../renet-functions/RenetFunctionsTestRunner';
 
 // Shared by suites 26 and 27: the account-server and fleet wiring, the CLI login, and the repository provisioning both chunk-store CLI suites build on.
 
@@ -129,30 +130,17 @@ export const parseEnvelope = (raw: string, stderr = ''): Partial<CliEnvelope<unk
 export const bothChannels = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr;
 
 /**
- * Stand a CLI up against this account server, in its own config namespace.
- *
- * `licensing: true` is load-bearing, not tidiness: CliRunner's default exports
- * `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which makes
- * `ensureRepoLicenseForProvisioning` return immediately — so `repo create`
- * would produce exactly the unlicensed repo the bridge produced, and the
- * snapshot verb would refuse it again.
+ * Stand a CLI up against this account server, in its own config namespace, logged in
+ * (licence.ts loginCliToAccount), so `repo create` can issue the licence renet demands.
  */
 export const loginCli = async (cfg: string): Promise<CliRunner> => {
   await CliRunner.resetConfig(cfg);
   const cli = CliRunner.create({
     configName: cfg,
-    licensing: true,
     env: { REDIACC_ACCOUNT_SERVER: ACCOUNT_SERVER },
   });
   await cli.initConfig(SSH_KEY);
-  const login = await cli.run([
-    'subscription',
-    'login',
-    '--server',
-    ACCOUNT_SERVER,
-    '--token',
-    ACCOUNT_TOKEN,
-  ]);
+  const login = await loginCliToAccount(cli);
   expect(login.code, `subscription login: ${login.stderr.slice(-600)}`).toBe(0);
   return cli;
 };
@@ -160,6 +148,45 @@ export const loginCli = async (cfg: string): Promise<CliRunner> => {
 /** Read rdc's own config file — the artifact `repo create` just wrote. */
 const readCliConfig = (cli: CliRunner): CliConfigFile =>
   JSON.parse(readFileSync(cli.configPath, 'utf8')) as CliConfigFile;
+
+/**
+ * What the CLI's config holds for one repository tag: its GUID, LUKS credential and network id.
+ * A restored repo and a fork mint their own GUID, so the suites read it back instead of assuming
+ * the source's. The credential falls back to the grand tag's, which is what a fork and a restore inherit.
+ */
+export const repoIdentity = (cli: CliRunner, name: string, tag?: string): ProvisionedRepo => {
+  const cfg = readCliConfig(cli);
+  const family = cfg.resources?.repositories?.[name];
+  const useTag = tag ?? family?.grand ?? 'latest';
+  const entry = family?.tags?.[useTag];
+  const grandEntry = family?.tags?.[family?.grand ?? 'latest'];
+  const guid = entry?.repositoryGuid ?? '';
+  expect(guid, `the config registered no guid for ${name}:${useTag}`).toMatch(/^[0-9a-f-]{36}$/);
+  const networkId = cfg.state?.repos?.[name]?.[useTag]?.networkId;
+  expect(networkId, `the config recorded no network id for ${name}:${useTag}`).toBeDefined();
+  return {
+    name,
+    guid,
+    credential: entry?.credential ?? grandEntry?.credential ?? '',
+    networkId: String(networkId),
+  };
+};
+
+/** Every repository GUID the CLI config holds, across all names and tags. */
+const allRepoGuids = (cli: CliRunner): string[] =>
+  Object.values(readCliConfig(cli).resources?.repositories ?? {}).flatMap((family) =>
+    Object.values(family.tags ?? {}).flatMap((t) => (t.repositoryGuid ? [t.repositoryGuid] : []))
+  );
+
+/**
+ * Every GUID the config holds apart from ONE occurrence of `own`: a second entry carrying `own`
+ * stays in the result, which is what lets `newGuidViolations` see a collision.
+ */
+export const guidsBesides = (cli: CliRunner, own: string): string[] => {
+  const all = allRepoGuids(cli);
+  const at = all.indexOf(own);
+  return at < 0 ? all : all.filter((_, i) => i !== at);
+};
 
 /**
  * Lay down the base datastore pool on a worker, WITHOUT destroying one.
@@ -170,8 +197,12 @@ const readCliConfig = (cli: CliRunner): CliConfigFile =>
  * suites share, that is not setup, it is collateral. So probe first and only
  * init when there is genuinely nothing there.
  */
-export const ensureDatastore = async (runner: BridgeTestRunner, label: string): Promise<void> => {
-  const init = await runner.datastoreInitPool('10G', DS, false);
+export const ensureDatastore = async (
+  runner: RenetFunctionsTestRunner,
+  label: string,
+  size = '10G'
+): Promise<void> => {
+  const init = await runner.datastoreInitPool(size, DS, false);
   if (init.code === 0) return;
   // Without --force, renet REFUSES an existing BTRFS datastore by name ("datastore already exists", datastore_init.go:106-111). That refusal is the answer this function wants, so it is the success case, not a failure — and it is a more reliable probe than a shell test, whose `&&`/`||` has to survive two levels of SSH quoting to mean anything.
   const output = runner.getCombinedOutput(init);
@@ -195,20 +226,21 @@ export const registerMachines = async (cli: CliRunner): Promise<void> => {
 /**
  * Create a repository THROUGH THE CLI and prove it came out licensed.
  *
- * The proof is the point. `repo create` exits 0 on a fleet whose license
- * issuance quietly no-opped (that is exactly what
- * `REDIACC_SKIP_MACHINE_ACTIVATION=1` does), and the failure would then surface
+ * The proof is the point. A `repo create` whose license issuance quietly
+ * no-opped (what the retired activation skip switch did) would
+ * still exit 0, and the failure would then surface
  * three tests later as a snapshot refusing on "no license data" — read as a
  * broken uploader. So the license is read back off the MACHINE, where it has to
  * be true, before the caller relies on it.
  */
 export const provisionRepo = async (
   cli: CliRunner,
-  runner: BridgeTestRunner,
+  runner: RenetFunctionsTestRunner,
   name: string,
-  machine: string
+  machine: string,
+  size = '1G'
 ): Promise<ProvisionedRepo> => {
-  const create = await cli.run(['repo', 'create', name, '-m', machine, '--size', '1G']);
+  const create = await cli.run(['repo', 'create', name, '-m', machine, '--size', size]);
   expect(create.code, `repo create ${name}: ${bothChannels(create).slice(-1200)}`).toBe(0);
 
   const cfg = readCliConfig(cli);

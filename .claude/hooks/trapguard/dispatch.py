@@ -455,6 +455,56 @@ def rule_bws_auth_failure(cmd, out, _root, _resp):
     )
 
 
+# AN rdc RUN, in command position: `./rdc.sh` or `rdc`, after any `VAR=value` prefixes (group 1), with the rest of its simple command (group 2). `_bench_rdc_run` then asks for `--config eu-bench`, `--config=eu-bench` or a `REDIACC_CONFIG=eu-bench` prefix. Quoted spans are blanked first, for the reason `_QUOTED` gives.
+RDC_CMD = re.compile(
+    r"(?:^|[;&|(]|\$\(|`)\s*((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*)(?:\S*/)?(?:rdc\.sh|rdc)(?![\w.\-/])([^\n;&|]*)",
+    re.MULTILINE,
+)
+BENCH_CONFIG_FLAG = re.compile(r"(?:^|\s)--config[= ]eu-bench(?![\w.-])")
+# A COPY of `rediacc_ci.ops.login_bench.LOGIN_NEEDED_MARKERS`, for the reason the bws markers above are copied: a hook has no route onto `.ci/`. The CLI strings are `loginIpMismatch`, `errors.subscription.ipRebind.nonInteractive` / `reloginOnly` and `errors.subscription.notLoggedIn` in packages/cli/src/i18n/locales/en/cli.json.
+BENCH_LOGIN_MARKERS = (
+    "tied to another network address",
+    "Your IP address changed",
+    "this login only works from the old one",
+    "Not logged in. Humans should run",
+)
+
+
+def _bench_rdc_run(cmd):
+    """True when `cmd` runs rdc against the eu-bench config (flag, `--config=` form, or a `REDIACC_CONFIG=eu-bench` prefix)."""
+    for m in RDC_CMD.finditer(_QUOTED.sub("''", cmd or "")):
+        if BENCH_CONFIG_FLAG.search(m.group(2)) or re.search(
+            r"(?:^|\s)REDIACC_CONFIG=eu-bench(?:\s|$)", m.group(1)
+        ):
+            return True
+    return False
+
+
+def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
+    """An eu-bench login that is tied to another IP address, or absent, is fixed by the agent itself with `npm run login:bench`.
+
+    Operator order 2026-10-30. The CLI's message for a login bound to another network address tells a HUMAN to run a command in an interactive terminal and type an authenticator code. It is right for a person and wrong for an agent: on 2026-10-30 an agent read it on `./rdc.sh --config eu-bench machine status hostinger` and asked the operator for the TOTP code, though `npm run login:bench`
+    (`.ci/rediacc_ci/ops/login_bench.py`, docs/agent-reference/bench-login.md) logs eu-bench in headlessly with the operator's bench account and is agent-allowed. The CLI is the shipped product and does not know this repository's tooling, so the pointer lives here, beside the output it qualifies.
+
+    BENCH ONLY. Another config (eu-remote, edge, stable) keeps human login, so the same message from it says nothing here.
+    """
+    text = out or ""
+    if not any(marker in text for marker in BENCH_LOGIN_MARKERS):
+        return None
+    if not _bench_rdc_run(cmd):
+        return None
+    return (
+        "trapguard[bench-login-is-the-agents-step]: the eu-bench login is tied to another "
+        "network address, or absent. Logging eu-bench in is YOUR step, not the operator's "
+        "(operator order 2026-10-30): run `npm run login:bench` (headless, the operator's "
+        "bench account through the bench-login bws profile; it refreshes the bench IP "
+        "allowlist too), then rerun the command. DO NOT ask the operator for an "
+        "authenticator code and DO NOT run `rdc subscription login` interactively for "
+        "eu-bench. Two TOTP logins inside one 30 s window collide, so a second login right "
+        "after waits for the next window. docs/agent-reference/bench-login.md"
+    )
+
+
 RULES = (
     rule_cancelled_run_not_passed,
     rule_phantom_deletion_diff,
@@ -462,6 +512,7 @@ RULES = (
     rule_history_rewrite_controls,
     rule_rebase_unverified,
     rule_bws_auth_failure,
+    rule_bench_login_is_the_agents_step,
 )
 
 # The rules that judge the COMMAND alone and never read `tool_response`. Over the payload bound only these run (plan section 4.3.1): the response was not read whole, so a rule keyed on it would be judging a truncated output.

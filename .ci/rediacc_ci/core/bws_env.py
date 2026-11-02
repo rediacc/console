@@ -208,6 +208,15 @@ IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 # All three are PUBLIC keys: they are baked into built artefacts already (`.ci/docker/web/entrypoint.sh` bakes UPSTREAM_PUBLIC_KEY, `private/renet/build.sh` bakes the ed25519 one), so writing them to a 0644 file adds no exposure that shipping the binary did not.
 #
 # The reason the cache exists at all is `agent/plans/PLAN-env-to-bitwarden-v2.md` 0.4: four build-time readers need these offline, and "a build that needs the network to read a PUBLIC key is a regression". A cache with one writer and a named refresh command is not a second source of truth; a second file that also claims to be authoritative is.
+# THE CACHE NAMES ITS OWN GENERATION (review 824f3bd7.2). Before agent/plans/PLAN-production-key-only.md the pair table aliased `ACCOUNT_ED25519_PUBLIC_KEY` to the retired `_DEV` store entry, so a cache an older setup wrote holds the retired DEV key under the production name, and nothing in the `KEY=value` lines tells the two apart. Every writer now puts this header first, and a reader treats a cache without it as stale: it reads Bitwarden instead (rewriting the cache), or refuses naming `./run.sh setup`, rather than baking the retired key.
+PUBLIC_KEY_CACHE_HEADER = "# rediacc public-key cache v2: production store entries only (agent/plans/PLAN-production-key-only.md)\n"
+
+
+def public_key_cache_current(text: str) -> bool:
+    """Whether a public-key cache's text was written by a v2 writer (`PUBLIC_KEY_CACHE_HEADER` as its first line)."""
+    return text.replace("\r\n", "\n").startswith(PUBLIC_KEY_CACHE_HEADER)
+
+
 CACHEABLE = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
@@ -217,14 +226,19 @@ CACHEABLE = (
 # The suffix a rotation's pre-rotation archive clone carries. The SAME literal is pinned in private/account/scripts/rotation/consumers/bitwarden-sm.ts and scripts/ops/bws-map-refresh.py; `check:ci-bws-map` assertion 15 asserts all three agree and that no mapped name matches it.
 ARCHIVE_PATTERN = r"__ROTATED_\d{8}T\d{6}Z$"
 
-# The STORE names each cacheable LOCAL name may be read from (PLAN-account-env-to-bws T15). Hardcoded for the same reason as CACHEABLE: the allowlist is on the LOCAL name, and without a fixed pair table an alias would turn `cache-to` into `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY`.
+# The STORE name each cacheable LOCAL name is read from: itself, and only itself. Hardcoded for the same reason as CACHEABLE: the allowlist is on the LOCAL name, and without a fixed pair table an alias would turn `cache-to` into `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY`.
 #
-# The `_DEV` spellings are why this exists. Local development signs licences with the DEV keypair, so a dev renet must bake the DEV public key; caching the unsuffixed store entry would bake the PRODUCTION key and break every dev-signed licence.
+# ONE KEYPAIR, SO NO ALIAS. The `_DEV` spellings that used to sit beside the first two were retired by agent/plans/PLAN-production-key-only.md (operator 2026-10-29): every renet build, the dev gateway, the backup plane and bench use the unsuffixed production entries, and a renet that baked a second key could not find a licence the production signer issued. A pair table that still admitted `ACCOUNT_ED25519_PUBLIC_KEY_DEV` would let the cache bake that second key again.
 CACHE_STORE_NAMES = {
-    "ACCOUNT_ED25519_PUBLIC_KEY": ("ACCOUNT_ED25519_PUBLIC_KEY", "ACCOUNT_ED25519_PUBLIC_KEY_DEV"),
-    "ACCOUNT_X25519_PUBLIC_KEY": ("ACCOUNT_X25519_PUBLIC_KEY", "ACCOUNT_X25519_PUBLIC_KEY_DEV"),
+    "ACCOUNT_ED25519_PUBLIC_KEY": ("ACCOUNT_ED25519_PUBLIC_KEY",),
+    "ACCOUNT_X25519_PUBLIC_KEY": ("ACCOUNT_X25519_PUBLIC_KEY",),
     "UPSTREAM_PUBLIC_KEY": ("UPSTREAM_PUBLIC_KEY",),
 }
+
+# A PARKED store entry: a retired name renamed to `__<NAME>` (same id, same value) by the `park` verb, kept so the value can be recovered, and never mapped, bound or fetched. A rotation archive clone (`<NAME>__ROTATED_<stamp>`, ARCHIVE_PATTERN) has its own handling, so the lookahead keeps the two classes apart. The SAME literal is pinned in scripts/ops/bws-map-refresh.py as `PARKED_RE`, and `check:ci-bws-map` assertion 16 asserts the two agree and that no mapped or bound name matches it.
+PARKED_PATTERN = r"^__(?!.*__ROTATED_)"
+PARKED_RE = re.compile(PARKED_PATTERN)
+PARKED_PREFIX = "__"
 
 # Where `exec --profile` finds its profiles: the `consumers` object of the secret-supply spec, which `check:ci-secret-supply` validates against the vault map.
 SUPPLY_REL = os.path.join(".ci", "config", "secret-supply.json")
@@ -253,10 +267,12 @@ JSON_REQUIRED = {
 
 USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
-  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...] [--profile P ...]
+      `--profile P` adds the REQUIRED specs of that secret-supply profile.
       Resolve, then print the sorted LOCAL names that came back with a NON-EMPTY
       value, one per line, on stdout. Diagnostics on stderr, exactly as the twin
-      writes them. Exit 0 when every requested name resolved, 1 otherwise.
+      writes them. Exit 0 when every requested name resolved, 1 otherwise, and
+      2 for an unknown profile or any other argument that starts with `-`.
       A SPEC is `NAME` or `NAME > LOCAL_NAME`; the grammar is the one
       `.github/actions/bws-secrets` uses, parsed by the same rule.
 
@@ -270,9 +286,9 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
       Write `LOCAL=value` lines to FILE, mode 0644. Every LOCAL must be on the
-      three-name CACHEABLE allowlist of PUBLIC keys, and an aliased store name
-      must be one CACHE_STORE_NAMES pairs with it; anything else is refused
-      and no file is written at all.
+      three-name CACHEABLE allowlist of PUBLIC keys, read from the store entry
+      of the same name (CACHE_STORE_NAMES); an alias or a parked `__` name is
+      refused and no file is written at all.
 
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env rotation-notice RC
       Classify ONE `bws` failure and print the rotation notice on stdout when
@@ -305,6 +321,15 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
       For each `STORE > LOCAL` spec, write the environment's LOCAL value into
       the existing store entry STORE, then read it back with the same
       comparison `compare` makes. Prints names and MATCH/MISMATCH only.
+
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env park NAME [NAME ...]
+      Rename each existing store entry NAME to `__NAME`, keeping its id and its
+      value, through the same stdin-only writer `store-from-env` uses. Every
+      name is checked before any write: an argument that is already `__`
+      prefixed, a NAME absent from the store, and a NAME whose `__NAME` already
+      exists are refused. The read-back prints `NAME -> __NAME MATCH` only when
+      the same id now carries `__NAME` with an unchanged value and NAME is gone.
+      A parked name is never mapped, bound or fetched (PARKED_PATTERN).
 
 There is deliberately no verb that prints a VALUE; see the module docstring.
 """
@@ -443,6 +468,28 @@ def parse_specs(items: list[str]) -> list[tuple[str, str]]:
     return out
 
 
+def parked_refusal(specs: list[tuple[str, str]], verb: str) -> list[str] | None:
+    """The refusal for any spec with a `__`-prefixed half, or None. Pure, so each caller checks before the store is touched.
+
+    A parked entry is a retired value kept for recovery only. Binding it would put the second keypair agent/plans/PLAN-production-key-only.md retired back into a process, so `load`, `exec` and `cache-to` refuse the spec outright instead of resolving it. Either half counts: a `__` LOCAL name is no legal consumer variable either.
+    """
+    parked = sorted(
+        {
+            "%s > %s" % (name, local) if name != local else name
+            for name, local in specs
+            if name.startswith(PARKED_PREFIX) or local.startswith(PARKED_PREFIX)
+        }
+    )
+    if not parked:
+        return None
+    return [
+        "rediacc_ci.core.bws_env: %s refuses %d parked spec(s): %s"
+        % (verb, len(parked), ", ".join(parked)),
+        "  A `__` name is a retired store entry kept only for recovery; it is never",
+        "  mapped, bound or fetched. Bind the live, unsuffixed entry instead.",
+    ]
+
+
 def expand_json(name: str, value: str, required: tuple[str, ...] | None = None) -> dict[str, str]:
     """A store entry whose value is a JSON object -> one binding per key.
 
@@ -515,6 +562,9 @@ def cache_refusal(names: list[str]) -> list[str] | None:
     Each item is a SPEC. The allowlist is checked on the LOCAL half, and an aliased STORE half must be one `CACHE_STORE_NAMES` pairs with that local name, so `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY` is refused as firmly as `ANY_SECRET`.
     """
     specs = parse_specs(names)
+    parked = parked_refusal(specs, "cache-to")
+    if parked:
+        return [*parked, "  No file was written."]
     outside = [local for _name, local in specs if local not in CACHEABLE]
     unpaired = [
         "%s > %s" % (name, local)
@@ -688,9 +738,14 @@ def load(
 
     `resolved` maps NAME to value for every name that came back non-empty. The caller decides what to do with it; nothing here writes it anywhere, prints it, or puts it in `os.environ`.
 
-    `rc` is the twin's return code: 1 if anything was absent or empty, else 0. The four preconditions raise `RefusalError` instead of returning, because they are a different kind of answer -- the twin cannot say "0 exported" for them, it stops before the fetch.
+    `rc` is the twin's return code: 1 if anything was absent or empty, else 0. The five preconditions (a parked spec, then the twin's four: the token, the binary, the map file, and a readable listing) raise `RefusalError` instead of returning, because they are a different kind of answer -- the twin cannot say "0 exported" for them, it stops before the fetch (review d3b47b36.2).
     """
     err = sys.stderr if stderr is None else stderr
+    # Checked before the token, the binary and the store: a parked spec is refused whatever else is wrong, and its value never leaves Bitwarden.
+    if names is not None:
+        refusal = parked_refusal(parse_specs(list(names)), "load")
+        if refusal:
+            raise RefusalError(refusal)
     environ = with_token(env)
     bws = binary(environ)
     if not bws:
@@ -706,7 +761,8 @@ def load(
     # A REQUESTED NAME IS NOT CHECKED AGAINST THE MAP, and that is the twin's behaviour rather than an omission: `bws_env_load FOO` looks FOO up in the store directly. The map is consulted only to enumerate the default set.
     #
     # THE DEFAULT SET IS PARSED THROUGH THE SAME GRAMMAR AS AN EXPLICIT ONE, even though a map key can never carry a `>`. Running both paths through `parse_specs` means the alias-free case is not a second code path that could drift; a map name simply parses to `(name, name)`, which is what the twin did implicitly.
-    wanted = parse_specs(list(names) if names else mapped_names(path))
+    # `None` is the whole map; an empty list asks for nothing and resolves nothing.
+    wanted = parse_specs(mapped_names(path) if names is None else list(names))
 
     resolved: dict[str, str] = {}
     missing: list[str] = []
@@ -800,11 +856,23 @@ def main(argv: list[str]) -> int:
             )
             return 2
         return _store_verb(rest)
+    if verb == "park":
+        if not rest:
+            print("rediacc_ci.core.bws_env: park takes at least one NAME", file=sys.stderr)
+            return 2
+        return _park_verb(rest)
     if verb != "names":
         print(USAGE, file=sys.stderr)
         return 2
     try:
-        resolved, _missing, rc = load(rest or None)
+        specs = _names_specs(rest)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 2
+    try:
+        # `None` (the whole map) only when nothing was asked for: a profile with no required spec resolves nothing rather than everything.
+        resolved, _missing, rc = load(specs if rest else None)
     except RefusalError as refusal:
         for line in refusal.lines:
             print(line, file=sys.stderr)
@@ -812,6 +880,41 @@ def main(argv: list[str]) -> int:
     for name in sorted(resolved):
         print(name)
     return rc
+
+
+def _names_specs(argv: list[str]) -> list[str]:
+    """The SPECs `names` resolves: its positional SPECs plus the REQUIRED specs of each `--profile P`.
+
+    Any other argument that starts with `-` refuses, so a mistyped flag is never looked up as a store name and reported "absent or empty in the store", which reads as a broken vault entry.
+    """
+    specs: list[str] = []
+    profile_names: list[str] = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--profile" and i + 1 < len(argv):
+            profile_names.append(argv[i + 1])
+            i += 2
+            continue
+        if arg.startswith("--profile="):
+            profile_names.append(arg.split("=", 1)[1])
+            i += 1
+            continue
+        if arg.startswith("-"):
+            raise RefusalError(
+                [
+                    "rediacc_ci.core.bws_env: names: unexpected argument %r (want SPEC ... or --profile P)"
+                    % arg
+                ]
+            )
+        specs.append(arg)
+        i += 1
+    if profile_names:
+        required, _optional = profile_specs(profiles(), profile_names)
+        specs.extend(
+            name if name == local else "%s > %s" % (name, local) for name, local in required
+        )
+    return specs
 
 
 def _json_verb(name: str) -> int:
@@ -862,7 +965,9 @@ def _cache_verb(target: str, names: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    body = "".join("%s=%s\n" % (local, resolved[local]) for _n, local in parse_specs(names))
+    body = PUBLIC_KEY_CACHE_HEADER + "".join(
+        "%s=%s\n" % (local, resolved[local]) for _n, local in parse_specs(names)
+    )
     with open(target, "w", encoding="utf-8") as handle:
         handle.write(body)
     # 0644 BY EXPLICIT chmod, not by umask. These are public keys and four build steps must read them under whatever user the build runs as; inheriting a 0600 umask would make the cache work for its writer and fail for its readers, which is the hardest kind of environment bug to see.
@@ -1050,8 +1155,11 @@ def hydrate(
     done = [p for p in environ.get(PROFILES_ENV, "").split(",") if p]
     table = profiles(environ)
     names = list(dict.fromkeys(names))
-    # Validates every requested name, inherited ones included: an unknown profile is a typo whether or not a parent claims to have run it.
-    profile_specs(table, names)
+    # Validates every requested name, inherited ones included: an unknown profile is a typo whether or not a parent claims to have run it. A parked spec in any of them is refused the same way, before any fetch and whether or not the environment already carries the name.
+    req_all, opt_all = profile_specs(table, names)
+    refusal = parked_refusal(req_all + opt_all, "exec")
+    if refusal:
+        raise RefusalError(refusal)
     wanted = [n for n in names if n not in done]
     if not wanted:
         return environ, done
@@ -1172,10 +1280,16 @@ WRITER_ARGV = ("npx", "--no", "tsx", WRITER_SCRIPT_REL)
 WRITER_TIMEOUT_S = 120
 
 
+# The id Secrets Manager gives an entry: a UUID, the only thing a create's answer may be.
+_SECRET_ID = re.compile(
+    r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}"
+)
+
+
 def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
     """Run bws-write.ts with REQUEST as JSON on stdin. None on success, else a value-free reason.
 
-    argv is the constant WRITER_ARGV and nothing else: no field of the request, the value least of all, is ever an argument. Success is exit 0 AND stdout being exactly the id asked for, so a writer that printed anything more is a failure too, and its stdout is never relayed.
+    argv is the constant WRITER_ARGV and nothing else: no field of the request, the value least of all, is ever an argument. Success is exit 0 AND stdout being exactly the id asked for (for a create, which asks for none, exactly one entry id), so a writer that printed anything more is a failure too, and its stdout is never relayed.
     """
     # Its own process group, so a timeout kills the node/tsx grandchild npx spawned and no late write lands after the verb reported failure.
     try:
@@ -1211,6 +1325,11 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
             % (proc.returncode, shlex.quote(account_dir), shlex.join(WRITER_ARGV))
         )
     answered = raw_out.decode(errors="replace").strip()
+    # A create carries no id (bws-write.ts refuses one), so the answer is the new entry's id and can only be held to an id's shape; an edit's answer is the id it asked for (#c938b4ab: a successful create was reported as "the writer answered an unexpected id").
+    if request.get("op") == "create":
+        if not _SECRET_ID.fullmatch(answered):
+            return "the writer answered an unexpected id"
+        return None
     wanted = request.get("id")
     if not answered or "\n" in answered or not wanted or answered != wanted:
         return "the writer answered an unexpected id"
@@ -1298,6 +1417,137 @@ def _store_verb(raw_specs: list[str]) -> int:
     for local, verdict in verdicts:
         print("%s %s" % (local, verdict))
     return 0 if all(v == MATCH for _l, v in verdicts) else 1
+
+
+def park_preflight(names: list[str], rows: list[dict]) -> list[str]:
+    """Every reason `park NAMES` must not write anything, against one listing. Pure; values never leave it.
+
+    All names are judged before the first write, so a refused name never leaves the store half-renamed.
+    """
+    problems: list[str] = []
+    keys = [r.get("key") for r in rows]
+    for name in names:
+        if name.startswith(PARKED_PREFIX):
+            problems.append("%s is already a parked name; pass the live name" % name)
+        elif not IDENT_RE.match(name):
+            problems.append("%r is not a store name (a bare NAME, no `>` spec)" % name)
+        elif keys.count(name) != 1:
+            problems.append(
+                "%s is %s in the store" % (name, "absent" if not keys.count(name) else "duplicated")
+            )
+        elif PARKED_PREFIX + name in keys:
+            problems.append(
+                "%s already exists in the store; %s is already parked or collides"
+                % (PARKED_PREFIX + name, name)
+            )
+        elif not isinstance(next(r for r in rows if r.get("key") == name).get("value"), str):
+            # The rename rewrites the value with what the listing carried; a row without one would be parked EMPTY, and the read-back, defaulting both sides to "", would still say MATCH (review d3b47b36.1).
+            problems.append(
+                "%s carries no value in the listing, so parking it would blank it" % name
+            )
+    dupes = sorted({n for n in names if names.count(n) > 1})
+    if dupes:
+        problems.append("named more than once: %s" % " ".join(dupes))
+    return problems
+
+
+def park_verdicts(
+    names: list[str], before: dict[str, dict], rows: list[dict]
+) -> list[tuple[str, str]]:
+    """(NAME, MATCH|MISMATCH) per parked name, read back from a fresh listing. Pure.
+
+    MATCH needs all three: the entry with NAME's old id now carries `__NAME`, its value equals the value held before the write (which must have been a string; a listing that carried none proves nothing), and no entry is still called NAME.
+    """
+    by_id = {r.get("id"): r for r in rows}
+    keys = {r.get("key") for r in rows}
+    out = []
+    for name in names:
+        old = before[name]
+        now = by_id.get(old.get("id")) or {}
+        ok = (
+            now.get("key") == PARKED_PREFIX + name
+            and isinstance(old.get("value"), str)
+            and now.get("value") == old.get("value")
+            and name not in keys
+        )
+        out.append((name, MATCH if ok else MISMATCH))
+    return out
+
+
+def _park_verb(names: list[str]) -> int:
+    """`park NAME...`: rename each live entry to `__NAME`, keeping its id and value, then read back.
+
+    The REST edit (`private/account/scripts/rotation/bws-write.ts`) overwrites key, value, note and project together, so a rename is an edit carrying the new key, the same id, and the value this process already holds from `listing()`. That value rides the writer's STDIN through `write_secret`, never argv, and nothing here prints it: the report is names and a verdict.
+    """
+    try:
+        environ = with_token()
+        bws = binary(environ)
+        if not bws:
+            raise RefusalError(NO_BINARY)
+        rows = listing(bws, environ)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    problems = park_preflight(names, rows)
+    if problems:
+        print(
+            "rediacc_ci.core.bws_env: park refuses; nothing was written:",
+            file=sys.stderr,
+        )
+        for line in problems:
+            print("  %s" % line, file=sys.stderr)
+        return 1
+    before: dict[str, dict] = {str(r.get("key")): r for r in rows if r.get("key") in names}
+    missing_project = [n for n in names if not before[n].get("projectId")]
+    if missing_project:
+        print(
+            "rediacc_ci.core.bws_env: park: no projectId in the listing for: %s; nothing was written"
+            % " ".join(missing_project),
+            file=sys.stderr,
+        )
+        return 1
+    account = os.path.join(root(environ), *WRITER_DIR_PARTS)
+    if not os.path.isfile(os.path.join(account, WRITER_SCRIPT_REL)):
+        print(
+            "rediacc_ci.core.bws_env: park: %s is missing; the private/account submodule is needed to write"
+            % os.path.join(account, WRITER_SCRIPT_REL),
+            file=sys.stderr,
+        )
+        return 1
+    done: list[str] = []
+    for name in names:
+        row = before[name]
+        failure = write_secret(
+            account,
+            {
+                "op": "edit",
+                "id": row["id"],
+                "key": PARKED_PREFIX + name,
+                "value": row["value"],
+                "note": row.get("note") or "",
+                "projectIds": [row["projectId"]],
+            },
+            environ,
+        )
+        if failure is not None:
+            print(
+                "rediacc_ci.core.bws_env: park: renaming %s failed (%s); already parked: %s"
+                % (name, failure, " ".join(done) or "none"),
+                file=sys.stderr,
+            )
+            return 1
+        done.append(name)
+    try:
+        after = listing(bws, environ)
+    except RefusalError as refusal:
+        for line in refusal.lines:
+            print(line, file=sys.stderr)
+        return 1
+    verdicts = park_verdicts(names, before, after)
+    for name, verdict in verdicts:
+        print("%s -> %s%s %s" % (name, PARKED_PREFIX, name, verdict))
+    return 0 if all(v == MATCH for _n, v in verdicts) else 1
 
 
 if __name__ == "__main__":

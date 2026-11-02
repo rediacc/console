@@ -8,61 +8,56 @@ tags:
 subcategory: data-protection
 order: 12
 language: it
-sourceHash: "7d9a82ee410c420a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Pruning
 
-Il pruning elimina lo stato che non corrisponde più a una risorsa attiva. Tre comandi coprono tre ambiti diversi:
+Il pruning elimina lo stato che non corrisponde più a una risorsa attiva. Due comandi coprono due ambiti diversi. Gli snapshot nello storage a chunk non rientrano tra questi: il server li elimina in base a una [policy di retention](#backup-snapshots), per lignaggio e flusso di backup.
 
 | Comando | Cosa pulisce | Dove risiede la fonte di verità |
 |---|---|---|
-| `rdc storage prune <storage> -m <machine>` | Backup orfani nell'archiviazione cloud | Config CLI locale (verificata rispetto alla macchina esecutrice per la sicurezza del mount) |
 | `rdc machine prune <machine>` | Artefatti del datastore sulla macchina (sempre); immagini di repository orfane o sconosciute (opt-in) | Config CLI locale + lo specchio `.interim/state` della macchina |
 | `rdc config prune` | Residui del config locale (cache certificati, archivi scaduti, riferimenti incrociati pendenti) | Solo config CLI locale |
 
-I tre sono indipendenti. Puoi eseguirne uno qualsiasi senza gli altri. Condividono un modello di sicurezza comune descritto in [Sicurezza](#safety-model) di seguito.
+I due sono indipendenti. Puoi eseguirne uno senza l'altro. Condividono un modello di sicurezza comune descritto in [Sicurezza](#safety-model) di seguito.
 
 Il pruning rimuove lo stato lasciato da risorse eliminate. Per recuperare spazio occupato da repository *attivi* (blocchi che i loro filesystem hanno liberato ma il pool ancora detiene), usa invece [`rdc repo trim`](/it/docs/repositories#reclaim-space-trim); i due sono complementari.
 
 ## Preflight di sicurezza del mount
 
-`storage prune` e `machine prune --prune-unknown` eseguono entrambi un **preflight di sicurezza del mount** prima di eliminare qualsiasi cosa: interrogano la macchina esecutrice per le repository attualmente montate o in esecuzione, le intersecano con i candidati all'eliminazione e **si rifiutano di eliminare un candidato ancora attivo sulla macchina**. Eliminare il backup fuori macchina di una repository montata, o eliminare un'immagine di repository attiva, è un vero e proprio rischio di perdita di dati. Il preflight rende impossibile farlo accidentalmente.
+`machine prune --prune-unknown` esegue un **preflight di sicurezza del mount** prima di eliminare qualsiasi cosa: interroga la macchina per le repository attualmente montate o in esecuzione, le interseca con i candidati all'eliminazione e **si rifiuta di eliminare un candidato ancora attivo sulla macchina**. Eliminare un'immagine di repository attiva è un vero e proprio rischio di perdita di dati. Il preflight rende impossibile farlo accidentalmente.
 
 Per ignorare questo controllo (raro; solo quando sai genuinamente che lo stato attivo è errato), passa `--force-delete-mounted`. Questo è un flag separato da `--force` (che controlla il periodo di grazia dell'archivio) in modo che le due valvole di sicurezza rimangano distinte.
 
-## Storage Prune
+## Snapshot di backup
 
-Scansiona un provider di archiviazione ed elimina i backup i cui GUID non compaiono più in nessun file di config locale.
+Gli snapshot caricati con `rdc backup snapshot` risiedono nello storage a chunk, ed è il server a eliminarli. Non esiste un comando di prune lato client: dichiara quanta cronologia conservare e il server rimuove il resto.
+
+Una policy appartiene al lignaggio di un repository, quindi un repository e i suoi fork la condividono, e si può sovrascrivere per un flusso di backup (un repository su una macchina). Ogni flusso conserva inoltre i suoi snapshot più recenti e la sua ancora corrente qualunque cosa dica la policy, quindi un passaggio non lascia mai un flusso a metà.
 
 ```bash
-# Solo anteprima - mostra cosa verrebbe eliminato
-rdc storage prune my-s3 -m server-1 --dry-run
+# Mostrare la policy attuale e da dove deriva
+rdc backup retention my-app
 
-# Elimina effettivamente i backup orfani (comportamento predefinito)
-rdc storage prune my-s3 -m server-1
+# Vedere cosa eliminerebbe il prossimo passaggio e lo spazio che libera, senza eliminare
+rdc backup retention preview my-app
 
-# Override del periodo di grazia (predefinito 7 giorni)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+# Conserva 7 snapshot giornalieri, 4 settimanali e 6 mensili
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Override del controllo di sicurezza del mount (usare con cautela)
-rdc storage prune my-s3 -m server-1 --force-delete-mounted
+# Sovrascrivere un solo flusso
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Torna a conservare tutti gli snapshot
+rdc backup retention clear my-app
+
+# Eliminare subito un singolo snapshot; la prossima garbage collection libera i suoi dati esclusivi
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
-`--machine` è richiesto perché le chiamate rclone vengono eseguite sulla macchina esecutrice, non sul tuo laptop. Non si aspetta che i client abbiano rclone installato localmente. Le credenziali di archiviazione provengono comunque dal tuo config locale; la macchina è solo il runner rclone.
-
-### Cosa controlla
-
-1. Elenca tutti i GUID di backup nell'archiviazione nominata (in entrambe le sottodirectory `hot/` e `cold/`. Vedi [Backup & Restore](/it/docs/backup-restore#scheduled-backups)).
-2. Scansiona ogni file di config su disco (`~/.config/rediacc/*.json`).
-3. Un backup è **orfano** se il suo GUID non è referenziato dalla sezione repositories di nessun config.
-4. Le repository archiviate di recente entro il periodo di grazia sono **protette** anche se rimosse dal config attivo.
-5. Preflight di sicurezza del mount: i GUID attualmente montati su `--machine` vengono saltati e segnalati, mai eliminati.
-
-### Prestazioni
-
-Le eliminazioni sono raggruppate per sottopercorso di archiviazione: una chiamata rclone per directory `hot/` o `cold/` indipendentemente da quanti GUID vengono rimossi. Un backlog di 11 orfani si riduce da circa 50 secondi di overhead SSH a un singolo round-trip per sottopercorso.
+Le regole della policy sono in [Backup e Ripristino](/it/docs/backup-restore#retention); `rdc backup usage` mostra cosa contiene lo store in questo momento.
 
 ## Machine Prune
 
@@ -132,7 +127,6 @@ Elimina i residui obsoleti **all'interno del file di config locale** in `~/.conf
 3. **Riferimenti incrociati pendenti** tra i bucket di config:
    - Voci `resources.machines.<m>.backupStrategies[]` che nominano una strategia non più esistente.
    - Voci `resources.backupStrategies.<s>.exclude[]` e `include[]` che nominano una repository non più esistente.
-   - Destinazioni di archiviazione il cui storage target è mancante. Contrassegnate come avvertimento, non rimosse automaticamente (la rimozione automatica cambierebbe la semantica della strategia).
 
 ```bash
 # Solo anteprima
@@ -155,9 +149,8 @@ rdc config prune --grace-days 30
 
 ### Cosa NON tocca
 
-- Risorse attive (macchine, archiviazioni, repository, strategie di backup, provider cloud).
+- Risorse attive (macchine, repository, strategie di backup, provider cloud).
 - Credenziali, il blocco account, il blocco di cifratura, i valori predefiniti.
-- `vaultContent` di archiviazione (incluso il `access_token` OneDrive scaduto. Il refresh_token conia ancora nuovi token; il pruning forcerebbe la ri-autenticazione).
 - Voci `knownHosts` (il percorso di aggiornamento automatico è `rdc machine scan-keys`).
 - L'array di blob di certificati compressi (`infra.acmeCertCache.<base>.data[]`) viene ricostruito automaticamente dall'elenco di certificati puliti; non perdi nessuna catena che copra ancora un nome mantenuto.
 
@@ -198,23 +191,23 @@ Il backfill copia lo stato in-volume attivo sullo specchio per le repository att
 
 ## Modello di Sicurezza
 
-Tutti e tre i comandi sono sicuri per default in configurazioni multi-config.
+Entrambi i comandi sono sicuri per default in configurazioni multi-config.
 
 ### Consapevolezza multi-config
 
-`storage prune` e `machine prune --orphaned-repos` scansionano **tutti** i file di config in `~/.config/rediacc/`, non solo quello attivo. Una repository referenziata da `production.json` non verrà eliminata anche se assente da `staging.json`. Questo previene l'eliminazione accidentale quando i config sono scoped a diversi ambienti.
+`machine prune --orphaned-repos` scansiona **tutti** i file di config in `~/.config/rediacc/`, non solo quello attivo. Una repository referenziata da `production.json` non verrà eliminata anche se assente da `staging.json`. Questo previene l'eliminazione accidentale quando i config sono scoped a diversi ambienti.
 
 ### Periodo di grazia
 
-Quando una repository viene rimossa da un config con `--archive-config`, la sua voce di credenziali viene spostata in `resources.deletedRepositories[]` con un timestamp `deletedAt`. I comandi di pruning rispettano un periodo di grazia (predefinito 7 giorni) durante il quale le repository archiviate di recente sono protette dall'eliminazione. Questo ti dà tempo di ripristinare una repository (`rdc repo admin archive restore <guid>`) se è stata rimossa accidentalmente. Una volta scaduta la grazia, `storage prune`, `machine prune` e `config prune` eliminano automaticamente la voce.
+Quando una repository viene rimossa da un config con `--archive-config`, la sua voce di credenziali viene spostata in `resources.deletedRepositories[]` con un timestamp `deletedAt`. I comandi di pruning rispettano un periodo di grazia (predefinito 7 giorni) durante il quale le repository archiviate di recente sono protette dall'eliminazione. Questo ti dà tempo di ripristinare una repository (`rdc repo admin archive restore <guid>`) se è stata rimossa accidentalmente. Una volta scaduta la grazia, `machine prune` e `config prune` eliminano automaticamente la voce.
 
 ### Preflight di sicurezza del mount
 
-Descritto sopra. `storage prune` e `machine prune --prune-unknown` si rifiutano di eliminare repository attualmente montate o in esecuzione sulla macchina esecutrice. Override solo con `--force-delete-mounted`.
+Descritto sopra. `machine prune --prune-unknown` si rifiuta di eliminare repository attualmente montate o in esecuzione sulla macchina. Override solo con `--force-delete-mounted`.
 
 ### Applica per default; `--dry-run` per anteprima
 
-Tutti e tre i comandi di pruning applicano le modifiche per **default**. Passa `--dry-run` per visualizzare l'anteprima senza scrivere. Questo corrisponde al verbo: "prune" è distruttivo di per sé, e il flag dry-run è il opt-out esplicito.
+Entrambi i comandi di pruning applicano le modifiche per **default**. Passa `--dry-run` per visualizzare l'anteprima senza scrivere. Questo corrisponde al verbo: "prune" è distruttivo di per sé, e il flag dry-run è il opt-out esplicito.
 
 ## Configurazione
 
@@ -237,11 +230,11 @@ Il flag CLI `--grace-days` sovrascrive questo valore quando fornito.
 
 ## Buone Pratiche
 
-- **Esegui prima il dry-run in produzione.** Visualizza sempre l'anteprima prima di eseguire un pruning distruttivo, specialmente sull'archiviazione di produzione.
-- **Mantieni aggiornati i config multipli.** Storage prune e machine prune controllano tutti i config nella directory di config. Se un file di config è obsoleto o eliminato, le sue repository perdono protezione. Mantieni i file di config accurati.
+- **Esegui prima il dry-run in produzione.** Visualizza sempre l'anteprima prima di eseguire un pruning distruttivo.
+- **Mantieni aggiornati i config multipli.** Machine prune controlla tutti i config nella directory di config. Se un file di config è obsoleto o eliminato, le sue repository perdono protezione. Mantieni i file di config accurati.
 - **Preferisci `--prune-unknown` rispetto a `--orphaned-repos`.** Il flag chirurgico rispetta lo specchio renet; il flag approssimativo eliminerà volentieri i fork creati da altri strumenti.
 - **Usa periodi di grazia generosi per la produzione.** Il periodo di grazia predefinito di 7 giorni si adatta alla maggior parte dei workflow. Per ambienti di produzione con finestre di manutenzione poco frequenti, considera 14 o 30 giorni.
-- **Pianifica storage prune dopo le esecuzioni di backup.** Abbina `storage prune` al tuo programma di backup per mantenere i costi di archiviazione sotto controllo senza intervento manuale.
+- **Dichiara una policy di retention.** `rdc backup retention set` tiene sotto controllo i costi di archiviazione degli snapshot senza intervento manuale.
 - **Combina machine prune con il programma di backup.** Dopo aver distribuito i programmi di backup (`rdc backup schedule`), aggiungi un machine prune periodico per pulire snapshot obsoleti e artefatti del datastore orfani.
 - **Esegui `config prune` periodicamente.** Il gonfiore del config locale (specialmente la cache dei certificati) si accumula silenziosamente; un `config prune --dry-run` trimestrale è sufficiente per individuarlo.
 - **Fai un audit prima di usare `--force` o `--force-delete-mounted`.** Entrambi i flag ignorano i controlli di sicurezza. Usa `--force` solo quando sei certo che nessun altro config referenzia le repository in questione; usa `--force-delete-mounted` solo quando sei certo che lo stato attivo sulla macchina sia errato.

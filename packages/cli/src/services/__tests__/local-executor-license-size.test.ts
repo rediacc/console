@@ -50,15 +50,19 @@ const {
   mockGetSubscriptionTokenState: vi.fn(),
 }));
 
-vi.mock('../../remote/sftp/index.js', () => ({
-  SFTPClient: class MockSFTPClient {
-    connect = mockConnect;
-    close = mockClose;
-    exec = mockExec;
-    execStreaming = mockExecStreaming;
-    isConnected = () => true;
-  },
-}));
+// Every renet call runs as a machine job: the script below answers as renet's run did (stdout, stderr, exit code), and the fake turns a `job start` exec into the attach stream renet prints for that run.
+vi.mock('../../remote/sftp/index.js', async () => {
+  const { asJobAttach } = await import('./job-attach-fake.js');
+  return {
+    SFTPClient: class MockSFTPClient {
+      connect = mockConnect;
+      close = mockClose;
+      exec = mockExec;
+      execStreaming = asJobAttach(mockExecStreaming as never);
+      isConnected = () => true;
+    },
+  };
+});
 
 vi.mock('../config/config-resources.js', () => ({
   configService: {
@@ -193,12 +197,10 @@ function parentRepo(placement?: { datastore: string } | { machine: string }) {
 }
 
 describe('repo-license size probe: which datastore it stats', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -226,9 +228,6 @@ describe('repo-license size probe: which datastore it stats', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   it('stats the NAMED datastore the parent is placed on, never the machine default', async () => {
@@ -315,12 +314,10 @@ describe('repo-license size probe: which datastore it stats', () => {
 });
 
 describe('repo-license size probe: a failed stat is not a measurement', () => {
-  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
     warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -347,9 +344,6 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-    if (savedSkipActivation !== undefined) {
-      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
-    }
   });
 
   it('says so on stderr when the source image could not be measured for a fork', async () => {

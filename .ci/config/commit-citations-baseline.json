@@ -1,0 +1,505 @@
+{
+  "comment": "Shrink-only baseline of check:ci-commit-citations (dead commit SHAs cited in tracked files). Keyed by a hash of path and token, never a line number. `--write-baseline` only removes entries; never add one by hand.",
+  "findings": {
+    "008372d9c8ba5120": {
+      "path": ".claude/rediacc_hooks/tests/test_review_commit_hook.py",
+      "sha": "6d0246d67"
+    },
+    "00c6a77eba781318": {
+      "path": ".claude/rediacc_hooks/guards/block_commit_of_live_writer_file.py",
+      "sha": "252e5e1d1"
+    },
+    "014ccfb97e40d237": {
+      "path": "agent/plans/_done/PLAN-prepush-full-cpu.md",
+      "sha": "ca84a0173"
+    },
+    "01d28efa41059270": {
+      "path": ".ci/rediacc_ci/quality/pipefail_grep_q.py",
+      "sha": "820e53328"
+    },
+    "03416f5c4894f6e1": {
+      "path": ".claude/rediacc_hooks/tests/test_review_commit_hook.py",
+      "sha": "e2a16724"
+    },
+    "0a37244ce74b1731": {
+      "path": ".github/workflows/cd-v2.yml",
+      "sha": "c608e29a8"
+    },
+    "0a8794dd9e8f9d17": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py",
+      "sha": "bcc4f1ee1"
+    },
+    "0b69b7d292fd7d94": {
+      "path": "scripts/ci-runner/manifest.ts",
+      "sha": "b213ae7da"
+    },
+    "0c191d768ce2c926": {
+      "path": ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
+      "sha": "033a35227"
+    },
+    "0d2d4e6d111f1db6": {
+      "path": ".claude/hooks/stop/wl_planrec.py",
+      "sha": "a2e639712"
+    },
+    "0d8c2b3338a79fda": {
+      "path": ".ci/rediacc_ci/quality/label_references.py",
+      "sha": "96355d3b5"
+    },
+    "0d94d9d77ba6c20e": {
+      "path": ".claude/rediacc_hooks/hookio.py",
+      "sha": "fae7c16a2"
+    },
+    "0dd9211a7ac7f484": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "d32227178"
+    },
+    "0deebf86ea7767b1": {
+      "path": ".ci/scripts/quality/check_plan_implementation.py",
+      "sha": "72eb06b56"
+    },
+    "0f06ca181d497178": {
+      "path": ".claude/hooks/stop/test-completion-evidence.py",
+      "sha": "b80552370"
+    },
+    "1418ff7c942f2ed2": {
+      "path": ".ci/rediacc_ci/core/allowlist.py",
+      "sha": "b80552370"
+    },
+    "161e25d1426f26cd": {
+      "path": "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md",
+      "sha": "f1e57ee32"
+    },
+    "1d972ada7975bf79": {
+      "path": "scripts/gates/check-external-links.ts",
+      "sha": "b8e332b73"
+    },
+    "2034f29c11aec307": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py",
+      "sha": "86580a281"
+    },
+    "20b0ae4cfd32bbd2": {
+      "path": ".ci/rediacc_ci/quality/release_bump_skip.py",
+      "sha": "056fe87b6"
+    },
+    "2140e73d2e1bbac0": {
+      "path": ".claude/rediacc_hooks/guards/block_blanket_git_add.py",
+      "sha": "cefa43ca7"
+    },
+    "246a0beea8bccaf4": {
+      "path": ".ci/rediacc_ci/quality/go_deps.py",
+      "sha": "b80552370"
+    },
+    "2c3c51459644c833": {
+      "path": ".ci/scripts/quality/check_plan_record.py",
+      "sha": "0123456ab"
+    },
+    "2ceab5625342428c": {
+      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
+      "sha": "63b96e658"
+    },
+    "30df5e0c64f14bc8": {
+      "path": "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md",
+      "sha": "6584a8795"
+    },
+    "342e297504b9ce24": {
+      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
+      "sha": "b213ae7da"
+    },
+    "3443f9ab48e0b897": {
+      "path": ".ci/rediacc_ci/policy_paths.py",
+      "sha": "b80552370"
+    },
+    "366d8adfc48c32d2": {
+      "path": ".claude/rediacc_hooks/git/githooks.py",
+      "sha": "7f2ece4c1"
+    },
+    "39c83e2d62d60612": {
+      "path": ".ci/rediacc_ci/tests/test_quality_label_inventory.py",
+      "sha": "96355d3b5"
+    },
+    "3e5bf92022cc25e8": {
+      "path": "agent/plans/PLAN-cli-em-dash-lint-gate.md",
+      "sha": "82def0b11"
+    },
+    "3fd1c239d84632b9": {
+      "path": ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
+      "sha": "c129f44d1"
+    },
+    "42aff67f91fdee8f": {
+      "path": ".claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
+      "sha": "9b557ab0e"
+    },
+    "45511fba2b7d6640": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "92cf92a3d"
+    },
+    "48c862d2de64fb5c": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "a0dabc983"
+    },
+    "4a0aad71d05554ec": {
+      "path": ".claude/rediacc_hooks/tests/test_githook_gen_docs.py",
+      "sha": "1fb9eefe7"
+    },
+    "4c4c9ae33cd376c2": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "3d98f9d78"
+    },
+    "4f1f2bdeb5b70a4e": {
+      "path": ".ci/scripts/quality/check_plan_citations.py",
+      "sha": "d1589e0bc"
+    },
+    "541af1cd760bb3cc": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py",
+      "sha": "056fe87b6"
+    },
+    "5631f4402b00cea9": {
+      "path": ".ci/rediacc_ci/tests/test_prsignals_pins.py",
+      "sha": "a0f482ca8"
+    },
+    "5940569508d0563f": {
+      "path": ".ci/rediacc_ci/quality/rubric_calibration.py",
+      "sha": "18700a769"
+    },
+    "5c58b87fff6d9e7b": {
+      "path": ".ci/scripts/quality/check_policy_inventory.py",
+      "sha": "b80552370"
+    },
+    "5da144c563d45180": {
+      "path": ".claude/rediacc_hooks/tests/test_pr_body_reader.py",
+      "sha": "bd4388b40"
+    },
+    "5db592d3d372cc68": {
+      "path": ".claude/rediacc_hooks/tests/test_githook_gen_docs.py",
+      "sha": "7f2ece4c1"
+    },
+    "5e7fdd531fa307bc": {
+      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
+      "sha": "1fb9eefe7"
+    },
+    "5f3360b8cf643aaf": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py",
+      "sha": "6584a8795"
+    },
+    "636794980982340b": {
+      "path": ".claude/hooks/stop/calibrate-judge-rules.py",
+      "sha": "18700a769"
+    },
+    "652df8358b882d72": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_policy_path.py",
+      "sha": "b80552370"
+    },
+    "6606510ee4aefae9": {
+      "path": ".ci/rediacc_ci/quality/pr_description.py",
+      "sha": "96355d3b5"
+    },
+    "6665f22a05c7438e": {
+      "path": ".claude/rediacc_hooks/tests/test_githook_gen_docs.py",
+      "sha": "84cfe4e55"
+    },
+    "6a18868a52a4545c": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py",
+      "sha": "9a6c21063"
+    },
+    "6a9cefde138ccecd": {
+      "path": "scripts/gates/check-pr-task-trailers.ts",
+      "sha": "55b982fc0"
+    },
+    "6e3b341441ba1d72": {
+      "path": "scripts/ci-runner/lanes.ts",
+      "sha": "6fe24d1cb"
+    },
+    "6e668c6e817897e2": {
+      "path": ".claude/rediacc_hooks/tests/hookcases.py",
+      "sha": "126f2a9fc"
+    },
+    "6f6062eff31a047a": {
+      "path": ".ci/rediacc_ci/tests/test_quality_label_references.py",
+      "sha": "96355d3b5"
+    },
+    "71b27275c9cf34a5": {
+      "path": ".ci/rediacc_ci/tests/test_ci_freshness.py",
+      "sha": "7c845cf3b"
+    },
+    "73500a9362c0494c": {
+      "path": "scripts/gates/check-suppression-liveness.ts",
+      "sha": "b80552370"
+    },
+    "75f4edecc171a08b": {
+      "path": ".claude/rediacc_hooks/tests/test_wl_leases.py",
+      "sha": "fed321cba"
+    },
+    "77cd1857b65a796c": {
+      "path": "scripts/lib/doc-providers.ts",
+      "sha": "7f2ece4c1"
+    },
+    "7ab207f0388e9d5f": {
+      "path": "agent/plans/PLAN-test-advisor.md",
+      "sha": "a1ec17d9"
+    },
+    "7b167782f1d40059": {
+      "path": ".ci/scripts/ci/scope-engine.cjs",
+      "sha": "681443ad3"
+    },
+    "820f7ad38aa4eb47": {
+      "path": ".ci/rediacc_ci/ci/generate_tag.py",
+      "sha": "b99162b7f"
+    },
+    "86f9b71f26c7c05a": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_scope_mirrors.py",
+      "sha": "8ed69711c"
+    },
+    "8719264c193fd779": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "2fa7d53df"
+    },
+    "87a05d43258cf80b": {
+      "path": "agent/plans/_done/PLAN-stop-hook-retro-20260925.md",
+      "sha": "b9d4dcb2"
+    },
+    "88d6dabcb24b198e": {
+      "path": ".ci/scripts/ci/greenlight.cjs",
+      "sha": "797d99c05"
+    },
+    "8a6deceefa672b66": {
+      "path": ".claude/rediacc_hooks/tests/test_guard_chained_state.py",
+      "sha": "c17c47c3"
+    },
+    "8bf0ff04dc90f468": {
+      "path": "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md",
+      "sha": "ba7b175c1"
+    },
+    "8c12bed650088c1a": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py",
+      "sha": "1d172438f"
+    },
+    "8e6dcdae9a56ab15": {
+      "path": "scripts/gates/check-translation-completeness.ts",
+      "sha": "a3f7b2c"
+    },
+    "8f844c945da8c394": {
+      "path": ".claude/rediacc_hooks/git/githooks.py",
+      "sha": "84cfe4e55"
+    },
+    "8fd1fcd3021350cb": {
+      "path": ".claude/rediacc_hooks/tests/test_wl_loop_next.py",
+      "sha": "d6a6e18b5"
+    },
+    "94f1325b2ed1eded": {
+      "path": "scripts/ci-runner/manifest.ts",
+      "sha": "94934de41"
+    },
+    "952b0207c919aeaa": {
+      "path": ".ci/rediacc_ci/quality/scope_mirrors.py",
+      "sha": "8ed69711c"
+    },
+    "9995a73fc4089ee0": {
+      "path": ".ci/rediacc_ci/tests/test_ci_publish_verdict.py",
+      "sha": "f92f55e63"
+    },
+    "9db56b806514ac26": {
+      "path": ".ci/scripts/ci/scope-engine.cjs",
+      "sha": "2469e5d72"
+    },
+    "a3386d080fe90d3c": {
+      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
+      "sha": "1a4a6971e"
+    },
+    "a568600307b3497f": {
+      "path": ".claude/rediacc_hooks/shellscan.py",
+      "sha": "28801da09"
+    },
+    "a5a49063eec35228": {
+      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
+      "sha": "0a3719dc9"
+    },
+    "a6c403899b151f20": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "f58f21973"
+    },
+    "a97a6672fb0b9342": {
+      "path": ".ci/scripts/quality/check_plan_implementation.py",
+      "sha": "99c1bb4dc"
+    },
+    "a9b33583d74bee2a": {
+      "path": ".ci/scripts/quality/check_plan_implementation.py",
+      "sha": "f8dcd7973"
+    },
+    "aa6d6c0b67358d01": {
+      "path": ".claude/hooks/stop/wl_liveness.py",
+      "sha": "860f47b04"
+    },
+    "aab7ca12806f2082": {
+      "path": ".ci/rediacc_ci/tests/test_quality_guard_mention_anchoring.py",
+      "sha": "276a69db9"
+    },
+    "ab0ec1adb3f73f75": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_scrub_sentinel_empty.py",
+      "sha": "27e9a49ab"
+    },
+    "abad5d77520b2589": {
+      "path": ".ci/scripts/quality/check_plan_folders.py",
+      "sha": "fedcba987"
+    },
+    "abdcc18c28cb1dc0": {
+      "path": ".ci/rediacc_ci/quality/probe_parity.py",
+      "sha": "96355d3b5"
+    },
+    "acdf09a6a80d4096": {
+      "path": ".ci/scripts/quality/check_bws_map.py",
+      "sha": "ca8d42f5c"
+    },
+    "adb6aa90f042c104": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_preview_readiness.py",
+      "sha": "8b7840ed4"
+    },
+    "b1925c08e828888f": {
+      "path": ".ci/rediacc_ci/tests/test_quality_plan_lifecycle.py",
+      "sha": "fedcba987"
+    },
+    "b4081aae704e24eb": {
+      "path": ".claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
+      "sha": "28801da09"
+    },
+    "b45c7d410a7b32e2": {
+      "path": ".claude/rediacc_hooks/guards/block_plan_box_rewrite.py",
+      "sha": "c2ca68dfe"
+    },
+    "b60a1f191fa64545": {
+      "path": "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md",
+      "sha": "b0184561c"
+    },
+    "b71724806e823e06": {
+      "path": ".ci/rediacc_ci/ci/publish_ci_verdict.py",
+      "sha": "f92f55e63"
+    },
+    "b99142c83759ec2f": {
+      "path": "agent/plans/_done/PLAN-per-commit-review.md",
+      "sha": "3f9a1c2e7d0b"
+    },
+    "ba3085e54bb05105": {
+      "path": ".ci/scripts/quality/check_release_bump_skip.py",
+      "sha": "056fe87b6"
+    },
+    "bb627e5c37798328": {
+      "path": "scripts/lib/doc-providers.ts",
+      "sha": "1fb9eefe7"
+    },
+    "bb9be9bfc4d36b23": {
+      "path": ".ci/rediacc_ci/quality/gh_retry_shell.py",
+      "sha": "ec583bbda"
+    },
+    "bd2499268f619053": {
+      "path": ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
+      "sha": "8ba9169be"
+    },
+    "c2a19de05a5cc2c5": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py",
+      "sha": "73bd8f7ec"
+    },
+    "c5494db6e65f8d21": {
+      "path": ".ci/rediacc_ci/ci/dispatch_release.py",
+      "sha": "056fe87b6"
+    },
+    "c5864248251531e1": {
+      "path": ".ci/rediacc_ci/tests/test_ci_initialize.py",
+      "sha": "056fe87b6"
+    },
+    "c711c7931b458810": {
+      "path": "scripts/ci-runner/manifest.ts",
+      "sha": "19c45c78e"
+    },
+    "cac0cdcf71f4f897": {
+      "path": "agent/plans/_done/PLAN-vm-check.md",
+      "sha": "b68d78f06"
+    },
+    "cadf1a7b5e32e413": {
+      "path": "scripts/ci-runner/manifest.ts",
+      "sha": "0327ab26b"
+    },
+    "cb9dc7130daa2e97": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_detect_bump_type.py",
+      "sha": "056fe87b6"
+    },
+    "cc0a302dbcdd6758": {
+      "path": ".ci/rediacc_ci/quality/toolchain_pins.py",
+      "sha": "820e53328"
+    },
+    "cdf19c034fdbc4e9": {
+      "path": "agent/plans/PLAN-greenlight-verify-at-read.md",
+      "sha": "03bac5a8"
+    },
+    "cf24378ba7c38c7e": {
+      "path": "agent/plans/_done/PLAN-vm-check.md",
+      "sha": "8f1782431"
+    },
+    "cff541ace693ae26": {
+      "path": "agent/plans/_done/PLAN-account-vm-check.md",
+      "sha": "ea5745734"
+    },
+    "d0d3d4b6e09ca06c": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_bws_map.py",
+      "sha": "ca8d42f5c"
+    },
+    "d0e682f1271281d4": {
+      "path": ".claude/rediacc_hooks/git/githooks.py",
+      "sha": "1fb9eefe7"
+    },
+    "d14465604a658539": {
+      "path": ".github/workflows/housekeeping.yml",
+      "sha": "9384e046c"
+    },
+    "d19274a1f8e5e787": {
+      "path": ".ci/rediacc_ci/tests/test_quality_ci_job_aggregation.py",
+      "sha": "8ba9169be"
+    },
+    "d204406c1993e051": {
+      "path": ".claude/rediacc_hooks/tests/hookcases.py",
+      "sha": "cd8ccb112"
+    },
+    "d57ec39e596b6904": {
+      "path": "agent/plans/_done/PLAN-tooling-transformation.md",
+      "sha": "f01b05bc"
+    },
+    "d5bf8c0e45bbfe5d": {
+      "path": ".claude/rediacc_hooks/tests/test_guard_chained_state.py",
+      "sha": "033a35227"
+    },
+    "d5cd9017194b9427": {
+      "path": ".claude/rediacc_hooks/guards/block_commit_of_live_writer_file.py",
+      "sha": "32bf7abdb"
+    },
+    "daeb7843259a0925": {
+      "path": ".ci/rediacc_ci/tests/test_quality_probe_parity.py",
+      "sha": "96355d3b5"
+    },
+    "e34320ef0e883ea9": {
+      "path": ".claude/rediacc_hooks/tests/hookcases.py",
+      "sha": "8ae5b3706"
+    },
+    "ee7b9c431dad3e39": {
+      "path": ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
+      "sha": "4a6641bf2"
+    },
+    "efb6970a9a714828": {
+      "path": "scripts/gates/check-external-links.ts",
+      "sha": "09654cc45"
+    },
+    "f068c499e3c42b3c": {
+      "path": "agent/plans/_done/PLAN-prepush-full-cpu.md",
+      "sha": "8b9732c2f"
+    },
+    "f7cd1cdd92940cba": {
+      "path": ".ci/rediacc_ci/tests/gates/test_gate_preview_readiness.py",
+      "sha": "cefa43ca7"
+    },
+    "fa176908668d5bb3": {
+      "path": ".claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py",
+      "sha": "0123abcd9"
+    },
+    "ff53ba79dbbcb4d0": {
+      "path": ".ci/rediacc_ci/quality/label_inventory.py",
+      "sha": "96355d3b5"
+    }
+  }
+}

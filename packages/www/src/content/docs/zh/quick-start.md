@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: zh
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 快速开始
@@ -75,7 +75,7 @@ rdc machine setup my-server  # 配置 renet + 创建数据存储
 
 ```bash
 rdc config show                            # 可读的摘要信息
-cat ~/.config/rediacc/rediacc.json         # 原始 JSON：机器、仓库、存储、SSH 密钥
+cat ~/.config/rediacc/rediacc.json         # 原始 JSON：机器、仓库、备份目标、SSH 密钥
 ```
 
 **一个文件 = 一个环境。** 复制到另一台笔记本电脑即可使用。
@@ -223,7 +223,7 @@ rdc backup usage
 
 快照会上传到分块存储，这需要账户服务器和已获许可的仓库。只存储发生变化的数据，因此对同一仓库做第二次快照只需支付差异部分的成本，而不是整份镜像的成本。
 
-使用 `--to <storage>` 将仓库推送到云存储的功能已废止，现在会被拒绝。要读取该变更之前写入的存档，`rdc storage browse` 仍可使用，并且需要在您的 PATH 中安装 `rclone`。
+备份只有一种目标类型，即由服务托管的分块存储，`repo push` 的 `--to` 只接受机器名。保留策略按仓库谱系用 `rdc backup retention set` 声明，定时运行则来自 `rdc backup strategy set` 加 `rdc backup schedule`。参见[备份与恢复](/zh/docs/backup-restore)。
 
 ### 4. 从远程拉取
 

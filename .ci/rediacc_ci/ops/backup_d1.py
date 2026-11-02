@@ -22,6 +22,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import wrangler
 from rediacc_ci.ops import cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
@@ -44,7 +45,7 @@ def _human_size(size: int) -> str:
 def _export(env: dict[str, str], db_name: str, out_file: str) -> int:
     """Run the wrangler export, echoing its output minus the pre-signed URL lines; return its exit status."""
     proc = subprocess.Popen(
-        ["npx", "wrangler", "d1", "export", db_name, "--remote", "--output=%s" % out_file],
+        [*wrangler.ARGV, "d1", "export", db_name, "--remote", "--output=%s" % out_file],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,

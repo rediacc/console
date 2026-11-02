@@ -198,7 +198,7 @@ function findDead(): string[] {
   const dead: string[] = [];
   for (const [c, file] of defined)
     if (!alive.has(c) && !livesByPrefix(c)) dead.push(`${file}:${c}`);
-  return dead.sort();
+  return dead.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 function selftest(): number {

@@ -168,6 +168,12 @@ class World:
         if regenerated:
             _git(self.repo, "add", "--", *regenerated)
         _git(self.repo, "commit", "-q", "-m", "base", env=_env(COMMIT_POLICY_OK="1"))
+        # The checkout's own origin/main, reachable through the alternates, so check_plan_record's RF can tell "ticked on this branch, not yet on main" (a warning) from "no main ref" (a refusal, fail closed). A fresh `git init` has no remote-tracking ref, which made every fully ticked plan of the live tree a refusal in the fixture while the real gate only warns.
+        main_sha = _git(
+            REPO_ROOT, "rev-parse", "--verify", "-q", "origin/main", check=False
+        ).stdout.strip()
+        if main_sha:
+            _git(self.repo, "update-ref", "refs/remotes/origin/main", main_sha)
         clean = _gen(self.repo)
         assert clean.returncode == 0, "the fixture's own regions are not clean:\n" + clean.stderr
         _git(self.repo, "config", "core.hooksPath", str(self.real_hooks))

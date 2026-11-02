@@ -8,9 +8,9 @@
 
 import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import type { BackupStrategyConfig } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { generateEnvFile } from './backup-env-file.js';
+import type { ScheduleUnitSpec } from './backup-schedule-targets.js';
 import {
   cronToOnCalendar,
   generateServiceUnit,
@@ -233,35 +233,62 @@ export async function readRemoteState(
   return result;
 }
 
+/**
+ * The number of CPUs the machine offers its processes, read on the machine with `nproc`.
+ *
+ * Why this and not another source: the unit's CPUQuota is percent x cores, and only the machine knows its own core count. `nproc` honours the CPU affinity mask and cgroup limits of the process asking, which is the count renet's own scope math uses (Go's runtime.NumCPU), so the unit and the ad-hoc function agree; `/proc/cpuinfo` would count offlined or masked cores. A failed or non-numeric answer THROWS: writing the unit with a guessed count would put a wrong quota on a machine and nobody would notice until its load climbed.
+ */
+export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> {
+  let out = '';
+  let err = '';
+  const exitCode = await sftp.execStreaming('nproc', {
+    onStdout: (data) => {
+      out += data;
+    },
+    onStderr: (data) => {
+      err += data;
+    },
+  });
+  const n = Number(out.trim());
+  if (exitCode !== 0 || !Number.isInteger(n) || n < 1) {
+    throw new Error(
+      `Could not read the CPU count on the machine (nproc exit ${exitCode}, output "${out.trim()}"${err.trim() ? `, ${err.trim()}` : ''}); a CPU ceiling cannot be written without it.`
+    );
+  }
+  return n;
+}
+
 // --------------------------------------------------------------------------- Phase B, Compute desired units ---------------------------------------------------------------------------
 
-// SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage, which existed to build rclone args; with the rclone path removed there is nothing async left. The single caller (backup-schedule.ts:204) still awaits it, which is harmless, so the signature change needs no caller edit.
+/**
+ * Render every unit the specs ask for. One spec is one (strategy, datastore, cadence, scope) unit; see
+ * backup-schedule-targets.ts for how specs come from the config. Synchronous and deterministic: the
+ * reconciler diffs the result by hash.
+ */
 export function computeDesiredUnits(
-  strategies: { name: string; config: BackupStrategyConfig }[],
-  datastore: string,
-  remoteRenetPath: string
+  specs: ScheduleUnitSpec[],
+  remoteRenetPath: string,
+  cpuCount?: number
 ): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
-  for (const { name, config } of strategies) {
-    const enabledDests = config.destinations.filter((d) => d.enabled !== false);
+  for (const spec of specs) {
+    const enabledDests = spec.strategy.destinations.filter((d) => d.enabled !== false);
     if (enabledDests.length === 0) {
-      outputService.warn(`Skipping strategy "${name}": no enabled destinations`);
+      outputService.warn(`Skipping strategy "${spec.strategyName}": no enabled destinations`);
       continue;
     }
-
-    // NOTE 2026-08-15: this used to build an rclone args Map here and REFUSE any hosted-service destination as "not available in this build yet". Both are gone. Keeping the refusal after the rclone emission was deleted made `backup schedule push` impossible for EVERY config: hosted-service threw here, and storage threw in the unit generator. The generator is now the single place
-    // that validates destination kind.
-
     const { serviceContent, envVars } = generateServiceUnit(
-      name,
-      config,
+      spec.unitName,
+      spec.strategy,
       enabledDests,
-      datastore,
-      remoteRenetPath
+      spec.datastore.path,
+      remoteRenetPath,
+      spec.scope,
+      cpuCount
     );
-    const timerContent = generateTimerUnit(name, cronToOnCalendar(config.schedule));
-    result.set(name, {
-      strategyName: name,
+    const timerContent = generateTimerUnit(spec.unitName, cronToOnCalendar(spec.schedule));
+    result.set(spec.unitName, {
+      strategyName: spec.unitName,
       serviceContent,
       timerContent,
       envFileContent: generateEnvFile(envVars),

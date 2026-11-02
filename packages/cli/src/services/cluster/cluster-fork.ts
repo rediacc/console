@@ -12,6 +12,7 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
+import { targetFloor } from '../config/network-id-discovery.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
@@ -116,7 +117,10 @@ async function listClusterCephDatastores(
   }
   // Deterministic order: control datastore first, then data datastores sorted.
   const control = controlDatastore(clusterName);
-  return [...members.filter((m) => m === control), ...members.filter((m) => m !== control).sort()];
+  return [
+    ...members.filter((m) => m === control),
+    ...members.filter((m) => m !== control).sort((a, b) => Number(a > b) - Number(a < b)),
+  ];
 }
 
 /**
@@ -224,7 +228,9 @@ export async function forkCluster(
   // networkID (04 §2 step 4). The clone mounts at the stable-name path.
   const controlDs = controlDatastore(clusterName);
   const forkMount = forkDatastoreMount(controlDs, options.tag);
-  const forkNet = await configService.allocateNetworkId();
+  const forkNet = await configService.allocateNetworkId({
+    floor: await targetFloor({ machine: dstControl.name }),
+  });
   outputService.info(
     `  control-plane fork identity rewrite (PKI re-mint + scrub) on ${dstControl.name}...`
   );
@@ -256,7 +262,7 @@ export async function forkCluster(
   const forkEndpoint = serverUrl(dstControl.ip);
   for (const agent of dstAgents) {
     outputService.info(`  fresh agent join ${agent.name} (${agent.ip})...`);
-    const agentNet = await allocateAgentNetworkId();
+    const agentNet = await allocateAgentNetworkId(agent.name);
     await dispatch(
       'kube_join',
       agent.name,

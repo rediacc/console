@@ -50,6 +50,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -158,9 +159,11 @@ export function compareValue(source: string, value: string): Verdict {
   const got = placeholders(value);
   const enSentinels = sentinels(source);
   return {
-    dropped: [...want].filter((p) => !got.has(p)).sort(),
-    invented: [...got].filter((p) => !want.has(p)).sort(),
-    leakedSentinels: [...sentinels(value)].filter((t) => !enSentinels.has(t)).sort(),
+    dropped: [...want].filter((p) => !got.has(p)).sort((a, b) => Number(a > b) - Number(a < b)),
+    invented: [...got].filter((p) => !want.has(p)).sort((a, b) => Number(a > b) - Number(a < b)),
+    leakedSentinels: [...sentinels(value)]
+      .filter((t) => !enSentinels.has(t))
+      .sort((a, b) => Number(a > b) - Number(a < b)),
   };
 }
 
@@ -318,6 +321,6 @@ function main(): void {
   );
 }
 
-if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
+if (isEntryPoint(import.meta.filename)) {
   main();
 }

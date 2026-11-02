@@ -2,7 +2,6 @@
   "build",
   "build:account-onboarding",
   "build:all-sites",
-  "build:cli",
   "build:json",
   "check:ci-release-state",
   "check:env-credential-drift",

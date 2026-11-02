@@ -5,6 +5,11 @@
 
 // High-level operations
 export { formatChangesSummary, formatDetailedChanges } from './operations.js';
+export {
+  planMissingParents,
+  skeletonDestination,
+  writeSkeleton,
+} from './remote-parents.js';
 // Rsync execution
 export {
   executeRsync,

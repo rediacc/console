@@ -1,0 +1,8 @@
+{
+  "$comment": "Shrink-only baseline for check:ci-plan-record RP (a live plan's `Priority:` seed claim disagrees with its Status or open box count). Each id is the plan path plus the first 12 hex of sha256 over the Priority value, never a line number. Written by hand on 2026-10-23 from the measured findings; `check_plan_record.py --write-baseline` only removes entries. Do not add one: fix the plan's Priority line instead.",
+  "findings": {
+    "agent/plans/PLAN-haiku-model-routing.md:5f5e2b398f12": "claims Status phase, 1 open box(es); reads Status executing, 9 open",
+    "agent/plans/PLAN-retire-bash-oracles.A0.md:fc82c7352bb9": "claims Status unknown, 0 open box(es); reads Status executing, 7 open",
+    "agent/plans/PLAN-w7p5a-real-run-dispatch.md:b072b02fe02a": "claims Status in-progress, 2 open box(es); reads Status in-progress, 1 open"
+  }
+}

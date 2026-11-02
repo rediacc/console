@@ -1,8 +1,9 @@
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import type { FrameLocator, Locator, Page } from 'playwright';
+import { stripAnsi } from '../dev-server-ready.js';
 import {
   FPS,
   muxNarratedSegment,
@@ -24,7 +25,6 @@ import type {
 } from '../storyboard.ts';
 import type { LiveSession } from './browser-session.ts';
 import type { ChunkProducer, SceneContext } from './index.ts';
-import { stripAnsi } from '../dev-server-ready.js';
 
 /** Ceiling (and default) for how long a click waits for its target. */
 const CLICK_TIMEOUT_MS = 5000;
@@ -446,7 +446,10 @@ function muxCachedSegment(
 /** Copy a freshly-cut silent segment into the cache for future-language reuse. */
 function saveToCache(ctx: SceneContext, silentSeg: string, cacheFile: string): void {
   mkdirSync(ctx.browserCache.dir, { recursive: true });
-  copyFileSync(silentSeg, cacheFile);
+  // Copy to a sibling temp name, then rename: existsSync() is the cache's only readiness test, and a concurrent locale render must never see a half-copied file as a hit.
+  const part = `${cacheFile}.${process.pid}.part`;
+  copyFileSync(silentSeg, part);
+  renameSync(part, cacheFile);
 }
 
 /**

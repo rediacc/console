@@ -139,7 +139,7 @@ DRIFT_THRESHOLD = 0.25
 # None of them changes its answer on a unit that is 25% off in isolation. The smallest leg difference any of them acts on is `REBALANCE_ADVISORY_MIN` in check-lane-budget.ts, half a minute of leg wall, below which a rebalance is not even advised.
 # THE HISTORY THIS REPLACES. A fixed floor of 2 s (2026-10-04), then 5 s (#ce346f22), then the median and max statistics (#d901ba82), then `MIN_FASTER_SAMPLES` (2026-10-13 morning) each answered one day's reds, and the gate still went red four times on branch 1008-1 on 2026-10-13.
 # MEASURED on that branch's seven artifact-bearing runs: two of every five pytest units of 5 to 20 s differ by more than 25% between runs, one of three at 60 s and up, and a whole leg ran 35% slower on one runner (leg 1 of 3: 1773 s against 2388 s of unit time) while the other two legs moved 2.5% and 6.3%.
-# The replay of the three reds found the cause was sample size before it was noise. The slower side fired on ONE run (15 of the 17 findings on run 38409515814 had one or two samples), and the refresh kept every thinly sampled unit that had got faster, which the check then reported as soon as a third sample arrived (12 of the 14 findings after 1dd250d87).
+# The replay of the three reds found the cause was sample size before it was noise. The slower side fired on ONE run (15 of the 17 findings on run 38409515814 had one or two samples), and the refresh kept every thinly sampled unit that had got faster, which the check then reported as soon as a third sample arrived (12 of the 14 findings after ebae07c7e).
 # So the rule has three parts, and the refresh obeys the same three.
 #   1. EVIDENCE. A drift verdict, slower or faster, needs `MIN_DRIFT_RUNS` distinct sampled runs that measured the unit. One run is one runner. A unit below that count is counted, printed as thin and never judged, and a refresh keeps its committed value.
 #   2. PERSISTENCE. Slower needs the median of the window AND each of the newest `MIN_DRIFT_RUNS` runs past the limit, so no single run can produce a finding. Faster needs the slowest sample of the window under the limit, which is every run agreeing.
@@ -1598,8 +1598,9 @@ def compute_lane_durations(
     fetch_log: Callable[[str, int], str] = fetch_job_log,
     log_cache_dir: Path | None = None,
     as_of: float | None = None,
+    measure_variants: bool = True,
 ) -> dict[str, Any]:
-    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "unit_parallelism", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root). Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
+    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "unit_parallelism", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root); `measure_variants=False` skips that log fetch entirely and leaves `variant_costs` and `variant_legs` empty, which is what `--check` (`compute_for_check`) wants, since only `--refresh` writes them. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
     # THE PR SAMPLE HONOURS `--branch`, AS THE REPORT'S DOES SINCE 34ac34c13. `--refresh --branch 0923-1` still sampled PR runs with NO branch filter, so the durations it wrote came from whichever branches' runs the listing served, not the branch named. `class_branch_filter` keeps a default-branch refresh repo-wide.
@@ -1687,17 +1688,21 @@ def compute_lane_durations(
             "reported missing. The next PR run that finishes them measures them."
             % (retention_days, ", ".join(unmeasurable))
         )
-    variant_costs, variant_legs = collect_variant_costs(
-        repo,
-        pr_jobs_by_run,
-        patterns,
-        tree_root,
-        bucket_titles=bucket_titles,
-        fetch_log=fetch_log,
-        cache_dir=log_cache_dir
-        if log_cache_dir is not None
-        else tree_root / VARIANT_LOG_CACHE_REL_PATH,
-    )
+    # `--check` never reads variantCosts (only `--refresh` writes them), and their job logs are the slowest read of the sample. MEASURED 2026-10-26 on a cold cache: 274 logs took 6128 s of call time (8 workers, about 22 s each, 766 s of an 840 s run), which stopped the nightly housekeeping check at its 480 s budget (run 40293968889). A dev box's warm `.ci/cache` made the same check 81 s.
+    variant_costs: dict[str, dict[str, dict[str, Any]]] = {}
+    variant_legs: dict[str, int] = {}
+    if measure_variants:
+        variant_costs, variant_legs = collect_variant_costs(
+            repo,
+            pr_jobs_by_run,
+            patterns,
+            tree_root,
+            bucket_titles=bucket_titles,
+            fetch_log=fetch_log,
+            cache_dir=log_cache_dir
+            if log_cache_dir is not None
+            else tree_root / VARIANT_LOG_CACHE_REL_PATH,
+        )
     units_ms: dict[str, float] = {}
     unit_stats: dict[str, dict[str, float]] = {}
     for per_unit in unit_samples.values():
@@ -1733,6 +1738,19 @@ def compute_lane_durations(
                 "samples": len(wall_minutes),
             }
 
+    leg_samples, untraced_legs = traced_leg_samples(
+        pr_runs,
+        pr_jobs_by_run,
+        patterns,
+        lambda sha, rel: _git_show(tree_root, sha, rel),
+    )
+    job_p90_minutes, leg_plans = prefer_todays_leg(
+        job_p90_minutes,
+        leg_samples,
+        untraced_legs,
+        today_leg_hashes(tree_root, patterns),
+        patterns,
+    )
     return {
         "jobs": jobs_minutes,
         "units": units_ms,
@@ -1752,17 +1770,12 @@ def compute_lane_durations(
         "stale_sample": stale_sample_findings(pr_runs),
         # Which PR runs the numbers came from, so a refresh names its sample rather than only its size.
         "sampled_runs": [_run_summary(run) for run in pr_runs],
-        # The leg contents each measured leg ran; see `job_p90_plans`.
-        "job_p90_plans": job_p90_plans(
-            pr_runs,
-            pr_jobs_by_run,
-            patterns,
-            lambda sha, rel: _git_show(tree_root, sha, rel),
-        ),
+        # The leg contents each measured leg ran; see `job_p90_plans` and `prefer_todays_leg`.
+        "job_p90_plans": leg_plans,
     }
 
 
-# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a leg of a lane with a committed shard manifest, the leg contents its sampled jobs ran, read from each run's own head commit, so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
+# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a leg of a lane with a committed shard manifest, the leg contents its sampled jobs ran, read from each run's own head commit (narrowed to today's leg alone when `prefer_todays_leg` prices the name on today's samples), so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
 _LEG_INDEX_RE = re.compile(r"(?:\(|, )(\d+)(?:/(\d+))?\)$")
 SHARDS_DIR_REL = ".ci/config/shards"
 
@@ -1790,17 +1803,115 @@ def job_p90_plans(
     patterns: Mapping[str, re.Pattern[str]],
     show: Callable[[str, str], str | None],
 ) -> dict[str, list[str]]:
-    """`{display name: sorted leg_plan_hash values}` for every leg of a manifest lane that a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
+    """`{display name: sorted leg_plan_hash values}` for every leg of a manifest lane that a sampled job measured; `traced_leg_samples` holds the rule. A name with an untraced sample gets no entry."""
+    samples, untraced = traced_leg_samples(pr_runs, pr_jobs_by_run, patterns, show)
+    return plans_from_samples(samples, untraced)
+
+
+def plans_from_samples(
+    samples: Mapping[str, Sequence[tuple[str, float]]], untraced: set[str]
+) -> dict[str, list[str]]:
+    """The `job_p90_plans` shape of `traced_leg_samples`' result: each traced name's distinct leg hashes, sorted."""
+    return {
+        name: sorted({h for h, _ in rows})
+        for name, rows in sorted(samples.items())
+        if name not in untraced
+    }
+
+
+def today_leg_hashes(
+    tree_root: Path, patterns: Mapping[str, re.Pattern[str]]
+) -> dict[str, tuple[int | None, dict[int, str]]]:
+    """`{lane: (leg count, {leg index: leg_plan_hash})}` from the shard manifests in the working tree, the legs that ship today. A lane with no readable manifest is absent."""
+    out: dict[str, tuple[int | None, dict[int, str]]] = {}
+    for lane in patterns:
+        path = tree_root / SHARDS_DIR_REL / ("%s.json" % lane)
+        try:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        legs = {
+            lg["index"]: leg_plan_hash(lg.get("ids") or [])
+            for lg in manifest.get("legs") or []
+            if isinstance(lg, dict) and isinstance(lg.get("index"), int)
+        }
+        of = manifest.get("of")
+        out[lane] = (of if isinstance(of, int) else None, legs)
+    return out
+
+
+def prefer_todays_leg(
+    job_p90_minutes: Mapping[str, float],
+    samples: Mapping[str, Sequence[tuple[str, float]]],
+    untraced: set[str],
+    today: Mapping[str, tuple[int | None, Mapping[int, str]]],
+    patterns: Mapping[str, re.Pattern[str]],
+) -> tuple[dict[str, float], dict[str, list[str]]]:
+    """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
+
+    A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now.
+    When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone.
+    MEASURED 2026-11-01: "Account E2E (4/4)" read 13.1m from samples 6.2, 4.9, 14.8 and 4.9, the 14.8 from run 39869882942 under the retired plan, and check-lane-budget.ts counted the mixed entry against today's leg.
+    A name none of whose samples ran today's leg keeps every sample, so the gate's own set-aside (`measuredThisLeg`) still prints it; a name with fewer than `MIN_DRIFT_RUNS` samples of today's leg is measured on its retired samples alone and records only their hashes, so it is set aside the same way rather than priced on one run (one run is one runner, the units' evidence rule) or on another plan's numbers. An untraced name keeps its p90 and gets no entry, the strict side."""
+    p90 = dict(job_p90_minutes)
+    plans = plans_from_samples(samples, untraced)
+    for name, rows in samples.items():
+        if name in untraced:
+            continue
+        hashes = sorted({h for h, _ in rows})
+        lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
+        lane_today = today.get(lane) if lane is not None else None
+        current = next((h for h in hashes if _is_today(name, h, lane_today)), None)
+        if current is None or len(hashes) == 1:
+            continue
+        walls = [w for h, w in rows if h == current]
+        if len(walls) < MIN_DRIFT_RUNS:
+            # Too thin to price today's leg, and the rest describes a leg that no longer ships: the name is measured on the retired samples alone and records only their hashes, so the gate sets it aside until a refresh sees enough runs of today's leg.
+            retired = [(h, w) for h, w in rows if h != current]
+            s = stats([w for _, w in retired])
+            if s is not None:
+                p90[name] = s["p90"]
+                plans[name] = sorted({h for h, _ in retired})
+            continue
+        s = stats(walls)
+        if s is not None:
+            p90[name] = s["p90"]
+            plans[name] = [current]
+    return p90, plans
+
+
+def _is_today(
+    name: str, leg_hash: str, lane_today: tuple[int | None, Mapping[int, str]] | None
+) -> bool:
+    """Whether `leg_hash` is the hash of the leg `name` names in its own lane's manifest of today (`lane_today`, None when the lane has none)."""
+    leg = _LEG_INDEX_RE.search(name)
+    if leg is None or lane_today is None:
+        return False
+    of, legs = lane_today
+    of_in = leg.group(2)
+    if of_in is not None and of is not None and int(of_in) != of:
+        return False
+    return legs.get(int(leg.group(1))) == leg_hash
+
+
+def traced_leg_samples(
+    pr_runs: Sequence[dict[str, Any]],
+    pr_jobs_by_run: Sequence[Sequence[dict[str, Any]]],
+    patterns: Mapping[str, re.Pattern[str]],
+    show: Callable[[str, str], str | None],
+) -> tuple[dict[str, list[tuple[str, float]]], set[str]]:
+    """`({display name: [(leg_plan_hash, wall minutes)]}, untraced names)` for every leg of a manifest lane that a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
 
     A name ANY of whose samples cannot be traced (no head_sha, no manifest at that commit, a leg count or index the manifest does not hold) gets NO entry, and the gate counts a name with no entry against today's leg. Unknown is the strict direction here, never the lenient one."""
-    out: dict[str, set[str]] = {}
+    out: dict[str, list[tuple[str, float]]] = {}
     untraced: set[str] = set()
     manifests: dict[tuple[str, str], dict[str, Any] | None] = {}
     for run, jobs in zip(pr_runs, pr_jobs_by_run, strict=False):
         sha = run.get("head_sha")
         for job in jobs:
             name = job.get("name") or ""
-            if job_wall_minutes(job) is None:
+            wall = job_wall_minutes(job)
+            if wall is None:
                 continue
             lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
             if lane is None:
@@ -1831,8 +1942,8 @@ def job_p90_plans(
             if (of_in is not None and int(of_in) != manifest.get("of")) or len(legs) != 1:
                 untraced.add(name)
                 continue
-            out.setdefault(name, set()).add(leg_plan_hash(legs[0].get("ids") or []))
-    return {name: sorted(hashes) for name, hashes in sorted(out.items()) if name not in untraced}
+            out.setdefault(name, []).append((leg_plan_hash(legs[0].get("ids") or []), wall))
+    return out, untraced
 
 
 def merged_job_p90_plans(
@@ -2129,7 +2240,7 @@ def refreshed_units(
 ) -> dict[str, float]:
     """The units a refresh writes. A unit the table already prices is rewritten only on the evidence the check judges it on, `MIN_DRIFT_RUNS` sampled runs, in either direction; below that its committed value stays. A unit new to the table is written at any count, because a row from one run beats no row.
 
-    WHY NOT "WRITE WHAT GOT SLOWER". Until 2026-10-13 a thin sample was written when slower and kept when faster. The kept half was reported faster as soon as a third sample arrived (12 of 14 findings one run after 1dd250d87), and the written half put one runner's time in the table for the next window to disagree with (test_regolden_bootstrap.py, 11.0 s from one run, 18.9 s median two runs later).
+    WHY NOT "WRITE WHAT GOT SLOWER". Until 2026-10-13 a thin sample was written when slower and kept when faster. The kept half was reported faster as soon as a third sample arrived (12 of 14 findings one run after ebae07c7e), and the written half put one runner's time in the table for the next window to disagree with (test_regolden_bootstrap.py, 11.0 s from one run, 18.9 s median two runs later).
     """
     units = dict(committed)
     for unit_id, ms in measured.items():
@@ -2338,6 +2449,11 @@ def refresh_lane_durations(
     return 0
 
 
+def compute_for_check(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """`compute_lane_durations` without the variant-cost job logs, which `check_lane_durations` never reads (see `measure_variants`)."""
+    return compute_lane_durations(*args, measure_variants=False, **kwargs)
+
+
 def _compute_sample(
     compute: Callable[..., dict[str, Any]],
     repo: str,
@@ -2379,7 +2495,7 @@ def check_lane_durations(
     branch: str = DEFAULT_BRANCH,
     limit: int = DEFAULT_REFRESH_LIMIT,
     *,
-    compute: Callable[..., dict[str, Any]] = compute_lane_durations,
+    compute: Callable[..., dict[str, Any]] = compute_for_check,
     as_of: float | None = None,
 ) -> int:
     """T3.3: freshly measure, then compare against the COMMITTED file -- never writes. Fails (1) when any leg's measured p90 exceeds 12m, a job's committed estimate drifts more than 25% from what was just measured, a unit or a leg's unit sum drifts under the three-part rule at `MIN_DRIFT_RUNS`, or a measured unit has no row and costs a material amount over what it is priced at."""

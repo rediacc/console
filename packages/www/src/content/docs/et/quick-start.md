@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: et
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Kiirjuhend
@@ -75,7 +75,7 @@ rdc machine setup my-server  # Provisioonib renet + loob andmehoidla
 
 ```bash
 rdc config show                            # Inimloetav kokkuvõte
-cat ~/.config/rediacc/rediacc.json         # Toores JSON: masinad, hoidlad, mäluhoidlad, SSH-võti
+cat ~/.config/rediacc/rediacc.json         # Toores JSON: masinad, hoidlad, varunduse sihtkohad, SSH-võti
 ```
 
 **Üks fail = üks keskkond.** Kopeeri see teise sülearvutisse ja oled valmis.
@@ -223,7 +223,7 @@ rdc backup usage
 
 Tõmmised laaditakse üles tükksalvestusse, mis vajab konto-serverit ja litsentseeritud repositooriumi. Salvestatakse ainult muutunud andmed, seega maksab sama repositooriumi teine tõmmis ainult erinevuse, mitte kogu tõmmise hinda.
 
-Repositooriumi lükkamine pilvemällu käsuga `--to <storage>` on kaotatud ja lükatakse nüüd tagasi. Enne seda muudatust kirjutatud arhiivi lugemiseks toimib `rdc storage browse` endiselt ja vajab `rclone`-i sinu PATH-is.
+Varukoopiatel on üks sihtkohatüüp, teenuse majutatud tükksalvestus, ja `--to` käsul `repo push` nimetab ainult masinat. Säilitus deklareeritakse repositooriumi liini kaupa käsuga `rdc backup retention set` ning ajastatud käitused tulevad käsust `rdc backup strategy set` pluss `rdc backup schedule`. Vaata [Varundus ja taastamine](/et/docs/backup-restore).
 
 ### 4. Tõmba kaugelt
 

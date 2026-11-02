@@ -101,10 +101,9 @@ export const TRACKED: ReadonlyArray<{ key: string; slugs: string[] }> = [
 export const manifestIds = (json: unknown): Map<string, Map<string, string>> => {
   const out = new Map<string, Map<string, string>>();
   const root = json as Record<string, unknown>;
-  const creds = (root.credentials ?? root) as Record<
-    string,
-    { versions?: { id?: string; state?: string }[] }
-  >;
+  const creds = (root.credentials ?? root) as
+    | Record<string, { versions?: { id?: string; state?: string }[] }>
+    | undefined;
   for (const [slug, v] of Object.entries(creds ?? {})) {
     if (!v || typeof v !== 'object') continue;
     const ids = new Map<string, string>();

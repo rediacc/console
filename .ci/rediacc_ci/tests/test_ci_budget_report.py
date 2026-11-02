@@ -779,7 +779,7 @@ REAL_FINDINGS = {
         "lane-durations:drift:leg-sum:test-account-e2e-leg-2/4",
         "lane-durations:unpriced-unit:%s" % LICENSE_E2E,
     ],
-    "after-1dd250d87": [
+    "after-ebae07c7e": [
         "lane-durations:drift:unit:%s" % CLEANUP_VERSIONS,
         "lane-durations:drift:unit:tutorial:delta-transfer",
     ],
@@ -926,10 +926,10 @@ def _retired_reds(name: str) -> dict[str, str]:
 
 
 @pytest.mark.parametrize(
-    ("name", "retired"), [("morning", 26), ("run-38409515814", 17), ("after-1dd250d87", 14)]
+    ("name", "retired"), [("morning", 26), ("run-38409515814", 17), ("after-ebae07c7e", 14)]
 )
 def test_the_three_reds_of_2026_10_13_replayed(name, retired, tmp_path, capsys):
-    """Each window is one real red, whole. The retired rule reports the count the day's logs show (17 on run 38409515814, 14 one run after 1dd250d87). Under the rule none of those units is a finding, and what is left is `REAL_FINDINGS`, each of which the controls below take apart."""
+    """Each window is one real red, whole. The retired rule reports the count the day's logs show (17 on run 38409515814, 14 one run after ebae07c7e). Under the rule none of those units is a finding, and what is left is `REAL_FINDINGS`, each of which the controls below take apart."""
     window = DRIFT_FIXTURE["windows"][name]
     reported = _retired_reds(name)
     assert len(reported) == retired
@@ -969,7 +969,7 @@ def test_what_the_three_reds_were_made_of():
     counts = [sum(len(per_run) for per_run in samples[u]) for u in slower]
     assert max(counts) == 2
     assert counts.count(1) == 11
-    after = _retired_reds("after-1dd250d87")
+    after = _retired_reds("after-ebae07c7e")
     assert sum(1 for side in after.values() if side == "faster") == 12
     # 25 of the morning's 26 were a speedup read from ONE cancelled run.
     morning = _retired_reds("morning")
@@ -978,8 +978,8 @@ def test_what_the_three_reds_were_made_of():
 
 
 def test_control_the_lanes_largest_file_slower_on_two_runs_is_red(tmp_path, capsys):
-    """REAL, and the kind the table is for: test_guards_differential.py, 447 s committed at 1ee6476e3, ran 586 s on run 38389205702 and 598 s on run 38409515814. One run of it is evidence on its way, named and not red; the second run makes it a finding."""
-    was = _table("1ee6476e3")[GUARDS]
+    """REAL, and the kind the table is for: test_guards_differential.py, 447 s committed at a72c3f71c, ran 586 s on run 38389205702 and 598 s on run 38409515814. One run of it is evidence on its way, named and not red; the second run makes it a finding."""
+    was = _table("a72c3f71c")[GUARDS]
     newest, older = _samples(ALL_RUNS)[GUARDS]
     assert (was, older, newest) == (447215.0, [585869], [598158])
     once, shape = br.unit_drift_findings(
@@ -1002,8 +1002,8 @@ def test_control_the_lanes_largest_file_slower_on_two_runs_is_red(tmp_path, caps
     stats = {GUARDS: _runs(newest, older)}
     assert br.check_lane_durations(path, limit=10, compute=_fake_compute(**_measured(stats))) == 1
     assert "2 sampled run(s)" in capsys.readouterr().err
-    # In the day as it went, the table of 1ee6476e3 against every run: this file is among the findings.
-    keys = _judge(_table("1ee6476e3"), _window_stats(ALL_RUNS), tmp_path)
+    # In the day as it went, the table of a72c3f71c against every run: this file is among the findings.
+    keys = _judge(_table("a72c3f71c"), _window_stats(ALL_RUNS), tmp_path)
     assert "lane-durations:drift:unit:%s" % br.key_part(GUARDS) in [_normal(k) for k in keys]
 
 
@@ -1068,7 +1068,7 @@ def test_control_many_small_moves_in_one_leg_are_red_as_the_leg_sum():
 
 
 def test_control_a_real_leg_over_estimated_by_a_third_is_red():
-    """REAL: Account E2E leg 2 of 4 at 1ee6476e3. Two runs agree its 25 units take 339 s against 514 s committed, by their slowest samples. On the newest of those runs alone the same leg is thin, which was the morning's red."""
+    """REAL: Account E2E leg 2 of 4 at a72c3f71c. Two runs agree its 25 units take 339 s against 514 s committed, by their slowest samples. On the newest of those runs alone the same leg is thin, which was the morning's red."""
     window = DRIFT_FIXTURE["windows"]["run-38409515814"]
     leg = "test-account-e2e leg 2/4"
     table = {u: ms for u, ms in _table(window["table"]).items() if DRIFT_LEGS.get(u) == leg}
@@ -1125,8 +1125,8 @@ def test_one_more_run_cannot_make_a_finding_on_its_own():
 
 
 def test_control_a_new_slow_unit_with_no_row_is_red_on_one_run(tmp_path, capsys):
-    """REAL: test_private_license_e2e.py had no row at 1ee6476e3 and ran 173 s on run 38389205702, which the lane budget priced at the 23.4 s lane default. That is a fact about the table, so one run is enough."""
-    assert LICENSE_E2E not in _table("1ee6476e3")
+    """REAL: test_private_license_e2e.py had no row at a72c3f71c and ran 173 s on run 38389205702, which the lane budget priced at the 23.4 s lane default. That is a fact about the table, so one run is enough."""
+    assert LICENSE_E2E not in _table("a72c3f71c")
     stats = {LICENSE_E2E: _runs(*_samples([38389205702])[LICENSE_E2E])}
     assert stats[LICENSE_E2E]["runs"] == 1
     table = _committed(
@@ -1187,7 +1187,7 @@ def _refreshed(
     return br.refreshed_units(table, measured, unit_stats)
 
 
-@pytest.mark.parametrize("name", ["morning", "run-38409515814", "after-1dd250d87"])
+@pytest.mark.parametrize("name", ["morning", "run-38409515814", "after-ebae07c7e"])
 def test_a_check_after_a_refresh_on_the_same_sample_is_green(name, tmp_path):
     """The property that ends the refresh-then-red loop: the table a refresh writes from a sample has no unit, leg or unpriced finding on that sample. Driven through the real refresh and the real check over each of the three real windows."""
     window = DRIFT_FIXTURE["windows"][name]
@@ -1206,8 +1206,8 @@ def test_a_check_after_a_refresh_on_the_same_sample_is_green(name, tmp_path):
 
 
 def test_the_day_replayed_reds_twice_on_real_findings_and_then_holds(tmp_path):
-    """2026-10-13 from the table before the morning fix, one window per artifact-bearing run, refreshing on each red as the session did. The retired rule and refresh gave three reds of 1, 17 and 14 findings (measured with the module as it stood at 9fb286309). The rule gives two, three findings each, all of them moves two runs agree on or a missing row."""
-    table = _table("46be5e863^")
+    """2026-10-13 from the table before the morning fix, one window per artifact-bearing run, refreshing on each red as the session did. The retired rule and refresh gave three reds of 1, 17 and 14 findings (measured with the module as it stood at 25abff96f). The rule gives two, three findings each, all of them moves two runs agree on or a missing row."""
+    table = _table("a80b5663a^")
     reds: list[list[str]] = []
     for position in range(len(ALL_RUNS) - 1, -1, -1):
         unit_stats = _window_stats(ALL_RUNS[position:])
@@ -2147,6 +2147,28 @@ def test_compute_lane_durations_cancels_unstarted_job_fetches_on_a_gh_error(tmp_
             root=root, list_artifacts=lambda *_a: [], download=lambda *_a: b""
         )
     assert len(started) < len(runs), started
+
+
+def test_check_compute_reads_no_variant_logs_and_refresh_still_does(tmp_path, monkeypatch):
+    """FIRES-if-unfixed: `--check` read ~270 job logs it never uses and ran past the 480 s freshness budget on a cold cache (run 40293968889)."""
+    root = _write_fixture_workflows(tmp_path)
+    seen: list[bool] = []
+
+    def fake_collect(*_a, **_k):
+        seen.append(True)
+        return {}, {}
+
+    def fake_fetch_runs(_repo, _workflow, event, _branch, _status, _limit):
+        return [{"id": 1, "created_at": "2026-09-27T00:00:00Z"}] if event == "pull_request" else []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "fetch_jobs", lambda _repo, _run_id: [])
+    monkeypatch.setattr(br, "collect_variant_costs", fake_collect)
+    kwargs = {"root": root, "list_artifacts": lambda *_a: [], "download": lambda *_a: b""}
+    br.compute_for_check(**kwargs)
+    assert seen == []
+    br.compute_lane_durations(**kwargs)
+    assert seen == [True]
 
 
 def test_compute_lane_durations_job_p90_minutes_is_success_only(tmp_path, monkeypatch):
@@ -3233,3 +3255,69 @@ def test_fetch_jobs_refuses_a_broken_or_short_page(monkeypatch):
     )
     with pytest.raises(br.ghx.GhBadOutputError, match="short at 1 of 141"):
         br.fetch_jobs("o/r", 1)
+
+
+def _mixed_leg_samples() -> dict[str, list[tuple[str, float]]]:
+    # 2026-11-01's shape: three samples of today's leg 4 and one 14.8m sample of the retired plan.
+    return {
+        "Q / X (4/4)": [("today4", 6.2), ("old4", 14.8), ("today4", 4.9), ("today4", 4.9)],
+        "Q / X (3/4)": [("old3", 12.6)],
+    }
+
+
+_TODAY = {"lane-x": (4, {3: "today3", 4: "today4"})}
+
+
+def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
+    p90, plans = br.prefer_todays_leg(
+        {"Q / X (4/4)": 13.1, "Q / X (3/4)": 12.6},
+        _mixed_leg_samples(),
+        set(),
+        _TODAY,
+        _PLAN_PATTERNS,
+    )
+    expected = br.stats([6.2, 4.9, 4.9])
+    assert expected is not None
+    assert p90["Q / X (4/4)"] == expected["p90"]
+    assert plans["Q / X (4/4)"] == ["today4"]
+    # CONTROL: a leg none of whose samples ran today's leg keeps its p90 and its retired hash, so check-lane-budget.ts still sets it aside and prints it.
+    assert p90["Q / X (3/4)"] == 12.6
+    assert plans["Q / X (3/4)"] == ["old3"]
+
+
+def test_prefer_todays_leg_leaves_untraced_and_single_plan_names_alone():
+    samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 13.0)]}
+    p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 12.3}, samples, set(), _TODAY, _PLAN_PATTERNS)
+    # CONTROL: one plan only, so nothing is dropped and the slow sample still counts.
+    assert p90 == {"Q / X (4/4)": 12.3}
+    assert plans == {"Q / X (4/4)": ["today4"]}
+    p90, plans = br.prefer_todays_leg(
+        {"Q / X (4/4)": 13.1}, _mixed_leg_samples(), {"Q / X (4/4)"}, _TODAY, _PLAN_PATTERNS
+    )
+    # Untraced is the strict side: the full p90 stays and no entry is written.
+    assert p90["Q / X (4/4)"] == 13.1
+    assert "Q / X (4/4)" not in plans
+
+
+def test_prefer_todays_leg_refuses_a_leg_count_that_is_not_today_s():
+    samples = {"Q / X (4/5)": [("today4", 6.0), ("old4", 14.0)]}
+    p90, _ = br.prefer_todays_leg({"Q / X (4/5)": 13.2}, samples, set(), _TODAY, _PLAN_PATTERNS)
+    assert p90 == {"Q / X (4/5)": 13.2}
+
+
+def test_prefer_todays_leg_sets_aside_a_leg_with_one_run_of_today_s_plan():
+    """One run is one runner (MIN_DRIFT_RUNS): one sample of today's leg prices nothing, and the retired samples describe another leg, so the name records only the retired hash and the gate sets it aside."""
+    samples = {"Q / X (4/4)": [("today4", 5.0), ("old4", 14.8), ("old4", 13.0)]}
+    p90, plans = br.prefer_todays_leg({"Q / X (4/4)": 14.4}, samples, set(), _TODAY, _PLAN_PATTERNS)
+    expected = br.stats([14.8, 13.0])
+    assert expected is not None
+    assert p90 == {"Q / X (4/4)": expected["p90"]}
+    assert plans == {"Q / X (4/4)": ["old4"]}
+
+
+def test_prefer_todays_leg_matches_only_the_name_s_own_lane():
+    """Another lane's leg 4 with the same hash is not today's leg of this name."""
+    today = {"lane-y": (4, {4: "today4"}), "lane-x": (4, {4: "x4"})}
+    samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 5.0), ("old4", 14.8)]}
+    p90, _ = br.prefer_todays_leg({"Q / X (4/4)": 13.0}, samples, set(), today, _PLAN_PATTERNS)
+    assert p90 == {"Q / X (4/4)": 13.0}

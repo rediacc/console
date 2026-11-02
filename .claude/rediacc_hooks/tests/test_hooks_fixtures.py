@@ -992,7 +992,7 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
     block.done()
 
 
-# --- block_worktree_add: a script run BY PATH is a program (#78afdc0b) --------- The guard read `-c`, heredocs and here-strings only, so a script on disk that runs `git worktree add` was allowed (rc 0 at c5c3036c3). It now reads the script: an untracked or edited one is read, a tracked and unchanged one is reviewed code and is not.
+# --- block_worktree_add: a script run BY PATH is a program (#78afdc0b) --------- The guard read `-c`, heredocs and here-strings only, so a script on disk that runs `git worktree add` was allowed (rc 0 at c72518af1). It now reads the script: an untracked or edited one is read, a tracked and unchanged one is reviewed code and is not.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
     block = hookblocks.Block("worktree-add-by-path")
@@ -1491,7 +1491,7 @@ def test_a_program_read_on_stdin_is_judged_by_its_text(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# A STDIN THE HOOK CANNOT READ IS REFUSED (#faca6bd7). At c5f0fd121 a program read through a duplicated descriptor (`python3 - <&3 3< p.py`) and one piped from a producer whose output the command line does not hold (`git show HEAD:p.py | python3 -`) both ran with rc 0. A `<&N` is now followed to what opens N, and a stdin program fed by any other producer is refused naming it; a pipe into a `-c`/`-e` program or a script file carries data and still passes.
+# A STDIN THE HOOK CANNOT READ IS REFUSED (#faca6bd7). At 3f3e50a58 a program read through a duplicated descriptor (`python3 - <&3 3< p.py`) and one piped from a producer whose output the command line does not hold (`git show HEAD:p.py | python3 -`) both ran with rc 0. A `<&N` is now followed to what opens N, and a stdin program fed by any other producer is refused naming it; a pipe into a `-c`/`-e` program or a script file carries data and still passes.
 def test_a_stdin_program_from_a_source_the_hook_cannot_read_is_refused(tmp_path):
     # The command line must not spell the verb itself, or the older command-line pre-filter refuses it and the case proves nothing.
     assert "worktree" not in str(tmp_path).lower(), tmp_path
@@ -1588,7 +1588,7 @@ def test_a_stdin_program_from_a_source_the_hook_cannot_read_is_refused(tmp_path)
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# DENO, BUN AND TSX PROGRAMS ARE JUDGED BY THEIR TEXT (#80712245). At 4132c3f7e the guard had no reader for deno or bun: `deno eval`, `bun -e`/`--eval`/`-p`/`--print`, `bun exec`, `deno run -`/`bun run -` on a heredoc, a file or a pipe, `deno run -c <config> x.ts` and `deno serve x.ts` all ran `git worktree add` with rc 0; tsx's `-e`, `watch` and `--tsconfig` were missed the same way.
+# DENO, BUN AND TSX PROGRAMS ARE JUDGED BY THEIR TEXT (#80712245). At a1de8a7e5 the guard had no reader for deno or bun: `deno eval`, `bun -e`/`--eval`/`-p`/`--print`, `bun exec`, `deno run -`/`bun run -` on a heredoc, a file or a pipe, `deno run -c <config> x.ts` and `deno serve x.ts` all ran `git worktree add` with rc 0; tsx's `-e`, `watch` and `--tsconfig` were missed the same way.
 WT_DENO = "new Deno.Command('git',{args:['worktree','add','/tmp/x']}).outputSync()"
 WT_BUN = "Bun.spawnSync(['git','worktree','add','/tmp/x'])"
 
@@ -1680,7 +1680,7 @@ def test_deno_and_bun_programs_are_judged_by_their_text(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# A PIPE READ THROUGH /dev/stdin, AND A PIPE AN INLINE PROGRAM EVALUATES, IS A PROGRAM (13fdcda2.1, 13fdcda2.2). At 13fdcda23 `git show HEAD:p.py | python3 - < /dev/stdin` and `... | cat /dev/stdin | python3 -` ran with rc 0 because /dev/stdin was taken for a file, and `git show HEAD:p.py | python3 -c 'import sys; exec(sys.stdin.read())'` ran with rc 0 because a pipe into `-c` was read as data whatever the program did with it.
+# A PIPE READ THROUGH /dev/stdin, AND A PIPE AN INLINE PROGRAM EVALUATES, IS A PROGRAM (13fdcda2.1, 13fdcda2.2). At fddf91222 `git show HEAD:p.py | python3 - < /dev/stdin` and `... | cat /dev/stdin | python3 -` ran with rc 0 because /dev/stdin was taken for a file, and `git show HEAD:p.py | python3 -c 'import sys; exec(sys.stdin.read())'` ran with rc 0 because a pipe into `-c` was read as data whatever the program did with it.
 def test_a_pipe_through_dev_stdin_or_into_an_evaluator_is_a_program(tmp_path):
     assert "worktree" not in str(tmp_path).lower(), tmp_path
     (tmp_path / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
@@ -1762,7 +1762,7 @@ def test_a_pipe_into_an_inline_program_that_only_names_an_evaluator_in_a_string_
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# REVIEW c5f0fd12.1-.3 AND db1e9409.1-.2 ON THE STDIN READERS. .1 and .2 were closed by db1e94091 before this test existed and are pinned here; .3 (a `..` after a directory symlink read lexically) and db1e9409.1 (a descriptor held in a name) ran `git worktree add` with rc 0 at bd4ead963. db1e9409.2: `eval(console)` reads no stdin, so its pipe is data.
+# REVIEW c5f0fd12.1-.3 AND db1e9409.1-.2 ON THE STDIN READERS. .1 and .2 were closed by 6a35dfb20 before this test existed and are pinned here; .3 (a `..` after a directory symlink read lexically) and db1e9409.1 (a descriptor held in a name) ran `git worktree add` with rc 0 at 2f3430b60. db1e9409.2: `eval(console)` reads no stdin, so its pipe is data.
 def test_stdin_spellings_review_c5f0fd12_and_db1e9409(tmp_path):
     assert "worktree" not in str(tmp_path).lower(), tmp_path
     (tmp_path / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
@@ -1824,7 +1824,7 @@ def test_stdin_spellings_review_c5f0fd12_and_db1e9409(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# A PHYSICAL CHANGE OF DIRECTORY STEPS UP FROM WHERE THE LINK POINTS (#362f37b2). With `lnk` a link to `far/inner`, bash's own `cd lnk/..` and `pushd lnk/..` are logical and land back in the root, while `cd -P`, `env -C`/`--chdir`, `sudo -D` and `git -C` call chdir(2) and land in `far` (measured with bash 5 and `pwd -P`). At a34ee2781 `shellscan._join_dir` read every change lexically, so every guard that reads the program a run executes read the root's `q.py` while python ran `far/q.py`: 9 of the 18 cases below missed, rc 0 on each physical `git worktree add`.
+# A PHYSICAL CHANGE OF DIRECTORY STEPS UP FROM WHERE THE LINK POINTS (#362f37b2). With `lnk` a link to `far/inner`, bash's own `cd lnk/..` and `pushd lnk/..` are logical and land back in the root, while `cd -P`, `env -C`/`--chdir`, `sudo -D` and `git -C` call chdir(2) and land in `far` (measured with bash 5 and `pwd -P`). At cb21268ee `shellscan._join_dir` read every change lexically, so every guard that reads the program a run executes read the root's `q.py` while python ran `far/q.py`: 9 of the 18 cases below missed, rc 0 on each physical `git worktree add`.
 def test_a_physical_change_of_directory_resolves_its_dotdot_on_disk_review_362f37b2(tmp_path):
     assert "worktree" not in str(tmp_path).lower(), tmp_path
     (tmp_path / "far" / "inner").mkdir(parents=True)
@@ -1918,7 +1918,7 @@ def test_join_dir_keeps_a_physical_dotdot_beside_its_lexical_text_review_ec6ec53
     )
 
 
-# A PLAIN DIRECTORY BEFORE `..` READS AS IT DID BEFORE ec6ec5338 (review ec6ec533.1). There the kept pair was the walked text itself, so `cd agent/reviews && env -C .. tee 1008-1/x.md` read as `agent/reviews/../1008-1/x.md` and block_review_file_shell_write refused a write to `agent/1008-1` (rc 0 -> 2, three spellings). The writes INTO the review directory stay refused.
+# A PLAIN DIRECTORY BEFORE `..` READS AS IT DID BEFORE 358345716 (review ec6ec533.1). There the kept pair was the walked text itself, so `cd agent/reviews && env -C .. tee 1008-1/x.md` read as `agent/reviews/../1008-1/x.md` and block_review_file_shell_write refused a write to `agent/1008-1` (rc 0 -> 2, three spellings). The writes INTO the review directory stay refused.
 def test_a_plain_directory_before_a_physical_dotdot_reads_lexically_review_ec6ec533(tmp_path):
     (tmp_path / "agent" / "reviews" / "1008-1").mkdir(parents=True)
     rows = [
@@ -1954,7 +1954,7 @@ def test_what_a_run_starts_starts_in_the_runs_own_directory_review_ec6ec533():
     assert (inner.name, inner.cwd, inner.git_dir) == ("git", ".", ".")
 
 
-# ONE PROGRAM PARSE FOR EVERY GUARD (#a2599946). At bd4ead963 `shellscan._program_parse` read deno, bun and tsx with node's table after a leading `run`, so the words in the `was` column are what every shell-write guard and block_long_sleep took for the program; and it returned the FIRST inline program, where node runs the last and perl and ruby join them all (measured on node v24.21.0 and perl 5.40.1).
+# ONE PROGRAM PARSE FOR EVERY GUARD (#a2599946). At 2f3430b60 `shellscan._program_parse` read deno, bun and tsx with node's table after a leading `run`, so the words in the `was` column are what every shell-write guard and block_long_sleep took for the program; and it returned the FIRST inline program, where node runs the last and perl and ruby join them all (measured on node v24.21.0 and perl 5.40.1).
 PROGRAM_PARSE_ROWS = [
     # (base, argv, now, was)
     ("deno", ["eval", "x"], ("inline", "x"), ("file", "eval")),
@@ -2025,7 +2025,7 @@ def test_interpreter_program_maps_runtime_kinds(tmp_path):
     assert shellscan.every_run(command)[1].writes == ["out.md"]
 
 
-# THE RUNTIME LINES EVERY GUARD READS (#a2599946). Each `deny` row was allowed (rc 0) at bd4ead963: the shell-write guards and block_long_sleep read `cfg.json`, `serve`, `watch` or `t.json` as the script, block_review_file_shell_write named no deno, bun or tsx at all, block_suppressions_shell_write missed a `-` after an option's value, and nothing walked the line inside `bun exec`.
+# THE RUNTIME LINES EVERY GUARD READS (#a2599946). Each `deny` row was allowed (rc 0) at 2f3430b60: the shell-write guards and block_long_sleep read `cfg.json`, `serve`, `watch` or `t.json` as the script, block_review_file_shell_write named no deno, bun or tsx at all, block_suppressions_shell_write missed a `-` after an option's value, and nothing walked the line inside `bun exec`.
 _NQ = "no" + "qa"
 _RUNTIME_W = 'require("fs").writeFileSync("a.py","x = 1  # %s\\n")' % _NQ
 _RUNTIME_R = 'require("fs").writeFileSync("agent/reviews/x.md","x\\n")'
@@ -2128,7 +2128,7 @@ def test_runtime_lines_are_read_by_every_guard(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# BASH'S `set -P` AND A PHYSICAL FLOOR (#91f1787a, #97d3d908), measured on bash 5.3.9 with `lnk` a link to `far/inner`. `set -P` / `set -o physical` makes every later `cd` and `pushd` physical, so `set -P; cd lnk/..` lands in `far`; at cfacdc927 the walk had no slot for the option and read the root, so each `far` row below was rc 0 over a `git worktree add` program. A physical change is also a floor: after `cd -P lnk` bash's $PWD is the resolved path, so a later logical `cd ..` lands in `far` as well, and the walk popped the name and read the root.
+# BASH'S `set -P` AND A PHYSICAL FLOOR (#91f1787a, #97d3d908), measured on bash 5.3.9 with `lnk` a link to `far/inner`. `set -P` / `set -o physical` makes every later `cd` and `pushd` physical, so `set -P; cd lnk/..` lands in `far`; at de1e3faef the walk had no slot for the option and read the root, so each `far` row below was rc 0 over a `git worktree add` program. A physical change is also a floor: after `cd -P lnk` bash's $PWD is the resolved path, so a later logical `cd ..` lands in `far` as well, and the walk popped the name and read the root.
 # Each row is `(command, lands in far)`; Layout A puts the program in `far/q.py` and Layout B in the root's `q.py`, so neither reading can pass by refusing everything.
 PHYSICAL_OPTION_ROWS = (
     ("set -P; cd lnk/..; python3 q.py", True),
@@ -2282,7 +2282,7 @@ def test_set_physical_follows_bash_set_grammar_review_91f1787a():
     assert not wrong_shells, wrong_shells
 
 
-# DECLARING BUILTINS STOP READING OPTIONS AT THE FIRST OPERAND (#d1800b1b), as bash's internal_getopt does, and only declare/typeset/local take `+` options. Measured on bash 5.3.9: `declare FOO=1 -x` leaves FOO unexported (`-x` is refused as an identifier), `export FOO=1 -n` exports it, `export +x FOO=1` exports it, `unset FOO -f` unsets the variable. At cfacdc927 `_shell_builtin` gathered letters from the whole argv, so the first read as exported, the second as an unexported nameref, and the last left FOO set. A sibling in the same function: `export -n FOO=1` assigns 1 and unexports, while `_NOT_TEXT` read export's `-n` as declare's nameref and the value as unresolved.
+# DECLARING BUILTINS STOP READING OPTIONS AT THE FIRST OPERAND (#d1800b1b), as bash's internal_getopt does, and only declare/typeset/local take `+` options. Measured on bash 5.3.9: `declare FOO=1 -x` leaves FOO unexported (`-x` is refused as an identifier), `export FOO=1 -n` exports it, `export +x FOO=1` exports it, `unset FOO -f` unsets the variable. At de1e3faef `_shell_builtin` gathered letters from the whole argv, so the first read as exported, the second as an unexported nameref, and the last left FOO set. A sibling in the same function: `export -n FOO=1` assigns 1 and unexports, while `_NOT_TEXT` read export's `-n` as declare's nameref and the value as unresolved.
 def test_declaring_builtins_stop_at_the_first_operand_review_d1800b1b():
     rows = [
         ("declare", ["FOO=1", "-x"], ("1", None)),
@@ -2312,7 +2312,7 @@ def test_declaring_builtins_stop_at_the_first_operand_review_d1800b1b():
     assert got == exported, got
 
 
-# A WRITE THROUGH A KEPT PAIR LANDS WHERE THE DISK RESOLVES IT (review 2925782e.1). With `reviews-lnk` a link to `agent/reviews/sub`, `cd reviews-lnk && env -C .. tee x.md` writes `agent/reviews/x.md`; at 6651820a2 each write guard joined the lexical text `.` and judged the root's `x.md`, so every `2` row below was allowed (rc 0). Each link and plain directory is named with the guard's pre-filter word, so every row reaches the judgement rather than the text pre-filter.
+# A WRITE THROUGH A KEPT PAIR LANDS WHERE THE DISK RESOLVES IT (review 2925782e.1). With `reviews-lnk` a link to `agent/reviews/sub`, `cd reviews-lnk && env -C .. tee x.md` writes `agent/reviews/x.md`; at a65adb577 each write guard joined the lexical text `.` and judged the root's `x.md`, so every `2` row below was allowed (rc 0). Each link and plain directory is named with the guard's pre-filter word, so every row reaches the judgement rather than the text pre-filter.
 WRITE_THROUGH_PAIR_ROWS = (
     ("block_review_file_shell_write", "cd reviews-lnk && env -C .. tee x.md", 2),
     ("block_review_file_shell_write", "cd -P reviews-lnk && cd .. && echo x > x.md", 2),
@@ -3043,7 +3043,7 @@ def test_block_cli_bundle_reads_the_program_bash_runs(tmp_path):
     block.done()
 
 
-# --- shellscan: the guards read what a launcher, a `-c` shell, eval and ssh are handed (#156caed2) ---------------- bash expands every word once before a launcher or a shell runs, and the walk used to build the inner command from the words as typed, so a guard reading the launched run saw the literal `$F`. Each `2` row below was rc 0 at b8058ec2c and is refused now ONLY through shellscan: none of these guards carries a re-walk of its own.
+# --- shellscan: the guards read what a launcher, a `-c` shell, eval and ssh are handed (#156caed2) ---------------- bash expands every word once before a launcher or a shell runs, and the walk used to build the inner command from the words as typed, so a guard reading the launched run saw the literal `$F`. Each `2` row below was rc 0 at 6c0e47aed and is refused now ONLY through shellscan: none of these guards carries a re-walk of its own.
 # block_cli_bundle carried one until #d6d000ad removed it, and its two rows are forms that workaround missed too: a `-c` payload under a launcher. The formatter rows stay refused because an unknowable word keeps its typed `$` inside the launched run; the `0` rows are the reads and prints beside each refusal.
 _SJ = ".claude/settings.json"
 _BUNDLE = "packages/cli/dist/" + "cli-bundle.cjs"
@@ -3109,7 +3109,7 @@ def test_guards_read_the_expanded_launched_command_156caed2(tmp_path):
         assert verdicts == {0, 2}, (stem, verdicts)
 
 
-# --- block_review_file_shell_write: the operand arms read the expanded words, and the glob pre-filter reads only a glob that can spell the directory (#f6334e52, #a1852a9e) ---------------- Each `2` row of the first group and the `0` rows of the second were the other verdict at a7b3a36f6, run from a scratch root holding `agent/reviews/x`.
+# --- block_review_file_shell_write: the operand arms read the expanded words, and the glob pre-filter reads only a glob that can spell the directory (#f6334e52, #a1852a9e) ---------------- Each `2` row of the first group and the `0` rows of the second were the other verdict at 5e00d0768, run from a scratch root holding `agent/reviews/x`.
 REVIEW_OPERAND_ROWS = (
     # #f6334e52: tee, truncate, sed -i and cp read their operands as typed, so `$D/y.md` named no review file.
     ("D=agent/reviews/x; tee $D/y.md", 2),
@@ -3127,7 +3127,7 @@ REVIEW_OPERAND_ROWS = (
     ("cp x agent/revi*s/", 2),
     ("sed -i 's/a.*b/c/' agent/revi*s/x/y.md", 2),
     ("cd agent && tee revi*s/y.md", 2),
-    # A glob in the directory the run executes in (rc 0 at a7b3a36f6).
+    # A glob in the directory the run executes in (rc 0 at 5e00d0768).
     ("cd agen? && tee revi*s/x.md", 2),
 )
 
@@ -3148,7 +3148,7 @@ def test_review_shell_write_reads_expanded_operands_and_real_globs(tmp_path):
     assert {w for _c, w in REVIEW_OPERAND_ROWS} == {0, 2}
 
 
-# --- the expanded redirect target, the expanded in-place option and the copied script, through the guards (#4deea064, #3ff3bb16) ---------------- Run from a scratch root holding `agent/reviews/x`, an empty `d/`, `src.py` (prints 1) and `rv.py` (opens a review file for writing). Each `2` row marked "was 0" and each `0` row marked "was 2" had the other verdict at d73b26844; the rest are controls that keep theirs.
+# --- the expanded redirect target, the expanded in-place option and the copied script, through the guards (#4deea064, #3ff3bb16) ---------------- Run from a scratch root holding `agent/reviews/x`, an empty `d/`, `src.py` (prints 1) and `rv.py` (opens a review file for writing). Each `2` row marked "was 0" and each `0` row marked "was 2" had the other verdict at 04b0ebdf9; the rest are controls that keep theirs.
 _RV = "open('agent/reviews/x/y.md', 'w').write('x')\n"
 EXPANDED_WRITE_GUARD_ROWS = (
     # #4deea064: the redirect target and the in-place option as bash expands them (was 0).

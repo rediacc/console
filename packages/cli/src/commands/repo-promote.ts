@@ -1,8 +1,12 @@
 import type { Command } from 'commander';
+import { findUnreachable, RemoteWriteFailedClosedError } from '../adapters/remote-config-errors.js';
 import { t } from '../i18n/index.js';
+import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { ERROR_CODES } from '../types/errors.js';
+import { CliExitError } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -22,6 +26,24 @@ interface PromoteOptions {
   yes?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
+}
+
+/**
+ * Typed failure for a config save that fails after the machine promote.
+ * ORDER: machine first, config second. The retry cannot converge here (unlike `repo delete`):
+ * promote swaps two images that both still exist, so re-running would swap the data back.
+ * The error names the manual config fix and forbids the re-run.
+ */
+function configSaveFailure(error: unknown, params: Record<string, string>): CliExitError {
+  const networkDown = error instanceof RemoteWriteFailedClosedError || !!findUnreachable(error);
+  return new CliExitError(
+    networkDown ? ERROR_CODES.NETWORK_ERROR : ERROR_CODES.GENERAL_ERROR,
+    t('commands.repo.promote.configSaveFailed', {
+      ...params,
+      reason: error instanceof Error ? error.message : String(error),
+    }),
+    { retryable: false }
+  );
 }
 
 async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<void> {
@@ -92,11 +114,22 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
     const { parseRepoRef } = await import('../utils/config-schema.js');
     const dateSuffix = new Date().toISOString().slice(0, 10).replaceAll('-', '');
     const backupName = `${parseRepoRef(forkRef).name}:pre-promote-${dateSuffix}`;
-    await configService.addRepository(backupName, forkConfig);
-    await configService.removeRepository(forkRef);
+    try {
+      await configService.addRepository(backupName, forkConfig);
+      await configService.removeRepository(forkRef);
+    } catch (error) {
+      throw configSaveFailure(error, {
+        fork: forkRef,
+        grand: grandEntry.name,
+        machine: machineName,
+        backup: backupName,
+      });
+    }
     outputService.success(t('commands.repo.promote.completed'));
     outputService.info(t('commands.repo.promote.backupInfo', { backup: backupName }));
     outputService.info(t('commands.repo.promote.revertHint', { backup: backupName }));
+    // G4: the fork ref was renamed to the pre-promote backup, so the backup units re-render.
+    await reconcileBackupSchedules(machineName);
   } catch (error) {
     handleError(error);
   }

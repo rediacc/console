@@ -24,6 +24,13 @@ THE X FIELDS (PLAN-plan-priority-concurrency.md section 1), one anchored line ea
 
 THE X FIELDS ARE MANDATORY. PLAN-plan-priority-concurrency.md T11 wrote the three lines into every required plan and this has been the only behaviour since (the migration commit is 7ad4a8c78): every required plan must carry them, the gate fails on any X finding, and the guard refuses any new one. The operator freeze (D17 and the guard's freeze) is enforced the same way.
 
+THE LIVE-PROOF FIELD (agent/plans/PLAN-tested-on-bench.md Design item 2, box V3), one anchored line in the X window, X-field shape:
+
+    Live-Proof: bench|hostinger[, <target>...] -- <reason, 12+ chars>
+    Live-Proof: none -- <reason, 12+ chars, citing #<item id> or "<operator quote>" in <path>>
+
+The targets are the live tier's (`LIVE_TARGETS`); `edge` and `stable` are refused by name, because the operator ruling of 2026-10-27 admits bench and hostinger only. A `none` reason must CITE a ruling (operator ruling 2: an opt-out passes only under a closed worklist item or a committed operator quote), in the `Ruling:` reference grammar `wl_planfile` owns; the grammar refuses a rulingless `none`, and `resolve_live_proof_waiver` resolves the citation against the worklist store and the quoted file. WHICH plans must carry the line is not this module's question: the surface map lives under `.ci` (`rediacc_ci.proof.surfaces`), read by the pre-edit guard and the CI gate.
+
 STDLIB ONLY AT IMPORT. The guard runs this in the pre-edit chain on every plan edit. `wl_planfile` (for `FINISHED_STATES`) is imported lazily inside `finished_states`, so a broken sibling module costs the guard its completeness answer, never its import. Reads no environment variable.
 
 NEVER RAISES ON THE READ PATH. `Graph.load` skips an unreadable file rather than failing the stop or the edit; the gate's vacuity floor (D8) is what notices a corpus that stopped loading.
@@ -33,6 +40,7 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import datetime
 import difflib
 import importlib
 import os
@@ -66,6 +74,18 @@ OPERATOR_MARK = "operator"
 PARALLEL = "parallel"
 EXCLUSIVE = "exclusive"
 OWNS_NONE = "none"
+# PLAN-plan-preflight.md PF1: the optional `Revalidated:` stamp, read in the X window. Absent means no finding; a present one must parse.
+REVALIDATED = "Revalidated"
+# PLAN-tested-on-bench.md V3: the live-proof declaration, read in the X window. Whether a plan must carry it is the caller's question (the surface map is under `.ci`).
+LIVE_PROOF = "Live-Proof"
+LIVE_NONE = "none"
+# The live tier's targets (proof-tiers.json `surfaces.<name>.live`); test-plandeps.py compares this tuple with the map.
+LIVE_TARGETS = ("bench", "hostinger")
+# Targets a plan might reach for that the operator ruling of 2026-10-27 shut out of the live tier, each with the reason the refusal names.
+REFUSED_TARGETS = {
+    "edge": "edge is not a live-proof target (operator ruling 2026-10-27: bench and hostinger only)",
+    "stable": "stable is CI/CD-only and never a live-proof target (operator ruling 2026-10-27)",
+}
 
 FIELD = "Depends-On"
 NO_DEP = "no-dep"
@@ -87,6 +107,13 @@ NO_DEP_RE = re.compile(r"^no-dep(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
 PRIORITY_VALUE_RE = re.compile(r"^(P[0-3])(?: \((operator)\))?(?: (?:--|\u2014) (\S.*))?$")
 CONCURRENCY_VALUE_RE = re.compile(r"^(parallel|exclusive)(?: (?:--|\u2014) (\S.*))?$")
 OWNS_NONE_RE = re.compile(r"^none(?:\s+(?:--|\u2014)(?:\s+(.*))?)?$")
+# The Revalidated value: `<date> @ <sha>` with an optional ` -- reason`.
+REVALIDATED_VALUE_RE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2}) @ ([0-9a-f]{12,40})(?: (?:--|\u2014) (\S.*))?$"
+)
+# The `none` reason's citations: a mirror of wl_planfile.RULING_ID_RE and RULING_QUOTE_RE, which this module cannot import at load time (stdlib only). test-plandeps.py compares the patterns.
+LIVE_RULING_ID_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
+LIVE_RULING_QUOTE_RE = re.compile(r'"([^"]{12,})"[ \t]+in[ \t]+`?([^\s`]+)`?')
 # An Owns item's optional trailing note: `path (new)`, `file.ts (one mount line)`.
 OWNS_NOTE_RE = re.compile(r"^(\S+)(?:\s+\(([^()]*)\))?$")
 # A worklist item implements a plan box when the plan's basename is IMMEDIATELY followed by ` [<8hex>]`, the existing `PLAN-x.md [41f56150]` convention. A bare mention links nothing.
@@ -119,6 +146,9 @@ D_OWNS_GLOB = "D14"
 D_UNIVERSAL = "D15"
 D_WINDOW = "D16"
 D_OPERATOR_DEMOTED = "D17"
+# The live-proof findings this module and the guard can name; the gate's LP3-LP7 need the boxes and the receipt ledger. LP1: missing, malformed, emphasised, duplicated or outside the window. LP2: a `none` whose cited ruling does not resolve.
+LP_GRAMMAR = "LP1"
+LP_WAIVER = "LP2"
 
 # Resolution states of one token.
 LIVE = "live"
@@ -204,6 +234,16 @@ class Header:
     @property
     def owns(self) -> Owns | None:
         f = self.fields.get(OWNS)
+        return f.parsed if f is not None else None
+
+    @property
+    def revalidated(self) -> Revalidated | None:
+        f = self.fields.get(REVALIDATED)
+        return f.parsed if f is not None else None
+
+    @property
+    def live_proof(self) -> LiveProof | None:
+        f = self.fields.get(LIVE_PROOF)
         return f.parsed if f is not None else None
 
     def field_errors(self, name: str) -> list[str]:
@@ -307,6 +347,118 @@ class Owns:
     notes: tuple[tuple[str, str], ...] = ()
 
 
+@dataclasses.dataclass(frozen=True)
+class Revalidated:
+    """A parsed `Revalidated:`: the ISO date, the merge-base sha (12-40 lowercase hex) and an optional note."""
+
+    date: str
+    sha: str
+    note: str = ""
+
+
+def parse_revalidated(value: str) -> tuple[Revalidated | None, list[str]]:
+    value = (value or "").strip()
+    m = REVALIDATED_VALUE_RE.match(value)
+    if not m:
+        return None, ["%r is not `YYYY-MM-DD @ <12-40 lowercase hex sha> [-- <note>]`" % value]
+    try:
+        datetime.date.fromisoformat(m.group(1))
+    except ValueError:
+        return None, ["%r is not a calendar date" % m.group(1)]
+    return Revalidated(m.group(1), m.group(2), (m.group(3) or "").strip()), []
+
+
+@dataclasses.dataclass(frozen=True)
+class LiveProof:
+    """A parsed `Live-Proof:`. `targets` is empty exactly when the plan declared `none`; then `ruling_ids` and `ruling_quotes` hold the citations its reason carries (at least one)."""
+
+    targets: tuple[str, ...] = ()
+    reason: str = ""
+    ruling_ids: tuple[str, ...] = ()
+    ruling_quotes: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def none(self) -> bool:
+        return not self.targets
+
+
+def parse_live_proof(value: str) -> tuple[LiveProof | None, list[str]]:
+    """(LiveProof, []) for `<target>[, <target>...] -- <reason>` or `none -- <reason citing a ruling>`, else (None, [error, ...])."""
+    value = (value or "").strip()
+    if not value:
+        empty = "the value is empty; write `bench|hostinger[, ...] -- <reason>` or `none -- <reason citing a ruling>`"
+        return None, [empty]
+    parts = REASON_SPLIT_RE.split(value, maxsplit=1)
+    listed = parts[0].strip()
+    reason = parts[1].strip() if len(parts) > 1 else ""
+    if listed == LIVE_NONE:
+        errors = _reason_errors(reason, "`none`", "say why no live run is owed")
+        ids = tuple(LIVE_RULING_ID_RE.findall(reason))
+        quotes = tuple(LIVE_RULING_QUOTE_RE.findall(reason))
+        if reason and not ids and not quotes:
+            errors.append(
+                "`none` cites no ruling: name a closed worklist item (`#<id>`) or a committed "
+                'operator quote (`"<quote>" in <path>`) in the reason (operator ruling 2 of '
+                "PLAN-tested-on-bench.md)"
+            )
+        if errors:
+            return None, errors
+        return LiveProof(reason=reason, ruling_ids=ids, ruling_quotes=quotes), []
+    errors = []
+    targets: list[str] = []
+    for raw in listed.split(","):
+        tok = raw.strip()
+        if not tok:
+            errors.append("an empty target (a leading, trailing or doubled comma)")
+            continue
+        if tok.lower() == LIVE_NONE:
+            errors.append("`none` mixed with targets; a plan either owes a live run or does not")
+            continue
+        if tok in REFUSED_TARGETS:
+            errors.append("%r: %s" % (tok, REFUSED_TARGETS[tok]))
+            continue
+        if tok not in LIVE_TARGETS:
+            errors.append(
+                "%r is not a live target; the targets are %s, comma-separated"
+                % (tok, " and ".join(LIVE_TARGETS))
+            )
+            continue
+        if tok in targets:
+            errors.append("%s is listed twice" % tok)
+            continue
+        targets.append(tok)
+    errors.extend(_reason_errors(reason, "the target list", "say what the live run proves"))
+    if errors:
+        return None, errors
+    return LiveProof(targets=tuple(targets), reason=reason), []
+
+
+def live_proof_findings(header: Header, required: bool) -> list[tuple[str, str]]:
+    """[(LP1, message)] for one plan's `Live-Proof:` line: every structural and value error, plus a missing line when `required`. Pure; the `none` citation is resolved by `resolve_live_proof_waiver`, not here."""
+    out = [(LP_GRAMMAR, "%s: %s" % (LIVE_PROOF, msg)) for msg in header.field_errors(LIVE_PROOF)]
+    if required and header.get(LIVE_PROOF) is None and not out:
+        out.append(
+            (
+                LP_GRAMMAR,
+                "no `%s:` line in the first %d lines, and the plan's Owns hit a deployable surface"
+                % (LIVE_PROOF, X_HEADER_LINES),
+            )
+        )
+    return out
+
+
+def resolve_live_proof_waiver(
+    root: str | os.PathLike[str], rel: str, proof: LiveProof, item_states: dict[str, str]
+) -> tuple[bool, str]:
+    """(ok, why) for a `none` declaration's citations, through `wl_planfile.resolve_ruling` (imported lazily): every cited item must be closed and every quote must occur in its non-plan file. A target list needs no waiver and resolves True."""
+    if not proof.none:
+        return True, "targets declared"
+    import wl_planfile
+
+    ok, why = wl_planfile.resolve_ruling(root, rel, "Ruling: %s\n" % proof.reason, item_states)
+    return ok, why.replace("`Ruling:`", "`%s: none`" % LIVE_PROOF)
+
+
 def parse_priority(value: str) -> tuple[Priority | None, list[str]]:
     value = (value or "").strip()
     m = PRIORITY_VALUE_RE.match(value)
@@ -394,6 +546,8 @@ FIELD_SPECS: dict[str, FieldSpec] = {
     PRIORITY: FieldSpec(PRIORITY, X_HEADER_LINES, parse_priority),
     CONCURRENCY: FieldSpec(CONCURRENCY, X_HEADER_LINES, parse_concurrency),
     OWNS: FieldSpec(OWNS, X_HEADER_LINES, parse_owns),
+    REVALIDATED: FieldSpec(REVALIDATED, X_HEADER_LINES, parse_revalidated),
+    LIVE_PROOF: FieldSpec(LIVE_PROOF, X_HEADER_LINES, parse_live_proof),
 }
 
 

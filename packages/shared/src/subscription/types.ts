@@ -2,13 +2,13 @@
  * Subscription Types
  *
  * Centralized type definitions for the subscription system.
- * Used by account-server, middleware, renet, and CLI.
+ * Used by account-server, renet, and CLI.
  */
 
 /**
  * Subscription plan codes.
  */
-export type PlanCode = 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
+export type PlanCode = 'FREE' | 'COMMUNITY' | 'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE';
 
 /**
  * Subscription status values.
@@ -50,7 +50,7 @@ export interface SubscriptionData {
   version: 2;
   /** UUID from account server */
   subscriptionId: string;
-  /** Middleware organization ID */
+  /** Account server organization ID */
   organizationId: number;
   /** Customer identifier */
   customerId: string;
@@ -230,12 +230,14 @@ export type ApiTokenScope =
   // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
   | 'proxy:admin'
-  // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --password). Creatable by any member — not privileged.
+  // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --master-password). Creatable by any member — not privileged.
   | 'config:enroll'
   // Backup plane: `backup:read` lets a CLI query the subscription's backup storage state through the tunnel (usage, manifest index, verify). Read-only, creatable by any member — not privileged. The MACHINE never holds this: it commits its own manifests via the license-blob storage session.
   | 'backup:read'
   // `backup:manage` declares the server-enforced GFS retention policy, which SCHEDULES DELETIONS. It is deliberately not folded into `backup:read`: a token minted to show a usage bar must not be able to shrink history.
-  | 'backup:manage';
+  | 'backup:manage'
+  // `backup:restore` mints a restore session for one lineage from an API token (POST /backups/restore-session), so the CLI can rebuild an image straight from the chunk store with no machine. Privileged (owner/admin), team-scoped tokens only, and never part of a member's CLI login: it turns a token into a download credential.
+  | 'backup:restore';
 
 /**
  * API token for machine authentication.
@@ -355,7 +357,7 @@ export interface ApiTokenIpRebindResponse {
 
 /**
  * Refusal codes from the rebind route (on top of TOKEN_IP_MISMATCH from the
- * auth middleware and TOTP_INVALID for a wrong code):
+ * auth check and TOTP_INVALID for a wrong code):
  * - TOTP_INVALID 400, body carries `attemptsRemaining`
  * - TOTP_REPLAYED 409, the code's time step is at or below the last one used
  * - IP_REBIND_LOCKED 429, body carries `retryAfter` (seconds) plus a Retry-After header

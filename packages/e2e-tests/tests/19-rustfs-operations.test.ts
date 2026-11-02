@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_RUSTFS_ACCESS_KEY, DEFAULT_RUSTFS_SECRET_KEY } from '../src/constants';
-import { getOpsManager } from '../src/utils/bridge/OpsManager';
+import { getOpsManager } from '../src/utils/renet-functions/OpsManager';
 import { log } from '../src/utils/log';
 
 /**
@@ -9,10 +8,10 @@ import { log } from '../src/utils/log';
  * Tests for RustFS S3-compatible storage operations:
  * - Start/stop RustFS container
  * - Bucket creation and listing
- * - Worker configuration for rclone access
+ * - Signed S3 access from the bridge and from workers
  *
  * RustFS runs on the bridge VM and provides S3-compatible storage
- * that workers can access via rclone.
+ * that workers can access with signed `curl --aws-sigv4` requests.
  *
  * Prerequisites:
  * - VMs must be running (use 18-ops-workflow.test.ts first)
@@ -107,8 +106,6 @@ test.describe('RustFS Lifecycle @bridge @rustfs', () => {
  */
 test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
   const ops = getOpsManager();
-  const rustfsAccessKey = process.env.RUSTFS_ACCESS_KEY ?? DEFAULT_RUSTFS_ACCESS_KEY;
-  const rustfsSecretKey = process.env.RUSTFS_SECRET_KEY ?? DEFAULT_RUSTFS_SECRET_KEY;
 
   test.setTimeout(120000); // 2 minutes
 
@@ -160,19 +157,19 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
     test('should upload test file to bucket', async () => {
       const bridgeIp = ops.getBridgeVMIp();
 
-      // Create a test file and upload via rclone
-      const result = await ops.executeOnVM(
+      // Create a test file and upload it with a signed PUT
+      const written = await ops.executeOnVM(
         bridgeIp,
-        `echo "e2e-test-content-$(date +%s)" > /tmp/test-file.txt && ` +
-          `rclone copy /tmp/test-file.txt rustfs:${testBucket}/ ` +
-          `--s3-provider Other ` +
-          `--s3-endpoint http://localhost:9000 ` +
-          `--s3-access-key-id ${rustfsAccessKey} ` +
-          `--s3-secret-access-key ${rustfsSecretKey} ` +
-          `--s3-force-path-style`
+        'echo "e2e-test-content-$(date +%s)" > /tmp/test-file.txt'
+      );
+      expect(written.code).toBe(0);
+
+      const result = await ops.rustfsS3Request(
+        { method: 'PUT', path: `${testBucket}/test-file.txt`, bodyFile: '/tmp/test-file.txt' },
+        { vmIp: bridgeIp, fromWorker: false }
       );
 
-      expect(result.code).toBe(0);
+      expect(result.ok).toBe(true);
       log('Test file uploaded');
     });
 
@@ -187,9 +184,9 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
 });
 
 /**
- * Worker Configuration Tests
+ * Worker Access Tests
  */
-test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
+test.describe('RustFS Worker Access @bridge @rustfs', () => {
   const ops = getOpsManager();
 
   test.setTimeout(180000); // 3 minutes
@@ -208,44 +205,11 @@ test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
     await ops.createRustFSBucket();
   });
 
-  test('should configure single worker for RustFS access', async () => {
-    const vmIds = ops.getVMIds();
-    const firstWorker = vmIds.workers[0];
-
-    const result = await ops.configureRustFSWorker(firstWorker);
-
-    expect(result.success).toBe(true);
-    log(result.message);
-  });
-
-  test('should verify rclone config on configured worker', async () => {
-    const vmIds = ops.getVMIds();
-    const firstWorkerId = vmIds.workers[0];
-    const firstWorkerIp = ops.calculateVMIp(firstWorkerId);
-
-    // Check rclone config file exists
-    const result = await ops.executeOnVM(firstWorkerIp, 'cat ~/.config/rclone/rclone.conf');
-
-    expect(result.code).toBe(0);
-    expect(result.stdout).toContain('[rustfs]');
-    expect(result.stdout).toContain('type = s3');
-    expect(result.stdout).toContain('endpoint');
-
-    log('Rclone config verified on worker');
-  });
-
-  test('should verify RustFS access from configured worker', async () => {
+  test('should verify RustFS access from the first worker', async () => {
     const vmIds = ops.getVMIds();
     const firstWorkerId = vmIds.workers[0];
 
     const result = await ops.verifyRustFSAccessFromWorker(firstWorkerId);
-
-    expect(result.success).toBe(true);
-    log(result.message);
-  });
-
-  test('should configure all workers for RustFS access', async () => {
-    const result = await ops.configureRustFSWorkers();
 
     expect(result.success).toBe(true);
     log(result.message);
@@ -266,7 +230,7 @@ test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
 /**
  * RustFS Integration Tests
  *
- * Tests end-to-end workflow: start RustFS, configure workers, upload/download files
+ * Tests end-to-end workflow: start RustFS, upload/download files from workers
  */
 test.describe('RustFS Integration @bridge @rustfs @slow', () => {
   const ops = getOpsManager();
@@ -285,29 +249,33 @@ test.describe('RustFS Integration @bridge @rustfs @slow', () => {
       expect(result.success).toBe(true);
     });
 
-    test('should configure all workers', async () => {
-      const result = await ops.configureRustFSWorkers();
-      expect(result.success).toBe(true);
-    });
-
     test('should upload file from worker to RustFS', async () => {
       const vmIds = ops.getVMIds();
       const workerId = vmIds.workers[0];
       const workerIp = ops.calculateVMIp(workerId);
 
-      // Create and upload a file from worker (add -v for verbose output)
-      const result = await ops.executeOnVM(
+      // Create a file on the worker and upload it with a signed PUT
+      const written = await ops.executeOnVM(
         workerIp,
-        `echo "uploaded-from-worker-$(hostname)-$(date +%s)" > /tmp/worker-test.txt && ` +
-          `rclone copy /tmp/worker-test.txt rustfs:${integrationBucket}/ -v 2>&1`
+        'echo "uploaded-from-worker-$(hostname)-$(date +%s)" > /tmp/worker-test.txt'
+      );
+      expect(written.code).toBe(0);
+      const result = await ops.rustfsS3Request(
+        {
+          method: 'PUT',
+          path: `${integrationBucket}/worker-test.txt`,
+          bodyFile: '/tmp/worker-test.txt',
+        },
+        { vmIp: workerIp, fromWorker: true }
       );
 
       // Always log output for debugging
-      console.warn(`[RustFS Upload] Worker ${workerId} (${workerIp}) exit code: ${result.code}`);
-      console.warn(`[RustFS Upload] stdout: ${result.stdout}`);
+      console.warn(
+        `[RustFS Upload] Worker ${workerId} (${workerIp}) HTTP status: ${result.status}`
+      );
       if (result.stderr) console.warn(`[RustFS Upload] stderr: ${result.stderr}`);
 
-      expect(result.code).toBe(0);
+      expect(result.ok).toBe(true);
     });
 
     test('should download file from RustFS to another worker', async () => {
@@ -317,22 +285,21 @@ test.describe('RustFS Integration @bridge @rustfs @slow', () => {
       const downloadWorkerId = vmIds.workers.length > 1 ? vmIds.workers[1] : vmIds.workers[0];
       const downloadWorkerIp = ops.calculateVMIp(downloadWorkerId);
 
-      // Download the file to another worker (add -v for verbose output)
-      const result = await ops.executeOnVM(
-        downloadWorkerIp,
-        `rclone copy rustfs:${integrationBucket}/worker-test.txt /tmp/downloaded/ -v 2>&1 && ` +
-          `cat /tmp/downloaded/worker-test.txt`
+      // Download the file to another worker with a signed GET
+      const result = await ops.rustfsS3Request(
+        { method: 'GET', path: `${integrationBucket}/worker-test.txt` },
+        { vmIp: downloadWorkerIp, fromWorker: true }
       );
 
       // Always log output for debugging
       console.warn(
-        `[RustFS Download] Worker ${downloadWorkerId} (${downloadWorkerIp}) exit code: ${result.code}`
+        `[RustFS Download] Worker ${downloadWorkerId} (${downloadWorkerIp}) HTTP status: ${result.status}`
       );
-      console.warn(`[RustFS Download] stdout: ${result.stdout}`);
+      console.warn(`[RustFS Download] body: ${result.body}`);
       if (result.stderr) console.warn(`[RustFS Download] stderr: ${result.stderr}`);
 
-      expect(result.code).toBe(0);
-      expect(result.stdout).toContain('uploaded-from-worker');
+      expect(result.ok).toBe(true);
+      expect(result.body).toContain('uploaded-from-worker');
     });
 
     test('should list integration bucket with uploaded files', async () => {

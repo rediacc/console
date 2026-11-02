@@ -19,7 +19,7 @@ This section describes the system as built. Where an older section below says mo
 
 **The claim.** Stored configs are confidential against a compromise of the server's storage and against a passive operator. Every blob is bound to its store, config, team and version, so the server cannot swap one config's blob for another's or edit a blob undetected. The design does NOT protect against an operator who serves malicious portal code, or who withholds the newest version from a device that has never seen it.
 
-Confidentiality rests on one key, the CEK. The server holds the other two layers' keys: the org passphrase (layer 3, stored server-recoverable) and `sdkMaster` (layer 1). Layer 2 is the CEK, wrapped per slot under `HKDF(slotSecret ‖ serverSecret)`; the slot secret stays on the device (the OS keyring for the CLI, RAM in the portal).
+Confidentiality rests on one key, the CEK. The server holds the other two layers' keys: the org passphrase (layer 3, stored server-recoverable under the per-Worker `ACCOUNT_CONFIG_SERVER_KEY`, see [The layer-3 server key](#the-layer-3-server-key)) and `sdkMaster` (layer 1). Layer 2 is the CEK, wrapped per slot under `HKDF(slotSecret ‖ serverSecret)`; the slot secret stays on the device (the OS keyring for the CLI, RAM in the portal).
 
 ### What the server can and cannot learn or do
 
@@ -53,7 +53,7 @@ A reader rebuilds it from its own pointer (the CLI's `remote` block, the portal'
 - **Blinded names.** A commitment key is `base64(HMAC(PBK, pointer))` with `PBK = HKDF(CEK, salt = configId, info = 'rediacc-config-ptr-v1')`. One pointer keeps one key across pushes of a config, so the server's anti-downgrade check still compares keys, and the same name in two configs gets unrelated keys.
 - **Tombstones.** A push that drops a committed path carries `commitments.removed[key]`: the stored commitment, recomputed by the client from the value it saw under the stored `fckSalt`. The server lets a stored key vanish only against a matching tombstone, so deleting a machine, repository or storage works, and deleting a value requires knowing it.
 - **High-water mark.** The CLI records the highest version it has pulled or pushed per config in its token file (not in the config cache, so clearing the cache does not reset it) and refuses a pull below it. Once it has seen v3 for a config it also refuses a v2 copy.
-- **Migration.** Clients read v2 for one release, with a warning, and upgrade the config to v3 on their next push. The server refuses a v2 push.
+- **Migration (clean break).** The server refuses a v2 push. A config pull answers 426 `CONFIG_ENVELOPE_UNSUPPORTED` once the stored envelope is v3 and the request either declares an older envelope in `x-config-envelope` or sends no such header; the CLI sends it on every config request, so only a client that predates the header is refused, and it must upgrade rdc. While the stored envelope is still v2, a pull is served as before whatever the header says (or omits), and returns the v2 envelope.
 
 **Residual risk.** A device that has never seen a newer version has nothing to hold the server against, so a server can still hand it an old one. Guaranteeing freshness against a malicious server needs an external witness, which this design does not have.
 
@@ -87,7 +87,7 @@ The server reads the caller's org role, the team and the team membership on ever
 | Member of T | read, write | read, write | 403 | 404 |
 | Org member outside T | read, write | 403 `team_forbidden` | 403 | 404 |
 
-- **Token scope.** A config token minted from a team-scoped credential carries `scope_team_id`: a team-scoped login token through password enroll, a team-scoped executor token, or a device token minted from a scoped chain. The scope narrows the table and never widens it. A scoped chain reaches its own team's configs and the org-level ones, and only while the membership rule still passes. Tokens from the portal handoff are unscoped.
+- **Token scope.** A config token minted from a team-scoped credential carries `scope_team_id`: a team-scoped login token through password enroll, a team-scoped executor token, or a device token minted from a scoped chain. The scope narrows the table of team configs and never widens it; the one admission beyond a team's own configs is the org-level config (`teamId` null): read as below, written as the table says. A scoped chain reaches its own team's configs and the org-level ones, and only while the membership rule still passes. Every read path, password enroll included, admits an org-level config (`teamId` null) of the token's org to a team-scoped token of an org member (operator ruling 2026-10-28), and refuses another team's config and any config outside the org; writes follow the table. Tokens from the portal handoff are unscoped.
 - **Revocation.** Membership is never cached into a token, so removal from a team takes effect on the next request with no token revocation. The CLI then purges its offline copy of that config, which does not recall plaintext already copied off the device.
 - **Refusals.** Config-token routes answer `403 { error, code: 'team_forbidden', newServerToken }`, because the presented token was already rotated; session routes answer the same code without a token. Each refusal is logged as `config.auth.team_forbidden`. A refusal depends only on what the request sent, so it reveals nothing about whether a config exists.
 - **Listing.** `GET /configs`, the executor grant's config list and the portal's `configCount` hold only the configs the caller may read.
@@ -235,6 +235,16 @@ At rest in DB:  orgEnc(clientEnc_CEK(serverKeyEnc_SDK(ssh_keys)))
                 orgEnc(clientEnc_CEK(serverKeyEnc_SDK(repositories)))
 ```
 
+### The layer-3 server key
+
+The org passphrase that layer 3 encrypts under is itself stored server-recoverable, in `config_stores.server_recoverable_org_passphrase`, sealed under a server key that never enters the database.
+
+- **The key.** Each account Worker holds its own Worker secret, `ACCOUNT_CONFIG_SERVER_KEY`. Every channel and region (stable and edge in eu, us and asia, plus bench) has a separate key, and none is shared.
+- **The seal.** AES-256-GCM under `HKDF-SHA256(key, salt "rediacc-config-server-v1", info "server-encryption")`, imported non-extractable, with AAD `csk1|<storeId>`. The stored form is `csk1.<kid>.<base64(iv || ct)>`, where `kid` is the first 8 hex characters of `HMAC-SHA256(key, "kid")`. The AAD binds a row to its store, so a row copied onto another store does not open; the kid names the sealing key without revealing it.
+- **No fallback.** A Worker without `ACCOUNT_CONFIG_SERVER_KEY` refuses every layer-3 operation with `ConfigServerKeyMissingError` (HTTP 503). A row in any other form, including the untagged base64 rows written before `csk1`, is refused with `ConfigServerKeyMismatchError` and never opened, and so is a `csk1` row whose kid or tag does not verify. The only built-in key is a constant that `resolveConfigServerKey` returns under `TEST_MODE`, which the Cloudflare entry pins off; `check:ci-config-server-key-constant` confines that constant to `private/account/src/services/config-server-key.ts` behind the `TEST_MODE` guard.
+
+Every account database was rewrapped from the untagged form to `csk1` before the untagged opener was deleted (`agent/plans/PLAN-config-server-key.md`, K4 and K6).
+
 The SDK layer uses **time-windowed derived keys**. The master SDK never leaves the server — the client only receives a derived key valid for a specific time window (default: 5 minutes). Each config entry stores the `sdkEpoch` it was encrypted with, so the server can re-derive the correct key on pull.
 
 ```
@@ -253,7 +263,7 @@ Example (window = 300s / 5 min):
 
 **Security properties of each layer:**
 - Compromised server code → sees `clientEnc_CEK(serverKeyEnc_SDK(values))` → has `sdkMaster` but CEK blocks access to the SDK layer
-- Compromised DB → sees `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(values)))` → three keys needed, has none
+- Compromised DB → sees `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(values)))` with `sdkMaster` in the clear → the org passphrase needs the Worker's `ACCOUNT_CONFIG_SERVER_KEY`, which is not in the database, and the CEK layer needs a slot secret
 - Compromised CEK alone → can remove CEK layer → `serverKeyEnc_SDK(values)` → needs `sdk_derived` from server → server rejects revoked members
 - Captured `sdk_derived` → only decrypts configs from that specific time window — future windows use different derived keys
 - Compromised passkey alone → no `server_secret` → can't derive CEK
@@ -355,123 +365,83 @@ D1 stores only lightweight metadata — no encrypted blobs:
 
 ### First-Time Setup (Once Per Org)
 
-#### Desktop Mode (has browser)
+#### Server relay (CLI and browser on any machines)
+
+The CLI never talks to the browser. The account server relays one sealed blob between them, and an ephemeral X25519 key pair means it cannot read it. This is the only transport: the CLI works the same on a server with no browser, and in WSL with the browser on Windows.
+
+The CLI must be signed in (`rdc subscription login`), because the server binds the request to that user.
 
 ```
-CLI                           Browser                        Server
+CLI                           Account server                 Browser (any machine)
  │                              │                              │
- ├─ Start local server ────────►│                              │
- │  localhost:PORT              │                              │
+ ├─ Ephemeral X25519 key pair   │                              │
+ │  nonce N, poll secret S      │                              │
  │                              │                              │
- ├─ Open browser ──────────────►│                              │
- │  /config-setup?              │                              │
- │  callback=localhost:PORT     │                              │
- │                              ├─ Passkey auth ──────────────►│
- │                              │  (passkey popup +            │
- │                              │   biometric)                 │
+ ├─ POST /device-codes ────────►│  row bound to the CLI's user │
+ │  purpose=config-handoff      │  stores H(key), H(S)         │
+ │  keyHash, pollVerifier       │                              │
+ │◄──────── device code D ──────┤                              │
  │                              │                              │
- │                              │  PRF derives:                │
- │                              │  - passkey_secret            │
- │                              │  - user_x25519 key pair      │
- │                              │  (stay in browser,           │
- │                              │   never sent to server)      │
+ ├─ Print link + pairing code P │                              │
+ │  <portal>/config-remote      │                              │
+ │   #code=D&key=...&nonce=N    │   (the fragment is never     │
+ │  P = first 60 bits of        │    sent to any server)       │
+ │      SHA-256(key)            │                              │
  │                              │                              │
- │                              ├─ user_x25519_public ────────►│
- │                              │  (server stores for          │
- │                              │   future CEK distribution)   │
+ ├─ POST /device-codes/D/claim ►│  the CLI polls with S        │
  │                              │                              │
- │                              │◄──── server_secret ──────────┤
- │                              │      (via E2E tunnel)        │
+ │                              │◄─ GET .../handoff-request ───┤
+ │                              │   {keyHash, boundToYou}      │
  │                              │                              │
- │                              │  Browser computes:           │
- │                              │  wrapping_key = HKDF(        │
- │                              │    passkey_secret +           │
- │                              │    server_secret)            │
+ │                              │  Page checks: pending, bound │
+ │                              │  to this session's user,     │
+ │                              │  H(key in link) == keyHash   │
  │                              │                              │
- │                              │  CEK = random 256 bits       │
+ │                              │  User types P from the       │
+ │                              │  terminal; the page compares │
+ │                              │  it with code(H(key in link))│
  │                              │                              │
- │                              │  wrappedCEK = encrypt(       │
- │                              │    wrapping_key, CEK)        │
+ │                              │  Passkey / password unlock:  │
+ │                              │  PRF derives passkey_secret, │
+ │                              │  user_x25519 key pair; the   │
+ │                              │  CEK is created or unwrapped │
  │                              │                              │
- │                              ├──── wrappedCEK ─────────────►│
- │                              │     (server stores it)       │
+ │                              │  blob = X25519_encrypt(key,  │
+ │                              │   passkey_secret + token     │
+ │                              │   + storageKeyId + N)        │
  │                              │                              │
- │◄─ POST localhost:PORT ───────┤                              │
- │   encrypt(nonce,             │                              │
- │     passkey_secret + token   │                              │
- │     + storageKeyId)          │                              │
+ │                              │◄─ POST .../config-handoff ───┤
+ │                              │   {blob, keyHash} + 2FA      │
+ │                              │   one conditional UPDATE:    │
+ │                              │   same user, same keyHash,   │
+ │                              │   pending, not expired       │
  │                              │                              │
- ├─ Store passkey_secret in     │                              │
- │  native secure storage       │                              │
- │  (keyctl/Keychain/DPAPI)     │                              │
- │  indexed by storageKeyId     │                              │
- │                              │                              │
- ├─ Store storageKeyId +        │                              │
- │  serverToken + wrappedCEK    │                              │
- │  in token file (no secrets)  │                              │
- │                              │                              │
- ▼ Done. No password stored. No secrets on disk.               │
-```
-
-Server never sees `passkey_secret` — it goes directly from browser to CLI via localhost. The secret is stored in OS-native secure storage, not in the token file.
-
-#### Headless Mode (no browser — e.g., Linode, EC2)
-
-The server acts as a relay but never sees `passkey_secret` thanks to an ephemeral encryption handoff:
-
-```
-CLI                           Browser (phone/laptop)          Server
- │                              │                              │
- ├─ Generate ephemeral          │                              │
- │  X25519 key pair             │                              │
- │  (handoff_pub, handoff_priv) │                              │
- │                              │                              │
- ├─ Show URL to user: ─────────────────────────────────────────┤
- │  rediacc.com/device?         │                              │
- │  code=ABCD&key=handoff_pub   │                              │
- │                              │                              │
- │  (user opens URL on          │                              │
- │   phone or laptop)           │                              │
- │                              │                              │
- │                              │  Browser reads handoff_pub   │
- │                              │  from URL query param        │
- │                              │  (NOT from server API)       │
- │                              │                              │
- │                              ├─ Passkey auth ──────────────►│
- │                              │  (passkey on phone)          │
- │                              │                              │
- │                              │  PRF derives:                │
- │                              │  - passkey_secret            │
- │                              │  - user_x25519 key pair      │
- │                              │                              │
- │                              │  Encrypt with handoff_pub:   │
- │                              │  blob = X25519_encrypt(      │
- │                              │    handoff_pub,              │
- │                              │    passkey_secret + token)   │
- │                              │                              │
- │                              ├──── encrypted blob ─────────►│
- │                              │     (opaque to server)       │
- │                              │                              │
- │  CLI polls...                │                              │
- │◄───────────────── encrypted blob (relayed, can't read) ─────┤
+ │◄─ claim: DELETE RETURNING ───┤  exactly one caller gets it  │
  │                              │                              │
  ├─ Decrypt with handoff_priv   │                              │
- │  → passkey_secret + token    │                              │
- │    + storageKeyId            │                              │
+ ├─ Require handoffNonce == N   │                              │
  ├─ Discard handoff_priv        │                              │
- ├─ Store passkey_secret in     │                              │
- │  native secure storage       │                              │
- │  indexed by storageKeyId     │                              │
- ├─ Store storageKeyId +        │                              │
- │  serverToken + wrappedCEK    │                              │
- │  in token file (no secrets)  │                              │
+ ├─ Store passkey_secret in native secure storage by storageKeyId
+ ├─ Store storageKeyId + serverToken + wrappedCEK in the token file
  │                              │                              │
- ▼ Done. Server never saw passkey_secret. No secrets on disk.  │
+ ▼ Done. The server never saw passkey_secret. No secrets on disk.
+Ctrl+C: DELETE /device-codes/D {S}, best effort.
 ```
 
-In both flows the ephemeral X25519 key pair means the server only relays an encrypted blob it cannot decrypt, as long as the page code it serves is unmodified.
+What each value is for:
 
-**Headless security note**: The browser JS reads `handoff_pub` from the **URL query parameter**, not from any server API. This prevents a rogue server from substituting its own public key. The config setup page must be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection.
+| Value | Travels in | Defends against |
+|---|---|---|
+| Link fragment (`code`, `key`, `nonce`) | the URL fragment only, so never in server logs or Referer | a third party who learns the code from a log or history and forges a handoff |
+| `keyHash` stored at creation | server row | a link tamperer who swaps only `key`: the server refuses a blob sealed to any other key |
+| Bound user | server row | another account completing the request |
+| Pairing code P, typed by the user | terminal to keyboard | a swapped whole link: P derives from the CLI's key, so an attacker's key never matches |
+| Nonce N, sealed inside the blob | fragment and sealed plaintext only | a forged blob written by a relay or database insider |
+| Poll secret S | CLI to server, never in the link | a third party racing the claim to consume the blob |
+
+The request lives for 10 minutes (`DEVICE_CODE_TTL_MS`). The blob is deleted on the first successful claim, so it rests on the server for at most that long. A user holds at most 5 pending requests.
+
+**Security note**: The page reads the key from the fragment, but `keyHash` and `boundToYou` come from the handoff-request response, which a rogue server controls and can rewrite. Only the pairing code P does not rest on a server answer: the user types it from the terminal and the page compares it with the code derived from the key in the link, so a swapped link or key is caught there. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
 
 ### Adding a Team Member
 
@@ -695,7 +665,7 @@ Config storage requires a passkey provider that supports the PRF extension. No f
 |----------|-------------------|
 | Confidential against storage compromise and a passive operator | Client-side encryption with the CEK; the server never holds the CEK or a slot secret (full claim and limits: [Security model](#security-model)) |
 | Not confidential against malicious portal code | The server serves the portal JavaScript that unwraps the CEK; a modified bundle can read it |
-| Member addition and headless setup | CEK and slot secret handed off under X25519 between devices; the server relays opaque blobs |
+| Member addition and CLI setup | CEK and slot secret handed off under X25519 between devices; the server relays opaque blobs |
 | Data at rest encrypted | Triple encryption: `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(values)))`; only the CEK layer is out of the server's reach |
 | Revocation | Removing a member deletes their slots and config tokens, so the next request is refused; content already pulled stays on their device |
 | Encryption key not stored anywhere | CEK unwrapped on the fly from `wrappedCEK` using split-key derived wrapping key |
@@ -978,7 +948,7 @@ Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registe
 
 ### CLI (Daily Operations)
 Shipped under `rdc config remote`:
-- `rdc config remote enable`: link this config to the store (`--password` enrolls against a pre-provisioned password slot, with no browser). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
+- `rdc config remote enable`: link this config to the store (`--master-password` enrolls against the master password's pre-provisioned password slot, with no browser). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
 - `rdc config remote disable`: disconnect and write the config back to disk. Server-only: it pulls the newest server copy first, so a disable from a stale cache cannot lose another device's writes.
 - `rdc config remote disable --local`: unlink on this device without the server, for a config whose store copy is gone or whose account left the store. It writes the cached copy without its `remote` pointer, host-local sections included, after a confirmation that newer server data is not fetched (`--yes` in a run with no terminal), and removes this device's token file and slot secret. It refuses, with the file untouched, when the file holds no cached copy or when a master-password cache cannot be opened. `disable` and `enable` name it only from the states where the server path cannot work.
 - `rdc config remote refresh`: download and decrypt the latest config
@@ -1013,20 +983,20 @@ The token file contains only **references and wrapped keys**, and no plaintext s
 
 ## Config Setup Portal Security
 
-The browser page used for config setup (`/config-setup` and `/device` endpoints) must be a **minimal static page** with:
+The browser page the CLI link opens (`<portal>/config-remote`) must be a **minimal static page** with:
 
 - **Content Security Policy (CSP)**: strict, no inline scripts, no eval
 - **Subresource Integrity (SRI)**: all loaded scripts verified by hash
 - **No server-side rendering**: pure static HTML/JS
-- **Auditable source**: users can view-source to verify the page reads `handoff_pub` from URL params (not from server API)
+- **Auditable source**: users can view-source to verify the page reads `handoff_pub` from the URL fragment (not from server API)
 
-This prevents a rogue server from substituting the handoff public key in headless mode.
+This prevents a rogue server from substituting the handoff public key.
 
 ## Threat Analysis
 
 | Attack | Result |
 |--------|--------|
-| DB dump stolen | D1 holds `sdkMaster` and `serverSecret` in the clear and the org passphrase under a server key; the CEK layer still needs a slot secret. A master password slot can be guessed offline from that data |
+| DB dump stolen | D1 holds `sdkMaster` and `serverSecret` in the clear. The org passphrase is sealed `csk1.<kid>.` under the Worker's own `ACCOUNT_CONFIG_SERVER_KEY`, a Worker secret that is not in D1, so a dump alone does not expose it ([The layer-3 server key](#the-layer-3-server-key)); the CEK layer still needs a slot secret. A master password slot can be guessed offline from that data |
 | Server memory inspected during request | Sees `clientEnc_CEK(serverKeyEnc_SDK(values))` — has SDK but CEK blocks access |
 | Removed member with CEK | Server access ends at removal (slots and config tokens deleted). A kept CEK plus a blob obtained elsewhere still needs that blob's `sdk_derived`; a CEK rotation closes the risk for later blobs |
 | Removed member with CEK + captured `sdk_derived` | Only decrypts configs from that specific time window — future configs use different derived keys they never received |
@@ -1062,10 +1032,10 @@ This prevents a rogue server from substituting the handoff public key in headles
 4. **Account server**: Static config setup page with CSP + SRI
 5. **CLI**: Platform-native secure storage abstraction (`keyctl` / Keychain / DPAPI / file by opt-in)
 6. **CLI**: `rediacc-store-adapter.ts` implementing `StoreAdapter` interface
-7. **CLI**: Browser-based setup flow (local loopback for passkey_secret handoff, store in native storage by `storageKeyId`)
-8. **CLI**: Device code flow with ephemeral X25519 handoff (headless mode)
+7. **CLI**: Browser-based setup flow (server relay for the passkey_secret handoff, store in native storage by `storageKeyId`)
+8. **CLI**: Device code relay with ephemeral X25519 handoff, pairing code and nonce
 9. **CLI**: Selective encryption (encrypt values, keep version/id plaintext)
-10. **E2E tests**: Full push/pull/sync cycle + token rotation + member add/remove + headless setup + native storage on all 3 platforms
+10. **E2E tests**: Full push/pull/sync cycle + token rotation + member add/remove + relay setup + native storage on all 3 platforms
 
 ## FAQ
 
@@ -1179,21 +1149,21 @@ Static API tokens are permanent — steal one, have access forever until manuall
 
 A stolen rotating token has a window of seconds to hours. A stolen static token has a window of forever.
 
-### How does config sync work on headless servers without a browser?
+### How does the CLI get its keys when the browser is on another machine?
 
-The device code flow (same pattern as GitHub CLI, `gcloud`, Stripe CLI):
-1. CLI shows a URL + code: `rediacc.com/device?code=ABCD&key=<handoff_pub>`
-2. User opens the URL on their phone or laptop (any device with a browser)
-3. Browser handles passkey authentication + PRF derivation
-4. `passkey_secret` is encrypted with the CLI's ephemeral public key (from the URL)
-5. Server relays the encrypted blob — it can't read it
-6. CLI decrypts and stores `passkey_secret` in the native secure storage
+Through the server relay (same pattern as GitHub CLI, `gcloud`, Stripe CLI), the only transport, so a server with no browser and WSL with a Windows browser work alike:
+1. The signed-in CLI creates a device code bound to its user and prints a link plus a pairing code: `<portal>/config-remote#code=ABCD&key=<handoff_pub>&nonce=<N>`
+2. The user opens the link on any device with a browser, signed in as the same account, and types the pairing code from the terminal
+3. The browser handles passkey authentication and PRF derivation
+4. `passkey_secret` and the nonce are encrypted with the CLI's ephemeral public key (from the link)
+5. The server relays the encrypted blob (it can't read it) and deletes it on the first claim
+6. The CLI decrypts, checks the nonce and stores `passkey_secret` in the native secure storage
 
 The server only relays an opaque encrypted blob, as long as the page code it serves is unmodified.
 
-### Why does the browser read `handoff_pub` from the URL, not from the server API?
+### Why does the browser read `handoff_pub` from the URL fragment, not from the server API?
 
-To prevent server-side key substitution. If the server provided the public key via its API, a rogue server could substitute its own key and intercept `passkey_secret`. By embedding the key in the URL (which the CLI controls), the browser reads it directly from the address bar. The config setup page is served as a static page with CSP + SRI to prevent script
+To prevent server-side key substitution. If the server provided the public key via its API, a rogue server could substitute its own key and intercept `passkey_secret`. By embedding the key in the link (which the CLI controls), the browser reads it directly from the address bar, and the fragment is never sent to a server. The server also stores a hash of the key at creation and refuses a blob sealed to any other key. The config setup page is served as a static page with CSP + SRI to prevent script
 injection. The page code still comes from the same server, so this blocks a substitution through the API but not a server that ships modified page code.
 
 ### How does team member addition work without the server seeing the CEK?

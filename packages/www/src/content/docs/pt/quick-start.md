@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: pt
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Início Rápido
@@ -75,7 +75,7 @@ rdc machine setup my-server  # Provisiona o renet + cria o datastore
 
 ```bash
 rdc config show                            # Resumo legível por humanos
-cat ~/.config/rediacc/rediacc.json         # JSON em bruto: máquinas, repositórios, armazenamentos, chave SSH
+cat ~/.config/rediacc/rediacc.json         # JSON em bruto: máquinas, repositórios, destinos de backup, chave SSH
 ```
 
 **Um ficheiro = um ambiente.** Copie-o para outro portátil e está pronto.
@@ -223,7 +223,7 @@ rdc backup usage
 
 Os snapshots são enviados para o armazenamento fragmentado, que precisa de um servidor de conta e de um repositório licenciado. Só são armazenados os dados alterados, pelo que um segundo snapshot do mesmo repositório custa apenas a diferença, não a imagem inteira.
 
-Enviar um repositório para armazenamento na nuvem com `--to <storage>` está retirado e agora é recusado. Para ler um arquivo escrito antes dessa alteração, o `rdc storage browse` continua a funcionar e precisa do `rclone` no seu PATH.
+Os backups têm um único tipo de destino, o armazenamento em chunks alojado no serviço, e `--to` em `repo push` indica apenas uma máquina. A retenção declara-se por linhagem de repositório com `rdc backup retention set`, e as execuções agendadas vêm de `rdc backup strategy set` mais `rdc backup schedule`. Veja [Backup e Restauro](/pt/docs/backup-restore).
 
 ### 4. Receber de Remoto
 

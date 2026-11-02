@@ -335,6 +335,36 @@ truthy(
 falsy("resolve gate: a script it does not", R.resolve(ROOT, "gate", "check:ci-invented")[0])
 truthy("resolve plan: a plan on disk", R.resolve(ROOT, "plan", REL)[0])
 falsy("resolve plan: a plan that is not", R.resolve(ROOT, "plan", "agent/PLAN-nope.md")[0])
+_base = pathlib.Path(REL).name
+truthy(
+    "resolve plan: the PLAN-<slug>.md basename names the same plan",
+    R.resolve(ROOT, "plan", _base)[0],
+)
+control(
+    "resolve plan: a miss lists every folder tried, not only the flat legacy path",
+    "agent/plans/PLAN-nope.md" in R.resolve(ROOT, "plan", "PLAN-nope.md")[1],
+    True,
+)
+_idx = ROOT / R.INDEX_REL
+_idx_before = _idx.read_text(encoding="utf-8") if _idx.exists() else None
+_idx.parent.mkdir(parents=True, exist_ok=True)
+_idx.write_text(
+    "## Expired plans\n\n| Plan | Title | First seen | Expired | Full-Text-Blob |\n|---|---|---|---|---|\n"
+    "| `agent/plans/_done/PLAN-swept.md` | Swept | 2026-09-01 | 2026-11-01 | `%s` |\n" % ("a" * 40),
+    encoding="utf-8",
+)
+truthy(
+    "resolve plan: a swept plan resolves to its tombstone row",
+    R.resolve(ROOT, "plan", "agent/plans/_done/PLAN-swept.md")[0],
+)
+falsy(
+    "resolve plan CONTROL: a plan with neither a file nor a tombstone still misses",
+    R.resolve(ROOT, "plan", "agent/plans/_done/PLAN-never.md")[0],
+)
+if _idx_before is None:
+    _idx.unlink()
+else:
+    _idx.write_text(_idx_before, encoding="utf-8")
 truthy("resolve trap: a Trap-Id in TRAPS.md", R.resolve(ROOT, "trap", "a-real-trap-id")[0])
 falsy("resolve trap: an invented one", R.resolve(ROOT, "trap", "not-a-trap-id")[0])
 Tally.count += 1
@@ -1440,6 +1470,53 @@ control(
     (len(R.read_investigations(ROOT)), R.investigation_for(ROOT, REL, _sig_done).get("retro")),
     (_n_before + 1, True),
 )
+R.append_investigation(ROOT, dict(_rrow, at="2099-01-01T00:00:00Z"))
+control(
+    "...and the same row written again (only the timestamp differs) adds no second line",
+    len(R.read_investigations(ROOT)),
+    _n_before + 1,
+)
+R.append_investigation(ROOT, dict(_rrow, note=_rrow["note"] + " amended"))
+control(
+    "CONTROL: a row whose note differs still appends",
+    len(R.read_investigations(ROOT)),
+    _n_before + 2,
+)
+
+# Review da8d629b.1: TWO PROCESSES writing the same row AT ONCE. Each child widens the read-then-append window with a sleep after its read, and both start at one instant, so without the outer dedupe flock both reads miss the other and the ledger gains two lines; with it the second waits, finds the first row, and appends nothing.
+_RACE_CHILD = """
+import json, sys, time
+sys.path.insert(0, sys.argv[1])
+import wl_planrec as R
+_read = R.read_investigations
+def slow(root):
+    rows = _read(root)
+    time.sleep(0.6)
+    return rows
+R.read_investigations = slow
+start = float(sys.argv[3])
+while time.time() < start:
+    time.sleep(0.005)
+R.append_investigation(sys.argv[2], json.loads(sys.argv[4]))
+"""
+_race_row = dict(_rrow, sig="race-sig", note="two identical writers at once")
+
+
+def _race(n_children=2):
+    before = sum(1 for r in R.read_investigations(ROOT) if r.get("sig") == "race-sig")
+    start = "%.3f" % (__import__("time").time() + 1.5)
+    procs = [
+        subprocess.Popen(
+            [sys.executable, "-c", _RACE_CHILD, str(HERE), str(ROOT), start, json.dumps(_race_row)],
+        )
+        for _ in range(n_children)
+    ]
+    rcs = [p.wait(timeout=60) for p in procs]
+    after = sum(1 for r in R.read_investigations(ROOT) if r.get("sig") == "race-sig")
+    return rcs, after - before
+
+
+control("two identical append_investigation runs at once write ONE row", _race(), ([0, 0], 1))
 
 raises(
     "--retro on an OPEN box is refused: it can still be investigated before the work",

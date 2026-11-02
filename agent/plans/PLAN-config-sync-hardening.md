@@ -1,12 +1,13 @@
 # PLAN: make the config sync loop (pull, push, encrypt, decrypt) safe, and prove it with a real round-trip harness
 
-Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-token-ip-rebind.md -- T11 (config token refresh) reuses the login token's TOTP rebind from that plan (`packages/cli/src/services/account/account-client.ts`, `token-ip-rebind.ts`). PLAN-config-handoff-relay-only.md -- both plans edit `packages/cli/src/commands/config-remote*.ts` and `packages/cli/src/i18n/locales/*/cli.json`, so T6, T11 and T12 wait for its console commit. T0-T5 and T7-T10 can start now.
 Priority: P0 -- proposed by AI. The operator asked whether this loop is "safe enough". It is not. Three confirmed defects cause silent data loss: repo network IDs wiped on every remote write (F3), concurrent edits reverted (F6), and a lost update on the server (F7). One makes deleting a machine, repo or storage impossible (F2). The protocol accepts rollback and cross-config blob swaps (F1).
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/src/services/config.service.ts, private/account/src/routes/configs.ts, private/account/src/middleware/config-token.ts, private/account/src/middleware/error-handler.ts (config-token newServerToken passthrough only), private/account/src/dto/config.dto.ts, private/account/src/db/config-schema.ts, private/account/drizzle/0055_*.sql, private/account/drizzle/meta/**, private/account/web/src/api/config-session.ts, private/account/web/src/api/config.ts, private/account/web/src/pages/RotateCekWizard.tsx, private/account/tests/integration/config-sync/** (new), private/account/tests/integration/config-envelope-v2.test.ts, packages/cli/src/adapters/remote-config-adapter.ts, packages/cli/src/adapters/remote-token-storage.ts, packages/cli/src/services/config/config-server-client.ts, packages/cli/src/services/config/remote-cache.ts, packages/cli/src/services/config/config-base.ts, packages/cli/src/services/config/resource-state.ts (RemoteResourceState only), packages/cli/src/commands/config-remote-enable.ts, packages/cli/src/adapters/__tests__/remote-*.test.ts, packages/cli/src/services/__tests__/remote-cache.test.ts, packages/cli/src/i18n/locales/*/cli.json, packages/shared/src/config-crypto/{selective,layers,hmac,types,commitments,constants}.ts, packages/shared/src/config-crypto/__tests__/**, packages/shared/src/config-schema/{payload,sensitivity,walker}.ts, packages/shared/src/config-crypto/rotation.ts, packages/shared/src/config-schema/__tests__/**, docs/DESIGN-CONFIG-STORAGE.md, packages/www/src/content/docs/*/config-storage.md
+Live-Proof: bench -- the config service, routes, migration and portal pages under private/account and the config crypto under packages/shared/src are the account surface (bench only), and the remote config adapter and cache under packages/cli/src are the cli surface, which bench admits too.
 Worklist: (the lead adds this with `worklist.py --add`)
 
 ## Status on 2026-09-26 (session d778be9d), before the plan was held
@@ -79,7 +80,7 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
     (ticked) 2026-10-03T10:01:39Z by d778be9d: e2d1b04e5: DEVICE_LOCAL_POINTERS six-pointer exclusion list, syncedDocument, stripStateForPush removed, state merge
 - [x] T18 [B] Every command that edits a remote config pushes through `updateSyncedSection` / `RemoteResourceState.updateDocument`, so no edit is reverted by the next pull: `commands/config/field.ts`, `commands/config/edit.ts`, `config-cluster-logic.ts`, `config-datastores.ts`, `config-resources.ts` (non-resource writes), `config-prune.ts`, `commands/update.ts` (`updateChannel`), `commands/subscription.ts` (`accountServer`), `services/account/account-client.ts` (`e2ePublicKey`); plus a gate or test that fails when a new writer of a synced section bypasses the push. Harness scenarios per command start as `it.fails`.
     (ticked) 2026-10-03T10:01:41Z by d778be9d: e2d1b04e5: synced-write.ts updateSyncedConfig, every edit command routed, synced-write-guard.test.ts gate
-- [ ] T15 [lead] Closure:
+- [x] T15 [lead] Closure:
   - H1-H17 are all green, with no `it.fails` left.
   - The mutation controls table (section 4.3) is run and recorded: each named revert turns its named test red.
   - The CI log of the account integration lane lists `config-sync/*.test.ts` with non-zero test counts (testing skill).
@@ -89,6 +90,10 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
     - delete a machine;
     - move A to a phone hotspot and run a command (it must refresh per D4);
     - rotate the CEK from the portal, and check that B reports "stale key, re-enroll".
+    (ticked) 2026-10-30T19:31:32Z by d778be9d: nocommit:operator-deferred hotspot step waived by operator ruling ASKED:2026-10-30T19:29Z (#0fe1788c); eu live run 2026-09-26 plus config-sync harness 113 tests rc 0
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-10-30T06:22:13Z by d778be9d: live-proof lp-c0ee207ee706 bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt
 
 ## 0. What each key protects
 
@@ -226,6 +231,9 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 - Two devices on one remote config allocate network IDs independently, starting from `MIN_NETWORK_ID`.
 - Device B does not know the network IDs of repos that A created.
 - Severity depends on whether renet can recover the ID from the machine (D8).
+- **Defect fixed, test coverage still partial (PLAN-config-networkid-discovery T7, 2026-10-28).** The T7 ledger verdict is partial, not closed, until the open test gaps below are filled. The network ID now syncs and the machine is the authority. `private/account/tests/integration/config-sync/network-id.test.ts` (N1a-N7, 11 tests, no `it.fails`) runs in `check:ci-account-server` through the `tests/integration/**` glob of `private/account/vitest.config.ts`; the harness is `harness/machine.ts` and `device.process({machine})` (`private/account/tests/integration/config-sync/harness/device.ts:294`, account commit c59d691). The renet guard cases run with `go test -tags nolicense ./cmd/renet/ -run 'NetworkID|Guard'`.
+  - The nine section 4.4 mutations were each run by hand and each turned a test red: discovery skipped (N1b, N2, N5, N6); floor dropped in `registerNewRepo` (`register-new-repo-floor.test.ts`; N3 inlines the allocation, and dropping the floor in `allocateNetworkIdWithFloor` turns N3b red); retry removed (N4b; N4 stays green without it); `state.ts` direct interpolation (`state-socket-guard.test.ts`; N5 runs discovery first); unreachable machine allocates (N6); floor reads every machine (`config-network-id.test.ts`, "reads only the floor it is given"); counter reseeded from the floor ("never lowers a counter already past the floor"; N7 stays green); guard call removed (`TestRepositoryCreate_HeldNetworkIDRefusedBeforeOrchestrator`, `TestForkStart_HeldNetworkIDRefusedBeforeOrchestrator`); reconcile rebuild skipped (`config-reconcile.test.ts`).
+  - Open test gaps: N3 and N5 do not exercise the code paths section 4.4 names, and N7 does not catch a floor-seeded counter. N4 flaked once under machine load (RemotePreconditionError).
 
 ### Verified safe
 

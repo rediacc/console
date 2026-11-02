@@ -138,11 +138,11 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
   });
 
   afterEach(() => {
-    vi.doUnmock('../updater.js');
-    vi.doUnmock('../background-updater.js');
-    vi.doUnmock('../update-state.js');
-    vi.doUnmock('../output.js');
-    vi.doUnmock('../subscription-auth.js');
+    vi.doUnmock('../update/updater.js');
+    vi.doUnmock('../update/background-updater.js');
+    vi.doUnmock('../update/update-state.js');
+    vi.doUnmock('../core/output.js');
+    vi.doUnmock('../account/subscription-auth.js');
     vi.doUnmock('../../i18n/index.js');
     vi.doUnmock('../../utils/platform.js');
     vi.doUnmock('../../utils/errors.js');

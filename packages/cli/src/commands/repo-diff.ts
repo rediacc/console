@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { writeStdout } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
@@ -257,7 +258,7 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
   if (baseGuid === targetGuid) {
     throw new ValidationError(t('commands.repo.diff.sameRepo'));
   }
-  await configService.ensureRepositoryNetworkId(repoKey);
+  await ensureRepositoryNetworkId(repoKey);
 
   const params: Record<string, unknown> = { base: baseGuid, target: targetGuid };
   if (options.fast) params.fast = true;

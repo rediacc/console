@@ -27,12 +27,10 @@ exits.
 
 Spans are created with `Collector.StartSpan(ctx, name, kind)` and closed when the operation returns; errors are attached via `RecordError`.
 
-| Span name      | Kind     | What it traces                             |
-|----------------|----------|--------------------------------------------|
-| `execute.task` | `bridge` | A single task run by the local executor    |
-| `list.all`     | `bridge` | A `renet list all` machine-status snapshot |
-
-The `bridge` span-kind constant is a legacy label left over from the removed middleware queue processor. Renaming it rides along with the wider `pkg/bridge` to `pkg/functions` cleanup and does not change the emitted data.
+| Span name      | Kind    | What it traces                             |
+|----------------|---------|--------------------------------------------|
+| `execute.task` | `renet` | A single task run by the local executor    |
+| `list.all`     | `renet` | A `renet list all` machine-status snapshot |
 
 ### Common Span Attributes
 
@@ -80,6 +78,6 @@ Dual logging setup:
 - `private/renet/pkg/telemetry/telemetry.go`: OTel SDK init, span/metric helpers, shutdown
 - `private/renet/pkg/telemetry/profiling.go`: Pyroscope integration
 - `private/renet/pkg/telemetry/attributes.go`: attribute definitions and span helpers
-- `private/renet/pkg/bridge/executor_bridge.go`: in-process task executor behind `renet execute`
+- `private/renet/pkg/functions/executor_local.go` (with the ssh and hybrid siblings `executor_ssh.go` and `executor_hybrid.go`): in-process task executors behind `renet execute`
 - `private/renet/cmd/renet/execute_command.go`: `renet execute` entry point
 - `private/renet/cmd/renet/list_commands.go`: `renet list` entry point

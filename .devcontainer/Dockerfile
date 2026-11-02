@@ -482,8 +482,8 @@ USER root
 # Pinned to an exact release; the values below are whatever the last bump chose.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
-ARG CODEX_VERSION=0.163.0
-ARG GEMINI_CLI_VERSION=0.65.0
+ARG CODEX_VERSION=0.166.0
+ARG GEMINI_CLI_VERSION=0.66.0
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves its whole
@@ -572,9 +572,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 # scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
-ARG BW_VERSION=2026.10.0
-ARG BW_SHA256_AMD64=269b67559caab860d1737f7554b32bdb8be9285d5689fee55193c137a0df9973
-ARG BW_SHA256_ARM64=2fe9d8a18dc4c35ea2f9e3e42a4021f14f129ef47e80b6cea1e3b34176f1583a
+ARG BW_VERSION=2026.10.1
+ARG BW_SHA256_AMD64=eb09c3715291c21cf744819b873a255c1247b1b8b45bae138621a644ec7ad8f5
+ARG BW_SHA256_ARM64=79ecb3293fb259660961c949d3e32fdab8682b2bcff0f6764ce38a411ca1ac5d
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
@@ -668,7 +668,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Both sides are pinned now: the workflow names a version instead of `@latest`, and
 # this ARG names the same one. They must move together -- a devbox that disagrees
 # with CI is worse than one that is merely behind, because it answers confidently.
-ARG AGENT_BROWSER_VERSION=0.39.1
+ARG AGENT_BROWSER_VERSION=0.41.0
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force
 

@@ -30,7 +30,7 @@ Compacted-By: 8f55d4f0
 Compacted-At: 2026-09-06T17:08:53Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: none
-Touched: scripts/dev/lib/cf-auth.sh, docs/backup-storage/05-docs-and-decommission.md, packages/shared/src/config-schema/schemas.ts, .ci/scripts/test/gates/test-embed-credits.sh, .ci/scripts/test/gates/test-embed-asset-freshness.sh, scripts/lib/embed-asset-sources.ts, packages/cli/src/data/third-party-credits.json, .gitmodules
+Touched: scripts/dev/lib/cf-auth.sh, docs/backup-storage/archive/05-docs-and-decommission.md, packages/shared/src/config-schema/schemas.ts, .ci/scripts/test/gates/test-embed-credits.sh, .ci/scripts/test/gates/test-embed-asset-freshness.sh, scripts/lib/embed-asset-sources.ts, packages/cli/src/data/third-party-credits.json, .gitmodules
 Gates: none
 Why-Source: author
 Read-History: `git show 09c51ce36a58383f4f12ac17ed21fe99cdbcab29` recovers the text; `git log --find-object=09c51ce36a58383f4f12ac17ed21fe99cdbcab29 --all` names the commit

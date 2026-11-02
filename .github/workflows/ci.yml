@@ -254,6 +254,8 @@ jobs:
       run_e2e_backup_browse_at: ${{ steps.scope.outputs.run_e2e_backup_browse_at }}
       run_fork_isolation: ${{ steps.scope.outputs.run_fork_isolation }}
       run_renet: ${{ steps.scope.outputs.run_renet }}
+      # J9: 'true' when this push moved the private/renet pointer; see the step below.
+      renet_changed: ${{ steps.renet-push.outputs.changed }}
       run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
       run_account_e2e: ${{ steps.scope.outputs.run_account_e2e }}
       run_drills: ${{ steps.scope.outputs.run_drills }}
@@ -326,11 +328,32 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+
+      # J9 (PLAN-backup-program): the renet go and integration jobs used to run only
+      # under `full_suite`, so a push to main that moved the private/renet pointer ran
+      # none of them. This decides, on a push, whether the gitlink moved between the
+      # pushed range's base and HEAD. 'true' on a hit and on anything it cannot decide
+      # (no base, unreachable base): fail open, the same direction as the scope engine.
+      # Every other event gets 'false' and the jobs follow `full_suite` as before. A
+      # gitlink diff needs no submodule checkout, only the two commits (fetch-depth 0).
+      - name: Decide whether private/renet changed in the push
+        id: renet-push
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          changed=false
+          if [ "$EVENT_NAME" = push ] && [ "${BEFORE_SHA//0/}" = "" ]; then changed=true; echo "a push that creates the branch has no base, so every renet leg runs"
+          elif [ "$EVENT_NAME" = push ]; then
+            if git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --filter=blob:none origin "$BEFORE_SHA"; then git diff --quiet "$BEFORE_SHA" HEAD -- private/renet || changed=true
+            else changed=true; echo "::warning::push base '$BEFORE_SHA' unavailable, so every renet leg runs"; fi
+          fi
+          echo "private/renet changed in this push: $changed"; echo "changed=$changed" >> "$GITHUB_OUTPUT"
 
       # Run consolidated initialization script
       - name: Initialize CI
@@ -369,6 +392,31 @@ jobs:
         # for schedule events.
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_channel_for_event "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
+      # The scope engine expands a private/renet gitlink bump into the renet
+      # paths it changed (expandRenetGitlink in .ci/scripts/ci/scope-engine.cjs),
+      # so a one-area renet change selects only that area's VM jobs. That needs
+      # the submodule's commits and trees here; without them the engine falls
+      # back to the bare gitlink and every VM job, and says so in the plan's
+      # reasons. A failed fetch therefore warns and fails open, it never fails CI.
+      - name: Load well-known
+        if: github.event_name == 'pull_request'
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
+      - name: Fetch private/renet history for the scope engine
+        if: github.event_name == 'pull_request'
+        env:
+          RENET_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          # The credential rides GIT_CONFIG_* environment variables, never argv, so it is not in the
+          # runner's process list; git's own output is captured and the token redacted before it is
+          # printed, so a failure line cannot echo the rewritten URL into the log.
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="url.https://x-access-token:${RENET_TOKEN}@github.com/.insteadOf"
+          export GIT_CONFIG_VALUE_0="${{ env.WK_GH_ORIGIN }}/"
+          if ! out=$(git submodule update --init --filter=blob:none --no-checkout private/renet 2>&1); then
+            printf '%s\n' "${out//${RENET_TOKEN}/***}"
+            echo "::warning::private/renet history unavailable; the scope engine selects every VM job for a renet bump"
+          fi
       # LIVE as of D-1: the `run_<key>` outputs this step writes now gate 17
       # jobs. It was shadow-only until the reconciler had a clean run of real
       # PR traffic behind it.
@@ -768,7 +816,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
@@ -810,6 +857,14 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Start account server
         id: deploy
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
@@ -818,6 +873,12 @@ jobs:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
 
       - name: Verify account server health
         run: curl -sf http://localhost:3000/health
@@ -1068,9 +1129,9 @@ jobs:
     permissions:
       contents: read
     needs: [initialize]
-    # ubuntu-latest, not ubuntu-slim: the image ships the aws CLI the R2
-    # readers call; slim does not, and a missing aws is UNCHECKED (red).
-    runs-on: ubuntu-latest
+    # ubuntu-slim: the pinned aws CLI comes from setup-aws (AWS_BIN), not the
+    # runner image, the same shape as check-release-state.
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     if: >-
       always() &&
@@ -1096,7 +1157,7 @@ jobs:
 
       - uses: ./.github/actions/profiler
         with:
-          runner-label: ubuntu-latest
+          runner-label: ubuntu-slim
 
       - name: Install the pinned aws CLI
         uses: ./.github/actions/setup-aws
@@ -1175,13 +1236,21 @@ jobs:
       packages: read
     # T2.1 (PLAN-ci-time-budget, finding 3): no ct-tests.yml leg consumes a
     # build-docker-fast image (no ghcr.io/rediacc reference or *_tag input in
-    # that file; each leg builds renet and the CLI itself), verified against
+    # that file; each leg builds the CLI itself), verified against
     # run 36040274865's E2E Workers log. `ops up` used to also pull
     # elite/bridge:latest at runtime, a pull that failed "manifest unknown"
     # on every distro and that nothing consumed; renet no longer does it.
     # The needs edge was pure critical-path cost (about 10.5 min), not a
     # real dependency.
-    needs: [initialize]
+    # build-renet IS a real dependency (agent/plans/PLAN-free-license.md R2,
+    # F2): every VM/E2E leg installs the one renet that ci-build-renet.yml's
+    # renet-embed-assets job uploads (renet-test-linux-amd64-<sha>) instead of
+    # building its own.
+    # always() below keeps the caller running when build-renet skips or fails,
+    # so migration-test still runs on push-to-main; renet_built tells the legs
+    # that need the artifact to skip instead of dying in its download. A
+    # failed build-renet still reds CI Complete through build-cli (HARD).
+    needs: [initialize, build-renet]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
     # CALLED on push-to-main: its migration-test job has to run there (it
     # validates the D1 migrations that push is about to deploy), while every
@@ -1191,6 +1260,7 @@ jobs:
     with:
       full_suite: ${{ needs.initialize.outputs.full_suite }}
       pointer_bump_only: ${{ needs.initialize.outputs.pointer_bump_only }}
+      renet_built: ${{ needs.build-renet.result == 'success' && 'true' || 'false' }}
       # Scope decisions, one per ct-tests leaf. Empty (the default on every
       # non-PR event, where the scope step does not run) means RUN; only the
       # literal string 'false' skips. migration-test takes no scope input on
@@ -1207,6 +1277,7 @@ jobs:
       run_e2e_backup_browse_at: ${{ needs.initialize.outputs.run_e2e_backup_browse_at }}
       run_fork_isolation: ${{ needs.initialize.outputs.run_fork_isolation }}
       run_renet: ${{ needs.initialize.outputs.run_renet }}
+      renet_changed: ${{ needs.initialize.outputs.renet_changed }}
       run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}
       run_account_e2e: ${{ needs.initialize.outputs.run_account_e2e }}
       run_drills: ${{ needs.initialize.outputs.run_drills }}
@@ -1229,10 +1300,14 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [initialize]
+    # build-renet: each probe leg installs the run's shared renet
+    # (agent/plans/PLAN-free-license.md F2), so the probe runs only when it was
+    # built; a failed build-renet reds CI Complete through build-cli.
+    needs: [initialize, build-renet]
     if: >-
       always() &&
       needs.initialize.result == 'success' &&
+      needs.build-renet.result == 'success' &&
       needs.initialize.outputs.is_bot != 'true' &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.outputs.run_e2e_workers != 'false'
@@ -1352,8 +1427,16 @@ jobs:
       - name: Run Health Check
         run: ./private/elite/scripts/healthcheck.sh
 
+      # A4d (PLAN-backup-program): the bundled store must honour the surface the backup
+      # data plane relies on, above all the create-only 412. The selftest first proves the
+      # probe goes red on a store that ignores If-None-Match; the live run then probes the
+      # RustFS container this job started.
+      - name: Probe the elite object store for S3 conformance
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe
+
       - name: Final Service Status
         if: always()
+        shell: bash
         run: |
           echo "Final Container Status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
@@ -1511,11 +1594,9 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
@@ -1625,6 +1706,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
+      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
+      # fetch serves the next step only, and the scrub after it blanks the key.
+      - name: Fetch the step-scoped signing key(s) for the next step only
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
       - name: Set preview worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
@@ -1650,6 +1740,13 @@ jobs:
           AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
+      - name: Blank the step-scoped signing key(s) for the rest of the job
+        if: always()
+        uses: ./.github/actions/bws-scrub
+        with:
+          names: |
+            BWS_ACCOUNT_ED25519_PRIVATE_KEY
+            BWS_ACCOUNT_X25519_PRIVATE_KEY
 
       - name: Deployment summary
         run: |

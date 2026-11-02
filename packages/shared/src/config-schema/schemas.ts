@@ -18,127 +18,22 @@
 import { z } from 'zod';
 import { ValidationError } from '../errors/index.js';
 import { PolicyDocumentSchema } from '../policy/schema.js';
+import { AccessSchema } from './access.js';
+import {
+  absolutePath,
+  datastoreRef,
+  domain,
+  ipOrHostname,
+  ipVersion,
+  isValidCron,
+  port,
+  resourceName,
+  TagName,
+  utf8ByteLength,
+  uuid,
+} from './primitives.js';
 import type { AcmeCertCache, RdcState, ReflogEntry, RepoRuntimeState } from './state-schema.js';
 import { StateSchema } from './state-schema.js';
-
-// =============================================================================
-// Primitive validators
-// =============================================================================
-
-/**
- * Portable replacement for node:net's `isIP`, so this module runs unchanged on
- * Node, Cloudflare Workers, and browsers. Same contract: 4, 6, or 0 for
- * "not an IP address". Backed by zod's own IP validators rather than a
- * hand-rolled regex.
- */
-const ipv4Check = z.ipv4();
-const ipv6Check = z.ipv6();
-
-function ipVersion(value: string): 0 | 4 | 6 {
-  if (ipv4Check.safeParse(value).success) return 4;
-  if (ipv6Check.safeParse(value).success) return 6;
-  return 0;
-}
-
-/**
- * Byte length of a UTF-8 string without Node's Buffer, so the secret size caps
- * below evaluate identically in the browser and in Workers.
- */
-const utf8Encoder = new TextEncoder();
-
-export function utf8ByteLength(value: string): number {
-  return utf8Encoder.encode(value).length;
-}
-
-const CRON_RANGES: [number, number][] = [
-  [0, 59],
-  [0, 23],
-  [1, 31],
-  [1, 12],
-  [0, 7],
-];
-
-function isValidCronField(field: string, min: number, max: number): boolean {
-  if (field === '*') return true;
-  if (field.startsWith('*/')) {
-    const step = Number.parseInt(field.slice(2), 10);
-    return Number.isInteger(step) && step >= 1 && step <= max;
-  }
-  return field.split(',').every((part) => {
-    const rangeMatch = /^(\d+)-(\d+)$/.exec(part);
-    if (rangeMatch) {
-      const lo = Number.parseInt(rangeMatch[1], 10);
-      const hi = Number.parseInt(rangeMatch[2], 10);
-      return lo >= min && hi <= max && lo <= hi;
-    }
-    const num = Number.parseInt(part, 10);
-    return Number.isInteger(num) && num >= min && num <= max;
-  });
-}
-
-function isValidCron(expr: string): boolean {
-  const parts = expr.trim().split(/\s+/);
-  if (parts.length !== 5) return false;
-  return parts.every((field, i) => isValidCronField(field, CRON_RANGES[i][0], CRON_RANGES[i][1]));
-}
-
-const resourceName = z
-  .string()
-  .min(1, 'Name cannot be empty')
-  .max(63, 'Name must be 63 characters or fewer')
-  .regex(
-    /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/,
-    'Must be lowercase alphanumeric with hyphens, starting and ending with alphanumeric'
-  );
-
-/**
- * A datastore registry key: `name` for a datastore, `name:tag` for a fork.
- * Unlike repositories (families, 06 §6.4), datastore forks are FLAT entries
- * with a `parent` backref, mirroring the machine-side registry which keys a
- * fork as `<parent>:<tag>` (renet pkg/datastore/registry.go).
- */
-const datastoreRef = z
-  .string()
-  .min(1, 'Name cannot be empty')
-  .max(127, 'Ref must be 127 characters or fewer')
-  .regex(
-    /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(:[a-z0-9]([a-z0-9-]*[a-z0-9])?)?$/,
-    'Must be lowercase alphanumeric with hyphens (name or name:tag)'
-  );
-
-/**
- * Structural repository tag. ':' and '@' are structurally impossible in a key
- * that matches this regex, which is the create-time validation for the tag
- * position (06 §6.4) — composite `name:tag` keys can no longer exist.
- */
-const TagName = z
-  .string()
-  .min(1)
-  .max(63)
-  .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, 'Tag must be lowercase alphanumeric with hyphens');
-
-const ipOrHostname = z
-  .string()
-  .min(1, 'IP address or hostname cannot be empty')
-  .refine(
-    (v) => ipVersion(v) !== 0 || /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(v),
-    'Must be a valid IP address or hostname'
-  );
-
-const absolutePath = z.string().refine((v) => v.startsWith('/'), 'Must be an absolute path');
-
-const domain = z
-  .string()
-  .min(1)
-  .regex(/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/, 'Must be a valid domain (e.g. example.com)');
-
-const port = z
-  .number()
-  .int('Port must be an integer')
-  .min(1, 'Port minimum is 1')
-  .max(65535, 'Port maximum is 65535');
-
-const uuid = z.uuid('Must be a valid UUID');
 
 // =============================================================================
 // Encrypted-field blob (per-field encryption-at-rest)
@@ -185,21 +80,12 @@ const CloudProviderConfigSchema = z.object({
 });
 
 // =============================================================================
-// Storage (rclone backup targets — disjoint from the `datastores` registry)
-// =============================================================================
-
-const StorageConfigSchema = z.object({
-  provider: z.string(),
-  vaultContent: z.record(z.string(), z.unknown()),
-});
-
-// =============================================================================
 // Repository (families of structural tags) + per-repo secrets
 // =============================================================================
 
 // Per-repo secrets. Two delivery modes:
 //   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
-// file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
+// file → tmpfs file at /var/run/rediacc/net-<networkId>/secrets/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
 
 // Size caps (gate C11, merged with spec 05). The config file is atomically rewritten and remote-pushed WHOLE on every mutation, and each mode materializes as one k8s Secret object per repo namespace (~1 MiB apiserver cap), so anything larger is a file the data plane should carry.
@@ -426,34 +312,18 @@ const backupDestinationCommon = {
 };
 
 /**
- * A backup destination, discriminated on `kind` (mirrors DatastoreBackendSchema).
- *
- * - `storage`: the classic rclone target. Points at a named /resources/storages
- *   entry by name; that entry's vaultContent holds the credentials. Legacy
- *   destinations carry no `kind`, so it DEFAULTS to 'storage' — the on-disk shape
- *   is unchanged and needs no migration.
- * - `hosted-service`: the content-addressed chunk store. Absent `endpoint` = the
- *   Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
- *   config); set `endpoint` for a customer S3 / self-hosted elite plane whose
- *   credentials ride a container-level `vaultContent` bag.
- *
- * NEVER add a `provider` string here: buildRcloneArgs (rclone-args.ts) emits
- * `:{provider}:` unconditionally, so only the `storage` kind may reach it.
+ * A backup destination: the content-addressed chunk store. Absent `endpoint` =
+ * the Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
+ * config); set `endpoint` for a customer S3 / self-hosted elite plane whose
+ * credentials ride a container-level `vaultContent` bag. Destinations of the
+ * removed `storage` kind (or without a `kind`) are refused.
  */
-export const BackupDestinationSchema = z.union([
-  z.object({
-    kind: z.literal('storage').default('storage'),
-    ...backupDestinationCommon,
-    storage: z.string().min(1, 'Storage name cannot be empty'),
-    folder: z.string().optional(),
-  }),
-  z.object({
-    kind: z.literal('hosted-service'),
-    ...backupDestinationCommon,
-    endpoint: z.string().optional(),
-    vaultContent: z.record(z.string(), z.unknown()).optional(),
-  }),
-]);
+export const BackupDestinationSchema = z.object({
+  kind: z.literal('hosted-service'),
+  ...backupDestinationCommon,
+  endpoint: z.string().optional(),
+  vaultContent: z.record(z.string(), z.unknown()).optional(),
+});
 
 /**
  * GFS-style retention policy for a strategy's manifests.
@@ -488,15 +358,23 @@ const RetentionPolicySchema = z.object({
   keepYearly: z.number().int().min(0).optional(),
 });
 
+const CronSchema = z.string().refine(isValidCron, 'Must be a valid 5-field cron expression');
+
 const BackupStrategyConfigSchema = z.object({
   destinations: z.array(BackupDestinationSchema),
-  schedule: z.string().refine(isValidCron, 'Must be a valid 5-field cron expression'),
+  schedule: CronSchema,
   mode: z.enum(['hot', 'cold']).optional(),
   enabled: z.boolean().optional(),
   bandwidthLimit: z.string().optional(),
+  /** Read cap for hashing and cell reads, strategy level only (the read is local to the machine). Same grammar as bandwidthLimit; 0 = unlimited. */
+  readBandwidthLimit: z.string().optional(),
+  /** Hard CPU ceiling of a snapshot, strategy level: percent of ALL cores (1-100, 100 = no ceiling). Unset means the verb's default, 50. */
+  cpuLimit: z.number().int().min(1).max(100).optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
   retention: RetentionPolicySchema.optional(),
+  /** Per-repo cadence override (G10): repo ref -> cron. The repo gets its own unit on that schedule. */
+  repoSchedules: z.record(z.string(), CronSchema).optional(),
 });
 
 // =============================================================================
@@ -538,7 +416,13 @@ const CredentialsSchema = z.object({
 const ResourcesSchema = z.object({
   machines: z.record(resourceName, MachineConfigSchema).optional(),
   datastores: z.record(datastoreRef, DatastoreConfigSchema).optional(),
-  storages: z.record(resourceName, StorageConfigSchema).optional(),
+  // Removed field: a config still carrying it is refused by name instead of silently stripped.
+  storages: z
+    .never({
+      error:
+        'resources.storages was removed: backup targets are backup strategy destinations of kind hosted-service',
+    })
+    .optional(),
   repositories: z.record(resourceName, RepoFamilySchema).optional(),
   deletedRepositories: z.array(ArchivedRepositorySchema).optional(),
   backupStrategies: z.record(resourceName, BackupStrategyConfigSchema).optional(),
@@ -570,6 +454,26 @@ const RemoteConfigSchema = z.object({
   cachedAt: z.string().optional(),
 });
 
+export type {
+  AccessConfig,
+  AccessKey,
+  AccessKeyBinding,
+  AccessKeyMachine,
+  SourceRanges,
+} from './access.js';
+export {
+  ACCESS_KEY_MARKER_PREFIX,
+  ACCESS_KEY_TYPES,
+  AccessKeySchema,
+  AccessSchema,
+  bindingSourceRanges,
+  canonicalKeyBlob,
+  parseOpenSshPublicKey,
+  resolveAccessSourceRanges,
+  SourceRangesSchema,
+} from './access.js';
+export { utf8ByteLength } from './primitives.js';
+
 // =============================================================================
 // Top-level RdcConfig v3
 // =============================================================================
@@ -587,6 +491,14 @@ export const RdcConfigSchema = z
     defaults: DefaultsSchema.optional(),
     credentials: CredentialsSchema.optional(),
     resources: ResourcesSchema.optional(),
+    /**
+     * SSH keys rdc installs on machines (`rdc machine access push`) and the
+     * source ranges each may log in from. Top-level, not under
+     * `resources.machines`, because the root is `.loose()`: an older CLI that
+     * rewrites the config keeps `access` whole instead of stripping it.
+     * Field-committed as one value (sensitivity.ts '/access'), like `policy`.
+     */
+    access: AccessSchema.optional(),
     infra: InfraTopSchema.optional(),
     encryption: EncryptionSchema.optional(),
     remote: RemoteConfigSchema.optional(),
@@ -612,7 +524,6 @@ export const RdcConfigSchema = z
 
 type RdcConfig = z.infer<typeof RdcConfigSchema>;
 type MachineConfig = z.infer<typeof MachineConfigSchema>;
-type StorageConfig = z.infer<typeof StorageConfigSchema>;
 type Placement = z.infer<typeof PlacementSchema>;
 type RepoRecord = z.infer<typeof RepoRecordSchema>;
 type RepoFamily = z.infer<typeof RepoFamilySchema>;
@@ -629,26 +540,26 @@ export type ClusterPoolRole = ClusterPool['role'];
 type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
 type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 type EncryptionState = z.infer<typeof EncryptionSchema>;
+
 export type {
-  RdcConfig,
-  MachineConfig,
-  StorageConfig,
-  Placement,
-  RepoRecord,
-  RepoFamily,
-  SecretEntry,
-  InfraConfig,
+  AcmeCertCache,
   BackupDestination,
   BackupStrategyConfig,
   CloudProviderConfig,
   ClusterConfig,
-  ClusterPool,
   ClusterKvm,
-  RemoteConfig,
+  ClusterPool,
   EncryptedBlob,
   EncryptionState,
-  AcmeCertCache,
+  InfraConfig,
+  MachineConfig,
+  Placement,
+  RdcConfig,
   RdcState,
+  RemoteConfig,
+  RepoFamily,
+  RepoRecord,
+  SecretEntry,
 };
 
 /**
@@ -663,6 +574,7 @@ export type RepositoryConfig = RepoRecord & {
   placement?: Placement;
   networkId?: number;
   registryPort?: number;
+  gpuDevices?: string[];
   pushState?: RepoRuntimeState['pushState'];
   headCommit?: string;
   commitMessage?: string;
@@ -674,6 +586,7 @@ export type RepositoryConfig = RepoRecord & {
 };
 
 type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+
 export type { ArchivedRepository };
 
 // =============================================================================
@@ -729,6 +642,7 @@ const CONFIG_KEY_ORDER_V3 = [
   'defaults',
   'credentials',
   'resources',
+  'access',
   'infra',
   'encryption',
   'remote',
@@ -747,10 +661,10 @@ function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
     const inOrder = keys
       .filter((k) => orderMap.has(k))
       .sort((a, b) => orderMap.get(a)! - orderMap.get(b)!);
-    const rest = keys.filter((k) => !orderMap.has(k)).sort();
+    const rest = keys.filter((k) => !orderMap.has(k)).sort((a, b) => Number(a > b) - Number(a < b));
     sortedKeys = [...inOrder, ...rest];
   } else {
-    sortedKeys = [...keys].sort();
+    sortedKeys = [...keys].sort((a, b) => Number(a > b) - Number(a < b));
   }
   const sorted: Record<string, unknown> = {};
   for (const k of sortedKeys) {

@@ -17,6 +17,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_DATASTORE_PATH } from '../../shared/src/config/well-known.generated.ts';
+import {
+  ERROR_PATTERNS,
+  FORBIDDEN_SCRIPT_PATTERNS,
+  MARKER_HACK_PATTERNS,
+  NOISE_PATTERNS,
+  overflowIsOneUnbreakablePath,
+  overflowIsOneUnbreakableUrl,
+} from './lib/cast-patterns.js';
 import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 import { displayWidth, drawnSegments, stripAnsi } from './lib/terminal-cells.js';
 
@@ -34,64 +43,8 @@ const colors = {
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
 };
 
-/** Patterns that indicate a command produced error output. */
-/** Cursor-home / erase-line, which restart a display line just as `\r` does. */
-
-/**
- * Structured logs BELOW error level. They are not a correctness failure, they are
- * a "should never have been on camera" failure: the widest lines in the corpus
- * were 227-358 column `level=info` go-executor relays. Kept separate from
- * ERROR_PATTERNS so the two failures read differently in the report.
- */
-const NOISE_PATTERNS = [/\blevel=(info|warning|warn|debug|trace)\b/, /^time="\d{4}-/];
-
-/**
- * Is this line over-width ONLY because of a single URL nothing may break?
- *
- * `rdc vscode connect --browser` prints a 162-column line whose bulk is one URL
- * with an auth token in it. Wrapping a URL makes it uncopyable, which is worse
- * for the viewer than one long line, so the pipeline deliberately does not wrap
- * it. A gate that demands the impossible gets suppressed, so it is exempted
- * here EXPLICITLY rather than by widening the check.
- *
- * Deliberately narrow, and narrower than the first version: the token must be a
- * URL. Exempting any unbreakable token was tried and the gate's OWN selftest
- * caught it - the 150-column control is a single long token, so that version
- * silently stopped detecting the thing the gate exists for. Only URLs carry the
- * copy-paste argument; a long path, hash or joined field has no such defence and
- * still fails.
- */
-function overflowIsOneUnbreakableUrl(line, width) {
-  const tokens = line.split(/\s+/).filter(Boolean);
-  const urls = tokens.filter((tok) => /^https?:\/\//.test(tok));
-  const longest = urls.reduce((a, b) => (b.length > a.length ? b : a), '');
-  if (longest.length <= width) return false;
-  const withoutIt = line.replace(longest, '').trimEnd();
-  return displayWidth(withoutIt) <= width;
-}
-
 /** Must match run.sh's TUTORIAL_COLS. A cast recorded at another width is a bug. */
 const TUTORIAL_COLS = 107;
-
-const ERROR_PATTERNS = [
-  /^error:\s/i,
-  /unknown command/i,
-  /command not found/,
-  /required option .* not specified/i,
-  /too many arguments/i,
-  /missing required argument/i,
-  /^fatal:/i,
-  /panic:/,
-  /level=(error|fatal)/,
-];
-
-/** On-camera shell hacks that must never appear in a typed command. */
-const MARKER_HACK_PATTERNS = [
-  { pattern: /\|\|\s*true/, message: 'typed command carries "|| true"' },
-  { pattern: /2>\s*\/dev\/null/, message: 'typed command carries "2>/dev/null"' },
-  { pattern: />\s*\/dev\/null/, message: 'typed command suppresses output with >/dev/null' },
-  { pattern: /\btimeout\s+[\d.]+/, message: 'typed command is wrapped in "timeout"' },
-];
 
 function pushError(errors, file, message, suggestion) {
   errors.push({ file, message, suggestion });
@@ -127,10 +80,7 @@ function validateCastFile(castFile, errors, expectFailLabels) {
     return;
   }
 
-  // The header is line 1. Every other consumer of a cast reads it
-  // (scenes/cast.ts passes header.width into the renderer); this validator used
-  // to skip it, which is precisely why `width` was the one field no check could
-  // see, and why ~200 wrapped lines shipped unnoticed.
+  // The header is line 1. Every other consumer of a cast reads it (scenes/cast.ts passes header.width into the renderer); this validator used to skip it, which is precisely why `width` was the one field no check could see, and why ~200 wrapped lines shipped unnoticed.
   let headerWidth = TUTORIAL_COLS;
   try {
     const header = JSON.parse(lines[0]);
@@ -249,7 +199,11 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
   // The check this file existed without: does the output FIT?
   for (const line of drawnSegments(outputChunks.join(''))) {
     const w = displayWidth(line);
-    if (w > width && !overflowIsOneUnbreakableUrl(line, width)) {
+    if (
+      w > width &&
+      !overflowIsOneUnbreakableUrl(line, width) &&
+      !overflowIsOneUnbreakablePath(line, width)
+    ) {
       pushError(
         errors,
         file,
@@ -260,17 +214,9 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLa
     }
   }
 
-  // Structured logs below error level: never intended for a viewer, and the
-  // widest lines in the whole corpus.
+  // Structured logs below error level: never intended for a viewer, and the widest lines in the whole corpus.
   //
-  // EXCEPT in a failure demo. When a command fails, the CLI deliberately replays
-  // the info-level diagnostics it withheld while the command was running,
-  // because dropping them outright was tried and made real failures unreadable
-  // (executor/output-lines.ts). In a `run_cmd_expect_fail` scene the failure IS
-  // the demo, so that explanation is the payoff the viewer came for, and this
-  // rule would otherwise require deleting it. Scoped to the noise class ONLY:
-  // an over-width line or a raw JSON dump is still a defect in a failure demo,
-  // which is why those checks run above this point and are not exempted.
+  // EXCEPT in a failure demo. When a command fails, the CLI deliberately replays the info-level diagnostics it withheld while the command was running, because dropping them outright was tried and made real failures unreadable (executor/output-lines.ts). In a `run_cmd_expect_fail` scene the failure IS the demo, so that explanation is the payoff the viewer came for, and this rule would otherwise require deleting it. Scoped to the noise class ONLY: an over-width line or a raw JSON dump is still a defect in a failure demo, which is why those checks run above this point and are not exempted.
   const isFailureDemo = expectFailLabels.some((re) => re.test(markerLabel));
   for (const line of isFailureDemo ? [] : drawnSegments(outputChunks.join(''))) {
     if (NOISE_PATTERNS.some((re) => re.test(line))) {
@@ -322,35 +268,6 @@ function collectExpectFailLabels() {
   }
   return labels;
 }
-
-/** Patterns forbidden in on-camera tutorial script commands. */
-const FORBIDDEN_SCRIPT_PATTERNS = [
-  {
-    pattern: />\s*\/dev\/null/,
-    message: 'Output suppressed with >/dev/null',
-    suggestion: 'Tutorial commands should show their output',
-  },
-  {
-    pattern: /2>&1\s*\|?\s*>/,
-    message: 'Stderr redirected to suppress output',
-    suggestion: 'Tutorial commands should show their output',
-  },
-  {
-    pattern: /\|\|\s*true/,
-    message: 'Failure masked with "|| true"',
-    suggestion: 'Fix the underlying product issue or use run_cmd_expect_fail',
-  },
-  {
-    pattern: /2>\s*\/dev\/null/,
-    message: 'Stderr hidden with 2>/dev/null',
-    suggestion: 'Fix the noisy output at the source instead of hiding it',
-  },
-  {
-    pattern: /\btimeout\s+[\d.]+/,
-    message: 'Command wrapped in "timeout"',
-    suggestion: 'Use run_cmd_interrupt for long-running commands',
-  },
-];
 
 function validateTutorialScripts(errors) {
   if (!fs.existsSync(TUTORIAL_SCRIPTS_DIR)) return;
@@ -441,11 +358,63 @@ function selftest() {
       false,
     ],
     [
-      // Same shape, NOT a URL: a long path has no copy-paste defence and must fail.
+      // A long token that is not a URL or a normal path (one 160-column segment) must fail.
       'a lone over-long non-URL token still FAILS',
       cast([
         [1, 'm', 'rdc repo list'],
         [1, 'o', `/var/lib/rediacc/${'p'.repeat(160)}\n`],
+      ]),
+      true,
+    ],
+    [
+      'a lone over-long absolute path (many normal segments) is EXEMPT',
+      cast([
+        [1, 'm', 'rdc repo up my-app:test'],
+        [
+          1,
+          'o',
+          `${WK_DATASTORE_PATH}/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`,
+        ],
+      ]),
+      false,
+    ],
+    [
+      'an over-long path with short text beside it still FAILS (it would hard-wrap mid-path)',
+      cast([
+        [1, 'm', 'rdc repo up my-app:test'],
+        [
+          1,
+          'o',
+          `-f ${WK_DATASTORE_PATH}/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`,
+        ],
+      ]),
+      true,
+    ],
+    [
+      'a lone over-long token with base64 characters and slashes still FAILS',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', `/${'Ab+/'.repeat(40)}==\n`],
+      ]),
+      true,
+    ],
+    [
+      'a long line of prose still FAILS',
+      cast([
+        [1, 'm', 'rdc repo list'],
+        [1, 'o', `${'word '.repeat(30)}\n`],
+      ]),
+      true,
+    ],
+    [
+      'an over-long path plus long other text still FAILS',
+      cast([
+        [1, 'm', 'rdc repo up my-app:test'],
+        [
+          1,
+          'o',
+          `${'word '.repeat(30)}-f ${WK_DATASTORE_PATH}/mounts/${'g'.repeat(36)}/.rediacc/compose-tmp/${'r'.repeat(40)}/compose.yml\n`,
+        ],
       ]),
       true,
     ],
@@ -505,9 +474,7 @@ function selftest() {
     console.log('ok    a cast recorded at 100 columns is reported');
   }
 
-  // The failure-demo exemption, pinned in BOTH directions. It is the only place
-  // this gate is allowed to stay quiet about a logrus line, so a widening of it
-  // has to show up here rather than silently disarming the noise class.
+  // The failure-demo exemption, pinned in BOTH directions. It is the only place this gate is allowed to stay quiet about a logrus line, so a widening of it has to show up here rather than silently disarming the noise class.
   const demoLabel = 'rdc repo up my-app:test';
   const demoCases = [
     [
@@ -560,8 +527,7 @@ function selftest() {
     console.error(`\nselftest: ${failed} control(s) failed. This gate is not trustworthy.`);
     process.exit(1);
   }
-  // COUNTED, not hardcoded: the literal said 6 while 8 controls ran, which is a
-  // gate quietly misreporting its own coverage.
+  // COUNTED, not hardcoded: the literal said 6 while 8 controls ran, which is a gate quietly misreporting its own coverage.
   console.log(
     `\nselftest: ${ran} controls passed -- fires on width, noise, JSON and drift; quiet on clean output and spinners.`
   );
@@ -624,8 +590,7 @@ function main() {
     process.exit(0);
   }
 
-  // Reached even when errors is empty: a cleared recording with a surviving baseline entry is
-  // the stale case the ratchet exists to catch.
+  // Reached even when errors is empty: a cleared recording with a surviving baseline entry is the stale case the ratchet exists to catch.
   const regressions = findRegressions(
     errors,
     loadBacklog(BASELINE_PATH),

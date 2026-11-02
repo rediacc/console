@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: ja
-sourceHash: "9c5882697da43a8f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "103d9f60b35eabc9"
+sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
 ---
 
 # モニタリング
@@ -201,7 +201,7 @@ rdc machine status server-1
 提供される情報：
 - ホスト名とアップタイム
 - メモリ、ディスク、データストアの使用量
-- リポジトリの総数、マウント数、Docker実行数
+- リポジトリの総数、マウント数、Docker daemonが応答しているリポジトリ数
 - リポジトリごとの詳細情報
 
 マシン可読な出力には `--output json` を使用してください。

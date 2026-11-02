@@ -8,61 +8,56 @@ tags:
 subcategory: data-protection
 order: 12
 language: ko
-sourceHash: "7d9a82ee410c420a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7f1821cd35a53d7b"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # 정리(Pruning)
 
-정리는 더 이상 실제 리소스에 해당하지 않는 상태를 스캔하여 제거합니다. 세 가지 명령이 세 가지 범위를 다룹니다.
+정리는 더 이상 실제 리소스에 해당하지 않는 상태를 스캔하여 제거합니다. 두 가지 명령이 두 가지 범위를 다룹니다. 청크 스토리지의 스냅샷은 여기에 포함되지 않으며, 서버가 계보와 백업 스트림별로 [보존 정책](#backup-snapshots)에 따라 정리합니다.
 
 | 명령 | 정리하는 항목 | 진실의 원천 위치 |
 |---|---|---|
-| `rdc storage prune <storage> -m <machine>` | 클라우드 스토리지의 고아 백업 | 로컬 CLI config (마운트 안전성을 위해 실행기 머신과 교차 확인) |
 | `rdc machine prune <machine>` | 머신 내 데이터스토어 아티팩트 (항상 실행); 고아 또는 알 수 없는 리포지터리 이미지 (옵트인) | 로컬 CLI config + 머신의 `.interim/state` 미러 |
 | `rdc config prune` | 로컬 config 잔여물 (인증서 캐시, 만료된 아카이브, 끊어진 상호 참조) | 로컬 CLI config만 |
 
-세 가지는 독립적입니다. 다른 것 없이 어느 하나만 실행할 수 있습니다. 아래 [안전 모델](#safety-model)에 설명된 공통 안전 모델을 공유합니다.
+두 명령은 독립적입니다. 다른 하나 없이 어느 쪽이든 실행할 수 있습니다. 아래 [안전 모델](#safety-model)에 설명된 공통 안전 모델을 공유합니다.
 
 정리는 삭제된 리소스가 남긴 상태를 제거합니다. *라이브* 리포지터리가 점유하는 공간(파일 시스템이 해제했지만 풀이 여전히 보유하는 블록)을 회수하려면 대신 [`rdc repo trim`](/ko/docs/repositories#reclaim-space-trim)을 사용하세요. 두 명령은 서로 보완적입니다.
 
 ## 마운트 안전성 프리플라이트
 
-`storage prune`과 `machine prune --prune-unknown`은 모두 삭제 전에 **마운트 안전성 프리플라이트**를 실행합니다: 실행기 머신에서 현재 마운트되거나 실행 중인 리포지터리를 쿼리하고, 삭제 후보와 교차하여 **머신에서 여전히 실행 중인 후보는 삭제를 거부합니다**. 마운트된 리포지터리의 오프머신 백업을 삭제하거나 실행 중인 리포지터리 이미지를 삭제하는 것은 실제 데이터 손실의 위험이 있습니다. 프리플라이트는 이것이 실수로 발생하는 것을 불가능하게 합니다.
+`machine prune --prune-unknown`은 삭제 전에 **마운트 안전성 프리플라이트**를 실행합니다: 머신에서 현재 마운트되거나 실행 중인 리포지터리를 쿼리하고, 삭제 후보와 교차하여 **머신에서 여전히 실행 중인 후보는 삭제를 거부합니다**. 실행 중인 리포지터리 이미지를 삭제하는 것은 실제 데이터 손실의 위험이 있습니다. 프리플라이트는 이것이 실수로 발생하는 것을 불가능하게 합니다.
 
 재정의하려면(드문 경우; 실제 상태가 잘못되었다는 것을 확실히 아는 경우에만), `--force-delete-mounted`를 전달합니다. 이것은 `--force`(아카이브 유예 기간을 제어함)와 별개의 플래그이므로 두 이스케이프 해치가 구별됩니다.
 
-## Storage Prune
+## 백업 스냅샷
 
-스토리지 공급자를 스캔하고 GUID가 더 이상 로컬 config 파일에 나타나지 않는 백업을 삭제합니다.
+`rdc backup snapshot`으로 업로드한 스냅샷은 청크 스토리지에 저장되며, 서버가 정리합니다. 클라이언트 쪽 prune 명령은 없습니다. 보관할 기록의 양을 선언하면 서버가 나머지를 삭제합니다.
+
+정책은 저장소의 계보에 속하므로 저장소와 그 fork가 함께 공유하며, 백업 스트림 하나(한 머신의 저장소 하나)에 대해 재정의할 수 있습니다. 또한 정책이 무엇이든 각 스트림은 최신 스냅샷과 현재 앵커를 보존하므로, 정리 작업이 스트림을 고립시키는 일은 없습니다.
 
 ```bash
-# 미리 보기만 - 삭제될 항목 표시
-rdc storage prune my-s3 -m server-1 --dry-run
+# 현재 정책과 그 출처 표시
+rdc backup retention my-app
 
-# 실제로 고아 백업 삭제 (기본 동작)
-rdc storage prune my-s3 -m server-1
+# 다음 정리에서 삭제될 대상과 확보될 공간을 삭제 없이 확인
+rdc backup retention preview my-app
 
-# 유예 기간 재정의 (기본값 7일)
-rdc storage prune my-s3 -m server-1 --grace-days 14
+# 일간 7개, 주간 4개, 월간 6개의 스냅샷 보관
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# 마운트 안전성 검사 재정의 (주의해서 사용)
-rdc storage prune my-s3 -m server-1 --force-delete-mounted
+# 스트림 하나만 재정의
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# 모든 스냅샷을 다시 보관
+rdc backup retention clear my-app
+
+# 스냅샷 하나를 지금 삭제. 다음 가비지 컬렉션이 그 스냅샷만 쓰던 데이터를 해제합니다
+rdc backup snapshots delete my-app <snapshot-id>
 ```
 
-`--machine`은 rclone 호출이 노트북이 아닌 실행기 머신에서 실행되기 때문에 필요합니다. 클라이언트는 rclone을 로컬에 설치할 필요가 없습니다. 스토리지 자격 증명은 여전히 로컬 config에서 가져오며, 머신은 단지 rclone 실행기입니다.
-
-### 확인 항목
-
-1. 명명된 스토리지에서 모든 백업 GUID를 나열합니다 (`hot/` 및 `cold/` 하위 디렉터리 모두. [백업 및 복원](/ko/docs/backup-restore#scheduled-backups) 참조).
-2. 디스크의 모든 config 파일(`~/.config/rediacc/*.json`)을 스캔합니다.
-3. GUID가 어떤 config의 리포지터리 섹션에도 참조되지 않으면 백업은 **고아**입니다.
-4. 유예 기간 내에 최근 아카이브된 리포지터리는 활성 config에서 제거되더라도 **보호됩니다**.
-5. 마운트 안전성 프리플라이트: `--machine`에 현재 마운트된 GUID는 건너뛰고 보고되며, 절대 삭제되지 않습니다.
-
-### 성능
-
-삭제는 스토리지 하위 경로별로 일괄 처리됩니다: 제거되는 GUID 수에 관계없이 `hot/` 또는 `cold/` 디렉터리당 하나의 rclone 호출. 11개의 고아 백로그가 ~50초의 SSH 오버헤드에서 하위 경로당 단일 라운드 트립으로 축소됩니다.
+정책 규칙은 [백업 및 복원](/ko/docs/backup-restore#retention)에서, 스토어에 현재 무엇이 있는지는 `rdc backup usage`로 확인합니다.
 
 ## Machine Prune
 
@@ -132,7 +127,6 @@ rdc machine prune server-1 --prune-unknown
 3. config 버킷 간 **끊어진 상호 참조**:
    - 더 이상 존재하지 않는 전략을 명명하는 `resources.machines.<m>.backupStrategies[]` 항목.
    - 더 이상 존재하지 않는 리포지터리를 명명하는 `resources.backupStrategies.<s>.exclude[]` 및 `include[]` 항목.
-   - 대상 스토리지가 없는 스토리지 목적지. 경고로 표시되며, 자동 제거되지 않습니다 (자동 제거는 전략 의미를 변경할 것임).
 
 ```bash
 # 미리 보기만
@@ -155,9 +149,8 @@ rdc config prune --grace-days 30
 
 ### 건드리지 않는 항목
 
-- 활성 리소스 (머신, 스토리지, 리포지터리, 백업 전략, 클라우드 공급자).
+- 활성 리소스 (머신, 리포지터리, 백업 전략, 클라우드 공급자).
 - 자격 증명, 계정 블록, 암호화 블록, 기본값.
-- 스토리지 `vaultContent` (만료된 OneDrive `access_token` 포함. refresh_token은 여전히 새 토큰을 발급합니다; pruning하면 재인증이 필요합니다).
 - `knownHosts` 항목 (자동 갱신 경로는 `rdc machine scan-keys`).
 - 압축된 인증서 blob 배열 (`infra.acmeCertCache.<base>.data[]`)은 정리된 인증서 목록에서 자동으로 재구성됩니다; 여전히 유지된 이름을 다루는 체인은 잃지 않습니다.
 
@@ -202,19 +195,19 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 ### 다중 config 인식
 
-`storage prune`과 `machine prune --orphaned-repos`는 활성 config만이 아니라 `~/.config/rediacc/`의 **모든** config 파일을 스캔합니다. `production.json`에서 참조된 리포지터리는 `staging.json`에 없더라도 삭제되지 않습니다. 이를 통해 config가 다른 환경으로 범위가 지정되었을 때 우발적인 삭제를 방지합니다.
+`machine prune --orphaned-repos`는 활성 config만이 아니라 `~/.config/rediacc/`의 **모든** config 파일을 스캔합니다. `production.json`에서 참조된 리포지터리는 `staging.json`에 없더라도 삭제되지 않습니다. 이를 통해 config가 다른 환경으로 범위가 지정되었을 때 우발적인 삭제를 방지합니다.
 
 ### 유예 기간
 
-`--archive-config`로 config에서 리포지터리를 제거하면, 자격 증명 항목이 `deletedAt` 타임스탬프와 함께 `resources.deletedRepositories[]`로 이동됩니다. prune 명령은 최근 아카이브된 리포지터리가 삭제로부터 보호되는 유예 기간(기본값 7일)을 존중합니다. 이를 통해 실수로 제거된 리포지터리를 복원할 시간(`rdc repo admin archive restore <guid>`)을 제공합니다. 유예 기간이 만료되면 `storage prune`, `machine prune`, `config prune`이 모두 항목을 자동으로 제거합니다.
+`--archive-config`로 config에서 리포지터리를 제거하면, 자격 증명 항목이 `deletedAt` 타임스탬프와 함께 `resources.deletedRepositories[]`로 이동됩니다. prune 명령은 최근 아카이브된 리포지터리가 삭제로부터 보호되는 유예 기간(기본값 7일)을 존중합니다. 이를 통해 실수로 제거된 리포지터리를 복원할 시간(`rdc repo admin archive restore <guid>`)을 제공합니다. 유예 기간이 만료되면 `machine prune`과 `config prune`이 항목을 자동으로 제거합니다.
 
 ### 마운트 안전성 프리플라이트
 
-위에서 설명되었습니다. `storage prune`과 `machine prune --prune-unknown`은 실행기 머신에서 현재 마운트되거나 실행 중인 리포지터리를 삭제하기를 거부합니다. `--force-delete-mounted`로만 재정의합니다.
+위에서 설명되었습니다. `machine prune --prune-unknown`은 머신에서 현재 마운트되거나 실행 중인 리포지터리를 삭제하기를 거부합니다. `--force-delete-mounted`로만 재정의합니다.
 
 ### 기본적으로 적용; 미리 보기는 `--dry-run`
 
-세 가지 prune 명령 모두 기본적으로 변경 사항을 **적용합니다**. 작성 없이 미리 보기를 위해 `--dry-run`을 전달합니다. 이것은 동사와 일치합니다: "prune"은 자체적으로 파괴적이며, 드라이런 플래그는 명시적인 옵트아웃입니다.
+두 prune 명령 모두 기본적으로 변경 사항을 **적용합니다**. 작성 없이 미리 보기를 위해 `--dry-run`을 전달합니다. 이것은 동사와 일치합니다: "prune"은 자체적으로 파괴적이며, 드라이런 플래그는 명시적인 옵트아웃입니다.
 
 ## 구성
 
@@ -237,11 +230,11 @@ rdc config field set --pointer /defaults/pruneGraceDays --new 14
 
 ## 모범 사례
 
-- **프로덕션에서 먼저 드라이런을 실행합니다.** 특히 프로덕션 스토리지에서 파괴적인 prune을 실행하기 전에 항상 미리 봅니다.
-- **여러 config를 최신 상태로 유지합니다.** 스토리지 및 머신 prune은 config 디렉터리의 모든 config를 확인합니다. config 파일이 오래되었거나 삭제되면 해당 리포지터리는 보호를 잃습니다. config 파일을 정확하게 유지합니다.
+- **프로덕션에서 먼저 드라이런을 실행합니다.** 파괴적인 prune을 실행하기 전에 항상 미리 봅니다.
+- **여러 config를 최신 상태로 유지합니다.** 머신 prune은 config 디렉터리의 모든 config를 확인합니다. config 파일이 오래되었거나 삭제되면 해당 리포지터리는 보호를 잃습니다. config 파일을 정확하게 유지합니다.
 - **`--orphaned-repos` 대신 `--prune-unknown`을 선호합니다.** 정밀 플래그는 renet 미러를 존중합니다; 대략적인 플래그는 다른 도구가 생성한 포크를 기꺼이 삭제합니다.
 - **프로덕션에는 넉넉한 유예 기간을 사용합니다.** 기본 7일 유예 기간은 대부분의 워크플로에 적합합니다. 유지 관리 기간이 드문 프로덕션 환경의 경우 14일 또는 30일을 고려합니다.
-- **백업 실행 후 스토리지 prune을 예약합니다.** `storage prune`을 백업 일정과 함께 사용하여 수동 개입 없이 스토리지 비용을 관리합니다.
+- **보존 정책을 선언합니다.** `rdc backup retention set`은 수동 개입 없이 스냅샷 스토리지 비용을 관리해 줍니다.
 - **머신 prune을 백업 일정과 결합합니다.** 백업 일정을 배포한 후(`rdc backup schedule`), 오래된 스냅샷과 고아 데이터스토어 아티팩트를 정리하기 위해 주기적인 머신 prune을 추가합니다.
 - **`config prune`을 주기적으로 실행합니다.** 로컬 config 팽창(특히 인증서 캐시)은 조용히 누적됩니다; 분기별 `config prune --dry-run`으로 충분히 확인할 수 있습니다.
 - **`--force` 또는 `--force-delete-mounted` 사용 전에 감사합니다.** 두 플래그 모두 안전 검사를 우회합니다. 다른 config가 해당 리포지터리를 참조하지 않는다고 확신할 때만 `--force`를 사용합니다; 머신의 실제 상태가 잘못되었다고 확신할 때만 `--force-delete-mounted`를 사용합니다.

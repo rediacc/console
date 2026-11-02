@@ -1,6 +1,6 @@
 # PLAN: submodule branch-name divergence -- diagnosis, immediate action, and a pre-commit guard
 
-Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (01d3583e1) and the operator asked for parallel turbo
+Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-23

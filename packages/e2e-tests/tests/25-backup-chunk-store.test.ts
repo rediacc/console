@@ -7,12 +7,13 @@ import {
   snapshotRecordViolations,
   verbIsRegistered,
 } from '../src/utils/backupStorage';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import {
   announcePrerequisites,
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../src/utils/declaredSkip';
+import { e2eRepoGuid } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
 
 /**
@@ -23,7 +24,7 @@ import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
  * The existing backup suites verify nothing: suite 10's 17 tests assert only
  * `hasValidCommandSyntax`, which never reads an exit code (its
  * unreachable-machine test passes ON connection failure), and suite 15
- * string-matches generated rclone flags against fabricated credentials. This
+ * string-matched generated storage flags against fabricated credentials (since retired). This
  * one reads exit codes and parses the verb's own JSON records.
  *
  * ## What it can prove with a fleet ALONE, and what it deliberately does not
@@ -222,8 +223,8 @@ test.describe
       const gate = announcePrerequisites(verdict);
       test.skip(gate.skip, gate.reason);
 
-      let runner: BridgeTestRunner;
-      const named = `chunk-e2e-${stamp}`;
+      let runner: RenetFunctionsTestRunner;
+      const named = e2eRepoGuid();
 
       /** sha256 of a repository's LUKS image, mount-free (suite 17's technique). */
       const imageSha = async (name: string): Promise<string> => {
@@ -257,7 +258,7 @@ test.describe
       };
 
       test.beforeAll(async () => {
-        runner = BridgeTestRunner.forWorker();
+        runner = RenetFunctionsTestRunner.forWorker();
         await runner.resetWorkerState();
         const init = await runner.datastoreInitPool('10G', DS, true);
         if (!runner.isSuccess(init)) {
@@ -341,6 +342,36 @@ test.describe
         );
       });
 
+      /** Drive a backup function the way rdc does: the FunctionDef, via a vault. */
+      const backupFunction = (name: string, params: Record<string, string>) => {
+        const vault = new VaultBuilder()
+          .withFunction(name)
+          .withTeam(TEST_TEAM)
+          .withRepository(named, named)
+          .withMachine(runner.getTargetVM(), TEST_USER, DS)
+          .withDatastore(DS)
+          .withParams(params);
+        return runner.executeWithVault(name, vault);
+      };
+
+      test('4b. backup_toc_key reports a repository with no stored key as absent', async () => {
+        const result = await backupFunction('backup_toc_key', { action: 'status' });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(true);
+        expect(runner.getCombinedOutput(result)).toContain('absent');
+      });
+
+      test('4c. backup_repair refuses a repository with no anchor, and uploads nothing', async () => {
+        const result = await backupFunction('backup_repair', { hashes: '0'.repeat(64) });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(false);
+        expect(runner.getCombinedOutput(result)).toContain('no backup anchor');
+      });
+
+      test('4d. backup_compare does not call a copy identical with no anchor to hold it to', async () => {
+        const result = await backupFunction('backup_compare', { against_anchor: e2eRepoGuid() });
+        expect(runner.isSuccess(result), runner.getCombinedOutput(result)).toBe(false);
+        expect(runner.getCombinedOutput(result)).not.toContain('identical');
+      });
+
       test('5. verify is a read: it leaves no anchor and no journal behind', async () => {
         // An anchor or journal conjured by a READ is the state a later incremental would trust — and it would describe a snapshot that was never uploaded. CASE MATTERS HERE. getCombinedOutput() LOWERCASES (TestHelpers.ts:15), so a literal carrying a capital can never match no matter what the machine did. `/No such file/` was exactly that: the anchor directory was correctly absent
         // and the assertion still went red, because only the `total 0` arm was alive. Every matcher in this file is
@@ -368,7 +399,7 @@ test.describe
       test('6. `backup snapshot --dry-run` plans without a session, and writes no state', async () => {
         // The verb landed on 2026-08-14 (`renet backup snapshot`), and `--dry-run` is "plan only: no session, no grant, no upload" (backup_snapshot.go:128), which is what makes this leg runnable HERE: no account server, no credentials, no bytes.
         //
-        // Two honest outcomes, because the plan needs an installed repository licence before it will look at the image (backup_snapshot.go:216): failed — this fleet's repos carry no licence (the ops fleet runs --nolicense renet). The record must SAY so. stored — a licensed fleet: the plan really ran and reports what WOULD move. Both are asserted specifically. What both must share
+        // Two honest outcomes, because the plan needs an installed repository licence before it will look at the image (backup_snapshot.go:216): failed — this fleet's repos carry no installed licence. The record must SAY so. stored — a licensed fleet: the plan really ran and reports what WOULD move. Both are asserted specifically. What both must share
         // is the part that matters: a dry run moves nothing and leaves nothing behind.
         const result = await runner.executeViaBridge(
           `sudo renet ${chunkVerbs().run} --dry-run --repo "${REPO_GUID}" --datastore "${DS}"`
@@ -407,10 +438,11 @@ test.describe
           'the dry run left a journal behind'
         ).toMatch(/(^|\D)0(\D|$)/);
         const anchors = await runner.executeViaBridge(
-          `sudo ls -la "${DS}/.chunk-anchors" 2>&1 || true`
+          `sudo ls -A "${DS}/.chunk-anchors" 2>&1 | grep -v '^\\.lock-' || true`
         );
-        expect(runner.getCombinedOutput(anchors), 'the dry run left an anchor behind').toMatch(
-          /no such file|total 0/i
+        // A licensed repository's plan really runs, and taking the staging lock leaves its empty `.lock-<guid>` flock file behind (pkg/prune BackupStagingLockPath). That file is not an anchor: only an entry besides it is.
+        expect(anchors.stdout.trim(), 'the dry run left an anchor behind').toMatch(
+          /^$|no such file/i
         );
       });
 
@@ -558,8 +590,10 @@ test.describe
 
       const browseAtDirect = (at: string, passphrase = TEST_PASSWORD) =>
         runner.executeViaBridge(
-          `printf '%s\\n' '${passphrase}' | sudo renet backup browse-at --datastore "${DS}" ` +
-            `--repo "${REPO_GUID}" --lineage "${REPO_GUID}" --at '${at}' --password-stdin`
+          `sudo renet backup browse-at --datastore "${DS}" ` +
+            `--repo "${REPO_GUID}" --lineage "${REPO_GUID}" --at '${at}' --password-stdin`,
+          undefined,
+          { stdin: `${passphrase}\n` }
         );
 
       test('12. browse-at refuses a TIME by name, before any licence lookup or server call', async () => {

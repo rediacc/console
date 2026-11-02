@@ -99,6 +99,7 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   'scripts/lib/pins/drivers/embed-selftest.ts': { args: [], submodules: PRIVATE },
   'scripts/lib/pins/drivers/selftest.ts': { args: ['--selftest'] },
   'scripts/lib/pins/drivers/toolchain-selftest.ts': { args: [], submodules: PRIVATE },
+  'scripts/lib/pins/ran-line-selftest.ts': { args: [] },
   'scripts/lib/pins/txn-selftest.ts': { args: [] },
   'scripts/ci-runner/typecheck-incremental.ts': {
     args: ['--selftest'],
@@ -107,6 +108,14 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   'scripts/gates/check-env-credential-drift.ts': { args: ['--selftest'] },
   '.ci/scripts/quality/check_proxy_image_smoke.py': { args: ['--selftest'] },
   '.ci/scripts/housekeeping/retire-shadowed-secrets.py': { args: ['--selftest'] },
+  // isEntryPoint (scripts/lib/entry-point.ts) through a symlink and a spaced path, with the old comparison as the control.
+  'scripts/__tests__/entry-point.control.ts': { args: [] },
+  // isEntryPoint's refusal of a module URL (scripts/lib/entry-point.ts): the throw that keeps a gate's main() from being skipped silently.
+  'scripts/lib/entry-point-selftest.ts': { args: [] },
+  // retryUpstream (scripts/lib/upstream.ts) keeps its retry note on stderr, so a --json stdout stays parseable.
+  'scripts/__tests__/upstream-retry-note.control.ts': { args: [] },
+  // the settings verb (scripts/settings/settings.ts): its controls for range, peer-dirty files, restore-on-failure and unit parsing.
+  'scripts/settings/settings.ts': { args: ['--selftest'] },
 };
 
 /** Where the table and the tree disagree over the pins selftests. */
@@ -340,4 +349,4 @@ function main(argv: string[]): number {
   return 0;
 }
 
-if (isEntryPoint(import.meta.url)) process.exit(main(process.argv.slice(2)));
+if (isEntryPoint(import.meta.filename)) process.exit(main(process.argv.slice(2)));

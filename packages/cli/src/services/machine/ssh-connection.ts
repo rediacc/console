@@ -4,7 +4,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { t } from '../../i18n/index.js';
 import { repoTagFromName } from '../../remote/repository/index.js';
 import { debugLog } from '../../utils/debug.js';
@@ -96,10 +96,12 @@ function buildRepositoryEnvFromVault(
   const immovable = repoVault.immovable ? 'true' : 'false';
   const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;
 
-  const dockerSocket = (machineVault.dockerSocket ??
-    (networkId
-      ? `${WK_RUNTIME_DIR}/docker-${networkId}.sock`
-      : DEFAULTS.DOCKER.SOCKET_PATH)) as string;
+  // A repo session without a network id has no daemon of its own; it fails here instead of falling back to the host's system Docker socket.
+  const vaultSocket = (machineVault.dockerSocket ?? '') as string;
+  if (vaultSocket === '' && networkId === '') {
+    throw new Error(t('errors.ssh.noNetworkId', { repository: repositoryName }));
+  }
+  const dockerSocket = vaultSocket === '' ? repoDockerSocketPath(networkId) : vaultSocket;
   const dockerHost = (machineVault.dockerHost ?? `unix://${dockerSocket}`) as string;
 
   const environment: Record<string, string> = {

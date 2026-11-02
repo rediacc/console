@@ -41,6 +41,14 @@
  * preview builder pushes 15 of 85), so "schema key nobody pushes" is not a
  * finding.
  *
+ * LIVE EXTRAS (advisory). With CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the
+ * environment (`bws_env exec --profile deploy-workers`), the gate also asks
+ * `rediacc_ci.ops.prune_worker_secrets --json` which secrets the live account Workers
+ * hold that the push no longer carries, and prints them. A bulk push only adds, so a
+ * renamed key lingers on the Worker; `prune_worker_secrets --delete` removes it. Without
+ * a token the section is skipped and says so. It never changes the exit code: CI has no
+ * token, and a live Worker is not part of the tree this gate judges.
+ *
  * Run: npx tsx scripts/gates/check-worker-secret-names.ts
  *
  * Control-first: both extractors are proven on synthetic input before any
@@ -168,6 +176,9 @@ export function schemaKeys(text: string): Set<string> {
   return new Set([...text.matchAll(SCHEMA_KEY)].map((m) => m[1]));
 }
 
+/** A Python `wrangler secret bulk` argv: a literal `"wrangler"` head or the pinned `wrangler.ARGV` splat. */
+const PY_BULK_ARGV = /(?:"wrangler"|\bwrangler\.ARGV),\s*"secret",\s*"bulk"/;
+
 /**
  * Does this shell source build a `wrangler secret bulk` payload?
  *
@@ -184,9 +195,9 @@ export function schemaKeys(text: string): Set<string> {
  */
 export function looksLikeBuilder(text: string, file = ''): boolean {
   if (file.endsWith('.py')) {
-    // A Python builder spells the command as an argv list, and the file must also
-    // carry a payload the extractors can read: a test that only quotes the argv has none.
-    return /"wrangler",\s*"secret",\s*"bulk"/.test(text) && keysOf(file, text).length > 0;
+    // A Python builder spells the command as an argv list, and the file must also carry a payload the extractors can read: a test that only quotes the argv has none.
+    // Two spellings of the head: the literal `"wrangler"` and the pinned `*wrangler.ARGV` from rediacc_ci.core.wrangler (`npx --no-install wrangler`), which every port moved to in a9603a30d. Recognising only the literal made the sweep find ZERO builders across the whole tree.
+    return PY_BULK_ARGV.test(text) && keysOf(file, text).length > 0;
   }
   return text.includes('wrangler secret bulk') && pushedKeys(text).length > 0;
 }
@@ -279,7 +290,20 @@ export function looksLikeBuilder(text: string, file = ''): boolean {
     );
     process.exit(1);
   }
+  // The pinned head every port uses: `[*wrangler.ARGV, "secret", "bulk", ...]`.
+  const pinnedBuilder =
+    'KEYS = (\n    ("API_KEY", "api"),\n)\n\ndef argv(n):\n    return [*wrangler.ARGV, "secret", "bulk", "--name", n]\n';
+  if (!looksLikeBuilder(pinnedBuilder, 'x.py')) {
+    console.error(
+      '✗ instrument control: the discovery predicate did not recognise a Python port whose argv starts with the pinned `*wrangler.ARGV`. Every real port spells it that way, so the sweep below would find none of them.'
+    );
+    process.exit(1);
+  }
   if (
+    looksLikeBuilder(
+      'KEYS = (\n    ("API_KEY", "api"),\n)\n\nX = [*wrangler.ARGV, "secret", "put"]\n',
+      'z.py'
+    ) ||
     looksLikeBuilder('# see `npx wrangler secret bulk` for how deploys push secrets\n') ||
     looksLikeBuilder("jq -n '{\n  API_KEY: $a,\n}' > payload.json\n") ||
     looksLikeBuilder('assert argv("n") == ["npx", "wrangler", "secret", "bulk"]\n', 'test_x.py') ||
@@ -420,6 +444,132 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
+/** One surveyed Worker as `prune_worker_secrets --json` prints it. */
+interface LiveRow {
+  region?: string;
+  worker: string;
+  extras: string[];
+}
+
+/**
+ * The `worker: name name` lines for every Worker that holds a secret the push does not
+ * carry, from the module's JSON. Unreadable input yields null so the caller can say so
+ * instead of reading it as "no extras".
+ */
+export function liveExtraLines(json: string): string[] | null {
+  try {
+    const doc = JSON.parse(json) as { workers?: LiveRow[] };
+    if (!Array.isArray(doc.workers) || doc.workers.length === 0) return null;
+    return doc.workers
+      .filter((w) => Array.isArray(w.extras) && w.extras.length > 0)
+      .map((w) => `${w.worker}: ${w.extras.join(' ')}`);
+  } catch {
+    return null;
+  }
+}
+
+// The one spelling of the removal command; `<region>` is filled per region with extras. The verb refuses --archive without an explicit --region (exit 2); `--archive` archives each value from bws, confirms it, then deletes the original, so it needs no `--delete`. The unit test `test_ops_prune_worker_secrets.py` reads this constant and runs it through the verb.
+const PRUNE_HINT =
+  'PYTHONPATH=.ci python3 -m rediacc_ci.ops.prune_worker_secrets --region <region> --archive';
+
+/** The distinct regions of the Workers that hold extras, in listing order. */
+export function liveExtraRegions(json: string): string[] {
+  try {
+    const doc = JSON.parse(json) as { workers?: LiveRow[] };
+    const regions = (doc.workers ?? [])
+      .filter((w) => Array.isArray(w.extras) && w.extras.length > 0 && w.region)
+      .map((w) => w.region as string);
+    return [...new Set(regions)];
+  } catch {
+    return [];
+  }
+}
+
+/** The removal command lines: one per region with extras, or a refusal line when no row names a region. */
+export function removeLines(json: string): string {
+  const regions = liveExtraRegions(json);
+  if (regions.length === 0) {
+    return '    (no region in the listing: pass --region eu|us|asia to prune_worker_secrets by hand)';
+  }
+  return regions.map((r) => `    ${PRUNE_HINT.replace('<region>', r)}`).join('\n');
+}
+
+// Control: liveExtraRegions and removeLines must tell regions, none and several apart.
+{
+  const one =
+    '{"workers":[{"region":"eu","worker":"a","extras":["X"]},{"region":"us","worker":"b","extras":[]}]}';
+  const many =
+    '{"workers":[{"region":"eu","worker":"a","extras":["X"]},{"region":"us","worker":"b","extras":["Y"]},{"region":"eu","worker":"c","extras":["Z"]}]}';
+  const bare = '{"workers":[{"worker":"a","extras":["X"]}]}';
+  if (
+    liveExtraRegions(one).join() !== 'eu' ||
+    liveExtraRegions(many).join() !== 'eu,us' ||
+    liveExtraRegions(bare).length !== 0 ||
+    liveExtraRegions('not json').length !== 0 ||
+    removeLines(one).includes('<region>') ||
+    removeLines(many).split('\n').length !== 2 ||
+    !removeLines(many).includes('--region us --archive') ||
+    removeLines(bare).includes('python3 -m') ||
+    removeLines(bare).includes('<region>')
+  ) {
+    console.error('✗ instrument control: the region reader or the removal lines are wrong.');
+    process.exit(1);
+  }
+}
+
+// Control: both outcomes and the unreadable case must come out distinct.
+{
+  const withExtra = liveExtraLines(
+    '{"workers":[{"worker":"w","extras":["OLD"]},{"worker":"v","extras":[]}]}'
+  );
+  const none = liveExtraLines('{"workers":[{"worker":"w","extras":[]}]}');
+  if (
+    withExtra?.join('|') !== 'w: OLD' ||
+    none === null ||
+    none.length !== 0 ||
+    liveExtraLines('not json') !== null ||
+    liveExtraLines('{"workers":[]}') !== null
+  ) {
+    console.error(
+      '✗ instrument control: the live-extras reader does not tell extras, none and unreadable apart.'
+    );
+    process.exit(1);
+  }
+}
+
+function reportLiveExtras(): void {
+  if (!process.env.CLOUDFLARE_API_TOKEN || !process.env.CLOUDFLARE_ACCOUNT_ID) {
+    console.log(
+      '  Live extras: skipped (no CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID; run under `bws_env exec --profile deploy-workers`).'
+    );
+    return;
+  }
+  let out = '';
+  try {
+    out = execFileSync('python3', ['-m', 'rediacc_ci.ops.prune_worker_secrets', '--json'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: { ...process.env, PYTHONPATH: join(ROOT, '.ci') },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    // Exit 1 means extras were found and the JSON is still on stdout; exit 2 has none.
+    out = (err as { stdout?: string }).stdout ?? '';
+  }
+  const lines = liveExtraLines(out);
+  if (lines === null) {
+    console.log('  Live extras: no verdict (the listing failed or was unreadable).');
+  } else if (lines.length === 0) {
+    console.log('  Live extras: none on any account Worker.');
+  } else {
+    console.log(
+      `  Live extras (advisory, ${lines.length} Worker(s)): secrets the push no longer carries:\n` +
+        lines.map((l) => `    ${l}`).join('\n') +
+        `\n  Remove with (--archive saves each value from bws as __ARCHIVE_<NAME>, then deletes it):\n${removeLines(out)}`
+    );
+  }
+}
+
 console.log(
   `✓ worker secret names: ${checked} pushed key(s) across ${BUILDERS.length} builder(s) are all\n` +
     `  declared in ${SCHEMA} (${schema.size} schema keys; extractor controls fired both ways).\n` +
@@ -428,3 +578,4 @@ console.log(
     "  normalises to undefined and validates — that is the deploy scripts' non-empty\n" +
     '  guards, not this gate.'
 );
+reportLiveExtras();

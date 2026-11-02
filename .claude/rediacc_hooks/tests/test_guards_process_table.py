@@ -14,9 +14,14 @@ No other guard reads the process table, so only those three guards' cases need t
 THE ASSERTIONS ARE THE DIFFERENTIAL'S OWN, UNCHANGED. Every test below calls the differential's helpers (`python_fields`, `golden_for`, `case_env`, ...) through the module object, never by importing a `test_*` name into this namespace (pytest would collect it a second time here). The two anti-vacuity controls are parametrised per guard in both files: a guard's verdict depends only on its own cases, so splitting the loop by stem changes scheduling and nothing else. `test_the_partition_covers_every_guard` is what proves the two halves together still cover every guard exactly once.
 """
 
+import os
+import subprocess
+import time
+
 import pytest
 
 from rediacc_hooks import guards
+from rediacc_hooks.guards import block_bash_write_to_running_script as guard
 from rediacc_hooks.tests import test_guards_differential as gd
 
 # The group name `test_hooks_procs.py` imports. One spelling: two would be two groups, which may run concurrently.
@@ -86,3 +91,53 @@ def test_every_guard_discriminates(fixture_work, stem):
 def test_the_differential_can_fail(tmp_path, fixture_work, stem):
     """The differential's planted-defect control, for one process-table reader (see its docstring)."""
     gd.assert_defect_is_caught(tmp_path, fixture_work, stem)
+
+
+def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_path):
+    """A stale script in a group it does not lead takes its own `sleep` child with it, and the rest of that group stays: anything naming a fixture path matches, so the group may be a bystander's."""
+    script = tmp_path / "fixture-script.sh"
+    script.write_text("#!/usr/bin/env bash\nsleep 20\nexit 0\n", encoding="utf-8")
+    # The leader's own command line does not name the script, so only the script matches.
+    bystander = subprocess.Popen(
+        ["bash", "-c", 'bash "$FIXTURE" & wait; exec sleep 20'],
+        env={**os.environ, "FIXTURE": str(script)},
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    try:
+        children: list[int] = []
+        deadline = time.monotonic() + 10
+        while not children and time.monotonic() < deadline:
+            scripts = [p for p in guard.proc.pids() if str(script) in (guard.proc.cmdline(p) or "")]
+            children = [c for p in scripts for c in guard.proc.children_named(p, "sleep")]
+            time.sleep(0.02)
+        assert children, "CONTROL: the fixture script never started its sleep"
+        guard._kill_stale((str(script),))
+        deadline = time.monotonic() + 5
+        while any(guard.proc.running(c) for c in children) and time.monotonic() < deadline:
+            time.sleep(0.02)
+        assert not any(guard.proc.running(c) for c in children)
+        assert bystander.poll() is None, "the group's other member was killed with the script"
+    finally:
+        bystander.kill()
+        bystander.wait()
+
+
+@pytest.mark.parametrize("backend", ["proc", "ps"])
+def test_ppid_reads_the_parent_on_both_backends(monkeypatch, backend):
+    monkeypatch.setenv(guard.proc.BACKEND_ENV, backend)
+    assert guard.proc.ppid(os.getpid()) == os.getppid()
+    # CONTROL: a pid nothing runs under answers None, not a parent.
+    assert guard.proc.ppid(2**22 + 1) is None
+    assert guard.proc.running(os.getpid())
+    assert not guard.proc.running(2**22 + 1)
+    # A killed child nobody has collected yet is a zombie: in the table, and not running.
+    child = subprocess.Popen(["true"])
+    deadline = time.monotonic() + 5
+    while guard.proc.running(child.pid) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert guard.proc.comm(child.pid) is not None
+    assert not guard.proc.running(child.pid)
+    child.wait()

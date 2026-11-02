@@ -101,6 +101,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import importlib
 import json
 import os
 import pathlib
@@ -501,7 +502,7 @@ def resolve(root, kind, token):
         got = _git_out(root, "rev-parse", "--verify", "--quiet", token + "^{commit}")
         if not got:
             return False, "no such commit"
-        # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cfea06ead); restated here, not imported, because this directory must not import from `.ci/`.
+        # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cd8b0cdc8); restated here, not imported, because this directory must not import from `.ci/`.
         # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (same rule as check_plan_citations.commit_is_reachable, 2026-10-08).
         if not any(
             _git_ok(root, "merge-base", "--is-ancestor", got, ref)
@@ -541,6 +542,9 @@ def resolve(root, kind, token):
         if token.startswith("agent/"):
             candidates = [token]
         else:
+            # The basename a reader copies from a listing (`PLAN-<slug>.md`) names the same plan as the bare slug, so the prefix and suffix are stripped before the folder candidates are built.
+            if token.startswith("PLAN-") and token.endswith(".md"):
+                token = token[len("PLAN-") : -len(".md")]
             candidates = [
                 "%s/PLAN-%s.md" % (d, token) if d else "agent/PLAN-%s.md" % token
                 for d in ("agent/plans/_done", "agent/plans/_removed", "agent/plans", "")
@@ -557,7 +561,21 @@ def resolve(root, kind, token):
                 rel = "%s/PLAN-%s.md" % (d, slug)
                 if (pathlib.Path(root) / rel).is_file():
                     return True, rel
-        return False, "%s does not exist" % candidates[-1]
+        # A SWEPT PLAN RESOLVES TO ITS TOMBSTONE. The retention sweep deletes a terminal plan and keeps a row under `## Expired plans` in agent/INDEX.md naming the blob of its full text (rediacc_ci.quality.plan_lifecycle), which is the record a citation of it now points at; check:ci-plan-folders F7 accepts the same row.
+        index = pathlib.Path(root) / INDEX_REL
+        try:
+            text = index.read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        expired = text.split("## Expired plans", 1)[1] if "## Expired plans" in text else ""
+        for rel in candidates:
+            if re.search(
+                r"^\|[ \t]*`%s`[ \t]*\|.*`[0-9a-f]{40}`[ \t]*\|[ \t]*$" % re.escape(rel),
+                expired,
+                re.MULTILINE,
+            ):
+                return True, "tombstone in %s" % INDEX_REL
+        return False, "no plan file at %s" % ", ".join(candidates)
     if kind == "trap":
         ids = _trap_ids(root)
         if not ids:
@@ -835,6 +853,8 @@ def ledger_history(root, ledger_rel=LEDGER_REL):
     Taking the newest would record the most recent regeneration of the ledger, which is a date with no meaning: the ledger is rewritten wholesale by `--update`, so every sig in it appears in every later commit.
     """
     out = []
+    # One request for every version the walk below reads, in a partial clone (`wl_review.prefetch_diff_blobs`).
+    importlib.import_module("wl_review").prefetch_diff_blobs(root, "HEAD", ledger_rel)
     log = _git_out(root, "log", "--reverse", "--format=%H", "--", ledger_rel)
     for sha in (log or "").split():
         raw = _git_out(root, "show", "%s:%s" % (sha, ledger_rel))
@@ -874,7 +894,7 @@ def attested_at(ledger, rel, sig):
 def done_commit(history, rel, sig):
     """The commit that ticked `sig` for `rel` and kept it ticked: the first commit of the LATEST unbroken run of ledgers in `history` (oldest first) that attest it, or "" when the newest ledger does not.
 
-    A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (65d4eefe2), reopened (a1efe7747) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
+    A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (2553ca19a), reopened (43a2e6b9c) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
     """
     start = ""
     for commit, doc in history:
@@ -1988,6 +2008,52 @@ def records(root, plan_records):
 #: check_plan_boxes.py's A1 reports as a box that VANISHED.
 TICK_EVIDENCE = "    (ticked) %s by %s: %s"
 
+#: The stale-plan WARNING `plan_tick` appends to its note (agent/plans/PLAN-plan-preflight.md PF5, Design 3b, operator ruling 2026-10-23 "Lean first, enforcement warns"). A warning and never a refusal: the tick goes through either way.
+PREFLIGHT_TICK_WARN = (
+    "\nWARNING: %(rel)s is not revalidated against the current tree (state %(state)s: %(detail)s).\n"
+    "%(commits)s"
+    "The tick goes through; revalidate the plan before the next box:\n"
+    "    worklist.py --plan-preflight %(me)s %(rel)s"
+)
+#: What revalidating can raise short of a bug in this file: a missing or broken module, an unreadable plan, a git child that failed.
+_PREFLIGHT_ERRORS = (
+    ImportError,
+    OSError,
+    ValueError,
+    AttributeError,
+    RuntimeError,
+    subprocess.SubprocessError,
+)
+
+
+def preflight_warning(root, rel, text, me):
+    """ "" when the plan is `fresh` (wl_planpreflight.revalidation_state), else the PREFLIGHT_TICK_WARN paragraph naming up to 5 stale commits. Never raises: an instrument that cannot judge is itself a warning, because the ruling is warn-first and a tick must not fail on the warning's account."""
+    who = (me or "<me>")[:8]
+    try:
+        import wl_planpreflight as PP
+
+        st = PP.revalidation_state(root, rel, text)
+    except _PREFLIGHT_ERRORS as exc:
+        return PREFLIGHT_TICK_WARN % {
+            "rel": rel,
+            "state": "not judged",
+            "detail": "%s: %s" % (type(exc).__name__, exc),
+            "commits": "",
+            "me": who,
+        }
+    if st.state == PP.FRESH:
+        return ""
+    shown = "".join("    stale: %s\n" % c[:12] for c in st.commits[:5])
+    if len(st.commits) > 5:
+        shown += "    ... and %d more\n" % (len(st.commits) - 5)
+    return PREFLIGHT_TICK_WARN % {
+        "rel": rel,
+        "state": st.state,
+        "detail": st.detail,
+        "commits": shown,
+        "me": who,
+    }
+
 
 def _evidence_slot(lines, i):
     """Where a box's evidence line goes: after the box AND its continuation lines.
@@ -2222,8 +2288,22 @@ def append_investigation(root, row):
     path.parent.mkdir(parents=True, exist_ok=True)
     rec = dict(row)
     rec.setdefault("at", C.stamp_now())
-    S._append_lines(str(path), _investigation_lock(path), [rec])
+    # A re-run of the same --write (same box, tree, verdict, pointers and note) adds no testimony, only a duplicate line in the ledger; return the row already there. The read and the append sit under one outer flock (a sidecar of its own, since the append takes the ledger lock itself), so two identical runs at once cannot both miss the other.
+    same = _investigation_identity(rec)
+    with open(_investigation_lock(path) + ".dedupe", "a") as guard:
+        S._flock(guard, getattr(S.fcntl, "LOCK_EX", 2))
+        for prior in reversed(read_investigations(root)):
+            if prior.get("plan") == rec.get("plan") and prior.get("sig") == rec.get("sig"):
+                if _investigation_identity(prior) == same:
+                    return prior
+                break
+        S._append_lines(str(path), _investigation_lock(path), [rec])
     return rec
+
+
+def _investigation_identity(rec):
+    """Every field of an investigation row except its timestamp."""
+    return json.dumps({k: v for k, v in rec.items() if k != "at"}, sort_keys=True)
 
 
 def read_investigations(root):
@@ -2748,6 +2828,8 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
         "box %s moved from open_sigs to done_sigs in %s (%d open, %d done for this plan). "
         "BOTH files must land in the SAME commit." % (sig, LEDGER_REL, row["open"], row["done"])
     )
+    # CLAUSE 3, WARN-FIRST (PLAN-plan-preflight.md PF5, Design 3b): after clause 1 and clause 2, so their refusals keep their order, and judged on the plan as it stood BEFORE this tick. It adds a paragraph to the note and never refuses.
+    note += preflight_warning(root, rel, text, me)
     return out, merge_ledger(doc, rel, row), note
 
 

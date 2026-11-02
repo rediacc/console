@@ -54,6 +54,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import {
   driverFor,
   type FileWrite,
@@ -77,6 +78,7 @@ import {
 } from '../lib/pins/drivers/pin-manifests.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { familyGateOf } from '../lib/pins/family-gates.js';
+import { ranLine } from '../lib/pins/ran-line.js';
 import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
@@ -104,6 +106,7 @@ import {
 } from '../lib/pins/txn.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
+import { signedReleaseSelftest } from './signed-release-cases.js';
 
 // ---- the run's world ------------------------------------------------------------------------
 
@@ -200,13 +203,15 @@ export interface DraftInput {
   task: string | null;
   /** The shared-message mutant: the drafting before 2026-10-15, one change list for every repository. */
   shared?: boolean;
+  /** The tree the recorded commands ran in; the Ran: labels are relative to it, not to the caller's working directory. */
+  root?: string;
 }
 
 /**
  * One repository's drafted commit message. Each draft lists only what that repository's own commit changes: its own site lines and the commands run in it. A submodule's subject names the repository and its own changes, and the run's release lines appear in a submodule draft only for a plan whose every site lies in that submodule. The console draft carries the run's subject and release lines, and one pointer line per submodule naming that submodule's own commit. Pure.
  */
 export function draftMessage(d: DraftInput): string {
-  const cmdLine = (c: CommandRecord): string => `Ran: ${c.cmd} (in ${c.cwd}) rc=${c.rc}`;
+  const cmdLine = (c: CommandRecord): string => ranLine(c, d.root);
   const gateLines = (): string[] =>
     d.ungated.length > 0
       ? [
@@ -337,6 +342,7 @@ function writeDrafts(
       stamp: res.stamp,
       task,
       shared: w.mutant === 'shared-message',
+      root: w.root,
     });
     const draft = path.join(res.dir, `${slug(c.repo)}.msg`);
     fs.writeFileSync(draft, `${body}\n`);
@@ -738,10 +744,12 @@ function report(
   f: Flags,
   s: Selected,
   res: TxnResult | null,
-  drafts: RepoDraft[]
+  drafts: RepoDraft[],
+  regenFailure: string | null = null
 ): object {
   return {
-    ok: res?.ok ?? false,
+    // Agrees with the exit code: true exactly when the run exits 0 (a failure or a refusal makes it false).
+    ok: (res === null || res.ok) && s.refused.length === 0 && regenFailure === null,
     now: iso(w.nowMs),
     stamp: res?.stamp ?? null,
     journal: res?.dir ?? null,
@@ -755,7 +763,7 @@ function report(
     refused: s.refused,
     skipped: s.skipped,
     not_checked: s.notChecked,
-    failure: res?.failure ?? null,
+    failure: res?.failure ?? regenFailure,
     commands: res?.commands ?? [],
     gates: res?.gates ?? null,
     ungated: res?.ungated ?? [],
@@ -832,11 +840,11 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   f.task = derived.task;
   const drafts =
     res.ok && regenFailure === null ? writeDrafts(w, res, s.plans, s.views, f.task, subject) : [];
-  const rep = report(w, f, s, res, drafts);
+  const rep = report(w, f, s, res, drafts, regenFailure);
   if (f.out) writeOut(w, path.resolve(f.out), rep, drafts);
   if (f.json) {
     w.out.push(JSON.stringify(rep, null, 2));
-    return res.ok && s.refused.length === 0 ? 0 : 1;
+    return res.ok && s.refused.length === 0 && regenFailure === null ? 0 : 1;
   }
   for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
   noteNotChecked(w, s);
@@ -1373,6 +1381,11 @@ const directTxn = (fx: Fx, stamp: string, runner: Runner, m: Mutant | undefined)
 });
 
 const CASES: Record<string, Case> = {
+  // The cosign-signed checksum path (scripts/pins/signed-release.ts, T2) and the OpenTofu pin it feeds (T1).
+  // It reads no fixture tree and honours no core mutant, so a forced PINS_MUTANT skips it; its own mutants run inside.
+  async 'signed-release'(m) {
+    return m === undefined ? signedReleaseSelftest() : [];
+  },
   async soak(m) {
     const fx = fixtureTree();
     const r = await runCli(['status', 'embed:tool', '--json'], withMutant(fx, m));
@@ -2343,6 +2356,7 @@ const CASES: Record<string, Case> = {
     const all = build();
     const r = await runCli(['apply-soaked', '--json'], withMutant(all, m));
     const j = JSON.parse(r.out || '{}') as {
+      ok?: boolean;
       refused?: Array<{ id: string }>;
       skipped?: Array<{ id: string }>;
     };
@@ -2364,6 +2378,16 @@ const CASES: Record<string, Case> = {
         name: 'bump <id>: a source-none pin named on the command line is still refused',
         ok: named.rc === 1,
         detail: `rc=${named.rc} ${named.err}`,
+      },
+      {
+        // `ok` in the JSON report agrees with the exit code at one green and one refused sample; the equivalence itself is the single `ok` expression in report().
+        name: 'json report: ok agrees with the exit code at two sample points (green run rc 0 true, refused run rc 1 false)',
+        ok:
+          r.rc === 0 &&
+          (j as { ok?: boolean }).ok === true &&
+          named.rc === 1 &&
+          (JSON.parse(named.out || '{}') as { ok?: boolean; refused?: unknown[] }).ok === false,
+        detail: `green rc=${r.rc} ok=${(j as { ok?: boolean }).ok}; refused rc=${named.rc} out=${named.out.slice(0, 120)}`,
       },
     ];
   },
@@ -2419,7 +2443,9 @@ const CASES: Record<string, Case> = {
       path.join(spacedRoot, '.gitmodules'),
       '[submodule "a"]\n\tpath = private/re net\n\turl = x\n[submodule "b"]\n\tpath = private/other\n\turl = y\n'
     );
-    const spaced = [...declaredSubmodules(spacedRoot)].sort();
+    const spaced = [...declaredSubmodules(spacedRoot)].sort(
+      (a, b) => Number(a > b) - Number(a < b)
+    );
     fs.rmSync(spacedRoot, { recursive: true });
     return [
       {
@@ -2934,7 +2960,7 @@ const CASES: Record<string, Case> = {
           rep.failure === 'gates failed (rc=1): check:fixture-tool (ok: check:fixture-zed)' &&
           JSON.stringify(rep.gates.failed) === '["check:fixture-tool"]' &&
           rep.commands.some((c) => / --events \/\S+\/gates\.jsonl$/.test(c.cmd)),
-        detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify(rep.gates?.failed)}`,
+        detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify((rep.gates as typeof rep.gates | undefined)?.failed)}`,
       },
       {
         // Red when siblingHint is dropped, reads gate output instead of the registry, or loses its --to / --major --reason guidance.
@@ -3326,7 +3352,7 @@ const CASES: Record<string, Case> = {
   },
 
   /**
-   * Worklist #3fc8b8cb, the 394935a1f shape: a bump moves i18next 26.4.4 -> 26.5.2, the sync step moves the "Pin i18next" group's pinVersion, and every manifest the group covers must declare the new pin too (npm update never rewrites a range); the plan that declares those writes must run check:version. Mutants: `no-manifest-pin` (the sync leaves the manifests on ^26.4.4, so the "ranges follow" control goes red) and `no-version-gate` (the plan keeps check:deps alone, so the gate-list control goes red).
+   * Worklist #3fc8b8cb, the 4ba8aab48 shape: a bump moves i18next 26.4.4 -> 26.5.2, the sync step moves the "Pin i18next" group's pinVersion, and every manifest the group covers must declare the new pin too (npm update never rewrites a range); the plan that declares those writes must run check:version. Mutants: `no-manifest-pin` (the sync leaves the manifests on ^26.4.4, so the "ranges follow" control goes red) and `no-version-gate` (the plan keeps check:deps alone, so the gate-list control goes red).
    */
   async pinmanifests(m) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
@@ -3562,6 +3588,6 @@ async function main(): Promise<number> {
   return r.rc;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(await main());
 }

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -32,15 +32,20 @@ const {
   removeSSHConfigEntry,
 } = await import('../sshConfig.js');
 
+// Every home this file makes is removed after its test, so a run leaves /tmp as it found it (3,623 sshconfig-* directories had piled up by 2026-10-24).
+const madeHomes: string[] = [];
+
 let tmpHome: string;
 
 beforeEach(() => {
   tmpHome = join(tmpdir(), `sshconfig-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(tmpHome, { recursive: true });
+  madeHomes.push(tmpHome);
   mockGetSSHHome.mockReturnValue(tmpHome);
 });
 
 afterEach(() => {
+  for (const dir of madeHomes.splice(0)) rmSync(dir, { recursive: true, force: true });
   vi.clearAllMocks();
   mockIsWSL.mockReturnValue(false);
   mockWslToWindows.mockImplementation((p) => p);
@@ -97,6 +102,7 @@ describe('addMachineSSHConfigEntry', () => {
     // Under WSL getSSHHome() is the WINDOWS home, not $HOME, so callers must report this return value rather than assuming ~/.ssh/config_rediacc.
     const winHome = join(tmpdir(), `sshconfig-winhome-${Math.random().toString(36).slice(2)}`);
     mkdirSync(winHome, { recursive: true });
+    madeHomes.push(winHome);
     mockGetSSHHome.mockReturnValue(winHome);
 
     const written = addMachineSSHConfigEntry({

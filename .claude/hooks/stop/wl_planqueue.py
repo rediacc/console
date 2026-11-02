@@ -12,7 +12,7 @@ THE ORDER (operator rulings 2026-10-02). A plan with no open box is never queued
 needs, directly or transitively: a `Depends-On:` edge (a task ref `PLAN-x.md#T3` counts as its plan, `wl_plandeps.Graph.resolve`), or a sub-plan, `PLAN-<parent>.<suffix>.md`, which its parent needs first (`parent_of`; no other module models the relation). A prerequisite inherits the least-held value, the best tier and the best rank (`wl_planconc.rank`, given the sub-plan edges too) of everything that needs it, so it is pulled ahead of unrelated plans. A dependency cycle is broken at its
 best-keyed member and named under `### Not queued`. Ties go to operator Priority, then AI Priority, then the path: this file is compared for equality in a clean CI checkout, where every mtime is the checkout's.
 
-THE SUBJECTS are live plans directly under agent/plans (Status not in `wl_planfile.FINISHED_STATES`, not `removed`, stubs excluded), TRACKED ONLY: the file is a committed render, so another session's untracked draft must not enter it (`wl_store.agent_plan_files(root, tracked_only=True)`, the rule 9100e89f0 set for agent/INDEX.md). The dependency graph drops the same untracked files, so a draft cannot move a tracked plan's rank either.
+THE SUBJECTS are live plans directly under agent/plans (Status not in `wl_planfile.FINISHED_STATES`, not `removed`, stubs excluded), TRACKED ONLY: the file is a committed render, so another session's untracked draft must not enter it (`wl_store.agent_plan_files(root, tracked_only=True)`, the rule 02726a896 set for agent/INDEX.md). The dependency graph drops the same untracked files, so a draft cannot move a tracked plan's rank either.
 
 Reads no environment variable. Heavy imports are lazy so `plan_gate` can read the format on the post-push path without loading the plan graph.
 """
@@ -924,6 +924,27 @@ def without_promoted(text: str, rels) -> tuple[str, list[str]]:
     if not removed:
         return text, []
     return text[:start] + "".join(out) + text[end:], removed
+
+
+def with_promoted_entry(text: str, rel: str, note: str) -> str:
+    """`text` with `<n>. <rel> -- <note>` appended as the last numbered Promoted entry, numbered one past the entries already there, below the last entry's continuation lines and above the section's trailing blank lines. With no entry yet it lands at the end of the section, after the progress block. Every other byte is kept. Raises ValueError without a `## Promoted` heading. The one caller is `worklist.py --promote` (#dd9b7624), which runs the RQ-DEPS repair over the result so the plan's unfinished prerequisites are pulled in ahead of it."""
+    bounds = _promoted_bounds(text)
+    if not bounds:
+        raise ValueError("%s has no %s heading" % (QUEUE_REL, PROMOTED_HEADING))
+    start, end = bounds
+    lines = text[start:end].splitlines(keepends=True)
+    count = sum(1 for ln in lines if ENTRY.match(ln.rstrip("\r\n")))
+    at = len(lines)
+    while at > 0 and not lines[at - 1].strip():
+        at -= 1
+    if at and not lines[at - 1].endswith("\n"):
+        lines[at - 1] += "\n"
+    entry = "%d. %s -- %s\n" % (count + 1, rel, " ".join(note.split()))
+    if count == 0 and at and lines[at - 1].strip():
+        # After a progress block or prose: one blank line keeps the entry a list of its own.
+        entry = "\n" + entry
+    lines.insert(at, entry)
+    return text[:start] + "".join(lines) + text[end:]
 
 
 def moved_entries(root, text: str) -> list[tuple[str, str, str]]:

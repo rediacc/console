@@ -9,7 +9,7 @@ WHY IT NEEDS NO VM, NO BTRFS, NO LUKS, NO DOCKER. The license gate fires before 
 
 WHAT NEEDS PRIVILEGE. Only installing the license files: `license.RepoLicenseDir` (`/var/lib/rediacc/license/repos`) is a hardcoded constant in renet with no env override, so the fixtures go there through `sudo -n` (`rm`, `mkdir`, `cp`, `chmod`, in the argv the bash used). renet itself runs unprivileged except for `repository license-status`, which persists chain state and runs under sudo. A pre-existing `chain-state.json` is backed up and restored, and only the battery's own repo directories are removed.
 
-PROVING THE INSTRUMENT. The battery runs three times against three binaries built from the same source, and the two controls MUST fail: `enforcing` (baked with the ephemeral master key, every scenario passes), `nolicense` (built with `-tags nolicense`, S1 must FAIL) and `wrong-key` (baked with a stranger's public key, S2 must FAIL). A battery that cannot fail would be worthless.
+PROVING THE INSTRUMENT. The battery runs three times against three binaries built from the same source, and the two controls MUST fail: `enforcing` (baked with the ephemeral master key, every scenario passes), `keyless` (built with an empty baked key, the 2026-10-21 defect class, so no licence can validate; S2 must FAIL) and `wrong-key` (baked with a stranger's public key, S2 must FAIL). A battery that cannot fail would be worthless.
 
 ENVIRONMENT. `RENET_SRC` points the battery at another renet checkout (default `private/renet`); `LICENSE_E2E_MASTER_PUB` plus `LICENSE_E2E_MASTER_PRIV` (base64 SPKI/PKCS8) reuse a caller-supplied ephemeral pair; `TMPDIR` places the scratch directory.
 
@@ -24,6 +24,7 @@ SET -E SEMANTICS ARE KEPT. The bash ran `run_battery` inside `if`, where `set -e
 
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import glob
 import hashlib
@@ -65,11 +66,20 @@ SEQ_GUID_A = "1ce1ce2e-0000-0000-0000-00000000000a"
 SEQ_GUID_B = "1ce1ce2e-0000-0000-0000-00000000000b"
 FP_GUID = "1ce1ce2e-0000-0000-0000-00000000000f"
 
+# Restore scenarios (S11). The target and its lineage are GUIDs because the verb refuses anything else before it reaches the license step. Neither has an image: restore judges the target first, and an absent image passes.
+RESTORE_GUID = "1ce1ce2e-0000-0000-0000-0000000000c1"
+RESTORE_LINEAGE = "1ce1ce2e-0000-0000-0000-0000000000c2"
+RESTORE_SNAPSHOT = "snap-license-e2e"
+# A second repo of the same lineage: restore falls back to its license when the target holds none.
+RESTORE_HOLDER_GUID = "1ce1ce2e-0000-0000-0000-0000000000c3"
+# Points at a closed port, and ends in /licenses/renew so the session URL guard accepts it: the storage session mint then fails at the network, which is past the license step.
+RESTORE_SESSION_URL = "http://127.0.0.1:1/licenses/renew"
+
 # Datastore identities. UUID-shaped because that is what `datastore create` mints and what the store's path-segment guard accepts.
 PARENT_DS_ID = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa"
 FORK_DS_ID = "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb"
 
-# The attribution line renet logs ONLY after a license validates. Its presence is the positive proof that the real validator ran and succeeded; a nolicense stub never emits it.
+# The attribution line renet logs ONLY after a license validates. Its presence is the positive proof that the real validator ran and succeeded; a build that cannot validate never emits it.
 ATTRIBUTION = "Licensed to: license-e2e@rediacc.invalid"
 # Where an accepted create/up lands instead: the same failure an unlicensed build reaches.
 CREATE_TAIL = "--password-stdin is required"
@@ -214,6 +224,8 @@ class Battery:
                     self.repo_license_root + "/" + SEQ_GUID_A,
                     self.repo_license_root + "/" + SEQ_GUID_B,
                     self.repo_license_root + "/" + FP_GUID,
+                    self.repo_license_root + "/" + RESTORE_GUID,
+                    self.repo_license_root + "/" + RESTORE_HOLDER_GUID,
                 ]
             )
             _exec(
@@ -499,6 +511,59 @@ class Battery:
             self.errexit = True
         return not self.failed
 
+    def assert_restore_refused_plainly(self, scenario: str, needle: str, *cmd: str) -> None:
+        """A refusal that is NOT LICENSE_REQUIRED: exit 1 with `needle` in the message. Exit 10 here would send the CLI into a reissue that hands back the same license."""
+        stderr = self.run_renet(*cmd)
+        if self.renet_code == 10 or b"LICENSE_REQUIRED" in stderr:
+            self.record_fail(
+                scenario,
+                "expected a plain refusal, got the typed license error (exit %d): %s"
+                % (self.renet_code, _head_flat(stderr)),
+            )
+        elif self.renet_code != 1:
+            self.record_fail(
+                scenario,
+                "expected exit 1, got %d; stderr: %s" % (self.renet_code, _head_flat(stderr)),
+            )
+        elif needle.encode() not in self.stdout_and(stderr):
+            self.record_fail(
+                scenario, "exit 1 but '%s' was not reported: %s" % (needle, _head_flat(stderr))
+            )
+        else:
+            self.record_pass(scenario, "exit 1, refused without LICENSE_REQUIRED (%s)" % needle)
+
+    def assert_restore_reached_session(self, scenario: str, licence_from: str, *cmd: str) -> None:
+        """A license of the right lineage gets PAST the license step: exit 1 at the storage session mint (no server listens), no LICENSE_REQUIRED, and the stdout record names the license that was used."""
+        stderr = self.run_renet(*cmd)
+        combined = self.stdout_and(stderr)
+        if self.renet_code == 10 or b"LICENSE_REQUIRED" in stderr:
+            self.record_fail(
+                scenario,
+                "a license of the lineage was refused at the license step (exit %d): %s"
+                % (self.renet_code, _head_flat(stderr)),
+            )
+        elif self.renet_code != 1:
+            self.record_fail(
+                scenario,
+                "expected exit 1, got %d; stderr: %s" % (self.renet_code, _head_flat(stderr)),
+            )
+        elif b"storage session mint failed" not in combined:
+            self.record_fail(
+                scenario,
+                "exit 1 but the storage session mint was never reached: %s" % _head_flat(stderr),
+            )
+        elif b'"licenseFrom":"%s"' % licence_from.encode() not in combined:
+            self.record_fail(
+                scenario, "licenseFrom is not %s: %s" % (licence_from, _head_flat(combined))
+            )
+        else:
+            self.record_pass(scenario, "past the license step, licenseFrom=%s" % licence_from)
+
+    def stdout_and(self, stderr: bytes) -> bytes:
+        """The restore record on stdout carries the reason in prose; stderr carries the error line."""
+        with open(self.work + "/stdout.txt", "rb") as fh:
+            return fh.read() + stderr
+
     def _scenarios(self, binary: str, label: str) -> None:
         self.label = label
         self.failed = []
@@ -654,6 +719,39 @@ class Battery:
         # S7b: the same mismatch inside the grace window is deliberately tolerated, so a VM migration does not brick a repo.
         self.assert_accepted("S7b", CREATE_TAIL, *create, REPO_PREFIX + "-machine-grace")
 
+        # S11: RESTORE. backup_restore is tier none (a lapsed license must never lock a customer out of disaster recovery), but the verb needs a license of the requested LINEAGE as the credential for its storage session. The retention window is enforced by the account server when the session is minted, so it is outside a battery that talks to no server.
+        restore = [
+            binary,
+            "backup",
+            "restore",
+            "--datastore",
+            work + "/ds-restore",
+            "--repo",
+            RESTORE_GUID,
+            "--lineage",
+            RESTORE_LINEAGE,
+            "--at",
+            RESTORE_SNAPSHOT,
+        ]
+        # S11a: no license of the lineage on the machine is the typed refusal the CLI's recovery path acts on.
+        self._sudo("rm", "-rf", self.repo_license_root + "/" + RESTORE_GUID)
+        self.assert_rejected("S11a", "missing", *restore)
+        # S11b: the target's own license carries no lineage (minted with only -renewal-url), which differs from the requested RESTORE_LINEAGE; a different-lineage license is not minted here. Reissuing would return the same blob, so this is a plain refusal.
+        self.mint(RESTORE_GUID, "-renewal-url", "http://127.0.0.1:1/license/renew")
+        self.install_license(RESTORE_GUID)
+        self.assert_restore_refused_plainly("S11b", "belongs to lineage", *restore)
+        # S11c: the target's own license carries the lineage, so restore gets past the license step and stops at the storage session mint (nothing listens).
+        self.mint(RESTORE_GUID, "-grand-guid", RESTORE_LINEAGE, "-renewal-url", RESTORE_SESSION_URL)
+        self.install_license(RESTORE_GUID)
+        self.assert_restore_reached_session("S11c", RESTORE_GUID, *restore)
+        # S11d: with no license on the target, another license of the lineage is the credential.
+        self._sudo("rm", "-rf", self.repo_license_root + "/" + RESTORE_GUID)
+        self.mint(
+            RESTORE_HOLDER_GUID, "-grand-guid", RESTORE_LINEAGE, "-renewal-url", RESTORE_SESSION_URL
+        )
+        self.install_license(RESTORE_HOLDER_GUID)
+        self.assert_restore_reached_session("S11d", RESTORE_HOLDER_GUID, *restore)
+
     def expect_control_failure(self, binary: str, label: str, required: str) -> bool:
         """Run the battery against a binary that MUST NOT pass it. False when it passes, or fails for the wrong reason."""
         if self.run_battery(binary, label):
@@ -723,6 +821,7 @@ class Battery:
         self.describe_datastore(work + "/ds-fork", FORK_DS_ID)
         os.makedirs("%s/ds-parent/repositories/%s" % (work, FORK_GUID), exist_ok=True)
         os.makedirs("%s/ds-fork/repositories/%s" % (work, FORK_GUID), exist_ok=True)
+        os.makedirs(work + "/ds-restore/repositories", exist_ok=True)
 
         self._back_up_chain_state()
 
@@ -753,9 +852,9 @@ class Battery:
         shutil.rmtree(work + "/fp", ignore_errors=True)
         log.info("Ephemeral master key fingerprint: %s" % self.master_key_id)
 
-        log.step("Building renet: enforcing, nolicense twin, wrong-key twin...")
+        log.step("Building renet: enforcing, keyless twin, wrong-key twin...")
         self.build_renet(work + "/renet-enforcing", self.master_pub)
-        self.build_renet(work + "/renet-nolicense", self.master_pub, "-tags", "nolicense")
+        self.build_renet(work + "/renet-keyless", "")
         self.build_renet(work + "/renet-wrongkey", stranger_pub)
 
         self.install_fixtures()
@@ -766,8 +865,8 @@ class Battery:
             return 1
         log.info("Enforcing binary passed every scenario")
 
-        log.step("Proving the instrument: the same battery must FAIL on a nolicense build...")
-        if not self.expect_control_failure(work + "/renet-nolicense", "nolicense", "S1"):
+        log.step("Proving the instrument: the same battery must FAIL on a keyless build...")
+        if not self.expect_control_failure(work + "/renet-keyless", "keyless", "S2"):
             return 1
 
         log.step("Proving the instrument: the same battery must FAIL on a wrongly-baked key...")
@@ -776,6 +875,11 @@ class Battery:
 
         log.info("License enforcement battery passed, and both controls failed as required")
         return 0
+
+
+def is_scratch_store(license_root: str) -> bool:
+    """True when `license_root` is not the machine's real store, compared by realpath so a trailing slash or a symlink naming the real store still counts as the real store."""
+    return os.path.realpath(license_root) != os.path.realpath(LICENSE_ROOT)
 
 
 def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
@@ -791,28 +895,43 @@ def run(argv: Sequence[str], *, license_root: str = LICENSE_ROOT) -> int:
     # The lock lives in /tmp itself, never TMPDIR, so every environment on the host names the same file; it is opened read-only (flock needs no write access, so another user's readable file still serves; an unreadable one or a symlink fails the run with its reason) and never through a symlink. The wait is bounded: a holder that hangs makes this run fail with its reason instead of stalling the gate.
     key = hashlib.sha256(os.path.realpath(license_root).encode()).hexdigest()[:16]
     lock_path = f"/tmp/rediacc-license-e2e-{key}.lock"
-    try:
-        fd = os.open(lock_path, os.O_RDONLY | os.O_CREAT | os.O_NOFOLLOW, 0o644)
-    except OSError as exc:
-        log.error(
-            f"cannot open the license-store lock {lock_path} ({exc.strerror}); a symlink or another user's unreadable file sits there"
-        )
-        return 1
-    try:
-        deadline = time.monotonic() + LOCK_WAIT_S
-        while True:
+    # A scratch store (a test's tree) has its lock file removed by the run that held it, so a waiter can wake on an unlinked inode: after taking the flock, the fd must still be the file at lock_path, or the run reopens and waits again (otherwise a waiter on the old inode and a newcomer on a fresh file would hold the store at once, review 37ecbdd5.2).
+    is_scratch = is_scratch_store(license_root)
+    deadline = time.monotonic() + LOCK_WAIT_S
+    while True:
+        try:
+            fd = os.open(lock_path, os.O_RDONLY | os.O_CREAT | os.O_NOFOLLOW, 0o644)
+        except OSError as exc:
+            log.error(
+                f"cannot open the license-store lock {lock_path} ({exc.strerror}); a symlink or another user's unreadable file sits there"
+            )
+            return 1
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            pass
+        else:
             try:
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                current = os.stat(lock_path, follow_symlinks=False).st_ino
+            except OSError:
+                current = None
+            if current == os.fstat(fd).st_ino:
                 break
-            except BlockingIOError:
-                if time.monotonic() >= deadline:
-                    log.error(
-                        f"another license battery still holds the store {license_root} after {LOCK_WAIT_S}s; not running beside it"
-                    )
-                    return 1
-                time.sleep(1)
+        # Busy, or the locked inode is no longer the file at lock_path: either way the next try waits and the deadline holds (review 768f6e50.3: a stat that keeps failing must not loop past LOCK_WAIT_S).
+        os.close(fd)
+        if time.monotonic() >= deadline:
+            log.error(
+                f"another license battery still holds the store {license_root} after {LOCK_WAIT_S}s; not running beside it"
+            )
+            return 1
+        time.sleep(1)
+    try:
         return battery.run()
     finally:
+        # The scratch store's lock file goes while the lock is still held, so the next opener creates a fresh file and a waiter on this inode sees the mismatch above; without removal every test run left one file in /tmp (2,066 by 2026-10-24). The real store, compared by realpath so a trailing slash or a symlink still names it (review 37ecbdd5.1), keeps its single fixed file.
+        if is_scratch:
+            with contextlib.suppress(OSError):
+                os.unlink(lock_path)
         os.close(fd)
 
 

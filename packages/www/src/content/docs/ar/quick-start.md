@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: ar
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # البدء السريع
@@ -75,7 +75,7 @@ rdc machine setup my-server  # يجهّز renet + ينشئ مخزن البيان
 
 ```bash
 rdc config show                            # ملخص سهل القراءة
-cat ~/.config/rediacc/rediacc.json         # ملف JSON الخام: الأجهزة، المستودعات، التخزين، مفتاح SSH
+cat ~/.config/rediacc/rediacc.json         # ملف JSON الخام: الأجهزة، المستودعات، وجهات النسخ الاحتياطي، مفتاح SSH
 ```
 
 **ملف واحد = بيئة واحدة.** انسخه إلى جهاز محمول آخر وستكون جاهزًا.
@@ -223,7 +223,7 @@ rdc backup usage
 
 ترفع اللقطات إلى التخزين المجزّأ، الذي يحتاج إلى خادم حساب ومستودع مرخَّص. تُخزَّن البيانات المتغيّرة فقط، لذا تكلّف اللقطة الثانية لنفس المستودع الفرق فقط بدلاً من الصورة كاملة.
 
-دفع مستودع إلى التخزين السحابي باستخدام `--to <storage>` متقاعد الآن ويُرفض. لقراءة أرشيف كُتب قبل ذلك التغيير، لا يزال `rdc storage browse` يعمل، ويحتاج `rclone` في PATH الخاص بك.
+للنسخ الاحتياطية نوع وجهة واحد، هو التخزين المجزّأ الذي تستضيفه الخدمة، ويسمّي `--to` في `repo push` جهازاً فقط. يُعلن الاحتفاظ لكل سلسلة مستودع بالأمر `rdc backup retention set`، وتأتي التشغيلات المجدولة من `rdc backup strategy set` مع `rdc backup schedule`. راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
 
 ### 4. السحب من مصدر بعيد
 

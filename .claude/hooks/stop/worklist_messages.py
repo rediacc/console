@@ -288,12 +288,18 @@ V_MANY_WORK_CRONS = (
 )
 
 V_BG_ORPHAN = (
-    "%d ORPHAN BACKGROUND SHELL(S) FOUND UNDER THIS SESSION'S OWN HARNESS, %d minute(s) or "
-    "older, that nothing currently bookkeeps:\n%s"
-    "ADVISORY ONLY -- this check never kills anything. Each row is a real OS process, still "
-    "alive, resolved as a descendant of this session's own harness pid (never a sibling "
-    "session's tree). Read the command line, decide whether it is still needed, and if not, "
-    "kill it by hand; `worklist.py --reap` retires bookkeeping only, never an OS process."
+    "%d BACKGROUND SHELL(S) UNDER THIS SESSION'S OWN HARNESS NEED KILLING (threshold %d minute(s)):\n%s"
+    "Each row is a live OS process under this session's own harness pid, never a sibling session's "
+    "tree. A declared task is not excused: a pure wait loop does no work (the harness already "
+    "notifies when a task ends), one waiter per target is enough, and a finished sub-agent's "
+    "shell has nobody left to read it. Exempt by command shape: the wake timer (wl_wake.py), "
+    "ci-trace --wait, wl_prreview --wait, wl_wait.py, renders and test runs. Run each kill "
+    "command; this check kills nothing itself, and `worklist.py --reap` retires bookkeeping "
+    "only, never an OS process."
+)
+# One row of V_BG_ORPHAN: the pid, its age in minutes, why it is reported (wl_bgsweep.describe), the command as typed, and the exact kill command (wl_bgsweep.kill_command).
+V_BG_ORPHAN_ROW = (
+    "    pid %(pid)s, %(age)s min old, %(why)s:\n        %(cmd)s\n        kill: %(kill)s\n"
 )
 
 V_AGENT_STATE = (
@@ -302,7 +308,8 @@ V_AGENT_STATE = (
     "already cost this project one operator decision (the autopilot App was "
     "reported blocked AFTER the operator had created it), and the transcript "
     "cannot be the recovery mechanism because the transcript is what gets "
-    "summarised. Rewrite it (%d-%d chars, with a '## Next action' section) for "
+    "summarised. Rewrite it (%d-%d chars, with a '## Next action' and a "
+    "'## Big pieces' section) for "
     "a session that knows NOTHING: what is true right now and what happens "
     "next. RULES.md and TRAPS.md are not freshness-gated, so do NOT restate "
     "them here; STATE.md carries only what is volatile. Stale means the WORLD "
@@ -852,7 +859,8 @@ N_CL_FOREIGN_DRIFT = (
 
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits for YOUR SECTION: %d-%d chars and a "
-    "'## Next action' section whose FIRST step is real work rather than a wait. "
+    "'## Next action' section whose FIRST step is real work rather than a wait, "
+    "plus a '## Big pieces' section naming the census's big pieces (or 'none'). "
     "Nothing was written; the previous STATE.md is untouched, including every "
     "other session's section.\n"
 )
@@ -902,7 +910,7 @@ CLI_STATE_WHOLE_DOC = (
     "never a whole document to paste.\n"
     "Send your section's body ALONE -- no '## SESSION' line, no peer's text:\n"
     "    .claude/hooks/stop/worklist.py --state %s <<'EOF'\n"
-    "    ...what is true right now, and a '## Next action' section...\n"
+    "    ...what is true right now, a '## Next action' and a '## Big pieces' section...\n"
     "    EOF\n"
     "Nothing was written; the previous document is untouched.\n"
 )
@@ -2245,6 +2253,16 @@ Plan records (W12):
   --plan-revive <me> <agent/plans/PLAN-x.md> [--write]
                                 restore a record's full text from its blob
 
+Live proof (agent/plans/PLAN-tested-on-bench.md):
+  --live-proof <me>             LIST the open LP-<target> [live] boxes and
+                                the Accept line each one runs
+  --live-proof <me> <agent/plans/PLAN-x.md> <LP-box-sig> [--write] [--tick]
+                                run the box's `Accept: live-proof <target>
+                                <check>` through rediacc_ci.ops.live_proof
+                                record; --write appends the VERIFIED row to
+                                agent/ledgers/live-proof.jsonl, --tick then
+                                closes the box through the --plan-tick path
+
 Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per other verdict):
   --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> |
                      waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z]
@@ -2264,6 +2282,18 @@ Session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad):
                                 tree with undelivered changes all keep);
                                 --write deletes the deletable ones
 
+Operator rulings (agent/rulings/<session>.jsonl, rendered into agent/RULES.md):
+  --rule <me>                   list the live rulings and how many were revoked
+  --rule <me> <check> <subject> <text...> [--until <ISO8601Z>]
+                                record the operator's ruling on one subject of
+                                one Stop check (submodule, bigpieces); every
+                                session's check reads it before firing, until
+                                it expires or is revoked. Rewrites the
+                                `## Rulings (machine-checked)` block in RULES.md
+  --rule <me> --revoke <id> <reason...>
+                                revoke a ruling; the row stays, nothing is
+                                ever deleted
+
 Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
   --queue-set <me> [key=value ...] [--note "<text>"]
                                 write effort (quiet|low|smart|high|ultra) and
@@ -2282,6 +2312,11 @@ Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
                                 every plan the Stop hook named for the branch),
                                 for `gh pr create --body-file` when the batch
                                 completes
+  --promote <me> <plan> <note...>
+                                append a live, unfinished plan to `## Promoted`
+                                with its unfinished prerequisites pulled in
+                                ahead of it (the check:ci-plan-record RQ-DEPS
+                                repair); one atomic write, nothing committed
 
 Maintenance:
   --compact                     drop tombstones and fold the event log
@@ -2308,6 +2343,13 @@ With no arguments this runs as the Stop hook and expects a JSON event on stdin.
 # work (the branch usually descends from the old pointer) but it adds a submodule PR to the merge chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
 #
 # Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only the human-or-agent deciding can say which case this is, so the check hands over the facts rather than a verdict.
+V_BIGPIECES_DRIFT = """BIG PIECES DRIFT in agent/%(slug)s/STATE.md: %(body)s.
+The '## Big pieces' section disagrees with the plan census. A big piece is DERIVED (agent/INDEX.md's census: top open-box counts, or 10+ open), never remembered. Re-derive the section from the plans the SessionStart block marks ! BIG PIECE ! and rewrite STATE.md:
+    .claude/hooks/stop/worklist.py --state %(me)s <<'EOF'
+    ...
+    EOF"""
+
+
 V_SUBMODULE_POINTER = """SUBMODULE POINTER MOVED IN THE WORKTREE (%d): %s
 
 `git add -A` would COMMIT this pointer move, changing what this PR depends on.
@@ -2319,7 +2361,11 @@ Decide explicitly, then act:
     recorded pointer with
         git submodule update --checkout <path>
     which is safe ONLY while that submodule's worktree is clean and its commit
-    is pushed. Verify both first; this is not an undo you can take back."""
+    is pushed. Verify both first; this is not an undo you can take back.
+  - leave it unstaged (the checkout belongs to a peer, or the parent already
+    matches): record the decision once, and no session fires on this pointer
+    at this sha again until the ruling is revoked:
+%s"""
 
 
 # --------------------------------------------------------------------------- --roundlog: the pr-babysit round log's STATUS block.
@@ -2723,6 +2769,47 @@ CLI_PLAN_ORDER = (
     "A box ticked any other way can only be recorded late, with --retro, and\n"
     "check:ci-plan-implementation prints every such row on every run.\n"
     "\n"
+)
+
+CLI_PLANPREFLIGHT_USAGE = (
+    "usage: worklist.py --plan-preflight <me> <agent/plans/PLAN-x.md> [--write]\n"
+    "\n"
+    "Revalidate a plan against the current tree before its first box is worked\n"
+    "(agent/plans/PLAN-plan-preflight.md). The report has five parts: the survey of\n"
+    "every open box against its latest investigation row, the plan's citations\n"
+    "(unresolved, drifted, relocatable), the main commits that touched the paths\n"
+    "the plan watches, its dependencies, and the verdict.\n"
+    "\n"
+    "Without --write nothing is written and the exit code is 0 whatever the verdict.\n"
+    "With --write, a clean verdict stamps `Revalidated: <today> @ <merge base>`,\n"
+    "relocates the drifted citations, writes the `(preflight)` partial lines and the\n"
+    "generated block, and refreshes agent/INDEX.md and agent/plans/QUEUE.md. A\n"
+    "verdict that is not clean refuses the write (exit 2) and names each reason.\n"
+    "Never commits.\n"
+)
+
+CLI_PLANPREFLIGHT_DRY = (
+    "\n---- NOTHING was written. Re-run with --write once the verdict is clean. ----\n"
+)
+
+CLI_PLANPREFLIGHT_REFUSED = (
+    "--plan-preflight --write REFUSED for %(rel)s; nothing was written:\n"
+    "%(why)s\n"
+    "\n"
+    "Each line above is a fact the plan still owes. Investigate the uncovered boxes\n"
+    "(the survey prints a skeleton per box), tick the `present` ones, re-cite the\n"
+    "unrelocatable citations, then run the preflight again.\n"
+)
+
+CLI_PLANPREFLIGHT_WROTE = (
+    "revalidated %(rel)s @ %(base)s (%(relocated)d citation(s) relocated)\n"
+    "\n"
+    "NOT COMMITTED. The plan, the investigation rows the survey wrote and the\n"
+    "renders this run refreshed land in ONE commit:\n"
+    "\n"
+    "  git add -- %(rel)s %(investigation)s %(ledger)s %(index)s %(queue)s\n"
+    "  git commit -F <msg> -- %(rel)s %(investigation)s %(ledger)s %(index)s %(queue)s\n"
+    "  # subject: chore(plan): preflight %(slug)s @ %(base)s\n"
 )
 
 #: Appended to CLI_PLANINV_USAGE by `--plan-investigate`'s usage path.

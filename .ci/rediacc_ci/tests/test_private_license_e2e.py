@@ -102,8 +102,8 @@ if ROLE == "go":
             write_wrapper(out, "mint", {})
         else:
             n = counter("renet-builds")
-            label = "nolicense" if "-tags" in args else ("enforcing" if n == 0 else "wrong-key")
             pub = args[args.index("-ldflags") + 1].split("=", 1)[1]
+            label = "keyless" if pub == "" else ("enforcing" if n == 0 else "wrong-key")
             write_wrapper(out, "renet", {"label": label, "pub": pub})
         sys.exit(0)
     sys.exit(2)
@@ -189,9 +189,6 @@ if ROLE == "renet":
 
     if args[:2] in (["repository", "create"], ["repository", "up"]):
         op = args[1]
-        if label == "nolicense" and bug != "enforce":
-            sys.stderr.write(TAIL[op] + "\n")
-            sys.exit(1)
         blob = load(LIC + "/repos/" + opt("--name"))
         why = "missing" if blob is None else reason(blob, op)
         if why:
@@ -200,29 +197,54 @@ if ROLE == "renet":
         sys.stderr.write(ATTR + "\n" + TAIL[op] + "\n")
         sys.exit(1)
 
+    if args[:2] == ["backup", "restore"]:
+        lineage = opt("--lineage")
+        blob = load(LIC + "/repos/" + opt("--repo"))
+        holder = None
+        if blob is not None and (blob.get("opts") or {}).get("-grand-guid") == lineage:
+            holder = opt("--repo")
+        elif blob is None:
+            for d in sorted(os.listdir(LIC + "/repos")) if os.path.isdir(LIC + "/repos") else []:
+                other = load(LIC + "/repos/" + d)
+                if other is not None and (other.get("opts") or {}).get("-grand-guid") == lineage:
+                    holder = d
+                    break
+        if holder is not None:
+            if CFG.get("bug", {}).get(label) == "restore-license-required":
+                sys.stderr.write(json.dumps({"code": "LICENSE_REQUIRED", "reason": "missing"}, separators=(",", ":")) + "\n")
+                sys.exit(10)
+            print(json.dumps({"status": "failed", "licenseFrom": holder}, separators=(",", ":")))
+            sys.stderr.write("restore failed: storage session mint failed\n")
+            sys.exit(1)
+        if blob is None:
+            sys.stderr.write(json.dumps({"code": "LICENSE_REQUIRED", "reason": "missing"}, separators=(",", ":")) + "\n")
+            sys.exit(10)
+        if (blob.get("opts") or {}).get("-grand-guid") != lineage:
+            print("repository %s belongs to lineage %s" % (opt("--repo"), (blob.get("opts") or {}).get("-grand-guid", "(none)")))
+            sys.stderr.write("restore refused\n")
+            sys.exit(1)
+        sys.exit(1)
+
     if args[:2] == ["repository", "license-status"]:
         ds = opt("--datastore")
         guid = sorted(os.listdir(ds + "/repositories"))[0]
         desc = ds + "/.rediacc/datastore.json"
         ds_id = json.load(open(desc))["datastoreId"] if os.path.exists(desc) else None
-        if label == "nolicense" and bug != "enforce":
+        where = LIC + ("/datastores/%s/repos/%s" % (ds_id, guid) if ds_id else "/repos/" + guid)
+        blob = load(where)
+        status = "missing" if blob is None else reason(blob, "status", ds_id)
+        if blob is not None and not status:
+            o = blob["opts"]
             status = "valid"
-        else:
-            where = LIC + ("/datastores/%s/repos/%s" % (ds_id, guid) if ds_id else "/repos/" + guid)
-            blob = load(where)
-            status = "missing" if blob is None else reason(blob, "status", ds_id)
-            if blob is not None and not status:
-                o = blob["opts"]
-                status = "valid"
-                if "-chain-hash" in o:
-                    state_path = pathlib.Path(LIC + "/chain-state.json")
-                    state = json.loads(state_path.read_text()) if state_path.exists() else {}
-                    seq = int(o.get("-sequence", 1))
-                    if seq < state.get(guid, 0):
-                        status = "sequence_regression"
-                    else:
-                        state[guid] = seq
-                        state_path.write_text(json.dumps(state, sort_keys=True))
+            if "-chain-hash" in o:
+                state_path = pathlib.Path(LIC + "/chain-state.json")
+                state = json.loads(state_path.read_text()) if state_path.exists() else {}
+                seq = int(o.get("-sequence", 1))
+                if seq < state.get(guid, 0):
+                    status = "sequence_regression"
+                else:
+                    state[guid] = seq
+                    state_path.write_text(json.dumps(state, sort_keys=True))
         print(json.dumps([{"repositoryGuid": guid, "status": status}]))
         sys.exit(0)
     sys.exit(2)
@@ -486,7 +508,7 @@ CASES: dict[str, tuple[dict, dict, dict]] = {
         {"env_extra": {"LICENSE_E2E_MASTER_PUB": "PUB-M"}},
     ),
     "enforcing-binary-accepts-a-forged-license": ({"bug": {"enforcing": "accept-forged"}}, {}, {}),
-    "nolicense-control-fails-at-the-wrong-scenario": ({"bug": {"nolicense": "enforce"}}, {}, {}),
+    "keyless-control-fails-at-the-wrong-scenario": ({"bug": {"keyless": "accept-forged"}}, {}, {}),
     "wrong-key-control-fails-at-the-wrong-scenario": (
         {"bug": {"wrong-key": "accept-forged"}},
         {},
@@ -553,7 +575,7 @@ def _port(tmp_path: pathlib.Path, cfg: dict | None = None, **kw) -> dict[str, An
 
 
 def test_the_fakes_are_actually_reached(tmp_path):
-    """ANTI-VACUITY. Every comparison above is worthless if the battery never reached a binary. The call log must show the minter built, three renets built (enforcing, nolicense, wrong-key) and the scenario table driven against each."""
+    """ANTI-VACUITY. Every comparison above is worthless if the battery never reached a binary. The call log must show the minter built, three renets built (enforcing, keyless, wrong-key) and the scenario table driven against each."""
     out = _port(tmp_path)
     assert out["exit"] == 0, out["stderr"]
     calls = out["calls"]
@@ -561,14 +583,15 @@ def test_the_fakes_are_actually_reached(tmp_path):
     assert len(builds) == 4, builds
     assert builds[0].split("\t")[1] == ".ci/scripts/private/license-mint"
     assert all(b.split("\t")[1] == "private/renet" for b in builds[1:])
-    assert "-tags\tnolicense" in builds[2]
-    by_label = dict.fromkeys(("enforcing", "nolicense", "wrong-key"), 0)
+    # The keyless control bakes an empty key: the ldflag ends at its `=` (agent/plans/PLAN-production-key-only.md Design 6).
+    assert builds[2].split("\t")[builds[2].split("\t").index("-ldflags") + 1].endswith("=")
+    by_label = dict.fromkeys(("enforcing", "keyless", "wrong-key"), 0)
     for call in calls:
         if call.startswith("renet\t"):
             by_label[call.split("\t")[1]] += 1
     assert all(n >= 20 for n in by_label.values()), by_label
     assert "Enforcing binary passed every scenario" in out["stderr"]
-    assert "Control OK: nolicense fails the battery at S1" in out["stderr"]
+    assert "Control OK: keyless fails the battery at S2" in out["stderr"]
     assert "Control OK: wrong-key fails the battery at S2" in out["stderr"]
     assert out["stderr"].rstrip().endswith("both controls failed as required")
     assert out["stdout"] == "", "the battery writes nothing to stdout"
@@ -583,10 +606,10 @@ def test_a_control_that_passes_the_battery_fails_the_run(monkeypatch, capsys):
 
 
 def test_a_control_that_fails_for_the_wrong_reason_fails_the_run(tmp_path):
-    """A control must fail at the scenario that detects ITS defect class: a nolicense build that fails elsewhere but passes S1 proves nothing about stubs."""
-    out = _port(tmp_path, {"bug": {"nolicense": "enforce"}})
+    """A control must fail at the scenario that detects ITS defect class: a keyless build that fails elsewhere but passes S2 proves nothing about validation."""
+    out = _port(tmp_path, {"bug": {"keyless": "accept-forged"}})
     assert out["exit"] == 1
-    assert "failed the battery, but S1 passed" in out["stderr"]
+    assert "failed the battery, but S2 passed" in out["stderr"]
 
 
 def test_the_scenario_table_is_complete(tmp_path):
@@ -618,6 +641,10 @@ def test_the_scenario_table_is_complete(tmp_path):
         "S10b",
         "S7",
         "S7b",
+        "S11a",
+        "S11b",
+        "S11c",
+        "S11d",
     ]
 
 
@@ -822,8 +849,10 @@ def test_a_battery_holding_the_store_makes_a_second_run_fail_after_the_bound(
     try:
         assert port_module.run([], license_root=root) == 0
         assert started == [True]
+        # A scratch store's lock file is removed on exit, so a run leaves nothing in /tmp.
+        assert not os.path.lexists(lock)
     finally:
-        os.unlink(lock)
+        pathlib.Path(lock).unlink(missing_ok=True)
 
 
 def test_a_symlink_at_the_lock_path_fails_the_run_with_its_reason(tmp_path, monkeypatch, capsys):
@@ -845,3 +874,92 @@ def test_a_symlink_at_the_lock_path_fails_the_run_with_its_reason(tmp_path, monk
         os.unlink(lock)
     assert started == []
     assert lock in capsys.readouterr().err
+
+
+def test_the_real_store_is_recognised_through_a_trailing_slash_or_a_symlink(tmp_path, monkeypatch):
+    """A non-canonical spelling of the real store is the real store, so its fixed lock file is never unlinked (review 768f6e50.1); a different directory is a scratch store."""
+    real = tmp_path / "license"
+    real.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(real)
+    monkeypatch.setattr(port_module, "LICENSE_ROOT", str(real))
+    assert not port_module.is_scratch_store(str(real) + "/")
+    assert not port_module.is_scratch_store(str(link))
+    assert port_module.is_scratch_store(str(tmp_path / "other"))
+
+
+def test_a_lock_taken_on_an_unlinked_inode_is_retried_on_the_live_file(tmp_path, monkeypatch):
+    """A waiter that wins the flock on an inode a previous holder already unlinked must reopen and lock the file now at the lock path, not run beside the newcomer (review 768f6e50.1/.2): the first stat reports a different inode, the run reopens, and the battery runs once."""
+    root = str(tmp_path / "store")
+    key = hashlib.sha256(os.path.realpath(root).encode()).hexdigest()[:16]
+    lock = f"/tmp/rediacc-license-e2e-{key}.lock"
+    started: list[bool] = []
+    opens: list[str] = []
+    real_open = os.open
+    real_stat = os.stat
+    stats = {"n": 0}
+
+    def counting_open(path, *args, **kwargs):
+        if path == lock:
+            opens.append(path)
+        return real_open(path, *args, **kwargs)
+
+    def first_stat_mismatches(path, *args, **kwargs):
+        result = real_stat(path, *args, **kwargs)
+        if path == lock:
+            stats["n"] += 1
+            if stats["n"] == 1:
+                return os.stat_result((result.st_mode, result.st_ino + 1, *tuple(result)[2:]))
+        return result
+
+    def fake_run(_self: object) -> int:
+        started.append(True)
+        return 0
+
+    monkeypatch.setattr(port_module.os, "open", counting_open)
+    monkeypatch.setattr(port_module.os, "stat", first_stat_mismatches)
+    monkeypatch.setattr(port_module.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(port_module.Battery, "run", fake_run)
+    try:
+        assert port_module.run([], license_root=root) == 0
+        assert started == [True]
+        assert len(opens) == 2
+        assert not os.path.lexists(lock)
+    finally:
+        pathlib.Path(lock).unlink(missing_ok=True)
+
+
+def test_a_stat_that_keeps_failing_ends_at_the_deadline(tmp_path, monkeypatch, capsys):
+    """When the lock path cannot be stat'ed after a successful lock, the run waits and fails at LOCK_WAIT_S with its reason instead of looping (review 768f6e50.3)."""
+    root = str(tmp_path / "store")
+    key = hashlib.sha256(os.path.realpath(root).encode()).hexdigest()[:16]
+    lock = f"/tmp/rediacc-license-e2e-{key}.lock"
+    real_stat = os.stat
+    clock = {"t": 0.0}
+
+    def failing_stat(path, *args, **kwargs):
+        if path == lock:
+            raise FileNotFoundError(path)
+        return real_stat(path, *args, **kwargs)
+
+    def advance(_s: float) -> None:
+        clock["t"] += 1.0
+
+    monkeypatch.setattr(port_module.os, "stat", failing_stat)
+    monkeypatch.setattr(port_module.time, "sleep", advance)
+    monkeypatch.setattr(port_module.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(port_module, "LOCK_WAIT_S", 3)
+    monkeypatch.setattr(port_module.Battery, "run", lambda _self: 0)
+    try:
+        assert port_module.run([], license_root=root) == 1
+        assert root in capsys.readouterr().err
+    finally:
+        pathlib.Path(lock).unlink(missing_ok=True)
+
+
+def test_a_restore_that_reports_license_required_on_a_lineage_match_fails_s11c(tmp_path):
+    """MUTANT. A binary that answers LICENSE_REQUIRED even though the license carries the lineage turns S11c red, so the positive scenario can fail."""
+    out = _port(tmp_path, {"bug": {"enforcing": "restore-license-required"}})
+    assert out["exit"] == 1
+    assert "[enforcing] S11c FAIL" in out["stderr"]
+    assert "[enforcing] S11d FAIL" in out["stderr"]

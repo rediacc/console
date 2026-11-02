@@ -89,6 +89,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   //
   // Not 'public' (public fields are excluded from pathsToCommit, which would leave the rules tamper-able) and not 'secret' either: the threat here is not someone reading the rules, it is someone quietly rewriting them.
   '/policy': { kind: 'identifier' },
+
+  // ── Access (SSH keys rdc installs on machines, with their source ranges) ── One committed value for the whole subtree, for the reason '/policy' is: the threat is a push that quietly rewrites who may log in from where (adds a key, widens a range), so ANY edit changes the commitment and a push made without knowing the current value is rejected.
+  '/access': { kind: 'identifier' },
   // The verifier is what the CLI uses to CHECK the master password BEFORE any decryption can happen. Encrypting it under the password it verifies is a bootstrapping deadlock, so it is stored in the clear by explicit override (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
   //
   // commit:false because it is HOST-LOCAL to the master-password at-rest mode and must never enter the remote config envelope. A remote config is stored under the CEK, not a master password, so the verifier is meaningless there — and committing it (without also syncing it, which we must not) would drop a committed pointer on every push/rotation round trip and brick the re-push.
@@ -155,20 +158,22 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/clusters/*/kvm/controlId': { kind: 'public' },
   '/resources/clusters/*/kvm/dockerRegistry': { kind: 'public' },
 
-  // ── Backup strategies (scheduling topology; storage creds live in vaultContent) ── A strategy references storages by NAME; the credentials are in /resources/storages/*/vaultContent (secret). Folder paths and include/ exclude globs are location topology, same sensitivity as datastore paths.
+  // ── Backup strategies (scheduling topology; destination creds live in the destination vaultContent) ── Folder paths and include/ exclude globs are location topology, same sensitivity as datastore paths.
   '/resources/backupStrategies/*/schedule': { kind: 'public' },
   '/resources/backupStrategies/*/mode': { kind: 'public' },
   '/resources/backupStrategies/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/bandwidthLimit': { kind: 'public' },
+  '/resources/backupStrategies/*/readBandwidthLimit': { kind: 'public' },
+  '/resources/backupStrategies/*/cpuLimit': { kind: 'public' },
   '/resources/backupStrategies/*/include': { kind: 'public' },
   '/resources/backupStrategies/*/exclude': { kind: 'public' },
+  // Per-repo cadence override (G10): repo ref -> cron, scheduling topology like `schedule`.
+  '/resources/backupStrategies/*/repoSchedules/*': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/kind': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/name': { kind: 'public' },
-  '/resources/backupStrategies/*/destinations/*/storage': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
-  '/resources/backupStrategies/*/destinations/*/folder': { kind: 'public' },
-  // hosted-service destination: the endpoint identifies a customer/elite plane (mirror accountServer/releasesUrl → identifier); vaultContent is the credential bag, one container-level secret leaf like storages/*/vaultContent.
+  // hosted-service destination: the endpoint identifies a customer/elite plane (mirror accountServer/releasesUrl → identifier); vaultContent is the credential bag, one container-level secret leaf.
   '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
   '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
   // GFS retention knobs (counts; enforced server-side). Non-sensitive policy.
@@ -179,9 +184,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/retention/keepMonthly': { kind: 'public' },
   '/resources/backupStrategies/*/retention/keepYearly': { kind: 'public' },
 
-  // ── Storages ─────────────────────────────────────────────────────────────
-  '/resources/storages/*/provider': { kind: 'public' },
-  '/resources/storages/*/vaultContent': { kind: 'secret' },
+  // ── Removed: resources.storages ── The schema refuses any value (z.never), so no content can exist; the pointer stays registered, as a secret, so the coverage walker sees a closed schema and a hand-edited config can never leak credentials through a redaction log.
+  '/resources/storages': { kind: 'secret' },
 
   // ── Repositories (structural tags: name -> tags -> tag -> record) ──────────
   '/resources/repositories/*/grand': { kind: 'public' },
@@ -254,6 +258,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/clusters/*/nodes/*/lastSeenAt': { kind: 'public' },
   '/state/repos/*/*/networkId': { kind: 'public' },
   '/state/repos/*/*/registryPort': { kind: 'public' },
+  '/state/repos/*/*/gpuDevices': { kind: 'public' },
   '/state/repos/*/*/pushState/*/verifiedBase': { kind: 'public' },
   '/state/repos/*/*/pushState/*/lastPushAt': { kind: 'public' },
   '/state/repos/*/*/pushState/*/method': { kind: 'public' },

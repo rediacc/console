@@ -72,7 +72,7 @@ PATH_MINIMUM = (
 # THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`, which are exactly those two glyphs. A finding regex over the message text could therefore never match anything and every
 # ledger row would read VACUOUS_BOTH_EMPTY. `call: ` is a shape no logger in this tree emits.
 FAKE_NPX = r'''#!/usr/bin/python3
-"""Recording fake for `npx wrangler d1`. See the test module docstring."""
+"""Recording fake for `npx --no-install wrangler d1`. See the test module docstring."""
 import json
 import os
 import sys
@@ -91,7 +91,7 @@ emit("call: npx %s\n" % " ".join(argv))
 with open(log) as fh:
     call_index = len([line for line in fh if line.startswith("call: ")])
 
-rest = argv[1:] if argv[:1] == ["wrangler"] else None
+rest = argv[2:] if argv[:2] == ["--no-install", "wrangler"] else None
 if rest is None:
     sys.stderr.write("fake npx: unmodelled tool %r\n" % (argv[:1],))
     sys.exit(127)
@@ -381,8 +381,8 @@ def _verbs(log: str) -> list[str]:
     out = []
     for line in _calls(log):
         fields = line.split()
-        if fields[:3] == ["npx", "wrangler", "d1"]:
-            out.append(" ".join(fields[2:4]))
+        if fields[:4] == ["npx", "--no-install", "wrangler", "d1"]:
+            out.append(" ".join(fields[3:5]))
         else:
             out.append(fields[0])
     return out
@@ -576,7 +576,7 @@ def test_three_failures_exhaust_the_retries_and_exit_with_wranglers_status(
 
 
 def test_a_failing_import_ends_the_run_with_wranglers_status(tmp_path) -> None:
-    """`npx wrangler d1 execute --file=` is unguarded, so `set -e` hands its
+    """`npx --no-install wrangler d1 execute --file=` is unguarded, so `set -e` hands its
     status straight out. The FK verification never runs, which is the important half: a failed import must not be followed by a clean bill of health."""
     _root, old, new = run_both(tmp_path, FAKE_EXECUTE_FAILS_ON="2")
     _agree(old, new, "import-fails")
@@ -727,6 +727,7 @@ def test_config_flag_words_splits_the_way_an_unquoted_expansion_does() -> None:
 def test_the_argv_builders_match_the_twins_words() -> None:
     assert port.export_argv("db", "/t/e.sql") == [
         "npx",
+        "--no-install",
         "wrangler",
         "d1",
         "export",
@@ -760,11 +761,11 @@ def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
 
     Both halves, because either alone is satisfiable by a broken pattern.
     """
-    a = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/export.sql"
-    b = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.JTIJi7lgUF/export.sql"
+    a = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/export.sql"
+    b = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.JTIJi7lgUF/export.sql"
     assert _mask(a) == _mask(b)
     assert _mask(a).endswith("--output=<MKTEMP>/export.sql")
-    c = "call: npx wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/dump.sql"
+    c = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/dump.sql"
     assert _mask(a) != _mask(c)
     assert _mask("/tmp/somewhere/else") == "/tmp/somewhere/else"
     assert _mask("/tmp/tmp.short") == "/tmp/tmp.short"

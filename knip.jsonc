@@ -47,6 +47,8 @@
         "scripts/lib/tree-write-sites.ts",
         // Run BY PATH from the transactions of `npm run pins`: scripts/lib/pins/drivers/npm.ts plans its freshness-guard and pin-group steps as shell commands over this file, so no import reaches it.
         "scripts/lib/pins/drivers/npm-steps.ts",
+        // BLOCKER: run BY PATH, never imported: the leaf of the cli-tool:tofu-providers pin in .ci/config/pins.json names `npx tsx scripts/pins/tofu-provider-pins.ts --lock` as the step that moves its exact provider versions, and --check/--write render the provider pin file. No npm script names it, because a pins driver compares one version per leaf and this leaf carries one per provider.
+        "scripts/pins/tofu-provider-pins.ts",
         // Loaded BY PATH, not by import: .ci/scripts/quality/lint-rule-liveness.mjs:449
         // `import(path.join(ROOT, 'scripts/data/source-rules.ts'))`, which knip cannot
         // follow. It is the per-rule scope table the liveness gate derives its universe from.
@@ -58,7 +60,15 @@
         // The pin drivers' selftests are run BY PATH from .ci/rediacc_ci/tests/gates/test_gate_pin_drivers.py and test_gate_pin_family_drivers.py (npx tsx <file>), which no npm script names; toolchain-fixture.ts is imported only by toolchain-selftest.ts.
         "scripts/lib/pins/drivers/*selftest.ts",
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts (npx tsx <file>), like the driver selftests above.
-        "scripts/lib/pins/txn-selftest.ts"
+        "scripts/lib/pins/txn-selftest.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like txn-selftest.ts.
+        "scripts/lib/pins/ran-line-selftest.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the two above.
+        "scripts/__tests__/entry-point.control.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
+        "scripts/__tests__/upstream-retry-note.control.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
+        "scripts/lib/entry-point-selftest.ts"
       ],
       // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
       // usually load-bearing. `check-doc-region-parity.ts:297` matches
@@ -71,7 +81,11 @@
       // even in its own file, is still reported, which is how the genuinely dead
       // `rel` helper in scripts/lib/repo-root.ts was found and removed.
       "ignoreExportsUsedInFile": true,
-      "project": ["scripts/**/*.ts"]
+      "project": ["scripts/**/*.ts"],
+      "ignoreBinaries": [
+        // BLOCKER: .github/workflows/cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
+        "wrangler"
+      ]
     },
     "packages/locales": {
       "project": ["*.js"]
@@ -142,6 +156,10 @@
       "ignore": [
         // BLOCKER: intentionally unreferenced. Its render was disabled in SolutionPage.astro and PersonaPage.astro because every testimonial quote and impact metric behind it is invented and Rediacc has no public customers (rediacc/console#519). The component is kept, not deleted, so restoring it is a copy-paste once honest content exists; delete this entry when the render is re-enabled.
         "src/components/solution-pages/SPSocialProof.astro"
+      ],
+      "ignoreBinaries": [
+        // BLOCKER: the tutorial render takes its recording lock through util-linux flock(1) (scripts/lib/seg-lock.ts), so the kernel drops the lock when a render dies; a host tool, not an npm dependency
+        "flock"
       ]
     },
     "private/account": {
@@ -212,6 +230,8 @@
     "workers/proxy": {
       "project": [
         "src/**/*.ts"
+      ],
+      "ignoreDependencies": [
       ]
     },
     "workers/www": {
@@ -225,7 +245,9 @@
     },
     "private/account/e2e": {
       "entry": [
-        "tests/**/*.ts"
+        "tests/**/*.ts",
+        // Run BY PATH: `npx playwright test --config playwright.live.config.ts`; knip only follows imports.
+        "playwright.live.config.ts"
       ],
       "project": [
         "**/*.ts"
@@ -276,11 +298,11 @@
     "ssh-agent",
     "ssh-keyscan",
 
-    // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing, pdftotext content checks, agent-browser session capture) and by the CLI backup stack (rclone); installed on dev/CI hosts, not npm deps
+    // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing and its ffprobe stream probe, pdftotext content checks, agent-browser session capture); installed on dev/CI hosts, not npm deps
     "agent-browser",
     "ffmpeg",
+    "ffprobe",
     "pdftotext",
-    "rclone",
 
     // BLOCKER: go toolchain spawned by scripts/gen/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
     "go"

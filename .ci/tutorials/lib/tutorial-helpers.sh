@@ -43,8 +43,9 @@ export TUTORIAL_MACHINE_IP="${TUTORIAL_MACHINE_IP:-192.168.111.11}"
 export TUTORIAL_MACHINE_USER="${TUTORIAL_MACHINE_USER:-$USER}"
 export TUTORIAL_SSH_KEY="${TUTORIAL_SSH_KEY:-$HOME/.renet/staging/.ssh/id_rsa}"
 
-# Skip machine activation -- tutorial VMs don't have a valid subscription license.
-export REDIACC_SKIP_MACHINE_ACTIVATION=1
+# Licensing is enforced: the CLI's repo create/fork issue repository licences, so it needs a subscription token.
+# shellcheck source=tutorial-licence.sh
+source "$(dirname "${BASH_SOURCE[0]}")/tutorial-licence.sh"
 
 # Allow `term connect -c` shell redirects during pre-recording setup. The guard
 # blocks writes by default to nudge users toward `rdc repo sync upload`, but

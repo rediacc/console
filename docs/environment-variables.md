@@ -21,6 +21,7 @@ Each level has a distinct owner: this invocation > this shell/CI job > the persi
 | `REDIACC_CONFIG` | Selects the active config name (`--config` flag wins). Default `rediacc`. | `services/config/config-name.ts` |
 | `REDIACC_ACCOUNT_SERVER` | Account-server URL override for this invocation/job. The one connectivity env var. | `services/account/subscription-auth.ts` |
 | `REDIACC_UPDATE_CHANNEL` | Release-channel override (config field `account.updateChannel` is the persisted value). | `services/update/updater.ts`, telemetry |
+| `REDIACC_REGION` | Region label (`eu`, `us`, `asia`) the container executor (`rdc serve --mode container`) puts on its telemetry as `rediacc.region`; set by the proxy Worker in the container env. Unset reports no region. | `services/telemetry/container-telemetry.ts` |
 | `XDG_CONFIG_HOME` / `XDG_STATE_HOME` / `XDG_CACHE_HOME` | Standard base-dir overrides. | `packages/shared/src/paths/dirs.ts` |
 
 ## Who: credentials (headless / CI)
@@ -28,7 +29,8 @@ Each level has a distinct owner: this invocation > this shell/CI job > the persi
 | Variable | Purpose |
 |---|---|
 | `REDIACC_TOKEN` | The account api-token, for every flow that needs one: subscription auth, config-store password enrollment, `rdc serve` executor auth. Scopes live inside the token; the server enforces them. Replaces the former `REDIACC_SUBSCRIPTION_TOKEN`, `REDIACC_API_TOKEN`, and `REDIACC_EXECUTOR_TOKEN`. |
-| `REDIACC_CONFIG_PASSWORD` | Password-slot secret for headless remote-config unlock. |
+| `REDIACC_STORE_MASTER_PASSWORD` | The config store's master password, which opens its password slot for headless `rdc config remote enable --master-password`. |
+| `REDIACC_NEW_STORE_MASTER_PASSWORD` | The new store master password for `rdc config remote master-password change` when `--new-master-password-stdin` is not given. |
 | `REDIACC_MASTER_PASSWORD` | Master password for configs encrypted at rest. |
 
 Tokens obtained interactively are stored per config at `<configDir>/api-token-<config>.json`. There is no shared token file.
@@ -46,7 +48,6 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 
 | Variable | Purpose |
 |---|---|
-| `REDIACC_SKIP_MACHINE_ACTIVATION` | Skips CLI-side license issuance/recovery. Tutorial/test infra only. |
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | Disables the repo-context file-write guard. Tutorial/test infra only. |
 | `REDIACC_YES` | Assume-yes prompt bypass (mirror of `--yes`). |
 | `REDIACC_NO_DAEMON` | Forces the direct execution path (no executor daemon). |
@@ -77,7 +78,6 @@ daemon client), `renet` (binary provisioning transfer), `timing` (fork timing ch
 | Variable | Purpose |
 |---|---|
 | `RDC_DEV=1` (or `./rdc.sh --dev`) | Wrapper sugar: seeds/refreshes the `dev` config from the running dev gateway and runs with `REDIACC_CONFIG=dev`. |
-| `RDC_RENET_LICENSE=1` | Builds dev renet WITHOUT the `nolicense` tag (license enforcement on). |
 | `ACCOUNT_ED25519_PUBLIC_KEY` | Ldflags-injected master key for renet license validation. Build-time only; setting it at runtime has no effect. |
 
 ## Test and tooling harnesses (not read by the CLI)
@@ -114,7 +114,7 @@ These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappea
 | `REDIACC_SUBSCRIPTION_TOKEN_FILE` | Per-config token file `api-token-<config>.json` |
 | `REDIACC_SUBSCRIPTION_TOKEN`, `REDIACC_API_TOKEN`, `REDIACC_EXECUTOR_TOKEN` | `REDIACC_TOKEN` |
 | `X25519_PUBLIC_KEY` (CLI env) | `account.e2ePublicKey` in the config |
-| `RDC_BENCH` | `./rdc.sh --config bench` |
+| `RDC_BENCH` | `./rdc.sh --config eu-bench` |
 | `RDC_UPDATE_CHANNEL` | `REDIACC_UPDATE_CHANNEL` |
 | `RDC_DISABLE_AUTOUPDATE` | `REDIACC_DISABLE_AUTOUPDATE` |
 | `RDC_UPDATE_INTERVAL_HOURS` | `REDIACC_UPDATE_INTERVAL_HOURS` |
@@ -122,5 +122,6 @@ These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappea
 | `RDC_SKIP_ROUTER_RESTART` / `RDC_SKIP_SETUP_CHECK` | `REDIACC_SKIP_ROUTER_RESTART` / `REDIACC_SKIP_SETUP_CHECK` |
 | `RDC_DEBUG_RENET_PROVISION`, `RDC_TIMING_CHART`, `REDIACC_DAEMON_DEBUG`, `DEBUG` | `REDIACC_DEBUG` scopes |
 | `REDIACC_NO_COLOR` | `NO_COLOR` |
-| `REDIACC_TEAM` / `REDIACC_REGION` | none (config fields; env overrides were unused) |
+| `REDIACC_TEAM` | none (a config field; the env override was unused) |
+| `REDIACC_CONFIG_PASSWORD` / `REDIACC_NEW_CONFIG_PASSWORD` | `REDIACC_STORE_MASTER_PASSWORD` / `REDIACC_NEW_STORE_MASTER_PASSWORD` |
 | `server.json` (file, not env) | `account.*` fields in the active config |

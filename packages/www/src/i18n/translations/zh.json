@@ -518,7 +518,7 @@
         "whatWeDontUse": {
           "content": ["以下技术在我们的网站上<strong>未</strong>使用："],
           "content2": [
-            "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Renet 代理）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+            "注意：本 Cookie 政策适用于 Rediacc 营销网站。我们的软件产品（CLI 和 Renet 代理）会收集单独的使用遥测数据，这些数据不使用 Cookie。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测政策</a>。"
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -1856,6 +1856,11 @@
         "description": "5 分钟快速安装，开始 14 天免费试用。",
         "heading": "保护基础设施"
       },
+      "freeLicense": {
+        "cta": "安装 Rediacc",
+        "description": "任何机器无需注册即可为一个仓库获取免费许可证:最多 3 GB,有效期 48 小时,可随时免费续期,次数不限。到期后,正在运行的仓库继续工作;创建新仓库和使用托管备份需要付费方案。",
+        "heading": "无需账户即可试用"
+      },
       "hero": {
         "subtitle": "为你的团队选择合适的方案。定价简洁透明，没有隐藏费用，随时可以取消。",
         "title": "为真实运维而生"
@@ -2139,10 +2144,16 @@
             },
             "productTelemetry": {
               "content": [
-                "我们的软件产品（Web 应用程序、CLI、中间件和 Renet 代理）收集匿名使用遥测数据，以提高产品质量、性能和可靠性。遥测数据包括技术信息，例如应用程序版本、操作系统、浏览器类型、性能指标、功能使用模式和错误报告。个人标识符在收集前进行匿名处理——电子邮件地址仅保留域名部分，用户 ID 经过哈希和截断处理，密码或机密信息绝不收集。",
-                "遥测功能在我们的 Web 应用程序和 CLI 中默认启用，并且可以在所有产品中禁用。有关每个产品收集的内容以及如何退出的完整详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+                "我们的软件产品（CLI 和 Renet 代理）会收集使用遥测数据，以提升产品的质量、性能和可靠性。遥测数据包括应用版本、操作系统、性能指标、功能使用模式和错误报告等技术信息。个人标识符在收集前会进行匿名化处理：电子邮件地址仅保留域名，用户 ID 经哈希并截断，密码和密钥绝不会被收集。我们网站和账户服务的遥测数据还包含城市级位置信息（城市和地区），来自 Cloudflare 边缘节点，保留 7 天。",
+                "遥测功能在我们的 CLI 中默认启用，并且可以在所有产品中禁用。有关每个产品收集的内容以及如何退出的完整详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
               ],
               "title": "2.5 产品遥测数据"
+            },
+            "freeLicenseData": {
+              "content": [
+                "当机器在没有账户的情况下申请免费许可证时,我们会保存请求方 IP 地址(完整的 IPv4 地址,或 IPv6 地址的 /64 前缀)的密钥哈希,但绝不保存地址本身。该哈希只保存在按地址计数的计数器中,72 小时后删除。许可证记录包含请求中携带的机器和仓库标识符,不含任何 IP 数据。法律依据是我们防止免费服务被滥用的正当利益。"
+              ],
+              "title": "2.6 免费许可证申请"
             }
           },
           "title": "2. 我们收集的信息"
@@ -9290,7 +9301,7 @@
         "title": "我们的遥测数据收集实践与透明度"
       },
       "meta": {
-        "description": "Rediacc产品收集的遥测数据的详细说明，包括收集原因、处理方式以及如何退出。涵盖Web应用程序、CLI、中间件和 Renet 代理。",
+        "description": "说明 Rediacc 产品收集哪些遥测数据、收集原因、处理方式以及如何选择退出。适用于 CLI 和 Renet 代理。",
         "keywords": "遥测策略, 数据收集, OpenTelemetry, 退出, 隐私, GDPR, Rediacc",
         "title": "遥测策略 - Rediacc 产品遥测数据收集与使用的透明详细说明"
       },
@@ -9314,16 +9325,16 @@
                 "<strong>Renet 代理生命周期：</strong>启动、关闭和重连事件",
                 "<strong>性能分析：</strong>CPU使用率采样和内存分配分析，自动收集并发送至我们的性能分析端点"
               ],
-              "title": "7.1 收集的数据"
+              "title": "5.1 收集的数据"
             },
             "bridgeOptOut": {
               "content": [
                 "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>以禁用 Renet 代理遥测（包括性能分析）。"
               ],
-              "title": "7.2 如何退出"
+              "title": "5.2 如何退出"
             }
           },
-          "title": "7. Renet 代理遥测"
+          "title": "5. Renet 代理遥测"
         },
         "ccpa": {
           "content": [
@@ -9331,19 +9342,19 @@
           ],
           "id": "ccpa",
           "items": [
-            "<strong>收集的信息类别：</strong>互联网或电子网络活动信息（浏览器类型、交互数据、错误日志）、设备标识符（匿名化）、地理位置数据（仅限国家级别，来源于IP地址，但IP地址不存储）",
+            "<strong>收集的信息类别：</strong>互联网或电子网络活动信息（浏览器类型、交互数据、错误日志）、设备标识符（匿名化）、地理位置数据（城市级别：城市和地区，由 Cloudflare 边缘节点根据 IP 地址推导；IP 地址本身不存储，位置信息保留 7 天）",
             "<strong>目的：</strong>改善和维护服务质量、调试、性能监控和安全",
             "<strong>出售/共享：</strong>我们不按照CCPA/CPRA的定义出售或共享遥测数据",
-            "<strong>退出权：</strong>使用上述第4-7节中描述的产品特定退出机制。我们的Web应用程序还支持全球隐私控制（GPC）信号。"
+            "<strong>退出权：</strong>使用上述第4和5节中描述的产品特定退出机制。我们的Web应用程序还支持全球隐私控制（GPC）信号。"
           ],
-          "title": "11. 加州居民（CCPA/CPRA）"
+          "title": "9. 加州居民（CCPA/CPRA）"
         },
         "changes": {
           "content": [
             "当我们添加新产品、更改收集的数据或修改处理实践时，我们可能会更新本遥测策略。变更将在此页面上发布并更新生效日期。我们将通过产品发布说明和网站通知用户重大变更。"
           ],
           "id": "changes",
-          "title": "12. 本策略的变更"
+          "title": "10. 本策略的变更"
         },
         "cli": {
           "content": [
@@ -9362,7 +9373,7 @@
                 "<strong>会话：</strong>随机生成的会话ID、命令执行持续时间",
                 "<strong>性能分析：</strong>CPU使用率采样和内存分配分析，自动收集并发送至我们的性能分析端点"
               ],
-              "title": "5.1 收集的数据"
+              "title": "4.1 收集的数据"
             },
             "cliOptOut": {
               "content": ["您可以使用以下任一方法禁用CLI遥测（包括性能分析）："],
@@ -9371,10 +9382,10 @@
                 "在CLI配置文件中设置<code>telemetryEnabled: false</code>",
                 "在CI环境中遥测<strong>自动禁用</strong>（通过<code>CI</code>环境变量检测）"
               ],
-              "title": "5.2 如何退出"
+              "title": "4.2 如何退出"
             }
           },
-          "title": "5. CLI 遥测"
+          "title": "4. CLI 遥测"
         },
         "dataProcessing": {
           "content": [
@@ -9388,19 +9399,19 @@
             "<strong>不与第三方共享：</strong>遥测数据不会与任何第三方共享、出售或提供给任何第三方。",
             "<strong>基础设施：</strong>所有遥测数据在位于欧盟的基础设施上处理和存储。"
           ],
-          "title": "8. 数据处理和存储"
+          "title": "6. 数据处理和存储"
         },
         "internationalTransfers": {
           "content": [
             "遥测数据专门在欧盟境内的服务器上处理和存储。在极少数情况下，如果遥测数据需要传输到欧盟/欧洲经济区之外（例如用于灾难恢复），将采取适当的保障措施，包括欧盟委员会批准的标准合同条款（SCC）。"
           ],
           "id": "international-transfers",
-          "title": "9. 国际数据传输"
+          "title": "7. 国际数据传输"
         },
         "introduction": {
           "content": [
             "Rediacc软件产品收集匿名使用遥测数据，以帮助我们改善产品质量、诊断问题并了解工具的使用情况。本遥测策略准确描述了收集的数据、原因、处理方式以及如何退出。",
-            "本策略涵盖四个产品：<strong>Rediacc Web 应用程序</strong>、<strong>Rediacc CLI</strong>、<strong>Rediacc 中间件</strong>和<strong>Rediacc Renet 代理</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和<a href=\"cookie-policy\">Cookie政策</a>中另行说明。"
+            "本政策涵盖两个产品：<strong>Rediacc CLI</strong> 和 <strong>Rediacc Renet 代理</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和 <a href=\"cookie-policy\">Cookie 政策</a>中另行说明。"
           ],
           "id": "introduction",
           "title": "1. 简介"
@@ -9408,8 +9419,8 @@
         "legalBasis": {
           "content": [
             "根据欧盟《通用数据保护条例》（GDPR）和《电子隐私指令》，我们收集遥测数据的法律依据取决于产品场景：",
-            "对于<strong>Web 应用程序</strong>（基于浏览器）：遥测数据基于<strong>合法利益</strong>（GDPR第6(1)(f)条）收集，目的是维护和提高服务质量。您可以随时退出。",
-            "对于<strong>CLI、中间件和 Renet 代理</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。"
+            "对于 <strong>CLI 和 Renet 代理</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>（GDPR第6(1)(f)条）收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。",
+            "对于要求明确同意的司法辖区的用户（例如适用 PIPA 的韩国），应在发送任何数据之前，通过产品配置明确启用遥测。"
           ],
           "id": "legal-basis",
           "title": "3. 收集的法律依据"
@@ -9440,7 +9451,7 @@
             "<strong>退出：</strong>随时使用上述产品特定机制禁用遥测",
             "<strong>投诉：</strong>向爱沙尼亚数据保护监察局（<a href=\"https://www.aki.ee\" target=\"_blank\" rel=\"noopener noreferrer\">Andmekaitse Inspektsioon</a>）或您当地的监管机构提出投诉"
           ],
-          "title": "10. 您的权利"
+          "title": "8. 您的权利"
         }
       },
       "toc": {
@@ -9471,7 +9482,7 @@
             "如果您不同意本条款，则不得访问或使用本服务。本条款构成您与 Rediacc OÜ（注册号 17363830）之间具有法律约束力的协议，该公司在爱沙尼亚注册，办公地址为 Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia（以下称\"Rediacc\"、\"我们\"或\"我方\"）。"
           ],
           "id": "acceptance",
-          "title": "1. 接受条款"
+          "title": "2. 接受条款"
         },
         "accounts": {
           "content": ["注册时您必须提供准确的信息，并对账户下的所有活动负责。"],
@@ -9485,7 +9496,7 @@
             "确保授权用户遵守本条款",
             "维护您配置文件的机密性，包括 SSH 私钥和加密凭据"
           ],
-          "title": "3. 账户与注册"
+          "title": "4. 账户与注册"
         },
         "changes": {
           "content": [
@@ -9493,7 +9504,7 @@
             "在更新后的条款生效后继续使用服务即表示接受修订后的条款。如果您不同意更新后的条款，您必须在变更生效之前停止使用服务并取消订阅。"
           ],
           "id": "changes",
-          "title": "14. 条款变更"
+          "title": "19. 条款变更"
         },
         "dataOwnership": {
           "content": [
@@ -9502,7 +9513,7 @@
             "根据《欧盟数据法》（第 2023/2854 号条例），如果您使用平台的云功能，您有权切换提供商或迁移到自托管方案。您的客户数据存储在您自己的机器上，始终由您控制。存储在平台上的任何账户数据和配置都可以标准的、机器可读的格式导出。我们将在您提出请求后的三十 (30) 天过渡期内提供合理协助。"
           ],
           "id": "data-ownership",
-          "title": "8. 您的数据"
+          "title": "11. 您的数据"
         },
         "definitions": {
           "content": ["以下定义适用于本服务条款全文："],
@@ -9538,7 +9549,7 @@
             "尽管有上述规定，任何一方均可向任何具有管辖权的法院寻求禁令或其他衡平法救济，以防止实际或威胁性的知识产权或保密义务的侵犯、盗用或违反。"
           ],
           "id": "governing-law",
-          "title": "13. 适用法律"
+          "title": "18. 适用法律"
         },
         "indemnification": {
           "id": "indemnification",
@@ -9558,7 +9569,7 @@
               "title": "16.2 By Rediacc"
             }
           },
-          "title": "11. 赔偿"
+          "title": "16. 赔偿"
         },
         "intellectualProperty": {
           "content": [
@@ -9567,7 +9578,7 @@
             "我们可能收集和使用从您使用服务中获得的匿名、汇总数据（包括遥测数据），用于产品改进、分析和基准测试目的。此类汇总数据不会识别您或任何个人用户。"
           ],
           "id": "intellectual-property",
-          "title": "7. 知识产权"
+          "title": "12. 知识产权"
         },
         "limitationOfLiability": {
           "content": [
@@ -9576,7 +9587,7 @@
             "第 14 条和第 15 条中的限制和排除不适用于：(A) 因过失造成的死亡或人身伤害的责任；(B) 欺诈或欺诈性虚假陈述的责任；(C) 根据爱沙尼亚《债法》规定的故意违约 (TAHTLIK RIKKUMINE) 或重大过失 (RASKE HOOLETUS) 的责任；或 (D) 适用法律不能排除或限制的任何其他责任。"
           ],
           "id": "limitation-of-liability",
-          "title": "10. 责任限制"
+          "title": "15. 责任限制"
         },
         "onPremiseLicense": {
           "content": [
@@ -9631,7 +9642,7 @@
             "<strong>平台：</strong>用于订阅管理、团队协作以及（如适用）基于云的基础设施管理的网页应用和账户门户",
             "<strong>专业服务：</strong>可选的咨询、迁移协助和实施支持，须另行签订服务协议"
           ],
-          "title": "2. 服务描述"
+          "title": "3. 服务描述"
         },
         "subscriptions": {
           "content": [
@@ -9681,7 +9692,7 @@
               "title": "5.2 Taxes"
             }
           },
-          "title": "4. 订阅与付款"
+          "title": "5. 订阅与付款"
         },
         "telemetry": {
           "content": [
@@ -9690,7 +9701,7 @@
             "在要求对终端设备上的遥测收集获得明确同意的司法管辖区（包括根据您所在司法管辖区实施的《电子隐私指令》），您应在首次使用本地部署软件之前配置遥测偏好设置。在启用遥测的情况下继续使用服务，即表示您同意<a href=\"telemetry-policy\">遥测政策</a>中描述的数据收集。"
           ],
           "id": "telemetry",
-          "title": "6. 遥测与数据收集"
+          "title": "10. 遥测与数据收集"
         },
         "termination": {
           "content": [
@@ -9704,7 +9715,7 @@
             "账户数据将保留三十 (30) 天以便导出，之后将从我们的活跃系统中删除",
             "第 1 条（定义）、第 11 条（您的数据）、第 12 条（知识产权）、第 14 条（保证）、第 15 条（责任）、第 16 条（赔偿）和第 18 条（适用法律）在终止后继续有效"
           ],
-          "title": "12. 终止"
+          "title": "17. 终止"
         },
         "thirdPartyComponents": {
           "content": [

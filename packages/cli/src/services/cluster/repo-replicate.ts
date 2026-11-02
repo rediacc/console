@@ -29,13 +29,17 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { ReplicaSet } from '@rediacc/shared/config-schema';
+import { issueFreeRepoLicense, resolveLicenseAuthority } from '../account/free-license.js';
+import { refreshRepoLicenseIdentity } from '../account/license.js';
 import {
   assertMachineSlotsAvailable,
   partialPlacementGuidance,
 } from '../account/license-preflight.js';
+import { authorizeSubscriptionViaDeviceCode } from '../account/subscription-device-auth.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
+import { machineConnections } from '../machine/machine-connection.js';
 
 /** Labels every replicate-generated object carries, for enumerate + teardown. */
 const REPLICA_LABEL = `${WK_INFRA_DOMAIN}/replica-set`;
@@ -171,7 +175,14 @@ export async function provisionReplicaDatastores(
 export async function provisionOneReplica(
   input: Pick<
     ProvisionReplicasInput,
-    'repoGuid' | 'setName' | 'datastore' | 'snapshot' | 'controlMachine' | 'controlMount' | 'debug'
+    | 'repo'
+    | 'repoGuid'
+    | 'setName'
+    | 'datastore'
+    | 'snapshot'
+    | 'controlMachine'
+    | 'controlMount'
+    | 'debug'
   >,
   index: number,
   node: ReplicaNode
@@ -220,6 +231,8 @@ export async function provisionOneReplica(
   // By GUID, never by name (#93, found live by B1): the repo folder on the datastore, and therefore on its byte-clone fork, is `repos/<guid>`, so a name-based `repo:` param stats `repos/<name>` and aborts every replicate.
   //
   // It MUST precede kube_node_label: the label is the scheduling gate (the PV's nodeAffinity key), so opening first means a pod can never be scheduled onto a volume that is not yet mounted.
+  // renet licence-checks datastore_volumes_open against the fork datastore `name` targets, and a fork gets a fresh datastore id (datastore/fork.go), so a licence for THAT id must be installed first.
+  await issueForkLicense(input, forkName, node.machine);
   await dispatch(
     'datastore_volumes_open',
     node.machine,
@@ -237,6 +250,96 @@ export async function provisionOneReplica(
     },
     input.debug
   );
+}
+
+/** The device-code login the licence paths run when a terminal operator picks "log in". */
+async function loginViaDeviceCode(): Promise<void> {
+  await authorizeSubscriptionViaDeviceCode(undefined, {
+    interactive: process.stdin.isTTY && process.stdout.isTTY,
+    announceIntro: true,
+  });
+}
+
+/** The fork's own datastore id, read from `datastore_list --json` on the node that hosts it. */
+async function readForkDatastoreId(
+  forkName: string,
+  machine: string,
+  debug?: boolean
+): Promise<string> {
+  const res = await getExecutor().execute({
+    functionName: 'datastore_list',
+    machineName: machine,
+    params: {},
+    debug,
+    captureOutput: true,
+  });
+  if (!res.success) {
+    throw new Error(
+      `Replica step "datastore_list" failed on ${machine}: ${res.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
+    );
+  }
+  const rows = parseCapturedJson<{ name?: string; datastoreId?: unknown }[]>(res.stdout);
+  const id = rows.find((r) => r.name === forkName)?.datastoreId;
+  if (typeof id !== 'string' || id === '') {
+    throw new Error(
+      `Cannot license replica fork "${forkName}" on ${machine}: its datastore registry reports no datastore id for it.`
+    );
+  }
+  return id;
+}
+
+/** Install the repo licence for the fork's datastore id on its node, through the account or the FREE licence. */
+async function issueForkLicense(
+  input: Pick<ProvisionReplicasInput, 'repo' | 'repoGuid' | 'debug'>,
+  forkName: string,
+  machine: string
+): Promise<void> {
+  const datastoreId = await readForkDatastoreId(forkName, machine, input.debug);
+  const repo = await configService.getRepository(input.repo);
+  // A grand repo carries no grandGuid (unset or self-referential, see config/resource-state.ts), so it is its own grand and the repo guid is the right value.
+  const grandGuid = repo?.grandGuid ?? input.repoGuid;
+  const authority = await resolveLicenseAuthority(loginViaDeviceCode);
+  const lease = await machineConnections.acquire(machine);
+  try {
+    const { machine: machineConfig, sshPrivateKey, sftp } = lease;
+    if (authority === 'free') {
+      // No datastoreMount: the FREE route takes a fixed 3 GB cap and never sizes the image (FreeLicenseParams has no mount field), unlike the token path's size probe.
+      await issueFreeRepoLicense(
+        machineConfig,
+        sshPrivateKey,
+        { repositoryGuid: input.repoGuid, grandGuid, kind: 'fork', datastoreId },
+        undefined,
+        sftp
+      );
+      return;
+    }
+    const issued = await refreshRepoLicenseIdentity(
+      machineConfig,
+      sshPrivateKey,
+      {
+        repositoryGuid: input.repoGuid,
+        grandGuid,
+        kind: 'fork',
+        datastoreId,
+        datastoreMount: forkMountFromName(forkName),
+      },
+      undefined,
+      sftp
+    );
+    if (!issued) {
+      throw new Error(
+        `Cannot license replica fork "${forkName}" on ${machine}: the account did not issue a licence.`
+      );
+    }
+  } finally {
+    lease.release();
+  }
+}
+
+/** `<parent>:<tag>` to its mount path `/mnt/rediacc-ds/<parent>-<tag>`. */
+function forkMountFromName(forkName: string): string {
+  const [parent, tag] = forkName.split(':');
+  return replicaForkMount(parent, tag);
 }
 
 /** The fork clone's mount path `/mnt/rediacc-ds/<parent>-<tag>` on its node. */

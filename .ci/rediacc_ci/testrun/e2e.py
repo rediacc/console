@@ -177,6 +177,7 @@ def build_shard_command(opts: Options, ids: list[str], workers: str, ci: bool) -
             all_files.append(f)
     return [
         "npx",
+        "--no-install",
         "playwright",
         "test",
         *run_opts,
@@ -187,7 +188,7 @@ def build_shard_command(opts: Options, ids: list[str], workers: str, ci: bool) -
 
 
 def build_plain_command(opts: Options, workers: str, ci: bool) -> list[str]:
-    cmd = ["npx", "playwright", "test", f"--workers={workers}"]
+    cmd = ["npx", "--no-install", "playwright", "test", f"--workers={workers}"]
     if opts.config:
         cmd += ["--config", opts.config]
     if opts.filter:

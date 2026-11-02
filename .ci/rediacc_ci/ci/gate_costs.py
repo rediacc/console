@@ -20,7 +20,7 @@ THE FILE'S SCHEMA, defined here beside its only writer:
 
 Per gate, each figure is the MEDIAN over the captures in which the gate passed and reported `cpuMs`: `cpu_s` and `wall_s` in seconds, `peak_rss_mb` (null when the sampler captured none). `eff_cores` is cpu_s / wall_s. `capped` is eff_cores >= `CAPPED_FRACTION` x the runner's cores: such a gate used the whole machine, so its width says more about the runner than about the gate and does not port to another machine. `rank` is 1 for the largest cpu_s. A gate the captures ran but never measured (failed, blocked, skipped: the capture runner has no submodules and no Go or uv toolchain) sits in `unmeasured` with its newest status, so a missing baseline is named rather than silently absent.
 
-TWO KINDS OF GATE, BECAUSE `--quick` IS TWO LANES. A capture runs every fast gate, and a slow gate (`slow: true` in the lock, or one whose `needs` reach a slow gate: run.ts's own fixpoint, `sampled_gate_ids`) ONLY when the captured commit's diff touches it (run.ts `quickDiffAdmit`). So a slow gate is DIFF-SAMPLED: present in one capture, absent from the next ones, with nothing wrong. MEASURED 2026-10-07: capture 37294996911 reads `--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)`; check:ci-format-scope entered the file from capture 37192382851 (whose diff touched it), and when that capture left the window every PR went red with "no capture measured it (absent in the newest)", the second such red after check:ci-proxy-rdc-update (365933af3). Therefore: a diff-sampled gate absent from EVERY capture in the window is not a finding, and `--refresh` CARRIES its last figures forward (named in `carried`, stamped with when they were measured) rather than dropping them; a diff-sampled gate the captures ran is held to every rule a fast gate is. Both sets are printed by name on every green.
+TWO KINDS OF GATE, BECAUSE `--quick` IS TWO LANES. A capture runs every fast gate, and a slow gate (`slow: true` in the lock, or one whose `needs` reach a slow gate: run.ts's own fixpoint, `sampled_gate_ids`) ONLY when the captured commit's diff touches it (run.ts `quickDiffAdmit`). So a slow gate is DIFF-SAMPLED: present in one capture, absent from the next ones, with nothing wrong. MEASURED 2026-10-07: capture 37294996911 reads `--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)`; check:ci-format-scope entered the file from capture 37192382851 (whose diff touched it), and when that capture left the window every PR went red with "no capture measured it (absent in the newest)", the second such red after check:ci-proxy-rdc-update (a33693828). Therefore: a diff-sampled gate absent from EVERY capture in the window is not a finding, and `--refresh` CARRIES its last figures forward (named in `carried`, stamped with when they were measured) rather than dropping them; a diff-sampled gate the captures ran is held to every rule a fast gate is. Both sets are printed by name on every green.
 
 `--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has (either kind); a FAST gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed fast gate no fresh capture measured, or a committed diff-sampled gate a fresh capture ran and could not measure; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
 
@@ -227,7 +227,7 @@ def collect_captures(
             repo, CAPTURE_WORKFLOW, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
         ):
             runs.setdefault(run.get("id"), run)
-    # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture outlived its 12m bound for three nights and the fix, 5d5d88247, sat on the PR that this very check kept red).
+    # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture outlived its 12m bound for three nights and the fix, 65a2b37ee, sat on the PR that this very check kept red).
     # A capture DISPATCHED on the PR head comes from the workflow and gate code that branch ships, which is no new trust: this check itself runs from the PR tree, so the PR could already rewrite it. It is read beside main's, never instead of it.
     head = _head_branch()
     if head and head != budget_report.DEFAULT_BRANCH:
@@ -548,7 +548,9 @@ def refresh(
             " (%s)" % ", ".join(carried) if carried else "",
             len(captures),
             baseline["source"]["cores"],
-        )
+        ),
+        # stderr, so `--refresh --dry-run` stdout is the payload alone and parses as JSON.
+        file=sys.stderr,
     )
     if dry_run:
         print(payload)

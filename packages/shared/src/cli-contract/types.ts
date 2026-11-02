@@ -71,9 +71,9 @@ export type PositionalKind =
  * `kinds` to a hard constraint: an operator can always type a value the picker
  * did not list (a machine that is not yet in config, a fork tag typed by hand).
  *
- * The 12 kinds are the noun set the addressing grammar binds. Seven resolve
- * from config families (machine/repo/datastore/storage/cluster/provider/
- * strategy); five resolve by running a discovery command
+ * The 11 kinds are the noun set the addressing grammar binds. Six resolve
+ * from config families (machine/repo/datastore/cluster/provider/strategy);
+ * five resolve by running a discovery command
  * (container/template/snapshot/job/artifact). The mapping lives in
  * {@link RESOURCE_DISCOVERY} (./discovery). There are deliberately NO
  * branch/commit kinds in v1.
@@ -82,7 +82,6 @@ export type ResourceKind =
   | 'machine'
   | 'repo'
   | 'datastore'
-  | 'storage'
   | 'cluster'
   | 'provider'
   | 'container'
@@ -330,13 +329,20 @@ export interface ContractCommand {
    * Safe to run as a DETACHED renet job: start it under a transient unit and
    * follow its spool, so a dropped connection does not lose the work.
    *
-   * Derived as `proxyCapable && domain !== 'job'` (minus a small exclusion
-   * table): the classes proxyCapable already rules out are exactly the ones that
-   * break under detach, and `rdc job *` manages jobs rather than doing machine
-   * work, so detaching one is circular. The serve dispatch turns detach on for a
-   * proxied command; `--background` turns it on for a local one.
+   * Derived as `proxyCapable && domain !== 'job'` minus the section 24
+   * exceptions of agent/plans/PLAN-detached-jobs.md (DETACH_EXCLUSIONS in
+   * generate-cli-contract.ts): every proxyable machine-plane command runs its
+   * renet calls as one machine job, `rdc job *` reads the spool (a job per job
+   * query is circular), and an exception makes no renet call or cannot run as a
+   * root unit. `--background` is accepted exactly where this is true.
    */
   detachable: boolean;
+  /**
+   * Why a proxyable command does not run as a machine job, phrased for the
+   * operator. Present exactly when the command is proxyCapable, not a `job`
+   * verb, and not detachable, so a `--background` refusal always has a message.
+   */
+  detachBlockedReason?: string;
 
   // ── Resource binding (how a caller targets this command) ────────────────
   /**
@@ -377,4 +383,5 @@ export interface CliContract {
 
 /** A flattened i18n bundle: key -> translated string. */
 type ContractStrings = Record<string, string>;
+
 export type { ContractStrings };

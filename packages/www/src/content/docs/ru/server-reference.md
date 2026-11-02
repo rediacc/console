@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ru
-sourceHash: "960821a4fc0654eb"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "a64de9af83bd943a"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Справочник по серверу
@@ -44,7 +44,7 @@ sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ├── letsencrypt/                       # ACME certificates
 └── traefik/dynamic/                   # Dynamic route files
 
-/run/rediacc/docker-{id}.sock          # Per-network Docker sockets
+/run/rediacc/net-{id}/docker-{id}.sock          # Per-network Docker sockets
 /var/lib/rediacc/router/               # Router state (port allocations)
 ```
 
@@ -102,7 +102,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 Вы также можете использовать Docker-сокет напрямую:
 
 ```bash
-DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
+DOCKER_HOST=unix:///run/rediacc/net-{id}/docker-{id}.sock docker ps
 ```
 
 > Всегда запускайте compose из каталога, содержащего `docker-compose.yml`, иначе Docker не найдёт файл.
@@ -190,16 +190,12 @@ renet daemon logs   --network-id {id}    # Daemon logs
 
 ### Резервное копирование и восстановление
 
-Отправка резервных копий на другую машину или в облачное хранилище:
+Отправляйте бэкапы на другую машину. Снимки хранилища чанков создаются командой `rdc backup snapshot` или `renet backup snapshot`:
 
 ```bash
 # Push to remote machine (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
   --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
-
-# Push to cloud storage (rclone)
-renet backup push --name {uuid} --network-id {id} --target storage \
-  --dest {uuid}.backup --rclone-backend {backend} --rclone-bucket {bucket}
 
 # Pull from remote
 renet backup pull --name {uuid} --network-id {id} --source machine \
@@ -316,7 +312,7 @@ sudo renet docker --network-id {id} -- exec -it {container} bash
 ### Определение Docker-сокета контейнера
 
 ```bash
-for sock in /run/rediacc/docker-*.sock; do
+for sock in /run/rediacc/net-*/docker-*.sock; do
   result=$(DOCKER_HOST=unix://$sock docker ps --format '{{.Names}}' 2>/dev/null | grep {name})
   [ -n "$result" ] && echo "Found on: $sock"
 done
@@ -342,7 +338,7 @@ renet list containers
 - Разделитель `--` обязателен перед передачей аргументов в `renet compose` и `renet docker`
 - Запускайте compose из каталога, содержащего `docker-compose.yml`
 - Назначения слотов в `.rediacc.json` стабильны, не изменяйте их после развёртывания
-- Используйте пути `/run/rediacc/docker-{id}.sock` (systemd может изменять устаревшие пути `/var/run/`)
+- Используйте пути `/run/rediacc/net-{id}/docker-{id}.sock` (systemd может изменять устаревшие пути `/var/run/`)
 - Периодически выполняйте `renet prune --dry-run` для обнаружения осиротевших ресурсов
 - Снимки BTRFS (`renet backup`) быстры и экономичны, создавайте их перед рискованными изменениями
 - Репозитории зашифрованы с помощью LUKS, потеря пароля означает потерю данных

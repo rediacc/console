@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: fr
-sourceHash: "05e91da1e94dddfc"
-sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
+sourceHash: "05e87ddd9ad815ff"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Démarrage rapide
@@ -75,7 +75,7 @@ rdc machine setup my-server  # Provisionne renet + crée le datastore
 
 ```bash
 rdc config show                            # Résumé lisible
-cat ~/.config/rediacc/rediacc.json         # JSON brut : machines, repos, stockages, clé SSH
+cat ~/.config/rediacc/rediacc.json         # JSON brut : machines, repos, destinations de sauvegarde, clé SSH
 ```
 
 **Un fichier = un environnement.** Copiez-le sur un autre poste et vous êtes prêt.
@@ -223,7 +223,7 @@ rdc backup usage
 
 Les instantanés sont envoyés vers le stockage fragmenté, qui nécessite un serveur de compte et un dépôt sous licence. Seules les données modifiées sont stockées, donc un second instantané du même dépôt ne coûte que la différence plutôt que l'image entière.
 
-Pousser un dépôt vers un stockage cloud avec `--to <storage>` est retiré et refuse désormais. Pour lire une archive écrite avant ce changement, `rdc storage browse` fonctionne toujours et nécessite `rclone` dans votre PATH.
+Les sauvegardes n'ont qu'un seul type de destination, le stockage fragmenté hébergé par le service, et `--to` sur `repo push` ne désigne qu'une machine. La rétention se déclare par lignée de dépôt avec `rdc backup retention set`, et les exécutions planifiées viennent de `rdc backup strategy set` puis de `rdc backup schedule`. Voir [Sauvegarde et restauration](/fr/docs/backup-restore).
 
 ### 4. Récupérer depuis un emplacement distant
 

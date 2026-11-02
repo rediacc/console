@@ -346,6 +346,43 @@ CASES = [
         'gh pr create -t --body -b "fix: x"',
         False,
     ),
+    # #736c233b: a launcher in front of the commit. The segment's source span starts at the launcher, so a shlex split of it began `timeout 600 git ...` and read no flag at all; the message went unexamined. Each launcher is one `shellscan._strip_prefixes` strips, the same set `every_run` resolves.
+    (
+        "timeout 600 before the commit",
+        "timeout 600 %s -q -F %s -- p" % (COMMIT, BODY_FILE_PATH),
+        True,
+    ),
+    ("an env assignment launcher", "env X=1 %s -F %s -- p" % (COMMIT, BODY_FILE_PATH), True),
+    ("a bare assignment prefix", "X=1 %s -F %s -- p" % (COMMIT, BODY_FILE_PATH), True),
+    ("nice -n 5 before the commit", 'nice -n 5 %s -m "Did %s run it?" -- p' % (COMMIT, Y), True),
+    ("nohup before the commit", 'nohup %s -m "Did %s run it?" -- p' % (COMMIT, Y), True),
+    # Review 63863ef6.3: `sudo`, the launcher the commit message named, before a commit and before a gh pr create.
+    ("sudo before the commit", 'sudo %s -m "Did %s run it?" -- p' % (COMMIT, Y), True),
+    (
+        "sudo -u root before a gh pr create",
+        'sudo -u root gh pr create --title "fix: x" --body "Did %s run it?"' % Y,
+        True,
+    ),
+    (
+        "a launcher inside a command substitution",
+        'R=$(timeout 5 %s -m "Did %s run it?" -- p)' % (COMMIT, Y),
+        True,
+    ),
+    (
+        "timeout before a gh pr create",
+        'timeout 60 gh pr create --title "fix: x" --body "Did %s run it?"' % Y,
+        True,
+    ),
+    (
+        "CONTROL: a sentence mentioning the commit is not a commit",
+        "echo please %s -F %s now" % (COMMIT, BODY_FILE_PATH),
+        False,
+    ),
+    (
+        "CONTROL: a launcher before a clean message passes",
+        'timeout 600 %s -m "fix(ci): widen the trigger" -- p' % COMMIT,
+        False,
+    ),
 ]
 
 

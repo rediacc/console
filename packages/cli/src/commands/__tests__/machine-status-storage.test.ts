@@ -218,6 +218,9 @@ describe('table/JSON section parity guard', () => {
     license_statuses: 'table',
     health_drift: 'table',
     backup_coverage: 'table',
+    jobs: 'table',
+    // The CLI shows stale renet processes through its own staleBinary probe table, not listResult.stale_processes.
+    stale_processes: 'table',
   };
 
   it('renders storage_health in the table (the gap this change closes)', () => {

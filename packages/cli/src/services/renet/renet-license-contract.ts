@@ -63,7 +63,7 @@ const TIER_BY_FUNCTION: ReadonlyMap<string, LicenseTier> = new Map(
 );
 
 /**
- * The licence tier renet assigns to a bridge function, read from the generated
+ * The licence tier renet assigns to a renet function, read from the generated
  * contract (`LICENSE_TIERS`), which is emitted from renet's tier map.
  *
  * `undefined` means renet has no entry for the name. That is not "free": every
@@ -143,14 +143,15 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
   );
 }
 
-/** The chunk-store read verbs: restore, and browse of a stored snapshot. */
+/** The chunk-store read verbs: restore, restore of one path, and browse of a stored snapshot. */
 const RESTORE_LICENSE_FUNCTIONS: ReadonlySet<string> = new Set([
   'backup_restore',
+  'backup_restore_path',
   'backup_browse_at',
 ]);
 
 /**
- * The chunk-store read verbs (`backup_restore`, `backup_browse_at`) that need a repo licence installed on the target
+ * The chunk-store read verbs (`backup_restore`, `backup_restore_path`, `backup_browse_at`) that need a repo licence installed on the target
  * machine BEFORE it runs, without being a repo-provisioning verb.
  *
  * `renet backup restore` and `renet backup browse-at` open a chunk-store session, and the licence blob is
@@ -195,7 +196,7 @@ export function usesTagAsProvisioningTarget(functionName: string): boolean {
  * `isLicensedRenetFunction` and its REPOSITORY_DENY_LIST used to live here.
  * Both are deleted, and the deletion is the point.
  *
- * They were a SECOND source of truth for which bridge functions need a licence,
+ * They were a SECOND source of truth for which renet functions need a licence,
  * maintained by hand alongside renet's tier map, and they had already drifted:
  * the prefix rule claimed every `backup_*` function was licensed, while renet
  * licenses none of them. Proven live, one enforcing binary, no licence

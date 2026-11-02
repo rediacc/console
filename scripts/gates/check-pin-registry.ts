@@ -165,7 +165,7 @@ export function gitTree(root: string, reg: PinRegistry, note: (line: string) => 
 export function memTree(files: Record<string, Record<string, string>>, gitmodules: string[]): Tree {
   return {
     repos: Object.keys(files),
-    files: (repo) => Object.keys(files[repo] ?? {}).sort(),
+    files: (repo) => Object.keys(files[repo] ?? {}).sort((a, b) => Number(a > b) - Number(a < b)),
     read: (repo, file) => (Object.hasOwn(files[repo] ?? {}, file) ? files[repo][file] : null),
     gitmodules,
   };
@@ -639,7 +639,7 @@ export function checkRegistry(
         const live = plan.filter(() => true);
         let text: string | null | undefined;
         for (const p of live) {
-          if (text === undefined) text = tree.read(repo, file);
+          text ??= tree.read(repo, file);
           if (text === null) break;
           if (!text.includes(p.value)) continue;
           for (const re of p.res) {

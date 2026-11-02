@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: de
-sourceHash: "878b744629cb8b14"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "146542a7b1508613"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
 # Architektur
@@ -73,12 +73,12 @@ Jedes Repository erhält seinen eigenen isolierten Docker-Daemon. Wenn ein Repos
 ![Docker-Isolation](/img/arch-docker-isolation.svg)
 
 ```
-/var/run/rediacc/docker-{networkId}.sock
+/var/run/rediacc/net-{networkId}/docker-{networkId}.sock
 ```
 
 Zum Beispiel verwendet ein Repository mit Netzwerk-ID `2816`:
 ```
-/var/run/rediacc/docker-2816.sock
+/var/run/rediacc/net-2816/docker-2816.sock
 ```
 
 Das bedeutet:
@@ -108,7 +108,7 @@ Docker-Daten und -Konfiguration werden innerhalb des Repository-Einhängepunkts 
 
 **Gemeinsamer Laufzeitpfad** (unverändert):
 ```
-/run/rediacc/docker-{N}.sock
+/var/run/rediacc/net-{N}/docker-{N}.sock
 ```
 
 Diese einheitliche Struktur beseitigt Konflikte zwischen schreibgeschützten und schreibbaren Einhängepunkten, die auftraten, wenn Daemon-Pfade zwischen dem Host-Dateisystem und dem verschlüsselten Volume aufgeteilt waren. Wir sind auf diese Aufteilung mehr als einmal gestoßen, bevor wir uns auf diese Lösung einigten. Sowohl Pro-Repository- als auch Standalone-Daemons folgen derselben Verzeichnisstruktur, sodass Werkzeuge und Diagnosen in beiden Fällen identisch funktionieren.
@@ -144,11 +144,11 @@ Ganze-Cluster-Klonen und -Umzug liegen bei `rdc cluster fork` und `rdc cluster m
 
 ## Konfigurationsstruktur
 
-Jede Konfiguration ist eine flache JSON-Datei, die in `~/.config/rediacc/` gespeichert wird. Die Standardkonfiguration ist `rediacc.json`; benannte Konfigurationen verwenden den Namen als Dateiname (z. B. `production.json`). Felder sind nach Zweck eingeteilt: `resources` enthält Deployments, `credentials` enthält Geheimnisse, `account` enthält Cloud-Standardwerte, `infra` enthält TLS/DNS und `encryption` enthält den verschlüsselten Zustand einzelner Felder. Der Top-Level-Diskriminator `schemaVersion: 2` verankert die Vorwärtskompatibilität.
+Jede Konfiguration ist eine flache JSON-Datei, die in `~/.config/rediacc/` gespeichert wird. Die Standardkonfiguration ist `rediacc.json`; benannte Konfigurationen verwenden den Namen als Dateiname (z. B. `production.json`). Felder sind nach Zweck eingeteilt: `resources` enthält Deployments, `credentials` enthält Geheimnisse, `account` enthält Cloud-Standardwerte, `infra` enthält TLS/DNS und `encryption` enthält den verschlüsselten Zustand einzelner Felder. Der Top-Level-Diskriminator `schemaVersion: 3` verankert die Vorwärtskompatibilität.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "version": 47,
   "defaults": {
@@ -175,10 +175,12 @@ Jede Konfiguration ist eine flache JSON-Datei, die in `~/.config/rediacc/` gespe
         "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
       }
     },
-    "storages": {
-      "backblaze": {
-        "provider": "b2",
-        "vaultContent": { "...": "..." }
+    "backupStrategies": {
+      "daily": {
+        "destinations": [{ "kind": "hosted-service", "name": "hosted", "enabled": true }],
+        "schedule": "0 2 * * *",
+        "mode": "hot",
+        "retention": { "keepLast": 7, "keepDaily": 7 }
       }
     },
     "repositories": {
@@ -203,14 +205,14 @@ Jede Konfiguration ist eine flache JSON-Datei, die in `~/.config/rediacc/` gespe
 
 | Bucket | Inhalt |
 |---|---|
-| `schemaVersion` | Diskriminator (aktuell `2`). Loader lehnen unbekannte Versionen ab. |
+| `schemaVersion` | Diskriminator (aktuell `3`). Loader lehnen unbekannte Versionen ab. |
 | `id` / `version` | Unveränderliche UUID + monotoner Zähler; werden für optimistisches Locking im Remote-Config-Store verwendet. |
 | `defaults.*` | Nicht-sensible Laufzeit-Standardwerte (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
 | `credentials.ssh` | Inline-SSH-Schlüsselpaar + `knownHosts`. Ersetzt den veralteten `ssh.privateKeyPath` (keine Datei-Pfad-Indirection mehr; der Inhalt wird zur Ladezeit aufgelöst und inline gespeichert). |
 | `credentials.cfDnsApiToken` | Cloudflare-DNS-01-ACME-Token. |
 | `credentials.masterPasswordVerifier` | Nur vorhanden, wenn `encryption.mode === "master-password"`. |
 | `resources.machines.*` | SSH-Verbindungsdetails pro Maschine. |
-| `resources.storages.*` | rclone-kompatible Backups-Anmeldedaten für externe Speicher. |
+| `resources.backupStrategies.*` | Benannte Backup-Strategien: Zeitplan, Modus, Repository-Filter, Aufbewahrung und Ziele (immer ein gehosteter Chunk-Store). |
 | `resources.repositories.*` | Pro-Repo GUID + LUKS-Credential + SSH-Schlüssel für Sandbox-isolierten Agent-Zugriff. |
 | `infra.acmeCertCache.*` | Gecachte Traefik-acme.json, gzip+base64, nach Domäne indiziert. |
 | `encryption.mode` | `"plaintext"` (Standard) oder `"master-password"`. |

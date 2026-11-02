@@ -2,9 +2,13 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { expect, test } from '@playwright/test';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
-import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/bridge/OpsManager';
-import type { ExecResult } from '../../src/utils/bridge/types';
+import { installRepoLicence } from '../../src/utils/licence';
+import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/renet-functions/OpsManager';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../../src/utils/renet-functions/types';
+
+/** Single-quote `value` for a POSIX shell, so a quote inside it cannot end the quoting early. */
+const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
 const execAsync = promisify(exec);
 
@@ -42,7 +46,8 @@ const K3S = '/usr/local/bin/rediacc-k3s';
 // Network IDs must be 2816 + n*64. Suites 15/16/17 use 2816-3328; suite 18 uses
 // 3392 (source) and reuses it on the destination (the image carries its netID).
 const MIG_NET = '3392';
-const REPO = 'dgmig';
+// A fixed GUID, not a name: renet licenses a repository by its name and the account server signs UUIDs only (src/utils/licence.ts). Fixed so cleanNode reaps the leftover of an earlier run.
+const REPO = 'd91c0000-1818-4a18-8a18-000000001818';
 const MOUNT = `${DATASTORE}/mounts/${REPO}`;
 const KC = `${MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
 
@@ -51,7 +56,7 @@ test.describe
     test.skip(!enabled, 'Requires K8S_MODE=1 and DUAL_GROUP=1 (a second KVM group booted)');
     test.setTimeout(900_000);
 
-    let src: BridgeTestRunner; // group A worker .11 (source; two-hop via A's bridge)
+    let src: RenetFunctionsTestRunner; // group A worker .11 (source; two-hop via A's bridge)
     const opsA = getOpsManager();
     // Group B's non-singleton manager: its own groupEnv (VM_NET=renet12,
     // DOCKER_REGISTRY derived from .5), disjoint IDs — this is the wave-8 seam.
@@ -155,8 +160,24 @@ test.describe
       await cleanNode(onB);
     };
 
+    // The licence blob is bound to the target machine's id, so each group's worker gets its own. Group B's single-hop executor takes no stdin: the blob rides in as base64 through a shell pipe instead.
+    const licenceOn = async (target: 'A' | 'B'): Promise<ExecResult> =>
+      installRepoLicence(
+        target === 'A'
+          ? src.executeViaBridge.bind(src)
+          : (cmd, timeout, options) =>
+              src.executeOnVM(
+                B_WORKER_IP,
+                options?.stdin === undefined
+                  ? cmd
+                  : `printf %s ${Buffer.from(options.stdin).toString('base64')} | base64 -d | bash -c ${shellQuote(cmd)}`,
+                timeout
+              ),
+        { repositoryGuid: REPO, kind: 'grand', size: '6G', datastorePath: DATASTORE }
+      );
+
     test.beforeAll(async () => {
-      src = BridgeTestRunner.forWorker(1);
+      src = RenetFunctionsTestRunner.forWorker(1);
 
       // Host routes between the two private LANs (the WAN stand-in).
       await ensureCrossLanRoute();
@@ -238,6 +259,10 @@ test.describe
     });
 
     test('3. single-node k3s cluster on group A worker, with kine state', async () => {
+      const licenceA = await licenceOn('A');
+      expect(licenceA.code, `licence on A: ${licenceA.stdout}${licenceA.stderr}`).toBe(0);
+      const licenceB = await licenceOn('B');
+      expect(licenceB.code, `licence on B: ${licenceB.stdout}${licenceB.stderr}`).toBe(0);
       const create = await onA(
         `sudo renet repository create --name ${REPO} --network-id ${MIG_NET} --unencrypted --size 6G`
       );

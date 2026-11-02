@@ -69,9 +69,11 @@ def retry[T](asked: str, host: str, who: str, once: Callable[[], Answer[T] | Fai
         if tries >= MAX_ATTEMPTS or not outcome.retry:
             raise NotComparedError(outcome.what, host, asked, tries, outcome.status)
         wait = BACKOFF_S[tries - 1] if tries - 1 < len(BACKOFF_S) else 0
+        # Progress, so stderr: a caller printing JSON on stdout must stay parseable.
         print(
             "? %s: attempt %d of %d failed (%s), asking again in %d s"
             % (who, tries, MAX_ATTEMPTS, outcome.what, wait),
+            file=sys.stderr,
             flush=True,
         )
         SLEEP_SEAM["sleep"](wait)

@@ -20,7 +20,6 @@ function config(): RdcConfig {
         keep: { ip: '192.0.2.1', user: 'root' },
         gone: { ip: '192.0.2.2', user: 'root' },
       },
-      storages: { s3: { provider: 's3' } },
     },
   } as unknown as RdcConfig;
 }
@@ -31,10 +30,8 @@ describe('a resource state never edits the config it was loaded from', () => {
     const state = RemoteResourceState.load(loaded, 'c', {} as RemoteConfigAdapter, 2, 0);
     const machines = state.getMachines();
     delete machines.gone;
-    delete state.getStorages().s3;
 
     expect(Object.keys(loaded.resources?.machines ?? {})).toEqual(['keep', 'gone']);
-    expect(loaded.resources?.storages?.s3).toBeDefined();
   });
 
   it('local: the same holds', () => {

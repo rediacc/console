@@ -157,13 +157,12 @@ SIGNATURES = (
         "a package mirror failed",
         0,
     ),
-    # renet's worker setup gave up on the package manager. Only the FINAL lines count: `apt install of X failed or stalled past Ns in all N attempts` and `apt-get update failed ... in all N attempts` (aptretry.go), and `<tool> is still not installed after every install attempt` (the rclone dnf/zypper/apt arms in docker/service.go, which share that last line). The per-attempt `attempt 1/3 ... retrying` and `install attempt N failed, sleeping` lines are NOT matched: a retry that then succeeded is no verdict, and since an infra hit outranks every code hit, matching it would hide a real error later in the same log. E2E Workers run 37660537647 (legs 1,4,5,6,7) read `code-likely (error: an error was raised)` on an apt mirror stall.
+    # renet's worker setup gave up on the package manager. Only the FINAL lines count: `apt install of X failed or stalled past Ns in all N attempts` and `apt-get update failed ... in all N attempts` (ops_host_apt.go). The per-attempt `attempt 1/3 ... retrying` lines are NOT matched: a retry that then succeeded is no verdict, and since an infra hit outranks every code hit, matching it would hide a real error later in the same log. E2E Workers run 37660537647 (legs 1,4,5,6,7) read `code-likely (error: an error was raised)` on an apt mirror stall.
     (
         "pkg-install-stall",
         "infra",
         re.compile(
             r"\bapt(?:-get update| install of \S.*?) failed or stalled past \d+s in all \d+ attempts"
-            r"|\bis still not installed after every install attempt"
         ),
         "the package manager stalled or failed in every install attempt",
         0,
@@ -891,8 +890,10 @@ def durations(job, p90_minutes=None):
     }
 
 
-def history(fetch, job_name, n=5, workflow_file="ci.yml"):
+def history(fetch, job_name, n=5, workflow_file="ci.yml", passed=None):
     """The last `n` completed runs of one job by display name, newest first.
+
+    A SKIPPED JOB IS NOT A RUN. MEASURED 2026-10-30: the five newest main runs were reruns of 403f47b9 that skipped `CD Preflight`, `Check Release State` and `Finalize Release Sentinel`, so `--history` answered five `skipped` rows with no duration and the jobs' real times were unreadable. Skipped jobs are passed over and counted in `passed["skipped"]` when a dict is given.
 
     NO `status=` FILTER IN THE REQUEST. MEASURED 2026-10-07: `workflows/ci.yml/runs?per_page=20&status=completed` answered `total_count` 46, newest run 2026-10-01 (0930-1), while the unfiltered listing answered 239 with that day's runs first; `&status=success` answered ONE run from 2026-09-29. GitHub serves a status-filtered listing from a stale index (budget_report.py `fetch_runs` measured the same on 2026-09-28), so `--history` answered week-old runs of another branch with no warning. The unfiltered listing is fresh; completion is filtered here instead.
     """
@@ -922,6 +923,10 @@ def history(fetch, job_name, n=5, workflow_file="ci.yml"):
                 break
             continue
         for j in jobs:
+            if j.get("name") == job_name and j.get("conclusion") == "skipped":
+                if passed is not None:
+                    passed["skipped"] = passed.get("skipped", 0) + 1
+                break
             if j.get("name") == job_name:
                 out.append(
                     {

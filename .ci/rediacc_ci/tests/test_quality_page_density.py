@@ -123,7 +123,13 @@ def test_pure_helpers() -> None:
     argv = page_density.docker_argv("/repo", "img:1")
     assert argv[:5] == ["docker", "run", "--rm", "--ipc=host", "-v"]
     assert argv[5] == "/repo:/repo"
-    assert argv[-4:] == ["npx", "tsx", "scripts/gates/check-page-density.ts", "--selftest"]
+    assert argv[-5:] == [
+        "npx",
+        "--no-install",
+        "tsx",
+        "scripts/gates/check-page-density.ts",
+        "--selftest",
+    ]
     assert "CI=true" in argv
 
 

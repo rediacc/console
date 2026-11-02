@@ -147,7 +147,7 @@ POLL_REMOTE = (
     """sudo bash -c '
       for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
         [ -S "$sock" ] || continue
         cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format "{{.ID}}" 2>/dev/null | head -1)
         if [ -n "$cid" ]; then
@@ -162,7 +162,7 @@ DIAG_REMOTE = (
     """sudo bash -c '
       for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
         [ -S "$sock" ] || continue
         cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format "{{.ID}}" 2>/dev/null | head -1)
         if [ -n "$cid" ]; then
@@ -183,7 +183,7 @@ APP_REMOTE = (
     """sudo bash -c '
   for sock in """
     + RUNTIME_DIR
-    + """/docker-*.sock; do
+    + """/net-*/docker-*.sock; do
     [ -S "$sock" ] || continue
     cid=$(docker -H unix://$sock ps -a --filter name=^app$ --format "{{.ID}}" 2>/dev/null | head -1)
     if [ -n "$cid" ]; then

@@ -201,7 +201,7 @@ export function pathsToCommit(config: unknown): string[] {
   for (const { pointer, meta } of walkSensitive(config)) {
     if (meta.commit !== false && meta.kind !== 'public') out.push(pointer);
   }
-  return out.sort();
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** Stable comparator for string keys used in canonical JSON sorting. */

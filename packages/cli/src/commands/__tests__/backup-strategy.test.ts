@@ -4,8 +4,14 @@ import {
   buildBackupCommands,
   generateServiceUnit,
 } from '../../services/backup/backup-schedule-unit-generator.js';
-import type { BackupStrategyDestination } from '../../types/index.js';
-import { buildDestination, buildStrategyUpdate, parseRepoFilter } from '../backup-strategy.js';
+import { strategyUnschedulableReason } from '../../services/backup/backup-strategy-validate.js';
+import {
+  applyBackupStrategyOptions,
+  buildDestination,
+  buildStrategyUpdate,
+  parseRepoFilter,
+  parseRetentionOption,
+} from '../backup-strategy.js';
 
 describe('parseRepoFilter', () => {
   it('parses a comma-separated list, trimming and dropping empties', () => {
@@ -73,11 +79,10 @@ describe('buildStrategyUpdate include/exclude', () => {
 /**
  * THE DEFECT THESE CLOSE: there was no supported way to schedule a backup.
  *
- * `backup strategy set` could only make `storage` (rclone) destinations, it
- * hard-required `--storage`, and on 2026-08-15 the unit generator stopped
- * being able to render that kind at all. Every documented route from
- * "configure a strategy" to "deploy a timer" therefore ended in an exception,
- * and only a hand-edited config JSON could produce a working strategy.
+ * `backup strategy set` could only make a destination kind the unit generator
+ * had stopped being able to render. Every documented route from "configure a
+ * strategy" to "deploy a timer" therefore ended in an exception, and only a
+ * hand-edited config JSON could produce a working strategy.
  *
  * The crossing test below is the point of this file: ONE object made by the
  * create path is handed to the REAL unit generator. Every defect in this stack
@@ -86,8 +91,8 @@ describe('buildStrategyUpdate include/exclude', () => {
  * written expectation would prove exactly nothing here.
  */
 describe('creating a destination an operator can actually schedule', () => {
-  it('defaults to a chunk-store destination when --storage is absent', () => {
-    const dest = buildDestination({ destinationName: 'chunks' }, undefined);
+  it('makes a chunk-store destination', () => {
+    const dest = buildDestination({ destinationName: 'chunks' });
     expect(dest.kind).toBe('hosted-service');
     expect(dest.name).toBe('chunks');
     expect(dest).not.toHaveProperty('storage');
@@ -95,21 +100,23 @@ describe('creating a destination an operator can actually schedule', () => {
 
   it('and the unit generator emits a real snapshot command for that object', () => {
     // The crossing: create path -> generator, no fake in between. Before the fix this could not even be written, because the create path threw.
-    const dest = buildDestination({ destinationName: 'chunks' }, undefined);
+    const dest = buildDestination({ destinationName: 'chunks' });
     const { commands, envVars } = buildBackupCommands(
       { schedule: '0 * * * *', destinations: [dest] },
       [dest],
       WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
-    expect(commands).toEqual([`/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH}`]);
+    expect(commands).toEqual([
+      `/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --parallelism 2`,
+    ]);
     // No credential reaches the unit: the machine authenticates with its licence blob and the server hands back a short-lived grant.
     expect(envVars).toEqual({});
   });
 
   it('and a whole systemd unit comes out of it, ExecStart and all', () => {
     // One step further than the command list: what `rdc backup schedule` will actually write to the machine, built from the object the create path produced. This is the end-to-end claim the defect made impossible.
-    const dest = buildDestination({ destinationName: 'chunks' }, undefined);
+    const dest = buildDestination({ destinationName: 'chunks' });
     const { serviceContent } = generateServiceUnit(
       'hourly-chunks',
       { schedule: '0 * * * *', destinations: [dest] },
@@ -123,38 +130,8 @@ describe('creating a destination an operator can actually schedule', () => {
     expect(serviceContent).not.toContain('EnvironmentFile=');
   });
 
-  it('still makes a storage destination when --storage is given', () => {
-    // `--storage` keeps working for as long as storage destinations are legal to hold on disk. It is now also the explicit opt-in to the legacy kind.
-    const dest = buildDestination({ destinationName: 'offsite', storage: 'onedrive' }, undefined);
-    expect(dest.kind).toBe('storage');
-    expect(dest).toMatchObject({ storage: 'onedrive' });
-  });
-
-  it('does NOT convert an existing storage destination just because --storage was omitted', () => {
-    // `set s --destination onedrive-hourly --disable` against the operator's live rclone destination must edit it in place. Flipping its kind here would orphan every backup already behind it.
-    const existing: BackupStrategyDestination = {
-      kind: 'storage',
-      name: 'onedrive-hourly',
-      storage: 'microsoft',
-      folder: 'hot',
-    };
-    const dest = buildDestination({ destinationName: 'onedrive-hourly', enabled: false }, existing);
-    expect(dest.kind).toBe('storage');
-    expect(dest).toMatchObject({ storage: 'microsoft', folder: 'hot', enabled: false });
-  });
-
-  it('treats a destination with no `kind` at all as storage, not as a chunk store', () => {
-    // How the operator's real config reads: `kind` was added later. Guessing hosted-service for it would silently repoint an rclone destination.
-    const raw: Record<string, unknown> = { name: 'onedrive-hourly', storage: 'microsoft' };
-    const legacy = raw as BackupStrategyDestination;
-    const dest = buildDestination({ destinationName: 'onedrive-hourly' }, legacy);
-    expect(dest.kind).toBe('storage');
-    expect(dest).toMatchObject({ storage: 'microsoft' });
-  });
-
-  it('keeps an existing chunk-store destination on its own kind', () => {
-    const existing: BackupStrategyDestination = { kind: 'hosted-service', name: 'chunks' };
-    const dest = buildDestination({ destinationName: 'chunks', bwlimit: '6M' }, existing);
+  it('applies the bandwidth limit flag', () => {
+    const dest = buildDestination({ destinationName: 'chunks', bwlimit: '6M' });
     expect(dest.kind).toBe('hosted-service');
     expect(dest).toMatchObject({ bandwidthLimit: '6M' });
   });
@@ -162,24 +139,111 @@ describe('creating a destination an operator can actually schedule', () => {
   it('omits keys the flags did not set, so the stored value survives the merge', () => {
     // addBackupDestination merges with `{...existing, ...dest}`, and zod KEEPS
     // an optional key passed as an explicit undefined. Before this, setting a bandwidth limit silently re-ENABLED a destination the operator had disabled, and any set without --bwlimit dropped the cap.
-    const dest = buildDestination({ destinationName: 'chunks', bwlimit: '6M' }, undefined);
+    const dest = buildDestination({ destinationName: 'chunks', bwlimit: '6M' });
     expect(Object.hasOwn(dest, 'enabled')).toBe(false);
     const merged = { ...{ name: 'chunks', kind: 'hosted-service', enabled: false }, ...dest };
     expect(merged.enabled).toBe(false);
   });
+});
 
-  it('REFUSES --folder on a chunk-store destination rather than dropping it', () => {
-    // The server names every key in the chunk store, so a folder has nothing to mean. Dropping it would put backups somewhere other than where the operator said.
-    expect(() => buildDestination({ destinationName: 'chunks', folder: 'hot' }, undefined)).toThrow(
-      /--storage/
+describe('strategy retention (F4)', () => {
+  it('--retention parses name=count pairs into the stored policy', () => {
+    const u = buildStrategyUpdate({ retention: 'last=7,daily=7,weekly=4,monthly=6' }, undefined);
+    expect(u.retention).toEqual({ keepLast: 7, keepDaily: 7, keepWeekly: 4, keepMonthly: 6 });
+  });
+
+  it('leaves retention out of the update when the flag is absent, so a set never wipes it', () => {
+    expect('retention' in buildStrategyUpdate({ cron: '0 3 * * *' }, undefined)).toBe(false);
+  });
+
+  it('"none" clears the stored policy', () => {
+    const u = buildStrategyUpdate({ retention: 'none' }, undefined);
+    expect('retention' in u).toBe(true);
+    expect(u.retention).toBeUndefined();
+  });
+
+  it.each(['last=x', 'last', 'weekly=1,weekly=2', 'fortnightly=2', 'last=-1', 'last=1.5'])(
+    'refuses %s rather than guessing what to delete',
+    (raw) => {
+      expect(() => parseRetentionOption(raw)).toThrow(/--retention/);
+    }
+  );
+});
+
+describe('strategy read cap (--read-bwlimit)', () => {
+  it('stores the value as readBandwidthLimit and leaves it alone when not passed', () => {
+    expect(buildStrategyUpdate({ readBwlimit: '50M' }, undefined).readBandwidthLimit).toBe('50M');
+    expect(() => buildStrategyUpdate({ readBwlimit: 'fast' }, undefined)).toThrow(
+      /Read bandwidth limit "fast" cannot be converted/
+    );
+    expect(() => buildStrategyUpdate({ readBwlimit: ' ' }, undefined)).toThrow(
+      /--read-bwlimit must be a rate/
+    );
+    expect(() => buildStrategyUpdate({ bwlimit: '100Mb' }, undefined)).toThrow(
+      /Bandwidth limit "100Mb" cannot be converted/
+    );
+    expect(() => buildStrategyUpdate({ bwlimit: '' }, undefined)).toThrow(
+      /--bwlimit must be a rate/
+    );
+    expect(buildStrategyUpdate({ readBwlimit: '0' }, undefined).readBandwidthLimit).toBe('0');
+    expect('readBandwidthLimit' in buildStrategyUpdate({ cron: '0 * * * *' }, undefined)).toBe(
+      false
     );
   });
 
-  it('accepts --folder together with --storage', () => {
-    const dest = buildDestination(
-      { destinationName: 'offsite', storage: 'onedrive', folder: 'cold' },
-      undefined
+  it('clears the cap on none', () => {
+    const u = buildStrategyUpdate({ readBwlimit: 'none' }, undefined);
+    expect('readBandwidthLimit' in u).toBe(true);
+    expect(u.readBandwidthLimit).toBeUndefined();
+  });
+
+  it('is refused together with --destination, because the read is not tied to a destination', async () => {
+    await expect(
+      applyBackupStrategyOptions('s', { destination: 'd', readBwlimit: '50M' })
+    ).rejects.toThrow(/applies to the whole strategy/);
+  });
+
+  it('makes a strategy with an unparseable read cap unschedulable, and accepts 0 and 50M', () => {
+    const base = { destinations: [], schedule: '0 * * * *' };
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: 'fast' })).toMatch(
+      /Read bandwidth limit "fast"/
     );
-    expect(dest).toMatchObject({ kind: 'storage', folder: 'cold' });
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '100Mb' })).toBeDefined();
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '50M' })).toBeUndefined();
+    expect(strategyUnschedulableReason({ ...base, readBandwidthLimit: '0' })).toBeUndefined();
+  });
+});
+
+describe('strategy CPU ceiling (--cpu-limit)', () => {
+  it('stores the percent as cpuLimit and leaves it alone when not passed', () => {
+    expect(buildStrategyUpdate({ cpuLimit: '30' }, undefined).cpuLimit).toBe(30);
+    expect('cpuLimit' in buildStrategyUpdate({ cron: '0 * * * *' }, undefined)).toBe(false);
+  });
+
+  it('clears the ceiling on none', () => {
+    const u = buildStrategyUpdate({ cpuLimit: 'none' }, undefined);
+    expect('cpuLimit' in u).toBe(true);
+    expect(u.cpuLimit).toBeUndefined();
+  });
+
+  it.each(['0', '101', '-1', '1.5', 'abc', ' '])('refuses %j at set time', (value) => {
+    expect(() => buildStrategyUpdate({ cpuLimit: value }, undefined)).toThrow(
+      /--cpu-limit must be an integer from 1 to 100/
+    );
+  });
+
+  it('is refused together with --destination, because the ceiling is not tied to a destination', async () => {
+    await expect(
+      applyBackupStrategyOptions('s', { destination: 'd', cpuLimit: '30' })
+    ).rejects.toThrow(/applies to the whole strategy/);
+  });
+
+  it('makes a strategy with an out-of-range ceiling unschedulable, and accepts 1, 50 and 100', () => {
+    const base = { destinations: [], schedule: '0 * * * *' };
+    expect(strategyUnschedulableReason({ ...base, cpuLimit: 0 })).toMatch(/--cpu-limit must be/);
+    expect(strategyUnschedulableReason({ ...base, cpuLimit: 101 })).toMatch(/--cpu-limit must be/);
+    for (const cpuLimit of [1, 50, 100]) {
+      expect(strategyUnschedulableReason({ ...base, cpuLimit })).toBeUndefined();
+    }
   });
 });

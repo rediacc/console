@@ -1,0 +1,347 @@
+name: Local Release Assist
+
+# The CI half of a release published from the local machine
+# (`npm run release:local`, agent/plans/PLAN-local-release.md, box W3-A).
+#
+# The local entry builds everything a Linux host can build. Four artifacts
+# cannot be built there: the two macOS SEAs need a macOS host node and ad-hoc
+# codesign, and the two Windows SEAs need a host node.exe and the native smoke
+# test. Their install legs need the same runners. This workflow runs exactly
+# those four builds and four install legs, dispatched by the entry at minute
+# zero and awaited before it stages.
+#
+# THE R2 CONTRACT, both directions under one prefix in the releases bucket
+# (WK_RELEASES_BUCKET), `staging/local-release/v<version>/`:
+#   private-bin/   INPUT, written by the entry before it dispatches: the keyed
+#                  renet set, the same file list as the `renet-binaries-<sha>`
+#                  artifact ci-build-renet.yml uploads, checksums.sha256 included.
+#   cli/           OUTPUT: rdc-mac-{arm64,x64}, rdc-win-{arm64,x64}.exe and
+#                  their checksum files, exactly what the build writes to dist/cli/.
+#   cli/.complete  OUTPUT, written LAST: `<sha> <run id>`. Its absence means
+#                  the run did not finish, and the entry must not stage.
+# The prefix sits outside housekeeping's format dirs (cli, npm, apt, rpm, apk,
+# archlinux), so nothing sweeps it; the entry removes it after staging.
+#
+# The install legs are the mac and win legs of ct-install-methods.yml (the
+# `binary` method of rediacc_ci.testrun.install_methods, per platform and
+# arch), run with --local-artifacts against the bytes this run built, before
+# any of them is uploaded. ct-install-methods.yml itself downloads from a
+# published R2 channel, which staged bytes do not have yet.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version X.Y.Z, without the leading v'
+        required: true
+        type: string
+      sha:
+        description: 'Full 40-character console commit sha the release is cut from'
+        required: true
+        type: string
+
+# One assist per version: a second dispatch for the same version queues
+# behind the first instead of racing it on the same R2 prefix.
+concurrency:
+  group: local-release-assist-v${{ inputs.version }}
+  cancel-in-progress: false
+
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
+
+# WHICH CODE SEES A SECRET. The `if:` on every job pins the dispatched ref to
+# the default branch, so the workflow file and `github.sha` are main's tip.
+# `inputs.sha` is a separate, caller-chosen commit, so:
+#   * `admit` runs first, holds no secret, and refuses unless inputs.sha is an
+#     ancestor of (or equal to) main's tip. Every other job needs it.
+#   * The two jobs that hold the BWS and R2 credentials (fetch-renet, upload)
+#     never check out inputs.sha: their only checkout is main's tip, so every
+#     action they run (setup-aws, bws-secrets) and every file they read from
+#     the repository is main's, `.ci/config/well-known.env` included (the
+#     bucket the upload goes to is main's choice, not the sha's). What crosses
+#     into them from the sha is DATA: `upload` runs the downloaded dist/cli
+#     artifacts' checksums but executes none of them.
+#   * build-sea and install do check out inputs.sha, because those are the
+#     bytes under release. They hold no secret: contents: read on the job token
+#     and nothing from Bitwarden.
+
+jobs:
+  admit:
+    name: Admit the sha
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    # Checkout of main's history only. No secret, no API, no write.
+    permissions:
+      contents: read
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    env:
+      VERSION: ${{ inputs.version }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - name: Refuse a malformed version or sha
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version '$VERSION' is not X.Y.Z"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha '$SHA' is not a full 40-hex commit sha"; exit 1; }
+
+      # main's tip (github.sha, pinned by the `if:`), with every commit but no
+      # file contents: the ancestry walk needs commits only.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      # An unknown object makes merge-base exit 128 and a non-ancestor exit 1;
+      # both take the refusal, so only a commit in main's history passes.
+      - name: Refuse a sha that is not in the default branch's history
+        run: |
+          git merge-base --is-ancestor "$SHA" HEAD || { echo "::error::sha $SHA is not an ancestor of (or equal to) $GITHUB_REF tip $GITHUB_SHA; only merged code is built with release secrets"; exit 1; }
+          echo "admitted: $SHA is in the history of $GITHUB_REF at $GITHUB_SHA"
+
+  fetch-renet:
+    name: Fetch staged renet
+    needs: [admit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Checkout of main's tip plus R2 reads with the bws-secrets credentials.
+    # No GitHub API, and never the dispatched sha (see WHICH CODE SEES A SECRET).
+    permissions:
+      contents: read
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+
+      # The checksum file is the completeness check: an empty or partial
+      # prefix fails here, never as a SEA built without its renet.
+      - name: Download and verify the staged renet set
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: |
+          "$AWS_BIN" s3 cp --recursive --only-show-errors "s3://${WK_RELEASES_BUCKET}/staging/local-release/v${VERSION}/private-bin/" private/bin/ --endpoint-url "$CLOUDFLARE_R2_ENDPOINT"
+          [[ -s private/bin/checksums.sha256 ]] || { echo "::error::staging/local-release/v${VERSION}/private-bin/checksums.sha256 is missing or empty; the entry did not stage renet"; exit 1; }
+          (cd private/bin && sha256sum --check --strict checksums.sha256)
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: local-release-renet-v${{ inputs.version }}
+          path: |
+            private/bin/
+            !private/bin/.gitkeep
+          retention-days: 1
+          if-no-files-found: error
+
+  build-sea:
+    name: CLI (${{ matrix.platform }}-${{ matrix.arch }})
+    needs: [fetch-renet]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+    # Checkout and artifacts only. No GitHub API, no registry, no git remote.
+    permissions:
+      contents: read
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    strategy:
+      # The same reason ci-build-cli.yml gives: a cancelled sibling never
+      # reaches a verdict, so one red leg would hide the other three.
+      fail-fast: false
+      # The mac and win rows of ci-build-cli.yml's matrix, runner and timeout
+      # unchanged.
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+            timeout: 5
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+            timeout: 10
+          - os: windows-latest
+            platform: win
+            arch: x64
+            timeout: 6
+          - os: windows-11-arm
+            platform: win
+            arch: arm64
+            timeout: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Download the staged renet set
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: local-release-renet-v${{ inputs.version }}
+          path: private/bin/
+
+      - uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+
+      # Always the release path here, so the --strict version check always runs.
+      - name: Require a real version
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ inputs.version }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.version.inject_env --version "$NEXT_VERSION" --strict --print
+
+      - name: Build CLI SEA executable
+        shell: bash
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_executables --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        env:
+          CLI_VERSION: ${{ inputs.version }}
+          RELEASE_BUILD: 'true'
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: local-release-cli-${{ matrix.platform }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: dist/cli/
+          retention-days: 1
+          if-no-files-found: error
+
+  install:
+    name: Install (${{ matrix.platform }}-${{ matrix.arch }})
+    needs: [build-sea]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    # Binary install tests against the artifact of this run: no ghcr, no API.
+    permissions:
+      contents: read
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    strategy:
+      fail-fast: false
+      # The runners of ct-install-methods.yml's mac and win legs.
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+          - os: windows-latest
+            platform: win
+            arch: x64
+          - os: windows-11-arm
+            platform: win
+            arch: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Download this leg's SEA
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: local-release-cli-${{ matrix.platform }}-${{ matrix.arch }}-v${{ inputs.version }}
+          path: staged/cli/
+
+      - name: Test Binary Download
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
+            --method binary --version "$VERSION" --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} \
+            --local-artifacts staged
+
+  upload:
+    name: Upload to R2 staging
+    needs: [admit, build-sea, install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Checkout of main's tip plus R2 writes with the bws-secrets credentials.
+    # No GitHub API, and never the dispatched sha (see WHICH CODE SEES A SECRET).
+    permissions:
+      contents: read
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    env:
+      VERSION: ${{ inputs.version }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Download the four SEAs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          pattern: local-release-cli-*-v${{ inputs.version }}
+          path: dist/cli/
+          merge-multiple: true
+
+      # Each binary AND its `<binary>.sha256` (build_cli_executables writes
+      # the bare filename into it), and each checksum must verify, before
+      # anything is uploaded and so before .complete can exist. The checksum
+      # is written by the same build as the binary, so it proves the artifact
+      # survived the download intact; it says nothing about the build itself.
+      - name: Refuse an incomplete or unverified set
+        working-directory: dist/cli
+        run: |
+          for f in rdc-mac-arm64 rdc-mac-x64 rdc-win-x64.exe rdc-win-arm64.exe; do
+            [[ -s "$f" && -s "$f.sha256" ]] || { echo "::error::dist/cli/$f or dist/cli/$f.sha256 is missing; refusing to upload a partial set"; exit 1; }
+            sha256sum --check --strict "$f.sha256"
+          done
+
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
+      # main's tip, on purpose: this job holds the R2 credentials, so the
+      # destination bucket must not be chosen by the dispatched sha.
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+
+      # The marker goes LAST, so a run that dies mid-upload leaves no
+      # .complete and the entry refuses to stage from it.
+      - name: Upload the SEAs, then the completion marker
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: |
+          prefix="s3://${WK_RELEASES_BUCKET}/staging/local-release/v${VERSION}/cli"
+          "$AWS_BIN" s3 cp --recursive --only-show-errors dist/cli/ "${prefix}/" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT"
+          printf '%s %s\n' "$SHA" "$GITHUB_RUN_ID" > complete.txt
+          "$AWS_BIN" s3 cp --only-show-errors complete.txt "${prefix}/.complete" --endpoint-url "$CLOUDFLARE_R2_ENDPOINT"
+          echo "staged: ${prefix}/ (sha ${SHA}, run ${GITHUB_RUN_ID})" >> "$GITHUB_STEP_SUMMARY"

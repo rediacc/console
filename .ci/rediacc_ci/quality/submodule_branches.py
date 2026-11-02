@@ -695,7 +695,7 @@ def selftest() -> int:
 
     THE GH PATHS ARE COVERED BY PURE FUNCTIONS, not by mocks: `pr_is_linked`, `is_low_effort_reply` and the two jq translations are the parts that decide a verdict, and each is exercised against the shape GitHub actually returns. What no local suite can prove is the `gh` invocation itself, which is stated rather than faked.
     """
-    # 35, not 39: eb932d04d retired the report arm with its four `judge_report` controls and left the floor behind, so every run failed on the floor alone.
+    # 35, not 39: fe89b851b retired the report arm with its four `judge_report` controls and left the floor behind, so every run failed on the floor alone.
     ctl = Controls("submodule-branches", floor=35, verbose=True)
     # -- is_low_effort_reply ------------------------------------------------
     for word in ("ok", "Done", "  fixed.  ", "THANKS!!", "will do"):

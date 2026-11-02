@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
-    listStorages: vi.fn(),
     listMachines: vi.fn(),
   },
 }));
@@ -21,7 +20,6 @@ import type { RdcConfig } from '../../types/index.js';
 import {
   assertMachineExists,
   assertResourceName,
-  assertStorageExists,
   BackupDestinationSchema,
   CertEmailSchema,
   CONFIG_KEY_ORDER,
@@ -39,7 +37,6 @@ import {
   stringifyConfig,
 } from '../config-schema.js';
 
-const mockListStorages = vi.mocked(configService.listStorages);
 const mockListMachines = vi.mocked(configService.listMachines);
 
 describe('config-schema', () => {
@@ -307,11 +304,11 @@ describe('config-schema', () => {
   });
 
   describe('BackupDestinationSchema', () => {
-    it('accepts valid destination', () => {
+    it('accepts a valid destination', () => {
       expect(
         BackupDestinationSchema.safeParse({
-          name: 'onedrive-hourly',
-          storage: 'microsoft',
+          kind: 'hosted-service',
+          name: 'chunks-hourly',
           enabled: true,
         }).success
       ).toBe(true);
@@ -320,31 +317,34 @@ describe('config-schema', () => {
     it('accepts destination with bandwidthLimit', () => {
       expect(
         BackupDestinationSchema.safeParse({
+          kind: 'hosted-service',
           name: 'fast',
-          storage: 'r2',
           bandwidthLimit: '50M',
         }).success
       ).toBe(true);
     });
 
     it('rejects empty name', () => {
-      expect(BackupDestinationSchema.safeParse({ name: '', storage: 'microsoft' }).success).toBe(
+      expect(BackupDestinationSchema.safeParse({ kind: 'hosted-service', name: '' }).success).toBe(
         false
       );
     });
 
-    it('rejects empty storage', () => {
-      expect(BackupDestinationSchema.safeParse({ name: 'test', storage: '' }).success).toBe(false);
-    });
-
     it('rejects missing name', () => {
-      expect(BackupDestinationSchema.safeParse({ storage: 'microsoft' }).success).toBe(false);
+      expect(BackupDestinationSchema.safeParse({ kind: 'hosted-service' }).success).toBe(false);
     });
 
-    it('defaults a kind-less destination to the storage kind', () => {
-      const parsed = BackupDestinationSchema.safeParse({ name: 'legacy', storage: 'microsoft' });
-      expect(parsed.success).toBe(true);
-      expect(parsed.success && parsed.data.kind).toBe('storage');
+    it('refuses the removed storage kind', () => {
+      expect(
+        BackupDestinationSchema.safeParse({ kind: 'storage', name: 'legacy', storage: 'microsoft' })
+          .success
+      ).toBe(false);
+    });
+
+    it('refuses a kind-less destination instead of defaulting it', () => {
+      expect(
+        BackupDestinationSchema.safeParse({ name: 'legacy', storage: 'microsoft' }).success
+      ).toBe(false);
     });
 
     it('accepts a hosted-service destination with a credential bag', () => {
@@ -362,12 +362,6 @@ describe('config-schema', () => {
       expect(
         BackupDestinationSchema.safeParse({ kind: 'hosted-service', name: 'hosted' }).success
       ).toBe(true);
-    });
-
-    it('does not let a hosted-service destination match the storage variant', () => {
-      // No `storage`, kind explicit → must NOT satisfy the storage variant.
-      const parsed = BackupDestinationSchema.safeParse({ kind: 'hosted-service', name: 'h' });
-      expect(parsed.success && parsed.data.kind).toBe('hosted-service');
     });
   });
 
@@ -406,36 +400,6 @@ describe('config-schema', () => {
         expect(msg).toContain('user');
         expect(msg).toContain('port');
       }
-    });
-  });
-
-  describe('assertStorageExists', () => {
-    it('passes when storage exists', async () => {
-      mockListStorages.mockResolvedValue([
-        { name: 'microsoft', config: { provider: 's3', vaultContent: {} } },
-        { name: 'r2-cloudflare', config: { provider: 's3', vaultContent: {} } },
-      ]);
-      await expect(assertStorageExists('microsoft')).resolves.not.toThrow();
-    });
-
-    it('throws when storage does not exist', async () => {
-      mockListStorages.mockResolvedValue([
-        { name: 'microsoft', config: { provider: 's3', vaultContent: {} } },
-      ]);
-      await expect(assertStorageExists('google')).rejects.toThrow('errors.config.storageNotFound');
-    });
-
-    it('includes available storages in error message', async () => {
-      mockListStorages.mockResolvedValue([
-        { name: 'microsoft', config: { provider: 's3', vaultContent: {} } },
-        { name: 'r2', config: { provider: 's3', vaultContent: {} } },
-      ]);
-      await expect(assertStorageExists('google')).rejects.toThrow('microsoft, r2');
-    });
-
-    it('shows (none) when no storages configured', async () => {
-      mockListStorages.mockResolvedValue([]);
-      await expect(assertStorageExists('google')).rejects.toThrow('(none)');
     });
   });
 

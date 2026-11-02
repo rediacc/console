@@ -17,11 +17,13 @@
  * local-executor, so local-executor can import from here without a cycle.
  */
 
+import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
+import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/timeline.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
+import { REATTACH_BUDGET_MS } from '../jobs/attach.js';
 import { type MachineConnectionLease, machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, type RenetAccess } from '../renet/renet-execution.js';
 import {
@@ -31,31 +33,55 @@ import {
   buildJobLogsCommand,
   buildJobStatusCommand,
   createEventLineReader,
+  isRenetFlagUnsupported,
   type JobGcResult,
   JobLogCursor,
   type JobStatus,
   parseJobGcResult,
   parseJobList,
   parseJobStatus,
+  renetOlderThanCliMessage,
 } from './job-client.js';
-import { isMachineReadableRelayLine } from './output-lines.js';
+import { cleanRelayLine, isMachineReadableRelayLine } from './output-lines.js';
 import type { RenetEvent } from './types.js';
 
 /**
- * How many times a dropped log tail is reconnected before giving up.
- *
- * Reconnecting is cheap and safe: the job runs on the machine either way, so
- * resuming only changes what we can SEE of it. The ceiling exists to stop an
- * unreachable machine from spinning forever, not to ration attempts.
+ * How long a dropped log tail keeps reconnecting before it gives up
+ * (agent/plans/PLAN-detached-jobs.md Design 2, section 16): a time budget, not
+ * an attempt count, so a laptop that sleeps through a short Wi-Fi change does
+ * not detach. Reconnecting is cheap and safe: the job runs on the machine
+ * either way, so resuming only changes what we can SEE of it.
  */
-const MAX_LOG_RECONNECTS = 5;
+const LOG_RECONNECT_BUDGET_MS = REATTACH_BUDGET_MS;
 
 /** Backoff before reconnecting a dropped log tail, capped so it stays responsive. */
-function logReconnectDelayMs(attempt: number): number {
+export function logReconnectDelayMs(attempt: number): number {
   return Math.min(500 * 2 ** attempt, 5000);
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Raised when a follow lost its transport for longer than the reconnect budget.
+ * The job is unaffected; the caller keeps the ticket and exits FOLLOW_LOST.
+ */
+export class FollowLostError extends Error {
+  constructor(
+    readonly jobId: string,
+    readonly sinceLine: number,
+    readonly cause: Error
+  ) {
+    super(`Lost the log stream of job ${jobId} at line ${sinceLine}: ${cause.message}`);
+    this.name = 'FollowLostError';
+  }
+}
+
+/** The reconnect clock, seamed so a test can run the 2-minute budget instantly. */
+interface ReconnectTiming {
+  budgetMs?: number;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}
 
 /** How a caller wants a job's log stream rendered and reported. */
 export interface JobFollowOptions {
@@ -69,6 +95,8 @@ export interface JobFollowOptions {
    * detaching on SIGINT, unchanged from before.
    */
   signal?: AbortSignal;
+  /** The reconnect budget and clock (default: LOG_RECONNECT_BUDGET_MS, real time). */
+  reconnect?: ReconnectTiming;
 }
 
 /** One attempt at tailing a job's logs. */
@@ -87,6 +115,8 @@ type FollowOutcome =
 export interface JobConnection {
   lease: MachineConnectionLease;
   remoteRenetPath: string;
+  /** The machine's name, for messages that name it. */
+  machineName?: string;
 }
 
 /**
@@ -115,7 +145,7 @@ export async function connectForJobs(
       lease.sshPrivateKey,
       { machineName }
     );
-    return { lease, remoteRenetPath: remotePath };
+    return { lease, remoteRenetPath: remotePath, machineName };
   } catch (error) {
     lease.release();
     throw error;
@@ -138,7 +168,8 @@ export async function listJobs(conn: JobConnection): Promise<JobStatus[]> {
 export async function readJobStatus(
   sftp: SFTPClient,
   remoteRenetPath: string,
-  jobId: string
+  jobId: string,
+  machineName?: string
 ): Promise<JobStatus> {
   const { exitCode, stdout, stderr } = await execCapture(
     sftp,
@@ -146,7 +177,9 @@ export async function readJobStatus(
   );
 
   if (exitCode !== 0) {
-    throw new Error(failureDetail(`read the status of job ${jobId}`, stdout, stderr, exitCode));
+    throw new Error(
+      failureDetail(`read the status of job ${jobId}`, stdout, stderr, exitCode, machineName)
+    );
   }
 
   return parseJobStatus(stdout);
@@ -198,10 +231,19 @@ export async function followJobLogs(
   remoteRenetPath: string,
   jobId: string,
   options: JobFollowOptions,
-  cursor: JobLogCursor
+  cursor: JobLogCursor,
+  machineName?: string
 ): Promise<boolean> {
-  for (let attempt = 0; ; attempt++) {
-    const outcome = await followJobLogsOnce(lease, remoteRenetPath, jobId, options, cursor);
+  const streak = new DropStreak(options.reconnect, cursor);
+  for (;;) {
+    const outcome = await followJobLogsOnce(
+      lease,
+      remoteRenetPath,
+      jobId,
+      options,
+      cursor,
+      machineName
+    );
 
     switch (outcome.kind) {
       case 'done':
@@ -213,7 +255,7 @@ export async function followJobLogs(
     }
 
     // Transport died. The JOB is untouched (it runs under systemd, not under this connection), so all that is lost is our view of it. Resume from the last COMPLETE line: renet re-sends anything it only half-delivered.
-    if (attempt >= MAX_LOG_RECONNECTS) throw outcome.error;
+    if (streak.exhausted()) throw new FollowLostError(jobId, cursor.sinceLine, outcome.error);
 
     if (options.debug) {
       outputService.info(
@@ -221,7 +263,47 @@ export async function followJobLogs(
       );
     }
 
-    await delay(logReconnectDelayMs(attempt));
+    await streak.pause();
+  }
+}
+
+/**
+ * A run of consecutive drops. The budget runs from the first drop of a streak,
+ * and a stream that delivered lines since resets it: only a connection that
+ * stays gone detaches.
+ */
+class DropStreak {
+  private readonly now: () => number;
+  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly budgetMs: number;
+  private lostSince: number | undefined;
+  private lineAtDrop: number;
+  private attempt = 0;
+
+  constructor(
+    timing: ReconnectTiming | undefined,
+    private readonly cursor: JobLogCursor
+  ) {
+    this.now = timing?.now ?? Date.now;
+    this.sleep = timing?.sleep ?? delay;
+    this.budgetMs = timing?.budgetMs ?? LOG_RECONNECT_BUDGET_MS;
+    this.lineAtDrop = cursor.sinceLine;
+  }
+
+  /** Record a drop; true when the transport has been gone for the whole budget. */
+  exhausted(): boolean {
+    if (this.lostSince === undefined || this.cursor.sinceLine > this.lineAtDrop) {
+      this.lostSince = this.now();
+      this.lineAtDrop = this.cursor.sinceLine;
+      this.attempt = 0;
+    }
+    return this.now() - this.lostSince >= this.budgetMs;
+  }
+
+  /** The capped backoff before the next reconnect. */
+  async pause(): Promise<void> {
+    await this.sleep(logReconnectDelayMs(this.attempt));
+    this.attempt += 1;
   }
 }
 
@@ -231,7 +313,8 @@ async function followJobLogsOnce(
   remoteRenetPath: string,
   jobId: string,
   options: JobFollowOptions,
-  cursor: JobLogCursor
+  cursor: JobLogCursor,
+  machineName?: string
 ): Promise<FollowOutcome> {
   const command = buildJobLogsCommand({
     remoteRenetPath,
@@ -252,6 +335,7 @@ async function followJobLogsOnce(
   const streaming = (async (): Promise<FollowOutcome> => {
     try {
       const sftp = await lease.ensure();
+      let stderr = '';
       const exitCode = await sftp.execStreaming(command, {
         onStdout: (data) => {
           if (stopped) return;
@@ -259,6 +343,7 @@ async function followJobLogsOnce(
           cursor.consume(data);
         },
         onStderr: (data) => {
+          stderr += data.toString();
           if (options.debug && !stopped) writeStderr(data);
         },
       });
@@ -271,7 +356,9 @@ async function followJobLogsOnce(
 
       return {
         kind: 'failed',
-        error: new Error(`renet job logs exited ${exitCode} for job ${jobId}`),
+        error: new Error(
+          failureDetail(`follow the logs of job ${jobId}`, '', stderr, exitCode, machineName)
+        ),
       };
     } catch (error) {
       // execStreaming rejects on a channel error or a dead session: transport.
@@ -352,7 +439,9 @@ export async function replayJobLogs(
   });
 
   if (exitCode !== 0) {
-    throw new Error(failureDetail(`read the logs of job ${jobId}`, '', stderr, exitCode));
+    throw new Error(
+      failureDetail(`read the logs of job ${jobId}`, '', stderr, exitCode, conn.machineName)
+    );
   }
 }
 
@@ -377,6 +466,34 @@ export function renderJobEvent(event: RenetEvent): void {
   }
 
   writeStdout(line.text);
+}
+
+/**
+ * The renderer for a job whose output IS the answer (`repo exec`, `repo logs`:
+ * `passthroughOutput`). The inner process's lines go to stdout with renet's
+ * relay prefix stripped and its logrus lines dropped, exactly as the
+ * `renet execute` passthrough handler prints them; step progress goes to
+ * stderr, because stdout belongs to the command.
+ */
+export function passthroughJobRenderer(renderSteps: boolean): (event: RenetEvent) => void {
+  return (event) => {
+    if (event.type === 'step_start' || event.type === 'step_done') {
+      if (renderSteps) writeStepToStderr(event);
+      return;
+    }
+    if (event.type === 'output') writeCleanedOutput(event.msg);
+  };
+}
+
+function writeStepToStderr(event: RenetEvent): void {
+  const line = jobEventLine(event);
+  if (line) writeStderr(line.text);
+}
+
+function writeCleanedOutput(msg: string | undefined): void {
+  if (msg == null) return;
+  const cleaned = cleanRelayLine(msg);
+  if (cleaned !== undefined) writeStdout(`${cleaned}\n`);
 }
 
 /** What one event renders to, or null if it renders to nothing. */
@@ -409,7 +526,7 @@ function stepDoneLine(event: RenetEvent): EventLine | null {
   if (!event.name || event.duration_ms == null) return null;
   return {
     stream: 'out',
-    text: `\r✔ ${getDoneLabel(event.name)} (${formatStepDuration(event.duration_ms)})\n`,
+    text: `\r✔ ${getDoneText(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`,
   };
 }
 
@@ -436,7 +553,7 @@ async function runJobCommand(conn: JobConnection, command: string, what: string)
   const { exitCode, stdout, stderr } = await execCapture(sftp, command);
 
   if (exitCode !== 0) {
-    throw new Error(failureDetail(what, stdout, stderr, exitCode));
+    throw new Error(failureDetail(what, stdout, stderr, exitCode, conn.machineName));
   }
 
   return stdout;
@@ -467,7 +584,17 @@ async function execCapture(
  * renet writes the useful part to stderr ("unknown job", "invalid job id"), so
  * that is preferred over stdout, and the exit code alone is never enough.
  */
-function failureDetail(what: string, stdout: string, stderr: string, exitCode: number): string {
+function failureDetail(
+  what: string,
+  stdout: string,
+  stderr: string,
+  exitCode: number,
+  machineName?: string
+): string {
+  // A flag the remote renet does not know is version skew, not a job failure: say so before the cobra usage text.
+  if (isRenetFlagUnsupported(stderr || stdout)) {
+    return `Failed to ${what}: ${renetOlderThanCliMessage(machineName ?? BACKUP_DEFAULTS.UNNAMED_TARGET_MACHINE)}`;
+  }
   const detail = (stderr || stdout).trim().split('\n')[0] ?? '';
   return detail
     ? `Failed to ${what}: ${detail}`

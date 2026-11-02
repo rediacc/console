@@ -14,12 +14,12 @@
 #   ./www-assets/         packages/www/dist           (marketing site)
 #   ./account-web-assets/ private/account/web/dist    (account portal SPA)
 #   ./cli-npm/            packages/cli npm tarball    (CLI release artifact)
-#   ./binaries/           renet-linux-{amd64,arm64}   (with embedded CRIU/rsync/rclone
+#   ./binaries/           renet-linux-{amd64,arm64}   (with embedded CRIU/rsync
 #                                                      and ACCOUNT_ED25519_PUBLIC_KEY
 #                                                      already baked in)
 #
 # Why renet binaries are pre-built and not built inside this Dockerfile:
-# the renet binary embeds CRIU/rsync/rclone via go:embed assets/*. Those .gz
+# the renet binary embeds CRIU/rsync via go:embed assets/*. Those .gz
 # files are extracted from the rediacc/renet image by build-renet.sh, which
 # requires running on a real Linux host with Docker available -- not possible
 # inside an in-Docker `go build` step. The previous Dockerfiles all silently
@@ -112,8 +112,8 @@ RUN mkdir -p /usr/share/nginx/html/releases/cli/stable && \
     echo "{\"version\":\"${VITE_APP_VERSION}\",\"npm\":true}" > \
        /usr/share/nginx/html/releases/cli/stable/latest.json
 
-# Renet binaries (pre-built by ci-build-renet.yml with embedded CRIU/rsync/
-# rclone assets and ACCOUNT_ED25519_PUBLIC_KEY baked in via -X main.Version
+# Renet binaries (pre-built by ci-build-renet.yml with embedded CRIU/rsync
+# assets and ACCOUNT_ED25519_PUBLIC_KEY baked in via -X main.Version
 # / -X .../keys.ProductionPublicKey ldflags).
 COPY ./binaries/renet-linux-amd64 /usr/share/nginx/html/bin/renet-linux-amd64
 COPY ./binaries/renet-linux-arm64 /usr/share/nginx/html/bin/renet-linux-arm64

@@ -11,8 +11,8 @@ tags:
   - case-study
 featured: true
 language: ja
-sourceHash: "4658b7226eb1e696"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "2b10e7d64d0ce38d"
+sourceCommit: "c8a8908f7412252e302fe5280980c35d5cae82da"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -124,7 +124,7 @@ Total: 6.3s
 
 2 GBフォークのクローンステップは573ミリ秒。128 GBフォークのクローンステップは2.3秒。つまりデータクローンは線形未満で、厳密に定数時間ではありません。しかしフォーク全体の所要時間はほぼ同じ（6.3秒対7.2秒）です。なぜなら待ち時間の大半はデータではなく、SSHとライセンスのやり取りだからです。ユーザーから見れば、フォークはリポジトリサイズに関係なく6〜7秒の待機にすぎません。
 
-これでフォーク上で操作できるようになりました。独自のGUID（`22c57178-...`）、独自のnetworkId（`21760`）、独自のマウントパス、独自のDockerデーモンソケット（`/var/run/rediacc/docker-21760.sock`）を持ちます。親のデータはリフリンクで共有されます。親自体はその間ずっと稼働し続けます。
+これでフォーク上で操作できるようになりました。独自のGUID（`22c57178-...`）、独自のnetworkId（`21760`）、独自のマウントパス、独自のDockerデーモンソケット（`/var/run/rediacc/net-21760/docker-21760.sock`）を持ちます。親のデータはリフリンクで共有されます。親自体はその間ずっと稼働し続けます。
 
 フォークに`term connect`した時に見えるのは以下のとおり：
 

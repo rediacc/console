@@ -266,6 +266,20 @@ cases.append(
     (0, run(PUSH), "DROPPED: a red re-run listed in failed and carried is judged by the carry")
 )
 uncarry()
+put(
+    droppedTouched=[DROP],
+    droppedVerified=passed_at(CURRENT["tree"], code=77),
+    blocked=[PLAN_RECORD],
+)
+cases.append(
+    (
+        0,
+        run(PUSH),
+        "DROPPED: a could-not-run (77) re-run the merge listed as blocked is judged as blocked",
+    )
+)
+put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=77))
+cases.append((2, run(PUSH), "DROPPED CONTROL: a 77 re-run NOT listed as blocked still refuses"))
 put(droppedTouched=[DROP], droppedVerified=passed_at(CURRENT["tree"], code=False))
 cases.append((2, run(PUSH), "DROPPED: an exitCode of false is not a pass"))
 put()
@@ -418,7 +432,7 @@ cases.append(
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ok"))
 cases.append((2, run(PUSH), "CONTROL: the same carried gate recorded as ok is stale"))
 
-# The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of afe0503db unremarked.
+# The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of b72969998 unremarked.
 put(exitCode=0)
 carry(keyed(K1))
 cases.append(
@@ -1501,6 +1515,334 @@ def test_v2_helpers():
     )
 
 
+# --- receipt_refusal: the guard's receipt verdict as a pure function (PLAN-local-release W1-A) ----
+# The release entry asks one question of a receipt, with no event and no fail-open: does it authorise publishing this tree? These cases drive the function directly, and the parity sweep proves it agrees with what `run()` decides on every frozen fixture world.
+def _world(name):
+    root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
+    GM.FIXTURES[name](root)
+    return root
+
+
+def _head_tree(root):
+    return g(root, "rev-parse", "HEAD^{tree}")
+
+
+def _refusal_at(root):
+    tree = _head_tree(root)
+    return GM.receipt_refusal(str(root), tree, GM.read_receipt(str(root), tree))
+
+
+def _refusal_latest(root):
+    """receipt_refusal over the receipt object `run()` reads: the latest file only, through the guard's own `_read_json`. The parity sweep uses this, because the per-tree reader differs from run() on purpose."""
+    tree = _head_tree(root)
+    latest = pathlib.Path(root) / GM.RECEIPT_REL
+    receipt = GM._read_json(str(latest)) if latest.is_file() else None
+    return GM.receipt_refusal(str(root), tree, receipt)
+
+
+def test_receipt_refusal():
+    # CONTROL FIRST: the push-green world is admitted, so every refusal below is about its own planted fault.
+    green = _world("push-green")
+    cases.append((None, _refusal_at(green), "RECEIPT API: push-green returns None"))
+
+    missing = _world("push-no-receipt")
+    cases.append(
+        (None, GM.read_receipt(str(missing), _head_tree(missing)), "READER: no file reads as None")
+    )
+    cases.append((GM.NO_RECEIPT, _refusal_at(missing), "RECEIPT API: a missing receipt refuses"))
+
+    stale = _world("push-wrong-tree")
+    why = _refusal_at(stale) or ""
+    cases.append(
+        (True, "different tree" in why, "RECEIPT API: a receipt for another tree refuses as stale")
+    )
+
+    narrowed = _world("push-narrowed")
+    why = _refusal_at(narrowed) or ""
+    cases.append((True, "NARROWED" in why, "RECEIPT API: whole false refuses"))
+
+    red = _world("push-red-unnamed")
+    why = _refusal_at(red) or ""
+    cases.append(
+        (
+            True,
+            "check:format" in why and "check:ci-parity" in why,
+            "RECEIPT API: a red receipt nothing carries refuses, naming the failures",
+        )
+    )
+
+    dropped = _world("push-dropped-unverified")
+    why = _refusal_at(dropped) or ""
+    cases.append(
+        (
+            True,
+            "check:ci-plan-record" in why,
+            "RECEIPT API: a dropped touched gate with no passing --only run refuses",
+        )
+    )
+    verified = _world("push-dropped-verified")
+    cases.append(
+        (None, _refusal_at(verified), "RECEIPT API CONTROL: the same gate verified is admitted")
+    )
+
+    # THE PER-TREE COPY WINS. A later whole run at another tree overwrote the latest file; the archive copy for this tree still speaks for it.
+    pt = _world("push-green")
+    tree = _head_tree(pt)
+    latest = pt / ".ci" / "cache" / "prepush-receipt.json"
+    good = latest.read_text(encoding="utf-8")
+    archive = pt / ".ci" / "cache" / "receipts" / ("%s.json" % tree)
+    archive.parent.mkdir(parents=True)
+    archive.write_text(good, encoding="utf-8")
+    body = json.loads(good)
+    body["headTree"] = "0" * 40
+    latest.write_text(json.dumps(body), encoding="utf-8")
+    cases.append(
+        (
+            None,
+            _refusal_at(pt),
+            "READER: the per-tree copy is preferred over a latest for another tree",
+        )
+    )
+    # THE INTENDED DIVERGENCE, pinned: in this same world run() reads only the latest file and refuses the push as a different tree, and receipt_refusal over that latest object agrees with run(). Only the reader differs; the verdict on one receipt object is shared.
+    rc, err = drive(pt, V2_PUSH)
+    cases.append((2, rc, "DIVERGENCE: run() refuses the tree whose per-tree copy admits"))
+    cases.append((True, "different tree" in err, "DIVERGENCE: and run() names the different tree"))
+    why = _refusal_latest(pt) or ""
+    cases.append(
+        (
+            True,
+            "different tree" in why,
+            "DIVERGENCE: receipt_refusal over the latest object refuses exactly as run() does",
+        )
+    )
+    # Its control: the same world without the archive copy is refused, so the None above is the reader's work.
+    archive.unlink()
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (
+            True,
+            "different tree" in why,
+            "READER CONTROL: without the per-tree copy the latest refuses",
+        )
+    )
+    # A corrupt per-tree copy refuses; it never falls through to a latest file that might happen to pass.
+    latest.write_text(good, encoding="utf-8")
+    archive.write_text("{not json", encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (True, "does not parse" in why, "READER: a corrupt per-tree copy refuses, no fallthrough")
+    )
+    # SAFE BY CONSTRUCTION (5429d717.1): a per-tree copy is admissible only for the exact tree it names and only from a whole run. The latest file here is the good, admissible receipt, so each refusal below also proves there is no fallthrough to it.
+    misfiled = dict(json.loads(good), headTree="1" * 40)
+    archive.write_text(json.dumps(misfiled), encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (
+            True,
+            "not admissible" in why and "1" * 40 in why,
+            "READER: a per-tree copy whose content names another tree is refused",
+        )
+    )
+    archive.write_text(json.dumps(dict(json.loads(good), whole=False)), encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (
+            True,
+            "not admissible" in why and "whole" in why,
+            "READER: a per-tree copy from a narrowed run is refused",
+        )
+    )
+    archive.write_text("[]", encoding="utf-8")
+    why = _refusal_at(pt) or ""
+    cases.append((True, "not admissible" in why, "READER: a non-object per-tree copy is refused"))
+    # Their control: the admissible copy for this tree, same world, is admitted.
+    archive.write_text(good, encoding="utf-8")
+    cases.append((None, _refusal_at(pt), "READER CONTROL: the admissible per-tree copy admits"))
+
+    # SAME-TREE DIVERGENCE (review 96b512e4.2): the per-tree copy is the whole green run at this tree, and the latest file is a narrowed run at the SAME tree, green and then red. The runner never writes that pair (read_receipt's docstring: a narrowed run does not replace a whole latest file), so it arises only by hand; this pins what each reader does then. read_receipt admits the whole copy; run() and receipt_refusal over the latest object refuse the narrowed run.
+    for label, extra in (
+        ("green", {"whole": False}),
+        ("red", {"whole": False, "exitCode": 1, "failed": ["check:format"]}),
+    ):
+        latest.write_text(json.dumps(dict(json.loads(good), **extra)), encoding="utf-8")
+        cases.append(
+            (
+                tree,
+                json.loads(latest.read_text(encoding="utf-8")).get("headTree"),
+                "SAME-TREE DIVERGENCE (%s): the latest file names this very tree" % label,
+            )
+        )
+        cases.append(
+            (
+                None,
+                _refusal_at(pt),
+                "SAME-TREE DIVERGENCE (%s narrowed latest): the whole per-tree copy admits" % label,
+            )
+        )
+        rc, err = drive(pt, V2_PUSH)
+        cases.append((2, rc, "SAME-TREE DIVERGENCE (%s narrowed latest): run() refuses" % label))
+        why = _refusal_latest(pt) or ""
+        cases.append(
+            (
+                True,
+                "NARROWED" in why and why in err,
+                "SAME-TREE DIVERGENCE (%s narrowed latest): the latest object refuses as narrowed, with run()'s text"
+                % label,
+            )
+        )
+    # Its control: without the per-tree copy the narrowed latest refuses through read_receipt too, so the None above is the copy's work.
+    archive.unlink()
+    why = _refusal_at(pt) or ""
+    cases.append(
+        (True, "NARROWED" in why, "SAME-TREE CONTROL: without the copy the narrowed latest refuses")
+    )
+    archive.write_text(good, encoding="utf-8")
+    latest.write_text(good, encoding="utf-8")
+
+    # NO FAIL-OPEN: the function never consults the environment. An unparseable receipt object (the reader's marker, and a document that is not an object at all) and an empty dict all refuse.
+    why = GM.receipt_refusal(str(green), _head_tree(green), {GM.UNPARSEABLE: "x.json: bad"}) or ""
+    cases.append(
+        (True, "does not parse" in why and "x.json" in why, "RECEIPT API: the marker refuses")
+    )
+    doc: object
+    for doc in ([], "receipt", 2):
+        why = GM.receipt_refusal(str(green), _head_tree(green), doc) or ""
+        cases.append(
+            (True, "schema" in why, "RECEIPT API: a non-object receipt %r refuses" % (doc,))
+        )
+    cases.append(
+        (
+            True,
+            GM.receipt_refusal(str(green), _head_tree(green), {}) is not None,
+            "RECEIPT API: {} refuses",
+        )
+    )
+
+    # RULE 2 ON A GREEN RECEIPT (carried-reds.json `_comment`: an excuse cannot outlive its failure). run() refuses a green receipt with a carried entry on its green branch, and receipt_refusal refuses it with the same text.
+    stale_green = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / "green-stale-carry"
+    GM._repo_with_receipt(
+        stale_green,
+        {"whole": True, "exitCode": 0, "droppedTouched": []},
+        carried={"version": 2, "carried": [keyed("fmt:packages/a.ts", gate="check:format")]},
+    )
+    rc, err = drive(stale_green, V2_PUSH)
+    why = _refusal_at(stale_green)
+    cases.append((2, rc, "RULE 2: run() refuses a green receipt with a stale carried entry"))
+    cases.append(
+        (
+            True,
+            why is not None and why in err,
+            "RULE 2: receipt_refusal refuses it too, with run()'s own text",
+        )
+    )
+
+    # PARITY: on every frozen fixture world, receipt_refusal over the LATEST file (the receipt object run() reads) is None exactly when run() admits the push. run() adds only the behind-base fetch, which these worlds (no remote) never trip. The per-tree reader is excluded by design (DIVERGENCE above).
+    admitted = []
+    for name in sorted(GM.FIXTURES):
+        w = _world(name)
+        rc = drive(w, V2_PUSH)[0]
+        why = _refusal_latest(w)
+        cases.append(
+            (
+                rc == 0,
+                why is None,
+                "PARITY %s: receipt_refusal agrees with run() (rc=%d)" % (name, rc),
+            )
+        )
+        if why is None:
+            admitted.append(name)
+    print(
+        "  receipt_refusal admitted %d of %d fixture worlds: %s"
+        % (len(admitted), len(GM.FIXTURES), ", ".join(admitted))
+    )
+    cases.append((True, len(GM.FIXTURES) > 10, "PARITY: the sweep saw the fixture set"))
+
+    # READER SWEEP (5429d717.2): each world's latest receipt filed as the per-tree copy for its HEAD tree. Where that copy is admissible read_receipt's verdict must be the latest-file verdict, word for word; where it is not, read_receipt must refuse it as not admissible rather than read past it.
+    # WHICH WORLD IS WHICH IS FROZEN HERE BY NAME (review 96b512e4.3), read off the FIXTURES table rather than recomputed with the reader's own predicate, so an error in that predicate shows as a world in the wrong group: push-narrowed is not whole, push-wrong-tree and push-advance-forged name another tree, push-no-receipt writes none. ALL THREE GROUPS ARE NAMED, the admissible one included (review 7f22f490.5): a world added to or dropped from FIXTURES fails the partition case below until this table names it, so the 14/3/1 split is pinned rather than derived from the fixture count.
+    sweep_admissible = {
+        "push-dropped-unverified",
+        "push-dropped-verified",
+        "push-green",
+        "push-red-carried",
+        "push-red-finding-carried",
+        "push-red-finding-new",
+        "push-red-stale",
+        "push-red-unnamed",
+        "push-v1-receipt",
+        "push-v2-carried-ok",
+        "push-v2-carried-red",
+        "push-v2-carried-red-flipped",
+        "push-v2-carried-red-honest",
+        "push-v2-carried-stale-input",
+    }
+    sweep_inadmissible = {"push-narrowed", "push-wrong-tree", "push-advance-forged"}
+    sweep_absent = {"push-no-receipt"}
+    cases.append(
+        (
+            sorted(GM.FIXTURES),
+            sorted(sweep_admissible | sweep_inadmissible | sweep_absent),
+            "READER SWEEP: the three named groups are exactly the fixture set",
+        )
+    )
+    cases.append(
+        (
+            (14, 3, 1),
+            (len(sweep_admissible), len(sweep_inadmissible), len(sweep_absent)),
+            "READER SWEEP: the named groups hold 14/3/1 and do not overlap",
+        )
+    )
+    same = misfiled_n = absent = 0
+    for name in sorted(GM.FIXTURES):
+        w = _world(name)
+        latest_w = w / GM.RECEIPT_REL
+        if name in sweep_absent or not latest_w.is_file():
+            absent += 1
+            cases.append(
+                (GM.NO_RECEIPT, _refusal_at(w), "READER SWEEP %s: no receipt reads as none" % name)
+            )
+            continue
+        tree_w = _head_tree(w)
+        doc = json.loads(latest_w.read_text(encoding="utf-8"))
+        copy = w / GM.RECEIPT_ARCHIVE_REL / ("%s.json" % tree_w)
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_text(json.dumps(doc), encoding="utf-8")
+        via = _refusal_at(w)
+        if name in sweep_admissible:
+            same += 1
+            cases.append(
+                (
+                    _refusal_latest(w),
+                    via,
+                    "READER SWEEP %s: the per-tree copy gives the latest-file verdict" % name,
+                )
+            )
+        else:
+            misfiled_n += 1
+            cases.append(
+                (
+                    True,
+                    via is not None and "not admissible" in via,
+                    "READER SWEEP %s: an inadmissible per-tree copy is refused" % name,
+                )
+            )
+    print(
+        "  reader sweep: %d admissible copies matched, %d inadmissible refused, %d without a receipt"
+        % (same, misfiled_n, absent)
+    )
+    # The exact split (review 96b512e4.4), so a regression that moves a world between the groups fails here even if each world's own case were somehow skipped.
+    want_same = len(sweep_admissible)
+    cases.append(
+        (
+            (want_same, len(sweep_inadmissible), len(sweep_absent)),
+            (same, misfiled_n, absent),
+            "READER SWEEP: %d admissible, %d inadmissible, %d without a receipt"
+            % (want_same, len(sweep_inadmissible), len(sweep_absent)),
+        )
+    )
+    cases.append((True, want_same > 10, "READER SWEEP: most worlds produced an admissible copy"))
+
+
+test_receipt_refusal()
 test_failfast_skips_refused()
 test_v2_carried_hash_match_allows()
 test_v2_planted_input_change_refuses()

@@ -167,8 +167,8 @@ datastore, so grand and forks are co-located by construction, and 06 §6.5 alrea
 registry, ceph ref, controlNode, kvm) MINUS `kvm.memberIds`, which moves to `state.clusters[*].memberIds` (it is a booted-VM allocation ledger, exactly the "status churn bumps the version counter" problem R2-F2 names).
 - `cloudProviders`: kept as-is; `apiToken` finally encrypted at rest (2.3).
 - `backupStrategies`: kept as-is.
-- `storages` (rclone backup targets, `vaultContent`): kept as-is. The noun survives the
-06 reshape (`rdc storage list/create/delete/browse/prune/import`); it is disjoint from the new `datastores` registry and the two must never be merged.
+- `storages`: removed. Backup targets are backup strategy destinations of kind `hosted-service`;
+the schema refuses `resources.storages` by name, and the v2→v3 migration drops a v2 `storages` family with a warning.
 - Per-repo `secrets`: kept on the RepoRecord (spec: the operator declared them), shape
 unchanged (`UPPER_SNAKE` key regex, `env|file` mode), size cap changes in §5. Fork isolation invariant carried forward: fork registration never copies `secrets`.
 - `deletedRepositories`: kept as an array; `ArchivedRepository.name` splits into
@@ -221,7 +221,7 @@ const StateSchema = z.object({
   // .repositories structurally; a state entry with no matching spec record is
   // pruned by reconcile).
   repos: z.record(resourceName, z.record(TagName, z.object({
-    networkId: z.number().int().optional(),   // writer: config-network-id.ts
+    networkId: z.number().int().optional(),   // writer: config-network-id.ts; synced, with the machine as fallback
     // Per-repo zot registry port (gate G3; spec 05 §5): allocated at `repo create`
     // for registry-opted repos from the 21000-28999 range, recorded next to
     // networkId. Rebuildable: the machine's rediacc-registry-<networkID>.service
@@ -257,15 +257,14 @@ const StateSchema = z.object({
 
 **The three documented properties (02 §11.1), made precise:**
 
-1. **Excluded from the version counter and from remote push.** State writes go through
-a new `configFileStorage.updateState()` that does NOT bump `version`; remote push serializes the config with `state` (and any `encryption.encryptedFields` entry whose pointer starts with `/state/`) stripped. This kills the optimistic-version conflicts and audit noise that status churn causes today (every `pushState` stamp and cert refresh currently bumps the counter via
-`config-file-storage.ts:213`).
+1. **Excluded from the version counter, synced with the config.** State writes go through
+a new `configFileStorage.updateState()` that does NOT bump `version`, which kills the optimistic-version conflicts and audit noise that status churn caused (every `pushState` stamp and cert refresh bumped the counter via `config-file-storage.ts:213`). Remote push carries `state` like the rest of the config, so a second device sharing a machine sees each repo's `networkId`, `registryPort` and head. `repos.*.*.networkId` and `networkIds.next` are synced, with the machine as fallback: renet keys a repo's Docker daemon, socket and loopback /26 on the ID, so every device must use the same one. A record that still has no ID asks its machine (`renet list all --json`, by GUID) before anything is allocated, and an allocation starts above every ID the target machine already uses.
 2. **Rebuildable via `config reconcile`** (§4), with an honest per-field ledger. Not
 all state is machine-observable, so v3 defines three classes; ALL are losable without a correctness failure:
    - **Rebuildable** (reconcile restores from `renet list all --json` + the P1
      datastore verbs): `datastores.*` attach/mounted/holders, `machines.*`,
-     `clusters.*.k3sVersion/nodes`, `repos.*.networkId` (requires the P1 renet
-     addition below), `repos.*.registryPort` (from the per-repo registry unit),
+     `clusters.*.k3sVersion/nodes`, `repos.*.networkId` (synced, with the machine
+     as fallback; rebuilt by GUID match from the renet `network_id` field below), `repos.*.registryPort` (from the per-repo registry unit),
      `certCache` (re-fetchable from the source machine).
    - **Partially rebuildable**: `clusters.*.memberIds` (from `renet ops` libvirt
      inventory on the KVM host; unrecoverable if the host is gone, in which case the
@@ -280,8 +279,8 @@ all state is machine-observable, so v3 defines three classes; ALL are losable wi
 gone) that resolves through `state.datastores[*].attachedTo` MUST verify before acting: one cheap remote check that the datastore is actually mounted on that machine (renet reports it; `ListResult.repositories[].mount_path` and the P1 datastore-status verb). Mismatch is a hard error naming both sides plus the fix: `state says ds-alpha is attached to prod-2, but prod-2 does not have
 it mounted. Run 'rdc config reconcile' to refresh, or 'rdc datastore attach ds-alpha --to <m>'.` Never fall back to trying other machines: a guess is a wrong-host deploy.
 
-**Required renet-side addition (P1)**: `RepositoryInfo` in `private/renet/pkg/list/types.go` does not expose the repo's networkId today (only `HealthDriftEntry.NetworkID` has it, and only for drifting containers). Reconcile needs it to rebuild `repos.*.networkId` without re-allocating (a re-allocation would silently break the repo's baked loopback /26 and socket path). Add
-`network_id` to `RepositoryInfo`, sourced from the `.interim` state mirror like `is_fork`/`grand_guid`/`repo_name` already are.
+**renet-side field (landed)**: `RepositoryInfo` in `private/renet/pkg/list/types.go` carries `network_id`, sourced from the `.interim` state mirror like `is_fork`/`grand_guid`/`repo_name`. Reconcile and network-ID discovery read it to recover `repos.*.networkId` without re-allocating (a re-allocation would silently break the repo's baked loopback /26 and socket
+path).
 
 ### 1.4 Sensitivity registry: v3 pointer delta
 
@@ -292,7 +291,7 @@ it mounted. Run 'rdc config reconcile' to refresh, or 'rdc datastore attach ds-a
 | `/resources/repositories/*/credential` (and sshPrivateKey, sshPublicKey, secrets/*/value, secrets/*/mode, repositoryGuid, grandGuid, parentGuid) | `/resources/repositories/*/tags/*/<same>` |
 | `/resources/machines/*/ceph/...` (3 entries) | deleted with the field |
 | (none) | `/resources/datastores/*/backend/...`, `/resources/datastores/*/cluster`, `/resources/datastores/*/parent/...` all `public` |
-| `/infra/acmeCertCache/*/data` (`credential`) | `/state/certCache/*/data` (`credential`, `commit: false` since state never pushes) |
+| `/infra/acmeCertCache/*/data` (`credential`) | `/state/certCache/*/data` (`credential`, `commit: false`; it is pushed with the config, `state` included (§2.2), inside the CEK-encrypted remote blob, never in a committed file) |
 | `/resources/repositories/*/pushState/...` | `/state/repos/*/*/pushState/...` (`public`) |
 | `/account/team`, `/account/region` | deleted (R2-F9; never registered anyway) |
 
@@ -354,7 +353,7 @@ DELETED; its setters become plain `configFileStorage.update()` calls on `resourc
 - The cluster/provider/strategy CRUD in `config-resources.ts` keeps its existing
 `configFileStorage.update()` calls UNCHANGED and becomes automatically encryption-correct: same path as everything else. The dual-path world is gone, which is why datastore records (P1) are born safe.
 - `RemoteResourceState` stops reconstructing configs: push serializes the real
-on-disk config (minus `/state/*`, per 1.3), so nothing can be dropped.
+on-disk config, `state` included (property 1 of 1.3), so nothing can be dropped.
 - Per-field granularity is driven ENTIRELY by `schema/sensitivity.ts` via
 `walkSensitive` + `metaForPointer` (both exist and are tested in `schema/__tests__/walker.test.ts`); `encryptAtRest` already defaults to true for `secret`/`credential` kinds (`sensitivity.ts:47`). No parallel field list.
 - The encrypted-fields container keeps the v2 shape
@@ -369,7 +368,7 @@ Everything with kind `secret` or `credential` in the v3 registry (1.4):
 | `/account/token` | secret | NO (escaped) |
 | `/credentials/ssh/privateKey` | credential | yes (via sshContent) |
 | `/credentials/cfDnsApiToken` | secret | **NO (escaped — named in R2-F3)** |
-| `/resources/storages/*/vaultContent` | secret | yes |
+| `/resources/storages` | secret (removed; the schema refuses any value) | n/a |
 | `/resources/repositories/*/tags/*/credential` | credential | yes |
 | `/resources/repositories/*/tags/*/sshPrivateKey` | credential | yes |
 | `/resources/repositories/*/tags/*/secrets/*/value` | secret | yes |
@@ -411,7 +410,7 @@ raw file while mode is master-password (the 2.3 exception), and login/verify wor
 - **T5 (state does not bump version)**: record `version`; write `pushState` and a cert
 cache entry via `updateState()`; assert `version` unchanged; write a machine via `update()`; assert `version` incremented by exactly 1.
 - **T6 (remote push completeness)**: with a mock `RemoteConfigAdapter`, push after T1;
-assert the pushed document contains clusters/providers/strategies and does NOT contain `state`.
+assert the pushed document contains clusters/providers/strategies and `state` (§2.2: push serializes the real on-disk config).
 
 ---
 
@@ -452,10 +451,13 @@ deleted and a stderr warning names each machine and the equivalent `rdc datastor
 with the key named (the operator moves the payload out of config; a silent truncation of a secret is never acceptable).
 9. **`deletedRepositories[*].name` composite split** → `{ name, tag }` with the same
 parse as transform 2 (`tag: 'latest'` when bare).
-10. **Everything else passes through untouched**: machines (minus ceph), storages,
+10. **Everything else passes through untouched**: machines (minus ceph),
     clusters (minus kvm.memberIds), cloudProviders, backupStrategies, account,
     defaults, credentials, infra (minus acmeCertCache), remote, renetPath, and — via
     `.loose()` — unknown top-level keys.
+11. **`resources.storages` retirement**: the family is dropped with a warning naming
+    each entry; backup targets are backup strategy destinations of kind `hosted-service`
+    (`migrations/v2-to-v3.ts` `dropRetiredStorages`).
 
 ### 3.3 Unknown and corrupt fields
 
@@ -504,7 +506,7 @@ writes mode, loop/dm holders via `FindLoopDevicesFor` + `dmsetup ls`).
 
 ### 4.2 What it rebuilds (and what it only prunes)
 
-Per the 1.3 ledger: rebuilds `state.datastores` (attachedTo/mounted/mountPath/holders), `state.machines`, `state.clusters` (k3sVersion, nodes, memberIds where the KVM host answers), `state.repos[*][*].networkId`, and re-seeds `branches` from on-machine commit objects. Prunes state entries whose spec record is gone. Fills MISSING `placement` (3.2 transform 3) by GUID match; it never
+Per the 1.3 ledger: rebuilds `state.datastores` (attachedTo/mounted/mountPath/holders), `state.machines`, `state.clusters` (k3sVersion, nodes, memberIds where the KVM host answers), `state.repos[*][*].networkId` (synced, with the machine as fallback: matched by GUID from `renet list all --json`, and a synced ID that diverges from the machine's takes the machine's value), and re-seeds `branches` from on-machine commit objects. Prunes state entries whose spec record is gone. Fills MISSING `placement` (3.2 transform 3) by GUID match; it never
 OVERWRITES an existing placement (see 4.3). Stamps `state.reconciledAt`. Writes via `updateState()` (no version bump); prints a spec-vs-observed diff table; `-o json` supported (R2-F15).
 
 ### 4.3 Mismatch behavior
@@ -543,8 +545,8 @@ repo isolation unit, 02 §8), renet materializes at `up()`:
      in-container names are byte-identical to the docker world's
      `REDIACC_SECRET_<KEY>` contract.
    - Secret `rediacc-files` (type Opaque): all file-mode keys. Mounted as a volume at
-     `/var/run/rediacc/secrets/` (one file per KEY, mode 0400), matching the docker
-     world's tmpfs path shape (no `<networkId>` segment: the namespace is the scope).
+     `/var/run/rediacc/secrets/` (one file per KEY, mode 0400), matching the tail of the docker
+     world's tmpfs path `/var/run/rediacc/net-<networkId>/secrets/` (no `net-<networkId>` segment: the namespace is the scope).
      k8s Secret volumes are tmpfs-backed on the node, preserving the never-on-disk
      property at the node level.
    - Both objects carry the CONTRACT label **`rediacc.io/injected=true`** (gate C4:

@@ -242,8 +242,7 @@ def _kill_stale(paths):
     the Python sweep reports different pids for the same case. Observed exactly that: three processes for one script, two of them from runs that had already finished, and the two sides disagreed on which two they saw.
 
     Only processes running THESE fixture scripts are touched -- nothing else on the machine can match a path under this world -- and each was started with
-    `start_new_session=True`, so it leads its own group and killing the group
-    takes its `sleep` child with it.
+    `start_new_session=True`. A process that leads its group loses the group, and any other loses itself and its direct `sleep` children, read before anything dies.
     """
     import time
 
@@ -251,6 +250,13 @@ def _kill_stale(paths):
         stale = [p for p in proc.pids() if any(t in (proc.cmdline(p) or "") for t in paths)]
         if not stale:
             return
+        # The children are read before anything dies. The bashcov-sup wrapper matches too and comes first in `stale`; killing it takes its script with it, and the script's child is then reparented, out of reach (measured 2026-11-01, about three orphans per run). Only a script's own child goes: a group the script does not lead may hold an unrelated process, since anything naming a fixture path matches `stale`.
+        children = [c for pid in stale for c in proc.children_named(pid, "sleep")]
+        for pid in children:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                continue
         for pid in stale:
             try:
                 if os.getpgid(pid) == pid:
@@ -484,7 +490,7 @@ def run(ev):
         if hookio.case_glob(cand, "*$*"):
             continue
         base = cand.rsplit("/", 1)[-1]
-        running = runningscript.live_shells(runningscript.pattern_for(base), 2)
+        running = runningscript.live_shells(runningscript.pattern_for(base), 2, cand, cwd)
         if running == "":
             continue
         body = hookio._command_substitution(

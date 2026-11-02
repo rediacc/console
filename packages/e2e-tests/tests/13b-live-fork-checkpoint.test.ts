@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
+import { repoDockerHost } from '@rediacc/shared/config/runtime-paths';
 import {
   DEFAULT_DATASTORE_PATH,
   DEFAULT_NETWORK_ID,
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
-import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
+import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
  * Live Fork with CRIU Checkpoint (console#440)
@@ -60,12 +61,12 @@ async function ignoreFailure(action: () => Promise<unknown>): Promise<void> {
 
 test.describe
   .serial('Live Fork Checkpoint Restore @bridge @integration', () => {
-    let runner: BridgeTestRunner;
+    let runner: RenetFunctionsTestRunner;
     const timestamp = Date.now();
-    const parentRepoName = `cp-livefork-${timestamp}`;
+    const parentRepoName = e2eRepoGuid();
     // In raw renet, `repository fork --tag` takes the fork's FULL image name — "--tag IS its image name; the rdc `name:tag` compositing is a config concern" (suite 17's ledger; the bridge ParamDef describes `tag` as "Fork repository name", and rdc passes the fork's GUID here). The fork's storage therefore lives at repositories/<forkRepoName>, NOT at repositories/<parent>:<tag> —
     // mounting the latter was this suite's original bug: fork exit 0, then "repository storage not found".
-    const forkRepoName = `cpfork-${timestamp}`;
+    const forkRepoName = e2eRepoGuid();
     const parentContainerName = `cp-counter-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const parentNetworkId = DEFAULT_NETWORK_ID;
@@ -76,13 +77,13 @@ test.describe
     /** Last logged counter value of the counter container on a daemon. */
     const counterValue = async (networkId: string | number): Promise<number> => {
       const result = await runner.executeViaBridge(
-        `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${networkId}.sock logs --tail 5 ${parentContainerName} 2>/dev/null | grep -o "count=[0-9]*" | tail -1 | cut -d= -f2`
+        `sudo docker -H ${repoDockerHost(networkId)} logs --tail 5 ${parentContainerName} 2>/dev/null | grep -o "count=[0-9]*" | tail -1 | cut -d= -f2`
       );
       return Number.parseInt(result.stdout.trim(), 10) || 0;
     };
 
     test.beforeAll(async () => {
-      runner = BridgeTestRunner.forWorker();
+      runner = RenetFunctionsTestRunner.forWorker();
       // Defense in depth alongside the resetWorkerState()+datastoreInitPool(force) below: if CRIU turns out to be unavailable this beforeAll returns before either of those run, and whichever suite ran before this one in project order (fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) may already have wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
       const criuCheck = await runner.checkCriu();
@@ -179,6 +180,15 @@ test.describe
 
     test('5. fork the RUNNING parent with --checkpoint', async () => {
       test.skip(!criuAvailable, 'CRIU not available on worker');
+      const licence = await installRepoLicence(runner.executeViaBridge.bind(runner), {
+        repositoryGuid: forkRepoName,
+        kind: 'fork',
+        grandGuid: parentRepoName,
+        datastorePath,
+      });
+      expect(runner.isSuccess(licence), `fork licence: ${runner.getCombinedOutput(licence)}`).toBe(
+        true
+      );
       const result = await runner.executeViaBridge(
         `sudo renet repository fork --name "${parentRepoName}" --tag "${forkRepoName}" --datastore "${datastorePath}" --checkpoint --network-id ${parentNetworkId}`
       );

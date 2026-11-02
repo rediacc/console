@@ -24,7 +24,7 @@ import subprocess
 import sys
 import tempfile
 import types
-from typing import Any
+from typing import Any, cast
 
 import wl_bravedefault
 import wl_classsweep
@@ -688,10 +688,14 @@ def fake_run(cmd, **_kw):
 # intercept nothing and let every control below drive the REAL CLI.
 #
 # `TIMEOUT_RC`/`SPAWN_FAILED_RC` are carried over verbatim rather than invented, because the routed call sites branch on them by name.
-wl_judge.wl_proc = types.SimpleNamespace(
-    run=fake_run,
-    TIMEOUT_RC=wl_proc.TIMEOUT_RC,
-    SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC,
+# cast to Any: the fake is a SimpleNamespace standing in for a module, which a typed assignment refuses.
+wl_judge.wl_proc = cast(
+    "Any",
+    types.SimpleNamespace(
+        run=fake_run,
+        TIMEOUT_RC=wl_proc.TIMEOUT_RC,
+        SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC,
+    ),
 )
 wl_judge.resolve_claude = lambda: "/bin/sh"
 
@@ -3144,6 +3148,210 @@ _work = judged(
     },
 )
 control("CONTROL: a work order stays continue", _work["verdict"], "continue")
+
+# ---- a length limit is a size BUDGET, never a reason for the CLI to bounce the verdict --------------
+#
+# THE INCIDENT, 2026-10-24 (session d778be9d): "subtype=error_max_structured_output_retries; stop_reason=tool_use; turns=6; cost=$0.0132", twice in a row, with `--tools ""` already in the argv. The child's StructuredOutput tool results read "/reason: must NOT have more than 300 characters (got 310)", then 321, then 345: the hard `maxLength` bounced a sound verdict a few characters over, five times. wire_schema moves each limit into the schema's `description` and clamp_to_schema enforces it after the answer arrives.
+
+
+def _walk_keys(node):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield k
+            yield from _walk_keys(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _walk_keys(v)
+
+
+_ml_all = wl_judge.judge_schema_for(
+    wl_judge._REGGATE_MARKER + wl_classsweep.SWEEP_MARKER + wl_bravedefault.BRAVE_MARKER
+)
+control(
+    "PART 8: the real schema DOES declare maxLength somewhere",
+    "maxLength" in set(_walk_keys(_ml_all)),
+    True,
+)
+_wired = wl_judge.wire_schema(_ml_all)
+control(
+    "PART 8: the wire schema carries no maxLength anywhere",
+    "maxLength" in set(_walk_keys(_wired)),
+    False,
+)
+control(
+    "PART 8: the limit survives as prose",
+    _wired["properties"]["reason"].get("description"),
+    "Keep under 300 characters.",
+)
+control(
+    "PART 8: wire_schema leaves the module schema untouched",
+    _ml_all["properties"]["reason"].get("maxLength"),
+    300,
+)
+
+_prev_run = wl_judge.wl_proc
+wl_judge.wl_proc = cast(
+    "Any",
+    types.SimpleNamespace(
+        run=fake_run, TIMEOUT_RC=wl_proc.TIMEOUT_RC, SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC
+    ),
+)
+try:
+    _long = judged(
+        "",
+        {
+            "verdict": "continue",
+            "reason": ("word " * 80).strip(),
+            "next_action": ("go " * 90).strip(),
+        },
+    )
+finally:
+    # A raise in judged() must not leave the fake installed for later controls (review ced51132.2).
+    wl_judge.wl_proc = _prev_run
+control(
+    "PART 8: the argv's schema has no maxLength",
+    "maxLength" in set(_walk_keys(CAPTURED["schema"])),
+    False,
+)
+control(
+    "PART 8: an overlong reason is clamped, not rejected",
+    _long is not None and len(_long["reason"]) <= 300,
+    True,
+)
+control(
+    "PART 8: an overlong next_action is clamped, not rejected",
+    _long is not None and len(_long["next_action"]) <= 200,
+    True,
+)
+control(
+    "PART 8: the clamp cuts on a word boundary",
+    _long is not None and _long["reason"].endswith("word"),
+    True,
+)
+control(
+    "PART 8: the argv still carries the tool restriction",
+    CAPTURED["argv"][CAPTURED["argv"].index("--tools") + 1],
+    "",
+)
+control(
+    "CONTROL: a short string is not touched",
+    wl_judge.clamp_to_schema("abc", {"maxLength": 5}),
+    "abc",
+)
+
+# wire_schema strips exactly the limits clamp_to_schema enforces; a limit anywhere else stays on the wire for the CLI (reviews ced51132.1, 7734d259, ffba0743).
+_cut = {"maxLength": 4}
+_combo = {
+    "$defs": {"s": _cut},
+    "properties": {
+        "a": {"anyOf": [_cut, {"type": "null"}]},
+        "b": {"$ref": "#/$defs/s"},
+        "c": {"type": "array", "items": _cut},
+    },
+    "additionalProperties": _cut,
+}
+_combo_wire = wl_judge.wire_schema(_combo)
+control(
+    "PART 8: a maxLength under anyOf stays on the wire",
+    _combo_wire["properties"]["a"]["anyOf"][0].get("maxLength"),
+    4,
+)
+control(
+    "PART 8: a maxLength under $defs stays on the wire",
+    _combo_wire["$defs"]["s"].get("maxLength"),
+    4,
+)
+control(
+    "PART 8: a maxLength under items and additionalProperties leaves the wire",
+    (
+        _combo_wire["properties"]["c"]["items"].get("maxLength"),
+        _combo_wire["additionalProperties"].get("maxLength"),
+    ),
+    (None, None),
+)
+control(
+    "PART 8: a maxLength under additionalProperties is clamped",
+    wl_judge.clamp_to_schema({"x": "abcdefgh"}, {"properties": {}, "additionalProperties": _cut}),
+    {"x": "abcd"},
+)
+control(
+    "PART 8: a maxLength under items is clamped",
+    wl_judge.clamp_to_schema(["abcdefgh"], {"items": _cut}),
+    ["abcd"],
+)
+control(
+    "CONTROL: additionalProperties false leaves an unknown key alone",
+    wl_judge.clamp_to_schema({"x": "abcdefgh"}, {"properties": {}, "additionalProperties": False}),
+    {"x": "abcdefgh"},
+)
+
+
+def _stripped_unclamped(schema, value_for):
+    """Every path where wire_schema dropped a maxLength that clamp_to_schema does not then enforce on an overlong string."""
+    misses = []
+    wired = wl_judge.wire_schema(schema)
+
+    def walk(orig, wire, path):
+        if isinstance(orig, dict):
+            if "maxLength" in orig and "maxLength" not in (wire or {}):
+                probe = "x" * (orig["maxLength"] + 50)
+                if len(value_for(path, probe)) > orig["maxLength"]:
+                    misses.append(path)
+            for k, v in orig.items():
+                walk(v, (wire or {}).get(k) if isinstance(wire, dict) else None, (*path, k))
+        elif isinstance(orig, list):
+            for i, v in enumerate(orig):
+                walk(v, wire[i] if isinstance(wire, list) and i < len(wire) else None, (*path, i))
+
+    walk(schema, wired, ())
+    return misses
+
+
+def _steps(path):
+    """The schema path as value steps: ("key", name), ("item",) or ("extra",)."""
+    out: list = []
+    i = 0
+    while i < len(path):
+        if path[i] == "properties" and i + 1 < len(path):
+            out.append(("key", path[i + 1]))
+            i += 2
+        elif path[i] == "items":
+            out.append(("item",))
+            i += 1
+        elif path[i] == "additionalProperties":
+            out.append(("key", "zz_extra"))
+            i += 1
+        else:
+            return None
+    return out
+
+
+def _nest(path, probe):
+    value = probe
+    for step in reversed(_steps(path) or []):
+        value = [value] if step[0] == "item" else {step[1]: value}
+    return value
+
+
+def _dig(value, path):
+    for step in _steps(path) or []:
+        value = value[0] if step[0] == "item" else value[step[1]]
+    return value
+
+
+control(
+    "CONTROL: the stripped-but-unclamped walk sees a limit the clamp cannot reach",
+    _stripped_unclamped({"properties": {"a": {"maxLength": 4}}}, lambda _path, probe: probe),
+    [("properties", "a")],
+)
+control(
+    "PART 8: every limit the real judge schemas lose on the wire is clamped",
+    _stripped_unclamped(
+        _ml_all,
+        lambda path, probe: _dig(wl_judge.clamp_to_schema(_nest(path, probe), _ml_all), path),
+    ),
+    [],
+)
 
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)

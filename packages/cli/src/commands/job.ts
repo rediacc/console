@@ -33,18 +33,21 @@ import {
   renderJobEvent,
   replayJobLogs,
 } from '../services/executor/job-remote.js';
+import { formatAge, parseWaitTimeoutMs } from '../services/jobs/duration.js';
+import { type WaitOutcome, waitForJob } from '../services/jobs/job-wait.js';
+import { openTicketStore, sshWaitDeps } from '../services/jobs/remote-deps.js';
+import { pendingStepNames } from '../services/jobs/steps.js';
+import type { Ticket } from '../services/jobs/ticket-store.js';
 import type { RenetAccess } from '../services/renet/renet-execution.js';
-import type { OutputFormat } from '../types/index.js';
+import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
 /** Default GC horizon: one week, matching renet's own default. */
 const DEFAULT_GC_HOURS = 168;
 
-/** Exit code when the operator detaches from a still-running job with Ctrl-C. */
-const EXIT_DETACHED = 130;
-
 interface JobCommandOptions {
-  machine: string;
+  machine?: string;
+  timeout?: string;
   id?: string;
   follow?: boolean;
   sinceLine?: string;
@@ -52,6 +55,9 @@ interface JobCommandOptions {
   yes?: boolean;
   debug?: boolean;
 }
+
+/** Options once the target machine is known: required for gc, resolved from `-m` or the ticket elsewhere. */
+type MachineJobOptions = JobCommandOptions & { machine: string };
 
 /** Run a job command against a machine, always releasing the connection. */
 async function withJobConnection<T>(
@@ -67,7 +73,47 @@ async function withJobConnection<T>(
   }
 }
 
-/** The rows `rdc job list` prints. */
+/**
+ * The machine and job id a command acts on: `-m` wins, otherwise the local ticket
+ * for that id supplies the machine. With neither the command cannot know whose
+ * spool to read, and says so.
+ */
+function resolveJobTarget(
+  jobId: string,
+  machineOption: string | undefined
+): { machine: string; jobId: string } {
+  const ticket = openTicketStore().find(jobId);
+  const machine = machineOption ?? ticket?.machine;
+  if (!machine) throw new Error(t('commands.job.machineRequired', { jobId }));
+  return { machine, jobId: ticket?.jobId ?? jobId };
+}
+
+/** The rows `rdc job list` prints without `-m`: this config's tickets. */
+function toTicketRow(ticket: Ticket) {
+  return {
+    id: ticket.jobId ?? ticket.requestId,
+    state: ticket.state,
+    verb: ticket.verb ?? ticket.function ?? '-',
+    repo: ticket.repo ?? '-',
+    machine: ticket.machine ?? '-',
+    age: formatAge(ticket.startedAt),
+    stepsPending: pendingStepNames(ticket).length,
+  };
+}
+
+/** `rdc job list` without -m: this config's pending and unacknowledged tickets. */
+function listTickets(format: OutputFormat): void {
+  const store = openTicketStore();
+  const tickets = store.pending();
+  store.compactIfNeeded();
+  if (tickets.length === 0 && format === 'table') {
+    outputService.info(t('commands.job.list.emptyTickets'));
+    return;
+  }
+  outputService.print(tickets.map(toTicketRow), format);
+}
+
+/** The rows `rdc job list -m` prints. */
 function toListRow(status: JobStatus) {
   return {
     id: status.job_id,
@@ -116,11 +162,17 @@ export function registerJobCommands(program: Command): void {
   job
     .command('list')
     .description(t('commands.job.list.description'))
-    .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
+    .option('-m, --machine <name>', t('commands.job.list.machineOption'))
     .action(async (options: JobCommandOptions) => {
       try {
-        const jobs = await withJobConnection(options.machine, 'read-only', listJobs);
         const format = getOutputFormat();
+
+        if (!options.machine) {
+          listTickets(format);
+          return;
+        }
+
+        const jobs = await withJobConnection(options.machine, 'read-only', listJobs);
 
         if (jobs.length === 0 && format === 'table') {
           outputService.info(t('commands.job.list.empty', { machine: options.machine }));
@@ -137,11 +189,12 @@ export function registerJobCommands(program: Command): void {
     .command('status')
     .description(t('commands.job.status.description'))
     .argument('<job-id>', t('commands.job.idOption'))
-    .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
-    .action(async (jobId: string, options: JobCommandOptions) => {
+    .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
+    .action(async (requested: string, options: JobCommandOptions) => {
       try {
-        const status = await withJobConnection(options.machine, 'read-only', (conn) =>
-          readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId)
+        const { machine, jobId } = resolveJobTarget(requested, options.machine);
+        const status = await withJobConnection(machine, 'read-only', (conn) =>
+          readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, machine)
         );
 
         outputService.print(status, getOutputFormat());
@@ -154,13 +207,14 @@ export function registerJobCommands(program: Command): void {
     .command('logs')
     .description(t('commands.job.logs.description'))
     .argument('<job-id>', t('commands.job.idOption'))
-    .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
+    .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
     .option('-f, --follow', t('commands.job.logs.followOption'))
     .option('--since-line <n>', t('commands.job.logs.sinceLineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (jobId: string, options: JobCommandOptions) => {
+    .action(async (requested: string, options: JobCommandOptions) => {
       try {
-        await runJobLogs(jobId, options);
+        const { machine, jobId } = resolveJobTarget(requested, options.machine);
+        await runJobLogs(jobId, { ...options, machine });
       } catch (error) {
         handleError(error);
       }
@@ -170,11 +224,26 @@ export function registerJobCommands(program: Command): void {
     .command('cancel')
     .description(t('commands.job.cancel.description'))
     .argument('<job-id>', t('commands.job.idOption'))
-    .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
+    .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
     .option('-y, --yes', t('options.yes'))
-    .action(async (jobId: string, options: JobCommandOptions) => {
+    .action(async (requested: string, options: JobCommandOptions) => {
       try {
-        await runJobCancel({ ...options, id: jobId }, getOutputFormat());
+        const { machine, jobId } = resolveJobTarget(requested, options.machine);
+        await runJobCancel({ ...options, machine, id: jobId }, getOutputFormat());
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  job
+    .command('wait')
+    .description(t('commands.job.wait.description'))
+    .argument('<job-id>', t('commands.job.idOption'))
+    .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
+    .option('--timeout <duration>', t('commands.job.wait.timeoutOption'))
+    .action(async (requested: string, options: JobCommandOptions) => {
+      try {
+        await runJobWait(requested, options);
       } catch (error) {
         handleError(error);
       }
@@ -188,7 +257,7 @@ export function registerJobCommands(program: Command): void {
     .option('-y, --yes', t('options.yes'))
     .action(async (options: JobCommandOptions) => {
       try {
-        await runJobGc(options, getOutputFormat());
+        await runJobGc(options as MachineJobOptions, getOutputFormat());
       } catch (error) {
         handleError(error);
       }
@@ -202,7 +271,7 @@ export function registerJobCommands(program: Command): void {
  * systemd, not under this terminal, and a user stopping a scrolling log is not
  * asking to destroy a half-finished migration.
  */
-async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<void> {
+async function runJobLogs(jobId: string, options: MachineJobOptions): Promise<void> {
   const cursor = new JobLogCursor(parseSinceLine(options.sinceLine));
 
   await withJobConnection(options.machine, 'read-only', async (conn) => {
@@ -218,19 +287,90 @@ async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<vo
       conn.remoteRenetPath,
       jobId,
       followOptions,
-      cursor
+      cursor,
+      options.machine
     );
 
     if (interrupted) {
       outputService.warn(t('commands.job.logs.detached', { jobId, machine: options.machine }));
-      setExitCode(EXIT_DETACHED);
+      setExitCode(EXIT_CODES.DETACHED);
       return;
     }
 
     // The stream ended because the job did. Report how it went, so a follow leaves the operator knowing the outcome rather than just a stopped log.
-    const status = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId);
+    const status = await readJobStatus(
+      conn.lease.sftp,
+      conn.remoteRenetPath,
+      jobId,
+      options.machine
+    );
     reportTerminalState(status);
   });
+}
+
+/**
+ * Resume following a ticketed job from its last seen line, then acknowledge it
+ * and exit with the job's own exit code. `--timeout` stops the WAIT, not the job.
+ */
+async function runJobWait(requested: string, options: JobCommandOptions): Promise<void> {
+  const timeoutMs = options.timeout === undefined ? undefined : parseWaitTimeoutMs(options.timeout);
+  if (options.timeout !== undefined && timeoutMs === undefined) {
+    throw new Error(t('commands.job.wait.invalidTimeout', { value: options.timeout }));
+  }
+
+  const store = openTicketStore();
+  let ticket = store.find(requested);
+  if (!ticket) {
+    if (!options.machine) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
+    // No ticket (a job started elsewhere): adopt it so the wait leaves a resumable record.
+    store.append('started', `adopted-${requested}`, {
+      jobId: requested,
+      machine: options.machine,
+      via: { kind: 'ssh' },
+      startedAt: new Date().toISOString(),
+    });
+    ticket = store.find(requested);
+  }
+  if (!ticket) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
+
+  const target = ticket.jobId ?? ticket.requestId;
+  const outcome = await waitForJob(store, ticket, sshWaitDeps(), {
+    timeoutMs,
+    onEvent: renderJobEvent,
+  });
+  reportWaitOutcome(outcome, target, ticket.machine ?? options.machine ?? '');
+  store.compactIfNeeded();
+}
+
+function reportWaitOutcome(outcome: WaitOutcome, jobId: string, machine: string): void {
+  switch (outcome.kind) {
+    case 'finished':
+      if (outcome.status.state === 'succeeded') {
+        outputService.success(t('commands.job.finished.succeeded', { jobId }));
+      } else {
+        outputService.warn(
+          t('commands.job.finished.other', {
+            jobId,
+            state: outcome.status.state,
+            error: outcome.status.error ?? '',
+          })
+        );
+      }
+      setExitCode(outcome.exitCode);
+      return;
+    case 'timeout':
+      outputService.warn(t('commands.job.wait.timedOut', { jobId, machine }));
+      setExitCode(EXIT_CODES.FOLLOW_LOST);
+      return;
+    case 'interrupted':
+      outputService.warn(t('commands.job.wait.detached', { jobId, machine }));
+      setExitCode(EXIT_CODES.DETACHED);
+      return;
+    case 'unresolved':
+      throw new Error(t('commands.job.wait.startingUnresolved', { jobId }));
+    case 'proxy-unsupported':
+      throw new Error(t('commands.job.wait.proxyUnsupported', { jobId }));
+  }
 }
 
 /** Print (and exit-code) a job's final outcome after a follow. */
@@ -251,11 +391,16 @@ function reportTerminalState(status: JobStatus): void {
 }
 
 /** Cancel a running job, confirming first: it stops real work. */
-async function runJobCancel(options: JobCommandOptions, format: OutputFormat): Promise<void> {
+async function runJobCancel(options: MachineJobOptions, format: OutputFormat): Promise<void> {
   const jobId = options.id as string;
 
   await withJobConnection(options.machine, 'provision', async (conn) => {
-    const current = await readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId);
+    const current = await readJobStatus(
+      conn.lease.sftp,
+      conn.remoteRenetPath,
+      jobId,
+      options.machine
+    );
 
     // Cancelling a finished job is a no-op machine-side, so do not make the operator confirm something that will not happen.
     if (isTerminalState(current.state)) {
@@ -285,7 +430,7 @@ async function runJobCancel(options: JobCommandOptions, format: OutputFormat): P
 }
 
 /** Remove finished jobs and their logs. Running jobs are never collected. */
-async function runJobGc(options: JobCommandOptions, format: OutputFormat): Promise<void> {
+async function runJobGc(options: MachineJobOptions, format: OutputFormat): Promise<void> {
   const hours = parseOlderThanHours(options.olderThan);
 
   await withJobConnection(options.machine, 'provision', async (conn) => {

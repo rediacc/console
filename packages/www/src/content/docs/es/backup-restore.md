@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: es
-sourceHash: "c35328105c2f3e8c"
-sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+sourceHash: "243d934efa7d9d54"
+sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
 ---
 
 # Respaldo y Restauración
@@ -59,9 +59,9 @@ El push y el pull de máquina a máquina no necesitan ninguna de las dos cosas. 
 - **No es replicación continua.** Un snapshot es un punto que tomaste, y puedes perder todo lo escrito desde el último. Cuánto sea eso depende de con qué frecuencia lo ejecutes.
 - **Los objetos almacenados son de escritura única, no WORM certificado.** Las celdas se escriben con una condición de solo creación, el permiso que obtiene una máquina no puede borrar nada, y las eliminaciones ocurren en el servidor según la política de retención. Eso es una barrera real contra una máquina comprometida que destruye sus propios respaldos. No es una certificación de cumplimiento, y no se audita como tal.
 
-### La vía de almacenamiento con rclone desapareció
+### Un único tipo de destino
 
-`rdc repo push --to <storage>` y sus variantes solían copiar un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. Ahora rechazan un destino de almacenamiento y nombran su reemplazo. La transferencia de máquina a máquina nunca pasó por rclone y no se ve afectada. Si aún necesitas leer un archivo escrito de esa forma, consulta [Leer un archivo escrito antes de la retirada](#reading-an-archive-written-before-the-retirement).
+Los backups en almacenamiento fragmentado tienen un único tipo de destino: un almacenamiento fragmentado alojado en el servicio, al que se llega a través del servidor de cuentas. No existe un registro de endpoints de almacenamiento externos, así que `--to` y `--from` en `repo push` y `repo pull` solo aceptan una máquina.
 
 ### Comandos de almacenamiento fragmentado
 
@@ -92,7 +92,11 @@ rdc backup usage
 | `--dry-run` | Solo planificar: sin subida. Informa qué se movería |
 | `--cold` | Detener los contenedores, congelar, reiniciar, y luego subir. No se puede combinar con `--dry-run` |
 | `--reseed` | Desconfiar del ancla local y subir un inventario completo. Vuelve a subir todo y recarga la cuota |
+| `--read-bwlimit <limit>` | Límite de la velocidad con que la instantánea lee la imagen del disco, en las mismas unidades que `--bwlimit` (por defecto `50M`, `0` = sin límite) |
+| `--hash-parallelism <n>` | Número de procesos de hash (por defecto `1`, `0` = uno por CPU, hasta `16`) |
 | `--debug` | Habilitar salida detallada |
+
+El límite de subida y el de lectura son independientes. `--bwlimit` limita lo que se envía y por defecto no tiene límite; `--read-bwlimit` limita la velocidad a la que la imagen se lee y se calcula su hash desde el disco. `ionice` solo afecta al planificador de E/S BFQ, así que con `mq-deadline` o `none` el límite de lectura es lo que acota la carga del disco.
 
 ## Snapshots en Frío (`--cold`)
 
@@ -264,22 +268,34 @@ La copia enviada aparece bajo su propio nombre. Una segunda fila con un GUID en 
 | `Size` | Tamaño legible del archivo de respaldo |
 | `Modified` | Marca de tiempo UTC del archivo en la máquina |
 
-Listar un backend de almacenamiento quedó retirado junto con la rama de rclone; el comando se rechaza y nombra estos dos reemplazos.
-
 ## Retención
 
-El servidor aplica una política de retención por repositorio sobre el almacenamiento fragmentado, así que los snapshots antiguos se podan sin que borres nada a mano. Sin política declarada, se conserva cada snapshot.
+El servidor aplica una política de retención sobre el almacenamiento fragmentado, así que los snapshots antiguos se podan sin que haya que borrar nada a mano. Una política pertenece al linaje de un repositorio: un repositorio y sus forks comparten un único historial, y una política fijada sobre el nombre del repositorio cubre a toda la familia. Dentro de un linaje, cada flujo de backup (un repositorio en una máquina) también está protegido por separado, de modo que la retención nunca deja a un flujo sin sus snapshots más recientes ni su ancla actual, diga lo que diga la política. Una segunda máquina o un fork que pode su propio historial no puede consumir el mínimo de otro flujo.
+
+Sin política declarada se aplica un valor por defecto del servidor (el del plan, cuando el plan define uno) y se conservan los snapshots más recientes de cada flujo.
 
 ```bash
-# Qué se está aplicando ahora mismo.
+# Qué se está aplicando ahora mismo y de dónde procede.
 rdc backup retention my-app
+
+# Qué borraría la próxima pasada y cuánto espacio liberaría. No se borra nada.
+rdc backup retention preview my-app
 
 # Mantener una ventana rotativa: 7 diarios, 4 semanales, 6 mensuales.
 rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-# Volver a conservar todo.
+# Aplicar una política distinta a un solo flujo de backup.
+rdc backup retention set my-app --stream <stream-id> --keep-last 3
+
+# Eliminar la política declarada.
 rdc backup retention clear my-app
+rdc backup retention clear my-app --stream <stream-id>
+
+# Borrar un snapshot ahora. Los datos que solo usaba ese snapshot los libera el siguiente GC.
+rdc backup snapshots delete my-app <snapshot-id>
 ```
+
+Una estrategia puede declarar la política de los repositorios que cubre: `rdc backup strategy set daily --retention last=7,daily=7,weekly=4,monthly=6` (`--retention none` la elimina).
 
 | Opción | Descripción |
 |--------|-------------|
@@ -289,8 +305,9 @@ rdc backup retention clear my-app
 | `--keep-weekly <n>` | Conservar el snapshot más nuevo de cada una de estas semanas |
 | `--keep-monthly <n>` | Conservar el snapshot más nuevo de cada uno de estos meses |
 | `--keep-yearly <n>` | Conservar el snapshot más nuevo de cada uno de estos años |
+| `--stream <id>` | Aplicar la política a un solo flujo de backup en lugar de al valor por defecto de todo el repositorio |
 
-Da al menos una regla. `set` sin reglas se rechaza en lugar de tratarse como "no conservar nada", porque para eso está `clear`.
+Da al menos una regla. `set` reemplaza todos los parámetros en lugar de combinarlos, así que la política completa se pasa cada vez. `set` sin reglas se rechaza en lugar de tratarse como "no conservar nada", porque para eso está `clear`. `clear` elimina la política declarada, de modo que vuelve a aplicarse el valor predeterminado del plan o del servidor; nunca significa "no conservar nada" ni "conservarlo todo".
 
 ## Restaurar
 
@@ -306,6 +323,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 `--at` toma un id de snapshot de `rdc backup manifests`, o una hora RFC 3339 como `2026-08-14T12:00:00Z`, que se resuelve al snapshot más reciente tomado en ese momento o antes. Una hora sin snapshot en ese momento o antes se rechaza en lugar de redondearse hacia adelante.
 
+Una hora se resuelve solo entre los snapshots de este repositorio en su máquina de origen. Los snapshots escritos por otras máquinas o por forks del mismo linaje no se consideran, salvo que `--any-stream` amplíe la búsqueda a propósito. Si no se puede determinar el flujo propio del repositorio, la restauración se rechaza y pide `--any-stream` en lugar de adivinar.
+
 Restaurar bajo un nombre nuevo con `--as` no sobrescribe nada, así que un simulacro de restauración es seguro de ejecutar contra una máquina en vivo. Restaurar sobre un nombre que ya existe se rechaza.
 
 | Opción | Descripción |
@@ -315,6 +334,7 @@ Restaurar bajo un nombre nuevo con `--as` no sobrescribe nada, así que un simul
 | `-m, --machine <machine>` | Máquina en la que restaurar |
 | `--datastore <name>` | Restaurar en este datastore nombrado, cuya máquina asociada lo aloja |
 | `--at <time>` | Restaurar un punto en el tiempo: un id de snapshot o una hora RFC 3339 |
+| `--any-stream` | Con `--at`, considera también los snapshots de otras máquinas y de forks de este linaje |
 | `--up` | Desplegar el repositorio restaurado después de la transferencia |
 | `--health-window <seconds>` | Cuánto tiempo observar la salud del repositorio desplegado |
 | `--health-timeout <seconds>` | Cuánto tiempo esperar hasta que esté saludable |
@@ -351,7 +371,7 @@ Las listas completas de opciones están en [Enviar un Respaldo a Otra Máquina](
 
 ## Respaldos Programados
 
-Rediacc utiliza estrategias de respaldo nombradas. Cada estrategia define un cronograma, modo de respaldo, límite de ancho de banda opcional y filtros de archivo. Vincula nombres de estrategia a máquinas para controlar qué respaldos se ejecutan donde.
+Rediacc utiliza estrategias de respaldo nombradas. Cada estrategia define un cronograma, modo de respaldo, límite de ancho de banda opcional, filtros de repositorios y retención de snapshots. Los nombres de estrategia se vinculan a máquinas para controlar qué respaldos se ejecutan donde.
 
 ### Modos de Respaldo
 
@@ -450,7 +470,7 @@ La configuración predeterminada es una división en dos estrategias: un flujo h
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -459,28 +479,28 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
-`--destination <name>` nombra el destino dentro de la estrategia; es una etiqueta que tú eliges, y describe el almacenamiento fragmentado. `--include` lista los repositorios a respaldar, y repetirlo añade más. Omítelo y la estrategia cubre todos los repositorios del datastore. Los nombres coinciden con el nombre de repositorio de la configuración local (sin `:tag`).
+`--destination <name>` nombra el destino dentro de la estrategia; es una etiqueta que se elige por estrategia, y el destino es siempre el almacenamiento fragmentado alojado en el servicio. `--include` toma una lista de repositorios a respaldar separada por comas (`--include shop,mail`). Omítelo y la estrategia cubre todos los repositorios del datastore. Un nombre sin más cubre el repositorio y todos sus forks; `name:tag` cubre un fork. Los nombres desconocidos se rechazan al guardar la estrategia, así que un error tipográfico no puede programar un respaldo de nada.
 
-`--exclude` se rechaza para un destino de almacenamiento fragmentado en lugar de descartarse en silencio, porque el `backup snapshot` subyacente selecciona repositorios nombrándolos y no tiene exclusión propia. Respetarlo significaría respaldar repositorios que pediste dejar fuera. Delimita una estrategia con `--include` en su lugar, para que lo que cubre una ejecución programada quede escrito en lugar de inferido.
+`--exclude` tiene la misma forma separada por comas y omite los repositorios indicados. `--include` y `--exclude` son mutuamente excluyentes: fijar uno borra el otro, y el valor `none` borra un filtro.
 
 | Opción | Descripción |
 |--------|-------------|
 | `<strategy>` (posicional) | Nombre de la estrategia (usado para la vinculación a la máquina) |
-| `--destination <name>` | Nombre del destino dentro de la estrategia. Por defecto, el almacenamiento fragmentado |
-| `--storage <name>` | Optar por el tipo de destino rclone retirado. Un cronograma que lo use no se puede desplegar |
+| `--destination <name>` | Nombre del destino dentro de la estrategia. Siempre un almacenamiento fragmentado alojado en el servicio |
 | `--cron <expression>` | Expresión cron (p. ej. `"0 2 * * *"` para diario a las 2 AM) |
 | `--mode <hot\|cold>` | Modo de respaldo |
 | `--bwlimit <limit>` | Límite de ancho de banda para cargas (p. ej. `10M`) |
-| `--include <repos>` | Repositorios que cubre esta estrategia (repetible) |
-| `--exclude <repos>` | Repositorios a omitir (repetible). Se rechaza en un destino de almacenamiento fragmentado |
-| `--folder <path>` | Subcarpeta dentro de un bucket rclone. Se rechaza en un destino de almacenamiento fragmentado |
+| `--read-bwlimit <limit>` | Límite de la velocidad con que las instantáneas leen la imagen del disco (p. ej. `50M`, `0` = sin límite). `none` lo elimina |
+| `--include <repos>` | Repositorios que cubre esta estrategia (separados por comas) |
+| `--exclude <repos>` | Repositorios a omitir (separados por comas) |
+| `--retention <spec>` | Retención de snapshots, por ejemplo `last=7,daily=7,weekly=4,monthly=6`. `none` la elimina |
 | `--enable` / `--disable` | Habilitar o deshabilitar la estrategia |
 
 ### Ver Estrategias
@@ -539,12 +559,12 @@ Ambos modos escriben en el mismo almacenamiento fragmentado, y el modo trata de 
 
 ### Delimitar repositorios por estrategia
 
-Una estrategia sin `--include` cubre todos los repositorios del datastore. Repetir `--include` la reduce a los repositorios que nombras, comparados con el nombre de repositorio de la configuración local (sin `:tag`).
+Una estrategia sin `--include` cubre todos los repositorios del datastore. `--include` la reduce a los repositorios indicados, separados por comas, comparados con el nombre de repositorio de la configuración local.
 
 ```bash
 # Estrategia hot: respaldar todo cada hora
 rdc backup strategy set hourly-hot \
-  --destination rediacc \
+  --destination hosted \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -552,10 +572,10 @@ rdc backup strategy set hourly-hot \
 
 # Estrategia cold: semanal, y solo los repositorios que necesitan reposo
 rdc backup strategy set weekly-cold \
-  --destination rediacc \
+  --destination hosted \
   --cron "15 3 * * 0" \
   --mode cold \
-  --include shop --include mail \
+  --include shop,mail \
   --enable
 ```
 
@@ -637,25 +657,6 @@ rdc repo migrate my-app@server-1 --to server-2
 | `--bwlimit <limit>` | Límite de ancho de banda para la transferencia (p. ej. `50M`) |
 
 La migración transfiere los datos del repositorio cifrado vía rsync en dos fases: una transferencia masiva mientras el repositorio sigue en ejecución, y luego una breve parada para el delta. La migración **mueve** el repositorio, así que las imágenes de origen se eliminan una vez que el movimiento tiene éxito. Pasa `--keep-source` para conservarlas. Esta es la diferencia entre `repo migrate` y `repo push`: push deja la fuente en ejecución e intacta.
-
-## Leer un Archivo Escrito Antes de la Retirada
-
-`rdc storage` es lo que queda de la rama de rclone, y es de solo lectura. Ya no puede ser un destino de respaldo, pero todavía puede acceder a un archivo que se escribió en uno.
-
-```bash
-# Registra un remote que ya tienes configurado para rclone.
-rdc storage import rclone.conf
-rdc storage list
-
-# Mira qué hay en él. Esto ejecuta el rclone de tu PATH.
-rdc storage browse my-storage
-```
-
-`import` lee un archivo de configuración rclone y registra los remotes en tu configuración; los tipos compatibles son S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
-
-**`browse` requiere `rclone` en tu PATH.** Ejecuta el rclone instalado en la máquina donde estás escribiendo; ya no hay una copia integrada. Sin uno, te lo dice y no hace nada más.
-
-Enviar a, descargar desde, listar y restaurar un backend de almacenamiento están retirados; cada uno se rechaza y nombra el comando que lo reemplaza.
 
 ## Mejores Prácticas
 

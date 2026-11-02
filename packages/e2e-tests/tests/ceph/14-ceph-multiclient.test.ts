@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
+import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Combined topology only: needs BOTH a Ceph cluster and >=2 worker/client VMs.
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
@@ -24,9 +24,9 @@ test.describe
   .serial('Ceph Multi-Client Read-Only + COW @bridge @ceph @multiclient', () => {
     test.skip(!hasCephAndTwoClients, 'Requires combined topology (VM_CEPH_NODES + >=2 VM_WORKERS)');
 
-    let ceph: BridgeTestRunner;
-    let worker1: BridgeTestRunner;
-    let worker2: BridgeTestRunner;
+    let ceph: RenetFunctionsTestRunner;
+    let worker1: RenetFunctionsTestRunner;
+    let worker2: RenetFunctionsTestRunner;
 
     const id = Date.now().toString(36);
     const pool = `mc-pool-${id}`;
@@ -40,9 +40,9 @@ test.describe
     const worker1Content = `worker1-only-${id}`;
 
     test.beforeAll(() => {
-      ceph = BridgeTestRunner.forCeph();
-      worker1 = BridgeTestRunner.forWorker(1);
-      worker2 = BridgeTestRunner.forWorker(2);
+      ceph = RenetFunctionsTestRunner.forCeph();
+      worker1 = RenetFunctionsTestRunner.forWorker(1);
+      worker2 = RenetFunctionsTestRunner.forWorker(2);
     });
 
     test('1. Ceph cluster is healthy', async () => {

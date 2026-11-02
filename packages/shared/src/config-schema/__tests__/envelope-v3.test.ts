@@ -41,7 +41,7 @@ function doc(machines: Record<string, { ip: string; user: string }>): RdcConfig 
     schemaVersion: 3,
     id: CONFIG,
     version: 1,
-    resources: { machines, repositories: {}, storages: {} },
+    resources: { machines, repositories: {} },
     credentials: { ssh: { privateKey: 'PRIVATE-KEY-BYTES', publicKey: 'ssh-ed25519 AAA' } },
   };
 }
@@ -180,8 +180,10 @@ describe('envelope v3: blinded pointers (F14, D6)', () => {
     const k = await keys();
     const first = await push(doc(BOTH), k);
     const second = await push(doc(BOTH), k, { version: 3 });
-    expect(Object.keys(second.envelope.commitments.fields).sort()).toEqual(
-      Object.keys(first.envelope.commitments.fields).sort()
+    expect(
+      Object.keys(second.envelope.commitments.fields).sort((a, b) => Number(a > b) - Number(a < b))
+    ).toEqual(
+      Object.keys(first.envelope.commitments.fields).sort((a, b) => Number(a > b) - Number(a < b))
     );
     const ownKey = await blindPointer(
       await derivePointerBlindingKey(k.cek, CONFIG),
@@ -271,10 +273,10 @@ describe('envelope v2: read for one release, upgraded by the next push (D2)', ()
     });
     const migrated = next.envelope.commitments.migrated ?? {};
     const fields = next.envelope.commitments.fields;
-    expect(Object.keys(migrated).sort()).toEqual(
+    expect(Object.keys(migrated).sort((a, b) => Number(a > b) - Number(a < b))).toEqual(
       buildCommitEntries(doc({ alpha: BOTH.alpha }))
         .map((e) => e.pointer)
-        .sort()
+        .sort((a, b) => Number(a > b) - Number(a < b))
     );
     for (const key of Object.values(migrated)) expect(fields).toHaveProperty([key]);
     // Every stored v2 pointer is accounted for: migrated to a v3 key, or tombstoned with its stored commitment.

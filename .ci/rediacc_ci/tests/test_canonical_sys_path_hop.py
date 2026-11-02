@@ -91,7 +91,7 @@ EXEMPT: dict[str, str] = {
     ),
     ".ci/scripts/ci/profiler/_cipath.py": (
         "BLOCKER: the canonical `.ci` hop for the profiler's path-invoked sampler "
-        "shims (3773868ac), exempt for the reason the docker copy above gives: a "
+        "shims (b934e8777), exempt for the reason the docker copy above gives: a "
         "path invocation puts only the script's own directory on sys.path[0]. Three "
         "directories below `.ci` rather than two; the file's `raise` checks the depth. "
         "The exemption dies the day `.ci/scripts/ci/profiler/` stops holding "

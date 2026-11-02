@@ -2060,13 +2060,6 @@
       "message": "Incompatible types in assignment (expression has type \"Path\", variable has type \"str\")"
     },
     {
-      "id": "a8b27d5691fb2eff",
-      "file": ".claude/hooks/stop/test-judge-schema.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"SimpleNamespace\", variable has type Module)"
-    },
-    {
       "id": "47dcf6f2f0c06d82",
       "file": ".claude/hooks/stop/test-judge-schema.py",
       "code": "assignment",
@@ -2282,20 +2275,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"v\" (hint: \"v: list[<type>] = ...\")"
-    },
-    {
-      "id": "77bffce329df3bd9",
-      "file": ".claude/hooks/stop/wl_checks.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"Callable[[], Any]\", target has type \"Callable[[Any], Any]\")"
-    },
-    {
-      "id": "ebd564763a84fc10",
-      "file": ".claude/hooks/stop/wl_checks.py",
-      "code": "misc",
-      "count": 1,
-      "message": "Cannot infer type of lambda"
     },
     {
       "id": "bfef57e66cd8b42e",

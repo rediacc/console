@@ -5,12 +5,7 @@ Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can s
 
 The executor image was never built or booted by CI; it shipped with no renet (B2) and died at boot without REDIACC_TOKEN (B1), and nothing noticed.
 
----- gate ----
-kind: local-only
-id: check:ci-proxy-image-smoke
-blocker: BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)
-needs: submodules
----- end gate ----
+Hand-registered, with no gate header: CI runs it in `.github/workflows/ci-build-renet.yml` job `proxy-image-smoke`, the one place a freshly built renet-linux-amd64 exists to stage, and a header can only bind a step in ci-quality.yml (scripts/gate-bind.ts WORKFLOW).
 """
 
 import sys

@@ -341,22 +341,26 @@ export async function handleDownAll(options: {
 }
 
 // Renders the `repo list` table: resolves tag/type from local config, marks server-sourced names (not in local config) with ' *', and prints a legend when any such name is shown.
-async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<void> {
+export async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<void> {
   const { parseRepoRef } = await import('../utils/config-schema.js');
   const { classifyRepoType } = await import('../utils/repo-classify.js');
   const repoConfigs = await configService.listRepositories().catch((err: unknown) => {
     telemetryService.trackError(err, { operation: 'repo.list_repositories' });
     return [];
   });
-  const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
+  const configLookup = new Map<
+    string,
+    { grandGuid?: string; tag?: string; gpuDevices?: string[] }
+  >();
   for (const rc of repoConfigs) {
     configLookup.set(rc.config.repositoryGuid, {
       grandGuid: rc.config.grandGuid,
       tag: rc.config.tag,
+      gpuDevices: rc.config.gpuDevices,
     });
   }
   const compact = resolved.map((r) => {
-    const cfg = configLookup.get((r.guid ?? r.name) as string);
+    const cfg = configLookup.get(r.guid as string);
     const { name: baseName, tag: parsedTag } = parseRepoRef(r.name as string);
     const serverSourced = r.name_source === 'server';
     return {
@@ -366,9 +370,11 @@ async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<
       size: r.size_human,
       mounted: r.mounted ? 'Yes' : 'No',
       docker: r.docker_running ? 'Yes' : 'No',
+      running: r.containers_running ? 'Yes' : 'No',
       containers: r.container_count,
       services: r.service_count,
       modified: r.modified_human,
+      gpu: cfg?.gpuDevices?.join(', ') || '-',
     };
   });
   outputService.print(compact, 'table');

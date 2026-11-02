@@ -149,7 +149,7 @@ export function interpolate(template: string, data: Record<string, unknown>): st
 function computeLineStarts(source: string): number[] {
   const starts = [0];
   for (let i = 0; i < source.length; i++) {
-    if (source[i] === '\n') starts.push(i + 1);
+    if (source.startsWith('\n', i)) starts.push(i + 1);
   }
   return starts;
 }
@@ -205,12 +205,12 @@ function collectPatternNames(pattern: AnyNode | null | undefined, out: string[])
       out.push(pattern.name as string);
       return;
     case 'ObjectPattern':
-      for (const prop of (pattern.properties as AnyNode[]) ?? []) {
+      for (const prop of (pattern.properties as AnyNode[] | undefined) ?? []) {
         collectPatternNames((prop.argument ?? prop.value) as AnyNode, out);
       }
       return;
     case 'ArrayPattern':
-      for (const el of (pattern.elements as Array<AnyNode | null>) ?? [])
+      for (const el of (pattern.elements as Array<AnyNode | null> | undefined) ?? [])
         collectPatternNames(el, out);
       return;
     case 'AssignmentPattern':
@@ -288,7 +288,7 @@ function buildParentsAndScopes(
     childScope = { type: 'function', block: node, variables: [], upper: scope };
     nodeScope.set(node, childScope);
     const names: string[] = [];
-    for (const p of (node.params as AnyNode[]) ?? []) collectPatternNames(p, names);
+    for (const p of (node.params as AnyNode[] | undefined) ?? []) collectPatternNames(p, names);
     for (const name of names) childScope.variables.push({ name, defs: [{ node }] });
   } else if (
     node.type === 'BlockStatement' &&
@@ -358,7 +358,7 @@ export function parseSource(
   const moduleScope: HostScope = { type: 'module', block: program, variables: [], upper: null };
   nodeScope.set(program, moduleScope);
   const keys = jsVisitorKeys as unknown as Record<string, string[]>;
-  for (const key of keys.Program ?? ['body']) {
+  for (const key of (keys as Partial<typeof keys>).Program ?? ['body']) {
     const value = program[key];
     if (Array.isArray(value)) {
       for (const child of value as AnyNode[])
@@ -438,7 +438,7 @@ export function runJsonRule(rule: RuleModule, code: string, run: RunOptions): Fi
       findings.push(toFinding(rule, descriptor, null));
     },
   };
-  const visitors = rule.create(context);
+  const visitors: Partial<ReturnType<typeof rule.create>> = rule.create(context);
   visitors.Document?.(document as unknown as AnyNode);
   return findings;
 }

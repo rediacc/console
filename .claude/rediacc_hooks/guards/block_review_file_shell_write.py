@@ -32,7 +32,7 @@ REVIEW_TEXT = "agent/reviews/"
 REVIEW_LITERAL = re.compile(r"['\"](?![A-Za-z][A-Za-z0-9+.-]*://)(?:[^'\"\s]*/)?agent/reviews/")
 REVIEW_WORD = re.compile(r"(\A|/)agent/reviews(/|\Z)")
 SANCTIONED = ("wl_review.py", "worklist.py")
-# Every interpreter `shellscan.interpreter_program` reads (#a2599946): this guard listed python, node, perl and ruby alone, so `deno eval`, `bun -e`, `tsx -e` and `deno run - <<EOF` wrote a review file unread (rc 0, 2026-10-15 at bd4ead963).
+# Every interpreter `shellscan.interpreter_program` reads (#a2599946): this guard listed python, node, perl and ruby alone, so `deno eval`, `bun -e`, `tsx -e` and `deno run - <<EOF` wrote a review file unread (rc 0, 2026-10-15 at 2f3430b60).
 INTERPRETERS = shellscan.INTERPRETER_NAMES
 # Code that opens a file for writing, replaces or removes one. `.open('w')` is pathlib's spelling, whose mode is the FIRST argument (e30f1ad1.1).
 WRITE_CODE = re.compile(
@@ -165,8 +165,10 @@ EDGE_CASES = [
 def _is_review(word, cwd=None, base=None):
     if not word:
         return False
-    # The directory is read with the word, so a glob in it counts as one in the word does: `cd agen? && tee revi*s/x.md` writes a review file, and joining the typed `agen?` onto the word's forms read `agen?/reviews/x.md` (rc 0).
-    joined = [word, str(cwd).rstrip("/") + "/" + word] if cwd else [word]
+    # The directory is read with the word, so a glob in it counts as one in the word does: `cd agen? && tee revi*s/x.md` writes a review file, and joining the typed `agen?` onto the word's forms read `agen?/reviews/x.md` (rc 0). An absolute word is not joined (#e85553f0): bash opens it where it names, wherever the run executes, so `cd agent/reviews/b && ls x 2>/dev/null` redirects into `/dev/null`, not a review record, and was refused (rc 2) while the typed directory was joined onto it.
+    joined = (
+        [word, str(cwd).rstrip("/") + "/" + word] if cwd and not word.startswith("/") else [word]
+    )
     return any(REVIEW_WORD.search(form) for w in joined for form in _review_forms(w)) or (
         _lands_in_reviews(word, base)
     )

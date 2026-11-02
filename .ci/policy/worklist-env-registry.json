@@ -167,6 +167,13 @@
         "'15'"
       ]
     },
+    "WORKLIST_BIGPIECES_LATCH_MIN": {
+      "kind": "tuning",
+      "class": "harness",
+      "defaults": [
+        "'60'"
+      ]
+    },
     "WORKLIST_BIG_OPEN_FLOOR": {
       "kind": "tuning",
       "class": "harness",
@@ -877,13 +884,6 @@
       "class": "harness",
       "defaults": [
         "'70'"
-      ]
-    },
-    "WORKLIST_SUBMODULE_DECIDED_LATCH_MIN": {
-      "kind": "tuning",
-      "class": "harness",
-      "defaults": [
-        "'1440'"
       ]
     },
     "WORKLIST_SUBMODULE_LATCH_MIN": {

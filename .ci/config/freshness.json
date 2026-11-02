@@ -15,14 +15,17 @@
     "not caches of a live measurement (agent/reports/consolidation-investigation-2026-10-04.md",
     "section 3). lane-durations.json has two producers because",
     "check_job_timeout_headroom.py --refresh owns its `job_max_seconds` section and stamps",
-    "that section's own refreshed_at (that script's module docstring, RETIRED INTO)."
+    "that section's own refreshed_at (that script's module docstring, RETIRED INTO). It runs",
+    "FIRST: budget_report --refresh then rewrites the same section's numbers from the sample",
+    "budget_report --check judges, so the check that follows a refresh is green by construction",
+    "(the reverse order left any-status main runs in the file and reddened drift:job-max)."
   ],
   "artifacts": [
     {
       "artifact": ".ci/config/lane-durations.json",
       "producers": [
-        ["python3", "-m", "rediacc_ci.ci.budget_report", "--refresh"],
-        ["python3", ".ci/scripts/quality/check_job_timeout_headroom.py", "--refresh"]
+        ["python3", ".ci/scripts/quality/check_job_timeout_headroom.py", "--refresh"],
+        ["python3", "-m", "rediacc_ci.ci.budget_report", "--refresh"]
       ],
       "check": ["python3", "-m", "rediacc_ci.ci.budget_report", "--check"],
       "network": true,

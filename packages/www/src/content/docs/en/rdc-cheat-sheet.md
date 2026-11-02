@@ -57,8 +57,12 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc backup snapshot <repo> --dry-run` | Plan the snapshot without uploading; reports what would move |
 | `rdc backup verify <repo>` | Verify a repository's backup anchor against the chunk store |
 | `rdc backup usage` | Show chunk-store bytes stored against your quota |
-| `rdc backup manifests <repo>` | List snapshot manifests recorded on the server |
-| `rdc storage browse <storage>` | Browse storage contents |
+| `rdc backup restore <repo> --as <name> --at <snapshot-id> -m <machine> --up` | Restore a chunk-store snapshot under a new name |
+| `rdc backup retention <repo>` | Show the retention policy the server enforces for a repository lineage |
+| `rdc backup retention preview <repo>` | Show what the next sweep would delete and the space it frees |
+| `rdc backup retention set <repo> --keep-daily 7 [--stream <id>]` | Declare retention for a lineage, or one backup stream |
+| `rdc backup retention clear <repo> [--stream <id>]` | Remove the policy; every snapshot is kept |
+| `rdc backup snapshots delete <repo> <snapshot-id>` | Delete one snapshot; its exclusive data is freed by the next GC |
 
 ## Repository Migration
 
@@ -74,7 +78,7 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 
 | Command | Description |
 |---------|-------------|
-| `rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Create or update a named backup strategy |
+| `rdc backup strategy set <name> --destination <name> --cron <expr> --mode <hot\|cold> --enable` | Create or update a named backup strategy |
 | `rdc backup strategy list` | List all defined backup strategies |
 | `rdc backup strategy show <name>` | Show details of a strategy |
 | `rdc backup strategy remove <name>` | Remove a strategy |
@@ -135,8 +139,6 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc config list` | List every config on this machine |
 | `rdc config set machine <alias>` | Point an alias at a different machine |
 | `rdc machine add <machine> --ip <host> --user <user>` | Add a machine to config |
-| `rdc storage import rclone.conf` | Import storage providers from rclone config |
-| `rdc storage list` | List configured storage providers |
 | `rdc backup strategy set ...` | Define a named backup strategy |
 | `rdc --config <name> <command>` | Use a named config file |
 

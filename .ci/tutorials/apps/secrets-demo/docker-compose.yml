@@ -16,4 +16,4 @@ secrets:
   # ${REDIACC_NETWORK_ID} keeps the same compose valid for parents and
   # forks — each fork has its own network ID (and its own empty secrets).
   stripe_key:
-    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_KEY
+    file: /var/run/rediacc/net-${REDIACC_NETWORK_ID}/secrets/STRIPE_KEY

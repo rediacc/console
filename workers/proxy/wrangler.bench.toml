@@ -1,0 +1,99 @@
+# The proxy Worker for bench.rediacc.com, the internal-only environment (workers/account/wrangler.bench.toml).
+# Deployed only by `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench`, under
+# the deploy-proxy-bench Bitwarden profile. Hand-written, unlike the six generated from
+# wrangler.template.toml, and held to the same shape by
+# `rediacc_ci.deploy.proxy_configs.config_refusals`: the name rediacc-proxy-bench, the only route
+# proxy.bench.rediacc.com, ACCOUNT_URL https://bench.rediacc.com, ACCOUNT and ISSUER both bound to
+# rediacc-account-bench, and nothing naming a region or production. check:ci-proxy-cost-guard reads
+# it too. Bench exists so PLAN-cloudflare-proxy Phase 2 runs end to end without production
+# (operator order 2026-10-24).
+#
+# The container and Durable Object blocks are the template's: a class name is scoped to its Worker,
+# so OrgExecutor here never shares state or instances with any other target's.
+name = "rediacc-proxy-bench"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "proxy.bench.rediacc.com", custom_domain = true }
+]
+
+[vars]
+ACCOUNT_URL = "https://bench.rediacc.com"
+REGION = "eu"
+ENVIRONMENT = "bench"
+EXECUTOR_CAP = "25"
+EXECUTOR_HEAVY_CAP = "5"
+
+# The same-zone reason as wrangler.template.toml: introspection goes through the binding, never a
+# public fetch. The named entrypoint is one only a service binding can reach: it marks the request
+# as Cloudflare-internal (private/account src/utils/request.ts markServiceBindingEnv).
+[[services]]
+binding = "ACCOUNT"
+service = "rediacc-account-bench"
+entrypoint = "CloudflareInternal"
+
+# The executor token source: rediacc-account-bench's ExecutorIssuer entrypoint mints a short-lived
+# token on demand (agent/plans/PLAN-proxy-cd-six-targets.md Design item 3).
+[[services]]
+binding = "ISSUER"
+service = "rediacc-account-bench"
+entrypoint = "ExecutorIssuer"
+
+# The deployed version id, which /v1/ready reports to the deploy smoke.
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
+# The `durable_object` scheduling policy entry (agent/plans/PLAN-executor-durable-object-policy.md
+# Design item 2). It carries no max_instances and no
+# instance_type: wrangler refuses both under this policy (spike DU6), so the cap of 25 lives in
+# src/capacity.ts and each start names its own instance size.
+[[containers]]
+class_name = "OrgExecutor"
+scheduling_policy = "durable_object"
+
+[containers.images.executor]
+dockerfile = "./Dockerfile"
+build_context = "../.."
+
+[[durable_objects.bindings]]
+name = "ORG_EXECUTOR"
+class_name = "OrgExecutor"
+
+[[durable_objects.bindings]]
+name = "EXECUTOR_CAPACITY"
+class_name = "ExecutorCapacity"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ExecutorContainer"]
+
+# v2 adds the two classes of the durable_object policy; v3 retires the class v1 created.
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["OrgExecutor", "ExecutorCapacity"]
+
+[[migrations]]
+tag = "v3"
+deleted_classes = ["ExecutorContainer"]
+
+# Telemetry export (agent/plans/PLAN-telemetry-export.md T14): the bench destination pair, which
+# rediacc-account-bench shares. The 2026-10-23 setting kept logs and traces off only until a
+# destination existed; Cloudflare still keeps no copy (persist = false).
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+head_sampling_rate = 1
+destinations = ["otlp-bench-logs"]
+persist = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+destinations = ["otlp-bench-traces"]
+persist = false

@@ -75,7 +75,7 @@ def test_license_setup_logs_in_with_the_token_on_stdin(
     lic = license_drill.License(drill, typing.cast("license_drill.Options", opts))
     lic.api_token = API_TOKEN
     lic.server_url = "http://127.0.0.1:1"
-    monkeypatch.setattr(lic, "verify_renet_flavor", lambda: None)
+    monkeypatch.setattr(lic, "verify_renet_key", lambda: None)
     lic.setup_config()
     assert_off_argv(drill, API_TOKEN)
     argv, _env, stdin = login_call(drill)
@@ -99,7 +99,7 @@ def test_backup_cli_config_logs_in_with_the_token_on_stdin(
 def test_transfer_enrollment_carries_the_token_and_password_in_the_environment(
     drill: Recorder, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """`config remote enable --password` is a FLAG: the password rides REDIACC_CONFIG_PASSWORD and the minted token REDIACC_TOKEN."""
+    """`config remote enable --master-password` is a FLAG: the master password rides REDIACC_STORE_MASTER_PASSWORD and the minted token REDIACC_TOKEN."""
     tr = transfer.Transfer(drill, restart_gateway=False)
     tr.device1 = tr.device2 = str(drill.work)
     tr.server_url = "http://127.0.0.1:1"
@@ -115,9 +115,11 @@ def test_transfer_enrollment_carries_the_token_and_password_in_the_environment(
     enable = [c for c in drill.calls if c[0][1:4] == ["config", "remote", "enable"]]
     assert len(enable) == 1
     argv, env, _stdin = enable[0]
-    assert argv[argv.index("--password") + 1].startswith("--"), "--password takes no value"
+    assert argv[argv.index("--master-password") + 1].startswith("--"), (
+        "--master-password takes no value"
+    )
     assert env["REDIACC_TOKEN"] == MINTED_TOKEN
-    assert env["REDIACC_CONFIG_PASSWORD"] == transfer.STORE_PASSWORD
+    assert env["REDIACC_STORE_MASTER_PASSWORD"] == transfer.STORE_PASSWORD
 
 
 def test_run_feeds_stdin_text_to_the_child_and_keeps_it_off_last_cmd() -> None:

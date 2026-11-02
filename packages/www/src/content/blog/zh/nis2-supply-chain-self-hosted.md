@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: zh
-sourceHash: "f6a1604ae2a3a794"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "c1a20432472d9452"
+sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 translatedFrom: en
 ---
 
@@ -85,7 +85,7 @@ Rediacc 的构建方式有所不同。完整架构记录于[架构页面](/zh/do
 
 1. **操作员工作站。** 运行 `rdc`，持有 LUKS 凭证。
 2. **操作员自有服务器。** 运行 `renet`，持有 LUKS 加密存储库。
-3. **操作员自有备份目标。** 任何兼容 rclone 的存储（S3、B2、OneDrive、本地 MinIO），接收加密卷。
+3. **备份目标。** 要么是操作员控制的第二台机器（`rdc repo push`），要么是托管的分块存储（`rdc backup snapshot`），后者只保存以 SHA-256 寻址的密文单元。LUKS 凭证不会到达其中任何一个。
 
 不存在第 4 层。对于未选择使用实验性[云适配器](/zh/docs/architecture)的操作员，Rediacc 公司不是次级处理商。对于自托管操作员，与 Rediacc 公司的关系是软件许可，而非数据处理协议。
 
@@ -130,7 +130,7 @@ Rediacc 的构建方式有所不同。完整架构记录于[架构页面](/zh/do
 | 次级处理商 | (1) 自托管无次级处理商；(2) 仅 Hetzner 内部，已列入其 DPA |
 | 合同状态 | (1) 软件许可，无需 DPA；(2) Hetzner DPA + SCC 已到位 |
 | 密钥托管 | 客户（LUKS 凭证在操作员配置中，不在服务器上） |
-| 退出方案 | "从任何兼容 rclone 的目标执行 rdc repo pull。卷为 LUKS 加密；操作员持有凭证。" |
+| 退出方案 | "从第二台机器执行 rdc repo pull，或从任一已存储的快照执行 rdc backup restore。卷为 LUKS 加密；操作员持有凭证。" |
 | 最近评估 | (2) 已由现有 IaaS 审查覆盖 |
 
 两个登记条目，而非一个。关键级条目对应 IaaS 提供商，买方已有 DPA 和经过验证的退出方案，因为 IaaS 是大多数团队都知道如何管理的关系。Rediacc 条目为非关键级，因为它是软件许可，而非数据处理商。

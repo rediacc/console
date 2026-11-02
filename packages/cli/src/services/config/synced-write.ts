@@ -94,6 +94,7 @@ async function pushEdit(
     await configFileStorage.update(configName, edit);
     return;
   }
+  // A no-op edit is skipped inside the push (pushOnce), so it bumps no version.
   await state.updateDocument(edit);
   // The memoized snapshot and resource view predate the push; the next read pulls again.
   configService.resetResourceView();

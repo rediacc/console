@@ -368,6 +368,19 @@ def test_c_a_ratchet_above_the_oldest_sentinel_warns(root: pathlib.Path) -> None
     assert "v1.4.1, v1.4.2" in results["c"].lines[0]
 
 
+def test_c_a_ratchet_lagging_the_oldest_sentinel_warns_and_does_not_fail(
+    root: pathlib.Path,
+) -> None:
+    state = healthy()
+    state["ratchet"] = "v1.3.0"
+    code, results = run(state, "1.4.21", root=root)
+    assert results["c"].status == cp.WARN
+    assert "lags the oldest sentinel v1.4.1" in results["c"].lines[0]
+    assert "next PR" in results["c"].lines[0]
+    assert results["c"].status != cp.DRIFT
+    assert code == 0, "a lagging floor must not fail the preflight"
+
+
 def test_c_an_untagged_pointer_is_drift(root: pathlib.Path) -> None:
     state = healthy()
     state["pointers"]["edge/latest.json"] = state["pointers"]["edge/manifest.json"] = "v1.4.99"

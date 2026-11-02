@@ -21,7 +21,7 @@ import { getEmbeddedAssetText, isSEA } from './embedded-assets.js';
 interface Credit {
   /** Category: embedded-binary (conveyed by renet), runtime, or bundled-deps. */
   kind?: string;
-  /** Embed asset base name (criu/rsync/rclone) for renet-embedded binaries. */
+  /** Embed asset base name (criu/rsync) for renet-embedded binaries. */
   asset?: string;
   name: string;
   version: string;

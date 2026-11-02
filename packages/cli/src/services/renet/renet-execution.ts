@@ -3,7 +3,7 @@
  * Extracted from local-executor.ts for reuse across the CLI's executors.
  */
 
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync, execSync, spawn } from 'node:child_process';
 import * as fsSync from 'node:fs';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
@@ -17,8 +17,24 @@ import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
+import {
+  accountKeyId,
+  bakedAccountKey,
+  CLEAN_BUILD_MARKER,
+  cleanBuildDirName,
+  cleanBuildEnv,
+  cleanBuildFiles,
+  cleanBuildMarker,
+  cleanBuildRoot,
+  copyEmbeddedAssets,
+  isCompleteCleanBuild,
+  pinCommittedEbpfObjects,
+  pruneOtherCleanBuilds,
+  RENET_BUILD_DIR,
+} from './renet-clean-build-fs.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
@@ -91,6 +107,8 @@ export interface RenetAcquireResult {
   uploaded: boolean;
   /** Drift seen by a read-only probe; null for provision, which removes it. */
   drift: RenetDrift | null;
+  /** A router refresh the caller deferred (`deferRouterRefresh`) and still owes. */
+  routerRefreshDue?: boolean;
 }
 
 /** Hosts already warned about drift in this process (one line per host). */
@@ -104,26 +122,17 @@ const DIRTY_PATHS_SHOWN = 10;
  * REDIACC_ALLOW_DIRTY_RENET=1. A binary outside a git work tree (a release
  * binary on PATH) is allowed. Untracked files count: Go compiles untracked .go
  * files, and `bin/` is gitignored so the binary itself never shows up.
+ *
+ * A tree already dirty when provisioning starts never reaches this guard:
+ * {@link selectRenetUploadBinary} swaps in a build of the committed HEAD. The guard
+ * catches a tree that turned dirty after that choice, and binds callers that pass
+ * the working-tree binary directly.
  */
 export function assertRenetSourceClean(localBinaryPath: string, machine: MachineConfig): void {
   if (process.env.REDIACC_ALLOW_DIRTY_RENET === '1') return;
-  let top: string;
-  try {
-    top = execFileSync(
-      'git',
-      ['-C', path.dirname(localBinaryPath), 'rev-parse', '--show-toplevel'],
-      { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }
-    ).trim();
-  } catch {
-    return;
-  }
-  if (!top) return;
-  const porcelain = execFileSync('git', ['-C', top, 'status', '--porcelain'], {
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  });
-  const dirty = porcelain.split('\n').filter((line) => line.trim() !== '');
-  if (dirty.length === 0) return;
+  const state = renetSourceState(localBinaryPath);
+  if (state === null || state.dirty.length === 0) return;
+  const { top, dirty } = state;
   const shown = dirty.slice(0, DIRTY_PATHS_SHOWN).map((line) => `  ${line}`);
   if (dirty.length > DIRTY_PATHS_SHOWN) {
     shown.push(`  ... and ${dirty.length - DIRTY_PATHS_SHOWN} more`);
@@ -133,6 +142,191 @@ export function assertRenetSourceClean(localBinaryPath: string, machine: Machine
       `${shown.join('\n')}\n` +
       'Commit the renet change first, or set REDIACC_ALLOW_DIRTY_RENET=1 to upload it anyway.'
   );
+}
+
+/**
+ * The git work tree a local renet binary sits in and its `status --porcelain` lines, or null for
+ * a binary outside any git work tree (a release binary on PATH).
+ */
+export function renetSourceState(localBinaryPath: string): { top: string; dirty: string[] } | null {
+  let top: string;
+  try {
+    top = gitOut(['rev-parse', '--show-toplevel'], path.dirname(localBinaryPath));
+  } catch {
+    return null;
+  }
+  if (!top) return null;
+  const porcelain = gitOut(['status', '--porcelain'], top);
+  return { top, dirty: porcelain.split('\n').filter((line) => line.trim() !== '') };
+}
+
+function gitOut(args: string[], cwd: string): string {
+  return execFileSync('git', ['-C', cwd, ...args], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+/** The renet binary a provisioning call hands to the provisioner. */
+export interface RenetUploadSelection {
+  /** Host binary; the provisioner picks `renet-linux-<arch>` beside it for a foreign arch. */
+  localBinaryPath: string;
+  /** The committed renet HEAD this binary was built from instead of a dirty tree; null otherwise. */
+  cleanCommit: string | null;
+  /** Uncommitted paths left out of that build. */
+  excludedPaths: number;
+  /** Whether the dirty-tree upload guard applies (only to the working-tree binary). */
+  guarded: boolean;
+}
+
+/** Process seams of the clean build; tests replace them, production uses the real tools. */
+export interface RenetCleanBuildDeps {
+  git: (args: string[], cwd: string) => string;
+  /** Run renet's own `./build.sh dev` in `cwd`; build output goes to stderr. */
+  build: (cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
+  /** `go version -m <binary>` output. */
+  goVersionM: (binary: string) => string;
+}
+
+const realCleanBuildDeps: RenetCleanBuildDeps = {
+  git: gitOut,
+  build: (cwd, env) =>
+    new Promise((resolve, reject) => {
+      // stdout is the CLI command's; build progress goes to stderr.
+      // build.sh resolves against the child's cwd: a cwd-joined path would be resolved against cwd a second time when cwd is relative.
+      const child = spawn('bash', ['build.sh', 'dev'], {
+        cwd,
+        env,
+        stdio: ['ignore', 2, 2],
+      });
+      child.on('error', reject);
+      child.on('close', (code) =>
+        code === 0 ? resolve() : reject(new Error(`bash build.sh dev exited ${code} in ${cwd}`))
+      );
+    }),
+  goVersionM: (binary) =>
+    execFileSync('go', ['version', '-m', binary], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }),
+};
+
+/**
+ * Pick the renet binary to upload. A dirty renet working tree no longer blocks the upload: the
+ * binary is built from the committed HEAD in a scratch clone and THAT is uploaded, so another
+ * session's uncommitted edits in private/renet cannot stop a production `rdc repo up` (2026-10-23,
+ * the hostinger observability stack). REDIACC_ALLOW_DIRTY_RENET=1 still uploads the working-tree
+ * build as it is.
+ */
+export async function selectRenetUploadBinary(
+  localBinaryPath: string,
+  deps: RenetCleanBuildDeps = realCleanBuildDeps
+): Promise<RenetUploadSelection> {
+  const asIs: RenetUploadSelection = {
+    localBinaryPath,
+    cleanCommit: null,
+    excludedPaths: 0,
+    guarded: true,
+  };
+  if (process.env.REDIACC_ALLOW_DIRTY_RENET === '1') return asIs;
+  const state = renetSourceState(localBinaryPath);
+  if (state === null || state.dirty.length === 0) return asIs;
+  const commit = deps.git(['rev-parse', 'HEAD'], state.top);
+  outputService.info(
+    `renet working tree ${state.top} has ${state.dirty.length} uncommitted path(s); using a build of committed HEAD ${commit.slice(0, 12)} (local edits not included; REDIACC_ALLOW_DIRTY_RENET=1 uploads the working-tree build)`
+  );
+  const built = await buildRenetAtCommit(state.top, commit, deps);
+  return {
+    localBinaryPath: built,
+    cleanCommit: commit,
+    excludedPaths: state.dirty.length,
+    guarded: false,
+  };
+}
+
+/**
+ * Build renet at `commit` with renet's own `./build.sh dev`, in a `git clone --shared` of `top`
+ * (no worktree, nothing written to the source checkout), and return the host binary of the result.
+ * There is one licensed build, in the clone's `bin/`, and it must bake the licence public key the
+ * working tree supplies ({@link cleanBuildEnv}); without one this refuses before build.sh runs.
+ * Cached per commit and key under {@link cleanBuildRoot}; other commits' builds are pruned.
+ *
+ * The clone has its own `.git` directory, so Go stamps `vcs.revision=<commit>`; the stamp and a
+ * clean clone are verified before the build is accepted. The gitignored embedded assets are copied
+ * from the working tree; build.sh's receipt check restages them if HEAD's lockfile differs.
+ */
+export async function buildRenetAtCommit(
+  top: string,
+  commit: string,
+  deps: RenetCleanBuildDeps = realCleanBuildDeps
+): Promise<string> {
+  const root = cleanBuildRoot(top, deps);
+  const ext = process.platform === 'win32' ? '.exe' : '';
+  const finalDir = path.join(root, cleanBuildDirName(commit));
+  const hostBinary = path.join(finalDir, `renet${ext}`);
+  const buildEnv = cleanBuildEnv(top);
+  const key = buildEnv.ACCOUNT_ED25519_PUBLIC_KEY ?? '';
+  if (!key) {
+    throw new Error(
+      'renet needs ACCOUNT_ED25519_PUBLIC_KEY (the production account public key) and none was found in the environment or the public-key cache. Run ./run.sh setup, then retry.'
+    );
+  }
+  const keyId = accountKeyId(key);
+  if (isCompleteCleanBuild(finalDir, commit, ext, keyId)) return hostBinary;
+
+  fsSync.mkdirSync(root, { recursive: true });
+  const work = path.join(root, `work-${commit.slice(0, 12)}-${process.pid}`);
+  const stage = path.join(root, `stage-${commit.slice(0, 12)}-${process.pid}`);
+  fsSync.rmSync(work, { recursive: true, force: true });
+  fsSync.rmSync(stage, { recursive: true, force: true });
+  try {
+    deps.git(['clone', '--quiet', '--shared', '--no-checkout', top, work], root);
+    deps.git(['-c', 'advice.detachedHead=false', 'switch', '--quiet', '--detach', commit], work);
+    copyEmbeddedAssets(top, work);
+    pinCommittedEbpfObjects(work);
+
+    outputService.info(`Building renet ${commit.slice(0, 12)} from a clean clone...`);
+    await deps.build(work, buildEnv);
+
+    const left = deps.git(['status', '--porcelain'], work);
+    if (left) {
+      throw new Error(
+        `The clean renet build of ${commit.slice(0, 12)} changed tracked files in its clone, so its stamp would be modified:\n${left}`
+      );
+    }
+    fsSync.mkdirSync(stage);
+    for (const name of cleanBuildFiles(ext)) {
+      const built = path.join(work, RENET_BUILD_DIR, name);
+      const info = deps.goVersionM(built);
+      if (bakedAccountKey(info) !== key) {
+        throw new Error(
+          `The clean renet build ${built} does not bake the account public key it was built with (key id ${keyId})`
+        );
+      }
+      if (!info.includes(`vcs.revision=${commit}`) || !info.includes('vcs.modified=false')) {
+        throw new Error(
+          `The clean renet build ${built} does not carry vcs.revision=${commit} with vcs.modified=false`
+        );
+      }
+      fsSync.renameSync(built, path.join(stage, name));
+    }
+    fsSync.writeFileSync(path.join(stage, CLEAN_BUILD_MARKER), cleanBuildMarker(commit, keyId));
+    // A leftover directory (a cached build missing a binary, or one baked with another key) would make the rename fail with ENOTEMPTY on every run; a rename only ever publishes a whole directory, so what is there is stale.
+    if (!isCompleteCleanBuild(finalDir, commit, ext, keyId)) {
+      fsSync.rmSync(finalDir, { recursive: true, force: true });
+    }
+    try {
+      fsSync.renameSync(stage, finalDir);
+    } catch (err) {
+      // A concurrent process finished the same commit first; its build is as good as ours.
+      if (!isCompleteCleanBuild(finalDir, commit, ext, keyId)) throw err;
+    }
+    pruneOtherCleanBuilds(root, commit);
+  } finally {
+    fsSync.rmSync(work, { recursive: true, force: true });
+    fsSync.rmSync(stage, { recursive: true, force: true });
+  }
+  return hostBinary;
 }
 
 function shortHash(hash: string | null): string {
@@ -182,6 +376,8 @@ export async function acquireRemoteRenet(
   sshPrivateKey: string,
   options: Pick<RenetSpawnOptions, 'debug' | 'skipRouterRestart'> & {
     restartServices?: boolean;
+    /** Report the owed router refresh as `routerRefreshDue` instead of running it. */
+    deferRouterRefresh?: boolean;
     /** Name used in operator-facing messages; defaults to the machine IP. */
     machineName?: string;
   },
@@ -197,22 +393,24 @@ export async function acquireRemoteRenet(
     return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp);
   }
 
-  // Auto-restart rediacc-router after a binary update so the long-running router daemon picks up new code without manual `systemctl restart`. systemctl try-restart is a no-op when the unit is not running, so this is safe on machines without the
-  // router daemon. Opt out via skipRouterRestart=true or
+  // After a binary update an active rediacc-router is re-installed from the new binary (`renet proxy install`, which re-renders its unit) and restarted, so it runs the new code under the new unit text; see RenetProvisionerService.restartRunningServices. A machine whose router is not running is left alone. Opt out via skipRouterRestart=true or
   // REDIACC_SKIP_ROUTER_RESTART=1.
   const skipRestart = options.skipRouterRestart ?? !!process.env.REDIACC_SKIP_ROUTER_RESTART;
   const restartServices = skipRestart ? false : (options.restartServices ?? true);
-  const guardPath = localBinaryPath;
+  const selection =
+    localBinaryPath === undefined ? null : await selectRenetUploadBinary(localBinaryPath);
+  const uploadPath = selection?.localBinaryPath ?? localBinaryPath;
 
   const start = Date.now();
   const result = await renetProvisioner.provision(
     sftpConfigForMachine(machine, sshPrivateKey),
     {
-      localBinaryPath,
+      localBinaryPath: uploadPath,
       restartServices,
+      deferRouterRefresh: options.deferRouterRefresh,
       debug: options.debug,
-      ...(guardPath !== undefined && {
-        uploadGuard: () => assertRenetSourceClean(guardPath, machine),
+      ...(selection?.guarded === true && {
+        uploadGuard: () => assertRenetSourceClean(selection.localBinaryPath, machine),
       }),
     },
     sftp
@@ -225,6 +423,11 @@ export async function acquireRemoteRenet(
 
   if (result.action === 'uploaded') {
     outputService.info(`Renet updated on ${machine.ip} (${result.arch}) in ${elapsed}s`);
+    if (selection?.cleanCommit) {
+      outputService.info(
+        `Uploaded renet built from committed HEAD ${selection.cleanCommit.slice(0, 12)}; ${selection.excludedPaths} uncommitted path(s) in the renet working tree were not included`
+      );
+    }
     if (result.servicesRestarted) {
       outputService.info(`Restarted rediacc-router on ${machine.ip}`);
     }
@@ -232,10 +435,15 @@ export async function acquireRemoteRenet(
     outputService.info(`Renet verified on ${machine.ip} (${elapsed}s)`);
   }
 
-  return { remotePath: result.remotePath, uploaded: result.action === 'uploaded', drift: null };
+  return {
+    remotePath: result.remotePath,
+    uploaded: result.action === 'uploaded',
+    drift: null,
+    routerRefreshDue: result.routerRefreshDue === true,
+  };
 }
 
-/** Check whether a bridge function requires the BTRFS datastore. */
+/** Check whether a renet function requires the BTRFS datastore. */
 function functionRequiresDatastore(functionName: string): boolean {
   if (!(functionName in FUNCTION_REQUIREMENTS)) return false;
   const reqs = FUNCTION_REQUIREMENTS[functionName as RenetFunctionName];
@@ -312,19 +520,6 @@ export async function verifyMachineSetup(
   );
 }
 
-interface RepoEntryConfig {
-  guid: string;
-  name: string;
-  networkId?: number;
-  /**
-   * File-mode secrets to materialize on the host at deploy time. Renet's
-   * repository_up reads these from the vault payload and writes them to
-   * /var/run/rediacc/secrets/<networkID>/<NAME>. Tmpfs only; never enters
-   * the LUKS image; never inherited by forks.
-   */
-  secretFiles?: { name: string; value: string }[];
-}
-
 interface BuildLocalVaultOptions {
   functionName: string;
   machineName: string;
@@ -334,7 +529,6 @@ interface BuildLocalVaultOptions {
   sshKnownHosts: string;
   params: Record<string, unknown>;
   extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
-  storages?: Record<string, { vaultContent: Record<string, unknown> }>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, RepoEntryConfig>;
 }
@@ -365,103 +559,6 @@ function buildExtraMachines(
   return result;
 }
 
-function buildStorageSection(vault: Record<string, unknown>): Record<string, unknown> | null {
-  const provider = String(vault.provider ?? '');
-  if (!provider) return null;
-
-  const section: Record<string, unknown> = { backend: provider };
-  if (vault.bucket) section.bucket = String(vault.bucket);
-  if (vault.region) section.region = String(vault.region);
-  if (vault.folder !== undefined && vault.folder !== null) {
-    section.folder = String(vault.folder);
-  }
-
-  const parameters: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(vault)) {
-    if (['provider', 'bucket', 'region', 'folder'].includes(key)) continue;
-    parameters[key] = value;
-  }
-  if (Object.keys(parameters).length > 0) {
-    section.parameters = parameters;
-  }
-
-  return section;
-}
-
-function buildStorageSystems(
-  storages: Record<string, { vaultContent: Record<string, unknown> }> | undefined
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  if (!storages) return result;
-  for (const [name, storage] of Object.entries(storages)) {
-    const section = buildStorageSection(storage.vaultContent);
-    if (section) result[name] = section;
-  }
-  return result;
-}
-
-/** Build a single repository entry from config and params. */
-function buildSingleRepoEntry(
-  repoName: string,
-  params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, RepoEntryConfig>
-): Record<string, unknown> {
-  const repoConfig = repositoryConfigs?.[repoName];
-  const repoEntry: Record<string, unknown> = {
-    guid: repoConfig?.guid ?? (typeof params.guid === 'string' ? params.guid : repoName),
-    name: repoName,
-  };
-  const networkId = repoConfig?.networkId ?? params.network_id;
-  if (networkId !== undefined && networkId !== '' && networkId !== 0) {
-    repoEntry.network_id = typeof networkId === 'number' ? networkId : Number(networkId);
-  }
-  if (repoConfig?.secretFiles && repoConfig.secretFiles.length > 0) {
-    repoEntry.secret_files = repoConfig.secretFiles;
-  }
-  return repoEntry;
-}
-
-/** Build repository entries for all repos in config (multi-repo mode). */
-function buildAllRepoEntries(
-  repositoryConfigs: Record<string, RepoEntryConfig>
-): Record<string, unknown> {
-  const repositories: Record<string, unknown> = {};
-  for (const [name, config] of Object.entries(repositoryConfigs)) {
-    const repoEntry: Record<string, unknown> = {
-      guid: config.guid,
-      name,
-    };
-    if (config.networkId !== undefined && config.networkId !== 0) {
-      repoEntry.network_id = config.networkId;
-    }
-    if (config.secretFiles && config.secretFiles.length > 0) {
-      repoEntry.secret_files = config.secretFiles;
-    }
-    repositories[name] = repoEntry;
-  }
-  return repositories;
-}
-
-function buildRepositories(
-  params: Record<string, unknown>,
-  repositoryConfigs?: Record<string, RepoEntryConfig>
-): { repoName: string; repositories: Record<string, unknown> } {
-  const repoName = (params.repository ?? '') as string;
-
-  if (repoName) {
-    return {
-      repoName,
-      repositories: { [repoName]: buildSingleRepoEntry(repoName, params, repositoryConfigs) },
-    };
-  }
-
-  if (repositoryConfigs) {
-    return { repoName, repositories: buildAllRepoEntries(repositoryConfigs) };
-  }
-
-  return { repoName, repositories: {} };
-}
-
 /**
  * Build RenetVault structure for local/s3 execution.
  */
@@ -472,8 +569,10 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
     opts.sshPrivateKey,
     opts.sshPublicKey
   );
-  const storageSystems = buildStorageSystems(opts.storages);
-  const { repoName, repositories } = buildRepositories(opts.params, opts.repositoryConfigs);
+  const { repoGuid, repoName, repositories } = buildRepositories(
+    opts.params,
+    opts.repositoryConfigs
+  );
 
   const vault = {
     $schema: 'queue-vault-v2',
@@ -482,7 +581,8 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
       function: opts.functionName,
       machine: opts.machineName,
       team: 'local',
-      repository: repoName,
+      repository: repoGuid,
+      ...(repoName ? { repo_name: repoName } : {}),
     },
     ssh: {
       private_key: opts.sshPrivateKey,
@@ -499,7 +599,6 @@ export function buildLocalVault(opts: BuildLocalVaultOptions): string {
     },
     params: opts.params,
     extra_machines: extraMachines,
-    storage_systems: storageSystems,
     repository_credentials: opts.repositoryCredentials ?? {},
     repositories,
     context: {

@@ -34,20 +34,12 @@ export const MachineSectionSchema = z.object({
   known_hosts: z.string().optional().describe('SSH known_hosts entries for this machine'),
 });
 
-/** Storage system configuration (rclone backends) */
-export const StorageSectionSchema = z.object({
-  backend: z.string().min(1).describe('Storage backend type (s3, b2, azure, etc.)'),
-  bucket: z.string().optional().describe('Bucket name'),
-  region: z.string().optional().describe('Region'),
-  folder: z.string().optional().describe('Folder path'),
-  parameters: z.record(z.string(), z.unknown()).optional().describe('Additional parameters'),
-});
-
 /** Repository name and GUID mapping */
 export const RepositoryInfoSchema = z.object({
   guid: z.string().min(1).describe('Repository GUID'),
   name: z.string().min(1).describe('Repository name'),
-  network_id: z.number().int().optional().describe('Network ID'),
+  network_id: z.union([z.number().int(), z.literal('auto')]).optional().describe('Network ID, or auto to have renet job start allocate one'),
+  network_id_exclude: z.array(z.number().int()).optional().describe('Network IDs an auto allocation must not pick (every ID the caller config holds)'),
 });
 
 /** Organization and API context */
@@ -86,10 +78,6 @@ export const RenetVaultSchema = z.object({
     .record(z.string(), MachineSectionSchema)
     .optional()
     .describe('Additional machines for multi-machine operations'),
-  storage_systems: z
-    .record(z.string(), StorageSectionSchema)
-    .optional()
-    .describe('Storage system configurations'),
   repository_credentials: z
     .record(z.string(), z.string())
     .optional()
@@ -98,6 +86,7 @@ export const RenetVaultSchema = z.object({
     .record(z.string(), RepositoryInfoSchema)
     .optional()
     .describe('Repository info by name'),
+  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted']).optional().describe('Start precondition renet job start checks against the machine'),
   context: ContextSectionSchema.optional(),
   preferences: PreferencesSectionSchema.optional(),
 });
