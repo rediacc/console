@@ -75,6 +75,7 @@
         "pkg/backupstate",
         "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/functions",
         "pkg/list",
         "pkg/restorepath"
       ]
@@ -197,6 +198,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backupstate",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/coldbackup",
@@ -355,6 +357,7 @@
       "dependents": [
         "cmd/renet",
         "pkg/chunkstore",
+        "pkg/functions",
         "pkg/repodiff",
         "pkg/restorepath"
       ]
@@ -529,6 +532,7 @@
         "cmd/renet",
         "pkg/chunkstore",
         "pkg/delta",
+        "pkg/functions",
         "pkg/repodiff",
         "pkg/restorepath"
       ]
@@ -843,6 +847,7 @@
         "cmd/renet",
         "pkg/chunkstore",
         "pkg/delta",
+        "pkg/functions",
         "pkg/repodiff",
         "pkg/restorepath"
       ]
@@ -925,6 +930,7 @@
       ],
       "dependents": [
         "cmd/renet",
+        "pkg/backupstate",
         "pkg/certexport",
         "pkg/chunkstore",
         "pkg/compose",
@@ -1093,6 +1099,7 @@
       "dependents": [
         "cmd/renet",
         "pkg/chunkstore",
+        "pkg/functions",
         "pkg/list",
         "pkg/restorepath",
         "pkg/trim"
@@ -1106,6 +1113,7 @@
       "dependents": [
         "cmd/renet",
         "pkg/chunkstore",
+        "pkg/functions",
         "pkg/list",
         "pkg/prune",
         "pkg/restorepath",
@@ -1359,6 +1367,7 @@
       "dependents": [
         "cmd/renet",
         "pkg/chunkstore",
+        "pkg/functions",
         "pkg/list",
         "pkg/prune",
         "pkg/ps",

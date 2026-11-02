@@ -30,6 +30,16 @@ export interface BackupBrowseAtParams {
   limit?: string;
 }
 
+/** Compare a restored copy with the source repository's backup anchor, byte for byte */
+export interface BackupCompareParams {
+  /** The source repository GUID whose anchor the copy is held to */
+  againstAnchor: string;
+  /** Read cap across both files, same units as backup_snapshot's bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
+}
+
 /** Delete one or more backups from a machine's datastore */
 export interface BackupDeleteParams {
   /** Target type: machine (SSH) */
@@ -70,6 +80,8 @@ export interface BackupPullParams {
   deltaBase?: string;
   /** Delta strategy: auto|physical|shared */
   strategy?: string;
+  /** Place the pulled image even though the repository passphrase did not open it */
+  allowUnopenable?: boolean;
 }
 
 /** Push repository to another machine over SSH */
@@ -104,6 +116,18 @@ export interface BackupPushParams {
   retainBasePrune?: string;
 }
 
+/** Re-upload chunks from this machine's backup anchor */
+export interface BackupRepairParams {
+  /** Chunk hashes to re-upload, separated by commas or whitespace */
+  hashes: string;
+  /** Upload cap, same units as backup_snapshot's bwlimit. Empty = unlimited */
+  bwlimit?: string;
+  /** Anchor read cap, same units as backup_snapshot's bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
+}
+
 /** Restore a repository image from a chunk-store snapshot */
 export interface BackupRestoreParams {
   /** Lineage (grand) GUID the snapshot belongs to */
@@ -114,6 +138,10 @@ export interface BackupRestoreParams {
   dryRun?: boolean;
   /** Fetch every chunk from the store instead of reusing local anchors or images */
   noSeed?: boolean;
+  /** Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one */
+  allowUnopenable?: boolean;
+  /** Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image */
+  salvage?: boolean;
 }
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -132,6 +160,8 @@ export interface BackupRestorePathParams {
 export interface BackupSnapshotParams {
   /** Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota) */
   reseed?: boolean;
+  /** Take this image as the new baseline when its LUKS identity moved or it shrank. Forces a full manifest with no parent */
+  acceptIdentityChange?: boolean;
   /** Plan only: no session, no grant, no upload; report what would move */
   dryRun?: boolean;
   /** Quiesce first: stop each repository's containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run */
@@ -148,10 +178,26 @@ export interface BackupSnapshotParams {
   cpuLimit?: number;
 }
 
+/** Inspect or install a repository's browse-listing public key */
+export interface BackupTocKeyParams {
+  /** status prints the stored key and licence lineage; install stores a public key */
+  action: string;
+  /** Lineage (grand) GUID the key was derived under; install only */
+  lineage?: string;
+  /** The public line, rediacc-toc-x25519 <base64>; install only */
+  publicKey?: string;
+  /** Overwrite a different stored key. Sends the repository passphrase, which has to open the repository and derive this line */
+  replace?: boolean;
+}
+
 /** Verify local chunk-backup state against the recorded snapshot inventory */
 export interface BackupVerifyParams {
   /** Verification level: spot (sampled cells) or full (re-hash every recorded cell) */
   level?: string;
+  /** Read cap for the full level, same units as backup_snapshot's bwlimit. Empty = the verb default (50M); 0 = unlimited */
+  readBwlimit?: string;
+  /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
+  cpuLimit?: number;
 }
 
 /** Mount RBD image on client */
@@ -894,13 +940,16 @@ export interface SetupParams {
 export const RENET_FUNCTIONS = [
   'backup_browse',
   'backup_browse_at',
+  'backup_compare',
   'backup_delete',
   'backup_list',
   'backup_pull',
   'backup_push',
+  'backup_repair',
   'backup_restore',
   'backup_restore_path',
   'backup_snapshot',
+  'backup_toc_key',
   'backup_verify',
   'ceph_client_mount',
   'ceph_client_unmount',
@@ -987,20 +1036,23 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v2.3.2-242-g082ae80';
+export const RENET_FUNCTIONS_VERSION = 'dev';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
 export const RENET_BRIDGE_FUNCTIONS = [
   'backup_browse',
   'backup_browse_at',
+  'backup_compare',
   'backup_delete',
   'backup_list',
   'backup_pull',
   'backup_push',
+  'backup_repair',
   'backup_restore',
   'backup_restore_path',
   'backup_snapshot',
+  'backup_toc_key',
   'backup_verify',
   'ceph_bootstrap_cluster',
   'ceph_client_config_export',
@@ -1172,13 +1224,16 @@ export type RenetBridgeFunctionName = (typeof RENET_BRIDGE_FUNCTIONS)[number];
 export type FunctionParamsMap = {
   backup_browse: BackupBrowseParams;
   backup_browse_at: BackupBrowseAtParams;
+  backup_compare: BackupCompareParams;
   backup_delete: BackupDeleteParams;
   backup_list: BackupListParams;
   backup_pull: BackupPullParams;
   backup_push: BackupPushParams;
+  backup_repair: BackupRepairParams;
   backup_restore: BackupRestoreParams;
   backup_restore_path: BackupRestorePathParams;
   backup_snapshot: BackupSnapshotParams;
+  backup_toc_key: BackupTocKeyParams;
   backup_verify: BackupVerifyParams;
   ceph_client_mount: CephClientMountParams;
   ceph_client_unmount: CephClientUnmountParams;
@@ -1272,6 +1327,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'backup_browse_at': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'backup_compare': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'backup_delete': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1284,6 +1342,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'backup_push': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'backup_repair': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'backup_restore': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1291,6 +1352,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_snapshot': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'backup_toc_key': {
     requirements: { machine: true, team: true, repository: true },
   },
   'backup_verify': {
@@ -1673,6 +1737,28 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'backup_compare': {
+    name: 'backup_compare',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      againstAnchor: {
+        type: 'string',
+        required: true,
+        help: 'The source repository GUID whose anchor the copy is held to',
+        minLength: 1,
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Read cap across both files, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+    },
+  },
   'backup_delete': {
     name: 'backup_delete',
     category: 'backup',
@@ -1784,6 +1870,11 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         ui: 'dropdown',
         enum: ['auto', 'physical', 'shared'],
       },
+      allowUnopenable: {
+        type: 'bool',
+        default: 'false',
+        help: 'Place the pulled image even though the repository passphrase did not open it',
+      },
     },
   },
   'backup_push': {
@@ -1872,6 +1963,32 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'backup_repair': {
+    name: 'backup_repair',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      hashes: {
+        type: 'string',
+        required: true,
+        help: 'Chunk hashes to re-upload, separated by commas or whitespace',
+        minLength: 1,
+      },
+      bwlimit: {
+        type: 'string',
+        help: 'Upload cap, same units as backup_snapshot\'s bwlimit. Empty = unlimited',
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Anchor read cap, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+    },
+  },
   'backup_restore': {
     name: 'backup_restore',
     category: 'backup',
@@ -1899,6 +2016,16 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'bool',
         default: 'false',
         help: 'Fetch every chunk from the store instead of reusing local anchors or images',
+      },
+      allowUnopenable: {
+        type: 'bool',
+        default: 'false',
+        help: 'Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one',
+      },
+      salvage: {
+        type: 'bool',
+        default: 'false',
+        help: 'Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image',
       },
     },
   },
@@ -1943,6 +2070,11 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)',
       },
+      acceptIdentityChange: {
+        type: 'bool',
+        default: 'false',
+        help: 'Take this image as the new baseline when its LUKS identity moved or it shrank. Forces a full manifest with no parent',
+      },
       dryRun: {
         type: 'bool',
         default: 'false',
@@ -1975,6 +2107,35 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'backup_toc_key': {
+    name: 'backup_toc_key',
+    category: 'backup',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      action: {
+        type: 'string',
+        required: true,
+        help: 'status prints the stored key and licence lineage; install stores a public key',
+        options: ['status', 'install'],
+        ui: 'dropdown',
+        enum: ['status', 'install'],
+      },
+      lineage: {
+        type: 'string',
+        help: 'Lineage (grand) GUID the key was derived under; install only',
+      },
+      publicKey: {
+        type: 'string',
+        help: 'The public line, rediacc-toc-x25519 <base64>; install only',
+      },
+      replace: {
+        type: 'bool',
+        default: 'false',
+        help: 'Overwrite a different stored key. Sends the repository passphrase, which has to open the repository and derive this line',
+      },
+    },
+  },
   'backup_verify': {
     name: 'backup_verify',
     category: 'backup',
@@ -1988,6 +2149,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         options: ['spot', 'full'],
         ui: 'dropdown',
         enum: ['spot', 'full'],
+      },
+      readBwlimit: {
+        type: 'string',
+        help: 'Read cap for the full level, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited',
+      },
+      cpuLimit: {
+        type: 'int',
+        help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
       },
     },
   },
@@ -3697,13 +3866,16 @@ export type QueueFunctionsType = {
 export const queueFunctions: QueueFunctionsType = {
   backup_browse: (params) => ({ functionName: 'backup_browse', params }),
   backup_browse_at: (params) => ({ functionName: 'backup_browse_at', params }),
+  backup_compare: (params) => ({ functionName: 'backup_compare', params }),
   backup_delete: (params) => ({ functionName: 'backup_delete', params }),
   backup_list: (params) => ({ functionName: 'backup_list', params }),
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
   backup_push: (params) => ({ functionName: 'backup_push', params }),
+  backup_repair: (params) => ({ functionName: 'backup_repair', params }),
   backup_restore: (params) => ({ functionName: 'backup_restore', params }),
   backup_restore_path: (params) => ({ functionName: 'backup_restore_path', params }),
   backup_snapshot: (params) => ({ functionName: 'backup_snapshot', params }),
+  backup_toc_key: (params) => ({ functionName: 'backup_toc_key', params }),
   backup_verify: (params) => ({ functionName: 'backup_verify', params }),
   ceph_client_mount: (params) => ({ functionName: 'ceph_client_mount', params }),
   ceph_client_unmount: (params) => ({ functionName: 'ceph_client_unmount', params }),

@@ -10,8 +10,9 @@ WHAT IT DOES, one claim per row:
   3. Its boot log reports the configured chunk store (`Backup chunk storage: <endpoint>/<bucket>`), not `not configured`.
   4. The backup routes are mounted (`GET /backups/usage` without a credential answers 401, never 404 for a missing route and never 503 `BACKUP_NOT_CONFIGURED`).
   5. The on-premise factory still leaves the admin surface out: the dev-only `/test` seam answers 404, and so does `/admin`.
+  6. The store conformance preflight (`src/services/backup-store-conformance.ts`) prints `passed` at boot against RustFS, with the 412 and the refused checksum in its line. Its planted controls boot the same entry over a local fake store: one that takes every PUT prints `FAILED`, one that enforces checksums but ignores If-None-Match prints `warning`, so the pass above can be anything else.
 
-NOT PROVEN HERE, said plainly: a backup session needs a licence from a delegated deployment (a delegation cert from the upstream key), and this drill boots without one; the session, grant and restore legs run against the dev gateway in `rediacc_ci.drills.backup`. The recipe a live P14 run (PLAN-backup-program, the offline plane) proved for the delegated leg:
+NOT PROVEN HERE, said plainly: the fake boots prove the boot line, not `BACKUP_STORE_NONCONFORMING` at grant time, which needs the session described next (`tests/integration/backup-store-conformance.test.ts` covers that refusal). A backup session needs a licence from a delegated deployment (a delegation cert from the upstream key), and this drill boots without one; the session, grant and restore legs run against the dev gateway in `rediacc_ci.drills.backup`. The recipe a live P14 run (PLAN-backup-program, the offline plane) proved for the delegated leg:
   a. Register an account on the dev gateway and give it a subscription that can hold a cert.
   b. Mint a throwaway Ed25519 pair (SPKI and PKCS8, base64) and `POST /account/api/v1/portal/delegation-certs` with `{subscriptionId, delegatedPublicKey: <SPKI>, validDays}` (`private/account/src/routes/portal-delegation-certs.ts`); the response's `cert` is the signed cert, signed by the gateway's key (the production key from the store).
   c. Boot `src/entry/on-premise.ts` with `ACCOUNT_ED25519_PRIVATE_KEY`/`ACCOUNT_ED25519_PUBLIC_KEY` AND `ON_PREMISE_PRIVATE_KEY`/`ON_PREMISE_PUBLIC_KEY` all set to that pair, `DELEGATION_CERT_BASE64` set to the base64 of the `cert` JSON, and `UPSTREAM_PUBLIC_KEY` set to the gateway's public key.
@@ -22,13 +23,17 @@ NO NEW ENVIRONMENT READS. The child inherits this process's environment (the sam
 
 from __future__ import annotations
 
+import base64
 import contextlib
+import hashlib
 import http.client
+import http.server
 import os
 import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 import uuid
 from typing import TYPE_CHECKING
@@ -58,6 +63,10 @@ NOT_CONFIGURED = "not configured"
 NOT_CONFIGURED_CODE = "BACKUP_NOT_CONFIGURED"
 # Routes the on-premise factory must not carry, each with the reason it is expected absent.
 ABSENT_ROUTES = ("/account/api/v1/test/ensure-login", "/account/api/v1/admin/subscriptions")
+# The preflight's boot line, and how long it may take: the server does not wait for it.
+PREFLIGHT_PREFIX = "Backup store preflight: "
+PREFLIGHT_TRIES = 30
+FAKE_BUCKET = "onprem-fake"
 
 
 def free_port() -> int:
@@ -134,6 +143,77 @@ def plane_configured(line: str, endpoint: str, bucket: str) -> bool:
     return bool(line) and NOT_CONFIGURED not in line and "%s/%s" % (endpoint, bucket) in line
 
 
+def preflight_line(log_text: str) -> str:
+    """The entry's preflight line, or the empty string when it has not printed one."""
+    for line in log_text.splitlines():
+        if line.startswith(PREFLIGHT_PREFIX):
+            return line
+    return ""
+
+
+def preflight_verdict(line: str) -> str:
+    """`passed`, `failed`, `warning`, `could-not-check` or `none`, from the one line the boot prints."""
+    rest = line[len(PREFLIGHT_PREFIX) :] if line.startswith(PREFLIGHT_PREFIX) else ""
+    for word, verdict in (
+        ("passed", "passed"),
+        ("FAILED", "failed"),
+        ("warning", "warning"),
+        ("could not check", "could-not-check"),
+    ):
+        if rest.startswith(word):
+            return verdict
+    return "none"
+
+
+class FakeStore(http.server.ThreadingHTTPServer):
+    """A store that says yes where a conforming one says no: every PUT lands, and `enforce_checksum` alone decides whether a body has to match its signed checksum. It never checks a signature, and it holds no bytes, only which keys it has seen."""
+
+    def __init__(self, enforce_checksum: bool) -> None:
+        super().__init__(("127.0.0.1", 0), FakeStoreHandler)
+        self.enforce_checksum = enforce_checksum
+        self.keys: set[str] = set()
+
+
+class FakeStoreHandler(http.server.BaseHTTPRequestHandler):
+    server: FakeStore
+
+    def log_message(self, *_args: object) -> None:
+        """Silent: the drill's stdout is its table."""
+
+    def answer(self, status: int, body: bytes = b"") -> None:
+        self.send_response(status)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if self.command != "HEAD" and body:
+            self.wfile.write(body)
+
+    def do_PUT(self) -> None:
+        body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        signed = self.headers.get("x-amz-checksum-sha256")
+        actual = base64.b64encode(hashlib.sha256(body).digest()).decode()
+        if self.server.enforce_checksum and signed and signed != actual:
+            self.answer(400)
+            return
+        self.server.keys.add(self.path.split("?", 1)[0])
+        self.answer(200)
+
+    def do_HEAD(self) -> None:
+        self.answer(200 if self.path.split("?", 1)[0] in self.server.keys else 404)
+
+    def do_DELETE(self) -> None:
+        self.server.keys.discard(self.path.split("?", 1)[0])
+        self.answer(204)
+
+    def do_POST(self) -> None:
+        # The batch delete. Answering with nothing deleted leaves the keys for HEAD to report, which is not what this control is about, so the fake forgets them all.
+        self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        self.server.keys.clear()
+        self.answer(200, b"<DeleteResult></DeleteResult>")
+
+    def do_GET(self) -> None:
+        self.answer(200, b"<ListBucketResult></ListBucketResult>")
+
+
 def route_verdict(status: int, body: str) -> str:
     """`mounted`, `missing` or `unconfigured` for an unauthenticated GET on a backup route. A mounted route refuses the missing credential (401); a missing one answers 404; an unconfigured plane answers `BACKUP_NOT_CONFIGURED`."""
     if NOT_CONFIGURED_CODE in body:
@@ -179,6 +259,7 @@ class OnPrem:
         self.access_key = os.environ.get("CONFIG_R2_ACCESS_KEY_ID") or "configadmin"
         self.secret_key = os.environ.get("CONFIG_R2_SECRET_ACCESS_KEY") or "configadmin"
         self.server_log: pathlib.Path | None = None
+        self.fake_factory = FakeStore
 
     @property
     def work(self) -> pathlib.Path:
@@ -247,7 +328,9 @@ class OnPrem:
             "planted control: the same probe against a closed port FAILS, so a pass above can be a fail",
         )
 
-    def start_server(self) -> bool:
+    def start_server(
+        self, endpoint: str = "", bucket: str = "", log_name: str = "onprem-server.log"
+    ) -> bool:
         d = self.d
         d.step("%s: boot src/entry/on-premise.ts against that bucket" % STEP_LABEL)
         self.port = free_port()
@@ -255,8 +338,8 @@ class OnPrem:
         overrides = onprem_overrides(
             port=self.port,
             db_path=str(self.work / "onprem-account.db"),
-            endpoint=self.endpoint,
-            bucket=self.bucket,
+            endpoint=endpoint or self.endpoint,
+            bucket=bucket or self.bucket,
             access_key=self.access_key,
             secret_key=self.secret_key,
             keys={
@@ -268,7 +351,7 @@ class OnPrem:
                 "jwt": keys.jwt,
             },
         )
-        self.server_log = self.work / "onprem-server.log"
+        self.server_log = self.work / log_name
         with self.server_log.open("wb") as sink:
             self.server = self.spawn(
                 ["npx", "--no-install", "tsx", "src/entry/on-premise.ts"],
@@ -328,6 +411,44 @@ class OnPrem:
                 "the on-premise factory leaves %s out" % path.rsplit("/account/api/v1", 1)[-1],
             )
 
+    def await_preflight(self) -> str:
+        """The preflight's verdict once the boot has printed it; `none` after the wait."""
+        for _ in range(PREFLIGHT_TRIES):
+            line = preflight_line(self.log_text())
+            if line:
+                self.d.note(line)
+                return preflight_verdict(line)
+            time.sleep(BOOT_INTERVAL_S)
+        return "none"
+
+    def preflight_row(self) -> None:
+        """The boot in hand is RustFS's: a conforming store passes, with what it answered in the line."""
+        d = self.d
+        verdict = self.await_preflight()
+        d.last_cmd = "the entry's preflight line (RustFS)"
+        d.assert_equal("passed", verdict, "the store preflight passes against RustFS")
+        d.assert_equal(
+            "True",
+            str("duplicate PUT 412" in preflight_line(self.log_text())),
+            "and its line names the 412",
+        )
+
+    def fake_store_row(self, enforce_checksum: bool, want: str, desc: str) -> None:
+        """The same entry over a fake store: the planted control that the verdict above can be something else. A boot failure is the row's own failure."""
+        fake = self.fake_factory(enforce_checksum)
+        thread = threading.Thread(target=fake.serve_forever, daemon=True)
+        thread.start()
+        try:
+            endpoint = "http://127.0.0.1:%d" % fake.server_address[1]
+            if self.start_server(endpoint, FAKE_BUCKET, "onprem-fake-%s.log" % want):
+                verdict = self.await_preflight()
+                self.d.last_cmd = "the entry's preflight line (%s)" % desc
+                self.d.assert_equal(want, verdict, "planted control: %s" % desc)
+        finally:
+            self.stop_server()
+            fake.shutdown()
+            fake.server_close()
+
     # ------------------------------------------------------------------ main
 
     def stop_server(self) -> None:
@@ -354,8 +475,13 @@ class OnPrem:
             self.probe_row()
             if self.start_server():
                 self.server_rows()
+                self.preflight_row()
         finally:
             self.stop_server()
+        self.fake_store_row(False, "failed", "a store that takes any body fails the preflight")
+        self.fake_store_row(
+            True, "warning", "a store that ignores If-None-Match only draws the warning"
+        )
         return d.summary()
 
 

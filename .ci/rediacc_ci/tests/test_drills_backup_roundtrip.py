@@ -37,7 +37,7 @@ class FakeVm:
         cmp_rc: int = 0,
         control_rc: int = 1,
         snapshot_out: str = SNAP_OK,
-        restore_out: str = '{"status":"restored"}',
+        restore_out: str = '{"status":"restored","passphraseCheck":"opened"}',
         fail_containing: str = "",
         enforce_license: bool = True,
     ) -> None:
@@ -83,7 +83,11 @@ class FakeVm:
         if "backup snapshot" in command:
             return rt.VmResult(0, self.snapshot_out)
         if "backup restore" in command:
+            if (stdin_data or "").startswith("not-"):
+                return rt.VmResult(1, '{"status":"failed","passphraseCheck":"refused"}')
             return rt.VmResult(0, self.restore_out)
+        if "test -e" in command:
+            return rt.VmResult(1)
         if "cmp -s" in command:
             return rt.VmResult(self.control_rc)
         if "sudo -n cmp " in command:
@@ -144,7 +148,10 @@ def test_a_clean_run_passes_and_tears_down_both_repos(tmp_path: pathlib.Path) ->
         "snapshot stored",
         "manifest index carries the snapshot",
         "quota ledger equals bytes uploaded",
+        "wrong passphrase: refused",
+        "wrong passphrase: places nothing",
         "restore completed",
+        "the image opens",
         "restored image is byte-identical to the source",
         "cmp reports the two images identical",
         "control fired",

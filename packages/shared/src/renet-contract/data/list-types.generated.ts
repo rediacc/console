@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'v2.3.2-242-g082ae80';
+export const LIST_TYPES_VERSION = 'dev';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {
@@ -399,6 +399,8 @@ export interface BackupRepoStatus {
   last_skip_reason?: string;
   last_skipped_at?: string;
   last_success_at?: string;
+  last_verify_at?: string;
+  last_verify_status?: string;
   name?: string;
 }
 

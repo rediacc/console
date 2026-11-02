@@ -85,7 +85,7 @@ FAILED = "FAILED"
 NOT_VERIFIED = "NOT_VERIFIED"
 STATUSES = (VERIFIED, FAILED, NOT_VERIFIED)
 # The RustFS drill legs a-l without the opt-in machine leg i (box J4: "legs a-l"); leg l is box J8. Legs n and o are the S5 and S12 isolation legs; leg m is not required.
-REQUIRED_LEGS = ("a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "n", "o")
+REQUIRED_LEGS = ("a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "l", "n", "o", "p", "q", "r", "s")
 CACHE_DIR = ".ci/cache/backup-check"
 LATEST = "receipt.json"
 ARCHIVE_SCAN_MAX = 50
@@ -619,7 +619,7 @@ def admit(root: pathlib.Path, tree: str, digest: str | None, pointers: dict[str,
 
 
 RECEIPT_FIX = (
-    "the two backup drills write it together: `./run.sh drill backup` (legs a-l, n and o) and "
+    "the two backup drills write it together: `./run.sh drill backup` (legs a-l and n-s) and "
     "`./run.sh drill backup-onprem` (the on-premise variant), on the committed tree"
 )
 

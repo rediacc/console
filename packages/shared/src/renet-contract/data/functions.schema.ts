@@ -25,6 +25,13 @@ export const BackupBrowseAtParamsSchema = z.object({
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
 });
 
+/** Compare a restored copy with the source repository's backup anchor, byte for byte */
+export const BackupCompareParamsSchema = z.object({
+  againstAnchor: z.string().min(1).describe('The source repository GUID whose anchor the copy is held to'),
+  readBwlimit: z.string().optional().describe('Read cap across both files, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+});
+
 /** Delete one or more backups from a machine's datastore */
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
@@ -63,6 +70,7 @@ export const BackupPullParamsSchema = z.object({
     .default('auto')
     .optional()
     .describe('Delta strategy: auto|physical|shared'),
+  allowUnopenable: z.boolean().default(false).optional().describe('Place the pulled image even though the repository passphrase did not open it'),
 });
 
 /** Push repository to another machine over SSH */
@@ -90,12 +98,22 @@ export const BackupPushParamsSchema = z.object({
   retainBasePrune: z.string().optional().describe('Delete this prior retained base on both machines after a successful push'),
 });
 
+/** Re-upload chunks from this machine's backup anchor */
+export const BackupRepairParamsSchema = z.object({
+  hashes: z.string().min(1).describe('Chunk hashes to re-upload, separated by commas or whitespace'),
+  bwlimit: z.string().optional().describe('Upload cap, same units as backup_snapshot\'s bwlimit. Empty = unlimited'),
+  readBwlimit: z.string().optional().describe('Anchor read cap, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+});
+
 /** Restore a repository image from a chunk-store snapshot */
 export const BackupRestoreParamsSchema = z.object({
   lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
   at: z.string().min(1).describe('Snapshot id to restore (a TIME is resolved by the CLI, never here)'),
   dryRun: z.boolean().default(false).optional().describe('Resolve the manifest chain and report what would be fetched; write nothing'),
   noSeed: z.boolean().default(false).optional().describe('Fetch every chunk from the store instead of reusing local anchors or images'),
+  allowUnopenable: z.boolean().default(false).optional().describe('Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one'),
+  salvage: z.boolean().default(false).optional().describe('Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image'),
 });
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -109,6 +127,7 @@ export const BackupRestorePathParamsSchema = z.object({
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
 export const BackupSnapshotParamsSchema = z.object({
   reseed: z.boolean().default(false).optional().describe('Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)'),
+  acceptIdentityChange: z.boolean().default(false).optional().describe('Take this image as the new baseline when its LUKS identity moved or it shrank. Forces a full manifest with no parent'),
   dryRun: z.boolean().default(false).optional().describe('Plan only: no session, no grant, no upload; report what would move'),
   cold: z.boolean().default(false).optional().describe('Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run'),
   bwlimit: z.string().optional().describe('Upload cap: bytes/second (12500000), decimal bytes (12.5M, 12.5MB/s), binary bytes (12Mi) or bits (100Mbit, 100Mbps). Empty = unlimited'),
@@ -118,6 +137,14 @@ export const BackupSnapshotParamsSchema = z.object({
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100. Empty = 50; 100 = no ceiling. Enforced by a systemd scope CPUQuota'),
 });
 
+/** Inspect or install a repository's browse-listing public key */
+export const BackupTocKeyParamsSchema = z.object({
+  action: z.enum(['status', 'install']).describe('status prints the stored key and licence lineage; install stores a public key'),
+  lineage: z.string().optional().describe('Lineage (grand) GUID the key was derived under; install only'),
+  publicKey: z.string().optional().describe('The public line, rediacc-toc-x25519 <base64>; install only'),
+  replace: z.boolean().default(false).optional().describe('Overwrite a different stored key. Sends the repository passphrase, which has to open the repository and derive this line'),
+});
+
 /** Verify local chunk-backup state against the recorded snapshot inventory */
 export const BackupVerifyParamsSchema = z.object({
   level: z
@@ -125,6 +152,8 @@ export const BackupVerifyParamsSchema = z.object({
     .default('spot')
     .optional()
     .describe('Verification level: spot (sampled cells) or full (re-hash every recorded cell)'),
+  readBwlimit: z.string().optional().describe('Read cap for the full level, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
+  cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
 });
 
 /** Mount RBD image on client */
@@ -686,13 +715,16 @@ export const SetupParamsSchema = z.object({
 export const FUNCTION_SCHEMAS = {
   backup_browse: BackupBrowseParamsSchema,
   backup_browse_at: BackupBrowseAtParamsSchema,
+  backup_compare: BackupCompareParamsSchema,
   backup_delete: BackupDeleteParamsSchema,
   backup_list: BackupListParamsSchema,
   backup_pull: BackupPullParamsSchema,
   backup_push: BackupPushParamsSchema,
+  backup_repair: BackupRepairParamsSchema,
   backup_restore: BackupRestoreParamsSchema,
   backup_restore_path: BackupRestorePathParamsSchema,
   backup_snapshot: BackupSnapshotParamsSchema,
+  backup_toc_key: BackupTocKeyParamsSchema,
   backup_verify: BackupVerifyParamsSchema,
   ceph_client_mount: CephClientMountParamsSchema,
   ceph_client_unmount: CephClientUnmountParamsSchema,
