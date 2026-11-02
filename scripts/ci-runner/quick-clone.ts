@@ -324,6 +324,7 @@ function trackedAt(clone: string, commit: string): string[] {
     const sub = path.join(clone, rel);
     if (fs.existsSync(path.join(sub, '.git'))) out.push(...list(sub, oid, `${rel}/`));
   }
+  if (out.length === 0) throw new Error(`VACUOUS: no tracked path at ${commit} in ${clone}`);
   return out;
 }
 
@@ -493,6 +494,7 @@ export function prepareClone({ live, clone, seams }: PrepareInput): Prepared {
     [
       'fetch',
       '-q',
+      '--no-recurse-submodules',
       '--update-head-ok',
       '--tags',
       '--force',

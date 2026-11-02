@@ -4345,7 +4345,7 @@ async function runAdvance(
   const carriedRed = advanceExit(exitCode, receipt);
   if (carriedRed !== exitCode)
     humanOut(
-      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}\n`
+      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${(receipt.failed ?? []).join(', ') || '(none listed)'}\n`
     );
   return carriedRed;
 }
@@ -4934,7 +4934,7 @@ async function main(): Promise<number> {
 
   // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
   //
-  // `--quick` runs selftest() first (see the npm key), and selftest() refuses to return 0 unless a planted failing gate produced exit 1, both captured streams, and a skipped dependent. A runner that cannot fail authorising a push would be strictly worse than no lane at all: it would replace "nobody checked" with "something green says it checked".
+  // `--quick` runs selftest() first (quick-clone.ts selftestThenLane), and selftest() refuses to return 0 unless a planted failing gate produced exit 1, both captured streams, and a skipped dependent. A runner that cannot fail authorising a push would be strictly worse than no lane at all: it would replace "nobody checked" with "something green says it checked".
   //
   // Minted on RED as well as green, carrying the failing ids. The guard decides what a red receipt is worth; the runner's job is to record what happened, not to editorialise. A receipt that appeared only on success would make "gates failed" and "gates never ran" the same observation at the guard -- the exact conflation this repo keeps paying for. SAMPLE THE TREE AGAIN, and
   // compare. dirtyAtStart alone answers "was the tree dirty when we began"; it cannot answer "did it hold still", and those are different questions once anything else is running in this working tree. Two whole-lane runs were spent on 2026-08-27 discovering that four gates failed only in the lane and passed standalone every time, because a peer session was editing files mid-run. The
