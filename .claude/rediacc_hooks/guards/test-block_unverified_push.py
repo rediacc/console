@@ -198,6 +198,21 @@ cases.append((2, run(PUSH), "no receipt at all: nothing has judged this tree"))
 put()
 cases.append((0, run(PUSH), "a WHOLE, GREEN, tree-matching receipt is honoured"))
 
+# THE WORKING-TREE NOTE: a receipt from the kept clean clone judged another tree, so comparing its digest with this checkout's says nothing. Both directions, on a digest that differs from this checkout's.
+DIRTY_NOTE = "working tree has changed since the gates ran"
+put(dirtyDigest="0" * 16)
+cases.append(
+    (True, DIRTY_NOTE in run_err(PUSH), "NOTE: a receipt judged here still warns on drift")
+)
+put(dirtyDigest="0" * 16, judgedRoot=d)
+cases.append((True, DIRTY_NOTE in run_err(PUSH), "NOTE: naming this checkout changes nothing"))
+put(dirtyDigest="0" * 16, judgedRoot="/elsewhere/kept-clone")
+cases.append(
+    (False, DIRTY_NOTE in run_err(PUSH), "NOTE: a receipt judged in the clone has no such drift")
+)
+cases.append((0, run(PUSH), "NOTE: and the clone's receipt is honoured by the tree comparison"))
+put()
+
 put(headTree="0" * 40)
 cases.append((2, run(PUSH), "a receipt for a DIFFERENT tree is not a receipt"))
 
@@ -1451,6 +1466,95 @@ def test_v1_receipt_refused():
     )
 
 
+def test_v2_whole_tree_carry():
+    """A gate declaring no `paths` records `**` as its input (scripts/ci-runner/input-hash.ts): the guard needs no second rule, so it must admit that carry at an identical tree and refuse it after ANY tracked change. Two gates share the guard's memo, so one with a narrower input proves a stale whole-tree hash is not read through a neighbour's."""
+    root = pathlib.Path(RUN_TMP) / "v2-whole-tree"
+    root.mkdir()
+
+    def wgit(*a):
+        return subprocess.run(
+            ["git", "-C", str(root), *a], capture_output=True, text=True, check=True, env=GM._env()
+        ).stdout.strip()
+
+    whole_lock = {"id": "check:whole", "run": "npm run check:whole", "gate": True, "leaves": []}
+    narrow_lock = {
+        "id": "check:narrow",
+        "run": "npm run check:narrow",
+        "gate": True,
+        "leaves": [],
+        "paths": ["src/**"],
+    }
+    lock = [*GM.FIXTURE_LOCK, whole_lock, narrow_lock]
+    wgit("init", "--initial-branch=main", "-q")
+    (root / "src").mkdir()
+    (root / "src" / "a.txt").write_text("a\n", encoding="utf-8")
+    (root / "docs.txt").write_text("n\n", encoding="utf-8")
+    scripts = {"check:whole": "echo w", "check:narrow": "echo n"}
+    (root / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+    GM._write_fixture_lock(root, lock)
+    wgit("add", "-A")
+    wgit("commit", "-q", "-m", "A")
+    tree = wgit("rev-parse", "HEAD^{tree}")
+    entries = GM.v2_ls_tree(str(root), tree)
+
+    def carried_entry(gate_lock, globs):
+        inputs = {"globs": globs, "files": [], "scripts": [gate_lock["id"]]}
+        lines = GM.v2_input_lines(entries, globs, [])
+        return GM._gate_entry(
+            "ok",
+            inputHash="fixture-hash",
+            defHash=GM.v2_def_hash(gate_lock, {gate_lock["id"]: scripts[gate_lock["id"]]}),
+            filesHash=GM.v2_files_hash(lines),
+            inputs=inputs,
+            judgedTree=tree,
+        )
+
+    gates = {
+        "check:fixture-ok": GM._gate_entry("ok"),
+        "check:fixture-cionly": GM._gate_entry("ciOnly"),
+        "check:narrow": carried_entry(narrow_lock, ["src/**"]),
+        "check:whole": carried_entry(whole_lock, ["**"]),
+    }
+    origin = {"headTree": tree, "whole": True, "exitCode": 0, "failed": [], "gates": gates}
+    archive = root / ".ci" / "cache" / "receipts"
+    archive.mkdir(parents=True)
+    (archive / ("%s.json" % tree)).write_text(json.dumps(origin), encoding="utf-8")
+    from_origin = {"headTree": tree, "head": "x", "finishedAt": "now"}
+    carried_gates = {
+        gid: (
+            dict(e, carriedFrom=from_origin)
+            if gid.startswith(("check:whole", "check:narrow"))
+            else e
+        )
+        for gid, e in gates.items()
+    }
+    receipt = dict(origin, schema=GM.RECEIPT_SCHEMA, gates=carried_gates, droppedTouched=[])
+    cases.append(
+        (True, GM.v2_verdict(str(root), tree, receipt) == "", "WHOLE TREE: identical tree carries")
+    )
+    (root / "docs.txt").write_text("a change no declared path names\n", encoding="utf-8")
+    wgit("add", "-A")
+    wgit("commit", "-q", "-m", "B")
+    moved = wgit("rev-parse", "HEAD^{tree}")
+    why = GM.v2_verdict(str(root), moved, receipt)
+    cases.append(
+        (
+            True,
+            "check:whole" in why and "filesHash" in why,
+            "WHOLE TREE: any tracked change voids the carry and names the gate: %s" % why,
+        )
+    )
+    alone = dict(receipt, gates={k: v for k, v in carried_gates.items() if k != "check:whole"})
+    alone["gates"]["check:whole"] = GM._gate_entry("ok")
+    cases.append(
+        (
+            True,
+            GM.v2_verdict(str(root), moved, alone) == "",
+            "WHOLE TREE CONTROL: the narrow gate alone still carries, so the refusal above is the whole-tree input's",
+        )
+    )
+
+
 def test_v2_helpers():
     cases.append((True, GM.v2_match_glob("src/**", "src/a/b.ts"), "GLOB: ** crosses /"))
     cases.append((False, GM.v2_match_glob("src/*", "src/a/b.ts"), "GLOB: * does not cross /"))
@@ -1848,6 +1952,7 @@ test_v2_carried_hash_match_allows()
 test_v2_planted_input_change_refuses()
 test_v2_carried_red_never_green()
 test_v1_receipt_refused()
+test_v2_whole_tree_carry()
 test_v2_helpers()
 
 shutil.rmtree(d, ignore_errors=True)

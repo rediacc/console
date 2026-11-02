@@ -1447,8 +1447,12 @@ def _exempt_ids(doc):
     return {i["id"] for i in items}
 
 
-def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt):
-    """Why one carried entry is not honoured, or ''. Names the gate and the field."""
+def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=None):
+    """Why one carried entry is not honoured, or ''. Names the gate and the field.
+
+    `memo` holds what every carried gate of one push reads alike: package.json, the hash of one input set, and each origin receipt. A gate that declares no `paths` records the whole tree as its input (`**`, scripts/ci-runner/input-hash.ts), and several hundred of them carry at once, so re-reading these per gate made the push wait on the same bytes hundreds of times. Every comparison below still runs per gate.
+    """
+    memo = {} if memo is None else memo
     carried = entry.get("carriedFrom")
     inputs = entry.get("inputs")
     if not isinstance(inputs, dict) or not isinstance(carried, dict):
@@ -1459,23 +1463,32 @@ def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt):
             CARRY_EXEMPT_REL,
         )
     names = inputs.get("scripts") or []
-    pkg = _show_at(root, tree, "package.json")
-    try:
-        texts = json.loads(pkg).get("scripts", {}) if pkg else {}
-    except (ValueError, AttributeError):
-        texts = {}
+    if "scripts" not in memo:
+        pkg = _show_at(root, tree, "package.json")
+        try:
+            memo["scripts"] = json.loads(pkg).get("scripts", {}) if pkg else {}
+        except (ValueError, AttributeError):
+            memo["scripts"] = {}
+    texts = memo["scripts"]
     if not isinstance(names, list) or any(n not in texts for n in names):
         return "%s: a script in inputs.scripts is absent from package.json (field defHash)" % gid
     def_hash = v2_def_hash(lock_entry, {n: texts[n] for n in names})
     if def_hash != entry.get("defHash"):
         return "%s: defHash differs at the pushed tree (the gate or its scripts changed)" % gid
-    lines = v2_input_lines(entries, inputs.get("globs") or [], inputs.get("files") or [])
-    if v2_files_hash(lines) != entry.get("filesHash"):
+    globs = inputs.get("globs") or []
+    files = inputs.get("files") or []
+    key = ("files", json.dumps([globs, files], sort_keys=True))
+    if key not in memo:
+        memo[key] = v2_files_hash(v2_input_lines(entries, globs, files))
+    if memo[key] != entry.get("filesHash"):
         return "%s: filesHash differs at the pushed tree (an input changed after the carry)" % gid
     origin = carried.get("headTree")
     if not isinstance(origin, str) or not TREE_RE.match(origin):
         return "%s: carriedFrom.headTree is not a tree hash (field carriedFrom)" % gid
-    origin_doc = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
+    origin_key = ("origin", origin)
+    if origin_key not in memo:
+        memo[origin_key] = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
+    origin_doc = memo[origin_key]
     base = (origin_doc.get("gates") if isinstance(origin_doc, dict) else None) or {}
     was = base.get(gid) if isinstance(base, dict) else None
     if not isinstance(was, dict):
@@ -1579,10 +1592,11 @@ def v2_verdict(root, tree, receipt):
             exempt = _exempt_ids(json.loads(exempt_text)) if exempt_text else set()
         except ValueError as exc:
             return "%s is unreadable at the pushed tree: %s." % (CARRY_EXEMPT_REL, exc)
+        memo: dict[Any, Any] = {}
         for gid in carried:
             if gid not in by_id:
                 return "%s is carried but is not in %s (field defHash)" % (gid, LOCK_REL)
-            why = _carried_refusal(root, tree, gid, gates[gid], by_id[gid], entries, exempt)
+            why = _carried_refusal(root, tree, gid, gates[gid], by_id[gid], entries, exempt, memo)
             if why:
                 return "a carried verdict is not valid here: %s. Re-run `%s`." % (why, V2_REGEN)
     failed = receipt.get("failed")
@@ -1834,9 +1848,15 @@ def run(ev):
     # THE HONEST RESIDUAL, stated rather than hidden: the gates ran against the
     # WORKING TREE, not against `HEAD^{tree}`. If the dirty set has moved since,
     # something the gates read has changed. That is a warning and not a refusal -- this tree carries dozens of dirty paths from other sessions at any moment, so refusing on it would make the receipt unobtainable, and an unobtainable receipt is a guard nobody keeps.
+    #
+    # A RECEIPT FROM THE KEPT CLEAN CLONE HAS NO SUCH RESIDUAL. `npm run ci:quick` judges HEAD in another tree (scripts/ci-runner/quick-clone.ts), so `judgedRoot` names that tree, its digest describes that tree, and comparing it with this checkout's would print this note on every push while being false. A receipt with no `judgedRoot` keeps the note. This only decides a note: the tree comparison above is what admits the push.
     now_dirty = _dirty_digest(root)
     r_dirty = r_dirty if isinstance(r_dirty, str) else ""
-    if now_dirty and r_dirty and now_dirty != r_dirty:
+    judged_root = receipt.get("judgedRoot") if isinstance(receipt, dict) else None
+    judged_elsewhere = isinstance(judged_root, str) and os.path.realpath(
+        judged_root
+    ) != os.path.realpath(root)
+    if now_dirty and r_dirty and now_dirty != r_dirty and not judged_elsewhere:
         ev.warn("NOTE: the working tree has changed since the gates ran (they judged the")
         ev.warn("  worktree, this push carries HEAD^{tree}). The receipt still matches the")
         ev.warn("  committed tree, so this is allowed -- but if you changed something a gate")

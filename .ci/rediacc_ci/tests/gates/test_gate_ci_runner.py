@@ -1036,6 +1036,172 @@ ADVANCE_POLICY = json.dumps(
 )
 
 
+def test_advance_over_a_red_receipt_exits_nonzero(gate):
+    """#ea5e31cd: an advance never touches `failed` or `exitCode`, so a record-only commit over a red receipt printed a green and exited 0 while the receipt it left stayed red."""
+    gates = [spec("fast:red", '[ -z "$MAKE_RED" ]'), spec("fast:reader", "true")]
+    with harness.temp_dir() as work:
+        repo = _fixture_repo(
+            gate,
+            work,
+            gates,
+            {".ci/policy/record-paths.json": ADVANCE_POLICY, "agent/reviews/a.md": "a\n"},
+        )
+        receipt_path = work / "receipt.json"
+        red = {"MAKE_RED": "1"}
+        r = _quick(
+            gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=red
+        )
+        gate.assert_exit(1, r, "the whole run is red")
+        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
+        gate.assert_contains(r.out, "ADVANCE", "the record-only commit advanced")
+        gate.assert_eq(
+            _receipt(gate, receipt_path).get("failed"), ["fast:red"], "the receipt stays red"
+        )
+        gate.assert_exit(1, r, "an advance over a red receipt exits non-zero")
+        gate.assert_contains(
+            r.out, "still RED", "and it says why its readers passing was not enough"
+        )
+        gate.log_pass("a record-only commit over a red receipt exited 1 and named the red")
+
+
+QUICK_CLONE_REL = "scripts/ci-runner/quick-clone.ts"
+
+
+def _clone_fixture(gate, work):
+    """A fixture whose one gate reads a file the live tree holds uncommitted, with an install the kept clone can copy: `quick-clone.ts` starts the runner through `<clone>/node_modules/.bin/tsx`, so the clone must get one the way it gets every dependency."""
+    tsx = require_runner(gate)
+    gates = [spec("fast:sees-head", "[ ! -e dirty.marker ]")]
+    lock = '{"packages": {"node_modules/dep": {"version": "1.0.0"}}}\n'
+    repo = _fixture_repo(
+        gate,
+        work,
+        gates,
+        {
+            ".gitignore": "node_modules/\n.ci/cache/\n",
+            "package-lock.json": lock,
+            # The carry hashes the lock at the judged tree; without one the run says `incremental: off`.
+            "scripts/ci-runner/gates.lock.json": json.dumps(gates),
+        },
+    )
+    bin_dir = repo / "node_modules" / ".bin"
+    bin_dir.mkdir(parents=True)
+    os.symlink(tsx, bin_dir / "tsx")
+    (repo / "node_modules" / ".package-lock.json").write_text(lock, encoding="utf-8")
+    (repo / "dirty.marker").write_text("not committed\n", encoding="utf-8")
+    # THE RUNNER'S OWN SELFTEST STAYS OUT OF THIS FIXTURE: it drives real hung gates and a real checkout's state, and `check:ci-runner-selftest` runs it for real. A stub answers `--selftest` and hands every other call to the real runner's copy, so these cases still judge a real lane in a real clone; the stub is committed because the clone runs HEAD.
+    runner_dir = repo / "scripts" / "ci-runner"
+    os.rename(runner_dir / "run.ts", runner_dir / "run-real.ts")
+    (runner_dir / "run.ts").write_text(
+        "import { spawnSync } from 'node:child_process';\n"
+        "import path from 'node:path';\n"
+        "const args = process.argv.slice(2);\n"
+        "if (args[0] === '--selftest') process.exit(0);\n"
+        "const real = path.join(import.meta.dirname, 'run-real.ts');\n"
+        "const tsx = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');\n"
+        "const r = spawnSync(tsx, [real, ...args], { stdio: 'inherit' });\n"
+        "process.exit(r.status ?? 1);\n",
+        encoding="utf-8",
+    )
+    _git(gate, repo, "add", "-A", "scripts/ci-runner")
+    _git(gate, repo, "commit", "-q", "-m", "chore: the fixture's runner stub")
+    _git(gate, repo, "update-ref", "refs/remotes/origin/topic", "HEAD")
+    return repo
+
+
+def _quick_clone(gate, repo, work, *args: str, clone=None) -> Run:
+    """`npm run ci:quick` as the wrapper runs it, on the fixture's own copy, with no CI in the environment."""
+    return _quick_entry(gate, repo, work, QUICK_CLONE_REL, args, clone)
+
+
+def _quick_entry(gate, repo, work, entry, args, clone) -> Run:
+    tsx = require_runner(gate)
+    env = {
+        "PATH": os.environ.get("PATH", ""),
+        "HOME": os.fspath(work),
+        "TMPDIR": os.fspath(work),
+        "CI_PROFILE": "off",
+        "CI_RUNNER_CACHE": os.fspath(work / "gate-durations.json"),
+        "MARK": os.fspath(work / "ran.log"),
+        "CI_QUICK_CLONE_DIR": os.fspath(clone if clone is not None else work / "kept" / "clone"),
+    }
+    return Run(
+        harness.run(
+            [tsx, os.fspath(repo / entry), *args], cwd=repo, env=env, env_replace=True, timeout=300
+        )
+    )
+
+
+def test_quick_clone_judges_head_and_leaves_the_live_tree_alone(gate):
+    """A plain `ci:quick` runs in the kept clone: an untracked file that reddens this checkout's gate is not judged, the receipt lands here naming HEAD, and `git status` here does not move."""
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work)
+        before = _git(gate, repo, "status", "--porcelain=v1", "--ignored")
+        branch = _git(gate, repo, "branch", "--show-current")
+        tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        receipt_path = repo / ".ci" / "cache" / "prepush-receipt.json"
+
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "the clone judges HEAD, which does not hold the dirty file")
+        gate.assert_contains(r.out, "in the kept clean clone", "the run says where it happened")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("headTree"), tree, "the receipt names the live HEAD's tree")
+        gate.assert_eq(rc.get("whole"), True, "the receipt is whole")
+        gate.assert_eq(
+            rc.get("judgedRoot"), os.fspath(work / "kept" / "clone"), "and the clone judged it"
+        )
+        gate.assert_eq(
+            _git(gate, repo, "status", "--porcelain=v1", "--ignored").replace(
+                "!! .ci/cache/\n", ""
+            ),
+            before.replace("!! .ci/cache/\n", ""),
+            "the live git status does not move",
+        )
+        gate.assert_eq(_git(gate, repo, "branch", "--show-current"), branch, "nor its branch")
+
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "the second run passes")
+        gate.assert_contains(r.out, "ci:quick: carried 1, ran ", "the second run carries the gate")
+        gate.assert_contains(
+            (repo / ".ci" / "cache" / "prepush-receipt.json").read_text(encoding="utf-8"),
+            '"carriedFrom"',
+            "the carry is recorded where the push guard reads it",
+        )
+
+        # CONTROL: the same gate, in this checkout, sees the dirty file. Without it the green above could be a gate that cannot fail.
+        r = _quick_clone(gate, repo, work, "--here")
+        gate.assert_exit(1, r, "--here judges the dirty checkout and goes red")
+        gate.assert_contains(r.out, "running in this checkout", "and says where it ran")
+        gate.assert_contains(r.out, "npm run ci -- --narrow", "and prints the repair line")
+        gate.log_pass("the clone judged HEAD, the second run carried, and --here went red")
+
+
+def test_quick_clone_falls_back_loudly_and_needs_a_receipt(gate):
+    """A clone that cannot be set up runs in this checkout, says why in one line, and judges what that run left, so the fallback never exits 0 on a tree that went red."""
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work)
+        occupied = work / "occupied"
+        occupied.mkdir()
+        (occupied / "something").write_text("not a clone\n", encoding="utf-8")
+        r = _quick_clone(gate, repo, work, clone=occupied)
+        gate.assert_contains(r.out, "FALLBACK TO THE SHARED CHECKOUT", "the fallback is loud")
+        gate.assert_contains(r.out, "exists and is not a clone", "and it says why")
+        gate.assert_exit(1, r, "this checkout's dirty file reddens the fallback run")
+        (repo / "dirty.marker").unlink()
+        r = _quick_clone(gate, repo, work, clone=occupied)
+        gate.assert_exit(0, r, "CONTROL: a clean checkout's fallback run is judged and passes")
+        gate.assert_eq(
+            (occupied / "something").read_text(encoding="utf-8"),
+            "not a clone\n",
+            "the occupied directory was not touched",
+        )
+        gate.log_pass(
+            "the fallback said why, went red on the red tree, and passed on the clean one"
+        )
+
+
 def test_quick_advances_across_a_record_only_commit(gate):
     """A commit touching only record paths carries the receipt forward instead of re-running the lane (agent/plans/PLAN-prepush-full-cpu.md PF24).
 

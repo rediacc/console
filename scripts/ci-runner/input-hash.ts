@@ -3,7 +3,9 @@
  *
  * The contract is frozen: the Python guard (block_unverified_push.py) and the parity test implement exactly the same bytes, so a change here is a change to three files. Pure functions over a git tree object: nothing reads the worktree, which is what makes a hash a statement about the judged tree rather than about whatever is on disk.
  *
- * A gate's `inputHash` is null (the gate always runs) when it cannot be carried: it declares no `paths`, carries an `env` entry, is listed in carry-exempt.json, has a leaf closure at its cap, has a `needs` node that is itself null, or has a glob this grammar does not define. `reason` names which.
+ * A gate's `inputHash` is null (the gate always runs) when it cannot be carried: it carries an `env` entry, is listed in carry-exempt.json, has a leaf closure at its cap, has a `needs` node that is itself null, or has a glob this grammar does not define. `reason` names which.
+ *
+ * A GATE THAT DECLARES NO `paths` READS THE WHOLE TREE, so its input glob is `**` and its hash moves on any tracked change: it carries only across an identical tree. That is what `paths` absent has always meant to `--changed` and to quick-select's rule 4 (any change may reach it). The guard needs no second rule, because it recomputes `filesHash` from the recorded `inputs` at the pushed tree, `**` included. 343 of 392 gates declare no paths, so before this a re-run at an unchanged HEAD carried 31 gates and re-ran the rest.
  *
  * `ls-tree` is read with `-z` so a path is never quoted; for every path git does not quote the bytes are the same as the plain form.
  */
@@ -24,6 +26,8 @@ export const GLOBAL_INPUTS: readonly string[] = [
   'pyproject.toml',
   'scripts/ci-runner/**',
 ];
+/** The input of a gate that declares no `paths`: every tracked path, gitlinks included. */
+export const WHOLE_TREE_GLOB = '**';
 
 function sortKeys(x: unknown): unknown {
   if (Array.isArray(x)) return x.map(sortKeys);
@@ -195,12 +199,14 @@ export function computeGateHashes(
     if (done) return done;
     const entry = lock[id];
     const paths = entry?.paths ?? [];
-    const globs = [...paths, ...GLOBAL_INPUTS];
+    const wholeTree = paths.length === 0;
+    const globs = wholeTree ? [WHOLE_TREE_GLOB] : [...paths, ...GLOBAL_INPUTS];
     const scripts = opts.scriptsOf(id);
     const leaf = opts.leafFilesOf(id);
     const rawGlobs = globs;
     const res = rawGlobs.map(globRe);
-    const files = [...new Set(leaf.files)];
+    // `**` already names every leaf, so listing them would only make each gate's hash input differ for nothing, and cost the guard one whole-tree hash per gate.
+    const files = wholeTree ? [] : [...new Set(leaf.files)];
     const fileSet = new Set(files);
     const lines = entries
       .filter((e) => fileSet.has(e.path) || entryMatches(res, rawGlobs, e))
@@ -231,11 +237,9 @@ export function computeGateHashes(
     } else if (opts.exempt.has(id)) {
       // Named in carry-exempt.json before the generic reasons: a gate that reads live state (and so declares no paths, or an env) is exempt BY NAME, and the report should say so.
       gh.reason = 'exempt';
-    } else if (paths.length === 0) {
-      gh.reason = 'no-paths';
     } else if (entry.env !== undefined && Object.keys(entry.env).length > 0) {
       gh.reason = 'env';
-    } else if (leaf.capped) {
+    } else if (!wholeTree && leaf.capped) {
       gh.reason = 'leaf-cap';
     } else if (inProgress.has(id)) {
       gh.reason = 'needs-cycle';
@@ -361,7 +365,8 @@ export function inputHashSelftest(tmpDir: string): void {
       'g:exempt': { id: 'g:exempt', run: 'x', paths: ['src/**'] },
       'g:forbid': { id: 'g:forbid', run: 'x', paths: ['src/{a,b}.ts'] },
       'g:float': { id: 'g:float', run: 'x', paths: ['src/**'], n: 1.5 },
-      'g:needsnull': { id: 'g:needsnull', run: 'x', paths: ['src/**'], needs: ['g:nopaths'] },
+      'g:needsnull': { id: 'g:needsnull', run: 'x', paths: ['src/**'], needs: ['g:env'] },
+      'g:nopathsenv': { id: 'g:nopathsenv', run: 'x', env: { K: 'v' } },
       'g:needsok': { id: 'g:needsok', run: 'x', paths: ['src/**'], needs: ['g:src'] },
       'g:gitlink': { id: 'g:gitlink', run: 'x', paths: ['private/x'] },
       'g:gitlink2': { id: 'g:gitlink2', run: 'x', paths: ['private/x/**'] },
@@ -380,17 +385,23 @@ export function inputHashSelftest(tmpDir: string): void {
     };
     must(get(h1, 'g:src').inputHash !== null, 'a gate with paths is carriable');
     must(
-      get(h1, 'g:nopaths').reason === 'no-paths' && get(h1, 'g:nopaths').inputHash === null,
-      'no-paths is null'
+      get(h1, 'g:nopaths').inputHash !== null &&
+        get(h1, 'g:nopaths').inputs.globs.join() === WHOLE_TREE_GLOB &&
+        get(h1, 'g:nopaths').inputs.files.length === 0,
+      'a gate declaring no paths reads the whole tree, so that is its input'
     );
     must(get(h1, 'g:env').reason === 'env' && get(h1, 'g:env').inputHash === null, 'env is null');
+    must(
+      get(h1, 'g:nopathsenv').reason === 'env' && get(h1, 'g:nopathsenv').inputHash === null,
+      'an env entry stays uncarriable with no paths too: it names outside state the tree does not hold'
+    );
     must(
       get(h1, 'g:exempt').reason === 'exempt' && get(h1, 'g:exempt').inputHash === null,
       'exempt is null'
     );
     must(get(h1, 'g:forbid').reason === 'forbidden-glob', 'a { glob is forbidden');
     must(get(h1, 'g:float').reason === 'float-in-entry', 'a float entry is null');
-    must(get(h1, 'g:needsnull').reason === 'needs-null:g:nopaths', 'a null needs hash propagates');
+    must(get(h1, 'g:needsnull').reason === 'needs-null:g:env', 'a null needs hash propagates');
     must(get(h1, 'g:needsok').inputHash !== null, 'a needs on a carriable gate stays carriable');
     must(
       get(h1, 'g:gitlink').filesHash === get(h1, 'g:gitlink2').filesHash &&
@@ -410,6 +421,15 @@ export function inputHashSelftest(tmpDir: string): void {
     must(
       get(h2, 'g:src').inputHash === get(h1, 'g:src').inputHash,
       'a non-input change must not move inputHash'
+    );
+    must(
+      get(h2, 'g:nopaths').inputHash !== get(h1, 'g:nopaths').inputHash,
+      'any tracked change must move a whole-tree gate: it carries across an identical tree only'
+    );
+    must(
+      computeGateHashes(root, t1, lock, mk(root)).get('g:nopaths')?.inputHash ===
+        get(h1, 'g:nopaths').inputHash,
+      'CONTROL: the same tree must give a whole-tree gate the same hash, or nothing ever carries'
     );
     fs.writeFileSync(path.join(root, 'src', 'a.ts'), 'a2\n');
     g('commit', '-q', '-am', 'input');

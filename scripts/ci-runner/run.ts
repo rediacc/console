@@ -78,6 +78,7 @@ import {
   SCHEMA,
   saltHash,
   scriptsMapOf,
+  WHOLE_TREE_GLOB,
 } from './input-hash';
 import { stepDurationsMs } from './lanes';
 import { learnedSelftest } from './learned-selftest';
@@ -103,6 +104,7 @@ import {
   runPool,
   type Sched,
 } from './pool';
+import { NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
 import {
   admitTouched,
   type DropKind,
@@ -383,7 +385,7 @@ function parseArgs(argv: readonly string[]): Options {
         break;
       }
       case '--receipt-out': {
-        // A CLEAN-SNAPSHOT RECEIPT. The gates judge the worktree they run in, and the push carries HEAD^{tree}. In a tree shared with live writers, their uncommitted edits turn a receipt red for a tree that does not contain them (2026-09-24: 14 writers, python-lint red on two files in nobody's HEAD). Running ci:quick in a clean clone checked out at HEAD
+        // A CLEAN-SNAPSHOT RECEIPT. The gates judge the working tree they run in, and the push carries HEAD^{tree}. In a tree shared with live writers, their uncommitted edits turn a receipt red for a tree that does not contain them (2026-09-24: 14 writers, python-lint red on two files in nobody's HEAD). Running ci:quick in a clean clone checked out at HEAD
         // and writing the receipt into the pushing checkout's cache judges exactly the pushed tree. Nothing is trusted: the receipt still records the clone's own HEAD^{tree}, and block_unverified_push refuses unless that equals the pushing HEAD^{tree}. ABSOLUTE ONLY, because a relative path would resolve against whichever cwd npm happened to use.
         const out = value(i, arg);
         if (!path.isAbsolute(out))
@@ -676,7 +678,7 @@ interface PushDiff {
 }
 
 /**
- * Files changed since the last push: the merge-base with the first resolvable ref of quick-select.ts `resolvePushBase`, against the WORKTREE, plus untracked files and widened gitlinks. The quick lane judges the worktree, so committed, staged, unstaged and new files all count.
+ * Files changed since the last push: the merge-base with the first resolvable ref of quick-select.ts `resolvePushBase`, against the WORKING TREE, plus untracked files and widened gitlinks. The quick lane judges the working tree, so committed, staged, unstaged and new files all count.
  */
 function changedSinceLastPush(): PushDiff {
   const branch = gitTry(['branch', '--show-current']);
@@ -2807,6 +2809,20 @@ async function selftest(): Promise<number> {
       quiet.kind === 'advance' && quiet.readers.length === 0,
       'a record glob with no reader must advance with no gate to run'
     );
+    // #ea5e31cd: a record-only commit over a red receipt must not read as green.
+    require_(
+      advanceExit(0, { exitCode: 1, failed: ['g'] }) === 1,
+      'an advance whose readers passed over a red receipt must exit non-zero'
+    );
+    require_(
+      advanceExit(0, { exitCode: 0, failed: ['g'] }) === 1,
+      'a non-empty failed list must redden an advance whatever exitCode says'
+    );
+    require_(advanceExit(3, { exitCode: 0, failed: [] }) === 3, "a reader's own red must survive");
+    require_(
+      advanceExit(0, { exitCode: 0, failed: [] }) === 0,
+      'CONTROL: an advance over a green receipt with green readers exits 0'
+    );
     require_(
       plan(whole, ['agent/reviews/x.md', 'scripts/ci-runner/run.ts']).kind === 'full',
       'a diff holding one code path must run the whole lane'
@@ -2936,6 +2952,8 @@ async function selftest(): Promise<number> {
   for (const f of ledgerCheck.failures) require_(false, `ledger: ${f}`);
   const streamCheck = streamSelftest();
   for (const f of streamCheck.failures) require_(false, `stream: ${f}`);
+  const cloneCheck = await quickCloneSelftest(os.tmpdir());
+  for (const f of cloneCheck.failures) require_(false, `quick-clone: ${f}`);
   const learned = await learnedSelftest();
   for (const f of learned.failures) require_(false, `learned: ${f}`);
   for (const row of learned.table) process.stdout.write(`ci-runner: ${row}\n`);
@@ -2965,13 +2983,13 @@ async function selftest(): Promise<number> {
  * `git rev-parse` and one file read. The expensive half happens here, once,
  * and leaves an artifact naming exactly what it proved.
  *
- * KEYED ON `HEAD^{tree}`, NOT ON THE WORKTREE, and that choice is load-bearing
+ * KEYED ON `HEAD^{tree}`, NOT ON THE WORKING TREE, and that choice is load-bearing
  * twice over. CI checks out the pushed commit, so the tree object is precisely
  * what CI will judge. And this repo's tree normally holds dozens of dirty paths
- * from OTHER live sessions -- keying on the worktree would invalidate the
+ * from OTHER live sessions -- keying on the working tree would invalidate the
  * receipt on someone else's keystroke and make it unobtainable.
  *
- * The honest residual: the gates ran against the WORKTREE, not against
+ * The honest residual: the gates ran against the WORKING TREE, not against
  * `HEAD^{tree}`. So the digest of the dirty set is recorded too, and the guard
  * warns (naming files) when it has moved while the tree object has not.
  */
@@ -3557,7 +3575,16 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
     );
     check(
       second.run.includes('g:none'),
-      'CONTROL: a gate declaring no paths always runs, even when nothing it could read changed'
+      'CONTROL: a gate declaring no paths re-runs on any tracked change, because any change may reach what it reads'
+    );
+    const identical = plan(t1, r1);
+    check(
+      identical.run.length === 0 && identical.carry.has('g:none'),
+      `at an identical tree every gate carries, the one declaring no paths included; ran ${identical.run.join()}`
+    );
+    check(
+      identical.hashes.get('g:none')?.inputs.globs[0] === WHOLE_TREE_GLOB,
+      'a gate declaring no paths records the whole tree as its input, which is what the push guard recomputes'
     );
     const r2 = receiptOf(t2, second, {});
     check(
@@ -4315,7 +4342,18 @@ async function runAdvance(
     humanOut(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
     return 1;
   }
-  return exitCode;
+  const carriedRed = advanceExit(exitCode, receipt);
+  if (carriedRed !== exitCode)
+    humanOut(
+      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}\n`
+    );
+  return carriedRed;
+}
+
+/** What an advance exits with: its readers' code, unless the receipt it leaves is red. An advance never touches `failed` or `exitCode`, so a record-only commit over a red receipt used to print a green and exit 0 (#ea5e31cd). */
+function advanceExit(readersExit: number, receipt: Partial<Receipt>): number {
+  if (readersExit !== 0) return readersExit;
+  return receipt.exitCode !== 0 || (receipt.failed ?? []).length > 0 ? 1 : 0;
 }
 
 /**
@@ -4437,7 +4475,7 @@ function loadModel(synthetic: boolean): { model: ModelV1 } | { error: string } {
   return parseModel(text);
 }
 
-/** carried-reds.json as HEAD carries it (the push guard reads the same copy), else the worktree's; [] when neither reads. */
+/** carried-reds.json as HEAD carries it (the push guard reads the same copy), else the working tree's; [] when neither reads. */
 function carriedAtHead(): CarriedEntry[] {
   const atHead = gitTry(['show', 'HEAD:.ci/config/carried-reds.json']);
   if (atHead !== undefined) return parseCarried(atHead);
@@ -4472,7 +4510,7 @@ function defaultEventsFile(opts: Options, runId: string): string {
 }
 
 /**
- * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..worktree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
+ * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
 function narrowPlan(
   specs: readonly GateSpec[],
@@ -4745,9 +4783,12 @@ async function main(): Promise<number> {
     } catch {
       prior = null;
     }
+    // NOTHING CARRIES when quick-clone.ts says so: a clone made this run holds no build output while a carried prerequisite leaves `needs` and is not rebuilt, and `--no-carry` asks for every gate to be judged again.
+    const noCarry = process.env[NO_CARRY_ENV] === '1';
+    if (noCarry) humanOut('incremental: carry is off for this run, every selected gate runs\n');
     const input = incrementalInputOf(
       headTreeAtStart,
-      narrowingFlags(opts).length === 0 ? prior : null,
+      narrowingFlags(opts).length === 0 && !noCarry ? prior : null,
       disposable,
       [...selection.ids]
     );
@@ -4759,9 +4800,9 @@ async function main(): Promise<number> {
       hashes = plan.hashes;
       salt = plan.salt;
       if (disposable) {
-        const noInputs = plan.run.filter((id) => hashes.get(id)?.reason === 'no-paths').length;
+        const uncarriable = plan.run.filter((id) => hashes.get(id)?.inputHash === null).length;
         humanOut(
-          `incremental: ${carry.size} carried, ${plan.run.length} run (${noInputs} with no declared inputs)\n`
+          `incremental: ${carry.size} carried, ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite)\n`
         );
         const named = [...carry.keys()].slice(0, 10);
         if (named.length > 0)
@@ -4798,7 +4839,7 @@ async function main(): Promise<number> {
     opts.events ?? (opts.quick && !synthetic ? defaultEventsFile(opts, runId) : undefined),
     humanOut
   );
-  // WHAT CHANGED, as gate_ledger.py defines it: since the previous run of this checkout (the tree its receipt judged), plus what is dirty now, since the gates judge the worktree. With no prior receipt, since the last push. The same set names the diff's classes for ranking, so what the model learned from and what it is asked about mean the same thing.
+  // WHAT CHANGED, as gate_ledger.py defines it: since the previous run of this checkout (the tree its receipt judged), plus what is dirty now, since the gates judge the working tree. With no prior receipt, since the last push. The same set names the diff's classes for ranking, so what the model learned from and what it is asked about mean the same thing.
   const since = changedSincePreviousRun(opts, synthetic);
   const changedNow =
     since?.files ??
@@ -4896,7 +4937,7 @@ async function main(): Promise<number> {
   // `--quick` runs selftest() first (see the npm key), and selftest() refuses to return 0 unless a planted failing gate produced exit 1, both captured streams, and a skipped dependent. A runner that cannot fail authorising a push would be strictly worse than no lane at all: it would replace "nobody checked" with "something green says it checked".
   //
   // Minted on RED as well as green, carrying the failing ids. The guard decides what a red receipt is worth; the runner's job is to record what happened, not to editorialise. A receipt that appeared only on success would make "gates failed" and "gates never ran" the same observation at the guard -- the exact conflation this repo keeps paying for. SAMPLE THE TREE AGAIN, and
-  // compare. dirtyAtStart alone answers "was the tree dirty when we began"; it cannot answer "did it hold still", and those are different questions once anything else is running in this worktree. Two whole-lane runs were spent on 2026-08-27 discovering that four gates failed only in the lane and passed standalone every time, because a peer session was editing files mid-run. The
+  // compare. dirtyAtStart alone answers "was the tree dirty when we began"; it cannot answer "did it hold still", and those are different questions once anything else is running in this working tree. Two whole-lane runs were spent on 2026-08-27 discovering that four gates failed only in the lane and passed standalone every time, because a peer session was editing files mid-run. The
   // lane read a moving tree and said nothing.
   const dirtyAtEnd = dirtyDigest();
   if (dirtyAtEnd !== dirtyAtStart) {
@@ -4904,7 +4945,7 @@ async function main(): Promise<number> {
     humanOut(
       'WARNING: the working tree CHANGED while these gates ran, so they did not all judge\n' +
         '  the same tree and a failure here may belong to the churn rather than to the code.\n' +
-        '  Re-run on a still tree before believing a red. This worktree may be shared.' +
+        '  Re-run on a still tree before believing a red. This working tree may be shared.' +
         (writers.length > 0
           ? `\n  This disposable clone admitted tree-writing gate(s) that may account for it: ${writers.join(', ')}.`
           : '') +

@@ -52,6 +52,18 @@
     {
       "id": "check:ci-pr-condition-ledger",
       "reason": "Asks GitHub whether each PR that a BLOCKER clause names has merged, so its verdict turns red when another PR merges while every tracked input stays byte-identical; a carried green would hide exactly that."
+    },
+    {
+      "id": "check:ci-lane-budget",
+      "reason": "Fails on the age of .ci/config/lane-durations.json against the wall clock (freshnessFindings with new Date() in check-lane-budget.ts), so its verdict turns red as the calendar advances at an identical tree."
+    },
+    {
+      "id": "check:ci-secret-reachability",
+      "reason": "Judges the age of its record and each allowlist expiry against the wall clock (dt.datetime.now in check_secret_reachability.py), so its verdict moves as the calendar advances at an identical tree."
+    },
+    {
+      "id": "check:ci-timeout-headroom",
+      "reason": "Judges the age of its baseline against the wall clock (dt.datetime.now in check_job_timeout_headroom.py), so its verdict moves as the calendar advances at an identical tree."
     }
   ]
 }
