@@ -61,11 +61,15 @@ export const CEPH_IMAGE_PIN_PATH = path.resolve(
 );
 
 /**
- * The `host-version=` value of a .ceph-image-pin text; throws when the line is absent.
+ * The Ceph client version the hosts must report, from a .ceph-image-pin text: the `host-version.<target>` line when the pin leaves the shared series for `target` (openSUSE Leap 16.0 moved to 19.2.7 because OBS no longer serves 19.2.3), else `host-version=`. Throws when neither line is present.
  */
-export function readCephHostVersion(pinText: string): string {
-  const line = pinText.split('\n').find((l) => l.trim().startsWith('host-version='));
-  const value = line?.trim().slice('host-version='.length).trim() ?? '';
+export function readCephHostVersion(pinText: string, target?: string): string {
+  const lines = pinText.split('\n').map((l) => l.trim());
+  const valueOf = (prefix: string): string => {
+    const line = lines.find((l) => l.startsWith(prefix));
+    return line?.slice(prefix.length).trim() ?? '';
+  };
+  const value = (target ? valueOf(`host-version.${target}=`) : '') || valueOf('host-version=');
   if (!value) {
     throw new Error('no host-version line in the Ceph image pin file');
   }
@@ -405,7 +409,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
       await assertCephHostVersion(
         opsManager,
         [...cephNodes, ...opsManager.getWorkerVMIps()],
-        readCephHostVersion(fs.readFileSync(CEPH_IMAGE_PIN_PATH, 'utf8'))
+        readCephHostVersion(fs.readFileSync(CEPH_IMAGE_PIN_PATH, 'utf8'), process.env.VM_IMAGE)
       );
     }
 
