@@ -306,7 +306,7 @@ describe('parseJobStatus + jobStatusToExecuteResult', () => {
     expect(result.error).toContain('cryptsetup: device busy');
   });
 
-  it('carries a task refusal code (18 no-listing, 16 quota) to the result the callers branch on', () => {
+  it('carries a task refusal code (18 no-listing, 16 quota) into the execute result', () => {
     for (const code of [18, 16]) {
       const status = parseJobStatus(
         JSON.stringify({
