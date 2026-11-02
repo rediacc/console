@@ -219,9 +219,7 @@
       ],
       "ignoreDependencies": [
         // BLOCKER: same as workers/www below -- wrangler is invoked as `npx wrangler ...` from .ci/scripts/deploy/*.sh with this directory as the working directory, never from a package.json script, so knip has no call site to trace
-        "wrangler",
-        // BLOCKER: `cloudflare:workers` (the WorkerEntrypoint base of src/index.ts's CloudflareInternal) is a module the workerd runtime provides, not an npm package; knip reads the scheme as an unlisted dependency named `cloudflare`, and there is nothing to install
-        "cloudflare"
+        "wrangler"
       ]
     },
     "workers/mta-sts": {
@@ -234,8 +232,6 @@
         "src/**/*.ts"
       ],
       "ignoreDependencies": [
-        // BLOCKER: `cloudflare:workers` (the DurableObject base of src/capacity.ts) is a module the workerd runtime provides, not an npm package; knip reads the scheme as an unlisted dependency named `cloudflare`, and there is nothing to install
-        "cloudflare"
       ]
     },
     "workers/www": {

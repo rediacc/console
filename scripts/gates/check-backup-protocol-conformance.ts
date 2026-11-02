@@ -606,7 +606,10 @@ if (!releaseLeg?.clientCall || !releaseLeg.callerCall) {
 const releaseSend = 'c.endpoint("/leases/"+url.PathEscape(snapshotID)+"/release")';
 const releaseCaller = 'released, err := releaser.ReleaseLease(ctx, snapshotID)';
 const releaseSources = (text: string) => ({ [releaseLeg.callerCall?.file ?? '']: text });
-if (!clientCalls(releaseLeg, releaseSend) || !callerCalls(releaseLeg, releaseSources(releaseCaller))) {
+if (
+  !clientCalls(releaseLeg, releaseSend) ||
+  !callerCalls(releaseLeg, releaseSources(releaseCaller))
+) {
   console.error('✗ release-leg control over-fired: the real call shapes were not recognised.');
   process.exit(1);
 }
