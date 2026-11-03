@@ -87,7 +87,7 @@
       "dependencies": [
         "i18next"
       ],
-      "pinVersion": "^26.5.11"
+      "pinVersion": "^26.7.1"
     },
     {
       "label": "Pin vite-tsconfig-paths to latest",
