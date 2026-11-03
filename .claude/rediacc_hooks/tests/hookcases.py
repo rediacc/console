@@ -2080,43 +2080,43 @@ STATIC: list[Case] = [
     # #5077391c: xargs appends its feed to cp's own words, so under `-t` a fed word is a SOURCE. The control was refused while every fed word read as a destination.
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1/x.md | xargs cp -t /tmp"),
+        bash_json("echo agent/reviews/0000-0/x.md | xargs cp -t /tmp"),
         "review-file-shell-write CONTROL: xargs feeds a review file to cp -t another directory",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo /tmp/a.md | xargs cp -t agent/reviews/1008-1"),
+        bash_json("echo /tmp/a.md | xargs cp -t agent/reviews/0000-0"),
         "review-file-shell-write: xargs feeds a source to cp -t the review directory",
     ),
     # The fed word as the file an in-place editor, tee or truncate writes: appended, or put where the marker stands. Each refusal was allowed before, since the editor's own words named no review file.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1/x.md | xargs sed -i s/a/b/"),
+        bash_json("echo agent/reviews/0000-0/x.md | xargs sed -i s/a/b/"),
         "review-file-shell-write: xargs feeds a review file to sed -i",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1/x.md | xargs -rI{} sed -i s/a/b/ {}"),
+        bash_json("echo agent/reviews/0000-0/x.md | xargs -rI{} sed -i s/a/b/ {}"),
         "review-file-shell-write: xargs puts a review file at its marker for sed -i",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1/x.md | xargs tee"),
+        bash_json("echo agent/reviews/0000-0/x.md | xargs tee"),
         "review-file-shell-write: xargs feeds a review file to tee",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1 | xargs -I{} truncate -s 0 {}/x.md"),
+        bash_json("echo agent/reviews/0000-0 | xargs -I{} truncate -s 0 {}/x.md"),
         "review-file-shell-write: xargs puts a review directory at its marker for truncate",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1 | xargs -I X truncate -s 0 X/x.md"),
+        bash_json("echo agent/reviews/0000-0 | xargs -I X truncate -s 0 X/x.md"),
         "review-file-shell-write: xargs puts a review directory at a marker of its own for truncate",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/1008-1/x.md | xargs cat"),
+        bash_json("echo agent/reviews/0000-0/x.md | xargs cat"),
         "review-file-shell-write CONTROL: xargs feeds a review file to a reader",
     ),
     case(
@@ -2323,7 +2323,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("grep -n Resolution agent/reviews/1008-1/*.md"),
+        bash_json("grep -n Resolution agent/reviews/0000-0/*.md"),
         "review-file-shell-write CONTROL: grep -n over the records",
     ),
     case(
@@ -2333,17 +2333,17 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("git add -- agent/reviews/1008-1/"),
+        bash_json("git add -- agent/reviews/0000-0/"),
         "review-file-shell-write CONTROL: git add of the review directory",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("git commit -F /tmp/m -- agent/reviews/1008-1/"),
+        bash_json("git commit -F /tmp/m -- agent/reviews/0000-0/"),
         "review-file-shell-write CONTROL: git commit of the review directory",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("ls agent/reviews/1008-1/"),
+        bash_json("ls agent/reviews/0000-0/"),
         "review-file-shell-write CONTROL: ls of the review directory",
     ),
     case(
@@ -2354,7 +2354,7 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json(
-            "python3 .claude/hooks/stop/worklist.py --review-mark d778be9d ab12cd34.1 not-a-bug 'x agent/reviews/1008-1/x.md:3'"
+            "python3 .claude/hooks/stop/worklist.py --review-mark d778be9d ab12cd34.1 not-a-bug 'x agent/reviews/0000-0/x.md:3'"
         ),
         "review-file-shell-write CONTROL: the mark verb with evidence naming a record",
     ),
@@ -2432,55 +2432,55 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json(
-            "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md"
+            "cd agent/reviews/0000-0 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md"
         ),
         "review-file-shell-write CONTROL: awk with an alternation and its own assignments, run inside the directory",
     ),
     # Review 660ec7a0.1: an awk program that redirects a print names its target without a literal, so every operand is a landing. The three refusals were allowed at cc5c597a8.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk 'BEGIN{print \"x\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
+        bash_json("awk 'BEGIN{print \"x\" > ARGV[1]}' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: awk prints into the operand it was handed",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '{f=ARGV[1]; print \"x\" > f}' agent/reviews/1008-1/x.md"),
+        bash_json("awk '{f=ARGV[1]; print \"x\" > f}' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: awk prints into a variable built from its operand",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '{print > FILENAME}' agent/reviews/1008-1/x.md"),
+        bash_json("awk '{print > FILENAME}' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: awk prints into the file it reads",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk 'BEGIN{print \"a;b\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
+        bash_json("awk 'BEGIN{print \"a;b\" > ARGV[1]}' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: awk redirects after a literal that holds a semicolon",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json('awk \'BEGIN{print "x" > "" ARGV[1]}\' agent/reviews/1008-1/x.md'),
+        bash_json('awk \'BEGIN{print "x" > "" ARGV[1]}\' agent/reviews/0000-0/x.md'),
         "review-file-shell-write: awk redirects into a target that starts with a literal",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '$3 > 5 {print}' agent/reviews/1008-1/x.md"),
+        bash_json("awk '$3 > 5 {print}' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: a printing awk program that holds a > is refused, comparison or not",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("awk '$3 > 5' agent/reviews/1008-1/x.md"),
+        bash_json("awk '$3 > 5' agent/reviews/0000-0/x.md"),
         "review-file-shell-write CONTROL: an awk program that prints nothing redirects nothing",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("awk '/^### (a|b)/{p=1} p' agent/reviews/1008-1/x.md"),
+        bash_json("awk '/^### (a|b)/{p=1} p' agent/reviews/0000-0/x.md"),
         "review-file-shell-write CONTROL: a pattern's alternation is not a pipe",
     ),
     # Review fd4eda1a.1: the rule does not follow where a print goes, so a program that redirects into a literal ELSEWHERE is refused while it reads a review file. The control is the same program over another file.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '{print > \"x\"}' agent/reviews/1008-1/x.md"),
+        bash_json("awk '{print > \"x\"}' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: an awk that redirects into a literal elsewhere while reading a review file (fd4eda1a.1)",
     ),
     case(
@@ -2491,12 +2491,12 @@ STATIC: list[Case] = [
     # Review fd4eda1a.3: the rule is lexical. This program prints nothing; the letters `print` beside a `|` inside its regex read as a program that may redirect, and the refusal is a stated over-read in the direction that fails closed.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '/print|x/' agent/reviews/1008-1/x.md"),
+        bash_json("awk '/print|x/' agent/reviews/0000-0/x.md"),
         "review-file-shell-write: over-read, an awk regex that spells print beside a pipe is refused (fd4eda1a.3)",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("awk '/prin|x/' agent/reviews/1008-1/x.md"),
+        bash_json("awk '/prin|x/' agent/reviews/0000-0/x.md"),
         "review-file-shell-write CONTROL: an awk regex with an alternation and no print reads a review file",
     ),
     case(

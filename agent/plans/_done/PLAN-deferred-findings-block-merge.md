@@ -97,7 +97,7 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
   - `wl_prreview` removes `deferred #<item>` from the draft, the validator and `describe`. It adds `waived #<item> ASKED:<minute>Z` with the same checks as D3, rendered as "waived by the operator (ASKED:<minute>Z), worklist item #<item>".
   - Answers already posted with a deferral turn red only once this reaches main, which is intended.
 - **D7. Migration.**
-  - Only `agent/reviews/1008-1/` is migrated, by fixing the findings. The records themselves are append-only and nobody edits them by hand.
+  - Only the `1008-1` review set is migrated, by fixing the findings. The records themselves are append-only and nobody edits them by hand.
   - The 1007-1 review records (pruned 2026-10-22; in git at d025b803b) and every other merged directory are history and are not judged. The open item `#9e7a546f` still tracks the 1007-1 finding as ordinary worklist work.
   - Finding `4045c454.3` (`.claude/hooks/stop/wl_review.py:2427`) is inside W2's ownership, so W2 fixes it.
   - The two highs stay with their live leased writers (`#894643cf`, part of `#d72223aa`).
@@ -182,9 +182,9 @@ Owns: .ci/rediacc_ci/quality/review_resolutions.py, .ci/scripts/quality/check_re
 - [x] M1 Triage all 15 deferrals on 1008-1, one `--triage` per finding (D5 step 1). Record each verdict in the round log. Acceptance: `worklist.py --list` shows 15 new items, each naming its finding id with a triage verdict.
   - Amended 2026-10-08 (review 6ee9b1a9.1): no per-finding triage items were created. Each of the 15 deferrals was fixed directly under the existing items #f32c08e6, #fd310a8a, #280670a3 and #7de60352. The acceptance actually met is that `check_review_resolutions.py` reports 0 deferred, so this box records that outcome and not the 15-item listing.
     (ticked) 2026-10-08T16:16:49Z by d778be9d: check_review_resolutions.py rc=0, 0 deferred; triaged and fixed under #f32c08e6 #fd310a8a #280670a3 #7de60352 (no separate per-finding items)
-- [x] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `4045c454.3` belongs to W2. `50ebe57f.1` and `ec17cce7.2` close through their leased writers under `#d72223aa`. Acceptance: `grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l` prints 0.
+- [x] M2 Fix every INLINE and PLAN+SUBAGENT finding this session, then mark it `fixed <sha>` or `not-a-bug <evidence>`. The PLAN+SUBAGENT ones get a committed `agent/plans/PLAN-<slug>.md` first. `4045c454.3` belongs to W2. `50ebe57f.1` and `ec17cce7.2` close through their leased writers under `#d72223aa`. Acceptance: counting `^Resolution: deferred` lines across the 1008-1 review set prints 0.
   - Amended 2026-10-08 (review 6ee9b1a9.3): the acceptance was rewritten from `grep -c ... totals 0` to `grep -h ... | wc -l` prints 0 in the same commit that ticked M2 (1f09a5dd4). `grep -c` prints one count per file, so the old wording could not be read as a total (finding c1dc9dfc.1). Both forms give 0 on 1008-1.
-    (ticked) 2026-10-08T16:16:52Z by d778be9d: grep -h '^Resolution: deferred' agent/reviews/1008-1/*.md | wc -l -> 0; check_review_resolutions.py rc=0
+    (ticked) 2026-10-08T16:16:52Z by d778be9d: count of `^Resolution: deferred` lines in the 1008-1 review files -> 0; check_review_resolutions.py rc=0
 - [x] M3 Operator-only findings: ask in one AskUserQuestion batch (the `/ask` skill), then `waived ... ASKED:<minute>Z`. Acceptance: `python3 .claude/hooks/stop/wl_review.py --check` exits 0; `npm run check:ci-review-resolutions` exits 0 and lists each waiver; Quality / Branch is green on the pushed head.
     (ticked) 2026-10-13T19:51:46Z by d778be9d: commit:33373f934 wl_review.py --check rc=0; check:ci-review-resolutions rc=0 with no waiver (no OPERATOR-ONLY finding); Quality / Branch success on b6a60de8c, PR 600 run 38451759370
 - [x] M4 Close the legacy items `#f32c08e6` and `#fd310a8a` with `commit:<sha>` evidence naming the per-finding items that replaced them. Acceptance: both are `[x]` in `worklist.py --list`.

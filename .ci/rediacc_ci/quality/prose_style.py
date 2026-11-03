@@ -2255,7 +2255,7 @@ def selftest():
     _ex = [("agent/reviews/**", "r"), ("agent/*/STATE.md", "s")]
     ctl.check(
         "exempt: `**` covers a record one level down",
-        exempt_for("agent/reviews/1008-1/x.md", _ex),
+        exempt_for("agent/reviews/0000-0/x.md", _ex),
         "r",
     )
     ctl.check(

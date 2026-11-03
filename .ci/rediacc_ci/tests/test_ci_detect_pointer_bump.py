@@ -777,7 +777,7 @@ def _top_reason(tmp_path, files: dict[str, str]):
 def test_a_review_record_commit_on_top_of_the_bump_still_fires(tmp_path) -> None:
     repo, proc = _top_reason(
         tmp_path,
-        {"agent/reviews/1008-1/abc.md": "x\n", "agent/reviews/1008-1/clean.jsonl": "{}\n"},
+        {"agent/reviews/0000-0/abc.md": "x\n", "agent/reviews/0000-0/clean.jsonl": "{}\n"},
     )
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout == "pointer_bump_only=true\nbaseline_sha=%s\n" % repo.base
@@ -785,7 +785,7 @@ def test_a_review_record_commit_on_top_of_the_bump_still_fires(tmp_path) -> None
 
 def test_a_commit_mixing_review_and_other_files_does_not_fire(tmp_path) -> None:
     _repo, proc = _top_reason(
-        tmp_path, {"agent/reviews/1008-1/abc.md": "x\n", "readme2.md": "product\n"}
+        tmp_path, {"agent/reviews/0000-0/abc.md": "x\n", "readme2.md": "product\n"}
     )
     assert proc.stdout == "pointer_bump_only=false\nbaseline_sha=\n"
 

@@ -443,21 +443,21 @@ SHELL_CASES = [
     ("rm keeps its verdict", "rm %s" % R, False),
     ("git checkout keeps its verdict", "git checkout -- %s" % R, False),
     # The reads the review workflow itself runs.
-    ("grep -n over the records", "grep -n Resolution agent/reviews/1008-1/*.md", False),
+    ("grep -n over the records", "grep -n Resolution agent/reviews/0000-0/*.md", False),
     ("sed -n prints a range", "sed -n 1,20p %s" % R, False),
-    ("git add of the directory", "git add -- agent/reviews/1008-1/", False),
+    ("git add of the directory", "git add -- agent/reviews/0000-0/", False),
     (
         "git commit of the directory",
-        "git commit -F /tmp/m -- agent/reviews/1008-1/",
+        "git commit -F /tmp/m -- agent/reviews/0000-0/",
         False,
     ),
-    ("ls of the directory", "ls agent/reviews/1008-1/", False),
+    ("ls of the directory", "ls agent/reviews/0000-0/", False),
     ("tail of the clean ledger", "tail -1 %s" % L, False),
     (
         "the mark verb with evidence naming a record",
         (
             "python3 .claude/hooks/stop/worklist.py --review-mark d778be9d ab12cd34.1 not-a-bug "
-            "'x agent/reviews/1008-1/x.md:3'"
+            "'x agent/reviews/0000-0/x.md:3'"
         ),
         False,
     ),
@@ -493,7 +493,7 @@ SHELL_CASES = [
     # A read this session ran for real: a program with a regex alternation and its own assignments, from inside the directory. A draft of this fix read what follows the program's `=` as a file and refused it.
     (
         "awk filtering findings from inside the directory",
-        "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md",
+        "cd agent/reviews/0000-0 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md",
         False,
     ),
     # Review fd4eda1a.1: whether an awk program may redirect is a rule over its text that follows nothing, so a redirect into a literal elsewhere is refused while the program reads a review file, and allowed over any other file.
@@ -508,7 +508,7 @@ SHELL_CASES = [
     ("an awk regex with an alternation and no print", "awk '/prin|x/' %s" % R, False),
     (
         "a loop reading the records after a cd",
-        "cd agent/reviews/1008-1 && grep -l open *.md | while read f; do head -1 $f; done",
+        "cd agent/reviews/0000-0 && grep -l open *.md | while read f; do head -1 $f; done",
         False,
     ),
     # A git ref verb's positional words are refs, refspecs and patterns, never a file it writes: two adjacent `*` segments in a glob refspec are not `agent/reviews`. Each allowance was refused (rc 2) before.

@@ -423,7 +423,7 @@ export function generatorWrote(out: string): Set<string> {
 /**
  * Regenerates the generated doc regions after a verb's writes landed. A hold moves the row counts in .ci/policy/README.md and scripts/data/doc-registry.md, and a bump can move any region that quotes a version, so the regeneration runs after every verb that wrote; a no-op when nothing moved. Returns the files the run changed that were clean beforehand (they belong in the commit), the files it changed that already held another session's edits (they do not), and the command record. A file this run itself wrote (`written`) is never foreign, whatever it held before; one of those that regeneration moved again is returned in `late`, as is every file it added to the commit, because the gates ran before it. A tree without the generator, or a fixture without a matching command, skips it.
  *
- * ONLY A FILE THE GENERATOR REPORTS WRITING IS ATTRIBUTED. The tree diff around the run sees every writer in the tree, not this one alone: on 2026-10-15 the per-commit reviewer wrote agent/reviews/1008-1/7a32b551...md while gen-docs ran, and the 01:18Z `bump --all` drafted a `git add` and a commit pathspec for it. A file the diff shows and the generator's `wrote` lines do not name is returned in `unclaimed` and stays out of the commit.
+ * ONLY A FILE THE GENERATOR REPORTS WRITING IS ATTRIBUTED. The tree diff around the run sees every writer in the tree, not this one alone: on 2026-10-15 the per-commit reviewer wrote the record 7a32b551...md while gen-docs ran, and the 01:18Z `bump --all` drafted a `git add` and a commit pathspec for it. A file the diff shows and the generator's `wrote` lines do not name is returned in `unclaimed` and stays out of the commit.
  */
 function regenDocs(
   w: World,
@@ -2637,7 +2637,7 @@ const CASES: Record<string, Case> = {
         ...regenCmd,
         writes: {
           'docs/generated.md': 'rows: 6\n',
-          'agent/reviews/1008-1/abc.md': 'a review another process wrote\n',
+          'agent/reviews/0000-0/abc.md': 'a review another process wrote\n',
         },
       })
     );
@@ -2702,7 +2702,7 @@ const CASES: Record<string, Case> = {
           !rStray.out.includes('agent/reviews') &&
           /commit -F \S+ -- .*docs\/generated\.md/.test(rStray.out) &&
           rStray.err.includes(
-            'note: agent/reviews/1008-1/abc.md changed while the generated docs were regenerated, but the generator did not report writing it'
+            'note: agent/reviews/0000-0/abc.md changed while the generated docs were regenerated, but the generator did not report writing it'
           ),
         detail: `rc=${rStray.rc} ${rStray.err} ${rStray.out}`,
       },
