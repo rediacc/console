@@ -143,15 +143,21 @@ def main(argv: list[str]) -> int:
             [*wrangler.ARGV, "d1", "list", "--json"],
             cwd=worker_dir,
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            capture_output=True,
             text=True,
             check=False,
         )
     except OSError as exc:
         log.error(f"npx: {exc.strerror or exc}")
         return 1
-    db_uuid = find_db_uuid(listed.stdout, d["db_name"]) if listed.returncode == 0 else None
+    # A failed list says nothing about the database, so it never reads as "not found": run 41574752573 called a missing wrangler a missing database on two attempts.
+    if listed.returncode != 0:
+        print(
+            f"wrangler d1 list failed (rc {listed.returncode}): {listed.stderr.strip()[-500:]}",
+            file=sys.stderr,
+        )
+        return 1
+    db_uuid = find_db_uuid(listed.stdout, d["db_name"])
     if not db_uuid:
         print(f"Database {d['db_name']} not found", file=sys.stderr)
         return 1

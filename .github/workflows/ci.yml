@@ -1826,6 +1826,10 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
+      # seed_smoke runs `npx --no-install wrangler` from workers/www, and the root lockfile holds no wrangler.
+      - name: Install the Worker's wrangler
+        run: npm ci --prefix workers/www
+
       - name: Seed test data into preview D1
         id: seed
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.seed_smoke

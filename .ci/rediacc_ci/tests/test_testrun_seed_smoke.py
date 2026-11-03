@@ -118,6 +118,16 @@ def test_delta_unset_jwt_secret_is_refused(tmp_path: pathlib.Path) -> None:
     assert "ACCOUNT_JWT_SECRET is required" in new.err
 
 
+def test_delta_failed_list_names_the_failure_not_a_missing_database(
+    tmp_path: pathlib.Path,
+) -> None:
+    env = env_for(tmp_path, FAKE_RC_NPX="1", FAKE_RCWHEN_NPX="list", FAKE_ERR_NPX="npx canceled")
+    new = ts.run_side(ts.py_cmd(MODULE), tmp_path, ("npx",), ts.py_env(env))
+    assert new.code == 1
+    assert "Database account-db-pr-12 not found" not in new.err
+    assert "wrangler d1 list failed (rc 1): npx canceled" in new.err
+
+
 def test_delta_non_numeric_pr_number_is_refused(tmp_path: pathlib.Path) -> None:
     old, new, _, _ = both(tmp_path, PR_NUMBER="1'; DROP TABLE users; --")
     assert old.calls, "bash interpolated the text into SQL and into a config"
