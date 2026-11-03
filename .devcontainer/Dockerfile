@@ -637,10 +637,10 @@ RUN gcc -O2 -Wall -o /usr/local/bin/bashcov-sup /tmp/bashcov-sup.c \
     && /usr/local/bin/bashcov-sup -- true
 
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
-ARG BTM_VERSION=0.14.9
+ARG BTM_VERSION=0.15.0
 # Digests from the release API's `digest` field, same source as the bw pins above.
-ARG BTM_SHA256_AMD64=e8312526746c1190c3433e6ce0843f64c6e0c501003ee377552745c040dc6d56
-ARG BTM_SHA256_ARM64=a2d5fb1500c2209ffe3ec8711fe551b3b41830fad7bbde9fa1e58ae87010b9e5
+ARG BTM_SHA256_AMD64=02aabca9cd9dd41d3fbf3642e96b5a7b266027fd0ba9eb78a96e4c5eeabcd8c8
+ARG BTM_SHA256_ARM64=1b70cef7d66fedc6df227f85d34a4238d99f3e3800cfb3fd14bafb072b6dece9
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BTM_SHA="$BTM_SHA256_AMD64" ;; \
@@ -668,7 +668,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Both sides are pinned now: the workflow names a version instead of `@latest`, and
 # this ARG names the same one. They must move together -- a devbox that disagrees
 # with CI is worse than one that is merely behind, because it answers confidently.
-ARG AGENT_BROWSER_VERSION=0.41.0
+ARG AGENT_BROWSER_VERSION=0.41.1
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
