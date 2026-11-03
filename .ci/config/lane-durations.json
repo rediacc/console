@@ -2100,15 +2100,15 @@
     "check:ci-account-backup": 51.7
   },
   "job_max_seconds": {
-    "refreshed_at": "2026-11-03T10:12:01Z",
+    "refreshed_at": "2026-11-03T21:12:32Z",
     "jobs": {
       "Validate Promotion": {
-        "observed_max_seconds": 344,
-        "samples": 1
+        "observed_max_seconds": 493,
+        "samples": 2
       },
       "Stage Artifacts": {
-        "observed_max_seconds": 668,
-        "samples": 2
+        "observed_max_seconds": 712,
+        "samples": 3
       }
     }
   }

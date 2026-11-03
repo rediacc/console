@@ -18,6 +18,7 @@ vi.mock('cloudflare:workers', () => {
 });
 
 import { CONTAINER_CALL_TIMEOUT_MS, type ExecutorRecord, READY_TIMEOUT_MS } from '../org-executor';
+import { COORDINATOR_TIMEOUT_MS } from '../org-executor-support';
 import { FakeContainer, harness, IMAGE_V1, LEASE, ORG, T0 } from './helpers/org-executor-harness';
 
 /** EXECUTOR_LEG_TOKEN_TTL_MS in private/account/src/routes/console.ts. */
@@ -223,7 +224,9 @@ describe('a start that does not stall (the control)', () => {
   });
 
   it('the longest start that succeeds stays inside the life of a fresh bearer', async () => {
-    expect(CONTAINER_CALL_TIMEOUT_MS + READY_TIMEOUT_MS).toBeLessThan(BEARER_LIFE_MS);
+    expect(COORDINATOR_TIMEOUT_MS + CONTAINER_CALL_TIMEOUT_MS + READY_TIMEOUT_MS).toBeLessThan(
+      BEARER_LIFE_MS
+    );
 
     const h = harness();
     await h.ready;
