@@ -161,14 +161,13 @@
       "owner": "45048a90",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 37,
+      "open": 19,
+      "done": 38,
       "open_sigs": [
         "06623ce1",
         "11388dba",
         "3b026825",
         "3bf5d6ea",
-        "46930f64",
         "47bb6bd4",
         "4ad3cc4c",
         "5e46ed6d",
@@ -201,6 +200,7 @@
         "25413d91",
         "3b7dbc23",
         "3cb155ce",
+        "46930f64",
         "4f5e643e",
         "598f4ca9",
         "5d9452ba",
@@ -298,24 +298,6 @@
         "2a858fea",
         "b75e70c6",
         "db7a591c"
-      ]
-    },
-    "agent/plans/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "26e0e91d",
-        "341dbb5b",
-        "5e004140",
-        "90622cbf",
-        "b00bc9df",
-        "bfe10930",
-        "ef7feae1"
       ]
     },
     "agent/plans/PLAN-backup-program.md": {
@@ -842,55 +824,6 @@
         "5ac35d6c",
         "721413cb",
         "b1ee5c7d"
-      ]
-    },
-    "agent/plans/PLAN-config-server-key.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "3dcaeba4",
-        "4f529c92",
-        "5491e758",
-        "a3c03a4f",
-        "aa8197f8",
-        "b00bc9df",
-        "c38ce2cd"
-      ]
-    },
-    "agent/plans/PLAN-config-sync-hardening.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 20,
-      "open_sigs": [],
-      "done_sigs": [
-        "062333dd",
-        "08dc5472",
-        "1e925024",
-        "26cfd48c",
-        "2719c3f0",
-        "3dc0b75f",
-        "40fcf48e",
-        "4da3c6c5",
-        "5def7433",
-        "6dc965e5",
-        "8d86ebae",
-        "972d071f",
-        "a06b3426",
-        "aa633f4b",
-        "b00bc9df",
-        "b33ab570",
-        "c075725e",
-        "cc3fd747",
-        "dbe6d212",
-        "ec7ecf90"
       ]
     },
     "agent/plans/PLAN-console-executor-multi-org.md": {
@@ -1577,43 +1510,6 @@
         "fcedcc15"
       ]
     },
-    "agent/plans/PLAN-per-flavor-renet-binary-paths.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "4e19e176",
-        "5c2201f1",
-        "67c1c48b",
-        "766dce3d",
-        "7bae58a9",
-        "7d1b9895",
-        "a30e43e0",
-        "e8a5f3ff"
-      ]
-    },
-    "agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "19cb6d69",
-        "3e5efa07",
-        "42de672c",
-        "5ba2fe74",
-        "85c8c882",
-        "97c1c575",
-        "d44bbcb5"
-      ]
-    },
     "agent/plans/PLAN-plan-compaction-bindings.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -1631,33 +1527,6 @@
         "e6863976"
       ],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-plan-per-pr-loop.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 16,
-      "open_sigs": [],
-      "done_sigs": [
-        "1feb206a",
-        "2dd2429a",
-        "4b8321e0",
-        "4d461643",
-        "4d91dd68",
-        "5157363b",
-        "6f4a1a63",
-        "7fb23a48",
-        "9660fb2f",
-        "97dc855e",
-        "aa8ad1d6",
-        "b4445450",
-        "c27e410c",
-        "cf7a2303",
-        "eeb654e8",
-        "ff593758"
-      ]
     },
     "agent/plans/PLAN-plan-preflight.md": {
       "status": "approved",
@@ -1857,6 +1726,40 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-rediaccfile-unprivileged.md": {
+      "status": "executing",
+      "owner": "45048a90",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 23,
+      "done": 0,
+      "open_sigs": [
+        "124d9bb0",
+        "1fc992df",
+        "31a903ee",
+        "32e45dcc",
+        "3e8ac9d9",
+        "4bc38d4e",
+        "5aab0155",
+        "5ef1c737",
+        "615b09d8",
+        "650c4e79",
+        "7428fa28",
+        "77f740eb",
+        "8d218ccc",
+        "8e7a76f5",
+        "afa91934",
+        "b589c4ea",
+        "b77f4b89",
+        "c1809be6",
+        "c90ef1b1",
+        "c92fa7a4",
+        "d443ae4f",
+        "d54ce9a0",
+        "d5789763"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
       "owner": "unowned",
@@ -1934,24 +1837,6 @@
         "bba519b9",
         "cdafb668",
         "f3681e45"
-      ]
-    },
-    "agent/plans/PLAN-renet-change-test-triggers.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "0142a7ba",
-        "086ec19f",
-        "85454b26",
-        "87bef2c0",
-        "a893e8dc",
-        "ad69bd74",
-        "ddf1b24c"
       ]
     },
     "agent/plans/PLAN-renet-docker-running-semantics.md": {
@@ -2729,27 +2614,6 @@
         "e8822a18"
       ]
     },
-    "agent/plans/PLAN-w7p5a-real-run-dispatch.md": {
-      "status": "in-progress",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 10,
-      "open_sigs": [],
-      "done_sigs": [
-        "3cee36fd",
-        "4cb49d45",
-        "8b4161ce",
-        "a65f7c80",
-        "b00bc9df",
-        "ba2c9c8c",
-        "cbf8530c",
-        "ce14776f",
-        "d073162f",
-        "ff0cda58"
-      ]
-    },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -2892,6 +2756,24 @@
         "84a24b2f",
         "e5d46d41",
         "e644e195"
+      ]
+    },
+    "agent/plans/_done/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "26e0e91d",
+        "341dbb5b",
+        "5e004140",
+        "90622cbf",
+        "b00bc9df",
+        "bfe10930",
+        "ef7feae1"
       ]
     },
     "agent/plans/_done/PLAN-biome-only-lint.md": {
@@ -3298,6 +3180,55 @@
         "af41ded2",
         "cb17a5a5",
         "d72e974f"
+      ]
+    },
+    "agent/plans/_done/PLAN-config-server-key.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "3dcaeba4",
+        "4f529c92",
+        "5491e758",
+        "a3c03a4f",
+        "aa8197f8",
+        "b00bc9df",
+        "c38ce2cd"
+      ]
+    },
+    "agent/plans/_done/PLAN-config-sync-hardening.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 20,
+      "open_sigs": [],
+      "done_sigs": [
+        "062333dd",
+        "08dc5472",
+        "1e925024",
+        "26cfd48c",
+        "2719c3f0",
+        "3dc0b75f",
+        "40fcf48e",
+        "4da3c6c5",
+        "5def7433",
+        "6dc965e5",
+        "8d86ebae",
+        "972d071f",
+        "a06b3426",
+        "aa633f4b",
+        "b00bc9df",
+        "b33ab570",
+        "c075725e",
+        "cc3fd747",
+        "dbe6d212",
+        "ec7ecf90"
       ]
     },
     "agent/plans/_done/PLAN-config-team-scoping.md": {
@@ -3814,6 +3745,43 @@
         "fbbcf759"
       ]
     },
+    "agent/plans/_done/PLAN-per-flavor-renet-binary-paths.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "4e19e176",
+        "5c2201f1",
+        "67c1c48b",
+        "766dce3d",
+        "7bae58a9",
+        "7d1b9895",
+        "a30e43e0",
+        "e8a5f3ff"
+      ]
+    },
+    "agent/plans/_done/PLAN-pin-awscli-toolchain-python-compatible.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "19cb6d69",
+        "3e5efa07",
+        "42de672c",
+        "5ba2fe74",
+        "85c8c882",
+        "97c1c575",
+        "d44bbcb5"
+      ]
+    },
     "agent/plans/_done/PLAN-pins-command.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3939,6 +3907,33 @@
         "d28bed5d",
         "e60ff3c6",
         "fac236ea"
+      ]
+    },
+    "agent/plans/_done/PLAN-plan-per-pr-loop.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 16,
+      "open_sigs": [],
+      "done_sigs": [
+        "1feb206a",
+        "2dd2429a",
+        "4b8321e0",
+        "4d461643",
+        "4d91dd68",
+        "5157363b",
+        "6f4a1a63",
+        "7fb23a48",
+        "9660fb2f",
+        "97dc855e",
+        "aa8ad1d6",
+        "b4445450",
+        "c27e410c",
+        "cf7a2303",
+        "eeb654e8",
+        "ff593758"
       ]
     },
     "agent/plans/_done/PLAN-plan-priority-concurrency.md": {
@@ -4116,6 +4111,24 @@
         "d0988b5f"
       ],
       "ruling": "#c3a46b36"
+    },
+    "agent/plans/_done/PLAN-renet-change-test-triggers.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "0142a7ba",
+        "086ec19f",
+        "85454b26",
+        "87bef2c0",
+        "a893e8dc",
+        "ad69bd74",
+        "ddf1b24c"
+      ]
     },
     "agent/plans/_done/PLAN-renet-cross-repo-isolation.md": {
       "status": "done",
@@ -4829,6 +4842,27 @@
         "be38aa52",
         "d89e1dc8",
         "dcdf6c1e"
+      ]
+    },
+    "agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-03",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
+        "3cee36fd",
+        "4cb49d45",
+        "8b4161ce",
+        "a65f7c80",
+        "b00bc9df",
+        "ba2c9c8c",
+        "cbf8530c",
+        "ce14776f",
+        "d073162f",
+        "ff0cda58"
       ]
     },
     "agent/plans/_done/PLAN-w9p2-script-relocation.md": {
