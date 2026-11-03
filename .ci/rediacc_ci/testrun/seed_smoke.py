@@ -150,7 +150,7 @@ def main(argv: list[str]) -> int:
     except OSError as exc:
         log.error(f"npx: {exc.strerror or exc}")
         return 1
-    # A failed list says nothing about the database, so it never reads as "not found": run 41574752573 called a missing wrangler a missing database on two attempts.
+    # A failed list says nothing about the database, so it never reads as "not found".
     if listed.returncode != 0:
         print(
             f"wrangler d1 list failed (rc {listed.returncode}): {listed.stderr.strip()[-500:]}",
