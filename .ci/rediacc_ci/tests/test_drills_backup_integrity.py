@@ -23,6 +23,13 @@ ROOT = pathlib.Path(__file__).resolve()
 VECTORS = ROOT.parent / "fixtures" / "cells_root_vectors.json"
 
 
+def test_the_vector_copy_matches_renet_byte_for_byte() -> None:
+    source = ROOT.parents[3] / "private/renet/pkg/chunkstore/testdata/cells_root_vectors.json"
+    if not source.is_file():
+        pytest.skip("private/renet is not checked out")
+    assert VECTORS.read_bytes() == source.read_bytes()
+
+
 def test_the_drill_root_gives_every_known_answer() -> None:
     vectors = json.loads(VECTORS.read_text())["vectors"]
     assert vectors

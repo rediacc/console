@@ -39,7 +39,7 @@
     "PR run on check:ci-plan-implementation, so it has no success sample), content",
     "3.0m / 45, gate-tests 0.8m - 0.7m fixed / 6, go 7.6m / 17, i18n 5.1m / 40, packages",
     "5.7m / 13, security 1.8m / 18, static 4.5m / 64, wiring 0.5m / 1, www-build 3.6m / 16.",
-    "quality-account (2026-11-02, split out of quality-go) 4.0m / 6: the six gates' gate_step_p90_seconds sum to 176.6 s (account-server 145.9, account-backup 28.3, four near-zero) plus about 64 s of job setup and teardown read from the steps of run 41478109601 job 125398865593, 241 s x 1000 / 6 = 40000 ms. Re-derive it with the rest.",
+    "quality-account (2026-11-02, split out of quality-go) 4.0m / 6: the six gates' gate_step_p90_seconds sum to 176.6 s (account-server 145.9, account-backup 28.3, four near-zero) plus about 64 s of job setup and teardown read from the steps of run 41478109601 job 125398865593, 241 s x 1000 / 6, about 40000 ms. Re-derive it with the rest.",
     "These quality figures are not refreshed by any tool yet: re-derive them by the recipe above",
     "when refreshed_at moves.",
     "quality-code has NO defaultUnitMs entry (removed 2026-10-14): gate-bind plans it on each",
@@ -89,7 +89,7 @@
     "leg, 'onLeg' pins a unit to a leg, 'notOnLeg' keeps a unit off one. quality-pytest needs no entry: its xdist groups come",
     "from the gate's own mutex model and are indivisible there. The gate reds a committed plan that breaks a rule, and",
     "--rebalance refuses one it cannot satisfy.",
-    "Every value that used to be SEEDED here is now MEASURED by the 2026-10-22 refresh (budget_report --refresh --branch 1020-1, 10 sampled runs, after green PR run 39742633342):",
+    "Every value that used to be SEEDED here was first MEASURED by the 2026-10-22 refresh (budget_report --refresh --branch 1020-1, 10 sampled runs, after green PR run 39742633342); later refreshes re-measure them, as refreshed_at records:",
     "the vm_bake_key/vm_bake_image and renet_pkg_matrix pytest units, the renet pkg/infra aptretry, pkgset and cephpkg go units, 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' (seeded 2026-09-29, PLAN-renet-ceph-gpu-non-apt P6),",
     "and 'E2E Backup Browse-At' (seeded 9.0 at PLAN-e2e-browse-at-ci B6, 2026-10-21; measured 7.0, job 119710934780 at 7m00s). The seed derivations are in git history before commit 9c568c99e."
   ],
