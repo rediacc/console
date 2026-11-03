@@ -16,9 +16,15 @@ const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
 export const EXECUTOR_PORT = 8080;
 /** The image key under `[containers.images]` in the wrangler config. */
 export const EXECUTOR_IMAGE_KEY = 'executor';
-/** Readiness: poll every READY_POLL_MS for at most READY_TIMEOUT_MS. */
+/** Readiness: poll every READY_POLL_MS for at most READY_TIMEOUT_MS, a probe that stalls included. */
 export const READY_POLL_MS = 100;
 export const READY_TIMEOUT_MS = 20_000;
+/**
+ * The longest one call into the container runtime may take: a health probe, the intercept registration, a destroy. The library this class replaced aborted each of its port pings at the same 5 s (`PING_TIMEOUT_MS`, @cloudflare/containers 0.3.7).
+ *
+ * A start that succeeds therefore takes at most CONTAINER_CALL_TIMEOUT_MS + READY_TIMEOUT_MS, which has to stay below the life of the caller's bearer: the executor introspects that bearer only after this start, so a longer start answers its caller 401 (EXECUTOR_LEG_TOKEN_TTL_MS in private/account/src/routes/console.ts).
+ */
+export const CONTAINER_CALL_TIMEOUT_MS = 5_000;
 /** A request renews the lease at most this often; the idle alarm renews while a request is in flight. */
 export const RENEW_THROTTLE_MS = 30_000;
 /** A coordinator or issuer call that takes longer than this counts as failed, and a failed coordinator refuses a start (fail closed). */
@@ -151,6 +157,11 @@ export function isOomExit(error: unknown): boolean {
   return /\bOOM\b|out of memory|exit(?:ed)?(?: with)?(?: code)? 137\b/i.test(message);
 }
 
+/** Whether a start settled to a refusal. A start that threw settles to undefined. */
+export function isRefusal(answer: StartAnswer | undefined): answer is Refusal {
+  return answer !== undefined && !answer.ok;
+}
+
 export function refusal(code: ExecutorRefusalCode, reason: string): Refusal {
   console.warn(`proxy: org executor refused: ${reason}`);
   return { ok: false, code, reason };
@@ -181,17 +192,37 @@ export function pinnedFrom(value: unknown): PinnedExecutor | undefined {
 export const wait = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-/** A coordinator or issuer call bounded by COORDINATOR_TIMEOUT_MS; a timeout rejects like any other failure. */
-export async function bounded<T>(call: Promise<T>): Promise<T> {
+/** A call into the container runtime that outlived CONTAINER_CALL_TIMEOUT_MS. The message is the reason a failed start reports. */
+export class StallError extends Error {
+  constructor(readonly step: 'health' | 'egress' | 'destroy') {
+    super(`${step}-stalled`);
+    this.name = 'StallError';
+  }
+}
+
+/** Name the await that stalled, when `error` is a stall. The step is the whole of the line: never a request or a token. */
+export function logStall(error: unknown): void {
+  if (error instanceof StallError) {
+    console.warn('proxy: org executor container call stalled', { step: error.step });
+  }
+}
+
+/** `call`, or `timedOut()` as a rejection once `ms` have passed. The abandoned call keeps running, and a late rejection of it stays handled. */
+async function within<T>(call: Promise<T>, ms: number, timedOut: () => Error): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('coordinator-timeout')), COORDINATOR_TIMEOUT_MS);
+    timer = setTimeout(() => reject(timedOut()), ms);
   });
   try {
     return await Promise.race([call, timeout]);
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** A coordinator or issuer call bounded by COORDINATOR_TIMEOUT_MS; a timeout rejects like any other failure. */
+export function bounded<T>(call: Promise<T>): Promise<T> {
+  return within(call, COORDINATOR_TIMEOUT_MS, () => new Error('coordinator-timeout'));
 }
 
 /**
@@ -209,15 +240,35 @@ export function errorSummary(error: unknown): { name: string; message: string } 
   return { name: typeof error, message: String(error) };
 }
 
-/** Whether the executor's health route answers 2xx. A refused connection means it is not listening yet. */
-export async function healthy(container: Container): Promise<boolean> {
-  try {
-    const response = await container.getTcpPort(EXECUTOR_PORT).fetch('http://container/v1/health');
+/** Whether the executor's health route answers 2xx within `limitMs`. A refused connection means it is not listening yet; a probe that stalls is aborted and logged, and answers false like one. */
+export async function healthy(
+  container: Container,
+  limitMs = CONTAINER_CALL_TIMEOUT_MS
+): Promise<boolean> {
+  const abort = new AbortController();
+  const probe = async (): Promise<boolean> => {
+    const response = await container
+      .getTcpPort(EXECUTOR_PORT)
+      .fetch('http://container/v1/health', { signal: abort.signal });
     await response.body?.cancel();
     return response.ok;
-  } catch {
+  };
+  try {
+    return await within(probe(), limitMs, () => new StallError('health'));
+  } catch (error) {
+    logStall(error);
+    abort.abort();
     return false;
   }
+}
+
+/** Destroy the container, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. */
+export function destroyContainer(container: Container, reason: string): Promise<void> {
+  return within(
+    container.destroy(reason),
+    CONTAINER_CALL_TIMEOUT_MS,
+    () => new StallError('destroy')
+  );
 }
 
 /** The response body, byte for byte, with `done` called once when it closes, errors or is cancelled, rather than when the headers arrive. */
@@ -284,7 +335,7 @@ export async function releaseLease(
   }
 }
 
-/** Route `account.internal` to the egress entrypoint with the instance's props. Registering again replaces the props without dropping open connections. */
+/** Route `account.internal` to the egress entrypoint with the instance's props, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. Registering again replaces the props without dropping open connections. */
 export async function registerEgress(
   ctx: DurableObjectState,
   container: Container,
@@ -296,5 +347,9 @@ export async function registerEgress(
   ];
   if (typeof factory !== 'function') throw new Error('egress-entrypoint-missing');
   const props: ExecutorEgressProps = { orgId, placement, containerId: ctx.id.toString() };
-  await container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props }));
+  await within(
+    container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props })),
+    CONTAINER_CALL_TIMEOUT_MS,
+    () => new StallError('egress')
+  );
 }
