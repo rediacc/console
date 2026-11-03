@@ -22,7 +22,7 @@ export const READY_TIMEOUT_MS = 20_000;
 /**
  * The longest one call into the container runtime may take: a health probe, the intercept registration, a destroy. The library this class replaced aborted each of its port pings at the same 5 s (`PING_TIMEOUT_MS`, @cloudflare/containers 0.3.7).
  *
- * A start that succeeds therefore takes at most CONTAINER_CALL_TIMEOUT_MS + READY_TIMEOUT_MS, which has to stay below the life of the caller's bearer: the executor introspects that bearer only after this start, so a longer start answers its caller 401 (EXECUTOR_LEG_TOKEN_TTL_MS in private/account/src/routes/console.ts).
+ * A start that succeeds therefore takes at most COORDINATOR_TIMEOUT_MS (the lease) + CONTAINER_CALL_TIMEOUT_MS (the intercept) + READY_TIMEOUT_MS, 30 s, which has to stay below the life of the caller's bearer: the executor introspects that bearer only after this start, so a longer start answers its caller 401 (EXECUTOR_LEG_TOKEN_TTL_MS in private/account/src/routes/console.ts).
  */
 export const CONTAINER_CALL_TIMEOUT_MS = 5_000;
 /** A request renews the lease at most this often; the idle alarm renews while a request is in flight. */
