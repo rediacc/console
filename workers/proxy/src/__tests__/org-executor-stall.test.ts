@@ -230,11 +230,18 @@ describe('a start that does not stall (the control)', () => {
 
     const h = harness();
     await h.ready;
-    // The slowest success: the intercept takes its whole allowance, and the last probe before the deadline answers.
+    // The slowest success: the lease and the intercept each take their whole allowance, and the last probe before the deadline answers.
+    const lease = h.capacity.acquire.getMockImplementation();
+    if (!lease) throw new Error('the harness acquire has no implementation');
+    h.capacity.acquire.mockImplementation(async (...args: Parameters<typeof lease>) => {
+      await new Promise((resolve) => setTimeout(resolve, COORDINATOR_TIMEOUT_MS - 100));
+      return lease(...args);
+    });
     h.container.interceptOutboundHttp = async () => {
       await new Promise((resolve) => setTimeout(resolve, CONTAINER_CALL_TIMEOUT_MS - 100));
     };
-    const readyAt = T0 + CONTAINER_CALL_TIMEOUT_MS + READY_TIMEOUT_MS - 1_000;
+    const readyAt =
+      T0 + COORDINATOR_TIMEOUT_MS + CONTAINER_CALL_TIMEOUT_MS + READY_TIMEOUT_MS - 1_000;
     h.container.health = () =>
       Date.now() >= readyAt ? new Response('ok') : new Response('booting', { status: 503 });
 
