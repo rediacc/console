@@ -600,19 +600,16 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         if not result.ok:
             print("✗ git rm %s failed: %s" % (plan.rel, result.stderr.strip()), file=sys.stderr)
             return 1
+        # Written per plan, so whatever stops the sweep later leaves no deleted plan without its row.
+        _write_tombstones(root, rows)
         # A stub left behind would point at nothing, which F5 refuses.
         stub = "agent/plans/" + plan.rel.rsplit("/", 1)[-1]
         stub_path = root / stub
-        if (
-            stub != plan.rel
-            and stub_path.is_file()
-            and PL.looks_like_stub(stub_path.read_text(encoding="utf-8"))
-        ):
+        if stub != plan.rel and _is_stub_file(stub_path):
             result = gitx.git(["rm", "-q", "--", stub], root=root)
             if not result.ok:
                 print("✗ git rm %s failed: %s" % (stub, result.stderr.strip()), file=sys.stderr)
                 return 1
-    _write_tombstones(root, rows)
     print(
         "✓ swept %d terminal plan(s); %d tombstone row(s) in %s"
         % (len(due), len(rows), PL.INDEX_REL)
@@ -713,6 +710,16 @@ def _flag_value(argv: list[str], flag: str) -> str:
         return ""
     i = argv.index(flag)
     return argv[i + 1] if len(argv) > i + 1 and not argv[i + 1].startswith("--") else ""
+
+
+def _is_stub_file(path: pathlib.Path) -> bool:
+    """Whether a path holds a moved-plan stub. A file that does not decode is not one."""
+    if not path.is_file():
+        return False
+    try:
+        return PL.looks_like_stub(path.read_text(encoding="utf-8"))
+    except UnicodeDecodeError:
+        return False
 
 
 def _write_tombstones(root: pathlib.Path, rows: list[PL.Tombstone]) -> None:

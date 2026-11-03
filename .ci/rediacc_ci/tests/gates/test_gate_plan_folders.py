@@ -280,6 +280,52 @@ def test_sweep_refuses_to_delete_without_write(gate, tmp_path):
     gate.log_pass("--sweep without --write names what would go and deletes nothing")
 
 
+def test_sweep_keeps_each_tombstone_past_a_later_failure(gate, tmp_path):
+    """A sweep that stops partway leaves a row for every plan it already deleted, so a second expired plan refusing its `git rm` costs the first plan nothing."""
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/_done/PLAN-a-first.md": "# PLAN: first\nStatus: done\nFirst-Seen: 2024-01-01\n",
+            "agent/plans/_done/PLAN-b-second.md": "# PLAN: second\nStatus: done\nFirst-Seen: 2024-01-01\n",
+        },
+    )
+    _ledger(
+        root,
+        {
+            "agent/plans/_done/PLAN-a-first.md": {"moved_at": "2024-02-01"},
+            "agent/plans/_done/PLAN-b-second.md": {"moved_at": "2024-02-01"},
+        },
+    )
+    # Staged content that differs from HEAD and from the working tree is what `git rm` refuses.
+    second = root / "agent/plans/_done/PLAN-b-second.md"
+    second.write_text(second.read_text(encoding="utf-8") + "staged\n", encoding="utf-8")
+    subprocess.run(["git", "add", "--", str(second)], cwd=root, check=True)
+    second.write_text(second.read_text(encoding="utf-8") + "dirty\n", encoding="utf-8")
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(1, result, "the second plan's git rm must stop the sweep")
+    gate.assert_eq(
+        (root / "agent/plans/_done/PLAN-a-first.md").exists(), False, "the first plan went"
+    )
+    index = (root / "agent/INDEX.md").read_text(encoding="utf-8")
+    gate.assert_contains(index, "PLAN-a-first.md", "and it left its tombstone behind")
+    gate.log_pass("a sweep stopped by a later plan keeps the rows of the plans it already deleted")
+
+
+def test_sweep_treats_an_undecodable_stub_as_no_stub(gate, tmp_path):
+    root = _seed(
+        tmp_path,
+        {"agent/plans/_done/PLAN-gone.md": "# PLAN: gone\nStatus: done\nFirst-Seen: 2024-01-01\n"},
+    )
+    _ledger(root, {"agent/plans/_done/PLAN-gone.md": {"moved_at": "2024-02-01"}})
+    stub = root / "agent/plans/PLAN-gone.md"
+    stub.write_bytes(b"\xff\xfe not utf-8")
+    result = _gate(root, "--sweep", "--write")
+    index = (root / "agent/INDEX.md").read_text(encoding="utf-8")
+    gate.assert_contains(index, "PLAN-gone.md", "the plan's tombstone is written whatever the stub")
+    gate.assert_not_contains(result.combined, "Traceback", "and nothing crashes on the stub")
+    gate.log_pass("a stub that does not decode is no stub, and the tombstone stands")
+
+
 def test_sweep_with_write_deletes_and_leaves_a_tombstone(gate, tmp_path):
     root = _seed(
         tmp_path,

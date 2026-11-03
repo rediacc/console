@@ -65,11 +65,14 @@ export const CEPH_IMAGE_PIN_PATH = path.resolve(
  */
 export function readCephHostVersion(pinText: string, target?: string): string {
   const lines = pinText.split('\n').map((l) => l.trim());
-  const valueOf = (prefix: string): string => {
-    const line = lines.find((l) => l.startsWith(prefix));
-    return line?.slice(prefix.length).trim() ?? '';
-  };
-  const value = (target ? valueOf(`host-version.${target}=`) : '') || valueOf('host-version=');
+  const valueOf = (prefix: string): string | undefined =>
+    lines
+      .find((l) => l.startsWith(prefix))
+      ?.slice(prefix.length)
+      .trim();
+  // A present but empty override is a broken pin, not a target with no override, so it never falls through to the shared line.
+  const override = target ? valueOf(`host-version.${target}=`) : undefined;
+  const value = override ?? valueOf('host-version=');
   if (!value) {
     throw new Error('no host-version line in the Ceph image pin file');
   }
