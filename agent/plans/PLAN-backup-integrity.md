@@ -361,9 +361,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 
 ### D: artifacts, docs and drills (writer D)
 
-- [ ] D1: Renet artifacts: regenerate the function contract (`renet functions generate-types`) for `backup_verify`, `backup_snapshot`, `backup_restore`, `backup_toc_key`; add new functions to the tier map; add every new `i18n.T` key to the renet catalogs and baselines.
+- [x] D1: Renet artifacts: regenerate the function contract (`renet functions generate-types`) for `backup_verify`, `backup_snapshot`, `backup_restore`, `backup_toc_key`; add new functions to the tier map; add every new `i18n.T` key to the renet catalogs and baselines.
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts, private/renet/pkg/i18n/**
   - Accept: `npm run check:ci-renet-types && npm run check:ci-renet-tiers && npm run check:ci-renet` rc 0.
+    (ticked) 2026-11-03T08:52:41Z by 45048a90: commit:480c09178 run 41593926695 CI Complete SUCCESS with check:ci-renet-types, check:ci-renet-tiers and check:ci-renet among the green gates on that head. DEPS-WAIVED: the sequencing table of PLAN-backup-integrity
 - [x] D2: CLI artifacts: command metadata and planes for `backup repair`, `backup check`, `backup toc-key`; update the count pins with their reasons; CLI strings in all 13 locales; regenerate the contract and docs data.
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.

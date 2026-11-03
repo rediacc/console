@@ -1,7 +1,7 @@
 # PLAN: Stop-hook retro, 2026-11-01 (band late, covers early #b4940dfa; lead session 45048a90)
 
 Status: ready
-Depends-On: no-dep -- cites no other plan
+Depends-On: no-dep -- no box waits on another plan
 Priority: P2 -- refusal wording that cost calls, no wrong block
 Concurrency: parallel -- touches only the stop hook's refusal text
 Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_report.py, .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py, .claude/rediacc_hooks/tests/test_wl_state_document.py, .claude/rediacc_hooks/tests/test_wl_report_inbox.py
