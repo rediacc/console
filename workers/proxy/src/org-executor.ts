@@ -22,7 +22,9 @@ import {
 import {
   acquireLease,
   bounded,
+  CONTAINER_CALL_TIMEOUT_MS,
   containerRequest,
+  destroyContainer,
   durationMs,
   type EgressReportAnswer,
   EXECUTOR_IMAGE_KEY,
@@ -33,6 +35,8 @@ import {
   executorEnv,
   healthy,
   isOomExit,
+  isRefusal,
+  logStall,
   OOM_HEAVY_KEY,
   OOM_KEY,
   ORG_KEY,
@@ -49,6 +53,7 @@ import {
   refusalResponse,
   registerEgress,
   releaseLease,
+  StallError,
   type StartAnswer,
   trackBody,
   UNREACHABLE_AT_KEY,
@@ -61,6 +66,7 @@ import { INSTANCE_BY_SIZE } from './sizing';
 
 export {
   ACCOUNT_EGRESS_HOST,
+  CONTAINER_CALL_TIMEOUT_MS,
   COORDINATOR_TIMEOUT_MS,
   durationMs,
   type EgressReportAnswer,
@@ -143,8 +149,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     await this.touch();
 
     // Wait out a start in progress, then decide with no await between the check and `serialized`, which sets `this.startup` synchronously: two pins arriving together can then never both start a container.
+    // A pin that waited on a refused start shares the refusal instead of starting again, so N queued pins cannot wait N start bounds one after another while their bearers expire. A pin arriving after the start settled finds `this.startup` clear and gets a fresh attempt.
     while (this.startup !== undefined) {
-      await this.startup.catch(() => undefined);
+      const settled = await this.startup.catch(() => undefined);
+      if (isRefusal(settled)) return settled;
     }
     if (this.isRetired()) return refusal('EXECUTOR_RELOCATED', 'retired');
     if (this.isDraining()) return refusal('EXECUTOR_CAPACITY', 'draining');
@@ -499,9 +507,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       await this.ctx.storage.put(RECORD_KEY, this.record);
       if (await this.waitReady(container, generation)) return undefined;
       return { reason: 'not-ready', releasedByExit: this.exitedIn(generation) };
-    } catch {
+    } catch (error) {
+      logStall(error);
       return {
-        reason: 'start-threw',
+        reason: error instanceof StallError ? error.message : 'start-threw',
         releasedByExit: generation !== undefined && this.exitedIn(generation),
       };
     }
@@ -548,12 +557,13 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     await releaseLease(this.capacity(), owner?.orgId, owner?.placement);
   }
 
-  /** Poll the health route until it answers 2xx. An exit during the poll, or READY_TIMEOUT_MS passing, is a failed start. */
+  /** Poll the health route until it answers 2xx. An exit during the poll, or READY_TIMEOUT_MS passing, is a failed start. No probe may outlive the deadline, so a stalled one ends the wait on time. */
   private async waitReady(container: Container, generation: number): Promise<boolean> {
     const deadline = Date.now() + READY_TIMEOUT_MS;
     for (;;) {
       if (this.generation !== generation || this.exited !== undefined) return false;
-      if (await healthy(container)) {
+      const limitMs = Math.min(CONTAINER_CALL_TIMEOUT_MS, deadline - Date.now());
+      if (await healthy(container, limitMs)) {
         return this.generation === generation && this.exited === undefined;
       }
       if (Date.now() >= deadline) return false;
@@ -567,8 +577,9 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.record = undefined;
     const container = this.ctx.container;
     try {
-      if (container?.running) await container.destroy(reason);
-    } catch {
+      if (container?.running) await destroyContainer(container, reason);
+    } catch (error) {
+      logStall(error);
       console.warn(`proxy: org executor destroy failed: ${reason}`);
     }
     try {
@@ -610,7 +621,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.exited = undefined;
     try {
       await registerEgress(this.ctx, container, record.orgId, record.placement);
-    } catch {
+    } catch (error) {
+      logStall(error);
       console.warn('proxy: org executor intercept not re-registered');
     }
     this.attachMonitor(container);
