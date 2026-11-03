@@ -635,11 +635,17 @@ def finished_on_branch(
     head_plans: dict[str, Any],
     is_finished: Callable[[dict[str, Any], str], bool],
 ) -> list[str]:
-    """Head rels (non-stub rows) whose plan identity is finished at head and was not finished, or absent, at the base."""
+    """Head rels (non-stub rows) whose plan identity is finished at head and was not finished, or absent, at the base.
+
+    A plan with every box ticked at the base is finished there too, whatever its Status says. Its LP boxes were judged by LP4 and LP5 when they were ticked, and RF asks for the close-out on the next branch after the merge, by which time surface code has moved and rewritten heads have lost their successor, so judging the close-out as a new finish refused the documented path (PR 602's eight plans, 2026-11-03).
+    """
     base_by: dict[str, bool] = {}
     for rel, row in (base_plans or {}).items():
         if isinstance(row, dict) and row.get("status") != D.STUB_STATUS:
-            base_by[identity(rel)] = base_by.get(identity(rel), False) or is_finished(row, rel)
+            ticked = row.get("open") == 0 and bool(row.get("done"))
+            base_by[identity(rel)] = (
+                base_by.get(identity(rel), False) or ticked or is_finished(row, rel)
+            )
     return [
         rel
         for rel, row in sorted((head_plans or {}).items())
@@ -1431,6 +1437,33 @@ class _Suite:
             "finished_on_branch: done at the base already is not",
             finished_on_branch({_FX_DONE: {"status": "done"}}, {_FX_DONE: {"status": "done"}}, fin),
             [],
+        )
+        c.check(
+            "finished_on_branch: every box ticked at the base is a close-out, not a finish",
+            finished_on_branch(
+                {_FX: {"status": "executing", "open": 0, "done": 7}},
+                {_FX: {"status": "moved"}, _FX_DONE: {"status": "done", "open": 0, "done": 7}},
+                fin,
+            ),
+            [],
+        )
+        c.check(
+            "finished_on_branch: CONTROL an open box at the base still makes it a finish",
+            finished_on_branch(
+                {_FX: {"status": "executing", "open": 1, "done": 6}},
+                {_FX: {"status": "moved"}, _FX_DONE: {"status": "done", "open": 0, "done": 7}},
+                fin,
+            ),
+            [_FX_DONE],
+        )
+        c.check(
+            "finished_on_branch: CONTROL a plan with no boxes at the base is not ticked",
+            finished_on_branch(
+                {_FX: {"status": "executing", "open": 0, "done": 0}},
+                {_FX: {"status": "moved"}, _FX_DONE: {"status": "done"}},
+                fin,
+            ),
+            [_FX_DONE],
         )
         hist = [("a", {"x": 1}), ("b", {}), ("c", {"x": 1}), ("d", {"x": 1})]
         c.check(
