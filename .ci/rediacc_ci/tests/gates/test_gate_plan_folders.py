@@ -323,6 +323,7 @@ def test_sweep_treats_an_undecodable_stub_as_no_stub(gate, tmp_path):
     index = (root / "agent/INDEX.md").read_text(encoding="utf-8")
     gate.assert_contains(index, "PLAN-gone.md", "the plan's tombstone is written whatever the stub")
     gate.assert_not_contains(result.combined, "Traceback", "and nothing crashes on the stub")
+    gate.assert_eq(stub.is_file(), True, "and a file that is no stub stays where it is")
     gate.log_pass("a stub that does not decode is no stub, and the tombstone stands")
 
 

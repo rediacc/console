@@ -61,7 +61,7 @@ export const CEPH_IMAGE_PIN_PATH = path.resolve(
 );
 
 /**
- * The Ceph client version the hosts must report, from a .ceph-image-pin text: the `host-version.<target>` line when the pin leaves the shared series for `target` (openSUSE Leap 16.0 moved to 19.2.7 because OBS no longer serves 19.2.3), else `host-version=`. Throws when neither line is present.
+ * The Ceph client version the hosts must report, from a .ceph-image-pin text: the `host-version.<target>` line when the pin leaves the shared series for `target` (openSUSE Leap 16.0 moved to 19.2.7 because OBS no longer serves 19.2.3), else `host-version=`. Throws when neither line is present, and on an override line that is empty.
  */
 export function readCephHostVersion(pinText: string, target?: string): string {
   const lines = pinText.split('\n').map((l) => l.trim());
@@ -73,6 +73,9 @@ export function readCephHostVersion(pinText: string, target?: string): string {
   // A present but empty override is a broken pin, not a target with no override, so it never falls through to the shared line.
   const override = target ? valueOf(`host-version.${target}=`) : undefined;
   const value = override ?? valueOf('host-version=');
+  if (override === '') {
+    throw new Error(`empty host-version.${target} line in the Ceph image pin file`);
+  }
   if (!value) {
     throw new Error('no host-version line in the Ceph image pin file');
   }

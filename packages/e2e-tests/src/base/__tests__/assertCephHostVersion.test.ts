@@ -45,7 +45,9 @@ describe('readCephHostVersion', () => {
 
   it('throws on an empty override rather than falling back to the shared line', () => {
     const pin = 'host-version=19.2.3\nhost-version.opensuse-16.0=\n';
-    expect(() => readCephHostVersion(pin, 'opensuse-16.0')).toThrow('no host-version line');
+    expect(() => readCephHostVersion(pin, 'opensuse-16.0')).toThrow(
+      'empty host-version.opensuse-16.0 line'
+    );
     expect(readCephHostVersion(pin, 'fedora-43')).toBe('19.2.3');
   });
 
