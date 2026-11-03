@@ -720,6 +720,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-fixture-env-example-validation-entries.md` | PLAN: give test_gate_bws_map.py's clean-fixture test a synthetic .env.example | 2026-09-23 | 2026-11-03 | `9a738cf49706d10a73e065a33c1e2fd7deafa94a` |
 | `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` | PLAN: check_hint_corpus.py, the control-first liveness gate for the behavioral-hint corpus | 2026-09-22 | 2026-11-03 | `63cef320cfdc127f3b134ae0cedb8e87be837c4e` |
 | `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` | Plan-document discovery in /migrate and the Stop hook's handoff block | 2026-09-17 | 2026-11-03 | `e36ee9241f35231d53a6471810d1ab3001c0e4b7` |
+| `agent/plans/_done/PLAN-pid-fallback-liveness-check.md` | PLAN: block_unsatisfiable_pid_wait.py -- a /proc/$(cat X // echo <always-alive-PID>) liveness-check guard | 2026-09-22 | 2026-11-03 | `f00cb5e85d86ff0dc444a7f75f156f05eb169f96` |
 | `agent/plans/_done/PLAN-plan-path-migration.md` | PLAN: repoint citations of moved agent/PLAN-<slug>.md paths directly at agent/plans/... | 2026-09-23 | 2026-11-03 | `e5a99eff677ee6935bf6dbfb772c68e1c76480fe` |
 | `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | PLAN: load the video player's CSS on demand, not on every page that carries the hydrator | 2026-09-17 | 2026-11-03 | `33a21e4ba9ef56d4ac97a34116dd40a76747c9c0` |
 | `agent/plans/_done/PLAN-popup-reminder.md` | PLAN: probabilistic "out of the blue" Stop-hook reminder | 2026-09-23 | 2026-11-03 | `164a6bdead9e7d1d2d3bf4551433602805af035a` |
@@ -732,4 +733,4 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-sys-path-canonical-form.md` | PLAN: sys.path hop debt -- canonicalize the 5 gate-flagged sites | 2026-09-22 | 2026-11-03 | `76bfc271936160674f441fb080973e3744e92837` |
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | PLAN: wl_wait duplicate listeners -- `--timeout 60` is SIXTY MINUTES and nothing refuses a second instance | 2026-09-23 | 2026-11-03 | `d95c15b4c60f39f75ab14f3e9e294745e280071a` |
 
-30 expired plan(s). The row is the receipt; the blob is the text.
+31 expired plan(s). The row is the receipt; the blob is the text.

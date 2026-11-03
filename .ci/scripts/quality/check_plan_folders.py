@@ -365,6 +365,18 @@ def selftest() -> int:
         [t.rel for t in dead_stones],
     )
     tally.check("an empty tombstone table renders as nothing", PL.render_tombstones([]), "")
+    piped_stone = PL.Tombstone(
+        rel="agent/plans/_done/PLAN-piped.md",
+        title="a guard for cat X || echo 1",
+        first_seen="2026-01-01",
+        expired_at="2026-02-11",
+        blob="0" * 40,
+    )
+    tally.check(
+        "a title holding a pipe survives the round trip, so its row is not lost",
+        [t.rel for t in PL.parse_tombstones(PL.render_tombstones([piped_stone]))],
+        [piped_stone.rel],
+    )
 
     # M. The citation remap `--move` applies. The git half (fork point, subject index, patch-ids) is driven against real rebased histories in .ci/rediacc_ci/tests/gates/test_gate_plan_folders.py; these pin the decision and the rewrite, both directions each.
     tally.check(

@@ -752,8 +752,10 @@ def render_tombstones(rows: list[Tombstone]) -> str:
     """
     if not rows:
         return ""
+    # A `|` in a title is a table cell boundary, so TOMBSTONE_ROW_RE would not read the row back and the next regeneration would drop it. PLAN-pid-fallback-liveness-check.md lost its row that way, its title holding `||`.
     body = "".join(
-        "| `%s` | %s | %s | %s | `%s` |\n" % (r.rel, r.title, r.first_seen, r.expired_at, r.blob)
+        "| `%s` | %s | %s | %s | `%s` |\n"
+        % (r.rel, r.title.replace("|", "/"), r.first_seen, r.expired_at, r.blob)
         for r in sorted(rows, key=lambda r: r.rel)
     )
     return (
