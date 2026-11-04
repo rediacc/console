@@ -470,7 +470,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-backup-critical-tier.md` | approved | 773 | 17 | 36 | 105721 |
+| `agent/plans/PLAN-backup-critical-tier.md` | approved | 776 | 14 | 39 | 106226 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 48 | 4 | 5 | 8897 |
 | `agent/plans/PLAN-backup-integrity.md` | approved | 485 | 17 | 40 | 74369 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
@@ -502,7 +502,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1026 | 21 | 18 | 182317 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1028 | 19 | 20 | 183018 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 118 | 1 | 8 | 19848 |

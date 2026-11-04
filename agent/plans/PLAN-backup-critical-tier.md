@@ -432,11 +432,12 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Tests: a delete with `D=7` keeps restoring until final; undelete restores; a tightened policy waits while a loosened one applies at once; shortening `D` waits; a tombstoned snapshot's chunks stay live; repair still deletes a corrupt object; `D=0` behaves as today.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-immutability.test.ts` rc 0.
     (ticked) 2026-11-02T09:31:38Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
-- [ ] M9: Missed-target alerting (R4, F22), extending G4: a stream with `target_seconds` past `nextExpectedAt`, or with 3 consecutive `targetMet: false`, sends at most one alert per stream per 6 hours from the end of each sweep, naming the target, the achieved figure and the reason. A destructive intent (M8) sends immediately. Detection latency equals the sweep interval, and docs state that.
+- [x] M9: Missed-target alerting (R4, F22), extending G4: a stream with `target_seconds` past `nextExpectedAt`, or with 3 consecutive `targetMet: false`, sends at most one alert per stream per 6 hours from the end of each sweep, naming the target, the achieved figure and the reason. A destructive intent (M8) sends immediately. Detection latency equals the sweep interval, and docs state that.
     (reopened 2026-11-04) Unmet: the docs clause: packages/www/src/content/docs/en/backup-restore.md:522 describes only the daily digest, with no target alert or latency statement. No rc 1 control is recorded. The code landed in private/account b33e0c8 and e3bc304 only reformatted the test, so the tick's pointer was imprecise. Prerequisite PLAN-backup-integrity is unfinished and G4, which this extends, is ticked.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/src/services/notification.service.ts, private/account/src/email/templates/security.ts, private/account/tests/integration/backup-target-alerts.test.ts
   - Tests: a hung run with no report alerts through the dead-man path; a `throttled` run names the cap; a repeat inside 6 hours sends nothing; a recovered stream clears `missed_since`; a stream with no target stays on the daily digest; the preference off suppresses both.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-target-alerts.test.ts tests/integration/backup-alerts.test.ts` rc 0.
+    (ticked) 2026-11-04T19:18:22Z by d778be9d: commit:ce7173cfd vitest backup-target-alerts and backup-alerts from private/account rc=0 with 62 tests, docs clause present
     (ticked) 2026-11-04T09:37:16Z by d778be9d: fileline:private/account/tests/integration/backup-target-alerts.test.ts:1 M9 target alerts landed in private/account e3bc304; vitest backup-target-alerts rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
 - [x] M10: The age anchor: each stream always keeps one snapshot older than `D`, so a flood of new versions or backed-up ransomware cannot age every good version out inside the window, and routine pruning cannot bypass delayed destruction.
@@ -575,16 +576,18 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### T: artifacts, docs and drills (writer T)
 
-- [ ] T1: Renet artifacts: regenerate the contract for `backup_snapshot` and `backup_churn_probe`, add new functions to the tier map, and add every new `i18n.T` key to the catalogs and baselines.
+- [x] T1: Renet artifacts: regenerate the contract for `backup_snapshot` and `backup_churn_probe`, add new functions to the tier map, and add every new `i18n.T` key to the catalogs and baselines.
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts, private/renet/pkg/i18n/**
   - Accept: `npm run check:ci-renet-types && npm run check:ci-renet-tiers && npm run check:ci-renet` rc 0.
+    (ticked) 2026-11-04T19:18:25Z by d778be9d: commit:68e6092ca check:ci-renet-types rc=0, check:ci-renet-tiers rc=0, check:ci-renet rc=0 on this tree
 - [x] T2: CLI artifacts: command metadata and planes for `backup churn`, `backup immutability`, `backup undelete`; count pins with reasons; strings in all 13 locales; regenerate contract and docs data.
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
     (ticked) 2026-11-04T14:59:09Z by d778be9d: commit:5610b2859 check:ci-i18n-completeness, -hashes, -cli-key-usage, -placeholders, check:ci-cli-contract rc=0, npm run typecheck -w @rediacc/cli rc=0
-- [ ] T3: Docs in 13 locales: the tier and how to choose a target, what RPO means here (a loss window, including upload time), the hook with its bounds and security note, cell size, delayed destruction with its limits stated plainly, live and waiting, the churn cap, alert latency. Study text corrected for `keepWithin`. The execution record states what was run, dated.
+- [x] T3: Docs in 13 locales: the tier and how to choose a target, what RPO means here (a loss window, including upload time), the hook with its bounds and security note, cell size, delayed destruction with its limits stated plainly, live and waiting, the churn cap, alert latency. Study text corrected for `keepWithin`. The execution record states what was run, dated.
   - Owns: packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, private/account/web/src/data/study-content/mt6-backup.ts, docs/backup-storage/07-execution-record.md
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
+    (ticked) 2026-11-04T19:18:30Z by d778be9d: commit:abbcec18c check:cli-docs rc=0, validate:cli-docs rc=0, check:ci-i18n-docs-untranslated rc=0, check:ci-docs-structure-parity rc=0
 - [ ] T4: Drill legs, each with a planted control:
   - leg t: hook order against a real database container, including a killed renet thawed by the deadman;
   - leg u: `backup_onprem` records whether the store offers Object Lock and versioning, recorded and not asserted;
