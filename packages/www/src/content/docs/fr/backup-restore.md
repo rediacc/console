@@ -448,13 +448,13 @@ Un dépôt qui doit perdre des minutes plutôt qu'une journée déclare une cibl
 ### Déclarer une cible
 
 ```bash
-# Measure how much changes between runs, then read the projection and the cell recommendation.
+# Mesurer ce qui change entre deux exécutions, puis lire la projection et la recommandation de taille de cellule.
 rdc backup churn mail --samples 12 --interval 5m
 
-# Declare a 15 minute target for one repository on a strategy.
+# Déclarer un objectif de 15 minutes pour un dépôt sur une stratégie.
 rdc backup strategy set nightly-hot --repo-rpo mail=15m
 
-# Or one target for every repository the strategy covers (at least 5m; none clears it).
+# Ou un seul objectif pour chaque dépôt couvert par la stratégie (5m au minimum ; none le supprime).
 rdc backup strategy set nightly-hot --rpo 15m
 ```
 

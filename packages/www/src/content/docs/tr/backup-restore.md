@@ -449,13 +449,13 @@ Bir günü değil, yalnızca dakikaları kaybetmeyi göze alabilen bir depo, bir
 ### Hedef bildirme
 
 ```bash
-# Measure how much changes between runs, then read the projection and the cell recommendation.
+# Çalıştırmalar arasında ne kadar değiştiğini ölçün, ardından projeksiyonu ve hücre önerisini okuyun.
 rdc backup churn mail --samples 12 --interval 5m
 
-# Declare a 15 minute target for one repository on a strategy.
+# Bir strateji üzerinde tek bir depo için 15 dakikalık hedef belirleyin.
 rdc backup strategy set nightly-hot --repo-rpo mail=15m
 
-# Or one target for every repository the strategy covers (at least 5m; none clears it).
+# Ya da stratejinin kapsadığı her depo için tek bir hedef (en az 5m; none kaldırır).
 rdc backup strategy set nightly-hot --rpo 15m
 ```
 

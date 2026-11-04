@@ -449,13 +449,13 @@ rdc backup toc-key sync my-app --replace
 ### 목표 선언하기
 
 ```bash
-# Measure how much changes between runs, then read the projection and the cell recommendation.
+# 실행 사이에 얼마나 변하는지 측정한 뒤 예측치와 셀 크기 권장값을 확인합니다.
 rdc backup churn mail --samples 12 --interval 5m
 
-# Declare a 15 minute target for one repository on a strategy.
+# 전략에서 저장소 하나에 15분 목표를 지정합니다.
 rdc backup strategy set nightly-hot --repo-rpo mail=15m
 
-# Or one target for every repository the strategy covers (at least 5m; none clears it).
+# 또는 전략이 적용되는 모든 저장소에 하나의 목표를 지정합니다(최소 5m, none은 해제).
 rdc backup strategy set nightly-hot --rpo 15m
 ```
 

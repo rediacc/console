@@ -448,13 +448,13 @@ Un repository che deve perdere minuti anziché un giorno dichiara un obiettivo d
 ### Dichiarare un obiettivo
 
 ```bash
-# Measure how much changes between runs, then read the projection and the cell recommendation.
+# Misura quanto cambia tra un'esecuzione e l'altra, poi leggi la proiezione e la raccomandazione sulla dimensione della cella.
 rdc backup churn mail --samples 12 --interval 5m
 
-# Declare a 15 minute target for one repository on a strategy.
+# Dichiara un obiettivo di 15 minuti per un repository su una strategia.
 rdc backup strategy set nightly-hot --repo-rpo mail=15m
 
-# Or one target for every repository the strategy covers (at least 5m; none clears it).
+# Oppure un unico obiettivo per ogni repository coperto dalla strategia (almeno 5m; none lo azzera).
 rdc backup strategy set nightly-hot --rpo 15m
 ```
 
