@@ -428,7 +428,7 @@ def control_path_twin(tmp, main, lease):
         worklist(tmp, lease, "--path").stdout.strip(),
         from_main,
     )
-    program = "import sys; sys.path.insert(0, sys.argv[1]); import wl_core as C; print(C.worklist_for(sys.argv[2]))"
+    program = "import sys; sys.path.insert(0, sys.argv[1]); import wl_core as C; print(C.worklist_for(C.project_start({'cwd': sys.argv[2]})))"
     check(
         "wl_core.worklist_for agrees with --path",
         pyrun(tmp, lease, program, lease / ".claude/hooks/stop", lease)[1],
