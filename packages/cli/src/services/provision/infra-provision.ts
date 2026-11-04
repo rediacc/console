@@ -9,14 +9,14 @@
 
 import { t } from '../../i18n/index.js';
 import { parentRepoName } from '../../remote/repository/index.js';
-import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { InfraConfig } from '../../types/index.js';
-import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
-import { writeStderr, writeStdout } from '../core/request-context.js';
+import { setExitCode } from '../core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../jobs/command-job.js';
+import { bindStepHandler, planStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
-import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
+import { readSSHKey } from '../renet/renet-execution.js';
 import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
 
 interface PushInfraOptions {
@@ -278,85 +278,54 @@ export async function removeClusterDnsRecords(
 }
 
 /**
- * Execute proxy configure + install commands on the remote machine via SSH.
+ * Upload the cached acme.json before the proxy starts (avoids re-requesting certs). The upload is a plain SSH write, so it runs on the client before the `infra-push` job starts; a failure never blocks the push.
  */
-async function executeProxySetup(
-  sftp: SFTPClient,
-  infraJSON: string,
-  baseDomain: string | undefined,
-  remoteRenetPath: string,
-  options: PushInfraOptions
+async function uploadCachedCerts(
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+  sshPrivateKey: string,
+  baseDomain: string,
+  debug: boolean | undefined
 ): Promise<void> {
-  const configExitCode = await sftp.execStreaming(
-    `sudo ${shellQuote(remoteRenetPath)} proxy configure`,
-    {
-      stdin: infraJSON,
-      onStdout: (data) => {
-        if (options.debug) writeStdout(data);
-      },
-      onStderr: (data) => {
-        writeStderr(data);
-      },
-    }
-  );
-
-  if (configExitCode !== 0) {
-    throw new Error(`renet proxy configure exited with code ${configExitCode}`);
-  }
-
-  // Upload cached acme.json before proxy starts (avoids re-requesting certs)
-  if (baseDomain) {
+  try {
+    const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
     try {
       const { uploadCertCacheViaConnection } = await import('../account/cert-cache.js');
-      const uploaded = await uploadCertCacheViaConnection(sftp, baseDomain, {
-        debug: options.debug,
-      });
-      if (uploaded && options.debug) {
-        outputService.info(t('commands.config.infra.push.certCacheUploaded'));
-      }
-    } catch {
-      // Non-fatal: cert cache upload failure should not block push-infra
+      const uploaded = await uploadCertCacheViaConnection(lease.sftp, baseDomain, { debug });
+      if (uploaded && debug) outputService.info(t('commands.config.infra.push.certCacheUploaded'));
+    } finally {
+      lease.release();
     }
-  }
-
-  if (options.debug) {
-    outputService.info(t('commands.machine.infra.push.installingProxy'));
-  }
-
-  const installExitCode = await sftp.execStreaming(
-    `sudo ${shellQuote(remoteRenetPath)} proxy install`,
-    {
-      onStdout: (data) => {
-        if (options.debug) writeStdout(data);
-      },
-      onStderr: (data) => {
-        writeStderr(data);
-      },
-    }
-  );
-
-  if (installExitCode !== 0) {
-    outputService.warn(
-      `Proxy install exited with code ${installExitCode} (proxy may need manual start)`
-    );
+  } catch {
+    // Non-fatal: cert cache upload failure should not block push-infra
   }
 }
+
+/** The success step of an infra push: the machine's Cloudflare DNS records, read from the config when the job finishes. */
+async function ensureMachineDns(machineName: string): Promise<void> {
+  const localConfig = await configService.getLocalConfig();
+  const infra = localConfig.machines[machineName]?.infra;
+  if (!infra) return;
+  await ensureMachineDnsRecords(machineName, infra, localConfig, {});
+}
+
+bindStepHandler('ensureMachineDns', ({ machine }) => ensureMachineDns(machine));
 
 /**
  * Push infrastructure configuration to a remote machine.
  *
  * Flow:
  * 1. Load machine config + SSH keys from context
- * 2. Provision renet binary to remote
- * 3. Build infra JSON (snake_case keys for Go)
- * 4. SSH: pipe JSON to `sudo renet proxy configure`
- * 5. SSH: run `sudo renet proxy install` (installs systemd service + starts proxy)
- * 6. Ensure Cloudflare DNS records for machine subdomain
+ * 2. Build infra JSON (snake_case keys for Go)
+ * 3. Upload the cached acme.json over SSH (before the job)
+ * 4. One `infra-push` job: `renet proxy configure` with the JSON as its payload, then `renet proxy install`
+ * 5. Step on success: ensure Cloudflare DNS records for the machine subdomain
+ *
+ * Resolves true when the job finished here, false when it was handed back still running (its step runs when `rdc job wait` or the finished notice sees it finish).
  */
 export async function pushInfraConfig(
   machineName: string,
   options: PushInfraOptions = {}
-): Promise<void> {
+): Promise<boolean> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -373,17 +342,6 @@ export async function pushInfraConfig(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
-    'provision',
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    {
-      debug: options.debug,
-      restartServices: false,
-    }
-  );
-
   const team = (await configService.applyDefaults({})).team ?? '';
   const infraJSON = buildInfraPayload(machineName, machine.infra, {
     cfDnsApiToken: localConfig.cfDnsApiToken,
@@ -391,19 +349,30 @@ export async function pushInfraConfig(
     team,
   });
 
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-
-  try {
-    await executeProxySetup(
-      lease.sftp,
-      infraJSON,
-      machine.infra.baseDomain,
-      remoteRenetPath,
-      options
-    );
-  } finally {
-    lease.release();
+  if (machine.infra.baseDomain) {
+    await uploadCachedCerts(machine, sshPrivateKey, machine.infra.baseDomain, options.debug);
   }
 
-  await ensureMachineDnsRecords(machineName, machine.infra, localConfig, options);
+  const outcome = await runCommandJob(
+    'machine infra push',
+    {
+      functionName: 'infra-push',
+      machineName,
+      params: {},
+      commandKind: { name: 'infra-push', payload: infraJSON },
+      debug: options.debug,
+    },
+    [planStep('ensureMachineDns', { machine: machineName })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return false;
+  }
+  if (!outcome.result.success) {
+    throw new Error(
+      outcome.result.error ?? `infra push exited with code ${outcome.result.exitCode}`
+    );
+  }
+  return true;
 }

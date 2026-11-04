@@ -92,8 +92,8 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'machine infra push': {
     form: 'compound',
+    fn: 'infra-push',
     lock: 'machine-exclusive',
-    lockGap: { runs: 'infra-push', overlap: 'read' },
     timeout: '10m',
     box: 'J18',
     steps: ['ensureMachineDns'],

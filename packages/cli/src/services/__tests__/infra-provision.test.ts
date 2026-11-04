@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from '../../commands/__tests__/job-deps.js';
 import type { InfraConfig } from '../../types/index.js';
 
 const { mockEnsureRecord, mockSearchRecordsBySuffix, mockDeleteRecord } = vi.hoisted(() => ({
@@ -23,10 +24,14 @@ vi.mock('../core/output.js', () => ({
   },
 }));
 
-const { execCalls, mockGetLocalConfig } = vi.hoisted(() => ({
+const { execCalls, mockGetLocalConfig, mockUploadCerts, mockOrder } = vi.hoisted(() => ({
   execCalls: [] as string[],
   mockGetLocalConfig: vi.fn(),
+  mockUploadCerts: vi.fn(),
+  mockOrder: [] as string[],
 }));
+
+vi.mock('../account/cert-cache.js', () => ({ uploadCertCacheViaConnection: mockUploadCerts }));
 
 vi.mock('../renet/renet-execution.js', () => ({
   acquireRemoteRenet: vi.fn().mockResolvedValue({
@@ -258,16 +263,76 @@ describe('buildInfraPayload team_name field', () => {
   });
 });
 
-describe('pushInfraConfig proxy commands', () => {
-  it('quotes a renet path with spaces, a quote and `;` in configure and install', async () => {
+describe('pushInfraConfig runs one infra-push job', () => {
+  const OK = { success: true, exitCode: 0, durationMs: 1, state: 'succeeded' as const };
+  let restore: () => void;
+  let executed: Record<string, unknown>[];
+  let answer: Record<string, unknown>;
+
+  beforeEach(() => {
+    executed = [];
+    answer = OK;
     execCalls.length = 0;
+    mockUploadCerts.mockClear();
+    mockGetLocalConfig.mockResolvedValue({
+      ssh: { privateKeyPath: '/k' },
+      sshPrivateKey: 'key',
+      cfDnsApiToken: 'cf-secret',
+      machines: { m1: { infra: baseInfra } },
+    });
+    restore = installJobDeps((options) => {
+      mockOrder.push('job');
+      executed.push(options as unknown as Record<string, unknown>);
+      return Promise.resolve(answer as never);
+    });
+  });
+  afterEach(() => restore());
+
+  it('uploads the cached certs first, then starts one job whose payload carries the infra document', async () => {
+    mockOrder.length = 0;
+    mockUploadCerts.mockImplementation(() => {
+      mockOrder.push('upload');
+      return Promise.resolve(true);
+    });
+
+    await expect(pushInfraConfig('m1')).resolves.toBe(true);
+
+    expect(mockOrder).toEqual(['upload', 'job']);
+    expect(executed).toHaveLength(1);
+    const call = executed[0] as {
+      functionName: string;
+      params: unknown;
+      commandKind: { name: string; payload: string };
+      jobSteps: { name: string }[];
+    };
+    expect(call.functionName).toBe('infra-push');
+    expect(call.params).toEqual({});
+    expect(JSON.parse(call.commandKind.payload)).toMatchObject({
+      machine_name: 'm1',
+      cf_dns_api_token: 'cf-secret',
+    });
+    expect(call.jobSteps.map((step) => step.name)).toEqual(['ensureMachineDns']);
+    expect(execCalls).toEqual([]);
+  });
+
+  it('a machine without a base domain makes no certificate upload', async () => {
     mockGetLocalConfig.mockResolvedValue({
       ssh: { privateKeyPath: '/k' },
       sshPrivateKey: 'key',
       machines: { m1: { infra: { ...baseInfra, baseDomain: undefined } } },
     });
+
     await pushInfraConfig('m1');
-    const quoted = `'/opt/my renet/o'\\''brien;rm -rf x/renet'`;
-    expect(execCalls).toEqual([`sudo ${quoted} proxy configure`, `sudo ${quoted} proxy install`]);
+
+    expect(mockUploadCerts).not.toHaveBeenCalled();
+    expect(executed).toHaveLength(1);
+  });
+
+  it('a failed job throws; a job still running resolves false', async () => {
+    answer = { success: false, exitCode: 1, durationMs: 1, state: 'failed', error: 'boom' };
+    await expect(pushInfraConfig('m1')).rejects.toThrow('boom');
+
+    answer = { ...OK, state: 'running' };
+    await expect(pushInfraConfig('m1')).resolves.toBe(false);
   });
 });

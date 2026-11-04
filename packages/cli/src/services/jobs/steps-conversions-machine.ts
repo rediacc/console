@@ -113,7 +113,8 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
     'ensureMachineDns',
     'success',
     ['machine'],
-    () => import('../provision/infra-provision.js')
+    () => import('../provision/infra-provision.js'),
+    true
   ),
   privateStep(
     'cleanupSshArtifacts',

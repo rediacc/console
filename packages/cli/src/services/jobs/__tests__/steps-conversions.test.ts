@@ -24,7 +24,6 @@ import {
 const AWAITING_BIND: Record<string, string> = {
   renderRepoLog: 'commands/repo-branching.ts',
   printRepoStatus: 'commands/repo.ts',
-  ensureMachineDns: 'services/provision/infra-provision.ts',
   renderSubscriptionRefresh: 'commands/subscription-actions.ts',
   renderSubscriptionStatus: 'commands/subscription-actions.ts',
 };

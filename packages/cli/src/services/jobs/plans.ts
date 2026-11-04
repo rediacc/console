@@ -135,6 +135,7 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   // J18: one job each; the report, the converge pass and the failure tails are steps.
   'machine converge',
   'machine gpu list',
+  'machine infra push',
   'machine prune',
   'machine restart-services',
   'machine setup',

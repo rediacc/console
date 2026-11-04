@@ -109,7 +109,7 @@ export interface ExecuteOptions {
   params?: Record<string, unknown>;
   /**
    * Run an allow-listed renet command kind (`job start --command <name> --args <json>`, section 14) instead of a vault
-   * function: `setup`, `list-all`, `backup-unit`, `daemons-restart`, `backup-cancel`, `backup-status`, `backup-schedule`, `backup-journal`, `license-status`, `license-scan` and `license-write`. `functionName`
+   * function: `setup`, `list-all`, `backup-unit`, `daemons-restart`, `backup-cancel`, `backup-status`, `backup-schedule`, `backup-journal`, `license-status`, `license-scan`, `license-write` and `infra-push`. `functionName`
    * then names the kind (the ticket and the lock class read it), `params` stays empty, and the job carries no vault.
    * `args` is JSON for the argv builder in renet, never a secret.
    */
