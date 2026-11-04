@@ -15,6 +15,8 @@ import type { Context, Hono } from 'hono';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { assertJobId } from '../executor/job-client.js';
 import { cancelJob, connectForJobs, runJobCommand } from '../executor/job-remote.js';
+import { observeTerminalPoll } from '../jobs/executor-observation.js';
+import type { TicketState } from '../jobs/ticket-store.js';
 import type { AuthVerifier } from './auth.js';
 import type { ServeDeps } from './deps.js';
 import {
@@ -98,9 +100,15 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
     const sinceLine = intParam(c.req.query('sinceLine'), 0);
     const maxLines = intParam(c.req.query('maxLines'), DEFAULT_MAX_LINES);
     try {
-      const checked = await helpers.withRequestConfig(config, () =>
-        pollAndParse(machine, jobId, sinceLine, maxLines)
-      );
+      const checked = await helpers.withRequestConfig(config, async () => {
+        const polled = await pollAndParse(machine, jobId, sinceLine, maxLines);
+        await observeTerminalPoll(jobId, {
+          state: polled.status.state as TicketState,
+          exitCode: polled.status.exitCode,
+          finishedAt: polled.status.finishedAt,
+        });
+        return polled;
+      });
       await auditFirstTerminal(ledger, deps, principal, machine, jobId, checked);
       return c.json(checked.body);
     } catch (error) {

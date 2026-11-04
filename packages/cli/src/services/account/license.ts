@@ -1,8 +1,8 @@
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
-import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { outputService } from '../core/output.js';
+import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
 import {

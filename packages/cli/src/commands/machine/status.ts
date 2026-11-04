@@ -848,6 +848,16 @@ export function runningJobLines(
   ];
 }
 
+/**
+ * The jobs a `repository_status` record carries (renet filters them to the repo's GUID, so nothing is
+ * left to filter here). Anything that is not a record with a `jobs` array, an older renet's answer
+ * included, yields none.
+ */
+export function jobsOfStatusRecord(record: unknown): JobInfo[] {
+  const jobs = (record as { jobs?: unknown } | null)?.jobs;
+  return Array.isArray(jobs) ? (jobs as JobInfo[]) : [];
+}
+
 /** The jobs section for JSON output, with each repo GUID resolved to its name. */
 export function enrichJobs(
   jobs: JobInfo[] | undefined,

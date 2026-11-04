@@ -57,6 +57,10 @@ import {
   type StreamState,
   terminalOutcome,
 } from './proxy-follow.js';
+
+/** The waits before start retry 1, 2 and 3: the head of the poll ladder (2 s, then 3 s, then 4.5 s). */
+const START_RETRY_DELAYS_MS = [2000, 3000, 4500] as const;
+
 import type { RenetEvent } from './types.js';
 
 export { nextPollDelayMs, type ProxyCommandOutcome };
@@ -299,6 +303,10 @@ export class ProxyClient {
         attempt < MAX_START_RETRIES
       );
       if (step === 'done') return;
+      // The retry waits on the poll ladder (Design 5): 2 s, then 3 s, then 4.5 s.
+      await this.sleep(
+        jittered(START_RETRY_DELAYS_MS[Math.min(attempt, MAX_START_RETRIES - 1)], this.random)
+      );
     }
   }
 
@@ -319,7 +327,8 @@ export class ProxyClient {
     const body = await this.commandBody(response);
     try {
       await this.pumpStream(body, onEvent, state);
-      return 'done';
+      // A stream that closed cleanly with neither a job line nor a result dropped before the start was announced: the same retry as a broken one.
+      return !state.jobId && !state.outcome && retriable ? 'retry' : 'done';
     } catch (error) {
       return recoverBrokenStream(error, state, fallbackMachine, retriable);
     }

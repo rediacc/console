@@ -235,6 +235,31 @@ describe('attach window over /v1/command', () => {
     expect(finished).toBe(true);
   });
 
+  it('answers an overlap refusal as a result with code BUSY and the overlaps', async () => {
+    const overlap = {
+      jobId: 'j1-other',
+      function: 'repository_up',
+      action: 'refuse',
+      attach: 'rdc job logs j1-other -m hostinger --follow',
+    };
+    boot(() =>
+      Promise.reject(
+        Object.assign(new Error('Refused to start the job: job j1-other holds the same scope.'), {
+          overlaps: [overlap],
+        })
+      )
+    );
+    const all = await lines(await post());
+    expect(all.filter((l) => l.kind === 'job')).toHaveLength(0);
+    const result = all.at(-1);
+    expect(result).toMatchObject({
+      kind: 'result',
+      result: { success: false, errorCode: 'BUSY' },
+    });
+    if (result?.kind !== 'result') throw new Error('no result line');
+    expect(result.result.overlaps?.[0]?.attach).toBe(overlap.attach);
+  });
+
   it('is unchanged for a refused command: a 400 before any stream opens', async () => {
     boot(() => Promise.resolve({ success: true, exitCode: 0, durationMs: 1 }));
     const res = await post({ pathKey: 'repo sync upload' });

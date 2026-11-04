@@ -11,7 +11,8 @@ import { JobPollResponseSchema, PROXY_ROUTES } from '@rediacc/shared/cli-contrac
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { ran, cancelled, spool } = vi.hoisted(() => ({
+const { ran, cancelled, spool, observed } = vi.hoisted(() => ({
+  observed: [] as { jobId: string; state: string; exitCode?: number }[],
   ran: [] as string[],
   cancelled: [] as string[],
   spool: { stdout: '' },
@@ -32,6 +33,13 @@ vi.mock('../../executor/job-remote.js', async (original) => ({
   cancelJob: vi.fn((_conn: unknown, jobId: string) => {
     cancelled.push(jobId);
     return Promise.resolve({ state: 'cancelled', exit_code: 130 });
+  }),
+}));
+
+vi.mock('../../jobs/executor-observation.js', () => ({
+  observeTerminalPoll: vi.fn((jobId: string, seen: { state: string; exitCode?: number }) => {
+    observed.push({ jobId, state: seen.state, exitCode: seen.exitCode });
+    return Promise.resolve(undefined);
   }),
 }));
 
@@ -113,6 +121,7 @@ describe('job poll and cancel routes', () => {
 
   beforeEach(() => {
     ran.length = 0;
+    observed.length = 0;
     cancelled.length = 0;
     spool.stdout = `${JSON.stringify({ type: 'output', msg: 'a' })}\n${JSON.stringify({ type: 'output', msg: 'b' })}\n${trailer()}\n`;
     boot();
@@ -162,6 +171,14 @@ describe('job poll and cancel routes', () => {
     }
     expect(audited).toHaveLength(1);
     expect(audited[0]).toMatchObject({ commandPath: 'job logs', success: true });
+  });
+
+  it('hands the terminal state to the executor observation on every poll (run-once lives in executor-observation.test.ts)', async () => {
+    spool.stdout = `${trailer({ state: 'succeeded', exit_code: 0, finished_at: '2026-11-04T00:00:00Z' })}\n`;
+    for (let i = 0; i < 3; i++) {
+      await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
+    }
+    expect(observed).toEqual(Array(3).fill({ jobId: ID, state: 'succeeded', exitCode: 0 }));
   });
 
   it('writes no terminal audit while the job still runs', async () => {

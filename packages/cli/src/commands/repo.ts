@@ -12,6 +12,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
+import { jobsOfStatusRecord, runningJobLines } from './machine/status.js';
 import { createRepoAdminCommand } from './repo-admin.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { handleDownAll, handleRepoList, handleUpAll } from './repo-batch-utils.js';
@@ -125,7 +126,7 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
 /**
  * Print what `repository_status` reported, as data on stdout in every output format (the record is structured, so a table would only say less). Renet's text is passed through untouched when it is not JSON.
  */
-function printRepoStatusRecord(stdout: string | undefined): void {
+function printRepoStatusRecord(stdout: string | undefined, repoName: string): void {
   if (!stdout?.trim()) return;
   let record: unknown;
   try {
@@ -136,6 +137,12 @@ function printRepoStatusRecord(stdout: string | undefined): void {
   }
   const format = getOutputFormat();
   outputService.print(record, format === 'table' ? 'json' : format);
+  // The jobs on this repo's GUID ride in the record (JSON output carries them as is); the text view adds the attach rows.
+  const [header, ...rows] = runningJobLines(jobsOfStatusRecord(record), () => repoName);
+  if (header) {
+    outputService.info(`\n${header}`);
+    for (const row of rows) outputService.info(row);
+  }
 }
 
 export function registerRepoCommands(program: Command): void {
@@ -333,7 +340,7 @@ export function registerRepoCommands(program: Command): void {
             }
           );
           if (!result.success) return;
-          printRepoStatusRecord(result.stdout);
+          printRepoStatusRecord(result.stdout, name);
           // Managed replica sets are CRUD-from-birth state (R2-F17): surface any set built on this repo alongside its status.
           const replicaSets = Object.entries(await listReplicaSets()).filter(
             ([, set]) => set.repo === name

@@ -396,23 +396,32 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
   // Renet's own stdout is the command's answer only for a verb that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug. For every other verb a local run drops it (the step detector keeps step lines only, and a captureOutput verb prints what it chose from `result.stdout` itself), so a proxied run must not carry it either: the proxy client prints `output` events, which put renet's full repository-list JSON (the machine probe's answer) on the stdout of `repo up` and `repo down`. Events are therefore dropped here for such a verb; the raw `result.stdout` still travels on the wire for clients that want it.
   let forwardRenetOutput = false;
+  let refusedOverlaps: JobOverlap[] | undefined;
   const recordingExecutor: Executor = {
     async execute(options) {
       if (options.passthroughOutput || options.debug) forwardRenetOutput = true;
       functionName = options.functionName;
       machineName = options.machineName;
-      const result = await args.executor.execute({
-        ...options,
-        ...(minter && isSeamMinted(options.requestId)
-          ? { requestId: minter.next(options.machineName) }
-          : {}),
-        ...(args.onJobStarted
-          ? {
-              onJobStarted: (jobId: string, machine?: string, overlaps?: JobOverlap[]) =>
-                args.onJobStarted?.(jobId, machine ?? options.machineName, overlaps),
-            }
-          : {}),
-      });
+      let result: ExecuteResult;
+      try {
+        result = await args.executor.execute({
+          ...options,
+          ...(minter && isSeamMinted(options.requestId)
+            ? { requestId: minter.next(options.machineName) }
+            : {}),
+          ...(args.onJobStarted
+            ? {
+                onJobStarted: (jobId: string, machine?: string, overlaps?: JobOverlap[]) =>
+                  args.onJobStarted?.(jobId, machine ?? options.machineName, overlaps),
+              }
+            : {}),
+        });
+      } catch (error) {
+        // An overlap refusal (BUSY) names the jobs that hold the scope; handleError flattens the error, so the dispatch keeps them for the result line.
+        const held = refusedOverlapsOf(error);
+        if (held) refusedOverlaps = held;
+        throw error;
+      }
       lastResult = result;
       return result;
     },
@@ -462,7 +471,17 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   }
 
   const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
-  return { result: failure, ...common };
+  // A BUSY refusal is a structured result: the code, and the jobs that hold the scope with their attach commands.
+  const refused = refusedOverlaps
+    ? { ...failure, errorCode: failure.errorCode ?? 'BUSY', overlaps: refusedOverlaps }
+    : failure;
+  return { result: refused, ...common };
+}
+
+/** The overlaps a refused start carried (JobOverlapRefusedError), or undefined for any other error. */
+function refusedOverlapsOf(error: unknown): JobOverlap[] | undefined {
+  const overlaps = (error as { overlaps?: unknown } | null)?.overlaps;
+  return Array.isArray(overlaps) && overlaps.length > 0 ? (overlaps as JobOverlap[]) : undefined;
 }
 
 /**

@@ -120,6 +120,9 @@ function outputJsonError(cliError: CliError): void {
         retryable: isRetryable(cliError),
         guidance: getGuidance(cliError),
         ...(cliError.next && { next: cliError.next }),
+        ...((cliError as { overlaps?: unknown[] }).overlaps?.length && {
+          overlaps: (cliError as { overlaps?: unknown[] }).overlaps,
+        }),
       },
     ],
     warnings: outputService.getWarnings(),

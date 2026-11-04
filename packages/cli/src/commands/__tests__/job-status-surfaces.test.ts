@@ -13,7 +13,9 @@ vi.mock('../../i18n/index.js', () => ({
   t: (k: string, p?: Record<string, unknown>) => (p ? `${k} ${JSON.stringify(p)}` : k),
 }));
 
-const { runningJobLines, enrichJobs, statusJsonDocument } = await import('../machine/status.js');
+const { runningJobLines, enrichJobs, statusJsonDocument, jobsOfStatusRecord } = await import(
+  '../machine/status.js'
+);
 
 const GUID = 'a0000000-0000-4000-8000-000000000001';
 const FOREIGN = 'b0000000-0000-4000-8000-000000000002';
@@ -104,5 +106,21 @@ describe('machine status running jobs', () => {
     expect(runningJobLines([], resolve)).toEqual([]);
     expect(runningJobLines(undefined, resolve)).toEqual([]);
     expect(enrichJobs(undefined, resolve)).toEqual([]);
+  });
+});
+
+describe('repo status running jobs', () => {
+  it('takes the jobs of the status record, which renet already filtered to the repo GUID', () => {
+    const jobs = jobsOfStatusRecord({ name: 'mail', jobs: [live] });
+    expect(jobs).toEqual([live]);
+    const lines = runningJobLines(jobs, () => 'mail');
+    expect(lines).toHaveLength(2);
+    expect(params(lines[1] as string)).toMatchObject({ id: 'j-123', repo: 'mail' });
+  });
+
+  it('control: a record with no jobs, an empty list or an older renet prints nothing extra', () => {
+    expect(runningJobLines(jobsOfStatusRecord({ name: 'mail', jobs: [] }), resolve)).toEqual([]);
+    expect(runningJobLines(jobsOfStatusRecord({ name: 'mail' }), resolve)).toEqual([]);
+    expect(jobsOfStatusRecord(null)).toEqual([]);
   });
 });
