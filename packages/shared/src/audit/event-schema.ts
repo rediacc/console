@@ -126,10 +126,12 @@ const clusterEventTypes = [
   'cli.cluster_join',
   'cli.cluster_migrate',
   'cli.cluster_scale',
+  'cli.kube_delete',
   'cli.kube_health',
   'cli.kube_namespace_create',
   'cli.kube_namespace_delete',
   'cli.kube_namespace_fork',
+  'cli.setup',
 ] as const;
 
 export const MACHINE_OP_EVENT_TYPES = [
