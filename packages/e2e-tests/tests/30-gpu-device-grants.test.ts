@@ -172,6 +172,10 @@ test.describe
     test('repository_permission_grant refuses a call that names neither --root nor --path', async () => {
       const result = await runner.executeOnWorker(once('repository_permission_grant'));
       expect(result.code, runner.getCombinedOutput(result)).not.toBe(0);
+      // The refusal text, so a missing or unknown verb (also a nonzero exit) cannot pass.
+      expect(runner.getCombinedOutput(result)).toContain(
+        'repository_permission_grant needs the root parameter or a path to change'
+      );
     });
 
     test('repository_permission_grant records the path and repository_permission_show prints it', async () => {

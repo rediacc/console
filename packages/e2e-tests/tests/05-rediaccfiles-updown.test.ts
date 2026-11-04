@@ -418,13 +418,16 @@ test.describe
         datastorePath
       );
       expect(written.code).toBe(0);
-      await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+      const up = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+      expect(runner.isSuccess(up), runner.getCombinedOutput(up)).toBe(true);
       const out = await read('sudo.out');
       expect(out).toContain('no new privileges');
       expect(out).not.toContain('rc=0');
     });
 
-    test('4. cleanup: unmount and remove repository', async () => {
+    // A serial describe skips every test after a failure, so the cleanup is a hook: a failed
+    // test 2 or 3 still unmounts the repository and stops the daemon.
+    test.afterAll(async () => {
       const unmount = await runner.repositoryUnmount(repositoryName, datastorePath);
       expect(runner.isSuccess(unmount)).toBe(true);
       const rm = await runner.repositoryRm(repositoryName, datastorePath);
