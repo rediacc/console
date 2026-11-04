@@ -1143,6 +1143,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'checkpoint_create',
   'checkpoint_restore',
   'checkpoint_validate',
+  'cluster_join',
   'container_exec',
   'container_inspect',
   'container_kill',

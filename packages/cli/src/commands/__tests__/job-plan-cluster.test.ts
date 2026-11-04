@@ -481,16 +481,16 @@ describe('cluster verbs (one job per phase, one ticket per phase)', () => {
     );
   });
 
-  it('join: the token read is the first job and the join runs from its step with the membership steps', async () => {
+  it('join: one cluster_join job on the member, carrying the control plane and the membership steps', async () => {
     const { joinCluster } = await import('../../services/cluster/cluster-membership.js');
-    respond = () => ({ ...FINISHED, stdout: 'K10tokenvalue' });
+    respond = () => FINISHED;
     await joinCluster('c1-ag-1', { cluster: 'c1' });
     expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
-      ['kube_join_token', 'c1-cp-1'],
-      ['kube_join', 'c1-ag-1'],
+      ['cluster_join', 'c1-ag-1'],
     ]);
-    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual(['joinClusterTail']);
-    expect(executed[1].jobSteps?.map((x) => x.name)).toEqual([
+    expect(executed[0].params).toMatchObject({ to: 'c1-cp-1', role: 'agent', bind_ip: '10.0.0.2' });
+    expect(JSON.stringify(executed[0])).not.toContain('K10');
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual([
       'updateMachineCluster',
       'recordClusterAudit',
     ]);
@@ -500,22 +500,19 @@ describe('cluster verbs (one job per phase, one ticket per phase)', () => {
     expect(cfg.audit).toHaveBeenCalledOnce();
   });
 
-  it('join handed back at the token phase starts no join and records no membership', async () => {
+  it('join handed back running records no membership until its steps run', async () => {
     const { joinCluster } = await import('../../services/cluster/cluster-membership.js');
     respond = () => BACKGROUND;
     await joinCluster('c1-ag-1', { cluster: 'c1' });
-    expect(executed.map((o) => o.functionName)).toEqual(['kube_join_token']);
+    expect(executed.map((o) => o.functionName)).toEqual(['cluster_join']);
     expect(cfg.updateMachine).not.toHaveBeenCalled();
     expect(cfg.audit).not.toHaveBeenCalled();
   });
 
   it('a failed join job records no membership', async () => {
     const { joinCluster } = await import('../../services/cluster/cluster-membership.js');
-    respond = (o) =>
-      o.functionName === 'kube_join' ? FAILED : { ...FINISHED, stdout: 'K10tokenvalue' };
-    await expect(joinCluster('c1-ag-1', { cluster: 'c1' })).rejects.toThrow(
-      /did not finish|kube_join/
-    );
+    respond = () => FAILED;
+    await expect(joinCluster('c1-ag-1', { cluster: 'c1' })).rejects.toThrow(/cluster_join/);
     expect(cfg.updateMachine).not.toHaveBeenCalled();
   });
 

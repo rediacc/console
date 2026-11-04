@@ -147,6 +147,7 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'kube_install',
   'kube_uninstall',
   'kube_upgrade',
+  'cluster_join',
   'kube_join',
   'kube_registry_up',
   'kube_prep_fork',

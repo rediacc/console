@@ -106,89 +106,50 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
     `Joining "${machineName}" (${machine.ip}) to cluster "${options.cluster}" as an agent...`
   );
 
-  // Two jobs, one per phase (renet has no compound token-then-join function, and the join consumes the token read). The CA-derived join token is read from the control plane's anchor datastore by the first job; the join on the member, the membership record and the audit line are the phase that follows it, a ticket step, so a ticket handed back early still owes them.
+  // ★ #25: no per-node repo. An adopted agent's k3s state is a disposable cache;
+  // `renet kube join` creates its own data-dir under the mount path. Only the
+  // networkID (its systemd unit + node interface) is allocated. See
+  // allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
+  const net = await allocateAgentNetworkId(machineName);
+  const controlMachine = await configService.getLocalMachine(control.name);
+
+  // One `cluster_join` job on the member: renet reads the CA-derived join token from the control plane over ssh and joins with it, so the token reaches no client. The membership record (repo create --machine refuses on it, R2-F12) and the audit line are ticket steps, so a ticket handed back early still owes them.
   const { pending, unfinished } = await runClusterPhase(
-    'kube_join_token',
-    control.name,
-    { mount_path: controlMount },
+    'cluster_join',
+    machineName,
+    {
+      mount_path: clusterMount(options.cluster),
+      to: control.name,
+      control_mount_path: controlMount,
+      network_id: net,
+      role: 'agent',
+      endpoint: serverUrl(controlMachine.ip),
+      bind_ip: machine.ip,
+    },
     {
       debug: options.debug,
-      capture: true,
       label: 'Membership step',
       verb: 'cluster join',
       steps: [
-        planStep('joinClusterTail', {
-          member: machineName,
+        planStep('updateMachineCluster', {
+          machine: machineName,
           cluster: options.cluster,
           pool: pool.name,
+        }),
+        planStep('recordClusterAudit', {
+          function: 'cluster_join',
+          machine: machineName,
           startedAt: new Date(startTime).toISOString(),
-          ...(options.debug && { debug: true }),
         }),
       ],
     }
   );
   if (pending) return;
   if (unfinished.length > 0) {
-    throw new Error(`Joining "${machineName}" to "${options.cluster}" did not finish.`);
+    throw new Error(`"${machineName}" joined, but ${unfinished.join(', ')} did not finish.`);
   }
+  outputService.success(`"${machineName}" joined cluster "${options.cluster}" as an agent.`);
 }
-
-/** The second phase of `cluster join`: the join on the member, once the token job succeeded. */
-bindStepHandler('joinClusterTail', async ({ params, machine: controlName, output }) => {
-  const machineName = String(params.member);
-  const clusterName = String(params.cluster);
-  const poolName = String(params.pool);
-  const debug = params.debug === true;
-  const token = /K10[^"\s]+/.exec(output ?? '')?.[0];
-  if (!token) {
-    throw new Error(`Could not read the k3s join token from ${controlName}.`);
-  }
-  const machine = await configService.getLocalMachine(machineName);
-  const controlMachine = await configService.getLocalMachine(controlName);
-
-  // ★ #25: no per-node repo. An adopted agent's k3s state is a disposable cache;
-  // `renet kube join` creates its own data-dir under the mount path. Only the
-  // networkID (its systemd unit + node interface) is allocated. See
-  // allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
-  const net = await allocateAgentNetworkId(machineName);
-  // The closing call carries the membership record (repo create --machine refuses on it, R2-F12) and the audit line.
-  const closing = await runClusterPhase(
-    'kube_join',
-    machineName,
-    {
-      mount_path: clusterMount(clusterName),
-      network_id: net,
-      role: 'agent',
-      token,
-      endpoint: serverUrl(controlMachine.ip),
-      bind_ip: machine.ip,
-    },
-    {
-      debug,
-      label: 'Membership step',
-      verb: 'cluster join',
-      steps: [
-        planStep('updateMachineCluster', {
-          machine: machineName,
-          cluster: clusterName,
-          pool: poolName,
-        }),
-        planStep('recordClusterAudit', {
-          function: 'cluster_join',
-          machine: machineName,
-          startedAt: String(params.startedAt),
-        }),
-      ],
-    }
-  );
-  if (closing.pending) return;
-  if (closing.unfinished.length > 0) {
-    throw new Error(
-      `"${machineName}" joined, but ${closing.unfinished.join(', ')} did not finish.`
-    );
-  }
-  outputService.success(`"${machineName}" joined cluster "${clusterName}" as an agent.`);
-});
 
 export interface EvictClusterOptions {
   force?: boolean;

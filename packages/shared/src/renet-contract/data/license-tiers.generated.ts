@@ -69,6 +69,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "checkpoint_create": { tier: "full", pending: false },
   "checkpoint_restore": { tier: "full", pending: false },
   "checkpoint_validate": { tier: "none", pending: false },
+  "cluster_join": { tier: "none", pending: false },
   "container_exec": { tier: "operate", pending: false },
   "container_inspect": { tier: "none", pending: false },
   "container_kill": { tier: "none", pending: false },

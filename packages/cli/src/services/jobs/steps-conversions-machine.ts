@@ -280,14 +280,7 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
     ['datastore', 'debug'],
     () => import('../../commands/datastore.js')
   ),
-  // The second phase of `cluster join` and `cluster evict` (services/cluster/cluster-membership.ts).
-  privateStep(
-    'joinClusterTail',
-    'success',
-    ['member', 'cluster', 'pool', 'startedAt', 'debug'],
-    () => import('../cluster/cluster-membership.js'),
-    true
-  ),
+  // The second phase of `cluster evict` (services/cluster/cluster-membership.ts).
   privateStep(
     'evictClusterTail',
     'success',

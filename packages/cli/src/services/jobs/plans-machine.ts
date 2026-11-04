@@ -176,12 +176,12 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'cluster join': {
     form: 'compound',
-    fn: 'kube_join',
+    fn: 'cluster_join',
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J19',
     steps: ['updateMachineCluster', 'recordClusterAudit'],
-    note: 'kube_join consumes the kube_join_token output',
+    note: 'one cluster_join job on the member reads the join token from the control plane over ssh and joins with it',
   },
   'cluster migrate': {
     form: 'compound',
