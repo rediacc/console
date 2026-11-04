@@ -9,6 +9,7 @@ import {
   TEST_USER,
 } from '../src/constants';
 import { e2eRepoGuid } from '../src/utils/licence';
+import { peerKnownHostsArg } from '../src/utils/renet-functions/peerKnownHosts';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import { DEFAULT_RUSTFS_CONFIG, StorageTestHelper } from '../src/utils/storage/StorageTestHelper';
 import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
@@ -164,11 +165,16 @@ test.describe
       extra: string,
       dest = guid
     ): Promise<{ seconds: number; code: number; out: string }> => {
+      const pin = await peerKnownHostsArg(
+        (command, timeout) => runner.executeViaBridge(command, timeout),
+        'dest-known-hosts',
+        DEFAULT_WORKER_2_IP
+      );
       const started = Date.now();
       const result = await runner.executeViaBridge(
         `sudo renet backup push --name "${guid}" --datastore "${DEFAULT_DATASTORE_PATH}"` +
           ` --target machine --dest-host "${DEFAULT_WORKER_2_IP}" --dest-path "${DEFAULT_DATASTORE_PATH}"` +
-          ` --dest "${dest}" --force${extra}`,
+          ` --dest "${dest}" --force${pin}${extra}`,
         600_000
       );
       return {

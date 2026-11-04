@@ -33,6 +33,9 @@ export interface TestFunctionOptions {
   checkpointName?: string;
   sourceMachine?: string;
   destMachine?: string;
+  /** The peer's known-hosts flag values, filled in by the runner for a cross-VM verb. */
+  sourceKnownHosts?: string;
+  destKnownHosts?: string;
   format?: string;
   force?: boolean;
   timeout?: number;

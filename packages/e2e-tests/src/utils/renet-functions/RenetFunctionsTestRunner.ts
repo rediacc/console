@@ -53,6 +53,7 @@ import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
 import { formatExecutionLog } from './outputRedaction';
 import { buildPasswordVault } from './passwordVault';
+import { peerKnownHosts } from './peerKnownHosts';
 import { feedStdin } from './stdinFeed';
 import { buildTokenVault } from './tokenVault';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
@@ -756,16 +757,35 @@ export class RenetFunctionsTestRunner {
   private buildCrossVMFlags(opts: TestFunctionOptions): string {
     const crossVM = CROSS_VM_FUNCTIONS.has(opts.function);
     const identity = ` --ssh-key ${this.sshKeyPath()}`;
-    let flags = '';
-    if (opts.sourceMachine) {
-      flags += ` --source-machine ${opts.sourceMachine}`;
-      if (crossVM) flags += ` --source-user ${this.sshUser()}${identity}`;
-    }
-    if (opts.destMachine) {
-      flags += ` --dest-machine ${opts.destMachine}`;
-      if (crossVM) flags += ` --dest-user ${this.sshUser()}${identity}`;
-    }
-    return flags;
+    const side = (
+      prefix: 'source' | 'dest',
+      pinFlag: string,
+      machine?: string,
+      record?: string
+    ): string => {
+      if (!machine) return '';
+      const named = ` --${prefix}-machine ${machine}`;
+      if (!crossVM) return named;
+      const pin = record ? ` --${pinFlag} ${record}` : '';
+      return `${named} --${prefix}-user ${this.sshUser()}${identity}${pin}`;
+    };
+    return (
+      side('source', 'src-known-hosts', opts.sourceMachine, opts.sourceKnownHosts) +
+      side('dest', 'dest-known-hosts', opts.destMachine, opts.destKnownHosts)
+    );
+  }
+
+  /** A cross-VM verb refuses a peer with no recorded key, so scan the ones this call names from the machine that connects to them. */
+  private async withPeerKnownHosts(opts: TestFunctionOptions): Promise<TestFunctionOptions> {
+    if (!CROSS_VM_FUNCTIONS.has(opts.function)) return opts;
+    const run = (command: string, timeout?: number) => this.executeViaBridge(command, timeout);
+    return {
+      ...opts,
+      sourceKnownHosts: opts.sourceMachine
+        ? await peerKnownHosts(run, opts.sourceMachine)
+        : undefined,
+      destKnownHosts: opts.destMachine ? await peerKnownHosts(run, opts.destMachine) : undefined,
+    };
   }
 
   /**
@@ -938,6 +958,10 @@ export class RenetFunctionsTestRunner {
         opts.timeout
       );
     }
+    return this.withPeerKnownHosts(opts).then((withKeys) => this.runFunctionOnce(withKeys));
+  }
+
+  private runFunctionOnce(opts: TestFunctionOptions): Promise<ExecResult> {
     let cmd = `sudo -n renet functions once --test-mode --debug --function ${opts.function}`;
 
     cmd += this.buildCommonFlags(opts);
@@ -1076,6 +1100,22 @@ export class RenetFunctionsTestRunner {
     return JSON.stringify(vault);
   }
 
+  /** The vault form of withPeerKnownHosts: a literal `dest_machine` / `source_machine` carries its record as a param. */
+  private async withPeerKnownHostParams(functionName: string, vaultJSON: string): Promise<string> {
+    if (!CROSS_VM_FUNCTIONS.has(functionName)) return vaultJSON;
+    const vault = JSON.parse(vaultJSON) as { params?: Record<string, unknown> };
+    const params = vault.params ?? {};
+    const run = (command: string, timeout?: number) => this.executeViaBridge(command, timeout);
+    if (typeof params.dest_machine === 'string') {
+      params.dest_known_hosts = await peerKnownHosts(run, params.dest_machine);
+    }
+    if (typeof params.source_machine === 'string') {
+      params.source_known_hosts = await peerKnownHosts(run, params.source_machine);
+    }
+    vault.params = params;
+    return JSON.stringify(vault);
+  }
+
   /**
    * Upload vault JSON to the target VM over stdin (it can hold repository credentials, so it never
    * rides in the logged command text) and run the function against it.
@@ -1087,7 +1127,10 @@ export class RenetFunctionsTestRunner {
     buildVaultJSON: () => string,
     timeout?: number
   ): Promise<ExecResult> {
-    const vaultJSON = this.withCrossVMSSHKey(functionName, buildVaultJSON());
+    const vaultJSON = await this.withPeerKnownHostParams(
+      functionName,
+      this.withCrossVMSSHKey(functionName, buildVaultJSON())
+    );
     const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
     const uploadResult = await this.executeViaBridge(`umask 077 && cat > ${vaultPath}`, timeout, {
       stdin: vaultJSON,
