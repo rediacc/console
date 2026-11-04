@@ -810,16 +810,75 @@ def control_effort_table(tmp):
         check("the rule reds with %s removed" % key, judged(str(path)), 1)
 
 
+# The gh shim of test_wl_focus.py, whose imports reach pytest: this file runs under a bare python3.
+GH_SHIM = """#!/bin/bash
+for a in "$@"; do
+    case "$a" in
+        *lastEditedAt*) cat "%(base)s/ci-fresh.json"; exit 0 ;;
+        *'states:[OPEN,MERGED,CLOSED]'*) cat "%(base)s/ci-merged.json"; exit 0 ;;
+        query=*) cat "%(base)s/ci-rollup.json"; exit 0 ;;
+    esac
+done
+case "$*" in
+    *actions/jobs/*) cat "%(base)s/ci-job.json"; exit 0 ;;
+esac
+echo '{}'
+"""
+SAID = "working the PR\n\n## Remaining\n- the PR"
+
+
+def hook_world(fix, wlfix, ci_status):
+    """A fixture git repo whose origin/pub PR #543 is green, with fresh brief and handover."""
+    fix.git("init", "-q", "-b", "main")
+    fix.git("config", "user.email", "t@t")
+    fix.git("config", "user.name", "t")
+    fix.git("remote", "add", "origin", wlfix.FAKE_ORIGIN)
+    (fix.proj / "a.txt").write_text("a\n", encoding="utf-8")
+    fix.git("add", "-A")
+    fix.git("commit", "-qm", "base")
+    head = fix.git("rev-parse", "HEAD").stdout.strip()
+    fix.git("update-ref", "refs/remotes/origin/pub", head)
+    fix.brief_now()
+    fix.hand_now()
+    for name, body in (
+        ("ci-fresh.json", ci_status.CI_FRESH_PAYLOAD),
+        ("ci-job.json", ci_status.CI_JOB_PAYLOAD),
+        ("ci-merged.json", {"data": {"repository": {"pullRequests": {"nodes": []}}}}),
+    ):
+        (fix.base / name).write_text(json.dumps(body) + "\n", encoding="utf-8")
+    ci_status.write_exec(fix.base / "binonly" / "gh", GH_SHIM % {"base": fix.base})
+    job = ci_status.ci_job("Quality / Static", "SUCCESS")
+    ci_status.ci_rollup(fix, "SUCCESS", "[%s]" % job)
+
+
+def hook_stop(fix, extra):
+    """A Stop with the gh shim on PATH, in context band 0."""
+    band = fix.base / "ctxband"
+    band.mkdir(exist_ok=True)
+    (band / ("%s.json" % fix.sid[:8])).write_text(
+        json.dumps({"epoch": 1, "band": 0}), encoding="utf-8"
+    )
+    env = {"CTX_BAND_STATE_DIR": str(band), **extra}
+    env["PATH"] = "%s:%s" % (fix.base / "binonly", fix.env.get("PATH", ""))
+    fix.say(SAID)
+    return fix.run(env)
+
+
+def hook_state(fix):
+    path = fix.stem(".state-%s.json" % fix.sid[:8])
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
 def control_real_hook(tmp):
     """The real Stop hook over a fixture: the wiring, the effort row and the stand-down keep."""
     sys.path[:0] = [str(_CI.parent), str(SOURCE)]
+    from rediacc_hooks.tests import test_wl_ci_status as ci_status
     from rediacc_hooks.tests import wlfix
-    from rediacc_hooks.tests.test_wl_focus import focus_off, focus_on, state_doc, stop, world
 
     needle = "UNLANDED LEASE"
     fix = wlfix.Fixture(tmp / "hookfix")
     fix.setup()
-    world(fix, ci=True)
+    hook_world(fix, wlfix, ci_status)
     with (fix.proj / ".git/info/exclude").open("a", encoding="utf-8") as fh:
         fh.write(".claude/worktrees/\n")
     lease = fix.proj / ".claude/worktrees/w1"
@@ -833,28 +892,29 @@ def control_real_hook(tmp):
     (config / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))).mkdir(parents=True)
     env = {"CLAUDE_CONFIG_DIR": str(config)}
 
-    got = stop(fix, env)
+    got = hook_stop(fix, env)
     check("the hook blocks an owner's finished lease", got.decision, "block")
     check("the block is this check's", needle in got.out, True)
     check("the block names land", "./run.sh worktree land w1" in got.out, True)
-    cached = state_doc(fix).get("worktrees", {}).get("w1", {})
+    cached = hook_state(fix).get("worktrees", {}).get("w1", {})
     check("the state doc keeps the figures for the next stop", bool(cached.get("sig")), True)
 
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
     )
-    got = stop(fix, env)
+    got = hook_stop(fix, env)
     check("a live writer lifts the block", needle in got.out, False)
     fix.bg = "[]"
 
-    focus_on(fix)
-    got = stop(fix, env)
+    phase = ("--phase", wlfix.ME, "babysit", "--branch", "pub", "--pr", "543")
+    check("the phase is declared", fix.cli(*phase).rc, 0)
+    got = hook_stop(fix, env)
     check("a babysit phase keeps the block", got.decision, "block")
     check("a babysit phase keeps the text", needle in got.out, True)
-    focus_off(fix)
+    check("the phase ends", fix.cli("--phase", wlfix.ME, "build").rc, 0)
 
     write_record(fix.proj, "w1", owner="cafe1234", agent="wa1")
-    got = stop(fix, env)
+    got = hook_stop(fix, env)
     check("a peer's lease is no block", got.decision, "allow")
     check("a peer's lease is no block text", needle in got.out, False)
     check("a peer's lease is reported once", got.out.count("peer lease w1"), 1)

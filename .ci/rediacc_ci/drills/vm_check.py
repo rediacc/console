@@ -45,6 +45,7 @@ import datetime
 import fcntl
 import hashlib
 import http.cookiejar
+import importlib
 import json
 import os
 import pathlib
@@ -74,6 +75,9 @@ from rediacc_ci.drills import (
 from rediacc_ci.proof import surfaces as trigger
 from rediacc_ci.proof import vm_tier as receipt_mod
 from rediacc_ci.well_known import DATASTORE_PATH
+
+paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
+wl_core = importlib.import_module("wl_core")
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping, Sequence
@@ -3591,6 +3595,23 @@ def selftest(out=None) -> int:
     return EXIT_FAILED
 
 
+# These start no gateway and write no receipt, so a lease may run them.
+LEASE_SAFE_FLAGS = frozenset({"--selftest", "--dry-run", "-h", "--help"})
+
+
+def lease_refusal(root: pathlib.Path, argv: Sequence[str]) -> str | None:
+    """Why a run may not start from `root`, or None. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
+    if LEASE_SAFE_FLAGS.intersection(argv):
+        return None
+    main_tree = wl_core.lease_main(root)
+    if main_tree is None:
+        return None
+    return (
+        "%s: REFUSED: %s is a lease of %s, and full gates run only in the main checkout at landing: a run restarts the shared dev gateway, and the push guards read the receipt from there. Land the commits, then run npm run vm:check in %s. --dry-run and --selftest stay allowed in a lease."
+        % (NAME, root, main_tree, main_tree)
+    )
+
+
 def main(
     argv: Sequence[str],
     *,
@@ -3611,6 +3632,10 @@ def main(
     extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
     receipt_fn: Callable[[pathlib.Path, str], tuple[bool, str]] = backup_receipt_admits,
 ) -> int:
+    refusal = lease_refusal(root or paths.repo_root(), argv)
+    if refusal is not None:
+        log.error(refusal)
+        return EXIT_FAILED
     opts = parse_args(argv, environ)
     if opts.selftest:
         return selftest(out)

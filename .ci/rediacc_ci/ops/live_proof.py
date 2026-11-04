@@ -46,6 +46,9 @@ from rediacc_ci.proof import surfaces as S
 from rediacc_ci.proof import vm_tier
 from rediacc_ci.review import successor as SUCC
 
+paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
+wl_core = importlib.import_module("wl_core")
+
 if TYPE_CHECKING:
     import pathlib
     from collections.abc import Callable, Mapping, Sequence
@@ -692,10 +695,27 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def lease_refusal(root, argv):
+    """Why a run may not start from `root`, or None. `verify` runs no step and writes nothing; `record` runs live checks and appends to the ledger. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
+    if argv[:1] == ["verify"] or {"-h", "--help"}.intersection(argv):
+        return None
+    main_tree = wl_core.lease_main(root)
+    if main_tree is None:
+        return None
+    return (
+        "live_proof: REFUSED: %s is a lease of %s, and live proof runs only in the main checkout at landing: its identity is that tree's head and its ledger is that tree's. Land the commits, then run record in %s. verify stays allowed in a lease."
+        % (root, main_tree, main_tree)
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    args = _parser().parse_args(argv)
     root = paths.repo_root()
+    refusal = lease_refusal(root, argv)
+    if refusal is not None:
+        log.error(refusal)
+        return EXIT_REFUSED
+    args = _parser().parse_args(argv)
     if args.verb == "verify":
         code, lines = verify(root, args.plan)
         for line in lines:
