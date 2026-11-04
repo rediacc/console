@@ -78,7 +78,7 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 
 대부분의 GPU 작업은 Docker를 거치므로 위의 장치 권한만으로 충분합니다. `devices:`가 있는 `renet compose`와 `docker run --device`는 저장소의 Docker 데몬을 통해 장치에 접근하고, CDI 훅도 그 아래에서 실행됩니다. `up()`이나 `down()`에서 `nvidia-smi` 같은 호스트 도구를 호출하는 Rediaccfile은 장치 노드를 직접 건드립니다. 이 함수들은 샌드박스 안에서 권한 없는 유니버설 사용자로 실행되므로, 같은 장치 권한이 CDI 스펙의 장치 노드도 함수에 열어 주고, 노드의 모드가 필요로 할 때만 노드의 그룹(`video` 또는 `render`)을 추가합니다. `/dev/nvidia*`의 NVIDIA 노드는 보통 누구나 접근할 수 있고, `/dev/dri/renderD*`와 `/dev/kfd`는 보통 `render` 그룹에 속합니다.
 
-장치 권한이 없으면 `up()`의 `nvidia-smi`는 장치가 없다며 실패하고, 저널에 권한 부여 명령이 표시됩니다. 장치 노드 이상이 필요한 호스트 도구에는 경로 권한이 필요합니다. [권한](/ko/docs/services#권한)을 참조하십시오.
+장치 권한이 없으면 `up()`의 `nvidia-smi`는 장치가 없다며 실패하고, 저널에 권한 부여 명령이 표시됩니다. 장치 노드 이상이 필요한 호스트 도구에는 경로 권한이 필요합니다. [권한](/ko/docs/services#privileges)을 참조하십시오.
 
 ## 단독 권한
 

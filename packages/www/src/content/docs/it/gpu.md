@@ -78,7 +78,7 @@ Lo stesso container viene rifiutato in un repo senza la concessione, e il messag
 
 La maggior parte del lavoro sulle GPU passa da Docker, e la concessione di dispositivo qui sopra è tutto ciò che serve: `renet compose` con `devices:` e `docker run --device` raggiungono il dispositivo tramite il daemon Docker del repo, e gli hook CDI girano al suo interno. Un Rediaccfile che chiama uno strumento host come `nvidia-smi` da `up()` o `down()` tocca il nodo del dispositivo stesso. Quelle funzioni girano come utente universale senza privilegi in una sandbox, quindi la stessa concessione di dispositivo apre loro anche i nodi di dispositivo della specifica CDI, e aggiunge il gruppo del nodo (`video` o `render`) solo quando la modalità del nodo ne richiede uno. I nodi NVIDIA sotto `/dev/nvidia*` sono normalmente accessibili a tutti, e `/dev/dri/renderD*` e `/dev/kfd` normalmente appartengono al gruppo `render`.
 
-Senza la concessione di dispositivo, `nvidia-smi` in `up()` fallisce perché il dispositivo manca, e il journal nomina il comando di concessione. Uno strumento host che richiede più dei nodi di dispositivo richiede una concessione di percorso, vedi [Privilegi](/it/docs/services#privilegi).
+Senza la concessione di dispositivo, `nvidia-smi` in `up()` fallisce perché il dispositivo manca, e il journal nomina il comando di concessione. Uno strumento host che richiede più dei nodi di dispositivo richiede una concessione di percorso, vedi [Privilegi](/it/docs/services#privileges).
 
 ## Concessioni esclusive
 

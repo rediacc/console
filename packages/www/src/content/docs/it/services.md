@@ -60,7 +60,7 @@ Le variabili `{SERVICE}_IP` vengono generate automaticamente dai mapping degli s
 
 > **Attenzione: Non usare `sudo docker` nei Rediaccfile.** Il comando `sudo` reimposta le variabili d'ambiente, il che significa che `DOCKER_HOST` viene perso e i comandi Docker punteranno al daemon di sistema invece del daemon isolato del repository. Questo rompe l'isolamento dei container e può causare conflitti di porta. Rediacc bloccherà l'esecuzione se rileva `sudo docker` senza `-E`.
 >
-> Usa `renet compose` nei tuoi Rediaccfile: gestisce automaticamente `DOCKER_HOST`, inietta le etichette di networking per la scoperta delle route e configura il networking dei servizi. Consulta [Networking](/it/docs/networking) per i dettagli su come i servizi vengono esposti tramite il reverse proxy. Se chiami Docker direttamente, usa `docker` senza `sudo`: le funzioni Rediaccfile raggiungono il daemon Docker del repository come utente universale, senza root (vedi [Privilegi](#privilegi)).
+> Usa `renet compose` nei tuoi Rediaccfile: gestisce automaticamente `DOCKER_HOST`, inietta le etichette di networking per la scoperta delle route e configura il networking dei servizi. Consulta [Networking](/it/docs/networking) per i dettagli su come i servizi vengono esposti tramite il reverse proxy. Se chiami Docker direttamente, usa `docker` senza `sudo`: le funzioni Rediaccfile raggiungono il daemon Docker del repository come utente universale, senza root (vedi [Privilegi](#privileges)).
 >
 > `renet` è lo strumento remoto di basso livello. Per i normali workflow utente dalla tua workstation, preferisci i comandi `rdc` come `rdc repo up` e `rdc repo down`. Consulta [rdc vs renet](/it/docs/rdc-vs-renet).
 

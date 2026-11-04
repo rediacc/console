@@ -60,7 +60,7 @@ Die `{SERVICE}_IP`-Variablen werden automatisch aus den Slot-Zuordnungen in `.re
 
 > **Warnung: Verwenden Sie kein `sudo docker` in Rediaccfiles.** Der `sudo`-Befehl setzt Umgebungsvariablen zurück, wodurch `DOCKER_HOST` verloren geht und Docker-Befehle den System-Daemon statt des isolierten Repository-Daemons ansprechen. Dies bricht die Container-Isolation und kann Port-Konflikte verursachen. Rediacc blockiert die Ausführung, wenn es `sudo docker` ohne `-E` erkennt.
 >
-> Verwenden Sie `renet compose` in Ihren Rediaccfiles. Es übernimmt automatisch `DOCKER_HOST`, injiziert Netzwerk-Labels für die Routen-Erkennung und konfiguriert das Dienst-Netzwerk. Siehe [Netzwerk](/de/docs/networking) für Details, wie Dienste über den Reverse Proxy bereitgestellt werden. Wenn Sie Docker direkt aufrufen, verwenden Sie `docker` ohne `sudo`: Rediaccfile-Funktionen erreichen den Docker-Daemon des Repositories als universeller Benutzer, ohne root (siehe [Berechtigungen](#berechtigungen)).
+> Verwenden Sie `renet compose` in Ihren Rediaccfiles. Es übernimmt automatisch `DOCKER_HOST`, injiziert Netzwerk-Labels für die Routen-Erkennung und konfiguriert das Dienst-Netzwerk. Siehe [Netzwerk](/de/docs/networking) für Details, wie Dienste über den Reverse Proxy bereitgestellt werden. Wenn Sie Docker direkt aufrufen, verwenden Sie `docker` ohne `sudo`: Rediaccfile-Funktionen erreichen den Docker-Daemon des Repositories als universeller Benutzer, ohne root (siehe [Berechtigungen](#privileges)).
 >
 > `renet` ist das remote Low-Level-Tool. Für normale Benutzer-Workflows von Ihrer Workstation bevorzugen Sie `rdc`-Befehle wie `rdc repo up` und `rdc repo down`. Siehe [rdc vs renet](/de/docs/rdc-vs-renet).
 

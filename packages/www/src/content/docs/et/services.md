@@ -60,7 +60,7 @@ Kui Rediaccfile'i funktsioon käivitub, on saadaval järgmised keskkonna muutuja
 
 > **Hoiatus: Ärge kasutage `sudo docker`-it Rediaccfile'ides.** Käsk `sudo` lähtestab keskkonna muutujad, mis tähendab, et `DOCKER_HOST` kaob ja Dockeri käsud suunatakse süsteemi deemonile repositooriumi isoleeritud deemoni asemel. See katkestab konteineri isoleerimise ja võib põhjustada pordinäitude. Rediacc blokeerib täitmise, kui tuvastab `sudo docker` ilma `-E`-ta.
 >
-> Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Kui kutsute Dockerit otse, kasutage `docker`-it ilma `sudo`-ta: Rediaccfile'i funktsioonid jõuavad hoidla Dockeri deemonini universaalse kasutajana, ilma root-õigusteta (vt [Õigused](#õigused)).
+> Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Kui kutsute Dockerit otse, kasutage `docker`-it ilma `sudo`-ta: Rediaccfile'i funktsioonid jõuavad hoidla Dockeri deemonini universaalse kasutajana, ilma root-õigusteta (vt [Õigused](#privileges)).
 >
 > `renet` on kaugjuhtimise madala taseme tööriist. Tavaliste kasutaja töövoode jaoks oma tööjaamast eelistage `rdc` käske nagu `rdc repo up` ja `rdc repo down`. Vaadake [rdc vs renet](/en/docs/rdc-vs-renet).
 

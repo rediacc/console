@@ -59,7 +59,7 @@ Rediaccfile 在两个位置被发现：
 
 > **警告：请勿在 Rediaccfile 中使用 `sudo docker`。** `sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，Docker 命令将指向系统守护进程而非仓库的隔离守护进程。这会破坏容器隔离并可能导致端口冲突。如果 Rediacc 检测到未带 `-E` 的 `sudo docker`，将阻止执行。
 >
-> 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数以通用用户身份（而非 root）访问仓库的 Docker 守护进程（参阅[权限](/zh/docs/services#权限)）。
+> 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数以通用用户身份（而非 root）访问仓库的 Docker 守护进程（参阅[权限](/zh/docs/services#privileges)）。
 >
 > `renet` 是远程低级别工具。对于从工作站执行的正常用户工作流，请优先使用 `rdc` 命令，如 `rdc repo up` 和 `rdc repo down`。参阅 [rdc vs renet](/zh/docs/rdc-vs-renet)。
 

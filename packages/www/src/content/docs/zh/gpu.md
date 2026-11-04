@@ -78,7 +78,7 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 
 大多数 GPU 工作都经由 Docker，上文的设备授权就足够了：带 `devices:` 的 `renet compose` 和 `docker run --device` 通过仓库的 Docker 守护进程访问设备，CDI 钩子也在其下运行。Rediaccfile 若在 `up()` 或 `down()` 中调用 `nvidia-smi` 之类的主机工具，就会直接接触设备节点。这些函数在沙箱中以无特权的通用用户身份运行，所以同一个设备授权也会向它们开放 CDI 规范中的设备节点，仅当节点的权限模式需要时才加入节点所属的组（`video` 或 `render`）。`/dev/nvidia*` 下的 NVIDIA 节点通常对所有人可访问，而 `/dev/dri/renderD*` 和 `/dev/kfd` 通常属于 `render` 组。
 
-没有设备授权时，`up()` 中的 `nvidia-smi` 会因设备不存在而失败，日志会指出授权命令。需要设备节点之外权限的主机工具，则需要路径授权，参阅[权限](/zh/docs/services#权限)。
+没有设备授权时，`up()` 中的 `nvidia-smi` 会因设备不存在而失败，日志会指出授权命令。需要设备节点之外权限的主机工具，则需要路径授权，参阅[权限](/zh/docs/services#privileges)。
 
 ## 独占授权
 

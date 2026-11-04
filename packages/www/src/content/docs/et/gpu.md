@@ -78,7 +78,7 @@ Sama konteiner lükatakse tagasi hoidlas, millel luba pole, ja teade nimetab puu
 
 Enamik GPU-tööd käib Dockeri kaudu ja ülaltoodud seadmeluba on kõik, mida see vajab: `renet compose` koos `devices:`-ga ja `docker run --device` jõuavad seadmeni hoidla Dockeri deemoni kaudu ning CDI konksud töötavad selle all. Rediaccfile, mis kutsub `up()` või `down()` seest hosti tööriista nagu `nvidia-smi`, puudutab ise seadmesõlme. Need funktsioonid töötavad privilegeerimata universaalse kasutajana liivakastis, seega avab sama seadmeluba neile ka CDI spetsifikatsiooni seadmesõlmed ning lisab sõlme grupi (`video` või `render`) ainult siis, kui sõlme režiim seda nõuab. NVIDIA sõlmed asukohas `/dev/nvidia*` on tavaliselt kõigile ligipääsetavad ning `/dev/dri/renderD*` ja `/dev/kfd` kuuluvad tavaliselt gruppi `render`.
 
-Ilma seadmeloata ebaõnnestub `nvidia-smi` failis `up()` seadme puudumise tõttu ja žurnaal nimetab loa andmise käsu. Hosti tööriist, mis vajab enamat kui seadmesõlmed, vajab rajaluba, vt [Õigused](/et/docs/services#õigused).
+Ilma seadmeloata ebaõnnestub `nvidia-smi` failis `up()` seadme puudumise tõttu ja žurnaal nimetab loa andmise käsu. Hosti tööriist, mis vajab enamat kui seadmesõlmed, vajab rajaluba, vt [Õigused](/et/docs/services#privileges).
 
 ## Ainukasutusload
 

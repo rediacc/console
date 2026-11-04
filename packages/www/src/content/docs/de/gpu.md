@@ -78,7 +78,7 @@ Derselbe Container wird in einem Repo ohne Freigabe abgelehnt, und die Meldung n
 
 Die meiste GPU-Arbeit läuft über Docker, und die obige Geräte-Freigabe ist alles, was sie braucht: `renet compose` mit `devices:` und `docker run --device` erreichen das Gerät über den Docker-Daemon des Repos, und die CDI-Hooks laufen darunter. Ein Rediaccfile, das aus `up()` oder `down()` ein Host-Tool wie `nvidia-smi` aufruft, berührt den Geräteknoten selbst. Diese Funktionen laufen als unprivilegierter universeller Benutzer in einer Sandbox, daher öffnet dieselbe Geräte-Freigabe ihnen auch die Geräteknoten der CDI-Spezifikation und fügt die Gruppe des Knotens (`video` oder `render`) nur hinzu, wenn der Modus des Knotens eine verlangt. NVIDIA-Knoten unter `/dev/nvidia*` sind normalerweise für alle zugänglich, und `/dev/dri/renderD*` und `/dev/kfd` gehören normalerweise zur Gruppe `render`.
 
-Ohne die Geräte-Freigabe scheitert `nvidia-smi` in `up()` mit fehlendem Gerät, und das Journal nennt den Freigabe-Befehl. Ein Host-Tool, das mehr als die Geräteknoten braucht, braucht eine Pfad-Freigabe, siehe [Berechtigungen](/de/docs/services#berechtigungen).
+Ohne die Geräte-Freigabe scheitert `nvidia-smi` in `up()` mit fehlendem Gerät, und das Journal nennt den Freigabe-Befehl. Ein Host-Tool, das mehr als die Geräteknoten braucht, braucht eine Pfad-Freigabe, siehe [Berechtigungen](/de/docs/services#privileges).
 
 ## Exklusive Freigaben
 

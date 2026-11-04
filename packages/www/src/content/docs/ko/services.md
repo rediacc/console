@@ -59,7 +59,7 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 
 > **경고: Rediaccfile에서 `sudo docker`를 사용하지 마십시오.** `sudo` 명령은 환경 변수를 초기화하므로 `DOCKER_HOST`가 손실되고 Docker 명령이 저장소의 격리된 데몬 대신 시스템 데몬을 대상으로 합니다. 이는 컨테이너 격리를 깨고 포트 충돌을 일으킬 수 있습니다. Rediacc는 `-E` 없이 `sudo docker`를 감지하면 실행을 차단합니다.
 >
-> Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 root가 아닌 유니버설 사용자로 저장소의 Docker 데몬에 접근합니다([권한](/ko/docs/services#권한) 참조).
+> Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 root가 아닌 유니버설 사용자로 저장소의 Docker 데몬에 접근합니다([권한](/ko/docs/services#privileges) 참조).
 >
 > `renet`은 원격 저수준 도구입니다. 워크스테이션에서의 일반 사용자 워크플로에는 `rdc repo up` 및 `rdc repo down` 같은 `rdc` 명령을 선호하십시오. [rdc vs renet](/en/docs/rdc-vs-renet)을 참조하십시오.
 

@@ -78,7 +78,7 @@ Aynı konteyner izni olmayan bir repoda reddedilir ve ileti eksik izni adlandır
 
 GPU işlerinin çoğu Docker üzerinden geçer ve yukarıdaki aygıt izni ihtiyacın tamamıdır: `devices:` ile `renet compose` ve `docker run --device`, aygıta reponun Docker daemon'u üzerinden ulaşır; CDI kancaları da onun altında çalışır. `up()` veya `down()` içinden `nvidia-smi` gibi bir ana makine aracını çağıran Rediaccfile, doğrudan aygıt düğümüne dokunur. Bu fonksiyonlar sandbox içinde ayrıcalıksız evrensel kullanıcı olarak çalışır; bu yüzden aynı aygıt izni CDI spesifikasyonunun aygıt düğümlerini de onlara açar ve düğümün grubunu (`video` veya `render`) yalnızca düğümün modu gerektirdiğinde ekler. `/dev/nvidia*` altındaki NVIDIA düğümlerine normalde herkes erişebilir; `/dev/dri/renderD*` ve `/dev/kfd` ise normalde `render` grubuna aittir.
 
-Aygıt izni olmadan `up()` içindeki `nvidia-smi` aygıt bulunamadığı için başarısız olur ve günlük izin komutunu belirtir. Aygıt düğümlerinden fazlasına ihtiyaç duyan bir ana makine aracı yol izni gerektirir, bkz. [Ayrıcalıklar](/tr/docs/services#ayrıcalıklar).
+Aygıt izni olmadan `up()` içindeki `nvidia-smi` aygıt bulunamadığı için başarısız olur ve günlük izin komutunu belirtir. Aygıt düğümlerinden fazlasına ihtiyaç duyan bir ana makine aracı yol izni gerektirir, bkz. [Ayrıcalıklar](/tr/docs/services#privileges).
 
 ## Özel izinler
 

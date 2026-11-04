@@ -59,7 +59,7 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 
 > **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`-E`なしの`sudo docker`を検出すると実行をブロックします。
 >
-> Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は、rootではなくユニバーサルユーザーとしてリポジトリのDockerデーモンに接続します（[権限](/ja/docs/services#権限)を参照）。
+> Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は、rootではなくユニバーサルユーザーとしてリポジトリのDockerデーモンに接続します（[権限](/ja/docs/services#privileges)を参照）。
 >
 > `renet`はリモートロー・レベルツールです。ワークステーションから通常のユーザー作業フローを行う場合は、`rdc repo up`や`rdc repo down`などの`rdc`コマンドを優先してください。[rdc vs renet](/ja/docs/rdc-vs-renet)を参照してください。
 
