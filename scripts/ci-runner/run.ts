@@ -83,6 +83,7 @@ import {
 import { stepDurationsMs } from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
+import { seedReceipt } from './lease-seed';
 import {
   cappedChanged,
   type GateLedger,
@@ -104,7 +105,7 @@ import {
   runPool,
   type Sched,
 } from './pool';
-import { NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
+import { leaseMainOf, NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
 import {
   admitTouched,
   type DropKind,
@@ -2003,6 +2004,27 @@ async function selftest(): Promise<number> {
     receiptPathFor(parseArgs(['--quick'])) === RECEIPT_PATH,
     "CONTROL: without --receipt-out the receipt stays in this checkout's own cache"
   );
+  // A lease's --narrow reads the main checkout's receipt, which the seed copies; no receipt is no copy and no failure.
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-receipt-'));
+    const rel = path.relative(REPO_ROOT, RECEIPT_PATH);
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'lease');
+    fs.mkdirSync(lease);
+    seedReceipt(lease, live);
+    require_(
+      !fs.existsSync(path.join(lease, rel)),
+      'CONTROL: a main checkout with no receipt seeds none into the lease'
+    );
+    fs.mkdirSync(path.dirname(path.join(live, rel)), { recursive: true });
+    fs.writeFileSync(path.join(live, rel), '{"failed":[]}');
+    seedReceipt(lease, live);
+    require_(
+      fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
+      "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
+    );
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
   let relRefused = false;
   try {
     parseArgs(['--receipt-out', 'relative/receipt.json']);
@@ -4523,6 +4545,12 @@ function defaultEventsFile(opts: Options, runId: string): string {
   return path.join(dir, `${runId}.jsonl`);
 }
 
+/** The whole lane, named where it can run: `ci:quick` is refused in a lease, whose main checkout is where the receipt comes from. */
+function wholeLane(): string {
+  const main = leaseMainOf(REPO_ROOT);
+  return main === undefined ? '`npm run ci:quick`' : `\`npm run ci:quick\` in ${main}`;
+}
+
 /**
  * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
@@ -4540,7 +4568,7 @@ function narrowPlan(
   } catch {
     return {
       lines: [],
-      error: `ci-runner: --narrow needs the last receipt at ${dest}; run \`npm run ci:quick\` first`,
+      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane()} first`,
     };
   }
   const gates = specs.filter((s) => s.gate);
@@ -4625,11 +4653,10 @@ function narrowPlan(
   if (ids.size === 0)
     return {
       lines,
-      error:
-        'ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: npm run ci:quick',
+      error: `ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: ${wholeLane()}`,
     };
   lines.push(
-    `  run it: npm run ci:quick -- --narrow   (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
+    `  run it: npm run ${leaseMainOf(REPO_ROOT) === undefined ? 'ci:quick' : 'ci'} -- --narrow   (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
   );
   return { ids, lines };
 }

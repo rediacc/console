@@ -16,6 +16,7 @@ import { assertNoSelfLoop, syncBuilds, syncDependencies } from './quick-clone.js
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
 const SHARED = 'packages/shared';
 const E2E = 'packages/e2e-tests';
+const RECEIPT = '.ci/cache/prepush-receipt.json';
 
 function run(cmd: string, args: readonly string[], cwd: string): string {
   const env = { ...process.env };
@@ -84,6 +85,18 @@ function copyEnvFiles(lease: string, live: string): void {
   }
 }
 
+/** `npm run ci -- --narrow` reads the last receipt and writes none, and a lease cannot make one because `ci:quick` is refused there. The copy serves that read only: the push guards are refused from a lease, so it authorises nothing. */
+export function seedReceipt(lease: string, live: string): string {
+  const source = path.join(live, RECEIPT);
+  if (!fs.existsSync(source)) return `${RECEIPT}: none in the main checkout, --narrow will say so`;
+  const dest = path.join(lease, RECEIPT);
+  // tree-write: safe a directory inside the lease tree, which is ignored and never the live tree
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  // tree-write: safe a path inside the lease tree, which is ignored and never the live tree
+  fs.copyFileSync(source, dest);
+  return `${RECEIPT}: copied from the main checkout for --narrow`;
+}
+
 export function seedLease(lease: string, live: string, commit: string): string[] {
   try {
     const notes = syncDependencies(lease, live, commit);
@@ -91,6 +104,7 @@ export function seedLease(lease: string, live: string, commit: string): string[]
     linkCaches(lease, live);
     notes.push(seedSharedDist(lease, live));
     copyEnvFiles(lease, live);
+    notes.push(seedReceipt(lease, live));
     assertNoSelfLoop(live);
     assertNoSelfLoop(lease);
     return notes;
