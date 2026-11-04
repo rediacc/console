@@ -656,6 +656,15 @@ def test_stage_refuses_a_wrongly_keyed_renet_when_a_key_is_bound(r2, tmp_path, r
     assert not (r2 / "executor").exists()
 
 
+def test_stage_writes_a_correctly_keyed_renet_when_a_key_is_bound(r2, tmp_path, real_gate):
+    # The control of the refusal above: with the same key bound, a renet carrying it still stages.
+    del real_gate
+    sources = make_sources(tmp_path / "src")
+    sources[ea.RENET].write_bytes(renet_blob(version="1.4.2", key=PRODUCTION_KEY))
+    assert ea.stage("1.4.2", "deadbeef", sources) == "staged"
+    assert (r2 / "executor").exists()
+
+
 def test_the_build_info_reader_finds_a_real_go_binary():
     # A real binary when the tree has one. Its build info is what `go version -m` prints.
     binary = paths.repo_root() / "private" / "bin" / ea.RENET

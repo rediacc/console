@@ -336,7 +336,7 @@ def check_renet(
 
 
 def stage(version: str, git_sha: str, sources: dict[str, pathlib.Path]) -> str:
-    """Write `executor/v<version>/` once. Returns `staged` or `skipped`; refuses when the version exists with other bytes, or when the incoming renet is stamped with another version, or (with `ACCOUNT_ED25519_PUBLIC_KEY` bound) wrongly keyed: the objects are write-once, so a bad renet must not be written."""
+    """Write `executor/v<version>/` once. Returns `staged` or `skipped`; refuses when the version exists with other bytes, or when the incoming renet is stamped with another version, or (with `ACCOUNT_ED25519_PUBLIC_KEY` bound) wrongly keyed: the objects are write-once, so a bad renet must not be written. The renet check runs before the existing-manifest comparison, so a retry of an already staged version whose incoming renet is wrongly keyed is refused rather than returning `skipped`."""
     check_version(version)
     manifest = build_manifest(version, git_sha, sources)
     check_renet(
