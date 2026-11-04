@@ -403,8 +403,8 @@ export async function rehearseCluster(
       debug: options.debug,
     });
   } catch (err) {
-    // A failed fork/gate still tries to discard whatever partial state exists.
-    await discardRehearsal(destControl, clusterName, tag, options.debug);
+    // A failed fork/gate still tries to discard whatever partial state exists. A discard still running must not replace the failure being reported.
+    await discardRehearsal(destControl, clusterName, tag, options.debug).catch(warnPendingTeardown);
     throw err;
   }
 
@@ -474,6 +474,12 @@ async function tryDispatch(
     if (err instanceof ClusterPhasePendingError) throw err;
     outputService.warn(`  discard: ${functionName} on ${machineName} failed (continuing): ${err}`);
   }
+}
+
+/** A teardown phase still running leaves a warning, so the failure that started the teardown is the one reported; any other error from the teardown propagates. */
+function warnPendingTeardown(err: unknown): void {
+  if (!(err instanceof ClusterPhasePendingError)) throw err;
+  outputService.warn(`  teardown not finished: ${err.message}`);
 }
 
 export interface MigrateClusterOptions {
@@ -577,7 +583,9 @@ export async function migrateCluster(
       { debug: options.debug }
     );
   } catch (attachErr) {
-    await rollbackMigrateToSource(control, controlDs, controlDsMount, options.debug);
+    await rollbackMigrateToSource(control, controlDs, controlDsMount, options.debug).catch(
+      warnPendingTeardown
+    );
     throw new Error(
       `cluster migrate "${clusterName}" failed at the destination attach and was ROLLED BACK to ` +
         `"${control.name}" (control datastore re-attached + control plane restarted). The dest's ` +

@@ -100,7 +100,7 @@ async function prepareBackupList(
 }
 
 /**
- * A failed listing throws instead of rendering an error and returning an empty array: an error line followed by an empty table made a failed listing and a datastore with no backups look the same, and one of those means the backups are missing. The caller's handleError renders the throw, and the engine's own words are carried along so renet's reason stays visible.
+ * A failed listing renders the engine's failure and then throws, instead of returning an empty array: an error line followed by an empty table made a failed listing and a datastore with no backups look the same, and one of those means the backups are missing. The thrown message carries the engine's own words so renet's reason stays visible, and the caller's handleError sets the exit code from it.
  */
 function throwListFailure(result: ExecuteResult): never {
   renderLocalExecutionFailure(

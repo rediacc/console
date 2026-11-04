@@ -325,13 +325,22 @@ describe('backup status', () => {
     expect(executed[0].jobSteps).toEqual([
       expect.objectContaining({
         name: 'renderBackupStatus',
-        params: { machine: 'm1', strategy: '' },
+        params: { machine: 'm1', expected: JSON.stringify(EXPECTED) },
       }),
     ]);
   });
 
   it('renders the table in the job step from the job output, so the table content is the old one', async () => {
     answer = { ...FINISHED, stdout: SHOW };
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', EXPECTED, SHOW);
+  });
+
+  it('renders the units the job read, though the bindings changed after it started', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+    schedule.expectedStatusUnits.mockResolvedValueOnce(EXPECTED).mockResolvedValue([]);
 
     await rdcBackup('status', '-m', 'm1');
 

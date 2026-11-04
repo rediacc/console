@@ -9,9 +9,10 @@ import type { ExecuteOptions, ExecuteResult } from '../../services/executor/type
 import { setCommandJobDeps } from '../../services/jobs/command-job.js';
 import { TicketStore } from '../../services/jobs/ticket-store.js';
 
-/** Route `runCommandJob` through `execute`; call the returned function to restore the live dependencies. */
+/** Route `runCommandJob` through `execute`; call the returned function to restore the live dependencies. `warn` receives what a failed step reports. */
 export function installJobDeps(
-  execute: (options: ExecuteOptions) => Promise<ExecuteResult>
+  execute: (options: ExecuteOptions) => Promise<ExecuteResult>,
+  warn: (line: string) => void = () => undefined
 ): () => void {
   const dir = mkdtempSync(join(tmpdir(), 'job-deps-'));
   const store = new TicketStore('test', dir);
@@ -21,7 +22,7 @@ export function installJobDeps(
     stepDeps: () =>
       Promise.resolve({
         observer: { configName: 'test' },
-        warn: () => undefined,
+        warn,
         claim: ({ steps }) =>
           Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
       }),

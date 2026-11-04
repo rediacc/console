@@ -3,9 +3,10 @@
  *
  * One call per job writes `rediacc.job.id`, `rediacc.job.function` and
  * `rediacc.job.follow`, and adds `rediacc.job.outcome` once the run's result is
- * known, `rediacc.job.start_latency_ms` (the exec to the first event) and, for a
- * followed proxy run, `rediacc.job.polls`. A command that runs several jobs
- * leaves the attributes of the last one.
+ * known, and `rediacc.job.start_latency_ms` (from the start of the call, which
+ * includes the connection, to the first event). `rediacc.job.polls` is written
+ * only when the caller passes a count, and the proxy poll loop does not yet. A
+ * command that runs several jobs leaves the attributes of the last one.
  */
 
 import { telemetryService } from '../telemetry/telemetry.js';

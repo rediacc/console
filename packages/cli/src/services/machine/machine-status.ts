@@ -65,7 +65,12 @@ export async function fetchMachineStatus(
     );
   }
 
-  const parsed: unknown = JSON.parse(result.stdout ?? '');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(result.stdout ?? '');
+  } catch {
+    throw new Error('Failed to parse renet output: not JSON');
+  }
   if (!isListResult(parsed)) {
     throw new Error('Failed to parse renet output: unexpected format');
   }

@@ -604,4 +604,48 @@ describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', (
       expect(d.machineName).toBe('dest-cp-1');
     }
   });
+
+  it('reports the gate failure, not the teardown, when the teardown is still running', async () => {
+    stubOutput();
+    stubConfig({ prod: cephCluster, dest: cephCluster });
+    let clock = 0;
+    __setHealthGateClock(() => {
+      clock += 200_000;
+      return clock;
+    });
+    const exec = vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+      if (opts.functionName === 'kube_health') {
+        return Promise.resolve({ success: false, error: 'not ready' } as never);
+      }
+      if (opts.functionName === 'kube_uninstall') {
+        return Promise.resolve({ success: true, state: 'running', jobId: 'job-1' } as never);
+      }
+      if (opts.functionName === 'kube_join_token') {
+        return Promise.resolve({
+          success: true,
+          stdout: '{"token":"K10abcdef::server:0123456789abcdef"}',
+        } as never);
+      }
+      if (opts.functionName === 'datastore_list') {
+        return Promise.resolve({ success: true, stdout: datastoreListJson('prod') } as never);
+      }
+      if (opts.functionName === 'datastore_fork') {
+        const parent = String((opts.params as { parent?: string }).parent ?? 'ds');
+        const tag = String((opts.params as { tag?: string }).tag ?? 't');
+        return Promise.resolve({ success: true, stdout: forkRecordJson(parent, tag) } as never);
+      }
+      if (opts.functionName === 'ceph_client_config_export') {
+        return Promise.resolve({ success: true, stdout: cephConfigExportJson() } as never);
+      }
+      return Promise.resolve({ success: true } as never);
+    });
+
+    await expect(rehearseCluster('prod', { cluster: 'dest', tag: 'r1' })).rejects.toThrow(
+      /health gate/
+    );
+    const names = exec.mock.calls.map((c) => c[0].functionName);
+    // The teardown stops at the running phase: no datastore is detached beside it.
+    expect(names).toContain('kube_uninstall');
+    expect(names).not.toContain('datastore_detach');
+  });
 });

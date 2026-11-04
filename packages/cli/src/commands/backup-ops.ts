@@ -371,7 +371,8 @@ async function showBackupStatus(
       debug,
       captureOutput: true,
     },
-    [planStep('renderBackupStatus', { machine: machineName, strategy: strategyFilter ?? '' })]
+    // The step renders the unit list the job read, not a recomputation from a config that may have changed since.
+    [planStep('renderBackupStatus', { machine: machineName, expected: JSON.stringify(expected) })]
   );
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
@@ -415,12 +416,11 @@ bindStepHandler('seedStrategyRetention', async ({ machine, params }) => {
 });
 
 bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
-  const { expectedStatusUnits, renderBackupScheduleStatus } = await import(
-    '../services/backup/backup-schedule.js'
+  const { renderBackupScheduleStatus } = await import('../services/backup/backup-schedule.js');
+  const expected: unknown = JSON.parse(
+    typeof params.expected === 'string' ? params.expected : '[]'
   );
-  const strategy =
-    typeof params.strategy === 'string' && params.strategy ? params.strategy : undefined;
-  renderBackupScheduleStatus(machine, await expectedStatusUnits(machine, strategy), output ?? '');
+  renderBackupScheduleStatus(machine, Array.isArray(expected) ? expected : [], output ?? '');
 });
 
 /** Register the machine-scoped backup ops: schedule, run, status, cancel. */

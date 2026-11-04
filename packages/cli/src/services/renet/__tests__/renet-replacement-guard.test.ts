@@ -345,6 +345,30 @@ describe('the replacements a provision refuses', () => {
     expect(result.success).toBe(true);
   });
 
+  it('a probe of the slot that cannot run stops the upload instead of reading as an empty slot', async () => {
+    state.version = '2.5.0';
+    const p = await provisioner();
+    const sftp = remote(null, null);
+    const original = sftp.exec.getMockImplementation();
+    sftp.exec.mockImplementation((command: string) => {
+      if (
+        command.includes(' version 2>/dev/null') &&
+        !command.includes('/current/renet') &&
+        !command.includes('flock')
+      ) {
+        return Promise.reject(new Error('connection reset'));
+      }
+      return original?.(command) ?? Promise.resolve('');
+    });
+    const result = await p.provision(
+      CONFIG,
+      { localBinaryPath: writeBinary(renetBytes('2.5.0')) },
+      sftp as never
+    );
+    expect(result.success).toBe(false);
+    expect(stageMock).not.toHaveBeenCalled();
+  });
+
   it('a probe of `current` that cannot run stops the upload instead of reading as no renet', async () => {
     state.version = '2.5.0';
     const p = await provisioner();
@@ -381,6 +405,39 @@ describe('a coded failure inside the provision', () => {
       .provision(CONFIG, { localBinaryPath: writeBinary(renetBytes('2.5.0')) }, sftp as never)
       .catch((caught: unknown) => caught);
     expect((error as CliExitError).code).toBe('BUSY');
+  });
+});
+
+describe('an uncoded failure inside the provision', () => {
+  it('stays a failed result, and a coded one other than BUSY keeps its code', async () => {
+    state.version = '2.5.0';
+    const p = await provisioner();
+    const uncoded = await p.provision(
+      CONFIG,
+      {
+        localBinaryPath: writeBinary(renetBytes('2.5.1')),
+        uploadGuard: () => {
+          throw new Error('guard said no');
+        },
+      },
+      remote(null, null) as never
+    );
+    expect(uncoded.success).toBe(false);
+    expect(uncoded.error).toContain('guard said no');
+    const { CliExitError: Coded } = await import('../../../utils/cli-exit-error.js');
+    const coded = await p
+      .provision(
+        CONFIG,
+        {
+          localBinaryPath: writeBinary(renetBytes('2.5.1')),
+          uploadGuard: () => {
+            throw new Coded('INFRA_FAILED', 'guard refused');
+          },
+        },
+        remote(null, null) as never
+      )
+      .catch((caught: unknown) => caught);
+    expect((coded as CliExitError).code).toBe('INFRA_FAILED');
   });
 });
 

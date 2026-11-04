@@ -422,7 +422,7 @@ class RenetProvisionerService {
     } catch (error) {
       // Fail open: a machine that failed to provision must not be skipped by the persistent cache on the next attempt.
       await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
-      // A coded refusal (BUSY on the remote install lock) keeps its code, exit status and next action.
+      // Any CliExitError is a coded refusal (today BUSY on the remote install lock) and keeps its code, exit status and next action; an uncoded failure becomes a failed result.
       if (error instanceof CliExitError) throw error;
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -441,8 +441,11 @@ class RenetProvisionerService {
     options?: ProvisionOptions
   ): Promise<GuardedProvisionResult> {
     const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
-    const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
-    // `current` is what the machine runs, and the install below repoints it even when the slot already holds the local bytes. A probe that cannot run throws: reading it as "no renet" would upload past the guard.
+    // A probe that cannot run throws for the slot and for `current` alike: reading it as "no renet" would upload past the guard, over a renet of unknown version. An absent binary is not a failed exec, since the probe command ends in `|| true`.
+    const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath, {
+      strict: true,
+    });
+    // `current` is what the machine runs, and the install below repoints it even when the slot already holds the local bytes.
     const current = await this.getRemoteHashAndVersion(sftp, REMOTE_CURRENT_PATH, {
       strict: true,
     });

@@ -17,6 +17,8 @@ const m = vi.hoisted(() => ({
   execute: vi.fn(),
   print: vi.fn(),
   report: vi.fn(),
+  readActivation: vi.fn(),
+  refreshBatch: vi.fn(),
 }));
 
 vi.mock('../../services/executor/executor-factory.js', () => ({
@@ -29,19 +31,21 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
 }));
 vi.mock('../../services/account/license.js', () => ({
   fetchSubscriptionLicenseReportOrThrow: m.report,
-  readMachineActivationStatus: vi.fn(),
-  readRuntimeRepoLicenseStatuses: vi.fn(),
+  readMachineActivationStatus: m.readActivation,
+  readRuntimeRepoLicenseStatuses: vi.fn().mockResolvedValue([]),
   refreshRepoLicenseIdentity: vi.fn(),
-  refreshRepoLicensesBatch: vi.fn(),
+  refreshRepoLicensesBatch: m.refreshBatch,
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getTeam: vi.fn().mockResolvedValue('team'),
+    getLocalConfig: vi.fn().mockResolvedValue({ sshPrivateKey: 'key', ssh: {} }),
+    getLocalMachine: vi.fn().mockResolvedValue({ ip: '10.0.0.1', user: 'root' }),
     listRepositories: vi.fn().mockResolvedValue([]),
   },
 }));
 vi.mock('../../services/renet/renet-execution.js', () => ({
-  acquireRemoteRenet: vi.fn(),
+  acquireRemoteRenet: vi.fn().mockResolvedValue({ remotePath: '/usr/bin/renet' }),
   readSSHKey: vi.fn(),
 }));
 vi.mock('../../services/core/output.js', () => ({
@@ -52,7 +56,9 @@ vi.mock('../../utils/errors.js', async (orig) => ({
   getOutputFormat: () => 'json',
 }));
 
-const { executeSubscriptionStatus } = await import('../subscription-actions.js');
+const { executeSubscriptionStatus, executeMachineStatus, executeMachineRefresh } = await import(
+  '../subscription-actions.js'
+);
 const { JOB_PLANS, CONVERTED } = await import('../../services/jobs/plans.js');
 
 beforeEach(() => {
@@ -73,6 +79,26 @@ describe('subscription verbs (J20)', () => {
     await executeSubscriptionStatus();
     expect(m.execute).not.toHaveBeenCalled();
     expect(m.print).toHaveBeenCalledOnce();
+  });
+
+  it('runs the two machine verbs without starting a job', async () => {
+    m.refreshBatch.mockResolvedValue({
+      scanned: 0,
+      issued: 0,
+      refreshed: 0,
+      unchanged: 0,
+      failed: 0,
+      valid: 0,
+      invalidSignatureDetected: 0,
+      failures: [],
+      recoveryFailureMode: 'none',
+    });
+    await executeMachineStatus('m1');
+    await executeMachineRefresh('m1');
+    // Both verbs reached their SFTP reads: the verbs ran, they did not stop early.
+    expect(m.readActivation).toHaveBeenCalled();
+    expect(m.refreshBatch).toHaveBeenCalled();
+    expect(m.execute).not.toHaveBeenCalled();
   });
 
   it('the two machine verbs are planned for J20 and not yet converted', () => {

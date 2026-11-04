@@ -354,6 +354,21 @@ describe('backup list', () => {
     expect(rows.map((r) => r.guid)).toEqual(['wanted']);
   });
 
+  it('a failed listing throws with the engine reason and prints no table', async () => {
+    answer = {
+      ...finished(),
+      success: false,
+      exitCode: 1,
+      state: 'failed' as const,
+      stderr: 'datastore unreadable',
+    };
+
+    await expect(
+      listBackups({ sourceType: 'local', from: 'm1' }, { machine: 'm1' })
+    ).rejects.toThrow(/backup list failed: datastore unreadable/);
+    expect(mockPrint).not.toHaveBeenCalled();
+  });
+
   it('control: under --background nothing is printed', async () => {
     answer = BACKGROUND;
     await listBackups({ sourceType: 'local', from: 'm1' }, { machine: 'm1' });

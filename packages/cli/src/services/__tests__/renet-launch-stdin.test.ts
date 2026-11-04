@@ -1,9 +1,9 @@
 /**
  * Secrets reach a remote renet through stdin, never through its command line.
  *
- * Every renet launch the CLI sends over SSH (`execute`, detached `job start`,
- * and the `list all` of `machine status`, which is now a job) used to splice `REDIACC_OTLP_PASS` and each `REDIACC_SECRET_*`
- * into a `sudo env K='v' renet ...` command, readable in the local ssh argv
+ * Every renet launch the CLI sends over SSH (`execute` and detached `job start`,
+ * which also carries the `list all` of `machine status`) used to splice
+ * `REDIACC_OTLP_PASS` and each `REDIACC_SECRET_*` into a `sudo env K='v' renet ...` command, readable in the local ssh argv
  * and in `ps` on the machine. The launch now carries them as NUL-terminated
  * records ahead of the vault, read by a root bash that exports them and execs
  * renet.

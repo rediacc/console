@@ -103,6 +103,12 @@ describe('fetchMachineStatus', () => {
     expect(mockExecute.mock.calls[0][0].commandKind.args).not.toHaveProperty('sections');
   });
 
+  it('names the parse failure when the job succeeds with no stdout', async () => {
+    mockExecute.mockResolvedValue({ success: true, exitCode: 0 });
+
+    await expect(fetchMachineStatus('m1')).rejects.toThrow('Failed to parse renet output');
+  });
+
   it('throws with the job stderr when the job fails', async () => {
     mockExecute.mockResolvedValue({ success: false, exitCode: 1, stderr: 'boom' });
 

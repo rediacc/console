@@ -170,6 +170,9 @@ describe('repo pull --up (a successor step: pullDeploy)', () => {
     answer = FAILED;
     await runPull(['--up']);
 
+    // The pull was dispatched with the deploy planned, so the empty upCalls is the failure's doing and not an early exit.
+    expect(jobCalls.map((o) => o.functionName)).toEqual(['backup_pull']);
+    expect(jobCalls[0].jobSteps?.map((s) => s.name)).toEqual(['pullDeploy']);
     expect(upCalls).toEqual([]);
   });
 

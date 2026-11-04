@@ -225,7 +225,7 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderBackupStatus',
     'success',
-    ['machine', 'strategy'],
+    ['machine', 'expected'],
     () => import('../../commands/backup-ops.js'),
     true
   ),

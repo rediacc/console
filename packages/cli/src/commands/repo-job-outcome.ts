@@ -8,7 +8,8 @@ import { renderLocalExecutionFailure } from '../utils/local-execution-failures.j
  * Settle the outcome of a converted repo verb's one job. A pending outcome (`--background`, the proxy window, a lost
  * tail) owes its steps to the ticket and only sets the exit code the executor reported. A failed job renders its
  * failure. A finished one has already run its steps inside the attach window, so a step that did not finish is named
- * and fails the command. Returns true when the job finished successfully.
+ * and fails the command. Returns true only when the job finished successfully with every step, so a caller that
+ * prints success on the return value never does while a step is owed.
  */
 export function settleRepoJob(
   verb: string,
@@ -30,6 +31,7 @@ export function settleRepoJob(
       `${verb}: the job finished, but the step(s) ${unfinished.join(', ')} did not; rdc job wait settles them.`
     );
     setExitCode(1);
+    return false;
   }
   return true;
 }
