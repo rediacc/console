@@ -1143,9 +1143,9 @@ def _repo_files(root: pathlib.Path) -> list[str]:
         if r.returncode == 0:
             return r.stdout.splitlines()
     return sorted(
-        p.relative_to(root).as_posix()
-        for p in root.rglob("*")
-        if p.is_file() and ".git" not in p.parts
+        pathlib.Path(dirpath, name).relative_to(root).as_posix()
+        for dirpath, _dirs, names in paths.walk_tree(root)
+        for name in names
     )
 
 

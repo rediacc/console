@@ -1100,6 +1100,8 @@ function importersOf(pkg: string, dirs: string[]): string[] {
         '**/.cache/**',
         '**/.build_cache/**',
         '**/.ci/cache/**',
+        // Lease trees hold whole checkouts of this repository; relative to `cwd`, so a session whose own root is a lease still reads itself.
+        '.claude/worktrees/**',
       ],
     }).sort((a, b) => Number(a > b) - Number(a < b)))
       if (!isOutput(f) && re.test(fs.readFileSync(path.join(d, f), 'utf8')))

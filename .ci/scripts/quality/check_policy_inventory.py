@@ -81,6 +81,7 @@ import tempfile
 import tokenize
 
 import _cipath
+from rediacc_ci import paths
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.policy_paths import policy_path
 
@@ -268,7 +269,7 @@ def source_files(root: pathlib.Path) -> tuple[list[str], str]:
     except OSError:
         pass
     out = []
-    for dirpath, dirnames, filenames in os.walk(root):
+    for dirpath, dirnames, filenames in paths.walk_tree(root):
         dirnames[:] = [d for d in dirnames if d not in WALK_SKIP]
         out.extend(
             os.path.relpath(os.path.join(dirpath, f), str(root))
