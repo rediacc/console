@@ -73,16 +73,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 2 of 39 plans done, 598 of 819 boxes done (73%).
+Promoted: 3 of 39 plans done, 601 of 819 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-backup-program.md | 167/196 | 29 open |
-| 2 | PLAN-cloudflare-proxy.md | 26/30 | 4 open |
+| 2 | PLAN-cloudflare-proxy.md | 27/30 | 3 open |
 | 3 | PLAN-sync-remote-file-ownership.md | 6/7 | 1 open |
-| 4 | PLAN-telemetry-export.md | 17/20 | 3 open |
+| 4 | PLAN-telemetry-export.md | 18/20 | 2 open |
 | 5 | PLAN-renet-bridge-leftovers.md | 15/16 | 1 open |
-| 6 | PLAN-token-ip-rebind.md | 10/11 | 1 open |
+| 6 | PLAN-token-ip-rebind.md | 11/11 | done |
 | 7 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
 | 8 | PLAN-plan-preflight.md | 8/9 | 1 open |
 | 9 | PLAN-renet-run-docker-sock-isolation.md | 3/4 | 1 open |

@@ -493,7 +493,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 53 | 1 | 9 | 10869 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 405 | 4 | 26 | 60279 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 406 | 3 | 27 | 60469 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 112 | 0 | 10 | 39794 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3939 |
@@ -588,11 +588,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-submodule-branch-coordination-guard.md` | proposed | 109 | 8 | 0 | 18747 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 133 | 1 | 6 | 21029 |
-| `agent/plans/PLAN-telemetry-export.md` | approved | 204 | 3 | 17 | 50934 |
+| `agent/plans/PLAN-telemetry-export.md` | approved | 206 | 2 | 18 | 51160 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 320 | 6 | 14 | 45502 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
-| `agent/plans/PLAN-token-ip-rebind.md` | draft | 420 | 1 | 10 | 39294 |
+| `agent/plans/PLAN-token-ip-rebind.md` | draft | 421 | 0 | 11 | 39472 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |

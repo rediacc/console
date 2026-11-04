@@ -42,12 +42,13 @@ The submodule PR (A) merges first. The console PR (B, plus the pointer bump) fol
     (ticked) 2026-10-03T09:41:20Z by d778be9d: bd0278084: account-client-ip-rebind.test.ts (16 tests) + config-remote-password.test.ts, mutation controls recorded
 - [x] T8 [B] CLI i18n in 13 locales. Update the www `account-security.md` in 13 locales and regenerate the translation hashes and search indexes (section 7).
     (ticked) 2026-10-03T09:41:22Z by d778be9d: bd0278084: 11 CLI keys x13 locales + hashes, cli-contract regenerated, account-security.md x13, search indexes regenerated
-- [ ] T9 [lead] Closure:
+- [x] T9 [lead] Closure:
   - The removal sweep in section 8 returns nothing.
   - Deploy the account server (eu) before the CLI release.
   - Live smoke of the operator's case: take a token bound to an address, change the egress IP (a VPN or phone hotspot is enough), run `rdc config remote enable`, get one prompt, enter the code, and the command succeeds.
   - Check that the portal Activity shows the "API token moved to a new IP" row.
   - Check that the same token with a wrong code from a third IP is refused.
+    (ticked) 2026-11-04T07:39:18Z by d778be9d: fileline:agent/plans/PLAN-token-ip-rebind.md:51 bench receipt lp-96f7f22b87b4. Accepted by operator ruling ASKED:2026-11-04T07:38Z
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:15:41Z by d778be9d: live-proof lp-96f7f22b87b4 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
