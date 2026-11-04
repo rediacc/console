@@ -72,7 +72,10 @@ function seedDist(lease: string, live: string, pkg: string): string {
 function copyEnvFiles(lease: string, live: string): void {
   const source = path.join(live, E2E);
   if (!fs.existsSync(source)) return;
-  for (const name of fs.readdirSync(source)) {
+  const entries = fs.readdirSync(source);
+  // Few `.env*` files is normal; an empty package directory means the path is wrong, so the copy would pass with nothing read.
+  if (entries.length === 0) throw new Error(`VACUOUS: ${source} lists no entry at all`);
+  for (const name of entries) {
     if (!name.startsWith('.env')) continue;
     const from = path.join(source, name);
     const to = path.join(lease, E2E, name);

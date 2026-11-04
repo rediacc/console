@@ -266,6 +266,14 @@ DRILL_LEG_EXEMPT = {
             "BLOCKER: leg i runs `rdc backup verify` on a real repository and needs an ops VM; "
             "the CI drill job has no machine, so the leg is opt-in (`--legs i`) and runs by hand"
         ),
+        "t": (
+            "BLOCKER: leg t drives session expiry through real renet (`--renet --vm`) and the "
+            "gateway's session-TTL seam; the CI drill job has no ops VM, so the leg is opt-in"
+        ),
+        "u": (
+            "BLOCKER: leg u kills a real renet run and checks the reconcile (`--renet --vm`); "
+            "the CI drill job has no ops VM, so the leg is opt-in (`--legs u`) and runs by hand"
+        ),
     },
     "license": dict.fromkeys(("a", "b", "c", "d", "e", "f"), _LICENSE_DRILL_BLOCKER),
 }
