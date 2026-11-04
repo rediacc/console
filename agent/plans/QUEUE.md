@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 1 of 39 plans done, 596 of 819 boxes done (72%).
+Promoted: 2 of 39 plans done, 598 of 819 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -88,7 +88,7 @@ Promoted: 1 of 39 plans done, 596 of 819 boxes done (72%).
 | 9 | PLAN-renet-run-docker-sock-isolation.md | 3/4 | 1 open |
 | 10 | PLAN-config-networkid-discovery.md | 7/8 | 1 open |
 | 11 | PLAN-renet-fetch-retries.md | 2/3 | 1 open |
-| 12 | PLAN-cloudflare-spend-guard.md | 8/10 | 2 open |
+| 12 | PLAN-cloudflare-spend-guard.md | 10/10 | done |
 | 13 | PLAN-renet-runtime-converge.md | 4/5 | 1 open |
 | 14 | PLAN-sandbox-tenant-separation.md | 6/8 | 2 open |
 | 15 | PLAN-converge-preflight-and-repo-recovery.md | 18/19 | 1 open |
