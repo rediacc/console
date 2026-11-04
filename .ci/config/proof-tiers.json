@@ -85,6 +85,7 @@
         ".ci/rediacc_ci/drills/session_teardown.py": ["renet"],
         ".ci/rediacc_ci/drills/converge_preflight.py": ["renet"],
         ".ci/rediacc_ci/drills/gpu_grants.py": ["renet"],
+        ".ci/rediacc_ci/drills/lifecycle_privilege.py": ["renet"],
         ".ci/rediacc_ci/drills/vm_ssh.py": ["renet", "account"],
         ".ci/rediacc_ci/drills/wire.py": ["renet", "account"],
         ".ci/rediacc_ci/drills/backup_check_trigger.py": ["renet"]

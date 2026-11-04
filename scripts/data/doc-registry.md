@@ -942,7 +942,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/dev | 7 | .py 7 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 6 | .py 6 |
-| .ci/rediacc_ci/drills | 19 | .py 19 |
+| .ci/rediacc_ci/drills | 20 | .py 20 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/housekeeping | 8 | .py 8 |
 | .ci/rediacc_ci/infra | 21 | .py 21 |

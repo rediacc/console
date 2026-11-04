@@ -1034,6 +1034,7 @@
     "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_l.py": 760.0,
     "pytest:.ci/rediacc_ci/tests/test_drills_backup_legs.py": 32.5,
     "pytest:.ci/rediacc_ci/tests/test_drills_gpu_grants.py": 65.4,
+    "pytest:.ci/rediacc_ci/tests/test_drills_lifecycle_privilege.py": 65.0,
     "pytest:.ci/rediacc_ci/tests/test_drills_upgrade_converge.py": 116.0,
     "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py": 7.5,
     "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench.py": 4220.0,

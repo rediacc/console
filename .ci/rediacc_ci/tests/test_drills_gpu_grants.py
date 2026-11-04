@@ -50,7 +50,7 @@ def test_fork_tags_are_swept_as_stale_vmc_forks() -> None:
     assert (d, e) == ("vmc-10251200-abc123-d", "vmc-10251200-abc123-e")
     for tag in (d, e, *tags):
         assert vm_check.FORK_TAG.match(tag)
-    assert not vm_check.FORK_TAG.match("vmc-10251200-abc123-f")
+    assert not vm_check.FORK_TAG.match("vmc-10251200-abc123-g")
 
 
 # --------------------------------------------------------------------------- spec and setup
