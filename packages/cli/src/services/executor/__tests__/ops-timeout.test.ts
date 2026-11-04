@@ -262,7 +262,8 @@ describe('settleRun, the cleanup behind the timeout test', () => {
         `const { spawn } = require('node:child_process');
 process.on('SIGTERM', () => {});
 const gc = spawn(process.execPath, ['-e', "process.on('SIGTERM',()=>{}); setInterval(()=>{},1e9)"], { stdio: 'ignore' });
-require('node:fs').writeFileSync(${JSON.stringify(grandchildFile)}, String(gc.pid));
+require('node:fs').writeFileSync(${JSON.stringify(`${grandchildFile}.tmp`)}, String(gc.pid));
+require('node:fs').renameSync(${JSON.stringify(`${grandchildFile}.tmp`)}, ${JSON.stringify(grandchildFile)});
 setInterval(() => {}, 1e9);`,
       ],
       { detached: true, stdio: 'ignore' }
@@ -277,7 +278,7 @@ setInterval(() => {}, 1e9);`,
     });
     for (let i = 0; i < 500; i++) {
       try {
-        // writeFileSync creates the file before the pid lands in it: an empty read is "not written yet", not a pid.
+        // The child writes a temp file and renames it, so the file appears with the whole pid or not at all.
         const pid = Number.parseInt(readFileSync(grandchildFile, 'utf8').trim(), 10);
         if (Number.isInteger(pid) && pid > 1) return { leader, grandchildFile };
       } catch {

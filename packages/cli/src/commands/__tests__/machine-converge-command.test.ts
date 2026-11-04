@@ -170,6 +170,22 @@ describe('machine converge', () => {
     });
   });
 
+  it('a job that fails before writing a report still states the executor error', async () => {
+    mockExecute.mockResolvedValue({
+      success: false,
+      exitCode: 3,
+      durationMs: 1,
+      state: 'failed',
+      stdout: '',
+      error: 'ssh: connection reset',
+    });
+    const { outputService } = await import('../../services/core/output.js');
+
+    await program().parseAsync(['machine', 'converge', 'm1'], { from: 'user' });
+
+    expect(outputService.error).toHaveBeenCalledWith('ssh: connection reset');
+  });
+
   it('rejects an unknown policy', async () => {
     const p = program();
     p.exitOverride();

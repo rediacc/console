@@ -10,6 +10,7 @@ import { machineConnections } from '../services/machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { shellQuote } from '../utils/shell-quote.js';
 
 /** Resolve which strategy names to trigger. */
 function resolveStrategyNames(
@@ -99,7 +100,7 @@ async function stageAdhocUnit(
   }
 
   const exitCode = await sftp.execStreaming(
-    `sudo tee ${SYSTEMD_DIR}/${adhocUnit}.service > /dev/null && sudo systemctl daemon-reload`,
+    `sudo tee ${shellQuote(`${SYSTEMD_DIR}/${adhocUnit}.service`)} > /dev/null && sudo systemctl daemon-reload`,
     { stdin: content, onStdout: () => {}, onStderr: (data) => writeStderr(data) }
   );
   if (exitCode !== 0) {
@@ -119,7 +120,7 @@ const FINISHED_SUBSTATES = new Set(['', 'dead', 'exited', 'failed']);
 async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: string): Promise<void> {
   let subState = '';
   await sftp.execStreaming(
-    `systemctl show -p SubState --value ${unit}.service 2>/dev/null || true`,
+    `systemctl show -p SubState --value ${shellQuote(`${unit}.service`)} 2>/dev/null || true`,
     {
       onStdout: (data) => {
         subState += data;
@@ -133,7 +134,7 @@ async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: stri
     );
   }
   await sftp.execStreaming(
-    `sudo systemctl stop ${unit}.service 2>/dev/null; sudo systemctl reset-failed ${unit}.service 2>/dev/null; true`,
+    `sudo systemctl stop ${shellQuote(`${unit}.service`)} 2>/dev/null; sudo systemctl reset-failed ${shellQuote(`${unit}.service`)} 2>/dev/null; true`,
     { onStdout: () => {}, onStderr: () => {} }
   );
 }

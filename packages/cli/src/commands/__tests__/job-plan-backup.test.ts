@@ -230,7 +230,7 @@ describe('backup run ad hoc', () => {
       '/r/renet'
     );
     const staged = machine.commands.find((c) => c.command.startsWith('sudo tee'));
-    expect(staged?.command).toContain('/etc/systemd/system/rediacc-backup-nightly-adhoc.service');
+    expect(staged?.command).toContain("'/etc/systemd/system/rediacc-backup-nightly-adhoc.service'");
     expect(staged?.stdin).toContain('Type=oneshot');
     expect(staged?.stdin).toContain('ExecStart=/r/renet backup snapshot x');
     expect(staged?.stdin).toContain('CPUQuota=400%');

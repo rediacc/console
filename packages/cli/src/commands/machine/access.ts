@@ -114,7 +114,7 @@ function printPushReport(report: AccessPushReport, dryRun: boolean): void {
     );
   }
   const params = { name: report.machine, path: report.path };
-  if (report.noAccessSection) outputService.info(t('commands.config.access.list.noKeys'));
+  if (report.noAccessSection) outputService.info(t('commands.machine.access.show.noKeys', params));
   else if (dryRun) outputService.info(t('commands.machine.access.push.dryRun', params));
   else if (report.written) outputService.success(t('commands.machine.access.push.success', params));
   else outputService.info(t('commands.machine.access.push.unchanged', params));

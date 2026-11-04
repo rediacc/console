@@ -118,6 +118,13 @@ async function runConverge(machineName: string, options: ConvergeCommandOptions)
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
     if (code !== undefined) setExitCode(code);
+  } else if (
+    !outcome.result.success &&
+    outcome.result.error &&
+    !parseConvergeReport(outcome.result.stdout)
+  ) {
+    // The failed step settles from the job's output and exit code alone; the executor's error text is the reason.
+    outputService.error(outcome.result.error);
   }
 }
 
