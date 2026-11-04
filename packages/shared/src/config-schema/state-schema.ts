@@ -67,6 +67,14 @@ const PushStateSchema = z.record(
 const ReplicaSetSchema = z.object({
   repo: z.string(),
   /**
+   * `placing`: recorded before the first job and until the set is published, so a
+   * set that stopped part-way resumes on a rerun and can be removed. Absent on a
+   * set recorded before this field existed, which reads as `ready`.
+   */
+  phase: z.enum(['placing', 'ready']).optional(),
+  /** The snapshot a refresh is rolling the replicas to, so a rerun resumes on it. */
+  refreshing: z.string().optional(),
+  /**
    * The repo's GUID — its STORAGE identity (#93 ruling: storage speaks GUID,
    * k8s objects speak name). `repo create` stores the repo folder and its
    * volume images under `<ds>/repos/<guid>`, so every renet storage verb

@@ -319,6 +319,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/certCache/*/rawSize': { kind: 'public' },
   // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the spec-side repositoryGuid (identifier there), so it gets the same agent-redaction here; commit:false per the state rule above.
   '/state/replicaSets/*/repo': { kind: 'public' },
+  '/state/replicaSets/*/phase': { kind: 'public' },
+  '/state/replicaSets/*/refreshing': { kind: 'public' },
   '/state/replicaSets/*/repoGuid': { kind: 'identifier', commit: false },
   '/state/replicaSets/*/datastore': { kind: 'public' },
   '/state/replicaSets/*/cluster': { kind: 'public' },
