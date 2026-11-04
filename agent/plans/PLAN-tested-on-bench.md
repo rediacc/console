@@ -246,11 +246,12 @@ Worklist: pending -- filed at promotion
   - bench: PLAN-config-server-key's LP-bench box after its K3, with `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - hostinger: one renet-surface plan's LP-hostinger box through `renet-live` on `--config eu-bench`; candidate PLAN-hostinger-upgrade-followups T1, whose Traefik pin is renet-embedded. Run it after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0 and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-hostinger-upgrade-followups.md` rc=0. Also `npm run ci-plan-live-proof` rc=0 on each ticking commit.
-- [ ] V9 [writer] Docs.
+- [x] V9 [writer] Docs.
     (reopened 2026-11-04) Unmet: the docs lint lane in the Accept does not exist under that name in package.json or this plan, so it was not run. Citations rc 0 and the doc sections are present (docs/agent-reference/plan-records.md:115, docs/agent-reference/ci-gates.md:607). Depends-On is no-dep, so the waiver was vacuous.
   - A "Live proof" section in `docs/agent-reference/plan-records.md`: the header, the LP box form, the verb, the envelope and live body, the ladder and the LP rules.
   - A "Proof tiers" paragraph in `docs/agent-reference/ci-gates.md`: one map, the VM and live tiers, and which judge reads which.
   - Accept: `npm run check:ci-plan-citations` rc=0, and the docs gates that read these two files rc=0: `check:ci-prose-style`, `check:ci-doc-region-parity`, `check:ci-docs-structure-parity`, `check:ci-plan-live-proof`. (corrected 2026-11-04: "the docs lint lane" named no lane.)
+    (ticked) 2026-11-04T16:24:47Z by d778be9d: commit:58e5d26f7 plan-records Live proof section docs/agent-reference/plan-records.md:115 and Proof tiers paragraph in ci-gates; check:ci-plan-citations rc=0, check:ci-prose-style rc=0, check:ci-doc-region-parity rc=0, check:ci-docs-structure-parity rc=0, check:ci-plan-live-proof rc=0
     (ticked) 2026-11-04T09:36:22Z by d778be9d: fileline:docs/agent-reference/plan-records.md:115 V9 docs present: plan-records Live proof section and ci-gates Proof tiers; citations gate rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 - [x] V10 [writer] Ledger integrity (review findings 2a2941c4.1 and 2a2941c4.5). CI judges `agent/ledgers/live-proof.jsonl` with no secrets and no network, and LP5 checks only that a row's `id` hashes to its content, so a hand-written row with a recomputed id and `verdict: PASS` would pass the gate. A pre-edit and pre-bash guard refuses any write to that ledger except the append `python3 -m rediacc_ci.ops.live_proof record --write` makes, and the recorder stamps each row with the run's log digest that `verify` re-reads from `.ci/cache/live-proof/` when present. An `LP-<target>` or `LP-none` box tick names the V6 gate's pass on the same tree.
   - Accept: the guard's `test-*.py` rc=0 with a planted hand-appended row refused and a recorder append allowed; `pytest -q .ci/rediacc_ci/tests/test_ops_live_proof.py` rc=0 with a row whose log digest mismatches refused by `verify`.
@@ -297,15 +298,18 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     (ticked) 2026-10-28T15:37:03Z by d778be9d: superseded first-draft V6 migration, closed with the revised V7 (7acacf6d) in commit 494cb756e; check:ci-plan-live-proof rc=0
 - [ ] V7 [lead] Pilot: one real receipt end to end on bench and one on hostinger through `--config eu-bench`. Candidate: PLAN-config-server-key's live box, after its K3 provisioning. Run `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0, and `npm run ci-plan-live-proof` rc=0 on the commit that ticks it.
-- [ ] V8 [writer] Docs: a "Live proof" section in `docs/agent-reference/plan-records.md` covering the header, the LP box form, the verb, the receipt schema and the LP rules.
+- [x] V8 [writer] Docs: a "Live proof" section in `docs/agent-reference/plan-records.md` covering the header, the LP box form, the verb, the receipt schema and the LP rules.
     (reopened 2026-11-04) Unmet: the docs lint lane, as for V9, which this twin closes with.
   - Accept: `npm run check:ci-plan-citations` rc=0, and the gates V9 names rc=0. (corrected 2026-11-04.)
+    (ticked) 2026-11-04T16:26:47Z by d778be9d: commit:58e5d26f7 first-draft twin of V9, closed with it: check:ci-plan-citations rc=0 and the gates V9 names rc=0
     (ticked) 2026-11-04T09:36:25Z by d778be9d: fileline:docs/agent-reference/plan-records.md:115 V8 first-draft twin of V9, closed with it by the plan's rule. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface. V7 is its live exercise.
 
 ## Operator rulings 2026-11-04
 
 ASKED:2026-11-04T16:07Z. Live reads that named `eu-remote` move to `eu-bench`, because that config stops agents at the authenticator. A merge is not a precondition for a live step: the local CI/CD scripts may release to bench, edge and stable. The Accept corrections on V9, V8, S2, D4, U9, N3 and F2 stand.
+
+ASKED:2026-11-04T16:33Z. `release:local` refuses any HEAD but `origin/main`, and for now edge and stable wait: live work runs on bench and hostinger from the branch, and every edge and stable box stays open until the operator rules on the release path.
 
 ## Operator rulings 2026-10-27 (answers to the questions below)
 
