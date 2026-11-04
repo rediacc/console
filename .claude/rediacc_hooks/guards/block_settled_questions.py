@@ -206,9 +206,10 @@ BENCH_LOGIN_ASK = (
 )
 # Addressed to the operator, or asking leave: without it "Is the bench TOTP derivation RFC 6238?" is a fact question and "Should the bench login flow support us-bench?" a design one, and both pass.
 BENCH_ASK_SHAPE = r"(^|[^a-z])(you|your|please|operator|(should|shall|may|can) (i|we))([^a-z]|$)"
-# The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool.
+# The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool. A sentence naming eu-remote is about the config only the operator's authenticator opens, with bench at most an alternative, so `login:bench` is no answer to it (a 2026-11-04 question about eu-remote reads was refused here).
 BENCH_OPERATOR_DOOR = (
     r"placeholder|seed|bitwarden|(^|[^a-z])bws([^a-z]|$)|vault|machine token|rotate|login_bench"
+    r"|(^|[^a-z0-9_-])eu-remote([^a-z0-9_-]|$)"
 )
 
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")

@@ -166,6 +166,8 @@ BENCH_REFUSE += [
 BENCH_REFUSE += [
     # Review 28139d6b.1: "into" and "sign" spellings are the same login ask.
     ("log into spelling", "Can you log into eu-bench again?", ""),
+    # eu-remote in ANOTHER sentence does not excuse an eu-bench login ask.
+    ("a login ask beside an eu-remote remark", "Can you log into eu-bench? eu-remote is fine.", ""),
     ("sign into spelling", "Please sign into bench for me.", ""),
 ]
 
@@ -183,6 +185,11 @@ BENCH_PASS = [
     ("a fact question about the code", "Is the bench TOTP derivation RFC 6238?", ""),
     ("a design question about the flow", "Should the bench login flow cover us-bench too?", ""),
     ("another config", "Could you enter the authenticator code for eu-remote?", ""),
+    (
+        "eu-remote's login with bench as the alternative",
+        "Should we run the eu-remote reads behind your login, or reword them to bench?",
+        "",
+    ),
     ("a design question about the module", "Should we let login_bench retry a refused code?", ""),
     # Review dae87b66.1: addressed to the operator, yet the ask is for a code change, not a login.
     ("a request to fix the login test", "Do you want me to fix the bench login test?", ""),
