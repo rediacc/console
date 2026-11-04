@@ -25,6 +25,7 @@ describe('commandKindAccess', () => {
     expect(commandKindAccess('setup')).toBe('provision');
     expect(commandKindAccess('backup-unit')).toBe('provision');
     expect(commandKindAccess('daemons-restart')).toBe('provision');
+    expect(commandKindAccess('backup-cancel')).toBe('provision');
     expect(commandKindAccess('list-all')).toBe('read-only');
     expect(commandKindAccess('backup-status')).toBe('read-only');
     expect(commandKindAccess('anything-else')).toBe('read-only');

@@ -10,17 +10,18 @@ import { acquireRemoteRenet, type RenetAccess } from '../renet/renet-execution.j
 import { runJobExecution } from './detached-execution.js';
 import type { ExecuteOptions, ExecuteResult } from './types.js';
 
+const UNKNOWN_KIND_ACCESS: RenetAccess = 'read-only';
+
 /**
  * Which renet each kind needs. The kinds that change the machine provision the binary (a stale one would refuse the
- * allow-list entry); the reads run whatever renet is there.
+ * allow-list entry), and `backup-cancel` stops units on the machine; the reads run whatever renet is there.
  */
-const UNKNOWN_KIND_ACCESS: RenetAccess = 'read-only';
 const COMMAND_KIND_ACCESS: Readonly<Record<string, RenetAccess>> = {
   setup: 'provision',
   'backup-unit': 'provision',
   'daemons-restart': 'provision',
   'list-all': 'read-only',
-  'backup-cancel': 'read-only',
+  'backup-cancel': 'provision',
   'backup-status': 'read-only',
   'backup-journal': 'read-only',
   'backup-schedule': 'provision',
