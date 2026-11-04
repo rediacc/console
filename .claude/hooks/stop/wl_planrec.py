@@ -1389,6 +1389,10 @@ def write_atomic(path, text):
         raise
 
 
+#: Heading of the section `plan_lifecycle.TOMBSTONE_SECTION` names. Restated rather than imported: the hook modules do not load `.ci/`.
+TOMBSTONE_SECTION = "## Expired plans"
+
+
 def refresh_index(root, plan_records, plan_box_census):
     """Rewrite `agent/INDEX.md` after a verb changed a plan's bytes; True when it changed.
 
@@ -1409,6 +1413,10 @@ def refresh_index(root, plan_records, plan_box_census):
         got = path.read_text(encoding="utf-8")
     except OSError:
         got = ""
+    # THE TOMBSTONE SECTION IS OWNED BY THE PLAN SWEEP AND HAS NO DISK STATE TO RENDER FROM, so it is carried over from the file, as check_plan_record's R8 does. Without this every plan verb deleted the expired-plan rows, and only the rows something still cited went red.
+    at = got.find("\n" + TOMBSTONE_SECTION + "\n")
+    if want and at != -1:
+        want = want.rstrip("\n") + "\n" + got[at:]
     if not want or got == want:
         return False
     write_atomic(path, want)
