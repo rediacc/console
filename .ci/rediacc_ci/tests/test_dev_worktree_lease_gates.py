@@ -149,3 +149,11 @@ def test_gates_lease_rule_matches_its_twin_in_quick_clone(trees, tmp_path):
     expected = [wl_core.lease_main(tree) for tree in candidates]
     assert answers == [str(tree) if tree else None for tree in expected]
     assert answers.count(str(trees.main)) == 1, "the instrument must see one lease"
+
+
+def test_spike_store_of_an_empty_submodule_directory_is_not_the_parent_store(tmp_path) -> None:
+    root = (tmp_path / "main").resolve()
+    (root / "private" / "empty").mkdir(parents=True)
+    spike.must(root, "init", "-q")
+    repo = spike.Repo(root, ["private/empty"])
+    assert repo.store("private/empty") == root / ".git" / "modules" / "private/empty"

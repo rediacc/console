@@ -118,11 +118,12 @@ class Repo:
 
     def store(self, sub):
         """The module store git names after the submodule NAME, which differs from its path in a renamed or moved submodule."""
-        found = (
-            out(self.root / sub, "rev-parse", "--absolute-git-dir")
-            if (self.root / sub).is_dir()
-            else ""
-        )
+        tree = self.root / sub
+        # An uninitialised submodule is an empty directory, and git there walks up to the parent repository, whose store is not this one.
+        top = out(tree, "rev-parse", "--show-toplevel") if tree.is_dir() else ""
+        found = ""
+        if top and os.path.realpath(top) == os.path.realpath(tree):
+            found = out(tree, "rev-parse", "--absolute-git-dir")
         return pathlib.Path(found) if found else self.root / ".git" / "modules" / sub
 
 

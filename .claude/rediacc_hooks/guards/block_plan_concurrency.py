@@ -279,7 +279,7 @@ def run(event):
             "checked against live plans (add `Plan: PLAN-x.md` or `Owns: <globs>` to the prompt).\n"
             % kind
         )
-    if live is None and judged_against:
+    if live is None and judged_against and not cheap:
         event.warn_raw(
             "plan-concurrency: no live writer could be counted for session %r, so this %r spawn was judged against the %d unexpired sibling claim(s) only. The Stop hook's roster\n"
             "recounts plan concurrency from the authoritative event on the next stop.\n"
