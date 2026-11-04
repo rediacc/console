@@ -603,6 +603,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
 - [ ] Y1: VMs: a hook on a running repo, real reflink, a real unit at a 1-minute test target, a hung run killed at its deadline, two repos sharing the slot.
   - Accept: `npm run vm:check` rc 0 with the backup leg VERIFIED, receipt recorded here.
 - [ ] Y2: Drills with legs t to w and their controls firing.
+  (note) Read legs t to x: hook order is v, heal is w and restore-at-run is x, because t and u in `backup.py` were already taken.
   - Accept: `./run.sh drill backup` and `./run.sh drill backup-onprem` rc 0, and the receipt `block_backup_unverified_push` reads is fresh for this tree.
 - [ ] Y3: The D1 clone check covers migration 0074.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.

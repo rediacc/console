@@ -48,7 +48,7 @@ One build exists: licence-enforcing, with the production public key baked in. Th
 
 ## Go tests
 
-- One package: `cd private/renet && go test ./pkg/<x>/...`. Tag-gated files (`root`, `ebpf_e2e`) need `go vet -tags "root ebpf_e2e" ./...` to compile; root tests need sudo.
+- One package: `cd private/renet && go test ./pkg/<x>/...`. Tag-gated files (`root`, `ebpf_e2e`) need `go vet -tags "root ebpf_e2e renet_test" ./...` to compile; root tests need sudo.
 - CI stages, same script CI runs: `private/renet/.ci/ci.sh quality|govulncheck|test|build|all`. From the console root, `npm run check:ci-renet` runs the quality stage (gofmt, golangci-lint, deadcode, i18n) and `check:ci-renet-govulncheck` the advisory stage.
 - `test-renet-go` in CI splits the packages into shards: `.ci/config/shards/test-renet-go.json`. A new package lands in a shard through the manifest generator; a package in no shard never runs in CI.
 - Which tests a change needs: `.ci/config/renet-test-map.json` maps renet paths to the Go packages to test, and `npm run vm:check -- --changed` runs the VM areas the diff touches. Those two files hold the current table; none is copied here. The vm:check mechanics (receipts, verdicts, costs) live once, in `ops-vms.md`.
