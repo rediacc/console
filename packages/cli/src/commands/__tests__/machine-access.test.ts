@@ -390,6 +390,21 @@ describe('machine setup post tasks', () => {
     expect(h.warnings).toEqual([]);
   });
 
+  it('a config with no access section is a silent no-op for setup', async () => {
+    vi.mocked(deployAllRepoKeys).mockResolvedValueOnce(0);
+    vi.mocked(pushAccess).mockResolvedValueOnce({
+      machine: 'hostinger',
+      path: '',
+      written: false,
+      changes: [],
+      noAccessSection: true,
+    });
+
+    await postSetupMachineTasks('hostinger');
+
+    expect(h.warnings).toEqual([]);
+  });
+
   it('a push failure only warns', async () => {
     vi.mocked(deployAllRepoKeys).mockResolvedValueOnce(0);
     vi.mocked(pushAccess).mockRejectedValueOnce(new Error('ssh refused'));

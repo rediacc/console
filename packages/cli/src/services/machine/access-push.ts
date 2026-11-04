@@ -29,7 +29,7 @@ import {
   parseAuthorizedKeys,
   planAccessRewrite,
 } from './authorized-keys.js';
-import { machineConnections } from './machine-connection.js';
+import { type MachineConnectionLease, machineConnections } from './machine-connection.js';
 
 /** Exit code of the compare-and-swap exec when the live file no longer matches what was read. */
 const ACCESS_CAS_MISMATCH_EXIT = 3;
@@ -48,6 +48,8 @@ export interface AccessPushReport {
   path: string;
   written: boolean;
   changes: AccessChange[];
+  /** The config has no `access` section, so it holds no opinion and the push touched nothing. */
+  noAccessSection?: boolean;
 }
 
 function lockoutMessage(
@@ -246,6 +248,36 @@ export function buildSwapScript(dir: string, file: string, tmp: string, expected
   ].join('\n');
 }
 
+/** Write `text` beside authorized_keys and swap it in, deleting the temp file on any failure. */
+async function writePlan(
+  sftp: MachineConnectionLease['sftp'],
+  target: {
+    machineName: string;
+    dir: string;
+    path: string;
+    exists: boolean;
+    recorded: string;
+    text: string;
+  }
+): Promise<void> {
+  const { machineName, dir, path, exists, recorded, text } = target;
+  // The temp file is written into .ssh, so .ssh must exist before the swap's own mkdir.
+  if (!exists) await sftp.exec(`mkdir -p -m 700 ${shellQuote(dir)}`);
+  const tmp = `${dir}/.authorized_keys.rdc-${randomBytes(8).toString('hex')}`;
+  await sftp.writeFile(tmp, Buffer.from(text, 'utf8'));
+  let code: number;
+  try {
+    code = await sftp.execStreaming(buildSwapScript(dir, path, tmp, recorded), {});
+  } catch (error) {
+    await sftp.delete(tmp, false).catch(() => undefined);
+    throw error;
+  }
+  if (code === 0) return;
+  await sftp.delete(tmp, false).catch(() => undefined);
+  if (code === ACCESS_CAS_MISMATCH_EXIT) throw new AccessFileChangedError(machineName, path);
+  throw new Error(`replacing ${path} on ${machineName} failed (exit ${code})`);
+}
+
 /** Plan, and unless `dryRun`, apply the config's access keys to `machineName`'s authorized_keys. */
 export async function pushAccess(
   machineName: string,
@@ -253,6 +285,10 @@ export async function pushAccess(
 ): Promise<AccessPushReport> {
   const config = await configService.getCurrent();
   if (!config) throw new Error('No active config');
+  // No `access` section is no opinion: another config sharing this config id may own the managed lines.
+  if (config.access === undefined) {
+    return { machine: machineName, path: '', written: false, changes: [], noAccessSection: true };
+  }
   const desired = desiredAccessKeys(config.access, machineName);
   const { sshPublicKey } = await configService.getLocalConfig();
 
@@ -287,21 +323,8 @@ export async function pushAccess(
     };
     if (plan.text === text || options.dryRun) return report;
 
-    // The temp file is written into .ssh, so .ssh must exist before the swap's own mkdir.
-    if (!exists) await sftp.exec(`mkdir -p -m 700 ${shellQuote(dir)}`);
-    const tmp = `${dir}/.authorized_keys.rdc-${randomBytes(8).toString('hex')}`;
-    await sftp.writeFile(tmp, Buffer.from(plan.text, 'utf8'));
-    let code: number;
-    try {
-      code = await sftp.execStreaming(buildSwapScript(dir, path, tmp, recorded), {});
-    } catch (error) {
-      await sftp.delete(tmp, false).catch(() => undefined);
-      throw error;
-    }
-    if (code === 0) return { ...report, written: true };
-    await sftp.delete(tmp, false).catch(() => undefined);
-    if (code === ACCESS_CAS_MISMATCH_EXIT) throw new AccessFileChangedError(machineName, path);
-    throw new Error(`replacing ${path} on ${machineName} failed (exit ${code})`);
+    await writePlan(sftp, { machineName, dir, path, exists, recorded, text: plan.text });
+    return { ...report, written: true };
   } finally {
     lease.release();
   }
