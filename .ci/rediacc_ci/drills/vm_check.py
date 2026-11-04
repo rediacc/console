@@ -1004,6 +1004,22 @@ def last_lines(text: str, count: int = 3) -> str:
     return " | ".join(lines[-count:])
 
 
+def envelope_errors(out: str) -> str:
+    """The error messages of a CLI JSON envelope on stdout, empty when `out` is not one. Its raw tail is the metrics block, which says nothing."""
+    try:
+        doc = json.loads(out)
+    except (ValueError, TypeError):
+        return ""
+    if not isinstance(doc, dict):
+        return ""
+    msgs = [
+        " ".join(str(e.get("message") or e.get("code") or e).split())
+        for e in (doc.get("errors") or [])
+        if isinstance(e, dict)
+    ]
+    return " | ".join(msgs[:3])
+
+
 def rdc_failure(res: Result) -> str:
     """Why an `rdc` call failed. With `-o json` the CLI puts its errors in the JSON envelope on stdout and only progress lines on stderr, so a reason read from stderr alone named "Listing repositories..." and dropped `SSH connection error: connect EHOSTUNREACH` (2026-10-14T23:53Z)."""
     try:
@@ -1430,7 +1446,7 @@ class VmCheck:
         return "rc=%d stderr: %s | stdout: %s" % (
             res.rc,
             last_lines(res.err) or "<empty>",
-            last_lines(res.out) or "<empty>",
+            envelope_errors(res.out) or last_lines(res.out) or "<empty>",
         )
 
     def probe(self, command: str) -> Result:

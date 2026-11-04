@@ -406,34 +406,25 @@ class _LiveL1:
     def fork(self) -> bool:
         entry = {"tag": self.tag, "guid": "", "created": True, "deleted": False}
         self.ctx.forks.append(entry)
-        res = self.ctx.rdc("repo", "fork", self.ctx.opts.parent, "--tag", self.tag, timeout=1800)
-        if not self.check("L1 fork %s (no --up)" % self.ref, res.rc == 0, res):
+        # Up from the start: `term connect` refuses a repository that is not deployed, and the probe is installed through it.
+        res = self.ctx.rdc(
+            "repo", "fork", self.ctx.opts.parent, "--tag", self.tag, "--up", timeout=1800
+        )
+        if not self.check("L1 fork %s --up" % self.ref, res.rc == 0, res):
             return False
         listed, entries = self.ctx.repo_list()
         for item in entries:
             if item.get("name") == self.ref:
                 self.guid = str(item.get("guid", ""))
-        entry["guid"] = self.guid
-        return self.check(
-            "L1 fork %s listed with a guid" % self.ref,
-            bool(self.guid),
-            listed,
-            "guid %s" % self.guid,
-        )
-
-    def learn_network_id(self) -> bool:
-        """The machine reports a repository's network ID only once it is up, and this fork stays down until its probe is installed."""
-        listed, entries = self.ctx.repo_list()
-        for item in entries:
-            if item.get("name") == self.ref:
                 nid = item.get("networkId", item.get("network_id"))
                 if str(nid or "").isdigit():
                     self.nid = int(nid)
+        entry["guid"] = self.guid
         return self.check(
-            "L1.1 %s is listed with its network id once it is up" % self.ref,
-            bool(self.nid),
+            "L1 fork %s listed with a guid and network id" % self.ref,
+            bool(self.guid) and bool(self.nid),
             listed,
-            "network id %s" % self.nid,
+            "guid %s network id %s" % (self.guid, self.nid),
         )
 
     def install(self) -> bool:
@@ -449,7 +440,6 @@ class _LiveL1:
         up = self.up(extra_env={CREDENTIAL_VAR: CREDENTIAL_VALUE})
         if not self.check("L1.1 repo up %s runs the probe" % self.ref, up.rc == 0, up):
             return
-        self.learn_network_id()
         probe = self.read_probe(UP_FILE)
         ok, why = dropped_verdict(probe)
         self.check("L1.1 up() runs as a uid other than 0 with an empty CapEff", ok, up, why)

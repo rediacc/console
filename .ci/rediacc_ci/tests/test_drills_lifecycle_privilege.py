@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 import re
 import subprocess
@@ -358,3 +359,18 @@ def test_barrier_daemon_and_reconcile_scripts() -> None:
         lp.reconcile_script(DATASTORE_PATH)
         == f"renet repository reconcile --datastore {DATASTORE_PATH}"
     )
+
+
+def test_remote_evidence_of_a_cli_refusal_names_the_refusal_not_the_metrics_tail() -> None:
+    envelope = json.dumps(
+        {
+            "success": False,
+            "errors": [{"code": "VALIDATION_ERROR", "message": "Repository x is not\ndeployed"}],
+            "metrics": {"duration_ms": 1660},
+        },
+        indent=2,
+    )
+
+    assert vm_check.envelope_errors(envelope) == "Repository x is not deployed"
+    assert vm_check.envelope_errors("plain text\n") == ""
+    assert vm_check.envelope_errors('{"errors": []}') == ""
