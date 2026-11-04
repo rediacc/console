@@ -1711,3 +1711,152 @@ def test_lease_session_id_that_is_no_path_component_is_refused(repo, session):
     assert not (repo.root / ".claude" / "evil1-1").exists()
     named = run_lease(repo.root, "--owner", "abcd1234", WORKLIST_SESSION_ID=session)
     assert named.returncode == 0, named.stderr
+
+
+# --------------------------------------------------------------------------- review findings of `gc`, `leases` and the hooks ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("flag", ["--skip-worktree", "--assume-unchanged"])
+def test_gc_flagged_modified_file_keeps_the_tree(gc_repo, flag):
+    """Review 0bc06f7c.1: `git status` hides a modified file carrying either flag, so the flag itself is rule 3's row."""
+    repo = gc_repo
+    tree = make_tree(repo, "fl")
+    clean = make_tree(repo, "fc")
+    spike.must(tree, "update-index", flag, "code.txt")
+    spike.write(tree / "code.txt", "edited\n")
+    assert spike.must(tree, "status", "--porcelain") == "", "fixture control: status is blind"
+    before = snapshot(tree)
+
+    written = run_gc(repo.root, "--write")
+    assert written.returncode == 0, written.stderr
+    kept_by(written.stdout, "fl", "rule 3")
+    assert row_of(written.stdout, "fc").split()[0] == "DELETE", written.stdout
+    assert snapshot(tree) == before
+    assert not clean.exists()
+
+
+def gc_in_process(monkeypatch, root):
+    for name, value in gc_env(root).items():
+        monkeypatch.setenv(name, value)
+
+
+def test_gc_write_counts_a_tree_whose_removal_failed_as_not_deletable(gc_repo, monkeypatch):
+    """Review 0bc06f7c.2."""
+    repo = gc_repo
+    make_tree(repo, "st")
+    gc_in_process(monkeypatch, repo.root)
+    monkeypatch.setattr(lease, "_rollback", lambda *_args: [])
+    code, lines = lease.run_gc(repo.root, write=True)
+    assert code == 1
+    assert lines[-1].startswith("1 row(s): 0 deletable, 0 kept, 1 not fully removed;"), lines[-1]
+
+
+def test_gc_failed_removal_keeps_the_pin_and_record_of_the_tree_that_survived(gc_repo, monkeypatch):
+    """Review 0bc06f7c.6: the pin is the ref protecting the HEAD of a tree still on disk."""
+    repo = gc_repo
+    tree = make_tree(repo, "sv")
+    sha = gc_commit(tree, "landed.txt")
+    land(repo, sha)
+    gc_in_process(monkeypatch, repo.root)
+    monkeypatch.setattr(lease, "_rollback", lambda *_args: [])
+    code, _lines = lease.run_gc(repo.root, write=True)
+    assert code == 1
+    assert tree.is_dir()
+    assert pin_of(repo.root, "sv") == sha
+    assert (repo.root / ".git" / lease.RECORD_DIR / "sv.json").is_file()
+
+
+def test_leases_lists_a_lease_that_exists_only_as_a_pin(gc_repo):
+    """Review 0bc06f7c.3: `gc` lists a pin with no record and no tree, so `leases` does too."""
+    repo = gc_repo
+    tree = make_tree(repo, "po")
+    held = gc_commit(tree, "held.txt")
+    remove_by_hand(repo, tree)
+    (repo.root / ".git" / lease.RECORD_DIR / "po.json").unlink()
+    rows = json.loads(run_verb(repo.root, "leases", "--json").stdout)
+    assert [row["id"] for row in rows] == ["po"]
+    assert rows[0]["unlanded"] == {".": [held]}
+    assert rows[0]["exists"] is False
+
+
+def test_leases_never_runs_git_in_a_path_its_record_names(gc_repo, monkeypatch):
+    """Review 0bc06f7c.4: a record naming a directory outside the holder is a rule 1 problem, read by no git."""
+    repo = gc_repo
+    outside = repo.root.parent / "elsewhere"
+    add_detached(repo.root, outside)
+    (repo.root / ".git" / lease.RECORD_DIR).mkdir(exist_ok=True)
+    lease._write_record(repo.root, {"id": "rec", "path": str(outside), "owner": "feedface"})
+    asked = []
+    real = spike.git
+
+    def watching(cwd, *args, **kwargs):
+        asked.append(str(cwd))
+        return real(cwd, *args, **kwargs)
+
+    monkeypatch.setattr(spike, "git", watching)
+    rows = lease.lease_rows(repo.root)
+    assert [row["id"] for row in rows] == ["rec"]
+    assert rows[0]["path"] == str(repo.holder / "rec")
+    assert any("rule 1" in problem for problem in rows[0]["problems"]), rows[0]
+    assert asked, "fixture control: the run asked git something"
+    assert not [cwd for cwd in asked if cwd.startswith(str(outside))], asked
+
+
+def test_gc_removed_tree_named_by_a_live_item_is_kept_though_its_commits_landed(gc_repo):
+    """Review 0bc06f7c.5: a landed-commit check does not know that an open item still names the lease."""
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    tree = make_tree(repo, "gi")
+    land(repo, gc_commit(tree, "landed.txt"))
+    plant_leased_item(repo.root, "gc fixture holds the tree named gi")
+    remove_by_hand(repo, tree)
+    listing = run_gc(repo.root, "--write")
+    assert listing.returncode == 0, listing.stderr
+    kept_by(listing.stdout, "gi", "rule 2")
+    assert (repo.root / ".git" / lease.RECORD_DIR / "gi.json").is_file()
+    assert pin_of(repo.root, "gi") != ""
+
+
+@pytest.mark.parametrize("verb", ["lease-hook", "gc-hook"])
+@pytest.mark.parametrize("payload", [[1], "text", 3, None])
+def test_hooks_refuse_json_that_is_no_object_and_log_nothing(repo, verb, payload):
+    """Review ae354f14.1 and .2."""
+    cache = repo.root / ".ci" / "cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    done = run_worktree_hook(repo.root, verb, payload)
+    assert done.returncode == 1, done.stdout
+    assert "refused:" in done.stderr
+    assert "not a JSON object" in done.stderr
+    assert "Traceback" not in done.stderr
+    assert done.stdout == ""
+    assert not (cache / "worktree-hook-input.jsonl").exists()
+    assert not hasattr(lease, "HOOK_INPUT_LOG")
+
+
+def test_leases_from_inside_a_lease_reads_the_main_checkout_and_gc_land_name_it(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "in")
+    spike.write(tree / "code.txt", "edited\n")
+    before = snapshot(tree)
+    env = {**gc_env(repo.root), paths.ROOT_ENV: str(tree)}
+
+    def inside(*args):
+        return subprocess.run(
+            [sys.executable, "-m", "rediacc_ci.dev.worktree", *args],
+            cwd=str(paths.CI_DIR),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    listed = inside("leases", "--json")
+    assert listed.returncode == 0, listed.stderr
+    assert [row["id"] for row in json.loads(listed.stdout)] == ["in"]
+    for args in (("gc",), ("gc", "--write"), ("land", "in")):
+        refused = inside(*args)
+        assert refused.returncode == 1, args
+        assert "refused:" in refused.stderr
+        assert "not a main checkout" in refused.stderr
+        assert str(repo.root) in refused.stderr, refused.stderr
+    assert snapshot(tree) == before

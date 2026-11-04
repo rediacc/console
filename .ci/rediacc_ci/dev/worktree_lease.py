@@ -249,11 +249,20 @@ def _rollback(repo, path):
     return survived
 
 
+def _holding_checkout(root):
+    """The main checkout whose holder contains the lease tree `root` sits in, or None. `lease_root` answers only for a linked tree of that checkout's own stores."""
+    lease = spike.load_commit_policy().lease_root(str(root))
+    return pathlib.Path(lease).parents[len(spike.HOLDER.parts)] if lease else None
+
+
 def _main_checkout(root):
     """`root` normalized, or a refusal when it is no main checkout or its holder is a symlink."""
     root = pathlib.Path(os.path.realpath(root))
     if not (root / ".git").is_dir():
         message = "%s is not a main checkout" % root
+        main = _holding_checkout(root)
+        if main is not None:
+            message += ": it is a lease tree, so run this in the main checkout %s" % main
         raise LeaseRefusedError(message)
     for link in (root / ".claude", root / spike.HOLDER):
         if link.is_symlink():
@@ -483,7 +492,7 @@ def _repo_plan(root, record, key):
 
 def land_plan(root, lease_id):
     """The lines to run, or raises `LeaseRefusedError` naming every refused commit. Nothing is written."""
-    root = pathlib.Path(os.path.realpath(root))
+    root = _main_checkout(root)
     path = root / ".git" / RECORD_DIR / ("%s.json" % lease_id)
     if not ID_RE.match(lease_id) or not path.is_file():
         message = "no lease record %s" % lease_id
@@ -681,9 +690,17 @@ def _dirty_rows(tree):
     text = _quiet(
         tree, "status", "--porcelain=v2", "--untracked-files=all", "--ignore-submodules=none"
     )
-    if text is None:
+    flags = _quiet(tree, "ls-files", "-v", "-z")
+    if text is None or flags is None:
         return None
-    return [row for row in text.splitlines() if row and not _is_moved_gitlink(row)]
+    rows = [row for row in text.splitlines() if row and not _is_moved_gitlink(row)]
+    # `status` skips a modified file flagged skip-worktree (`S`) or assume-unchanged (lowercase), so the flag itself keeps the tree.
+    rows += [
+        "flag %s" % entry[2:]
+        for entry in flags.split("\0")
+        if entry[:1] and (entry[0] == "S" or entry[0].islower())
+    ]
+    return rows
 
 
 def _hidden_tips(tree, known):
@@ -974,7 +991,7 @@ def _in_use(world, live, lease_id, path, record):
     inside = [cwd for cwd in live["cwds"] if _under(cwd, text)]
     if inside:
         found.append("%s: %d process(es) work inside it" % (RULE_LIVE, len(inside)))
-    owner = str(record.get("owner") or "")
+    owner = str((record or {}).get("owner") or "")
     me = live["me"]
     for session in [owner, *([me] if me and not (owner and me.startswith(owner)) else [])]:
         if session not in live["rosters"]:
@@ -982,12 +999,12 @@ def _in_use(world, live, lease_id, path, record):
         rows = live["rosters"][session]
         if rows is None:
             # An unknown owner is a doubt about this lease; an unknown running session says nothing about it.
-            if session == owner:
+            if session == owner and record is not None:
                 found.append(
                     "%s: the roster of session %s cannot say" % (RULE_LIVE, owner or "(none)")
                 )
             continue
-        holder = _agent_holding(rows, lease_id, text, record)
+        holder = _agent_holding(rows, lease_id, text, record or {})
         if holder:
             found.append("%s: the live writer %s holds it" % (RULE_LIVE, holder))
     return found
@@ -1001,10 +1018,11 @@ def _judge(world, live, lease_id):
     if place:
         return GcRow(lease_id, str(path), [place], [], "outside")
     facts = _lease_facts(world, lease_id, path, record)
-    if not os.path.lexists(path):
-        return GcRow(lease_id, str(path), facts.problems, [], "gone")
     why = _in_use(world, live, lease_id, path, record)
-    return GcRow(lease_id, str(path), [*why, *facts.problems], facts.subs, "tree")
+    kind = "tree" if os.path.lexists(path) else "gone"
+    return GcRow(
+        lease_id, str(path), [*why, *facts.problems], facts.subs if kind == "tree" else [], kind
+    )
 
 
 def _holder_entries(root):
@@ -1046,8 +1064,12 @@ def _remove_row(world, row):
     ref = spike.PIN_SPACE + row.lease_id
     survived = [row.path] if os.path.lexists(path) else []
     for store in world.stores.values():
-        spike.drop_pins(store, ref)
         survived += [tree for tree in spike.listed_trees(store) if _under(tree, row.path)]
+    if survived:
+        # A pin is the only ref protecting the HEAD of a tree that is still there.
+        return survived
+    for store in world.stores.values():
+        spike.drop_pins(store, ref)
         survived += spike.out(store, "for-each-ref", "--format=%(refname)", ref).splitlines()
     if not survived:
         (world.root / ".git" / RECORD_DIR / ("%s.json" % row.lease_id)).unlink(missing_ok=True)
@@ -1088,9 +1110,10 @@ def run_gc(root, *, write=False, only=""):
             else:
                 deletable += 1
     tail = "deleted %d" % deletable if write else "listing only, rerun with --write to delete"
+    stuck = ", %d not fully removed" % failed if failed else ""
     lines.append(
-        "%d row(s): %d deletable, %d kept; %s; %s"
-        % (deletable + kept + failed, deletable + failed, kept, IGNORED_NOTE, tail)
+        "%d row(s): %d deletable, %d kept%s; %s; %s"
+        % (deletable + kept + failed, deletable, kept, stuck, IGNORED_NOTE, tail)
     )
     return (1 if failed or (write and only and kept) else 0), lines
 
@@ -1111,16 +1134,12 @@ def _parse_gc(args):
     return write, only
 
 
-HOOK_INPUT_LOG = pathlib.PurePath(".ci", "cache", "worktree-hook-input.jsonl")
-
-
-def _hook_input(root):
-    """The hook's JSON on stdin. W5 keeps a copy of each for one proof run, since its fields are what the docs leave unverified."""
+def _hook_input():
+    """The hook's JSON object on stdin. Valid JSON of another shape is a refusal like any other bad input."""
     data = json.loads(sys.stdin.read() or "{}")
-    log_path = root / HOOK_INPUT_LOG
-    if log_path.parent.is_dir():
-        with log_path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(data, sort_keys=True) + "\n")
+    if not isinstance(data, dict):
+        message = "the hook input is %s, not a JSON object" % type(data).__name__
+        raise LeaseRefusedError(message)
     return data
 
 
@@ -1131,7 +1150,7 @@ def cmd_lease_hook(args):
         return 1
     root = pathlib.Path(paths.repo_root())
     try:
-        data = _hook_input(root)
+        data = _hook_input()
         name = str(data.get("name") or "")
         agent = name[len("agent-") :] if name.startswith("agent-") else ""
         path = make_lease(
@@ -1155,7 +1174,7 @@ def cmd_gc_hook(args):
         return 1
     root = pathlib.Path(paths.repo_root())
     try:
-        data = _hook_input(root)
+        data = _hook_input()
         path = pathlib.Path(str(data.get("worktree_path") or ""))
         main = _main_checkout(root)
         if path.parent != pathlib.Path(main) / spike.HOLDER or not ID_RE.match(path.name):
@@ -1185,14 +1204,21 @@ def cmd_gc(args):
 
 def lease_rows(root):
     """One dict per lease: what `leases --json` prints."""
-    root = _main_checkout(root)
+    root = pathlib.Path(os.path.realpath(root))
+    root = _main_checkout(_holding_checkout(root) or root)
     world = _read_world(root)
     rows = []
-    for lease_id in sorted({*world.records, *_holder_entries(root)}):
+    for lease_id in sorted({*world.records, *world.pins, *_holder_entries(root)}):
         record = world.records.get(lease_id) or {}
-        named = str(record.get("path") or root / spike.HOLDER / lease_id)
-        path = pathlib.Path(named)
-        facts = _lease_facts(world, lease_id, path, record)
+        path = root / spike.HOLDER / lease_id
+        named = str(path)
+        # The same rule 1 gate as `gc`: a path it refuses is no lease, and no git runs in it.
+        place = _place_problem(world, lease_id, path, world.records.get(lease_id))
+        facts = (
+            Facts(repos={}, problems=[place], subs=[])
+            if place
+            else _lease_facts(world, lease_id, path, record)
+        )
         rows.append(
             {
                 "id": lease_id,
