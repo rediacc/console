@@ -169,7 +169,6 @@ const SLOT_LIMIT_FRAGMENTS = [
   'Enterprise or partner machine ceiling',
 ] as const;
 
-/** Verbatim fragments of `errors.license.partialPlacement` (en/cli.json:2072). */
 /** The renet functions `repo replicate`, `refresh` and `remove` run as jobs. */
 const REPLICA_COMPOUNDS = [
   'replica_fork',
@@ -180,7 +179,7 @@ const REPLICA_COMPOUNDS = [
 
 /** The job id a `--background` start hands back, from its JSON envelope or its hint. TRANSCRIPT-CONFIRM. */
 function backgroundJobId(text: string): string | undefined {
-  return /"jobId":\s*"([^"]+)"/.exec(text)?.[1] ?? /rdc job wait (\S+)/.exec(text)?.[1];
+  return /"jobId":\s*"([^"]+)"/.exec(text)?.[1] ?? /rdc job wait ([\w-]+)/.exec(text)?.[1];
 }
 
 /**
@@ -608,7 +607,22 @@ test.describe
         expect(text).toContain(`rdc repo replicate remove ${CLUSTER_REPO}`);
       });
 
-      test('5b. a background replicate licenses each fork once, and refresh and remove price as they should', async () => {
+      test('6. the bridge agrees the fork exists (the CLI claims are not self-referential)', async () => {
+        // Ground truth from renet, the same cross-check suite 23 uses: the CLI's licence view above is only meaningful if the storage really forked. This runs on the set test 5 placed, before test 7 removes it.
+        const res = await w1.executeViaBridge(
+          'renet functions once --test-mode --debug --function repository_list'
+        );
+        expect(res.code, `bridge repository_list: ${res.stderr.slice(-400)}`).toBe(0);
+        const statuses = await licenseStatuses(M2);
+        for (const s of statuses) {
+          expect(
+            res.stdout + res.stderr,
+            `${s.repositoryGuid} is licensed but absent from storage`
+          ).toContain(s.repositoryGuid);
+        }
+      });
+
+      test('7. a background replicate licenses each fork once, and refresh and remove price as they should', async () => {
         const cleared = await cli.run(['repo', 'replicate', 'remove', CLUSTER_REPO]);
         expect(cleared.code, `remove: ${bothChannels(cleared).slice(-800)}`).toBe(0);
         const issuedBefore = await issuanceCount();
@@ -656,21 +670,6 @@ test.describe
         );
         const jobs = listings.map((listed) => listed.stdout).join('\n');
         expect(REPLICA_COMPOUNDS.filter((name) => !jobs.includes(name))).toEqual([]);
-      });
-
-      test('6. the bridge agrees the fork exists (the CLI claims are not self-referential)', async () => {
-        // Ground truth from renet, the same cross-check suite 23 uses: the CLI's licence view above is only meaningful if the storage really forked.
-        const res = await w1.executeViaBridge(
-          'renet functions once --test-mode --debug --function repository_list'
-        );
-        expect(res.code, `bridge repository_list: ${res.stderr.slice(-400)}`).toBe(0);
-        const statuses = await licenseStatuses(M2);
-        for (const s of statuses) {
-          expect(
-            res.stdout + res.stderr,
-            `${s.repositoryGuid} is licensed but absent from storage`
-          ).toContain(s.repositoryGuid);
-        }
       });
 
       test.afterAll(async () => {
