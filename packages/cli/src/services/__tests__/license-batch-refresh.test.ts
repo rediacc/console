@@ -189,6 +189,33 @@ describe('refreshRepoLicensesBatch', () => {
     expect(sentJobs('license-write')).toHaveLength(1);
   });
 
+  it('does not report a license as issued when its awaited license-write job fails', async () => {
+    mockExecute.mockImplementation((opts: { commandKind: { name: string } }) => {
+      const { name } = opts.commandKind;
+      if (name === 'license-write') {
+        return Promise.resolve({ success: false, exitCode: 1, stderr: 'disk full' });
+      }
+      if (name === 'license-scan') {
+        return Promise.resolve({ success: true, exitCode: 0, stdout: JSON.stringify(jobs.scan) });
+      }
+      return Promise.resolve({ success: true, exitCode: 0, stdout: JSON.stringify(jobs.status) });
+    });
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'issued',
+          license: { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID },
+        },
+      ],
+    });
+
+    await expect(
+      refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet')
+    ).rejects.toThrow(/renet license-write failed on .* \(exit 1\): disk full/);
+    expect(sentJobs('license-write')).toHaveLength(1);
+  });
+
   it('fails unknown repos locally without issuing any batch request when nothing is tracked', async () => {
     mockListRepositories.mockResolvedValueOnce([]);
 
