@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get --pointer <pointer> --digest` kullanın.",
       "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak.",
       "rootGrantBlocked": "Ajanlar \"{{name}}\" deposuna root yetkisi veremez: Rediaccfile'ı ayrıcalık düşürülmeden çalışırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
-      "rootGrantOverride": "\"{{name}}\" deposunun root yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir."
+      "rootGrantOverride": "\"{{name}}\" deposunun root yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.",
+      "pathGrantBlocked": "Ajanlar \"{{name}}\" grand deposunun yol yetkilerini değiştiremez: Rediaccfile'ı, kullanıcının hiç onaylamadığı ana makine yollarına ulaşırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın. Bir fork için geçersiz kılma gerekmez.",
+      "pathGrantOverride": "\"{{name}}\" grand deposundaki yol yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir."
     },
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login",
     "cluster": {

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2437,
-    "sourceCommit": "5e2cfa4f2ed037b26b0ff59966a37511a4fbcdb8"
+    "keyCount": 2439,
+    "sourceCommit": "148c306d29780c9c08cde577e04278a4efea9d89"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2104,6 +2104,8 @@
     "errors.agent.mcpGrandGuard": "adf260d2",
     "errors.agent.mcpGrandGuardOverride": "0498db33",
     "errors.agent.mcpGrandGuardOverrideNonLinux": "0e99b9bc",
+    "errors.agent.pathGrantBlocked": "023e0b38",
+    "errors.agent.pathGrantOverride": "205d60d3",
     "errors.agent.revealRequiresTty": "fbb0a32d",
     "errors.agent.rootGrantBlocked": "44d27858",
     "errors.agent.rootGrantOverride": "474388b1",

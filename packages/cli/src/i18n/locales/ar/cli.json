@@ -2809,7 +2809,9 @@
       "showReveal": "‏--reveal محظور في بيئات العملاء. استخدم `rdc config show` (مُخفى) أو `rdc config field get --pointer <pointer> --digest` للحصول على بصمة آمنة.",
       "showRevealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض تمرير النص الصريح إلى وجهة غير تفاعلية.",
       "rootGrantBlocked": "لا يمكن للوكلاء منح \"{{name}}\" صلاحية root: سيعمل ملف Rediaccfile الخاص به دون خفض الامتيازات.\n\nللمستخدم: للسماح بذلك، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
-      "rootGrantOverride": "لا تُقبل التجاوزات التي يبدأها الوكيل لمنح root للمستودع \"{{name}}\".\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO. فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل."
+      "rootGrantOverride": "لا تُقبل التجاوزات التي يبدأها الوكيل لمنح root للمستودع \"{{name}}\".\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO. فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.",
+      "pathGrantBlocked": "لا يمكن للوكلاء تغيير صلاحيات المسارات للمستودع grand \"{{name}}\": سيصل ملف Rediaccfile الخاص به إلى مسارات على المضيف لم يوافق عليها المستخدم.\n\nللمستخدم: للسماح بذلك، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل. لا يحتاج الفرع (fork) إلى تجاوز.",
+      "pathGrantOverride": "لا تُقبل التجاوزات التي يبدأها الوكيل لتغيير صلاحيات المسارات في المستودع grand \"{{name}}\".\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO. فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل."
     },
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc subscription login",
     "cluster": {

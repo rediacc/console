@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal está bloqueado em ambientes de agente. Use `rdc config show` (redatado) ou `rdc config field get --pointer <pointer> --digest` para uma impressão digital segura.",
       "showRevealRequiresTty": "--reveal requer um TTY interativo; recusando enviar texto simples para um destino que não é TTY.",
       "rootGrantBlocked": "Os agentes não podem dar a \"{{name}}\" uma concessão de root: o seu Rediaccfile executaria sem descida de privilégios.\n\nUtilizador: para o permitir, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente.",
-      "rootGrantOverride": "Não são aceites substituições iniciadas pelo agente para a concessão de root de \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado."
+      "rootGrantOverride": "Não são aceites substituições iniciadas pelo agente para a concessão de root de \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado.",
+      "pathGrantBlocked": "Os agentes não podem alterar as concessões de caminho do repositório grand \"{{name}}\": o seu Rediaccfile alcançaria caminhos do anfitrião que o utilizador nunca aprovou.\n\nUtilizador: para o permitir, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente. Um fork não precisa de substituição.",
+      "pathGrantOverride": "Não são aceites substituições iniciadas pelo agente para uma concessão de caminho no repositório grand \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado."
     },
     "authRequired": "Autenticação necessária. Execute: rdc subscription login",
     "cluster": {

@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --pointer <pointer> --digest` を使用してください。",
       "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。",
       "rootGrantBlocked": "エージェントは 「{{name}}」 に root 付与を与えることはできません。Rediaccfile が権限降格なしで実行されてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
-      "rootGrantOverride": "「{{name}}」 の root 付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。"
+      "rootGrantOverride": "「{{name}}」 の root 付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。",
+      "pathGrantBlocked": "エージェントは grand リポジトリ「{{name}}」のパス付与を変更できません。Rediaccfile が、ユーザーが承認していないホストのパスに届いてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。フォークには上書きは不要です。",
+      "pathGrantOverride": "grand リポジトリ「{{name}}」のパス付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。"
     },
     "authRequired": "認証が必要です。実行してください: rdc subscription login",
     "cluster": {

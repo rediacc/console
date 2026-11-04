@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal está bloqueado en entornos de agente. Usa `rdc config show` (redactado) o `rdc config field get --pointer <pointer> --digest` para una huella segura.",
       "showRevealRequiresTty": "--reveal requiere un TTY interactivo; no se enviará texto en claro a un destino sin TTY.",
       "rootGrantBlocked": "Los agentes no pueden dar a \"{{name}}\" una concesión de root: su Rediaccfile se ejecutaría sin descenso de privilegios.\n\nUsuario: para permitirlo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
-      "rootGrantOverride": "No se aceptan anulaciones iniciadas por el agente para la concesión de root de \"{{name}}\".\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que el agente se inicie."
+      "rootGrantOverride": "No se aceptan anulaciones iniciadas por el agente para la concesión de root de \"{{name}}\".\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que el agente se inicie.",
+      "pathGrantBlocked": "Los agentes no pueden cambiar las concesiones de ruta del repo grand \"{{name}}\": su Rediaccfile alcanzaría rutas del host que el usuario nunca aprobó.\n\nUsuario: para permitirlo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente. Un fork no necesita anulación.",
+      "pathGrantOverride": "No se aceptan anulaciones iniciadas por el agente para una concesión de ruta en el repo grand \"{{name}}\".\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que el agente se inicie."
     },
     "authRequired": "Se requiere autenticación. Ejecute: rdc subscription login",
     "cluster": {

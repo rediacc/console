@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   executeRepoFunction: vi.fn(),
   setRepositoryLifecycle: vi.fn(),
+  getRepository: vi.fn(),
   print: vi.fn(),
   isAgentEnvironment: vi.fn(),
   isRepoAllowedByGrandEnv: vi.fn(),
@@ -40,7 +41,10 @@ vi.mock('../../utils/process-ancestry.js', () => ({
 }));
 vi.mock('../../services/core/output.js', () => ({ outputService: { print: mocks.print } }));
 vi.mock('../../services/config/config-resources.js', () => ({
-  configService: { setRepositoryLifecycle: mocks.setRepositoryLifecycle },
+  configService: {
+    setRepositoryLifecycle: mocks.setRepositoryLifecycle,
+    getRepository: mocks.getRepository,
+  },
 }));
 
 const { registerRepoPermissionCommands } = await import('../repo-permission.js');
@@ -82,6 +86,10 @@ const GRANT_STDOUT = JSON.stringify({
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.isAgentEnvironment.mockReturnValue(false);
+  mocks.isRepoAllowedByGrandEnv.mockReset();
+  mocks.isOverrideLegitimate.mockReset();
+  // A grand repository: no grandGuid of its own to differ from.
+  mocks.getRepository.mockResolvedValue({ repositoryGuid: 'g-app' });
   mocks.executeRepoFunction.mockResolvedValue({ success: true, stdout: GRANT_STDOUT });
 });
 
@@ -126,14 +134,57 @@ describe('rdc repo permission grant|revoke|show', () => {
     expect(mocks.executeRepoFunction).not.toHaveBeenCalled();
   });
 
-  it('lets an agent grant a path, and --root once the operator override is verified', async () => {
+  it('lets an agent grant --root once the operator override is verified', async () => {
     mocks.isAgentEnvironment.mockReturnValue(true);
-    await run(['grant', 'app', '--path', '/srv/a']);
-    expect(mocks.executeRepoFunction).toHaveBeenCalledTimes(1);
     mocks.isRepoAllowedByGrandEnv.mockReturnValue(true);
     mocks.isOverrideLegitimate.mockReturnValue(true);
     await run(['grant', 'app', '--root']);
-    expect(mocks.executeRepoFunction).toHaveBeenCalledTimes(2);
+    expect(mocks.executeRepoFunction).toHaveBeenCalledTimes(1);
+  });
+
+  describe('--path on a grand repository under an agent (finding 9fd746cf.4)', () => {
+    beforeEach(() => {
+      mocks.isAgentEnvironment.mockReturnValue(true);
+    });
+
+    it.each(['grant', 'revoke'])(
+      '%s is refused without the operator override and with an injected one',
+      async (verb) => {
+        mocks.isRepoAllowedByGrandEnv.mockReturnValue(false);
+        await expect(run([verb, 'app', '--path', '/srv/a'])).rejects.toThrow('pathGrantBlocked');
+        mocks.isRepoAllowedByGrandEnv.mockReturnValue(true);
+        mocks.isOverrideLegitimate.mockReturnValue(false);
+        await expect(run([verb, 'app', '--path', '/srv/a'])).rejects.toThrow('pathGrantOverride');
+        expect(mocks.executeRepoFunction).not.toHaveBeenCalled();
+      }
+    );
+
+    it('control: the verified operator override lets the agent grant a path', async () => {
+      mocks.isRepoAllowedByGrandEnv.mockReturnValue(true);
+      mocks.isOverrideLegitimate.mockReturnValue(true);
+      await run(['grant', 'app', '--path', '/srv/a']);
+      expect(mocks.executeRepoFunction).toHaveBeenCalledTimes(1);
+    });
+
+    it('control: a fork stays free, with no override at all', async () => {
+      mocks.getRepository.mockResolvedValue({ repositoryGuid: 'g-fork', grandGuid: 'g-app' });
+      mocks.isRepoAllowedByGrandEnv.mockReturnValue(false);
+      await run(['grant', 'app', '--path', '/srv/a']);
+      expect(mocks.executeRepoFunction).toHaveBeenCalledTimes(1);
+    });
+
+    it('control: a person (not an agent) is never gated', async () => {
+      mocks.isAgentEnvironment.mockReturnValue(false);
+      mocks.isRepoAllowedByGrandEnv.mockReturnValue(false);
+      await run(['grant', 'app', '--path', '/srv/a']);
+      expect(mocks.executeRepoFunction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('fails the mirror step when renet output cannot be parsed, leaving no silent old lifecycle (9fd746cf.1)', async () => {
+    mocks.executeRepoFunction.mockResolvedValue({ success: true, stdout: 'not json' });
+    await expect(run(['grant', 'app', '--path', '/srv/a'])).rejects.toThrow('show.unreadable');
+    expect(mocks.setRepositoryLifecycle).not.toHaveBeenCalled();
   });
 
   it('show prints the grant as one row', async () => {

@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal è bloccato negli ambienti agente. Usa `rdc config show` (con redazione) o `rdc config field get --pointer <pointer> --digest` per un'impronta sicura.",
       "showRevealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di inviare testo in chiaro a un sink non-TTY.",
       "rootGrantBlocked": "Gli agenti non possono dare a \"{{name}}\" una concessione root: il suo Rediaccfile verrebbe eseguito senza abbandono dei privilegi.\n\nUtente: per consentirlo, imposta REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repo) nel terminale prima di avviare la sessione dell'agente.",
-      "rootGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per la concessione root di \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato."
+      "rootGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per la concessione root di \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato.",
+      "pathGrantBlocked": "Gli agenti non possono modificare le concessioni di percorso del repo grand \"{{name}}\": il suo Rediaccfile raggiungerebbe percorsi dell'host che l'utente non ha mai approvato.\n\nUtente: per consentirlo, imposta REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repo) nel terminale prima di avviare la sessione dell'agente. Un fork non richiede alcuna sostituzione.",
+      "pathGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per una concessione di percorso sul repo grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato."
     },
     "authRequired": "Autenticazione richiesta. Esegui: rdc subscription login",
     "cluster": {

@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal est bloqué dans les environnements d'agent. Utilisez `rdc config show` (caviardé) ou `rdc config field get --pointer <pointer> --digest` pour une empreinte sûre.",
       "showRevealRequiresTty": "--reveal nécessite un TTY interactif ; pas de texte en clair vers une cible non-TTY.",
       "rootGrantBlocked": "Les agents ne peuvent pas donner à « {{name}} » une autorisation root : son Rediaccfile s'exécuterait sans abandon de privilèges.\n\nUtilisateur : pour l'autoriser, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
-      "rootGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour l'autorisation root de « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent."
+      "rootGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour l'autorisation root de « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.",
+      "pathGrantBlocked": "Les agents ne peuvent pas modifier les autorisations de chemin du dépôt grand « {{name}} » : son Rediaccfile atteindrait des chemins de l'hôte que l'utilisateur n'a jamais approuvés.\n\nUtilisateur : pour l'autoriser, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent. Un fork n'a pas besoin de remplacement.",
+      "pathGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour une autorisation de chemin sur le dépôt grand « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent."
     },
     "authRequired": "L'authentification est requise. Exécutez : rdc subscription login",
     "cluster": {

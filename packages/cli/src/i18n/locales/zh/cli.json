@@ -2807,6 +2807,8 @@
       "rotateNotSensitive": "指针“{{pointer}}”不是敏感字段;请改用 'config field set'。",
       "rootGrantBlocked": "代理不能给“{{name}}”授予 root 权限：其 Rediaccfile 将在不降权的情况下运行。\n\n用户提示：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "rootGrantOverride": "“{{name}}”的 root 授权不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。",
+      "pathGrantBlocked": "代理不能更改 grand 仓库“{{name}}”的路径授权：其 Rediaccfile 将触及用户从未批准的主机路径。\n\n用户提示：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。fork 无需覆盖。",
+      "pathGrantOverride": "grand 仓库“{{name}}”的路径授权不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。",
       "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
       "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`（脱敏）或 `rdc config field get --pointer <pointer> --digest` 获取安全指纹。",
       "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。"

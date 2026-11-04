@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal ist in Agenten-Umgebungen blockiert. Verwenden Sie `rdc config show` (zensiert) oder `rdc config field get --pointer <pointer> --digest` für einen sicheren Fingerabdruck.",
       "showRevealRequiresTty": "--reveal erfordert ein interaktives TTY; Klartext wird nicht in eine Nicht-TTY-Senke geleitet.",
       "rootGrantBlocked": "Agenten können \"{{name}}\" keine Root-Freigabe erteilen: Die Rediaccfile würde ohne Rechteverzicht laufen.\n\nBenutzer: Um das zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
-      "rootGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für die Root-Freigabe von \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren."
+      "rootGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für die Root-Freigabe von \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren.",
+      "pathGrantBlocked": "Agenten können die Pfadfreigaben des Grand-Repos \"{{name}}\" nicht ändern: Die Rediaccfile würde Host-Pfade erreichen, die der Benutzer nie genehmigt hat.\n\nBenutzer: Um das zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten. Ein Fork braucht keine Überschreibung.",
+      "pathGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für eine Pfadfreigabe am Grand-Repo \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren."
     },
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc subscription login",
     "cluster": {

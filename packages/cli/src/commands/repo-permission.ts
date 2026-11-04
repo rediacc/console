@@ -43,6 +43,12 @@ function lifecycleOf(stdout: string | undefined): LifecycleGrant | undefined {
   }
 }
 
+/** A grand repository has no grand of its own to differ from; a fork's grandGuid is another repository's guid. A ref that resolves to nothing is treated as grand. */
+async function isGrandRepository(repoKey: string): Promise<boolean> {
+  const repo = await configService.getRepository(repoKey);
+  return !(repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid);
+}
+
 /**
  * Refuse `--root` to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent
  * started: the same ancestry check the grand-repo guard makes. A root grant removes the privilege drop of
@@ -55,6 +61,21 @@ function assertRootGrantAllowed(name: string): void {
   }
   if (!isOverrideLegitimate()) {
     throw new ValidationError(t('errors.agent.rootGrantOverride', { name }));
+  }
+}
+
+/**
+ * Refuse `--path` on a grand repository to an agent under the same ancestry check as `--root`: a path grant widens
+ * what the repository's up() and down() reach on the host. A fork stays free.
+ */
+async function assertPathGrantAllowed(name: string, repoKey: string): Promise<void> {
+  if (!isAgentEnvironment()) return;
+  if (!(await isGrandRepository(repoKey))) return;
+  if (!isRepoAllowedByGrandEnv(name)) {
+    throw new ValidationError(t('errors.agent.pathGrantBlocked', { name }));
+  }
+  if (!isOverrideLegitimate()) {
+    throw new ValidationError(t('errors.agent.pathGrantOverride', { name }));
   }
 }
 
@@ -105,6 +126,7 @@ async function handlePermissionVerb(
       throw new ValidationError(t('commands.repo.permission.nothingToChange', { verb }));
     }
     if (options.root) assertRootGrantAllowed(name);
+    if (options.path) await assertPathGrantAllowed(name, repoKey);
   }
   await assertMachineExists(machineName);
 
@@ -138,7 +160,8 @@ bindStepHandler('mirrorLifecycleGrants', async ({ output, params }) => {
   const repoKey = optStr(params, 'repo');
   if (!repoKey) throw new Error('step param "repo" is missing');
   const grant = lifecycleOf(output);
-  if (!grant) return;
+  // The machine's grant already changed; an output that cannot be read must not leave state.repos on the old lifecycle without saying so.
+  if (!grant) throw new Error(t('commands.repo.permission.show.unreadable'));
   await configService.setRepositoryLifecycle(repoKey, grant);
 });
 

@@ -2809,7 +2809,9 @@
       "showReveal": "--reveal on agendikeskkondades blokeeritud. Kasuta `rdc config show` (varjatud) või `rdc config field get --pointer <pointer> --digest` turvalise sõrmejälje saamiseks.",
       "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti.",
       "rootGrantBlocked": "Agendid ei saa hoidlale \"{{name}}\" anda root-luba: selle Rediaccfile töötaks ilma õiguste loobumiseta.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist.",
-      "rootGrantOverride": "Agendi algatatud ülekirjutusi hoidla \"{{name}}\" root-loa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida."
+      "rootGrantOverride": "Agendi algatatud ülekirjutusi hoidla \"{{name}}\" root-loa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.",
+      "pathGrantBlocked": "Agendid ei saa muuta grand-hoidla \"{{name}}\" teeõigusi: selle Rediaccfile jõuaks hosti teedeni, mida kasutaja pole kunagi heaks kiitnud.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist. Fork ei vaja ülekirjutust.",
+      "pathGrantOverride": "Agendi algatatud ülekirjutusi grand-hoidla \"{{name}}\" teeloa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida."
     },
     "authRequired": "Autentimine on nõutud. Käivita: rdc subscription login",
     "cluster": {
