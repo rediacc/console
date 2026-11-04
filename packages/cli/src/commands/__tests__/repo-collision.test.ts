@@ -23,9 +23,11 @@ import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../services/cluster/repo-replicate-ops.js', () => ({
-  refreshReplicaSet: vi.fn(() => Promise.resolve()),
   removeReplicaSet: vi.fn(() => Promise.resolve()),
   replicateRepo: vi.fn(() => Promise.resolve()),
+}));
+vi.mock('../../services/cluster/repo-replicate-refresh.js', () => ({
+  refreshReplicaSet: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('../../services/cluster/repo-replicate.js', () => ({
   getReplicaSetForRepo: vi.fn(() => Promise.resolve({ repo: 'shop' })),
@@ -63,7 +65,8 @@ vi.mock('../../utils/repo-target.js', () => ({
   ),
 }));
 
-import { refreshReplicaSet, removeReplicaSet } from '../../services/cluster/repo-replicate-ops.js';
+import { removeReplicaSet } from '../../services/cluster/repo-replicate-ops.js';
+import { refreshReplicaSet } from '../../services/cluster/repo-replicate-refresh.js';
 import { runCommandJob } from '../../services/jobs/command-job.js';
 import { registerRepoCanaryCommands } from '../repo-canary.js';
 import { registerRepoReplicateCommands } from '../repo-replicate.js';

@@ -17,12 +17,9 @@ import { setCommandJobDeps } from '../../jobs/command-job.js';
 import { runTicketSteps, type StepRunnerDeps } from '../../jobs/run-job.js';
 import { resolveStepHandler } from '../../jobs/steps.js';
 import { TicketStore } from '../../jobs/ticket-store.js';
-import {
-  __setReplicateClock,
-  refreshReplicaSet,
-  removeReplicaSet,
-  replicateRepo,
-} from '../repo-replicate-ops.js';
+import { removeReplicaSet, replicateRepo } from '../repo-replicate-ops.js';
+import { __setReplicateClock } from '../repo-replicate-phase.js';
+import { refreshReplicaSet } from '../repo-replicate-refresh.js';
 
 vi.mock('../cluster-target.js', () => ({
   resolveExecutionTarget: vi.fn(() => Promise.resolve({ machineName: 'cp1', cluster: 'prod' })),
@@ -465,7 +462,10 @@ describe('replicateRepo (create)', () => {
     // The machine job finishes while the client is gone; `rdc job wait` then runs the tail from the job's replayed log.
     answer = undefined;
     const fork = replicaFork(model, calls[0]);
-    const report = await settleOwed(ticketOwing('replicateTail').requestId, fork.stdout);
+    const report = await settleOwed(
+      ticketOwing('replicateTail').requestId,
+      'stdout' in fork ? fork.stdout : undefined
+    );
 
     expect(report.failed).toEqual([]);
     expectSettledCreate();
@@ -744,7 +744,7 @@ const REPLICA_ROLL = [
   'replica_attach',
   'datastore_volumes_open',
   'replica_publish',
-];
+] as const;
 
 describe('refreshReplicaSet (rolling one-at-a-time)', () => {
   it('takes the snapshot, then per replica HOLD -> bounce -> discard -> re-fork -> open -> re-open the gate', async () => {

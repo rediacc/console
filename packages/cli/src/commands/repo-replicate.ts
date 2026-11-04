@@ -22,11 +22,8 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getReplicaSetForRepo, replicaSetNameFor } from '../services/cluster/repo-replicate.js';
-import {
-  refreshReplicaSet,
-  removeReplicaSet,
-  replicateRepo,
-} from '../services/cluster/repo-replicate-ops.js';
+import { removeReplicaSet, replicateRepo } from '../services/cluster/repo-replicate-ops.js';
+import { refreshReplicaSet } from '../services/cluster/repo-replicate-refresh.js';
 import { outputService } from '../services/core/output.js';
 import { notFound } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';

@@ -54,7 +54,6 @@
   "packages/cli/src/services/addressing/__tests__/resolve-machine.test.ts:cc603b9ac9a7",
   "packages/cli/src/services/addressing/__tests__/resolve-machine.test.ts:ed6d796d04d5",
   "packages/cli/src/services/cluster/__tests__/cluster-kube.test.ts:0cd930a6ee3e",
-  "packages/cli/src/services/cluster/__tests__/repo-replicate-ops.test.ts:773791f2e059",
   "packages/cli/src/services/core/embedded-assets.ts:5a9d9099ba3d",
   "packages/cli/src/services/serve/__tests__/proxy-audit-attribution.test.ts:900c589af318",
   "packages/cli/src/utils/__tests__/cli-exit-error.test.ts:cdd0506d6dc1",
