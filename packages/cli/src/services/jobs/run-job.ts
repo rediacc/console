@@ -369,6 +369,16 @@ async function runUnspooledSteps(
   return report;
 }
 
+/**
+ * A retried start attaches to the job the first start made and renet keeps that start's params and steps, so the ticket
+ * keeps its plan too: the retry's own may carry ids minted afresh (a commit guid). A start that was refused made no
+ * job, so the retry's plan stands.
+ */
+function keepsFirstPlan(store: TicketStore, requestId: string): boolean {
+  const prior = store.tickets().find((t) => t.requestId === requestId);
+  return prior !== undefined && (prior.jobId !== undefined || !prior.acknowledged);
+}
+
 export async function runJob<R>(
   call: JobCall<R>,
   steps: PlannedStep[],
@@ -378,6 +388,8 @@ export async function runJob<R>(
   const requestId = (deps.mintRequestId ?? randomUUID)();
   const startedAt = (deps.now ?? (() => new Date()))().toISOString();
 
+  const plan = keepsFirstPlan(store, requestId) ? {} : { steps: toTicketSteps(steps) };
+
   store.append('starting', requestId, {
     verb: call.verb,
     function: call.function,
@@ -385,7 +397,7 @@ export async function runJob<R>(
     repo: call.repo,
     via: call.via ?? { kind: 'ssh' },
     startedAt,
-    steps: toTicketSteps(steps),
+    ...plan,
   });
 
   const outcome = await call.start({ requestId, steps: toSpoolSteps(steps) });

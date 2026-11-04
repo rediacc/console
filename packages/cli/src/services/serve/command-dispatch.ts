@@ -50,7 +50,7 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
-import { invocationMinter, RequestIdMinter } from '../jobs/attach.js';
+import { RequestIdMinter, withInvocationMinter } from '../jobs/attach.js';
 import {
   currentRequestTelemetry,
   runWithRequestTelemetry,
@@ -373,15 +373,6 @@ export function prepareCommand(
   return { entry, argv: buildArgv(entry, params, positionals) };
 }
 
-/**
- * Whether a request id is one the executor seam minted from this process's own invocation (or none at all), as
- * opposed to one the command chose (`runCommandJob` mints its own). Only the seam's is replaced by the client's id,
- * so a command's explicit id is never overwritten.
- */
-function isSeamMinted(requestId: string | undefined): boolean {
-  return requestId === undefined || requestId.startsWith(`${invocationMinter().invocationId}:`);
-}
-
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
   const { argv } = args.prepared;
   const started = Date.now();
@@ -409,7 +400,8 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
       try {
         result = await args.executor.execute({
           ...options,
-          ...(minter && isSeamMinted(options.requestId)
+          // `runCommandJob` has already minted from the same minter, and its ticket is under that id.
+          ...(minter && options.requestId === undefined
             ? { requestId: minter.next(options.machineName) }
             : {}),
           ...(args.onJobStarted
@@ -445,17 +437,19 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   const outcome = await runWithRequestTelemetry(
     args.caller,
     () =>
-      runInRequestContext(context, async () => {
-        const program = createCli();
-        harden(program, context.stderr);
-        try {
-          await program.parseAsync(argv, { from: 'user' });
-          return { failed: false as const };
-        } catch (error) {
-          endFailedCommandSpan(error, Date.now() - started);
-          return { failed: true as const, error };
-        }
-      }),
+      withInvocationMinter(minter, () =>
+        runInRequestContext(context, async () => {
+          const program = createCli();
+          harden(program, context.stderr);
+          try {
+            await program.parseAsync(argv, { from: 'user' });
+            return { failed: false as const };
+          } catch (error) {
+            endFailedCommandSpan(error, Date.now() - started);
+            return { failed: true as const, error };
+          }
+        })
+      ),
     'command'
   );
 

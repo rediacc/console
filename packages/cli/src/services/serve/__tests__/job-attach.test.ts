@@ -21,7 +21,7 @@ import {
   StreamLineSchema,
 } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The dispatched command runs the real CLI, which would otherwise read the developer's own config from disk. This is the config the EXECUTOR holds.
 vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
@@ -31,8 +31,14 @@ vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
+    // A key with a tag is a fork, which is what a mutating verb must target to pass the executor's grand-repo guard.
     getRepository: vi.fn((name: string) =>
-      Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
+      Promise.resolve({
+        repositoryGuid: `guid-${name}`,
+        credential: 'set',
+        networkId: 7,
+        ...(name.includes(':') ? { grandGuid: 'guid-grand' } : {}),
+      })
     ),
     getLanguage: vi.fn(() => Promise.resolve('en')),
     applyDefaults: vi.fn((options: Record<string, unknown>) => Promise.resolve(options)),
@@ -48,7 +54,11 @@ vi.mock('../../config/config-resources.js', () => ({
         resources: {
           repositories: {
             shop: { grand: 'base', tags: { base: {} }, placement: { machine: 'hostinger' } },
-            demo: { grand: 'base', tags: { base: {} }, placement: { machine: 'hostinger' } },
+            demo: {
+              grand: 'base',
+              tags: { base: {}, trial: {} },
+              placement: { machine: 'hostinger' },
+            },
             // Distinct placements so the concurrency test derives distinct machines.
             alpha: { grand: 'base', tags: { base: {} }, placement: { machine: 'm1' } },
             beta: { grand: 'base', tags: { base: {} }, placement: { machine: 'm2' } },
@@ -130,7 +140,7 @@ describe('attach window over /v1/command', () => {
           Promise.resolve(
             Response.json({
               active: true,
-              scopes: ['proxy:exec'],
+              scopes: ['proxy:exec', 'audit:write'],
               orgId: 'org-1',
               teamId: 'team-1',
               createdByUserId: 'user-owner',
@@ -238,6 +248,87 @@ describe('attach window over /v1/command', () => {
     expect(seen[0]).toBe(`${REQUEST_ID}:hostinger:1`);
     // Without a body id the executor seam's own id stands.
     expect(seen[1]).not.toContain(REQUEST_ID);
+  });
+
+  describe('a verb that runs through runCommandJob', () => {
+    let dir: string;
+    let store: TicketStore;
+    /** The machine's request index: a known id answers with the job it started, and starts nothing. */
+    let jobs: Map<string, string>;
+
+    /** renet's start, restated for the fake: the `repository_up` call is the verb's job, and any other call answers at once. */
+    function jobOf(requestId: string): string {
+      const known = jobs.get(requestId);
+      if (known) return known;
+      const jobId = `j18c1c04dd251ce26-${String(jobs.size).padStart(8, '0')}`;
+      jobs.set(requestId, jobId);
+      return jobId;
+    }
+
+    function bootMachine() {
+      boot((options) => {
+        if (options.functionName !== 'repository_up') {
+          return Promise.resolve({ success: true, exitCode: 0, durationMs: 1 });
+        }
+        const jobId = jobOf(options.requestId ?? '');
+        options.onJobStarted?.(jobId, options.machineName);
+        return Promise.resolve({
+          success: true,
+          exitCode: 0,
+          durationMs: 1,
+          jobId,
+          state: 'running',
+          attached: false,
+        });
+      });
+    }
+
+    const up = (extra: Record<string, unknown> = {}) =>
+      post({ pathKey: 'repo up', params: {}, positionals: { ref: 'demo:trial' }, ...extra });
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'job-attach-retry-'));
+      store = new TicketStore('test', dir);
+      jobs = new Map();
+      setCommandJobDeps({
+        store: () => store,
+        stepDeps: () =>
+          Promise.resolve({
+            observer: { configName: 'test' },
+            warn: () => undefined,
+            claim: ({ steps }) =>
+              Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
+          }),
+      });
+    });
+
+    afterEach(() => {
+      setCommandJobDeps();
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('a POST retried with the same body id yields one job and one ticket on that id', async () => {
+      bootMachine();
+      await (await up({ requestId: REQUEST_ID })).text();
+      await (await up({ requestId: REQUEST_ID })).text();
+
+      expect([...jobs.keys()]).toHaveLength(1);
+      const [id] = [...jobs.keys()];
+      expect(id).toMatch(new RegExp(`^${REQUEST_ID}:hostinger:\\d+$`));
+      const tickets = store.tickets().filter((t) => t.verb === 'repo up');
+      expect(tickets.map((t) => t.requestId)).toEqual([id]);
+    });
+
+    it('control: a different body id is a second job, and no body id a fresh one', async () => {
+      bootMachine();
+      await (await up({ requestId: REQUEST_ID })).text();
+      await (await up({ requestId: `${REQUEST_ID}-other` })).text();
+      await (await up()).text();
+      await (await up()).text();
+
+      expect([...jobs.keys()]).toHaveLength(4);
+      expect(new Set([...jobs.keys()]).size).toBe(4);
+    });
   });
 
   it('keeps a quiet window alive with heartbeats', async () => {

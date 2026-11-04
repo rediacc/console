@@ -10,9 +10,9 @@
  * the gates and in whatever order the jobs end.
  */
 
-import { randomUUID } from 'node:crypto';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import type { ExecuteOptions } from '../executor/types.js';
+import { invocationMinter } from './attach.js';
 import { runCommandJob } from './command-job.js';
 import { ScratchStore } from './scratch-store.js';
 import {
@@ -142,7 +142,8 @@ export async function runJobGroup(
   groupStepsOf: JobGroupSteps = {},
   options: JobGroupOptions = {}
 ): Promise<JobGroupResult> {
-  const group = randomUUID();
+  // From the invocation, so a retried request settles the group its first attempt's members report to. The scratch store's names take no colon.
+  const group = invocationMinter().next('group').replaceAll(':', '.');
   const expected = members.map((m) => m.machineName);
   const gates = [
     planStep('groupMemberSucceeded', {

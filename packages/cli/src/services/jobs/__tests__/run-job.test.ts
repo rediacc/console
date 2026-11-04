@@ -356,6 +356,61 @@ describe('runJob', () => {
     expect(h.ran).toEqual([]);
     expect(machine.calls).toEqual([]);
   });
+
+  describe('a retried start of one request id', () => {
+    const planFor = (guid: string) => [planStep('postRepoUpTasks', { repo: guid, machine: 'm1' })];
+    const pendingCall = (): JobCall<{ ok: true }> => ({
+      verb: 'repo commit',
+      function: 'repository_commit',
+      machine: 'm1',
+      start: async () => ({ kind: 'pending', jobId: JOB_ID }),
+    });
+    const refusingCall = (): JobCall<{ ok: true }> => ({
+      ...pendingCall(),
+      start: () => Promise.reject(new Error('BUSY')),
+    });
+    const deps = () => ({
+      store,
+      steps: stepDeps(fakeMachine().claim, handlers(['postRepoUpTasks']).resolve),
+      mintRequestId: () => 'r1',
+    });
+
+    it('keeps the first plan, which is the one the deduped job carries', async () => {
+      await runJob(pendingCall(), planFor('guid-first'), deps());
+      const retried = await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(store.tickets()).toHaveLength(1);
+      expect(retried.ticket.steps[0].params).toMatchObject({ repo: 'guid-first' });
+    });
+
+    it('keeps the first plan while the first start has no answer yet', async () => {
+      store.append('starting', 'r1', { steps: toTicketSteps(planFor('guid-first')) });
+      const retried = await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(retried.ticket.steps[0].params).toMatchObject({ repo: 'guid-first' });
+    });
+
+    it('takes the retry plan and reopens the ticket after a refused first start', async () => {
+      await expect(runJob(refusingCall(), planFor('guid-first'), deps())).rejects.toThrow('BUSY');
+      store.append('acknowledged', 'r1', { state: 'unknown' });
+
+      const retried = await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(retried.ticket.steps[0].params).toMatchObject({ repo: 'guid-retry' });
+      expect(retried.ticket.acknowledged).toBe(false);
+      expect(store.pending().map((t) => t.requestId)).toEqual(['r1']);
+    });
+
+    it('control: a different request id keeps its own plan', async () => {
+      await runJob(pendingCall(), planFor('guid-first'), deps());
+      const other = await runJob(pendingCall(), planFor('guid-other'), {
+        ...deps(),
+        mintRequestId: () => 'r2',
+      });
+
+      expect(other.ticket.steps[0].params).toMatchObject({ repo: 'guid-other' });
+    });
+  });
 });
 
 describe('the claim command', () => {

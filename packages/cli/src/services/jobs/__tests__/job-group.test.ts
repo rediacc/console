@@ -20,6 +20,7 @@ vi.mock('../../core/audit.js', () => ({
   },
 }));
 
+const { RequestIdMinter, withInvocationMinter } = await import('../attach.js');
 const { runJobGroup } = await import('../job-group.js');
 const { planStep, resolveStepHandler } = await import('../steps.js');
 
@@ -126,6 +127,26 @@ describe('runJobGroup', () => {
     await handler(ctx);
     await handler(ctx);
     expect(recorded()).toEqual(['group_ok']);
+  });
+
+  it('a retried served invocation names the same group, so its members settle one group', async () => {
+    const attempt = () =>
+      withInvocationMinter(new RequestIdMinter('inv-1'), () =>
+        runJobGroup('cluster create', MEMBERS, groupSteps)
+      );
+    const first = await attempt();
+    const retried = await attempt();
+
+    expect(first.group).toBe('inv-1.group.1');
+    expect(retried.group).toBe(first.group);
+    expect(recorded()).toEqual(['group_ok']);
+  });
+
+  it('control: two local groups in one run are two groups', async () => {
+    const first = await runJobGroup('cluster create', MEMBERS);
+    const second = await runJobGroup('cluster create', MEMBERS);
+
+    expect(second.group).not.toBe(first.group);
   });
 
   it('control: members with no group steps settle without running anything', async () => {

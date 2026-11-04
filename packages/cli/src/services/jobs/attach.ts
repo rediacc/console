@@ -16,6 +16,7 @@
  * | `-b` / `--background`   | 0 (ticket at once)      |
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 
 /** The attach window of the proxy, the web console and MCP (operator ruling, fourth round). */
@@ -127,10 +128,25 @@ export class RequestIdMinter {
 
 let processMinter: RequestIdMinter | undefined;
 
-/** The minter of this process's invocation (one `rdc` run is one invocation). */
+const servedMinter = new AsyncLocalStorage<RequestIdMinter>();
+
+/**
+ * The minter of this invocation: the one a served request brought (its body id, {@link withInvocationMinter}), else
+ * the process's (one `rdc` run is one invocation).
+ */
 export function invocationMinter(): RequestIdMinter {
+  const served = servedMinter.getStore();
+  if (served) return served;
   processMinter ??= new RequestIdMinter();
   return processMinter;
+}
+
+/**
+ * Run `fn` as an invocation of its own. Every id minted under it comes from `minter`, so two served requests in one
+ * process keep their ids apart and a retried request mints the ids the first one did. No minter leaves the process's.
+ */
+export function withInvocationMinter<T>(minter: RequestIdMinter | undefined, fn: () => T): T {
+  return minter ? servedMinter.run(minter, fn) : fn();
 }
 
 /** Test seam: start a fresh invocation (optionally with a fixed id). */
