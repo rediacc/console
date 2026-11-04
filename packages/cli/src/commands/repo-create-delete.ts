@@ -23,6 +23,7 @@ import {
   pendingExitCode,
   runCommandJob,
 } from '../services/jobs/command-job.js';
+import { servedRecordGuid } from '../services/jobs/attach.js';
 import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
@@ -205,15 +206,26 @@ export async function registerNewRepo(
   target: NetworkIdTarget,
   /** The create job asks renet for the ID (`network_id: "auto"`): no ID is allocated here and the record carries none. */
   networkIdAuto = false
-): Promise<{ repositoryGuid: string; networkId?: number }> {
+): Promise<{ repositoryGuid: string; networkId?: number; reattached?: true }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
   const existing = await configService.getRepository(name);
+  // A POST retried with the same body id finds the record its first attempt registered (the guid derives from the id): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate.
+  const servedGuid = servedRecordGuid(`create:${name}`);
+  if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {
+    return {
+      repositoryGuid: servedGuid,
+      ...(existing.networkId === undefined || existing.networkId <= 0
+        ? {}
+        : { networkId: existing.networkId }),
+      reattached: true,
+    };
+  }
   if (existing) {
     throw new Error(t('commands.repo.create.alreadyExists', { name }));
   }
-  const repositoryGuid = randomUUID();
+  const repositoryGuid = servedGuid ?? randomUUID();
   // D3(a): the floor is the target machine's used set, so a lagging counter skips IDs other devices placed there.
   const networkId = networkIdAuto
     ? undefined
@@ -265,14 +277,15 @@ async function handleRepoCreateOnMachine(
 
     const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
     const target: NetworkIdTarget = { machine: options.machine };
-    const { repositoryGuid } = await registerNewRepo(
+    const { repositoryGuid, reattached } = await registerNewRepo(
       name,
       { machine: options.machine },
       { sshPrivateKey, sshPublicKey },
       target,
       true
     );
-    createdGuid = repositoryGuid;
+    // A reattached record is the first attempt's, so this invocation's failure must not roll it back.
+    if (!reattached) createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {
@@ -342,14 +355,15 @@ async function handleRepoCreateOnDatastore(
       datastore: placement.mountPath,
       ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
     };
-    const { repositoryGuid } = await registerNewRepo(
+    const { repositoryGuid, reattached } = await registerNewRepo(
       name,
       { datastore: options.datastore },
       {},
       target,
       true
     );
-    createdGuid = repositoryGuid;
+    // A reattached record is the first attempt's, so this invocation's failure must not roll it back.
+    if (!reattached) createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {

@@ -27,6 +27,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { servedRecordGuid } from '../services/jobs/attach.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
 import {
@@ -144,14 +145,23 @@ async function registerFork(
   machineName: string,
   parentConfig: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>,
   immutable = false
-): Promise<{ repositoryGuid: string; networkId: number }> {
+): Promise<{ repositoryGuid: string; networkId: number; reattached?: true }> {
   const existing = await configService.getRepository(forkKey);
+  // A POST retried with the same body id finds the row its first attempt registered (the guid derives from the id): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate.
+  const servedGuid = servedRecordGuid(`fork:${forkKey}`);
+  if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {
+    return {
+      repositoryGuid: servedGuid,
+      networkId: existing.networkId ?? 0,
+      reattached: true,
+    };
+  }
   if (existing) {
     // Exit 2 (INVALID_ARGUMENTS): the requested fork tag is already taken.
     throw new ValidationError(t('commands.repo.fork.alreadyExists', { name: forkKey }));
   }
 
-  const repositoryGuid = randomUUID();
+  const repositoryGuid = servedGuid ?? randomUUID();
   // D3(a): the floor is the fork machine's used set, so a lagging counter skips IDs other devices placed there.
   const networkId = await configService.allocateNetworkId({
     floor: await targetFloor({ machine: machineName }),
@@ -513,7 +523,7 @@ export async function handleForkAction(
 
     await assertMachineExists(options.machine);
 
-    const { repositoryGuid, networkId } = await registerFork(
+    const { repositoryGuid, networkId, reattached } = await registerFork(
       parent,
       forkKey,
       tagName,
@@ -521,7 +531,8 @@ export async function handleForkAction(
       parentConfig,
       options.immutable
     );
-    forkGuid = repositoryGuid;
+    // A reattached row is the first attempt's, so this invocation's failure must not roll it back.
+    if (!reattached) forkGuid = repositoryGuid;
 
     // Resolved BEFORE the lease: it is a config read, and anything between acquire() and the try/finally below escapes the release on a throw.
     const datastoreMount = await recordedDatastoreMount(parent);

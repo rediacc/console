@@ -17,7 +17,7 @@
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 /** The attach window of the proxy, the web console and MCP (operator ruling, fourth round). */
 export const JOB_ATTACH_WINDOW_MS = 20_000;
@@ -139,6 +139,19 @@ export function invocationMinter(): RequestIdMinter {
   if (served) return served;
   processMinter ??= new RequestIdMinter();
   return processMinter;
+}
+
+/**
+ * A guid for a record this invocation registers, or `undefined` outside a served request that brought a body id.
+ * It derives from the body id and `scope`, so a retried POST computes the guid its first attempt registered and can
+ * tell its own record from a stranger's of the same name; a fresh command, or a different id, never matches.
+ */
+export function servedRecordGuid(scope: string): string | undefined {
+  const served = servedMinter.getStore();
+  if (!served) return undefined;
+  const h = createHash('sha256').update(`${served.invocationId}\0${scope}`).digest('hex');
+  const variant = ((Number.parseInt(h.charAt(16), 16) & 0x3) | 0x8).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
 /**
