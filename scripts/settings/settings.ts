@@ -689,10 +689,7 @@ function treeCases(m: Mutant | null): ControlCase[] {
       const run = drive(r, ['set', R2, '5TB', '--reason', 'selftest'], m);
       cases.push({
         name: "set: a spend-guard file holding a peer's uncommitted change refuses the run by name, and the peer's bytes stay",
-        ok:
-          run.rc === 1 &&
-          run.err.includes(`refused: ${SPEND}`) &&
-          read(r, SPEND) === peer,
+        ok: run.rc === 1 && run.err.includes(`refused: ${SPEND}`) && read(r, SPEND) === peer,
         detail: `rc=${run.rc} err=${run.err.slice(0, 400)}`,
       });
     }

@@ -18,7 +18,9 @@ describe('buildRenetExitError', () => {
   it('finds the flag rejection on stdout too, where the bridge relays it', () => {
     expect(
       buildRenetExitError(1, '', "[backup_verify] Error: unknown shorthand flag: 'x' in -x", 'm1')
-    ).toBe('renet on m1 is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet');
+    ).toBe(
+      'renet on m1 is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet'
+    );
   });
 
   it('keeps the cobra line when no machine name is known', () => {
