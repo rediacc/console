@@ -1157,9 +1157,10 @@ def assert_defect_is_caught(tmp_path, fixture_work, stem):
     assert broken_src != source
     broken_path = tmp_path / ("broken_%s.py" % stem)
     broken_path.write_text(broken_src, encoding="utf-8")
+    # `__file__` stays the real guard's, because block_origin_clone and block_commit_of_live_writer_file load `../git/githooks.py` relative to it and would look beside the tmp copy and fail before the defect is judged; the code still compiles under the tmp name.
     namespace: dict[str, typing.Any] = {
         "__name__": "broken_%s" % stem,
-        "__file__": str(broken_path),
+        "__file__": str(module.__file__),
     }
     exec(compile(broken_src, str(broken_path), "exec"), namespace)
     # The broken copy reads the SAME frozen clock as the good one, or a clock-reading port would "change its answer" on today's date rather than on its planted defect, and this control would pass for the wrong reason.
