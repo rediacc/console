@@ -439,6 +439,7 @@ ck(
 )
 big.close()
 
+
 # THE TOMBSTONE SECTION SURVIVES A VERB'S REFRESH. Every plan verb runs refresh_index, and the section has no disk state to render from, so a rewrite that drops it loses the expired plans' only record.
 def _records(root, **_kwargs):
     return CK.plan_records(root)
@@ -447,15 +448,29 @@ def _records(root, **_kwargs):
 stone = Tree([("PLAN-boxed.md", plan_text("boxed", "draft", open_n=1, done_n=0))])
 _section = "\n## Expired plans\n\n| Plan |\n|---|\n| `agent/plans/_done/PLAN-gone.md` |\n"
 stone.write_index(extra=_section)
-ck("CONTROL: the planted section is in the index", _section in (stone.root / PI.INDEX_REL).read_text(), "")
+ck(
+    "CONTROL: the planted section is in the index",
+    _section in (stone.root / PI.INDEX_REL).read_text(),
+    "",
+)
 R.refresh_index(stone.root, _records, CK.plan_box_census)
 _after = (stone.root / PI.INDEX_REL).read_text()
 ck("refresh_index keeps the tombstone section", _after.endswith(_section), _after[-200:])
 ck("refresh_index keeps the census beside it", PI.CENSUS_SECTION in _after, _after[:200])
-eq("a second refresh changes nothing", R.refresh_index(stone.root, _records, CK.plan_box_census), False)
-(stone.root / PI.INDEX_REL).write_text(PI.render_census(PI.census_rows(stone.root)), encoding="utf-8")
+eq(
+    "a second refresh changes nothing",
+    R.refresh_index(stone.root, _records, CK.plan_box_census),
+    False,
+)
+(stone.root / PI.INDEX_REL).write_text(
+    PI.render_census(PI.census_rows(stone.root)), encoding="utf-8"
+)
 R.refresh_index(stone.root, _records, CK.plan_box_census)
-ck("CONTROL: an index with no section grows none", "## Expired plans" not in (stone.root / PI.INDEX_REL).read_text(), "")
+ck(
+    "CONTROL: an index with no section grows none",
+    "## Expired plans" not in (stone.root / PI.INDEX_REL).read_text(),
+    "",
+)
 stone.close()
 
 # ANTI-VACUITY. A suite that plants nothing and asserts nothing exits 0 too, so the floor is asserted rather than assumed: if a future edit breaks the fixture setup, this fails loudly instead of reporting a clean run over no work.

@@ -1935,7 +1935,7 @@ print(json.dumps(sorted(R.edit_paths(pathlib.Path(sys.argv[2]), pathlib.Path(sys
 """
 
 
-def _lease_transcript(tmp_path, root, calls):
+def _lease_transcript(tmp_path, _root, calls):
     recs = []
     for n, (name, tool_input, cwd) in enumerate(calls):
         block = {"type": "tool_use", "id": "toolu_%d" % n, "name": name, "input": tool_input}
@@ -2006,23 +2006,25 @@ def test_w12_load_metas_reads_the_recorded_worktree_path(tmp_path):
     sub = tmp_path / "subagents"
     sub.mkdir()
     (sub / "agent-iso.meta.json").write_text(
-        json.dumps({"agentType": "general-purpose", "worktreePath": "/r/.claude/worktrees/agent-iso"}),
+        json.dumps(
+            {"agentType": "general-purpose", "worktreePath": "/r/.claude/worktrees/agent-iso"}
+        ),
         encoding="utf-8",
     )
     (sub / "agent-plain.meta.json").write_text(
         json.dumps({"agentType": "general-purpose"}), encoding="utf-8"
     )
-    R = wlfix.import_wl("wl_roster")
-    metas = R.load_metas(sub)
+    roster = wlfix.import_wl("wl_roster")
+    metas = roster.load_metas(sub)
     assert metas["iso"]["worktree"] == "/r/.claude/worktrees/agent-iso"
     assert metas["plain"]["worktree"] == ""
 
 
 def _conc_world():
-    X = wlfix.import_wl("wl_planconc")
+    planconc = wlfix.import_wl("wl_planconc")
     xi = {
-        "PLAN-a.md": X.PlanX("PLAN-a.md", owns=("src/**",)),
-        "PLAN-b.md": X.PlanX("PLAN-b.md", owns=("src/**",)),
+        "PLAN-a.md": planconc.PlanX("PLAN-a.md", owns=("src/**",)),
+        "PLAN-b.md": planconc.PlanX("PLAN-b.md", owns=("src/**",)),
     }
     serving = {"wa": {"PLAN-a.md"}, "wb": {"PLAN-b.md"}}
     live = {
@@ -2033,33 +2035,33 @@ def _conc_world():
 
 
 def test_w12_two_isolated_writers_on_one_file_are_not_a_conflict():
-    PO = wlfix.import_wl("wl_planorder")
+    planorder = wlfix.import_wl("wl_planorder")
     xi, serving, live = _conc_world()
-    assert PO.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"}) == []
+    assert planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"}) == []
 
 
 def test_w12_control_one_plain_writer_and_the_overlap_still_trips():
-    PO = wlfix.import_wl("wl_planorder")
+    planorder = wlfix.import_wl("wl_planorder")
     xi, serving, live = _conc_world()
-    assert PO.conflicts(serving, live, xi.__getitem__, None) != []
-    got = PO.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"})
+    assert planorder.conflicts(serving, live, xi.__getitem__, None) != []
+    got = planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"})
     assert [aid for aid, _v in got] == ["wb"]
 
 
 def test_w12_control_an_isolated_writer_still_trips_an_exclusive_plan():
-    PO = wlfix.import_wl("wl_planorder")
-    X = wlfix.import_wl("wl_planconc")
+    planorder = wlfix.import_wl("wl_planorder")
+    planconc = wlfix.import_wl("wl_planconc")
     xi, serving, live = _conc_world()
-    xi["PLAN-b.md"] = X.PlanX("PLAN-b.md", owns=("src/**",), exclusive=True)
-    got = PO.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"})
+    xi["PLAN-b.md"] = planconc.PlanX("PLAN-b.md", owns=("src/**",), exclusive=True)
+    got = planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"})
     assert got != []
 
 
 def test_w12_hold_of_a_queue_item_reads_isolation_when_told():
-    PO = wlfix.import_wl("wl_planorder")
+    planorder = wlfix.import_wl("wl_planorder")
     xi, _serving, live = _conc_world()
     rec = {"id": "q1", "text": "queued item PLAN-a.md [deadbeef]"}
     live_b = {"PLAN-b.md": live["PLAN-b.md"]}
-    assert PO.X.item_plan(rec) == "PLAN-a.md"
-    assert PO.hold(rec, live_b, xi.__getitem__) is not None
-    assert PO.hold(rec, live_b, xi.__getitem__, isolated=True) is None
+    assert planorder.X.item_plan(rec) == "PLAN-a.md"
+    assert planorder.hold(rec, live_b, xi.__getitem__) is not None
+    assert planorder.hold(rec, live_b, xi.__getitem__, isolated=True) is None
