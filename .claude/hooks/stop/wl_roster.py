@@ -1371,17 +1371,16 @@ def _shellscan():
     return shellscan
 
 
-_LEASE_TREE = re.compile(r"^\.claude/worktrees/[^/]+/(.+)$")
+_LEASE_TREE = re.compile(r"^\.claude/worktrees/[^/]+/.")
 
 
-def lease_rel(path):
-    """`.claude/worktrees/<name>/src/a.ts` as `src/a.ts`: a writer's edit in its own tree is the same file in the main tree. A path outside the repo, or the tree directory itself, is returned as it came."""
-    m = _LEASE_TREE.match(path)
-    return m.group(1) if m else path
+def in_lease_tree(path):
+    """A path inside a lease tree (`.claude/worktrees/<name>/...`): a writer's edit there is not dirt in the main tree. A path outside the repo, and the tree directory itself, are not."""
+    return bool(_LEASE_TREE.match(path))
 
 
 def edit_paths(jsonl, root):
-    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). A path inside a lease tree (`.claude/worktrees/<name>/`) is read as the same path in the main tree (`lease_rel`). Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
+    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). A path inside a lease tree (`.claude/worktrees/<name>/`) is dropped (`in_lease_tree`), so it subtracts nothing from the lead's fix-set. Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
     try:
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
@@ -1407,7 +1406,7 @@ def edit_paths(jsonl, root):
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
                 out.add(path.removeprefix(base))
-    return {lease_rel(p) for p in out}
+    return {p for p in out if not in_lease_tree(p)}
 
 
 class WriterPaths(set):

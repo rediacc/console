@@ -131,6 +131,14 @@ guard.write_session(
         (GRAND, "suite grand-writer", [str(REPO / "lib/grand.py")], False, CHILD),
     ],
 )
+# The same file edited in the main tree, by a live writer of another session.
+MAIN_SESSION = "c0ffee11-live-writer-suite-000000000000"
+guard.write_session(
+    CONFIG,
+    REPO,
+    MAIN_SESSION,
+    [("asuitemainwriter0007", "suite main-tree writer", [str(REPO / "src/lease.ts")], True, "")],
+)
 # A session directory with no subagents is an honest empty roster, not an unreadable one.
 EMPTY_SESSION = "e0e0e0e0-live-writer-suite-000000000000"
 (next(CONFIG.glob("projects/*")) / EMPTY_SESSION).mkdir()
@@ -186,20 +194,20 @@ CASES = [
     ),
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
     (
-        "a lease writer's file named in the main tree",
+        "a lease writer's own-tree edit does not claim the main-tree file",
         "git commit -F m -- src/lease.ts",
-        None,
-        True,
-        "asuiteleasewriter0006",
-        SESSION,
-    ),
-    (
-        "CONTROL: the lease writer does not claim a sibling file",
-        "git commit -F m -- src/other.ts",
         None,
         False,
         "",
         SESSION,
+    ),
+    (
+        "CONTROL: a main-tree writer on the same file is still refused",
+        "git commit -F m -- src/lease.ts",
+        None,
+        True,
+        "asuitemainwriter0007",
+        MAIN_SESSION,
     ),
     # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
     (

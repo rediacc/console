@@ -1967,21 +1967,26 @@ def _edit_paths(tmp_path, calls):
     return json.loads(proc.stdout)
 
 
-def test_w12_a_lease_edit_counts_as_the_main_tree_path(tmp_path):
+def test_w12_a_lease_edit_is_dropped_not_the_main_tree_path(tmp_path):
     got = _edit_paths(
         tmp_path,
         lambda root: [("Edit", {"file_path": "%s/.claude/worktrees/x/src/a.ts" % root}, str(root))],
     )
-    assert got == ["src/a.ts"]
+    assert got == []
 
 
-def test_w12_a_bash_write_from_a_lease_cwd_counts_as_the_main_tree_path(tmp_path):
+def test_w12_a_bash_write_from_a_lease_cwd_is_dropped(tmp_path):
     got = _edit_paths(
         tmp_path,
         lambda root: [
             ("Bash", {"command": "touch src/b.ts"}, "%s/.claude/worktrees/x" % root),
         ],
     )
+    assert got == []
+
+
+def test_w12_control_a_bash_write_from_the_main_cwd_is_kept(tmp_path):
+    got = _edit_paths(tmp_path, lambda root: [("Bash", {"command": "touch src/b.ts"}, str(root))])
     assert got == ["src/b.ts"]
 
 
