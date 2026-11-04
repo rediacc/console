@@ -1728,15 +1728,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 23,
-      "done": 0,
+      "open": 22,
+      "done": 1,
       "open_sigs": [
         "124d9bb0",
         "1fc992df",
         "31a903ee",
         "32e45dcc",
         "3e8ac9d9",
-        "4bc38d4e",
         "5aab0155",
         "5ef1c737",
         "615b09d8",
@@ -1755,7 +1754,9 @@
         "d54ce9a0",
         "d5789763"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "4bc38d4e"
+      ]
     },
     "agent/plans/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
