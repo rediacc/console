@@ -614,15 +614,14 @@ class GcRow(NamedTuple):
 @contextlib.contextmanager
 def _project_env(root):
     """The hook modules find the worklist and the transcripts from this variable, so a listing of `root` reads the worklist of `root`."""
-    saved = os.environ.get("CLAUDE_PROJECT_DIR")
+    # The whole environment is saved and put back, so this module never reads the variable by name: the root conftest pops it for every test, and a reader outside `.claude/` would see it vanish.
+    saved = dict(os.environ)
     os.environ["CLAUDE_PROJECT_DIR"] = str(root)
     try:
         yield
     finally:
-        if saved is None:
-            del os.environ["CLAUDE_PROJECT_DIR"]
-        else:
-            os.environ["CLAUDE_PROJECT_DIR"] = saved
+        os.environ.clear()
+        os.environ.update(saved)
 
 
 def _quiet(cwd, *args):
