@@ -637,6 +637,25 @@ def control_live(tmp):
     check("another agent holds nothing", ids(got["unlanded"]), ["w1"])
     got = read(tmp, main, live={"ids": [], "trees": [str(lease)]})
     check("a live writer by recorded tree holds the lease", got["held"], ["w1"])
+    got = read(
+        tmp, main, live={"ids": [], "trees": [], "prompts": [("wb", "work in %s please" % lease)]}
+    )
+    check("a live writer whose prompt names the tree holds the lease", got["held"], ["w1"])
+    got = read(
+        tmp, main, live={"ids": [], "trees": [], "prompts": [("wb", "work in w10 not this one")]}
+    )
+    check("a prompt naming another tree holds nothing", ids(got["unlanded"]), ["w1"])
+    moved_gitlink = "1 .M SC.. 160000 160000 160000 aaa bbb private/renet"
+    staged_gitlink = "1 MM SC.. 160000 160000 160000 aaa bbb private/renet"
+    code = (
+        "import sys\nsys.path.insert(0, sys.argv[1])\nimport wl_worktrees\n"
+        "print(wl_worktrees.dirty_count(sys.argv[2]))\n"
+    )
+    for name, row, want in (
+        ("a moved gitlink is no dirt", moved_gitlink, "0"),
+        ("a staged gitlink is dirt", staged_gitlink, "1"),
+    ):
+        check(name, pyrun(tmp, tmp, code, SOURCE / "hooks/stop", row)[1].strip(), want)
     got = read(tmp, main, live={"ids": [], "trees": [], "cwd": str(lease / "deep")})
     check("the session working inside its lease holds it", got["held"], ["w1"])
     check("that session is not blocked by its own lease", got["unlanded"], [])

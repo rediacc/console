@@ -20,6 +20,7 @@ import pathlib
 import subprocess
 
 import wl_core as C
+import wl_leasehelp
 import wl_roster
 import wl_scratch
 
@@ -82,11 +83,16 @@ def parse_list(text):
 
 
 def dirty_count(text):
-    """The changed paths in `status --porcelain=v2` output, a moved gitlink's `SC..` row excused."""
+    """The changed paths in `status --porcelain=v2` output, a moved gitlink's `.M SC..` row excused. `MM SC..` is also a staged change, so it counts, as `gc` keeps it."""
     count = 0
     for line in text.splitlines():
         fields = line.split(" ", 3)
-        if fields[0] in ("1", "2") and len(fields) > 2 and fields[2] == GITLINK_MOVED:
+        if (
+            fields[0] in ("1", "2")
+            and len(fields) > 2
+            and fields[1] == ".M"
+            and fields[2] == GITLINK_MOVED
+        ):
             continue
         if line:
             count += 1
@@ -179,7 +185,16 @@ def live_work(roster, cwd, session_id):
         for aid in ids
         if (metas.get(aid) or {}).get("worktree")
     }
-    return {"ids": ids, "trees": trees, "cwd": os.path.realpath(cwd) if cwd else ""}
+    # A lead hands a lease over by path in the brief, so the record's agent is empty and the meta names no tree: only the prompt says who holds it, the way `gc` reads it.
+    prompts = [
+        (aid, wl_leasehelp.first_prompt((metas.get(aid) or {}).get("jsonl"))) for aid in sorted(ids)
+    ]
+    return {
+        "ids": ids,
+        "trees": trees,
+        "prompts": prompts,
+        "cwd": os.path.realpath(cwd) if cwd else "",
+    }
 
 
 def _holder(lease_id, record, live, leases, cwds):
@@ -192,6 +207,8 @@ def _holder(lease_id, record, live, leases, cwds):
         return "a live writer"
     if not path:
         return ""
+    if wl_scratch.lease_holder(lease_id, path, live.get("prompts") or ()):
+        return "a live writer"
     # A session working inside its own lease has no roster row, and its shell does not live between tool calls.
     here = live.get("cwd") or ""
     if here == path or here.startswith(path + os.sep):

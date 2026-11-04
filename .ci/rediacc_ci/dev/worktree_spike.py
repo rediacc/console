@@ -223,6 +223,7 @@ def remove_lease(repo, lease):
         unregister(repo.store(sub), lease / sub, holder)
         drop_pins(repo.store(sub), pattern)
     unregister(repo.root / ".git", lease, holder)
+    drop_pins(repo.root / ".git", pattern)
     survived = []
     if lease.exists():
         survived.append(str(lease))
