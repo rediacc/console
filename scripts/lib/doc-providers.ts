@@ -378,8 +378,9 @@ const wiredHooks = (root: string): WiredHook[] => {
         // The command is a shell line: `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/x.sh"` or `python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/y.py" --flag`. Pull every hook path out of it rather than assuming one shape, so a wrapper that runs two guards is not silently reported as running one. BOTH hook trees, and the alternation is load-bearing rather than tidy. This pattern was
         // `\.claude\/hooks\/`, which cannot match `.claude/rediacc_hooks/`: measured 2026-09-07 it found 14 of the 15 hook paths in the wiring and missed exactly `.claude/rediacc_hooks/dispatch.py`. That one miss is the whole problem, because the dispatcher is the ONLY edge from settings.json into the 64 guard modules, so widening the FILE LIST without fixing this pattern would
         // seed the closure without its single entry point and report all 64 live guards as dead code. Captures repo-relative now, so a key names a real path from the repo root.
+        // `run.sh` is the other way in: the WorktreeCreate and WorktreeRemove entries reach the lease tool through it, and they sat out of this table until 2026-11-04.
         for (const hit of (h.command ?? '').matchAll(
-          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+/g
+          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+|(?<=\$CLAUDE_PROJECT_DIR\/)run\.sh/g
         )) {
           out.push({ event, matcher: m.matcher ?? '(any)', file: hit[0] ?? '' });
         }
