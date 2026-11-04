@@ -44,7 +44,7 @@ HOOKS_DIR = paths.from_root(".claude", "hooks", "stop")
 WL_CI = HOOKS_DIR / "wl_ci.py"
 TRACE = paths.from_root(".ci", "scripts", "ci", "ci-trace.py")
 
-# The file that calls `ci_rollup` as a FIXTURE rather than as a consumer. The bash twin was the other, until W7 P5 census batch A10 retired it; an absent file never reaches the enumeration, so the entry goes rather than becoming a path nothing can match.
+# The files that call `ci_rollup` as a FIXTURE rather than as a consumer: this one, and the Stop hook's worktree harness (pinned below). The bash twin was another, until W7 P5 census batch A10 retired it; an absent file never reaches the enumeration, so an entry goes rather than becoming a path nothing can match.
 SELF_EXCLUDED = (
     ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py",
     # Hands the fixture builder `ci_status.ci_rollup` a world to write for the Stop hook; it reads no rollup itself.
@@ -621,6 +621,23 @@ def test_every_caller_handles_the_no_pr_state(gate):
         "all %d external caller(s) handle no-pr (%d fixture file(s) excluded by path: %s)"
         % (len(callers), len(SELF_EXCLUDED), ", ".join(SELF_EXCLUDED))
     )
+
+
+def test_the_worktree_harness_reads_no_rollup(gate):
+    gate.log_test("the exclusion of test-wl_worktrees.py rests on it reading no ci_rollup")
+    # The enumeration skips this file by path, so if it ever consumed a rollup the gate would not see it. Every mention of `ci_rollup` there must be the fixture writer `ci_status.ci_rollup(fix, ...)`, and the file must not import the readers (`wl_ci`, `ci-trace`).
+    text = paths.from_root(".claude", "hooks", "stop", "test-wl_worktrees.py").read_text(
+        encoding="utf-8"
+    )
+    mentions = re.findall(r"\bci_rollup\b", text)
+    writers = re.findall(r"\bci_status\.ci_rollup\(fix,", text)
+    if not mentions:
+        gate.log_fail("no ci_rollup mention at all: the claim this test pins has moved")
+    if len(mentions) != len(writers):
+        gate.log_fail("test-wl_worktrees.py mentions ci_rollup other than as the fixture writer")
+    if re.search(r"^\s*(import|from)\s+wl_ci\b|ci-trace", text, re.MULTILINE):
+        gate.log_fail("test-wl_worktrees.py reaches a rollup reader")
+    gate.log_pass("the only ci_rollup in test-wl_worktrees.py is the fixture writer")
 
 
 def test_control_a_blind_caller_is_detected(gate, tmp_path):
