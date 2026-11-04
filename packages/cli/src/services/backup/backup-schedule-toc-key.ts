@@ -38,13 +38,21 @@ type TocKeyOutcome =
   | 'refused'
   | 'no-credential'
   | 'unreadable'
-  | 'dry-run';
+  | 'would-install'
+  | 'would-replace';
 
 export interface TocKeyResult {
   ref: string;
   guid: string;
   outcome: TocKeyOutcome;
   detail?: string;
+  /**
+   * Whether the key on the machine equals the one this credential derives: true when equal, false when the
+   * machine holds a different one, absent when it holds none or was not asked.
+   */
+  machineKeyEqual?: boolean;
+  /** Where a snapshot's listing would come from on the machine (`keyfile`, `mount`, `none`, `unknown`); `none` seals no listing. */
+  listingSource?: string;
   /** The credential is shorter than the 32 characters `repo create` generates (decision O7: HKDF stays, the operator is told). */
   weakCredential: boolean;
 }
@@ -56,6 +64,7 @@ interface TocKeyAnswer {
   outcome?: string;
   publicKey?: string;
   reason?: string;
+  listingSource?: string;
 }
 
 function parseAnswer(stdout: string): TocKeyAnswer {
@@ -150,11 +159,47 @@ async function installOne(
   return { ...parseAnswer(answer.stdout), exitCode: answer.exitCode };
 }
 
+/** The fields every result carries once the machine has been asked: its listing source and whether its key equals ours. */
+function observation(
+  base: { ref: string; guid: string },
+  weakCredential: boolean,
+  status: TocKeyAnswer,
+  equal: boolean | undefined
+): Omit<TocKeyResult, 'outcome'> {
+  return {
+    ...base,
+    weakCredential,
+    ...(status.listingSource === undefined ? {} : { listingSource: status.listingSource }),
+    ...(equal === undefined ? {} : { machineKeyEqual: equal }),
+  };
+}
+
+/** The result when nothing has to be written: an equal key, a refused overwrite, or a dry run; undefined when the install goes ahead. */
+function settleWithoutWrite(
+  seen: Omit<TocKeyResult, 'outcome'>,
+  present: boolean,
+  equal: boolean | undefined,
+  replace: boolean,
+  dryRun: boolean
+): TocKeyResult | undefined {
+  if (equal === true) return { ...seen, outcome: 'unchanged' };
+  if (present && !replace) {
+    return {
+      ...seen,
+      outcome: 'differs',
+      detail: 'the machine holds a different key; it was not overwritten',
+    };
+  }
+  if (dryRun) return { ...seen, outcome: present ? 'would-replace' : 'would-install' };
+  return undefined;
+}
+
 async function syncOne(
   transport: TocKeyTransport,
   renetPath: string,
   target: TocKeyTarget,
-  replace: boolean
+  replace: boolean,
+  dryRun: boolean
 ): Promise<TocKeyResult> {
   const base = { ref: target.ref, guid: target.guid };
   const { credential } = target;
@@ -173,17 +218,10 @@ async function syncOne(
     (await transport.run(tocKeyCommand(renetPath, 'status', target))).stdout
   );
   const present = status.outcome === 'present';
-  if (present && status.publicKey?.trimEnd() === line) {
-    return { ...base, outcome: 'unchanged', weakCredential };
-  }
-  if (present && !replace) {
-    return {
-      ...base,
-      outcome: 'differs',
-      detail: 'the machine holds a different key; it was not overwritten',
-      weakCredential,
-    };
-  }
+  const equal = present ? status.publicKey?.trimEnd() === line : undefined;
+  const seen = observation(base, weakCredential, status, equal);
+  const settled = settleWithoutWrite(seen, present, equal, replace, dryRun);
+  if (settled) return settled;
   const answer = await installOne(
     transport,
     renetPath,
@@ -193,18 +231,12 @@ async function syncOne(
     replace && present
   );
   if (answer.outcome && INSTALL_ANSWERS.has(answer.outcome)) {
-    return {
-      ...base,
-      outcome: answer.outcome as TocKeyOutcome,
-      detail: answer.reason,
-      weakCredential,
-    };
+    return { ...seen, outcome: answer.outcome as TocKeyOutcome, detail: answer.reason };
   }
   return {
-    ...base,
+    ...seen,
     outcome: 'refused',
     detail: answer.reason ?? `renet exited ${answer.exitCode}`,
-    weakCredential,
   };
 }
 
@@ -220,17 +252,16 @@ export async function syncTocKeys(
 ): Promise<TocKeyResult[]> {
   const results: TocKeyResult[] = [];
   for (const target of targets) {
-    if (options.dryRun) {
-      results.push({
-        ref: target.ref,
-        guid: target.guid,
-        outcome: 'dry-run',
-        weakCredential: false,
-      });
-      continue;
-    }
     try {
-      results.push(await syncOne(transport, renetPath, target, options.replace === true));
+      results.push(
+        await syncOne(
+          transport,
+          renetPath,
+          target,
+          options.replace === true,
+          options.dryRun === true
+        )
+      );
     } catch (error) {
       results.push({
         ref: target.ref,
@@ -259,12 +290,20 @@ function attentionLine(r: TocKeyResult): string | undefined {
   }
 }
 
+/** Outcomes that leave the machine with no listing key, where a missing listing source is not the news. */
+const NO_KEY_OUTCOMES = new Set<TocKeyOutcome>(['no-credential', 'refused', 'unreadable']);
+
 /** The operator-facing lines for results that need attention. Silent for `unchanged` and `installed`. */
 export function tocKeyWarnings(results: TocKeyResult[]): string[] {
   const lines: string[] = [];
   for (const r of results) {
     const line = attentionLine(r);
     if (line) lines.push(line);
+    if (r.listingSource === 'none' && !NO_KEY_OUTCOMES.has(r.outcome)) {
+      lines.push(
+        `Repository ${r.ref} (${r.guid}): the machine holds a listing key but the repository has neither an autostart keyfile nor a mount, so its backups get no file listing until it is mounted or given a keyfile.`
+      );
+    }
     if (r.weakCredential && (r.outcome === 'installed' || r.outcome === 'replaced')) {
       lines.push(
         `Repository ${r.ref}: its credential is shorter than the ${GENERATED_CREDENTIAL_LENGTH} characters repo create generates. The listing key is derived with a fast hash, so a short hand-picked credential can be guessed offline from the public key; prefer a generated one.`
