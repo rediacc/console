@@ -66,18 +66,18 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-telemetry-export.md -- 19 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-plan-preflight.md -- 8 of 9 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (10 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 2 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 3 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
-  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 34 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 28 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 46 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 44 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 2 commit(s) on the branch, 0 open item(s): free license ladder F6
-  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 42 commit(s) on the branch, 0 open item(s): guided detached worktree leases
-  - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-- Writers: 6 live of writer_cap 25 (session d778be9d): worker:a73369247bb68ef49, worker:a6493a61701821557, worker:a685e3869dadc2fd2, worker:a6e878deace9244b6, worker:a02cd2349fda2514b, worker:acb1d7fd1ba3252f0.
-- Leased items: 6: #153d810f (worker:a73369247bb68ef49, d778be9d), #28b8fabf (worker:a685e3869dadc2fd2, d778be9d), #2b4610ea (worker:acb1d7fd1ba3252f0, d778be9d), #3ee2f9d7 (worker:a6e878deace9244b6, d778be9d), #6a758406 (worker:a6493a61701821557, d778be9d), #a150016d (worker:queue, d778be9d).
+  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 54 commit(s) on the branch, 0 open item(s): guided detached worktree leases
+  - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 11 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:ae64f749054a4d2ed.
+- Leased items: 2: #a150016d (worker:queue, d778be9d), #f8f4f14f (worker:ae64f749054a4d2ed, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 

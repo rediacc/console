@@ -68,7 +68,7 @@ _reset_pgadmin_data() {
         mkdir -p "$d/storage/admin_demo.dev"
         printf "db:5433:*:demo:demo\n" >"$d/storage/admin_demo.dev/pgpass"
         chmod 600 "$d/storage/admin_demo.dev/pgpass"
-        find "$d" -exec chown 5050:5050 {} +
+        chown -R 5050:5050 "$d"
         chmod 700 "$d"
     '
     printf '%s\n' "$PGADMIN_SERVER_MODE" >"$marker"
