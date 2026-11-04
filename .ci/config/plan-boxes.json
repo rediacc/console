@@ -2638,27 +2638,28 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 0,
+      "open": 13,
+      "done": 3,
       "open_sigs": [
-        "00eaad0d",
         "0c86e517",
         "0f7c9666",
         "2b9e01c3",
         "374277b1",
         "3b37d554",
         "4384c833",
-        "5d167c38",
         "86ceefe6",
         "8c4e6596",
-        "a3ed9487",
         "af9b1827",
         "b87a2bf6",
         "bc4c5aec",
         "ee8439c8",
         "f8de6e03"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "00eaad0d",
+        "5d167c38",
+        "a3ed9487"
+      ]
     },
     "agent/plans/PLAN-www-bundle-determinism.md": {
       "status": "compacted",

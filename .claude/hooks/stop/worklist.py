@@ -184,7 +184,7 @@ def _local_git_dirs(tree):
 def _local_lease_main(tree):
     """Self-contained twin of wl_core.lease_main. Keep in lockstep.
 
-    The harness folder's name stays unspelled in this file: naming it beside `--add` makes the checkout guard's script arm refuse every `python3 worklist.py` while this file differs from HEAD. The root section of this file's suite pins that.
+    The lease holder folder's own name stays unspelled in this file: naming it beside `--add` makes the checkout guard's script arm refuse every `python3 worklist.py` while this file differs from HEAD. The root section of this file's suite pins that.
     """
     tree = pathlib.Path(tree)
     if tree.parent.parent.name != ".claude" or not (tree / ".git").is_file():
