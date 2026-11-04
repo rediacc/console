@@ -57,7 +57,7 @@ export function parseStaleRenetProcesses(output: string): RenetProcess[] {
 }
 
 /** The renet processes on a machine still running a replaced binary (machine status, health). */
-export async function probeStaleRenetProcesses(
+async function probeStaleRenetProcesses(
   sftp: Pick<SFTPClient, 'exec'>,
   currentPath: string
 ): Promise<RenetProcess[]> {

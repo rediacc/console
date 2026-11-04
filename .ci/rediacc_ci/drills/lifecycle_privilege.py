@@ -22,6 +22,7 @@ import shlex
 from typing import Any
 
 from rediacc_ci.drills import gpu_grants, vm_ssh
+from rediacc_ci.well_known import ETC_DIR
 
 STEP_ID = "L1"
 
@@ -54,7 +55,7 @@ def probe_rediaccfile() -> str:
         '  if head -c1 /etc/shadow >/dev/null 2>&1; then echo shadow=readable >> "$out"; else echo shadow=denied >> "$out"; fi\n'
         "  blk=$(ls /sys/block 2>/dev/null | grep -v '^loop\\|^ram\\|^zram' | head -n1)\n"
         '  if [ -n "$blk" ] && head -c1 "/dev/$blk" >/dev/null 2>&1; then echo block=readable >> "$out"; else echo block=denied >> "$out"; fi\n'
-        '  if ls /etc/rediacc/grants >/dev/null 2>&1; then echo grants=readable >> "$out"; else echo grants=denied >> "$out"; fi\n'
+        '  if ls %(etc)s/grants >/dev/null 2>&1; then echo grants=readable >> "$out"; else echo grants=denied >> "$out"; fi\n'
         '  if [ -n "${%(cred)s:-}" ]; then echo cred_env=present >> "$out"; else echo cred_env=absent >> "$out"; fi\n'
         "  if tr '\\0' '\\n' < /proc/$PPID/environ 2>/dev/null | grep -q '^%(cred)s='; then echo cred_parent=readable >> \"$out\"; else echo cred_parent=denied >> \"$out\"; fi\n"
         '  so=$(sudo -n true 2>&1); echo "sudo_rc=$?" >> "$out"; echo "sudo_msg=$(echo "$so" | head -n1)" >> "$out"\n'
@@ -74,6 +75,7 @@ def probe_rediaccfile() -> str:
     ) % {
         "cred": CREDENTIAL_VAR,
         "created": CREATED_FILE,
+        "etc": ETC_DIR,
         "upf": UP_FILE,
         "downf": DOWN_FILE,
         "marker": FAIL_MARKER,

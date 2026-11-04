@@ -1946,7 +1946,6 @@
       },
       "gc": {
         "applied": "垃圾回收完成：已删除 {{deleted}}/{{total}} 个提交",
-        "started": "{{total}} 个删除操作中有 {{started}} 个正在作为作业运行；rdc job list 可查看。",
         "applyOption": "实际删除不可达的提交（默认仅为试运行预览）",
         "deleted": "已删除提交 {{commit}}",
         "deleteFailed": "删除提交 {{commit}} 失败",

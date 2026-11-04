@@ -51,6 +51,8 @@ const repoEventTypes = [
   'cli.repo.down_all',
   'cli.repo.expand',
   'cli.repo.fork',
+  'cli.repo.fsck',
+  'cli.repo.gc',
   'cli.repo.guid',
   'cli.repo.list',
   'cli.repo.log',

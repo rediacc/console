@@ -152,7 +152,9 @@ describe('CLI contract', () => {
     // 88 -> 89: `repo prune` landed (PLAN-repo-docker-storage-prune R5). It runs repository_docker_prune on the machine holding the repository and is non-interactive, so it is proxy-capable like `repo trim`. `machine access push` (PLAN-ssh-key-source-ranges C1) is machine-plane but excluded below: an executor never rewrites its own access.
     //
     // 89 -> 90: `rdc job wait` landed (PLAN-detached-jobs J5). It follows a machine job over SSH like the other `job *` verbs, which are proxy-capable and never detachable (they read the spool).
-    expect(proxyCapableCommands().length).toBe(90);
+    //
+    // 90 -> 93: `repo permission grant`, `repo permission revoke` and `repo permission show` landed. Each runs a repository_permission_* renet function on the machine that holds the repository and is non-interactive, so all three are proxy-capable and detachable like `repo gpu grant`.
+    expect(proxyCapableCommands().length).toBe(93);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -356,7 +358,7 @@ describe('CLI contract', () => {
       'vscode serve stop',
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
-    expect(detachable).toHaveLength(78);
+    expect(detachable).toHaveLength(81);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
     for (const pathKey of [
       'repo list',

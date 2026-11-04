@@ -14,6 +14,11 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
  * defines the name. Nothing here opens the device node, so no real hardware is
  * needed; the vm:check step G1 proves the container-side effect of a grant.
  *
+ * The same staged network also carries the lifecycle tier (PLAN-rediaccfile-unprivileged U10):
+ * repository_permission_grant, _show and _revoke widen, print and withdraw a path the repository's
+ * Rediaccfile up() and down() may reach. A grant with neither --root nor --path is the control: renet
+ * refuses it rather than recording nothing.
+ *
  * Each step asserts on the output of the verb itself: the grant must show the
  * device, the inventory must list it, and after the revoke the inventory must
  * not carry it. A refusal of an undefined device is the control that shows the
@@ -31,6 +36,8 @@ const DEVICE = `${KIND}=one`;
 const DEVICE_LC = DEVICE.toLowerCase();
 // repository_gpu_grant keeps the operate licence tier, so the call names a licensed repository.
 const REPO = e2eRepoGuid();
+// The path the lifecycle grant widens. It is recorded, never opened, so it need not exist.
+const PERM_PATH = `/srv/rediacc-e2e-perm-${RUN_ID}`;
 const SPEC_PATH = `/etc/cdi/rediacc-e2e-${RUN_ID}.yaml`;
 // A grant records the network's repo mount, which renet reads from the network's systemd unit (daemon grant refuses a network whose unit names none), so the suite stages a unit for its fake network. The unit is never started or loaded: nothing runs it.
 const UNIT_PATH = `/etc/systemd/system/rediacc-docker-${NETWORK_ID}.service`;
@@ -160,5 +167,34 @@ test.describe
       const listed = await runner.executeOnWorker(listCmd);
       expect(runner.isSuccess(listed), runner.getCombinedOutput(listed)).toBe(true);
       expect(grantLine(listed)).not.toContain(DEVICE_LC);
+    });
+
+    test('repository_permission_grant refuses a call that names neither --root nor --path', async () => {
+      const result = await runner.executeOnWorker(once('repository_permission_grant'));
+      expect(result.code, runner.getCombinedOutput(result)).not.toBe(0);
+    });
+
+    test('repository_permission_grant records the path and repository_permission_show prints it', async () => {
+      const granted = await runner.executeOnWorker(
+        once('repository_permission_grant', ` --path ${PERM_PATH}:rw`)
+      );
+      expect(runner.isSuccess(granted), runner.getCombinedOutput(granted)).toBe(true);
+      expect(runner.getCombinedOutput(granted)).toContain(PERM_PATH);
+
+      const shown = await runner.executeOnWorker(once('repository_permission_show'));
+      expect(runner.isSuccess(shown), runner.getCombinedOutput(shown)).toBe(true);
+      expect(verbText('repository_permission_show', shown)).toContain(PERM_PATH);
+    });
+
+    test('repository_permission_revoke withdraws the path', async () => {
+      const revoked = await runner.executeOnWorker(
+        once('repository_permission_revoke', ` --path ${PERM_PATH}`)
+      );
+      expect(runner.isSuccess(revoked), runner.getCombinedOutput(revoked)).toBe(true);
+      expect(verbText('repository_permission_revoke', revoked)).not.toContain(PERM_PATH);
+
+      const shown = await runner.executeOnWorker(once('repository_permission_show'));
+      expect(runner.isSuccess(shown), runner.getCombinedOutput(shown)).toBe(true);
+      expect(verbText('repository_permission_show', shown)).not.toContain(PERM_PATH);
     });
   });
