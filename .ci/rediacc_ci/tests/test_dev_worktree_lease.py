@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import shlex
 import subprocess
 import sys
 from typing import NamedTuple
@@ -674,3 +675,267 @@ def test_pin_verb_refuses_outside_a_lease_or_with_an_argument(pinned, args):
     assert result.returncode == 1
     assert result.stdout == ""
     assert pin_at(repo.root) == ""
+
+
+LAND_ID = "ld"
+
+
+class Landing(NamedTuple):
+    repo: spike.Repo
+    tree: pathlib.Path
+    sub_sha: str
+    console_sha: str
+
+
+def run_land(root, *args):
+    return subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.dev.worktree", "land", *args],
+        cwd=str(paths.CI_DIR),
+        env={**os.environ, "PYTHONPATH": str(paths.CI_DIR), paths.ROOT_ENV: str(root)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def run_printed(root, lines, tmp_path):
+    """Run each printed line as printed, with `<msg>` standing for a message file. Returns the finished runs."""
+    message = tmp_path / "gitlink-msg.txt"
+    message.write_text("chore: bump the gitlink\n\nPR-TASK: 1f877343\n", encoding="utf-8")
+    runs = []
+    for line in lines:
+        words = [str(message) if w == "<msg>" else w for w in shlex.split(line)]
+        assert words[0] == "git", line
+        runs.append(spike.git(root, *words[1:]))
+    return runs
+
+
+def sub_commit(tree, name):
+    sub = tree / SUB
+    spike.write(sub / name, "%s\n" % name)
+    spike.must(sub, "add", "--", name)
+    spike.must(sub, "commit", "--no-gpg-sign", "-m", "sub: %s\n\nPR-TASK: 1f877343\n" % name)
+    return spike.must(sub, "rev-parse", "HEAD")
+
+
+def unlanded_in(repo, tree, key=".", pin=""):
+    """What the lease tool reads as unlanded for one repo of lease LAND_ID."""
+    live = repo.root if key == "." else repo.root / key
+    where = tree if key == "." else tree / key
+    tip = spike.must(live, "rev-parse", "HEAD")
+    head = spike.must(where, "rev-parse", "HEAD")
+    return lease.unlanded(where, head, pin, tip, "")
+
+
+@pytest.fixture
+def landing(tmp_path):
+    repo = make_repo(tmp_path.resolve())
+    tree = make_tree(repo, LAND_ID)
+    sub_sha = sub_commit(tree, "sub-new.txt")
+    committed(tree, "feat.txt")
+    return Landing(repo, tree, sub_sha, spike.must(tree, "rev-parse", "HEAD"))
+
+
+def test_land_printed_lines_run_as_printed_land_the_submodule_first_and_rebump(landing, tmp_path):
+    repo, _tree, sub_sha, console_sha = landing
+    before = spike.must(repo.root, "rev-parse", "HEAD")
+    result = run_land(repo.root, LAND_ID)
+    assert result.returncode == 0, result.stderr
+    lines = result.stdout.splitlines()
+    assert lines == [
+        "git -C %s cherry-pick -x %s" % (SUB, sub_sha),
+        "git add -- %s" % SUB,
+        "git commit -F <msg> -- %s" % SUB,
+        "git cherry-pick -x %s" % console_sha,
+    ]
+    assert spike.must(repo.root, "rev-parse", "HEAD") == before
+    for finished in run_printed(repo.root, lines, tmp_path):
+        assert finished.returncode == 0, finished.stderr
+    live_sub = spike.must(repo.root / SUB, "rev-parse", "HEAD")
+    assert live_sub != sub_sha
+    bump = spike.must(repo.root, "rev-parse", "HEAD~1:%s" % SUB)
+    assert bump == live_sub
+    assert (repo.root / "feat.txt").is_file()
+    assert (repo.root / SUB / "sub-new.txt").is_file()
+
+
+def test_land_source_sha_reads_landed_afterwards_by_patch_id(landing, tmp_path):
+    repo, tree, sub_sha, console_sha = landing
+    assert unlanded_in(repo, tree) == [console_sha]
+    assert unlanded_in(repo, tree, SUB) == [sub_sha]
+    lines = run_land(repo.root, LAND_ID).stdout.splitlines()
+    for finished in run_printed(repo.root, lines, tmp_path):
+        assert finished.returncode == 0, finished.stderr
+    tip = spike.must(repo.root, "rev-parse", "HEAD")
+    assert spike.out(tree, "cherry", tip, console_sha).startswith("- ")
+    assert unlanded_in(repo, tree) == []
+    assert unlanded_in(repo, tree, SUB) == []
+    again = run_land(repo.root, LAND_ID)
+    assert again.returncode == 0
+    assert again.stdout == ""
+
+
+def conflicted(landing):
+    """A lease commit and a live commit both rewriting second.txt, so the pick stops and the resolution differs from the source patch."""
+    repo, tree, _, _ = landing
+    spike.write(tree / "second.txt", "lease version\n")
+    spike.must(tree, "add", "--", "second.txt")
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: edit\n\nPR-TASK: 1f877343\n")
+    source = spike.must(tree, "rev-parse", "HEAD")
+    spike.write(repo.root / "second.txt", "live version\n")
+    spike.commit_all(repo.root, "console: live edit")
+    return source
+
+
+def pick_with_resolution(repo, source):
+    stopped = spike.git(repo.root, "cherry-pick", "-x", source)
+    assert stopped.returncode != 0
+    spike.write(repo.root / "second.txt", "resolved by hand\n")
+    spike.must(repo.root, "add", "--", "second.txt")
+    return spike.git(repo.root, "-c", "core.editor=true", "cherry-pick", "--continue")
+
+
+def test_land_conflict_resolved_pick_reads_landed_by_its_x_line_not_by_patch_id(landing):
+    repo, tree, _, _ = landing
+    source = conflicted(landing)
+    done = pick_with_resolution(repo, source)
+    assert done.returncode == 0, done.stderr
+    tip = spike.must(repo.root, "rev-parse", "HEAD")
+    assert "(cherry picked from commit %s)" % source in spike.must(
+        repo.root, "log", "-1", "--format=%B"
+    )
+    assert "+ %s" % source in spike.out(tree, "cherry", tip, source)
+    assert source not in unlanded_in(repo, tree)
+
+
+def test_land_control_without_the_x_reader_the_resolved_pick_reads_unlanded(landing, monkeypatch):
+    repo, tree, _, _ = landing
+    source = conflicted(landing)
+    assert pick_with_resolution(repo, source).returncode == 0
+    monkeypatch.setattr(lease._hook_module("wl_worktrees"), "PICKED_LINE", "(no such line %s)")
+    assert source in unlanded_in(repo, tree)
+
+
+def test_land_without_x_the_resolved_pick_reads_unlanded_the_reason_for_the_flag(landing):
+    repo, tree, _, _ = landing
+    source = conflicted(landing)
+    stopped = spike.git(repo.root, "cherry-pick", source)
+    assert stopped.returncode != 0
+    spike.write(repo.root / "second.txt", "resolved by hand\n")
+    spike.must(repo.root, "add", "--", "second.txt")
+    assert (
+        spike.git(repo.root, "-c", "core.editor=true", "cherry-pick", "--continue").returncode == 0
+    )
+    assert source in unlanded_in(repo, tree)
+
+
+def test_land_commit_without_a_pr_task_trailer_exits_1_with_no_lines(landing):
+    repo, tree, _, _ = landing
+    spike.write(tree / "bare.txt", "bare\n")
+    spike.must(tree, "add", "--", "bare.txt")
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: no trailer")
+    bare = spike.must(tree, "rev-parse", "HEAD")
+    result = run_land(repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert bare[:12] in result.stderr
+    assert "PR-TASK" in result.stderr
+
+
+def test_land_pr_task_trailer_stays_parseable_after_x(landing, tmp_path):
+    repo, _, _, console_sha = landing
+    lines = run_land(repo.root, LAND_ID).stdout.splitlines()
+    for finished in run_printed(repo.root, lines, tmp_path):
+        assert finished.returncode == 0, finished.stderr
+    message = spike.must(repo.root, "log", "-1", "--format=%B")
+    assert "(cherry picked from commit %s)" % console_sha in message
+    parsed = subprocess.run(
+        ["git", "interpret-trailers", "--parse"],
+        input=message,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert "PR-TASK: 1f877343" in parsed.splitlines()
+
+
+def test_land_peer_staged_path_makes_the_pick_refuse_with_the_path_unmoved(landing):
+    repo, _, _, console_sha = landing
+    spike.write(repo.root / "peer.txt", "peer work\n")
+    spike.must(repo.root, "add", "--", "peer.txt")
+    head = spike.must(repo.root, "rev-parse", "HEAD")
+    refused = spike.git(repo.root, "cherry-pick", "-x", console_sha)
+    assert refused.returncode != 0
+    assert spike.must(repo.root, "rev-parse", "HEAD") == head
+    assert spike.must(repo.root, "diff", "--cached", "--name-only") == "peer.txt"
+    assert (repo.root / "peer.txt").read_text(encoding="utf-8") == "peer work\n"
+    assert not (repo.root / "feat.txt").exists()
+
+
+def test_land_rebase_of_the_live_branch_keeps_the_source_landed(landing):
+    repo, tree, _, _ = landing
+    source = conflicted(landing)
+    assert pick_with_resolution(repo, source).returncode == 0
+    spike.must(repo.root, "switch", "-q", "main")
+    spike.write(repo.root / "main-only.txt", "moved main\n")
+    spike.commit_all(repo.root, "console: main moved")
+    spike.must(repo.root, "switch", "-q", BRANCH)
+    spike.must(repo.root, "rebase", "main")
+    assert (repo.root / "main-only.txt").is_file()
+    assert source not in unlanded_in(repo, tree)
+
+
+def test_land_refuses_a_merge_commit(landing):
+    repo, tree, _, _ = landing
+    base = spike.must(tree, "rev-parse", "HEAD~1")
+    side = spike.must(tree, "rev-parse", "HEAD")
+    spike.must(tree, "checkout", "-q", "--detach", base)
+    committed(tree, "side.txt")
+    spike.must(
+        tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m\n\nPR-TASK: 1f877343\n", side
+    )
+    result = run_land(repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert "is a merge" in result.stderr
+
+
+def test_land_detached_submodule_gets_the_console_branch_first(landing, tmp_path):
+    repo, _tree, sub_sha, _console_sha = landing
+    sub = repo.root / SUB
+    branch = spike.must(repo.root, "symbolic-ref", "--short", "HEAD")
+    spike.must(sub, "checkout", "-q", "--detach")
+    lines = run_land(repo.root, LAND_ID).stdout.splitlines()
+    assert lines[:2] == [
+        "git -C %s switch -c %s" % (SUB, branch),
+        "git -C %s cherry-pick -x %s" % (SUB, sub_sha),
+    ]
+    for finished in run_printed(repo.root, lines, tmp_path):
+        assert finished.returncode == 0, finished.stderr
+    assert spike.must(sub, "symbolic-ref", "--short", "HEAD") == branch
+
+
+@pytest.mark.parametrize("kind", ["gitlink", "agent"])
+def test_land_refuses_a_commit_touching_a_gitlink_or_agent_path(landing, kind):
+    repo, tree, _, _ = landing
+    if kind == "gitlink":
+        sub_commit(tree, "moved.txt")
+        spike.must(tree, "add", "--", SUB)
+        needle = "gitlink"
+    else:
+        spike.write(tree / "agent" / "note.md", "note\n")
+        spike.must(tree, "add", "--", "agent/note.md")
+        needle = "agent/note.md"
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: bad\n\nPR-TASK: 1f877343\n")
+    result = run_land(repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert needle in result.stderr
+
+
+def test_land_unknown_lease_and_bad_arguments_exit_1(landing):
+    repo = landing.repo
+    for args in ((), ("a", "b"), ("--x",), ("missing",)):
+        result = run_land(repo.root, *args)
+        assert result.returncode == 1
+        assert result.stdout == ""

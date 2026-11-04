@@ -374,10 +374,152 @@ def cmd_pin(args):
     return 0
 
 
+LAND_HELP = """\
+Usage: ./run.sh worktree land <id>
+
+Read-only. Check that every unlanded commit of the lease carries a PR-TASK
+trailer and touches no gitlink and no agent/** path, then print the commands
+that land them, submodules first: the cherry-picks (-x, so the source sha is
+read as landed after a conflict), the gitlink commit, then the console's own
+cherry-picks. Nothing is run. A refusal prints nothing to stdout and exits 1.
+"""
+AGENT_PREFIX = "agent/"
+TRAILER_KEY = "PR-TASK"
+
+
+def unlanded(tree, head, pin, tip, base):
+    """The commits of `head` and `pin` the live `tip` does not hold, by the Stop hook's own reader (patch-id, then the `-x` line), or None when git could not say."""
+    return _hook_module("wl_worktrees").unlanded_commits(tree, head, pin, tip, base)
+
+
+def _ordered(tree, shas, tip):
+    """`shas` oldest first, in the order a pick must run."""
+    if not shas:
+        return []
+    listed = spike.must(tree, "rev-list", "--reverse", "--topo-order", *shas, "--not", tip)
+    return [sha for sha in listed.splitlines() if sha in shas]
+
+
+def _problems(tree, sha):
+    """What makes `sha` refused for landing, one phrase each."""
+    found = []
+    trailers = spike.must(tree, "show", "-s", "--format=%B", sha)
+    parsed = subprocess.run(
+        ["git", "-C", str(tree), "interpret-trailers", "--parse"],
+        input=trailers,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    if not any(line.startswith(TRAILER_KEY + ":") for line in parsed.splitlines()):
+        found.append("no %s trailer" % TRAILER_KEY)
+    raw = spike.must(tree, "diff-tree", "-r", "--root", "-m", "--no-commit-id", "--raw", "-z", sha)
+    fields = raw.split("\0")
+    for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
+        modes = meta.lstrip(":").split()[:2]
+        if GITLINK_MODE in modes:
+            found.append("touches the gitlink %s" % rel)
+        if rel.startswith(AGENT_PREFIX):
+            found.append("touches %s" % rel)
+    return found
+
+
+def _merges(tree, live, key, lease_id):
+    """A merge in the lease, refused by name. `git cherry` omits merges, so the landed reader never lists one, and picking the commits around it would silently lose whatever the merge resolved."""
+    tips = [spike.out(tree, "rev-parse", "HEAD")]
+    pin = spike.out(
+        tree, "rev-parse", "--verify", "-q", "%s%s^{commit}" % (spike.PIN_SPACE, lease_id)
+    )
+    tips += [pin] if pin else []
+    tip = spike.out(live, "rev-parse", "HEAD")
+    listed = spike.out(tree, "rev-list", "--merges", *tips, "--not", tip)
+    return ["%s %s: is a merge" % (key, sha[:12]) for sha in listed.splitlines()]
+
+
+def _repo_plan(root, record, key):
+    """`(lease tree, live checkout, shas oldest first)` for one repo of a lease, or None when the lease holds none there."""
+    tree = pathlib.Path(record["path"]) if key == "." else pathlib.Path(record["path"]) / key
+    live = root if key == "." else root / key
+    if not tree.is_dir() or not live.is_dir():
+        return None
+    tip = live_tip(root) if key == "." else spike.out(live, "rev-parse", "HEAD")
+    head = spike.out(tree, "rev-parse", "HEAD")
+    pin = spike.out(
+        tree, "rev-parse", "--verify", "-q", "%s%s^{commit}" % (spike.PIN_SPACE, record["id"])
+    )
+    shas = unlanded(tree, head, pin, tip, record.get("base", {}).get(key, ""))
+    if shas is None:
+        message = "git could not say what %s holds that %s lacks" % (tree, tip[:12])
+        raise LeaseRefusedError(message)
+    return tree, live, _ordered(tree, shas, tip)
+
+
+def land_plan(root, lease_id):
+    """The lines to run, or raises `LeaseRefusedError` naming every refused commit. Nothing is written."""
+    root = pathlib.Path(os.path.realpath(root))
+    path = root / ".git" / RECORD_DIR / ("%s.json" % lease_id)
+    if not ID_RE.match(lease_id) or not path.is_file():
+        message = "no lease record %s" % lease_id
+        raise LeaseRefusedError(message)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    keys = [*sorted(k for k in record.get("base", {}) if k != "."), "."]
+    plans = {}
+    refused = []
+    for key in keys:
+        plan = _repo_plan(root, record, key)
+        if plan is None:
+            continue
+        plans[key] = plan
+        refused += _merges(plan[0], plan[1], key, record["id"])
+        refused += [
+            "%s %s: %s" % (key, sha[:12], ", ".join(why))
+            for sha in plan[2]
+            if (why := _problems(plan[0], sha))
+        ]
+    if refused:
+        raise LeaseRefusedError("; ".join(refused))
+    lines = []
+    for key in keys:
+        if key not in plans or not plans[key][2]:
+            continue
+        shas = " ".join(plans[key][2])
+        if key == ".":
+            lines.append("git cherry-pick -x %s" % shas)
+        else:
+            # A pick on a detached checkout moves no branch, so the submodule takes the console's name first, which `_judge_local` admits (Design 3).
+            if not spike.out(root / key, "symbolic-ref", "-q", "HEAD"):
+                branch = spike.must(root, "symbolic-ref", "--short", "HEAD")
+                lines.append("git -C %s switch -c %s" % (key, branch))
+            lines += [
+                "git -C %s cherry-pick -x %s" % (key, shas),
+                "git add -- %s" % key,
+                "git commit -F <msg> -- %s" % key,
+            ]
+    return lines
+
+
+def cmd_land(args):
+    if len(args) != 1 or args[0].startswith("-"):
+        log.error("land takes one lease id")
+        return 1
+    try:
+        lines = land_plan(paths.repo_root(), args[0])
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    if not lines:
+        log.info("nothing to land in %s" % args[0])
+    sys.stdout.write("".join(line + "\n" for line in lines))
+    sys.stdout.flush()
+    return 0
+
+
 def main(argv):
     """The hook's way in, since a hook loaded by file has no package to import this from."""
     if argv[:1] == ["pin"]:
         return cmd_pin(argv[1:])
+    if argv[:1] == ["land"]:
+        return cmd_land(argv[1:])
     log.error("Unknown command: %s" % " ".join(argv))
     return 1
 

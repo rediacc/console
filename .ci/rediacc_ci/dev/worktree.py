@@ -110,6 +110,7 @@ SUBCOMMAND_HELP = {
     "prune": PRUNE_HELP,
     "lease": worktree_lease.LEASE_HELP,
     "pin": worktree_lease.PIN_HELP,
+    "land": worktree_lease.LAND_HELP,
 }
 
 MAIN_HELP = """\
@@ -123,6 +124,7 @@ Commands:
   prune             Cleanup of worktrees with merged PRs
   lease [options]   Make one detached tree for a writer under .claude/worktrees
   pin               Move this lease tree's pin to its HEAD (the post-commit hook runs it)
+  land <id>         Print the commands that land a lease's commits, submodules first (read-only)
 
 Every command accepts --help.
 
@@ -888,6 +890,7 @@ COMMANDS = {
     "prune": cmd_prune,
     "lease": worktree_lease.cmd_lease,
     "pin": worktree_lease.cmd_pin,
+    "land": worktree_lease.cmd_land,
 }
 
 
