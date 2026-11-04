@@ -21,4 +21,4 @@ Body-Sig: d1d88ea0220ad1a3
 ### 96bf8042.1 [low] pkg/orchestration/lifecycle.go:386
 Anchor: in-diff
 Claim: The comment says a down() that really needs the grant 'fails in its own step', but the new test only checks that DownLifecycleExecutor does not return an error; nothing in this diff tests that a down() with an unmet declaration then fails at run time.
-Resolution: open
+Resolution: fixed 46d2f0639a589a3de2b9abd05a02d95093e9894d | d778be9d 2026-11-04T17:27:00Z

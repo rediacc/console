@@ -26,9 +26,9 @@ Resolution: not-a-bug | read against the current tree: private/renet/cmd/renet/d
 ### 14b40d8c.2 [low] cmd/renet/sandbox_exec.go:725
 Anchor: in-diff
 Claim: exportSessionComposeGrant silently unsets the variable on any Load error, including non-permission errors such as a corrupt grant file, with no log line. The applyComposeDelegations path warns for the same failure, so an operator gets no signal that the session's compose grant was dropped.
-Resolution: open
+Resolution: fixed 158d72a1207d7ab1a25ba098dd32ddb5a8dc93ed | d778be9d 2026-11-04T17:26:11Z
 
 ### 14b40d8c.3 [low] pkg/dockergrant/gate_forgery_linux_test.go:40
 Anchor: in-diff
 Claim: The handler increments backendHits without synchronization and the test goroutine reads *hits after the HTTP response. Go's race detector does not treat socket I/O as a happens-before edge, so a go test -race run can report a data race on this counter.
-Resolution: open
+Resolution: fixed f7efe5c78e4746535666dad84d9dc88fd3d88b19 | d778be9d 2026-11-04T17:26:11Z

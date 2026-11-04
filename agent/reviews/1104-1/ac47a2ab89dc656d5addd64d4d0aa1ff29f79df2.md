@@ -21,7 +21,7 @@ Body-Sig: 27da4603b4fa41fb
 ### ac47a2ab.1 [medium] cmd/renet/sandbox_exec_runtime_linux_test.go:591
 Anchor: in-diff
 Claim: Docker up/down/health now run under the sandboxed default, but TestDockerRuntime_FunctionsRunAsTheUniversalUser's Rediaccfile never calls docker, so the universal user's access to the per-network DOCKER_HOST socket is untested by this commit.
-Resolution: open
+Resolution: fixed 829b7712064568cc86a15758f05206e5cfa85498 | d778be9d 2026-11-04T17:28:00Z
 
 ### ac47a2ab.2 [medium] pkg/reporuntime/contract_fixture_docker_test.go:50
 Anchor: in-diff
@@ -31,4 +31,4 @@ Resolution: not-a-bug | read against the current tree: private/renet/cmd/renet/s
 ### ac47a2ab.3 [low] pkg/orchestration/rediaccfile.go:229
 Anchor: in-diff
 Claim: AddReadExecutePath (and AddReadOnlyPath at 222) return silently when sandboxOpts is nil, so a path a runtime asks to grant on an executor built without a sandbox is dropped with no error or log.
-Resolution: open
+Resolution: fixed 1301770e1bad53b44679793abe65a6d39d1aa262 | d778be9d 2026-11-04T17:26:12Z
