@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "daa1122dce03392c"
-sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
+sourceHash: "5821d50e3e10e7d3"
+sourceCommit: "eef66b59b02a611d569c728bb918cb8ea965e095"
 ---
 
 # Backup & Wiederherstellung
