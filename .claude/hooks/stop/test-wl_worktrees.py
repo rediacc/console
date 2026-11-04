@@ -283,7 +283,7 @@ def control_add(tmp, main, lease):
     before_main, before_lease = snapshot(main), snapshot(lease)
     done = worklist(tmp, lease, "--add", ME, "from the lease (%s)" % ME)
     added("--add from a lease's copy", done)
-    written = main / "agent/worklist/%s.jsonl" % ME
+    written = main / ("agent/worklist/%s.jsonl" % ME)
     check(
         "--add from a lease appends to the main store",
         written.is_file() and "from the lease" in written.read_text(encoding="utf-8"),
@@ -291,7 +291,7 @@ def control_add(tmp, main, lease):
     )
     check("--add leaves the lease's store byte-identical", snapshot(lease), before_lease)
     check("--add moved the main store", snapshot(main) != before_main, True)
-    journal = main / ".git/rediacc-worklist-journal/%s.jsonl" % ME
+    journal = main / (".git/rediacc-worklist-journal/%s.jsonl" % ME)
     check("the journal is the main checkout's", journal.is_file(), True)
     admin = main / ".git/worktrees" / lease.name / "rediacc-worklist-journal"
     check("the lease's own git dir holds no journal", admin.exists(), False)
@@ -312,7 +312,7 @@ def control_rule_removed(tmp, main):
     before_main = snapshot(main)
     done = worklist(tmp, lease, "--add", ME, "rule removed (%s)" % ME)
     added("rule removed: --add", done)
-    written = lease / "agent/worklist/%s.jsonl" % ME
+    written = lease / ("agent/worklist/%s.jsonl" % ME)
     check(
         "rule removed: the item lands in the copy's store",
         written.is_file() and "rule removed" in written.read_text(encoding="utf-8"),
@@ -326,7 +326,7 @@ def control_operator_tree(tmp, main):
     before_main = snapshot(main)
     done = worklist(tmp, tree, "--add", ME, "operator tree (%s)" % ME)
     added("--add from .worktrees/0128-1", done)
-    written = tree / "agent/worklist/%s.jsonl" % ME
+    written = tree / ("agent/worklist/%s.jsonl" % ME)
     check(
         ".worktrees/0128-1 keeps its own store",
         written.is_file() and "operator tree" in written.read_text(encoding="utf-8"),
@@ -334,7 +334,7 @@ def control_operator_tree(tmp, main):
     )
     check(".worktrees/0128-1 leaves the main store alone", snapshot(main), before_main)
     check(".worktrees/0128-1 is its own project_root", root_of(tmp, main, tree), str(tree))
-    journal = main / ".git/worktrees/0128-1/rediacc-worklist-journal/%s.jsonl" % ME
+    journal = main / (".git/worktrees/0128-1/rediacc-worklist-journal/%s.jsonl" % ME)
     check(".worktrees/0128-1 keeps its own journal", journal.is_file(), True)
 
 
