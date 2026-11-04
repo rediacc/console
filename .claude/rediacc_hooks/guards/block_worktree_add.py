@@ -11,6 +11,8 @@ hooks rely on for that distinction, and inventing one on an unverified guess is 
     to, so the practical effect is worktree creation never happens there,
     which is exactly the "non-interactive: not allowed" requirement.
 
+THE ONE TREE AN ASSISTANT MAY GET is a lease: `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees` for a writer, and only GC removes it (agent/plans/PLAN-worktree-lease.md Design 6, the remove arm below). A clone of this origin is `block_origin_clone`'s refusal.
+
 Found live 2026-08-01: a session created a throwaway worktree+branch for a small doc edit mid-/pr-merge, then a second one for a NUL-byte gate fix, after the operator had already twice said to keep changes local instead. The operator then found six PRE-EXISTING worktrees holding real, unrelated work from other sessions sitting untouched in the same repo. Worktrees are cheap to
 create and easy to forget, and each one is a place uncommitted work can silently strand outside the one tree everyone actually watches.
 """
@@ -133,6 +135,60 @@ def runs_port_create(cmd):
         )
         port = target in PORT_TARGETS or path.rsplit("/", 1)[-1] == "worktree.py"
         if (package and rest[:2] == ["worktree", "create"]) or (port and rest[:1] == ["create"]):
+            return True
+    return False
+
+
+# A LEASE TREE LEAVES ONLY THROUGH GC (agent/plans/PLAN-worktree-lease.md Design 6). `./run.sh worktree lease` makes a locked, detached tree under `.claude/worktrees`, and a hand-typed `git worktree remove` can delete a commit nothing has landed. So `git worktree remove|move|prune|lock|unlock` is refused when it names such a tree; the same verbs on any other path stay allowed, and so does a bare `git worktree prune`, which names no tree and skips a locked one.
+#
+# THREE WAYS TO NAME ONE. A path holding the two segments, as typed or once joined to the directory the run executes in (`cd .claude/worktrees && git worktree remove x`, `git -C .claude worktree remove worktrees/x`). A directory under the lease root as the run's own directory (`git -C .claude/worktrees/x worktree remove .`). And a bare suffix, because git resolves a unique path suffix to a tree: measured on git 2.53.0 in this checkout, `git worktree lock w2-proof` answered `'w2-proof' is already locked` while `no-such-tree-xyz` answered `is not a working tree`. Text alone cannot see that spelling, so the suffix is compared with the trees on disk, and only a relative word can be one.
+#
+# OUT OF REACH, stated so a green is not read as more: a path held in a variable (`git worktree remove "$X"`), a glob that hides the segments, a git alias. The lock is the second wall for those, since `remove` refuses a locked tree without `-f -f`.
+LEASE_DIR = ".claude/worktrees"
+LEASE_VERBS = frozenset(("remove", "move", "prune", "lock", "unlock"))
+LEASE_PATH = re.compile(r"(?:^|/)\.claude/worktrees(?:/|$)")
+ARGV_LEASE_VERB = re.compile(
+    r"""['"]worktree['"]\s*,\s*['"](?:remove|move|prune|lock|unlock)['"]"""
+)
+
+
+def _lease_names():
+    """The trees on disk under this checkout's lease root; none when the directory is absent."""
+    try:
+        return sorted(os.listdir(hookio.repo_root() / LEASE_DIR))
+    except OSError:
+        return []
+
+
+def names_lease(word, here, names):
+    """Does the operand `word`, in a run executing in `here`, name a lease tree? `names` is `_lease_names()`, passed in so the suffix arm can be driven without a tree on disk."""
+    if LEASE_PATH.search(os.path.normpath(os.path.join(here, word))):
+        return True
+    if word.startswith("/"):
+        return False
+    tail = os.path.normpath(word)
+    return any(("/%s/%s" % (LEASE_DIR, name)).endswith("/" + tail) for name in names)
+
+
+def runs_lease_verb(cmd):
+    """Does `cmd` run a `git worktree` verb in LEASE_VERBS that names a lease tree? Judged by run, so an `echo` or a commit message naming the command is an argument and stays allowed."""
+    names = None
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "git":
+            continue
+        argv = list(run_.argv)
+        at, where = shellscan._git_verb_at(argv)
+        if at is None or argv[at] != "worktree":
+            continue
+        args = argv[at + 1 :]
+        if not args or args[0] not in LEASE_VERBS:
+            continue
+        here = os.path.join(run_.cwd or "", where)
+        if LEASE_PATH.search(os.path.normpath(here or ".")):
+            return True
+        if names is None:
+            names = _lease_names()
+        if any(names_lease(w, here, names) for w in args[1:] if not w.startswith("-")):
             return True
     return False
 
@@ -1073,11 +1129,13 @@ def _text_verdict(code, depth):
         return "port"
     if "rediacc_ci" in code and ARGV_WORKTREE_CREATE.search(code):
         return "port"
+    if LEASE_DIR in code and ARGV_LEASE_VERB.search(code):
+        return "lease"
     return None
 
 
 def _direct_verdict(cmd):
-    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", or None."""
+    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", "lease", or None."""
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if hookio.grep_q(WORKTREE_ADD, scan):
         return "git"
@@ -1085,6 +1143,8 @@ def _direct_verdict(cmd):
         return "run.sh"
     if runs_port_create(cmd):
         return "port"
+    if runs_lease_verb(cmd):
+        return "lease"
     return None
 
 
@@ -1157,13 +1217,14 @@ def _script_verdict(cmd, depth, cwd):
 
 def _could_spell(text):
     bare = re.sub(r"[\"'\\]", "", text)
-    return "worktree" in bare and ("add" in bare or "create" in bare)
+    # `move` is inside `remove` and `lock` inside `unlock`, so the tuple covers LEASE_VERBS.
+    return "worktree" in bare and any(v in bare for v in ("add", "create", "move", "prune", "lock"))
 
 
 def shell_verdict(cmd, depth=0):
-    """Which arm refuses the shell command `cmd`: "git", "run.sh", "port", or None, counting what any program inside it runs.
+    """Which arm refuses the shell command `cmd`: "git", "run.sh", "port", "lease", or None, counting what any program inside it runs.
 
-    Inside a program (depth > 0) a string that cannot spell `worktree` and one of `add`/`create` once quotes and backslashes are gone is skipped without a walk: every arm needs that word and one of those verbs, and a Python heredoc holds thousands of strings that are not commands (3,000 list literals naming `worktree list` took 2.9 s before the verb joined the filter).
+    Inside a program (depth > 0) a string that cannot spell `worktree` and one of the judged verbs (`add`, `create`, LEASE_VERBS) once quotes and backslashes are gone is skipped without a walk: every arm needs that word and one of those verbs, and a Python heredoc holds thousands of strings that are not commands (3,000 list literals naming `worktree list` took 2.9 s before the verb joined the filter).
     """
     if cmd == "":
         return None
@@ -1173,33 +1234,43 @@ def shell_verdict(cmd, depth=0):
 
 
 GIT_MESSAGE = (
-    "❌ BLOCKED: git worktree add is not run from here. Worktree creation needs the "
-    "operator to approve it explicitly THIS session, then run the command themselves via "
-    "the `!` prefix (bypasses this hook) -- do not ask the operator through chat and then "
-    "run it yourself, and never create one in an autonomous/cron-fired continuation with "
-    "no live operator to ask. Prefer working directly in the current checkout, a plain "
-    "`git clone`, or an existing worktree instead. If you believe you already have "
-    "explicit sign-off, hand the exact command back to the operator to run with `!`."
+    "❌ BLOCKED: git worktree add is not run from here. A writer that needs its own tree gets "
+    "a detached one from `./run.sh worktree lease`, and the lead stays in the current checkout. "
+    "A real second checkout needs the operator to approve it explicitly THIS session, then run "
+    "the command themselves via the `!` prefix (bypasses this hook): never ask through chat and "
+    "then run it here, and never create one in an autonomous/cron-fired continuation with no "
+    "live operator to ask. A clone of this origin is refused as well (`block_origin_clone`). "
+    "With explicit sign-off already given, hand the exact command back to the operator to run "
+    "with `!`."
 )
 
 RUN_SH_MESSAGE = (
     "❌ BLOCKED: `run.sh worktree create` creates a git worktree (and now a devbox "
     "container with it), so it is the same decision as `git worktree add` and carries the "
     "same rule: the operator approves it explicitly THIS session and runs it themselves "
-    "via the `!` prefix, which bypasses this hook. Do not ask through chat and then run it "
-    "yourself, and never in an autonomous/cron-fired continuation with no live operator to "
-    "ask. Prefer the current checkout or an existing worktree. `worktree list`, `switch`, "
-    "`remove` and `prune` are unaffected."
+    "via the `!` prefix, which bypasses this hook. Never ask through chat and then run it "
+    "here, and never in an autonomous/cron-fired continuation with no live operator to "
+    "ask. A writer's tree comes from `./run.sh worktree lease`; otherwise stay in the current "
+    "checkout. `worktree list`, `switch`, `remove` and `prune` are unaffected."
 )
 
 PORT_MESSAGE = (
     "❌ BLOCKED: this runs the Python worktree port's `create` (`rediacc_ci.dev.worktree`), "
     "which is `./run.sh worktree create` without the router: it runs `git worktree add` and "
     "brings a devbox up, so it carries the same rule. The operator approves it explicitly THIS "
-    "session and runs it themselves via the `!` prefix, which bypasses this hook. Do not ask "
-    "through chat and then run it yourself, and never in an autonomous/cron-fired continuation "
-    "with no live operator to ask. Prefer the current checkout or an existing worktree. The "
-    "port's `list`, `switch`, `remove` and `prune` are unaffected."
+    "session and runs it themselves via the `!` prefix, which bypasses this hook. Never ask "
+    "through chat and then run it here, and never in an autonomous/cron-fired continuation "
+    "with no live operator to ask. A writer's tree comes from `./run.sh worktree lease`; "
+    "otherwise stay in the current checkout. The port's `list`, `switch`, `remove` and `prune` "
+    "are unaffected."
+)
+
+LEASE_MESSAGE = (
+    "❌ BLOCKED: this runs `git worktree remove|move|prune|lock|unlock` on a lease tree under "
+    "`.claude/worktrees`, by its path or by the name git resolves to it. A lease leaves only "
+    "through `./run.sh worktree gc`, whose rules keep a commit nothing has landed, so a tree "
+    "moved or unlocked by hand can lose that work. `./run.sh worktree land <id>` prints how "
+    "its commits land first. The operator's `!` prefix bypasses this hook."
 )
 
 PROGRAM_NOTE = (
@@ -1275,6 +1346,31 @@ EDGE_CASES = [
     ("listing worktrees is allowed", "git worktree list"),
     ("removing a worktree is allowed", "git worktree remove /tmp/wt"),
     ("run.sh doing something else", "./run.sh setup --check"),
+    # A lease tree leaves only through GC (Design 6): the verbs on its path are refused, the lease tool and the same verbs on any other path are not.
+    ("the lease tool is allowed", "./run.sh worktree lease"),
+    ("the lease listing is allowed", "./run.sh worktree leases --json"),
+    ("removing a lease tree", "git worktree remove .claude/worktrees/x"),
+    ("force-removing a lease tree", "git worktree remove --force /r/.claude/worktrees/x"),
+    ("unlocking a lease tree", "git worktree unlock .claude/worktrees/x"),
+    ("moving a lease tree", "git worktree move .claude/worktrees/x /tmp/x"),
+    ("a lease tree joined to -C", "git -C .claude worktree remove worktrees/x"),
+    ("a lease tree as the run's directory", "git -C .claude/worktrees/x worktree remove ."),
+    ("a lease tree joined to cd", "cd .claude/worktrees && git worktree lock x"),
+    (
+        "a lease tree in a python argv",
+        (
+            "python3 -c \"import subprocess; subprocess.run(['git','worktree','remove',"
+            "'.claude/worktrees/x'])\""
+        ),
+    ),
+    (
+        "a lease tree in a perl argv",
+        'perl -e \'system("git","worktree","unlock",".claude/worktrees/x")\'',
+    ),
+    ("control: a bare prune names no tree", "git worktree prune"),
+    ("control: a look-alike directory", "git worktree remove .claude/worktrees-old/x"),
+    ("control: a sentence naming the verb", "echo git worktree remove .claude/worktrees/x"),
+    ("control: listing the lease root", "ls .claude/worktrees"),
     ("prose is stripped before the scan", "echo 'git worktree add /tmp/wt'"),
     # RULE T (PLAN-retire-bash-oracles A4, A0 L9): GIT_AT_CMD's anchor is the copied `(^|[;&|(]|\$\(|`)`, which misses every reserved word, prefix builtin and leading redirect. These ran with rc 0 until `shellscan.lifted_commands`; the heredoc twin below them is data and stays allowed.
     ("L9 a brace group", "{ git worktree add /tmp/wt main; }"),
@@ -1358,6 +1454,7 @@ def run(ev):
         "git": GIT_MESSAGE,
         "run.sh": RUN_SH_MESSAGE,
         "port": PORT_MESSAGE,
+        "lease": LEASE_MESSAGE,
         "unjudgeable": UNJUDGEABLE_MESSAGE,
         "script": SCRIPT_MESSAGE,
         "unread": UNREAD_MESSAGE,
