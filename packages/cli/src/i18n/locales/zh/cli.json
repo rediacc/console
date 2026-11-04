@@ -1954,7 +1954,8 @@
         "descriptionShort": "在机器上回收不可达的不可变提交",
         "dryRunHeader": "将删除 {{count}} 个不可达提交：",
         "dryRunHint": "使用 --apply 重新运行以删除它们。",
-        "nothing": "{{machine}} 上无可回收对象：所有提交均可达"
+        "nothing": "{{machine}} 上无可回收对象：所有提交均可达",
+        "started": "{{total}} 项删除中有 {{started}} 项正在作为作业运行；rdc job list 可查看。"
       },
       "list": {
         "completed": "列表获取完成",

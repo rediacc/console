@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "{{count}} commit(s) inaccessible(s) seraient supprimé(s) :",
   "commands.repo.gc.dryRunHint": "Relancez avec --apply pour les supprimer.",
   "commands.repo.gc.nothing": "Rien à collecter sur {{machine}} : chaque commit est accessible",
-  "commands.repo.gc.started": "{{started}} suppression(s) sur {{total}} s’exécutent comme des jobs ; rdc job list les affiche.",
+  "commands.repo.gc.started": "{{started}} suppression(s) sur {{total}} s'exécutent comme des jobs ; rdc job list les affiche.",
   "commands.repo.gpu.description": "Accorde à un dépôt un périphérique CDI (par exemple nvidia.com/gpu=all) pour que ses conteneurs puissent le demander, ou le retire à nouveau. La machine applique l'autorisation ; une autorisation exclusive réserve le périphérique à un seul dépôt.",
   "commands.repo.gpu.descriptionShort": "Accorder ou retirer des périphériques GPU à un dépôt",
   "commands.repo.gpu.deviceOption": "Nom CDI complet du périphérique (p. ex. nvidia.com/gpu=all)",

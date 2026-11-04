@@ -1954,7 +1954,8 @@
         "descriptionShort": "Collecter les commits immuables inaccessibles sur une machine",
         "dryRunHeader": "{{count}} commit(s) inaccessible(s) seraient supprimé(s) :",
         "dryRunHint": "Relancez avec --apply pour les supprimer.",
-        "nothing": "Rien à collecter sur {{machine}} : chaque commit est accessible"
+        "nothing": "Rien à collecter sur {{machine}} : chaque commit est accessible",
+        "started": "{{started}} suppression(s) sur {{total}} s'exécutent comme des jobs ; rdc job list les affiche."
       },
       "list": {
         "completed": "Listage terminé",

@@ -1954,7 +1954,8 @@
         "descriptionShort": "Bir makinedeki erişilemez değişmez commit'leri temizle",
         "dryRunHeader": "{{count}} erişilemez commit silinecek:",
         "dryRunHint": "Bunları silmek için --apply ile yeniden çalıştırın.",
-        "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir"
+        "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir",
+        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; rdc job list bunları gösterir."
       },
       "list": {
         "completed": "Listeleme tamamlandı",

@@ -1954,7 +1954,8 @@
         "descriptionShort": "Unerreichbare unveränderliche Commits auf einer Maschine per Garbage Collection entfernen",
         "dryRunHeader": "{{count}} unerreichbare(r) Commit(s) würden gelöscht:",
         "dryRunHint": "Mit --apply erneut ausführen, um sie zu löschen.",
-        "nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar"
+        "nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar",
+        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; rdc job list zeigt sie an."
       },
       "list": {
         "completed": "Auflistung abgeschlossen",

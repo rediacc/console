@@ -1954,7 +1954,8 @@
         "descriptionShort": "マシン上の到達不能な不変コミットをガベージコレクトする",
         "dryRunHeader": "到達不能なコミット {{count}} 件が削除されます:",
         "dryRunHint": "削除するには --apply を付けて再実行してください。",
-        "nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です"
+        "nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です",
+        "started": "{{total}} 件の削除のうち {{started}} 件がジョブとして実行中です。rdc job list で確認できます。"
       },
       "list": {
         "completed": "リスト表示が完了しました",

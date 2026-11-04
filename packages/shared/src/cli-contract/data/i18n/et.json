@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "{{count}} ligipääsmatut commit'i kustutataks:",
   "commands.repo.gc.dryRunHint": "Nende kustutamiseks käivita uuesti võtmega --apply.",
   "commands.repo.gc.nothing": "Masinal {{machine}} pole midagi koristada: kõik commit'id on ligipääsetavad",
-  "commands.repo.gc.started": "{{started}} kustutamisest {{total}}-st töötab tööna; rdc job list näitab neid.",
+  "commands.repo.gc.started": "{{started}} eemaldamisest {{total}}-st töötab töödena; rdc job list näitab neid.",
   "commands.repo.gpu.description": "Annab hoidlale CDI-seadme (näiteks nvidia.com/gpu=all), et selle konteinerid saaksid seda küsida, või võtab selle uuesti tagasi. Õigust jõustab masin; ainuõigus reserveerib seadme ühele hoidlale.",
   "commands.repo.gpu.descriptionShort": "Anna hoidlale GPU-seadmeid või võta need tagasi",
   "commands.repo.gpu.deviceOption": "Täielik CDI-seadme nimi (nt nvidia.com/gpu=all)",

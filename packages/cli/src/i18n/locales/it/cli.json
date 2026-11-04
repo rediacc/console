@@ -1954,7 +1954,8 @@
         "descriptionShort": "Esegue il garbage collection dei commit immutabili non raggiungibili su una macchina",
         "dryRunHeader": "{{count}} commit non raggiungibili verrebbero eliminati:",
         "dryRunHint": "Riesegui con --apply per eliminarli.",
-        "nothing": "Niente da raccogliere su {{machine}}: ogni commit e raggiungibile"
+        "nothing": "Niente da raccogliere su {{machine}}: ogni commit e raggiungibile",
+        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; rdc job list le mostra."
       },
       "list": {
         "completed": "Elenco completato",

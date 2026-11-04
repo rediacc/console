@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "将删除 {{count}} 个不可达提交：",
   "commands.repo.gc.dryRunHint": "使用 --apply 重新运行以删除它们。",
   "commands.repo.gc.nothing": "{{machine}} 上无可回收对象：所有提交均可达",
-  "commands.repo.gc.started": "{{total}} 个删除操作中有 {{started}} 个正在作为作业运行；rdc job list 可查看。",
+  "commands.repo.gc.started": "{{total}} 项删除中有 {{started}} 项正在作为作业运行；rdc job list 可查看。",
   "commands.repo.gpu.description": "为仓库授予 CDI 设备（例如 nvidia.com/gpu=all），使其容器可以申请该设备，也可以再将其撤销。授权由机器强制执行；独占授权会把设备保留给单个仓库。",
   "commands.repo.gpu.descriptionShort": "为仓库授予或撤销 GPU 设备",
   "commands.repo.gpu.deviceOption": "完整的 CDI 设备名称（例如 nvidia.com/gpu=all）",

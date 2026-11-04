@@ -1954,7 +1954,8 @@
         "descriptionShort": "Recolecta commits inmutables inaccesibles en una máquina",
         "dryRunHeader": "Se eliminarían {{count}} commit(s) inaccesible(s):",
         "dryRunHint": "Vuelve a ejecutar con --apply para eliminarlos.",
-        "nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles"
+        "nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles",
+        "started": "{{started}} de {{total}} eliminaciones se están ejecutando como trabajos; rdc job list las muestra."
       },
       "list": {
         "completed": "Listado completado",
