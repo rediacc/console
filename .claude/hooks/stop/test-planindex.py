@@ -439,8 +439,8 @@ ck(
 )
 big.close()
 
-# THE TOMBSTONE SECTION SURVIVES A VERB'S REFRESH. Every plan verb runs refresh_index, and the section has no disk state to render from, so a rewrite that drops it loses the expired plans' only record (twice, 2026-11-03 and 2026-11-04).
-def _records(root, tracked_only=False):
+# THE TOMBSTONE SECTION SURVIVES A VERB'S REFRESH. Every plan verb runs refresh_index, and the section has no disk state to render from, so a rewrite that drops it loses the expired plans' only record.
+def _records(root, **_kwargs):
     return CK.plan_records(root)
 
 
