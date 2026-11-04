@@ -263,12 +263,14 @@ describe('machine prune', () => {
     });
   });
 
-  it('the orphaned-repos form adds the ssh cleanup as a second step', async () => {
+  it('the orphaned-repos form plans no ssh cleanup: it follows a real deletion, on the client', async () => {
     answer = RUNNING;
 
     await run(registerPruneCommand, 'prune', 'm1', '--orphaned-repos');
+    await run(registerPruneCommand, 'prune', 'm1', '--orphaned-repos', '--dry-run');
 
-    expect(stepNames(executed[0])).toEqual(['renderPruneOutcome', 'cleanupSshArtifacts']);
+    expect(stepNames(executed[0])).toEqual(['renderPruneOutcome']);
+    expect(stepNames(executed[1])).toEqual(['renderPruneOutcome']);
     expect(mocks.warn).toHaveBeenCalled();
   });
 

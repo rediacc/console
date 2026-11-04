@@ -115,7 +115,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '10m',
     box: 'J18',
-    steps: ['cleanupSshArtifacts', 'purgeExpiredArchives', 'renderPruneOutcome'],
+    steps: ['purgeExpiredArchives', 'renderPruneOutcome'],
     note: 'one machine_prune job runs repository_prune then the unit prune and renders in renderPruneOutcome; the deletion sets of the orphaned and unknown forms stay client-side after a finished job (the config GUID set is not in the vault)',
   },
   'machine restart-services': {

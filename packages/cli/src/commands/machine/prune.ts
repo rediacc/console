@@ -308,6 +308,7 @@ async function pruneOrphanedRepos(
 
   if (!options.dryRun && analysis.orphaned.length > 0) {
     await deleteOrphanedItems(analysis.orphaned, machineName, options.debug);
+    await cleanupSshArtifacts(machineName);
 
     outputService.success(
       t('commands.machine.prune.orphanedReposCompleted', {
@@ -334,8 +335,6 @@ function buildPruneData(outcome: PruneOutcome, dryRun: boolean): Record<string, 
     ...(outcome.report ?? { dry_run: dryRun, orphaned_repos: [], protected_repos: [] }),
   };
 }
-
-bindStepHandler('cleanupSshArtifacts', ({ machine }) => cleanupSshArtifacts(machine));
 
 bindStepHandler('renderPruneOutcome', ({ output, params }) => {
   renderPrunePhases(output, params.dryRun === true);
@@ -370,7 +369,6 @@ async function runPruneJob(machineName: string, options: PruneOptions): Promise<
         dryRun: Boolean(options.dryRun),
         orphaned: hasOrphanForm(options),
       }),
-      ...(options.orphanedRepos ? [planStep('cleanupSshArtifacts', { machine: machineName })] : []),
     ]
   );
   if (job.kind === 'pending') {
