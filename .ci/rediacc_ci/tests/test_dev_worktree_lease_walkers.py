@@ -22,7 +22,8 @@ LEASE_IGNORE = ".claude/worktrees/**"
 GLOB_PROBE = """
 const { globSync } = require('glob');
 const ignore = JSON.parse(process.argv[2]);
-const found = globSync(['**/*.{ts,js}'], { cwd: process.argv[1], posix: true, dot: true, ignore });
+const patterns = JSON.parse(process.argv[3]);
+const found = globSync(patterns, { cwd: process.argv[1], posix: true, dot: true, ignore });
 process.stdout.write(JSON.stringify(found));
 """
 
@@ -85,6 +86,14 @@ def test_walkers_plan_deps_fallback_walk_skips_the_lease(tree, monkeypatch):
     assert "docs/real.py" in found
 
 
+def patterns_from_source():
+    """The patterns `importersOf` hands `globSync`, so the probe walks what the driver walks."""
+    text = NPM_DRIVER.read_text(encoding="utf-8")
+    body = text.split("function importersOf", 1)[1]
+    block = re.search(r"globSync\(\[(.*?)\],", body, re.DOTALL).group(1)
+    return re.findall(r"'([^']+)'", block)
+
+
 def ignore_list_from_source():
     """The `ignore: [...]` array of `importersOf`, as a list of strings."""
     text = NPM_DRIVER.read_text(encoding="utf-8")
@@ -95,7 +104,14 @@ def ignore_list_from_source():
 
 def glob_found(tree, ignore):
     done = subprocess.run(
-        ["node", "-e", GLOB_PROBE, str(tree), json.dumps(ignore)],
+        [
+            "node",
+            "-e",
+            GLOB_PROBE,
+            str(tree),
+            json.dumps(ignore),
+            json.dumps(patterns_from_source()),
+        ],
         cwd=paths.CI_DIR.parent,
         capture_output=True,
         text=True,

@@ -2033,8 +2033,7 @@ async function selftest(): Promise<number> {
     'in a lease the narrow messages must name the main checkout and the script a lease can run'
   );
   require_(
-    leaseMainOf(REPO_ROOT) !== undefined ||
-      (wholeLane() === '`npm run ci:quick`' && narrowScript() === 'ci:quick'),
+    wholeLane(undefined) === '`npm run ci:quick`' && narrowScript(undefined) === 'ci:quick',
     'CONTROL: outside a lease the narrow messages name ci:quick and no other checkout'
   );
   let relRefused = false;
@@ -4558,12 +4557,12 @@ function defaultEventsFile(opts: Options, runId: string): string {
 }
 
 /** The whole lane, named where it can run: `ci:quick` is refused in a lease, whose main checkout is where the receipt comes from. */
-function wholeLane(main: string | undefined = leaseMainOf(REPO_ROOT)): string {
+function wholeLane(main: string | undefined): string {
   return main === undefined ? '`npm run ci:quick`' : `\`npm run ci:quick\` in ${main}`;
 }
 
 /** The script a narrow set runs under here: `ci:quick` routes to a refusal in a lease, and `ci` does not. */
-function narrowScript(main: string | undefined = leaseMainOf(REPO_ROOT)): string {
+function narrowScript(main: string | undefined): string {
   return main === undefined ? 'ci:quick' : 'ci';
 }
 
@@ -4584,7 +4583,7 @@ function narrowPlan(
   } catch {
     return {
       lines: [],
-      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane()} first`,
+      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
     };
   }
   const gates = specs.filter((s) => s.gate);
@@ -4669,10 +4668,10 @@ function narrowPlan(
   if (ids.size === 0)
     return {
       lines,
-      error: `ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: ${wholeLane()}`,
+      error: `ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: ${wholeLane(leaseMainOf(REPO_ROOT))}`,
     };
   lines.push(
-    `  run it: npm run ${narrowScript()} -- --narrow  (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
+    `  run it: npm run ${narrowScript(leaseMainOf(REPO_ROOT))} -- --narrow  (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
   );
   return { ids, lines };
 }
