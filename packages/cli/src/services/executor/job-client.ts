@@ -19,27 +19,33 @@
  *     cursor past complete lines, so a line cut in half by a dropped connection
  *     is re-sent in full on resume. Counting it here would silently skip it.
  *
- * This module holds the pure, dependency-free half: the remote command builders,
- * parsing, line accounting, version-skew detection, and the status-to-result
- * mapping. The I/O half (SSH, stream plumbing, the reconnect loop) lives in
+ * This module holds the pure half, free of I/O: the remote command builders,
+ * parsing, line accounting, version-skew detection, the status-to-result
+ * mapping and the overlap text (which reads the i18n catalog). The I/O half (SSH, stream plumbing, the reconnect loop) lives in
  * job-remote.ts, which imports from here and never the other way around.
  */
 
-import type { BackgroundEnvelope, JobOverlap } from '@rediacc/shared/cli-contract/wire';
-import { z } from 'zod';
-import { t } from '../../i18n/index.js';
-import { shellQuote } from '../../utils/shell-quote.js';
-import { writeStdout } from '../core/request-context.js';
-import { type JobOutputCollector } from './job-output-collector.js';
-import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
-import type { ExecuteResult, RenetEvent } from './types.js';
+import type {
+  BackgroundEnvelope,
+  JobOverlap,
+} from "@rediacc/shared/cli-contract/wire";
+import { z } from "zod";
+import { t } from "../../i18n/index.js";
+import { shellQuote } from "../../utils/shell-quote.js";
+import { writeStdout } from "../core/request-context.js";
+import { type JobOutputCollector } from "./job-output-collector.js";
+import { type RenetEnv, type RenetLaunch, sudoRenet } from "./renet-launch.js";
+import type { ExecuteResult, RenetEvent } from "./types.js";
 
-const UNKNOWN_JOB_ID = '?';
-const DEFAULT_WORK_LABEL = 'work';
-const DEFAULT_JOB_STATE = 'running';
-const UNKNOWN_ORIGIN = 'unknown';
+const UNKNOWN_JOB_ID = "?";
+const DEFAULT_WORK_LABEL = "work";
+const DEFAULT_JOB_STATE = "running";
+const UNKNOWN_ORIGIN = "unknown";
 
-export { createJobOutputCollector, type JobOutputCollector } from './job-output-collector.js';
+export {
+  createJobOutputCollector,
+  type JobOutputCollector,
+} from "./job-output-collector.js";
 
 /**
  * The shape of a job ID as renet mints it (pkg/jobs: `j<unixnano-hex>-<4-byte-hex>`).
@@ -56,9 +62,9 @@ export class InvalidJobIdError extends Error {
   constructor(readonly jobId: string) {
     super(
       `The machine returned a job id that renet could not have produced: ${JSON.stringify(jobId)}. ` +
-        `Refusing to use it in a remote command.`
+        `Refusing to use it in a remote command.`,
     );
-    this.name = 'InvalidJobIdError';
+    this.name = "InvalidJobIdError";
   }
 }
 
@@ -79,7 +85,9 @@ const RenetOverlapSchema = z.object({
   started_at: z.string().optional(),
   origin: z
     .object({
-      config: z.object({ name: z.string().optional(), id: z.string().optional() }).optional(),
+      config: z
+        .object({ name: z.string().optional(), id: z.string().optional() })
+        .optional(),
       client: z.string().optional(),
       version: z.string().optional(),
       ssh_user: z.string().optional(),
@@ -94,8 +102,8 @@ const RenetOverlapSchema = z.object({
   lock_class: z.string().optional(),
   state: z.string().optional(),
   unit: z.string().optional(),
-  action: z.enum(['warn', 'refuse']),
-  attach: z.string().default(''),
+  action: z.enum(["warn", "refuse"]),
+  attach: z.string().default(""),
 });
 
 type RenetOverlap = z.infer<typeof RenetOverlapSchema>;
@@ -103,7 +111,9 @@ type RenetOverlap = z.infer<typeof RenetOverlapSchema>;
 /** Drop the keys whose value is undefined or empty, so an absent renet field never becomes `""` on the wire. */
 function compact<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, value]) => value !== undefined && value !== '')
+    Object.entries(obj).filter(
+      ([, value]) => value !== undefined && value !== "",
+    ),
   ) as T;
 }
 
@@ -155,7 +165,7 @@ export type { JobHandle };
 const JobStatusSchema = z.object({
   job_id: z.string(),
   function: z.string(),
-  state: z.enum(['running', 'succeeded', 'failed', 'cancelled']),
+  state: z.enum(["running", "succeeded", "failed", "cancelled"]),
   /** null while the job is still running. */
   exit_code: z.number().nullable().optional(),
   started_at: z.string(),
@@ -272,10 +282,10 @@ function jobsUnsupportedMessage(machineName: string, verb: string): string {
 export class JobsUnsupportedError extends Error {
   constructor(
     readonly machineName: string,
-    readonly verb: string
+    readonly verb: string,
   ) {
     super(jobsUnsupportedMessage(machineName, verb));
-    this.name = 'JobsUnsupportedError';
+    this.name = "JobsUnsupportedError";
   }
 }
 
@@ -283,10 +293,10 @@ export class JobsUnsupportedError extends Error {
 export class JobStartFailedError extends Error {
   constructor(
     readonly machineName: string,
-    readonly detail: string
+    readonly detail: string,
   ) {
     super(`Failed to start a detached job on '${machineName}': ${detail}`);
-    this.name = 'JobStartFailedError';
+    this.name = "JobStartFailedError";
   }
 }
 
@@ -306,7 +316,7 @@ export function resumeHint(jobId: string, machineName: string): string {
     `  Follow it again:  rdc job logs ${jobId} -m ${machineName} --follow`,
     `  Check the result: rdc job status ${jobId} -m ${machineName}`,
     `  Stop it:          rdc job cancel ${jobId} -m ${machineName}`,
-  ].join('\n');
+  ].join("\n");
 }
 
 /**
@@ -314,14 +324,17 @@ export function resumeHint(jobId: string, machineName: string): string {
  * or outlives its attach window, in text mode. It goes to stderr: stdout
  * belongs to the command (section 26). Under `-o json` the envelope replaces it.
  */
-export function backgroundStartedHint(jobId: string, machineName: string): string {
+export function backgroundStartedHint(
+  jobId: string,
+  machineName: string,
+): string {
   return [
     `Started job ${jobId} on '${machineName}'. It keeps running in the background.`,
     ``,
     `  Wait for it:      rdc job wait ${jobId}`,
     `  Follow it:        rdc job logs ${jobId} -m ${machineName} --follow`,
     `  Check the result: rdc job status ${jobId} -m ${machineName}`,
-  ].join('\n');
+  ].join("\n");
 }
 
 /**
@@ -334,7 +347,7 @@ export function followLostHint(jobId: string, machineName: string): string {
     ``,
     `  Resume following: rdc job wait ${jobId}`,
     `  Check the result: rdc job status ${jobId} -m ${machineName}`,
-  ].join('\n');
+  ].join("\n");
 }
 
 /** The `-b` / attach-window envelope (Design 2, section 26), shared with MCP. */
@@ -350,7 +363,7 @@ export function backgroundEnvelope(params: {
     machine: params.machine,
     verb: params.verb,
     ...(params.repo ? { repo: params.repo } : {}),
-    state: 'running',
+    state: "running",
     follow: `rdc job wait ${params.jobId}`,
     overlaps: params.overlaps ?? [],
   };
@@ -359,41 +372,45 @@ export function backgroundEnvelope(params: {
 /** One overlap as a stderr warning line plus the command that shows the other job (section 19). */
 export function overlapWarningLines(overlap: JobOverlap): string[] {
   const key =
-    overlap.action === 'refuse'
-      ? 'errors.jobs.overlap.refusedHead'
-      : 'errors.jobs.overlap.warningHead';
-  const head = t(key, { subject: overlapSubject(overlap), origin: originLabel(overlap.origin) });
+    overlap.action === "refuse"
+      ? "errors.jobs.overlap.refusedHead"
+      : "errors.jobs.overlap.warningHead";
+  const head = t(key, {
+    subject: overlapSubject(overlap),
+    origin: originLabel(overlap.origin),
+  });
   return overlap.attach
-    ? [head, t('errors.jobs.overlap.seeIt', { attach: overlap.attach })]
+    ? [head, t("errors.jobs.overlap.seeIt", { attach: overlap.attach })]
     : [head];
 }
 
 /** "job <id> (<function> on <repo>) is running, started <ts>". */
 function overlapSubject(overlap: JobOverlap): string {
   const what =
-    overlap.unit ?? t('errors.jobs.overlap.whatJob', { id: overlap.jobId ?? UNKNOWN_JOB_ID });
+    overlap.unit ??
+    t("errors.jobs.overlap.whatJob", { id: overlap.jobId ?? UNKNOWN_JOB_ID });
   const doing = overlap.function ?? overlap.command ?? DEFAULT_WORK_LABEL;
   const scope = overlap.repo ?? overlap.repoGuid;
-  return t('errors.jobs.overlap.subject', {
+  return t("errors.jobs.overlap.subject", {
     what,
     doing,
-    scope: scope ? t('errors.jobs.overlap.onScope', { scope }) : '',
+    scope: scope ? t("errors.jobs.overlap.onScope", { scope }) : "",
     state: overlap.state ?? DEFAULT_JOB_STATE,
     started: overlap.startedAt
-      ? t('errors.jobs.overlap.startedAt', { timestamp: overlap.startedAt })
-      : '',
+      ? t("errors.jobs.overlap.startedAt", { timestamp: overlap.startedAt })
+      : "",
   });
 }
 
 /** "started by <user> via <client> (config <name>)", or the older-renet fallback. */
-function originLabel(origin: JobOverlap['origin']): string {
-  if (!origin) return t('errors.jobs.overlap.originUnknown');
-  return t('errors.jobs.overlap.originStarted', {
+function originLabel(origin: JobOverlap["origin"]): string {
+  if (!origin) return t("errors.jobs.overlap.originUnknown");
+  return t("errors.jobs.overlap.originStarted", {
     user: origin.sshUser ?? UNKNOWN_ORIGIN,
     client: origin.client ?? UNKNOWN_ORIGIN,
     config: origin.config?.name
-      ? t('errors.jobs.overlap.originConfig', { name: origin.config.name })
-      : '',
+      ? t("errors.jobs.overlap.originConfig", { name: origin.config.name })
+      : "",
   });
 }
 
@@ -444,12 +461,17 @@ export function parseJobGcResult(stdout: string): JobGcResult {
  * reports how long it has been running so far, because "how long has this been
  * going" is the question an operator actually asks of a running job.
  */
-export function formatJobDuration(status: JobStatus, now: number = Date.now()): string {
+export function formatJobDuration(
+  status: JobStatus,
+  now: number = Date.now(),
+): string {
   const started = Date.parse(status.started_at);
-  if (Number.isNaN(started)) return '-';
+  if (Number.isNaN(started)) return "-";
 
-  const elapsed = jobDurationMs(status) ?? (isTerminalState(status.state) ? null : now - started);
-  if (elapsed === null || elapsed < 0) return '-';
+  const elapsed =
+    jobDurationMs(status) ??
+    (isTerminalState(status.state) ? null : now - started);
+  if (elapsed === null || elapsed < 0) return "-";
 
   if (elapsed < 1000) return `${elapsed}ms`;
   if (elapsed < 60_000) return `${(elapsed / 1000).toFixed(1)}s`;
@@ -460,8 +482,8 @@ export function formatJobDuration(status: JobStatus, now: number = Date.now()): 
 }
 
 /** Whether a job has reached a final state. */
-export function isTerminalState(state: JobStatus['state']): boolean {
-  return state === 'succeeded' || state === 'failed' || state === 'cancelled';
+export function isTerminalState(state: JobStatus["state"]): boolean {
+  return state === "succeeded" || state === "failed" || state === "cancelled";
 }
 
 // --- remote command builders -------------------------------------------------
@@ -503,20 +525,29 @@ export function buildJobStartCommand(params: {
   /** A command kind (section 14) to run instead of a vault function, with its `--args` JSON object. */
   command?: { name: string; args?: string };
 }): RenetLaunch {
-  const { remoteRenetPath, env, timeoutMs, debug, requestId, attach, origin, steps, command } =
-    params;
-  const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
-  const debugFlag = debug ? ' --debug' : '';
-  const requestFlag = requestId ? ` --request-id ${shellQuote(requestId)}` : '';
-  const attachFlag = attach ? ` --attach ${shellQuote(attach)}` : '';
-  const originFlag = origin ? ` --origin ${shellQuote(origin)}` : '';
-  const stepsFlag = steps ? ` --steps ${shellQuote(steps)}` : '';
+  const {
+    remoteRenetPath,
+    env,
+    timeoutMs,
+    debug,
+    requestId,
+    attach,
+    origin,
+    steps,
+    command,
+  } = params;
+  const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : "";
+  const debugFlag = debug ? " --debug" : "";
+  const requestFlag = requestId ? ` --request-id ${shellQuote(requestId)}` : "";
+  const attachFlag = attach ? ` --attach ${shellQuote(attach)}` : "";
+  const originFlag = origin ? ` --origin ${shellQuote(origin)}` : "";
+  const stepsFlag = steps ? ` --steps ${shellQuote(steps)}` : "";
   const commandFlag = command
-    ? ` --command ${shellQuote(command.name)}${command.args ? ` --args ${shellQuote(command.args)}` : ''}`
-    : '';
+    ? ` --command ${shellQuote(command.name)}${command.args ? ` --args ${shellQuote(command.args)}` : ""}`
+    : "";
   return sudoRenet(
     env,
-    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}${commandFlag}`
+    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}${commandFlag}`,
   );
 }
 
@@ -524,14 +555,14 @@ export function buildJobStartCommand(params: {
 
 /** The `{"type":"job_status",...}` trailer `job start --attach` and `job logs --with-status` print. */
 const JobStatusTrailerSchema = JobStatusSchema.extend({
-  type: z.literal('job_status'),
+  type: z.literal("job_status"),
   deduped: z.boolean().optional(),
   overlaps: z.array(RenetOverlapSchema).nullable().optional(),
 });
 
 /** What a refused start prints on stdout before exiting 15. */
 const OverlapRefusalSchema = z.object({
-  refused: z.literal('overlap'),
+  refused: z.literal("overlap"),
   overlaps: z.array(RenetOverlapSchema),
 });
 
@@ -540,8 +571,13 @@ const OverlapRefusalSchema = z.object({
  * 15 (private/renet/cmd/renet/job_precondition.go PreconditionRefusal).
  */
 const PreconditionRefusalSchema = z.object({
-  refused: z.literal('precondition'),
-  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted', 'ceph_datastores_exist']),
+  refused: z.literal("precondition"),
+  expect: z.enum([
+    "repo_present",
+    "repo_absent",
+    "repo_unmounted",
+    "ceph_datastores_exist",
+  ]),
   state: z.string(),
   repository: z.string(),
   repo_guid: z.string(),
@@ -556,17 +592,22 @@ export type { PreconditionRefusal };
 /** One line of a `job start --attach` stream, classified. */
 export type AttachLine =
   | {
-      kind: 'handle';
+      kind: "handle";
       jobId: string;
       deduped: boolean;
       overlaps: JobOverlap[];
       networkId?: number;
     }
-  | { kind: 'status'; status: JobStatus; deduped: boolean; overlaps: JobOverlap[] }
-  | { kind: 'refusal'; overlaps: JobOverlap[] }
-  | { kind: 'precondition'; refusal: PreconditionRefusal }
-  | { kind: 'event'; event: RenetEvent }
-  | { kind: 'raw'; text: string };
+  | {
+      kind: "status";
+      status: JobStatus;
+      deduped: boolean;
+      overlaps: JobOverlap[];
+    }
+  | { kind: "refusal"; overlaps: JobOverlap[] }
+  | { kind: "precondition"; refusal: PreconditionRefusal }
+  | { kind: "event"; event: RenetEvent }
+  | { kind: "raw"; text: string };
 
 /**
  * Classify one complete line of an attach stream. The handle is the first
@@ -578,32 +619,38 @@ export function parseAttachLine(line: string): AttachLine {
   try {
     parsed = JSON.parse(line);
   } catch {
-    return { kind: 'raw', text: line };
+    return { kind: "raw", text: line };
   }
-  if (!parsed || typeof parsed !== 'object') return { kind: 'event', event: parsed as RenetEvent };
+  if (!parsed || typeof parsed !== "object")
+    return { kind: "event", event: parsed as RenetEvent };
   const obj = parsed as Record<string, unknown>;
-  if (obj.type === 'job_handle') return handleLineOf(obj);
-  if (obj.type === 'job_status') return statusLineOf(obj);
-  if (obj.refused === 'overlap') {
+  if (obj.type === "job_handle") return handleLineOf(obj);
+  if (obj.type === "job_status") return statusLineOf(obj);
+  if (obj.refused === "overlap") {
     return {
-      kind: 'refusal',
+      kind: "refusal",
       overlaps: OverlapRefusalSchema.parse(obj).overlaps.map(toJobOverlap),
     };
   }
-  if (obj.refused === 'precondition') {
-    return { kind: 'precondition', refusal: PreconditionRefusalSchema.parse(obj) };
+  if (obj.refused === "precondition") {
+    return {
+      kind: "precondition",
+      refusal: PreconditionRefusalSchema.parse(obj),
+    };
   }
-  return { kind: 'event', event: obj as unknown as RenetEvent };
+  return { kind: "event", event: obj as unknown as RenetEvent };
 }
 
 function handleLineOf(obj: Record<string, unknown>): AttachLine {
   const handle = JobHandleSchema.parse(obj);
   return {
-    kind: 'handle',
+    kind: "handle",
     jobId: assertJobId(handle.job_id),
     deduped: handle.deduped === true,
     overlaps: (handle.overlaps ?? []).map(toJobOverlap),
-    ...(handle.network_id === undefined ? {} : { networkId: handle.network_id }),
+    ...(handle.network_id === undefined
+      ? {}
+      : { networkId: handle.network_id }),
   };
 }
 
@@ -612,7 +659,7 @@ function statusLineOf(obj: Record<string, unknown>): AttachLine {
   // The status schema strips the trailer-only keys (`type`, `deduped`, `overlaps`).
   const status = JobStatusSchema.parse(obj);
   return {
-    kind: 'status',
+    kind: "status",
     status,
     deduped: deduped === true,
     overlaps: (overlaps ?? []).map(toJobOverlap),
@@ -629,28 +676,32 @@ export function handleOverlaps(stdout: string): {
   return {
     deduped: handle.deduped === true,
     overlaps: (handle.overlaps ?? []).map(toJobOverlap),
-    ...(handle.network_id === undefined ? {} : { networkId: handle.network_id }),
+    ...(handle.network_id === undefined
+      ? {}
+      : { networkId: handle.network_id }),
   };
 }
 
 /** The overlaps of a refusal printed on stdout, or null when the output is no refusal. */
 export function parseOverlapRefusal(stdout: string): JobOverlap[] | null {
-  for (const line of stdout.split('\n')) {
+  for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('{')) continue;
+    if (!trimmed.startsWith("{")) continue;
     const parsed = parseAttachLine(trimmed);
-    if (parsed.kind === 'refusal') return parsed.overlaps;
+    if (parsed.kind === "refusal") return parsed.overlaps;
   }
   return null;
 }
 
 /** The precondition refusal printed on stdout, or null when the output is none. */
-export function parsePreconditionRefusal(stdout: string): PreconditionRefusal | null {
-  for (const line of stdout.split('\n')) {
+export function parsePreconditionRefusal(
+  stdout: string,
+): PreconditionRefusal | null {
+  for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('{')) continue;
+    if (!trimmed.startsWith("{")) continue;
     const parsed = parseAttachLine(trimmed);
-    if (parsed.kind === 'precondition') return parsed.refusal;
+    if (parsed.kind === "precondition") return parsed.refusal;
   }
   return null;
 }
@@ -672,22 +723,30 @@ export function buildJobLogsCommand(params: {
   follow: boolean;
 }): string {
   const jobId = assertJobId(params.jobId);
-  const followFlag = params.follow ? ' --follow' : '';
+  const followFlag = params.follow ? " --follow" : "";
   return `sudo ${shellQuote(params.remoteRenetPath)} job logs --id ${jobId} --since-line ${params.sinceLine}${followFlag}`;
 }
 
 /** Build the `renet job status` command. */
-export function buildJobStatusCommand(params: { remoteRenetPath: string; jobId: string }): string {
+export function buildJobStatusCommand(params: {
+  remoteRenetPath: string;
+  jobId: string;
+}): string {
   return `sudo ${shellQuote(params.remoteRenetPath)} job status --id ${assertJobId(params.jobId)} --json`;
 }
 
 /** Build the `renet job cancel` command. */
-export function buildJobCancelCommand(params: { remoteRenetPath: string; jobId: string }): string {
+export function buildJobCancelCommand(params: {
+  remoteRenetPath: string;
+  jobId: string;
+}): string {
   return `sudo ${shellQuote(params.remoteRenetPath)} job cancel --id ${assertJobId(params.jobId)} --json`;
 }
 
 /** Build the `renet job list` command. */
-export function buildJobListCommand(params: { remoteRenetPath: string }): string {
+export function buildJobListCommand(params: {
+  remoteRenetPath: string;
+}): string {
   return `sudo ${shellQuote(params.remoteRenetPath)} job list --json`;
 }
 
@@ -721,15 +780,15 @@ export function buildJobGcCommand(params: {
  */
 export function createEventLineReader(
   onEvent: (event: RenetEvent, line?: number) => void,
-  startLine = 0
+  startLine = 0,
 ): (chunk: Buffer) => void {
-  let buffered = '';
+  let buffered = "";
   let lineNumber = startLine;
 
   return (chunk: Buffer) => {
     buffered += chunk.toString();
-    const lines = buffered.split('\n');
-    buffered = lines.pop() ?? '';
+    const lines = buffered.split("\n");
+    buffered = lines.pop() ?? "";
 
     for (const line of lines) {
       // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
@@ -754,10 +813,12 @@ export function createEventLineReader(
  * assuming the payload begins at byte zero.
  */
 function extractJsonObject(stdout: string): string {
-  const start = stdout.indexOf('{');
-  const end = stdout.lastIndexOf('}');
+  const start = stdout.indexOf("{");
+  const end = stdout.lastIndexOf("}");
   if (start < 0 || end < start) {
-    throw new Error(`Expected JSON from renet, got: ${stdout.trim().slice(0, 200) || '(empty)'}`);
+    throw new Error(
+      `Expected JSON from renet, got: ${stdout.trim().slice(0, 200) || "(empty)"}`,
+    );
   }
   return stdout.slice(start, end + 1);
 }
@@ -771,7 +832,9 @@ function extractJsonValue(stdout: string): string {
   const trimmed = stdout.trim();
   const start = trimmed.search(/[[{]|null/);
   if (start < 0) {
-    throw new Error(`Expected JSON from renet, got: ${trimmed.slice(0, 200) || '(empty)'}`);
+    throw new Error(
+      `Expected JSON from renet, got: ${trimmed.slice(0, 200) || "(empty)"}`,
+    );
   }
   return trimmed.slice(start);
 }
@@ -788,9 +851,9 @@ function extractJsonValue(stdout: string): string {
 export function jobStatusToExecuteResult(
   status: JobStatus,
   wallMs: number,
-  output?: Pick<JobOutputCollector, 'stdout' | 'stderr' | 'steps'>
+  output?: Pick<JobOutputCollector, "stdout" | "stderr" | "steps">,
 ): ExecuteResult {
-  const success = status.state === 'succeeded';
+  const success = status.state === "succeeded";
   const operationDurationMs = jobDurationMs(status) ?? wallMs;
 
   return {
@@ -815,6 +878,7 @@ export function jobDurationMs(status: JobStatus): number | null {
   if (!status.finished_at) return null;
   const started = Date.parse(status.started_at);
   const finished = Date.parse(status.finished_at);
-  if (Number.isNaN(started) || Number.isNaN(finished) || finished < started) return null;
+  if (Number.isNaN(started) || Number.isNaN(finished) || finished < started)
+    return null;
   return finished - started;
 }
