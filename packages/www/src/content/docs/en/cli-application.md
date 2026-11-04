@@ -7,7 +7,7 @@ order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "073f6ddd68146592"
+sourceHash: "3828d7a40997b642"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2142,6 +2142,7 @@ rdc repo admin fsck [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-admin-ownership"></a>
