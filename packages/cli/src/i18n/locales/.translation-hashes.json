@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2394,
-    "sourceCommit": "694160a400ef3b2f695e57c4aa737efed03eea3d"
+    "keyCount": 2396,
+    "sourceCommit": "ed2831dde4f198459a1183ea10b9fe5f742ae9b4"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -380,9 +380,11 @@
     "commands.backup.verify.optionStore": "597a7c72",
     "commands.backup.verify.restoreTestCleanupFailed": "af1cf701",
     "commands.backup.verify.restoreTestExclusive": "d8fd328e",
+    "commands.backup.verify.restoreTestFreeUnknown": "7ee4be72",
     "commands.backup.verify.restoreTestNeedsCredential": "05bb844f",
     "commands.backup.verify.restoreTestNoAnchor": "5bf53d88",
     "commands.backup.verify.restoreTestNoSpace": "69478022",
+    "commands.backup.verify.restoreTestSizeUnknown": "110d0579",
     "commands.backup.verify.starting": "10d32493",
     "commands.backup.verify.storeEmpty": "7c454163",
     "commands.backup.verify.verdictUnreadable": "6afd439c",

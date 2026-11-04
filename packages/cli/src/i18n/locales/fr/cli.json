@@ -336,6 +336,8 @@
         "restoreTestNeedsCredential": "{{name}} n'a aucun identifiant dans cette configuration, une copie restaurée ne pourrait donc pas être ouverte pour test.",
         "restoreTestNoAnchor": "{{name}} n'a aucune ancre de sauvegarde sur sa machine à restaurer. Prenez d'abord un snapshot.",
         "restoreTestNoSpace": "Pas assez d'espace pour le test de restauration de {{snapshot}} : il faut {{need}} octets libres et le datastore en a {{free}}.",
+        "restoreTestSizeUnknown": "La taille du snapshot {{snapshot}} ne figure pas dans l'index du compte, donc l'espace nécessaire au test de restauration ne peut pas être vérifié. Créer un snapshot avec rdc backup snapshot puis réessayer.",
+        "restoreTestFreeUnknown": "L'espace libre du datastore de {{machine}} n'a pas pu être lu, donc l'espace nécessaire au test de restauration ne peut pas être vérifié.",
         "verdictUnreadable": "La vérification de {{name}} n'a affiché aucun verdict lisible, rien n'a donc été prouvé."
       },
       "snapshots": {

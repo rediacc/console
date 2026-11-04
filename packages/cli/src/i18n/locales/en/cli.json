@@ -2124,6 +2124,8 @@
         "restoreTestNeedsCredential": "{{name}} has no credential in this config, so a restored copy could not be test-opened.",
         "restoreTestNoAnchor": "{{name}} has no backup anchor on its machine to restore. Take a snapshot first.",
         "restoreTestNoSpace": "Not enough room for the restore test of {{snapshot}}: it needs {{need}} bytes free and the datastore has {{free}}.",
+        "restoreTestSizeUnknown": "The size of snapshot {{snapshot}} is not in the account's index, so the room the restore test needs cannot be checked. Take a snapshot with rdc backup snapshot and try again.",
+        "restoreTestFreeUnknown": "The free space on the datastore of {{machine}} could not be read, so the room the restore test needs cannot be checked.",
         "verdictUnreadable": "The verify of {{name}} printed no readable verdict, so nothing was proven."
       },
       "snapshots": {

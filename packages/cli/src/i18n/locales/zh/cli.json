@@ -336,6 +336,8 @@
         "restoreTestNeedsCredential": "此配置中没有 {{name}} 的凭据,因此无法试打开恢复的副本。",
         "restoreTestNoAnchor": "{{name}} 在其机器上没有可恢复的备份锚点。请先创建快照。",
         "restoreTestNoSpace": "空间不足,无法对 {{snapshot}} 进行恢复测试:需要 {{need}} 字节可用空间,数据存储只有 {{free}}。",
+        "restoreTestSizeUnknown": "账户索引中没有快照 {{snapshot}} 的大小,无法检查恢复测试所需的空间。请先用 rdc backup snapshot 创建快照后重试。",
+        "restoreTestFreeUnknown": "无法读取 {{machine}} 数据存储的可用空间,因此无法检查恢复测试所需的空间。",
         "verdictUnreadable": "{{name}} 的验证没有输出可读的结论,因此未能证明任何内容。"
       },
       "snapshots": {

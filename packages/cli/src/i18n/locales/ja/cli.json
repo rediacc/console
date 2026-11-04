@@ -336,6 +336,8 @@
         "restoreTestNeedsCredential": "この設定に {{name}} の認証情報がないため、復元したコピーを試験的に開けません。",
         "restoreTestNoAnchor": "{{name}} には、復元できるバックアップのアンカーがマシン上にありません。先にスナップショットを作成してください。",
         "restoreTestNoSpace": "{{snapshot}} の復元テストに必要な空き容量がありません。{{need}} バイトの空きが必要ですが、データストアには {{free}} しかありません。",
+        "restoreTestSizeUnknown": "スナップショット {{snapshot}} のサイズがアカウントのインデックスにないため、復元テストに必要な空き容量を確認できません。rdc backup snapshot でスナップショットを作成してから再試行してください。",
+        "restoreTestFreeUnknown": "{{machine}} のデータストアの空き容量を読み取れなかったため、復元テストに必要な空き容量を確認できません。",
         "verdictUnreadable": "{{name}} の検証は読み取れる判定を出力しなかったため、何も証明されていません。"
       },
       "snapshots": {

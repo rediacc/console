@@ -336,6 +336,8 @@
         "restoreTestNeedsCredential": "{{name}} hat in dieser Konfiguration keine Zugangsdaten, daher ließe sich eine wiederhergestellte Kopie nicht testweise öffnen.",
         "restoreTestNoAnchor": "{{name}} hat auf seiner Maschine keinen Backup-Anker zum Wiederherstellen. Erstelle zuerst einen Snapshot.",
         "restoreTestNoSpace": "Nicht genug Platz für den Restore-Test von {{snapshot}}: Es werden {{need}} Byte frei benötigt, der Datastore hat {{free}}.",
+        "restoreTestSizeUnknown": "Die Größe des Snapshots {{snapshot}} steht nicht im Index des Kontos, daher lässt sich der für den Restore-Test nötige Platz nicht prüfen. Mit rdc backup snapshot einen Snapshot erstellen und erneut versuchen.",
+        "restoreTestFreeUnknown": "Der freie Speicherplatz im Datastore von {{machine}} konnte nicht gelesen werden, daher lässt sich der für den Restore-Test nötige Platz nicht prüfen.",
         "verdictUnreadable": "Die Verifizierung von {{name}} hat kein lesbares Ergebnis ausgegeben, daher wurde nichts bewiesen."
       },
       "snapshots": {

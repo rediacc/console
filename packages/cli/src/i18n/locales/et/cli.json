@@ -336,6 +336,8 @@
         "restoreTestNeedsCredential": "Selles konfiguratsioonis pole {{name}} jaoks mandaati, seega ei saaks taastatud koopiat proovimiseks avada.",
         "restoreTestNoAnchor": "Hoidlal {{name}} pole masinas taastamiseks varundusankrut. Tee esmalt hetktõmmis.",
         "restoreTestNoSpace": "Hetktõmmise {{snapshot}} taastamistesti jaoks pole piisavalt ruumi: vaja on {{need}} baiti vaba ruumi, andmehoidlas on {{free}}.",
+        "restoreTestSizeUnknown": "Hetktõmmise {{snapshot}} suurust pole konto registris, seega ei saa kontrollida taastamistesti jaoks vajalikku ruumi. Tehke käsuga rdc backup snapshot hetktõmmis ja proovige uuesti.",
+        "restoreTestFreeUnknown": "Masina {{machine}} andmehoidla vaba ruumi ei õnnestunud lugeda, seega ei saa kontrollida taastamistesti jaoks vajalikku ruumi.",
         "verdictUnreadable": "Hoidla {{name}} kontroll ei printinud loetavat otsust, seega ei tõendatud midagi."
       },
       "snapshots": {

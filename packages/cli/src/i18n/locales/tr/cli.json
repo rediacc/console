@@ -336,6 +336,8 @@
         "restoreTestNeedsCredential": "{{name}} için bu yapılandırmada kimlik bilgisi yok, bu yüzden geri yüklenen kopya deneme amaçlı açılamazdı.",
         "restoreTestNoAnchor": "{{name}} için makinesinde geri yüklenecek yedek çapası yok. Önce bir anlık görüntü alın.",
         "restoreTestNoSpace": "{{snapshot}} geri yükleme testi için yeterli yer yok: {{need}} bayt boş alan gerekiyor, veri deposunda {{free}} var.",
+        "restoreTestSizeUnknown": "{{snapshot}} anlık görüntüsünün boyutu hesabın dizininde yok, bu yüzden geri yükleme testinin ihtiyaç duyduğu yer denetlenemiyor. rdc backup snapshot ile bir anlık görüntü alıp yeniden denenmeli.",
+        "restoreTestFreeUnknown": "{{machine}} makinesinin veri deposundaki boş alan okunamadı, bu yüzden geri yükleme testinin ihtiyaç duyduğu yer denetlenemiyor.",
         "verdictUnreadable": "{{name}} doğrulaması okunabilir bir sonuç yazdırmadı, bu yüzden hiçbir şey kanıtlanmadı."
       },
       "snapshots": {
