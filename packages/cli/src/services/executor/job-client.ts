@@ -27,6 +27,7 @@
 
 import type { BackgroundEnvelope, JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import { z } from 'zod';
+import { t } from '../../i18n/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
 import { type JobOutputCollector } from './job-output-collector.js';
@@ -357,25 +358,43 @@ export function backgroundEnvelope(params: {
 
 /** One overlap as a stderr warning line plus the command that shows the other job (section 19). */
 export function overlapWarningLines(overlap: JobOverlap): string[] {
-  const head = `${overlap.action === 'refuse' ? 'Refused' : 'Warning'}: ${overlapSubject(overlap)}, ${originLabel(overlap.origin)}.`;
-  return overlap.attach ? [head, `  See it: ${overlap.attach}`] : [head];
+  const key =
+    overlap.action === 'refuse'
+      ? 'errors.jobs.overlap.refusedHead'
+      : 'errors.jobs.overlap.warningHead';
+  const head = t(key, { subject: overlapSubject(overlap), origin: originLabel(overlap.origin) });
+  return overlap.attach
+    ? [head, t('errors.jobs.overlap.seeIt', { attach: overlap.attach })]
+    : [head];
 }
 
 /** "job <id> (<function> on <repo>) is running, started <ts>". */
 function overlapSubject(overlap: JobOverlap): string {
-  const what = overlap.unit ?? `job ${overlap.jobId ?? UNKNOWN_JOB_ID}`;
+  const what =
+    overlap.unit ?? t('errors.jobs.overlap.whatJob', { id: overlap.jobId ?? UNKNOWN_JOB_ID });
   const doing = overlap.function ?? overlap.command ?? DEFAULT_WORK_LABEL;
   const scope = overlap.repo ?? overlap.repoGuid;
-  const on = scope ? ` on ${scope}` : '';
-  const started = overlap.startedAt ? `, started ${overlap.startedAt}` : '';
-  return `${what} (${doing}${on}) is ${overlap.state ?? DEFAULT_JOB_STATE}${started}`;
+  return t('errors.jobs.overlap.subject', {
+    what,
+    doing,
+    scope: scope ? t('errors.jobs.overlap.onScope', { scope }) : '',
+    state: overlap.state ?? DEFAULT_JOB_STATE,
+    started: overlap.startedAt
+      ? t('errors.jobs.overlap.startedAt', { timestamp: overlap.startedAt })
+      : '',
+  });
 }
 
 /** "started by <user> via <client> (config <name>)", or the older-renet fallback. */
 function originLabel(origin: JobOverlap['origin']): string {
-  if (!origin) return 'started by: unknown (older renet)';
-  const config = origin.config?.name ? ` (config ${origin.config.name})` : '';
-  return `started by ${origin.sshUser ?? UNKNOWN_ORIGIN} via ${origin.client ?? UNKNOWN_ORIGIN}${config}`;
+  if (!origin) return t('errors.jobs.overlap.originUnknown');
+  return t('errors.jobs.overlap.originStarted', {
+    user: origin.sshUser ?? UNKNOWN_ORIGIN,
+    client: origin.client ?? UNKNOWN_ORIGIN,
+    config: origin.config?.name
+      ? t('errors.jobs.overlap.originConfig', { name: origin.config.name })
+      : '',
+  });
 }
 
 /** Parse `renet job start --json` output into a validated handle. */

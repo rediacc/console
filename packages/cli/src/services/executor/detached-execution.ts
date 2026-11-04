@@ -18,6 +18,7 @@
  */
 
 import type { JobOverlap } from '@rediacc/shared/cli-contract/wire';
+import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { ERROR_CODES } from '../../types/errors.js';
 import { EXIT_CODES } from '../../types/index.js';
@@ -97,20 +98,18 @@ class JobOverlapRefusedError extends CliExitError {
   ) {
     const refusing = overlaps.filter((o) => o.action === 'refuse');
     const first = refusing[0];
-    const holder = first ? `job ${first.jobId ?? first.unit ?? UNKNOWN_JOB_ID}` : 'another job';
-    super(
-      ERROR_CODES.BUSY,
-      `Refused to start the job on '${machineName}': ${holder} holds the same scope.`,
-      {
-        retryable: true,
-        details: [
-          ...refusing.flatMap(overlapWarningLines),
-          ...(first?.jobId
-            ? [`  Or stop it: rdc job cancel ${first.jobId} -m ${machineName}`]
-            : []),
-        ],
-      }
-    );
+    const holder = first
+      ? t('errors.jobs.holderJob', { id: first.jobId ?? first.unit ?? UNKNOWN_JOB_ID })
+      : t('errors.jobs.holderOther');
+    super(ERROR_CODES.BUSY, t('errors.jobs.refused', { machine: machineName, holder }), {
+      retryable: true,
+      details: [
+        ...refusing.flatMap(overlapWarningLines),
+        ...(first?.jobId
+          ? [t('errors.jobs.orStopIt', { id: first.jobId, machine: machineName })]
+          : []),
+      ],
+    });
     this.name = 'JobOverlapRefusedError';
   }
 }

@@ -2864,6 +2864,24 @@
         }
       }
     },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Refused: {{subject}}, {{origin}}.",
+        "warningHead": "Warning: {{subject}}, {{origin}}.",
+        "seeIt": "  See it: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) is {{state}}{{started}}",
+        "whatJob": "job {{id}}",
+        "onScope": " on {{scope}}",
+        "startedAt": ", started {{timestamp}}",
+        "originUnknown": "started by: unknown (older renet)",
+        "originStarted": "started by {{user}} via {{client}}{{config}}",
+        "originConfig": " (config {{name}})"
+      },
+      "refused": "Refused to start the job on '{{machine}}': {{holder}} holds the same scope.",
+      "holderJob": "job {{id}}",
+      "holderOther": "another job",
+      "orStopIt": "  Or stop it: rdc job cancel {{id}} -m {{machine}}"
+    },
     "proxy": {
       "timeout": "The proxy executor at {{host}} did not answer within {{seconds}}s. Check that it is running, or raise REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Cannot reach the proxy executor at {{host}}: {{reason}}"
