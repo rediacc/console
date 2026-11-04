@@ -51,20 +51,27 @@ _apply_auth_mode() {
 # pre-seed storage/<user>/pgpass — without it, expanding the server node
 # pops a password prompt instead of connecting.
 _reset_pgadmin_data() {
-    local dir storage marker
+    local dir marker
     dir="$(dirname "${BASH_SOURCE[0]}")"
-    marker="$dir/pgadmin-data/.rediacc-auth-mode"
+    # The marker sits beside the data dir: that dir is 700 and owned by uid 5050.
+    marker="$dir/.rediacc-pgadmin-auth-mode"
     if [ "$(cat "$marker" 2>/dev/null)" = "$PGADMIN_SERVER_MODE" ]; then
         return 0
     fi
-    rm -rf "$dir/pgadmin-data"
-    storage="$dir/pgadmin-data/storage/admin_demo.dev"
-    mkdir -p "$storage"
-    printf 'db:5433:*:demo:demo\n' >"$storage/pgpass"
-    chmod 600 "$storage/pgpass"
+    # The tree belongs to uid 5050 once pgAdmin has run, so a one-shot root
+    # container rebuilds it: up() runs as the universal user and cannot rm or chown it.
+    mkdir -p "$dir/pgadmin-data"
+    renet compose -- run --rm --no-deps --user 0 --entrypoint sh pgadmin -c '
+        set -e
+        d=/var/lib/pgadmin
+        rm -rf "$d"/* "$d"/.[!.]*
+        mkdir -p "$d/storage/admin_demo.dev"
+        printf "db:5433:*:demo:demo\n" >"$d/storage/admin_demo.dev/pgpass"
+        chmod 600 "$d/storage/admin_demo.dev/pgpass"
+        chown -R 5050:5050 "$d"
+        chmod 700 "$d"
+    '
     printf '%s\n' "$PGADMIN_SERVER_MODE" >"$marker"
-    chown -R 5050:5050 "$dir/pgadmin-data"
-    chmod 700 "$dir/pgadmin-data"
 }
 
 up() {

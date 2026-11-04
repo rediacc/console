@@ -3,9 +3,8 @@
 # export CLOUDFLARE_TUNNEL_HOST="foo.bar.com"
 
 up() {
-  # https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes
-  sudo sysctl -w net.core.rmem_max=7500000
-  sudo sysctl -w net.core.wmem_max=7500000
+  # The machine needs net.core.rmem_max and net.core.wmem_max at 7500000 for QUIC
+  # (https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes); an administrator sets them, up() cannot.
 
   docker build -t rediacc/template-cloudflared web
   ./tunnel.sh up # Here because, takes 30 seconds at cloudflare side to propagate changes
