@@ -655,6 +655,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:test-cli',
     slow: true, // 38.3s measured
     gate: true,
+    needs: ['build:packages'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },
     heavy: true,
@@ -688,6 +689,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:test-www',
     run: 'npm run check:test-www',
     gate: true,
+    needs: ['build:packages'],
     leaves: ['vitest'],
     ci: {
       kind: 'step',

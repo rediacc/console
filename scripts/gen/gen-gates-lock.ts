@@ -105,6 +105,19 @@ export function describeDrift(committed: string, fresh: string): string[] {
   return out;
 }
 
+/**
+ * Vitest gates whose tests import `@rediacc/shared`, which resolves to `dist` and never to source. Without the edge, the kept ci:quick clone judges them against the previous run's build, which fails right after a contract change and, worse, passes against a contract the tree no longer has. CI builds first, so this keeps the local runner honest to it.
+ */
+const SHARED_DIST_VITEST_GATES = ['check:test-cli', 'check:test-shared', 'check:test-www'];
+
+/** The named gates with no `needs` edge on the build of the dist they read. */
+export function gatesReadingAnUnbuiltDist(gates: readonly GateSpec[]): string[] {
+  return SHARED_DIST_VITEST_GATES.filter((id) => {
+    const gate = gates.find((candidate) => candidate.id === id);
+    return gate === undefined || !gate.needs?.includes('build:packages');
+  });
+}
+
 function selftest(): number {
   let bad = 0;
   const ck = (label: string, ok: boolean, detail?: unknown): void => {
@@ -154,6 +167,22 @@ function selftest(): number {
       .trimStart()
       .startsWith('[')
   );
+  const needing = (id: string, needs?: string[]): GateSpec =>
+    ({ id, run: 'true', gate: true, needs }) as GateSpec;
+  const built = SHARED_DIST_VITEST_GATES.map((id) => needing(id, ['build:packages']));
+  ck(
+    'every dist-reading vitest gate with the build edge passes',
+    gatesReadingAnUnbuiltDist(built).length === 0
+  );
+  ck(
+    'CONTROL: a dist-reading vitest gate with no build edge is named',
+    gatesReadingAnUnbuiltDist([needing('check:test-cli'), ...built.slice(1)]).join() ===
+      'check:test-cli'
+  );
+  ck(
+    'CONTROL: a dist-reading vitest gate gone from the manifest is named, not passed',
+    gatesReadingAnUnbuiltDist(built.slice(1)).join() === 'check:test-cli'
+  );
   return bad;
 }
 
@@ -168,6 +197,14 @@ function main(argv: string[]): number {
   if (selftest() !== 0) {
     process.stderr.write(
       'CONTROL FAILED: gen-gates-lock cannot detect drift, so it refuses to rule on the lock.\n'
+    );
+    return 1;
+  }
+
+  const unbuilt = gatesReadingAnUnbuiltDist(GATES);
+  if (unbuilt.length > 0) {
+    process.stderr.write(
+      `✗ ${unbuilt.join(', ')} read @rediacc/shared from dist, so each needs \`needs: ['build:packages']\` in the manifest.\n`
     );
     return 1;
   }

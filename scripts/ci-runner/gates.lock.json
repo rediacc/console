@@ -665,6 +665,9 @@
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:test-cli",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "cores": {
       "min": 1,
       "max": "all"
@@ -706,6 +709,9 @@
     "id": "check:test-www",
     "run": "npm run check:test-www",
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "leaves": [
       "vitest"
     ],
