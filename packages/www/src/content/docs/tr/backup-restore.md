@@ -46,6 +46,8 @@ Tüm özellikler bu tek karardan doğar.
 Kota, **fiziksel olarak benzersiz depolanan bayt sayısı** üzerinden hesaplanır: bu, tekilleştirme sonrasında gerçekte tutulan miktardır, anlık görüntülerinizin mantıksal olarak temsil ettiği toplam değil. Yavaş değişen bir deponun otuz anlık görüntüsü, bir taneye yakın bir maliyete mal olur.
 `rdc backup usage`, depolanan baytları kotanıza karşı gösterir; bu, Community planında 10 GB'tan başlayan, abonelik başına bir sayıdır.
 
+Ücretsiz lisanslı bir makinenin barındırılan yedeği yoktur ve yedekleme komutları onu bir yükseltme mesajıyla reddeder. Bir hesap kaydedin (Community planı ücretsizdir), makinede bu hesaba giriş yapın; yedekleri barındırılan 10 GB depolama alanına dahil edilir.
+
 ### Anlık görüntülerin ihtiyaç duyduğu şey
 
 Anlık görüntü yükleme, hesap sunucusundan geçer; hesap sunucusu her çalıştırmayı deponun yüklü lisansına göre yetkilendirir ve makineye yazmak için kısa ömürlü bir izin verir. Bu yüzden bu yol, makinenin erişebildiği bir hesap sunucusuna ve lisanslı bir depoya ihtiyaç duyar. Bunlar olmadan, anlık görüntü sessizce atlanmaz, reddedilir; `rdc backup manifests`, `rdc backup usage` ve `rdc backup retention`'ın okuyacak hiçbir şeyi kalmaz.

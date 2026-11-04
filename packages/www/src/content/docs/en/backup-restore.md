@@ -74,6 +74,8 @@ snapshots of a repository that changes slowly cost close to one.
 `rdc backup usage` shows stored bytes against your quota, which is a
 per-subscription number starting at 10 GB on a Community plan.
 
+A machine on a Free License has no hosted backup, and the backup verbs refuse it with an upgrade message. Register an account (the Community plan is free), sign the machine in to it, and its backups count toward the 10 GB of hosted storage.
+
 ### What snapshots need
 
 Snapshot upload goes through the account server, which authorizes each run

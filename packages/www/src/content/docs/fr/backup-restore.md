@@ -45,6 +45,8 @@ C'est de cette seule décision que découlent les propriétés.
 
 Le quota est compté en **octets physiques uniques stockés** : ce qui est réellement conservé après déduplication, pas la somme de ce que vos instantanés représentent logiquement. Trente instantanés d'un dépôt qui change lentement coûtent presque comme un seul. `rdc backup usage` affiche les octets stockés par rapport à votre quota, un nombre par abonnement qui commence à 10 Go sur une offre Community.
 
+Une machine sous licence gratuite n'a pas de sauvegarde hébergée, et les verbes de sauvegarde la refusent avec un message de mise à niveau. Créez un compte (le forfait Community est gratuit), connectez-y la machine et ses sauvegardes compteront dans les 10 Go de stockage hébergé.
+
 ### Ce dont les instantanés ont besoin
 
 L'envoi d'un instantané passe par le serveur de compte, qui autorise chaque exécution par rapport à la licence installée du dépôt et remet à la machine une autorisation d'écriture de courte durée. Cette voie nécessite donc un serveur de compte que la machine peut atteindre et un dépôt sous licence. Sans eux, l'instantané est refusé plutôt que discrètement ignoré, et `rdc backup manifests`, `rdc backup usage` et `rdc backup retention` n'ont rien à lire.

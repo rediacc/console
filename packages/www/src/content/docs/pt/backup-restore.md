@@ -46,6 +46,8 @@ A imagem do repositório é cortada em células de tamanho fixo, sobre uma grelh
 A quota é contada em **bytes físicos únicos armazenados**: o que está efetivamente retido após a deduplicação, não a soma do que os seus snapshots representam logicamente. Trinta snapshots de um repositório que muda lentamente custam próximo de um.
 `rdc backup usage` mostra os bytes armazenados face à sua quota, que é um número por subscrição, começando em 10 GB num plano Community.
 
+Uma máquina com licença gratuita não tem cópia de segurança alojada, e os verbos de backup recusam-na com uma mensagem de atualização. Registe uma conta (o plano Community é gratuito), inicie sessão nela com a máquina e as respetivas cópias passam a contar para os 10 GB de armazenamento alojado.
+
 ### O que os snapshots precisam
 
 O envio de snapshots passa pelo servidor de conta, que autoriza cada execução contra a licença instalada do repositório e entrega à máquina uma autorização de curta duração para escrever. Portanto, este caminho precisa de um servidor de conta que a máquina consiga alcançar e de um repositório licenciado. Sem eles, o snapshot é recusado em vez de silenciosamente ignorado, e `rdc backup manifests`, `rdc backup usage` e `rdc backup retention` não têm nada para ler.

@@ -45,6 +45,8 @@ Sellest ühest otsusest tulenevad kõik omadused.
 
 Kvooti loetakse **füüsiliste unikaalsete salvestatud baitidena**: see, mida pärast dedupleerimist tegelikult hoitakse, mitte teie hetktõmmiste loogiline kogusumma. Kolmkümmend hetktõmmist repositooriumist, mis muutub aeglaselt, maksavad peaaegu sama palju kui üks. `rdc backup usage` näitab salvestatud baite sinu kvoodi vastu, mis on tellimusepõhine number, mis algab 10 GB-st Community plaanil.
 
+Tasuta litsentsiga masinal pole majutatud varukoopiat ja varundusverbid keelduvad temast uuendamissõnumiga. Registreeri konto (Community pakett on tasuta) ja logi masin sellesse sisse, siis arvestatakse tema varukoopiad 10 GB majutatud salvestusruumi.
+
 ### Mida hetktõmmised vajavad
 
 Hetktõmmise üleslaadimine käib läbi konto-serveri, mis autoriseerib iga käivituse repositooriumi paigaldatud litsentsi vastu ja annab masinale lühiajalise kirjutusõiguse. Seega vajab see tee konto-serverit, mille masin saab kätte, ja litsentseeritud repositooriumi. Ilma nendeta lükatakse hetktõmmis tagasi, selle asemel et vaikselt vahele jätta, ja `rdc backup manifests`, `rdc backup usage` ning `rdc backup retention` ei leia midagi lugeda.

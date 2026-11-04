@@ -45,6 +45,8 @@ Aus dieser einen Entscheidung ergeben sich die Eigenschaften.
 
 Das Kontingent wird in **physisch eindeutig gespeicherten Bytes** gezählt: was nach Deduplizierung tatsächlich gehalten wird, nicht die Summe dessen, was Ihre Snapshots logisch darstellen. Dreißig Snapshots eines Repositorys, das sich nur langsam ändert, kosten fast wie einer. `rdc backup usage` zeigt gespeicherte Bytes gegen Ihr Kontingent, eine Zahl pro Abonnement, die bei 10 GB im Community-Plan beginnt.
 
+Eine Maschine mit kostenloser Lizenz hat kein gehostetes Backup, und die Backup-Verben lehnen sie mit einem Upgrade-Hinweis ab. Registrieren Sie ein Konto (der Community-Plan ist kostenlos), melden Sie die Maschine darin an, dann zählen ihre Backups zu den 10 GB gehostetem Speicher.
+
 ### Was Snapshots brauchen
 
 Der Snapshot-Upload läuft über den Account-Server, der jeden Lauf gegen die installierte Lizenz des Repositorys autorisiert und der Maschine eine kurzlebige Berechtigung zum Schreiben aushändigt. Dieser Weg braucht also einen Account-Server, den die Maschine erreichen kann, und ein lizenziertes Repository. Ohne diese wird der Snapshot zurückgewiesen statt still übersprungen, und `rdc backup manifests`, `rdc backup usage` und `rdc backup retention` haben nichts zu lesen.

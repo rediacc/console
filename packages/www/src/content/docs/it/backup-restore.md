@@ -45,6 +45,8 @@ Da questa unica decisione derivano le proprietà.
 
 La quota è conteggiata in **byte fisici unici memorizzati**: ciò che è effettivamente trattenuto dopo la deduplicazione, non la somma di ciò che i tuoi snapshot rappresentano logicamente. Trenta snapshot di un repository che cambia lentamente costano quasi come uno solo. `rdc backup usage` mostra i byte memorizzati rispetto alla tua quota, un numero per abbonamento che parte da 10 GB nel piano Community.
 
+Una macchina con licenza gratuita non ha backup ospitati e i verbi di backup la rifiutano con un messaggio di upgrade. Registra un account (il piano Community è gratuito), collega la macchina e i suoi backup rientreranno nei 10 GB di storage ospitato.
+
 ### Cosa serve agli snapshot
 
 Il caricamento di uno snapshot passa attraverso il server dell'account, che autorizza ogni esecuzione rispetto alla licenza installata del repository e consegna alla macchina un permesso di scrittura di breve durata. Questo percorso richiede quindi un server dell'account raggiungibile dalla macchina e un repository con licenza. Senza di essi, lo snapshot viene rifiutato anziché saltato silenziosamente, e `rdc backup manifests`, `rdc backup usage` e `rdc backup retention` non hanno nulla da leggere.

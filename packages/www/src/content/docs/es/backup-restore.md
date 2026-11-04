@@ -45,6 +45,8 @@ De esa única decisión salen las propiedades.
 
 La cuota se cuenta en **bytes físicos únicos almacenados**: lo que realmente se conserva tras la deduplicación, no la suma de lo que tus snapshots representan lógicamente. Treinta snapshots de un repositorio que cambia lentamente cuestan casi como uno. `rdc backup usage` muestra los bytes almacenados frente a tu cuota, un número por suscripción que empieza en 10 GB en el plan Community.
 
+Una máquina con una licencia gratuita no tiene copia de seguridad alojada, y los verbos de backup la rechazan con un mensaje de actualización. Registre una cuenta (el plan Community es gratuito), inicie sesión en ella con la máquina y sus copias contarán para los 10 GB de almacenamiento alojado.
+
 ### Qué necesitan los snapshots
 
 La subida de un snapshot pasa por el servidor de cuenta, que autoriza cada ejecución contra la licencia instalada del repositorio y le entrega a la máquina un permiso de escritura de corta duración. Así que esta vía necesita un servidor de cuenta que la máquina pueda alcanzar y un repositorio con licencia. Sin ellos, el snapshot se rechaza en lugar de omitirse en silencio, y `rdc backup manifests`, `rdc backup usage` y `rdc backup retention` no tienen nada que leer.
