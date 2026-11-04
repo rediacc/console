@@ -959,6 +959,23 @@ def test_land_refuses_a_merge_commit(landing):
     assert "is a merge" in result.stderr
 
 
+def test_land_checks_merges_against_the_live_tip_not_the_checkout_head(landing):
+    repo, tree, _, _ = landing
+    base = spike.must(tree, "rev-parse", "HEAD~1")
+    side = spike.must(tree, "rev-parse", "HEAD")
+    spike.must(tree, "checkout", "-q", "--detach", base)
+    committed(tree, "side.txt")
+    spike.must(
+        tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m\n\nPR-TASK: 1f877343\n", side
+    )
+    merged = spike.must(tree, "rev-parse", "HEAD")
+    # The live branch holds the merge, and the checkout sits on main: the merge is landed, so it is not refused.
+    spike.must(repo.root, "reset", "-q", "--hard", merged)
+    spike.must(repo.root, "switch", "-q", "main")
+    result = run_land(repo.root, LAND_ID)
+    assert "is a merge" not in result.stderr
+
+
 def test_land_detached_submodule_gets_the_console_branch_first(landing, tmp_path):
     repo, _tree, sub_sha, _console_sha = landing
     sub = repo.root / SUB

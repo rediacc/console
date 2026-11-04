@@ -460,20 +460,19 @@ def _problems(tree, sha):
     return found
 
 
-def _merges(tree, live, key, lease_id):
+def _merges(tree, tip, key, lease_id):
     """A merge in the lease, refused by name. `git cherry` omits merges, so the landed reader never lists one, and picking the commits around it would silently lose whatever the merge resolved."""
     tips = [spike.out(tree, "rev-parse", "HEAD")]
     pin = spike.out(
         tree, "rev-parse", "--verify", "-q", "%s%s^{commit}" % (spike.PIN_SPACE, lease_id)
     )
     tips += [pin] if pin else []
-    tip = spike.out(live, "rev-parse", "HEAD")
-    listed = spike.out(tree, "rev-list", "--merges", *tips, "--not", tip)
+    listed = spike.must(tree, "rev-list", "--merges", *tips, "--not", tip)
     return ["%s %s: is a merge" % (key, sha[:12]) for sha in listed.splitlines()]
 
 
 def _repo_plan(root, record, key):
-    """`(lease tree, live checkout, shas oldest first)` for one repo of a lease, or None when the lease holds none there."""
+    """`(lease tree, live tip, shas oldest first)` for one repo of a lease, or None when the lease holds none there."""
     tree = pathlib.Path(record["path"]) if key == "." else pathlib.Path(record["path"]) / key
     live = root if key == "." else root / key
     if not tree.is_dir() or not live.is_dir():
@@ -487,7 +486,7 @@ def _repo_plan(root, record, key):
     if shas is None:
         message = "git could not say what %s holds that %s lacks" % (tree, tip[:12])
         raise LeaseRefusedError(message)
-    return tree, live, _ordered(tree, shas, tip)
+    return tree, tip, _ordered(tree, shas, tip)
 
 
 def land_plan(root, lease_id):
