@@ -1706,7 +1706,8 @@
           "description": "Kontrolli CLI konfiguratsiooni viitu (harud, HEAD) masinal tegelikult olemasolevate objektide vastu. Teatab rippuvatest viidetest (viide osutab puuduvale objektile) ja orvuks jäänud commit'idest (muutumatu commit, milleni ükski viide ei küüni). Ainult lugemiseks.",
           "descriptionShort": "Kontrolli konfiguratsiooni viitu masina objektide vastu",
           "orphanHeader": "{{count}} orvuks jäänud commit'i (ükski viide ei küüni nendeni):",
-          "orphanHint": "Taaskasuta orve käsuga: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Taaskasuta orve käsuga: rdc repo gc --apply -m <machine>",
+          "noReport": "Masina {{machine}} fsck-töö ei tagastanud objektiaruannet, seega midagi ei võrreldud."
         },
         "ownership": {
           "completed": "Omandiõigus uuendatud",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
         "started": "{{started}} kustutust {{total}}-st töötab jobidena; jälgi neid käsuga rdc job list.",
+        "partlyFailed": "{{failed}} commit'i {{total}}-st ei õnnestunud kustutada",
+        "noSummary": "gc-töö ei trükkinud kokkuvõtet, seega kogusummad pole teada. Käivita proovikäivitus uuesti, et näha, mis on järel.",
+        "datastorePathUnsupported": "Andmehoidla tee {{path}} sisaldab märki ',' või '@', mida töö loendiparameeter edastada ei saa. Nimeta tee ümber.",
         "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
         "deleted": "Commit {{commit}} kustutatud",
         "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",

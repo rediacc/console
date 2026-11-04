@@ -134,8 +134,8 @@ function parseGcLines(output: string | undefined): GcResultLine[] {
   return lines;
 }
 
-/** Print what the gc job did to each candidate, then the totals. A candidate renet skipped on re-check names the reason it gave. */
-function reportGcResults(output: string | undefined): void {
+/** Print what the gc job did to each candidate, then the totals; returns renet's summary, or undefined when it printed none. A candidate renet skipped on re-check names the reason it gave. */
+function reportGcResults(output: string | undefined): GcResultLine['gc_summary'] {
   let summary: GcResultLine['gc_summary'];
   for (const line of parseGcLines(output)) {
     const r = line.gc_result;
@@ -153,12 +153,21 @@ function reportGcResults(output: string | undefined): void {
       t('commands.repo.gc.applied', { deleted: summary.deleted, total: summary.total })
     );
   }
+  return summary;
 }
 
 bindStepHandler('reportRepoGc', ({ output }) => {
-  reportGcResults(output);
+  // The step runs on success only, where renet always ends with a summary; its absence means the output was not captured.
+  if (!reportGcResults(output)) outputService.warn(t('commands.repo.gc.noSummary'));
   return Promise.resolve();
 });
+
+/** The candidate list and the fsck datastore list are comma-joined, and a candidate is `guid@datastore`, so a path holding either character would be split wrongly by renet. */
+function assertListSafePath(path: string): void {
+  if (/[,@]/.test(path)) {
+    throw new ValidationError(t('commands.repo.gc.datastorePathUnsupported', { path }));
+  }
+}
 
 /** repo gc -m <machine> [--apply], delete unreachable immutable commits. */
 async function handleGc(options: {
@@ -194,6 +203,7 @@ async function handleGc(options: {
     const pairs: string[] = [];
     for (const c of candidates) {
       const datastore = await recordedDatastoreMount(c.name);
+      if (datastore) assertListSafePath(datastore);
       pairs.push(datastore ? `${c.config.repositoryGuid}@${datastore}` : c.config.repositoryGuid);
     }
     const outcome = await runCommandJob(
@@ -217,10 +227,12 @@ async function handleGc(options: {
     }
     if (!outcome.result.success) {
       // The step runs on success only; a failed delete still owes its per-candidate lines.
-      reportGcResults(outcome.result.stdout);
+      const summary = reportGcResults(outcome.result.stdout);
       renderLocalExecutionFailure(
         outcome.result,
-        t('commands.repo.gc.deleteFailed', { commit: `${candidates.length} commit(s)` })
+        summary && summary.failed > 0
+          ? t('commands.repo.gc.partlyFailed', { failed: summary.failed, total: summary.total })
+          : t('commands.repo.gc.deleteFailed', { commit: `${candidates.length} commit(s)` })
       );
     }
   } catch (error) {
@@ -246,24 +258,30 @@ function findDanglingRefs(
 }
 
 /** The objects the `repository_fsck` job found: every `{"fsck_present": {datastore, guids}}` line of its stdout, merged. A line that is not one (a log line) is skipped. */
-export function parseFsckPresent(output: string | undefined): Set<string> {
+export function parseFsckPresent(output: string | undefined): Set<string> | undefined {
   const present = new Set<string>();
+  let reported = false;
   for (const raw of (output ?? '').split('\n')) {
     try {
       const parsed = JSON.parse(raw) as { fsck_present?: { guids?: string[] } };
-      for (const guid of parsed.fsck_present?.guids ?? []) present.add(guid);
+      if (!parsed.fsck_present) continue;
+      reported = true;
+      for (const guid of parsed.fsck_present.guids ?? []) present.add(guid);
     } catch {
       // Not a result line.
     }
   }
-  return present;
+  return reported ? present : undefined;
 }
 
 /** Compare the config's refs with the objects the machine reported, print the drift, and exit 1 when there is any. */
 async function reportFsck(machine: string, output: string | undefined): Promise<void> {
   const repos = await configService.listRepositories();
   const present = new Map<string, { mounted: boolean }>();
-  for (const guid of parseFsckPresent(output)) present.set(guid, { mounted: false });
+  const reported = parseFsckPresent(output);
+  // No fsck_present line means the report never arrived (empty or truncated output), which is not the same as an empty machine.
+  if (!reported) throw new Error(t('commands.repo.admin.fsck.noReport', { machine }));
+  for (const guid of reported) present.set(guid, { mounted: false });
   const reachable = reachableCommits(repos);
 
   const dangling = findDanglingRefs(repos, present);
@@ -297,6 +315,7 @@ async function handleFsck(options: { machine: string; debug?: boolean }): Promis
     const repos = await configService.listRepositories();
     // The job lists the default datastore and every mount the config records, so a repo family on a named datastore never reads as missing (#74).
     const mounts = (await recordedMounts(repos)).filter((m): m is string => m !== undefined);
+    for (const mount of mounts) assertListSafePath(mount);
     const outcome = await runCommandJob(
       'repo admin fsck',
       {

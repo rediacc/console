@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2433,
-    "sourceCommit": "57ac7315b0c1130c462c0474aee225d457c704a6"
+    "keyCount": 2437,
+    "sourceCommit": "5e2cfa4f2ed037b26b0ff59966a37511a4fbcdb8"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1292,6 +1292,7 @@
     "commands.repo.admin.fsck.danglingHeader": "41aef4e0",
     "commands.repo.admin.fsck.description": "1d747435",
     "commands.repo.admin.fsck.descriptionShort": "1f033a8f",
+    "commands.repo.admin.fsck.noReport": "113e1aa1",
     "commands.repo.admin.fsck.orphanHeader": "def4954e",
     "commands.repo.admin.fsck.orphanHint": "2c6e2cfd",
     "commands.repo.admin.ownership.completed": "cb3c7a24",
@@ -1475,13 +1476,16 @@
     "commands.repo.fork.upOption": "6a51deef",
     "commands.repo.gc.applied": "fde1f188",
     "commands.repo.gc.applyOption": "88851a29",
+    "commands.repo.gc.datastorePathUnsupported": "3c63cc3b",
     "commands.repo.gc.deleted": "67774e45",
     "commands.repo.gc.deleteFailed": "c44d870e",
     "commands.repo.gc.description": "834f0b2f",
     "commands.repo.gc.descriptionShort": "64f95d4c",
     "commands.repo.gc.dryRunHeader": "e037a193",
     "commands.repo.gc.dryRunHint": "925b6e53",
+    "commands.repo.gc.noSummary": "79497635",
     "commands.repo.gc.nothing": "a4facf3d",
+    "commands.repo.gc.partlyFailed": "9d873576",
     "commands.repo.gc.started": "3f905c24",
     "commands.repo.gpu.description": "6c86e5a0",
     "commands.repo.gpu.descriptionShort": "edddf82f",

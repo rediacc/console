@@ -1706,7 +1706,8 @@
           "description": "Convalida i ref della configurazione della CLI (rami, HEAD) rispetto agli oggetti effettivamente presenti su una macchina. Segnala i ref pendenti (un ref che punta a un oggetto mancante) e i commit orfani (un commit immutabile che nessun ref raggiunge). Sola lettura.",
           "descriptionShort": "Verifica i ref di configurazione rispetto agli oggetti della macchina",
           "orphanHeader": "{{count}} commit orfani (nessun ref li raggiunge):",
-          "orphanHint": "Recupera gli orfani con: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Recupera gli orfani con: rdc repo gc --apply -m <machine>",
+          "noReport": "Il job fsck su {{machine}} non ha restituito alcun rapporto sugli oggetti, quindi non è stato confrontato nulla."
         },
         "ownership": {
           "completed": "Proprietà aggiornata",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Garbage collection completato: {{deleted}}/{{total}} commit eliminati",
         "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; seguile con rdc job list.",
+        "partlyFailed": "{{failed}} commit su {{total}} non sono stati eliminati",
+        "noSummary": "Il job gc non ha stampato alcun riepilogo, quindi i totali non sono noti. Ripeti la simulazione per vedere cosa resta.",
+        "datastorePathUnsupported": "Il percorso del datastore {{path}} contiene ',' o '@', che il parametro elenco del job non può trasportare. Rinomina il percorso.",
         "applyOption": "Elimina effettivamente i commit non raggiungibili (per impostazione predefinita è un'anteprima dry-run)",
         "deleted": "Commit {{commit}} eliminato",
         "deleteFailed": "Impossibile eliminare il commit {{commit}}",

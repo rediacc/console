@@ -1706,7 +1706,8 @@
           "description": "CLI 設定の ref（ブランチ、HEAD）を、マシン上に実際に存在するオブジェクトと照合して検証します。ダングリング ref（存在しないオブジェクトを指す ref）と孤立コミット（どの ref からも到達できない不変コミット）を報告します。読み取り専用です。",
           "descriptionShort": "設定の ref をマシン上のオブジェクトと照合する",
           "orphanHeader": "孤立コミット {{count}} 件（どの ref からも到達できません）:",
-          "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>"
+          "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>",
+          "noReport": "{{machine}} の fsck ジョブからオブジェクトのレポートが返らなかったため、比較は行われていません。"
         },
         "ownership": {
           "completed": "所有権を更新しました",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "ガベージコレクション完了: {{deleted}}/{{total}} 件のコミットを削除しました",
         "started": "{{total}} 件中 {{started}} 件の削除がジョブとして実行中です。rdc job list で確認できます。",
+        "partlyFailed": "{{total}} 件のコミットのうち {{failed}} 件を削除できませんでした",
+        "noSummary": "gc ジョブが要約を出力しなかったため、合計は不明です。ドライランをもう一度実行して、残りを確認してください。",
+        "datastorePathUnsupported": "データストアのパス {{path}} に「,」または「@」が含まれており、ジョブのリストパラメーターでは扱えません。パスの名前を変更してください。",
         "applyOption": "到達不能なコミットを実際に削除する（既定はドライランのプレビュー）",
         "deleted": "コミット {{commit}} を削除しました",
         "deleteFailed": "コミット {{commit}} の削除に失敗しました",

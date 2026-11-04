@@ -1706,7 +1706,8 @@
           "description": "Valide les références (branches, HEAD) de la configuration CLI par rapport aux objets réellement présents sur une machine. Signale les références cassées (une référence pointant vers un objet manquant) et les commits orphelins (un commit immuable qu'aucune référence n'atteint). Lecture seule.",
           "descriptionShort": "Vérifier les références de config face aux objets de la machine",
           "orphanHeader": "{{count}} commit(s) orphelin(s) (aucune référence ne les atteint) :",
-          "orphanHint": "Récupérer les orphelins avec : rdc repo gc --apply -m <machine>"
+          "orphanHint": "Récupérer les orphelins avec : rdc repo gc --apply -m <machine>",
+          "noReport": "Le job fsck sur {{machine}} n'a renvoyé aucun rapport d'objets, rien n'a donc été comparé."
         },
         "ownership": {
           "completed": "Propriété mise à jour",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Nettoyage terminé : {{deleted}}/{{total}} commit(s) supprimé(s)",
         "started": "{{started}} suppression(s) sur {{total}} s'exécutent comme jobs ; suivez-les avec rdc job list.",
+        "partlyFailed": "{{failed}} commit(s) sur {{total}} n'ont pas pu être supprimés",
+        "noSummary": "Le job gc n'a imprimé aucun résumé, les totaux sont donc inconnus. Relancez la simulation pour voir ce qui reste.",
+        "datastorePathUnsupported": "Le chemin du datastore {{path}} contient ',' ou '@', que le paramètre de liste du job ne peut pas transporter. Renommez le chemin.",
         "applyOption": "Supprimer réellement les commits inaccessibles (aperçu à blanc par défaut)",
         "deleted": "Commit {{commit}} supprimé",
         "deleteFailed": "Échec de la suppression du commit {{commit}}",

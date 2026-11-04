@@ -1320,7 +1320,10 @@
         "deleted": "Deleted commit {{commit}}",
         "deleteFailed": "Failed to delete commit {{commit}}",
         "applied": "Garbage collection complete: {{deleted}}/{{total}} commit(s) deleted",
-        "started": "{{started}} of {{total}} deletion(s) are running as jobs; follow them with rdc job list."
+        "started": "{{started}} of {{total}} deletion(s) are running as jobs; follow them with rdc job list.",
+        "partlyFailed": "{{failed}} of {{total}} commit(s) could not be deleted",
+        "noSummary": "The gc job printed no summary, so the totals are unknown. Run the dry run again to see what is left.",
+        "datastorePathUnsupported": "The datastore path {{path}} contains ',' or '@', which the job's list parameter cannot carry. Rename the path."
       },
       "fork": {
         "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
@@ -1662,7 +1665,8 @@
           "clean": "No drift on {{machine}}: every ref resolves and no orphan commits found",
           "danglingHeader": "{{count}} dangling ref(s) (point at a missing object):",
           "orphanHeader": "{{count}} orphan commit(s) (no ref reaches them):",
-          "orphanHint": "Reclaim orphans with: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Reclaim orphans with: rdc repo gc --apply -m <machine>",
+          "noReport": "The fsck job on {{machine}} returned no object report, so nothing was compared."
         },
         "ownership": {
           "description": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",

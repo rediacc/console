@@ -1706,7 +1706,8 @@
           "description": "Validiert die Referenzen der CLI-Konfiguration (Branches, HEAD) gegen die tatsächlich auf einer Maschine vorhandenen Objekte. Meldet hängende Referenzen (eine Referenz, die auf ein fehlendes Objekt zeigt) und verwaiste Commits (ein unveränderlicher Commit, den keine Referenz erreicht). Schreibgeschützt.",
           "descriptionShort": "Konfigurationsreferenzen gegen Maschinenobjekte prüfen",
           "orphanHeader": "{{count}} verwaiste(r) Commit(s) (keine Referenz erreicht sie):",
-          "orphanHint": "Verwaiste Commits zurückgewinnen mit: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Verwaiste Commits zurückgewinnen mit: rdc repo gc --apply -m <machine>",
+          "noReport": "Der fsck-Job auf {{machine}} hat keinen Objektbericht geliefert, daher wurde nichts verglichen."
         },
         "ownership": {
           "completed": "Besitz aktualisiert",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Garbage Collection abgeschlossen: {{deleted}}/{{total}} Commit(s) gelöscht",
         "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; verfolgen lassen sie sich mit rdc job list.",
+        "partlyFailed": "{{failed}} von {{total}} Commit(s) konnten nicht gelöscht werden",
+        "noSummary": "Der gc-Job hat keine Zusammenfassung ausgegeben, die Summen sind also unbekannt. Ein erneuter Probelauf zeigt, was übrig ist.",
+        "datastorePathUnsupported": "Der Datastore-Pfad {{path}} enthält ',' oder '@', was der Listenparameter des Jobs nicht übertragen kann. Benennen Sie den Pfad um.",
         "applyOption": "Die unerreichbaren Commits tatsächlich löschen (Standard ist eine Probelauf-Vorschau)",
         "deleted": "Commit {{commit}} gelöscht",
         "deleteFailed": "Commit {{commit}} konnte nicht gelöscht werden",

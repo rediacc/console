@@ -1706,7 +1706,8 @@
           "description": "Valida las referencias de la configuración del CLI (ramas, HEAD) frente a los objetos realmente presentes en una máquina. Informa de referencias colgantes (una referencia que apunta a un objeto inexistente) y commits huérfanos (un commit inmutable que ninguna referencia alcanza). Solo lectura.",
           "descriptionShort": "Comprueba las referencias de configuración frente a los objetos de la máquina",
           "orphanHeader": "{{count}} commit(s) huérfano(s) (ninguna referencia los alcanza):",
-          "orphanHint": "Recupera los huérfanos con: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Recupera los huérfanos con: rdc repo gc --apply -m <machine>",
+          "noReport": "El trabajo de fsck en {{machine}} no devolvió ningún informe de objetos, así que no se comparó nada."
         },
         "ownership": {
           "completed": "Propiedad actualizada",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Recolección de basura completada: {{deleted}}/{{total}} commit(s) eliminado(s)",
         "started": "{{started}} de {{total}} eliminaciones se ejecutan como trabajos; se siguen con rdc job list.",
+        "partlyFailed": "No se pudieron eliminar {{failed}} de {{total}} commit(s)",
+        "noSummary": "El trabajo de gc no imprimió ningún resumen, así que se desconocen los totales. Repite la simulación para ver qué queda.",
+        "datastorePathUnsupported": "La ruta del datastore {{path}} contiene ',' o '@', que el parámetro de lista del trabajo no puede transportar. Cambia el nombre de la ruta.",
         "applyOption": "Eliminar realmente los commits inaccesibles (por defecto es una vista previa en modo simulación)",
         "deleted": "Commit {{commit}} eliminado",
         "deleteFailed": "No se pudo eliminar el commit {{commit}}",

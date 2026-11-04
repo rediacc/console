@@ -119,6 +119,7 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 
 const { configService } = await import('../../services/config/config-resources.js');
 const { outputService } = await import('../../services/core/output.js');
+const { renderLocalExecutionFailure } = await import('../../utils/local-execution-failures.js');
 const { setCommandJobDeps } = await import('../../services/jobs/command-job.js');
 const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 const { resolveStepHandler } = await import('../../services/jobs/steps.js');
@@ -640,6 +641,64 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
       expect(vi.mocked(outputService.error)).toHaveBeenCalledWith(
         expect.stringContaining('fsck.danglingHeader')
       );
+    });
+
+    it('the report step fails when the output carries no fsck_present line, instead of reading every ref as missing', async () => {
+      mockListRepositories.mockResolvedValue([
+        { name: 'c1', config: { repositoryGuid: 'g-c1', immutable: true, headCommit: 'g-gone' } },
+      ]);
+      const handler = await resolveStepHandler('reportRepoFsck');
+      for (const output of ['', 'a log line\n', '{"other":1}\n']) {
+        await expect(
+          handler({ jobId: 'job-1', machine: 'm1', params: {}, state: 'succeeded', output })
+        ).rejects.toThrow('fsck.noReport');
+      }
+      expect(vi.mocked(outputService.error)).not.toHaveBeenCalled();
+    });
+
+    it('a failed gc job still reports its per-candidate lines and names the failed count from the summary', async () => {
+      answer = {
+        ...FAILED,
+        stdout:
+          '{"gc_result":{"guid":"g-c1","datastore":"/d","status":"failed"}}\n{"gc_summary":{"total":3,"deleted":2,"skipped":0,"failed":1}}\n',
+      };
+      await runVerb(maintenance, 'gc', '-m', 'm1', '--apply');
+
+      expect(vi.mocked(outputService.error)).toHaveBeenCalledWith(
+        expect.stringContaining('gc.deleteFailed')
+      );
+      expect(vi.mocked(renderLocalExecutionFailure)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining('gc.partlyFailed:{"failed":1,"total":3}')
+      );
+    });
+
+    it('control: a failed gc job with no summary keeps the all-candidates message', async () => {
+      answer = FAILED;
+      await runVerb(maintenance, 'gc', '-m', 'm1', '--apply');
+
+      expect(vi.mocked(renderLocalExecutionFailure)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining('gc.deleteFailed')
+      );
+    });
+
+    it('the gc step warns when a succeeded job printed no summary, and stays quiet with one', async () => {
+      const handler = await resolveStepHandler('reportRepoGc');
+      await handler({ jobId: 'job-1', machine: 'm1', params: {}, state: 'succeeded', output: '' });
+      expect(vi.mocked(outputService.warn)).toHaveBeenCalledWith(
+        expect.stringContaining('gc.noSummary')
+      );
+
+      vi.mocked(outputService.warn).mockClear();
+      await handler({
+        jobId: 'job-1',
+        machine: 'm1',
+        params: {},
+        state: 'succeeded',
+        output: '{"gc_summary":{"total":1,"deleted":1,"skipped":0,"failed":0}}\n',
+      });
+      expect(vi.mocked(outputService.warn)).not.toHaveBeenCalled();
     });
   });
 

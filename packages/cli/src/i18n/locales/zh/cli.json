@@ -1706,7 +1706,8 @@
           "description": "对照机器上实际存在的对象校验 CLI 配置引用（分支、HEAD）。报告悬空引用（指向缺失对象的引用）和孤立提交（没有任何引用可达的不可变提交）。只读操作。",
           "descriptionShort": "对照机器对象检查配置引用",
           "orphanHeader": "{{count}} 个孤立提交（无引用可达）：",
-          "orphanHint": "使用以下命令回收孤立提交：rdc repo gc --apply -m <machine>"
+          "orphanHint": "使用以下命令回收孤立提交：rdc repo gc --apply -m <machine>",
+          "noReport": "{{machine}} 上的 fsck 任务没有返回对象报告，因此没有进行任何比较。"
         },
         "ownership": {
           "completed": "所有权已更新",
@@ -1954,7 +1955,10 @@
         "dryRunHeader": "将删除 {{count}} 个不可达提交：",
         "dryRunHint": "使用 --apply 重新运行以删除它们。",
         "nothing": "{{machine}} 上无可回收对象：所有提交均可达",
-        "started": "{{total}} 项删除中有 {{started}} 项正在作为作业运行；可用 rdc job list 跟踪。"
+        "started": "{{total}} 项删除中有 {{started}} 项正在作为作业运行；可用 rdc job list 跟踪。",
+        "partlyFailed": "{{total}} 个提交中有 {{failed}} 个未能删除",
+        "noSummary": "gc 任务没有输出汇总，因此总数未知。请再运行一次试运行，查看还剩下什么。",
+        "datastorePathUnsupported": "数据存储路径 {{path}} 含有“,”或“@”，任务的列表参数无法承载。请重命名该路径。"
       },
       "list": {
         "completed": "列表获取完成",

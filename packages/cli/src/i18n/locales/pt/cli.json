@@ -1706,7 +1706,8 @@
           "description": "Valida as referências da configuração do CLI (branches, HEAD) contra os objetos realmente presentes numa máquina. Reporta referências pendentes (uma referência apontando para um objeto ausente) e commits órfãos (um commit imutável que nenhuma referência alcança). Somente leitura.",
           "descriptionShort": "Verificar referências da configuração contra objetos da máquina",
           "orphanHeader": "{{count}} commit(s) órfão(s) (nenhuma referência os alcança):",
-          "orphanHint": "Recupere os órfãos com: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Recupere os órfãos com: rdc repo gc --apply -m <machine>",
+          "noReport": "O job de fsck em {{machine}} não devolveu nenhum relatório de objetos, então nada foi comparado."
         },
         "ownership": {
           "completed": "Propriedade actualizada",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Coleta de lixo concluída: {{deleted}}/{{total}} commit(s) excluído(s)",
         "started": "{{started}} de {{total}} eliminações estão a executar como jobs; acompanhe-os com rdc job list.",
+        "partlyFailed": "{{failed}} de {{total}} commit(s) não puderam ser excluídos",
+        "noSummary": "O job de gc não imprimiu nenhum resumo, então os totais são desconhecidos. Execute a simulação de novo para ver o que sobrou.",
+        "datastorePathUnsupported": "O caminho do datastore {{path}} contém ',' ou '@', que o parâmetro de lista do job não consegue transportar. Renomeie o caminho.",
         "applyOption": "Excluir de fato os commits inalcançáveis (o padrão é uma previsão dry-run)",
         "deleted": "Commit {{commit}} excluído",
         "deleteFailed": "Falha ao excluir o commit {{commit}}",

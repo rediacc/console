@@ -1706,7 +1706,8 @@
           "description": "CLI yapılandırma ref'lerini (dallar, HEAD) bir makinede gerçekten mevcut olan nesnelere karşı doğrula. Sarkan ref'leri (eksik bir nesneyi gösteren bir ref) ve yetim commit'leri (hiçbir ref'in erişemediği değişmez bir commit) raporlar. Salt okunur.",
           "descriptionShort": "Yapılandırma ref'lerini makine nesnelerine karşı kontrol et",
           "orphanHeader": "{{count}} yetim commit (hiçbir ref bunlara erişmiyor):",
-          "orphanHint": "Yetimleri şununla geri kazanın: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Yetimleri şununla geri kazanın: rdc repo gc --apply -m <machine>",
+          "noReport": "{{machine}} üzerindeki fsck işi nesne raporu döndürmedi, bu yüzden hiçbir şey karşılaştırılmadı."
         },
         "ownership": {
           "completed": "Sahiplik güncellendi",
@@ -1947,6 +1948,9 @@
       "gc": {
         "applied": "Çöp toplama tamamlandı: {{deleted}}/{{total}} commit silindi",
         "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; bunları takip etmek için: rdc job list.",
+        "partlyFailed": "{{total}} commit'ten {{failed}} tanesi silinemedi",
+        "noSummary": "gc işi özet yazdırmadı, bu yüzden toplamlar bilinmiyor. Geriye ne kaldığını görmek için deneme çalıştırmasını yeniden yapın.",
+        "datastorePathUnsupported": "{{path}} veri deposu yolu, işin liste parametresinin taşıyamadığı ',' veya '@' karakterini içeriyor. Yolu yeniden adlandırın.",
         "applyOption": "Erişilemez commit'leri gerçekten sil (varsayılan, deneme çalıştırması önizlemesidir)",
         "deleted": "{{commit}} commit'i silindi",
         "deleteFailed": "{{commit}} commit'i silinemedi",
