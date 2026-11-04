@@ -1238,6 +1238,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_fsck',
   'repository_gc',
   'repository_gpu_grant',
   'repository_gpu_revoke',

@@ -9358,6 +9358,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
         }
       ],
       "positionals": [],

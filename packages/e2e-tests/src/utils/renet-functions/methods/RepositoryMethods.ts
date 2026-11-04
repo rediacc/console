@@ -149,6 +149,13 @@ export class RepositoryMethods {
     });
   }
 
+  repositoryFsck(datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_fsck',
+      datastorePath,
+    });
+  }
+
   repositoryResize(
     name: string,
     newSize: string,

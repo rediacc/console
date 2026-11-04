@@ -597,13 +597,49 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
       );
     });
 
-    it('fsck is reads only: attached probes, no ticketed job', async () => {
+    it('fsck is one repository_fsck job, with the report as a bound step', async () => {
+      answer = {
+        ...FINISHED,
+        stdout: '{"fsck_present":{"datastore":"/d","guids":["g-c1"]}}\n',
+      };
       await runVerb(maintenance, 'admin', 'fsck', '-m', 'm1');
 
-      expect(executed).toEqual([]);
-      expect(plain.calls.map((c) => [c.functionName, c.probe])).toEqual([
-        ['repository_list', true],
+      expect(plain.calls).toEqual([]);
+      expect(executed.map((o) => [o.functionName, o.params])).toEqual([['repository_fsck', {}]]);
+      expect(stepNames(executed[0])).toEqual(['reportRepoFsck']);
+    });
+
+    it('the report step names an orphan commit present on the machine that no ref reaches', async () => {
+      const handler = await resolveStepHandler('reportRepoFsck');
+      await handler({
+        jobId: 'job-1',
+        machine: 'm1',
+        params: {},
+        state: 'succeeded',
+        output: '{"fsck_present":{"datastore":"/d","guids":["g-c1"]}}\n',
+      });
+
+      expect(vi.mocked(outputService.info)).toHaveBeenCalledWith(
+        expect.stringContaining('fsck.orphanHeader')
+      );
+    });
+
+    it('control: the report step names a ref whose object the machine does not hold', async () => {
+      mockListRepositories.mockResolvedValue([
+        { name: 'c1', config: { repositoryGuid: 'g-c1', immutable: true, headCommit: 'g-gone' } },
       ]);
+      const handler = await resolveStepHandler('reportRepoFsck');
+      await handler({
+        jobId: 'job-1',
+        machine: 'm1',
+        params: {},
+        state: 'succeeded',
+        output: '{"fsck_present":{"datastore":"/d","guids":[]}}\n',
+      });
+
+      expect(vi.mocked(outputService.error)).toHaveBeenCalledWith(
+        expect.stringContaining('fsck.danglingHeader')
+      );
     });
   });
 

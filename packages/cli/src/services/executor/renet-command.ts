@@ -272,6 +272,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_down',
   'repository_down_all',
   'repository_exec',
+  'repository_fsck',
   'repository_gc',
   'repository_gpu_grant',
   'repository_gpu_revoke',

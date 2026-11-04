@@ -124,11 +124,21 @@ describe('repo gc / fsck enumerate every recorded datastore (#74)', () => {
     expect(gc?.[0].params.candidates).toBe(`${ORPHAN_GUID}@${NAMED_MOUNT}`);
   });
 
-  it('enumerates only the default when nothing is placed on a named datastore', async () => {
+  it('fsck is one repository_fsck job naming each recorded mount, and lists nothing else', async () => {
+    await run(['admin', 'fsck', '-m', 'm1']);
+
+    const fsck = mockExecute.mock.calls.filter((c) => c[0].functionName === 'repository_fsck');
+    expect(fsck).toHaveLength(1);
+    expect(fsck[0][0].params).toEqual({ datastores: NAMED_MOUNT });
+    expect(listedDatastores()).toEqual([]);
+  });
+
+  it('fsck names no extra datastore when nothing is placed on a named one', async () => {
     mockGetCurrent.mockResolvedValue({ resources: { repositories: { app: {} } } });
 
     await run(['admin', 'fsck', '-m', 'm1']);
 
-    expect(listedDatastores()).toEqual([undefined]);
+    const fsck = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_fsck');
+    expect(fsck?.[0].params).toEqual({});
   });
 });

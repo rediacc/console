@@ -17,8 +17,8 @@ import { parseRepositoryListOutput } from './repo-list-parser.js';
  *  - repo gc:   reachability garbage-collection of unreachable immutable commits
  *  - repo fsck: validate config refs (branches/head) against machine objects
  *
- * Both read the machine with repository_list; gc --apply deletes through one
- * repository_gc job. The machine is the object store; the CLI
+ * gc reads the machine with repository_list and --apply deletes through one
+ * repository_gc job; fsck reads it with one repository_fsck job. The machine is the object store; the CLI
  * config is the ref store (branches/head/headCommit + commitParent lineage).
  */
 
@@ -245,35 +245,77 @@ function findDanglingRefs(
   return dangling;
 }
 
-/** repo fsck -m <machine>, report config-ref vs machine-object drift. */
-async function handleFsck(options: { machine: string }): Promise<void> {
+/** The objects the `repository_fsck` job found: every `{"fsck_present": {datastore, guids}}` line of its stdout, merged. A line that is not one (a log line) is skipped. */
+export function parseFsckPresent(output: string | undefined): Set<string> {
+  const present = new Set<string>();
+  for (const raw of (output ?? '').split('\n')) {
+    try {
+      const parsed = JSON.parse(raw) as { fsck_present?: { guids?: string[] } };
+      for (const guid of parsed.fsck_present?.guids ?? []) present.add(guid);
+    } catch {
+      // Not a result line.
+    }
+  }
+  return present;
+}
+
+/** Compare the config's refs with the objects the machine reported, print the drift, and exit 1 when there is any. */
+async function reportFsck(machine: string, output: string | undefined): Promise<void> {
+  const repos = await configService.listRepositories();
+  const present = new Map<string, { mounted: boolean }>();
+  for (const guid of parseFsckPresent(output)) present.set(guid, { mounted: false });
+  const reachable = reachableCommits(repos);
+
+  const dangling = findDanglingRefs(repos, present);
+  // Orphan objects: an immutable commit present on the machine that no ref reaches.
+  const orphans = repos
+    .filter((r) => r.config.immutable && present.has(r.config.repositoryGuid))
+    .filter((r) => !reachable.has(r.config.repositoryGuid))
+    .map((r) => r.config.repositoryGuid);
+
+  if (dangling.length === 0 && orphans.length === 0) {
+    outputService.success(t('commands.repo.admin.fsck.clean', { machine }));
+    return;
+  }
+  if (dangling.length > 0) {
+    outputService.error(t('commands.repo.admin.fsck.danglingHeader', { count: dangling.length }));
+    for (const d of dangling) outputService.info(`  ${d.ref} -> ${d.guid.slice(0, 12)} (missing)`);
+  }
+  if (orphans.length > 0) {
+    outputService.info(t('commands.repo.admin.fsck.orphanHeader', { count: orphans.length }));
+    for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
+    outputService.info(t('commands.repo.admin.fsck.orphanHint'));
+  }
+  setExitCode(1);
+}
+
+bindStepHandler('reportRepoFsck', ({ machine, output }) => reportFsck(machine, output));
+
+/** repo fsck -m <machine>, report config-ref vs machine-object drift from one `repository_fsck` job. */
+async function handleFsck(options: { machine: string; debug?: boolean }): Promise<void> {
   try {
     const repos = await configService.listRepositories();
-    const present = await machineObjects(options.machine, repos);
-    const reachable = reachableCommits(repos);
-
-    const dangling = findDanglingRefs(repos, present);
-    // Orphan objects: an immutable commit present on the machine that no ref reaches.
-    const orphans = repos
-      .filter((r) => r.config.immutable && present.has(r.config.repositoryGuid))
-      .filter((r) => !reachable.has(r.config.repositoryGuid))
-      .map((r) => r.config.repositoryGuid);
-
-    if (dangling.length === 0 && orphans.length === 0) {
-      outputService.success(t('commands.repo.admin.fsck.clean', { machine: options.machine }));
+    // The job lists the default datastore and every mount the config records, so a repo family on a named datastore never reads as missing (#74).
+    const mounts = (await recordedMounts(repos)).filter((m): m is string => m !== undefined);
+    const outcome = await runCommandJob(
+      'repo admin fsck',
+      {
+        functionName: 'repository_fsck',
+        machineName: options.machine,
+        params: mounts.length > 0 ? { datastores: mounts.join(',') } : {},
+        debug: options.debug,
+        captureOutput: true,
+      },
+      [planStep('reportRepoFsck', { machine: options.machine })]
+    );
+    if (outcome.kind === 'pending') {
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
       return;
     }
-    if (dangling.length > 0) {
-      outputService.error(t('commands.repo.admin.fsck.danglingHeader', { count: dangling.length }));
-      for (const d of dangling)
-        outputService.info(`  ${d.ref} -> ${d.guid.slice(0, 12)} (missing)`);
+    if (!outcome.result.success) {
+      renderLocalExecutionFailure(outcome.result, 'repository_fsck');
     }
-    if (orphans.length > 0) {
-      outputService.info(t('commands.repo.admin.fsck.orphanHeader', { count: orphans.length }));
-      for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
-      outputService.info(t('commands.repo.admin.fsck.orphanHint'));
-    }
-    setExitCode(1);
   } catch (error) {
     handleError(error);
   }
@@ -299,7 +341,8 @@ export function registerRepoMaintenanceCommands(repo: Command, admin: Command): 
     .summary(t('commands.repo.admin.fsck.descriptionShort'))
     .description(t('commands.repo.admin.fsck.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .action((options: { machine: string }) => {
+    .option('--debug', t('options.debug'))
+    .action((options: { machine: string; debug?: boolean }) => {
       if (!options.machine) throw new ValidationError(t('errors.machineRequiredLocal'));
       return handleFsck(options);
     });

@@ -164,6 +164,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "repository_exec": { tier: "operate", pending: false },
   "repository_expand": { tier: "full", pending: false },
   "repository_fork": { tier: "create", pending: false },
+  "repository_fsck": { tier: "none", pending: false },
   "repository_gc": { tier: "none", pending: false },
   "repository_gpu_grant": { tier: "operate", pending: false },
   "repository_gpu_revoke": { tier: "none", pending: false },

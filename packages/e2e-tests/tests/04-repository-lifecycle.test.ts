@@ -281,6 +281,14 @@ test.describe
       expect(runner.isSuccess(result)).toBe(true);
     });
 
+    test('2b. fsck: the repository object is listed under the datastore', async () => {
+      const result = await runner.repositoryFsck(datastorePath);
+      expect(runner.isSuccess(result)).toBe(true);
+      expect(result.stdout, 'repository_fsck did not list the created repository').toContain(
+        repositoryName
+      );
+    });
+
     test('3. info: get repository details', async () => {
       const result = await runner.repositoryInfo(repositoryName, datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
