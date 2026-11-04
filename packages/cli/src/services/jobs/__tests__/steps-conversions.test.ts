@@ -27,11 +27,9 @@ const AWAITING_BIND: Record<string, string> = {
   renderRepoLog: 'commands/repo-branching.ts',
   printRepoStatus: 'commands/repo.ts',
   reconcileConfigState: 'commands/config.ts',
-  renderMachineHealth: 'commands/machine/health.ts',
   ensureMachineDns: 'services/provision/infra-provision.ts',
   cleanupSshArtifacts: 'commands/machine/prune.ts',
   renderPruneOutcome: 'commands/machine/prune.ts',
-  renderMachineStatus: 'commands/machine/status.ts',
   renderSubscriptionRefresh: 'commands/subscription-actions.ts',
   renderSubscriptionStatus: 'commands/subscription-actions.ts',
 };

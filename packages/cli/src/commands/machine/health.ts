@@ -14,11 +14,13 @@ import { failedVerifyRepos, formatSpan } from '../../services/backup/backup-sche
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
+import { machineStatusJob, parseMachineStatus } from '../../services/machine/machine-status.js';
 import type { RenetProcess } from '../../services/renet/renet-daemons.js';
-import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
-import { handleError, ValidationError } from '../../utils/errors.js';
-import { withSpinner } from '../../utils/spinner.js';
+import { getOutputFormat, handleError, ValidationError } from '../../utils/errors.js';
+import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { fetchMissedTargets, fetchStaleBackups, staleBinariesOf } from './status.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
@@ -234,62 +236,77 @@ function backupStanding(
   return Promise.all([fetchStaleBackups(name, listResult), fetchMissedTargets(name, listResult)]);
 }
 
-export function registerHealthCommand(machine: Command, program: Command): void {
+/** The `renderMachineHealth` step: the verdict for the listing the `list-all` job produced. */
+async function renderHealthFromJob(
+  name: string,
+  output: string | undefined,
+  format: OutputFormat
+): Promise<void> {
+  const vaultStatus = JSON.stringify(parseMachineStatus(output));
+  const machine = { machineName: name, vaultStatus };
+  const listResult = parseListResult(vaultStatus);
+  // The listing the job returned already holds the stale-process section.
+  const staleBinary = listResult ? staleBinariesOf(listResult) : null;
+  const [staleBackups, missedTargets] = await backupStanding(name, listResult);
+  const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
+  const health = applyStaleness(getMachineHealth(machine), {
+    staleBinary,
+    staleBackups,
+    missedTargets,
+    failedVerifies,
+  });
+
+  if (format === 'json') {
+    outputService.print(
+      {
+        ...health,
+        stale_binary: staleBinary,
+        backup_staleness: staleBackups,
+        target_misses: missedTargets,
+        verify_failures: failedVerifies,
+      },
+      format
+    );
+  } else {
+    displayHealthReport(health, name);
+  }
+
+  if (health.exitCode !== 0) {
+    setExitCode(health.exitCode);
+  }
+}
+
+bindStepHandler('renderMachineHealth', async ({ machine, output }) => {
+  await renderHealthFromJob(machine, output, getOutputFormat());
+});
+
+/** `machine health`: one read job; the verdict is its step, so a ticket handed back early prints nothing half-done. */
+async function runHealthJob(name: string): Promise<void> {
+  if (!(await configService.getLocalConfig()).machines[name]) {
+    throw new ValidationError(t('errors.machineNotFound', { name }));
+  }
+  const outcome = await runCommandJob('machine health', await machineStatusJob(name), [
+    planStep('renderMachineHealth'),
+  ]);
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, t('commands.machine.health.fetching'));
+  }
+}
+
+export function registerHealthCommand(machine: Command): void {
   machine
     .command('health')
     .description(t('commands.machine.health.description'))
     .argument('<name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
-    .action(async (name: string, options: { team?: string }) => {
+    .action(async (name: string) => {
       try {
-        const provider = getStateProvider();
-        const opts = await configService.applyDefaults(options);
-
-        const machine = await withSpinner(
-          t('commands.machine.health.fetching'),
-          () =>
-            provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
-              machineName: name,
-            }),
-          t('commands.machine.health.fetched')
-        );
-
-        if (!machine) {
-          throw new ValidationError(t('errors.machineNotFound', { name }));
-        }
-
-        const format = program.opts().output as OutputFormat;
-        const listResult = parseListResult(machine.vaultStatus);
-        // The listing the machine record carries already holds the stale-process section.
-        const staleBinary = listResult ? staleBinariesOf(listResult) : null;
-        const [staleBackups, missedTargets] = await backupStanding(name, listResult);
-        const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
-        const health = applyStaleness(getMachineHealth(machine), {
-          staleBinary,
-          staleBackups,
-          missedTargets,
-          failedVerifies,
-        });
-
-        if (format === 'json') {
-          outputService.print(
-            {
-              ...health,
-              stale_binary: staleBinary,
-              backup_staleness: staleBackups,
-              target_misses: missedTargets,
-              verify_failures: failedVerifies,
-            },
-            format
-          );
-        } else {
-          displayHealthReport(health, name);
-        }
-
-        if (health.exitCode !== 0) {
-          setExitCode(health.exitCode);
-        }
+        await runHealthJob(name);
       } catch (error) {
         handleError(error);
       }

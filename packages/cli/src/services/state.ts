@@ -23,25 +23,11 @@ type ResourceRecord = Record<string, unknown>;
 /** Vault data */
 type VaultData = Record<string, unknown>;
 
-/** Machine data including vaultStatus for health/containers/services/repos/vault-status commands */
-interface MachineWithVaultStatusData {
-  machineName: string | null;
-  vaultStatus?: string | null;
-  vaultContent?: string | null;
-  vaultVersion?: number | null;
-  [key: string]: unknown;
-}
-
 export interface MachineProvider {
   list(params: { teamName: string }): Promise<ResourceRecord[]>;
   create(params: Record<string, unknown>): Promise<MutationResult>;
   rename(params: Record<string, unknown>): Promise<MutationResult>;
   delete(params: Record<string, unknown>): Promise<MutationResult>;
-  /** Get a single machine with vaultStatus data (for health/services/containers/repos) */
-  getWithVaultStatus(params: {
-    teamName: string;
-    machineName: string;
-  }): Promise<MachineWithVaultStatusData | null>;
 }
 
 export interface VaultProvider {
@@ -97,18 +83,6 @@ class LocalMachineProvider implements MachineProvider {
   async delete(params: Record<string, unknown>): Promise<MutationResult> {
     await configService.removeMachine(params.machineName as string);
     return { success: true };
-  }
-
-  async getWithVaultStatus(params: {
-    teamName: string;
-    machineName: string;
-  }): Promise<MachineWithVaultStatusData | null> {
-    const { fetchMachineStatus } = await import('./machine/machine-status.js');
-    const listResult = await fetchMachineStatus(params.machineName);
-    return {
-      machineName: params.machineName,
-      vaultStatus: JSON.stringify(listResult),
-    };
   }
 }
 

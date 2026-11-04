@@ -10,6 +10,7 @@ import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
+import type { ExecuteOptions } from '../executor/types.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
@@ -32,6 +33,24 @@ export async function fetchMachineStatus(
   machineName: string,
   options: FetchStatusOptions = {}
 ): Promise<ListResult> {
+  const result = await getExecutor().execute({
+    ...(await machineStatusJob(machineName, options)),
+    // The caller reads the listing now: `--background` must not hand back a ticket in its place.
+    probe: true,
+  });
+  if (!result.success) {
+    throw new Error(
+      `renet list all failed (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`
+    );
+  }
+  return parseMachineStatus(result.stdout);
+}
+
+/** The `list-all` job of one machine: the executor options a caller hands to `execute` or to `runCommandJob` with its own steps. */
+export async function machineStatusJob(
+  machineName: string,
+  options: FetchStatusOptions = {}
+): Promise<ExecuteOptions> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -44,24 +63,20 @@ export async function fetchMachineStatus(
   };
   if (options.sections && options.sections.length > 0) args.sections = options.sections.join(',');
 
-  const result = await getExecutor().execute({
+  return {
     functionName: 'list-all',
     machineName,
     commandKind: { name: 'list-all', args },
     debug: options.debug,
     captureOutput: true,
-    // The caller reads the listing now: `--background` must not hand back a ticket in its place.
-    probe: true,
-  });
-  if (!result.success) {
-    throw new Error(
-      `renet list all failed (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`
-    );
-  }
+  };
+}
 
+/** The captured stdout of a `list-all` job as a ListResult; anything else is a parse failure. */
+export function parseMachineStatus(stdout: string | undefined): ListResult {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(result.stdout ?? '');
+    parsed = JSON.parse(stdout ?? '');
   } catch {
     throw new Error('Failed to parse renet output: not JSON');
   }

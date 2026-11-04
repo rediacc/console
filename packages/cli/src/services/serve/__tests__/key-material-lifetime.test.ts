@@ -19,7 +19,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const PRIVATE_KEY =
   '-----BEGIN OPENSSH PRIVATE KEY-----\nMU4-SECRET-KEY-BYTES\n-----END OPENSSH PRIVATE KEY-----\n';
 const KNOWN_HOSTS = '10.9.9.9 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5MU4KNOWNHOSTSMARKER';
-const CONFIG_MARKER = 'mu4-config-marker-machine';
+// Config content that must never reach disk. Not the machine name: the job ticket legitimately names the machine it ran on.
+const CONFIG_MARKER = 'mu4-config-marker-user';
+const MACHINE_NAME = 'mu4-machine';
 
 interface RecordedWrite {
   target: string;
@@ -226,7 +228,7 @@ const CONFIG = {
   credentials: { ssh: { privateKey: PRIVATE_KEY } },
   resources: {
     machines: {
-      [CONFIG_MARKER]: { ip: '10.9.9.9', user: 'deploy', port: 22, knownHosts: KNOWN_HOSTS },
+      [MACHINE_NAME]: { ip: '10.9.9.9', user: CONFIG_MARKER, port: 22, knownHosts: KNOWN_HOSTS },
     },
     repositories: {},
   },
@@ -280,7 +282,7 @@ describe('MU4: key material lifetime on the dispatch path', () => {
       body: JSON.stringify({
         contractVersion: CLI_CONTRACT_VERSION,
         pathKey: 'machine status',
-        positionals: { name: CONFIG_MARKER },
+        positionals: { name: MACHINE_NAME },
       }),
     });
   }

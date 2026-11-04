@@ -123,7 +123,16 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderMachineStatus',
     'success',
-    [],
+    [
+      'machine',
+      'sections',
+      'healthCheck',
+      'stabilityCheck',
+      'search',
+      'strict',
+      'storageHealth',
+      'syncCerts',
+    ],
     () => import('../../commands/machine/status.js'),
     true
   ),

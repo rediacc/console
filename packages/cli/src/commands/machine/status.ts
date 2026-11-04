@@ -28,11 +28,13 @@ import {
 } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import type { RenetProcess } from '../../services/renet/renet-daemons.js';
-import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
+import type { InfraConfig, MachineConfig } from '../../types/index.js';
 import { ambiguous, notFound } from '../../utils/cli-exit-error.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
-import { handleError } from '../../utils/errors.js';
+import { getOutputFormat, handleError } from '../../utils/errors.js';
 import {
   createGuidResolver,
   createRepoNameResolver,
@@ -40,6 +42,7 @@ import {
   type RepoNameSource,
   resolveGuids,
 } from '../../utils/guid-resolver.js';
+import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import {
   filterRepositoriesBySearch,
   runContainerHealthCheck,
@@ -53,7 +56,6 @@ type RepoNameResolver = (
 ) => { name: string; source: RepoNameSource };
 
 import { setExitCode, writeStderr, writeStdout } from '../../services/core/request-context.js';
-import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */
 function parseSizeToGb(size: string | undefined): number {
@@ -629,17 +631,28 @@ async function resolveStatusMachine(name: string | undefined): Promise<string> {
 }
 
 /**
- * Everything `machine status` reads, fetched concurrently.
+ * The sections a `machine status` job asks `list-all` for. The licence detail and the stale-binary probe ride
+ * the same job as the rest (its `licenses` and `stale-processes` sections), so a filtered run asks for both next
+ * to what it was asked for. Undefined is the full listing.
+ */
+function requestedSections(sections: string[]): string[] | undefined {
+  return sections.length > 0
+    ? [...new Set([...sections, 'licenses', 'stale-processes'])]
+    : undefined;
+}
+
+/**
+ * What `machine status` renders from a finished `list-all` job: the listing plus the local config and the
+ * backup standing derived from it.
  *
- * The licence detail rides along whenever the Licenses section will be rendered
- * (no section flags = every section). It answers what `renet list` cannot:
- * which datastore holds each licence, whether a scheduled backup is blocked,
+ * The licence detail is read whenever the Licenses section will be rendered (no section flags = every section).
+ * It answers what `renet list` cannot: which datastore holds each licence, whether a scheduled backup is blocked,
  * and what the last unattended renewal did.
  */
 async function gatherStatus(
   machineName: string,
   sections: string[],
-  debug: boolean | undefined
+  listResult: ListResult
 ): Promise<{
   listResult: ListResult;
   guidMap: Awaited<ReturnType<typeof loadGuidMap>>;
@@ -650,18 +663,7 @@ async function gatherStatus(
   missedTargets: MissedTargetRepo[];
   failedVerifies: FailedVerifyRepo[];
 }> {
-  const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
-  // The licence detail and the stale-binary probe ride the same list-all job as the rest: its `licenses` and
-  // `stale-processes` sections, so a filtered run asks for both next to what it was asked for.
-  const requested =
-    sections.length > 0 ? [...new Set([...sections, 'licenses', 'stale-processes'])] : undefined;
-
-  const [listResult, guidMap, machineConfig] = await Promise.all([
-    withSpinner(
-      t('commands.machine.status.fetching', { machine: machineName }),
-      () => fetchMachineStatus(machineName, { debug, sections: requested }),
-      t('commands.machine.status.fetched')
-    ),
+  const [guidMap, machineConfig] = await Promise.all([
     loadGuidMap(),
     configService.getLocalMachine(machineName).catch(() => undefined),
   ]);
@@ -891,7 +893,142 @@ function renderRunningJobs(jobs: JobInfo[] | undefined, resolve: (guid: string) 
   for (const line of lines.slice(1)) outputService.info(line);
 }
 
-export function registerStatusCommand(machine: Command, program: Command): void {
+/** The flags the render step needs, carried on the ticket as step params: scalars only, never a secret. */
+type StatusRenderOptions = Pick<
+  QueryOptions,
+  'healthCheck' | 'stabilityCheck' | 'search' | 'strict' | 'storageHealth'
+> & { syncCerts?: boolean };
+
+/** The plan params of the `renderMachineStatus` step: the section filter and the render flags that were set. */
+function statusStepParams(
+  machineName: string,
+  sections: string[],
+  options: StatusRenderOptions
+): Record<string, string | boolean> {
+  return {
+    machine: machineName,
+    sections: sections.join(','),
+    ...(options.healthCheck && { healthCheck: true }),
+    ...(options.stabilityCheck && { stabilityCheck: true }),
+    ...(options.search && { search: options.search }),
+    ...(options.strict && { strict: true }),
+    ...(options.storageHealth && { storageHealth: true }),
+    ...(options.syncCerts && { syncCerts: true }),
+  };
+}
+
+/** The `renderMachineStatus` step: render the listing the `list-all` job produced, as tables or as data. */
+async function renderStatusFromJob(
+  machineName: string,
+  sections: string[],
+  output: string | undefined,
+  options: StatusRenderOptions
+): Promise<void> {
+  const { parseMachineStatus } = await import('../../services/machine/machine-status.js');
+  const {
+    listResult,
+    guidMap,
+    machineConfig,
+    licenseDetail,
+    staleBinary,
+    staleBackups,
+    missedTargets,
+    failedVerifies,
+  } = await gatherStatus(machineName, sections, parseMachineStatus(output));
+
+  const infra = machineConfig?.infra;
+  const format = getOutputFormat();
+  const resolve = createGuidResolver(guidMap);
+  const repoName = createRepoNameResolver(guidMap);
+
+  // Folded-in section refinements (06 §6.1): --health-check / --stability-check
+  // gate and return; --search narrows the repositories section.
+  if (options.healthCheck) {
+    runContainerHealthCheck(listResult, format, resolve);
+    return;
+  }
+  if (options.stabilityCheck) {
+    runServiceStabilityCheck(listResult, format, resolve);
+    return;
+  }
+  if (options.search) {
+    listResult.repositories = filterRepositoriesBySearch(
+      listResult.repositories,
+      options.search,
+      (guid, serverName) => repoName(guid, serverName).name
+    );
+  }
+
+  if (format === 'json') {
+    const enriched = buildEnrichedJson(
+      listResult,
+      machineConfig,
+      infra,
+      resolve,
+      repoName,
+      licenseDetail,
+      machineName
+    );
+    outputService.print(
+      statusJsonDocument(
+        enriched,
+        listResult.jobs,
+        resolve,
+        staleBinary,
+        staleBackups,
+        failedVerifies,
+        missedTargets
+      ),
+      format
+    );
+  } else {
+    renderTableMode(
+      listResult,
+      machineConfig,
+      infra,
+      resolve,
+      repoName,
+      licenseDetail,
+      machineName
+    );
+    renderBlockedBackupAlerts(licenseDetail);
+    renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
+    renderRunningJobs(listResult.jobs, resolve);
+  }
+
+  // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
+  if (!options.storageHealth) {
+    writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
+  }
+
+  // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
+  // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
+  // 1 = warn, 2 = error).
+  if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
+    const count = listResult.health_drift?.entries.length ?? 0;
+    writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
+    setExitCode(2);
+  }
+
+  if (options.syncCerts) {
+    await runOptInCertSync(machineName);
+  }
+}
+
+bindStepHandler('renderMachineStatus', async ({ machine, output, params }) => {
+  const sections =
+    typeof params.sections === 'string' && params.sections ? params.sections.split(',') : [];
+  await renderStatusFromJob(machine, sections, output, {
+    healthCheck: params.healthCheck === true,
+    stabilityCheck: params.stabilityCheck === true,
+    search: typeof params.search === 'string' ? params.search : undefined,
+    strict: params.strict === true,
+    storageHealth: params.storageHealth === true,
+    syncCerts: params.syncCerts === true,
+  });
+});
+
+export function registerStatusCommand(machine: Command): void {
   machine
     .command('status')
     .argument('[name]', t('options.name'))
@@ -915,96 +1052,28 @@ export function registerStatusCommand(machine: Command, program: Command): void 
     .action(async (name: string | undefined, options: QueryOptions & { syncCerts?: boolean }) => {
       try {
         const machineName = await resolveStatusMachine(name);
-
         const sections = collectSections(options);
 
-        const {
-          listResult,
-          guidMap,
-          machineConfig,
-          licenseDetail,
-          staleBinary,
-          staleBackups,
-          missedTargets,
-          failedVerifies,
-        } = await gatherStatus(machineName, sections, options.debug);
-
-        const infra = machineConfig?.infra;
-        const format = program.opts().output as OutputFormat;
-        const resolve = createGuidResolver(guidMap);
-        const repoName = createRepoNameResolver(guidMap);
-
-        // Folded-in section refinements (06 §6.1): --health-check / --stability-check
-        // gate and return; --search narrows the repositories section.
-        if (options.healthCheck) {
-          runContainerHealthCheck(listResult, format, resolve);
+        // One read job; the render is its step, so a ticket handed back early prints nothing half-done.
+        const { machineStatusJob } = await import('../../services/machine/machine-status.js');
+        const outcome = await runCommandJob(
+          'machine status',
+          await machineStatusJob(machineName, {
+            debug: options.debug,
+            sections: requestedSections(sections),
+          }),
+          [planStep('renderMachineStatus', statusStepParams(machineName, sections, options))]
+        );
+        if (outcome.kind === 'pending') {
+          const code = pendingExitCode(outcome);
+          if (code !== undefined) setExitCode(code);
           return;
         }
-        if (options.stabilityCheck) {
-          runServiceStabilityCheck(listResult, format, resolve);
-          return;
-        }
-        if (options.search) {
-          listResult.repositories = filterRepositoriesBySearch(
-            listResult.repositories,
-            options.search,
-            (guid, serverName) => repoName(guid, serverName).name
+        if (!outcome.result.success) {
+          renderLocalExecutionFailure(
+            outcome.result,
+            t('commands.machine.status.fetching', { machine: machineName })
           );
-        }
-
-        if (format === 'json') {
-          const enriched = buildEnrichedJson(
-            listResult,
-            machineConfig,
-            infra,
-            resolve,
-            repoName,
-            licenseDetail,
-            machineName
-          );
-          outputService.print(
-            statusJsonDocument(
-              enriched,
-              listResult.jobs,
-              resolve,
-              staleBinary,
-              staleBackups,
-              failedVerifies,
-              missedTargets
-            ),
-            format
-          );
-        } else {
-          renderTableMode(
-            listResult,
-            machineConfig,
-            infra,
-            resolve,
-            repoName,
-            licenseDetail,
-            machineName
-          );
-          renderBlockedBackupAlerts(licenseDetail);
-          renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
-          renderRunningJobs(listResult.jobs, resolve);
-        }
-
-        // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
-        if (!options.storageHealth) {
-          writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
-        }
-
-        // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
-        // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
-        // 1 = warn, 2 = error).
-        if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
-          const count = listResult.health_drift?.entries.length ?? 0;
-          writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
-          setExitCode(2);
-        }
-
-        if (options.syncCerts) {
-          await runOptInCertSync(machineName);
         }
       } catch (error) {
         handleError(error);
