@@ -90,7 +90,7 @@ function isActiveState(value: string | undefined): boolean {
   return value !== undefined && ACTIVE_STATES.has(value);
 }
 
-export function isEnabledState(value: string | undefined): boolean {
+function isEnabledState(value: string | undefined): boolean {
   return value !== undefined && ENABLED_STATES.has(value);
 }
 

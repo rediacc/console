@@ -107,14 +107,14 @@ export function buildRouterRefreshCommand(remoteRenetPath: string): string {
  * shows the binary is a build this CLI should deploy. `RENET_UPLOAD_REFUSED_IN_EXECUTOR`: a served request
  * reached the provisioner.
  */
-export type RenetRefusalCode =
+type RenetRefusalCode =
   | 'RENET_DEV_ON_MACHINE'
   | 'RENET_DOWNGRADE_REFUSED'
   | 'RENET_BUILD_UNVERIFIED'
   | 'RENET_UPLOAD_REFUSED_IN_EXECUTOR';
 
 /** A provision's result; a refusal carries its code. */
-export type GuardedProvisionResult = ProvisionResult & { code?: RenetRefusalCode };
+type GuardedProvisionResult = ProvisionResult & { code?: RenetRefusalCode };
 
 /** x.y.z with its suffix, so a dev build stays visible as one. */
 const VERSION_WITH_SUFFIX = /\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?/;
@@ -178,7 +178,7 @@ interface RenetReplacement {
  * it, which is what shows it to be this CLI's build (the proxy image's 0.0.0-dev bundle held a 2.4.0 renet).
  * A machine whose renet reports no version has nothing to compare, and stays repairable.
  */
-export function decideRenetReplacement(
+function decideRenetReplacement(
   r: RenetReplacement
 ): { code: RenetRefusalCode; message: string } | null {
   if (r.running === null) return null;

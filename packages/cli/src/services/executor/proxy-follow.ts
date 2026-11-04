@@ -45,7 +45,7 @@ export function jittered(ms: number, random: () => number): number {
 }
 
 /** Build the outcome from a result line. */
-export function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandOutcome {
+function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandOutcome {
   return {
     success: line.result.success,
     exitCode: line.result.exitCode,
