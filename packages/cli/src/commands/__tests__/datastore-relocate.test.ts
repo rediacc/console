@@ -14,7 +14,8 @@
  * that already had the record.
  */
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from './job-deps.js';
 
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -112,8 +113,17 @@ function dispatched(): { fn: string; machine: string; params: Record<string, unk
   }));
 }
 
+let restoreJobDeps: () => void;
+
+/** The relocation's later phases run as the first job's step, so a refusal there is a failed command (exit code 1), not a throw out of the command body. */
+async function runRefusedAttach(): Promise<void> {
+  await runAttach('tier1', 'machine-b');
+  expect(process.exitCode).toBe(1);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  restoreJobDeps = installJobDeps((options) => mockExecute(options));
   mockGetDatastore.mockResolvedValue({ name: 'tier1' });
   mockListDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'machine-a' } });
   mockSetDatastoreState.mockResolvedValue(undefined);
@@ -123,6 +133,12 @@ beforeEach(() => {
       stdout: functionName === 'datastore_list' ? JSON.stringify([CEPH_RECORD]) : '',
     })
   );
+});
+
+afterEach(() => {
+  restoreJobDeps();
+  vi.restoreAllMocks();
+  process.exitCode = 0;
 });
 
 describe('datastore attach — cross-machine relocation', () => {
@@ -148,7 +164,7 @@ describe('datastore attach — cross-machine relocation', () => {
           })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/datastore_adopt/);
+    await runRefusedAttach();
 
     expect(dispatched().map((d) => d.fn)).not.toContain('datastore_detach');
   });
@@ -176,7 +192,7 @@ describe('datastore attach — cross-machine relocation', () => {
       })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/cannot reach them/);
+    await runRefusedAttach();
 
     // The whole point: a refusal that arrives after the detach would have taken the datastore offline to tell the operator it could not be moved.
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
@@ -229,7 +245,7 @@ describe('datastore attach — relocation from a DETACHED state', () => {
       })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/cannot reach them/);
+    await runRefusedAttach();
 
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
   });
@@ -245,7 +261,7 @@ describe('datastore attach — relocation from a DETACHED state', () => {
           })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/datastore_adopt/);
+    await runRefusedAttach();
 
     const fns = dispatched().map((d) => d.fn);
     expect(fns).not.toContain('datastore_attach');

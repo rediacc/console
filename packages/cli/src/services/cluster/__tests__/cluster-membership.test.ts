@@ -1,6 +1,7 @@
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from '../../../commands/__tests__/job-deps.js';
 import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
 import { auditService } from '../../core/audit.js';
@@ -65,7 +66,16 @@ function execMock() {
   });
 }
 
-afterEach(() => vi.restoreAllMocks());
+let restoreJobDeps: () => void;
+beforeEach(() => {
+  // Each cluster phase is a ticketed job; its ticket goes to a temp store, never the real one.
+  restoreJobDeps = installJobDeps((options) => localExecutorService.execute(options));
+});
+
+afterEach(() => {
+  restoreJobDeps();
+  vi.restoreAllMocks();
+});
 
 describe('joinCluster', () => {
   it('reads the token from the anchor datastore, joins with NO per-node repo, and sets the backref', async () => {

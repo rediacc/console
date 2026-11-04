@@ -1,5 +1,6 @@
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from '../../../commands/__tests__/job-deps.js';
 import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
 import { auditService } from '../../core/audit.js';
@@ -130,7 +131,14 @@ function execMock(listCluster = 'prod', destCluster = 'dest') {
 // Health gate: no real waits in unit tests.
 __setHealthGateDelay(() => Promise.resolve());
 
+let restoreJobDeps: () => void;
+beforeEach(() => {
+  // Each cluster phase is a ticketed job; its ticket goes to a temp store, never the real one.
+  restoreJobDeps = installJobDeps((options) => localExecutorService.execute(options));
+});
+
 afterEach(() => {
+  restoreJobDeps();
   vi.restoreAllMocks();
   __setHealthGateClock(() => Date.now()); // reset any per-test clock override
 });

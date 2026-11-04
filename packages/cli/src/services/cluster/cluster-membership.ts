@@ -12,7 +12,6 @@
  * is P4; the command shapes here follow current conventions.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
 import { assertMachineSlotsAvailable } from '../account/license-preflight.js';
@@ -20,7 +19,8 @@ import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
-import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
+import { bindStepHandler, planStep } from '../jobs/steps.js';
+import { runClusterPhase } from './cluster-job.js';
 import { allocateAgentNetworkId } from './cluster-kube.js';
 
 const MOUNT_BASE = `${WK_DATASTORE_PATH}/mounts`;
@@ -40,28 +40,6 @@ function controlDatastoreMount(clusterName: string): string {
 }
 function serverUrl(ip: string): string {
   return `https://${ip}:${API_PORT}`;
-}
-
-/** Dispatch one internal renet function to a member, throwing on failure. */
-async function dispatch(
-  functionName: string,
-  machineName: string,
-  params: Record<string, unknown>,
-  opts: { debug?: boolean; capture?: boolean } = {}
-): Promise<ExecuteResult> {
-  const result = await getExecutor().execute({
-    functionName,
-    machineName,
-    params,
-    debug: opts.debug,
-    captureOutput: opts.capture,
-  });
-  if (!result.success) {
-    throw new Error(
-      `Membership step "${functionName}" failed on ${machineName}: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
-    );
-  }
-  return result;
 }
 
 /** The first control-plane (k3s server / hyperconverged) member of a cluster. */
@@ -119,60 +97,98 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
 
   const cluster = await getCluster(options.cluster);
   const control = controlMember(options.cluster, cluster);
-  const controlMachine = await configService.getLocalMachine(control.name);
+  // The control machine has to exist before anything starts.
+  await configService.getLocalMachine(control.name);
   const pool = agentPool(options.cluster, cluster);
-  const agentMount = clusterMount(options.cluster);
   const controlMount = controlDatastoreMount(options.cluster);
 
   outputService.info(
     `Joining "${machineName}" (${machine.ip}) to cluster "${options.cluster}" as an agent...`
   );
 
-  // The CA-derived join token is read from the control plane's anchor datastore.
-  const tokenRes = await dispatch(
+  // Two jobs, one per phase (renet has no compound token-then-join function, and the join consumes the token read). The CA-derived join token is read from the control plane's anchor datastore by the first job; the join on the member, the membership record and the audit line are the phase that follows it, a ticket step, so a ticket handed back early still owes them.
+  const { pending, unfinished } = await runClusterPhase(
     'kube_join_token',
     control.name,
     { mount_path: controlMount },
-    { debug: options.debug, capture: true }
+    {
+      debug: options.debug,
+      capture: true,
+      label: 'Membership step',
+      verb: 'cluster join',
+      steps: [
+        planStep('joinClusterTail', {
+          member: machineName,
+          cluster: options.cluster,
+          pool: pool.name,
+          startedAt: new Date(startTime).toISOString(),
+          ...(options.debug && { debug: true }),
+        }),
+      ],
+    }
   );
-  const token = /K10[^"\s]+/.exec(tokenRes.stdout ?? '')?.[0];
-  if (!token) {
-    throw new Error(`Could not read the k3s join token from ${control.name}.`);
+  if (pending) return;
+  if (unfinished.length > 0) {
+    throw new Error(`Joining "${machineName}" to "${options.cluster}" did not finish.`);
   }
+}
+
+/** The second phase of `cluster join`: the join on the member, once the token job succeeded. */
+bindStepHandler('joinClusterTail', async ({ params, machine: controlName, output }) => {
+  const machineName = String(params.member);
+  const clusterName = String(params.cluster);
+  const poolName = String(params.pool);
+  const debug = params.debug === true;
+  const token = /K10[^"\s]+/.exec(output ?? '')?.[0];
+  if (!token) {
+    throw new Error(`Could not read the k3s join token from ${controlName}.`);
+  }
+  const machine = await configService.getLocalMachine(machineName);
+  const controlMachine = await configService.getLocalMachine(controlName);
 
   // ★ #25: no per-node repo. An adopted agent's k3s state is a disposable cache;
   // `renet kube join` creates its own data-dir under the mount path. Only the
   // networkID (its systemd unit + node interface) is allocated. See
   // allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
   const net = await allocateAgentNetworkId(machineName);
-  await dispatch(
+  // The closing call carries the membership record (repo create --machine refuses on it, R2-F12) and the audit line.
+  const closing = await runClusterPhase(
     'kube_join',
     machineName,
     {
-      mount_path: agentMount,
+      mount_path: clusterMount(clusterName),
       network_id: net,
       role: 'agent',
       token,
       endpoint: serverUrl(controlMachine.ip),
       bind_ip: machine.ip,
     },
-    { debug: options.debug }
+    {
+      debug,
+      label: 'Membership step',
+      verb: 'cluster join',
+      steps: [
+        planStep('updateMachineCluster', {
+          machine: machineName,
+          cluster: clusterName,
+          pool: poolName,
+        }),
+        planStep('recordClusterAudit', {
+          function: 'cluster_join',
+          machine: machineName,
+          startedAt: String(params.startedAt),
+        }),
+      ],
+    }
   );
-
-  // Record the membership backref (repo create --machine refuses on it, R2-F12).
-  await configService.updateMachine(machineName, {
-    cluster: { cluster: options.cluster, pool: pool.name },
-  });
-
-  auditService.recordOperation({
-    functionName: 'cluster_join',
-    machineName,
-    success: true,
-    exitCode: 0,
-    durationMs: Date.now() - startTime,
-  });
-  outputService.success(`"${machineName}" joined cluster "${options.cluster}" as an agent.`);
-}
+  if (closing.pending) return;
+  if (closing.unfinished.length > 0) {
+    throw new Error(
+      `"${machineName}" joined, but ${closing.unfinished.join(', ')} did not finish.`
+    );
+  }
+  outputService.success(`"${machineName}" joined cluster "${clusterName}" as an agent.`);
+});
 
 export interface EvictClusterOptions {
   force?: boolean;
@@ -233,45 +249,72 @@ export async function evictCluster(
   // its InternalIP (k3s names nodes by hostname, not the config name). renet's
   // kube_node_remove already force-drains (--force --delete-emptydir-data), so a
   // reachable node always drains; an unreachable one is deleted regardless.
-  await dispatch(
+  // Two jobs, one per phase: the node removal on the control plane, then (a ticket step) the node-side uninstall and the deregistration.
+  const { pending, unfinished } = await runClusterPhase(
     'kube_node_remove',
     control.name,
     { mount_path: controlMount, node_ip: machine.ip },
-    { debug: options.debug }
+    {
+      debug: options.debug,
+      label: 'Membership step',
+      verb: 'cluster evict',
+      steps: [
+        planStep('evictClusterTail', {
+          member: machineName,
+          cluster: clusterName,
+          startedAt: new Date(startTime).toISOString(),
+          ...(options.debug && { debug: true }),
+        }),
+      ],
+    }
   );
+  if (pending) return;
+  if (unfinished.length > 0) {
+    throw new Error(`Evicting "${machineName}" from "${clusterName}" did not finish.`);
+  }
+}
 
-  // ★ #20: the control plane forgetting the Node is only HALF an eviction. The
-  // evicted machine still runs its own k3s agent (systemd unit, kubelet, its
-  // containers) against a cluster that no longer knows it, and it would try to
-  // rejoin on reboot. Uninstall the node-side k3s ON THE EVICTED MACHINE, against
-  // its own cluster image mount. Best-effort: a DEAD node cannot be reached, and
-  // refusing to finish the eviction because the corpse will not answer is exactly
-  // the failure --force exists for. The control-plane half already succeeded, so
-  // the machine is out of the cluster either way.
+/** The second phase of `cluster evict`: the node-side uninstall, then the deregistration, once the control plane dropped the Node. */
+bindStepHandler('evictClusterTail', async ({ params }) => {
+  const machineName = String(params.member);
+  const clusterName = String(params.cluster);
+  const debug = params.debug === true;
+  // ★ #20: the control plane forgetting the Node is only HALF an eviction. The evicted machine still runs its own k3s agent (systemd unit, kubelet, its containers) against a cluster that no longer knows it, and it would try to rejoin on reboot. The node-side k3s is uninstalled ON THE EVICTED MACHINE, against its own cluster image mount. Best-effort: a DEAD node cannot be reached, and refusing to finish the eviction because the corpse will not answer is exactly the failure --force exists for. The control-plane half already succeeded, so the machine is out of the cluster either way. The deregistration and the audit line ride the uninstall's ticket; when the uninstall fails they are written here instead.
   try {
-    await dispatch(
+    const closing = await runClusterPhase(
       'kube_uninstall',
       machineName,
       { mount_path: clusterMount(clusterName) },
-      { debug: options.debug }
+      {
+        debug,
+        label: 'Membership step',
+        verb: 'cluster evict',
+        steps: [
+          planStep('updateMachineCluster', { machine: machineName }),
+          planStep('recordClusterAudit', {
+            function: 'cluster_evict',
+            machine: machineName,
+            startedAt: String(params.startedAt),
+          }),
+        ],
+      }
     );
+    if (closing.pending) return;
   } catch (err) {
     outputService.warn(
       `Node-side k3s uninstall on "${machineName}" failed (continuing): ${err}. ` +
         `The node is out of the cluster, but it may still run a stale k3s agent; ` +
         `re-adopting it with "rdc cluster join" needs that cleaned up first.`
     );
+    // Deregister: clear the membership backref.
+    await configService.updateMachine(machineName, { cluster: undefined });
+    auditService.recordOperation({
+      functionName: 'cluster_evict',
+      machineName,
+      success: true,
+      exitCode: 0,
+      durationMs: Math.max(0, Date.now() - Date.parse(String(params.startedAt))),
+    });
   }
-
-  // Deregister: clear the membership backref.
-  await configService.updateMachine(machineName, { cluster: undefined });
-
-  auditService.recordOperation({
-    functionName: 'cluster_evict',
-    machineName,
-    success: true,
-    exitCode: 0,
-    durationMs: Date.now() - startTime,
-  });
   outputService.success(`"${machineName}" evicted from cluster "${clusterName}".`);
-}
+});

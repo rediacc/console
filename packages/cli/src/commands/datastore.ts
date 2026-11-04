@@ -24,7 +24,6 @@ import {
   listDatastoreState,
   listDatastores,
   parseDatastoreRef,
-  recordDatastore,
   reposInDatastore,
   requireDatastoreHost,
   setDatastoreState,
@@ -39,7 +38,8 @@ import {
   pendingExitCode,
   runCommandJob,
 } from '../services/jobs/command-job.js';
-import { type PlannedStep, planStep } from '../services/jobs/steps.js';
+import { outstandingSteps } from '../services/jobs/run-job.js';
+import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { stateMismatch } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -81,9 +81,14 @@ async function dispatchAsJob(
   machineName: string,
   params: Record<string, unknown>,
   steps: PlannedStep[],
-  debug?: boolean
+  debug?: boolean,
+  capture?: boolean
 ): Promise<CommandJobOutcome> {
-  const outcome = await runCommandJob(verb, { functionName, machineName, params, debug }, steps);
+  const outcome = await runCommandJob(
+    verb,
+    { functionName, machineName, params, debug, captureOutput: capture },
+    steps
+  );
   if (outcome.kind === 'finished' && !outcome.result.success) {
     throw new Error(
       `Datastore step "${functionName}" failed on ${machineName}: ${outcome.result.error}`
@@ -94,7 +99,16 @@ async function dispatchAsJob(
 
 /** A pending job owes its exit code (a lost tail) and prints nothing more: the ticket notice names how to wait. */
 function settledPending(outcome: CommandJobOutcome): boolean {
-  if (outcome.kind !== 'pending') return false;
+  if (outcome.kind !== 'pending') {
+    // A finished job whose step did not finish owes it to `rdc job wait`; the command does not claim success.
+    const unfinished = outstandingSteps(outcome.steps);
+    if (unfinished.length === 0) return false;
+    outputService.warn(
+      `The job finished, but the step(s) ${unfinished.join(', ')} did not; rdc job wait settles them.`
+    );
+    setExitCode(1);
+    return true;
+  }
   const code = pendingExitCode(outcome);
   if (code !== undefined) setExitCode(code);
   return true;
@@ -107,13 +121,14 @@ function settledPending(outcome: CommandJobOutcome): boolean {
  * `name`, which is the shape `datastore adopt --record-b64` reads back, so this
  * one call is both the lookup and the ferry payload.
  */
-async function captureDatastoreRecord(
+function findDatastoreRecord(
+  output: string | undefined,
   machineName: string,
-  ref: string,
-  debug?: boolean
-): Promise<{ name: string; backend?: string; fork?: unknown }> {
-  const stdout = await dispatch('datastore_list', machineName, {}, { debug, capture: true });
-  const records = parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout);
+  ref: string
+): { name: string; backend?: string; fork?: unknown } {
+  const records = parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(
+    output ?? ''
+  );
   const record = records.find((r) => r.name === ref);
   if (!record) {
     throw new ValidationError(
@@ -146,14 +161,18 @@ async function captureDatastoreRecord(
  * already present (adopt.go:61-62), so a resumed relocation converges. With the
  * adopt last, a malformed record or an unreachable target still strands the
  * datastore attached nowhere, the same bug, one step later.
+ *
+ * The record was captured by the relocation's first job (`datastore_list` on the holder), so a ticket handed back
+ * early still owes this ferry to its step.
  */
 async function ferryDatastoreRecord(
+  captured: string | undefined,
   from: string,
   to: string,
   ref: string,
   debug?: boolean
 ): Promise<void> {
-  const record = await captureDatastoreRecord(from, ref, debug);
+  const record = findDatastoreRecord(captured, from, ref);
   // A local-backend datastore's bytes never leave their machine, so relocating one is not something that can be half-done, it is something that must not start. renet refuses it too (adopt.go:44-46), but only after this command would already have detached.
   if (record.backend !== 'ceph') {
     const backend = record.backend ?? DEFAULTS.DATASTORE.BACKEND;
@@ -175,6 +194,89 @@ async function ferryDatastoreRecord(
     { debug }
   );
 }
+
+function boolParam(value: unknown): boolean {
+  return value === true;
+}
+
+function writesParam(value: unknown): 'local' | 'ceph' | undefined {
+  return value === 'local' || value === 'ceph' ? value : undefined;
+}
+
+function strParam(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined;
+}
+
+/**
+ * The relocation tail of `datastore attach --to <machine>` (PLAN-detached-jobs J19). The relocation alternates
+ * machines and each call consumes the one before (the source record feeds the target's adopt, and the adopt comes
+ * before the detach), so it is not a static successor and renet has no compound function for it. The first job is the
+ * `datastore_list` read on the holder; this step is the client-driven rest: adopt on the target, detach on the holder
+ * (an attached datastore only), attach on the target, then the routing hint.
+ */
+bindStepHandler('relocateDatastore', async ({ params, machine, output, finishedAt }) => {
+  const ref = String(params.datastore);
+  const to = String(params.to);
+  const debug = boolParam(params.debug);
+  const writes = writesParam(params.writes);
+  await ferryDatastoreRecord(output, machine, to, ref, debug);
+  if (boolParam(params.detach)) {
+    // Single-mounter relocation (02 §3): the old holder gives it up first, and a failed detach aborts the move with the old attach intact.
+    await dispatch('datastore_detach', machine, { name: ref }, { debug });
+  }
+  const cowSize = strParam(params.cowSize);
+  await dispatch(
+    'datastore_attach',
+    to,
+    {
+      name: ref,
+      ...(writes && { writes }),
+      ...(cowSize && { cow_size: cowSize }),
+      ...(boolParam(params.force) && { force: true }),
+      ...(boolParam(params.noAuto) && { no_auto: true }),
+    },
+    { debug }
+  );
+  const lastHolder = strParam(params.lastHolder);
+  await setDatastoreState(ref, {
+    attachedTo: to,
+    ...(writes && { writes }),
+    // Carried, not dropped: the schema's contract is that lastHolder is never cleared, only overwritten by the next detach. Attaching does not make the previous holder's registry row untrue.
+    ...(lastHolder && { lastHolder }),
+    mounted: true,
+    attachedAt: finishedAt ?? new Date().toISOString(),
+  });
+  outputService.success(t('commands.datastore.attach.attached', { ref, machine: to }));
+});
+
+/** The attach leg of `datastore fork --attach-to`: the fork is the ticket's job, the attach on the second machine follows it. */
+bindStepHandler('attachForkedDatastore', async ({ params, finishedAt }) => {
+  const ref = String(params.datastore);
+  const to = String(params.to);
+  const writes = writesParam(params.writes);
+  const cowSize = strParam(params.cowSize);
+  await dispatch(
+    'datastore_attach',
+    to,
+    { name: ref, writes, ...(cowSize && { cow_size: cowSize }) },
+    { debug: boolParam(params.debug) }
+  );
+  await setDatastoreState(ref, {
+    attachedTo: to,
+    writes,
+    mounted: true,
+    attachedAt: finishedAt ?? new Date().toISOString(),
+  });
+  outputService.success(t('commands.datastore.attach.attached', { ref, machine: to }));
+});
+
+/** The tail of `datastore delete` on an attached datastore: the detach was the job, the unlink and the record follow it. */
+bindStepHandler('deleteDatastoreTail', async ({ params, machine }) => {
+  const ref = String(params.datastore);
+  await dispatch('datastore_delete', machine, { name: ref }, { debug: boolParam(params.debug) });
+  await forgetDatastore(ref);
+  outputService.success(t('commands.datastore.delete.deleted', { ref }));
+});
 
 function registerCreate(datastore: Command): void {
   datastore
@@ -322,16 +424,17 @@ function registerReads(datastore: Command): void {
           );
           return;
         }
-        const raw = await dispatch(
+        // One read job; the render is its step, so a ticket handed back early prints nothing half-done.
+        const outcome = await dispatchAsJob(
+          'datastore status',
           'datastore_status',
           host,
           { name: ref },
-          { debug: options.debug, capture: true }
+          [planStep('renderDatastoreStatus', { datastore: ref })],
+          options.debug,
+          true
         );
-        outputService.print(
-          { name: ref, ...record, attachedTo: host, live: parseCapturedJson<unknown>(raw) },
-          getOutputFormat()
-        );
+        settledPending(outcome);
       } catch (error) {
         handleError(error);
       }
@@ -392,21 +495,43 @@ function registerAttach(datastore: Command): void {
           if (current === options.to) {
             throw new ValidationError(t('errors.datastore.writesImmutable', { ref }));
           }
-          if (current) {
-            // Single-mounter relocation (02 §3): the old holder gives it up first, and a failed detach aborts the move with the old attach intact.
-            outputService.info(
-              t('commands.datastore.attach.relocating', { ref, from: current, to: options.to })
+          const relocateFrom =
+            current ??
+            (entry?.lastHolder && entry.lastHolder !== options.to ? entry.lastHolder : undefined);
+          if (relocateFrom) {
+            // Relocation: the first job reads the holder's registry row (`datastore_list`); the rest (adopt, the detach of an attached holder, the attach, the routing hint) is the step that follows it. A DETACHED relocation has no detach, but the row exists only on the machine that last held the datastore (`lastHolder`), and a guessed holder would fence a live one.
+            if (current) {
+              outputService.info(
+                t('commands.datastore.attach.relocating', { ref, from: current, to: options.to })
+              );
+            }
+            const relocation = await dispatchAsJob(
+              'datastore attach',
+              'datastore_list',
+              relocateFrom,
+              {},
+              [
+                planStep('relocateDatastore', {
+                  datastore: ref,
+                  to: options.to,
+                  detach: current !== undefined,
+                  ...(options.writes && { writes: options.writes }),
+                  ...(options.cowSize && { cowSize: options.cowSize }),
+                  ...(options.force && { force: true }),
+                  ...(options.auto === false && { noAuto: true }),
+                  ...(entry?.lastHolder && { lastHolder: entry.lastHolder }),
+                  ...(options.debug && { debug: true }),
+                }),
+              ],
+              options.debug,
+              true
             );
-            await ferryDatastoreRecord(current, options.to, ref, options.debug);
-            await dispatch('datastore_detach', current, { name: ref }, { debug: options.debug });
-          } else if (entry?.lastHolder && entry.lastHolder !== options.to) {
-            // DETACHED relocation. Nothing holds the datastore, so there is no detach to do, but the registry row still exists only on the machine that last had it, so the attach below would fail "not registered" exactly as the attached case used to. `lastHolder` is recorded at
-            // detach time for this arm alone; without it the CLI has no idea which
-            // registry to ferry from, and guessing is how you fence a live holder.
-            await ferryDatastoreRecord(entry.lastHolder, options.to, ref, options.debug);
+            settledPending(relocation);
+            return;
           }
 
-          await dispatch(
+          const outcome = await dispatchAsJob(
+            'datastore attach',
             'datastore_attach',
             options.to,
             {
@@ -416,16 +541,19 @@ function registerAttach(datastore: Command): void {
               ...(options.force && { force: true }),
               ...(options.auto === false && { no_auto: true }),
             },
-            { debug: options.debug }
+            [
+              planStep('setDatastoreState', {
+                datastore: ref,
+                state: JSON.stringify({
+                  attachedTo: options.to,
+                  ...(options.writes && { writes: options.writes }),
+                  mounted: true,
+                }),
+              }),
+            ],
+            options.debug
           );
-          await setDatastoreState(ref, {
-            attachedTo: options.to,
-            ...(options.writes && { writes: options.writes }),
-            // Carried, not dropped: the schema's contract is that lastHolder is never cleared, only overwritten by the next detach. Attaching does not make the previous holder's registry row untrue.
-            ...(entry?.lastHolder && { lastHolder: entry.lastHolder }),
-            mounted: true,
-            attachedAt: new Date().toISOString(),
-          });
+          if (settledPending(outcome)) return;
           outputService.success(
             t('commands.datastore.attach.attached', { ref, machine: options.to })
           );
@@ -466,18 +594,23 @@ function registerAttach(datastore: Command): void {
           }
         }
 
-        await dispatch(
+        // Remember WHO held it. renet's registry row, the ceph pool/image record a later relocation has to ferry, survives only on that machine, so a detached datastore that forgets its last holder cannot be attached anywhere else: `datastore attach --to <other>` fails "not registered on this machine" and the CLI has nowhere to fetch the row from. The whole entry is replaced
+        // rather than merged because every OTHER field describes an attachment that no longer exists. A --discard detach drops this again with the next step: forgetDatastore clears both halves, which is right, since there is no longer a datastore to relocate.
+        const outcome = await dispatchAsJob(
+          'datastore detach',
           'datastore_detach',
           host,
           { name: ref, ...(options.discard && { discard: true }) },
-          { debug: options.debug }
+          [
+            planStep('setDatastoreState', {
+              datastore: ref,
+              state: JSON.stringify({ lastHolder: host }),
+            }),
+            ...(options.discard ? [planStep('forgetDatastore', { datastore: ref })] : []),
+          ],
+          options.debug
         );
-        // Remember WHO held it. renet's registry row, the ceph pool/image record a later relocation has to ferry, survives only on that machine, so a detached datastore that forgets its last holder cannot be attached anywhere else: `datastore attach --to <other>` fails "not registered on this machine" and the CLI has nowhere to fetch the row from. The whole entry is replaced
-        // rather than merged because every OTHER field describes an attachment that no longer exists. A --discard detach drops this again a line below: forgetDatastore clears both halves, which is right, since there is no longer a datastore to relocate.
-        await setDatastoreState(ref, { lastHolder: host });
-        if (options.discard) {
-          await forgetDatastore(ref);
-        }
+        if (settledPending(outcome)) return;
         outputService.success(
           t(
             options.discard
@@ -536,7 +669,10 @@ function registerFork(datastore: Command): void {
           }
 
           const host = await requireDatastoreHost(name);
-          await dispatch(
+          if (options.attachTo) await assertMachineExists(options.attachTo);
+          // One fork job on the holder; the record is its first step, and `--attach-to` is the client-driven second phase (the attach on another machine), a step too.
+          const outcome = await dispatchAsJob(
+            'datastore fork',
             'datastore_fork',
             host,
             {
@@ -544,38 +680,32 @@ function registerFork(datastore: Command): void {
               tag: options.tag,
               ...(options.cowSize && { cow_size: options.cowSize }),
             },
-            { debug: options.debug }
+            [
+              planStep('recordDatastore', {
+                datastore: forkRef,
+                record: JSON.stringify({
+                  backend: record.backend,
+                  ...(record.cluster && { cluster: record.cluster }),
+                  ...(record.size && { size: record.size }),
+                  parent: { datastore: name },
+                }),
+              }),
+              ...(options.attachTo
+                ? [
+                    planStep('attachForkedDatastore', {
+                      datastore: forkRef,
+                      to: options.attachTo,
+                      ...(options.writes && { writes: options.writes }),
+                      ...(options.cowSize && { cowSize: options.cowSize }),
+                      ...(options.debug && { debug: true }),
+                    }),
+                  ]
+                : []),
+            ],
+            options.debug
           );
-          await recordDatastore(forkRef, {
-            backend: record.backend,
-            ...(record.cluster && { cluster: record.cluster }),
-            ...(record.size && { size: record.size }),
-            parent: { datastore: name },
-          });
+          if (settledPending(outcome)) return;
           outputService.success(t('commands.datastore.fork.forked', { ref: forkRef, name }));
-
-          if (options.attachTo) {
-            await assertMachineExists(options.attachTo);
-            await dispatch(
-              'datastore_attach',
-              options.attachTo,
-              {
-                name: forkRef,
-                writes: options.writes,
-                ...(options.cowSize && { cow_size: options.cowSize }),
-              },
-              { debug: options.debug }
-            );
-            await setDatastoreState(forkRef, {
-              attachedTo: options.attachTo,
-              writes: options.writes,
-              mounted: true,
-              attachedAt: new Date().toISOString(),
-            });
-            outputService.success(
-              t('commands.datastore.attach.attached', { ref: forkRef, machine: options.attachTo })
-            );
-          }
         } catch (error) {
           handleError(error);
         }
@@ -602,12 +732,15 @@ function registerSnapshot(datastore: Command): void {
         await assertCommandPolicy(CMD.DATASTORE_SNAPSHOT_CREATE, undefined, ref);
         const label = options.snapshot ?? new Date().toISOString().replaceAll(/[:.]/g, '-');
         const host = await requireDatastoreHost(ref);
-        await dispatch(
+        const outcome = await dispatchAsJob(
+          'datastore snapshot create',
           'datastore_snapshot_create',
           host,
           { name: ref, snapshot: label },
-          { debug: options.debug }
+          [],
+          options.debug
         );
+        if (settledPending(outcome)) return;
         outputService.success(t('commands.datastore.snapshot.create.created', { ref, label }));
       } catch (error) {
         handleError(error);
@@ -624,13 +757,16 @@ function registerSnapshot(datastore: Command): void {
       try {
         await getDatastore(ref);
         const host = await requireDatastoreHost(ref);
-        const raw = await dispatch(
+        const outcome = await dispatchAsJob(
+          'datastore snapshot list',
           'datastore_snapshot_list',
           host,
           { name: ref },
-          { debug: options.debug, capture: true }
+          [planStep('printCapturedJson')],
+          options.debug,
+          true
         );
-        outputService.print(parseCapturedJson<unknown>(raw), getOutputFormat());
+        settledPending(outcome);
       } catch (error) {
         handleError(error);
       }
@@ -704,10 +840,25 @@ function registerMutators(datastore: Command): void {
         const host = deleteState?.attachedTo;
         if (host) {
           // A failed detach fails the delete: never unlink a record whose pool is still mounted somewhere (03 rule 1).
-          await dispatch('datastore_detach', host, { name: ref }, { debug: options.debug });
-          await setDatastoreState(ref, undefined);
-          await dispatch('datastore_delete', host, { name: ref }, { debug: options.debug });
+          // The detach is the ticket's job; clearing the routing hint and the unlink (`datastore_delete` on the same host, then the record) are the steps after it, so a ticket handed back early never unlinks a pool whose detach has not happened.
+          const outcome = await dispatchAsJob(
+            'datastore delete',
+            'datastore_detach',
+            host,
+            { name: ref },
+            [
+              planStep('setDatastoreState', { datastore: ref }),
+              planStep('deleteDatastoreTail', {
+                datastore: ref,
+                ...(options.debug && { debug: true }),
+              }),
+            ],
+            options.debug
+          );
+          settledPending(outcome);
+          return;
         }
+        // Never attached: no machine holds it, so nothing runs as a job; only the record goes.
         await forgetDatastore(ref);
         outputService.success(t('commands.datastore.delete.deleted', { ref }));
       } catch (error) {

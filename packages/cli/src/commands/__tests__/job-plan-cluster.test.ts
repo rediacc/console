@@ -22,6 +22,13 @@ const m = vi.hoisted(() => ({
   recordDatastore: vi.fn().mockResolvedValue(undefined),
   listDatastores: vi.fn().mockResolvedValue({}),
   requireDatastoreHost: vi.fn().mockResolvedValue('m1'),
+  setDatastoreState: vi.fn().mockResolvedValue(undefined),
+  forgetDatastore: vi.fn().mockResolvedValue(undefined),
+  listDatastoreState: vi.fn().mockResolvedValue({}),
+  reposInDatastore: vi.fn().mockResolvedValue([]),
+  childDatastores: vi.fn().mockResolvedValue([]),
+  print: vi.fn(),
+  direct: vi.fn(),
   success: vi.fn(),
 }));
 vi.mock('../../services/config/config-datastores.js', () => ({
@@ -29,25 +36,63 @@ vi.mock('../../services/config/config-datastores.js', () => ({
   at: (state: Record<string, unknown>, ref: string) => state[ref],
   getDatastore: m.getDatastore,
   listDatastores: m.listDatastores,
-  listDatastoreState: vi.fn().mockResolvedValue({}),
+  listDatastoreState: m.listDatastoreState,
+  forgetDatastore: m.forgetDatastore,
+  setDatastoreState: m.setDatastoreState,
+  reposInDatastore: m.reposInDatastore,
+  childDatastores: m.childDatastores,
   parseDatastoreRef: (ref: string) => ({ name: ref }),
   recordDatastore: m.recordDatastore,
   requireDatastoreHost: m.requireDatastoreHost,
 }));
-vi.mock('../../services/config/config-resources.js', () => ({
-  configService: { getCurrent: vi.fn().mockResolvedValue({}), listClusters: vi.fn() },
+const cfg = vi.hoisted(() => ({
+  getLocalMachine: vi.fn(),
+  updateMachine: vi.fn().mockResolvedValue(undefined),
+  audit: vi.fn(),
 }));
+vi.mock('../../services/config/config-resources.js', () => ({
+  configService: {
+    getCurrent: vi.fn().mockResolvedValue({}),
+    listClusters: vi.fn(),
+    getLocalMachine: cfg.getLocalMachine,
+    updateMachine: cfg.updateMachine,
+    allocateNetworkId: vi.fn().mockResolvedValue(7),
+  },
+}));
+vi.mock('../../services/config/config-cluster-ops.js', () => ({
+  getCluster: vi.fn().mockResolvedValue({
+    pools: [
+      { name: 'cp', role: 'k8s-server', count: 1 },
+      { name: 'ag', role: 'k8s-agent', count: 1 },
+    ],
+  }),
+}));
+vi.mock('../../services/config/network-id-discovery.js', () => ({
+  targetFloor: vi.fn().mockResolvedValue(0),
+}));
+vi.mock('../../services/account/license-preflight.js', () => ({
+  assertMachineSlotsAvailable: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../services/core/audit.js', () => ({ auditService: { recordOperation: cfg.audit } }));
 vi.mock('../../services/executor/executor-factory.js', () => ({
-  getExecutor: () => ({ execute: () => Promise.reject(new Error('the executor is replaced')) }),
+  getExecutor: () => ({ execute: m.direct }),
 }));
 vi.mock('../../services/executor/local-executor.js', () => ({ parseCapturedJson: JSON.parse }));
 vi.mock('../../utils/command-policy.js', () => ({
   assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
-  CMD: { DATASTORE_RESIZE: 'datastore resize', DATASTORE_CREATE: 'datastore create' },
+  CMD: {
+    DATASTORE_RESIZE: 'datastore resize',
+    DATASTORE_CREATE: 'datastore create',
+    DATASTORE_ATTACH: 'datastore attach',
+    DATASTORE_DETACH: 'datastore detach',
+    DATASTORE_FORK: 'datastore fork',
+    DATASTORE_DELETE: 'datastore delete',
+    DATASTORE_SNAPSHOT_CREATE: 'datastore snapshot create',
+  },
 }));
 vi.mock('../_validate.js', () => ({ assertMachineExists: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../services/core/output.js', () => ({
-  outputService: { info: vi.fn(), success: m.success, warn: vi.fn(), print: vi.fn() },
+  outputService: { info: vi.fn(), success: m.success, warn: vi.fn(), print: m.print },
 }));
 vi.mock('../../utils/errors.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -67,6 +112,7 @@ type Executed = {
   machineName: string;
   params: Record<string, unknown>;
   jobSteps?: { name: string; on: string; params: Record<string, unknown> }[];
+  captureOutput?: boolean;
 };
 
 const BACKGROUND = {
@@ -83,7 +129,9 @@ const FAILED = { ...FINISHED, success: false, exitCode: 1, state: 'failed' as co
 let dir: string;
 let store: InstanceType<typeof TicketStore>;
 let executed: Executed[];
+let direct: Executed[];
 let answer: Record<string, unknown>;
+let respond: ((options: Executed) => Record<string, unknown> | undefined) | undefined;
 
 async function run(...argv: string[]): Promise<void> {
   const program = new Command();
@@ -99,15 +147,22 @@ beforeEach(() => {
     size: '1G',
   });
   m.requireDatastoreHost.mockResolvedValue('m1');
+  m.listDatastoreState.mockResolvedValue({});
+  m.direct.mockImplementation((options: unknown) => {
+    direct.push(options as Executed);
+    return Promise.resolve(FINISHED);
+  });
+  direct = [];
   dir = mkdtempSync(join(tmpdir(), 'job-plan-cluster-'));
   store = new TicketStore('test', dir);
   executed = [];
   answer = FINISHED;
+  respond = undefined;
   setCommandJobDeps({
     executor: () => ({
       execute: (options) => {
         executed.push(options as unknown as Executed);
-        return Promise.resolve(answer as never);
+        return Promise.resolve((respond?.(options as unknown as Executed) ?? answer) as never);
       },
     }),
     store: () => store,
@@ -197,5 +252,359 @@ describe('datastore create (one job; the record as a success step)', () => {
       backend: { kind: 'local', machine: 'm1', path: '/mnt/rediacc-ds/tier2' },
       size: '10G',
     });
+  });
+});
+
+const record = { backend: { kind: 'rbd', pool: 'p', image: 'i' }, size: '1G' };
+
+describe('datastore reads (one read job, rendered by its step)', () => {
+  it('status on an attached datastore is one job with the render planned', async () => {
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1' } });
+    answer = { ...BACKGROUND };
+    await run('status', 'tier1');
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({ functionName: 'datastore_status', captureOutput: true });
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual(['renderDatastoreStatus']);
+    expect(m.print).not.toHaveBeenCalled();
+  });
+
+  it('control: followed, the render prints the record and the live payload once', async () => {
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1' } });
+    answer = { ...FINISHED, stdout: '{"state":"ok"}' };
+    await run('status', 'tier1');
+    expect(m.print).toHaveBeenCalledOnce();
+    expect(m.print.mock.calls[0][0]).toMatchObject({
+      name: 'tier1',
+      attachedTo: 'm1',
+      live: { state: 'ok' },
+    });
+  });
+
+  it('status on a detached datastore starts no job', async () => {
+    await run('status', 'tier1');
+    expect(executed).toHaveLength(0);
+    expect(m.print.mock.calls[0][0]).toMatchObject({ attached: false });
+  });
+
+  it('snapshot list is one read job whose step prints the captured list', async () => {
+    answer = { ...FINISHED, stdout: '[{"label":"a"}]' };
+    await run('snapshot', 'list', 'tier1');
+    expect(executed.map((o) => [o.functionName, o.captureOutput])).toEqual([
+      ['datastore_snapshot_list', true],
+    ]);
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual(['printCapturedJson']);
+    expect(m.print).toHaveBeenCalledExactlyOnceWith([{ label: 'a' }], 'table');
+  });
+
+  it('control: datastore list is config only and starts no job', async () => {
+    await run('list');
+    expect(executed).toHaveLength(0);
+  });
+});
+
+describe('datastore snapshot create (one job, no steps)', () => {
+  it('starts one job and reports only once it finished', async () => {
+    await run('snapshot', 'create', 'tier1', '--snapshot', 's1');
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({
+      functionName: 'datastore_snapshot_create',
+      params: { name: 'tier1', snapshot: 's1' },
+    });
+    expect(m.success).toHaveBeenCalledOnce();
+  });
+
+  it('a ticket handed back early claims no success', async () => {
+    answer = BACKGROUND;
+    await run('snapshot', 'create', 'tier1', '--snapshot', 's1');
+    expect(executed).toHaveLength(1);
+    expect(m.success).not.toHaveBeenCalled();
+  });
+});
+
+describe('datastore detach and attach (one job; the routing hint as a step)', () => {
+  beforeEach(() => {
+    m.getDatastore.mockResolvedValue(record);
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1' } });
+  });
+
+  it('detach plans the lastHolder hint and, with --discard, the forget', async () => {
+    answer = BACKGROUND;
+    await run('detach', 'tier1', '--discard', '-y');
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual([
+      'setDatastoreState',
+      'forgetDatastore',
+    ]);
+    expect(m.setDatastoreState).not.toHaveBeenCalled();
+    expect(m.forgetDatastore).not.toHaveBeenCalled();
+  });
+
+  it('control: followed, detach records the last holder once and forgets only with --discard', async () => {
+    await run('detach', 'tier1');
+    expect(m.setDatastoreState).toHaveBeenCalledExactlyOnceWith('tier1', { lastHolder: 'm1' });
+    expect(m.forgetDatastore).not.toHaveBeenCalled();
+  });
+
+  it('a failed detach job records nothing', async () => {
+    answer = FAILED;
+    await expect(run('detach', 'tier1')).rejects.toThrow(/datastore_detach/);
+    expect(m.setDatastoreState).not.toHaveBeenCalled();
+  });
+
+  it('a plain attach is one job on the target with the state as its step', async () => {
+    m.listDatastoreState.mockResolvedValue({});
+    answer = BACKGROUND;
+    await run('attach', 'tier1', '--to', 'm2');
+    expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_attach', 'm2'],
+    ]);
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual(['setDatastoreState']);
+    expect(m.setDatastoreState).not.toHaveBeenCalled();
+  });
+
+  it('control: followed, a plain attach records the holder with a stamped attachedAt', async () => {
+    m.listDatastoreState.mockResolvedValue({});
+    await run('attach', 'tier1', '--to', 'm2');
+    expect(m.setDatastoreState).toHaveBeenCalledOnce();
+    expect(m.setDatastoreState.mock.calls[0][1]).toMatchObject({
+      attachedTo: 'm2',
+      mounted: true,
+      attachedAt: expect.any(String),
+    });
+  });
+
+  it('a relocation starts with the holder read job and chains adopt, detach, attach from its step', async () => {
+    answer = { ...FINISHED, stdout: JSON.stringify([{ name: 'tier1', backend: 'ceph' }]) };
+    await run('attach', 'tier1', '--to', 'm2');
+    expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_list', 'm1'],
+    ]);
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual(['relocateDatastore']);
+    expect(direct.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_adopt', 'm2'],
+      ['datastore_detach', 'm1'],
+      ['datastore_attach', 'm2'],
+    ]);
+    expect(m.setDatastoreState.mock.calls[0][1]).toMatchObject({ attachedTo: 'm2' });
+  });
+
+  it('a relocation handed back early has made no adopt, detach or attach', async () => {
+    answer = BACKGROUND;
+    await run('attach', 'tier1', '--to', 'm2');
+    expect(direct).toHaveLength(0);
+    expect(m.setDatastoreState).not.toHaveBeenCalled();
+  });
+
+  it('a local-backed relocation stops before any destructive call', async () => {
+    answer = { ...FINISHED, stdout: JSON.stringify([{ name: 'tier1', backend: 'local' }]) };
+    await run('attach', 'tier1', '--to', 'm2');
+    expect(direct).toHaveLength(0);
+    expect(process.exitCode).toBe(1);
+  });
+});
+
+describe('datastore fork and delete (a second phase as a step)', () => {
+  beforeEach(() => {
+    m.getDatastore.mockResolvedValue(record);
+  });
+
+  it('fork is one job on the holder, the record is its step, and --attach-to adds the attach step', async () => {
+    answer = BACKGROUND;
+    await run('fork', 'tier1', '--tag', 't', '--attach-to', 'm2', '--writes', 'ceph');
+    expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_fork', 'm1'],
+    ]);
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual([
+      'recordDatastore',
+      'attachForkedDatastore',
+    ]);
+    expect(m.recordDatastore).not.toHaveBeenCalled();
+    expect(direct).toHaveLength(0);
+  });
+
+  it('control: followed, fork records the fork then attaches it on the second machine', async () => {
+    await run('fork', 'tier1', '--tag', 't', '--attach-to', 'm2', '--writes', 'ceph');
+    expect(m.recordDatastore.mock.calls[0][0]).toBe('tier1:t');
+    expect(direct.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_attach', 'm2'],
+    ]);
+    expect(m.setDatastoreState.mock.calls[0][0]).toBe('tier1:t');
+  });
+
+  it('delete of an attached datastore detaches as the job and unlinks from its step', async () => {
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1' } });
+    answer = BACKGROUND;
+    await run('delete', 'tier1', '-y');
+    expect(executed.map((o) => o.functionName)).toEqual(['datastore_detach']);
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual([
+      'setDatastoreState',
+      'deleteDatastoreTail',
+    ]);
+    // Nothing is unlinked while the detach has not finished.
+    expect(direct).toHaveLength(0);
+    expect(m.forgetDatastore).not.toHaveBeenCalled();
+  });
+
+  it('control: followed, delete clears the hint, deletes the pool, then forgets the record', async () => {
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1' } });
+    await run('delete', 'tier1', '-y');
+    expect(m.setDatastoreState).toHaveBeenCalledWith('tier1', undefined);
+    expect(direct.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_delete', 'm1'],
+    ]);
+    expect(m.forgetDatastore).toHaveBeenCalledExactlyOnceWith('tier1');
+  });
+
+  it('delete of a detached datastore starts no job', async () => {
+    await run('delete', 'tier1', '-y');
+    expect(executed).toHaveLength(0);
+    expect(m.forgetDatastore).toHaveBeenCalledExactlyOnceWith('tier1');
+  });
+
+  it('a failed detach never unlinks', async () => {
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1' } });
+    answer = FAILED;
+    await expect(run('delete', 'tier1', '-y')).rejects.toThrow(/datastore_detach/);
+    expect(direct).toHaveLength(0);
+    expect(m.forgetDatastore).not.toHaveBeenCalled();
+  });
+});
+
+describe('cluster verbs (one job per phase, one ticket per phase)', () => {
+  const machines: Record<string, Record<string, unknown>> = {
+    'c1-cp-1': { ip: '10.0.0.1' },
+    'c1-ag-1': { ip: '10.0.0.2' },
+  };
+  beforeEach(() => {
+    machines['c1-ag-1'] = { ip: '10.0.0.2' };
+    cfg.getLocalMachine.mockImplementation((name: string) =>
+      Promise.resolve(machines[name] ?? { ip: '10.0.0.9' })
+    );
+  });
+
+  it('join: the token read is the first job and the join runs from its step with the membership steps', async () => {
+    const { joinCluster } = await import('../../services/cluster/cluster-membership.js');
+    respond = () => ({ ...FINISHED, stdout: 'K10tokenvalue' });
+    await joinCluster('c1-ag-1', { cluster: 'c1' });
+    expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['kube_join_token', 'c1-cp-1'],
+      ['kube_join', 'c1-ag-1'],
+    ]);
+    expect(executed[0].jobSteps?.map((x) => x.name)).toEqual(['joinClusterTail']);
+    expect(executed[1].jobSteps?.map((x) => x.name)).toEqual([
+      'updateMachineCluster',
+      'recordClusterAudit',
+    ]);
+    expect(cfg.updateMachine).toHaveBeenCalledExactlyOnceWith('c1-ag-1', {
+      cluster: { cluster: 'c1', pool: 'ag' },
+    });
+    expect(cfg.audit).toHaveBeenCalledOnce();
+  });
+
+  it('join handed back at the token phase starts no join and records no membership', async () => {
+    const { joinCluster } = await import('../../services/cluster/cluster-membership.js');
+    respond = () => BACKGROUND;
+    await joinCluster('c1-ag-1', { cluster: 'c1' });
+    expect(executed.map((o) => o.functionName)).toEqual(['kube_join_token']);
+    expect(cfg.updateMachine).not.toHaveBeenCalled();
+    expect(cfg.audit).not.toHaveBeenCalled();
+  });
+
+  it('a failed join job records no membership', async () => {
+    const { joinCluster } = await import('../../services/cluster/cluster-membership.js');
+    respond = (o) =>
+      o.functionName === 'kube_join' ? FAILED : { ...FINISHED, stdout: 'K10tokenvalue' };
+    await expect(joinCluster('c1-ag-1', { cluster: 'c1' })).rejects.toThrow(
+      /did not finish|kube_join/
+    );
+    expect(cfg.updateMachine).not.toHaveBeenCalled();
+  });
+
+  it('evict: node removal on the control plane, then the uninstall carrying the deregistration', async () => {
+    const { evictCluster } = await import('../../services/cluster/cluster-membership.js');
+    machines['c1-ag-1'] = { ip: '10.0.0.2', cluster: { cluster: 'c1', pool: 'ag' } };
+    await evictCluster('c1-ag-1', {});
+    expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['kube_node_remove', 'c1-cp-1'],
+      ['kube_uninstall', 'c1-ag-1'],
+    ]);
+    expect(executed[1].jobSteps?.map((x) => x.name)).toEqual([
+      'updateMachineCluster',
+      'recordClusterAudit',
+    ]);
+    expect(cfg.updateMachine).toHaveBeenCalledExactlyOnceWith('c1-ag-1', { cluster: undefined });
+  });
+
+  it('evict deregisters inline when the node-side uninstall fails (a dead node)', async () => {
+    const { evictCluster } = await import('../../services/cluster/cluster-membership.js');
+    machines['c1-ag-1'] = { ip: '10.0.0.2', cluster: { cluster: 'c1', pool: 'ag' } };
+    respond = (o) => (o.functionName === 'kube_uninstall' ? FAILED : undefined);
+    await evictCluster('c1-ag-1', {});
+    expect(cfg.updateMachine).toHaveBeenCalledExactlyOnceWith('c1-ag-1', { cluster: undefined });
+    expect(cfg.audit).toHaveBeenCalledOnce();
+  });
+
+  it('evict handed back at the node removal never uninstalls or deregisters', async () => {
+    const { evictCluster } = await import('../../services/cluster/cluster-membership.js');
+    machines['c1-ag-1'] = { ip: '10.0.0.2', cluster: { cluster: 'c1', pool: 'ag' } };
+    answer = BACKGROUND;
+    await evictCluster('c1-ag-1', {});
+    expect(executed.map((o) => o.functionName)).toEqual(['kube_node_remove']);
+    expect(cfg.updateMachine).not.toHaveBeenCalled();
+  });
+
+  it('snapshot create: the listing, then the group snapshot job carrying the report step', async () => {
+    const { createClusterSnapshot } = await import('../../services/cluster/cluster-snapshot.js');
+    respond = (o) =>
+      o.functionName === 'datastore_list'
+        ? {
+            ...FINISHED,
+            stdout: JSON.stringify([
+              { name: 'ds-control-c1', backend: 'ceph', cluster: 'c1' },
+              { name: 'scratch', backend: 'local', cluster: 'c1' },
+            ]),
+          }
+        : undefined;
+    await createClusterSnapshot('c1', { snapshot: 's1' });
+    expect(executed.map((o) => o.functionName)).toEqual([
+      'datastore_list',
+      'datastore_snapshot_create',
+    ]);
+    expect(executed[1].params).toMatchObject({ group: 'c1', snapshot: 's1' });
+    expect(executed[1].jobSteps?.map((x) => x.name)).toEqual(['reportClusterSnapshot']);
+    expect(m.success).toHaveBeenCalledOnce();
+  });
+
+  it('snapshot create handed back claims no snapshot', async () => {
+    const { createClusterSnapshot } = await import('../../services/cluster/cluster-snapshot.js');
+    respond = (o) =>
+      o.functionName === 'datastore_list'
+        ? {
+            ...FINISHED,
+            stdout: JSON.stringify([{ name: 'ds-control-c1', backend: 'ceph', cluster: 'c1' }]),
+          }
+        : BACKGROUND;
+    await createClusterSnapshot('c1', { snapshot: 's1' });
+    expect(m.success).not.toHaveBeenCalled();
+  });
+
+  it('snapshot list is one read job whose step prints', async () => {
+    const { listClusterSnapshots } = await import('../../services/cluster/cluster-snapshot.js');
+    answer = { ...FINISHED, stdout: '[{"snapshot":"s1"}]' };
+    await listClusterSnapshots('c1');
+    expect(executed.map((o) => o.functionName)).toEqual(['datastore_snapshot_list']);
+    expect(m.print).toHaveBeenCalledExactlyOnceWith([{ snapshot: 's1' }], 'table');
+  });
+
+  it('a chain phase still running stops the chain with a named error instead of starting the next phase', async () => {
+    const { dispatch } = await import('../../services/cluster/cluster-kube.js');
+    answer = BACKGROUND;
+    await expect(dispatch('kube_install', 'c1-cp-1', {})).rejects.toThrow(/still running/);
+  });
+
+  it('control: a finished chain phase returns its result', async () => {
+    const { dispatch } = await import('../../services/cluster/cluster-kube.js');
+    const result = await dispatch('kube_install', 'c1-cp-1', {});
+    expect(result.success).toBe(true);
+    expect(executed).toHaveLength(1);
   });
 });

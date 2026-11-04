@@ -17,6 +17,8 @@
 import { getCluster } from '../config/config-cluster-ops.js';
 import { outputService } from '../core/output.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
+import { bindStepHandler, planStep } from '../jobs/steps.js';
+import { runClusterPhase } from './cluster-job.js';
 import { dispatch, K8S_SERVER_ROLES, k8sPoolsOf, resolveK8sMembers } from './cluster-kube.js';
 
 /** One datastore record from `renet datastore list --json`. */
@@ -80,15 +82,41 @@ export async function createClusterSnapshot(
     );
   }
 
-  await dispatch(
+  // The closing job; the report (it needs the datastores listed above) is its step, so a ticket handed back early claims nothing.
+  const closing = await runClusterPhase(
     'datastore_snapshot_create',
     control,
     { group: clusterName, snapshot },
-    { debug: options.debug }
+    {
+      debug: options.debug,
+      verb: 'cluster snapshot create',
+      steps: [
+        planStep('reportClusterSnapshot', {
+          cluster: clusterName,
+          snapshot,
+          inInstant: inInstant.join(','),
+          outsideInstant: outsideInstant.join(','),
+        }),
+      ],
+    }
   );
+  if (closing.pending) return;
+  if (closing.unfinished.length > 0) {
+    throw new Error(`Cluster snapshot "${snapshot}" was taken, but its report did not finish.`);
+  }
+}
 
+function names(value: unknown): string[] {
+  return typeof value === 'string' && value !== '' ? value.split(',') : [];
+}
+
+/** The report of `cluster snapshot create`, once the group snapshot job succeeded. */
+bindStepHandler('reportClusterSnapshot', ({ params }) => {
+  const clusterName = String(params.cluster);
+  const inInstant = names(params.inInstant);
+  const outsideInstant = names(params.outsideInstant);
   outputService.success(
-    `Cluster "${clusterName}" snapshotted as "${snapshot}": ${inInstant.length} datastore(s) ` +
+    `Cluster "${clusterName}" snapshotted as "${String(params.snapshot)}": ${inInstant.length} datastore(s) ` +
       `(${inInstant.join(', ')}) at ONE crash-consistent instant. Nothing stopped.`
   );
   if (outsideInstant.length > 0) {
@@ -97,19 +125,27 @@ export async function createClusterSnapshot(
         `block-level group primitive, 03 §3). They are NOT part of this snapshot.`
     );
   }
-}
+  return Promise.resolve();
+});
 
-/** List the cluster's group snapshots. */
+/** List the cluster's group snapshots: one read job, printed by its step. */
 export async function listClusterSnapshots(
   clusterName: string,
   options: { debug?: boolean } = {}
-): Promise<unknown> {
+): Promise<void> {
   const control = await controlMachine(clusterName);
-  const res = await dispatch(
+  const listing = await runClusterPhase(
     'datastore_snapshot_list',
     control,
     { group: clusterName },
-    { debug: options.debug, capture: true }
+    {
+      debug: options.debug,
+      capture: true,
+      verb: 'cluster snapshot list',
+      steps: [planStep('printCapturedJson')],
+    }
   );
-  return parseCapturedJson<unknown>(res.stdout);
+  if (listing.unfinished.length > 0) {
+    throw new Error('The snapshot list was read, but printing it did not finish.');
+  }
 }

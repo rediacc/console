@@ -5,6 +5,7 @@ import {
   migrateCluster,
   rehearseCluster,
 } from '../../services/cluster/cluster-fork.js';
+import { withClusterVerb } from '../../services/cluster/cluster-job.js';
 import { evictCluster, joinCluster } from '../../services/cluster/cluster-membership.js';
 import {
   createCluster,
@@ -107,16 +108,18 @@ function registerCreate(cluster: Command): void {
           throw new ValidationError(t('errors.cluster.declareNeedsProvider'));
         }
 
-        await createCluster(name, {
-          sshUser: options.sshUser,
-          baseDomain: options.baseDomain,
-          controlDs: {
-            size: options.controlDsSize,
-            backend: options.controlDsBackend as 'local' | 'ceph' | undefined,
-            pool: options.controlDsPool,
-          },
-          debug: options.debug,
-        });
+        await withClusterVerb('cluster create', () =>
+          createCluster(name, {
+            sshUser: options.sshUser,
+            baseDomain: options.baseDomain,
+            controlDs: {
+              size: options.controlDsSize,
+              backend: options.controlDsBackend as 'local' | 'ceph' | undefined,
+              pool: options.controlDsPool,
+            },
+            debug: options.debug,
+          })
+        );
       }
     );
 }
@@ -165,7 +168,9 @@ function registerScale(cluster: Command): void {
       if (!Number.isInteger(count) || count < 0) {
         throw new ValidationError(t('errors.cluster.countInvalid'));
       }
-      await scaleCluster(name, { pool: options.pool, count, debug: options.debug });
+      await withClusterVerb('cluster scale', () =>
+        scaleCluster(name, { pool: options.pool, count, debug: options.debug })
+      );
     });
 }
 
@@ -233,13 +238,15 @@ function registerForkMigrate(cluster: Command): void {
         if (options.writes && options.writes !== 'local' && options.writes !== 'ceph') {
           throw new ValidationError(t('errors.cluster.forkWritesInvalid'));
         }
-        await forkCluster(name, {
-          tag: options.tag,
-          cluster: options.to,
-          writes: options.writes as 'local' | 'ceph' | undefined,
-          up: options.up,
-          debug: options.debug,
-        });
+        await withClusterVerb('cluster fork', () =>
+          forkCluster(name, {
+            tag: options.tag,
+            cluster: options.to,
+            writes: options.writes as 'local' | 'ceph' | undefined,
+            up: options.up,
+            debug: options.debug,
+          })
+        );
       }
     );
 
@@ -252,7 +259,9 @@ function registerForkMigrate(cluster: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { to: string } & DebugOpt) => {
       await assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, name);
-      await migrateCluster(name, { to: options.to, debug: options.debug });
+      await withClusterVerb('cluster migrate', () =>
+        migrateCluster(name, { to: options.to, debug: options.debug })
+      );
     });
 
   cluster
@@ -266,11 +275,13 @@ function registerForkMigrate(cluster: Command): void {
     .action(async (name: string, options: { on: string; tag?: string } & DebugOpt) => {
       // Rehearse composes a fork; gate it under the same policy as cluster fork.
       await assertCommandPolicy(CMD.CLUSTER_FORK, undefined, name);
-      await rehearseCluster(name, {
-        cluster: options.on,
-        tag: options.tag,
-        debug: options.debug,
-      });
+      await withClusterVerb('cluster rehearse', () =>
+        rehearseCluster(name, {
+          cluster: options.on,
+          tag: options.tag,
+          debug: options.debug,
+        })
+      );
     });
 }
 
@@ -289,7 +300,9 @@ function registerSnapshot(cluster: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { snapshot?: string } & DebugOpt) => {
       await assertCommandPolicy(CMD.CLUSTER_SNAPSHOT_CREATE, undefined, name);
-      await createClusterSnapshot(name, { snapshot: options.snapshot, debug: options.debug });
+      await withClusterVerb('cluster snapshot create', () =>
+        createClusterSnapshot(name, { snapshot: options.snapshot, debug: options.debug })
+      );
     });
 
   snapshot
@@ -299,8 +312,9 @@ function registerSnapshot(cluster: Command): void {
     .argument('<cluster>', t('options.clusterName'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: DebugOpt) => {
-      const snapshots = await listClusterSnapshots(name, { debug: options.debug });
-      outputService.print(snapshots, getOutputFormat());
+      await withClusterVerb('cluster snapshot list', () =>
+        listClusterSnapshots(name, { debug: options.debug })
+      );
     });
 }
 

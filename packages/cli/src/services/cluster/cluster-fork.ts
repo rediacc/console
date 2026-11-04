@@ -17,6 +17,7 @@ import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
+import { runClusterPhase } from './cluster-job.js';
 import {
   allocateAgentNetworkId,
   assertDestNotRunningOwnK3s,
@@ -467,7 +468,7 @@ async function tryDispatch(
   debug?: boolean
 ): Promise<void> {
   try {
-    await getExecutor().execute({ functionName, machineName, params, debug });
+    await runClusterPhase(functionName, machineName, params, { debug });
   } catch (err) {
     outputService.warn(`  discard: ${functionName} on ${machineName} failed (continuing): ${err}`);
   }
