@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts stage --version V --bundle-dir D --renet P (--natives-tar T | --node-modules N)
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts fetch --version V --dest workers/proxy/stage/
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts stage-local [--dest workers/proxy/stage/]
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts stage-local [--dest workers/proxy/stage/] [--image-smoke-only]
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.executor_artifacts retain --current V --previous V [--apply]
 
 THE LAYOUT. `executor/v<V>/` in the releases R2 bucket (`RELEASES_BUCKET`) holds five objects: `cli-bundle.cjs` and `package.json` (the `cli-bundle-<sha>` CI artifact, ci-build-docker.yml), `renet-linux-amd64` (the `renet-binaries-<sha>` artifact), `node-natives-linux-x64.tar` (ssh2 and cpu-features at the lockfile versions) and `manifest.json` (each file's sha256 and size, the version and the git sha). The proxy Dockerfile copies the fetched directory, runs `sha256sum -c` against the manifest and builds nothing from source.
@@ -13,9 +13,11 @@ FETCH VERIFIES. Every file is hashed after download and compared with the manife
 
 U3 (the licence key in the renet artifact). `ci-build-renet.yml` builds renet with `ACCOUNT_ED25519_PUBLIC_KEY` from the bws secret of that name, and `build_renet.py` bakes it through `-ldflags`; `cd-deploy-account.yml` and `cd-deploy-worker.yml` read the same single secret name, so the CI artifact is meant to carry the production licence public key. Whether edge and stable verify with it is settled by the live deploy run, not by this module. The artifact lives one day (`retention-days: 1`), so `stage` runs in the same CD pipeline that built it. `stage` takes the renet path as an argument, so a renet built in CD with the key bound through bws drops in with no change here.
 
+THE RENET GATE. `fetch` and `stage-local` hand a renet to an image, so both run `release.renet_key_gate`'s verdict on it (`check_renet`) and refuse a wrongly keyed one, with the expected key from `ACCOUNT_ED25519_PUBLIC_KEY`. Staleness is what the deploy names: `fetch` and `stage` refuse a baked version other than the named one; `stage-local` refuses a `vcs.revision` other than the renet this tree builds, the checkout's HEAD or, with no checkout, the gitlink. `stage` checks the version only, because its CD job binds no key, and `fetch` checks both before any image is built. The build info is read from the binary's bytes, so no step needs a Go toolchain. `stage-local --image-smoke-only` skips the gate for a stage that never leaves its job, the CI image smoke, whose job holds no key and no submodule; a deploy never passes it. A gate at staging cannot end the exposure of a long-lived image: that is why an executor never uploads renet at all (`packages/cli/src/services/renet/renet-execution.ts`, `inExecutor`).
+
 RETENTION. `select_prune` keeps the newest `KEEP_RELEASES` versions plus the current and previous production versions, whatever their age, and refuses when the current version is unknown (unknown is never prunable).
 
-ENVIRONMENT. `CLOUDFLARE_R2_ENDPOINT` plus the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` the aws CLI reads, as `promote_r2_to_stable` does. Every call goes through `awscli.run`.
+ENVIRONMENT. `CLOUDFLARE_R2_ENDPOINT` plus the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` the aws CLI reads, as `promote_r2_to_stable` does. Every call goes through `awscli.run`. `ACCOUNT_ED25519_PUBLIC_KEY` is the renet gate's expected key.
 """
 
 from __future__ import annotations
@@ -35,9 +37,10 @@ from typing import TYPE_CHECKING, cast
 
 from rediacc_ci import paths
 from rediacc_ci.core import awscli
+from rediacc_ci.release import renet_key_gate
 from rediacc_ci.release.list_edge_releases import semver
 from rediacc_ci.release.retention_contract import KEEP_RELEASES
-from rediacc_ci.well_known import RELEASES_BUCKET
+from rediacc_ci.well_known import RELEASES_BUCKET, RENET_REPO
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -60,6 +63,14 @@ LOCAL_VERSION = "0.0.0-local"
 DEFAULT_DEST = "workers/proxy/stage"
 
 _VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(-branch\.[0-9a-f]{7,40})?$")
+
+# Where a Go binary's build info starts for renet's own module (an embedded Go asset carries its own), and the sentinel Go writes after it (cmd/go/internal/modload `infoEnd`).
+_RENET_MODINFO_START = ("path\tgithub.com/%s/cmd/renet\n" % RENET_REPO).encode()
+_GO_MODINFO_END = bytes.fromhex("f932433186182072008242104116d8f2")
+# A bound on the build-info text, so a file with no end sentinel is not read to its end.
+_MODINFO_MAX_BYTES = 256 * 1024
+_VCS_REVISION = re.compile(r"^build\tvcs\.revision=([0-9a-f]+)$", re.MULTILINE)
+_VCS_MODIFIED = re.compile(r"^build\tvcs\.modified=true$", re.MULTILINE)
 
 
 class ArtifactError(Exception):
@@ -237,13 +248,98 @@ def delete_version(version: str) -> None:
         raise ArtifactError("%s: aws delete-object failed for %s" % (SELF, ", ".join(failed)))
 
 
+# ---- the renet gate ---------------------------------------------------------
+
+
+def renet_build_text(binary: pathlib.Path) -> str:
+    """The build info of a renet binary, in the shape `go version -m` prints it, read from its bytes so no step needs a Go toolchain. Refuses bytes that are not a renet build."""
+    data = binary.read_bytes()
+    start = data.find(_RENET_MODINFO_START)
+    if start < 0:
+        raise ArtifactError(
+            "%s: %s is not a renet build (no build info for its module)" % (SELF, binary)
+        )
+    window = data[start : start + _MODINFO_MAX_BYTES]
+    end = window.find(_GO_MODINFO_END)
+    return (window if end < 0 else window[:end]).decode("latin-1")
+
+
+def tree_renet_revision(root: pathlib.Path) -> str:
+    """The renet commit this tree builds: the checkout's HEAD, or the gitlink when private/renet is not checked out. An empty directory must not reach the console's own HEAD, hence the `.git` test."""
+    submodule = root / "private" / "renet"
+    argv = (
+        ["git", "-C", str(submodule), "rev-parse", "HEAD"]
+        if (submodule / ".git").exists()
+        else ["git", "-C", str(root), "rev-parse", "HEAD:private/renet"]
+    )
+    proc = subprocess.run(argv, capture_output=True, text=True, check=False)
+    found = proc.stdout.strip()
+    if proc.returncode != 0 or not found:
+        raise ArtifactError(
+            "%s: cannot name the renet revision of %s, so a stale renet could not be told apart: %s"
+            % (SELF, root, proc.stderr.strip())
+        )
+    return found
+
+
+def _refuse_a_wrong_key(binary: pathlib.Path, info: renet_key_gate.BuildInfo) -> None:
+    """`release.renet_key_gate`'s verdict. Its messages carry fingerprints, never a key."""
+    try:
+        want = renet_key_gate.expected_fingerprint(os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""))
+    except renet_key_gate.KeyGateError as exc:
+        raise ArtifactError("%s: %s" % (SELF, exc)) from exc
+    reasons, _have = renet_key_gate.refusals(info, want)
+    if reasons:
+        raise ArtifactError("%s: refused %s: %s" % (SELF, binary, "; ".join(reasons)))
+
+
+def check_renet(
+    binary: pathlib.Path,
+    *,
+    version: str | None = None,
+    tree: pathlib.Path | None = None,
+    key: bool = True,
+) -> None:
+    """Refuse a renet that is wrongly keyed (`key`), stamped with a version other than `version`, or built from a revision other than the one `tree` builds."""
+    text = renet_build_text(binary)
+    info = renet_key_gate.parse_build_info(text)
+    if key:
+        _refuse_a_wrong_key(binary, info)
+    if version is not None and info.version != version:
+        raise ArtifactError(
+            "%s: refused %s as stale: it is stamped v%s and this deploy names v%s"
+            % (SELF, binary, info.version or "(none)", version)
+        )
+    if tree is None:
+        return
+    match = _VCS_REVISION.search(text)
+    if match is None:
+        raise ArtifactError(
+            "%s: refused %s: it carries no vcs.revision, so nothing shows it was built from this tree"
+            % (SELF, binary)
+        )
+    want = tree_renet_revision(tree)
+    if match.group(1) != want:
+        raise ArtifactError(
+            "%s: refused %s as stale: built from renet %s, and this tree builds %s. Rebuild it with rediacc_ci.build.build_renet"
+            % (SELF, binary, match.group(1)[:12], want[:12])
+        )
+    if _VCS_MODIFIED.search(text):
+        print(
+            "%s: %s was built from a modified renet tree at %s (vcs.modified=true)"
+            % (SELF, binary, want[:12]),
+            file=sys.stderr,
+        )
+
+
 # ---- stage / fetch ----------------------------------------------------------
 
 
 def stage(version: str, git_sha: str, sources: dict[str, pathlib.Path]) -> str:
-    """Write `executor/v<version>/` once. Returns `staged` or `skipped`; refuses when the version exists with other bytes."""
+    """Write `executor/v<version>/` once. Returns `staged` or `skipped`; refuses when the version exists with other bytes, or holds a renet stamped with another version."""
     check_version(version)
     manifest = build_manifest(version, git_sha, sources)
+    check_renet(sources[RENET], version=version, key=False)
     with tempfile.TemporaryDirectory(prefix="executor-stage-") as tmp:
         existing = pathlib.Path(tmp) / MANIFEST
         if get_object(key_for(version, MANIFEST), existing):
@@ -265,7 +361,7 @@ def stage(version: str, git_sha: str, sources: dict[str, pathlib.Path]) -> str:
 
 
 def fetch(version: str, dest: pathlib.Path) -> dict[str, dict[str, object]]:
-    """Download and verify `executor/v<version>/` into `dest`. Refuses on any sha256 or size mismatch."""
+    """Download and verify `executor/v<version>/` into `dest`. Refuses on any sha256 or size mismatch, and on a renet the gate refuses (`check_renet`), removing it and writing no manifest."""
     check_version(version)
     dest.mkdir(parents=True, exist_ok=True)
     manifest_path = dest / MANIFEST
@@ -284,6 +380,11 @@ def fetch(version: str, dest: pathlib.Path) -> dict[str, dict[str, object]]:
                     "%s: v%s lists %s but the object is missing" % (SELF, version, name)
                 )
             verify_file(target, files[name], version)
+        try:
+            check_renet(dest / RENET, version=version)
+        except ArtifactError:
+            (dest / RENET).unlink(missing_ok=True)
+            raise
         shutil.copyfile(staged_manifest, manifest_path)
     return files
 
@@ -380,8 +481,10 @@ def git_head() -> str:
     return proc.stdout.strip() if proc.returncode == 0 else "unknown"
 
 
-def stage_local(dest: pathlib.Path, root: pathlib.Path, git_sha: str) -> dict[str, object]:
-    """Bench and local runs: the same directory `fetch` produces, from a tree build (no R2)."""
+def stage_local(
+    dest: pathlib.Path, root: pathlib.Path, git_sha: str, *, image_smoke_only: bool = False
+) -> dict[str, object]:
+    """Bench and local runs: the same directory `fetch` produces, from a tree build (no R2). A renet the gate refuses stages nothing; `image_smoke_only` skips the gate for a stage that never leaves its job."""
     cli = root / "packages" / "cli"
     sources = {
         BUNDLE: cli / "dist" / "cli-bundle.cjs",
@@ -391,6 +494,8 @@ def stage_local(dest: pathlib.Path, root: pathlib.Path, git_sha: str) -> dict[st
     absent = [str(p) for p in sources.values() if not p.is_file()]
     if absent:
         raise ArtifactError("%s: tree build output missing: %s" % (SELF, ", ".join(absent)))
+    if not image_smoke_only:
+        check_renet(sources[RENET], tree=root)
     dest.mkdir(parents=True, exist_ok=True)
     (dest / MANIFEST).unlink(missing_ok=True)
     for name, source in sources.items():
@@ -488,6 +593,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     sl.add_argument("--dest", default=DEFAULT_DEST)
     sl.add_argument("--git-sha", default="")
+    sl.add_argument(
+        "--image-smoke-only",
+        action="store_true",
+        help="skip the renet gate, for the CI image smoke only: the stage never leaves its job, which holds no key and no submodule",
+    )
     rt = sub.add_parser(
         "retain", help="list (and with --apply delete) the versions retention releases"
     )
@@ -513,7 +623,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.verb == "stage-local":
             manifest = stage_local(
-                pathlib.Path(args.dest), paths.repo_root(), args.git_sha or git_head()
+                pathlib.Path(args.dest),
+                paths.repo_root(),
+                args.git_sha or git_head(),
+                image_smoke_only=args.image_smoke_only,
             )
             print("%s: local build staged into %s (%s)" % (SELF, args.dest, manifest["version"]))
         else:
