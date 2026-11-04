@@ -55,7 +55,7 @@ export interface ToolDef {
 }
 
 /** What a windowed tool's description tells the model about the job it may start. */
-const ATTACH_WINDOW_NOTE = `Returns the result, or a job id when the run outlasts about ${JOB_ATTACH_WINDOW_MS / 1000} s (follow it with job_status, job_logs or job_wait).`;
+const ATTACH_WINDOW_NOTE = `Returns the result, or a job id when the run outlasts about ${JOB_ATTACH_WINDOW_MS / 1000} s (follow it with job_status or job_logs).`;
 
 /** Does a command run as a machine job the MCP child attaches to for the window? One predicate, shared with the executor. */
 export function hasAttachWindow(cmd: Pick<ContractCommand, 'plane' | 'detachable'>): boolean {

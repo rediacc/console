@@ -60,17 +60,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['follow', 'debug'],
     },
   },
-  // `--timeout` is a required field in the MCP schema (requiredArgs), so a call always bounds the wait; the tool is on the write budget (the longest) because a wait runs until its timeout, not for one quick read. Callers keep the duration under it.
+  // An agent cannot usefully block on a wait: job_status and job_logs poll, and the ticket envelope names them (PLAN-detached-jobs Design 12).
   'job wait': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'write',
-      excludeOptions: ['debug'],
-      requiredArgs: ['timeout'],
-      descriptionOverride:
-        'Wait for a detached job to finish and return its outcome. timeout is required and must stay under 5m; a job still running at the timeout keeps running and can be waited on again',
-    },
+    mcpExcludeReason:
+      'Blocks until the job ends, which no MCP timeout covers; poll with job_status and job_logs.',
   },
   'job cancel': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },

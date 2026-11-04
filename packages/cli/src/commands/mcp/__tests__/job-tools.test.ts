@@ -66,12 +66,6 @@ describe('MCP job tools', () => {
     expect(refusedFields(logs, { 'job-id': 'j-1' })).toEqual([]);
     expect(logs.command({ 'job-id': 'j-1' })).toEqual(['job', 'logs', 'j-1']);
   });
-
-  it('job_wait refuses a call without timeout and accepts one with it', () => {
-    const wait = tool('job_wait');
-    expect(refusedFields(wait, { 'job-id': 'j-1' })).toContain('timeout');
-    expect(refusedFields(wait, { 'job-id': 'j-1', timeout: '2m' })).toEqual([]);
-  });
 });
 
 describe('requiredArgs on an option, whatever its flag shape', () => {
