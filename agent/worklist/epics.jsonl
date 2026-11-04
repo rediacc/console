@@ -111,3 +111,12 @@
 {"at":"2026-10-23T09:57:31Z","by":"d778be9d","id":"9ba16177","title":"renet bridge and middleware leftovers removed","covers":[],"order":null,"plan":"agent/plans/PLAN-renet-bridge-leftovers.md"}
 {"at":"2026-10-26T09:57:38Z","by":"d778be9d","id":"cc8b955e","title":"console executor serves many orgs: per-org container, per-org issued token, entitlement gate","covers":[],"order":null,"plan":"agent/plans/PLAN-console-executor-multi-org.md"}
 {"at":"2026-10-26T15:46:42Z","by":"d778be9d","id":"548d5805","title":"executor moves to the durable_object scheduling policy before the Container class freezes","covers":[],"order":null,"plan":"agent/plans/PLAN-executor-durable-object-policy.md"}
+{"at":"2026-11-04T07:14:26Z","by":"d778be9d","id":"c6b82e88","title":"settings set verb: one source for the ceilings","covers":[],"order":null,"plan":"agent/plans/PLAN-settings-set-verb.md"}
+{"at":"2026-11-04T07:19:17Z","by":"d778be9d","id":"dbb7de07","title":"cloudflare spend guard closure","covers":[],"order":null,"plan":"agent/plans/PLAN-cloudflare-spend-guard.md"}
+{"at":"2026-11-04T07:31:16Z","by":"d778be9d","id":"09b8bdfa","title":"detached jobs: proxied poll follow and job kinds","covers":[],"order":null,"plan":"agent/plans/PLAN-detached-jobs.md"}
+{"at":"2026-11-04T07:43:02Z","by":"d778be9d","id":"ec9ba176","title":"backup integrity docs and closure","covers":[],"order":null,"plan":"agent/plans/PLAN-backup-integrity.md"}
+{"at":"2026-11-04T08:04:57Z","by":"d778be9d","id":"d6bb9963","title":"backup critical tier proofs","covers":[],"order":null,"plan":"agent/plans/PLAN-backup-critical-tier.md"}
+{"at":"2026-11-04T08:10:31Z","by":"d778be9d","id":"b21ab2e2","title":"real machine tests for jobs and backup","covers":[],"order":null,"plan":"agent/plans/PLAN-jobs-backup-real-machine-tests.md"}
+{"at":"2026-11-04T09:32:26Z","by":"d778be9d","id":"92df2f69","title":"free license ladder F6","covers":[],"order":null,"plan":"agent/plans/PLAN-free-license.md"}
+{"at":"2026-11-04T10:49:52Z","by":"d778be9d","id":"1f877343","title":"guided detached worktree leases","covers":[],"order":null,"plan":"agent/plans/PLAN-worktree-lease.md"}
+{"at":"2026-11-04T12:57:25Z","by":"d778be9d","id":"2e0e531f","title":"Rediaccfile lifecycle runs unprivileged","covers":[],"order":null,"plan":"agent/plans/PLAN-rediaccfile-unprivileged.md"}
