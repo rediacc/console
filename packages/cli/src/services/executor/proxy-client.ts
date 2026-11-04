@@ -343,7 +343,7 @@ export class ProxyClient {
     state.unorderedSkip = state.unorderedSeen;
     try {
       await this.pumpStream(body, onEvent, state);
-      // A clean close with neither a job line, a result nor any output (heartbeats only) dropped before the start was announced: retried like a broken stream. One that printed may have run a command the request id does not dedupe, so it is not re-sent.
+      // A clean close with neither a job line, a result nor any output (heartbeats only) dropped before the start was announced: a detachable command is retried like a broken stream. One that printed may have run a command the request id does not dedupe, so it is not re-sent.
       const silentStart = !state.jobId && !state.outcome && state.eventsSeen === 0;
       // The request id dedupes machine job starts only, so another command that ran silently is never sent twice.
       return silentStart && retriable && getCommand(request.pathKey)?.detachable ? 'retry' : 'done';
