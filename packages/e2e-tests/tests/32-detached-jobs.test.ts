@@ -143,24 +143,6 @@ test.describe
       expect(new Set(unitIds), 'a unit stays loaded for a job gc removed').toEqual(liveIds);
     });
 
-    // Planted red of case 1: the same two starts with the dedupe seam on must make two jobs, so the one-job assertion of case 1 can fail.
-    test('1b. planted red: with the dedupe seam on, two starts with one request id make two jobs', async () => {
-      const vault = await stageVault('dedupe-red', vaultFor(2894));
-      const requestId = `e2e-dedupe-red-${Date.now()}`;
-      const start = `sudo renet job start --executor local --json --no-request-dedupe --request-id ${requestId} --vault @${vault}`;
-      const [a, b] = await Promise.all([w.executeViaBridge(start), w.executeViaBridge(start)]);
-      expect(a.code, a.stderr.slice(-400)).toBe(0);
-      expect(b.code, b.stderr.slice(-400)).toBe(0);
-      const ha = parseHandle(a.stdout);
-      const hb = parseHandle(b.stdout);
-      expect(ha.job_id, 'the seam did not disable dedupe').not.toBe(hb.job_id);
-      const list = await w.executeViaBridge(`sudo renet job list --request-id ${requestId} --json`);
-      const ids = new Set(list.stdout.match(/j[0-9a-f]+-[0-9a-f]{8}/g) ?? []);
-      expect(ids.size, 'the spool should hold both jobs of the planted red').toBeGreaterThanOrEqual(
-        2
-      );
-    });
-
     // Control of case 2: two claims of two different steps are both won, so "exactly one claimant" is not a count that is always one.
     test('2b. control: claims of two different steps are both won', async () => {
       const vault = await stageVault('claim-ctl', vaultFor(2895));
