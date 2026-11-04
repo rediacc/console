@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2750,
- "files": 675,
+ "count": 2748,
+ "files": 674,
  "by_rule": {
-  "R1": 1501,
+  "R1": 1499,
   "R11": 142,
   "R14": 1,
   "R18": 12,
@@ -4057,8 +4057,7 @@
   },
   "packages/cli/src/commands/datastore.ts": {
    "R1": [
-    "60b9c1c43d33dc81",
-    "e1c2a8ca99bb65a5"
+    "60b9c1c43d33dc81"
    ],
    "R7": [
     "586028193ea86787"
@@ -4068,11 +4067,6 @@
    "R1": [
     "21053aea466fc1a6",
     "a3ae17c0bf1d4678"
-   ]
-  },
-  "packages/cli/src/commands/repo-backup-list.ts": {
-   "R1": [
-    "16821d1570f8d4a1"
    ]
   },
   "packages/cli/src/commands/repo-container.ts": {
