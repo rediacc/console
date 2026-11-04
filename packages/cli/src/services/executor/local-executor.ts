@@ -441,7 +441,7 @@ class LocalExecutorService {
       repositoryCredentials,
       repositoryConfigs,
     };
-    // A command kind carries no vault (section 14): renet builds its argv from `--args`.
+    // A command kind carries no vault (section 14): renet builds its argv from `--args`, and a payload kind's blob rides the session.
     const vault = options.commandKind
       ? ''
       : applyVaultDirectives(

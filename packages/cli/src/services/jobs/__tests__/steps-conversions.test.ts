@@ -26,7 +26,6 @@ const AWAITING_BIND: Record<string, string> = {
   reportRepoGc: 'commands/repo-maintenance.ts',
   renderRepoLog: 'commands/repo-branching.ts',
   printRepoStatus: 'commands/repo.ts',
-  seedStrategyRetention: 'commands/backup-ops.ts',
   reconcileConfigState: 'commands/config.ts',
   renderMachineHealth: 'commands/machine/health.ts',
   ensureMachineDns: 'services/provision/infra-provision.ts',

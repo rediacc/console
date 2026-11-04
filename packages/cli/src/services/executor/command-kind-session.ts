@@ -21,6 +21,8 @@ const COMMAND_KIND_ACCESS: Readonly<Record<string, RenetAccess>> = {
   'list-all': 'read-only',
   'backup-cancel': 'read-only',
   'backup-status': 'read-only',
+  'backup-journal': 'read-only',
+  'backup-schedule': 'provision',
 };
 
 /** The access of a kind; an unknown kind reads, and renet refuses it against its own allow-list. */
@@ -51,7 +53,13 @@ export async function runCommandKindSession(
     },
     sftp
   );
-  // No vault: the kind's argv comes from `--args`, and renet reads nothing from stdin but the secret prefix.
-  const result = await runJobExecution(remotePath, '', options, machine, sshPrivateKey);
+  // No vault: the kind's argv comes from `--args`. A payload kind sends its blob where a vault goes, and renet reads nothing else from stdin but the secret prefix.
+  const result = await runJobExecution(
+    remotePath,
+    options.commandKind?.payload ?? '',
+    options,
+    machine,
+    sshPrivateKey
+  );
   return { ...result, durationMs: Date.now() - startTime };
 }

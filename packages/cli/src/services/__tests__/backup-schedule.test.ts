@@ -20,6 +20,7 @@ const mockAcquireRemoteRenet = vi
   .fn()
   .mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
 const mockReadSSHKey = vi.fn().mockResolvedValue('PRIVATE_KEY');
+const mockRunCommandJob = vi.fn();
 const mockRefreshRepoLicensesBatch = vi.fn();
 
 const mockGetBackupStrategy = vi.fn();
@@ -44,6 +45,11 @@ vi.mock('../../remote/sftp/index.js', () => ({
 vi.mock('../renet/renet-execution.js', () => ({
   acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: mockReadSSHKey,
+}));
+
+vi.mock('../jobs/command-job.js', () => ({
+  runCommandJob: mockRunCommandJob,
+  pendingExitCode: () => undefined,
 }));
 
 vi.mock('../account/license.js', () => ({
@@ -774,6 +780,10 @@ describe('pushBackupSchedule (reconcile)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecStreaming.mockResolvedValue(0);
+    mockRunCommandJob.mockResolvedValue({
+      kind: 'finished',
+      result: { success: true, exitCode: 0, durationMs: 1, state: 'succeeded' },
+    });
     mockGetLocalConfig.mockResolvedValue(DEFAULT_LOCAL_CONFIG);
     mockGetCurrent.mockResolvedValue(rdcConfig());
     mockGetBackupStrategy.mockResolvedValue(DEFAULT_STRATEGY);
@@ -792,42 +802,56 @@ describe('pushBackupSchedule (reconcile)', () => {
     return mockExecStreaming.mock.calls.map(([cmd]) => cmd as string);
   }
 
-  it('test 1: no existing units → creates both units atomically via staging + mv', async () => {
+  interface JobPayload {
+    remove: { name: string; timer: boolean; service: boolean; env: boolean; dangling: boolean }[];
+    remove_env: string[];
+    files: { name: string; kind: string; content: string }[];
+    reload: boolean;
+    enable: string[];
+    reset_failed: string[];
+  }
+
+  /** The plan the one `backup-schedule` job was started with: its payload, parsed. */
+  function jobPayload(): JobPayload {
+    expect(mockRunCommandJob).toHaveBeenCalledTimes(1);
+    const options = mockRunCommandJob.mock.calls[0][1] as {
+      functionName: string;
+      commandKind: { name: string; payload: string; args?: unknown };
+    };
+    expect(options.functionName).toBe('backup-schedule');
+    // The unit bodies carry credentials: they ride the stdin payload, never the arguments.
+    expect(options.commandKind.args).toBeUndefined();
+    return JSON.parse(options.commandKind.payload) as JobPayload;
+  }
+
+  /** No unit file is written, moved or enabled over the client's SSH any more: the job does it. */
+  function expectNoClientMutation(): void {
+    const cmds = recordedCommands();
+    expect(cmds.some((c) => c.includes('tee '))).toBe(false);
+    expect(cmds.some((c) => c.startsWith('sudo mv ') || c.startsWith('sudo rm '))).toBe(false);
+    expect(cmds.some((c) => c.includes('systemctl daemon-reload'))).toBe(false);
+    expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
+  }
+
+  it('test 1: no existing units → one backup-schedule job creates both units, reloads and enables the timer', async () => {
     scriptedExec([
       { match: /find \/etc\/systemd\/system/, stdout: '' },
       {
         match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
         stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
       },
-      {
-        match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: healthyTimers('hourly-hot'),
-      },
     ]);
 
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
-    await pushBackupSchedule('hostinger');
+    expect(await pushBackupSchedule('hostinger')).toBe('applied');
 
-    const cmds = recordedCommands();
-    expect(cmds).toContain(
-      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.service.new > /dev/null'
-    );
-    expect(cmds).toContain(
-      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.timer.new > /dev/null'
-    );
-    expect(cmds).toContain(
-      `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.service.new' '/etc/systemd/system/rediacc-backup-hourly-hot.service'`
-    );
-    expect(cmds).toContain(
-      `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.timer.new' '/etc/systemd/system/rediacc-backup-hourly-hot.timer'`
-    );
-    const reloads = cmds.filter((c) => c === 'sudo systemctl daemon-reload');
-    expect(reloads).toHaveLength(1);
-    expect(cmds).toContain('sudo systemctl enable --now rediacc-backup-hourly-hot.timer');
-    // No legacy glob-remove, only orphan cleanup of *.new files.
-    expect(cmds.some((c) => c.includes('rm -f') && c.includes('rediacc-backup-*.service'))).toBe(
-      false
-    );
+    const payload = jobPayload();
+    const hot = payload.files.filter((f) => f.name === 'hourly-hot').map((f) => f.kind);
+    expect(hot).toEqual(['service', 'timer']);
+    expect(payload.reload).toBe(true);
+    expect(payload.enable).toContain('hourly-hot');
+    expect(payload.remove).toEqual([]);
+    expectNoClientMutation();
   });
 
   // The failure this covers is PARTIAL binding, which was completely silent: one strategy bound and deployed ("unchanged"), another enabled but bound to no machine, exit 0, no mention of the second. The operator's only signal was a backup that never ran.
@@ -917,16 +941,12 @@ describe('pushBackupSchedule (reconcile)', () => {
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
-    const cmds = recordedCommands();
-    expect(cmds).toContain(
-      'sudo tee /etc/systemd/system/rediacc-backup-hourly-hot.timer.new > /dev/null'
-    );
-    expect(cmds.filter((c) => c.includes('.service.new'))).toEqual([]);
-    expect(cmds).toContain(
-      `sudo mv '/etc/systemd/system/rediacc-backup-hourly-hot.timer.new' '/etc/systemd/system/rediacc-backup-hourly-hot.timer'`
-    );
-    const reloads = cmds.filter((c) => c === 'sudo systemctl daemon-reload');
-    expect(reloads).toHaveLength(1);
+    const payload = jobPayload();
+    expect(payload.files.filter((f) => f.name === 'hourly-hot').map((f) => f.kind)).toEqual([
+      'timer',
+    ]);
+    expect(payload.reload).toBe(true);
+    expectNoClientMutation();
   });
 
   it('test 4: removed strategy → disable --now, then rm on exact paths (no glob)', async () => {
@@ -957,19 +977,13 @@ describe('pushBackupSchedule (reconcile)', () => {
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
-    const cmds = recordedCommands();
-    const disableIdx = cmds.findIndex(
-      (c) => c === 'sudo systemctl disable --now rediacc-backup-obsolete.timer'
-    );
-    expect(disableIdx).toBeGreaterThanOrEqual(0);
-    const rmIdx = cmds.findIndex(
-      (c) =>
-        c.startsWith('sudo rm -f') &&
-        c.includes('rediacc-backup-obsolete.service') &&
-        c.includes('rediacc-backup-obsolete.timer')
-    );
-    expect(rmIdx).toBeGreaterThan(disableIdx);
-    expect(cmds.some((c) => c.includes('reset-failed'))).toBe(false);
+    // The job disables the timer, then removes the two named files: units by name, never a glob.
+    const payload = jobPayload();
+    expect(payload.remove).toEqual([
+      { name: 'obsolete', timer: true, service: true, env: false, dangling: false },
+    ]);
+    expect(payload.reset_failed).toEqual([]);
+    expectNoClientMutation();
   });
 
   it('test 5: update with in-flight service and no --force → throws with cancel hint', async () => {
@@ -1047,36 +1061,52 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(mockOutputWarn).toHaveBeenCalledWith(
       expect.stringContaining('rediacc-backup-hourly-hot.service is currently running')
     );
-    const cmds = recordedCommands();
-    expect(cmds.some((c) => c.includes('.new'))).toBe(true);
-    expect(cmds).toContain('sudo systemctl daemon-reload');
+    const payload = jobPayload();
+    expect(payload.files.length).toBeGreaterThan(0);
+    expect(payload.reload).toBe(true);
     // Critically: we did NOT stop the running service; systemd keeps the
     // in-memory copy alive until the invocation finishes.
-    expect(cmds.some((c) => c.startsWith('sudo systemctl stop '))).toBe(false);
+    expect(recordedCommands().some((c) => c.startsWith('sudo systemctl stop '))).toBe(false);
   });
 
-  it('test 7: post-deploy verification failure throws with timer name and observed state', async () => {
+  it('test 7: a failed job (renet verifies the timers) throws with its reason', async () => {
     scriptedExec([
       { match: /find \/etc\/systemd\/system/, stdout: '' },
       {
         match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
         stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
       },
-      {
-        match: 'Id,LoadState,ActiveState,UnitFileState',
-        stdout: showRecord('rediacc-backup-hourly-hot.timer', {
-          LoadState: 'loaded',
-          ActiveState: 'inactive',
-          SubState: 'dead',
-          UnitFileState: 'enabled',
-        }),
-      },
     ]);
+    mockRunCommandJob.mockResolvedValue({
+      kind: 'finished',
+      result: {
+        success: false,
+        exitCode: 1,
+        durationMs: 1,
+        state: 'failed',
+        error:
+          'post-deploy verification failed:\n  - rediacc-backup-hourly-hot.timer: ActiveState=inactive',
+      },
+    });
 
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow(
-      /rediacc-backup-hourly-hot\.timer.*ActiveState=inactive/s
+      /Applying the backup schedule on hostinger failed.*rediacc-backup-hourly-hot\.timer.*ActiveState=inactive/s
     );
+  });
+
+  it('a job handed back past the attach window is pending, and the steps stay on its ticket', async () => {
+    scriptedExec([{ match: /find \/etc\/systemd\/system/, stdout: '' }]);
+    mockRunCommandJob.mockResolvedValue({
+      kind: 'pending',
+      result: { success: true, exitCode: 0, durationMs: 1, state: 'running' },
+    });
+    const step = { name: 'seedStrategyRetention', on: 'success', params: {} };
+
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    expect(await pushBackupSchedule('hostinger', { steps: [step] as never })).toBe('pending');
+
+    expect(mockRunCommandJob.mock.calls[0][2]).toEqual([step]);
   });
 
   it('test 8: --reset-failed does nothing when no touched service was in failed state', async () => {
@@ -1095,8 +1125,8 @@ describe('pushBackupSchedule (reconcile)', () => {
     const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger', { resetFailed: true });
 
-    const cmds = recordedCommands();
-    expect(cmds.some((c) => c.includes('reset-failed'))).toBe(false);
+    expect(jobPayload().reset_failed).toEqual([]);
+    expect(recordedCommands().some((c) => c.includes('reset-failed'))).toBe(false);
   });
 
   it('test 9: dry-run reads state but performs zero mutations and no license mint', async () => {
@@ -1120,6 +1150,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
     expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRunCommandJob).not.toHaveBeenCalled();
   });
 
   it('throws when machine has no backupStrategies', async () => {
@@ -1163,12 +1194,15 @@ describe('pushBackupSchedule (reconcile)', () => {
     ]);
   }
 
-  /** The content `tee`d into a staged unit file, by path suffix. */
+  /** The content the job writes for a unit file, by its `<name>.<kind>` suffix (as the units were named on the machine). */
   function stagedContent(suffix: string): string | undefined {
-    const call = mockExecStreaming.mock.calls.find(
-      ([cmd]) => typeof cmd === 'string' && cmd.startsWith('sudo tee ') && cmd.includes(suffix)
-    );
-    return (call?.[1] as { stdin?: string } | undefined)?.stdin;
+    const m = /^rediacc-backup-(.+)\.(service|timer)\.new$/.exec(suffix);
+    if (!m) throw new Error(`bad suffix ${suffix}`);
+    const payload = JSON.parse(
+      (mockRunCommandJob.mock.calls[0]?.[1] as { commandKind: { payload: string } } | undefined)
+        ?.commandKind.payload ?? '{"files":[]}'
+    ) as JobPayload;
+    return payload.files.find((f) => f.name === m[1] && f.kind === m[2])?.content;
   }
 
   it('G1: resolves include names to GUIDs, never passing a name to renet', async () => {

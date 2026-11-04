@@ -114,12 +114,30 @@ beforeEach(() => {
 
 describe('backup cancel', () => {
   it('stops a running .repo. unit of the named strategy', async () => {
-    machine.running.add('rediacc-backup-nightly.repo.gitlab.service');
+    jobs.runCommandJob.mockResolvedValue({
+      kind: 'finished',
+      result: { success: true, stdout: 'cancelled rediacc-backup-nightly.repo.gitlab.service\n' },
+    });
 
     await rdcBackup('cancel', 'nightly', '-m', 'm1');
 
-    const stops = machine.commands.filter((c) => c.startsWith('sudo systemctl stop'));
-    expect(stops).toEqual(['sudo systemctl stop rediacc-backup-nightly.repo.gitlab.service']);
+    // One backup-cancel job names every unit of the strategy and its ad-hoc unit, and no client stop runs.
+    expect(jobs.runCommandJob).toHaveBeenCalledTimes(1);
+    expect(jobs.runCommandJob.mock.calls[0][1]).toMatchObject({
+      functionName: 'backup-cancel',
+      commandKind: {
+        name: 'backup-cancel',
+        args: {
+          units: [
+            'rediacc-backup-nightly',
+            'rediacc-backup-nightly.ds.fast',
+            'rediacc-backup-nightly.repo.gitlab',
+            'rediacc-backup-nightly-adhoc',
+          ],
+        },
+      },
+    });
+    expect(machine.commands).toEqual([]);
   });
 });
 

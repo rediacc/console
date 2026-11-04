@@ -38,6 +38,7 @@ const schedule = vi.hoisted(() => ({
   buildStrategyCommandsForMachine: vi.fn(),
   expectedStatusUnits: vi.fn(),
   renderBackupScheduleStatus: vi.fn(),
+  pushBackupSchedule: vi.fn(),
 }));
 vi.mock('../../services/backup/backup-schedule.js', () => ({
   expectedScheduleUnits: () =>
@@ -47,6 +48,7 @@ vi.mock('../../services/backup/backup-schedule.js', () => ({
   buildStrategyCommandsForMachine: schedule.buildStrategyCommandsForMachine,
   expectedStatusUnits: schedule.expectedStatusUnits,
   renderBackupScheduleStatus: schedule.renderBackupScheduleStatus,
+  pushBackupSchedule: schedule.pushBackupSchedule,
   sanitizeBackupOutput: (s: string) => s,
 }));
 vi.mock('../../services/backup/backup-schedule-reconcile.js', () => ({
@@ -138,6 +140,7 @@ beforeEach(() => {
   schedule.buildStrategyCommandsForMachine.mockReset();
   schedule.expectedStatusUnits.mockReset();
   schedule.renderBackupScheduleStatus.mockReset();
+  schedule.pushBackupSchedule.mockReset();
   executed = [];
   answer = FINISHED;
   dir = mkdtempSync(join(tmpdir(), 'job-plan-backup-'));
@@ -363,14 +366,55 @@ describe('backup status', () => {
     expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', [], '');
   });
 
-  it('keeps the strategy journal as the only client read, after the job finished', async () => {
+  it('reads the strategy journal through a second backup-journal job, with no client SSH command', async () => {
     answer = { ...FINISHED, stdout: SHOW };
 
     await rdcBackup('status', 'nightly', '-m', 'm1');
 
-    expect(executed).toHaveLength(1);
-    expect(machine.commands.map((c) => c.command)).toEqual([
-      expect.stringContaining("journalctl -u 'rediacc-backup-nightly.service'"),
+    expect(executed).toHaveLength(2);
+    expect(executed[1]).toMatchObject({
+      functionName: 'backup-journal',
+      machineName: 'm1',
+      commandKind: { name: 'backup-journal', args: { strategy: 'nightly' } },
+    });
+    expect(machine.commands).toEqual([]);
+  });
+});
+
+describe('backup schedule', () => {
+  it('hands the apply job its two follow-up steps and prints the success once it applied', async () => {
+    schedule.pushBackupSchedule.mockResolvedValue('applied');
+
+    await rdcBackup('schedule', '-m', 'm1');
+
+    expect(schedule.pushBackupSchedule).toHaveBeenCalledTimes(1);
+    const [machineName, options] = schedule.pushBackupSchedule.mock.calls[0] as [
+      string,
+      { steps: { name: string; params: Record<string, unknown> }[] },
+    ];
+    expect(machineName).toBe('m1');
+    expect(options.steps.map((st) => st.name)).toEqual([
+      'seedStrategyRetention',
+      'warnIfConfigStorageUnenrolled',
     ]);
+    expect(options.steps[0].params).toEqual({ strategies: 'nightly', machine: 'm1' });
+    expect(executed).toHaveLength(0);
+  });
+
+  it('plans no step for a dry run', async () => {
+    schedule.pushBackupSchedule.mockResolvedValue('dry-run');
+
+    await rdcBackup('schedule', '-m', 'm1', '--dry-run');
+
+    expect(schedule.pushBackupSchedule.mock.calls[0][1]).toMatchObject({ steps: [], dryRun: true });
+  });
+
+  it('prints no success while the job is pending: its steps run when it is observed finished', async () => {
+    schedule.pushBackupSchedule.mockResolvedValue('pending');
+    const { outputService } = await import('../../services/core/output.js');
+
+    await rdcBackup('schedule', '-m', 'm1');
+
+    expect(outputService.success).not.toHaveBeenCalled();
   });
 });

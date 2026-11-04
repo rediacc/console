@@ -38,12 +38,12 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'backup schedule': {
     form: 'command-kind',
+    fn: 'backup-schedule',
     lock: 'machine-exclusive',
-    lockGap: { runs: 'backup-unit', overlap: 'machine-shared' },
     timeout: '10m',
     box: 'J17',
     steps: ['seedStrategyRetention', 'warnIfConfigStorageUnenrolled'],
-    note: `${NEW_KIND}; the license refresh inside it is HTTP between two machine phases (J0b finding 3)`,
+    note: 'the plan is computed from a read of the machine before the job and rides it as a stdin payload; the license refresh before it is HTTP between two machine phases (J0b finding 3) and stays client-driven',
   },
   'backup status': {
     form: 'command-kind',
@@ -52,7 +52,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     timeout: '10m',
     box: 'J17',
     steps: ['renderBackupStatus'],
-    note: NEW_KIND,
+    note: 'with a strategy, a second read job (backup-journal) follows the table',
   },
 
   // J18: machine verbs.

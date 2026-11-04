@@ -271,27 +271,11 @@ async function startBackupUnits(
   renderLocalExecutionFailure(outcome.result, `Backup failed on ${machineName}`);
 }
 
-/** Try to cancel a single systemd unit if active. Returns true if cancelled. */
-async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
-  // Only a running unit is worth stopping, a failed one has already exited, so `systemctl stop` on it would be a no-op reported as a cancellation.
-  const state = await readServiceState(sftp, unit);
-  if (state !== 'active' && state !== 'activating') return false;
-  outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
-  const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
-    onStdout: (data) => {
-      if (debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
-  if (exitCode === 0) {
-    outputService.success(t('commands.backup.cancel.cancelled', { name: unit }));
-    return true;
-  }
-  return false;
-}
-
+/**
+ * `backup cancel`: ONE `backup-cancel` job stops every scheduled unit of the strategies (base, `.ds.`, `.repo.`) and
+ * their ad-hoc units. renet stops only the units systemd has loaded and prints `cancelled <unit>.service` for each one
+ * that was running, which is where the per-strategy messages come from.
+ */
 async function cancelBackup(
   machineName: string,
   strategyFilter?: string,
@@ -310,59 +294,51 @@ async function cancelBackup(
     throw new Error(`No backup strategies bound to "${machineName}"`);
   }
 
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-
-  try {
-    for (const name of toCheck) {
-      await cancelStrategyUnits(lease.sftp, machineName, name, debug);
-    }
-  } finally {
-    lease.release();
+  const unitsOf = new Map<string, string[]>();
+  for (const name of toCheck) {
+    const unitNames = new Set([name, ...(await strategyUnitNames(machineName, name))]);
+    unitsOf.set(name, [
+      ...[...unitNames].map((u) => `rediacc-backup-${u}`),
+      `rediacc-backup-${name}-adhoc`,
+    ]);
   }
-}
+  const units = [...new Set([...unitsOf.values()].flat())];
 
-/** Try to cancel every scheduled unit of a strategy (base, `.ds.`, `.repo.`) and its ad-hoc unit. */
-async function cancelStrategyUnits(
-  sftp: SFTPClient,
-  machineName: string,
-  name: string,
-  debug?: boolean
-): Promise<void> {
-  const unitNames = new Set([name, ...(await strategyUnitNames(machineName, name))]);
-  const units = [
-    ...[...unitNames].map((u) => `rediacc-backup-${u}.service`),
-    `rediacc-backup-${name}-adhoc.service`,
-  ];
-  let cancelled = false;
-  for (const unit of units) {
-    if (await tryCancelUnit(sftp, unit, debug)) cancelled = true;
-  }
-  if (!cancelled) {
-    outputService.info(t('commands.backup.cancel.notRunning', { name }));
-  }
-}
-
-/**
- * Read a backup unit's systemd state.
- *
- * Returns the state verbatim rather than a boolean. Collapsing it to
- * active-or-not made a FAILED unit render exactly like a healthy idle one, which
- * is how a backup stayed broken for six days while this command kept reporting
- * "idle", the string systemd hands back already said `failed`, and the old code
- * threw it away one line later.
- */
-async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<string> {
-  let statusText = '';
-  await sftp.execStreaming(`systemctl is-active ${serviceName} 2>/dev/null || true`, {
-    onStdout: (data) => {
-      statusText += data;
+  const outcome = await runCommandJob(
+    'backup cancel',
+    {
+      functionName: 'backup-cancel',
+      machineName,
+      commandKind: { name: 'backup-cancel', args: { units } },
+      debug,
+      captureOutput: true,
     },
-    onStderr: () => {},
-  });
-  return statusText.trim();
+    []
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, `Cancelling the backups failed on ${machineName}`);
+    return;
+  }
+  const stopped = new Set(
+    (outcome.result.stdout ?? '')
+      .split('\n')
+      .map((line) => /^cancelled (.+)\.service$/.exec(line.trim())?.[1])
+      .filter((u): u is string => u !== undefined)
+  );
+  for (const [name, names] of unitsOf) {
+    const cancelled = names.filter((u) => stopped.has(u));
+    for (const unit of cancelled) {
+      outputService.success(t('commands.backup.cancel.cancelled', { name: `${unit}.service` }));
+    }
+    if (cancelled.length === 0) {
+      outputService.info(t('commands.backup.cancel.notRunning', { name }));
+    }
+  }
 }
 
 /**
@@ -411,29 +387,32 @@ async function showBackupStatus(
   }
   if (!strategyFilter) return;
 
-  const localConfig = await configService.getLocalConfig();
-  const machine = localConfig.machines[machineName];
-  if (!machine) {
-    throw new Error(`Machine "${machineName}" not found`);
+  // The recent journal of the strategy's units is a read job of its own (`backup-journal`), after the table's job.
+  const journal = await runCommandJob(
+    'backup status',
+    {
+      functionName: 'backup-journal',
+      machineName,
+      commandKind: { name: 'backup-journal', args: { strategy: strategyFilter } },
+      debug,
+      captureOutput: true,
+    },
+    []
+  );
+  if (journal.kind === 'pending') {
+    const code = pendingExitCode(journal);
+    if (code !== undefined) setExitCode(code);
+    return;
   }
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-  try {
-    outputService.info(`\nRecent logs (${strategyFilter}):`);
-    await lease.sftp.execStreaming(
-      `journalctl -u 'rediacc-backup-${strategyFilter}.service' -u 'rediacc-backup-${strategyFilter}.*.service' --no-pager -n 20 2>/dev/null || echo "(no logs)"`,
-      {
-        onStdout: (data) => {
-          writeStdout(data);
-        },
-        onStderr: () => {},
-      }
-    );
-  } finally {
-    lease.release();
-  }
+  outputService.info(`\nRecent logs (${strategyFilter}):`);
+  const lines = journal.result.success ? (journal.result.stdout ?? '').trim() : '';
+  writeStdout(`${lines || '(no logs)'}\n`);
 }
+
+bindStepHandler('seedStrategyRetention', async ({ machine, params }) => {
+  const strategies = typeof params.strategies === 'string' ? params.strategies : '';
+  await seedStrategyRetention(strategies ? strategies.split(',') : [], machine);
+});
 
 bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
   const { expectedStatusUnits, renderBackupScheduleStatus } = await import(
@@ -458,17 +437,29 @@ export function registerBackupOpsCommands(backup: Command): void {
       try {
         const machineName = options.machine;
         const { pushBackupSchedule } = await import('../services/backup/backup-schedule.js');
-        await pushBackupSchedule(machineName, {
+        const bound = (await configService.getLocalConfig()).machines[machineName];
+        const strategies = bound?.backupStrategies ?? [];
+        // Retention seeding and the DR nudge (enabling backups without config-storage enrollment leaves the repo credentials host-local, spec/02 dec 14) follow the apply job as its steps.
+        const steps = [
+          planStep('seedStrategyRetention', {
+            strategies: strategies.join(','),
+            machine: machineName,
+          }),
+          planStep('warnIfConfigStorageUnenrolled', {}),
+        ];
+        const result = await pushBackupSchedule(machineName, {
           debug: options.debug,
           dryRun: options.dryRun,
           force: options.force,
           resetFailed: options.resetFailed,
+          steps: options.dryRun ? [] : steps,
         });
-        if (!options.dryRun) {
+        if (result === 'applied' || result === 'unchanged') {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
-          const bound = (await configService.getLocalConfig()).machines[machineName];
-          await seedStrategyRetention(bound?.backupStrategies ?? [], machineName);
-          // DR nudge: enabling backups without config-storage enrollment leaves the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
+        }
+        if (result === 'unchanged') {
+          // No job ran, so the steps the job would have carried run here.
+          await seedStrategyRetention(strategies, machineName);
           const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
           await warnIfConfigStorageUnenrolled();
         }

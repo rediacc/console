@@ -10,15 +10,15 @@
  * Deploy strategy: state-based reconciliation. Read remote state (existing
  * unit files + SHA-256 hashes + systemd status), diff against desired, only
  * touch what changed. In-flight backups are detected and block updates/
- * removes by default (`--force` to override). Writes are staged to
- * `<path>.new` and `mv`-committed so a partial SSH failure never leaves
- * the machine with a half-deployed unit. Post-deploy, timers are
- * re-queried to confirm they actually loaded.
+ * removes by default (`--force` to override). The mutation phase runs on the
+ * machine as one `backup-schedule` job: writes are staged to `<path>.new` and
+ * renamed, so a dropped connection never leaves a half-deployed unit, and
+ * post-deploy the timers are re-queried to confirm they actually loaded.
  *
  * Implementation is split across:
  * - backup-schedule/unit-generator.ts, pure content generators
  * - backup-schedule/reconcile.ts     , read + diff + in-flight gate
- * - backup-schedule/execute.ts       , mutations + verification + summary
+ * - backup-schedule/execute.ts       , the job's payload + summary
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
@@ -28,15 +28,17 @@ import { refreshRepoLicensesBatch } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { setExitCode } from '../core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../jobs/command-job.js';
+import type { PlannedStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
 import { envFilePath, generateEnvFile } from './backup-env-file.js';
 import {
+  buildSchedulePayload,
   emitPlanSummary,
-  executePlan,
   printDryRunUnitBodies,
-  verifyPostDeploy,
+  type SchedulePayload,
 } from './backup-schedule-execute.js';
 import {
   applyInFlightGate,
@@ -74,7 +76,16 @@ import {
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
 
-type PushScheduleOptions = ReconcileOptions;
+type PushScheduleOptions = ReconcileOptions & {
+  /** Client-side steps the apply job carries on its ticket (they run after it, whoever observes it). */
+  steps?: PlannedStep[];
+};
+
+/**
+ * What a push did: `dry-run` and `unchanged` made no job; `applied` ran the job to its end with `options.steps` run
+ * after it; `pending` handed the ticket back, so the steps run when the job is observed finished.
+ */
+export type PushScheduleResult = 'dry-run' | 'unchanged' | 'applied' | 'pending';
 
 /** Validate no duplicate destination names across strategies. */
 function assertNoDuplicateDestinations(strategies: { config: BackupStrategyConfig }[]): void {
@@ -402,7 +413,7 @@ async function installTocKeys(
 export async function pushBackupSchedule(
   machineName: string,
   options: PushScheduleOptions = {}
-): Promise<void> {
+): Promise<PushScheduleResult> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -428,6 +439,7 @@ export async function pushBackupSchedule(
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;
+  let released = false;
 
   try {
     const cpuCount = await resolveMachineCpuCount(sftp);
@@ -441,20 +453,57 @@ export async function pushBackupSchedule(
       outputService.info(`Dry-run: plan for ${machineName}`);
       emitPlanSummary(plan);
       if (options.debug) printDryRunUnitBodies(plan);
-      return;
+      return 'dry-run';
     }
 
     emitPlanSummary(plan);
     if (!plan.daemonReloadNeeded) {
       outputService.info(`No changes needed on ${machineName}`);
-      return;
+      return 'unchanged';
     }
 
-    await executePlan(sftp, plan, options);
-    await verifyPostDeploy(sftp, plan);
-  } finally {
+    // The reads are done: release the connection before the job opens its own.
     lease.release();
+    released = true;
+    return await applyScheduleJob(machineName, buildSchedulePayload(plan, options), options);
+  } finally {
+    if (!released) lease.release();
   }
+}
+
+/**
+ * Apply the plan as ONE `backup-schedule` job. The unit bodies (env files carry credentials) ride the job's stdin
+ * payload, never an argument or a step param.
+ */
+async function applyScheduleJob(
+  machineName: string,
+  payload: SchedulePayload,
+  options: PushScheduleOptions
+): Promise<PushScheduleResult> {
+  const outcome = await runCommandJob(
+    'backup schedule',
+    {
+      functionName: 'backup-schedule',
+      machineName,
+      commandKind: { name: 'backup-schedule', payload: JSON.stringify(payload) },
+      debug: options.debug,
+      captureOutput: true,
+    },
+    options.steps ?? []
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return 'pending';
+  }
+  if (!outcome.result.success) {
+    const detail = outcome.result.error ?? outcome.result.stderr?.trim() ?? '';
+    throw new Error(
+      `Applying the backup schedule on ${machineName} failed${detail ? `: ${detail}` : ''}`
+    );
+  }
+  if (options.debug && outcome.result.stdout) outputService.info(outcome.result.stdout.trimEnd());
+  return 'applied';
 }
 
 /** @internal Exported for unit tests and ad-hoc backup execution. */

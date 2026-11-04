@@ -1,364 +1,101 @@
 /**
- * Plan execution: mutation phase + post-deploy verification + summary emit.
+ * Plan execution: the plan's payload for the `backup-schedule` job, and the summary emit.
  *
- * All writes go through atomic staging: content is first written to
- * `<finalPath>.new` via `sudo tee`/`sudo sh -c 'umask 077 && cat >'`, then
- * `mv`-committed. `mv` within the same filesystem is atomic, so a partial
- * write or SSH disconnect mid-batch never leaves the machine with a
- * half-deployed unit.
+ * The mutation phase runs on the machine as one `backup-schedule` job (PLAN-detached-jobs J17). The CLI still computes
+ * the plan (a hash diff against a read of the machine); this module turns it into the job's payload. renet writes each
+ * file atomically (`<path>.new`, then a rename), reloads systemd, enables the timers and verifies them, so a partial
+ * write or a dropped connection never leaves a half-deployed unit.
  */
 
-import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
-import type { SFTPClient } from '../../remote/sftp/index.js';
-import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
-import { writeStderr, writeStdout } from '../core/request-context.js';
 import { envFilePath } from './backup-env-file.js';
-import type {
-  ReconcileOptions,
-  ReconcilePlan,
-  RemoteUnitState,
-  StrategyDiff,
-} from './backup-schedule-reconcile.js';
-import { isEnabledState, parseSystemctlShow } from './backup-schedule-reconcile.js';
+import type { ReconcileOptions, ReconcilePlan, StrategyDiff } from './backup-schedule-reconcile.js';
 import { sanitizeBackupOutput } from './backup-schedule-unit-generator.js';
 
-async function runRemoteCommand(
-  sftp: SFTPClient,
-  command: string,
-  options: ReconcileOptions,
-  errorMessage: string
-): Promise<void> {
-  const exitCode = await sftp.execStreaming(command, {
-    onStdout: (data) => {
-      if (options.debug) writeStdout(data);
-    },
-    onStderr: (data) => writeStderr(data),
-  });
-  if (exitCode !== 0) {
-    throw new Error(`${errorMessage} (exit ${exitCode})`);
-  }
+interface ScheduleRemoval {
+  name: string;
+  timer: boolean;
+  service: boolean;
+  env: boolean;
+  dangling: boolean;
 }
 
-async function captureStdout(sftp: SFTPClient, command: string): Promise<string> {
-  let stdout = '';
-  await sftp.execStreaming(command, {
-    onStdout: (data) => {
-      stdout += data.toString();
-    },
-    onStderr: () => {},
-  });
-  return stdout;
-}
-
-async function stageFile(
-  sftp: SFTPClient,
-  finalPath: string,
-  content: string,
-  mode: 'secret' | 'normal',
-  options: ReconcileOptions
-): Promise<string> {
-  const stagingPath = `${finalPath}.new`;
-  const writeCmd =
-    mode === 'secret'
-      ? `sudo sh -c 'umask 077 && cat > ${stagingPath}'`
-      : `sudo tee ${stagingPath} > /dev/null`;
-  const exitCode = await sftp.execStreaming(writeCmd, {
-    stdin: content,
-    onStdout: (data) => {
-      if (options.debug) writeStdout(data);
-    },
-    onStderr: (data) => writeStderr(data),
-  });
-  if (exitCode !== 0) {
-    throw new Error(`Failed to stage ${stagingPath} (exit ${exitCode})`);
-  }
-  return stagingPath;
-}
-
-async function cleanupOrphanedStaging(sftp: SFTPClient): Promise<void> {
-  // rm -v prints one line per removed file; any output means a prior run
-  // left staging files behind, flag that to the operator.
-  const cmd =
-    `sudo sh -c 'rm -fv /etc/systemd/system/rediacc-backup-*.new ` +
-    `${WK_ETC_DIR}/backup-*.env.new 2>/dev/null; true'`;
-  const stdout = await captureStdout(sftp, cmd);
-  if (stdout.trim().length > 0) {
-    const count = stdout.trim().split('\n').length;
-    outputService.warn(
-      `Cleaned up orphaned staging files from a prior interrupted deploy: ${count} file(s)`
-    );
-  }
-}
-
-interface StagedFile {
-  stagingPath: string;
-  finalPath: string;
-}
-
-function collectExistingPaths(remote: RemoteUnitState): string[] {
-  const paths: string[] = [];
-  if (remote.serviceFile.exists) paths.push(remote.serviceFile.path);
-  if (remote.timerFile.exists) paths.push(remote.timerFile.path);
-  if (remote.envFile.exists) paths.push(remote.envFile.path);
-  return paths;
-}
-
-async function removeOneStrategy(
-  sftp: SFTPClient,
-  diff: StrategyDiff,
-  options: ReconcileOptions
-): Promise<void> {
-  const remote = diff.remote;
-  if (!remote) return;
-  // Only a timer unit that exists can be disabled: systemctl exits 1 on a missing one, and a strategy whose units are already gone but whose env file was left behind (hostinger, 2026-10-30) otherwise aborted the whole schedule before any other strategy's timer was deployed.
-  if (remote.timerFile.exists) {
-    await runRemoteCommand(
-      sftp,
-      `sudo systemctl disable --now rediacc-backup-${diff.name}.timer`,
-      options,
-      `Failed to disable timer for removed strategy "${diff.name}"`
-    );
-  } else if (remote.isActiveTimer || remote.isEnabledTimer) {
-    // A timer systemd still runs or links without its unit file cannot be disabled: stop it and drop the dangling timers.target.wants link, so it never fires again for a strategy that no longer exists. Best-effort with a warning, so one dangling unit never aborts the rest of the schedule.
-    const unit = `rediacc-backup-${diff.name}.timer`;
-    const exitCode = await sftp.execStreaming(
-      // Each step runs whatever the one before did, and the last failing step's own exit code is the
-      // command's: a plain `a; b; c` reports only c, which hid a failed stop.
-      `sudo sh -c 'rc=0; systemctl stop ${unit} || rc=$?; rm -f /etc/systemd/system/timers.target.wants/${unit} || rc=$?; systemctl daemon-reload || rc=$?; exit $rc'`,
-      { onStdout: () => {}, onStderr: (data) => writeStderr(data) }
-    );
-    if (exitCode !== 0) {
-      outputService.warn(
-        `Could not fully stop the dangling timer of removed strategy "${diff.name}" (exit ${exitCode})`
-      );
-    }
-  }
-  const paths = collectExistingPaths(remote);
-  if (paths.length === 0) return;
-  await runRemoteCommand(
-    sftp,
-    `sudo rm -f ${paths.map(shellQuote).join(' ')}`,
-    options,
-    `Failed to remove files for strategy "${diff.name}"`
-  );
-}
-
-async function applyRemovals(
-  sftp: SFTPClient,
-  toRemove: StrategyDiff[],
-  options: ReconcileOptions
-): Promise<void> {
-  for (const diff of toRemove) {
-    await removeOneStrategy(sftp, diff, options);
-  }
-}
-
-async function stageEnvFile(
-  sftp: SFTPClient,
-  diff: StrategyDiff,
-  staged: StagedFile[],
-  options: ReconcileOptions
-): Promise<void> {
-  const unit = diff.desired;
-  if (!unit) return;
-  const finalPath = envFilePath(unit.strategyName);
-  if (unit.envFileContent) {
-    const stagingPath = await stageFile(sftp, finalPath, unit.envFileContent, 'secret', options);
-    staged.push({ stagingPath, finalPath });
-  } else {
-    // Env file previously existed but is no longer needed. No staging/rollback
-    // for removals, the deploy semantics accept this as a directed change.
-    await runRemoteCommand(
-      sftp,
-      `sudo rm -f ${shellQuote(finalPath)}`,
-      options,
-      `Failed to remove obsolete env file for "${unit.strategyName}"`
-    );
-  }
-}
-
-async function stageTouched(
-  sftp: SFTPClient,
-  touched: StrategyDiff[],
-  options: ReconcileOptions
-): Promise<StagedFile[]> {
-  const staged: StagedFile[] = [];
-  try {
-    for (const diff of touched) {
-      const unit = diff.desired;
-      if (!unit) continue;
-      if (diff.changedFiles.includes('env')) {
-        await stageEnvFile(sftp, diff, staged, options);
-      }
-      if (diff.changedFiles.includes('service')) {
-        const finalPath = `/etc/systemd/system/rediacc-backup-${unit.strategyName}.service`;
-        const stagingPath = await stageFile(
-          sftp,
-          finalPath,
-          unit.serviceContent,
-          'normal',
-          options
-        );
-        staged.push({ stagingPath, finalPath });
-      }
-      if (diff.changedFiles.includes('timer')) {
-        const finalPath = `/etc/systemd/system/rediacc-backup-${unit.strategyName}.timer`;
-        const stagingPath = await stageFile(sftp, finalPath, unit.timerContent, 'normal', options);
-        staged.push({ stagingPath, finalPath });
-      }
-    }
-    return staged;
-  } catch (err) {
-    await rollbackStaged(sftp, staged);
-    throw err;
-  }
-}
-
-async function rollbackStaged(sftp: SFTPClient, staged: StagedFile[]): Promise<void> {
-  if (staged.length === 0) return;
-  const quoted = staged.map((s) => shellQuote(s.stagingPath)).join(' ');
-  await sftp
-    .execStreaming(`sudo rm -f ${quoted}`, {
-      onStdout: () => {},
-      onStderr: () => {},
-    })
-    .catch(() => {
-      /* best-effort cleanup */
-    });
-}
-
-async function commitStaged(
-  sftp: SFTPClient,
-  staged: StagedFile[],
-  options: ReconcileOptions
-): Promise<void> {
-  for (const { stagingPath, finalPath } of staged) {
-    await runRemoteCommand(
-      sftp,
-      `sudo mv ${shellQuote(stagingPath)} ${shellQuote(finalPath)}`,
-      options,
-      `Failed to commit ${finalPath}`
-    );
-  }
+/** The `backup-schedule` job's payload (private/renet/cmd/renet/job_backup_schedule.go, backupSchedulePayload). */
+export interface SchedulePayload {
+  remove: ScheduleRemoval[];
+  remove_env: string[];
+  files: { name: string; kind: 'service' | 'timer' | 'env'; content: string }[];
+  reload: boolean;
+  enable: string[];
+  reset_failed: string[];
 }
 
 function hasTimer(diff: StrategyDiff): boolean {
   return diff.desired !== null && diff.desired.timerContent !== '';
 }
 
-async function finalizeSystemd(
-  sftp: SFTPClient,
-  plan: ReconcilePlan,
-  options: ReconcileOptions
-): Promise<void> {
-  if (plan.daemonReloadNeeded) {
-    await runRemoteCommand(
-      sftp,
-      'sudo systemctl daemon-reload',
-      options,
-      'Failed to reload systemd daemon'
-    );
-  }
-
-  const touched = [...plan.toCreate, ...plan.toUpdate];
-  // A timerless unit (a failure report) is started by OnFailure= alone: there is no timer to enable.
-  for (const diff of touched.filter(hasTimer)) {
-    await runRemoteCommand(
-      sftp,
-      `sudo systemctl enable --now rediacc-backup-${diff.name}.timer`,
-      options,
-      `Failed to enable timer for "${diff.name}"`
-    );
-  }
-
-  if (options.resetFailed) {
-    for (const diff of touched) {
-      if (diff.remote?.isFailed) {
-        await runRemoteCommand(
-          sftp,
-          `sudo systemctl reset-failed rediacc-backup-${diff.name}.service`,
-          options,
-          `Failed to reset-failed for "${diff.name}"`
-        );
-      }
-    }
-  }
+function removalOf(diff: StrategyDiff): ScheduleRemoval | null {
+  const remote = diff.remote;
+  if (!remote) return null;
+  return {
+    name: diff.name,
+    timer: remote.timerFile.exists,
+    service: remote.serviceFile.exists,
+    env: remote.envFile.exists,
+    // A timer systemd still runs or links without its unit file cannot be disabled: renet stops it and drops its link.
+    dangling: !remote.timerFile.exists && (remote.isActiveTimer || remote.isEnabledTimer),
+  };
 }
 
-async function ensureEtcRediacc(
-  sftp: SFTPClient,
-  touched: StrategyDiff[],
-  options: ReconcileOptions
-): Promise<void> {
-  const needed = touched.some((d) => d.changedFiles.includes('env') && d.desired?.envFileContent);
-  if (!needed) return;
-  await runRemoteCommand(
-    sftp,
-    `sudo install -d -m 0755 -o root -g root ${WK_ETC_DIR}`,
-    options,
-    `Failed to ensure ${WK_ETC_DIR} exists`
-  );
+/** The files one created or updated strategy writes, and whether its env file is removed instead. */
+function writesOf(diff: StrategyDiff): { files: SchedulePayload['files']; removeEnv: boolean } {
+  const unit = diff.desired;
+  const files: SchedulePayload['files'] = [];
+  if (!unit) return { files, removeEnv: false };
+  const name = unit.strategyName;
+  // An env file that is no longer needed is removed outright: a directed removal has no staging or rollback.
+  const wantsEnv = diff.changedFiles.includes('env');
+  if (wantsEnv && unit.envFileContent) {
+    files.push({ name, kind: 'env', content: unit.envFileContent });
+  }
+  if (diff.changedFiles.includes('service')) {
+    files.push({ name, kind: 'service', content: unit.serviceContent });
+  }
+  if (diff.changedFiles.includes('timer')) {
+    files.push({ name, kind: 'timer', content: unit.timerContent });
+  }
+  return { files, removeEnv: wantsEnv && !unit.envFileContent };
 }
 
 /**
- * Execute a reconciliation plan: remove obsolete units, stage+commit
- * created/updated units, daemon-reload, enable timers. Writes are atomic
- * via `<path>.new` staging + `mv`.
+ * The payload that applies `plan`: obsolete strategies removed first, then the changed files of every created or
+ * updated strategy, the daemon-reload, the timers enabled (a timerless unit, a failure report, starts from OnFailure=
+ * alone) and, with `--reset-failed`, the failed services cleared.
  */
-export async function executePlan(
-  sftp: SFTPClient,
+export function buildSchedulePayload(
   plan: ReconcilePlan,
-  options: ReconcileOptions
-): Promise<void> {
-  await cleanupOrphanedStaging(sftp);
-  await applyRemovals(sftp, plan.toRemove, options);
-
+  options: Pick<ReconcileOptions, 'resetFailed'>
+): SchedulePayload {
   const touched = [...plan.toCreate, ...plan.toUpdate];
-  await ensureEtcRediacc(sftp, touched, options);
-
-  const staged = await stageTouched(sftp, touched, options);
-  await commitStaged(sftp, staged, options);
-
-  await finalizeSystemd(sftp, plan, options);
-}
-
-// --------------------------------------------------------------------------- Phase F, Post-deploy verification ---------------------------------------------------------------------------
-
-function diagnoseTimer(timer: string, rec: Record<string, string> | undefined): string | null {
-  if (!rec) return `${timer}: no state returned by systemctl show`;
-  const issues: string[] = [];
-  if (rec.LoadState !== 'loaded') issues.push(`LoadState=${rec.LoadState}`);
-  if (!isEnabledState(rec.UnitFileState)) issues.push(`UnitFileState=${rec.UnitFileState}`);
-  if (rec.ActiveState !== 'active') issues.push(`ActiveState=${rec.ActiveState}`);
-  return issues.length > 0 ? `${timer}: ${issues.join(', ')}` : null;
-}
-
-export async function verifyPostDeploy(sftp: SFTPClient, plan: ReconcilePlan): Promise<void> {
-  const timers = [...plan.toCreate, ...plan.toUpdate]
-    .filter(hasTimer)
-    .map((d) => `rediacc-backup-${d.name}.timer`);
-  if (timers.length === 0) return;
-
-  const cmd = `systemctl show --property=Id,LoadState,ActiveState,UnitFileState ${timers.join(' ')}`;
-  const stdout = await captureStdout(sftp, cmd);
-  const records = parseSystemctlShow(stdout);
-
-  const failures: string[] = [];
-  for (const timer of timers) {
-    const issue = diagnoseTimer(timer, records.get(timer));
-    if (issue) failures.push(issue);
+  const payload: SchedulePayload = {
+    remove: plan.toRemove.map(removalOf).filter((r): r is ScheduleRemoval => r !== null),
+    remove_env: [],
+    files: [],
+    reload: plan.daemonReloadNeeded,
+    enable: touched.filter(hasTimer).map((d) => d.name),
+    reset_failed: options.resetFailed
+      ? touched.filter((d) => d.remote?.isFailed).map((d) => d.name)
+      : [],
+  };
+  for (const diff of touched) {
+    const { files, removeEnv } = writesOf(diff);
+    payload.files.push(...files);
+    if (removeEnv && diff.desired) payload.remove_env.push(diff.desired.strategyName);
   }
-
-  if (failures.length > 0) {
-    throw new Error(
-      `Post-deploy verification failed:\n${failures.map((f) => `  - ${f}`).join('\n')}\n` +
-        `Diagnose with: journalctl -u <timer-name>`
-    );
-  }
+  return payload;
 }
 
-// --------------------------------------------------------------------------- Phase G, Emit plan summary ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Emit plan summary ---------------------------------------------------------------------------
 
 function formatDiffLine(diff: StrategyDiff): string {
   let line = `${diff.action} ${diff.name}`;
