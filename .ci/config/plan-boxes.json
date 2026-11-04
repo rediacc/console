@@ -2833,24 +2833,6 @@
       ],
       "ruling": "#a6ec6d6c"
     },
-    "agent/plans/_done/PLAN-calibrate-judge-rules-live.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "015849d7",
-        "0aac02ba",
-        "4dd8ec1f",
-        "77eaad77",
-        "bc40b973",
-        "bcd0c044",
-        "d09e7d40"
-      ]
-    },
     "agent/plans/_done/PLAN-carried-red-finding-keys.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3253,24 +3235,6 @@
         "e8152c55"
       ]
     },
-    "agent/plans/_done/PLAN-defer-settle-classifier.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "053b4136",
-        "3ac400fc",
-        "452d9340",
-        "58aeb9ee",
-        "5dce0269",
-        "65206617",
-        "6edb0ce2"
-      ]
-    },
     "agent/plans/_done/PLAN-deferred-findings-block-merge.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3387,46 +3351,6 @@
         "f86f9978"
       ]
     },
-    "agent/plans/_done/PLAN-fix-console-ci-5day-failure.md": {
-      "status": "superseded",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 13,
-      "done": 0,
-      "open_sigs": [
-        "1dcddd87",
-        "61fc13bb",
-        "6fe61842",
-        "7f611233",
-        "904ffbc2",
-        "962d5f35",
-        "b6fb6c28",
-        "b8e80be1",
-        "b9743d81",
-        "be8d374f",
-        "d06ce358",
-        "edf13c0b",
-        "f65f8bee"
-      ],
-      "done_sigs": [],
-      "ruling": "#d9785655"
-    },
-    "agent/plans/_done/PLAN-fix-is-invoked-sh-alternation.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 4,
-      "open_sigs": [],
-      "done_sigs": [
-        "009ad262",
-        "023406b0",
-        "2c4d110a",
-        "f7cb4cdd"
-      ]
-    },
     "agent/plans/_done/PLAN-gate-drop-receipt-verify.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3492,33 +3416,6 @@
         "de81a64d",
         "e674fa47",
         "ecf56f81"
-      ]
-    },
-    "agent/plans/_done/PLAN-github-actions-to-bitwarden.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 16,
-      "open_sigs": [],
-      "done_sigs": [
-        "26abe0f2",
-        "28d5f960",
-        "462d404b",
-        "4a168aee",
-        "4fc98aba",
-        "56203231",
-        "6d895c92",
-        "7a00eafd",
-        "9a9c38bf",
-        "aa640ee5",
-        "ca878a30",
-        "cbd1676c",
-        "d33c61df",
-        "eb8f899e",
-        "f2030dec",
-        "f642f759"
       ]
     },
     "agent/plans/_done/PLAN-github-pr-review-restore.md": {
@@ -3656,28 +3553,6 @@
         "e1112748"
       ]
     },
-    "agent/plans/_done/PLAN-npm11-everywhere.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "088fe5b1",
-        "0a7328d3",
-        "1d09988f",
-        "215821a7",
-        "30427d90",
-        "31b2cad6",
-        "4644c81b",
-        "6180ca30",
-        "9a9b5fe2",
-        "d83c6b3d",
-        "daf83f5c"
-      ]
-    },
     "agent/plans/_done/PLAN-parallel-writer-roster.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3806,33 +3681,6 @@
         "fcbd1cc2"
       ]
     },
-    "agent/plans/_done/PLAN-pipefail-grep-q-renet-gate.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 16,
-      "open_sigs": [],
-      "done_sigs": [
-        "5f53f957",
-        "695bedf8",
-        "7644c1ee",
-        "8f7e9c01",
-        "95e70680",
-        "9da858e5",
-        "ac4c55db",
-        "af6a7ff7",
-        "b139bdbf",
-        "b61a0445",
-        "d8e5079e",
-        "da94040f",
-        "e2366f73",
-        "eb7aa103",
-        "f052b4a9",
-        "f1533f2e"
-      ]
-    },
     "agent/plans/_done/PLAN-plan-dependencies.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3854,59 +3702,6 @@
         "98e8fe4f",
         "99fbddd7",
         "cd2f60ac"
-      ]
-    },
-    "agent/plans/_done/PLAN-plan-file-lifecycle.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 1,
-      "done": 12,
-      "open_sigs": [
-        "54cca06b"
-      ],
-      "done_sigs": [
-        "24fbc5fc",
-        "35f8115e",
-        "6be59355",
-        "7a89c5be",
-        "7adc2d9f",
-        "86185c7e",
-        "9d65a096",
-        "a69a55a5",
-        "daffe83e",
-        "e77bfe5f",
-        "f27685d2",
-        "ff0c1fc4"
-      ],
-      "ruling": "box 54cca06b stays open by decision, because the gate it served judges only branch-added plans: \"a plan this branch ADDS with open boxes must resolve an\" in .ci/scripts/quality/check_plan_boxes.py"
-    },
-    "agent/plans/_done/PLAN-plan-implementation-enforcement.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 16,
-      "open_sigs": [],
-      "done_sigs": [
-        "0a921c43",
-        "1e78ffe8",
-        "2ac6bfea",
-        "3000c34a",
-        "3668e9ca",
-        "445887e0",
-        "4764d799",
-        "4985c2b6",
-        "8afc3ce3",
-        "a1101d27",
-        "a29ea255",
-        "bbbbb3cf",
-        "bd4e5e87",
-        "d28bed5d",
-        "e60ff3c6",
-        "fac236ea"
       ]
     },
     "agent/plans/_done/PLAN-plan-per-pr-loop.md": {
@@ -4234,16 +4029,6 @@
         "f2c1e8d4"
       ]
     },
-    "agent/plans/_done/PLAN-rotation-gh-removal.md": {
-      "status": "done",
-      "owner": "unowned",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 0,
-      "open_sigs": [],
-      "done_sigs": []
-    },
     "agent/plans/_done/PLAN-scheduled-red-detector.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4474,23 +4259,6 @@
         "bcc0098f",
         "ea9dc74a"
       ]
-    },
-    "agent/plans/_done/PLAN-stop-hook-plan-agent-check-declined.md": {
-      "status": "superseded",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 5,
-      "done": 0,
-      "open_sigs": [
-        "06fcc45a",
-        "12482630",
-        "71c567df",
-        "bf550485",
-        "edc40d5b"
-      ],
-      "done_sigs": [],
-      "ruling": "#373907ed"
     },
     "agent/plans/_done/PLAN-stop-hook-retro-20260924.md": {
       "status": "done",
@@ -4863,27 +4631,6 @@
         "ce14776f",
         "d073162f",
         "ff0cda58"
-      ]
-    },
-    "agent/plans/_done/PLAN-w9p2-script-relocation.md": {
-      "status": "done",
-      "owner": "f4da5c2e",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-24",
-      "open": 0,
-      "done": 10,
-      "open_sigs": [],
-      "done_sigs": [
-        "39b0cd69",
-        "4c8449fd",
-        "52ccb61e",
-        "799fc249",
-        "8626e1f7",
-        "87925b31",
-        "a5a452ac",
-        "a8bb75db",
-        "d7595f6f",
-        "e833223e"
       ]
     },
     "agent/plans/_done/PLAN-www-solution-video-gaps.md": {

@@ -55,19 +55,22 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
-- Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z).
-- Branch: 1103-1, no PR yet.
-- Plans on the PR (5):
-  - agent/plans/PLAN-backup-program.md -- 167 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z); babysit on PR #603 (branch 1103-1, session d778be9d, since 2026-11-04T00:06:36Z).
+- Branch: 1103-1, PR #603 open.
+- Plans on the PR (8):
+  - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 35 boxes ticked, a prerequisite pulled in (an unfinished `Depends-On:` of the set)
+  - agent/plans/PLAN-console-executor-multi-org.md -- 17 of 21 boxes ticked, a prerequisite pulled in (an unfinished `Depends-On:` of the set)
+  - agent/plans/PLAN-executor-durable-object-policy.md -- 15 of 22 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 167 of 196 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 15 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 30 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 7 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a07b985c7160993b9.
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 13 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+- Writers: 0 live of writer_cap 25 (session d778be9d).
 - Leased items: 3: #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:222629, d778be9d).
-- Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 4; starts after this branch's PR merges.
+- Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
