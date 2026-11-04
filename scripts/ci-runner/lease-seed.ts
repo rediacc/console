@@ -54,7 +54,8 @@ function seedDist(lease: string, live: string, pkg: string): string {
   const manifest = path.join(lease, pkg, 'package.json');
   if (!fs.existsSync(manifest)) return `${pkg}: not in this commit`;
   const source = path.join(live, pkg, 'dist');
-  const dirty = run('git', ['status', '--porcelain', '--', pkg], live);
+  // The dependants of `packages/shared` were built against it, so its dirt taints their dist too.
+  const dirty = run('git', ['status', '--porcelain', '--', pkg, 'packages/shared'], live);
   if (dirty === '' && fs.existsSync(source)) {
     run('cp', ['-a', source, path.join(lease, pkg, 'dist')], lease);
     return `${pkg}/dist: copied from a clean live package`;
