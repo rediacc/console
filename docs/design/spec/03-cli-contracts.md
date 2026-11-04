@@ -440,7 +440,7 @@ not hypothetical: **`repo list` already exists** as a machine-plane command (`co
 #### The loud traps, for completeness
 
 - **Rule 2 fires when `config` loses its last machine leaf.** P4 moves
-`machine scan-keys|setup|set-ceph`, `config infra push` and `config cert-cache pull|push` out of `config`. Those are ALL FIVE of `config`'s machine-plane leaves (`command-planes.ts:104-118`). If `config` ends with zero machine leaves while `commands/config.ts` still transitively imports `remote/ssh` or `services/machine/*`, Rule 2 fires. The CORRECT fix is to remove the
+`config machine scan-keys|setup|set-ceph`, `config infra push` and `config cert-cache pull|push` out of `config`. Those are ALL FIVE of `config`'s machine-plane leaves (`command-planes.ts:104-118`). If `config` ends with zero machine leaves while `commands/config.ts` still transitively imports `remote/ssh` or `services/machine/*`, Rule 2 fires. The CORRECT fix is to remove the
 now-dead machine imports from the config command module. The TEMPTING WRONG fix is an `OVERRIDES` entry, and the file warns against exactly that (`check-command-planes.ts:82`: *"Every entry here is a rule this gate stops enforcing"*). Do not paper over it.
 - **A stale contract makes a renamed command fail-CLOSED under `--proxy`, which reads as a
 bug.** `cli.ts:213-221` does `assertProxyCapable(commandPath, entry?.proxyCapable ?? false)`. A rename with an unregenerated contract means `getCommand` misses and the `?? false` refuses the command with a generic "cannot be proxied" message. Safe, but it does not look like staleness. Regenerate the contract before testing any proxy path.
@@ -1563,7 +1563,7 @@ New with no current ancestor: `repo logs`, `repo exec`, `repo admin archive list
 | `config machine add` | moved | `machine add <name>` (`--datastore <path>` dies) |
 | `config machine remove` | moved | `machine remove <name>` |
 | `config machine list` | merged-into | `machine list` (duplicate dies) |
-| `machine scan-keys` | moved | `machine scan-keys [name]` |
+| `config machine scan-keys` | moved | `machine scan-keys [name]` |
 | `config machine setup` | moved | `machine setup <name>` (auto-creates default datastore) |
 | `config machine set-ceph` | deleted | datastore-backend property: `datastore create --backend rbd` (06 §2) |
 | `config provider add` | moved | `machine provider add <name>` |
@@ -1728,7 +1728,7 @@ vehicle (§8.1a), and the shared `proxyCapableCommands().length` snapshot is 85 
 one.
 
 5. **`PROXY_EXCLUSIONS` in `packages/cli/scripts/generate-cli-contract.ts:61.`** The
-machine-plane commands a remote executor must never run for the caller, keyed by command path (today: `repo sync upload|download|status`, `config cert-cache pull`, `cluster kubeconfig`, `machine scan-keys`). **Every rename silently breaks a key** (the key just stops matching, and the command becomes proxyable), and every NEW machine-plane leaf needs a proxy verdict plus a
+machine-plane commands a remote executor must never run for the caller, keyed by command path (today: `repo sync upload|download|status`, `config cert-cache pull`, `cluster kubeconfig`, `config machine scan-keys`). **Every rename silently breaks a key** (the key just stops matching, and the command becomes proxyable), and every NEW machine-plane leaf needs a proxy verdict plus a
 user-facing refusal reason: the CLI prints it verbatim when `--proxy` refuses.
 
 Two more that are not new but are easy to miss:
@@ -1901,7 +1901,7 @@ say which machine ran rclone for a storage listing. As-built until the retiremen
 inside the machine-default domain (§4.9 Case 2): their effect is the caller's local config / cert cache, so they must not become proxyable. `machine infra push` / `infra cert pull|push` / `scan-keys` / `setup` reach the machine and stay machine-plane. `config reconcile` is `plane: machine` (config's ONLY machine leaf, which keeps Rule 2 satisfied) **plus a `PROXY_EXCLUSIONS`
 entry** because its effect lands in the caller's state bucket.
 5. **PROXY_EXCLUSIONS re-key:** `config cert-cache pull`→`machine infra cert pull`,
-`machine scan-keys`→`machine scan-keys`, **+`config reconcile`**. Policy fixtures re-keyed: `machine query`→`machine status` (`policy/schema.ts` doc, `policy-round-trip.test.ts`, account `policy-rule-editor.test.tsx`).
+`config machine scan-keys`→`machine scan-keys`, **+`config reconcile`**. Policy fixtures re-keyed: `machine query`→`machine status` (`policy/schema.ts` doc, `policy-round-trip.test.ts`, account `policy-rule-editor.test.tsx`).
 
 ### Declared debt (allowed-red per the wave brief; for w4)
 

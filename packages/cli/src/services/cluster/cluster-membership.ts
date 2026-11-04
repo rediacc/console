@@ -65,9 +65,7 @@ function agentPool(clusterName: string, cluster: ClusterConfig): ClusterPool {
   return pool;
 }
 
-// Carry-in 1 seam note: the datastore node label (rediacc.io/ds-<name>) is stamped/stripped through the renet `kube_node_label` renet function (control plane admin kubectl, node resolved by InternalIP). Because node labels persist in kine across a same-node reboot, only RELOCATION/failover re-stamps them (remove-before-add). The `datastore attach`/`detach` porcelain that wires
-// this
-// dispatch is P4; until then it is exercised via the renet primitive directly.
+// Carry-in 1 seam note: the datastore node label (rediacc.io/ds-<name>) is stamped/stripped through the renet `kube_node_label` renet function (control plane admin kubectl, node resolved by InternalIP). Because node labels persist in kine across a same-node reboot, only RELOCATION/failover re-stamps them (remove-before-add). The `datastore attach`/`detach` porcelain that wires this dispatch is P4; until then it is exercised via the renet primitive directly.
 
 export interface JoinClusterOptions {
   cluster: string;
@@ -107,9 +105,7 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
   );
 
   // ★ #25: no per-node repo. An adopted agent's k3s state is a disposable cache;
-  // `renet kube join` creates its own data-dir under the mount path. Only the
-  // networkID (its systemd unit + node interface) is allocated. See
-  // allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
+  // `renet kube join` creates its own data-dir under the mount path. Only the networkID (its systemd unit + node interface) is allocated. See allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
   const net = await allocateAgentNetworkId(machineName);
   const controlMachine = await configService.getLocalMachine(control.name);
 
@@ -184,9 +180,7 @@ export async function evictCluster(
 
   const held = await attachedDatastoresOn(machineName);
   if (held.length > 0) {
-    // Single-mounter safety (spec 03 §5.5): refuse a node that still mounts a
-    // named datastore, unless --force, the honest path for a DEAD node whose
-    // datastore must be recovered/fenced separately (it will not detach cleanly).
+    // Single-mounter safety (spec 03 §5.5): refuse a node that still mounts a named datastore, unless --force, the honest path for a DEAD node whose datastore must be recovered/fenced separately (it will not detach cleanly).
     if (options.force) {
       outputService.warn(
         `--force: evicting "${machineName}" despite held datastore(s) ${held.join(', ')}. ` +
@@ -206,11 +200,7 @@ export async function evictCluster(
 
   outputService.info(`Evicting "${machineName}" (${machine.ip}) from cluster "${clusterName}"...`);
 
-  // Drain + delete the Node object on the control plane, resolving the node by
-  // its InternalIP (k3s names nodes by hostname, not the config name). renet's
-  // kube_node_remove already force-drains (--force --delete-emptydir-data), so a
-  // reachable node always drains; an unreachable one is deleted regardless.
-  // Two jobs, one per phase: the node removal on the control plane, then (a ticket step) the node-side uninstall and the deregistration.
+  // Drain + delete the Node object on the control plane, resolving the node by its InternalIP (k3s names nodes by hostname, not the config name). renet's kube_node_remove already force-drains (--force --delete-emptydir-data), so a reachable node always drains; an unreachable one is deleted regardless. Two jobs, one per phase: the node removal on the control plane, then (a ticket step) the node-side uninstall and the deregistration.
   const { pending, unfinished } = await runClusterPhase(
     'kube_node_remove',
     control.name,

@@ -1405,6 +1405,7 @@
       "dependents": [
         "cmd/renet",
         "pkg/functions",
+        "pkg/functions/commands",
         "pkg/functions/compatibility"
       ]
     },

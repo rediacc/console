@@ -220,8 +220,7 @@ async function runReconcileInner(options: ReconcileCliOptions): Promise<void> {
   const cfgName = configService.getEffectiveConfigName();
   const filter = options.machine;
 
-  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination
-  // (spec/04 §4.3); run it unfiltered instead.
+  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination (spec/04 §4.3); run it unfiltered instead.
   if (options.acceptObserved && filter?.length) {
     throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
   }
@@ -239,9 +238,7 @@ async function runReconcileInner(options: ReconcileCliOptions): Promise<void> {
   };
   const scratch = new ScratchStore(cfgName);
 
-  // One list-all job per machine under one group. Every ticket carries the reconcile step, which runs only once all the
-  // machines have finished. A machine whose job could not start leaves its error as its record and counts as finished,
-  // so the command checks once more after the loop for the case where no ticket is left to do it.
+  // One list-all job per machine under one group. Every ticket carries the reconcile step, which runs only once all the machines have finished. A machine whose job could not start leaves its error as its record and counts as finished, so the command checks once more after the loop for the case where no ticket is left to do it.
   const steps = [
     planStep('recordMachineListing', { group: group.group }),
     planStep('reconcileConfigState', { ...group }),
