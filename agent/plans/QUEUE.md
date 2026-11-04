@@ -68,7 +68,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 2 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
-  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 11 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
+  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 12 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 9 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 1 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup critical tier proofs
@@ -76,13 +76,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 1 commit(s) on the branch, 0 open item(s): free license ladder F6
 - Writers: 0 live of writer_cap 25 (session d778be9d).
 - Leased items: 1: #a150016d (worker:queue, d778be9d).
-- Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
+- Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 8 of 39 plans done, 608 of 819 boxes done (74%).
+Promoted: 8 of 40 plans done, 608 of 835 boxes done (72%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -125,6 +125,7 @@ Promoted: 8 of 39 plans done, 608 of 819 boxes done (74%).
 | 37 | PLAN-backup-integrity.md | 38/57 | 19 open |
 | 38 | PLAN-backup-critical-tier.md | 32/53 | 21 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 0/23 | 23 open |
+| 40 | PLAN-worktree-lease.md | 0/16 | 16 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -166,6 +167,7 @@ Promoted: 8 of 39 plans done, 608 of 819 boxes done (74%).
 37. agent/plans/PLAN-backup-integrity.md -- operator /ask 2026-11-01: all integrity fixes land in #602
 38. agent/plans/PLAN-backup-critical-tier.md -- operator /ask 2026-11-01: critical-system backups land in #602
 39. agent/plans/PLAN-rediaccfile-unprivileged.md -- operator /ask 2026-11-03: up() and down() run as the universal user with explicit grants, fixed in #602, tested on hostinger
+40. agent/plans/PLAN-worktree-lease.md -- operator order 2026-11-04: promote the new plan and continue until the full worktree solution
 
 ## Generated
 
