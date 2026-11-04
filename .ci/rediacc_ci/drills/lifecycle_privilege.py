@@ -35,7 +35,7 @@ CREATED_FILE = ".lifecycle-probe-created"
 FAIL_MARKER = "lifecycle-probe-fail-compose"
 # While present, down() asks the repository's Docker daemon something and fails loudly when the daemon does not answer.
 DOWN_MARKER = "lifecycle-probe-down-docker"
-DOWN_FAIL_TOKEN = "lifecycle-probe-down-daemon-unreachable"
+DOWN_FAIL_MARK = "lifecycle-probe-down-daemon-unreachable"
 BAD_COMPOSE = "lifecycle-probe-bad.yml"
 NNP_TEXT = "no new privileges"
 # gpu_grants' fake CDI device: a 0666 character node no driver claims, so opening it is ENXIO whenever the sandbox lets the function reach it.
@@ -90,7 +90,7 @@ def probe_rediaccfile() -> str:
         "downf": DOWN_FILE,
         "marker": FAIL_MARKER,
         "downmarker": DOWN_MARKER,
-        "downtoken": DOWN_FAIL_TOKEN,
+        "downtoken": DOWN_FAIL_MARK,
         "badc": BAD_COMPOSE,
         "cdinode": CDI_NODE,
     }
@@ -175,7 +175,7 @@ def cold_barrier_verdict(probe: dict[str, str]) -> tuple[bool, str]:
 
 def down_honest_verdict(rc: int, text: str) -> tuple[bool, str]:
     """(ok, evidence) of the stopped-daemon row: a `repo down` whose down() could not reach a stopped Docker daemon fails, and its output carries down()'s own complaint, so a success report or an unrelated failure does not pass."""
-    named = DOWN_FAIL_TOKEN in text
+    named = DOWN_FAIL_MARK in text
     return rc != 0 and named, "repo down rc=%d down() complaint named=%s %s" % (
         rc,
         named,
@@ -650,9 +650,9 @@ __all__ = [
     "cold_barrier_verdict",
     "daemon_stop_script",
     "daemon_unit",
+    "denied_verdict",
     "down_honest_verdict",
     "down_marker_command",
-    "denied_verdict",
     "dropped_verdict",
     "env_verdict",
     "fork_tag",

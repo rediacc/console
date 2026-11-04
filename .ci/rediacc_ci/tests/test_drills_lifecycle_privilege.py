@@ -306,7 +306,7 @@ def _run_probe_down(docker_ok: bool, marker: bool) -> subprocess.CompletedProces
 def test_down_asks_the_daemon_only_under_the_marker() -> None:
     unreachable = _run_probe_down(docker_ok=False, marker=True)
     assert unreachable.returncode != 0
-    assert lp.DOWN_FAIL_TOKEN in unreachable.stderr
+    assert lp.DOWN_FAIL_MARK in unreachable.stderr
     # controls: a reachable daemon, or no marker, leaves down() succeeding
     assert _run_probe_down(docker_ok=True, marker=True).returncode == 0
     assert _run_probe_down(docker_ok=False, marker=False).returncode == 0
@@ -323,8 +323,8 @@ def test_down_marker_and_removal_commands() -> None:
 
 
 def test_down_honest_verdict_control_and_failures() -> None:
-    assert lp.down_honest_verdict(1, "x " + lp.DOWN_FAIL_TOKEN)[0]
-    assert not lp.down_honest_verdict(0, lp.DOWN_FAIL_TOKEN)[0]  # reported success
+    assert lp.down_honest_verdict(1, "x " + lp.DOWN_FAIL_MARK)[0]
+    assert not lp.down_honest_verdict(0, lp.DOWN_FAIL_MARK)[0]  # reported success
     assert not lp.down_honest_verdict(1, "unrelated failure")[0]  # failed for another reason
 
 
