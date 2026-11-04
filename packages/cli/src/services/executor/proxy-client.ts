@@ -521,7 +521,7 @@ export class ProxyClient {
       if (!poll) {
         failingSince ??= Date.now();
         if (Date.now() - failingSince >= this.lostBudgetMs) {
-          annotatePolled(jobId, fn, 'running', polls);
+          annotatePolled(jobId, fn, undefined, polls);
           return lostOutcome(jobId, machine, first);
         }
         await this.sleep(jittered(pace.delay, this.random));

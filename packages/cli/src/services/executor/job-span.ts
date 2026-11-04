@@ -18,8 +18,8 @@ export interface JobSpanInput {
   jobId?: string;
   function: string;
   follow: JobFollowKind;
-  /** `succeeded`, `failed`, `cancelled`, or `running` when the ticket was handed back. */
-  outcome: string;
+  /** `succeeded`, `failed`, `cancelled`, or `running` when the ticket was handed back; absent while the result is unknown. */
+  outcome?: string;
   startLatencyMs?: number;
   polls?: number;
 }
@@ -28,9 +28,9 @@ export interface JobSpanInput {
 export function jobSpanAttributes(input: JobSpanInput): Record<string, string | number> {
   return {
     ...(input.jobId ? { 'rediacc.job.id': input.jobId } : {}),
-    'rediacc.job.function': input.function,
+    ...(input.function ? { 'rediacc.job.function': input.function } : {}),
     'rediacc.job.follow': input.follow,
-    'rediacc.job.outcome': input.outcome,
+    ...(input.outcome ? { 'rediacc.job.outcome': input.outcome } : {}),
     ...(input.startLatencyMs === undefined
       ? {}
       : { 'rediacc.job.start_latency_ms': input.startLatencyMs }),
@@ -43,11 +43,11 @@ export function annotateJobSpan(input: JobSpanInput): void {
   telemetryService.annotateCommand(jobSpanAttributes(input));
 }
 
-/** The span attributes of a proxied run followed by polls: how many polls it took and how it ended. The function is unknown until one poll answered. */
+/** The span attributes of a proxied run followed by polls: how many polls it took and how it ended. The function is unknown until one poll answered, and the outcome until the run is known; either is then left off. */
 export function annotatePolled(
   jobId: string,
   jobFunction: string,
-  outcome: string,
+  outcome: string | undefined,
   polls: number
 ): void {
   annotateJobSpan({ jobId, function: jobFunction, follow: 'poll', outcome, polls });

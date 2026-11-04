@@ -10,9 +10,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EXIT_CODES } from '../../../types/index.js';
 import { TicketStore } from '../../jobs/ticket-store.js';
+import { telemetryService } from '../../telemetry/telemetry.js';
 import { nextPollDelayMs, ProxyClient } from '../proxy-client.js';
 
 const JOB = 'j18c1c04dd251ce26-0ccf9fe5';
@@ -53,10 +54,15 @@ function poll(
 describe('ProxyClient follows by polls', () => {
   const dirs: string[] = [];
   afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
 
-  function setup(handler: (url: URL, call: number) => Response | Promise<Response>) {
+  function setup(
+    handler: (url: URL, call: number) => Response | Promise<Response>,
+    options: { clock?: boolean } = {}
+  ) {
     const dir = mkdtempSync(join(tmpdir(), 'poll-'));
     dirs.push(dir);
     const store = new TicketStore('cfg', dir);
@@ -69,9 +75,11 @@ describe('ProxyClient follows by polls', () => {
       contractVersion: 'contract-v1',
       ticketStore: store,
       random: () => 0.5,
-      lostBudgetMs: 0,
+      // The clock variant keeps the default budget and advances a fake Date by each recorded sleep.
+      ...(options.clock ? {} : { lostBudgetMs: 0 }),
       sleep: (ms) => {
         sleeps.push(ms);
+        if (options.clock) vi.setSystemTime(Date.now() + ms);
         return Promise.resolve();
       },
       fetchImpl: ((input: string | URL) => {
@@ -127,6 +135,38 @@ describe('ProxyClient follows by polls', () => {
       via: { kind: 'proxy', url: 'https://executor.test/' },
       state: 'failed',
       exitCode: 3,
+    });
+  });
+
+  it('keeps retrying failed polls for the 10 minute default, past the old 2 minute budget', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const { client, sleeps } = setup(() => new Response('bad gateway', { status: 502 }), {
+      clock: true,
+    });
+    const outcome = await client.run('repo up', {}, {}, () => {});
+    expect(outcome.exitCode).toBe(EXIT_CODES.FOLLOW_LOST);
+    const waited = sleeps.reduce((a, b) => a + b, 0);
+    expect(waited).toBeGreaterThanOrEqual(600_000 - 30_000);
+    expect(waited).toBeLessThan(600_000 + 30_000);
+  });
+
+  it('leaves the function and outcome off the span when the follow is lost before any poll answered', async () => {
+    const spy = vi.spyOn(telemetryService, 'annotateCommand').mockImplementation(() => {});
+    const { client } = setup(() => new Response('bad gateway', { status: 502 }));
+    await client.run('repo up', {}, {}, () => {});
+    const attrs = spy.mock.calls.at(-1)?.[0] ?? {};
+    expect(attrs).toMatchObject({ 'rediacc.job.follow': 'poll' });
+    expect(attrs).not.toHaveProperty('rediacc.job.function');
+    expect(attrs).not.toHaveProperty('rediacc.job.outcome');
+  });
+
+  it('control: a terminal poll writes the function and the outcome onto the span', async () => {
+    const spy = vi.spyOn(telemetryService, 'annotateCommand').mockImplementation(() => {});
+    const { client } = setup(() => poll('succeeded', { exitCode: 0 }));
+    await client.run('repo up', {}, {}, () => {});
+    expect(spy.mock.calls.at(-1)?.[0]).toMatchObject({
+      'rediacc.job.function': 'repository_up',
+      'rediacc.job.outcome': 'succeeded',
     });
   });
 
