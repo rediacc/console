@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "مرر على الأكثر واحداً من --certs-only / --archives-only / --refs-only.",
   "commands.config.reconcile.acceptObservedUnfiltered": "لا يمكن دمج --accept-observed مع --machine: الفحص الجزئي لا يمكنه إثبات أن الموضع لا لبس فيه، لذا ستكون إعادة الكتابة تخمينًا. شغّل 'rdc config reconcile --accept-observed' دون تصفية.",
   "commands.config.reconcile.description": "إعادة بناء حالة وقت التشغيل من واقع الأجهزة. يُصلح بيانات الإرفاق والتوجيه القديمة.",
+  "commands.config.reconcile.listFailed": "فشل الأمر renet list all (رمز الخروج {{exitCode}}).",
+  "commands.config.reconcile.noListing": "لم يتم تسجيل أي قائمة للجهاز {{machine}}.",
   "commands.config.reconcile.optionAcceptObserved": "إعادة كتابة الموضع المُعلن ليطابق مكان الصورة الفعلي، ولكن فقط عندما يكون ذلك لا لبس فيه (مُلاحظ على جهاز واحد بالضبط). التكرارات تبقى تعارضات.",
   "commands.config.reconcile.optionMachine": "تقييد التسوية بهذه الأجهزة",
   "commands.config.recover.confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",

@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed нельзя сочетать с --machine: частичное сканирование не может доказать, что размещение однозначно, поэтому перезапись была бы догадкой. Запустите 'rdc config reconcile --accept-observed' без фильтра.",
         "description": "Восстановить состояние времени выполнения на основе фактических данных с машин. Исправляет устаревшие данные подключения и маршрутизации.",
         "optionAcceptObserved": "Переписать заявленное размещение так, чтобы оно соответствовало фактическому расположению образа, но только если это однозначно (обнаружено ровно на одной машине). Дубликаты остаются конфликтами.",
-        "optionMachine": "Ограничить сверку этими машинами"
+        "optionMachine": "Ограничить сверку этими машинами",
+        "noListing": "Для {{machine}} не записан ни один список.",
+        "listFailed": "renet list all завершилась с ошибкой (код выхода {{exitCode}})."
       },
       "recover": {
         "confirm": "Восстановить конфигурацию \"{{name}}\" из резервной копии?",
@@ -3026,6 +3028,24 @@
       "noConfig": "В {{path}} нет конфигурации tofu (main.tf.json): шаг подготовки, который её записывает, не выполнялся.",
       "belowFloor": "{{engine}} {{version}} в {{path}} старше минимальной версии {{floor}}. Установите закреплённый OpenTofu командой: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU указывает на {{path}}, но этот файл не запускается ни как OpenTofu, ни как Terraform. Исправьте или удалите переменную либо установите закреплённый OpenTofu командой: rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Отказ: {{subject}}, {{origin}}.",
+        "warningHead": "Предупреждение: {{subject}}, {{origin}}.",
+        "seeIt": "  Посмотреть: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}): {{state}}{{started}}",
+        "whatJob": "задача {{id}}",
+        "onScope": " на {{scope}}",
+        "startedAt": ", запущена {{timestamp}}",
+        "originUnknown": "запущена: неизвестно кем (более старая версия renet)",
+        "originStarted": "запущена пользователем {{user}} через {{client}}{{config}}",
+        "originConfig": " (конфигурация {{name}})"
+      },
+      "refused": "Задача на '{{machine}}' не запущена: {{holder}} уже занимает ту же область.",
+      "holderJob": "задача {{id}}",
+      "holderOther": "другая задача",
+      "orStopIt": "  Или остановите её: rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed 不能与 --machine 同时使用：部分扫描无法证明放置位置是无歧义的，因此重写将只是猜测。请不加过滤地运行 'rdc config reconcile --accept-observed'。",
         "description": "根据机器上的真实状态重建运行时状态。修复过时的挂接和路由数据。",
         "optionAcceptObserved": "将声明的放置位置重写为镜像的实际所在位置，但仅当结果是无歧义时才这样做（恰好在一台机器上观察到）。重复项仍视为冲突。",
-        "optionMachine": "将协调（reconcile）限定于这些机器"
+        "optionMachine": "将协调（reconcile）限定于这些机器",
+        "noListing": "没有为 {{machine}} 记录任何列表。",
+        "listFailed": "renet list all 执行失败(退出码 {{exitCode}})。"
       },
       "recover": {
         "confirm": "从备份恢复配置 \"{{name}}\"？",
@@ -3026,6 +3028,24 @@
       "noConfig": "{{path}} 中没有 tofu 配置 (main.tf.json)；写入它的配置步骤未运行。",
       "belowFloor": "{{path}} 处的 {{engine}} {{version}} 低于最低版本 {{floor}}。请用以下命令安装固定版本的 OpenTofu：rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU 指向 {{path}}，但它无法作为 OpenTofu 或 Terraform 运行。请修正或删除该变量，或用以下命令安装固定版本的 OpenTofu：rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "已拒绝:{{subject}},{{origin}}。",
+        "warningHead": "警告:{{subject}},{{origin}}。",
+        "seeIt": "  查看:{{attach}}",
+        "subject": "{{what}}({{doing}}{{scope}}){{state}}{{started}}",
+        "whatJob": "作业 {{id}}",
+        "onScope": "(位于 {{scope}})",
+        "startedAt": ",开始于 {{timestamp}}",
+        "originUnknown": "启动方:未知(较旧的 renet)",
+        "originStarted": "由 {{user}} 通过 {{client}} 启动{{config}}",
+        "originConfig": " (配置 {{name}})"
+      },
+      "refused": "未在 '{{machine}}' 上启动作业:{{holder}}已占用相同范围。",
+      "holderJob": "作业 {{id}}",
+      "holderOther": "另一个作业",
+      "orStopIt": "  或停止它:rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

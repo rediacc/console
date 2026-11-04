@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed não pode ser combinado com --machine: uma verificação parcial não consegue provar que uma colocação é inequívoca, pelo que a reescrita seria um palpite. Execute 'rdc config reconcile --accept-observed' sem filtro.",
         "description": "Reconstrói o estado em tempo de execução a partir do estado real das máquinas. Corrige dados de anexação e encaminhamento desatualizados.",
         "optionAcceptObserved": "Reescreve uma colocação declarada para corresponder ao local real da imagem, mas apenas quando isso é inequívoco (observada em exatamente uma máquina). As duplicações mantêm-se como conflitos.",
-        "optionMachine": "Limitar a reconciliação a estas máquinas"
+        "optionMachine": "Limitar a reconciliação a estas máquinas",
+        "noListing": "Nenhuma listagem foi registrada para {{machine}}.",
+        "listFailed": "renet list all falhou (código de saída {{exitCode}})."
       },
       "recover": {
         "confirm": "Restaurar a configuração \"{{name}}\" a partir da cópia de segurança?",
@@ -3026,6 +3028,24 @@
       "noConfig": "Nenhuma configuração do tofu (main.tf.json) em {{path}}; a etapa de provisionamento que a escreve não foi executada.",
       "belowFloor": "{{engine}} {{version}} em {{path}} é anterior à versão mínima {{floor}}. Instale o OpenTofu fixado com: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU aponta para {{path}}, que não executa como OpenTofu nem como Terraform. Corrija ou remova a variável, ou instale o OpenTofu fixado com: rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Recusado: {{subject}}, {{origin}}.",
+        "warningHead": "Aviso: {{subject}}, {{origin}}.",
+        "seeIt": "  Para acompanhar: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) está {{state}}{{started}}",
+        "whatJob": "o job {{id}}",
+        "onScope": " em {{scope}}",
+        "startedAt": ", iniciado {{timestamp}}",
+        "originUnknown": "iniciado por: desconhecido (renet mais antigo)",
+        "originStarted": "iniciado por {{user}} via {{client}}{{config}}",
+        "originConfig": " (configuração {{name}})"
+      },
+      "refused": "O job em '{{machine}}' não foi iniciado: {{holder}} ocupa o mesmo escopo.",
+      "holderJob": "o job {{id}}",
+      "holderOther": "outro job",
+      "orStopIt": "  Ou pare-o: rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

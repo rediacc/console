@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed, --machine ile birleştirilemez: kısmi bir tarama, bir yerleşimin belirsizlik içermediğini kanıtlayamaz, bu yüzden yeniden yazma bir tahmin olur. 'rdc config reconcile --accept-observed' komutunu filtresiz çalıştırın.",
   "commands.config.reconcile.description": "Çalışma zamanı durumunu makinelerin gerçek durumundan yeniden kurar. Eski bağlama ve yönlendirme verilerini düzeltir.",
+  "commands.config.reconcile.listFailed": "renet list all başarısız oldu (çıkış kodu {{exitCode}}).",
+  "commands.config.reconcile.noListing": "{{machine}} için kaydedilmiş bir liste yok.",
   "commands.config.reconcile.optionAcceptObserved": "Bildirilen bir yerleşimi, imajın gerçekte bulunduğu yere uyacak şekilde yeniden yazar, ancak yalnızca bu belirsizlik içermediğinde (tam olarak bir makinede gözlemlendiğinde) yapar. Kopyalar çakışma olarak kalır.",
   "commands.config.reconcile.optionMachine": "Uzlaştırmayı bu makinelerle sınırla",
   "commands.config.recover.confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",

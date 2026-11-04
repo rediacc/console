@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed ei saa kombineerida --machine'iga: osaline skaneerimine ei suuda tõestada, et asukoht on ühemõtteline, seega oleks ümberkirjutamine oletus. Käivita 'rdc config reconcile --accept-observed' ilma filtrita.",
   "commands.config.reconcile.description": "Ehita töötamisaegne olek uuesti masina tõe põhjal. Parandab aegunud ühendus- ja marsruutimisandmed.",
+  "commands.config.reconcile.listFailed": "renet list all ebaõnnestus (väljumiskood {{exitCode}}).",
+  "commands.config.reconcile.noListing": "Masina {{machine}} kohta pole loendit salvestatud.",
   "commands.config.reconcile.optionAcceptObserved": "Kirjuta deklareeritud asukoht ümber vastavaks image'i tegelikule asukohale, kuid ainult siis, kui see on ühemõtteline (täheldatud täpselt ühel masinal). Duplikaadid jäävad konfliktideks.",
   "commands.config.reconcile.optionMachine": "Piira tasakaalustamine nende masinatega",
   "commands.config.recover.confirm": "Taasta konfiguratsioon \"{{name}}\" varukoopiast?",

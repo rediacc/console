@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only 중 하나만 전달하십시오.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed는 --machine과 함께 사용할 수 없습니다: 부분 스캔으로는 배치가 모호하지 않음을 증명할 수 없으므로, 다시 쓰는 것은 추측이 됩니다. 필터 없이 'rdc config reconcile --accept-observed'를 실행하세요.",
   "commands.config.reconcile.description": "머신의 실제 상태를 기준으로 런타임 상태를 재구축합니다. 오래된 어태치 정보와 라우팅 데이터를 수정합니다",
+  "commands.config.reconcile.listFailed": "renet list all 실행에 실패했습니다(종료 코드 {{exitCode}}).",
+  "commands.config.reconcile.noListing": "{{machine}}에 기록된 목록이 없습니다.",
   "commands.config.reconcile.optionAcceptObserved": "선언된 배치를 이미지가 실제로 있는 위치와 일치하도록 다시 씁니다. 단, 모호하지 않은 경우에만 적용됩니다 (정확히 하나의 머신에서 관찰된 경우). 중복은 계속 충돌로 남습니다.",
   "commands.config.reconcile.optionMachine": "reconcile 대상을 이 머신들로 제한합니다",
   "commands.config.recover.confirm": "백업에서 설정 \"{{name}}\"을 복원하시겠습니까?",

@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed, --machine ile birleştirilemez: kısmi bir tarama, bir yerleşimin belirsizlik içermediğini kanıtlayamaz, bu yüzden yeniden yazma bir tahmin olur. 'rdc config reconcile --accept-observed' komutunu filtresiz çalıştırın.",
         "description": "Çalışma zamanı durumunu makinelerin gerçek durumundan yeniden kurar. Eski bağlama ve yönlendirme verilerini düzeltir.",
         "optionAcceptObserved": "Bildirilen bir yerleşimi, imajın gerçekte bulunduğu yere uyacak şekilde yeniden yazar, ancak yalnızca bu belirsizlik içermediğinde (tam olarak bir makinede gözlemlendiğinde) yapar. Kopyalar çakışma olarak kalır.",
-        "optionMachine": "Uzlaştırmayı bu makinelerle sınırla"
+        "optionMachine": "Uzlaştırmayı bu makinelerle sınırla",
+        "noListing": "{{machine}} için kaydedilmiş bir liste yok.",
+        "listFailed": "renet list all başarısız oldu (çıkış kodu {{exitCode}})."
       },
       "recover": {
         "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
@@ -3026,6 +3028,24 @@
       "noConfig": "{{path}} içinde tofu yapılandırması (main.tf.json) yok; onu yazan hazırlama adımı çalışmadı.",
       "belowFloor": "{{path}} konumundaki {{engine}} {{version}}, en düşük sürüm olan {{floor}} sürümünden eski. Sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU, {{path}} yolunu gösteriyor ancak bu dosya OpenTofu ya da Terraform olarak çalışmıyor. Değişkeni düzeltin veya kaldırın ya da sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Reddedildi: {{subject}}, {{origin}}.",
+        "warningHead": "Uyarı: {{subject}}, {{origin}}.",
+        "seeIt": "  Görmek için: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) {{state}}{{started}}",
+        "whatJob": "{{id}} numaralı iş",
+        "onScope": " ({{scope}} üzerinde)",
+        "startedAt": ", başlangıç {{timestamp}}",
+        "originUnknown": "başlatan: bilinmiyor (eski renet sürümü)",
+        "originStarted": "{{client}} üzerinden {{user}} başlattı{{config}}",
+        "originConfig": " (yapılandırma {{name}})"
+      },
+      "refused": "'{{machine}}' üzerinde iş başlatılmadı: {{holder}} aynı kapsamı tutuyor.",
+      "holderJob": "{{id}} numaralı iş",
+      "holderOther": "başka bir iş",
+      "orStopIt": "  Ya da durdurun: rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

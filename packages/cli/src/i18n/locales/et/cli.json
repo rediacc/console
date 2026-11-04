@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed ei saa kombineerida --machine'iga: osaline skaneerimine ei suuda tõestada, et asukoht on ühemõtteline, seega oleks ümberkirjutamine oletus. Käivita 'rdc config reconcile --accept-observed' ilma filtrita.",
         "description": "Ehita töötamisaegne olek uuesti masina tõe põhjal. Parandab aegunud ühendus- ja marsruutimisandmed.",
         "optionAcceptObserved": "Kirjuta deklareeritud asukoht ümber vastavaks image'i tegelikule asukohale, kuid ainult siis, kui see on ühemõtteline (täheldatud täpselt ühel masinal). Duplikaadid jäävad konfliktideks.",
-        "optionMachine": "Piira tasakaalustamine nende masinatega"
+        "optionMachine": "Piira tasakaalustamine nende masinatega",
+        "noListing": "Masina {{machine}} kohta pole loendit salvestatud.",
+        "listFailed": "renet list all ebaõnnestus (väljumiskood {{exitCode}})."
       },
       "recover": {
         "confirm": "Taasta konfiguratsioon \"{{name}}\" varukoopiast?",
@@ -3026,6 +3028,24 @@
       "noConfig": "Kaustas {{path}} pole tofu seadistust (main.tf.json); seda kirjutav ettevalmistuse samm ei käivitunud.",
       "belowFloor": "{{engine}} {{version}} asukohas {{path}} on vanem kui miinimumversioon {{floor}}. Paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU osutab failile {{path}}, mis ei käivitu ei OpenTofu ega Terraformina. Paranda või eemalda muutuja või paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Keelatud: {{subject}}, {{origin}}.",
+        "warningHead": "Hoiatus: {{subject}}, {{origin}}.",
+        "seeIt": "  Vaata: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) on {{state}}{{started}}",
+        "whatJob": "töö {{id}}",
+        "onScope": " ({{scope}})",
+        "startedAt": ", algas {{timestamp}}",
+        "originUnknown": "käivitaja: teadmata (vanem renet)",
+        "originStarted": "käivitas {{user}} kliendiga {{client}}{{config}}",
+        "originConfig": " (konfiguratsioon {{name}})"
+      },
+      "refused": "Tööd masinas '{{machine}}' ei käivitatud: {{holder}} hoiab sama ulatust.",
+      "holderJob": "töö {{id}}",
+      "holderOther": "teine töö",
+      "orStopIt": "  Või peata see: rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed は --machine と組み合わせられません: 部分スキャンでは配置が一意であることを証明できないため、書き換えは推測になってしまいます。フィルタなしで 'rdc config reconcile --accept-observed' を実行してください。",
         "description": "マシン側の実態からランタイム状態を再構築する。古くなったアタッチ情報やルーティング情報を修正する",
         "optionAcceptObserved": "宣言された配置を、イメージが実際にある場所に一致するよう書き換える。ただしそれが一意である場合のみ（正確に 1 台のマシンで観測された場合）。重複は競合のままとなる。",
-        "optionMachine": "対象マシンを指定して reconcile を限定する"
+        "optionMachine": "対象マシンを指定して reconcile を限定する",
+        "noListing": "{{machine}} の一覧は記録されていません。",
+        "listFailed": "renet list all が失敗しました(終了コード {{exitCode}})。"
       },
       "recover": {
         "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
@@ -3026,6 +3028,24 @@
       "noConfig": "{{path}} に tofu の構成 (main.tf.json) がありません。これを書き出すプロビジョニング手順が実行されていません。",
       "belowFloor": "{{path}} の{{engine}} {{version}}は最低バージョン {{floor}} より古いです。次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU は {{path}} を指していますが、OpenTofuとしてもTerraformとしても実行できません。変数を修正または削除するか、次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "拒否しました: {{subject}}、{{origin}}。",
+        "warningHead": "警告: {{subject}}、{{origin}}。",
+        "seeIt": "  確認するには: {{attach}}",
+        "subject": "{{what}}({{doing}}{{scope}})は{{state}}です{{started}}",
+        "whatJob": "ジョブ {{id}}",
+        "onScope": "({{scope}})",
+        "startedAt": "、開始 {{timestamp}}",
+        "originUnknown": "開始元: 不明(古い renet)",
+        "originStarted": "{{user}} が {{client}} から開始{{config}}",
+        "originConfig": "(設定 {{name}})"
+      },
+      "refused": "'{{machine}}' のジョブは開始されませんでした。{{holder}}が同じスコープを使用中です。",
+      "holderJob": "ジョブ {{id}}",
+      "holderOther": "別のジョブ",
+      "orStopIt": "  停止するには: rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

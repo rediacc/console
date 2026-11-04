@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "Передайте не более одного из --certs-only / --archives-only / --refs-only.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed нельзя сочетать с --machine: частичное сканирование не может доказать, что размещение однозначно, поэтому перезапись была бы догадкой. Запустите 'rdc config reconcile --accept-observed' без фильтра.",
   "commands.config.reconcile.description": "Восстановить состояние времени выполнения на основе фактических данных с машин. Исправляет устаревшие данные подключения и маршрутизации.",
+  "commands.config.reconcile.listFailed": "renet list all завершилась с ошибкой (код выхода {{exitCode}}).",
+  "commands.config.reconcile.noListing": "Для {{machine}} не записан ни один список.",
   "commands.config.reconcile.optionAcceptObserved": "Переписать заявленное размещение так, чтобы оно соответствовало фактическому расположению образа, но только если это однозначно (обнаружено ровно на одной машине). Дубликаты остаются конфликтами.",
   "commands.config.reconcile.optionMachine": "Ограничить сверку этими машинами",
   "commands.config.recover.confirm": "Восстановить конфигурацию \"{{name}}\" из резервной копии?",

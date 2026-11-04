@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "最多传递 --certs-only / --archives-only / --refs-only 中的一个。",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed 不能与 --machine 同时使用：部分扫描无法证明放置位置是无歧义的，因此重写将只是猜测。请不加过滤地运行 'rdc config reconcile --accept-observed'。",
   "commands.config.reconcile.description": "根据机器上的真实状态重建运行时状态。修复过时的挂接和路由数据。",
+  "commands.config.reconcile.listFailed": "renet list all 执行失败(退出码 {{exitCode}})。",
+  "commands.config.reconcile.noListing": "没有为 {{machine}} 记录任何列表。",
   "commands.config.reconcile.optionAcceptObserved": "将声明的放置位置重写为镜像的实际所在位置，但仅当结果是无歧义时才这样做（恰好在一台机器上观察到）。重复项仍视为冲突。",
   "commands.config.reconcile.optionMachine": "将协调（reconcile）限定于这些机器",
   "commands.config.recover.confirm": "从备份恢复配置 \"{{name}}\"？",

@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "لا يمكن دمج --accept-observed مع --machine: الفحص الجزئي لا يمكنه إثبات أن الموضع لا لبس فيه، لذا ستكون إعادة الكتابة تخمينًا. شغّل 'rdc config reconcile --accept-observed' دون تصفية.",
         "description": "إعادة بناء حالة وقت التشغيل من واقع الأجهزة. يُصلح بيانات الإرفاق والتوجيه القديمة.",
         "optionAcceptObserved": "إعادة كتابة الموضع المُعلن ليطابق مكان الصورة الفعلي، ولكن فقط عندما يكون ذلك لا لبس فيه (مُلاحظ على جهاز واحد بالضبط). التكرارات تبقى تعارضات.",
-        "optionMachine": "تقييد التسوية بهذه الأجهزة"
+        "optionMachine": "تقييد التسوية بهذه الأجهزة",
+        "noListing": "لم يتم تسجيل أي قائمة للجهاز {{machine}}.",
+        "listFailed": "فشل الأمر renet list all (رمز الخروج {{exitCode}})."
       },
       "recover": {
         "confirm": "استعادة الإعدادات \"{{name}}\" من النسخة الاحتياطية؟",
@@ -3026,6 +3028,24 @@
       "noConfig": "لا يوجد إعداد tofu (main.tf.json) في {{path}}؛ لم تُنفَّذ خطوة التجهيز التي تكتبه.",
       "belowFloor": "{{engine}} {{version}} في {{path}} أقدم من الحد الأدنى للإصدار {{floor}}. ثبّت إصدار OpenTofu المحدد بالأمر: rdc tools install tofu",
       "overrideUnusable": "يشير REDIACC_TOFU إلى {{path}}، لكنه لا يعمل بوصفه OpenTofu أو Terraform. صحّح المتغير أو احذفه، أو ثبّت إصدار OpenTofu المحدد بالأمر: rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "تم الرفض: {{subject}}، {{origin}}.",
+        "warningHead": "تحذير: {{subject}}، {{origin}}.",
+        "seeIt": "  لعرضها: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) {{state}}{{started}}",
+        "whatJob": "المهمة {{id}}",
+        "onScope": " على {{scope}}",
+        "startedAt": "، بدأت {{timestamp}}",
+        "originUnknown": "بدأها: غير معروف (إصدار أقدم من renet)",
+        "originStarted": "بدأها {{user}} عبر {{client}}{{config}}",
+        "originConfig": " (الإعداد {{name}})"
+      },
+      "refused": "لم تبدأ المهمة على '{{machine}}': {{holder}} يشغل النطاق نفسه.",
+      "holderJob": "المهمة {{id}}",
+      "holderOther": "مهمة أخرى",
+      "orStopIt": "  أو أوقفها: rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

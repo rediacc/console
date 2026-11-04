@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed は --machine と組み合わせられません: 部分スキャンでは配置が一意であることを証明できないため、書き換えは推測になってしまいます。フィルタなしで 'rdc config reconcile --accept-observed' を実行してください。",
   "commands.config.reconcile.description": "マシン側の実態からランタイム状態を再構築する。古くなったアタッチ情報やルーティング情報を修正する",
+  "commands.config.reconcile.listFailed": "renet list all が失敗しました(終了コード {{exitCode}})。",
+  "commands.config.reconcile.noListing": "{{machine}} の一覧は記録されていません。",
   "commands.config.reconcile.optionAcceptObserved": "宣言された配置を、イメージが実際にある場所に一致するよう書き換える。ただしそれが一意である場合のみ（正確に 1 台のマシンで観測された場合）。重複は競合のままとなる。",
   "commands.config.reconcile.optionMachine": "対象マシンを指定して reconcile を限定する",
   "commands.config.recover.confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",

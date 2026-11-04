@@ -793,7 +793,9 @@
         "acceptObservedUnfiltered": "--accept-observed ne peut pas être combiné avec --machine : une analyse partielle ne peut pas prouver qu'un placement est sans ambiguïté, donc la réécriture serait une supposition. Exécutez 'rdc config reconcile --accept-observed' sans filtre.",
         "description": "Reconstruit l'état d'exécution à partir de la vérité des machines. Corrige les données d'attachement et de routage obsolètes.",
         "optionAcceptObserved": "Réécrit un placement déclaré pour qu'il corresponde à l'emplacement réel de l'image, mais uniquement lorsque cela est sans ambiguïté (observé sur exactement une machine). Les doublons restent des conflits.",
-        "optionMachine": "Limiter la réconciliation à ces machines"
+        "optionMachine": "Limiter la réconciliation à ces machines",
+        "noListing": "Aucune liste n'a été enregistrée pour {{machine}}.",
+        "listFailed": "renet list all a échoué (code de sortie {{exitCode}})."
       },
       "recover": {
         "confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
@@ -3026,6 +3028,24 @@
       "noConfig": "Aucune configuration tofu (main.tf.json) dans {{path}} ; l'étape de provisionnement qui l'écrit ne s'est pas exécutée.",
       "belowFloor": "{{engine}} {{version}} dans {{path}} est antérieur à la version minimale {{floor}}. Installez l'OpenTofu épinglé avec : rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU pointe vers {{path}}, qui ne s'exécute ni comme OpenTofu ni comme Terraform. Corrigez ou supprimez cette variable, ou installez l'OpenTofu épinglé avec : rdc tools install tofu"
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Refusé : {{subject}}, {{origin}}.",
+        "warningHead": "Attention : {{subject}}, {{origin}}.",
+        "seeIt": "  Pour le suivre : {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) est {{state}}{{started}}",
+        "whatJob": "le job {{id}}",
+        "onScope": " sur {{scope}}",
+        "startedAt": ", démarré {{timestamp}}",
+        "originUnknown": "démarré par : inconnu (renet plus ancien)",
+        "originStarted": "démarré par {{user}} via {{client}}{{config}}",
+        "originConfig": " (configuration {{name}})"
+      },
+      "refused": "Le job n'a pas été lancé sur '{{machine}}' : {{holder}} occupe déjà le même périmètre.",
+      "holderJob": "le job {{id}}",
+      "holderOther": "un autre job",
+      "orStopIt": "  Ou l'arrêter : rdc job cancel {{id}} -m {{machine}}"
     }
   },
   "help": {

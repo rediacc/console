@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "Passe no máximo um de --certs-only / --archives-only / --refs-only.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed não pode ser combinado com --machine: uma verificação parcial não consegue provar que uma colocação é inequívoca, pelo que a reescrita seria um palpite. Execute 'rdc config reconcile --accept-observed' sem filtro.",
   "commands.config.reconcile.description": "Reconstrói o estado em tempo de execução a partir do estado real das máquinas. Corrige dados de anexação e encaminhamento desatualizados.",
+  "commands.config.reconcile.listFailed": "renet list all falhou (código de saída {{exitCode}}).",
+  "commands.config.reconcile.noListing": "Nenhuma listagem foi registrada para {{machine}}.",
   "commands.config.reconcile.optionAcceptObserved": "Reescreve uma colocação declarada para corresponder ao local real da imagem, mas apenas quando isso é inequívoco (observada em exatamente uma máquina). As duplicações mantêm-se como conflitos.",
   "commands.config.reconcile.optionMachine": "Limitar a reconciliação a estas máquinas",
   "commands.config.recover.confirm": "Restaurar a configuração \"{{name}}\" a partir da cópia de segurança?",

@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "Passez au maximum un de --certs-only / --archives-only / --refs-only.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed ne peut pas être combiné avec --machine : une analyse partielle ne peut pas prouver qu'un placement est sans ambiguïté, donc la réécriture serait une supposition. Exécutez 'rdc config reconcile --accept-observed' sans filtre.",
   "commands.config.reconcile.description": "Reconstruit l'état d'exécution à partir de la vérité des machines. Corrige les données d'attachement et de routage obsolètes.",
+  "commands.config.reconcile.listFailed": "renet list all a échoué (code de sortie {{exitCode}}).",
+  "commands.config.reconcile.noListing": "Aucune liste n'a été enregistrée pour {{machine}}.",
   "commands.config.reconcile.optionAcceptObserved": "Réécrit un placement déclaré pour qu'il corresponde à l'emplacement réel de l'image, mais uniquement lorsque cela est sans ambiguïté (observé sur exactement une machine). Les doublons restent des conflits.",
   "commands.config.reconcile.optionMachine": "Limiter la réconciliation à ces machines",
   "commands.config.recover.confirm": "Restaurer la configuration \"{{name}}\" depuis la sauvegarde ?",
