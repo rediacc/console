@@ -14,7 +14,7 @@ OFF `main` THE TAG IS REFUSED, so the audit stays clean: a `[hotfix]` on a featu
 
 WHAT IS JUDGED. Every `git commit` bash would run in the command (a `sh -c` payload and an `eval` included), each against the branch of the repository it acts on: this checkout, or a submodule inside it through `cd`/`-C` (`git -C private/account commit` on account's `main` is refused like the console's). A repository outside this checkout (a `/tmp` fixture) is not this policy's business. The message is read in the three shapes `block_untagged_commit` established; one this guard cannot read on `main` is refused, because a hotfix it cannot see is not one it can admit. A `-F <file>` that an earlier clause of the same command writes is refused unread on any branch (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's, and reading them admitted a stale `[hotfix]` onto `main`.
 
-WRITERS NEVER COMMIT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so a `git commit` from a sub-agent is refused on any branch. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). There is no exemption (operator /ask 2026-10-04 declined one for `pr-babysitter`): a delegated `/pr-babysit bg` loop reports, and the lead commits.
+WRITERS NEVER COMMIT IN THE MAIN CHECKOUT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so a `git commit` from a sub-agent is refused on any branch, unless its repository is a lease tree (`commit_policy.lease_root`), where the writer commits on the detached HEAD and the lead lands it. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). There is no exemption (operator /ask 2026-10-04 declined one for `pr-babysitter`): a delegated `/pr-babysit bg` loop reports, and the lead commits.
 
 THE GIT-LEVEL TWIN. `.claude/rediacc_hooks/git/commit-msg` enforces the same rule on every commit in a checkout whose `core.hooksPath` points there, including the operator's own terminal; that layer honours `COMMIT_POLICY_OK=1`, this one never does.
 """
@@ -133,7 +133,8 @@ def run(ev):
         repo = commit_policy.run_repo(commit, base, commit_policy.created_dirs(cmd, base))
         if not repo or not commit_policy.is_inside(repo, root):
             continue
-        if ev.field("agent_id"):
+        # A lease is the one place a writer commits: its HEAD is detached, its pin keeps the commit, and the lead lands it with `git cherry-pick -x` (agent/plans/PLAN-worktree-lease.md Design 3).
+        if ev.field("agent_id") and not commit_policy.lease_root(repo):
             ev.warn_raw(WRITER_COMMIT % agent_type)
             return hookio.DENY
         # A `-F <file>` this same command writes first holds an earlier command's bytes: judging it admitted a stale `[hotfix]` onto `main` (#9888de00).

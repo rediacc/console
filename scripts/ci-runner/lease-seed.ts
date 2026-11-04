@@ -14,7 +14,8 @@ import { assertNoSelfLoop, syncBuilds, syncDependencies } from './quick-clone.js
 
 /** Far too big to copy and addressed by version, as in quick-clone. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
-const SHARED = 'packages/shared';
+/** The workspace packages other packages import from `dist`: without it their tests cannot load in a lease (measured 2026-11-04: 19 CLI test files, on `@rediacc/provisioning`). */
+const BUILT_PACKAGES = ['packages/shared', 'packages/provisioning', 'packages/json'];
 const E2E = 'packages/e2e-tests';
 const RECEIPT = '.ci/cache/prepush-receipt.json';
 
@@ -49,21 +50,21 @@ function linkCaches(lease: string, live: string): void {
 }
 
 /** A live `dist` built from dirty source would judge the wrong code, so it is copied only from a clean package. A copy, not a hard link, because a build in the lease writes in place. */
-function seedSharedDist(lease: string, live: string): string {
-  const manifest = path.join(lease, SHARED, 'package.json');
-  if (!fs.existsSync(manifest)) return `${SHARED}: not in this commit`;
-  const source = path.join(live, SHARED, 'dist');
-  const dirty = run('git', ['status', '--porcelain', '--', SHARED], live);
+function seedDist(lease: string, live: string, pkg: string): string {
+  const manifest = path.join(lease, pkg, 'package.json');
+  if (!fs.existsSync(manifest)) return `${pkg}: not in this commit`;
+  const source = path.join(live, pkg, 'dist');
+  const dirty = run('git', ['status', '--porcelain', '--', pkg], live);
   if (dirty === '' && fs.existsSync(source)) {
-    run('cp', ['-a', source, path.join(lease, SHARED, 'dist')], lease);
-    return `${SHARED}/dist: copied from a clean live package`;
+    run('cp', ['-a', source, path.join(lease, pkg, 'dist')], lease);
+    return `${pkg}/dist: copied from a clean live package`;
   }
   const scripts = (
     JSON.parse(fs.readFileSync(manifest, 'utf8')) as { scripts?: Record<string, string> }
   ).scripts;
-  if (scripts?.build === undefined) return `${SHARED}: no build script`;
-  run('npm', ['run', 'build'], path.join(lease, SHARED));
-  return `${SHARED}/dist: built in the lease`;
+  if (scripts?.build === undefined) return `${pkg}: no build script`;
+  run('npm', ['run', 'build'], path.join(lease, pkg));
+  return `${pkg}/dist: built in the lease`;
 }
 
 /** The ignored credentials an e2e run reads. A tracked name is already in the tree and stays as committed. */
@@ -102,7 +103,7 @@ export function seedLease(lease: string, live: string, commit: string): string[]
     const notes = syncDependencies(lease, live, commit);
     syncBuilds(lease, live);
     linkCaches(lease, live);
-    notes.push(seedSharedDist(lease, live));
+    for (const pkg of BUILT_PACKAGES) notes.push(seedDist(lease, live, pkg));
     copyEnvFiles(lease, live);
     notes.push(seedReceipt(lease, live));
     assertNoSelfLoop(live);

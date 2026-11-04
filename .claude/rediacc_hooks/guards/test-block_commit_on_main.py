@@ -348,7 +348,23 @@ AGENT_CASES = [
     ),
 ]
 # The planted defect removes the arm; every fire case on the feature branch must then flip to allowed.
-AGENT_DEFECT = ('if ev.field("agent_id"):', "if False:")
+AGENT_DEFECT = ('if ev.field("agent_id") and not commit_policy.lease_root(repo):', "if False:")
+# A lease is the one place a writer commits. The same payload from a real linked tree under the lease root is allowed, and the plant below proves the row in the main checkout still fires.
+LEASE_TREE = pathlib.Path(FEATURE) / ".claude" / "worktrees" / "lease-x"
+subprocess.run(
+    ["git", "-C", str(FEATURE), "worktree", "add", "-q", "--detach", str(LEASE_TREE)],
+    check=True,
+    env=GIT_ENV,
+)
+AGENT_CASES.append(
+    (
+        "a writer in a lease commits",
+        "git -C %s commit -m 'feat: x' -- a.txt" % LEASE_TREE,
+        FEATURE,
+        "general-purpose",
+        False,
+    )
+)
 print()
 for name, command, root, agent, want in AGENT_CASES:
     got, err = run(command, root, agent=agent)
