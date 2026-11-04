@@ -17,6 +17,8 @@ import { runCommandJob } from '../jobs/command-job.js';
 import { outstandingSteps } from '../jobs/run-job.js';
 import type { PlannedStep } from '../jobs/steps.js';
 
+const DEFAULT_VERB = 'cluster';
+const DEFAULT_STEP_LABEL = 'Cluster step';
 const verbs = new AsyncLocalStorage<string>();
 
 /** Run `fn` with `verb` as the label of every cluster phase it starts. */
@@ -71,7 +73,7 @@ export async function runClusterPhase(
   params: Record<string, unknown>,
   options: ClusterPhaseOptions = {}
 ): Promise<ClusterPhaseResult> {
-  const verb = options.verb ?? verbs.getStore() ?? 'cluster';
+  const verb = options.verb ?? verbs.getStore() ?? DEFAULT_VERB;
   const outcome = await runCommandJob(
     verb,
     {
@@ -91,7 +93,7 @@ export async function runClusterPhase(
   }
   if (!outcome.result.success) {
     throw new Error(
-      `${options.label ?? 'Cluster step'} "${functionName}" failed on ${machineName}: ${
+      `${options.label ?? DEFAULT_STEP_LABEL} "${functionName}" failed on ${machineName}: ${
         outcome.result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR
       }`
     );

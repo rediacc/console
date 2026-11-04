@@ -12,6 +12,7 @@
  * options left there is no collision to carry, and the flag is `--weight` again.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { CanarySet } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
@@ -74,7 +75,7 @@ async function runCanaryRelease(
   if (!outcome.result.success) {
     renderLocalExecutionFailure(
       outcome.result,
-      `Replica step "datastore_snapshot_create" failed on ${control}: ${outcome.result.error ?? 'unknown error'}`
+      `Replica step "datastore_snapshot_create" failed on ${control}: ${outcome.result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
     );
   }
 }
@@ -108,7 +109,9 @@ bindStepHandler('recordCanary', async ({ machine, params }) => {
 /** The `forgetCanary` step: the overlay is gone, so the managed set is forgotten. */
 bindStepHandler('forgetCanary', async ({ params }) => {
   const setName = str(params, 'set');
-  const { [setName]: _gone, ...rest } = await listCanaries();
+  const rest = Object.fromEntries(
+    Object.entries(await listCanaries()).filter(([name]) => name !== setName)
+  );
   await configService.setStateBucket('canaries', rest);
   outputService.success(
     `Canary "${setName}" removed; the stable Service serves 100% again. Undo snapshots retained.`
@@ -204,7 +207,7 @@ async function removeCanary(repoKey: string, debug: boolean | undefined): Promis
   if (!outcome.result.success) {
     renderLocalExecutionFailure(
       outcome.result,
-      `remove: kube_delete on ${control} failed: ${outcome.result.error ?? 'unknown error'}`
+      `remove: kube_delete on ${control} failed: ${outcome.result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
     );
   }
 }

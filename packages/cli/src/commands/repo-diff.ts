@@ -312,12 +312,14 @@ function modeName(options: DiffOptions): string {
   return 'name-status';
 }
 
+const DEFAULT_DIFF_MODE = 'name-status';
+
 function modePath(mode: DiffMode): string {
   return mode.kind === 'content' ? mode.path : '';
 }
 
 bindStepHandler('renderRepoDiff', ({ output, params }) => {
-  const name = optStr(params, 'mode') ?? 'name-status';
+  const name = optStr(params, 'mode') ?? DEFAULT_DIFF_MODE;
   const asJson = params.json === true;
   const path = optStr(params, 'path');
   const mode: DiffMode =

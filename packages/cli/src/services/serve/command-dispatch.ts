@@ -146,6 +146,9 @@ export interface DispatchOutcome {
   unpersistedConfigWrites: number;
 }
 
+/** The error code of a refusal that carries none of its own: another job holds the scope. */
+const BUSY_ERROR_CODE = 'BUSY';
+
 /**
  * Commands the executor will not run, however the policy is written.
  *
@@ -473,7 +476,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
   // A BUSY refusal is a structured result: the code, and the jobs that hold the scope with their attach commands.
   const refused = refusedOverlaps
-    ? { ...failure, errorCode: failure.errorCode ?? 'BUSY', overlaps: refusedOverlaps }
+    ? { ...failure, errorCode: failure.errorCode ?? BUSY_ERROR_CODE, overlaps: refusedOverlaps }
     : failure;
   return { result: refused, ...common };
 }

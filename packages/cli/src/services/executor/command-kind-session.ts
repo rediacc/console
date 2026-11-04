@@ -14,6 +14,7 @@ import type { ExecuteOptions, ExecuteResult } from './types.js';
  * Which renet each kind needs. The kinds that change the machine provision the binary (a stale one would refuse the
  * allow-list entry); the reads run whatever renet is there.
  */
+const UNKNOWN_KIND_ACCESS: RenetAccess = 'read-only';
 const COMMAND_KIND_ACCESS: Readonly<Record<string, RenetAccess>> = {
   setup: 'provision',
   'backup-unit': 'provision',
@@ -30,7 +31,7 @@ const COMMAND_KIND_ACCESS: Readonly<Record<string, RenetAccess>> = {
 
 /** The access of a kind; an unknown kind reads, and renet refuses it against its own allow-list. */
 export function commandKindAccess(name: string): RenetAccess {
-  return COMMAND_KIND_ACCESS[name] ?? 'read-only';
+  return COMMAND_KIND_ACCESS[name] ?? UNKNOWN_KIND_ACCESS;
 }
 
 type Machine = Parameters<typeof acquireRemoteRenet>[2];
