@@ -216,7 +216,8 @@ def run(event):
         names_work = bool(X.spawn_plans(text) or LH.item_refs(text))
         # THE CHEAP PATH: a spawn that names no plan, no item and no Owns can only be refused by a live mutex, and there is none anywhere unless some plan declares one. Reading ~40 plan heads costs milliseconds; a full fold costs ~0.5 s.
         cheap = not names_work and declared is None and not X.exclusive_plans(root)
-        serving, live = set(), X.LivePlans()
+        serving: set[str] = set()
+        live: dict[str, list[str]] | None = X.LivePlans()
         if not cheap:
             import wl_store as S
 

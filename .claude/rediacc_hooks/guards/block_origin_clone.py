@@ -106,10 +106,16 @@ SCP_FORM = re.compile(r"^(?:[^@/:]+@)?([^/:]+):(.*)$")
 GH_OWNER_REPO = re.compile(r"^[\w.-]+/[\w.-]+$")
 GH_HOST_OWNER_REPO = re.compile(r"^([\w-]+(?:\.[\w-]+)+)/([\w.-]+/[\w.-]+)$")
 INSTEAD_OF = re.compile(r"^url\.(.+)\.insteadof=(.*)$", re.IGNORECASE)
-TOPLEVEL_SUB = re.compile(
-    r"\$\(git(?: -C \S+)? rev-parse --(?:show-toplevel|show-superproject-working-tree|git-dir"
-    r"|git-common-dir|absolute-git-dir)\)"
-)
+
+
+def toplevel_sub():
+    """The `$(...)` spelling of a path query, matched whole so the walk can substitute the root for it."""
+    return re.compile(
+        r"\$\(git(?: -C \S+)? rev-parse --(?:show-toplevel|show-superproject-working-tree|git-dir"
+        r"|git-common-dir|absolute-git-dir)\)"
+    )
+
+
 # A source the walk cannot expand is judged only beside one of these.
 NAMES_A_WAY_TO_OURS = re.compile(
     r"rev-parse[^;&|\n]*--(?:show-toplevel|show-superproject-working-tree|git-dir|git-common-dir"
@@ -314,7 +320,7 @@ def _remotes(path):
 
 def _expand_typed(word, world, directory):
     """A word the walk could not expand, with what this event knows filled in; None if a part is still unknown."""
-    text = TOPLEVEL_SUB.sub(lambda _: world.root, word)
+    text = toplevel_sub().sub(lambda _: world.root, word)
     for name, value in (
         ("HOME", world.home),
         ("PWD", directory),
@@ -625,7 +631,7 @@ def _walk_text(cmd, world, depth):
             why = _judge_gh(run_, world)
         if why:
             return why
-    files = []
+    files: list[tuple[str, str, str]] = []
     for family, code in programs.interpreter_programs(cmd, files=files):
         if _could_spell(code):
             why = _program_reason(family, code, world, depth)

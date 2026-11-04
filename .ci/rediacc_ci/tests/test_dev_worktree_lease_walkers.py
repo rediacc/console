@@ -90,16 +90,18 @@ def patterns_from_source():
     """The patterns `importersOf` hands `globSync`, so the probe walks what the driver walks."""
     text = NPM_DRIVER.read_text(encoding="utf-8")
     body = text.split("function importersOf", 1)[1]
-    block = re.search(r"globSync\(\[(.*?)\],", body, re.DOTALL).group(1)
-    return re.findall(r"'([^']+)'", block)
+    found = re.search(r"globSync\(\[(.*?)\],", body, re.DOTALL)
+    assert found, "importersOf no longer calls globSync([...], ...)"
+    return re.findall(r"'([^']+)'", found.group(1))
 
 
 def ignore_list_from_source():
     """The `ignore: [...]` array of `importersOf`, as a list of strings."""
     text = NPM_DRIVER.read_text(encoding="utf-8")
     body = text.split("function importersOf", 1)[1]
-    block = re.search(r"ignore: \[(.*?)\]", body, re.DOTALL).group(1)
-    return re.findall(r"'([^']+)'", block)
+    found = re.search(r"ignore: \[(.*?)\]", body, re.DOTALL)
+    assert found, "importersOf no longer carries an ignore: [...] array"
+    return re.findall(r"'([^']+)'", found.group(1))
 
 
 def glob_found(tree, ignore):

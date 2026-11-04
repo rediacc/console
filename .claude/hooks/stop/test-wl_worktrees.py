@@ -534,7 +534,7 @@ got["lines"] = W.unlanded_lines(got)
 got["report"] = W.report_lines(got)
 print(json.dumps(got))
 """
-NOBODY = {"ids": [], "trees": []}
+NOBODY: dict[str, list[str]] = {"ids": [], "trees": []}
 
 
 def read(tmp, main, session=SID, live=NOBODY, items=(), cache=""):

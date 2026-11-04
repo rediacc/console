@@ -18,6 +18,7 @@ import json
 import os
 import pathlib
 import subprocess
+from typing import Any
 
 import wl_core as C
 import wl_leasehelp
@@ -68,7 +69,8 @@ def stores(common):
 
 def parse_list(text):
     """`git worktree list --porcelain` as one {attribute: value} per tree, the main checkout first."""
-    rows, row = [], {}
+    rows: list[dict[str, str]] = []
+    row: dict[str, str] = {}
     for line in text.splitlines():
         if not line:
             if row:
@@ -160,7 +162,14 @@ def _stray_dirs(base):
 
 def read_world(root):
     """Every lease fact readable from git and the record store. A checkout git cannot read holds nothing to follow."""
-    world = {"leases": {}, "tips": {}, "pins": {}, "records": {}, "dirs": [], "doubts": []}
+    world: dict[str, Any] = {
+        "leases": {},
+        "tips": {},
+        "pins": {},
+        "records": {},
+        "dirs": [],
+        "doubts": [],
+    }
     root = pathlib.Path(root)
     dirs = C._git_dirs(root) if (root / ".git").exists() else None
     if dirs is None or not (dirs[1] / "HEAD").is_file():
@@ -292,7 +301,7 @@ def survey(root, session_id, items, live_fn, cache):
     Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `orphans` [(id, why)], `doubts` [text] and `cache`.
     """
     world = read_world(root)
-    out = {
+    out: dict[str, Any] = {
         "unlanded": [],
         "held": [],
         "unknown": [],

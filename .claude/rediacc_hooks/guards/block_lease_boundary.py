@@ -164,7 +164,7 @@ def _lease_world(path):
 
 FIXTURES = {"lease-tree": _lease_world}
 
-ENVS = [
+ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("lease", {"CLAUDE_PROJECT_DIR": "{FIXTURE:lease-tree}"}, {}),
     ("main-checkout", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
 ]

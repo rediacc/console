@@ -1134,7 +1134,7 @@ def pin_of(cwd, name):
 def snapshot(top):
     """Every entry below `top`, the `.git` file included: mode, mtime, inode, and content or link target. Symlinks are read, never followed. The link count is out: a removed sibling tree lowers it on purpose."""
     top = pathlib.Path(top)
-    found = {}
+    found: dict[str, tuple] = {}
     stack = [top]
     while stack:
         here = stack.pop()
