@@ -442,18 +442,21 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
-  const outcome = await runWithRequestTelemetry(args.caller, () =>
-    runInRequestContext(context, async () => {
-      const program = createCli();
-      harden(program, context.stderr);
-      try {
-        await program.parseAsync(argv, { from: 'user' });
-        return { failed: false as const };
-      } catch (error) {
-        endFailedCommandSpan(error, Date.now() - started);
-        return { failed: true as const, error };
-      }
-    })
+  const outcome = await runWithRequestTelemetry(
+    args.caller,
+    () =>
+      runInRequestContext(context, async () => {
+        const program = createCli();
+        harden(program, context.stderr);
+        try {
+          await program.parseAsync(argv, { from: 'user' });
+          return { failed: false as const };
+        } catch (error) {
+          endFailedCommandSpan(error, Date.now() - started);
+          return { failed: true as const, error };
+        }
+      }),
+    'command'
   );
 
   const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);

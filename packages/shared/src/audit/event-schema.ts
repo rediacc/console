@@ -172,6 +172,9 @@ const baseData = z.object({
   // Set by the executor (rdc serve) only: the command path that ran (`repo up`) and whether the contract marks it destructive. The CLI's own emitter omits both.
   commandPath: z.string().min(1).max(200).optional(),
   destructive: z.boolean().optional(),
+  // Set by the executor for a command that ran as a job: the job and how its record ended (`started` when the request handed the ticket back before the job finished, else its terminal state). A job's start and its terminal state are two events of one job id.
+  jobId: z.string().min(1).max(100).optional(),
+  outcome: z.enum(['started', 'succeeded', 'failed', 'cancelled']).optional(),
 });
 
 /**

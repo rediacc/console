@@ -41,8 +41,8 @@ import { ERROR_CODES } from '../../types/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { VERSION } from '../../version.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
-import { REATTACH_BUDGET_MS } from '../jobs/attach.js';
 import { TicketStore } from '../jobs/ticket-store.js';
+import { annotatePolled } from './job-span.js';
 import {
   foldJobLine,
   foldResultLine,
@@ -53,6 +53,7 @@ import {
   nextPollDelayMs,
   POLL_FIRST_DELAY_MS,
   POLL_MAX_LINES,
+  PROXY_LOST_BUDGET_MS,
   type ProxyCommandOutcome,
   recoverBrokenStream,
   type StreamState,
@@ -204,7 +205,7 @@ export class ProxyClient {
     this.getCek = options.getCek;
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     this.random = options.random ?? Math.random;
-    this.lostBudgetMs = options.lostBudgetMs ?? REATTACH_BUDGET_MS;
+    this.lostBudgetMs = options.lostBudgetMs ?? PROXY_LOST_BUDGET_MS;
     this.ticketStore = options.ticketStore;
   }
 
@@ -495,7 +496,7 @@ export class ProxyClient {
   /**
    * Follow a job by short polls (Design 4 and 5): each poll returns the lines past
    * `sinceLine` and the job's status. A page with `more` is followed at once;
-   * an empty page waits 2 s, then 3, 4.5 ... up to 30 s (jitter +-10 %); a page
+   * an empty page waits 2 s, then 3, 4.5 ... up to 30 s (jitter +-20 %); a page
    * with lines resets the pacing. A transport failure or a 5xx is retried on the
    * same offset for up to the lost budget, then the follow is given up with the
    * ticket kept: FOLLOW_LOST. A 4xx (policy, unknown job) is final.
@@ -512,11 +513,15 @@ export class ProxyClient {
     const pace = { delay: POLL_FIRST_DELAY_MS };
     let nextLine = 0;
     let failingSince: number | undefined;
+    let polls = 0;
+    let fn = '';
     for (;;) {
       const poll = await this.fetchPoll(machine, jobId, nextLine);
+      polls += 1;
       if (!poll) {
         failingSince ??= Date.now();
         if (Date.now() - failingSince >= this.lostBudgetMs) {
+          annotatePolled(jobId, fn, 'running', polls);
           return lostOutcome(jobId, machine, first);
         }
         await this.sleep(jittered(pace.delay, this.random));
@@ -524,10 +529,12 @@ export class ProxyClient {
         continue;
       }
       failingSince = undefined;
+      fn = poll.status.function;
       this.deliver(poll, onEvent, state, ticket, requestId);
       nextLine = poll.nextLine;
       if (isTerminalState(poll.status.state) && !poll.more) {
         this.recordFinished(ticket, requestId, poll.status);
+        annotatePolled(jobId, fn, poll.status.state, polls);
         return terminalOutcome(poll.status, jobId, first);
       }
       await this.pausePoll(pace, poll);

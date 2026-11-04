@@ -302,6 +302,8 @@ export const JobPollResponseSchema = z.object({
   status: z.object({
     state: JobStateSchema,
     exitCode: z.number().int().optional(),
+    /** When the job started, from renet's status file: the terminal audit's duration is `finishedAt` minus this. */
+    startedAt: z.string().optional(),
     finishedAt: z.string().optional(),
     function: z.string(),
   }),

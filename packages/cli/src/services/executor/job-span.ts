@@ -5,7 +5,7 @@
  * `rediacc.job.follow`, and adds `rediacc.job.outcome` once the run's result is
  * known, and `rediacc.job.start_latency_ms` (from the start of the call, which
  * includes the connection, to the first event). `rediacc.job.polls` is written
- * only when the caller passes a count, and the proxy poll loop does not yet. A
+ * only when the caller passes a count, which the proxy poll loop does through `annotatePolled`. A
  * command that runs several jobs leaves the attributes of the last one.
  */
 
@@ -41,6 +41,16 @@ export function jobSpanAttributes(input: JobSpanInput): Record<string, string | 
 /** Write the job's attributes onto the open command span. */
 export function annotateJobSpan(input: JobSpanInput): void {
   telemetryService.annotateCommand(jobSpanAttributes(input));
+}
+
+/** The span attributes of a proxied run followed by polls: how many polls it took and how it ended. The function is unknown until one poll answered. */
+export function annotatePolled(
+  jobId: string,
+  jobFunction: string,
+  outcome: string,
+  polls: number
+): void {
+  annotateJobSpan({ jobId, function: jobFunction, follow: 'poll', outcome, polls });
 }
 
 /**

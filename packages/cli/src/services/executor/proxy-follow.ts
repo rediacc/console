@@ -20,11 +20,13 @@ export interface ProxyCommandOutcome {
   stderr: string;
 }
 
-/** The poll pacing (Design 5): 2 s, growing by half each empty poll, capped at 30 s, with +-10 % jitter. */
+/** The poll pacing (Design 5): 2 s, growing by half each empty poll, capped at 30 s, with +-20 % jitter. */
 export const POLL_FIRST_DELAY_MS = 2_000;
 const POLL_MAX_DELAY_MS = 30_000;
 const POLL_GROWTH = 1.5;
-const POLL_JITTER = 0.1;
+const POLL_JITTER = 0.2;
+/** How long failed polls are retried before the follow is given up with the ticket kept (Design 5). */
+export const PROXY_LOST_BUDGET_MS = 600_000;
 /** Lines asked of one poll. */
 export const POLL_MAX_LINES = 500;
 /** How many times a POST dropped before the job line is retried with the same request id. */

@@ -343,6 +343,9 @@ export function createServeApp(deps: ServeDeps): Hono {
         exitCode: result.exitCode,
         durationMs: result.durationMs,
         destructive: entry.destructive ?? false,
+        // A command that ran as a job records its id, and `started` when the ticket went back to the client before the job ended: the polls then add the terminal event.
+        ...(result.jobId ? { jobId: result.jobId } : {}),
+        ...(result.state ? { outcome: result.state === 'running' ? 'started' : result.state } : {}),
       });
 
       // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Only a result that names the address it never reached is reported, since the proxy probes that address before the report counts. Awaited, so the report finishes before the result line.

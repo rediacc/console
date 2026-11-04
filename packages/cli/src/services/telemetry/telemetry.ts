@@ -30,6 +30,12 @@ import {
 import { currentRequestTelemetry } from './request-telemetry.js';
 import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
 
+/** `rediacc.proxy.route` for a span opened inside an executor request (PLAN-detached-jobs Design 13); empty outside one. */
+function routeAttribute(): Record<string, string> {
+  const route = currentRequestTelemetry()?.route;
+  return route ? { 'rediacc.proxy.route': route } : {};
+}
+
 /**
  * Pure env-var check for whether the user has opted out of telemetry.
  *
@@ -284,6 +290,7 @@ class CliTelemetryService {
         'cli.version': CLI_VERSION,
         'session.id': this.sessionId,
         ...this.getUserAttributes(),
+        ...routeAttribute(),
       });
 
       this.activeSpans.set(options?.spanKey ?? commandName, span);

@@ -26,6 +26,7 @@ import {
   JobPollParseError,
   parseJobPollOutput,
 } from './job-poll.js';
+import { withRouteSpan } from './route-span.js';
 
 type Principal = Awaited<ReturnType<AuthVerifier['verify']>>;
 
@@ -99,21 +100,23 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
     const { principal, jobId, machine, config } = admitted;
     const sinceLine = intParam(c.req.query('sinceLine'), 0);
     const maxLines = intParam(c.req.query('maxLines'), DEFAULT_MAX_LINES);
-    try {
-      const checked = await helpers.withRequestConfig(config, async () => {
-        const polled = await pollAndParse(machine, jobId, sinceLine, maxLines);
-        await observeTerminalPoll(jobId, {
-          state: polled.status.state as TicketState,
-          exitCode: polled.status.exitCode,
-          finishedAt: polled.status.finishedAt,
+    return withRouteSpan('job-poll', principal, async () => {
+      try {
+        const checked = await helpers.withRequestConfig(config, async () => {
+          const polled = await pollAndParse(machine, jobId, sinceLine, maxLines);
+          await observeTerminalPoll(jobId, {
+            state: polled.status.state as TicketState,
+            exitCode: polled.status.exitCode,
+            finishedAt: polled.status.finishedAt,
+          });
+          return polled;
         });
-        return polled;
-      });
-      await auditFirstTerminal(ledger, deps, principal, machine, jobId, checked);
-      return c.json(checked.body);
-    } catch (error) {
-      return pollFailure(c, error);
-    }
+        await auditFirstTerminal(ledger, deps, principal, machine, jobId, checked);
+        return c.json(checked.body);
+      } catch (error) {
+        return pollFailure(c, error);
+      }
+    });
   });
 
   app.post(PROXY_ROUTES.jobCancelPattern, async (c) => {
@@ -122,42 +125,47 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
     const { principal, jobId, machine, config } = admitted;
     const started = Date.now();
     const destructive = getCommand('job cancel')?.destructive ?? true;
-    try {
-      const status = await helpers.withRequestConfig(config, async () => {
-        const conn = await connectForJobs(machine, 'read-only');
-        try {
-          return await cancelJob(conn, jobId);
-        } finally {
-          conn.lease.release();
-        }
-      });
-      await deps.audit?.({
-        principal,
-        commandPath: 'job cancel',
-        machineName: machine,
-        params: { id: jobId },
-        success: true,
-        exitCode: 0,
-        durationMs: Date.now() - started,
-        destructive,
-      });
-      return c.json({
-        state: status.state,
-        ...(status.exit_code == null ? {} : { exitCode: status.exit_code }),
-      });
-    } catch (error) {
-      await deps.audit?.({
-        principal,
-        commandPath: 'job cancel',
-        machineName: machine,
-        params: { id: jobId },
-        success: false,
-        exitCode: 1,
-        durationMs: Date.now() - started,
-        destructive,
-      });
-      return c.json({ error: error instanceof Error ? error.message : 'The cancel failed.' }, 500);
-    }
+    return withRouteSpan('job-cancel', principal, async () => {
+      try {
+        const status = await helpers.withRequestConfig(config, async () => {
+          const conn = await connectForJobs(machine, 'read-only');
+          try {
+            return await cancelJob(conn, jobId);
+          } finally {
+            conn.lease.release();
+          }
+        });
+        await deps.audit?.({
+          principal,
+          commandPath: 'job cancel',
+          machineName: machine,
+          params: { id: jobId },
+          success: true,
+          exitCode: 0,
+          durationMs: Date.now() - started,
+          destructive,
+        });
+        return c.json({
+          state: status.state,
+          ...(status.exit_code == null ? {} : { exitCode: status.exit_code }),
+        });
+      } catch (error) {
+        await deps.audit?.({
+          principal,
+          commandPath: 'job cancel',
+          machineName: machine,
+          params: { id: jobId },
+          success: false,
+          exitCode: 1,
+          durationMs: Date.now() - started,
+          destructive,
+        });
+        return c.json(
+          { error: error instanceof Error ? error.message : 'The cancel failed.' },
+          500
+        );
+      }
+    });
   });
 }
 
@@ -199,10 +207,27 @@ async function auditFirstTerminal(
   principal: Principal,
   machine: string,
   jobId: string,
-  checked: { status: { state: string; exitCode?: number; function: string }; durationMs: number }
+  checked: { status: JobStatusForAudit; durationMs: number }
 ): Promise<void> {
   if (!ledger.firstTerminal(jobId, checked.status.state)) return;
   await auditTerminal(deps, principal, machine, jobId, checked.status, checked.durationMs);
+}
+
+interface JobStatusForAudit {
+  state: string;
+  exitCode?: number;
+  function: string;
+  startedAt?: string;
+  finishedAt?: string;
+}
+
+/** How long the JOB ran, from its own status file; the poll's exec time is the fallback for a status that carries no usable pair. */
+function jobDurationMs(status: JobStatusForAudit, pollMs: number): number {
+  const started = status.startedAt ? Date.parse(status.startedAt) : Number.NaN;
+  const finished = status.finishedAt ? Date.parse(status.finishedAt) : Number.NaN;
+  return Number.isNaN(started) || Number.isNaN(finished) || finished < started
+    ? pollMs
+    : finished - started;
 }
 
 /** The terminal audit event, shipped by the poll that first sees the job finished. */
@@ -211,8 +236,8 @@ async function auditTerminal(
   principal: Principal,
   machine: string,
   jobId: string,
-  status: { state: string; exitCode?: number; function: string },
-  durationMs: number
+  status: JobStatusForAudit,
+  pollMs: number
 ): Promise<void> {
   const succeeded = status.state === 'succeeded';
   await deps.audit?.({
@@ -223,9 +248,15 @@ async function auditTerminal(
     params: { id: jobId, terminal: status.state },
     success: succeeded,
     exitCode: status.exitCode ?? (succeeded ? 0 : 1),
-    durationMs,
+    durationMs: jobDurationMs(status, pollMs),
     destructive: false,
+    jobId,
+    outcome: terminalOutcomeOf(status.state),
   });
+}
+
+function terminalOutcomeOf(state: string): 'succeeded' | 'failed' | 'cancelled' {
+  return state === 'succeeded' || state === 'cancelled' ? state : 'failed';
 }
 
 function refuse(c: Context, error: unknown, helpers: JobRouteHelpers): Response {
