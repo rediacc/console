@@ -347,3 +347,89 @@ test.describe
       expect(runner.isSuccess(result)).toBe(true);
     });
   });
+
+/**
+ * Rediaccfile privileges: up() runs as the universal user, so a file it creates belongs to that user and `sudo` in it is refused (PLAN-rediaccfile-unprivileged T2).
+ */
+test.describe
+  .serial('Rediaccfile Privileges @bridge @integration', () => {
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
+    const datastorePath = DEFAULT_DATASTORE_PATH;
+    const mountPath = `${datastorePath}/mounts/${repositoryName}`;
+
+    const ownerProbe = [
+      '#!/bin/bash',
+      'up() {',
+      '  id -u > "$REDIACC_WORKING_DIR/up-uid.out"',
+      '  : > "$REDIACC_WORKING_DIR/up-created.out"',
+      '  stat -c %u "$REDIACC_WORKING_DIR/up-created.out" > "$REDIACC_WORKING_DIR/up-owner.out"',
+      '}',
+      'down() { :; }',
+      '',
+    ].join('\n');
+
+    const sudoProbe = [
+      '#!/bin/bash',
+      'up() {',
+      '  sudo -n true > "$REDIACC_WORKING_DIR/sudo.out" 2>&1',
+      '  echo "rc=$?" >> "$REDIACC_WORKING_DIR/sudo.out"',
+      '}',
+      'down() { :; }',
+      '',
+    ].join('\n');
+
+    const read = async (name: string): Promise<string> => {
+      const result = await runner.executeOnWorker(`sudo cat ${mountPath}/${name}`);
+      return result.stdout.trim();
+    };
+
+    test.beforeAll(async () => {
+      runner = RenetFunctionsTestRunner.forWorker();
+      await runner.resetWorkerState();
+      await runner.datastoreInitPool('10G', datastorePath, true);
+    });
+
+    test('1. create repository', async () => {
+      const result = await runner.repositoryNew(repositoryName, '1G', TEST_PASSWORD, datastorePath);
+      expect(runner.isSuccess(result)).toBe(true);
+    });
+
+    test('2. up() file is owned by the universal user', async () => {
+      const written = await runner.writeFileToRepository(
+        repositoryName,
+        'Rediaccfile',
+        ownerProbe,
+        datastorePath
+      );
+      expect(written.code).toBe(0);
+      const up = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+      expect(runner.isSuccess(up)).toBe(true);
+      const uid = await read('up-uid.out');
+      expect(uid).toMatch(/^[1-9][0-9]*$/);
+      expect(await read('up-owner.out')).toBe(uid);
+    });
+
+    test('3. sudo in up() is refused', async () => {
+      const written = await runner.writeFileToRepository(
+        repositoryName,
+        'Rediaccfile',
+        sudoProbe,
+        datastorePath
+      );
+      expect(written.code).toBe(0);
+      await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+      const out = await read('sudo.out');
+      expect(out).toContain('no new privileges');
+      expect(out).not.toContain('rc=0');
+    });
+
+    test('4. cleanup: unmount and remove repository', async () => {
+      const unmount = await runner.repositoryUnmount(repositoryName, datastorePath);
+      expect(runner.isSuccess(unmount)).toBe(true);
+      const rm = await runner.repositoryRm(repositoryName, datastorePath);
+      expect(runner.isSuccess(rm)).toBe(true);
+      const teardown = await runner.daemonTeardown(DEFAULT_NETWORK_ID);
+      expect(runner.isSuccess(teardown)).toBe(true);
+    });
+  });
