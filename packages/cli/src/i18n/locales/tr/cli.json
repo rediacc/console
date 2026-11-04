@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} iptal edildi",
-        "cancelling": "{{name}} durduruluyor...",
         "description": "Uzak makinede çalışan bir yedeklemeyi iptal et",
         "notRunning": "\"{{name}}\" stratejisi için çalışan yedekleme yok"
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Çöp toplama tamamlandı: {{deleted}}/{{total}} commit silindi",
-        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; rdc job list bunları gösterir.",
+        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; bunları takip etmek için: rdc job list.",
         "applyOption": "Erişilemez commit'leri gerçekten sil (varsayılan, deneme çalıştırması önizlemesidir)",
         "deleted": "{{commit}} commit'i silindi",
         "deleteFailed": "{{commit}} commit'i silinemedi",

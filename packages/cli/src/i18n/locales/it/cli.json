@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} annullato",
-        "cancelling": "Arresto di {{name}} in corso...",
         "description": "Annulla un backup in esecuzione su una macchina remota",
         "notRunning": "Nessun backup in esecuzione per la strategia \"{{name}}\""
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Garbage collection completato: {{deleted}}/{{total}} commit eliminati",
-        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; rdc job list le mostra.",
+        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; seguile con rdc job list.",
         "applyOption": "Elimina effettivamente i commit non raggiungibili (per impostazione predefinita è un'anteprima dry-run)",
         "deleted": "Commit {{commit}} eliminato",
         "deleteFailed": "Impossibile eliminare il commit {{commit}}",

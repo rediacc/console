@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} をキャンセルしました",
-        "cancelling": "{{name}} を停止中...",
         "description": "リモートマシン上の実行中バックアップをキャンセル",
         "notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません"
       },

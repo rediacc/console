@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} katkestatud",
-        "cancelling": "{{name}} peatamine...",
         "description": "Katkestab käimasoleva varukoopia kaugmasinal",
         "notRunning": "Strateegia \"{{name}}\" varukoopia pole käimas"
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
-        "started": "{{started}} kustutust {{total}}-st töötab jobidena; rdc job list näitab neid.",
+        "started": "{{started}} kustutust {{total}}-st töötab jobidena; jälgi neid käsuga rdc job list.",
         "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
         "deleted": "Commit {{commit}} kustutatud",
         "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",

@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} cancelado",
-        "cancelling": "Deteniendo {{name}}...",
         "description": "Cancelar un respaldo en ejecución en una máquina remota",
         "notRunning": "No hay respaldo en ejecución para la estrategia \"{{name}}\""
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Recolección de basura completada: {{deleted}}/{{total}} commit(s) eliminado(s)",
-        "started": "{{started}} de {{total}} eliminaciones se ejecutan como trabajos; rdc job list los muestra.",
+        "started": "{{started}} de {{total}} eliminaciones se ejecutan como trabajos; se siguen con rdc job list.",
         "applyOption": "Eliminar realmente los commits inaccesibles (por defecto es una vista previa en modo simulación)",
         "deleted": "Commit {{commit}} eliminado",
         "deleteFailed": "No se pudo eliminar el commit {{commit}}",

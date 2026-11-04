@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} cancelado",
-        "cancelling": "A parar {{name}}...",
         "description": "Cancelar uma cópia de segurança em curso numa máquina remota",
         "notRunning": "Nenhuma cópia de segurança em curso para a estratégia \"{{name}}\""
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Coleta de lixo concluída: {{deleted}}/{{total}} commit(s) excluído(s)",
-        "started": "{{started}} de {{total}} eliminações estão a executar como jobs; rdc job list mostra-os.",
+        "started": "{{started}} de {{total}} eliminações estão a executar como jobs; acompanhe-os com rdc job list.",
         "applyOption": "Excluir de fato os commits inalcançáveis (o padrão é uma previsão dry-run)",
         "deleted": "Commit {{commit}} excluído",
         "deleteFailed": "Falha ao excluir o commit {{commit}}",

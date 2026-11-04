@@ -15,7 +15,6 @@
   "commands.backup.browse.startingAt": "Получение списка {{name}} на снимке {{snapshot}}...",
   "commands.backup.browse.truncated": "Список обрезан на {{limit}} записях. Сузьте его с помощью --path или увеличьте --limit.",
   "commands.backup.cancel.cancelled": "{{name}} отменено",
-  "commands.backup.cancel.cancelling": "Остановка {{name}}...",
   "commands.backup.cancel.description": "Отменить выполняемое резервное копирование на удалённой машине",
   "commands.backup.cancel.notRunning": "Нет выполняемого резервного копирования для стратегии \"{{name}}\"",
   "commands.backup.check.description": "Проверяет, что снимок открывается парольной фразой, восстанавливая один файл",

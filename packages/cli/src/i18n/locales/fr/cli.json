@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} annulé",
-        "cancelling": "Arrêt de {{name}}...",
         "description": "Annuler une sauvegarde en cours sur une machine distante",
         "notRunning": "Aucune sauvegarde en cours pour la stratégie \"{{name}}\""
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Nettoyage terminé : {{deleted}}/{{total}} commit(s) supprimé(s)",
-        "started": "{{started}} suppression(s) sur {{total}} s'exécutent comme jobs ; rdc job list les affiche.",
+        "started": "{{started}} suppression(s) sur {{total}} s'exécutent comme jobs ; suivez-les avec rdc job list.",
         "applyOption": "Supprimer réellement les commits inaccessibles (aperçu à blanc par défaut)",
         "deleted": "Commit {{commit}} supprimé",
         "deleteFailed": "Échec de la suppression du commit {{commit}}",

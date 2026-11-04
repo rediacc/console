@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} abgebrochen",
-        "cancelling": "{{name}} wird gestoppt...",
         "description": "Laufendes Backup auf einem Remote-Rechner abbrechen",
         "notRunning": "Kein laufendes Backup für Strategie \"{{name}}\""
       },
@@ -1948,7 +1947,7 @@
       },
       "gc": {
         "applied": "Garbage Collection abgeschlossen: {{deleted}}/{{total}} Commit(s) gelöscht",
-        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; rdc job list zeigt sie an.",
+        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; verfolgen lassen sie sich mit rdc job list.",
         "applyOption": "Die unerreichbaren Commits tatsächlich löschen (Standard ist eine Probelauf-Vorschau)",
         "deleted": "Commit {{commit}} gelöscht",
         "deleteFailed": "Commit {{commit}} konnte nicht gelöscht werden",

@@ -15,7 +15,6 @@
   "commands.backup.browse.startingAt": "{{name}} をスナップショット {{snapshot}} の時点で一覧表示しています...",
   "commands.backup.browse.truncated": "一覧は {{limit}} 件で打ち切られました。--path で絞り込むか、--limit を増やしてください。",
   "commands.backup.cancel.cancelled": "{{name}} をキャンセルしました",
-  "commands.backup.cancel.cancelling": "{{name}} を停止中...",
   "commands.backup.cancel.description": "リモートマシン上の実行中バックアップをキャンセル",
   "commands.backup.cancel.notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません",
   "commands.backup.check.description": "1つのファイルを復元して、スナップショットがパスフレーズで開くことを証明します",

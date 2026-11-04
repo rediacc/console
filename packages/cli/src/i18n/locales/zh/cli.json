@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "已取消 {{name}}",
-        "cancelling": "正在停止 {{name}}...",
         "description": "取消远程机器上正在运行的备份",
         "notRunning": "策略 \"{{name}}\" 没有正在运行的备份"
       },

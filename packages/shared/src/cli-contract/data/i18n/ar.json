@@ -15,7 +15,6 @@
   "commands.backup.browse.startingAt": "جارٍ عرض {{name}} عند اللقطة {{snapshot}}...",
   "commands.backup.browse.truncated": "تم اقتطاع العرض عند {{limit}} عنصرًا. ضيّق النطاق باستخدام --path، أو ارفع --limit.",
   "commands.backup.cancel.cancelled": "تم إلغاء {{name}}",
-  "commands.backup.cancel.cancelling": "جاري إيقاف {{name}}...",
   "commands.backup.cancel.description": "إلغاء نسخة احتياطية قيد التشغيل على جهاز بعيد",
   "commands.backup.cancel.notRunning": "لا يوجد نسخ احتياطي قيد التشغيل للاستراتيجية \"{{name}}\"",
   "commands.backup.check.description": "يثبت أن لقطة تُفتح بعبارة المرور عبر استعادة ملف واحد",
