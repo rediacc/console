@@ -1,11 +1,10 @@
-"""Run pytest, or one hook-guard suite, from any checkout, a lease included.
+"""Run pytest from any checkout, a lease included.
 
     python3 .ci/rediacc_ci/dev/lease_pytest.py pytest [<pytest args>...]
-    python3 .ci/rediacc_ci/dev/lease_pytest.py guard <stem> [<suite args>...]
 
 WHY. The system `python3` has no pytest, so `python3 -m pytest` reports `No module named pytest` in every tree. The installed wrapper lives at `.ci/cache/toolchain/uv-tools/bin/pytest`, which a lease reaches through the symlink the seed plants. A writer that did not know the path fell back on a side copy under /tmp. The `pytest` verb finds the wrapper in this tree, then in the main checkout beside the shared git directory, and runs it, so no copy is needed and the wrapper's core lease still applies.
 
-THE GUARD VERB. A hook-guard suite such as `guards/test-block_origin_clone.py` carries `git clone` rows in its text. `block_origin_clone` judges a script run by path and refuses one whose text names a clone verb unless the file is tracked and unchanged, so an edited suite has no direct way to run from the Bash tool. This verb starts the suite as a child of Python, the way `test_hooks_delegates.py` does, so the command the hook reads names no clone verb. The guard itself is untouched: the same text typed to Bash by path is still refused.
+
 """
 
 from __future__ import annotations
@@ -16,12 +15,7 @@ import subprocess
 import sys
 
 PYTEST_REL = pathlib.PurePath(".ci", "cache", "toolchain", "uv-tools", "bin", "pytest")
-GUARDS_REL = pathlib.PurePath(".claude", "rediacc_hooks", "guards")
-USAGE = (
-    "Usage: lease_pytest.py pytest [<pytest args>...]\n"
-    "       lease_pytest.py guard <stem> [<suite args>...]\n"
-    "  <stem> names guards/test-<stem>.py, for example block_origin_clone\n"
-)
+USAGE = "Usage: lease_pytest.py pytest [<pytest args>...]\n"
 
 
 def _git(top, *args):
@@ -57,16 +51,8 @@ def find_pytest(top):
     return None
 
 
-def guard_suite(top, stem):
-    """The suite file for `stem`, or None. A stem is a bare name, so no separator or dot walks out of the guards directory."""
-    if not stem or any(ch in stem for ch in "/\\.") or stem.startswith("-"):
-        return None
-    path = top / GUARDS_REL / ("test-%s.py" % stem)
-    return path if path.is_file() else None
-
-
 def run(argv, top):
-    if not argv or argv[0] not in ("pytest", "guard"):
+    if not argv or argv[0] != "pytest":
         sys.stderr.write(USAGE)
         return 2
     verb, rest = argv[0], argv[1:]
@@ -82,15 +68,7 @@ def run(argv, top):
     if not rest:
         sys.stderr.write(USAGE)
         return 2
-    suite = guard_suite(top, rest[0])
-    if suite is None:
-        sys.stderr.write(
-            "lease_pytest: no guard suite test-%s.py under %s\n" % (rest[0], GUARDS_REL)
-        )
-        return 1
-    return subprocess.run(
-        [sys.executable, str(suite), *rest[1:]], cwd=str(top), check=False
-    ).returncode
+    return None
 
 
 def main():

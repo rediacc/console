@@ -1,11 +1,8 @@
-"""`lease_pytest.py`: the pytest wrapper found from a lease-shaped tree, and a guard suite started without a clone verb in the command."""
+"""`lease_pytest.py`: the pytest wrapper found from a lease-shaped tree without a clone verb in the command."""
 
 from __future__ import annotations
 
-import os
 import stat
-
-import pytest
 
 from rediacc_ci.dev import lease_pytest as lp
 
@@ -44,28 +41,6 @@ def test_run_pytest_missing_is_a_named_failure(tmp_path, capsys):
     assert "no .ci/cache/toolchain/uv-tools/bin/pytest" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("stem", ["", "../x", "a/b", "a.b", "-x", "no_such_suite"])
-def test_guard_suite_refuses_other_than_a_bare_existing_stem(tmp_path, stem):
-    (tmp_path / lp.GUARDS_REL).mkdir(parents=True)
-    assert lp.guard_suite(tmp_path, stem) is None
-
-
-def test_run_guard_starts_the_suite_and_returns_its_status(tmp_path, capfd):
-    guards = tmp_path / lp.GUARDS_REL
-    guards.mkdir(parents=True)
-    (guards / "test-demo.py").write_text(
-        "import sys\nprint('suite', sys.argv[1:])\nsys.exit(4)\n", encoding="utf-8"
-    )
-    assert lp.run(["guard", "demo", "--flag"], tmp_path) == 4
-    assert "suite ['--flag']" in capfd.readouterr().out
-
-
 def test_run_without_a_verb_is_usage(tmp_path, capsys):
     assert lp.run([], tmp_path) == 2
     assert "Usage" in capsys.readouterr().err
-
-
-def test_the_real_origin_clone_suite_resolves_here():
-    top = lp.toplevel(os.getcwd())
-    assert top is not None
-    assert lp.guard_suite(top, "block_origin_clone") is not None
