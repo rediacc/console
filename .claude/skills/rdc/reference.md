@@ -56,7 +56,7 @@ Resume following a job from its ticket, then acknowledge it and exit with the jo
 - `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
 
-> MCP excluded: Blocks until the job ends, which no MCP timeout covers; poll with job_status and job_logs.
+> MCP excluded: An agent cannot usefully block until the job ends; poll with job_status and job_logs.
 
 ### rdc job gc
 
@@ -165,10 +165,6 @@ Show a machine's system, repositories, containers, and services. Read-only: neve
 ### rdc machine health <name>
 
 Check machine health for CI/CD pipelines
-
-**Options:**
-
-- `-t, --team <name>`: Team name
 
 > MCP tool
 
