@@ -236,7 +236,10 @@ describe('a retried POST of a verb that registers before its job', () => {
 
   for (const verb of ['repo create', 'repo fork'] as const) {
     describe(verb, () => {
-      const call = (extra: Record<string, unknown> = {}) => run(...verbs[verb](), extra);
+      const call = (extra: Record<string, unknown> = {}) => {
+        const [pathKey, params, positionals] = verbs[verb]();
+        return run(pathKey, params, positionals, extra);
+      };
 
       it('attaches a retry with the same body id to the first attempt: one job, one record', async () => {
         const first = await call({ requestId: REQUEST_ID });
@@ -278,6 +281,28 @@ describe('a retried POST of a verb that registers before its job', () => {
     });
 
     expect(moved).toMatchObject({ result: { success: false } });
+    expect([...jobs.keys()]).toHaveLength(1);
+  });
+
+  it('repo create: the same body id asking for another size is refused, not reported as the first size', async () => {
+    const [pathKey, params, positionals] = verbs['repo create']();
+    await run(pathKey, params, positionals, { requestId: REQUEST_ID });
+    const resized = await run(pathKey, { ...params, size: '2G' }, positionals, {
+      requestId: REQUEST_ID,
+    });
+
+    expect(resized).toMatchObject({ result: { success: false } });
+    expect([...jobs.keys()]).toHaveLength(1);
+  });
+
+  it('repo fork: the same body id asking for an immutable fork is refused, not reported as the first fork', async () => {
+    const [pathKey, params, positionals] = verbs['repo fork']();
+    await run(pathKey, params, positionals, { requestId: REQUEST_ID });
+    const hardened = await run(pathKey, { ...params, immutable: true }, positionals, {
+      requestId: REQUEST_ID,
+    });
+
+    expect(hardened).toMatchObject({ result: { success: false } });
     expect([...jobs.keys()]).toHaveLength(1);
   });
 

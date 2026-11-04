@@ -147,8 +147,8 @@ async function registerFork(
   immutable = false
 ): Promise<{ repositoryGuid: string; networkId: number; reattached?: true }> {
   const existing = await configService.getRepository(forkKey);
-  // A POST retried with the same body id and machine finds the row its first attempt registered (the guid derives from both): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another machine is a different request, and a row with no network ID cannot run a fork, so both meet the duplicate error.
-  const servedGuid = servedRecordGuid(`fork:${forkKey}@${machineName}`);
+  // A POST retried with the same body id, machine and immutability finds the row its first attempt registered (the guid derives from all three): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another machine or immutability is a different request, and a row with no network ID cannot run a fork, so both meet the duplicate error.
+  const servedGuid = servedRecordGuid(`fork:${forkKey}@${machineName}:${String(immutable)}`);
   const existingNetworkId = existing?.networkId ?? 0;
   if (
     existing?.repositoryGuid === servedGuid &&

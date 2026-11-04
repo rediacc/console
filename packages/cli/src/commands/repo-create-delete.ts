@@ -205,14 +205,16 @@ export async function registerNewRepo(
   extra: { sshPrivateKey?: string; sshPublicKey?: string },
   target: NetworkIdTarget,
   /** The create job asks renet for the ID (`network_id: "auto"`): no ID is allocated here and the record carries none. */
-  networkIdAuto = false
+  networkIdAuto = false,
+  /** The requested size: a retry asking for another one is a different request. */
+  size?: string
 ): Promise<{ repositoryGuid: string; networkId?: number; reattached?: true }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
   const existing = await configService.getRepository(name);
-  // A POST retried with the same body id and placement finds the record its first attempt registered (the guid derives from both): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another placement is a different request and meets the duplicate error.
-  const servedGuid = servedRecordGuid(`create:${name}:${JSON.stringify(placement)}`);
+  // A POST retried with the same body id, placement and size finds the record its first attempt registered (the guid derives from all three): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another placement or size is a different request and meets the duplicate error.
+  const servedGuid = servedRecordGuid(`create:${name}:${JSON.stringify(placement)}:${size ?? ''}`);
   if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {
     return {
       repositoryGuid: servedGuid,
@@ -282,7 +284,8 @@ async function handleRepoCreateOnMachine(
       { machine: options.machine },
       { sshPrivateKey, sshPublicKey },
       target,
-      true
+      true,
+      options.size
     );
     // A reattached record is the first attempt's, so this invocation's failure must not roll it back.
     if (!reattached) createdGuid = repositoryGuid;
@@ -360,7 +363,8 @@ async function handleRepoCreateOnDatastore(
       { datastore: options.datastore },
       {},
       target,
-      true
+      true,
+      options.size
     );
     // A reattached record is the first attempt's, so this invocation's failure must not roll it back.
     if (!reattached) createdGuid = repositoryGuid;
