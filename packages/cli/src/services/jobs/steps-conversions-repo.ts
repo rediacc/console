@@ -110,7 +110,7 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
     'renderAutostartList',
     'success',
     ['machine'],
-    () => import('../../commands/repo-extended.js'),
+    () => import('../../commands/repo-autostart-list.js'),
     true
   ),
   privateStep(
