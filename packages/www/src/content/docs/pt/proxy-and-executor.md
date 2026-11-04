@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: pt
-sourceHash: "e56214cd4086bafa"
-sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
+sourceHash: "c7310ede42dd2da0"
+sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
 ---
 
 # Proxy e Executor
@@ -62,6 +62,18 @@ O bucket `access` da configuração guarda os intervalos de origem IPv4 e IPv6 p
 `machine setup` volta a aplicar as linhas de acesso, pelo que uma máquina reconstruída recupera as suas restrições.
 
 Um push que bloquearia a sessão SSH atual, porque o respetivo endereço fica fora dos intervalos da chave em uso, é recusado com `ACCESS_LOCKOUT` e nada é escrito. Um push é recusado com `ACCESS_FILE_CHANGED` quando o ficheiro mudou na máquina entretanto; nada foi aplicado, por isso o push pode ser repetido em segurança.
+
+## Jobs, tickets e consulta periódica
+
+Cada comando do plano de máquina é executado na máquina como um job: uma unidade systemd gerida pelo renet, com o estado e o registo de eventos guardados num spool na máquina. Uma ligação interrompida nunca pára o trabalho, e qualquer cliente pode retomar o job pelo seu identificador.
+
+- **A janela de ligação.** O executor transmite os eventos de um job durante um máximo de 20 segundos, com uma linha de heartbeat a cada 10 segundos enquanto o fluxo está em silêncio. Um job que termina dentro da janela devolve o resultado no mesmo pedido. Um job mais longo devolve um resultado com `state: running` e o identificador do job, depois de uma linha `job` que traz a máquina e os jobs sobrepostos.
+- **A consulta periódica.** O cliente pede então a `GET /v1/jobs/<id>/poll` os eventos posteriores à última linha vista, juntamente com o estado do job, e espaça os pedidos enquanto as respostas vierem vazias. `POST /v1/jobs/<id>/cancel` cancela o job. Ambas as rotas aplicam a mesma política do comando que iniciou o job, e a consulta que vê primeiro um estado terminal escreve o evento de auditoria uma única vez.
+- **Os tickets.** Cada invocação escreve também um ticket na pasta de configuração da CLI (`jobs/<config>.jsonl`). `rdc job wait <id>` espera por um job e termina com o seu código de saída; `rdc job list`, `status`, `logs`, `cancel` e `gc` gerem o resto. Ctrl-C durante um acompanhamento desliga-se sem cancelar e sai com 130. Um acompanhamento cuja ligação não pôde ser restabelecida sai com 16 e mantém o ticket.
+- **Os passos.** O trabalho que se segue a um job, como registar um resultado na configuração ou mostrar uma listagem, é um passo anotado no ticket e no spool. Um passo corre uma vez, no sítio que primeiro vê o job terminar: o próprio comando, `rdc job wait`, o aviso impresso pelo comando seguinte ou a consulta do executor. A reivindicação faz-se na máquina, pelo que dois observadores nunca executam o mesmo passo.
+- **As sobreposições.** Um arranque que se sobrepõe a um job ativo no mesmo repositório ou na mesma máquina imprime um aviso com o comando que se liga ao job ativo. Quando a política de sobreposição recusa o arranque, o comando sai com 15 (`BUSY`), e a recusa indica os jobs sobrepostos em `overlaps`.
+- **As exceções.** Os comandos interativos, as transferências do lado do cliente e os próprios comandos `job` não correm como jobs.
+- **A retenção.** A máquina guarda um job de leitura terminado durante uma hora e qualquer outro job terminado durante sete dias, com um máximo de 2000 jobs terminados.
 
 ## Relacionados
 

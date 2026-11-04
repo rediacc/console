@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: tr
-sourceHash: "e56214cd4086bafa"
-sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
+sourceHash: "c7310ede42dd2da0"
+sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
 ---
 
 # Proxy ve Executor
@@ -62,6 +62,18 @@ Yapılandırmanın `access` bölümü, SSH anahtarları için izin verilen IPv4 
 `machine setup` erişim satırlarını yeniden uygular, böylece yeniden kurulan bir makine kısıtlamalarına geri kavuşur.
 
 Mevcut SSH oturumunu dışarıda bırakacak bir push, adresi kullanılan anahtarın aralıklarının dışında kaldığı için `ACCESS_LOCKOUT` ile reddedilir ve hiçbir şey yazılmaz. Dosya makinede bu arada değiştiyse push `ACCESS_FILE_CHANGED` ile reddedilir; hiçbir şey uygulanmadığından push güvenle yeniden denenebilir.
+
+## İşler, biletler ve yoklama
+
+Makine düzlemindeki her komut, makinede bir iş olarak çalışır: renet'in yönettiği bir systemd birimi; durumu ve olay günlüğü makinedeki bir spool'da tutulur. Bağlantının kopması bu yüzden işi hiçbir zaman durdurmaz ve herhangi bir istemci işi kimliğiyle yeniden devralabilir.
+
+- **Bağlanma penceresi.** Yürütücü bir işin olaylarını en fazla 20 saniye boyunca akıtır; akış sessizken her 10 saniyede bir heartbeat satırı gönderir. Pencere içinde biten bir iş sonucunu aynı istekte döndürür. Daha uzun süren bir iş, makineyi ve çakışan işleri taşıyan bir `job` satırından sonra `state: running` ve iş kimliğiyle bir sonuç döndürür.
+- **Yoklama.** İstemci bundan sonra `GET /v1/jobs/<id>/poll` ile son gördüğü satırdan sonraki olayları işin durumuyla birlikte ister ve cevaplar boş geldikçe aralıkları açar. `POST /v1/jobs/<id>/cancel` işi iptal eder. Her iki yol da işi başlatan komutla aynı ilkeyi uygular ve bir uç durumu ilk gören yoklama denetim olayını yalnızca bir kez yazar.
+- **Biletler.** Her çağrı ayrıca CLI'ın yapılandırma dizinine bir bilet yazar (`jobs/<config>.jsonl`). `rdc job wait <id>` bir işi bekler ve işin çıkış koduyla biter; `rdc job list`, `status`, `logs`, `cancel` ve `gc` gerisini yönetir. İzleme sırasında Ctrl-C iptal etmeden ayrılır ve 130 ile çıkar. Bağlantısı yeniden kurulamayan bir izleme 16 ile çıkar ve bileti korur.
+- **Adımlar.** Bir işi izleyen çalışma, örneğin bir sonucu yapılandırmaya kaydetmek veya bir listeyi göstermek, bilete ve spool'a yazılan bir adımdır. Bir adım, işin bittiğini ilk gören yerde bir kez çalışır: komutun kendisi, `rdc job wait`, sonraki komutun yazdığı bildirim ya da yürütücünün yoklaması. Hak makinede alınır; böylece iki gözlemci aynı adımı asla çalıştırmaz.
+- **Çakışmalar.** Aynı depoda veya aynı makinede canlı bir işle çakışan bir başlatma, canlı işe bağlanan komutu içeren bir uyarı yazdırır. Çakışma ilkesi başlatmayı reddettiğinde komut 15 (`BUSY`) ile çıkar ve ret, çakışan işleri `overlaps` içinde taşır.
+- **İstisnalar.** Etkileşimli komutlar, istemci tarafı aktarımlar ve `job` komutlarının kendisi iş olarak çalışmaz.
+- **Saklama.** Makine bitmiş salt okunur bir işi bir saat, bitmiş diğer her işi yedi gün saklar ve en çok 2000 bitmiş iş tutar.
 
 ## İlgili
 

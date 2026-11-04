@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: et
-sourceHash: "e56214cd4086bafa"
-sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
+sourceHash: "c7310ede42dd2da0"
+sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
 ---
 
 # Proxy ja käitaja
@@ -62,6 +62,18 @@ Konfiguratsiooni `access`-hoidla sisaldab SSH-võtmete lubatud IPv4 ja IPv6 läh
 `machine setup` rakendab juurdepääsuread uuesti, nii et uuesti üles seatud masin saab oma piirangud tagasi.
 
 Push, mis lukustaks praeguse SSH-seansi välja, kuna selle aadress jääb kasutatava võtme vahemikest välja, lükatakse tagasi veaga `ACCESS_LOCKOUT` ja midagi ei kirjutata. Push lükatakse tagasi veaga `ACCESS_FILE_CHANGED`, kui fail on masinas vahepeal muutunud; midagi ei rakendatud, seega võib pushi turvaliselt uuesti proovida.
+
+## Tööd, piletid ja päring
+
+Iga masinatasandi käsk töötab masinas tööna: renet haldab systemd üksust, mille olek ja sündmuste logi on masinas spoolis. Katkenud ühendus ei peata seetõttu tööd kunagi ning iga klient saab töö tema ID järgi uuesti üles võtta.
+
+- **Haakimisaken.** Täitja voogedastab töö sündmusi kuni 20 sekundit ning saadab vaikse voo ajal iga 10 sekundi järel südamelöögirea. Aknas lõppev töö tagastab tulemuse samas päringus. Pikem töö tagastab tulemuse väärtusega `state: running` ja töö ID-ga pärast `job`-rida, mis kannab masinat ja kattuvaid töid.
+- **Päring.** Seejärel küsib klient aadressilt `GET /v1/jobs/<id>/poll` viimati nähtud reast järgnevad sündmused koos töö olekuga ning pikendab päringute vahet, kuni vastused on tühjad. `POST /v1/jobs/<id>/cancel` tühistab töö. Mõlemad teed rakendavad sama poliitikat kui töö käivitanud käsk ning päring, mis esimesena lõppseisundi näeb, kirjutab auditisündmuse ainult ühe korra.
+- **Piletid.** Iga käivitus kirjutab lisaks pileti CLI seadistuskataloogi (`jobs/<config>.jsonl`). `rdc job wait <id>` ootab tööd ja lõpeb selle väljumiskoodiga; `rdc job list`, `status`, `logs`, `cancel` ja `gc` haldavad ülejäänut. Ctrl-C jälgimise ajal eraldub tühistamata ja väljub koodiga 130. Jälgimine, mille ühendust ei õnnestunud taastada, väljub koodiga 16 ja jätab pileti alles.
+- **Sammud.** Töö järel tehtav, näiteks tulemuse kirjutamine seadistusse või loendi kuvamine, on samm, mis on kirja pandud piletisse ja spoolis. Samm käivitub üks kord seal, kus töö lõppemist esimesena nähakse: käsk ise, `rdc job wait`, järgmise käsu trükitud teade või täitja päring. Nõue esitatakse masinas, mistõttu kaks jälgijat ei käivita kunagi sama sammu.
+- **Kattuvused.** Käivitus, mis kattub sama hoidla või sama masina käimasoleva tööga, trükib hoiatuse käsuga, mis haakub käimasoleva tööga. Kui kattumispoliitika keeldub käivitusest, lõpeb käsk koodiga 15 (`BUSY`) ja keeldumine nimetab kattuvad tööd väljas `overlaps`.
+- **Erandid.** Interaktiivsed käsud, kliendipoolsed ülekanded ja `job`-käsud ise ei tööta töödena.
+- **Säilitus.** Masin hoiab lõppenud kirjutuskaitstud tööd ühe tunni ja iga muud lõppenud tööd seitse päeva ning kuni 2000 lõppenud tööd.
 
 ## Seotud
 

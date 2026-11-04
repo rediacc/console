@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: de
-sourceHash: "e56214cd4086bafa"
-sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
+sourceHash: "c7310ede42dd2da0"
+sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
 ---
 
 # Proxy & Executor
@@ -62,6 +62,18 @@ Der `access`-Bereich der Konfiguration enthält die erlaubten IPv4- und IPv6-Que
 `machine setup` wendet die Zugriffszeilen erneut an, sodass eine neu aufgebaute Maschine ihre Einschränkungen zurückerhält.
 
 Ein Push, der die aktuelle SSH-Sitzung aussperren würde, weil deren Adresse außerhalb der Bereiche des verwendeten Schlüssels liegt, wird mit `ACCESS_LOCKOUT` abgelehnt, und es wird nichts geschrieben. Ein Push wird mit `ACCESS_FILE_CHANGED` abgelehnt, wenn sich die Datei auf der Maschine zwischenzeitlich geändert hat; es wurde nichts angewendet, daher kann der Push gefahrlos wiederholt werden.
+
+## Jobs, Tickets und Polling
+
+Jeder Befehl der Maschinenebene läuft auf der Maschine als Job: eine systemd-Unit, die renet verwaltet und deren Status und Ereignisprotokoll in einem Spool auf der Maschine liegen. Eine abgebrochene Verbindung stoppt die Arbeit daher nie, und jeder Client kann den Job über seine ID wieder aufnehmen.
+
+- **Das Attach-Fenster.** Der Executor streamt die Ereignisse eines Jobs bis zu 20 Sekunden lang und sendet bei ruhigem Stream alle 10 Sekunden eine Heartbeat-Zeile. Ein Job, der innerhalb des Fensters endet, liefert sein Ergebnis in derselben Anfrage. Ein längerer Job liefert ein Ergebnis mit `state: running` und der Job-ID, nach einer `job`-Zeile mit der Maschine und allen überlappenden Jobs.
+- **Polling.** Der Client fragt danach per `GET /v1/jobs/<id>/poll` die Ereignisse nach der zuletzt gesehenen Zeile samt Status des Jobs ab und wartet zwischen leeren Antworten länger. `POST /v1/jobs/<id>/cancel` bricht den Job ab. Beide Routen wenden dieselbe Richtlinie an wie der Befehl, der den Job gestartet hat, und das Polling, das als Erstes einen Endzustand sieht, schreibt das Audit-Ereignis genau einmal.
+- **Tickets.** Jeder Aufruf schreibt außerdem ein Ticket in das Konfigurationsverzeichnis der CLI (`jobs/<config>.jsonl`). `rdc job wait <id>` wartet auf einen Job und endet mit dessen Exit-Code; `rdc job list`, `status`, `logs`, `cancel` und `gc` verwalten den Rest. Strg+C während des Mitverfolgens löst die Verbindung, ohne abzubrechen, und beendet mit 130. Ein Mitverfolgen, dessen Verbindung nicht wiederhergestellt werden konnte, endet mit 16 und behält das Ticket.
+- **Schritte.** Arbeit, die auf einen Job folgt, etwa ein Ergebnis in der Konfiguration zu vermerken oder eine Liste auszugeben, ist ein Schritt, der im Ticket und im Spool steht. Ein Schritt läuft einmal, dort, wo der Job zuerst als beendet erkannt wird: im Befehl selbst, in `rdc job wait`, im Hinweis des nächsten Befehls oder im Polling des Executors. Der Anspruch wird auf der Maschine erhoben, sodass zwei Beobachter nie denselben Schritt ausführen.
+- **Überschneidungen.** Ein Start, der sich mit einem laufenden Job auf demselben Repository oder derselben Maschine überschneidet, gibt eine Warnung mit dem Befehl aus, der sich an den laufenden Job anhängt. Lehnt die Überschneidungsrichtlinie den Start ab, endet der Befehl mit 15 (`BUSY`), und die Ablehnung nennt die überlappenden Jobs in `overlaps`.
+- **Ausnahmen.** Interaktive Befehle, clientseitige Übertragungen und die `job`-Befehle selbst laufen nicht als Jobs.
+- **Aufbewahrung.** Die Maschine behält einen beendeten reinen Lese-Job eine Stunde lang und jeden anderen beendeten Job sieben Tage lang, höchstens jedoch 2000 beendete Jobs.
 
 ## Verwandte Seiten
 

@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: es
-sourceHash: "e56214cd4086bafa"
-sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
+sourceHash: "c7310ede42dd2da0"
+sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
 ---
 
 # Proxy y ejecutor
@@ -62,6 +62,18 @@ El bucket `access` de la configuración contiene los rangos de origen IPv4 e IPv
 `machine setup` vuelve a aplicar las líneas de acceso, de modo que una máquina reconstruida recupera sus restricciones.
 
 Un push que dejaría fuera la sesión SSH actual, porque su dirección queda fuera de los rangos de la clave en uso, se rechaza con `ACCESS_LOCKOUT` y no se escribe nada. Un push se rechaza con `ACCESS_FILE_CHANGED` cuando el archivo cambió en la máquina entretanto; no se aplicó nada, así que el push se puede reintentar sin riesgo.
+
+## Trabajos, tickets y sondeo
+
+Cada comando del plano de máquina se ejecuta en la máquina como un trabajo: una unidad de systemd que gestiona renet, con su estado y su registro de eventos guardados en un spool en la máquina. Una conexión caída nunca detiene el trabajo, y cualquier cliente puede retomarlo con su identificador.
+
+- **La ventana de conexión.** El ejecutor transmite los eventos de un trabajo durante un máximo de 20 segundos, con una línea de latido cada 10 segundos mientras el flujo está en silencio. Un trabajo que termina dentro de la ventana devuelve su resultado en la misma petición. Uno más largo devuelve un resultado con `state: running` y el identificador del trabajo, tras una línea `job` que lleva la máquina y los trabajos solapados.
+- **El sondeo.** Después el cliente pide a `GET /v1/jobs/<id>/poll` los eventos posteriores a la última línea vista, junto con el estado del trabajo, y espacia las peticiones mientras las respuestas lleguen vacías. `POST /v1/jobs/<id>/cancel` cancela el trabajo. Ambas rutas aplican la misma política que el comando que inició el trabajo, y el sondeo que ve primero un estado terminal escribe el evento de auditoría una sola vez.
+- **Los tickets.** Cada invocación escribe además un ticket en el directorio de configuración de la CLI (`jobs/<config>.jsonl`). `rdc job wait <id>` espera a un trabajo y termina con su código de salida; `rdc job list`, `status`, `logs`, `cancel` y `gc` gestionan el resto. Ctrl-C durante un seguimiento se desacopla sin cancelar y sale con 130. Un seguimiento cuya conexión no pudo restablecerse sale con 16 y conserva el ticket.
+- **Los pasos.** El trabajo que sigue a un trabajo, como registrar un resultado en la configuración o mostrar un listado, es un paso anotado en el ticket y en el spool. Un paso se ejecuta una vez, en el lugar que primero ve terminar el trabajo: el propio comando, `rdc job wait`, el aviso que imprime el comando siguiente o el sondeo del ejecutor. La reclamación se hace en la máquina, así que dos observadores nunca ejecutan el mismo paso.
+- **Los solapamientos.** Un inicio que se solapa con un trabajo activo sobre el mismo repositorio o la misma máquina imprime una advertencia con el comando que se conecta al trabajo activo. Cuando la política de solapamiento rechaza el inicio, el comando sale con 15 (`BUSY`), y el rechazo incluye los trabajos solapados en `overlaps`.
+- **Las excepciones.** Los comandos interactivos, las transferencias del lado del cliente y los propios comandos `job` no se ejecutan como trabajos.
+- **La retención.** La máquina conserva un trabajo de solo lectura terminado durante una hora y cualquier otro trabajo terminado durante siete días, con un máximo de 2000 trabajos terminados.
 
 ## Relacionado
 

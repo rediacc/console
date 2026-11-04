@@ -61,6 +61,18 @@ The config's `access` bucket holds the allowed IPv4 and IPv6 source ranges for S
 
 A push that would lock out the current SSH session, because its address lies outside the ranges of the key in use, is refused with `ACCESS_LOCKOUT`, and nothing is written. A push is refused with `ACCESS_FILE_CHANGED` when the file changed on the machine in the meantime; nothing was applied, so the push is safe to retry.
 
+## Jobs, tickets and polling
+
+Every machine-plane command runs on the machine as a job: a systemd unit that renet owns, with its status and event log kept in a spool on the machine. A dropped connection therefore never stops the work, and any client can pick the job up again by its id.
+
+- **The attach window.** The executor streams a job's events for up to 20 seconds, with a heartbeat line every 10 seconds while the stream is quiet. A job that finishes inside the window returns its result in the same request. A longer job returns a result with `state: running` and the job id, after a `job` line that carries the machine and any overlapping jobs.
+- **Polling.** The client then asks `GET /v1/jobs/<id>/poll` for the events after the last line it saw, together with the job's status, and backs off between empty answers. `POST /v1/jobs/<id>/cancel` cancels the job. Both routes apply the same policy as the command that started the job, and the poll that first sees a terminal state writes the audit event once.
+- **Tickets.** Each invocation also writes a ticket in the CLI's config directory (`jobs/<config>.jsonl`). `rdc job wait <id>` waits for a job and exits with its exit code, and `rdc job list`, `status`, `logs`, `cancel` and `gc` manage the rest. Ctrl-C during a follow detaches without cancelling and exits with 130, and a follow whose connection could not be re-established exits with 16 and keeps the ticket.
+- **Steps.** Work that follows a job, such as recording a result in the config or rendering a listing, is a step recorded on the ticket and in the spool. A step runs once, in whichever place first sees the job finish: the command itself, `rdc job wait`, the notice printed by the next command, or the executor's poll. The claim is taken on the machine, so two observers never run the same step.
+- **Overlaps.** A start that overlaps a live job on the same repository or machine prints a warning with the command that attaches to the live job. When the overlap policy refuses the start, the command exits with 15 (`BUSY`), and the refusal carries the overlapping jobs in `overlaps`.
+- **Exceptions.** Interactive commands, client-side transfers and the `job` commands themselves do not run as jobs.
+- **Retention.** The machine keeps a finished read-only job for one hour and any other finished job for seven days, and it keeps at most 2000 finished jobs.
+
 ## Related
 
 - [Web Console](/en/docs/web-console), the browser client built on this model
