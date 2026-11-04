@@ -416,13 +416,7 @@ you have config storage enabled, that credential comes back with your config on 
 fresh machine. If you do not, keep a copy of the config somewhere the machine
 failing does not take with it.
 
-A restore proves the passphrase before it places anything. After the image is
-assembled and its size and LUKS header check out, the passphrase from the config
-test-opens it. If it opens, the restore reports success. If it does not, the
-restore fails and places nothing, and the assembled image stays staged so a retry
-with the right passphrase does not download it again. A snapshot taken before a
-passphrase change opens only with the old passphrase; `--allow-unopenable` places
-such an image anyway and says that it was not opened.
+A restore proves the passphrase before it places anything. After the image is assembled and its size and LUKS header check out, the passphrase from the config test-opens it. If it opens, the restore reports success. If it does not, the restore fails and places nothing, and the assembled image stays staged so a retry with the right passphrase does not download it again. A snapshot taken before a passphrase change opens only with the old passphrase; `--allow-unopenable` places such an image anyway and says that it was not opened.
 
 ### Prove the restore on each machine
 
