@@ -214,9 +214,17 @@ async function syncOne(
   }
   const weakCredential = credential.length < GENERATED_CREDENTIAL_LENGTH;
   const line = deriveTocPublicKeyLine(credential, target.lineage).trimEnd();
-  const status = parseAnswer(
-    (await transport.run(tocKeyCommand(renetPath, 'status', target))).stdout
-  );
+  const statusRun = await transport.run(tocKeyCommand(renetPath, 'status', target));
+  const status = parseAnswer(statusRun.stdout);
+  // The machine answers `present` or `absent`; anything else (a non-zero exit, no JSON line) means it never answered, which is not the same as holding no key.
+  if (status.outcome !== 'present' && status.outcome !== 'absent') {
+    return {
+      ...base,
+      outcome: 'unreadable',
+      detail: status.reason ?? `toc-key status gave no answer (renet exited ${statusRun.exitCode})`,
+      weakCredential,
+    };
+  }
   const present = status.outcome === 'present';
   const equal = present ? status.publicKey?.trimEnd() === line : undefined;
   const seen = observation(base, weakCredential, status, equal);
@@ -290,8 +298,13 @@ function attentionLine(r: TocKeyResult): string | undefined {
   }
 }
 
-/** Outcomes that leave the machine with no listing key, where a missing listing source is not the news. */
-const NO_KEY_OUTCOMES = new Set<TocKeyOutcome>(['no-credential', 'refused', 'unreadable']);
+/** Outcomes where the machine holds no listing key, now or after the run, so a missing listing source is not the news. A dry run's `would-install` is one: nothing was written. */
+const NO_KEY_OUTCOMES = new Set<TocKeyOutcome>([
+  'no-credential',
+  'refused',
+  'unreadable',
+  'would-install',
+]);
 
 /** The operator-facing lines for results that need attention. Silent for `unchanged` and `installed`. */
 export function tocKeyWarnings(results: TocKeyResult[]): string[] {

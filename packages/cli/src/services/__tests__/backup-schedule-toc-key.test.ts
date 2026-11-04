@@ -154,6 +154,35 @@ describe('syncTocKeys', () => {
     }
   });
 
+  it('a dry run over a machine with no key makes no claim that it holds one, while a held key still warns', async () => {
+    const keyless = await syncTocKeys(fakeMachine(null, 'none').transport, RENET, [target()], {
+      dryRun: true,
+    });
+    expect(keyless[0].outcome).toBe('would-install');
+    expect(tocKeyWarnings(keyless)).toEqual([]);
+    const held = await syncTocKeys(fakeMachine(publicLine, 'none').transport, RENET, [target()], {
+      dryRun: true,
+    });
+    expect(held[0].outcome).toBe('unchanged');
+    expect(tocKeyWarnings(held)[0]).toContain('holds a listing key');
+  });
+
+  it('a status that never answers is unreadable, in a dry run as in a real one, and nothing is installed', async () => {
+    for (const dryRun of [true, false]) {
+      const calls: string[] = [];
+      const transport: TocKeyTransport = {
+        run(command) {
+          calls.push(command);
+          return Promise.resolve({ exitCode: 1, stdout: 'sudo: renet: not found\n' });
+        },
+      };
+      const [r] = await syncTocKeys(transport, RENET, [target()], { dryRun });
+      expect(r.outcome).toBe('unreadable');
+      expect(r.detail).toContain('renet exited 1');
+      expect(calls).toHaveLength(1);
+    }
+  });
+
   it('flags a credential shorter than the generated shape, still installing the key', async () => {
     const m = fakeMachine(null);
     const [r] = await syncTocKeys(m.transport, RENET, [target({ credential: 'short' })], {});
