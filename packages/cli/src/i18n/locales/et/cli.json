@@ -1955,7 +1955,7 @@
         "dryRunHeader": "{{count}} ligipääsmatut commit'i kustutataks:",
         "dryRunHint": "Nende kustutamiseks käivita uuesti võtmega --apply.",
         "nothing": "Masinal {{machine}} pole midagi koristada: kõik commit'id on ligipääsetavad",
-        "started": "{{started}} eemaldamisest {{total}}-st töötab töödena; rdc job list näitab neid."
+        "started": "{{started}} eemaldamisest {{total}}-st töötab töödena; jälgi neid käsuga rdc job list."
       },
       "list": {
         "completed": "Loetlemine lõpetatud",

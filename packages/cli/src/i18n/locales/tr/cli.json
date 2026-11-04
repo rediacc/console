@@ -1955,7 +1955,7 @@
         "dryRunHeader": "{{count}} erişilemez commit silinecek:",
         "dryRunHint": "Bunları silmek için --apply ile yeniden çalıştırın.",
         "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir",
-        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; rdc job list bunları gösterir."
+        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; takip için rdc job list çalıştırın."
       },
       "list": {
         "completed": "Listeleme tamamlandı",

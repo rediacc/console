@@ -1955,7 +1955,7 @@
         "dryRunHeader": "Se eliminarían {{count}} commit(s) inaccesible(s):",
         "dryRunHint": "Vuelve a ejecutar con --apply para eliminarlos.",
         "nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles",
-        "started": "{{started}} de {{total}} eliminaciones se están ejecutando como trabajos; rdc job list las muestra."
+        "started": "{{started}} de {{total}} eliminaciones se están ejecutando como trabajos; sigue su avance con rdc job list."
       },
       "list": {
         "completed": "Listado completado",

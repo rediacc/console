@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "Se eliminarían {{count}} commit(s) inaccesible(s):",
   "commands.repo.gc.dryRunHint": "Vuelve a ejecutar con --apply para eliminarlos.",
   "commands.repo.gc.nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles",
-  "commands.repo.gc.started": "{{started}} de {{total}} eliminaciones se están ejecutando como trabajos; rdc job list las muestra.",
+  "commands.repo.gc.started": "{{started}} de {{total}} eliminaciones se están ejecutando como trabajos; sigue su avance con rdc job list.",
   "commands.repo.gpu.description": "Concede a un repositorio un dispositivo CDI (por ejemplo nvidia.com/gpu=all) para que sus contenedores puedan solicitarlo, o lo revoca de nuevo. La máquina hace cumplir la concesión; una concesión exclusiva reserva el dispositivo para un solo repositorio.",
   "commands.repo.gpu.descriptionShort": "Conceder o revocar dispositivos GPU a un repositorio",
   "commands.repo.gpu.deviceOption": "Nombre CDI completo del dispositivo (p. ej. nvidia.com/gpu=all)",

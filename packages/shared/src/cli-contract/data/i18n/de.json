@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "{{count}} unerreichbare(r) Commit(s) würden gelöscht:",
   "commands.repo.gc.dryRunHint": "Mit --apply erneut ausführen, um sie zu löschen.",
   "commands.repo.gc.nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar",
-  "commands.repo.gc.started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; rdc job list zeigt sie an.",
+  "commands.repo.gc.started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; verfolgen lassen sie sich mit rdc job list.",
   "commands.repo.gpu.description": "Gibt einem Repository ein CDI-Gerät frei (z. B. nvidia.com/gpu=all), damit seine Container es anfordern können, oder entzieht es wieder. Die Maschine setzt die Freigabe durch; eine exklusive Freigabe reserviert das Gerät für ein einziges Repository.",
   "commands.repo.gpu.descriptionShort": "GPU-Geräte für ein Repository freigeben oder entziehen",
   "commands.repo.gpu.deviceOption": "Vollqualifizierter CDI-Gerätename (z. B. nvidia.com/gpu=all)",

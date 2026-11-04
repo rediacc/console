@@ -1955,7 +1955,7 @@
         "dryRunHeader": "سيتم حذف {{count}} إيداع غير قابل للوصول:",
         "dryRunHint": "أعد التشغيل مع ‎--apply‎ لحذفها.",
         "nothing": "لا شيء لجمعه على {{machine}}: كل إيداع قابل للوصول",
-        "started": "{{started}} من أصل {{total}} عملية حذف قيد التشغيل كمهام؛ يعرضها الأمر rdc job list."
+        "started": "{{started}} من أصل {{total}} عملية حذف قيد التشغيل كمهام؛ تابعها باستخدام rdc job list."
       },
       "list": {
         "completed": "اكتمل العرض",

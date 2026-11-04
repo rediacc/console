@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "도달 불가능한 commit {{count}}개가 삭제됩니다:",
   "commands.repo.gc.dryRunHint": "삭제하려면 --apply로 다시 실행하세요.",
   "commands.repo.gc.nothing": "{{machine}}에서 수집할 항목이 없습니다: 모든 commit이 도달 가능합니다",
-  "commands.repo.gc.started": "삭제 {{total}}건 중 {{started}}건이 작업으로 실행 중입니다. rdc job list로 확인할 수 있습니다.",
+  "commands.repo.gc.started": "삭제 {{total}}건 중 {{started}}건이 작업으로 실행 중입니다. 진행 상황은 rdc job list로 확인할 수 있습니다.",
   "commands.repo.gpu.description": "리포지토리에 CDI 장치(예: nvidia.com/gpu=all)를 부여해 컨테이너가 요청할 수 있게 하거나, 다시 회수합니다. 부여는 머신이 강제하며, 독점 부여는 장치를 하나의 리포지토리 전용으로 예약합니다.",
   "commands.repo.gpu.descriptionShort": "리포지토리에 GPU 장치 부여 또는 회수",
   "commands.repo.gpu.deviceOption": "정규화된 CDI 장치 이름(예: nvidia.com/gpu=all)",

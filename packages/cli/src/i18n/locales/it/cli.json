@@ -1955,7 +1955,7 @@
         "dryRunHeader": "{{count}} commit non raggiungibili verrebbero eliminati:",
         "dryRunHint": "Riesegui con --apply per eliminarli.",
         "nothing": "Niente da raccogliere su {{machine}}: ogni commit e raggiungibile",
-        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; rdc job list le mostra."
+        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; seguile con rdc job list."
       },
       "list": {
         "completed": "Elenco completato",

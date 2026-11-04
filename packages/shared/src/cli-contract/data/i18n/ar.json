@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "سيتم حذف {{count}} إيداع غير قابل للوصول:",
   "commands.repo.gc.dryRunHint": "أعد التشغيل مع ‎--apply‎ لحذفها.",
   "commands.repo.gc.nothing": "لا شيء لجمعه على {{machine}}: كل إيداع قابل للوصول",
-  "commands.repo.gc.started": "{{started}} من أصل {{total}} عملية حذف قيد التشغيل كمهام؛ يعرضها الأمر rdc job list.",
+  "commands.repo.gc.started": "{{started}} من أصل {{total}} عملية حذف قيد التشغيل كمهام؛ تابعها باستخدام rdc job list.",
   "commands.repo.gpu.description": "يمنح مستودعًا جهاز CDI (مثل nvidia.com/gpu=all) كي تتمكن حاوياته من طلبه، أو يسحبه مجددًا. الجهاز هو من يفرض التصريح؛ والتصريح الحصري يحجز الجهاز لمستودع واحد.",
   "commands.repo.gpu.descriptionShort": "منح مستودع أجهزة GPU أو سحبها منه",
   "commands.repo.gpu.deviceOption": "اسم جهاز CDI الكامل (مثل nvidia.com/gpu=all)",

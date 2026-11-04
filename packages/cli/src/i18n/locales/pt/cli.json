@@ -1955,7 +1955,7 @@
         "dryRunHeader": "{{count}} commit(s) inalcançável(eis) seria(m) excluído(s):",
         "dryRunHint": "Execute novamente com --apply para excluí-los.",
         "nothing": "Nada a coletar em {{machine}}: todos os commits são alcançáveis",
-        "started": "{{started}} de {{total}} exclusões estão em execução como jobs; rdc job list as mostra."
+        "started": "{{started}} de {{total}} exclusões estão em execução como jobs; acompanhe-as com rdc job list."
       },
       "list": {
         "completed": "Listagem concluída",

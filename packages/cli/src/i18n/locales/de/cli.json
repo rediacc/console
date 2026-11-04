@@ -1955,7 +1955,7 @@
         "dryRunHeader": "{{count}} unerreichbare(r) Commit(s) würden gelöscht:",
         "dryRunHint": "Mit --apply erneut ausführen, um sie zu löschen.",
         "nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar",
-        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; rdc job list zeigt sie an."
+        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; verfolgen lassen sie sich mit rdc job list."
       },
       "list": {
         "completed": "Auflistung abgeschlossen",

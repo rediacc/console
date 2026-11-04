@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "Недостижимых коммитов к удалению: {{count}}:",
   "commands.repo.gc.dryRunHint": "Запустите повторно с --apply, чтобы удалить их.",
   "commands.repo.gc.nothing": "Нечего собирать на {{machine}}: все коммиты достижимы",
-  "commands.repo.gc.started": "{{started}} из {{total}} удалений выполняются как задания; rdc job list их показывает.",
+  "commands.repo.gc.started": "{{started}} из {{total}} удалений выполняются как задания; следить за ними можно командой rdc job list.",
   "commands.repo.gpu.description": "Выдаёт репозиторию CDI-устройство (например, nvidia.com/gpu=all), чтобы его контейнеры могли его запрашивать, или снова отзывает его. Выдачу применяет машина; эксклюзивная выдача резервирует устройство за одним репозиторием.",
   "commands.repo.gpu.descriptionShort": "Выдать репозиторию GPU-устройства или отозвать их",
   "commands.repo.gpu.deviceOption": "Полное имя CDI-устройства (например, nvidia.com/gpu=all)",

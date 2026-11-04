@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "{{count}} commit(s) inalcançável(eis) seria(m) excluído(s):",
   "commands.repo.gc.dryRunHint": "Execute novamente com --apply para excluí-los.",
   "commands.repo.gc.nothing": "Nada a coletar em {{machine}}: todos os commits são alcançáveis",
-  "commands.repo.gc.started": "{{started}} de {{total}} exclusões estão em execução como jobs; rdc job list as mostra.",
+  "commands.repo.gc.started": "{{started}} de {{total}} exclusões estão em execução como jobs; acompanhe-as com rdc job list.",
   "commands.repo.gpu.description": "Concede a um repositório um dispositivo CDI (por exemplo nvidia.com/gpu=all) para que os seus contentores o possam pedir, ou revoga-o de novo. A máquina impõe a concessão; uma concessão exclusiva reserva o dispositivo para um único repositório.",
   "commands.repo.gpu.descriptionShort": "Conceder ou revogar dispositivos GPU a um repositório",
   "commands.repo.gpu.deviceOption": "Nome CDI completo do dispositivo (p. ex. nvidia.com/gpu=all)",

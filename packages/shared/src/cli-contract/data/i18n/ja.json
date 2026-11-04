@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "到達不能なコミット {{count}} 件が削除されます:",
   "commands.repo.gc.dryRunHint": "削除するには --apply を付けて再実行してください。",
   "commands.repo.gc.nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です",
-  "commands.repo.gc.started": "{{total}} 件の削除のうち {{started}} 件がジョブとして実行中です。rdc job list で確認できます。",
+  "commands.repo.gc.started": "{{total}} 件の削除のうち {{started}} 件がジョブとして実行中です。進行状況は rdc job list で確認できます。",
   "commands.repo.gpu.description": "リポジトリに CDI デバイス (例: nvidia.com/gpu=all) を付与し、そのコンテナが要求できるようにします。取り消すこともできます。付与はマシンが強制し、排他付与はデバイスを 1 つのリポジトリ専用にします。",
   "commands.repo.gpu.descriptionShort": "リポジトリに GPU デバイスを付与または取り消す",
   "commands.repo.gpu.deviceOption": "完全修飾の CDI デバイス名 (例: nvidia.com/gpu=all)",

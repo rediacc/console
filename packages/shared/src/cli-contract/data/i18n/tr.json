@@ -1474,7 +1474,7 @@
   "commands.repo.gc.dryRunHeader": "{{count}} erişilemez commit silinecek:",
   "commands.repo.gc.dryRunHint": "Bunları silmek için --apply ile yeniden çalıştırın.",
   "commands.repo.gc.nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir",
-  "commands.repo.gc.started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; rdc job list bunları gösterir.",
+  "commands.repo.gc.started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; takip için rdc job list çalıştırın.",
   "commands.repo.gpu.description": "Bir depoya CDI cihazı verir (örneğin nvidia.com/gpu=all); böylece konteynerleri onu isteyebilir. İzni geri de alabilir. İzni makine uygular; özel izin cihazı tek bir depoya ayırır.",
   "commands.repo.gpu.descriptionShort": "Bir depoya GPU cihazı ver veya geri al",
   "commands.repo.gpu.deviceOption": "Tam nitelikli CDI cihaz adı (örn. nvidia.com/gpu=all)",
