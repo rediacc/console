@@ -476,10 +476,10 @@ async function tryDispatch(
   }
 }
 
-/** A teardown phase still running leaves a warning, so the failure that started the teardown is the one reported; any other error from the teardown propagates. */
+/** A teardown that did not finish, still running or failed, leaves a warning, so the failure that started the teardown is the one reported. */
 function warnPendingTeardown(err: unknown): void {
-  if (!(err instanceof ClusterPhasePendingError)) throw err;
-  outputService.warn(`  teardown not finished: ${err.message}`);
+  const detail = err instanceof ClusterPhasePendingError ? err.message : String(err);
+  outputService.warn(`  teardown not finished: ${detail}`);
 }
 
 export interface MigrateClusterOptions {
