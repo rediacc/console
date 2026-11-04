@@ -1877,3 +1877,39 @@ def test_leases_from_inside_a_lease_reads_the_main_checkout_and_gc_land_name_it(
         assert "not a main checkout" in refused.stderr
         assert str(repo.root) in refused.stderr, refused.stderr
     assert snapshot(tree) == before
+
+
+def test_lease_seed_refuses_an_e2e_directory_that_lists_nothing(repo):
+    """VACUOUS: an e2e directory without one entry is a wrong path, and the seed names it instead of copying nothing."""
+    (repo.root / "packages" / "e2e-tests" / ".env").unlink()
+    result = run_lease(repo.root, "--name", "empty")
+    assert result.returncode == 1
+    assert "VACUOUS" in result.stderr
+    assert "lists no entry at all" in result.stderr
+    assert result.stdout == ""
+    assert holder_names(repo) == []
+
+
+@pytest.mark.parametrize(
+    ("shared_dirty", "dist"),
+    [(False, "live\n"), (True, "built\n")],
+    ids=["clean-shared-copies-the-live-dist", "dirty-shared-rebuilds-in-the-lease"],
+)
+def test_lease_seed_dist_of_a_dependant_follows_the_dirt_of_shared(tmp_path, shared_dirty, dist):
+    """`packages/provisioning` is clean in both runs; only the dirt of `packages/shared` decides whether its dist is copied or built."""
+    repo = make_repo(tmp_path.resolve())
+    package = repo.root / "packages" / "provisioning"
+    write_json(
+        package / "package.json",
+        {"name": "@x/provisioning", "version": "1.0.0", "scripts": {"build": "node build.js"}},
+    )
+    spike.write(package / "build.js", BUILD_JS)
+    spike.commit_all(repo.root, "console: provisioning")
+    spike.write(package / "dist" / "built.txt", "live\n")
+    if shared_dirty:
+        spike.write(repo.root / "packages" / "shared" / "index.js", "module.exports = 'dirty';\n")
+    result = run_lease(repo.root, "--name", "dist")
+    assert result.returncode == 0, result.stderr
+    tree = pathlib.Path(result.stdout.splitlines()[-1])
+    built = tree / "packages" / "provisioning" / "dist" / "built.txt"
+    assert built.read_text(encoding="utf-8") == dist

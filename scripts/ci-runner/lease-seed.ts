@@ -49,7 +49,7 @@ function linkCaches(lease: string, live: string): void {
   }
 }
 
-/** A live `dist` built from dirty source would judge the wrong code, so it is copied only from a clean package. A copy, not a hard link, because a build in the lease writes in place. */
+/** A live `dist` built from dirty source would judge the wrong code, so it is copied only when both the package and `packages/shared`, which its dist was built against, are clean. A copy, not a hard link, because a build in the lease writes in place. */
 function seedDist(lease: string, live: string, pkg: string): string {
   const manifest = path.join(lease, pkg, 'package.json');
   if (!fs.existsSync(manifest)) return `${pkg}: not in this commit`;
@@ -73,7 +73,7 @@ function copyEnvFiles(lease: string, live: string): void {
   const source = path.join(live, E2E);
   if (!fs.existsSync(source)) return;
   const entries = fs.readdirSync(source);
-  // Few `.env*` files is normal; an empty package directory means the path is wrong, so the copy would pass with nothing read.
+  // Few `.env*` files is normal, and a directory with only other files passes. A directory that lists nothing at all means the path is wrong, so the copy would pass with nothing read.
   if (entries.length === 0) throw new Error(`VACUOUS: ${source} lists no entry at all`);
   for (const name of entries) {
     if (!name.startsWith('.env')) continue;

@@ -268,7 +268,7 @@ DRILL_LEG_EXEMPT = {
         ),
         "t": (
             "BLOCKER: leg t drives session expiry through real renet (`--renet --vm`) and the "
-            "gateway's session-TTL seam; the CI drill job has no ops VM, so the leg is opt-in"
+            "gateway's session-TTL seam; the CI drill job has no ops VM, so the leg is opt-in (`--legs t`) and runs by hand"
         ),
         "u": (
             "BLOCKER: leg u kills a real renet run and checks the reconcile (`--renet --vm`); "
