@@ -1397,7 +1397,7 @@ test.describe
       });
 
       test('E2c. --read-bwlimit 8M on a 256 MiB image takes at least 30 s', async () => {
-        // E2a hashed the first image under the cap; a fresh repo of the same size is the clean measurement.
+        // E2a ran its snapshot under the cap; a fresh repo of the same size is the clean measurement.
         const name = `${CAP_NAME}-b`;
         cleanup.push(async () => {
           await cli.run(['repo', 'delete', name, '-y']);
@@ -1470,10 +1470,16 @@ test.describe
         expect(down.code, `repo down: ${bothChannels(down).slice(-400)}`).toBe(0);
         const guid = repoIdentity(cli, IMG_NAME).guid;
         const machineSha = await imageSha(w1, guid);
-        const file = execFileSync('find', [dir, '-name', `${IMG_NAME}.*.img`, '-type', 'f'], {
+        const found = execFileSync('find', [dir, '-name', `${IMG_NAME}.*.img`, '-type', 'f'], {
           encoding: 'utf8',
-        }).trim();
-        expect(file, `no ${IMG_NAME}.*.img under ${dir}`).not.toBe('');
+        })
+          .split('\n')
+          .filter(Boolean);
+        expect(
+          found,
+          `expected exactly one ${IMG_NAME}.*.img under ${dir}, found: ${found.join(', ')}`
+        ).toHaveLength(1);
+        const file = found[0];
         expect(await sha256OfFile(file), 'the downloaded file differs from the machine image').toBe(
           machineSha
         );
@@ -1504,9 +1510,12 @@ test.describe
         ]);
         const exit = new Promise((resolve) => child.on('close', resolve));
         await new Promise((r) => setTimeout(r, 10_000));
-        await w1.executeViaBridge(`sudo pkill -9 -f 'renet backup export'`);
+        // The bracketed first letter keeps the pattern from matching the shell that runs pkill.
+        await w1.executeViaBridge(`sudo pkill -9 -f '[r]enet backup export'`);
         child.kill('SIGKILL');
         await exit;
+        const alive = await w1.executeViaBridge(`pgrep -f '[r]enet backup export' || true`);
+        expect(alive.stdout.trim(), 'renet backup export survived the kill -9').toBe('');
         expect(
           (await snapshotDirs()).length,
           'killing export left no stale .snapshot-* to prune'
@@ -1528,7 +1537,9 @@ test.describe
         const lock = await w1.executeViaBridge(
           `sudo test -e "${lockPath}" && echo kept || echo gone`
         );
-        await w1.executeViaBridge(`sudo pkill -f 'flock -x ${lockPath}'; sudo rm -f "${lockPath}"`);
+        await w1.executeViaBridge(
+          `sudo pkill -f '[f]lock -x ${lockPath}'; sudo rm -f "${lockPath}"`
+        );
         expect(lock.stdout.trim(), 'prune deleted a .lock file that a process still held').toBe(
           'kept'
         );

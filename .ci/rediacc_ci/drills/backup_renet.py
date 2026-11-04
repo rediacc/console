@@ -386,8 +386,8 @@ class RenetLegs:
         trickle = max(cell_bytes // TRICKLE_SECONDS, 1)
         r.run_vm(mutation_command(r.datastore, self.src, cell_bytes))
         before = self.b.stored_bytes()
-        self.set_session_ttl(ttl_ms)
         try:
+            self.set_session_ttl(ttl_ms)
             doc = r._json_result(
                 r.run_vm(
                     "sudo -n renet backup snapshot --datastore %s --repo %s --cell-bytes %s --bwlimit %d"

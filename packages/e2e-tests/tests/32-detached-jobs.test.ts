@@ -120,6 +120,13 @@ test.describe
       expect(ha.network_id, 'first start allocated no network id').toBeGreaterThan(0);
       expect(hb.network_id, 'second start allocated no network id').toBeGreaterThan(0);
       expect(ha.network_id, 'both starts got the same network id').not.toBe(hb.network_id);
+      // Machine state: each job's spool dir holds the id its start reported.
+      for (const h of [ha, hb]) {
+        const rec = await w.executeViaBridge(
+          `sudo find / -path '*${h.job_id}/network_id' -exec cat {} \\; 2>/dev/null`
+        );
+        expect(rec.stdout.trim(), `spool network_id of ${h.job_id}`).toBe(String(h.network_id));
+      }
     });
 
     test('4. job gc --older-than 0 leaves loaded units equal to live jobs', async () => {

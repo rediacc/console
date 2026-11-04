@@ -157,14 +157,18 @@ test.describe
     let runner: RenetFunctionsTestRunner;
     let controlSeconds = 0;
 
+    // A distinct destination per push keeps the second push a full transfer, never an incremental one.
+    const cappedDest = e2eRepoGuid();
+
     const timedPush = async (
-      extra: string
+      extra: string,
+      dest = guid
     ): Promise<{ seconds: number; code: number; out: string }> => {
       const started = Date.now();
       const result = await runner.executeViaBridge(
         `sudo renet backup push --name "${guid}" --datastore "${DEFAULT_DATASTORE_PATH}"` +
           ` --target machine --dest-host "${DEFAULT_WORKER_2_IP}" --dest-path "${DEFAULT_DATASTORE_PATH}"` +
-          ` --dest "${guid}" --force${extra}`,
+          ` --dest "${dest}" --force${extra}`,
         600_000
       );
       return {
@@ -203,6 +207,9 @@ test.describe
       await RenetFunctionsTestRunner.forWorker(2)
         .repositoryRm(guid, DEFAULT_DATASTORE_PATH)
         .catch(() => undefined);
+      await RenetFunctionsTestRunner.forWorker(2)
+        .repositoryRm(cappedDest, DEFAULT_DATASTORE_PATH)
+        .catch(() => undefined);
     });
 
     test('control: the unlimited push finishes, and is timed', async () => {
@@ -212,7 +219,7 @@ test.describe
     });
 
     test('--bwlimit 2M stretches the same push to at least 25 s, and past the control', async () => {
-      const r = await timedPush(' --bwlimit 2M');
+      const r = await timedPush(' --bwlimit 2M', cappedDest);
       expect(r.code, `capped push: ${r.out}`).toBe(0);
       expect(r.seconds, `capped push took ${r.seconds}s`).toBeGreaterThanOrEqual(CAP_FLOOR_S);
       expect(r.seconds, `capped ${r.seconds}s vs control ${controlSeconds}s`).toBeGreaterThan(
