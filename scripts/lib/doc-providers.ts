@@ -380,7 +380,7 @@ const wiredHooks = (root: string): WiredHook[] => {
         // seed the closure without its single entry point and report all 64 live guards as dead code. Captures repo-relative now, so a key names a real path from the repo root.
         // `run.sh` is the other way in: the WorktreeCreate and WorktreeRemove entries reach the lease tool through it, and they sat out of this table until 2026-11-04.
         for (const hit of (h.command ?? '').matchAll(
-          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+|(?<=\$CLAUDE_PROJECT_DIR\/)run\.sh/g
+          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+|(?<=\$\{?CLAUDE_PROJECT_DIR\}?\/|(?<![\w./])\.\/)run\.sh/g
         )) {
           out.push({ event, matcher: m.matcher ?? '(any)', file: hit[0] ?? '' });
         }
@@ -2327,14 +2327,30 @@ export const generatedArtifactsProvider: Provider = {
 
 const AGENT_REFERENCE_PAGE_RE = /^docs\/agent-reference\/[^/]+\.md$/;
 
-/** The first level-one heading outside a code fence, or an empty string when the page has none. */
+/** The first level-one heading outside a code fence, or an empty string when the page has none. A fence closes only on its own marker character, at least as long as its opener (CommonMark), so a ~~~ block holding a ``` line stays fenced. */
 const firstHeading = (text: string): string => {
-  let fenced = false;
+  let fence = '';
   for (const line of text.split('\n')) {
-    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
-    else if (!fenced && line.startsWith('# ')) return line.slice(2).trim();
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    const found = marker?.[1] ?? '';
+    if (fence === '') {
+      if (found !== '') fence = found;
+      else if (line.startsWith('# ')) return line.slice(2).trim();
+    } else if (
+      found[0] === fence[0] &&
+      found.length >= fence.length &&
+      marker?.[2]?.trim() === ''
+    ) {
+      fence = '';
+    }
   }
   return '';
+};
+
+/** A page title as a table cell: a pipe is escaped so it cannot split the row, and a page with no heading outside a fence says so rather than showing a blank. */
+const titleCell = (title: string): string => {
+  if (title === '') return '(no title)';
+  return title.replaceAll('|', '\\|');
 };
 
 /**
@@ -2352,7 +2368,7 @@ export const agentReferenceProvider: Provider = {
       .filter((f) => AGENT_REFERENCE_PAGE_RE.test(f))
       .map((f) => ({
         key: f,
-        cells: [`\`${f}\``, firstHeading(fs.readFileSync(path.join(root, f), 'utf-8'))],
+        cells: [`\`${f}\``, titleCell(firstHeading(fs.readFileSync(path.join(root, f), 'utf-8')))],
       }));
   },
   missing: (root) =>
