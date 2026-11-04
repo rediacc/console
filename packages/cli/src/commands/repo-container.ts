@@ -31,6 +31,8 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import type { ExecuteOptions, ExecuteResult } from '../services/executor/types.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -56,6 +58,26 @@ function resolveContainer(
   void machineName;
   void kubeCluster;
   return undefined;
+}
+
+/**
+ * Run the call as the verb's one job, or as a plain executor call when the form owns the terminal (`stream`). A job
+ * handed back as a ticket (`--background`, the proxy window) returns undefined after setting the exit code the
+ * executor reported; otherwise the finished result is returned, with the remote exit code in it.
+ */
+async function runBoundedOrStream(
+  verb: string,
+  call: ExecuteOptions,
+  stream: boolean
+): Promise<ExecuteResult | undefined> {
+  if (stream) return getExecutor().execute(call);
+  const outcome = await runCommandJob(verb, call, []);
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return undefined;
+  }
+  return outcome.result;
 }
 
 export function registerRepoContainerCommands(repo: Command): void {
@@ -92,7 +114,7 @@ export function registerRepoContainerCommands(repo: Command): void {
             );
           }
 
-          const result = await getExecutor().execute({
+          const call: ExecuteOptions = {
             functionName: 'container_logs',
             machineName,
             // #74: the container lives in the repo's compose project, which renet resolves through the repo's mount, the machine default is not it.
@@ -107,7 +129,10 @@ export function registerRepoContainerCommands(repo: Command): void {
             debug: options.debug,
             passthroughOutput: true,
             ...(kubeCluster !== undefined && { kubeCluster }),
-          });
+          };
+          // The `-f` form streams to the terminal until interrupted (section 24), so it stays a plain call; the bounded form is one read job with no client follow-up.
+          const result = await runBoundedOrStream('repo logs', call, options.follow === true);
+          if (!result) return;
           if (!result.success) {
             throw new Error(result.error ?? t('errors.container.logsFailed'));
           }
@@ -143,7 +168,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           await assertCommandPolicy(CMD.REPO_EXEC, repoKey);
           const container = resolveContainer(repoKey, machineName, kubeCluster, options.container);
 
-          const result = await getExecutor().execute({
+          const call: ExecuteOptions = {
             functionName: 'container_exec',
             machineName,
             // #74: same as container_logs, the exec target is resolved through the repo's mount, so the recorded datastore has to travel.
@@ -159,7 +184,10 @@ export function registerRepoContainerCommands(repo: Command): void {
             debug: options.debug,
             passthroughOutput: true,
             ...(kubeCluster !== undefined && { kubeCluster }),
-          });
+          };
+          // The interactive form (`-i`, tty) needs the local terminal (section 24) and stays a plain call; every other exec is one job whose exit code is the remote command's.
+          const result = await runBoundedOrStream('repo exec', call, options.interactive === true);
+          if (!result) return;
 
           // The remote exit code IS the result (§1 deviation). Anything else makes `repo exec <ref> -- test -f /x` a command whose answer cannot be read.
           if (!result.success) {

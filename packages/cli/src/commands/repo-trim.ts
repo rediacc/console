@@ -2,13 +2,14 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
+import { settleRepoJob } from './repo-job-outcome.js';
 
 /** Mirror of renet `trim.RepoResult` (Go json tags). */
 interface TrimRepoResult {
@@ -101,24 +102,28 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
 
   outputService.info(t('commands.repo.trim.starting', { machine: machineName }));
 
-  const result = await getExecutor().execute({
-    functionName: 'repository_trim',
-    machineName,
-    ...(kubeCluster !== undefined && { kubeCluster }),
-    datastore,
-    params,
-    debug: options.debug,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    renderLocalExecutionFailure(result, t('commands.repo.trim.failed'));
-    return;
-  }
-
-  const parsed = parseDatastorePruneOutput(result.stdout ?? '') as TrimResult;
-  renderTrimResult(parsed);
+  // One job; the table is its success step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'repo trim',
+    {
+      functionName: 'repository_trim',
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
+      datastore,
+      params,
+      debug: options.debug,
+      captureOutput: true,
+    },
+    [planStep('renderRepoTrim', { reportOnly: options.reportOnly === true })]
+  );
+  settleRepoJob('repo trim', outcome, t('commands.repo.trim.failed'));
 }
+
+/** The `renderRepoTrim` step: print the result the trim job produced. */
+bindStepHandler('renderRepoTrim', ({ output }) => {
+  renderTrimResult(parseDatastorePruneOutput(output ?? '') as TrimResult);
+  return Promise.resolve();
+});
 
 function renderTrimResult(parsed: TrimResult | null | undefined): void {
   if (!parsed) {

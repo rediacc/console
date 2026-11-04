@@ -5,6 +5,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
@@ -92,6 +93,8 @@ async function machineObjects(
       datastore,
       params: {},
       captureOutput: true,
+      // The deletion set below is computed from this listing, so `--background` leaves the read attached: a ticket handed back early would read as an empty machine and report every ref dangling.
+      probe: true,
     });
     if (!result.success || !result.stdout) continue;
     try {
@@ -139,25 +142,42 @@ async function handleGc(options: {
       return;
     }
 
+    // The set is computed on the client from the config, so there is no single compound job yet (J0b): each deletion is one `repository_delete` job of the verb, and a deletion handed back as a ticket is counted as started, not deleted.
     let deleted = 0;
+    let started = 0;
     for (const c of candidates) {
       const guid = c.config.repositoryGuid;
-      const result = await getExecutor().execute({
-        functionName: 'repository_delete',
-        machineName: options.machine,
-        // #74: the candidate's OWN recorded datastore, not the machine default, gc deletes objects it found by enumerating those same mounts above.
-        datastore: await recordedDatastoreMount(c.name),
-        params: { repository: guid },
-        debug: options.debug,
-      });
-      if (result.success) {
+      const outcome = await runCommandJob(
+        'repo gc',
+        {
+          functionName: 'repository_delete',
+          machineName: options.machine,
+          // #74: the candidate's OWN recorded datastore, not the machine default, gc deletes objects it found by enumerating those same mounts above.
+          datastore: await recordedDatastoreMount(c.name),
+          params: { repository: guid },
+          debug: options.debug,
+        },
+        []
+      );
+      if (outcome.kind === 'pending') {
+        started++;
+        const code = pendingExitCode(outcome);
+        if (code !== undefined) setExitCode(code);
+      } else if (outcome.result.success) {
         deleted++;
         outputService.success(t('commands.repo.gc.deleted', { commit: guid.slice(0, 12) }));
       } else {
         outputService.error(t('commands.repo.gc.deleteFailed', { commit: guid.slice(0, 12) }));
       }
     }
-    outputService.success(t('commands.repo.gc.applied', { deleted, total: candidates.length }));
+    if (started > 0) {
+      outputService.info(t('commands.repo.gc.started', { started, total: candidates.length }));
+    }
+    if (started < candidates.length) {
+      outputService.success(
+        t('commands.repo.gc.applied', { deleted, total: candidates.length - started })
+      );
+    }
   } catch (error) {
     handleError(error);
   }

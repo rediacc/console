@@ -4,8 +4,10 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import { writeStdout } from '../services/core/request-context.js';
-import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
+import { optStr } from '../services/jobs/steps-support.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -272,25 +274,62 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
     })
   );
 
-  const result: ExecuteResult = await getExecutor().execute({
-    functionName: 'repository_diff',
-    machineName,
-    ...(kubeCluster !== undefined && { kubeCluster }),
-    // #74: both sides of the diff are GUIDs inside this family, so the family's recorded placement is the datastore renet must read them from.
-    datastore: await recordedDatastoreMount(repoKey),
-    params: { repository: repoKey, ...params },
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    // renderLocalExecutionFailure sets renet's own exit code (1 when it reported none).
-    renderLocalExecutionFailure(result, result.error ?? t('commands.repo.diff.failed'));
+  // The render is the job's step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'repo diff',
+    {
+      functionName: 'repository_diff',
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
+      // #74: both sides of the diff are GUIDs inside this family, so the family's recorded placement is the datastore renet must read them from.
+      datastore: await recordedDatastoreMount(repoKey),
+      params: { repository: repoKey, ...params },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+      captureOutput: true,
+    },
+    [planStep('renderRepoDiff', { mode: modeName(options), json: asJson, path: modePath(mode) })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
     return;
   }
-  renderResult(mode, result.stdout ?? '', asJson);
+  if (!outcome.result.success) {
+    // renderLocalExecutionFailure sets renet's own exit code (1 when it reported none).
+    renderLocalExecutionFailure(
+      outcome.result,
+      outcome.result.error ?? t('commands.repo.diff.failed')
+    );
+  }
 }
+
+/** The output form the render step reproduces from its params. */
+function modeName(options: DiffOptions): string {
+  if (options.content !== undefined) return 'content';
+  if (options.nameOnly) return 'name-only';
+  if (options.stat) return 'stat';
+  return 'name-status';
+}
+
+function modePath(mode: DiffMode): string {
+  return mode.kind === 'content' ? mode.path : '';
+}
+
+bindStepHandler('renderRepoDiff', ({ output, params }) => {
+  const name = optStr(params, 'mode') ?? 'name-status';
+  const asJson = params.json === true;
+  const path = optStr(params, 'path');
+  const mode: DiffMode =
+    name === 'content' && path !== undefined
+      ? { kind: 'content', path }
+      : {
+          kind: 'render',
+          render: pickRenderer({ nameOnly: name === 'name-only', stat: name === 'stat' }, asJson),
+        };
+  renderResult(mode, output ?? '', asJson);
+  return Promise.resolve();
+});
 
 /** Parse the renet JSON payload and render it per the selected mode. */
 function renderResult(mode: DiffMode, stdout: string, asJson: boolean): void {

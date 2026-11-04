@@ -2,7 +2,9 @@ import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { setExitCode } from '../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -88,23 +90,32 @@ async function runPolicyFunction(
 ): Promise<void> {
   await assertMachineExists(target.machineName);
 
-  const result = await getExecutor().execute({
-    functionName,
-    machineName: target.machineName,
-    datastore: target.datastore,
-    params: target.params,
-    debug,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    renderLocalExecutionFailure(result, t('commands.repo.policy.failed'));
+  // The settings table is the job's step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    functionName === 'repository_policy_set' ? 'repo policy set' : 'repo policy get',
+    {
+      functionName,
+      machineName: target.machineName,
+      datastore: target.datastore,
+      params: target.params,
+      debug,
+      captureOutput: true,
+    },
+    [planStep('renderPolicyResult')]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
     return;
   }
-
-  const parsed = parseDatastorePruneOutput(result.stdout ?? '');
-  await renderPolicyResult(parsed);
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, t('commands.repo.policy.failed'));
+  }
 }
+
+bindStepHandler('renderPolicyResult', ({ output }) =>
+  renderPolicyResult(parseDatastorePruneOutput(output ?? ''))
+);
 
 interface PolicyFields {
   auto_grow?: boolean | null;

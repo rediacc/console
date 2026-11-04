@@ -30,6 +30,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     applyDefaults: () => Promise.resolve({ team: 't' }),
     resolveDestructiveTarget: (key: string) =>
       Promise.resolve({ key, config: { repositoryGuid: 'g1' } }),
+    getRepository: () => Promise.resolve({ repositoryGuid: 'g1' }),
   },
 }));
 vi.mock('../../services/config/network-id-discovery.js', () => ({
@@ -68,9 +69,39 @@ vi.mock('../../utils/errors.js', async (orig) => ({
   },
 }));
 
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Command } from 'commander';
+import { afterEach } from 'vitest';
 import { RemoteWriteFailedClosedError } from '../../adapters/remote-config-errors.js';
+import { setCommandJobDeps } from '../../services/jobs/command-job.js';
+import { TicketStore } from '../../services/jobs/ticket-store.js';
 import { registerRepoCreateDeleteCommands } from '../repo-create-delete.js';
+
+// The delete is one job: the settlement is its success step, so a failed settlement is the step's warning, not a throw.
+const warnings: string[] = [];
+let ticketDir: string;
+function installJob(): void {
+  ticketDir = mkdtempSync(join(tmpdir(), 'repo-delete-converge-'));
+  const store = new TicketStore('test', ticketDir);
+  setCommandJobDeps({
+    executor: () => ({ execute: resolve.exec }),
+    store: () => store,
+    stepDeps: () =>
+      Promise.resolve({
+        observer: { configName: 'test' },
+        warn: (text: string) => void warnings.push(text),
+        claim: ({ steps }) =>
+          Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
+      }),
+  });
+}
+afterEach(() => {
+  setCommandJobDeps();
+  rmSync(ticketDir, { recursive: true, force: true });
+  process.exitCode = 0;
+});
 
 const run = async (...args: string[]) => {
   const repo = new Command().exitOverride();
@@ -83,6 +114,8 @@ const base = { name: 'mautic', repoKey: 'mautic:readcap', machineName: 'hostinge
 describe('repo delete converges after a partial failure', () => {
   beforeEach(() => {
     failures.handled.length = 0;
+    warnings.length = 0;
+    installJob();
     settle.entry.mockReset().mockResolvedValue(undefined);
     settle.backups.mockReset().mockResolvedValue(undefined);
     settle.license.mockReset().mockResolvedValue(undefined);
@@ -97,15 +130,12 @@ describe('repo delete converges after a partial failure', () => {
     settle.entry.mockRejectedValue(
       new RemoteWriteFailedClosedError('rediacc', WK_ACCOUNT_DEFAULT_ORIGIN, new Error('down'))
     );
-    await expect(run('mautic:readcap', '-y')).rejects.toMatchObject({
-      code: 'NETWORK_ERROR',
-      exitCode: 6,
-      retryable: true,
-    });
+    await run('mautic:readcap', '-y');
     expect(resolve.exec).toHaveBeenCalledTimes(1);
-    const err = failures.handled[0] as Error;
-    expect(err.message).toContain('commands.repo.delete.configSaveFailed');
-    expect(err.message).toContain('rdc repo delete mautic:readcap -y');
+    expect(warnings[0]).toContain('commands.repo.delete.configSaveFailed');
+    expect(warnings[0]).toContain('rdc repo delete mautic:readcap -y');
+    // The step failed, so the command does not exit 0.
+    expect(process.exitCode).toBe(1);
     // The steps after the config save are deferred to the retry (see handleDeleteSuccess).
     expect(reconcile.fn).not.toHaveBeenCalled();
     expect(settle.backups).not.toHaveBeenCalled();

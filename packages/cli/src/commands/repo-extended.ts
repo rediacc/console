@@ -3,15 +3,16 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
+import { settleRepoJob } from './repo-job-outcome.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoPromoteCommand } from './repo-promote.js';
 import { registerRepoPruneCommand } from './repo-prune.js';
@@ -45,6 +46,7 @@ function requireMachine(machine: string | undefined): string {
 
 /** Execute a machine-level function (no repository context needed). */
 async function executeMachineFunction(
+  verb: string,
   functionName: string,
   options: { machine: string; debug?: boolean; skipRouterRestart?: boolean },
   messages: { starting: string; completed: string; failed: string }
@@ -52,18 +54,20 @@ async function executeMachineFunction(
   await assertMachineExists(options.machine);
   outputService.info(messages.starting);
 
-  const result = await getExecutor().execute({
-    functionName,
-    machineName: options.machine,
-    params: {},
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-  });
-
-  if (result.success) {
+  // One machine job and no client follow-up: the completed line is the only tail, printed once the job is seen to succeed.
+  const outcome = await runCommandJob(
+    verb,
+    {
+      functionName,
+      machineName: options.machine,
+      params: {},
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    },
+    []
+  );
+  if (settleRepoJob(verb, outcome, outcome.result.error ?? messages.failed)) {
     outputService.success(messages.completed);
-  } else {
-    renderLocalExecutionFailure(result, result.error ?? messages.failed);
   }
 }
 
@@ -87,25 +91,30 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
     t('commands.repo.admin.autostart.list.starting', { machine: options.machine })
   );
 
-  const result = await getExecutor().execute({
-    functionName: 'repository_autostart_list',
-    machineName: options.machine,
-    params: {},
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-    captureOutput: true,
-  });
+  // One read job; the table is its success step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'repo admin autostart list',
+    {
+      functionName: 'repository_autostart_list',
+      machineName: options.machine,
+      params: {},
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+      captureOutput: true,
+    },
+    [planStep('renderAutostartList', { machine: options.machine })]
+  );
+  settleRepoJob(
+    'repo admin autostart list',
+    outcome,
+    outcome.result.error ?? t('commands.repo.admin.autostart.list.failed')
+  );
+}
 
-  if (!result.success) {
-    renderLocalExecutionFailure(
-      result,
-      result.error ?? t('commands.repo.admin.autostart.list.failed')
-    );
-    return;
-  }
-
+/** The `renderAutostartList` step: print the payload the `repository_autostart_list` job produced. */
+bindStepHandler('renderAutostartList', async ({ output, params }) => {
   // renet relays a single JSON object with `[repository_autostart_list]` line prefixes, same shape the prune parser extracts.
-  const payload = parseDatastorePruneOutput(result.stdout ?? '') as AutostartListPayload;
+  const payload = parseDatastorePruneOutput(output ?? '') as AutostartListPayload;
   const format = getOutputFormat();
   if (format !== 'table') {
     outputService.print(payload, format);
@@ -121,7 +130,9 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
   }));
 
   if (rows.length === 0) {
-    outputService.info(t('commands.repo.admin.autostart.list.empty', { machine: options.machine }));
+    outputService.info(
+      t('commands.repo.admin.autostart.list.empty', { machine: String(params.machine) })
+    );
   } else {
     outputService.print(rows, 'table');
   }
@@ -131,7 +142,7 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
       enabled: payload.service_enabled ? 'yes' : 'no',
     })
   );
-}
+});
 
 /**
  * Register extended repo commands: fork, resize, expand, validate,
@@ -167,7 +178,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             { size: options.size },
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo resize', steps: [] },
+            },
             {
               starting: t('commands.repo.resize.starting', {
                 repository: ref,
@@ -210,7 +225,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             { size: options.size },
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo expand', steps: [] },
+            },
             {
               starting: t('commands.repo.expand.starting', {
                 repository: ref,
@@ -262,7 +281,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             {},
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo admin validate', steps: [] },
+            },
             {
               starting: t('commands.repo.admin.validate.starting', {
                 repository: ref,
@@ -309,7 +332,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               repoKey,
               machineName,
               {},
-              options,
+              { ...options, job: { verb: 'repo admin autostart enable', steps: [] } },
               {
                 starting: t('commands.repo.admin.autostart.enable.starting', {
                   repository: ref,
@@ -322,6 +345,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
           } else {
             const machine = requireMachine(options.machine);
             await executeMachineFunction(
+              'repo admin autostart enable',
               'repository_autostart_enable_all',
               { ...options, machine },
               {
@@ -363,7 +387,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               repoKey,
               machineName,
               {},
-              options,
+              { ...options, job: { verb: 'repo admin autostart disable', steps: [] } },
               {
                 starting: t('commands.repo.admin.autostart.disable.starting', {
                   repository: ref,
@@ -376,6 +400,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
           } else {
             const machine = requireMachine(options.machine);
             await executeMachineFunction(
+              'repo admin autostart disable',
               'repository_autostart_disable_all',
               { ...options, machine },
               {
@@ -436,7 +461,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             params,
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo admin ownership', steps: [] },
+            },
             {
               starting: t('commands.repo.admin.ownership.starting', {
                 repository: ref,
@@ -552,6 +581,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             {
               ...options,
               ...(resolved.kubeCluster !== undefined && { kubeCluster: resolved.kubeCluster }),
+              job: { verb: 'repo admin template apply', steps: [] },
             },
             {
               starting: t('commands.repo.admin.template.starting', {

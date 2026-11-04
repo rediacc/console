@@ -131,14 +131,14 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
     'recordCanary',
     'success',
     ['set', 'canary'],
-    () => import('../cluster/repo-release.js')
+    () => import('../../commands/repo-canary.js')
   ),
-  privateStep('forgetCanary', 'success', ['set'], () => import('../cluster/repo-release.js')),
+  privateStep('forgetCanary', 'success', ['set'], () => import('../../commands/repo-canary.js')),
   privateStep('printRepoCat', 'success', [], () => import('../../commands/repo-cat.js'), true),
   privateStep(
     'renderRepoDiff',
     'success',
-    ['mode', 'json'],
+    ['mode', 'json', 'path'],
     () => import('../../commands/repo-diff.js'),
     true
   ),
@@ -173,11 +173,17 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderRepoPrune',
     'success',
-    ['survey'],
+    ['label'],
     () => import('../../commands/repo-prune.js'),
     true
   ),
   privateStep('printRepoStatus', 'success', [], () => import('../../commands/repo.js'), true),
+  privateStep(
+    'settlePromote',
+    'success',
+    ['fork', 'grand', 'machine', 'backup'],
+    () => import('../../commands/repo-promote.js')
+  ),
   privateStep(
     'renderRepoTrim',
     'success',
@@ -199,14 +205,14 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderBackupBrowse',
     'success',
-    ['repo'],
+    ['repo', 'snapshot', 'limit'],
     () => import('../../commands/backup-storage.js'),
     true
   ),
   privateStep(
     'renderBackupList',
     'success',
-    ['machine'],
+    ['machine', 'ref'],
     () => import('../../commands/repo-backup-list.js'),
     true
   ),

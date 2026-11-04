@@ -318,7 +318,7 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-exclusive',
     timeout: '10m',
     box: 'J16',
-    steps: ['reconcileBackupSchedules'],
+    steps: ['settlePromote'],
   },
   'repo prune': {
     form: 'compound',

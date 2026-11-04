@@ -43,6 +43,29 @@ async function run(argv: string[]): Promise<void> {
   program.exitOverride();
   registerRepoGpuCommands(program.command('repo'));
   await program.parseAsync(['repo', 'gpu', ...argv], { from: 'user' });
+  await settleJobSteps();
+}
+
+/** The mirror is the job's `mirrorGpuGrants` step: run the planned steps the way a finished job owes them (success only). */
+async function settleJobSteps(): Promise<void> {
+  const call = mocks.executeRepoFunction.mock.calls.at(-1);
+  if (!call) return;
+  const result = (await mocks.executeRepoFunction.mock.results.at(-1)?.value) as {
+    success: boolean;
+    stdout?: string;
+  };
+  if (!result.success) return;
+  const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+  for (const step of call[4].job.steps as { name: string; params: Record<string, string> }[]) {
+    const handler = await resolveStepHandler(step.name);
+    await handler({
+      jobId: '',
+      machine: 'm1',
+      params: step.params,
+      state: 'succeeded',
+      output: result.stdout,
+    });
+  }
 }
 
 const GRANT_STDOUT = JSON.stringify({

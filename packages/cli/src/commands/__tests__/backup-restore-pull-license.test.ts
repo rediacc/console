@@ -67,7 +67,6 @@ vi.mock('../../utils/remote-resolve.js', () => ({
   resolveRemoteName: (name: string) => Promise.resolve({ type: mockPlaceType.current, name }),
 }));
 vi.mock('../repo-backup-list.js', () => ({
-  fetchBackupList: vi.fn().mockResolvedValue([]),
   renderBackupList: vi.fn(),
 }));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({

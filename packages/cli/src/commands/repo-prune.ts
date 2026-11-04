@@ -4,6 +4,8 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -14,6 +16,7 @@ import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
+import { settleRepoJob } from './repo-job-outcome.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** One class of the renet `repository_docker_prune` record (Go json tags). */
@@ -167,10 +170,23 @@ function confirmOffline(label: string, options: PruneOptions): Promise<boolean> 
   return askConfirm(t('commands.repo.prune.confirm', { repository: label }));
 }
 
+/**
+ * The `renderRepoPrune` step: print the record the ref form's prune job produced. The label is the repo key the job
+ * ran for; the machine-wide survey renders from its own phase and never reaches here.
+ */
+bindStepHandler('renderRepoPrune', ({ output, params }) => {
+  const label = params.label;
+  if (typeof label !== 'string' || label === '') {
+    return Promise.reject(new Error('step param "label" is missing'));
+  }
+  renderRecords([{ label, record: parseDatastorePruneOutput(output ?? '') as PruneRecord }], false);
+  return Promise.resolve();
+});
+
+/** One survey probe: a prune scan of one mounted repository, attached under `--background` because the survey reads its answer. */
 async function pruneOne(
   machineName: string,
   kubeCluster: string | undefined,
-  datastore: string | undefined,
   guid: string,
   options: PruneOptions
 ): Promise<PruneRecord | undefined> {
@@ -178,10 +194,10 @@ async function pruneOne(
     functionName: 'repository_docker_prune',
     machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
-    datastore,
     params: buildParams(guid, options),
     debug: options.debug,
     captureOutput: true,
+    probe: true,
   });
   if (!result.success) {
     renderLocalExecutionFailure(result, t('commands.repo.prune.failed'));
@@ -211,14 +227,21 @@ async function handleRefPrune(ref: string, options: PruneOptions): Promise<void>
       machine: resolved.machineName,
     })
   );
-  const record = await pruneOne(
-    resolved.machineName,
-    resolved.kubeCluster,
-    await recordedDatastoreMount(resolved.repoKey),
-    repo.repositoryGuid,
-    options
+  // One job; the table is its success step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'repo prune',
+    {
+      functionName: 'repository_docker_prune',
+      machineName: resolved.machineName,
+      ...(resolved.kubeCluster !== undefined && { kubeCluster: resolved.kubeCluster }),
+      datastore: await recordedDatastoreMount(resolved.repoKey),
+      params: buildParams(repo.repositoryGuid, options),
+      debug: options.debug,
+      captureOutput: true,
+    },
+    [planStep('renderRepoPrune', { label: resolved.repoKey })]
   );
-  if (record) renderRecords([{ label: resolved.repoKey, record }], false);
+  settleRepoJob('repo prune', outcome, t('commands.repo.prune.failed'));
 }
 
 /** Machine-wide dry-run survey: list the machine's repositories, then report each mounted one. */
@@ -234,6 +257,7 @@ async function handleMachineSurvey(options: PruneOptions): Promise<void> {
     params: {},
     debug: options.debug,
     captureOutput: true,
+    probe: true,
   });
   if (!listed.success) {
     renderLocalExecutionFailure(listed, t('commands.repo.prune.failed'));
@@ -250,7 +274,7 @@ async function handleMachineSurvey(options: PruneOptions): Promise<void> {
   for (const entry of mounted) {
     const guid = String(entry.name);
     const label = `${resolveName(guid, entry.repo_name as string | undefined).name} (${guid})`;
-    const record = await pruneOne(target.machineName, target.kubeCluster, undefined, guid, options);
+    const record = await pruneOne(target.machineName, target.kubeCluster, guid, options);
     if (record) entries.push({ label, record });
   }
   renderRecords(entries, true);

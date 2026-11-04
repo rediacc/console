@@ -234,6 +234,40 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
       };
     },
   },
+  // Client-driven later phases of the datastore verbs (commands/datastore.ts): each makes machine calls that consume the job's output or follow it.
+  privateStep(
+    'relocateDatastore',
+    'success',
+    ['datastore', 'to', 'detach', 'writes', 'cowSize', 'force', 'noAuto', 'lastHolder', 'debug'],
+    () => import('../../commands/datastore.js'),
+    true
+  ),
+  privateStep(
+    'attachForkedDatastore',
+    'success',
+    ['datastore', 'to', 'writes', 'cowSize', 'debug'],
+    () => import('../../commands/datastore.js')
+  ),
+  privateStep(
+    'deleteDatastoreTail',
+    'success',
+    ['datastore', 'debug'],
+    () => import('../../commands/datastore.js')
+  ),
+  // The second phase of `cluster join` and `cluster evict` (services/cluster/cluster-membership.ts).
+  privateStep(
+    'joinClusterTail',
+    'success',
+    ['member', 'cluster', 'pool', 'startedAt', 'debug'],
+    () => import('../cluster/cluster-membership.js'),
+    true
+  ),
+  privateStep(
+    'evictClusterTail',
+    'success',
+    ['member', 'cluster', 'startedAt', 'debug'],
+    () => import('../cluster/cluster-membership.js')
+  ),
   {
     // `cluster create` (KVM ids) and `cluster scale` (pool counts).
     name: 'updateClusterRecord',
@@ -316,9 +350,8 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'reportClusterSnapshot',
     'success',
-    ['cluster', 'snapshot'],
-    () => import('../cluster/cluster-snapshot.js'),
-    true
+    ['cluster', 'snapshot', 'inInstant', 'outsideInstant'],
+    () => import('../cluster/cluster-snapshot.js')
   ),
 
   // J20: subscription verbs.

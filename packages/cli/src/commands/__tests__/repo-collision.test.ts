@@ -33,10 +33,18 @@ vi.mock('../../services/cluster/repo-replicate.js', () => ({
 }));
 vi.mock('../../services/cluster/repo-release.js', () => ({
   canarySetNameFor: (r: string) => `${r}-canary`,
-  createCanary: vi.fn(() => Promise.resolve()),
-  getCanaryForRepo: vi.fn(() => Promise.resolve({ repo: 'shop' })),
-  removeCanary: vi.fn(() => Promise.resolve()),
-  setCanaryWeight: vi.fn(() => Promise.resolve()),
+  getCanaryForRepo: vi.fn(() => Promise.resolve({ repo: 'shop', cluster: 'prod' })),
+  listCanaries: vi.fn(() => Promise.resolve({})),
+  renderCanaryOverlay: vi.fn(() => ''),
+}));
+vi.mock('../../services/cluster/cluster-target.js', () => ({
+  resolveExecutionTarget: vi.fn(() => Promise.resolve({ machineName: 'ctl' })),
+}));
+vi.mock('../../services/cluster/cluster-kube.js', () => ({ controlDatastoreMount: () => '/m' }));
+// The canary verbs run their main call as one job: the verb a call carries is the routing proof.
+vi.mock('../../services/jobs/command-job.js', () => ({
+  runCommandJob: vi.fn(() => Promise.resolve({ kind: 'finished', result: { success: true } })),
+  pendingExitCode: () => undefined,
 }));
 vi.mock('../../utils/command-policy.js', () => ({
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
@@ -55,8 +63,8 @@ vi.mock('../../utils/repo-target.js', () => ({
   ),
 }));
 
-import { removeCanary, setCanaryWeight } from '../../services/cluster/repo-release.js';
 import { refreshReplicaSet, removeReplicaSet } from '../../services/cluster/repo-replicate-ops.js';
+import { runCommandJob } from '../../services/jobs/command-job.js';
 import { registerRepoCanaryCommands } from '../repo-canary.js';
 import { registerRepoReplicateCommands } from '../repo-replicate.js';
 
@@ -95,12 +103,20 @@ describe('repo replicate / canary: keyed by the repo ref (spec §4.4)', () => {
     await repoProgram().parseAsync(['repo', 'canary', 'weight', 'shop', '--weight', '50'], {
       from: 'user',
     });
-    expect(setCanaryWeight).toHaveBeenCalledWith('shop', 50, undefined);
+    expect(runCommandJob).toHaveBeenCalledWith(
+      'repo canary weight',
+      expect.objectContaining({ functionName: 'datastore_snapshot_create' }),
+      expect.anything()
+    );
   });
 
   it('routes `repo canary remove <ref>` to the child', async () => {
     await repoProgram().parseAsync(['repo', 'canary', 'remove', 'shop'], { from: 'user' });
-    expect(removeCanary).toHaveBeenCalledWith('shop', undefined);
+    expect(runCommandJob).toHaveBeenCalledWith(
+      'repo canary remove',
+      expect.objectContaining({ functionName: 'kube_delete' }),
+      expect.anything()
+    );
   });
 
   it('neither family carries an identity option any more (--repo/--name/--set are gone)', () => {

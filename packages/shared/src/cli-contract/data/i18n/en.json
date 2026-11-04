@@ -1472,6 +1472,7 @@
   "commands.repo.gc.dryRunHeader": "{{count}} unreachable commit(s) would be deleted:",
   "commands.repo.gc.dryRunHint": "Re-run with --apply to delete them.",
   "commands.repo.gc.nothing": "Nothing to collect on {{machine}}: every commit is reachable",
+  "commands.repo.gc.started": "{{started}} of {{total}} deletion(s) are running as jobs; rdc job list shows them.",
   "commands.repo.gpu.description": "Grant a repository a CDI device (for example nvidia.com/gpu=all) so its containers can request it, or revoke it again. The machine enforces the grant; an exclusive grant reserves the device for one repository.",
   "commands.repo.gpu.descriptionShort": "Grant or revoke GPU devices for a repository",
   "commands.repo.gpu.deviceOption": "Fully qualified CDI device name (e.g. nvidia.com/gpu=all)",
