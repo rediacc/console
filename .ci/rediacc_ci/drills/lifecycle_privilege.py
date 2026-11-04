@@ -4,7 +4,7 @@
 
 THE PROBE. A fork of the parent grand gets a probe `Rediaccfile` written through `term connect` (the repository's own sandbox shell, which may write its mount). Its `up()` and `down()` write `key=value` lines to `lifecycle-probe.<function>` in the mount, reporting verdicts only, never the content of what they tried to read: the uid, CapEff, `/proc/kcore`, `/etc/shadow`, the first block device, `/etc/rediacc/grants`, whether a fake credential reached the function's environment or its parent's `/proc/<pid>/environ`, `sudo -n`, and the owner of a file `up()` creates. The drill reads the lines back through `term connect` and judges them with the pure functions below.
 
-THE ROWS. L1.0 the probe is installed in the fork; L1.1 `repo up` runs the probe as a uid other than 0 with an empty CapEff; L1.2 every denied probe is denied and the fake credential in `rdc`'s own environment never reached `up()`; L1.3 `sudo` fails on `no_new_privs`; L1.4 a file `up()` creates belongs to the function's uid; L1.5 a failing `renet compose` inside `up()` fails the `repo up`; L1.6 `repo down` runs the probe's `down()` as the same uid; L1.7 the fork's grant holds no lifecycle root or path; L1.8 the root grant is the positive control (the same probe reports uid 0 under `--lifecycle-root=true`) and its removal restores the drop.
+THE ROWS. L1.0 the probe is installed in the fork; L1.1 `repo up` runs the probe as a uid other than 0 with an empty CapEff; L1.2 every denied probe is denied and the fake credential in `rdc`'s own environment never reached `up()`; L1.3 `sudo` fails on `no_new_privs`; L1.4 a file `up()` creates belongs to the function's uid; L1.5 a failing `renet compose` inside `up()` fails the `repo up`; L1.6 `repo down` runs the probe's `down()` as the same uid; L1.7 the fork's grant holds no lifecycle root or path; L1.8 the root grant is the positive control (the same probe reports uid 0 under `--lifecycle-root=true`) and its removal restores the drop; L1.9 a FAKE CDI node (gpu_grants' `/dev/rediacc-fake`) is out of reach for `up()` without the repository's device grant and reachable with it. L1.4 also judges the owner of the `.env` file `up()` appends to.
 
 NOT COVERED HERE. A cold backup barrier whose own process carries the credential (F12) needs a backup run on the fork with the unit's environment, which the drill has no recipe for; P0's `TestLifecycle_RootProbe` carries the credential through the real `sandbox-exec` instead, and the box that closes the barrier case is the fleet run of T1 with a cold `backup run`. The reboot-shaped autostart and reconcile path of T1 is likewise left to T1.
 
@@ -21,7 +21,7 @@ import re
 import shlex
 from typing import Any
 
-from rediacc_ci.drills import vm_ssh
+from rediacc_ci.drills import gpu_grants, vm_ssh
 
 STEP_ID = "L1"
 
@@ -34,6 +34,9 @@ CREATED_FILE = ".lifecycle-probe-created"
 FAIL_MARKER = "lifecycle-probe-fail-compose"
 BAD_COMPOSE = "lifecycle-probe-bad.yml"
 NNP_TEXT = "no new privileges"
+# gpu_grants' fake CDI device: a 0666 character node no driver claims, so opening it is ENXIO whenever the sandbox lets the function reach it.
+CDI_NODE = gpu_grants.NODE_PATH
+CDI_REACHED = gpu_grants.ENXIO
 # Probe keys the denied-read verdicts judge.
 DENIED_KEYS = ("kcore", "shadow", "block", "grants")
 
@@ -56,6 +59,8 @@ def probe_rediaccfile() -> str:
         "  if tr '\\0' '\\n' < /proc/$PPID/environ 2>/dev/null | grep -q '^%(cred)s='; then echo cred_parent=readable >> \"$out\"; else echo cred_parent=denied >> \"$out\"; fi\n"
         '  so=$(sudo -n true 2>&1); echo "sudo_rc=$?" >> "$out"; echo "sudo_msg=$(echo "$so" | head -n1)" >> "$out"\n'
         '  : > "$REDIACC_WORKING_DIR/%(created)s"; echo "created_owner=$(stat -c %%u "$REDIACC_WORKING_DIR/%(created)s")" >> "$out"\n'
+        '  : >> "$REDIACC_WORKING_DIR/.env"; echo "env_owner=$(stat -c %%u "$REDIACC_WORKING_DIR/.env")" >> "$out"\n'
+        '  echo "cdi_open=$( (: < %(cdinode)s) 2>&1 | head -n1 | sed \'s/^.*: //\')" >> "$out"\n'
         "}\n"
         "up() {\n"
         "  _report %(upf)s\n"
@@ -73,6 +78,7 @@ def probe_rediaccfile() -> str:
         "downf": DOWN_FILE,
         "marker": FAIL_MARKER,
         "badc": BAD_COMPOSE,
+        "cdinode": CDI_NODE,
     }
 
 
@@ -150,6 +156,25 @@ def owner_verdict(probe: dict[str, str]) -> tuple[bool, str]:
     uid, owner = uid_of(probe), probe.get("created_owner", "")
     ok = uid is not None and uid != 0 and owner == str(uid)
     return ok, "function uid=%s created-file owner=%s" % (uid, owner or "<none>")
+
+
+def env_verdict(probe: dict[str, str]) -> tuple[bool, str]:
+    """(ok, evidence) of L1.4's `.env` row: the `.env` file `up()` appended to belongs to the uid it ran as, which is not root."""
+    uid, owner = uid_of(probe), probe.get("env_owner", "")
+    ok = uid is not None and uid != 0 and owner == str(uid)
+    return ok, "function uid=%s .env owner=%s" % (uid, owner or "<none>")
+
+
+def cdi_verdict(probe: dict[str, str], granted: bool) -> tuple[bool, str]:
+    """(ok, evidence) of L1.9: the fake CDI node is reachable from `up()` exactly when the repository holds its device grant. Reached is the ENXIO an open of the unclaimed node ends in; any other answer is a denial, and an empty answer is neither."""
+    answer = probe.get("cdi_open", "")
+    reached = CDI_REACHED in answer
+    ok = bool(answer) and reached == granted
+    return ok, "cdi_open=%r (%s, expected %s)" % (
+        answer or "<none>",
+        "reached" if reached else "denied",
+        "reached" if granted else "denied",
+    )
 
 
 def root_verdict(probe: dict[str, str]) -> tuple[bool, str]:
@@ -238,6 +263,8 @@ class _LiveL1:
         self.nid = 0
         self.guid = ""
         self.root_granted = False
+        self.fake_written = False
+        self.device_granted = False
 
     # -- helpers ---------------------------------------------------------------
 
@@ -279,6 +306,7 @@ class _LiveL1:
             self.l1_6_down()
             self.l1_7_no_grant()
             self.l1_8_root_control()
+            self.l1_9_device_grant()
         finally:
             self.cleanup()
 
@@ -330,6 +358,8 @@ class _LiveL1:
         self.check("L1.3 sudo in up() fails on no_new_privs", ok, up, why)
         ok, why = owner_verdict(probe)
         self.check("L1.4 a file up() creates belongs to the function's uid", ok, up, why)
+        ok, why = env_verdict(probe)
+        self.check("L1.4 the .env file up() writes belongs to the function's uid", ok, up, why)
 
     def l1_5_failing_compose(self) -> None:
         self.shell(fail_marker_command(True))
@@ -389,6 +419,44 @@ class _LiveL1:
             "clear rc=%d up rc=%d %s" % (cleared.rc, up.rc, why),
         )
 
+    def l1_9_device_grant(self) -> None:
+        """A fake CDI node is out of reach for `up()` without the device grant and reachable with it; the grant is revoked afterwards."""
+        setup = self.root(gpu_grants.setup_script())
+        self.fake_written = True
+        if not self.check(
+            "L1.9 the fake device %s and its CDI spec are written on the worker" % CDI_NODE,
+            setup.rc == 0 and gpu_grants.setup_verdict(setup.out),
+            setup,
+            setup.text(),
+        ):
+            return
+        up = self.up()
+        ok, why = cdi_verdict(self.read_probe(UP_FILE), False)
+        self.check(
+            "L1.9 without a device grant up() cannot open the fake node",
+            up.rc == 0 and ok,
+            up,
+            "up rc=%d %s" % (up.rc, why),
+        )
+        granted = self.ctx.rdc(
+            "repo", "gpu", "grant", self.ref, "--device", gpu_grants.CDI_NAME, refuse=False
+        )
+        self.device_granted = granted.rc == 0 or self.device_granted
+        if not self.check(
+            "L1.9 %s is granted to %s" % (gpu_grants.CDI_NAME, self.ref),
+            granted.rc == 0,
+            granted,
+        ):
+            return
+        up = self.up()
+        ok, why = cdi_verdict(self.read_probe(UP_FILE), True)
+        self.check(
+            "L1.9 with the device grant up() reaches the fake node",
+            up.rc == 0 and ok,
+            up,
+            "up rc=%d %s" % (up.rc, why),
+        )
+
     # -- teardown --------------------------------------------------------------
 
     def cleanup(self) -> None:
@@ -397,6 +465,16 @@ class _LiveL1:
             res = self.root(root_grant_script(self.nid, False))
             if res.rc != 0:
                 left.append("L1 root grant on net-%d (clear rc=%d)" % (self.nid, res.rc))
+        if self.device_granted:
+            res = self.ctx.rdc(
+                "repo", "gpu", "revoke", self.ref, "--device", gpu_grants.CDI_NAME, refuse=False
+            )
+            if res.rc != 0:
+                left.append("L1 device grant of %s on %s" % (gpu_grants.CDI_NAME, self.ref))
+        if self.fake_written:
+            res = self.root(gpu_grants.teardown_script())
+            if res.rc != 0:
+                left.append("L1 fake device %s / spec on the worker (rc=%d)" % (CDI_NODE, res.rc))
         self.ctx.sweep_leftovers.extend(self.ctx.scrub(x) for x in left)
 
 
@@ -404,8 +482,10 @@ __all__ = [
     "STEP",
     "STEP_ID",
     "bad_compose",
+    "cdi_verdict",
     "denied_verdict",
     "dropped_verdict",
+    "env_verdict",
     "fork_tag",
     "grant_show_script",
     "install_command",

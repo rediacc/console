@@ -22,6 +22,8 @@ cred_parent=denied
 sudo_rc=1
 sudo_msg=sudo: The "no new privileges" flag is set, which prevents sudo from running as root.
 created_owner=7111
+env_owner=7111
+cdi_open=Permission denied
 """
 
 ROOT_UP = GOOD_UP.replace("uid=7111", "uid=0").replace("created_owner=7111", "created_owner=0")
@@ -67,6 +69,8 @@ def test_probe_rediaccfile_is_valid_bash_and_reports_every_key() -> None:
         "sudo_rc=",
         "sudo_msg=",
         "created_owner=",
+        "env_owner=",
+        "cdi_open=",
     ):
         assert key in text, key
     assert "up()" in text
@@ -96,6 +100,8 @@ def test_probe_runs_for_real_and_reports_this_process() -> None:
     )  # the control: the probe can see a credential that is there
     assert probe["sudo_rc"] == "1"
     assert probe["created_owner"] == str(os.getuid())
+    assert probe["env_owner"] == str(os.getuid())
+    assert probe["cdi_open"] != ""  # an absent node answers "No such file", never an empty line
 
 
 def test_install_command_writes_both_files_through_base64() -> None:
@@ -201,3 +207,40 @@ def test_parse_lifecycle_and_no_grant_verdict() -> None:
 
     assert lp.parse_lifecycle("no json here") is None
     assert not lp.no_grant_verdict(None)[0]
+
+
+# --------------------------------------------------------------------------- L1.4 .env and L1.9 device grant
+
+
+def test_env_verdict_control_and_failures() -> None:
+    assert lp.env_verdict(lp.parse_probe(GOOD_UP))[0]
+    root_owned = GOOD_UP.replace("env_owner=7111", "env_owner=0")
+    assert not lp.env_verdict(lp.parse_probe(root_owned))[0]
+    assert not lp.env_verdict(lp.parse_probe(ROOT_UP))[0]
+    assert not lp.env_verdict({})[0]
+
+
+def test_cdi_verdict_both_directions_and_the_silent_probe() -> None:
+    denied = lp.parse_probe(GOOD_UP)
+    reached = lp.parse_probe(GOOD_UP.replace("Permission denied", "No such device or address"))
+    assert lp.cdi_verdict(denied, False)[0]
+    assert lp.cdi_verdict(reached, True)[0]
+    assert not lp.cdi_verdict(reached, False)[0]
+    assert not lp.cdi_verdict(denied, True)[0]
+    assert not lp.cdi_verdict({}, False)[0]
+    assert not lp.cdi_verdict({}, True)[0]
+
+
+def test_probe_cdi_open_reports_what_an_open_of_the_node_says() -> None:
+    """Run the probe's `up()` here with the node pointing at a missing path: the open's error text reaches `cdi_open`."""
+    with tempfile.TemporaryDirectory() as work:
+        script = lp.probe_rediaccfile().replace(lp.CDI_NODE, work + "/absent-node")
+        runner = "source /dev/stdin <<'EOF'\n%sEOF\nsudo() { return 1; }\nup\n" % script
+        env = {**os.environ, "REDIACC_WORKING_DIR": work}
+        proc = subprocess.run(
+            ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
+        )
+        assert proc.returncode == 0, proc.stderr
+        with open(os.path.join(work, lp.UP_FILE)) as handle:
+            probe = lp.parse_probe(handle.read())
+    assert probe["cdi_open"] == "No such file or directory"
