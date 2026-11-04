@@ -6,7 +6,7 @@ THE PROBE. A fork of the parent grand gets a probe `Rediaccfile` written through
 
 THE ROWS. L1.0 the probe is installed in the fork; L1.1 `repo up` runs the probe as a uid other than 0 with an empty CapEff; L1.2 every denied probe is denied and the fake credential in `rdc`'s own environment never reached `up()`; L1.3 `sudo` fails on `no_new_privs`; L1.4 a file `up()` creates belongs to the function's uid; L1.5 a failing `renet compose` inside `up()` fails the `repo up`; L1.6 `repo down` runs the probe's `down()` as the same uid; L1.7 the fork's grant holds no lifecycle root or path; L1.8 the root grant is the positive control (the same probe reports uid 0 under `--lifecycle-root=true`) and its removal restores the drop; L1.9 a FAKE CDI node (gpu_grants' `/dev/rediacc-fake`) is out of reach for `up()` without the repository's device grant and reachable with it. L1.4 also judges the owner of the `.env` file `up()` appends to.
 
-NOT COVERED HERE. A cold backup barrier whose own process carries the credential (F12) needs a backup run on the fork with the unit's environment, which the drill has no recipe for; P0's `TestLifecycle_RootProbe` carries the credential through the real `sandbox-exec` instead, and the box that closes the barrier case is the fleet run of T1 with a cold `backup run`. The reboot-shaped autostart and reconcile path of T1 is likewise left to T1.
+L1.10 (F12) is the cold barrier: a root `renet backup snapshot --cold` on the worker with the fake credential in renet's own environment, which stops and restarts the running fork, so the probe `up()` the barrier runs must report the credential absent. The run's exit status is not read (the barrier is what is judged). L1.11 stops the fork's Docker daemon unit with a probe `down()` that asks the daemon, and `repo down` must fail naming that complaint. L1.12 enables autostart, takes the fork down with `--unmount` and runs one `renet repository reconcile` tick, which must exit 0 with `up()` having run dropped.
 
 TEARDOWN. The fork joins `ctx.forks`, so the run's own teardown deletes it even when L1 crashes. The root grant is removed here; anything that stays rides `ctx.sweep_leftovers`.
 
@@ -22,7 +22,7 @@ import shlex
 from typing import Any
 
 from rediacc_ci.drills import gpu_grants, vm_ssh
-from rediacc_ci.well_known import ETC_DIR
+from rediacc_ci.well_known import DATASTORE_PATH, ETC_DIR
 
 STEP_ID = "L1"
 
@@ -33,6 +33,9 @@ UP_FILE = "lifecycle-probe.up"
 DOWN_FILE = "lifecycle-probe.down"
 CREATED_FILE = ".lifecycle-probe-created"
 FAIL_MARKER = "lifecycle-probe-fail-compose"
+# While present, down() asks the repository's Docker daemon something and fails loudly when the daemon does not answer.
+DOWN_MARKER = "lifecycle-probe-down-docker"
+DOWN_FAIL_TOKEN = "lifecycle-probe-down-daemon-unreachable"
 BAD_COMPOSE = "lifecycle-probe-bad.yml"
 NNP_TEXT = "no new privileges"
 # gpu_grants' fake CDI device: a 0666 character node no driver claims, so opening it is ENXIO whenever the sandbox lets the function reach it.
@@ -75,6 +78,9 @@ def probe_rediaccfile() -> str:
         "}\n"
         "down() {\n"
         "  _report %(downf)s\n"
+        '  if [ -f "$REDIACC_WORKING_DIR/%(downmarker)s" ]; then\n'
+        "    docker info >/dev/null 2>&1 || { echo %(downtoken)s >&2; return 1; }\n"
+        "  fi\n"
         "}\n"
     ) % {
         "cred": CREDENTIAL_VAR,
@@ -83,6 +89,8 @@ def probe_rediaccfile() -> str:
         "upf": UP_FILE,
         "downf": DOWN_FILE,
         "marker": FAIL_MARKER,
+        "downmarker": DOWN_MARKER,
+        "downtoken": DOWN_FAIL_TOKEN,
         "badc": BAD_COMPOSE,
         "cdinode": CDI_NODE,
     }
@@ -102,8 +110,8 @@ def install_command() -> str:
     bc = base64.b64encode(bad_compose().encode()).decode()
     return (
         "printf %%s %s | base64 -d > Rediaccfile && printf %%s %s | base64 -d > %s && "
-        "rm -f %s %s %s %s && ls -l Rediaccfile"
-        % (rf, bc, BAD_COMPOSE, UP_FILE, DOWN_FILE, CREATED_FILE, FAIL_MARKER)
+        "rm -f %s %s %s %s %s && ls -l Rediaccfile"
+        % (rf, bc, BAD_COMPOSE, UP_FILE, DOWN_FILE, CREATED_FILE, FAIL_MARKER, DOWN_MARKER)
     )
 
 
@@ -115,6 +123,72 @@ def read_command(name: str) -> str:
 def fail_marker_command(on: bool) -> str:
     """The repository shell's switch of the failing-compose mode."""
     return "touch %s" % FAIL_MARKER if on else "rm -f %s" % FAIL_MARKER
+
+
+def down_marker_command(on: bool) -> str:
+    """The repository shell's switch of the daemon-asking `down()` mode."""
+    return "touch %s" % DOWN_MARKER if on else "rm -f %s" % DOWN_MARKER
+
+
+def remove_probe_output_command(name: str) -> str:
+    """The repository shell's removal of one probe output file, so the next read can only be what a later function wrote."""
+    return "rm -f %s" % shlex.quote(name)
+
+
+def daemon_unit(network_id: int | str) -> str:
+    """The systemd unit of a repository's Docker daemon."""
+    return "rediacc-docker-%d" % int(network_id)
+
+
+def daemon_stop_script(network_id: int | str, on: bool) -> str:
+    """Root on the worker: stop (`on`) or start the repository's Docker daemon unit."""
+    return "systemctl %s %s" % ("stop" if on else "start", daemon_unit(network_id))
+
+
+def cold_barrier_script(datastore: str, guid: str) -> str:
+    """Root on the worker: a cold `renet backup snapshot` of the repository, run with the fake credential in renet's OWN environment the way a unit's would carry one (F12). The run may end in a refusal after the barrier (no session, no store); only what the barrier's `up()` saw matters, so the exit status is not read."""
+    return "env %s=%s renet backup snapshot --datastore %s --repo %s --cold" % (
+        CREDENTIAL_VAR,
+        CREDENTIAL_VALUE,
+        shlex.quote(datastore),
+        shlex.quote(guid),
+    )
+
+
+def reconcile_script(datastore: str) -> str:
+    """Root on the worker: one reconcile tick, what the autostart-reconcile timer runs."""
+    return "renet repository reconcile --datastore %s" % shlex.quote(datastore)
+
+
+def cold_barrier_verdict(probe: dict[str, str]) -> tuple[bool, str]:
+    """(ok, evidence) of the cold-barrier row (F12): the barrier restarted the repository (the probe it wrote is there), `up()` ran dropped, and the credential renet carried reached neither its environment nor its parent's environ. An empty probe means the barrier never ran `up()`, which is a failure and not a pass."""
+    if not probe:
+        return False, "the barrier wrote no probe: up() did not run"
+    ok_drop, why_drop = dropped_verdict(probe)
+    ok_cred = probe.get("cred_env") == "absent" and probe.get("cred_parent") == "denied"
+    return ok_drop and ok_cred, "%s cred_env=%s cred_parent=%s" % (
+        why_drop,
+        probe.get("cred_env", "<missing>"),
+        probe.get("cred_parent", "<missing>"),
+    )
+
+
+def down_honest_verdict(rc: int, text: str) -> tuple[bool, str]:
+    """(ok, evidence) of the stopped-daemon row: a `repo down` whose down() could not reach a stopped Docker daemon fails, and its output carries down()'s own complaint, so a success report or an unrelated failure does not pass."""
+    named = DOWN_FAIL_TOKEN in text
+    return rc != 0 and named, "repo down rc=%d down() complaint named=%s %s" % (
+        rc,
+        named,
+        " ".join(text.split())[-200:],
+    )
+
+
+def reboot_verdict(probe: dict[str, str], reconcile_rc: int) -> tuple[bool, str]:
+    """(ok, evidence) of the reboot-shaped row: after the mount and daemon were taken away, one reconcile tick exited 0 and its recovery ran `up()` as a dropped uid (the probe file was removed before, so only that run could have written it)."""
+    if not probe:
+        return False, "reconcile rc=%d and no probe written by the reconcile's up()" % reconcile_rc
+    ok_drop, why = dropped_verdict(probe)
+    return reconcile_rc == 0 and ok_drop, "reconcile rc=%d %s" % (reconcile_rc, why)
 
 
 def parse_probe(text: str) -> dict[str, str]:
@@ -279,6 +353,8 @@ class _LiveL1:
         self.root_granted = False
         self.fake_written = False
         self.device_granted = False
+        self.daemon_stopped = False
+        self.autostart_enabled = False
 
     # -- helpers ---------------------------------------------------------------
 
@@ -319,6 +395,9 @@ class _LiveL1:
             self.l1_5_failing_compose()
             self.l1_6_down()
             self.l1_7_no_grant()
+            self.l1_10_cold_barrier()
+            self.l1_11_down_stopped_daemon()
+            self.l1_12_reboot_path()
             self.l1_8_root_control()
             self.l1_9_device_grant()
         finally:
@@ -403,6 +482,68 @@ class _LiveL1:
             "rc=%d %s" % (res.rc, why),
         )
 
+    def l1_10_cold_barrier(self) -> None:
+        """F12: a cold backup barrier in a process that carries the credential. The repository is up, its probe output is cleared, and the barrier's own down() and up() are the only writers of the next one."""
+        up = self.up()
+        if not self.check("L1.10 repo up %s before the cold barrier" % self.ref, up.rc == 0, up):
+            return
+        self.shell(remove_probe_output_command(UP_FILE))
+        barrier = self.root(cold_barrier_script(DATASTORE_PATH, self.guid), timeout=900)
+        ok, why = cold_barrier_verdict(self.read_probe(UP_FILE))
+        self.check(
+            "L1.10 a cold barrier whose renet carries a credential restarts up() without it",
+            ok,
+            barrier,
+            "snapshot rc=%d %s" % (barrier.rc, why),
+        )
+
+    def l1_11_down_stopped_daemon(self) -> None:
+        """`repo down` against a stopped Docker daemon: down() fails on it, and the verb says so. The daemon is started again before the next row."""
+        up = self.up()
+        if not self.check("L1.11 repo up %s before the daemon stops" % self.ref, up.rc == 0, up):
+            return
+        self.shell(down_marker_command(True))
+        stopped = self.root(daemon_stop_script(self.nid, True))
+        self.daemon_stopped = stopped.rc == 0 or self.daemon_stopped
+        try:
+            if not self.check(
+                "L1.11 the Docker daemon of net-%d is stopped" % self.nid,
+                stopped.rc == 0,
+                stopped,
+                "rc=%d" % stopped.rc,
+            ):
+                return
+            down = self.down()
+            ok, why = down_honest_verdict(down.rc, down.out + "\n" + down.err)
+            self.check("L1.11 repo down with a stopped daemon reports the failure", ok, down, why)
+        finally:
+            started = self.root(daemon_stop_script(self.nid, False))
+            if started.rc == 0:
+                self.daemon_stopped = False
+            self.shell(down_marker_command(False))
+
+    def l1_12_reboot_path(self) -> None:
+        """Reboot-shaped: autostart on, the repository taken down and unmounted, then one reconcile tick brings it back, running up() dropped."""
+        up = self.up()
+        if not self.check("L1.12 repo up %s before the reboot shape" % self.ref, up.rc == 0, up):
+            return
+        enabled = self.ctx.rdc("repo", "admin", "autostart", "enable", self.ref, refuse=False)
+        self.autostart_enabled = enabled.rc == 0 or self.autostart_enabled
+        if not self.check("L1.12 autostart is enabled for %s" % self.ref, enabled.rc == 0, enabled):
+            return
+        self.shell(remove_probe_output_command(UP_FILE))
+        down = self.ctx.rdc("repo", "down", self.ref, "--unmount", timeout=900, refuse=False)
+        if not self.check("L1.12 repo down --unmount takes %s away" % self.ref, down.rc == 0, down):
+            return
+        tick = self.root(reconcile_script(DATASTORE_PATH), timeout=900)
+        ok, why = reboot_verdict(self.read_probe(UP_FILE), tick.rc)
+        self.check(
+            "L1.12 one reconcile tick ends with the repository running, up() dropped",
+            ok,
+            tick,
+            why,
+        )
+
     def l1_8_root_control(self) -> None:
         granted = self.root(root_grant_script(self.nid, True))
         self.root_granted = granted.rc == 0 or self.root_granted
@@ -479,6 +620,14 @@ class _LiveL1:
             res = self.root(root_grant_script(self.nid, False))
             if res.rc != 0:
                 left.append("L1 root grant on net-%d (clear rc=%d)" % (self.nid, res.rc))
+        if self.daemon_stopped and self.nid:
+            res = self.root(daemon_stop_script(self.nid, False))
+            if res.rc != 0:
+                left.append("L1 stopped Docker daemon of net-%d (start rc=%d)" % (self.nid, res.rc))
+        if self.autostart_enabled:
+            res = self.ctx.rdc("repo", "admin", "autostart", "disable", self.ref, refuse=False)
+            if res.rc != 0:
+                left.append("L1 autostart of %s (disable rc=%d)" % (self.ref, res.rc))
         if self.device_granted:
             res = self.ctx.rdc(
                 "repo", "gpu", "revoke", self.ref, "--device", gpu_grants.CDI_NAME, refuse=False
@@ -497,6 +646,12 @@ __all__ = [
     "STEP_ID",
     "bad_compose",
     "cdi_verdict",
+    "cold_barrier_script",
+    "cold_barrier_verdict",
+    "daemon_stop_script",
+    "daemon_unit",
+    "down_honest_verdict",
+    "down_marker_command",
     "denied_verdict",
     "dropped_verdict",
     "env_verdict",
@@ -508,6 +663,9 @@ __all__ = [
     "parse_lifecycle",
     "parse_probe",
     "probe_rediaccfile",
+    "reboot_verdict",
+    "reconcile_script",
+    "remove_probe_output_command",
     "root_grant_script",
     "root_verdict",
     "run",

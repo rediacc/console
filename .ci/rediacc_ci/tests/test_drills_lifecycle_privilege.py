@@ -283,3 +283,76 @@ def test_probe_cdi_open_reports_what_an_open_of_the_node_says() -> None:
         with open(os.path.join(work, lp.UP_FILE)) as handle:
             probe = lp.parse_probe(handle.read())
     assert probe["cdi_open"] == "No such file or directory"
+
+
+# --------------------------------------------------------------------------- T1 rows: cold barrier, stopped daemon, reboot shape
+
+
+def _run_probe_down(docker_ok: bool, marker: bool) -> subprocess.CompletedProcess[str]:
+    """Run the probe's `down()` here with `docker` stubbed to answer or fail."""
+    with tempfile.TemporaryDirectory() as work:
+        if marker:
+            open(os.path.join(work, lp.DOWN_MARKER), "w").close()
+        runner = (
+            "source /dev/stdin <<'EOF'\n%sEOF\nsudo() { return 1; }\ndocker() { return %d; }\ndown\n"
+            % (lp.probe_rediaccfile(), 0 if docker_ok else 1)
+        )
+        env = {**os.environ, "REDIACC_WORKING_DIR": work, "LC_ALL": "C"}
+        return subprocess.run(
+            ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
+        )
+
+
+def test_down_asks_the_daemon_only_under_the_marker() -> None:
+    unreachable = _run_probe_down(docker_ok=False, marker=True)
+    assert unreachable.returncode != 0
+    assert lp.DOWN_FAIL_TOKEN in unreachable.stderr
+    # controls: a reachable daemon, or no marker, leaves down() succeeding
+    assert _run_probe_down(docker_ok=True, marker=True).returncode == 0
+    assert _run_probe_down(docker_ok=False, marker=False).returncode == 0
+
+
+def test_install_command_clears_the_down_marker() -> None:
+    assert lp.DOWN_MARKER in lp.install_command()
+
+
+def test_down_marker_and_removal_commands() -> None:
+    assert lp.down_marker_command(True) == "touch " + lp.DOWN_MARKER
+    assert lp.down_marker_command(False) == "rm -f " + lp.DOWN_MARKER
+    assert lp.remove_probe_output_command(lp.UP_FILE) == "rm -f " + lp.UP_FILE
+
+
+def test_down_honest_verdict_control_and_failures() -> None:
+    assert lp.down_honest_verdict(1, "x " + lp.DOWN_FAIL_TOKEN)[0]
+    assert not lp.down_honest_verdict(0, lp.DOWN_FAIL_TOKEN)[0]  # reported success
+    assert not lp.down_honest_verdict(1, "unrelated failure")[0]  # failed for another reason
+
+
+def test_cold_barrier_verdict_control_and_failures() -> None:
+    good = lp.parse_probe(GOOD_UP)
+    assert lp.cold_barrier_verdict(good)[0]
+    assert not lp.cold_barrier_verdict({})[0]  # the barrier never ran up()
+    leaked = lp.parse_probe(GOOD_UP.replace("cred_env=absent", "cred_env=present"))
+    assert not lp.cold_barrier_verdict(leaked)[0]
+    readable = lp.parse_probe(GOOD_UP.replace("cred_parent=denied", "cred_parent=readable"))
+    assert not lp.cold_barrier_verdict(readable)[0]
+    assert not lp.cold_barrier_verdict(lp.parse_probe(ROOT_UP))[0]
+
+
+def test_reboot_verdict_control_and_failures() -> None:
+    good = lp.parse_probe(GOOD_UP)
+    assert lp.reboot_verdict(good, 0)[0]
+    assert not lp.reboot_verdict(good, 1)[0]
+    assert not lp.reboot_verdict({}, 0)[0]  # the tick recovered nothing
+    assert not lp.reboot_verdict(lp.parse_probe(ROOT_UP), 0)[0]
+
+
+def test_barrier_daemon_and_reconcile_scripts() -> None:
+    script = lp.cold_barrier_script("/mnt/rediacc", "abc-123")
+    assert script.startswith("env %s=" % lp.CREDENTIAL_VAR)
+    assert "renet backup snapshot --datastore /mnt/rediacc --repo abc-123 --cold" in script
+    assert lp.daemon_stop_script(2816, True) == "systemctl stop rediacc-docker-2816"
+    assert lp.daemon_stop_script(2816, False) == "systemctl start rediacc-docker-2816"
+    assert (
+        lp.reconcile_script("/mnt/rediacc") == "renet repository reconcile --datastore /mnt/rediacc"
+    )
