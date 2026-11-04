@@ -17,43 +17,31 @@
  * running the work twice (section 17).
  */
 
-import type { JobOverlap } from "@rediacc/shared/cli-contract/wire";
-import { t } from "../../i18n/index.js";
-import type { SFTPClient } from "../../remote/sftp/index.js";
-import { ERROR_CODES } from "../../types/errors.js";
-import { EXIT_CODES } from "../../types/index.js";
-import { CliExitError } from "../../utils/cli-exit-error.js";
-import { getOutputFormat } from "../../utils/errors.js";
-import { VERSION } from "../../version.js";
-import { clusterKubeconfigRemotePath } from "../cluster/cluster-target.js";
-import { getEffectiveConfigName } from "../config/config-name.js";
-import type { configService } from "../config/config-resources.js";
-import { outputService } from "../core/output.js";
-import {
-  currentRequestContext,
-  writeStderr,
-  writeStdout,
-} from "../core/request-context.js";
+import type { JobOverlap } from '@rediacc/shared/cli-contract/wire';
+import { t } from '../../i18n/index.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { EXIT_CODES } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
+import { getOutputFormat } from '../../utils/errors.js';
+import { VERSION } from '../../version.js';
+import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
+import { getEffectiveConfigName } from '../config/config-name.js';
+import type { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
+import { currentRequestContext, writeStderr, writeStdout } from '../core/request-context.js';
 import {
   attachFlagValue,
   clientKindFromEnv,
   invocationMinter,
   originJson,
   REATTACH_BUDGET_MS,
-} from "../jobs/attach.js";
-import {
-  type TicketInput,
-  type TicketKind,
-  TicketStore,
-} from "../jobs/ticket-store.js";
-import { machineConnections } from "../machine/machine-connection.js";
-import { fetchOtlpCredentials } from "../telemetry/otlp-credentials.js";
-import { isTelemetryDisabled } from "../telemetry/telemetry.js";
-import {
-  type AttachState,
-  type StartOutcome,
-  startOnce,
-} from "./detached-attach.js";
+} from '../jobs/attach.js';
+import { type TicketInput, type TicketKind, TicketStore } from '../jobs/ticket-store.js';
+import { machineConnections } from '../machine/machine-connection.js';
+import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
+import { isTelemetryDisabled } from '../telemetry/telemetry.js';
+import { type AttachState, type StartOutcome, startOnce } from './detached-attach.js';
 import {
   backgroundEnvelope,
   backgroundStartedHint,
@@ -69,7 +57,7 @@ import {
   overlapWarningLines,
   type PreconditionRefusal,
   resumeHint,
-} from "./job-client.js";
+} from './job-client.js';
 import {
   FollowLostError,
   followJobLogs,
@@ -77,31 +65,28 @@ import {
   passthroughJobRenderer,
   readJobStatus,
   renderJobEvent,
-} from "./job-remote.js";
-import { annotateJobSpan, followKindOf } from "./job-span.js";
+} from './job-remote.js';
+import { annotateJobSpan, followKindOf } from './job-span.js';
 import {
   buildRenetEnv,
   COMMAND_KIND_TIMEOUT_MS,
   detectEnvironment,
   resolveEnvSecrets,
   resolveRenetTimeoutMs,
-} from "./renet-command.js";
-import type { ExecuteOptions, ExecuteResult, RenetEvent } from "./types.js";
+} from './renet-command.js';
+import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
 
-const UNKNOWN_JOB_ID = "?";
+const UNKNOWN_JOB_ID = '?';
 
 /**
  * The section 24 exemptions that stay on `renet execute`: an interactive exec
  * needs a live TTY, and a log follow never ends on its own. Named, so the rule
  * lives in one place and a test can pin it.
  */
-export function runsOutsideJob(
-  options: Pick<ExecuteOptions, "functionName" | "params">,
-): boolean {
+export function runsOutsideJob(options: Pick<ExecuteOptions, 'functionName' | 'params'>): boolean {
   const params = options.params ?? {};
   if (params.tty === true) return true;
-  if (options.functionName === "container_logs" && params.follow === true)
-    return true;
+  if (options.functionName === 'container_logs' && params.follow === true) return true;
   return false;
 }
 
@@ -109,34 +94,23 @@ export function runsOutsideJob(
 export class JobOverlapRefusedError extends CliExitError {
   constructor(
     readonly overlaps: JobOverlap[],
-    machineName: string,
+    machineName: string
   ) {
-    const refusing = overlaps.filter((o) => o.action === "refuse");
+    const refusing = overlaps.filter((o) => o.action === 'refuse');
     const first = refusing[0];
     const holder = first
-      ? t("errors.jobs.holderJob", {
-          id: first.jobId ?? first.unit ?? UNKNOWN_JOB_ID,
-        })
-      : t("errors.jobs.holderOther");
-    super(
-      ERROR_CODES.BUSY,
-      t("errors.jobs.refused", { machine: machineName, holder }),
-      {
-        retryable: true,
-        details: [
-          ...refusing.flatMap(overlapWarningLines),
-          ...(first?.jobId
-            ? [
-                t("errors.jobs.orStopIt", {
-                  id: first.jobId,
-                  machine: machineName,
-                }),
-              ]
-            : []),
-        ],
-      },
-    );
-    this.name = "JobOverlapRefusedError";
+      ? t('errors.jobs.holderJob', { id: first.jobId ?? first.unit ?? UNKNOWN_JOB_ID })
+      : t('errors.jobs.holderOther');
+    super(ERROR_CODES.BUSY, t('errors.jobs.refused', { machine: machineName, holder }), {
+      retryable: true,
+      details: [
+        ...refusing.flatMap(overlapWarningLines),
+        ...(first?.jobId
+          ? [t('errors.jobs.orStopIt', { id: first.jobId, machine: machineName })]
+          : []),
+      ],
+    });
+    this.name = 'JobOverlapRefusedError';
   }
 }
 
@@ -149,16 +123,16 @@ export class JobOverlapRefusedError extends CliExitError {
 class JobPreconditionRefusedError extends CliExitError {
   constructor(
     readonly refusal: PreconditionRefusal,
-    machineName: string,
+    machineName: string
   ) {
     const machine = refusal.machine || machineName;
     super(
       ERROR_CODES.STATE_MISMATCH,
-      refusal.expect === "repo_present"
+      refusal.expect === 'repo_present'
         ? `config places ${refusal.repository} on ${machine}, but ${machine} does not have its image. Run "rdc config reconcile", then retry.`
-        : refusal.message,
+        : refusal.message
     );
-    this.name = "JobPreconditionRefusedError";
+    this.name = 'JobPreconditionRefusedError';
   }
 }
 
@@ -178,16 +152,12 @@ const realTiming: JobExecutionTiming = {
 let timing: JobExecutionTiming = realTiming;
 
 /** Test seam: replace the retry clock (pass nothing to restore real time). */
-export function setJobExecutionTiming(
-  next?: Partial<JobExecutionTiming>,
-): void {
+export function setJobExecutionTiming(next?: Partial<JobExecutionTiming>): void {
   timing = next ? { ...realTiming, ...next } : realTiming;
 }
 
 function repoOf(options: ExecuteOptions): string | undefined {
-  return typeof options.params?.repository === "string"
-    ? options.params.repository
-    : undefined;
+  return typeof options.params?.repository === 'string' ? options.params.repository : undefined;
 }
 
 /**
@@ -201,7 +171,7 @@ class CallTicket {
   constructor(
     readonly requestId: string,
     private readonly base: TicketInput,
-    owned = true,
+    owned = true
   ) {
     this.store = owned ? openStore() : undefined;
   }
@@ -211,7 +181,7 @@ class CallTicket {
       this.store?.append(kind, this.requestId, { ...this.base, ...input });
     } catch (error) {
       outputService.warn(
-        `Could not record job ticket ${this.requestId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Could not record job ticket ${this.requestId}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -238,13 +208,11 @@ export async function runJobExecution(
   vault: string,
   options: ExecuteOptions,
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
-  sshPrivateKey: string,
+  sshPrivateKey: string
 ): Promise<ExecuteResult> {
   const run = new JobRun(options);
   // Written BEFORE the start (section 16): a start whose answer is lost is still found later through its request id.
-  run.ticket.append("starting", {
-    startedAt: new Date(run.startedAt).toISOString(),
-  });
+  run.ticket.append('starting', { startedAt: new Date(run.startedAt).toISOString() });
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   try {
@@ -268,27 +236,24 @@ class JobRun {
   readonly ticket: CallTicket;
   readonly state: AttachState = { lines: 0, overlaps: [], deduped: false };
   readonly collector = createJobOutputCollector();
-  private readonly render:
-    ((event: RenetEvent, line?: number) => void) | undefined;
+  private readonly render: ((event: RenetEvent, line?: number) => void) | undefined;
 
   constructor(readonly options: ExecuteOptions) {
     this.window = options.attachWindowMs;
-    this.requestId =
-      options.requestId ?? invocationMinter().next(options.machineName);
-    this.verb =
-      options.verb ?? outputService.getCommandName() ?? options.functionName;
+    this.requestId = options.requestId ?? invocationMinter().next(options.machineName);
+    this.verb = options.verb ?? outputService.getCommandName() ?? options.functionName;
     this.repo = repoOf(options);
     this.render = options.onEvent ?? defaultRenderer(options);
     this.ticket = new CallTicket(
       this.requestId,
       {
         machine: options.machineName,
-        via: { kind: "ssh" },
+        via: { kind: 'ssh' },
         verb: this.verb,
         function: options.functionName,
         ...(this.repo ? { repo: this.repo } : {}),
       },
-      !options.externalTicket,
+      !options.externalTicket
     );
   }
 
@@ -302,18 +267,13 @@ class JobRun {
   }
 
   /** The handle arrived: the job exists. Announce it once, and warn about what it overlaps. */
-  announce(
-    jobId: string,
-    overlaps: JobOverlap[],
-    deduped: boolean,
-    networkId?: number,
-  ): void {
+  announce(jobId: string, overlaps: JobOverlap[], deduped: boolean, networkId?: number): void {
     this.state.overlaps = overlaps;
     this.state.deduped = deduped;
     if (networkId !== undefined) this.state.networkId = networkId;
     if (this.state.jobId) return;
     this.state.jobId = jobId;
-    this.ticket.append("started", { jobId, state: "running" });
+    this.ticket.append('started', { jobId, state: 'running' });
     this.options.onJobStarted?.(jobId, this.options.machineName, overlaps);
     for (const overlap of overlaps) {
       for (const line of overlapWarningLines(overlap)) writeStderr(`${line}\n`);
@@ -324,18 +284,14 @@ class JobRun {
    * Run the start exec, retrying with the same request id while no handle has
    * arrived and the transport keeps dropping, for up to the reattach budget.
    */
-  async start(
-    lease: Lease,
-    launch: Launch,
-    vault: string,
-  ): Promise<StartOutcome> {
+  async start(lease: Lease, launch: Launch, vault: string): Promise<StartOutcome> {
     let firstDrop: number | undefined;
     for (let attempt = 0; ; attempt++) {
       const sftp = await safeEnsure(lease);
       const outcome = sftp
         ? await startOnce(sftp, launch, vault, this)
-        : ({ kind: "dropped", error: new Error("connection lost") } as const);
-      if (outcome.kind !== "dropped" || this.state.jobId) return outcome;
+        : ({ kind: 'dropped', error: new Error('connection lost') } as const);
+      if (outcome.kind !== 'dropped' || this.state.jobId) return outcome;
       firstDrop ??= timing.now();
       if (timing.now() - firstDrop >= timing.budgetMs) return outcome;
       await timing.sleep(logReconnectDelayMs(attempt));
@@ -347,12 +303,8 @@ class JobRun {
     annotateJobSpan({
       ...(result.jobId ? { jobId: result.jobId } : {}),
       function: this.options.functionName,
-      follow: followKindOf(
-        outcome.kind,
-        result.attached === true,
-        this.window !== undefined,
-      ),
-      outcome: result.state ?? (result.success ? "succeeded" : "failed"),
+      follow: followKindOf(outcome.kind, result.attached === true, this.window !== undefined),
+      outcome: result.state ?? (result.success ? 'succeeded' : 'failed'),
       ...(this.firstEventAt === undefined
         ? {}
         : { startLatencyMs: this.firstEventAt - this.startedAt }),
@@ -363,37 +315,30 @@ class JobRun {
   settle(
     outcome: StartOutcome,
     lease: Lease,
-    remoteRenetPath: string,
+    remoteRenetPath: string
   ): ExecuteResult | Promise<ExecuteResult> {
     switch (outcome.kind) {
-      case "refused":
-        this.ticket.append("acknowledged", { state: "unknown" });
-        throw new JobOverlapRefusedError(
-          outcome.overlaps,
-          this.options.machineName,
-        );
-      case "precondition":
-        this.ticket.append("acknowledged", { state: "unknown" });
-        throw new JobPreconditionRefusedError(
-          outcome.refusal,
-          this.options.machineName,
-        );
-      case "unsupported":
-        this.ticket.append("acknowledged", { state: "unknown" });
+      case 'refused':
+        this.ticket.append('acknowledged', { state: 'unknown' });
+        throw new JobOverlapRefusedError(outcome.overlaps, this.options.machineName);
+      case 'precondition':
+        this.ticket.append('acknowledged', { state: 'unknown' });
+        throw new JobPreconditionRefusedError(outcome.refusal, this.options.machineName);
+      case 'unsupported':
+        this.ticket.append('acknowledged', { state: 'unknown' });
         throw new JobsUnsupportedError(this.options.machineName, this.verb);
-      case "failed":
+      case 'failed':
         throw new JobStartFailedError(this.options.machineName, outcome.detail);
-      case "interrupted":
+      case 'interrupted':
         return this.detached();
-      case "handle":
+      case 'handle':
         // `--background`: the ticket at once.
         return this.pending();
-      case "trailer":
+      case 'trailer':
         return this.fromTrailer();
-      case "dropped":
+      case 'dropped':
         // A finite window hands back the ticket; an unlimited one reattaches from the last line received.
-        if (this.window !== undefined || !this.state.jobId)
-          return this.pending();
+        if (this.window !== undefined || !this.state.jobId) return this.pending();
         return this.reattach(lease, remoteRenetPath, this.state.jobId);
     }
   }
@@ -405,28 +350,21 @@ class JobRun {
     return this.finished(status);
   }
 
-  private base(): Pick<
-    ExecuteResult,
-    "jobId" | "requestId" | "overlaps" | "networkId"
-  > {
+  private base(): Pick<ExecuteResult, 'jobId' | 'requestId' | 'overlaps' | 'networkId'> {
     return {
       ...(this.state.jobId ? { jobId: this.state.jobId } : {}),
       requestId: this.requestId,
-      ...(this.state.networkId === undefined
-        ? {}
-        : { networkId: this.state.networkId }),
-      ...(this.state.overlaps.length > 0
-        ? { overlaps: this.state.overlaps }
-        : {}),
+      ...(this.state.networkId === undefined ? {} : { networkId: this.state.networkId }),
+      ...(this.state.overlaps.length > 0 ? { overlaps: this.state.overlaps } : {}),
     };
   }
 
   private markSeen(): void {
     if (!this.state.jobId) return;
-    this.ticket.append("seen", {
+    this.ticket.append('seen', {
       jobId: this.state.jobId,
       lastSeenLine: this.state.lines,
-      state: "running",
+      state: 'running',
     });
   }
 
@@ -434,7 +372,7 @@ class JobRun {
   private async reattach(
     lease: Lease,
     remoteRenetPath: string,
-    jobId: string,
+    jobId: string
   ): Promise<ExecuteResult> {
     const cursor = new JobLogCursor(this.state.lines);
     let interrupted: boolean;
@@ -444,17 +382,12 @@ class JobRun {
         remoteRenetPath,
         jobId,
         {
-          onEvent: (event, line) =>
-            this.onEvent(event, line ?? cursor.sinceLine),
+          onEvent: (event, line) => this.onEvent(event, line ?? cursor.sinceLine),
           debug: this.options.debug,
-          reconnect: {
-            budgetMs: timing.budgetMs,
-            now: timing.now,
-            sleep: timing.sleep,
-          },
+          reconnect: { budgetMs: timing.budgetMs, now: timing.now, sleep: timing.sleep },
         },
         cursor,
-        this.options.machineName,
+        this.options.machineName
       );
     } catch (error) {
       if (!(error instanceof FollowLostError)) throw error;
@@ -468,26 +401,22 @@ class JobRun {
       await lease.ensure(),
       remoteRenetPath,
       jobId,
-      this.options.machineName,
+      this.options.machineName
     );
     return this.finished(status);
   }
 
   /** The job ended while the client watched: its result, and nothing pending. */
   private finished(status: JobStatus): ExecuteResult {
-    const result = jobStatusToExecuteResult(
-      status,
-      Date.now() - this.startedAt,
-      this.collector,
-    );
-    this.ticket.append("finished", {
+    const result = jobStatusToExecuteResult(status, Date.now() - this.startedAt, this.collector);
+    this.ticket.append('finished', {
       jobId: status.job_id,
       state: status.state,
       lastSeenLine: this.state.lines,
       exitCode: result.exitCode,
       ...(status.finished_at ? { finishedAt: status.finished_at } : {}),
     });
-    this.ticket.append("acknowledged");
+    this.ticket.append('acknowledged');
     return { ...result, ...this.base(), state: status.state, attached: true };
   }
 
@@ -500,7 +429,7 @@ class JobRun {
         this.options.machineName,
         this.verb,
         this.repo,
-        this.state.overlaps,
+        this.state.overlaps
       );
     }
     return {
@@ -508,7 +437,7 @@ class JobRun {
       success: true,
       exitCode: 0,
       durationMs: Date.now() - this.startedAt,
-      state: "running",
+      state: 'running',
       attached: false,
     };
   }
@@ -525,7 +454,7 @@ class JobRun {
       error: hint,
       durationMs: Date.now() - this.startedAt,
       outputEchoed: true,
-      state: "running",
+      state: 'running',
       attached: false,
     };
   }
@@ -533,10 +462,7 @@ class JobRun {
   /** Ctrl-C: the operator stopped watching; the job keeps running and the ticket is kept. */
   private detached(): ExecuteResult {
     this.markSeen();
-    const hint = resumeHint(
-      this.state.jobId ?? this.requestId,
-      this.options.machineName,
-    );
+    const hint = resumeHint(this.state.jobId ?? this.requestId, this.options.machineName);
     writeStderr(`\n${hint}\n`);
     return {
       ...this.base(),
@@ -545,23 +471,20 @@ class JobRun {
       error: hint,
       durationMs: Date.now() - this.startedAt,
       outputEchoed: true,
-      state: "running",
+      state: 'running',
       attached: false,
     };
   }
 }
 
 /** How a call renders its job's events when the caller set no renderer. */
-function defaultRenderer(
-  options: ExecuteOptions,
-): ((event: RenetEvent) => void) | undefined {
+function defaultRenderer(options: ExecuteOptions): ((event: RenetEvent) => void) | undefined {
   if (options.captureOutput) return undefined;
-  if (options.passthroughOutput)
-    return passthroughJobRenderer(!options.quietSpinners);
+  if (options.passthroughOutput) return passthroughJobRenderer(!options.quietSpinners);
   if (options.debug) return renderJobEvent;
   // Renet's own output lines are chatter for every verb that did not ask for them, as on the `renet execute` path: steps and problems render, output does not.
   return (event) => {
-    if (event.type !== "output") renderJobEvent(event);
+    if (event.type !== 'output') renderJobEvent(event);
   };
 }
 
@@ -569,7 +492,7 @@ function defaultRenderer(
 async function buildLaunch(
   remoteRenetPath: string,
   options: ExecuteOptions,
-  requestId: string,
+  requestId: string
 ): Promise<Launch> {
   const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
   const envSecrets = await resolveEnvSecrets(repoOf(options));
@@ -581,7 +504,7 @@ async function buildLaunch(
   return buildJobStartCommand({
     remoteRenetPath,
     env: buildRenetEnv({
-      isDevelopment: detectEnvironment() === "development",
+      isDevelopment: detectEnvironment() === 'development',
       telemetryDisabled: isTelemetryDisabled(),
       otlpCreds,
       envSecrets,
@@ -592,7 +515,7 @@ async function buildLaunch(
     requestId,
     ...(window === 0 ? {} : { attach: attachFlagValue(window) }),
     origin: originJson({
-      client: currentRequestContext() ? "proxy" : clientKindFromEnv(),
+      client: currentRequestContext() ? 'proxy' : clientKindFromEnv(),
       version: VERSION,
       config: { name: safeConfigName() },
     }),
@@ -601,9 +524,7 @@ async function buildLaunch(
       ? {
           command: {
             name: options.commandKind.name,
-            ...(options.commandKind.args
-              ? { args: JSON.stringify(options.commandKind.args) }
-              : {}),
+            ...(options.commandKind.args ? { args: JSON.stringify(options.commandKind.args) } : {}),
           },
         }
       : {}),
@@ -645,12 +566,12 @@ function emitTicket(
   machine: string,
   verb: string,
   repo: string | undefined,
-  overlaps: JobOverlap[],
+  overlaps: JobOverlap[]
 ): void {
   if (currentRequestContext()) return;
-  if (getOutputFormat() === "json") {
+  if (getOutputFormat() === 'json') {
     writeStdout(
-      `${JSON.stringify(backgroundEnvelope({ jobId, machine, verb, repo, overlaps }))}\n`,
+      `${JSON.stringify(backgroundEnvelope({ jobId, machine, verb, repo, overlaps }))}\n`
     );
     return;
   }
