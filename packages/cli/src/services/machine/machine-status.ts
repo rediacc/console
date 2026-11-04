@@ -1,27 +1,20 @@
 /**
  * Machine Status Service
  *
- * Fetches full machine status by SSHing in and running `renet list all --json`.
+ * Fetches full machine status as one `list-all` command-kind job (`renet list all --json`).
  * Returns the parsed ListResult for display by the command layer.
  */
 
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import { isDevBuild } from '../../utils/platform.js';
-import { shellQuote } from '../../utils/shell-quote.js';
 import {
   type RuntimeRepoLicenseStatus,
   readRuntimeRepoLicenseStatuses,
 } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
-import { outputService } from '../core/output.js';
-import { writeStderr } from '../core/request-context.js';
-import { buildRenetEnv } from '../executor/local-executor.js';
-import { type RenetEnv, type RenetLaunch, sudoRenet } from '../executor/renet-launch.js';
+import { getExecutor } from '../executor/executor-factory.js';
 import { acquireRemoteRenet } from '../renet/renet-execution.js';
-import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
-import { isTelemetryDisabled } from '../telemetry/telemetry.js';
 import { machineConnections } from './machine-connection.js';
 
 interface FetchStatusOptions {
@@ -31,31 +24,15 @@ interface FetchStatusOptions {
 }
 
 /**
- * Build the `renet list all` invocation. Exported for unit testing, the
- * caller-provided sections filter must propagate into `--sections`.
- */
-export function buildListCommand(params: {
-  env: RenetEnv;
-  remoteRenetPath: string;
-  datastore: string;
-  sections?: string[];
-}): RenetLaunch {
-  const sectionsFlag =
-    params.sections && params.sections.length > 0 ? ` --sections ${params.sections.join(',')}` : '';
-  return sudoRenet(
-    params.env,
-    `${shellQuote(params.remoteRenetPath)} list all --datastore ${shellQuote(params.datastore)} --json${sectionsFlag}`
-  );
-}
-
-/**
- * Fetch full machine status via SSH.
+ * Fetch full machine status as one `list-all` job (PLAN-detached-jobs J18).
  *
  * Flow:
  * 1. Load machine config from local context
- * 2. Resolve remote renet (read-only, never uploads; warns on drift)
- * 3. SSH: run `sudo renet list all --datastore <path> --json`
- * 4. Parse JSON output as ListResult
+ * 2. One `list-all` command-kind job: the executor resolves the remote renet read-only (never replaces it) and
+ *    renet runs `list all --datastore <path> --json` inside the job
+ * 3. Parse the captured JSON output as ListResult
+ *
+ * The sections filter rides the job's `--args`. A read has no ticket steps, the caller renders.
  */
 export async function fetchMachineStatus(
   machineName: string,
@@ -68,78 +45,31 @@ export async function fetchMachineStatus(
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const lease = await machineConnections.acquire(machineName);
+  const args: Record<string, string> = {
+    datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+  };
+  if (options.sections && options.sections.length > 0) args.sections = options.sections.join(',');
 
-  try {
-    // Resolve the remote renet read-only: status never replaces the machine's binary
-    if (options.debug) {
-      outputService.info(`Checking renet on ${machine.ip}...`);
-    }
-
-    // Fetch OTLP creds the same way `rdc run` / `repo up` do via local-executor, so the spawned renet sends its own telemetry to otlp.rediacc.io, keeping `machine query` consistent with other paths that shell out to renet. This is an independent, unauthenticated HTTP round-trip to the account server: it depends on neither the machine nor the renet check, so run it concurrently
-    // with that check rather than sequentially after it. It never throws (default-deny to null), so Promise.all cannot reject on the telemetry branch. Respect the opt-out short-circuit so we skip the fetch entirely when disabled.
-    const telemetryOff = isTelemetryDisabled();
-    const otlpCredsPromise = telemetryOff ? Promise.resolve(null) : fetchOtlpCredentials();
-
-    const [{ remotePath: remoteRenetPath }, otlpCreds] = await Promise.all([
-      acquireRemoteRenet(
-        'read-only',
-        { renetPath: localConfig.renetPath },
-        machine,
-        lease.sshPrivateKey,
-        { debug: options.debug, machineName }
-      ),
-      otlpCredsPromise,
-    ]);
-
-    const env = buildRenetEnv({
-      isDevelopment: isDevBuild(),
-      telemetryDisabled: telemetryOff,
-      otlpCreds,
-    });
-    const { command: cmd, stdinPrefix } = buildListCommand({
-      env,
-      remoteRenetPath,
-      datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      sections: options.sections,
-    });
-
-    if (options.debug) {
-      outputService.info(`[status] Running: ${cmd}`);
-    }
-
-    // Execute over the shared connection
-    const sftp = await lease.ensure();
-
-    let stdout = '';
-    let stderr = '';
-
-    const exitCode = await sftp.execStreaming(cmd, {
-      ...(stdinPrefix && { stdin: stdinPrefix }),
-      onStdout: (data) => {
-        stdout += data.toString();
-      },
-      onStderr: (data) => {
-        stderr += data.toString();
-        if (options.debug) {
-          writeStderr(data);
-        }
-      },
-    });
-
-    if (exitCode !== 0) {
-      throw new Error(`renet list all failed (exit ${exitCode}): ${stderr}`);
-    }
-
-    const parsed: unknown = JSON.parse(stdout);
-    if (!isListResult(parsed)) {
-      throw new Error('Failed to parse renet output: unexpected format');
-    }
-
-    return parsed;
-  } finally {
-    lease.release();
+  const result = await getExecutor().execute({
+    functionName: 'list-all',
+    machineName,
+    commandKind: { name: 'list-all', args },
+    debug: options.debug,
+    captureOutput: true,
+    // The caller reads the listing now: `--background` must not hand back a ticket in its place.
+    probe: true,
+  });
+  if (!result.success) {
+    throw new Error(
+      `renet list all failed (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`
+    );
   }
+
+  const parsed: unknown = JSON.parse(result.stdout ?? '');
+  if (!isListResult(parsed)) {
+    throw new Error('Failed to parse renet output: unexpected format');
+  }
+  return parsed;
 }
 
 /**

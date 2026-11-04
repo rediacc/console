@@ -2,7 +2,7 @@
  * Secrets reach a remote renet through stdin, never through its command line.
  *
  * Every renet launch the CLI sends over SSH (`execute`, detached `job start`,
- * `list all`) used to splice `REDIACC_OTLP_PASS` and each `REDIACC_SECRET_*`
+ * and the `list all` of `machine status`, which is now a job) used to splice `REDIACC_OTLP_PASS` and each `REDIACC_SECRET_*`
  * into a `sudo env K='v' renet ...` command, readable in the local ssh argv
  * and in `ps` on the machine. The launch now carries them as NUL-terminated
  * records ahead of the vault, read by a root bash that exports them and execs
@@ -17,11 +17,9 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildJobStartCommand } from '../executor/job-client.js';
 import { buildRemoteRenetCommand, buildRenetEnv } from '../executor/local-executor.js';
-import { buildListCommand } from '../machine/machine-status.js';
 
 const PASS = 'otlp-pass-Zq9';
 const SECRET = "multi\nline 'quoted' $HOME `x` value";
@@ -38,12 +36,6 @@ describe('every renet launch keeps secrets off the command', () => {
       buildRemoteRenetCommand({ remoteRenetPath: '/usr/bin/renet', eventsMode: true, ...PARAMS }),
     'job start': () =>
       buildJobStartCommand({ remoteRenetPath: '/usr/bin/renet', env: buildRenetEnv(PARAMS) }),
-    'list all': () =>
-      buildListCommand({
-        remoteRenetPath: '/usr/bin/renet',
-        datastore: WK_DATASTORE_PATH,
-        env: buildRenetEnv(PARAMS),
-      }),
   };
 
   for (const [name, build] of Object.entries(launches)) {

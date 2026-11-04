@@ -1,33 +1,36 @@
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  buildListCommand,
-  fetchMachineStatus,
-  fetchRepoLicenseDetail,
-} from '../machine/machine-status.js';
+import { fetchMachineStatus, fetchRepoLicenseDetail } from '../machine/machine-status.js';
 
-const { mockExecStreaming, mockRelease, mockAcquire, mockConfigService, mockAcquireRenet } =
-  vi.hoisted(() => {
-    const mockExecStreaming = vi.fn();
-    const sftp = { execStreaming: mockExecStreaming };
-    const mockRelease = vi.fn();
-    const mockAcquire = vi.fn().mockResolvedValue({
-      sftp,
-      machine: { machineName: 'm1', ip: '127.0.0.1', user: 'root', port: 22 },
-      sshPrivateKey: 'dummy-key',
-      ensure: vi.fn().mockResolvedValue(sftp),
-      release: mockRelease,
-    });
-    return {
-      mockExecStreaming,
-      mockRelease,
-      mockAcquire,
-      mockConfigService: { getLocalConfig: vi.fn() },
-      mockAcquireRenet: vi
-        .fn()
-        .mockResolvedValue({ remotePath: '/usr/lib/rediacc/renet/current/renet' }),
-    };
+const {
+  mockExecStreaming,
+  mockRelease,
+  mockAcquire,
+  mockConfigService,
+  mockAcquireRenet,
+  mockExecute,
+} = vi.hoisted(() => {
+  const mockExecStreaming = vi.fn();
+  const sftp = { execStreaming: mockExecStreaming };
+  const mockRelease = vi.fn();
+  const mockAcquire = vi.fn().mockResolvedValue({
+    sftp,
+    machine: { machineName: 'm1', ip: '127.0.0.1', user: 'root', port: 22 },
+    sshPrivateKey: 'dummy-key',
+    ensure: vi.fn().mockResolvedValue(sftp),
+    release: mockRelease,
   });
+  return {
+    mockExecStreaming,
+    mockRelease,
+    mockAcquire,
+    mockExecute: vi.fn(),
+    mockConfigService: { getLocalConfig: vi.fn() },
+    mockAcquireRenet: vi
+      .fn()
+      .mockResolvedValue({ remotePath: '/usr/lib/rediacc/renet/current/renet' }),
+  };
+});
 
 vi.mock('../machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
@@ -41,44 +44,9 @@ vi.mock('../renet/renet-execution.js', () => ({
   acquireRemoteRenet: mockAcquireRenet,
 }));
 
-vi.mock('../executor/local-executor.js', () => ({
-  buildRenetEnv: vi.fn().mockReturnValue({ prefix: '', secrets: {} }),
+vi.mock('../executor/executor-factory.js', () => ({
+  getExecutor: () => ({ execute: mockExecute }),
 }));
-
-vi.mock('../telemetry/otlp-credentials.js', () => ({
-  fetchOtlpCredentials: vi.fn().mockResolvedValue(null),
-}));
-
-vi.mock('../telemetry/telemetry.js', () => ({
-  isTelemetryDisabled: vi.fn().mockReturnValue(true),
-}));
-
-describe('buildListCommand', () => {
-  const base = {
-    env: { prefix: '', secrets: {} },
-    remoteRenetPath: '/usr/lib/rediacc/renet/current/renet',
-    datastore: WK_DATASTORE_PATH,
-  };
-
-  it('omits --sections when no filter is given', () => {
-    expect(buildListCommand(base).command).toBe(
-      `sudo '/usr/lib/rediacc/renet/current/renet' list all --datastore '${WK_DATASTORE_PATH}' --json`
-    );
-  });
-
-  it('propagates a caller-provided sections filter', () => {
-    expect(buildListCommand({ ...base, sections: ['containers'] }).command).toBe(
-      `sudo '/usr/lib/rediacc/renet/current/renet' list all --datastore '${WK_DATASTORE_PATH}' --json --sections containers`
-    );
-    expect(buildListCommand({ ...base, sections: ['system', 'repositories'] }).command).toBe(
-      `sudo '/usr/lib/rediacc/renet/current/renet' list all --datastore '${WK_DATASTORE_PATH}' --json --sections system,repositories`
-    );
-  });
-
-  it('treats an empty sections array as no filter', () => {
-    expect(buildListCommand({ ...base, sections: [] }).command).not.toContain('--sections');
-  });
-});
 
 describe('fetchMachineStatus', () => {
   beforeEach(() => {
@@ -86,56 +54,64 @@ describe('fetchMachineStatus', () => {
     mockConfigService.getLocalConfig.mockResolvedValue({
       machines: { m1: { ip: '127.0.0.1', user: 'root', port: 22 } },
     });
-    mockExecStreaming.mockImplementation(
-      (_cmd: string, opts: { onStdout?: (data: Buffer) => void }) => {
-        opts.onStdout?.(Buffer.from(JSON.stringify({ containers: [] })));
-        return Promise.resolve(0);
-      }
-    );
+    mockExecute.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: JSON.stringify({ containers: [] }),
+    });
   });
 
-  it('runs renet list over a pooled connection and releases the lease', async () => {
+  it('makes one list-all job, with no client-side renet command and no pooled connection', async () => {
     const result = await fetchMachineStatus('m1');
 
     expect(result).toEqual({ containers: [] });
-    expect(mockAcquire).toHaveBeenCalledExactlyOnceWith('m1');
-    expect(mockRelease).toHaveBeenCalledTimes(1);
-    // The renet check reuses the lease's team key instead of re-reading it.
-    expect(mockAcquireRenet).toHaveBeenCalledWith(
-      'read-only',
-      expect.anything(),
-      expect.anything(),
-      'dummy-key',
-      expect.anything()
-    );
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockExecute.mock.calls[0][0]).toMatchObject({
+      functionName: 'list-all',
+      machineName: 'm1',
+      commandKind: { name: 'list-all', args: { datastore: WK_DATASTORE_PATH } },
+      captureOutput: true,
+      probe: true,
+    });
+    expect(mockAcquire).not.toHaveBeenCalled();
+    expect(mockExecStreaming).not.toHaveBeenCalled();
+    expect(mockAcquireRenet).not.toHaveBeenCalled();
   });
 
-  it('never provisions renet: machine status is read-only', async () => {
+  it('uses the machine datastore when it names one', async () => {
+    mockConfigService.getLocalConfig.mockResolvedValue({
+      machines: { m1: { ip: '127.0.0.1', user: 'root', port: 22, datastore: '/mnt/other' } },
+    });
+
     await fetchMachineStatus('m1');
 
-    expect(mockAcquireRenet).toHaveBeenCalledTimes(1);
-    expect(mockAcquireRenet.mock.calls[0][0]).toBe('read-only');
+    expect(mockExecute.mock.calls[0][0].commandKind.args).toEqual({ datastore: '/mnt/other' });
   });
 
-  it('passes the sections filter through to the renet invocation', async () => {
-    await fetchMachineStatus('m1', { sections: ['containers'] });
+  it('passes the sections filter through the job args', async () => {
+    await fetchMachineStatus('m1', { sections: ['system', 'repositories'] });
 
-    expect(mockExecStreaming).toHaveBeenCalledWith(
-      expect.stringContaining('--sections containers'),
-      expect.anything()
-    );
+    expect(mockExecute.mock.calls[0][0].commandKind.args).toEqual({
+      datastore: WK_DATASTORE_PATH,
+      sections: 'system,repositories',
+    });
   });
 
-  it('releases the lease when renet exits non-zero', async () => {
-    mockExecStreaming.mockResolvedValue(1);
+  it('omits sections for an empty filter', async () => {
+    await fetchMachineStatus('m1', { sections: [] });
 
-    await expect(fetchMachineStatus('m1')).rejects.toThrow('renet list all failed');
-    expect(mockRelease).toHaveBeenCalledTimes(1);
+    expect(mockExecute.mock.calls[0][0].commandKind.args).not.toHaveProperty('sections');
   });
 
-  it('rejects unknown machines before acquiring a connection', async () => {
+  it('throws with the job stderr when the job fails', async () => {
+    mockExecute.mockResolvedValue({ success: false, exitCode: 1, stderr: 'boom' });
+
+    await expect(fetchMachineStatus('m1')).rejects.toThrow('renet list all failed (exit 1): boom');
+  });
+
+  it('rejects unknown machines before any job', async () => {
     await expect(fetchMachineStatus('nope')).rejects.toThrow('Machine "nope" not found');
-    expect(mockAcquire).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
   });
 });
 
@@ -152,5 +128,11 @@ describe('fetchRepoLicenseDetail', () => {
 
     expect(mockAcquireRenet).toHaveBeenCalledTimes(1);
     expect(mockAcquireRenet.mock.calls[0][0]).toBe('read-only');
+  });
+
+  it('releases the lease', async () => {
+    await fetchRepoLicenseDetail('m1');
+
+    expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 });

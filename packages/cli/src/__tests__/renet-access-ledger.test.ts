@@ -65,7 +65,6 @@ const LEDGER: Record<string, string[]> = {
   'services/jobs/remote-deps.ts::withConnection::connectForJobs': ['read-only'],
   // `renet job claim` writes a step marker into the spool of a job the machine's own renet already ran, so that renet has `job claim`; an observer (the notice, `job wait`) claiming steps must not provision.
   'services/jobs/run-job.ts::liveClaimExec::connectForJobs': ['read-only'],
-  'services/machine/machine-status.ts::fetchMachineStatus::acquireRemoteRenet': ['read-only'],
   'services/machine/machine-status.ts::fetchRepoLicenseDetail::acquireRemoteRenet': ['read-only'],
   'services/provision/infra-provision.ts::pushInfraConfig::acquireRemoteRenet': ['provision'],
   'services/renet/machine-bootstrap.ts::bootstrapMachine::acquireRemoteRenet': ['provision'],
