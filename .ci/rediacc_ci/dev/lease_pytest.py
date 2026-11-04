@@ -55,20 +55,15 @@ def run(argv, top):
     if not argv or argv[0] != "pytest":
         sys.stderr.write(USAGE)
         return 2
-    verb, rest = argv[0], argv[1:]
-    if verb == "pytest":
-        wrapper = find_pytest(top)
-        if wrapper is None:
-            sys.stderr.write(
-                "lease_pytest: no %s in %s or its main checkout; run `bash .ci/bootstrap.sh` there\n"
-                % (PYTEST_REL, top)
-            )
-            return 1
-        return subprocess.run([str(wrapper), *rest], cwd=str(top), check=False).returncode
-    if not rest:
-        sys.stderr.write(USAGE)
-        return 2
-    return None
+    rest = argv[1:]
+    wrapper = find_pytest(top)
+    if wrapper is None:
+        sys.stderr.write(
+            "lease_pytest: no %s in %s or its main checkout; run `bash .ci/bootstrap.sh` there\n"
+            % (PYTEST_REL, top)
+        )
+        return 1
+    return subprocess.run([str(wrapper), *rest], cwd=str(top), check=False).returncode
 
 
 def main():
