@@ -15,7 +15,6 @@
   "commands.backup.browse.startingAt": "Listing {{name}} at snapshot {{snapshot}}...",
   "commands.backup.browse.truncated": "Listing truncated at {{limit}} entries. Narrow it with --path, or raise --limit.",
   "commands.backup.cancel.cancelled": "Cancelled {{name}}",
-  "commands.backup.cancel.cancelling": "Stopping {{name}}...",
   "commands.backup.cancel.description": "Cancel a running backup on a remote machine",
   "commands.backup.cancel.notRunning": "No backup running for strategy \"{{name}}\"",
   "commands.backup.check.description": "Prove a stored snapshot opens with the passphrase by restoring one file",

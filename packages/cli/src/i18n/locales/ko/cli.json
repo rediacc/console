@@ -23,7 +23,6 @@
       },
       "cancel": {
         "cancelled": "{{name}}이 취소되었습니다",
-        "cancelling": "{{name}} 중지 중...",
         "description": "원격 머신에서 실행 중인 백업을 취소합니다",
         "notRunning": "전략 \"{{name}}\"에 대해 실행 중인 백업이 없습니다"
       },

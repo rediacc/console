@@ -15,7 +15,6 @@
   "commands.backup.browse.startingAt": "스냅샷 {{snapshot}} 기준으로 {{name}}을(를) 나열하는 중...",
   "commands.backup.browse.truncated": "나열이 {{limit}}개 항목에서 잘렸습니다. --path로 범위를 좁히거나 --limit을 늘리세요.",
   "commands.backup.cancel.cancelled": "{{name}}이 취소되었습니다",
-  "commands.backup.cancel.cancelling": "{{name}} 중지 중...",
   "commands.backup.cancel.description": "원격 머신에서 실행 중인 백업을 취소합니다",
   "commands.backup.cancel.notRunning": "전략 \"{{name}}\"에 대해 실행 중인 백업이 없습니다",
   "commands.backup.check.description": "파일 하나를 복원해 스냅샷이 암호로 열리는지 증명합니다",

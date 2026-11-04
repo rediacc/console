@@ -1811,7 +1811,6 @@
       },
       "cancel": {
         "cancelled": "Cancelled {{name}}",
-        "cancelling": "Stopping {{name}}...",
         "description": "Cancel a running backup on a remote machine",
         "notRunning": "No backup running for strategy \"{{name}}\""
       },
