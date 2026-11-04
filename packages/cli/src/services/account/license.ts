@@ -198,7 +198,8 @@ export function issueRepoLicense(
 async function readRepoLicenseInputs(
   machineName: string,
   datastore: string,
-  repositoryGuid: string
+  repositoryGuid: string,
+  callerDatastoreId?: string
 ): Promise<{
   luksUuid?: string;
   storageFingerprint?: string;
@@ -216,7 +217,11 @@ async function readRepoLicenseInputs(
       error instanceof Error ? error.message : String(error)
     );
   }
-  const entry = scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
+  // A byte-clone fork keeps its parent's GUID, and the scan walks the primary datastore and then the attached ones by name, so a replica attached beside its parent is listed after it. The first entry alone would license that fork under the parent's datastore id.
+  const entry =
+    scanned.find(
+      (repo) => repo.repositoryGuid === repositoryGuid && repo.datastoreId === callerDatastoreId
+    ) ?? scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
   if (!entry) {
     // The scan answered and this repository is not in it. renet's scan is fail-closed: an image whose LUKS header cannot be read gets no entry rather than a fingerprint minted in place of its UUID. Issuing from here would bind the licence to no identity at all, so refuse.
     throw new RepoIdentityUnreadableError(repositoryGuid);
@@ -256,12 +261,14 @@ export function refreshRepoLicenseIdentity(
     requestedSizeGb?: number;
     /**
      * The datastore identity the CALLER already resolved (the placement it just
-     * provisioned into). A fallback, not an override: the scan below is the
-     * better answer because it reads the repo's actual home. It matters when
-     * the scan lists the repo without a datastore identity, where dropping to
-     * none would write the reissue to the unscoped path that renet does not
-     * read for a datastore-resident repo. A scan that fails or omits the repo
-     * refuses the reissue before this is read.
+     * provisioned into). It picks the scan entry when the scan lists this GUID
+     * in several datastores, which a fork attached beside its parent does. Past
+     * that it is a fallback, not an override: the scan is the better answer
+     * because it reads the repo's actual home. The fallback matters when the
+     * scan lists the repo without a datastore identity, where dropping to none
+     * would write the reissue to the unscoped path that renet does not read for
+     * a datastore-resident repo. A scan that fails or omits the repo refuses
+     * the reissue before this is read.
      */
     datastoreId?: string;
     /**
@@ -292,7 +299,12 @@ export function refreshRepoLicenseIdentity(
       const datastore = machine.datastore ?? DEFAULT_DATASTORE;
       let scanned: Awaited<ReturnType<typeof readRepoLicenseInputs>>;
       try {
-        scanned = await readRepoLicenseInputs(machineName, datastore, params.repositoryGuid);
+        scanned = await readRepoLicenseInputs(
+          machineName,
+          datastore,
+          params.repositoryGuid,
+          params.datastoreId
+        );
       } catch (error) {
         if (!(error instanceof RepoIdentityUnreadableError)) throw error;
         outputService.warn(error.message);

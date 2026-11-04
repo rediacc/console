@@ -137,6 +137,94 @@ function sizeWarnings(spy: { mock: { calls: unknown[][] } }): string[] {
   return spy.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('Could not measure'));
 }
 
+describe('refreshRepoLicenseIdentity: which scan entry a GUID listed twice reads', () => {
+  const PARENT_ID = 'aaaaaaaa-0000-4000-8000-000000000001';
+  const FORK_ID = 'bbbbbbbb-0000-4000-8000-000000000002';
+  const FORK_MOUNT = '/mnt/rediacc-ds/ds-data-r1';
+  // renet's order: the parent's named datastore sorts before `<parent>:<tag>`.
+  const beside = [
+    scanEntry({
+      datastoreId: PARENT_ID,
+      datastorePath: '/mnt/rediacc-ds/ds-data',
+      requestedSizeGb: 9,
+    }),
+    scanEntry({ datastoreId: FORK_ID, datastorePath: FORK_MOUNT, requestedSizeGb: 2 }),
+  ];
+
+  /** The datastore id on the account request and on the licence write. */
+  function issuedScope(): { requested: unknown; written: unknown; size: unknown } {
+    const call = mockAccountServerFetch.mock.calls[0] as [
+      string,
+      { body: Record<string, unknown> },
+    ];
+    const write = mockExecute.mock.calls
+      .map((c) => c[0] as { commandKind: { name: string; payload?: string } })
+      .find((o) => o.commandKind.name === 'license-write');
+    const payload = JSON.parse(write?.commandKind.payload ?? '{}') as { datastoreId?: string };
+    return {
+      requested: call[1].body.datastoreId,
+      written: payload.datastoreId,
+      size: issuedSizeGb(),
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAccountServerFetch.mockResolvedValue({
+      license: { payload: 'a', signature: 'b', publicKeyId: 'fc6a12b178711e65' },
+    });
+  });
+
+  it("a replica on control beside its parent is licensed under the fork's id, not the parent's", async () => {
+    const { sftp } = createSftp(beside);
+
+    await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      { repositoryGuid: REPO_GUID, kind: 'fork', datastoreId: FORK_ID },
+      '/usr/bin/renet',
+      sftp
+    );
+
+    expect(issuedScope()).toEqual({ requested: FORK_ID, written: FORK_ID, size: 2 });
+  });
+
+  it('a caller that names no datastore reads the first entry, as a grand repo always has', async () => {
+    const { sftp } = createSftp(beside);
+
+    await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      { repositoryGuid: REPO_GUID, kind: 'grand' },
+      '/usr/bin/renet',
+      sftp
+    );
+
+    expect(issuedScope()).toEqual({ requested: PARENT_ID, written: PARENT_ID, size: 9 });
+  });
+
+  it('a caller id the scan does not list falls to what the scan does know', async () => {
+    const { sftp } = createSftp(beside);
+
+    await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      {
+        repositoryGuid: REPO_GUID,
+        kind: 'fork',
+        datastoreId: 'cccccccc-0000-4000-8000-000000000003',
+      },
+      '/usr/bin/renet',
+      sftp
+    );
+
+    expect(issuedScope().requested).toBe(PARENT_ID);
+  });
+});
+
 describe('refreshRepoLicenseIdentity: which datastore the size probe measures', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
