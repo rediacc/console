@@ -6549,7 +6549,7 @@ export const CLI_CONTRACT: CliContract = {
         "block",
         "attach"
       ],
-      "mcpExcludeReason": "Blocks until the job ends, which no MCP timeout covers; poll with job_status and job_logs.",
+      "mcpExcludeReason": "An agent cannot usefully block until the job ends; poll with job_status and job_logs.",
       "interactive": false,
       "proxyCapable": true,
       "detachable": false,

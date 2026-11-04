@@ -63,7 +63,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // An agent cannot usefully block on a wait: job_status and job_logs poll, and the ticket envelope names them (PLAN-detached-jobs Design 12).
   'job wait': {
     mcpExcludeReason:
-      'Blocks until the job ends, which no MCP timeout covers; poll with job_status and job_logs.',
+      'An agent cannot usefully block until the job ends; poll with job_status and job_logs.',
   },
   'job cancel': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
@@ -838,7 +838,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo gpu': {
     mcpExcludeReason: 'Device grants widen host access for a repository. Use CLI directly',
   },
-  // A lifecycle grant widens what a repository's Rediaccfile may reach on the host (a path, or root with no privilege drop), so it is the operator's call, CLI-only; `--root` is further refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
+  // A lifecycle grant widens what a repository's Rediaccfile may reach on the host (a path, or root with no privilege drop), so it is the operator's call, CLI-only; `--root`, and `--path` on a grand repository, are further refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
   'repo permission': {
     mcpExcludeReason: 'Lifecycle grants widen host access for a repository. Use CLI directly',
   },
