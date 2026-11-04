@@ -12,7 +12,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
-import { busy } from '../../utils/cli-exit-error.js';
+import { busy, CliExitError } from '../../utils/cli-exit-error.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { VERSION } from '../../version.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
@@ -422,6 +422,8 @@ class RenetProvisionerService {
     } catch (error) {
       // Fail open: a machine that failed to provision must not be skipped by the persistent cache on the next attempt.
       await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
+      // A coded refusal (BUSY on the remote install lock) keeps its code, exit status and next action.
+      if (error instanceof CliExitError) throw error;
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,

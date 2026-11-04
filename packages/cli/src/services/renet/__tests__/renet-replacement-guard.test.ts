@@ -366,6 +366,24 @@ describe('the replacements a provision refuses', () => {
   });
 });
 
+describe('a coded failure inside the provision', () => {
+  it('keeps BUSY on the remote install lock instead of flattening it to a failed result', async () => {
+    state.version = '2.5.0';
+    const p = await provisioner();
+    const sftp = remote(null, null);
+    const original = sftp.exec.getMockImplementation();
+    sftp.exec.mockImplementation((command: string) =>
+      command.includes('flock -w 120')
+        ? Promise.reject(new Error('Command exited with code 75: FLOCK_TIMEOUT'))
+        : (original?.(command) ?? Promise.resolve(''))
+    );
+    const error = await p
+      .provision(CONFIG, { localBinaryPath: writeBinary(renetBytes('2.5.0')) }, sftp as never)
+      .catch((caught: unknown) => caught);
+    expect((error as CliExitError).code).toBe('BUSY');
+  });
+});
+
 describe('readRenetBuild', () => {
   it('reads the stamp of the renet module and ignores the same text in an embedded asset', async () => {
     const { readRenetBuild } = await import('../renet-provisioner.js');
