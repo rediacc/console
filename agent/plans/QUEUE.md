@@ -63,21 +63,23 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-renet-run-docker-sock-isolation.md -- 3 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (5 epic(s)):
+- Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 2 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
-  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 4 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 2 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 7 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 8 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 1 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:abbcd808100117ee3, worker:a427f2f73b5f7b167, worker:ad2786b5bc394dba2.
-- Leased items: 4: #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:222629, d778be9d), #fa3383d6 (worker:2567959, d778be9d).
+  - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup critical tier proofs
+  - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 1: #a150016d (worker:queue, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 39 plans done, 605 of 819 boxes done (73%).
+Promoted: 3 of 39 plans done, 616 of 819 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -101,24 +103,24 @@ Promoted: 3 of 39 plans done, 605 of 819 boxes done (73%).
 | 18 | PLAN-console-executor-multi-org.md | 17/21 | 4 open |
 | 19 | PLAN-executor-durable-object-policy.md | 15/22 | 7 open |
 | 20 | PLAN-local-release.md | 14/16 | 2 open |
-| 21 | PLAN-tested-on-bench.md | 14/20 | 6 open |
+| 21 | PLAN-tested-on-bench.md | 16/20 | 4 open |
 | 22 | PLAN-org-executor-connect-timeout-relocate.md | 9/12 | 3 open |
 | 23 | PLAN-backup-restore-path.md | 7/10 | 3 open |
 | 24 | PLAN-ssh-key-source-ranges.md | 10/11 | 1 open |
 | 25 | PLAN-repo-docker-storage-prune.md | 11/14 | 3 open |
 | 26 | PLAN-production-key-only.md | 9/19 | 10 open |
-| 27 | PLAN-detached-jobs.md | 14/39 | 25 open |
+| 27 | PLAN-detached-jobs.md | 19/39 | 20 open |
 | 28 | PLAN-snapshot-read-io-cap.md | 12/16 | 4 open |
-| 29 | PLAN-backup-meter-orphaned-chunks.md | 4/8 | 4 open |
-| 30 | PLAN-backup-local-image.md | 9/14 | 5 open |
+| 29 | PLAN-backup-meter-orphaned-chunks.md | 5/8 | 3 open |
+| 30 | PLAN-backup-local-image.md | 10/14 | 4 open |
 | 31 | PLAN-backup-plane-shared-bucket-hardening.md | 4/7 | 3 open |
 | 32 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
 | 33 | PLAN-cli-tofu-toolchain.md | 9/10 | 1 open |
 | 34 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
-| 36 | PLAN-free-license.md | 6/13 | 7 open |
+| 36 | PLAN-free-license.md | 7/13 | 6 open |
 | 37 | PLAN-backup-integrity.md | 40/57 | 17 open |
-| 38 | PLAN-backup-critical-tier.md | 34/53 | 19 open |
+| 38 | PLAN-backup-critical-tier.md | 35/53 | 18 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 0/23 | 23 open |
 <!-- queue:progress:end -->
 

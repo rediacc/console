@@ -429,7 +429,8 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: private/renet/pkg/jobs/retention.go (new), private/renet/pkg/jobs/retention_test.go (new), private/renet/cmd/renet/job_commands.go, private/renet/cmd/renet/job_commands_test.go, private/renet/pkg/list/jobs.go (new), private/renet/pkg/list/jobs_test.go (new), private/renet/pkg/list/list.go (the jobs section call only), private/renet/pkg/list/types.go (the jobs section only), private/renet (gitlink bump only). Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/jobs/ ./pkg/list/` rc 0, and `cd private/renet && go vet ./cmd/renet/ ./pkg/jobs/ ./pkg/list/` rc 0.
 
-- [ ] J2 [writer] Contract: `detachable` narrows to the covered verbs through an explicit `JOB_VERBS` table with reasons (Design 1); the job wire line gains `machine`; the poll response schema and the poll and cancel routes join `PROXY_ROUTES`; `jobEvents` and `jobEventsPattern` are removed. The lead regenerates the contract with `npm run generate:cli-contract -w @rediacc/cli` after the writer's edit.
+- [x] J2 [writer] Contract: `detachable` narrows to the covered verbs through an explicit `JOB_VERBS` table with reasons (Design 1); the job wire line gains `machine`; the poll response schema and the poll and cancel routes join `PROXY_ROUTES`; `jobEvents` and `jobEventsPattern` are removed. The lead regenerates the contract with `npm run generate:cli-contract -w @rediacc/cli` after the writer's edit.
+    (ticked) 2026-11-04T09:37:19Z by d778be9d: commit:e8a92150c J2 wire shapes landed, JOB_VERBS narrowing superseded by J2b; tsc and vitest src/cli-contract rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
   Tests: the contract test asserts the exact covered set and that no `domain === 'job'` command is detachable; the poll schema round-trips a sample and refuses a body without `nextLine`; control: a planted `repo list` in `JOB_VERBS` makes the set test red.
 
@@ -548,10 +549,11 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: packages/cli/src/commands/subscription-actions.ts, packages/cli/src/commands/vscode-serve.ts, packages/cli/src/commands/__tests__/job-plan-misc.test.ts (new). Accept: `cd packages/cli && npx vitest run src/commands/__tests__/job-plan-misc.test.ts` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
 
-- [ ] J6 [writer] Proxy serve and client. After J2, J3 and J5. Changes:
+- [x] J6 [writer] Proxy serve and client. After J2, J3 and J5. Changes:
   - the dispatch returns at the terminal job's start (packages/cli/src/services/serve/command-dispatch.ts:389-405 loses `follow: true`);
   - the poll and cancel routes, the held re-attach route deleted, start and terminal audit events (Design 4);
   - proxy-client follows by polls with the Design 5 backoff, writes and updates the ticket (`via: proxy`), and loses its re-attach loop.
+    (ticked) 2026-11-04T09:36:28Z by d778be9d: commit:e8a92150c J6 poll and cancel routes landed; serve and executor vitest rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
   Tests: an in-process serve with a fake machine shows `/v1/command` for `repo up` ending right after the job and result lines (the response closes before the fake job finishes); poll returns events after `sinceLine` with the status and honours `maxLines` and `more`; a poll for a machine outside the caller's policy is 403; the cancel route audits as destructive; exactly one terminal audit event across three polls of a finished job; the client's backoff sequence on empty polls is 2, 3, 4.5 ... 30 s within jitter; control: a non-detachable command (`repo list`) still streams to its result.
 
@@ -583,7 +585,8 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: private/account/web/src/hooks/useCommand.ts, private/account/web/src/hooks/__tests__/useCommand-poll.test.ts (new), private/account/web/src/api/console.ts, private/account/src/routes/console.ts (the job poll relay only), private/account (the gitlink bump only). Accept: `cd private/account && npx vitest run web/src/hooks src/routes` rc 0, and `cd private/account && npx tsc --noEmit` rc 0.
   Amended (third round): follows J6b. The hook renders a result that arrives inside the window without polling, renders `overlaps` as a warning with the attach command, and sends a `requestId`. The test adds one case per behaviour.
 
-- [ ] J8 [writer] MCP (Design 12). After J2, J3 and J5. Covered tools append `--background` and describe the job; `job_status` and `job_logs` take the machine optionally.
+- [x] J8 [writer] MCP (Design 12). After J2, J3 and J5. Covered tools append `--background` and describe the job; `job_status` and `job_logs` take the machine optionally.
+    (ticked) 2026-11-04T09:37:22Z by d778be9d: commit:3b5cb478d J8 superseded by the J8b attach window; vitest src/commands/mcp rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
   Tests: each covered tool's argv carries `--background`; the parsed envelope of a fake `repo up` returns within the read timeout with a job id; `job_status` built with only an id omits `-m`; the coverage test lists every covered verb with `--background`; control: `repo list` carries no `--background`.
 
@@ -596,13 +599,15 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: packages/cli/src/commands/mcp/tool-factory.ts, packages/cli/src/commands/mcp/executor.ts, packages/cli/src/commands/mcp/__tests__/**, packages/cli/src/config/command-metadata.ts (the mcp fields of the converted verbs and the job tools only). Accept: `cd packages/cli && npx vitest run src/commands/mcp` rc 0.
 
-- [ ] J21 [writer] Running jobs in `machine status` and `repo status`, and the overlap warning text. After J1c and J3b. `machine status` renders the `jobs` section of `renet list all` (id, verb, repo, started-at, origin, state, and the attach command). `repo status` shows the jobs on its repo GUID. The en keys cover the warning, refusal and status lines.
+- [x] J21 [writer] Running jobs in `machine status` and `repo status`, and the overlap warning text. After J1c and J3b. `machine status` renders the `jobs` section of `renet list all` (id, verb, repo, started-at, origin, state, and the attach command). `repo status` shows the jobs on its repo GUID. The en keys cover the warning, refusal and status lines.
+    (ticked) 2026-11-04T09:36:31Z by d778be9d: commit:3b5cb478d J21 job rows on machine and repo status; job-status-surfaces rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
   Tests: a fake `list all` with one live job renders one row with the attach command; `-o json` carries `jobs`; `repo status` filters by GUID; a job from another config shows its GUID and origin; control: an empty `jobs` section prints nothing extra.
 
   Owns: packages/cli/src/commands/machine/status.ts (the running-jobs section only), packages/cli/src/commands/repo.ts (the status action only), packages/cli/src/commands/__tests__/job-status-surfaces.test.ts (new), packages/cli/src/i18n/locales/en/cli.json. Accept: `cd packages/cli && npx vitest run src/commands/__tests__/job-status-surfaces.test.ts` rc 0, and `npm run check:ci-i18n-cli-key-usage` rc 0.
 
-- [ ] J22 [writer] Remove each BACKGROUND_UNSAFE entry only when its verb's job and ticket steps land (section 25). One commit per verb, after that verb's conversion box (J4 for all ten). Each commit adds the verb to the converted registry in packages/cli/src/services/jobs/plans.ts.
+- [x] J22 [writer] Remove each BACKGROUND_UNSAFE entry only when its verb's job and ticket steps land (section 25). One commit per verb, after that verb's conversion box (J4 for all ten). Each commit adds the verb to the converted registry in packages/cli/src/services/jobs/plans.ts.
+    (ticked) 2026-11-04T09:37:25Z by d778be9d: commit:a5f022b2b J22 BACKGROUND_UNSAFE empty; proxy-command and background-unsafe-invariant vitest rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
   Tests: the invariant test holds every detachable verb in exactly one of `BACKGROUND_UNSAFE` or the converted registry; for each removed verb, `-b` returns the envelope with its steps recorded in the spool and on the ticket (recording executor); the existing per-key test (packages/cli/src/services/executor/__tests__/proxy-command.test.ts:131-133) keeps passing for the remaining keys; control: a planted verb in both sets fails the invariant.
 

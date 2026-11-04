@@ -271,8 +271,9 @@ R2's changes:
 
 ## Tasks
 
-- [ ] P0 [lead] Plan lint. Run the two gates on this file.
+- [x] P0 [lead] Plan lint. Run the two gates on this file.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0 and `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
+    (ticked) 2026-11-04T09:36:19Z by d778be9d: fileline:agent/plans/PLAN-backup-local-image.md:1 P0 plan record; check_plan_citations and check_plan_deps rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
 - [x] R1 [writer] renet `backup export` and `backup import` (Design 2, 8).
   - Both are new cobra commands in their own files, registered in private/renet/cmd/renet/backup.go.

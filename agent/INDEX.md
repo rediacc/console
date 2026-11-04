@@ -470,12 +470,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-backup-critical-tier.md` | approved | 764 | 19 | 34 | 102839 |
+| `agent/plans/PLAN-backup-critical-tier.md` | approved | 765 | 18 | 35 | 103120 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 47 | 4 | 5 | 8795 |
 | `agent/plans/PLAN-backup-integrity.md` | approved | 481 | 17 | 40 | 72576 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
-| `agent/plans/PLAN-backup-local-image.md` | approved | 455 | 5 | 9 | 57445 |
-| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 263 | 4 | 4 | 33285 |
+| `agent/plans/PLAN-backup-local-image.md` | approved | 456 | 4 | 10 | 57679 |
+| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 264 | 3 | 5 | 33524 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 40 | 3 | 4 | 6520 |
 | `agent/plans/PLAN-backup-program.md` | approved | 578 | 29 | 167 | 151218 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
@@ -502,7 +502,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 92 | 1 | 18 | 33745 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1013 | 25 | 14 | 179038 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1018 | 20 | 19 | 180119 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 118 | 1 | 8 | 19848 |
@@ -516,7 +516,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
-| `agent/plans/PLAN-free-license.md` | approved | 109 | 7 | 6 | 23924 |
+| `agent/plans/PLAN-free-license.md` | approved | 110 | 6 | 7 | 24173 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
@@ -590,7 +590,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 133 | 1 | 6 | 21029 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 206 | 2 | 18 | 51160 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
-| `agent/plans/PLAN-tested-on-bench.md` | approved | 324 | 6 | 14 | 46300 |
+| `agent/plans/PLAN-tested-on-bench.md` | approved | 326 | 4 | 16 | 46800 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 421 | 0 | 11 | 39472 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
