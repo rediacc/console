@@ -43,6 +43,7 @@ import {
   resolveGuids,
 } from '../../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
+import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import {
   filterRepositoriesBySearch,
   runContainerHealthCheck,
@@ -168,7 +169,7 @@ function formatBytesShort(bytes: number | undefined): string {
 function getSections(
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
+  licenseDetail: LicenseDetail,
   baseDomain?: string,
   machineName?: string
 ): SectionRenderer[] {
@@ -299,7 +300,7 @@ function getSections(
       getData: (r) => {
         const currentMachineId = r.system?.machine_id;
         return getLicenseStatuses(r).map((l) => {
-          const extra = licenseDetail.get(l.repositoryGuid);
+          const extra = licenseDetail?.get(l.repositoryGuid);
           return {
             repository: resolve(l.repositoryGuid),
             status: l.status,
@@ -308,7 +309,7 @@ function getSections(
             machine_match: getMachineMatch(currentMachineId, l.machineId),
             datastore: extra?.datastoreId?.slice(0, 8) ?? '-',
             // The whole reason this column exists: a blocked-backup marker means unattended backups have been failing on licensing since that timestamp, and nothing else in this output says so.
-            backups: extra?.blockedBackup ? `BLOCKED ${extra.blockedBackup.reason}` : 'ok',
+            backups: licenseDetailBackups(licenseDetail, extra),
             renewed: formatRenewalOutcome(extra?.lastRenewal),
           };
         });
@@ -338,7 +339,8 @@ function formatRenewalOutcome(renewal: RuntimeRepoLicenseStatus['lastRenewal']):
  * single cell in a wide table on a machine with thirty repos is exactly where
  * that gets missed.
  */
-function renderBlockedBackupAlerts(licenseDetail: Map<string, RuntimeRepoLicenseStatus>): void {
+function renderBlockedBackupAlerts(licenseDetail: LicenseDetail): void {
+  if (!licenseDetail) return;
   for (const entry of licenseDetail.values()) {
     const marker = entry.blockedBackup;
     if (!marker) continue;
@@ -507,7 +509,7 @@ function renderTableMode(
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
+  licenseDetail: LicenseDetail,
   machineName?: string
 ): void {
   const tableSections = getSections(
@@ -564,7 +566,7 @@ function buildEnrichedJson(
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
+  licenseDetail: LicenseDetail,
   machineName: string
 ): Record<string, unknown> {
   const baseDomain = infra?.baseDomain;
@@ -598,7 +600,7 @@ function buildEnrichedJson(
     // `machine status -o json | jq` health check should not have to shell out to renet separately to learn that backups are blocked.
     license_statuses: getLicenseStatuses(listResult).map((l) => ({
       ...l,
-      ...(licenseDetail.get(l.repositoryGuid) ?? {}),
+      ...(licenseDetail?.get(l.repositoryGuid) ?? {}),
     })),
   };
 }
@@ -657,7 +659,7 @@ async function gatherStatus(
   listResult: ListResult;
   guidMap: Awaited<ReturnType<typeof loadGuidMap>>;
   machineConfig: MachineConfig | undefined;
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
+  licenseDetail: LicenseDetail;
   staleBinary: RenetProcess[] | null;
   staleBackups: StaleBackupRepo[];
   missedTargets: MissedTargetRepo[];
@@ -668,12 +670,18 @@ async function gatherStatus(
     configService.getLocalMachine(machineName).catch(() => undefined),
   ]);
   const wantsLicenses = sections.length === 0 || sections.includes('licenses');
+  const licenseDetail = wantsLicenses ? licenseDetailOf(listResult) : new Map();
+  if (wantsLicenses && licenseDetail === undefined) {
+    outputService.warn(
+      'The listing carries no readable licence detail (renet predates the licenses section, or an entry is malformed), so blocked-backup and renewal state are unknown.'
+    );
+  }
 
   return {
     listResult,
     guidMap,
     machineConfig,
-    licenseDetail: wantsLicenses ? licenseDetailOf(listResult) : new Map(),
+    licenseDetail,
     staleBinary: staleBinariesOf(listResult),
     staleBackups: await fetchStaleBackups(machineName, listResult),
     missedTargets: await fetchMissedTargets(machineName, listResult),
@@ -681,14 +689,43 @@ async function gatherStatus(
   };
 }
 
-/** The per-repo licence detail of a listing, by repository GUID. */
-function licenseDetailOf(listResult: ListResult): Map<string, RuntimeRepoLicenseStatus> {
-  return new Map(
-    (listResult.license_statuses ?? []).map((entry) => [
-      entry.repositoryGuid,
-      entry as RuntimeRepoLicenseStatus,
-    ])
+/** The per-repo licence detail of a listing by repository GUID; undefined (unknown, never "none") when the listing has no licences section or an entry is not the shape the table reads. */
+export type LicenseDetail = Map<string, RuntimeRepoLicenseStatus> | undefined;
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** The fields the status table and the blocked-backup alert read: a mismatch there would render as `undefined` cells. */
+function isLicenseEntry(entry: unknown): entry is RuntimeRepoLicenseStatus {
+  if (!isObject(entry)) return false;
+  const { repositoryGuid, status, datastoreId, blockedBackup, lastRenewal } = entry;
+  if (typeof repositoryGuid !== 'string' || typeof status !== 'string') return false;
+  if (datastoreId !== undefined && typeof datastoreId !== 'string') return false;
+  if (
+    blockedBackup !== undefined &&
+    !(isObject(blockedBackup) && typeof blockedBackup.reason === 'string')
+  ) {
+    return false;
+  }
+  return (
+    lastRenewal === undefined || (isObject(lastRenewal) && typeof lastRenewal.outcome === 'string')
   );
+}
+
+export function licenseDetailOf(listResult: ListResult): LicenseDetail {
+  const entries: unknown = listResult.license_statuses;
+  if (!Array.isArray(entries) || !entries.every(isLicenseEntry)) return undefined;
+  return new Map(entries.map((entry) => [entry.repositoryGuid, entry]));
+}
+
+/** The `backups` cell: unknown detail is never `ok`. */
+function licenseDetailBackups(
+  licenseDetail: LicenseDetail,
+  extra: RuntimeRepoLicenseStatus | undefined
+): string {
+  if (licenseDetail === undefined) return 'unknown';
+  return extra?.blockedBackup ? `BLOCKED ${extra.blockedBackup.reason}` : 'ok';
 }
 
 /**
@@ -1016,6 +1053,8 @@ async function renderStatusFromJob(
 }
 
 bindStepHandler('renderMachineStatus', async ({ machine, output, params }) => {
+  // The spinner of the attached call ends before the table prints; in a ticket's later run there is none.
+  stopSpinner(true);
   const sections =
     typeof params.sections === 'string' && params.sections ? params.sections.split(',') : [];
   await renderStatusFromJob(machine, sections, output, {
@@ -1056,14 +1095,23 @@ export function registerStatusCommand(machine: Command): void {
 
         // One read job; the render is its step, so a ticket handed back early prints nothing half-done.
         const { machineStatusJob } = await import('../../services/machine/machine-status.js');
-        const outcome = await runCommandJob(
-          'machine status',
-          await machineStatusJob(machineName, {
-            debug: options.debug,
-            sections: requestedSections(sections),
-          }),
-          [planStep('renderMachineStatus', statusStepParams(machineName, sections, options))]
-        );
+        // The job captures its output, so nothing else shows while the machine lists itself.
+        startSpinner(t('commands.machine.status.fetching', { machine: machineName }));
+        let outcome: Awaited<ReturnType<typeof runCommandJob>>;
+        try {
+          outcome = await runCommandJob(
+            'machine status',
+            await machineStatusJob(machineName, {
+              debug: options.debug,
+              sections: requestedSections(sections),
+            }),
+            [planStep('renderMachineStatus', statusStepParams(machineName, sections, options))]
+          );
+        } catch (error) {
+          stopSpinner(false);
+          throw error;
+        }
+        stopSpinner(outcome.kind !== 'pending' && outcome.result.success);
         if (outcome.kind === 'pending') {
           const code = pendingExitCode(outcome);
           if (code !== undefined) setExitCode(code);

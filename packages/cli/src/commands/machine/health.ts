@@ -21,6 +21,7 @@ import type { RenetProcess } from '../../services/renet/renet-daemons.js';
 import type { OutputFormat } from '../../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
+import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import { fetchMissedTargets, fetchStaleBackups, staleBinariesOf } from './status.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
@@ -277,6 +278,8 @@ async function renderHealthFromJob(
 }
 
 bindStepHandler('renderMachineHealth', async ({ machine, output }) => {
+  // The spinner of the attached call ends before the verdict prints; in a ticket's later run there is none.
+  stopSpinner(true);
   await renderHealthFromJob(machine, output, getOutputFormat());
 });
 
@@ -285,9 +288,18 @@ async function runHealthJob(name: string): Promise<void> {
   if (!(await configService.getLocalConfig()).machines[name]) {
     throw new ValidationError(t('errors.machineNotFound', { name }));
   }
-  const outcome = await runCommandJob('machine health', await machineStatusJob(name), [
-    planStep('renderMachineHealth'),
-  ]);
+  // The job captures its output, so nothing else shows while the machine lists itself.
+  startSpinner(t('commands.machine.health.fetching'));
+  let outcome: Awaited<ReturnType<typeof runCommandJob>>;
+  try {
+    outcome = await runCommandJob('machine health', await machineStatusJob(name), [
+      planStep('renderMachineHealth'),
+    ]);
+  } catch (error) {
+    stopSpinner(false);
+    throw error;
+  }
+  stopSpinner(outcome.kind !== 'pending' && outcome.result.success);
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
     if (code !== undefined) setExitCode(code);
@@ -303,7 +315,6 @@ export function registerHealthCommand(machine: Command): void {
     .command('health')
     .description(t('commands.machine.health.description'))
     .argument('<name>', t('options.name'))
-    .option('-t, --team <name>', t('options.team'))
     .action(async (name: string) => {
       try {
         await runHealthJob(name);

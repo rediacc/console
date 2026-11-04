@@ -7091,20 +7091,7 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.health.description",
       "label": "Check machine health for CI/CD pipelines",
-      "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        }
-      ],
+      "options": [],
       "positionals": [
         {
           "name": "name",
