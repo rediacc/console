@@ -17,7 +17,7 @@ import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
-import { runClusterPhase } from './cluster-job.js';
+import { ClusterPhasePendingError, runClusterPhase } from './cluster-job.js';
 import {
   allocateAgentNetworkId,
   assertDestNotRunningOwnK3s,
@@ -470,6 +470,8 @@ async function tryDispatch(
   try {
     await runClusterPhase(functionName, machineName, params, { debug });
   } catch (err) {
+    // A phase still running has not failed: the next teardown call must not start beside it.
+    if (err instanceof ClusterPhasePendingError) throw err;
     outputService.warn(`  discard: ${functionName} on ${machineName} failed (continuing): ${err}`);
   }
 }

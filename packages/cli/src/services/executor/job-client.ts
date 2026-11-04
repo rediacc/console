@@ -242,7 +242,7 @@ export function isRenetFlagUnsupported(output: string): boolean {
 
 /** The answer to a renet that is older than the CLI talking to it. `machine` is the machine's name. */
 export function renetOlderThanCliMessage(machine: string): string {
-  return `renet on ${machine} is older than this CLI; run machine setup`;
+  return `renet on ${machine} is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet`;
 }
 
 /**

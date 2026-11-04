@@ -78,6 +78,10 @@ export function namedFailureOf(error: unknown): NamedFailure | undefined {
       ...(error.connectTarget && { connectTarget: error.connectTarget }),
     };
   }
+  // A provisioner refusal keeps its code across `rdc serve`, so a proxied caller can act on it.
+  if (error instanceof CliExitError && error.code.startsWith('RENET_')) {
+    return { errorCode: error.code, guidance: error.guidance };
+  }
   const named = sshConnectError(error);
   if (!named?.errorCode) return undefined;
   const connectTarget = unreachableTarget(error);

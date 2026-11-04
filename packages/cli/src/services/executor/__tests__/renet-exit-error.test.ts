@@ -11,14 +11,14 @@ describe('buildRenetExitError', () => {
   it('answers a flag the remote renet does not know with the version-skew message (C12)', () => {
     const stderr = 'Error: unknown flag: --datastore\nUsage:\n  renet list [flags]\n';
     expect(buildRenetExitError(1, stderr, '', 'hermes')).toBe(
-      'renet on hermes is older than this CLI; run machine setup'
+      'renet on hermes is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet'
     );
   });
 
   it('finds the flag rejection on stdout too, where the bridge relays it', () => {
     expect(
       buildRenetExitError(1, '', "[backup_verify] Error: unknown shorthand flag: 'x' in -x", 'm1')
-    ).toBe('renet on m1 is older than this CLI; run machine setup');
+    ).toBe('renet on m1 is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet');
   });
 
   it('keeps the cobra line when no machine name is known', () => {

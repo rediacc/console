@@ -684,7 +684,7 @@ def smoke(host: str, version_id: str, timing: dict[str, int] | None = None) -> i
 
 
 def stage_bench(repo_root: pathlib.Path, worker_dir: pathlib.Path) -> int:
-    """Bench: build the CLI bundle and a DEV-key renet from the tree, then `executor_artifacts stage-local`."""
+    """Bench: build the CLI bundle and a production-key renet from the tree, then `executor_artifacts stage-local`."""
     log.step("Building the CLI bundle and renet the bench image ships...")
     os.chdir(repo_root)
     for argv in [*(build_argv(w) for w in WORKSPACES), bundle_argv()]:

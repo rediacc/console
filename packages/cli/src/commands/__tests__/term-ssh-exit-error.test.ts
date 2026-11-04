@@ -25,7 +25,7 @@ describe("term connect carries the remote's own error (C11)", () => {
   it('names the version skew when the remote renet rejects a flag the CLI sent', () => {
     const tail = 'Error: unknown flag: --datastore\nUsage: renet term ...\n';
     const message = buildSSHExitErrorMessage(1, tail, 'server-1');
-    expect(message).toBe('renet on server-1 is older than this CLI; run machine setup');
+    expect(message).toBe('renet on server-1 is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet');
     expect(message).not.toContain('unknown flag');
   });
 

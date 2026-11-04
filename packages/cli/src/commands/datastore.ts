@@ -548,6 +548,7 @@ function registerAttach(datastore: Command): void {
                   attachedTo: options.to,
                   ...(options.writes && { writes: options.writes }),
                   mounted: true,
+                  ...(entry?.lastHolder && { lastHolder: entry.lastHolder }),
                 }),
               }),
             ],
