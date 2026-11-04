@@ -174,6 +174,7 @@ class Battery:
         self.failed: list[str] = []
         self.renet_code = 0
         self.mint_bin = ""
+        self.machine_id = ""
         self.master_pub = ""
         self.master_priv = ""
         self.stranger_priv = ""
@@ -252,6 +253,9 @@ class Battery:
                 _exec([*self.sudo, "rm", "-f", self.chain_state])
         if self.work:
             # Never leave an enforcing renet anywhere reachable.
+            if self.sudo:
+                # Privileged renet runs leave root-owned files under the scratch tree.
+                _exec([*self.sudo, "rm", "-rf", self.work])
             shutil.rmtree(self.work, ignore_errors=True)
 
     # ------------------------------------------------------------------ preflight and build
@@ -323,6 +327,8 @@ class Battery:
                 self.work + "/stage",
                 "-repo",
                 repo,
+                "-machine",
+                self.machine_id,
                 *flags,
             ],
             stdout=subprocess.DEVNULL,
@@ -400,12 +406,12 @@ class Battery:
         log.error("[%s] %s FAIL %s %s" % (self.label, scenario, EM_DASH, detail))
 
     def run_renet(self, *cmd: str) -> bytes:
-        """Drive the binary DIRECTLY, never through rdc: the CLI's exit-10 recovery framework would retry and rewrite the failure this battery asserts on. stdout and stderr are captured separately; the stderr bytes are returned."""
+        """Drive the binary DIRECTLY, never through rdc: the CLI's exit-10 recovery framework would retry and rewrite the failure this battery asserts on. Runs privileged like production, because renet reads the root-only product_uuid for the machine id. stdout and stderr are captured separately; the stderr bytes are returned."""
         stdout_path = self.work + "/stdout.txt"
         stderr_path = self.work + "/stderr.txt"
         with open(stdout_path, "wb") as out, open(stderr_path, "wb") as err:
             try:
-                self.renet_code = _exec(cmd, stdout=out, stderr=err).returncode
+                self.renet_code = _exec([*self.sudo, *cmd], stdout=out, stderr=err).returncode
             except PermissionError as exc:
                 err.write(("%s: %s\n" % (cmd[0], exc.strerror)).encode())
                 self.renet_code = 126
@@ -784,6 +790,15 @@ class Battery:
         except ValueError as exc:
             raise _AbortError(2) from exc
 
+    def _resolve_machine_id(self) -> str:
+        """The machine id, read once as root: the minter and renet both hash the root-only product_uuid, so an unprivileged runner cannot compute it."""
+        proc = _exec([*self.sudo, self.mint_bin, "-print-machine-id"], stdout=subprocess.PIPE)
+        self._fatal(proc.returncode)
+        machine_id = proc.stdout.decode().strip()
+        if not machine_id:
+            raise _AbortError(2)
+        return machine_id
+
     def run(self) -> int:
         """The whole script, from preflight to the closing verdict. Returns the exit status."""
         try:
@@ -828,6 +843,7 @@ class Battery:
         log.step("Building license-mint...")
         self.mint_bin = work + "/license-mint"
         self._fatal(_exec(["go", "build", "-o", self.mint_bin, "."], cwd=self.mint_src).returncode)
+        self.machine_id = self._resolve_machine_id()
 
         # The ephemeral master key. Never the production key: a build baked with a key this script also holds the private half of can only validate this script's own fixtures.
         supplied_pub = self.env.get("LICENSE_E2E_MASTER_PUB", "")
@@ -846,7 +862,14 @@ class Battery:
         self.stranger_priv = jq_raw(stranger, "private")
 
         probe = self._mint_json(
-            "-master-key", self.master_priv, "-out-dir", work + "/fp", "-repo", "fingerprint-probe"
+            "-master-key",
+            self.master_priv,
+            "-out-dir",
+            work + "/fp",
+            "-repo",
+            "fingerprint-probe",
+            "-machine",
+            self.machine_id,
         )
         self.master_key_id = jq_raw(probe, "publicKeyId")
         shutil.rmtree(work + "/fp", ignore_errors=True)
