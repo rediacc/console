@@ -37,6 +37,10 @@ JOURNAL_ASIDE = ".drill-aside"
 IMAGE_ASIDE = ".drill-original"
 # A hash no fixture and no anchor holds.
 UNHELD_HASH = "ab" * 32
+# Leg t: the session lifetime the dev gateway is moved to, and how long one trickled cell takes (over two lifetimes). Leg u: how long the first run lives before the KILL.
+SESSION_TTL_DRILL_MS = 4000
+TRICKLE_SECONDS = 12
+KILL_AFTER_SECONDS = 6
 
 
 def mutation_command(datastore: str, guid: str, cell_bytes: int) -> str:
@@ -359,6 +363,101 @@ class RenetLegs:
             [UNHELD_HASH],
             "and is named as unrepairable",
         )
+
+    # ------------------------------------------------------------------ leg t
+
+    def set_session_ttl(self, ms: int | None) -> None:
+        """Moves the dev gateway's session lifetime through its `/test/backup/session-ttl` seam (private/account setBackupSessionTtlForTest); None restores the 1 h constant."""
+        text = self.b.api(
+            "POST",
+            "%s/test/backup/session-ttl" % self.d.api_base(),
+            {"ms": ms},
+        )
+        self.b.capture("POST /test/backup/session-ttl (%s)" % ms, text)
+        self.d.assert_equal("200", self.b.status, "the TTL seam answers (dev gateway only)")
+
+    def leg_t(self) -> None:
+        """A real renet snapshot crosses two session expiries and still commits, one cell moved and the ledger exact."""
+        d, r = self.d, self.rt
+        d.step("Leg t (renet): a snapshot that outlives two sessions re-mints and still commits")
+        cell_bytes = int(r.cell_bytes)
+        ttl_ms = SESSION_TTL_DRILL_MS
+        # One cell at cell_bytes / TRICKLE_SECONDS bytes a second takes TRICKLE_SECONDS, which is over two lifetimes.
+        trickle = max(cell_bytes // TRICKLE_SECONDS, 1)
+        r.run_vm(mutation_command(r.datastore, self.src, cell_bytes))
+        before = self.b.stored_bytes()
+        self.set_session_ttl(ttl_ms)
+        try:
+            doc = r._json_result(
+                r.run_vm(
+                    "sudo -n renet backup snapshot --datastore %s --repo %s --cell-bytes %s --bwlimit %d"
+                    % (r.datastore, self.src, r.cell_bytes, trickle),
+                    must=False,
+                )
+            )
+        finally:
+            self.set_session_ttl(None)
+        d.last_cmd = "renet backup snapshot (trickle over two session lifetimes)"
+        d.assert_equal("stored", str(doc.get("status", "")), "the snapshot still commits")
+        duration_ms = int(doc.get("durationMs") or 0)
+        d.assert_equal(
+            "True",
+            str(duration_ms >= 2 * ttl_ms),
+            "CONTROL: the run lasted at least two session lifetimes (%d ms vs %d ms each)"
+            % (duration_ms, ttl_ms),
+        )
+        d.assert_equal(
+            str(before + cell_bytes),
+            str(self.b.stored_bytes()),
+            "and the ledger grew by exactly the one cell",
+        )
+
+    # ------------------------------------------------------------------ leg u
+
+    def leg_u(self) -> None:
+        """A killed run, then a rerun, leaves the ledger reconciled against the store."""
+        d, r = self.d, self.rt
+        d.step(
+            "Leg u (renet): a killed snapshot and its rerun leave `backup reconcile --check` clean"
+        )
+        cell_bytes = int(r.cell_bytes)
+        r.run_vm(mutation_command(r.datastore, self.src, cell_bytes))
+        slow = max(cell_bytes // (4 * KILL_AFTER_SECONDS), 1)
+        killed = r.run_vm(
+            "sudo -n timeout -s KILL %d renet backup snapshot --datastore %s --repo %s --cell-bytes %s --bwlimit %d"
+            % (KILL_AFTER_SECONDS, r.datastore, self.src, r.cell_bytes, slow),
+            must=False,
+        )
+        d.last_cmd = "renet backup snapshot killed after %d s" % KILL_AFTER_SECONDS
+        d.assert_not_equal("0", str(killed.returncode), "the first run was killed before it ended")
+        doc = r.snapshot(self.src)
+        d.last_cmd = "renet backup snapshot (rerun)"
+        d.assert_equal("stored", str(doc.get("status", "")), "the rerun stores the snapshot")
+        self.b.release_probe_leases()
+        text = self.b.api(
+            "POST",
+            "%s/reconcile" % self.b.backup_api(),
+            {"lineageGuid": self.src, "dryRun": True},
+            {"Authorization": "Bearer %s" % self.b.manage_token()},
+        )
+        self.b.capture(
+            "POST /backups/reconcile (dry run: the wire of `rdc backup reconcile --check`)", text
+        )
+        d.assert_equal("200", self.b.status, "the reconcile route answers")
+        lineages = self.b.field("lineages")
+        judged = [
+            row
+            for row in (lineages if isinstance(lineages, list) else [])
+            if isinstance(row, dict) and not row.get("skipped")
+        ]
+        d.assert_not_equal("0", str(len(judged)), "the lineage was judged, not skipped")
+        drifted = [
+            str(row.get("lineageGuid"))
+            for row in judged
+            if row.get("observedBytes") != row.get("ledgerBytesBefore")
+            or row.get("observedChunks") != row.get("ledgerChunksBefore")
+        ]
+        d.assert_equal("[]", str(drifted), "no judged lineage drifted: --check would exit 0")
 
     def teardown(self) -> None:
         self.rt.teardown()

@@ -52,6 +52,7 @@ CONSOLE_PATHS = (
     "packages/cli/src/commands/backup*",
     "packages/cli/src/commands/repo-backup*",
     "packages/cli/src/services/backup/",
+    "packages/cli/src/services/jobs/",
     ".ci/rediacc_ci/drills/backup.py",
     ".ci/rediacc_ci/drills/lib.py",
     ".ci/rediacc_ci/drills/wire.py",
@@ -59,6 +60,10 @@ CONSOLE_PATHS = (
 RENET_PATHS = (
     "cmd/renet/backup*",
     "cmd/renet/datastore*",
+    "cmd/renet/repository_migrate*",
+    "cmd/renet/repository_gc*",
+    "pkg/functions/commands/backup*",
+    "pkg/bwrate/",
     "cmd/renet/repository_prune*",
     "cmd/renet/prune_commands*",
     "pkg/chunkstore/",

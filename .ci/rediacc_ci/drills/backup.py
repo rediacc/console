@@ -76,7 +76,10 @@ KNOWN_LEGS = [
     "q",
     "r",
     "s",
+    "t",
+    "u",
 ]
+# t and u are opt-in and not in DEFAULT_LEGS: they need --renet, a worker, and the gateway's session-TTL seam.
 DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s"
 CELL_BYTES = 65536
 CELLS = 8
@@ -109,7 +112,7 @@ CELLS_ROOT_VECTORS = (
 VERIFY_MAX_PAGES = 10
 HTTP_OK = "200"
 USAGE = (
-    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s] [--selftest] [--renet] "
+    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u] [--selftest] [--renet] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillBackup123!"
@@ -333,7 +336,7 @@ class Options:
 
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
-        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrs")
+        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrstu")
 
     def using_real_store(self) -> bool:
         return bool(self.store_endpoint)
@@ -3180,6 +3183,16 @@ class Backup:
         headers = wire.sigv4_headers("GET", url, b"", region, key, secret)
         return wire.http_bytes("GET", url, None, headers, json_body=False)
 
+    def leg_t_session_expiry(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg t needs real renet: add --renet and --vm")
+        self.renet_legs.leg_t()
+
+    def leg_u_killed_run_reconciles(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg u needs real renet: add --renet and --vm")
+        self.renet_legs.leg_u()
+
     def leg_s_store_conformance(self) -> None:
         d = self.d
         store = "%s/%s" % (self.store_url(), self.bucket)
@@ -3348,6 +3361,12 @@ class Backup:
             log.error("    --legs %s" % o.legs_with("a", "b"))
             raise SystemExit(1)
 
+        # Legs t and u are real-renet only and work on the repository leg b creates.
+        if any(o.enabled(leg) for leg in "tu") and not (o.renet and o.enabled("b")):
+            log.error("Legs t and u need --renet and the repository leg b creates. Run:")
+            log.error("    --legs %s --renet --vm <worker>" % o.legs_with("a", "b"))
+            raise SystemExit(1)
+
         # The real-renet half of p and r works on the source repository legs b-d leave.
         if o.renet and any(o.enabled(leg) for leg in "pr") and not o.enabled("b"):
             log.error("With --renet, legs p and r act on the repository leg b creates. Include it:")
@@ -3388,6 +3407,8 @@ class Backup:
             ("q", self.leg_q_verified_retention),
             ("r", self.leg_r_repair),
             ("s", self.leg_s_store_conformance),
+            ("t", self.leg_t_session_expiry),
+            ("u", self.leg_u_killed_run_reconciles),
             ("k", self.leg_k_lapsed_restore),
         ):
             if o.enabled(leg):

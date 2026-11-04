@@ -1,4 +1,8 @@
-import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import { createReadStream, mkdtempSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
   ACCOUNT_SERVER,
@@ -1277,6 +1281,257 @@ test.describe
         // Local verify checks the machine's anchor against the journal, not the bucket (backup_verify.go: store-side verification is the server's scrub), so it stays green. This pins that scope rather than leaving it a surprise.
         const verify = await cli.run(['backup', 'verify', CORRUPT_NAME, '--deep']);
         expect(verify.code, `verify after repair: ${bothChannels(verify).slice(-600)}`).toBe(0);
+      });
+
+      // ---- E2: CPU ceiling and read cap, on a real systemd scope ----
+
+      /** systemd prints CPUQuotaPerSecUSec as a duration ("250ms", "1s", "1.5s"); this reads it as seconds. */
+      const quotaSeconds = (raw: string): number => {
+        const m = /^(\d+(?:\.\d+)?)(ms|s|min)?$/.exec(raw.trim());
+        if (!m) return Number.NaN;
+        const n = Number(m[1]);
+        if (m[2] === 'ms') return n / 1000;
+        return m[2] === 'min' ? n * 60 : n;
+      };
+
+      /** Polls every run-*.scope on the machine for `seconds` and returns each distinct CPUQuotaPerSecUSec seen. */
+      const pollScopeQuotas = async (seconds: number): Promise<string[]> => {
+        const script = [
+          `end=$((SECONDS + ${seconds}))`,
+          'while [ $SECONDS -lt $end ]; do',
+          "  for u in $(systemctl list-units 'run-*.scope' --no-legend --plain | awk '{print $1}'); do",
+          '    systemctl show "$u" -p CPUQuotaPerSecUSec --value',
+          '  done',
+          '  sleep 0.3',
+          'done',
+        ].join('\n');
+        const put = await w1.executeViaBridge('cat > /tmp/e2e-scope-poll.sh', undefined, {
+          stdin: script,
+        });
+        expect(put.code, 'staging the scope poller').toBe(0);
+        const polled = await w1.executeViaBridge(
+          'sudo bash /tmp/e2e-scope-poll.sh | sort -u',
+          (seconds + 60) * 1000
+        );
+        return polled.stdout
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l && l !== 'infinity');
+      };
+
+      const CAP_NAME = `e2ebk-cap-${tag}`;
+      const CAP_BYTES_PER_S = 8_000_000;
+      const CAP_IMAGE_MIB = 256;
+      const CAP_FLOOR_S = 30;
+
+      const workerCpus = async (): Promise<number> => {
+        const n = Number((await w1.executeViaBridge('nproc')).stdout.trim().split('\n').pop());
+        expect(n, 'nproc on the worker').toBeGreaterThan(0);
+        return n;
+      };
+
+      test('E2a. backup snapshot --cpu-limit 25 holds the scope at 0.25 x nproc seconds and records it', async () => {
+        const nproc = await workerCpus();
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', CAP_NAME, '-y']);
+        });
+        await provisionRepo(cli, w1, CAP_NAME, M1, `${CAP_IMAGE_MIB}M`);
+        // A read cap keeps the run alive long enough for the poller to see the scope.
+        const poll = pollScopeQuotas(CAP_FLOOR_S + 15);
+        const run = await cli.run([
+          'backup',
+          'snapshot',
+          `${CAP_NAME}@${M1}`,
+          '--cpu-limit',
+          '25',
+          '--read-bwlimit',
+          '8M',
+        ]);
+        const seen = await poll;
+        expect(run.code, `backup snapshot --cpu-limit 25: ${bothChannels(run).slice(-800)}`).toBe(
+          0
+        );
+        const expected = 0.25 * nproc;
+        expect(
+          seen.map(quotaSeconds).some((q) => Math.abs(q - expected) < 0.01),
+          `no scope carried CPUQuotaPerSecUSec = ${expected}s (nproc ${nproc}); saw ${JSON.stringify(seen)}`
+        ).toBe(true);
+        expect(run.stdout + run.stderr, 'the snapshot record names no cpuQuota').toMatch(
+          new RegExp(`"cpuQuota"\\s*:\\s*"${Math.round(25 * nproc)}%"`)
+        );
+      });
+
+      test('E2b. the unit file of a bound strategy carries the CPUQuota of its limit', async () => {
+        const name = `e2e-e2b-${tag}`;
+        cleanup.push(async () => {
+          await cli.run(['backup', 'strategy', 'unbind', name, '-m', M1]);
+          await cli.run(['backup', 'strategy', 'remove', name]);
+          await cli.run(['backup', 'schedule', '-m', M1]);
+        });
+        const set = await cli.run([
+          'backup',
+          'strategy',
+          'set',
+          name,
+          '--destination',
+          'hosted',
+          '--cron',
+          '0 4 * * *',
+          '--include',
+          REPO_NAME,
+          '--cpu-limit',
+          '25',
+        ]);
+        expect(set.code, `strategy set: ${bothChannels(set).slice(-600)}`).toBe(0);
+        const bind = await cli.run(['backup', 'strategy', 'bind', name, '-m', M1]);
+        expect(bind.code, `strategy bind: ${bothChannels(bind).slice(-600)}`).toBe(0);
+        const schedule = await cli.run(['backup', 'schedule', '-m', M1]);
+        expect(schedule.code, `backup schedule: ${bothChannels(schedule).slice(-600)}`).toBe(0);
+        const nproc = await workerCpus();
+        const unit = await w1.executeViaBridge(
+          `sudo cat /etc/systemd/system/${scheduleServiceUnit(name)}`
+        );
+        expect(unit.stdout, 'the unit file has no CPUQuota line').toContain(
+          `CPUQuota=${Math.round(25 * nproc)}%`
+        );
+      });
+
+      test('E2c. --read-bwlimit 8M on a 256 MiB image takes at least 30 s', async () => {
+        // E2a hashed the first image under the cap; a fresh repo of the same size is the clean measurement.
+        const name = `${CAP_NAME}-b`;
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', name, '-y']);
+        });
+        await provisionRepo(cli, w1, name, M1, `${CAP_IMAGE_MIB}M`);
+        const started = Date.now();
+        const run = await cli.run(['backup', 'snapshot', `${name}@${M1}`, '--read-bwlimit', '8M']);
+        const seconds = (Date.now() - started) / 1000;
+        expect(run.code, `capped snapshot: ${bothChannels(run).slice(-800)}`).toBe(0);
+        expect(
+          seconds,
+          `${CAP_IMAGE_MIB} MiB at ${CAP_BYTES_PER_S} B/s took ${seconds}s`
+        ).toBeGreaterThanOrEqual(CAP_FLOOR_S);
+      });
+
+      // ---- E3: local image, the regression form of local-image L1 ----
+
+      const IMG_NAME = `e2ebk-img-${tag}`;
+      const IMG_COPY = `${IMG_NAME}-copy`;
+
+      const snapshotDirs = async (): Promise<string[]> => {
+        const r = await w1.executeViaBridge(
+          `sudo ls -A "${DS}/repositories" | grep '^\\.snapshot-' || true`
+        );
+        return r.stdout.split('\n').filter(Boolean);
+      };
+
+      const sha256OfFile = (file: string): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const hash = createHash('sha256');
+          createReadStream(file)
+            .on('data', (chunk) => hash.update(chunk))
+            .on('end', () => resolve(hash.digest('hex')))
+            .on('error', reject);
+        });
+
+      test('E3a/b. an INT-interrupted download leaves no .snapshot-*; the rerun and an upload --as are byte-identical', async () => {
+        const dir = mkdtempSync(path.join(os.tmpdir(), 'e2e-bdl-'));
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', IMG_NAME, '-y']);
+        });
+        await provisionRepo(cli, w1, IMG_NAME, M1, '256M');
+
+        // 4M/s over a 256 MiB image runs about a minute, so the INT at 8 s lands mid-transfer.
+        const child = cli.spawn([
+          'backup',
+          'download',
+          `${IMG_NAME}@${M1}`,
+          '--to',
+          dir,
+          '--bwlimit',
+          '4M',
+        ]);
+        const exit = new Promise<number | null>((resolve) => child.on('close', resolve));
+        await new Promise((r) => setTimeout(r, 8000));
+        child.kill('SIGINT');
+        expect(await exit, 'the download ended 0 before the interrupt').not.toBe(0);
+        // The machine drops the snapshot of an interrupted export within 90 s.
+        const deadline = Date.now() + 90_000;
+        let left = await snapshotDirs();
+        while (left.length > 0 && Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 3000));
+          left = await snapshotDirs();
+        }
+        expect(left, 'an interrupted download left a .snapshot-* on the machine').toEqual([]);
+
+        const rerun = await cli.run(['backup', 'download', `${IMG_NAME}@${M1}`, '--to', dir]);
+        expect(rerun.code, `rerun: ${bothChannels(rerun).slice(-800)}`).toBe(0);
+        const down = await cli.run(['repo', 'down', `${IMG_NAME}@${M1}`]);
+        expect(down.code, `repo down: ${bothChannels(down).slice(-400)}`).toBe(0);
+        const guid = repoIdentity(cli, IMG_NAME).guid;
+        const machineSha = await imageSha(w1, guid);
+        const file = execFileSync('find', [dir, '-name', `${IMG_NAME}.*.img`, '-type', 'f'], {
+          encoding: 'utf8',
+        }).trim();
+        expect(file, `no ${IMG_NAME}.*.img under ${dir}`).not.toBe('');
+        expect(await sha256OfFile(file), 'the downloaded file differs from the machine image').toBe(
+          machineSha
+        );
+
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', IMG_COPY, '-y']);
+        });
+        const up = await cli.run(['backup', 'upload', file, '--to', M1, '--as', IMG_COPY, '--up']);
+        expect(up.code, `upload --as: ${bothChannels(up).slice(-800)}`).toBe(0);
+        const copy = repoIdentity(cli, IMG_COPY);
+        expect(copy.guid, 'upload --as kept the source GUID').not.toBe(guid);
+        expect(await imageSha(w1, copy.guid), 'the uploaded copy differs from the source').toBe(
+          machineSha
+        );
+      });
+
+      test('E3c. a kill -9 of export leaves a stale transfer that prune removes, and prune spares a held .lock', async () => {
+        expect(await snapshotDirs(), 'a stale snapshot is present before the kill').toEqual([]);
+        const dir = mkdtempSync(path.join(os.tmpdir(), 'e2e-bdl-kill-'));
+        const child = cli.spawn([
+          'backup',
+          'download',
+          `${IMG_NAME}@${M1}`,
+          '--to',
+          dir,
+          '--bwlimit',
+          '2M',
+        ]);
+        const exit = new Promise((resolve) => child.on('close', resolve));
+        await new Promise((r) => setTimeout(r, 10_000));
+        await w1.executeViaBridge(`sudo pkill -9 -f 'renet backup export'`);
+        child.kill('SIGKILL');
+        await exit;
+        expect(
+          (await snapshotDirs()).length,
+          'killing export left no stale .snapshot-* to prune'
+        ).toBeGreaterThan(0);
+
+        // A held lock must survive the same prune.
+        const lockPath = `${DS}/repositories/.lock-${randomUUID()}`;
+        const holder = await w1.executeViaBridge(
+          `sudo bash -c 'touch "${lockPath}"; nohup flock -x "${lockPath}" sleep 120 >/dev/null 2>&1 &'`
+        );
+        expect(holder.code, 'holding the lock').toBe(0);
+        const dry = await cli.run(['machine', 'prune', M1, '--dry-run']);
+        expect(bothChannels(dry), 'prune --dry-run does not list the stale snapshot').toContain(
+          '.snapshot-'
+        );
+        const pruned = await cli.run(['machine', 'prune', M1]);
+        expect(pruned.code, `machine prune: ${bothChannels(pruned).slice(-600)}`).toBe(0);
+        expect(await snapshotDirs(), 'prune left the stale snapshot').toEqual([]);
+        const lock = await w1.executeViaBridge(
+          `sudo test -e "${lockPath}" && echo kept || echo gone`
+        );
+        await w1.executeViaBridge(`sudo pkill -f 'flock -x ${lockPath}'; sudo rm -f "${lockPath}"`);
+        expect(lock.stdout.trim(), 'prune deleted a .lock file that a process still held').toBe(
+          'kept'
+        );
       });
     }
   });
