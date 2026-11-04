@@ -21,19 +21,19 @@ Body-Sig: 4ea46e68ef458176
 ### f05ab392.1 [medium] .claude/hooks/stop/wl_liveproof.py:213
 Anchor: in-diff
 Claim: The new re.sub strips the renet commit from every evidence line's v= field, which changes what --tick writes for all rows, but no test in this commit covers the rewritten format, so a regression in the regex or its output would go unnoticed.
-Resolution: open
+Resolution: fixed d3f62390c66e96977493ad237bf58d8f3d9ca73a | d778be9d 2026-11-04T12:18:53Z
 
 ### f05ab392.2 [low] .claude/hooks/stop/wl_liveproof.py:213
 Anchor: in-diff
 Claim: The pattern only matches lowercase hex of 7 to 40 characters after 'renet:'; any other version form (uppercase hex, a different prefix, a longer sha) passes through unchanged, so the citation-gate fix silently does nothing for it.
-Resolution: open
+Resolution: fixed d3f62390c66e96977493ad237bf58d8f3d9ca73a | d778be9d 2026-11-04T12:18:53Z
 
 ### f05ab392.3 [low] .claude/hooks/stop/wl_liveproof.py:212
 Anchor: in-diff
 Claim: The comment says 'the sha256 and the row hold the identity', but the format string shown in this diff writes only id, target, check, rc and version, so the sha256 is not visible in the evidence line this comment describes.
-Resolution: open
+Resolution: fixed d3f62390c66e96977493ad237bf58d8f3d9ca73a | d778be9d 2026-11-04T12:18:53Z
 
 ### f05ab392.4 [low] packages/cli/src/services/executor/__tests__/ops-timeout.test.ts:281
 Anchor: in-diff
 Claim: If the grandchild's pid write is observed mid-write, parseInt reads a truncated prefix (e.g. '12' of '1234') and the pid > 1 check accepts it, so the poll can return before the full pid is in the file.
-Resolution: open
+Resolution: fixed 867b26ee28f371730519a1f4452a60e639e27fd7 | d778be9d 2026-11-04T12:20:09Z
