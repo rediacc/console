@@ -293,11 +293,12 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: private/renet/build.sh, .github/workflows/ci-build-renet.yml (line 545 only), .ci/rediacc_ci/tests/test_renet_build_key_required.py, .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py. Accept: those pytest files rc 0 (the keyless and `RENET_KEYLESS` cases now refused), and `env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev` rc 1.
 
-- [ ] N3 [writer] The console build path. Changes:
+- [x] N3 [writer] The console build path. Changes:
   - Delete .ci/rediacc_ci/core/renet_flavor.py and its test. rdc.sh:97 always uses `bin/`. local_common.py (:1238, :1445) and its shadow driver lose the flavor. build_renet.py drops the flag forwarding (:38-39).
   - After the build, `ensure_renet_built` runs `renet_key_gate` against the binary and refuses on anything but the production fingerprint.
   - rdc_sh_env_check, renet_types, drills (license.py, vm_check.py, upgrade_converge.py, tenant_isolation.py), start_backup_plane, private/license_e2e and proxies/license_e2e drop the flavor and use issued licences.
   - env-manifest.json, python-env-registry.json and check_workflow_env_provision.py lose `RDC_RENET_LICENSE`.
+    (ticked) 2026-11-04T19:26:55Z by d778be9d: commit:7e9e832bc pytest over the key, build, drill and env tests rc=0 with 169 passed and 1 skipped, the corrected git grep prints nothing, check:ci-env-manifest, check:ci-python-env-registry, check:ci-rdc-sh-env and check:ci-workflow-env-provision rc=0
 
   Owns: the console files above and their tests in the header Owns. Accept: `PYTHONPATH=.ci python3 -m pytest` over every test named in Owns rc 0, `npm run check:ci-env-manifest`, `check:ci-python-env-registry`, `check:ci-rdc-sh-env` and `check:ci-workflow-env-provision` rc 0, and `git grep -n -E "nolicense|RDC_RENET_LICENSE|bin/enforce" -- .ci rdc.sh ':!.ci/shadow' ':!.ci/cache' ':!.ci/rediacc_ci/tests' ':!.ci/rediacc_ci/release/renet_key_gate.py' ':!.ci/rediacc_ci/drills/upgrade_converge.py'` prints nothing. (corrected ASKED:2026-11-04T16:07Z: the gate refuses a nolicense binary, the drill builds the old pre-isolation commit, and the tests assert the refusal; each is a live control.)
 
