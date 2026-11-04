@@ -40,7 +40,7 @@ import {
 import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
-import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
+import { listBackups } from './repo-backup-list.js';
 
 /** `backup list [artifact-ref]`, list backup artifacts on a machine. */
 function registerBackupList(backup: Command): void {
@@ -81,13 +81,7 @@ function registerBackupList(backup: Command): void {
           // ONE call, and no hot/cold probe. renet enumerates the datastore now, which is what makes an artifact left by `repo push` at the root
           // visible; the old pair of probes only ever looked where SCHEDULED
           // runs write, so a real copy reported an empty table. The per-entry subdirectory comes back on the entry itself.
-          const entries = await fetchBackupList(baseParams, { machine, debug: options.debug });
-          const tagged: TaggedBackupEntry[] = entries.map((e) => ({ ...e, mode: e.path ?? '' }));
-
-          const filtered = ref
-            ? tagged.filter((e) => e.name === ref.name || e.name.startsWith(ref.name))
-            : tagged;
-          await renderBackupList(filtered);
+          await listBackups(baseParams, { machine, debug: options.debug }, ref?.name);
         } catch (error) {
           handleError(error);
         }

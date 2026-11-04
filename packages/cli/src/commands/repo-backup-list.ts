@@ -1,6 +1,10 @@
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { setExitCode } from '../services/core/request-context.js';
+import type { ExecuteResult } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
+import { optStr } from '../services/jobs/steps-support.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -77,10 +81,11 @@ async function assertBackupFromExists(fromName: string): Promise<void> {
   await assertMachineExists(fromName);
 }
 
-export async function fetchBackupList(
+/** The listing's machine and coerced params; the machine is required and `from` must be a known machine. */
+async function prepareBackupList(
   params: Record<string, unknown>,
   options: BackupRunOptions
-): Promise<BackupListEntry[]> {
+): Promise<{ machineName: string; coerced: Record<string, unknown> }> {
   const machineName = options.machine;
   if (!machineName) throw new ValidationError(t('errors.machineRequiredLocal'));
 
@@ -91,30 +96,60 @@ export async function fetchBackupList(
   if (fromName) {
     await assertBackupFromExists(fromName);
   }
-
-  const result = await getExecutor().execute({
-    functionName: 'backup_list',
-    machineName,
-    params: coerced,
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    // THROW rather than render-and-return-[]. Returning an empty array printed an error line and then an EMPTY TABLE underneath it, so a failed listing and a datastore with no backups looked identical to a reader scanning output -- and one of those means your backups are missing. The caller's handleError renders this, and the engine's own words are carried along so the operator
-    // still sees what renet said.
-    renderLocalExecutionFailure(
-      result,
-      t('commands.shortcuts.run.failedLocal', { error: result.error })
-    );
-    const tail = (result.stderr ?? result.error ?? '').toString().trim().slice(-400);
-    throw new Error(tail ? `backup list failed: ${tail}` : 'backup list failed');
-  }
-
-  const payload = extractBackupListPayload(result.stdout ?? '');
-  return payload?.entries ?? [];
+  return { machineName, coerced };
 }
+
+/**
+ * A failed listing throws instead of rendering an error and returning an empty array: an error line followed by an empty table made a failed listing and a datastore with no backups look the same, and one of those means the backups are missing. The caller's handleError renders the throw, and the engine's own words are carried along so renet's reason stays visible.
+ */
+function throwListFailure(result: ExecuteResult): never {
+  renderLocalExecutionFailure(
+    result,
+    t('commands.shortcuts.run.failedLocal', { error: result.error })
+  );
+  const tail = (result.stderr ?? result.error ?? '').toString().trim().slice(-400);
+  throw new Error(tail ? `backup list failed: ${tail}` : 'backup list failed');
+}
+
+/**
+ * `backup list` as one read job: the table is its `renderBackupList` step, so a ticket handed back early prints
+ * nothing half-done. `refName` narrows the entries to one artifact name or prefix, as the command always did.
+ */
+export async function listBackups(
+  params: Record<string, unknown>,
+  options: BackupRunOptions,
+  refName?: string
+): Promise<void> {
+  const { machineName, coerced } = await prepareBackupList(params, options);
+
+  const outcome = await runCommandJob(
+    'backup list',
+    {
+      functionName: 'backup_list',
+      machineName,
+      params: coerced,
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+      captureOutput: true,
+    },
+    [planStep('renderBackupList', { machine: machineName, ...(refName ? { ref: refName } : {}) })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) throwListFailure(outcome.result);
+}
+
+bindStepHandler('renderBackupList', async ({ output, params }) => {
+  const entries = extractBackupListPayload(output ?? '')?.entries ?? [];
+  const refName = optStr(params, 'ref');
+  const tagged: TaggedBackupEntry[] = entries.map((e) => ({ ...e, mode: e.path ?? '' }));
+  await renderBackupList(
+    refName ? tagged.filter((e) => e.name === refName || e.name.startsWith(refName)) : tagged
+  );
+});
 
 function formatModified(iso: string | undefined): string {
   if (!iso) return '-';
