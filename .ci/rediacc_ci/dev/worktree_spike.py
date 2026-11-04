@@ -333,10 +333,11 @@ def probe_hooks(tree, expected, result):
         *("commit", "--allow-empty", "--no-gpg-sign", "-m", PROBE_MESSAGE),
         env={"GIT_TRACE": "1"},
     )
-    wanted = "run_command: %s/pre-commit" % expected.rstrip("/")
+    wanted = "%s/pre-commit" % expected.rstrip("/")
     said = [line for line in done.stderr.splitlines() if " trace: " not in line]
     detail = "commit rc %d %s" % (done.returncode, " ".join(said)[:200])
-    result.answer(tree.sub, "hook_fires", bool(expected) and wanted in done.stderr, detail)
+    ran = any("run_command:" in line and wanted in line for line in done.stderr.splitlines())
+    result.answer(tree.sub, "hook_fires", bool(expected) and ran, detail)
 
 
 def probe_gitlink_row(tree, result):
