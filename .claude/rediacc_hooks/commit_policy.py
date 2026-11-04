@@ -166,6 +166,78 @@ def superproject(repo_root: str) -> str:
     return git(["rev-parse", "--show-superproject-working-tree"], cwd=repo_root) or ""
 
 
+# --------------------------------------------------------------------------- lease trees ---------------------------------------------------------------------------
+#
+# THE LEASE BOUNDARY (agent/plans/PLAN-worktree-lease.md, Design 6). `block_lease_boundary` and `git/githooks.py` share these helpers, so both layers agree on what a lease is and what it may commit.
+
+LEASE_HOLDER = "/.claude/worktrees/"
+PIN_SPACE = "refs/worktrees/"
+LEASE_ADVICE = (
+    "A lease tree commits on its detached HEAD with the pathspec form and stops there. Landing is\n"
+    "the lead's, in the main checkout: `./run.sh worktree land <id>` prints the cherry-picks and\n"
+    "the gitlink commits (agent/plans/PLAN-worktree-lease.md, Design 3)."
+)
+
+
+def lease_root(directory: str) -> str:
+    """The lease tree `directory` sits in, "" when it sits in none. A submodule tree inside a lease answers that lease.
+
+    A LEASE IS A LINKED TREE BELOW `<main>/.claude/worktrees/<id>` WHOSE COMMON GIT DIRECTORY IS `<main>/.git` OR A MODULE STORE UNDER IT. The linked test keeps out a plain repository at such a path, and the store test keeps out a tree another checkout made there. An operator's `.worktrees/<MMDD-N>` has no such path and stays a real second checkout.
+
+    NO SUBPROCESS UNLESS THE PATH HAS THE HOLDER: a directory with no holder in its realpath cannot sit below one, and every commit and push in the main checkout comes through here. `foreign=True` because git-level hooks carry `GIT_DIR`, and the question is about the directory.
+    """
+    if not directory:
+        return ""
+    real = os.path.realpath(directory)
+    prefix, found, rest = (real + "/").partition(LEASE_HOLDER)
+    name = rest.split("/", 1)[0]
+    if not found or not name:
+        return ""
+    answer = git(
+        ["rev-parse", "--path-format=absolute", "--git-common-dir", "--absolute-git-dir"],
+        cwd=real,
+        foreign=True,
+    )
+    lines = (answer or "").split("\n")
+    if len(lines) != 2:
+        return ""
+    common, own = (os.path.realpath(line) for line in lines)
+    store = prefix + "/.git"
+    if common == own or not (common == store or common.startswith(store + "/modules/")):
+        return ""
+    return prefix + LEASE_HOLDER + name
+
+
+def diff_changes(repo_root: str, *spec: str) -> tuple[set[str], set[str]] | None:
+    """`(changed paths, the gitlinks among them)` from `git diff --raw <spec>`, None when git cannot answer. A mode of 160000 on either side is a gitlink. `--ignore-submodules=none` because a `submodule.<name>.ignore` setting would hide exactly those rows."""
+    out = git(
+        ["diff", "--raw", "--no-renames", "--no-abbrev", "--ignore-submodules=none", "-z", *spec],
+        cwd=repo_root,
+    )
+    if out is None:
+        return None
+    fields = out.split("\0")
+    paths: set[str] = set()
+    links: set[str] = set()
+    for meta, path in zip(fields[0::2], fields[1::2], strict=False):
+        paths.add(path)
+        if "160000" in meta.lstrip(":").split()[:2]:
+            links.add(path)
+    return paths, links
+
+
+def lease_commit_offenders(paths: typing.Iterable[str], links: typing.Iterable[str]) -> list[str]:
+    """What a lease may not commit, labelled: a gitlink, and anything under `agent/`. Both land from the main checkout."""
+    gitlinks = set(links)
+    out = []
+    for path in sorted(set(paths)):
+        if path in gitlinks:
+            out.append("%s (a gitlink)" % path)
+        elif path == "agent" or path.startswith("agent/"):
+            out.append(path)
+    return out
+
+
 # --------------------------------------------------------------------------- branches ---------------------------------------------------------------------------
 
 

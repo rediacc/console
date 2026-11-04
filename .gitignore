@@ -150,6 +150,7 @@ reports/
 
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 
 # D1 database backups (local exports via rediacc_ci.ops.backup_d1)
 .backups/

@@ -6,8 +6,8 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
-  pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
+  pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
+  pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -398,12 +398,32 @@ def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str]
     return offenders, ""
 
 
+def pin_lines(lines: list[list[str]]) -> list[str]:
+    """Each pushed line that sends or names a pin under `refs/worktrees/`, as `<local> -> <remote>`. The source counts too: `refs/worktrees/x:refs/heads/y` publishes the pin's commit under another name."""
+    return [
+        "%s -> %s" % (line[0], line[2])
+        for line in lines
+        if line[0].startswith(cp.PIN_SPACE) or line[2].startswith(cp.PIN_SPACE)
+    ]
+
+
 def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
     remote = argv[0] if argv else "origin"
     lines = [line.split() for line in stdin.split("\n") if len(line.split()) == 4]
-    # FIRST, before every admission below (the mirror push, a release run): none of them makes a session link fit to publish.
+    # BEFORE every admission below: a pin never leaves the machine, and no lease pushes, whatever a mirror or release record says (agent/plans/PLAN-worktree-lease.md, Design 6).
+    pins = pin_lines(lines)
+    if pins:
+        return _refuse(
+            "this pushes a lease pin, and a pin never leaves the machine:\n  %s\n"
+            "`%s*` holds a lease's commits locally until they land."
+            % ("\n  ".join(pins), cp.PIN_SPACE)
+        )
+    lease = cp.lease_root(repo)
+    if lease:
+        return _refuse("this pushes from the lease tree %s.\n%s" % (lease, cp.LEASE_ADVICE))
+    # FIRST of the rest (the mirror push, a release run): none of them makes a session link fit to publish.
     leaks, unchecked = outgoing_session_leaks(repo, lines)
     if unchecked:
         return _refuse(
@@ -671,8 +691,33 @@ def _unchecked(why: str) -> int:
     )
 
 
+def lease_commit_refusal() -> int:
+    """A commit from a lease tree that holds a gitlink or a path under `agent/`. The index this hook sees is the commit's own, under `git commit -- <paths>` too. A diff that cannot be read in a lease is UNCHECKED and refused; outside a lease this starts no subprocess beyond `_repo`."""
+    repo = _repo()
+    lease = cp.lease_root(repo)
+    if not lease:
+        return 0
+    changes = cp.diff_changes(repo, "--cached")
+    if changes is None:
+        return _refuse(
+            "UNCHECKED: `git diff --cached` failed in the lease tree %s. An unknown is not a pass."
+            % lease
+        )
+    offenders = cp.lease_commit_offenders(*changes)
+    if offenders:
+        return _refuse(
+            "this commit from the lease tree %s stages what only the lead commits:\n  %s\n"
+            "Commit the other paths by pathspec, and name these in the report.\n%s"
+            % (lease, "\n  ".join(offenders), cp.LEASE_ADVICE)
+        )
+    return 0
+
+
 def pre_commit(_argv: list[str]) -> int:
-    """Both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
+    """The lease boundary, then both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
+    code = lease_commit_refusal()
+    if code != 0:
+        return code
     code = gen_docs_pre_commit()
     if code != 0:
         return code

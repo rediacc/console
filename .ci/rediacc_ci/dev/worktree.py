@@ -1,4 +1,4 @@
-"""`./run.sh worktree`: create, list, remove, switch and prune console worktrees.
+"""`./run.sh worktree`: create, list, remove, switch and prune console worktrees; `lease` lives in `worktree_lease.py`.
 
 PORT OF `scripts/dev/worktree.sh`, under Rule T (PLAN-retire-bash-oracles): the commands, messages, streams and exit codes match the script wherever the script was right, and differ on purpose in the places below. Each difference has a test in `tests/test_dev_worktree.py` that fails on the bash.
 
@@ -44,6 +44,7 @@ import time
 from pathlib import Path
 
 from rediacc_ci import log, paths
+from rediacc_ci.dev import worktree_lease
 
 BASE_BRANCH = "main"
 TMUX_PREFIX = "console"
@@ -107,6 +108,7 @@ SUBCOMMAND_HELP = {
     "remove": REMOVE_HELP,
     "switch": SWITCH_HELP,
     "prune": PRUNE_HELP,
+    "lease": worktree_lease.LEASE_HELP,
 }
 
 MAIN_HELP = """\
@@ -118,6 +120,7 @@ Commands:
   remove <name>     Remove a specific worktree by name
   switch <branch>   Switch current repo to branch and sync submodules
   prune             Cleanup of worktrees with merged PRs
+  lease [options]   Make one detached tree for a writer under .claude/worktrees
 
 Every command accepts --help.
 
@@ -881,6 +884,7 @@ COMMANDS = {
     "remove": cmd_remove,
     "switch": cmd_switch,
     "prune": cmd_prune,
+    "lease": worktree_lease.cmd_lease,
 }
 
 
