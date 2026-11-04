@@ -270,7 +270,7 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
     jobId: z.string(),
     /** The machine the job runs on, so a client polls it without re-deriving the target. */
     machine: z.string().min(1),
-    /** Line offset to resume from when re-attaching to a detached job. */
+    /** The spool line the stream starts after: the highest ordinal the client already holds, so the polls resume past it. */
     sinceLine: z.number().int().nonnegative().default(0),
     /** The overlapping jobs the start met (section 19). */
     overlaps: z.array(JobOverlapSchema).optional(),

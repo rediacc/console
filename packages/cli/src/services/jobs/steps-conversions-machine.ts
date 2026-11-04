@@ -138,6 +138,22 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
     },
   },
   {
+    // Resize changes one field, and a job can outlive the plan, so the merge reads the record as it is now.
+    name: 'setDatastoreSize',
+    on: 'success',
+    params: ['datastore', 'size'],
+    load: async () => {
+      const { getDatastore, recordDatastore } = await import('../config/config-datastores.js');
+      return async (ctx) => {
+        const name = str(ctx.params, 'datastore');
+        await recordDatastore(name, {
+          ...(await getDatastore(name)),
+          size: str(ctx.params, 'size'),
+        });
+      };
+    },
+  },
+  {
     // The routing hint after attach, detach or fork --attach-to. No `state` clears the entry. An attach whose plan
     // leaves out `attachedAt` is stamped with the job's finish, not the plan's start.
     name: 'setDatastoreState',

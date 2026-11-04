@@ -45,6 +45,10 @@ const TICKET = {
 afterEach(() => vi.clearAllMocks());
 
 describe('MCP attach window', () => {
+  it('no windowed description doubles its period before the note', () => {
+    for (const tool of buildAllTools()) expect(tool.description, tool.name).not.toContain('..');
+  });
+
   it('every tool whose command starts a machine job carries the window and says so', () => {
     const windowed = CLI_CONTRACT.commands.filter(hasAttachWindow).map((c) => c.pathKey);
     const tools = buildAllTools();

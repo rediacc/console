@@ -126,7 +126,7 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
 /**
  * Print what `repository_status` reported, as data on stdout in every output format (the record is structured, so a table would only say less). Renet's text is passed through untouched when it is not JSON.
  */
-function printRepoStatusRecord(stdout: string | undefined, repoName: string): void {
+export function printRepoStatusRecord(stdout: string | undefined, repoName: string): void {
   if (!stdout?.trim()) return;
   let record: unknown;
   try {
@@ -138,6 +138,7 @@ function printRepoStatusRecord(stdout: string | undefined, repoName: string): vo
   const format = getOutputFormat();
   outputService.print(record, format === 'table' ? 'json' : format);
   // The jobs on this repo's GUID ride in the record (JSON output carries them as is); the text view adds the attach rows.
+  if (format !== 'table') return;
   const [header, ...rows] = runningJobLines(jobsOfStatusRecord(record), () => repoName);
   if (header) {
     outputService.info(`\n${header}`);

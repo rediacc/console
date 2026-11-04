@@ -139,12 +139,12 @@ describe('datastore resize (one job; the record as a success step)', () => {
       params: { name: 'tier1', size: '2G' },
     });
     expect(executed[0].jobSteps?.map((s) => [s.name, s.on])).toEqual([
-      ['recordDatastore', 'success'],
+      ['setDatastoreSize', 'success'],
     ]);
     // A job still running owes the record to its ticket; nothing is written and no success is claimed.
     expect(m.recordDatastore).not.toHaveBeenCalled();
     expect(m.success).not.toHaveBeenCalled();
-    expect(store.tickets()[0].steps.map((s) => s.name)).toEqual(['recordDatastore']);
+    expect(store.tickets()[0].steps.map((s) => s.name)).toEqual(['setDatastoreSize']);
   });
 
   it('control: followed, the record is written once with the new size', async () => {
@@ -154,6 +154,17 @@ describe('datastore resize (one job; the record as a success step)', () => {
       size: '2G',
     });
     expect(m.success).toHaveBeenCalledOnce();
+  });
+
+  it('merges the size into the record as it is when the step runs, not as it was planned', async () => {
+    m.getDatastore.mockResolvedValueOnce({
+      backend: { kind: 'local', machine: 'm2', path: '/moved' },
+    });
+    await run('resize', 'tier1', '--size', '2G');
+    expect(m.recordDatastore).toHaveBeenCalledExactlyOnceWith('tier1', {
+      backend: { kind: 'local', machine: 'm2', path: '/moved' },
+      size: '2G',
+    });
   });
 
   it('a failed job throws and records nothing', async () => {

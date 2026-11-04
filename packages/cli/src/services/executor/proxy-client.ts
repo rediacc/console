@@ -58,10 +58,18 @@ import {
   terminalOutcome,
 } from './proxy-follow.js';
 
+import type { RenetEvent } from './types.js';
+
 /** The waits before start retry 1, 2 and 3: the head of the poll ladder (2 s, then 3 s, then 4.5 s). */
 const START_RETRY_DELAYS_MS = [2000, 3000, 4500] as const;
 
-import type { RenetEvent } from './types.js';
+/** The stream state plus the replay guard of a retried start: events with no spool ordinal cannot dedupe by it. */
+interface ClientStreamState extends StreamState {
+  /** Ordinal-less events rendered so far, across attempts. */
+  unorderedSeen: number;
+  /** Ordinal-less events of the current attempt still to skip because an earlier attempt rendered them. */
+  unorderedSkip: number;
+}
 
 export { nextPollDelayMs, type ProxyCommandOutcome };
 
@@ -278,7 +286,12 @@ export class ProxyClient {
       requestId,
     };
 
-    const state: StreamState = { eventsSeen: 0, highestLine: 0 };
+    const state: ClientStreamState = {
+      eventsSeen: 0,
+      highestLine: 0,
+      unorderedSeen: 0,
+      unorderedSkip: 0,
+    };
     await this.startCommand(request, onEvent, state, reattach?.machine);
     return this.finishOrPoll(pathKey, requestId, onEvent, state, reattach);
   }
@@ -291,7 +304,7 @@ export class ProxyClient {
   private async startCommand(
     request: CommandRequest,
     onEvent: (event: RenetEvent) => void,
-    state: StreamState,
+    state: ClientStreamState,
     fallbackMachine: string | undefined
   ): Promise<void> {
     for (let attempt = 0; ; attempt++) {
@@ -313,7 +326,7 @@ export class ProxyClient {
   private async tryStart(
     request: CommandRequest,
     onEvent: (event: RenetEvent) => void,
-    state: StreamState,
+    state: ClientStreamState,
     fallbackMachine: string | undefined,
     retriable: boolean
   ): Promise<'done' | 'retry'> {
@@ -325,10 +338,14 @@ export class ProxyClient {
       throw error;
     }
     const body = await this.commandBody(response);
+    // A retried attempt replays from the start: what an earlier attempt rendered without an ordinal is skipped.
+    state.unorderedSkip = state.unorderedSeen;
     try {
       await this.pumpStream(body, onEvent, state);
-      // A stream that closed cleanly with neither a job line nor a result dropped before the start was announced: the same retry as a broken one.
-      return !state.jobId && !state.outcome && retriable ? 'retry' : 'done';
+      // A clean close with neither a job line, a result nor any output (heartbeats only) dropped before the start was announced: retried like a broken stream. One that printed may have run a command the request id does not dedupe, so it is not re-sent.
+      return !state.jobId && !state.outcome && state.eventsSeen === 0 && retriable
+        ? 'retry'
+        : 'done';
     } catch (error) {
       return recoverBrokenStream(error, state, fallbackMachine, retriable);
     }
@@ -431,7 +448,7 @@ export class ProxyClient {
   private async pumpStream(
     body: ReadableStream<Uint8Array>,
     onEvent: (event: RenetEvent) => void,
-    state: StreamState
+    state: ClientStreamState
   ): Promise<void> {
     for await (const raw of readNdjson<unknown>(body, (line) => {
       // Renet occasionally writes unstructured output to the same stream. A stray line must not kill a healthy operation, so surface it as a log event and keep reading.
@@ -446,7 +463,7 @@ export class ProxyClient {
   private foldStreamLine(
     line: StreamLine,
     onEvent: (event: RenetEvent) => void,
-    state: StreamState
+    state: ClientStreamState
   ): void {
     if (line.kind === 'job') {
       foldJobLine(line, state);
@@ -460,7 +477,15 @@ export class ProxyClient {
     if (line.kind === 'heartbeat') return;
     // An event. Dedupe on the spool-line ordinal so a resumed boundary line renders exactly once.
     if (line.line != null && line.line <= state.highestLine) return;
-    if (line.line != null) state.highestLine = line.line;
+    if (line.line == null) {
+      if (state.unorderedSkip > 0) {
+        state.unorderedSkip -= 1;
+        return;
+      }
+      state.unorderedSeen += 1;
+    } else {
+      state.highestLine = line.line;
+    }
     state.eventsSeen += 1;
     // No cast needed: the wire event and RenetEvent are the same shape by construction, which is the point of forwarding renet's events verbatim.
     onEvent(line.event);

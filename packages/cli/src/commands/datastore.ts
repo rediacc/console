@@ -647,7 +647,6 @@ function registerMutators(datastore: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (ref: string, options: { size: string } & DebugOpt) => {
       try {
-        const record = await getDatastore(ref);
         await assertCommandPolicy(CMD.DATASTORE_RESIZE, undefined, ref);
         const host = await requireDatastoreHost(ref);
         const outcome = await dispatchAsJob(
@@ -655,12 +654,7 @@ function registerMutators(datastore: Command): void {
           'datastore_resize',
           host,
           { name: ref, size: options.size },
-          [
-            planStep('recordDatastore', {
-              datastore: ref,
-              record: JSON.stringify({ ...record, size: options.size }),
-            }),
-          ],
+          [planStep('setDatastoreSize', { datastore: ref, size: options.size })],
           options.debug
         );
         if (settledPending(outcome)) return;

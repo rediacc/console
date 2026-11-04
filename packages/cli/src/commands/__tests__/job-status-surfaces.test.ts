@@ -5,14 +5,22 @@
  */
 
 import type { JobInfo } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../services/core/output.js', () => ({ outputService: { info: vi.fn() } }));
+const out = vi.hoisted(() => ({ info: vi.fn(), print: vi.fn(), format: 'table' }));
+vi.mock('../../services/core/output.js', () => ({
+  outputService: { info: out.info, print: out.print },
+}));
+vi.mock('../../utils/errors.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  getOutputFormat: () => out.format,
+}));
 vi.mock('../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../i18n/index.js', () => ({
   t: (k: string, p?: Record<string, unknown>) => (p ? `${k} ${JSON.stringify(p)}` : k),
 }));
 
+const { printRepoStatusRecord } = await import('../repo.js');
 const { runningJobLines, enrichJobs, statusJsonDocument, jobsOfStatusRecord } = await import(
   '../machine/status.js'
 );
@@ -122,5 +130,26 @@ describe('repo status running jobs', () => {
     expect(runningJobLines(jobsOfStatusRecord({ name: 'mail', jobs: [] }), resolve)).toEqual([]);
     expect(runningJobLines(jobsOfStatusRecord({ name: 'mail' }), resolve)).toEqual([]);
     expect(jobsOfStatusRecord(null)).toEqual([]);
+  });
+});
+
+describe('repo status record printing', () => {
+  const record = JSON.stringify({ name: 'mail', jobs: [live] });
+  beforeEach(() => {
+    out.info.mockClear();
+    out.print.mockClear();
+  });
+
+  it('the text view prints the job rows after the record', () => {
+    out.format = 'table';
+    printRepoStatusRecord(record, 'mail');
+    expect(out.info).toHaveBeenCalledTimes(2);
+  });
+
+  it('JSON output prints the record only: the jobs ride in it, with no extra rows', () => {
+    out.format = 'json';
+    printRepoStatusRecord(record, 'mail');
+    expect(out.print).toHaveBeenCalledOnce();
+    expect(out.info).not.toHaveBeenCalled();
   });
 });

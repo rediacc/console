@@ -275,7 +275,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J19',
-    steps: ['recordDatastore'],
+    steps: ['setDatastoreSize'],
   },
   'datastore snapshot create': {
     form: 'single',

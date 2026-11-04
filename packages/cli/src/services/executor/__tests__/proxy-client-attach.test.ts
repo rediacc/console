@@ -128,4 +128,50 @@ describe('ProxyClient over the attach window', () => {
     expect(urls.some((u) => u.includes(JOB))).toBe(true);
     expect(outcome).toMatchObject({ success: true, jobId: JOB });
   });
+
+  it('does not re-send a clean close that printed output: the command may have run', async () => {
+    const { client, ids } = setup(() =>
+      ndjson([{ kind: 'event', event: { type: 'output', msg: 'partial\n' } }])
+    );
+    await expect(client.run('repo create', {}, {}, () => {})).rejects.toThrow(/without reporting/);
+    expect(ids).toHaveLength(1);
+  });
+
+  it('re-sends a clean close of heartbeats only (the case that motivated the retry)', async () => {
+    const { client, ids } = setup((call) =>
+      call === 1 ? new Response('{"kind":"heartbeat"}\n', { status: 200 }) : finishedInWindow()
+    );
+    const outcome = await client.run('repo create', {}, {}, () => {});
+    expect(outcome.success).toBe(true);
+    expect(ids).toHaveLength(2);
+  });
+
+  it('a retried stream does not render again what the broken one already printed', async () => {
+    const event = (msg: string) => ({ kind: 'event', event: { type: 'output', msg } });
+    const { client, ids } = setup((call) => {
+      if (call === 1) {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(`${JSON.stringify(event('one\n'))}\n`));
+            controller.error(new TypeError('terminated'));
+          },
+        });
+        return new Response(body, { status: 200 });
+      }
+      return ndjson([
+        event('one\n'),
+        event('two\n'),
+        {
+          kind: 'result',
+          result: { success: true, exitCode: 0, durationMs: 1, state: 'succeeded', attached: true },
+        },
+      ]);
+    });
+    const rendered: string[] = [];
+    await client.run('repo create', {}, {}, (e) => {
+      if (e.type === 'output' && e.msg) rendered.push(e.msg);
+    });
+    expect(ids).toHaveLength(2);
+    expect(rendered).toEqual(['one\n', 'two\n']);
+  });
 });

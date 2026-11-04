@@ -245,7 +245,9 @@ export function buildToolsFromContract(): ToolDef[] {
     const baseDescription = mcp.descriptionOverride ?? cmd.label;
     tools.push({
       name: cmd.pathKey.replaceAll(' ', '_'),
-      description: windowed ? `${baseDescription}. ${ATTACH_WINDOW_NOTE}` : baseDescription,
+      description: windowed
+        ? `${baseDescription.replace(/\.$/, '')}. ${ATTACH_WINDOW_NOTE}`
+        : baseDescription,
       ...(windowed ? { attachWindowMs: JOB_ATTACH_WINDOW_MS } : {}),
       schema,
       command: commandFn,
