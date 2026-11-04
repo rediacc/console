@@ -473,6 +473,65 @@ def real_hooks(repo):
         spike.must(checkout, "config", "core.hooksPath", str(HOOKS))
 
 
+def run_worktree_hook(root, verb, payload):
+    return subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.dev.worktree", verb],
+        cwd=str(paths.CI_DIR),
+        env=gc_env(root),
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_lease_hook_prints_the_tree_and_records_the_agent(repo):
+    done = run_worktree_hook(
+        repo.root, "lease-hook", {"name": "agent-a123", "session_id": "abcd1234ffff"}
+    )
+    assert done.returncode == 0, done.stderr
+    tree = pathlib.Path(done.stdout.strip().splitlines()[-1])
+    assert tree == repo.root / spike.HOLDER / "agent-a123"
+    assert spike.out(tree, "branch", "--show-current") == ""
+    record = json.loads((repo.root / ".git" / lease.RECORD_DIR / "agent-a123.json").read_text())
+    assert (record["owner"], record["agent"]) == ("abcd1234", "a123")
+
+
+def test_lease_hook_over_the_cap_exits_non_zero_with_the_message(repo):
+    spike.write(
+        repo.root / "agent" / "plans" / "QUEUE.md",
+        "## Settings\n\n```stop-hook\nwriter_cap: 1 -- fixture\n```\n",
+    )
+    make_tree(repo, "first")
+    done = run_worktree_hook(repo.root, "lease-hook", {"name": "agent-b", "session_id": "abcd1234"})
+    assert done.returncode != 0
+    assert "writer_cap 1" in done.stderr
+    assert done.stdout == ""
+
+
+def test_gc_hook_on_a_dirty_tree_exits_non_zero_with_the_tree_intact(repo):
+    tree = make_tree(repo, "dirty-hook")
+    spike.write(tree / "scratch.txt", "work\n")
+    done = run_worktree_hook(repo.root, "gc-hook", {"worktree_path": str(tree)})
+    assert done.returncode != 0
+    assert (tree / "scratch.txt").is_file()
+
+
+def test_gc_hook_on_a_clean_tree_exits_zero_with_the_tree_gone(repo):
+    made = run_lease(repo.root, "--name", "clean-hook", "--owner", "cli")
+    assert made.returncode == 0, made.stderr
+    tree = pathlib.Path(made.stdout.strip())
+    done = run_worktree_hook(repo.root, "gc-hook", {"worktree_path": str(tree)})
+    assert done.returncode == 0, done.stderr
+    assert not tree.exists()
+
+
+def test_gc_hook_refuses_a_path_outside_the_holder(repo):
+    done = run_worktree_hook(repo.root, "gc-hook", {"worktree_path": str(repo.root / "docs")})
+    assert done.returncode != 0
+    assert "no lease tree" in done.stderr
+
+
 def make_tree(repo, name):
     result = run_lease(repo.root, "--name", name)
     assert result.returncode == 0, result.stderr

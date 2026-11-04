@@ -176,6 +176,25 @@ PATTERNS = {
         "collapsed": False,
         "members": _members("$CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py --teammate-idle"),
     },
+    # Every route to a harness tree lands on the lease tool (agent/plans/PLAN-worktree-lease.md Design 5). The tree is seeded inside the hook, hence the budget. Neither is collapsed: stdout is the tree's path, and it must reach the harness unmerged.
+    "worktree-create": {
+        "event": "WorktreeCreate",
+        "matcher": None,
+        "head": False,
+        "collapsed": False,
+        "members": _members(
+            {"command": '"$CLAUDE_PROJECT_DIR/run.sh" worktree lease-hook', "timeout": 600},
+        ),
+    },
+    "worktree-remove": {
+        "event": "WorktreeRemove",
+        "matcher": None,
+        "head": False,
+        "collapsed": False,
+        "members": _members(
+            {"command": '"$CLAUDE_PROJECT_DIR/run.sh" worktree gc-hook', "timeout": 300},
+        ),
+    },
     "subagent-stop": {
         "event": "SubagentStop",
         "matcher": None,

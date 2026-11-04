@@ -512,7 +512,12 @@ def counting(argv, *a, **k):
 subprocess.run = counting
 live = json.loads(live)
 if live is not None:
-    live = {"ids": set(live["ids"]), "trees": set(live["trees"]), "cwd": live.get("cwd", "")}
+    live = {
+        "ids": set(live["ids"]),
+        "trees": set(live["trees"]),
+        "cwd": live.get("cwd", ""),
+        "prompts": [tuple(row) for row in live.get("prompts", ())],
+    }
 cache = {}
 if cache_path:
     try:

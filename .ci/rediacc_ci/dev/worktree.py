@@ -113,6 +113,8 @@ SUBCOMMAND_HELP = {
     "land": worktree_lease.LAND_HELP,
     "leases": worktree_lease.LEASES_HELP,
     "gc": worktree_lease.GC_HELP,
+    "lease-hook": "The WorktreeCreate hook: reads the harness JSON on stdin, prints the tree path.\n",
+    "gc-hook": "The WorktreeRemove hook: reads the harness JSON on stdin, exits non-zero on a kept tree.\n",
 }
 
 MAIN_HELP = """\
@@ -897,6 +899,8 @@ COMMANDS = {
     "land": worktree_lease.cmd_land,
     "leases": worktree_lease.cmd_leases,
     "gc": worktree_lease.cmd_gc,
+    "lease-hook": worktree_lease.cmd_lease_hook,
+    "gc-hook": worktree_lease.cmd_gc_hook,
 }
 
 

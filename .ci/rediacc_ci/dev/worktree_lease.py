@@ -1111,6 +1111,64 @@ def _parse_gc(args):
     return write, only
 
 
+HOOK_INPUT_LOG = pathlib.PurePath(".ci", "cache", "worktree-hook-input.jsonl")
+
+
+def _hook_input(root):
+    """The hook's JSON on stdin. W5 keeps a copy of each for one proof run, since its fields are what the docs leave unverified."""
+    data = json.loads(sys.stdin.read() or "{}")
+    log_path = root / HOOK_INPUT_LOG
+    if log_path.parent.is_dir():
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(data, sort_keys=True) + "\n")
+    return data
+
+
+def cmd_lease_hook(args):
+    """`WorktreeCreate`: make the tree the harness asked for and print its path as the last stdout line. Any non-zero exit fails the creation, so a refusal reaches the spawn."""
+    if args:
+        log.error("Unknown option: %s" % args[0])
+        return 1
+    root = pathlib.Path(paths.repo_root())
+    try:
+        data = _hook_input(root)
+        name = str(data.get("name") or "")
+        agent = name[len("agent-") :] if name.startswith("agent-") else ""
+        path = make_lease(
+            root,
+            name=name,
+            owner=str(data.get("session_id") or "")[:8] or _default_owner(),
+            agent=agent,
+        )
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stdout.write(path + "\n")
+    sys.stdout.flush()
+    return 0
+
+
+def cmd_gc_hook(args):
+    """`WorktreeRemove`: exit 0 counts as removed whether or not anything was deleted, so anything `gc` keeps exits non-zero with the tree in place."""
+    if args:
+        log.error("Unknown option: %s" % args[0])
+        return 1
+    root = pathlib.Path(paths.repo_root())
+    try:
+        data = _hook_input(root)
+        path = pathlib.Path(str(data.get("worktree_path") or ""))
+        main = _main_checkout(root)
+        if path.parent != pathlib.Path(main) / spike.HOLDER or not ID_RE.match(path.name):
+            log.error("refused: %s is no lease tree of %s" % (path, main))
+            return 1
+        code, lines = run_gc(root, write=True, only=path.name)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stderr.write("".join(line + "\n" for line in lines))
+    return code
+
+
 def cmd_gc(args):
     parsed = _parse_gc(args)
     if parsed is None:

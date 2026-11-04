@@ -85,6 +85,28 @@
         ]
       }
     ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/run.sh\" worktree lease-hook",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/run.sh\" worktree gc-hook",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [
