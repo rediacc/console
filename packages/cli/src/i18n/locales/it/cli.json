@@ -1529,7 +1529,6 @@
           "basic": "Mostra lo stato completo di una macchina.",
           "containers": "Mostra solo i container in esecuzione su una macchina."
         },
-        "fetched": "Stato recuperato",
         "fetching": "Recupero stato da {{machine}} in corso...",
         "healthCheck": "Modalita controllo salute: esce con codice 2 se ci sono container non sani",
         "infrastructure": "Infrastruttura",

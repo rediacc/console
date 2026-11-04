@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "Vollständigen Maschinenstatus anzeigen",
   "commands.machine.status.examples.basic": "Den vollständigen Status einer Maschine anzeigen.",
   "commands.machine.status.examples.containers": "Nur die laufenden Container auf einer Maschine anzeigen.",
-  "commands.machine.status.fetched": "Status abgerufen",
   "commands.machine.status.fetching": "Status von {{machine}} wird abgerufen...",
   "commands.machine.status.healthCheck": "Zustandsprüfungsmodus - beendet mit Code 2 bei ungesunden Containern",
   "commands.machine.status.infrastructure": "Infrastruktur",

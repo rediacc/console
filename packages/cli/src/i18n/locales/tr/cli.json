@@ -1529,7 +1529,6 @@
           "basic": "Bir makinenin tam durumunu göster.",
           "containers": "Bir makinedeki yalnızca çalışan konteynerleri göster."
         },
-        "fetched": "Durum alındı",
         "fetching": "{{machine}} durumu alınıyor...",
         "healthCheck": "Sağlık kontrolü modu - sağlıksız varsa kod 2 ile çıkar",
         "infrastructure": "Altyapı",

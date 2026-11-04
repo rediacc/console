@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "Näitab masina täisstaatust",
   "commands.machine.status.examples.basic": "Kuva masina täielik olek.",
   "commands.machine.status.examples.containers": "Kuva ainult masinal töötavad konteinerid.",
-  "commands.machine.status.fetched": "Staatus laaditud",
   "commands.machine.status.fetching": "Staatust laaditakse masinast {{machine}}...",
   "commands.machine.status.healthCheck": "Seisundikontrolli režiim - väljub koodiga 2, kui mõni on ebaterve",
   "commands.machine.status.infrastructure": "Infrastruktuur",

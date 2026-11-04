@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "عرض حالة الجهاز الكاملة",
   "commands.machine.status.examples.basic": "عرض الحالة الكاملة لجهاز.",
   "commands.machine.status.examples.containers": "عرض الحاويات قيد التشغيل على جهاز فقط.",
-  "commands.machine.status.fetched": "تم جلب الحالة",
   "commands.machine.status.fetching": "جارٍ جلب الحالة من {{machine}}...",
   "commands.machine.status.healthCheck": "وضع فحص الصحة - الخروج برمز 2 إذا وُجدت حاويات غير سليمة",
   "commands.machine.status.infrastructure": "البنية التحتية",

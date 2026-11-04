@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "Afficher l'état complet de la machine",
   "commands.machine.status.examples.basic": "Afficher le statut complet d'une machine.",
   "commands.machine.status.examples.containers": "Afficher uniquement les conteneurs en cours d'exécution sur une machine.",
-  "commands.machine.status.fetched": "Statut récupéré",
   "commands.machine.status.fetching": "Récupération du statut de {{machine}}...",
   "commands.machine.status.healthCheck": "Mode de vérification de santé - sort avec le code 2 si des conteneurs ne sont pas sains",
   "commands.machine.status.infrastructure": "Infrastructure",

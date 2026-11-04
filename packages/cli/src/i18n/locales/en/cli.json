@@ -900,7 +900,6 @@
         "containersUnhealthyFound": "{{count}} unhealthy container(s) found",
         "description": "Show a machine's system, repositories, containers, and services. Read-only: never updates renet on the machine; warns when its version differs.",
         "descriptionShort": "Show machine status",
-        "fetched": "Status fetched",
         "fetching": "Fetching status from {{machine}}...",
         "healthCheck": "Health check mode - exits with code 2 if any unhealthy",
         "infrastructure": "Infrastructure",

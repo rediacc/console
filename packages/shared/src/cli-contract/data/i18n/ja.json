@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "マシンの完全なステータスを表示する",
   "commands.machine.status.examples.basic": "マシンの完全なステータスを表示する",
   "commands.machine.status.examples.containers": "マシン上で実行中のコンテナのみを表示する",
-  "commands.machine.status.fetched": "ステータスを取得しました",
   "commands.machine.status.fetching": "{{machine}} からステータスを取得中...",
   "commands.machine.status.healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
   "commands.machine.status.infrastructure": "インフラストラクチャ",

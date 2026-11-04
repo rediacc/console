@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "显示机器的完整状态",
   "commands.machine.status.examples.basic": "显示一台机器的完整状态。",
   "commands.machine.status.examples.containers": "仅显示机器上正在运行的容器。",
-  "commands.machine.status.fetched": "状态已获取",
   "commands.machine.status.fetching": "正在从 {{machine}} 获取状态...",
   "commands.machine.status.healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
   "commands.machine.status.infrastructure": "基础设施",

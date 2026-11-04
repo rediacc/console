@@ -1529,7 +1529,6 @@
           "basic": "Muestra el estado completo de una máquina.",
           "containers": "Muestra solo los contenedores en ejecución de una máquina."
         },
-        "fetched": "Estado obtenido",
         "fetching": "Obteniendo estado de {{machine}}...",
         "healthCheck": "Modo de verificación de salud - sale con código 2 si hay algún no saludable",
         "infrastructure": "Infraestructura",

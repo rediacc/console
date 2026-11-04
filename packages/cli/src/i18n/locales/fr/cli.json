@@ -1529,7 +1529,6 @@
           "basic": "Afficher le statut complet d'une machine.",
           "containers": "Afficher uniquement les conteneurs en cours d'exécution sur une machine."
         },
-        "fetched": "Statut récupéré",
         "fetching": "Récupération du statut de {{machine}}...",
         "healthCheck": "Mode de vérification de santé - sort avec le code 2 si des conteneurs ne sont pas sains",
         "infrastructure": "Infrastructure",

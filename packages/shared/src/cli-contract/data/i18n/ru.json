@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "Показать полный статус машины",
   "commands.machine.status.examples.basic": "Показать полный статус машины.",
   "commands.machine.status.examples.containers": "Показать только запущенные контейнеры на машине.",
-  "commands.machine.status.fetched": "Статус получен",
   "commands.machine.status.fetching": "Получение статуса с {{machine}}...",
   "commands.machine.status.healthCheck": "Режим проверки состояния - завершается с кодом 2 при наличии нездоровых",
   "commands.machine.status.infrastructure": "Инфраструктура",

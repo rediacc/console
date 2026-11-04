@@ -1529,7 +1529,6 @@
           "basic": "显示一台机器的完整状态。",
           "containers": "仅显示机器上正在运行的容器。"
         },
-        "fetched": "状态已获取",
         "fetching": "正在从 {{machine}} 获取状态...",
         "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
         "infrastructure": "基础设施",

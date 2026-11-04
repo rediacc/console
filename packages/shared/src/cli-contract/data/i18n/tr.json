@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "Makinenin tam durumunu göster",
   "commands.machine.status.examples.basic": "Bir makinenin tam durumunu göster.",
   "commands.machine.status.examples.containers": "Bir makinedeki yalnızca çalışan konteynerleri göster.",
-  "commands.machine.status.fetched": "Durum alındı",
   "commands.machine.status.fetching": "{{machine}} durumu alınıyor...",
   "commands.machine.status.healthCheck": "Sağlık kontrolü modu - sağlıksız varsa kod 2 ile çıkar",
   "commands.machine.status.infrastructure": "Altyapı",

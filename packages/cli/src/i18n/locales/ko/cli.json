@@ -1529,7 +1529,6 @@
           "basic": "머신의 전체 상태를 표시합니다.",
           "containers": "머신에서 실행 중인 컨테이너만 표시합니다."
         },
-        "fetched": "상태를 가져왔습니다",
         "fetching": "{{machine}}에서 상태 가져오는 중...",
         "healthCheck": "상태 확인 모드 - 비정상 컨테이너가 있으면 종료 코드 2로 종료",
         "infrastructure": "인프라",

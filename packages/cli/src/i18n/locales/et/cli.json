@@ -1529,7 +1529,6 @@
           "basic": "Kuva masina täielik olek.",
           "containers": "Kuva ainult masinal töötavad konteinerid."
         },
-        "fetched": "Staatus laaditud",
         "fetching": "Staatust laaditakse masinast {{machine}}...",
         "healthCheck": "Seisundikontrolli režiim - väljub koodiga 2, kui mõni on ebaterve",
         "infrastructure": "Infrastruktuur",

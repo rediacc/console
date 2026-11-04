@@ -1529,7 +1529,6 @@
           "basic": "Den vollständigen Status einer Maschine anzeigen.",
           "containers": "Nur die laufenden Container auf einer Maschine anzeigen."
         },
-        "fetched": "Status abgerufen",
         "fetching": "Status von {{machine}} wird abgerufen...",
         "healthCheck": "Zustandsprüfungsmodus - beendet mit Code 2 bei ungesunden Containern",
         "infrastructure": "Infrastruktur",

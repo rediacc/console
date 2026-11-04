@@ -1193,7 +1193,6 @@
   "commands.machine.status.descriptionShort": "Show machine status",
   "commands.machine.status.examples.basic": "Show a machine's full status.",
   "commands.machine.status.examples.containers": "Show only the running containers on a machine.",
-  "commands.machine.status.fetched": "Status fetched",
   "commands.machine.status.fetching": "Fetching status from {{machine}}...",
   "commands.machine.status.healthCheck": "Health check mode - exits with code 2 if any unhealthy",
   "commands.machine.status.infrastructure": "Infrastructure",
