@@ -13,6 +13,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -452,7 +453,7 @@ def control_twin_source():
     core = ast.parse((stop / "wl_core.py").read_text(encoding="utf-8"))
     text = (stop / "worklist.py").read_text(encoding="utf-8")
     # The twin must call its own helper, so that one name is mapped; any other difference still fails.
-    twin = ast.parse(text.replace("_local_git_dirs(", "_git_dirs("))
+    twin = ast.parse(re.sub(r"(?<!def )_local_git_dirs\(", "_git_dirs(", text))
     for name in ("_git_dirs", "lease_main"):
         got = _body(twin, "_local_" + name.lstrip("_"))
         check(
