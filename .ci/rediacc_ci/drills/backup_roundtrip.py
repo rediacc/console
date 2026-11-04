@@ -395,6 +395,13 @@ class Roundtrip:
             snap,
             str(listed[0]["snapshotId"]) if listed else "",
         )
+        # A run with no hook declares crash consistency on its commit: the listing must say so, so a run
+        # that stopped declaring (or one that claimed an application quiesce it never had) is visible here.
+        self.check(
+            "the commit declared its consistency",
+            "crash-consistent",
+            str(listed[0].get("consistency", "")) if listed else "",
+        )
         usage = self.api.call("GET", "/backups/usage")
         self.check(
             "quota ledger equals bytes uploaded", uploaded, str(usage.get("storedBytes", ""))

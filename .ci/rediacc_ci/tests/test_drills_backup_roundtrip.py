@@ -98,9 +98,10 @@ class FakeVm:
 class FakeApi(rt.Api):
     """A scripted account API."""
 
-    def __init__(self, fail_path: str = "") -> None:
+    def __init__(self, fail_path: str = "", consistency: str = "crash-consistent") -> None:
         super().__init__("http://127.0.0.1:1")
         self.fail_path = fail_path
+        self.consistency = consistency
         self.calls: list[tuple[str, str, dict | None]] = []
 
     def call(self, method: str, path: str, body: dict | None = None, *_ignored: object) -> dict:
@@ -114,7 +115,7 @@ class FakeApi(rt.Api):
         if path == "/licenses/activate-repo":
             return {"license": {"publicKeyId": "kid-1", "blob": "x"}}
         if path == "/backups/manifests":
-            return {"manifests": [{"snapshotId": "S1"}]}
+            return {"manifests": [{"snapshotId": "S1", "consistency": self.consistency}]}
         if path == "/backups/usage":
             return {"storedBytes": 4242}
         return {}
@@ -147,6 +148,7 @@ def test_a_clean_run_passes_and_tears_down_both_repos(tmp_path: pathlib.Path) ->
         "source repo licence is valid",
         "snapshot stored",
         "manifest index carries the snapshot",
+        "the commit declared its consistency",
         "quota ledger equals bytes uploaded",
         "wrong passphrase: refused",
         "wrong passphrase: places nothing",
@@ -189,6 +191,16 @@ def test_a_control_that_does_not_fire_fails_the_run(tmp_path: pathlib.Path) -> N
     rc, out, _ = _run(tmp_path, FakeVm(control_rc=0))
     assert rc == 1
     assert "FAIL  control did NOT fire" in out
+
+
+@pytest.mark.parametrize("declared", ["", "app-quiesced"])
+def test_a_commit_that_declares_the_wrong_consistency_fails_the_run(
+    tmp_path: pathlib.Path, declared: str
+) -> None:
+    """A run with no hook must say crash-consistent: silence, or a quiesce nothing performed, is a failure."""
+    rc, out, _ = _run(tmp_path, FakeVm(), FakeApi(consistency=declared))
+    assert rc >= 1
+    assert "FAIL  the commit declared its consistency" in out
 
 
 def test_a_failed_snapshot_is_a_verdict_and_still_tears_down(tmp_path: pathlib.Path) -> None:
