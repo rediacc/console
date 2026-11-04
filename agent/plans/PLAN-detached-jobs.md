@@ -587,8 +587,9 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: private/account/web/src/hooks/useCommand.ts, private/account/web/src/hooks/__tests__/useCommand-poll.test.ts (new), private/account/web/src/api/console.ts, private/account/src/routes/console.ts (the job poll relay only), private/account (the gitlink bump only). Accept: `cd private/account && npx vitest run web/src/hooks src/routes` rc 0, and `cd private/account && npx tsc --noEmit` rc 0.
   Amended (third round): follows J6b. The hook renders a result that arrives inside the window without polling, renders `overlaps` as a warning with the attach command, and sends a `requestId`. The test adds one case per behaviour.
 
-- [ ] J8 [writer] MCP (Design 12). After J2, J3 and J5. Covered tools append `--background` and describe the job; `job_status` and `job_logs` take the machine optionally.
+- [x] J8 [writer] MCP (Design 12). After J2, J3 and J5. Covered tools append `--background` and describe the job; `job_status` and `job_logs` take the machine optionally.
     (reopened 2026-11-04) Unmet: the tick called the box superseded, but J8b amends only the --background clause and J8b is itself open. Also unmet: Design 12 says job_wait is not exposed, and packages/cli/src/config/command-metadata.ts:64 gives job wait an mcp field. Reopened until both close.
+    (ticked) 2026-11-04T17:45:50Z by d778be9d: commit:141379d1b vitest of src/commands/mcp from packages/cli rc=0 on this tree with 199 tests including job-status-surfaces
     (ticked) 2026-11-04T09:37:22Z by d778be9d: commit:3b5cb478d J8 superseded by the J8b attach window; vitest src/commands/mcp rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
   Tests: each covered tool's argv carries `--background`; the parsed envelope of a fake `repo up` returns within the read timeout with a job id; `job_status` built with only an id omits `-m`; the coverage test lists every covered verb with `--background`; control: `repo list` carries no `--background`.
