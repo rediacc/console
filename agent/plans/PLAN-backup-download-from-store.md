@@ -39,6 +39,7 @@ Worklist: #b76e7dcb, PR-TASK 9f92c43e
 - [x] L1 [live] Bench: mint a restore session with a scoped token, fetch a small lineage, and show the refusals for a member token and an unscoped token. Accept: the fetch rc 0 and both refusals answer 403.
     (ticked) 2026-10-29T22:33:53Z by d778be9d: bench worker 3906a08b: team token with backup:read+backup:restore, rdc backup download hb1023-src --store rc=0, bytesFetched 79691776, image begins with the LUKS magic; member POST /api-tokens with backup:restore 403 INSUFFICIENT_ORG_ROLE, its backup:read token 403 on restore-session; demoted creator token 403 INSUFFICIENT_ORG_ROLE after a 200 control; team-less token row 403 TEAM_SCOPE_REQUIRED; cleaned up. DEPS-WAIVED: the bench proof of the landed route and CLI needs neither the local-image plan nor the hardening L2 stable step
 - [ ] L2 [live] Hostinger lineage, read-only: fetch one seeded repo to a local path, then fetch again and record the bytes fetched by the incremental run. Accept: both runs rc 0, the second fetches only changed cells, and the image sha256 equals the recorded one.
+  (note) Runs through `--config eu-bench`, on a lineage bench's store holds, ASKED:2026-11-04T16:07Z.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

@@ -303,6 +303,10 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     (ticked) 2026-11-04T09:36:25Z by d778be9d: fileline:docs/agent-reference/plan-records.md:115 V8 first-draft twin of V9, closed with it by the plan's rule. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface. V7 is its live exercise.
 
+## Operator rulings 2026-11-04
+
+ASKED:2026-11-04T16:07Z. Live reads that named `eu-remote` move to `eu-bench`, because that config stops agents at the authenticator. A merge is not a precondition for a live step: the local CI/CD scripts may release to bench, edge and stable. The Accept corrections on V9, V8, S2, D4, U9, N3 and F2 stand.
+
 ## Operator rulings 2026-10-27 (answers to the questions below)
 
 1. Renet and every surface: the ruling to go with bench only, not edge, with the subscription command called after the EU config is copied to bench. The live targets are bench (account, proxy, www, cli) and hostinger reached through the `eu-bench` rdc config (cli, renet), the EU stable store mirrored to bench. Edge is not a live-proof target; vm:check does not substitute. Every edge reference above is superseded by this ruling. Confirmed ASKED:2026-10-27T14:33Z: "Yes, bench + hostinger via eu-bench".

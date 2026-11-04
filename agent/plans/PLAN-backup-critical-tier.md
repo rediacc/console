@@ -593,6 +593,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - `backup_roundtrip` asserts `consistency`.
   - Owns: .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, the drill tests under .ci
   - Accept: `./run.sh drill backup --selftest` rc 0, and the pytest for those drills rc 0.
+    (corrected 2026-11-04) `./run.sh drill backup --selftest` exits 1 and prints `selftest fired as designed`, so that is what the Accept reads. Letters t and u in `backup.py` are already session expiry and killed-run reconcile, so the hook-order, heal and restore-at-run legs take new letters; leg u of this box is the `backup_onprem` capability row, landed in 5d71f5515.
 
 ### Y: proof before the merge (lead)
 
