@@ -1253,8 +1253,8 @@ const BNB_MAX_BLOCKS = 40;
 const BNB_NODE_LIMIT = 1_000_000;
 /** Local search stops after the step that takes its candidate count past this, and says so (`capped`). A count, not a clock, so a capped result is reproducible; quality-pytest converges in under 1.5M per run. */
 const LOCAL_SEARCH_MAX_EVALUATIONS = 10_000_000;
-/** The work the live quality-pytest rebalance may spend, both local-search runs together; the BUDGET control holds it. Measured 1,795,571 on 2026-09-29 (516 blocks, 16 + 2 steps). */
-export const QUALITY_PYTEST_EVALUATION_BUDGET = 4_000_000;
+/** The work the live quality-pytest rebalance may spend, both local-search runs together; the BUDGET control holds it. Measured 1,795,571 on 2026-09-29 (516 blocks, 16 + 2 steps), and 4,199,948 on 2026-11-04 (781 blocks, 14 + 1 steps) once the lease tests joined the lane, so the budget follows the lane's growth at 6M, still under the 10M cap where the search reports `capped`. */
+export const QUALITY_PYTEST_EVALUATION_BUDGET = 6_000_000;
 
 /** One lane's pricing inputs, per variant and leg, built from exactly what `priceLegs` reads, so a plan's minutes here are the verdict's minutes. A lane with no `variantCosts` has one variant named ''. */
 export interface LaneModel {

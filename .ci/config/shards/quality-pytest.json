@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-03T10:15:29.850Z",
+  "generatedAt": "2026-11-04T14:17:41.291Z",
   "legs": [
     {
       "index": 1,
@@ -393,6 +393,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_executor_artifacts.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_resolve_account_deploy_config.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_upload_to_r2.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_walkers.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_l.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_o.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_renet.py",
@@ -558,6 +559,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_diagnostics_collect_drill_diagnostics.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_create_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_integrity.py",
@@ -719,6 +721,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_verify_stable_endpoints.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_www.py",
         "pytest:.ci/rediacc_ci/tests/test_doc_env_manifest_region.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_check_trigger.py",
