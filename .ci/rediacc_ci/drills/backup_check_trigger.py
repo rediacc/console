@@ -4,9 +4,9 @@ THE CLONE. This is the backup twin of the `vm:check` pair: `rediacc_ci.proof.sur
 
 WHAT IS TOUCHED. Three path tables, one per repository, each entry either a directory prefix (ending in `/`) or an `fnmatch` pattern (`*` crosses `/`):
 
-  CONSOLE_PATHS   the CLI backup commands and services, and the drill that writes the receipt
+  CONSOLE_PATHS   the CLI backup commands and services, and the drill modules that write the receipt (the legs, their real-renet half, the round trip and the on-premise half)
   RENET_PATHS     relative to private/renet: the backup, datastore and prune commands, the chunk store, delta, datastore, coldbackup, backupstate and prune packages, go.mod and go.sum
-  ACCOUNT_PATHS   relative to private/account: the backup routes, services and DTO, their migrations, and `src/entry/on-premise.ts` (the I7 boot)
+  ACCOUNT_PATHS   relative to private/account: the backup routes, services and DTO, their migrations, `src/entry/on-premise.ts` (the I7 boot) and `src/routes/test.ts` (the session-TTL seam that legs t and u drive)
 
 Test files and documents are excluded through `rediacc_ci.proof.surfaces.excluded`, the same rule the vm-check trigger applies. A submodule whose gitlink moved is diffed inside the submodule; a range that cannot be computed is UNKNOWN, named in `Changed.unknown`, and counts as touched.
 
@@ -54,6 +54,9 @@ CONSOLE_PATHS = (
     "packages/cli/src/services/backup/",
     "packages/cli/src/services/jobs/",
     ".ci/rediacc_ci/drills/backup.py",
+    ".ci/rediacc_ci/drills/backup_renet.py",
+    ".ci/rediacc_ci/drills/backup_roundtrip.py",
+    ".ci/rediacc_ci/drills/backup_onprem.py",
     ".ci/rediacc_ci/drills/lib.py",
     ".ci/rediacc_ci/drills/wire.py",
 )
@@ -80,6 +83,7 @@ ACCOUNT_PATHS = (
     "src/services/backup*",
     "src/dto/backup.dto.ts",
     "src/entry/on-premise.ts",
+    "src/routes/test.ts",
     "drizzle/*backup*",
 )
 DIGEST_VERSION = "backup-v1"
