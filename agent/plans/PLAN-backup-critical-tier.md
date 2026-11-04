@@ -605,17 +605,17 @@ Control rule: every new test fails without its fix. Each tick note records the t
 Every J box uses the released `rdc` and its released renet. No original repo is deleted, pruned by hand, replaced or downed. `nightly-hot` must keep running for the other repositories, checked in each day's box. J2 needs migration 0074 live on the stable eu account. J boxes stop on load above the sampler limit of the read-cap plan or on a missed nightly. No hook is added to `mail`'s Rediaccfile unless decision O9 says so; `hook.prepare: absent` is the expected record.
 
 - [ ] J1: Churn measurement on `mail` before enabling, with the reflink base disclosed (F8): samples at 5-minute spacing through a busy hour, then the base removed.
-  - Accept: `rdc --config eu-remote backup churn mail --samples 12 --interval 5m -o json` rc 0, with N, projected bytes per cell size and the recommendation recorded here, and a read showing no `.churn-probe` base remaining for `mail`.
+  - Accept: `rdc --config eu-bench backup churn mail --samples 12 --interval 5m -o json` rc 0, with N, projected bytes per cell size and the recommendation recorded here, and a read showing no `.churn-probe` base remaining for `mail`.
 - [ ] J2: Enable at 30 minutes with the estimate recorded; a day later: no missed target, `indexMs` and load peaks recorded, `nightly-hot` ran for the other repos.
-  - Accept: `rdc --config eu-remote backup strategy set nightly-hot --repo-rpo mail=30m` then `rdc --config eu-remote backup schedule -m hostinger` rc 0; a day later `rdc --config eu-remote machine health -m hostinger` rc 0, and `backup manifests mail -o json` rc 0, recorded here.
+  - Accept: `rdc --config eu-bench backup strategy set nightly-hot --repo-rpo mail=30m` then `rdc --config eu-bench backup schedule -m hostinger` rc 0; a day later `rdc --config eu-bench machine health -m hostinger` rc 0, and `backup manifests mail -o json` rc 0, recorded here.
 - [ ] J3: The same at 15 minutes, with a day's check.
   - Accept: as J2 with `mail=15m`, figures recorded here.
 - [ ] J4: The same at 5 minutes, with a day's check; the btrfs fragmentation and syncfs cost read-only under the sampler; actual Class A and B against the estimate.
   - Accept: as J2 with `mail=5m`, figures recorded here, with the estimate error stated.
 - [ ] J5: A restore at a chosen minute from the last 24 hours, under a new name, compared by mail-store checksum on sampled messages; only the `-rt` copy is deleted, by GUID.
-  - Accept: `rdc --config eu-remote backup restore mail --at <minute> --as mail-rt -m hostinger` rc 0, then `repo list -m hostinger` shows `mail` with its GUID unchanged and no copy after cleanup.
+  - Accept: `rdc --config eu-bench backup restore mail --at <minute> --as mail-rt -m hostinger` rc 0, then `repo list -m hostinger` shows `mail` with its GUID unchanged and no copy after cleanup.
 - [ ] J6: Seven days at 5 minutes: `waitingBytes` stabilizes near the formula, the first reap ran, and the churn cap state is known.
-  - Accept: `rdc --config eu-remote backup usage -o json` rc 0 on day 8, with the series recorded here.
+  - Accept: `rdc --config eu-bench backup usage -o json` rc 0 on day 8, with the series recorded here.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

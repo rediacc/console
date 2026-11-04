@@ -329,7 +329,7 @@ There are two account keypairs today. Production is one keypair, the same for al
 
 - [ ] L3 [live] hostinger, read-only first.
   1. Run `renet_key_gate` against the local `private/renet/bin/renet` built by `./rdc.sh`. It must pass and name `fingerprint:fb37f1ae16f8b7c0`.
-  2. Run `./rdc.sh machine status hostinger --config eu-remote --licenses -o json`. Every repo licence must be present under that fingerprint.
+  2. Run `./rdc.sh machine status hostinger --config eu-bench --licenses -o json`. Every repo licence must be present under that fingerprint.
   3. Then, with the operator's go (a mutating verb uploads renet), rerun the snapshot that failed on one repo and record its rc and record id.
 
 - [ ] L4 [live] Local machines and VMs.
@@ -337,7 +337,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   2. Run `./run.sh account reset` (DB only) or `rdc --dev subscription refresh -m <vm>` for each ops VM.
   3. Run `npm run vm:check -- --changed` green on the merged tree.
 
-- [ ] L5 [live] Replace the nolicense renet on hostinger, after N1-N3 land. Run `renet_key_gate` on the freshly built `private/renet/bin/renet` (it must pass and name `fingerprint:fb37f1ae16f8b7c0`), then `./rdc.sh --config eu-remote machine setup hostinger`, then confirm the remote `/usr/lib/rediacc/renet/current/renet` sha equals the local one and is no longer `sha256:f56e1ef1a638d33d`. Record both hashes and a snapshot rc.
+- [ ] L5 [live] Replace the nolicense renet on hostinger, after N1-N3 land. Run `renet_key_gate` on the freshly built `private/renet/bin/renet` (it must pass and name `fingerprint:fb37f1ae16f8b7c0`), then `./rdc.sh --config eu-bench machine setup hostinger`, then confirm the remote `/usr/lib/rediacc/renet/current/renet` sha equals the local one and is no longer `sha256:f56e1ef1a638d33d`. Record both hashes and a snapshot rc.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof after L2.
   Accept: live-proof bench cli-bench

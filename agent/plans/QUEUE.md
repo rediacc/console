@@ -59,21 +59,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (5):
   - agent/plans/PLAN-backup-program.md -- 167 of 196 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cloudflare-proxy.md -- 26 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-cloudflare-proxy.md -- 27 of 30 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-renet-run-docker-sock-isolation.md -- 3 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (1 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a9a322a6a07c0d9fe.
-- Leased items: 5: #510a97e9 (worker:a9a322a6a07c0d9fe, d778be9d), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:222629, d778be9d), #fa3383d6 (worker:2567959, d778be9d).
+- Work outside the PR's plans (5 epic(s)):
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 2 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
+  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 4 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 2 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 1 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:abbcd808100117ee3, worker:a427f2f73b5f7b167, worker:ad2786b5bc394dba2.
+- Leased items: 4: #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:222629, d778be9d), #fa3383d6 (worker:2567959, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 3 of 39 plans done, 601 of 819 boxes done (73%).
+Promoted: 3 of 39 plans done, 603 of 819 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -113,7 +117,7 @@ Promoted: 3 of 39 plans done, 601 of 819 boxes done (73%).
 | 34 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
 | 36 | PLAN-free-license.md | 6/13 | 7 open |
-| 37 | PLAN-backup-integrity.md | 38/57 | 19 open |
+| 37 | PLAN-backup-integrity.md | 40/57 | 17 open |
 | 38 | PLAN-backup-critical-tier.md | 32/53 | 21 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 0/23 | 23 open |
 <!-- queue:progress:end -->

@@ -349,10 +349,11 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Owns: packages/shared/src/backup/toc-key.ts, packages/shared/src/backup/__tests__/toc-key.test.ts, packages/shared/src/backup/__tests__/toc_key_vectors.json
   - Accept: `npx vitest run --root packages/shared src/backup/__tests__/toc-key.test.ts` rc 0.
     (ticked) 2026-11-02T03:24:48Z by 45048a90: commit:ce8749873. toc-key vectors from renet pass, vitest rc=0; each new test recorded rc 1 first.
-- [ ] S2: Install at schedule deploy (F6): in `pushBackupSchedule`, after renet is provisioned, each repo in scope gets `status`, then a comparison. Missing: install the public half. Equal: silent. Different: a loud warning naming the repo, and no overwrite. Lineage from `grandGuid`, else the repository GUID. A repo with no credential warns. `rdc backup toc-key sync <repo> [--replace]` re-issues on demand, and `--replace` carries the passphrase to L1's proof. A scan after the install reports repositories with a key but neither keyfile nor mount as getting no listing.
+- [x] S2: Install at schedule deploy (F6): in `pushBackupSchedule`, after renet is provisioned, each repo in scope gets `status`, then a comparison. Missing: install the public half. Equal: silent. Different: a loud warning naming the repo, and no overwrite. Lineage from `grandGuid`, else the repository GUID. A repo with no credential warns. `rdc backup toc-key sync <repo> [--replace]` re-issues on demand, and `--replace` carries the passphrase to L1's proof. A scan after the install reports repositories with a key but neither keyfile nor mount as getting no listing.
   - Owns: packages/cli/src/services/backup/backup-schedule.ts, packages/cli/src/services/backup/backup-toc-key.ts, packages/cli/src/commands/backup-toc-key.ts, packages/cli/src/services/__tests__/backup-toc-key.test.ts
   - Tests: nothing but the public line leaves the CLI on the deploy path, asserted over every transport call; a mismatch never overwrites without `--replace`; a dry run touches nothing.
   - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-toc-key.test.ts` rc 0.
+    (ticked) 2026-11-04T07:43:34Z by d778be9d: commit:ce8749873 toc-key vitest rc=0
 - [x] S3: Units (F9, F12): the service runs verify after the snapshot (same scope flags; a failed snapshot stops it), and `OnFailure=rediacc-backup-alert@%n.service` runs `renet backup report`. A new daily verify timer at a staggered offset runs `backup verify --level full --next-due 7d` under `CPUQuota=100%`. A strategy `verify` block (`spotAfterRun`, `deepSchedule`, `off`) goes through schema, sensitivity and validation. Reconcile and removal handle the new units.
   - Owns: packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-schedule-execute.ts, packages/cli/src/services/backup/backup-schedule-reconcile.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts, packages/cli/src/services/__tests__/backup-schedule.test.ts
   - Tests: rendered unit text for each case; the alert template carries no secret; removing a strategy removes all its units; `off` renders neither.
@@ -369,9 +370,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
     (ticked) 2026-11-02T08:01:49Z by 45048a90: commit:f5bc56d80 with 29c70f4c7. check:ci-i18n-completeness, check:ci-i18n-hashes, check:ci-i18n-cli-key-usage, check:ci-i18n-placeholders, check:ci-cli-contract and typecheck rc=0, rerun 2026-11-02.
-- [ ] D3: Docs: the verification ladder and schedule, restore's passphrase statement, repair and salvage with what is safe, TOC keys and the no-listing case, the alert preference, in all 13 locales. docs/backup-storage/07-execution-record.md records tier B's real result (P3), with each claim dated.
+- [x] D3: Docs: the verification ladder and schedule, restore's passphrase statement, repair and salvage with what is safe, TOC keys and the no-listing case, the alert preference, in all 13 locales. docs/backup-storage/07-execution-record.md records tier B's real result (P3), with each claim dated.
   - Owns: packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, docs/backup-storage/07-execution-record.md
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
+    (ticked) 2026-11-04T07:43:29Z by d778be9d: commit:f6c04c7b9 freshness --strict-all, search index, structure parity, untranslated rc=0
 - [ ] D4: Drill legs, each with a planted control: leg p (identity refuses a swapped image, restore refuses a wrong passphrase and places nothing, in `backup_renet`), leg q (retention keeps a verified snapshot through bad nights), leg r (repair deletes a corrupt chunk, re-uploads it, and `--store` is clean), leg s (duplicate PUT and wrong checksum on the real store, named so a tier B run reads as R2's proof). `backup_roundtrip` asserts `passphraseCheck`. `backup_onprem` runs the conformance preflight against RustFS and a non-conforming fake.
   - Owns: .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, the drill tests under .ci
   - Accept: `./run.sh drill backup --selftest` rc 0, and the pytest for those drills rc 0.
@@ -400,19 +402,20 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 Every H box uses the released `rdc` and its released renet. Mutating steps run only under a released renet. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
 
 - [ ] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
-  - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-remote backup strategy list -o json` rc 0 with rows on stdout.
+  (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
+  - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-bench backup strategy list -o json` rc 0 with rows on stdout.
 - [ ] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
-  - Accept: `rdc --config eu-remote backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
+  - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
-  - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
+  - Accept: `rdc --config eu-bench backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
 - [ ] H4: The next nightly: 10 repositories have `hasIndex` true and `indexStatus` sealed. demo-heartbeat is reported plainly: it has neither keyfile nor mount, so it gets no listing, and the warning is in its unit journal. Spot ran after the snapshot, and reports reached the account after the stable deploy.
-  - Accept: `rdc --config eu-remote backup manifests <repo> -o json` rc 0 per repo, recorded here.
+  - Accept: `rdc --config eu-bench backup manifests <repo> -o json` rc 0 per repo, recorded here.
 - [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
-  - Accept: `rdc --config eu-remote backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
+  - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
 - [ ] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
-  - Accept: `rdc --config eu-remote backup verify <repo> --deep` rc 0, figures recorded here.
+  - Accept: `rdc --config eu-bench backup verify <repo> --deep` rc 0, figures recorded here.
 - [ ] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
-  - Accept: `rdc --config eu-remote backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
+  - Accept: `rdc --config eu-bench backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
 - [ ] H8: `rdc backup check` on one listed repo marks a snapshot `proven`, and `backup verify demo-heartbeat --store` runs one real full pass on the smallest lineage.
   - Accept: both rc 0; `backup manifests` shows the states.
 - [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.

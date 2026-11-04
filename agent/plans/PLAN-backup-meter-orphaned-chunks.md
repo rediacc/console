@@ -241,6 +241,7 @@ Most of this exists already, and A1 pins it with tests:
   Accept: `./rdc.sh --config eu-bench backup reconcile <repo> --check` rc 0, and the recorded usage and listing counts are equal.
 
 - [ ] L2 [live, hostinger, after A1 reaches stable eu] Repair, then check.
+  (note) This box stays on `eu-remote` under PLAN-tested-on-bench ruling 1 as extended on 2026-11-04: it repairs the stable store's own meter, which bench cannot reach. The operator approved the apply at ASKED:2026-11-04T07:38Z.
   1. `./rdc.sh --config eu-remote backup reconcile --dry-run -o json` records the before figures.
   2. With the operator's go, `./rdc.sh --config eu-remote backup reconcile -o json` applies.
   3. `./rdc.sh --config eu-remote backup usage -o json`: storedBytes must equal the sum of `/c/` object sizes and chunkCount the count of `/c/` keys in a fresh independent R2 listing of the subscription prefix. The figures expected at the time of writing were 13,262,389,248 and 3162; the seed has since grown the store (2026-10-29: R2 106,940,214,348 bytes in 25,496 chunks against a ledger of 17,321 chunks), so the check is equality with a fresh listing, not those numbers; manifests are not counted.

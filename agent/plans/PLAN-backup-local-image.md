@@ -411,7 +411,7 @@ R2's changes:
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: each step's command, rc, timing, `literalBytes` and both sha256 values recorded under "Live records"; step 1 rc 130, every other step rc 0.
 
 - [ ] L2 [live] hostinger, after L1 and with the branch renet provisioned. ASK the operator first: provisioning a branch renet restarts the router and daemons. Steps:
-  1. `./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-remote`. Expect rc 0, state `complete`, and the sha256 compare passing.
+  1. `./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-bench`. Expect rc 0, state `complete`, and the sha256 compare passing.
   2. The same command again. Expect rc 0 and `literalBytes` recorded.
   3. Before, during and after the run: the load and iowait sampler of agent/plans/PLAN-snapshot-read-io-cap.md, and `machine status` showing 0 transfer snapshots after each run.
   No upload runs on production.
@@ -420,7 +420,8 @@ R2's changes:
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:16:42Z by d778be9d: live-proof lp-a5a6c2416537 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-remote (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `live-proof hostinger renet-live`
 
 ## Open questions for the operator
