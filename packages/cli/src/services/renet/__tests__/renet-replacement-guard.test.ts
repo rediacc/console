@@ -443,12 +443,12 @@ describe('an uncoded failure inside the provision', () => {
 
 describe('readRenetBuild', () => {
   it('reads the stamp of the renet module and ignores the same text in an embedded asset', async () => {
-    const { readRenetBuild } = await import('../renet-provisioner.js');
+    const { readRenetBuild } = await import('../renet-replacement.js');
     expect(readRenetBuild(renetBytes('2.4.0'))).toEqual({ version: '2.4.0', revision: REVISION });
   });
 
   it('answers null for bytes that are not a renet build', async () => {
-    const { readRenetBuild } = await import('../renet-provisioner.js');
+    const { readRenetBuild } = await import('../renet-replacement.js');
     expect(readRenetBuild(Buffer.from('-X main.Version=9.9.9'))).toEqual({
       version: null,
       revision: null,
