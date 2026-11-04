@@ -68,6 +68,11 @@ ABSENT_ROUTES = ("/account/api/v1/test/ensure-login", "/account/api/v1/admin/sub
 PREFLIGHT_PREFIX = "Backup store preflight: "
 PREFLIGHT_TRIES = 30
 FAKE_BUCKET = "onprem-fake"
+# The two capabilities leg u records, each as the query that asks and the marker only a real answer carries.
+CAPABILITIES = (
+    ("object-lock", "object-lock", "<ObjectLockEnabled>Enabled</ObjectLockEnabled>"),
+    ("versioning", "versioning", "<Status>Enabled</Status>"),
+)
 
 
 def free_port() -> int:
@@ -226,6 +231,15 @@ def route_verdict(status: int, body: str) -> str:
     return "other-%d" % status
 
 
+def capability_verdict(status: int, body: str, marker: str) -> str:
+    """`supported`, `unsupported` or `unreachable` for one S3 capability query. `supported` needs a 200 whose body carries the capability's own marker (an answer that merely exists proves nothing); status 0 means nothing answered; any other answer is `unsupported`, which covers a store that returns NotImplemented or an empty configuration."""
+    if status == 0:
+        return "unreachable"
+    if status == HTTP_OK and marker in body:
+        return "supported"
+    return "unsupported"
+
+
 def http_status(port: int, method: str, path: str) -> tuple[int, str]:
     """(status, body) of one request to the local server; (0, error) when nothing answered."""
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
@@ -328,6 +342,36 @@ class OnPrem:
             str(d.code),
             "planted control: the same probe against a closed port FAILS, so a pass above can be a fail",
         )
+
+    def capability_row(self) -> None:
+        """Leg u: record whether the store offers Object Lock and versioning. Recorded and never asserted, since a store without them is a valid on-prem store; the planted control is the verdict function itself, which must tell a real answer from a bare 200 and from a dead port."""
+        d = self.d
+        d.step("%s: Object Lock and versioning, recorded and not asserted" % STEP_LABEL)
+        d.assert_equal(
+            "supported",
+            capability_verdict(
+                HTTP_OK, "<ObjectLockEnabled>Enabled</ObjectLockEnabled>", CAPABILITIES[0][2]
+            ),
+            "planted control: an Enabled configuration reads as supported",
+        )
+        d.assert_equal(
+            "unsupported",
+            capability_verdict(HTTP_OK, "", CAPABILITIES[0][2]),
+            "planted control: a bare 200 with no configuration reads as unsupported",
+        )
+        d.assert_equal(
+            "unreachable",
+            capability_verdict(0, "connection refused", CAPABILITIES[0][2]),
+            "planted control: a dead port reads as unreachable, never as a verdict on the store",
+        )
+        for name, query, marker in CAPABILITIES:
+            url = "%s/%s?%s" % (self.endpoint, self.bucket, query)
+            headers = wire.sigv4_headers(
+                "GET", url, b"", S3_REGION, self.access_key, self.secret_key
+            )
+            code, body = wire.http_call("GET", url, b"", headers, json_body=False)
+            verdict = capability_verdict(code, str(body), marker)
+            d.note("STORE-CAPABILITY %s: %s (HTTP %d)" % (name, verdict, code))
 
     def start_server(
         self, endpoint: str = "", bucket: str = "", log_name: str = "onprem-server.log"
@@ -479,6 +523,7 @@ class OnPrem:
         self.setup_store()
         try:
             self.probe_row()
+            self.capability_row()
             if self.start_server():
                 self.server_rows()
                 self.preflight_row()

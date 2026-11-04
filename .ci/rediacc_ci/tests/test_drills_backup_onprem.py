@@ -265,3 +265,25 @@ def test_the_receipt_module_still_asks_for_the_on_premise_half() -> None:
     """The variant exists to set `onprem`; a receipt without it must stay NOT_VERIFIED."""
     assert "l" in backup_check_trigger.REQUIRED_LEGS
     assert set(backup_check_trigger.REQUIRED_LEGS) <= set(backup.KNOWN_LEGS)
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "verdict"),
+    [
+        (200, "<ObjectLockEnabled>Enabled</ObjectLockEnabled>", "supported"),
+        (200, "", "unsupported"),
+        (501, "NotImplemented", "unsupported"),
+        (404, "ObjectLockConfigurationNotFoundError", "unsupported"),
+        (0, "connection refused", "unreachable"),
+    ],
+)
+def test_capability_verdict_separates_a_real_answer_from_a_bare_one(
+    status: int, body: str, verdict: str
+) -> None:
+    marker = onprem.CAPABILITIES[0][2]
+    assert onprem.capability_verdict(status, body, marker) == verdict
+
+
+def test_the_capability_queries_name_both_features_and_a_marker_each() -> None:
+    assert [name for name, _query, _marker in onprem.CAPABILITIES] == ["object-lock", "versioning"]
+    assert all(marker.startswith("<") for _name, _query, marker in onprem.CAPABILITIES)
