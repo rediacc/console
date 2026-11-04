@@ -133,6 +133,10 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo trim',
   // J17: backup run is one backup-unit job; its ad-hoc form stages a oneshot unit first.
   'backup run',
+  // J17: list is one backup_list read job with its table as a step; cancel is one backup-cancel job naming every unit; schedule is one backup-schedule job carrying the unit bodies as its stdin payload, with retention seeding and the DR nudge as steps.
+  'backup cancel',
+  'backup list',
+  'backup schedule',
   // J17: browse is one backup_browse(_at) job with its listing print as a step; status is one backup-status job with its table as a step.
   'backup browse',
   'backup status',
