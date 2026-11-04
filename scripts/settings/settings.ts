@@ -417,7 +417,6 @@ export function main(argv: string[], env: NodeJS.ProcessEnv, io: Io): number {
 // ---- selftest --------------------------------------------------------------------------------
 
 const SPEND = '.ci/config/cf-spend-guard.json';
-const PY = '.ci/rediacc_ci/ops/cf_usage_report.py';
 const R2 = 'cf.r2_storage_bytes';
 
 interface Run {
@@ -480,7 +479,7 @@ function pytestIni(text = fs.readFileSync(path.join(REPO_ROOT, 'pyproject.toml')
 }
 
 /**
- * A git tree holding the REAL registry, the REAL spend-guard JSON and the REAL cf_usage_report.py
+ * A git tree holding the REAL registry and the REAL spend-guard JSON
  * (so the byte-span edits run on the shapes they will meet), with the R2 ceiling seeded back to
  * 200 GB at every copy and each id's tests pointed at one fixture test that goes red on 4 TB.
  */
@@ -491,7 +490,6 @@ function fixture(): string {
   const files: Record<string, string> = {
     [REGISTRY_REL]: `${JSON.stringify(reg, null, 2)}\n`,
     [SPEND]: fs.readFileSync(path.join(REPO_ROOT, SPEND), 'utf8'),
-    [PY]: fs.readFileSync(path.join(REPO_ROOT, PY), 'utf8'),
     'tests/test_fx.py': FIXTURE_TEST,
     '.gitignore': '.ci/cache/\n__pycache__/\n',
     'pyproject.toml': pytestIni(),
@@ -509,7 +507,7 @@ function fixture(): string {
 }
 
 const read = (root: string, rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
-const snap = (root: string): string => [SPEND, PY].map((f) => read(root, f)).join('\0');
+const snap = (root: string): string => read(root, SPEND);
 const r2Values = (root: string): unknown[] => {
   const e = loadRegistry(root).find((x) => x.id === R2) as SettingEntry;
   return e.copies.map((cp) => readCopy(read(root, cp.file), cp).value);
@@ -628,9 +626,9 @@ function treeCases(m: Mutant | null): ControlCase[] {
       entryOf({ root: REPO_ROOT, mutant: null, out: () => {}, err: () => {} }, R2)
     );
     cases.push({
-      name: 'list: the real tree resolves every registered copy, they agree, and the R2 ceiling reads 5000000000000 at all three copies',
+      name: 'list: the real tree resolves every registered copy, they agree, and the R2 ceiling reads 5000000000000 at both copies',
       ok:
-        real === 0 && realR2.copies.length === 3 && realR2.copies.every((cp) => cp.value === 5e12),
+        real === 0 && realR2.copies.length === 2 && realR2.copies.every((cp) => cp.value === 5e12),
       detail: `rc=${real} r2=${realR2.copies.map((cp) => `${cp.label}=${String(cp.value)}`).join(', ')}`,
     });
 
@@ -638,7 +636,7 @@ function treeCases(m: Mutant | null): ControlCase[] {
     {
       const r = fx();
       const e = loadRegistry(r).find((x) => x.id === R2) as SettingEntry;
-      fs.writeFileSync(path.join(r, PY), writeCopy(read(r, PY), e.copies[2], 7e9));
+      fs.writeFileSync(path.join(r, SPEND), writeCopy(read(r, SPEND), e.copies[1], 7e9));
       const run = drive(r, ['list'], m);
       cases.push({
         name: 'list: a copy planted out of agreement is named and exits 1',
@@ -688,15 +686,13 @@ function treeCases(m: Mutant | null): ControlCase[] {
       const r = fx();
       const peer = read(r, SPEND).replace('"policy_prefix"', '"policy_prefix" ');
       fs.writeFileSync(path.join(r, SPEND), peer);
-      const pyBefore = read(r, PY);
       const run = drive(r, ['set', R2, '5TB', '--reason', 'selftest'], m);
       cases.push({
-        name: "set: a spend-guard file holding a peer's uncommitted change refuses the run by name, and the peer's bytes and the other copy stay",
+        name: "set: a spend-guard file holding a peer's uncommitted change refuses the run by name, and the peer's bytes stay",
         ok:
           run.rc === 1 &&
           run.err.includes(`refused: ${SPEND}`) &&
-          read(r, SPEND) === peer &&
-          read(r, PY) === pyBefore,
+          read(r, SPEND) === peer,
         detail: `rc=${run.rc} err=${run.err.slice(0, 400)}`,
       });
     }
@@ -707,7 +703,7 @@ function treeCases(m: Mutant | null): ControlCase[] {
       const pre = snap(r);
       const run = drive(r, ['set', R2, '4TB', '--reason', 'selftest'], m);
       cases.push({
-        name: 'set: a failing test (4TB is poisoned in the fixture test) restores both spend-guard copies and the code copy byte for byte',
+        name: 'set: a failing test (4TB is poisoned in the fixture test) restores both spend-guard copies byte for byte',
         ok:
           run.rc === 1 &&
           run.err.includes('step failed') &&
@@ -731,21 +727,20 @@ function treeCases(m: Mutant | null): ControlCase[] {
       const msgRel = /git commit -F (\S+) --/.exec(run.out)?.[1];
       const msg = msgRel ? read(r, msgRel) : '';
       cases.push({
-        name: 'set: 5TB is written as 5000000000000 to both spend-guard copies (and the code default), the test runs green, and the commit line is printed',
+        name: 'set: 5TB is written as 5000000000000 to both spend-guard copies, the test runs green, and the commit line is printed',
         ok:
           run.rc === 0 &&
           spend.notifications.products.r2_storage.limit === 5000000000000 &&
           spend.report.r2_storage_bytes === 5000000000000 &&
           vals.every((v) => v === 5e12) &&
-          read(r, PY).includes('"r2_storage_bytes": 5_000_000_000_000,') &&
-          run.out.includes(`-- ${SPEND} ${PY}`) &&
+          run.out.includes(`-- ${SPEND}`) &&
           msg.includes('PR-TASK: deadbeef') &&
           msg.includes('# rc=0'),
         detail: `rc=${run.rc} vals=${vals.join(',')} out=${run.out.slice(0, 400)} err=${run.err.slice(0, 400)}`,
       });
       cases.push({
-        name: 'set: only the value and reason lines move (spend-guard 4 lines: two limits, the why, report_reason; the code 1 line)',
-        ok: numstat.includes(`4\t4\t${SPEND}`) && numstat.includes(`1\t1\t${PY}`),
+        name: 'set: only the value and reason lines move (spend-guard 4 lines: two limits, the why, report_reason)',
+        ok: numstat.includes(`4\t4\t${SPEND}`),
         detail: numstat,
       });
       cases.push({

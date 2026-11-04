@@ -81,7 +81,7 @@ PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile cf-usage-report
 gh workflow run cf-usage-report.yml
 ```
 
-Each line is `OK` or `OVER` with the value and its ceiling. Ceilings come from the `report` object of the JSON, key by key, and from `DEFAULT_CEILINGS` in the module otherwise: `workers_requests_month`, `workers_cpu_ms_month`, `r2_storage_bytes`, `r2_class_a_month`, `r2_class_b_month`, `d1_storage_bytes`. Each is compared with the account total.
+Each line is `OK` or `OVER` with the value and its ceiling. Ceilings come only from the `report` object of the JSON, and a missing key is an error: `workers_requests_month`, `workers_cpu_ms_month`, `r2_storage_bytes`, `r2_class_a_month`, `r2_class_b_month`, `d1_storage_bytes`. Each is compared with the account total.
 
 **Container alarm.** Cloudflare offers no usage alert for Containers, so this is the alarm. Each Containers application (one proxy target) is compared with `containers_memory_gib_seconds_month` (20,000,000) and `containers_vcpu_seconds_month` (2,500,000), each about 50 USD a month at 0.0000025 USD per GiB-second and 0.00002 USD per vCPU-second, so one target at both ceilings would estimate about 100 USD. `containers_target_usd_month` (50) therefore bounds each application's estimated memory plus vCPU cost in dollars, which is what the ruling sets; the per-metric ceilings remain as well. `containers_total_usd_month` (350) bounds the estimated sum over 7 targets. The estimate leaves out the monthly included amounts, so it is an upper bound. Operator ruling `ASKED:2026-10-26T16:35Z`, "Raise to ~$50/target". An application over any of the three per-target ceilings is an `OVER` line naming the estimated cost.
 

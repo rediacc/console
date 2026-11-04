@@ -23,6 +23,13 @@ CEILINGS = {
     "r2_class_b_month": 100,
     "d1_storage_bytes": 1000,
 }
+# The real container ceilings (the `report` object of cf-spend-guard.json); the account-wide keys above are loosened per test.
+CONTAINER_CEILINGS = {
+    "containers_memory_gib_seconds_month": 20_000_000,
+    "containers_vcpu_seconds_month": 2_500_000,
+    "containers_total_usd_month": 350,
+    "containers_target_usd_month": 50,
+}
 
 DATA = {
     "r2StorageAdaptiveGroups": [
@@ -103,7 +110,13 @@ class Fake:
 
 def go(fake, ceilings=None):
     out = io.StringIO()
-    rc = ur.run(ENV, fake, now=NOW, ceilings=ceilings or dict.fromkeys(CEILINGS, 10**12), out=out)
+    rc = ur.run(
+        ENV,
+        fake,
+        now=NOW,
+        ceilings=ceilings or (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS),
+        out=out,
+    )
     return rc, out.getvalue()
 
 
@@ -120,7 +133,7 @@ def test_under_budget_is_exit_0_and_folds_the_reads():
 
 
 def test_one_bucket_over_the_ceiling_is_exit_1_and_named():
-    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"r2_storage_bytes": 100}
+    ceilings = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {"r2_storage_bytes": 100}
     rc, text = go(Fake(), ceilings)
     assert rc == 1
     assert "OVER r2.storage.total.bytes value=105 ceiling=100" in text
@@ -177,27 +190,38 @@ def test_no_secret_reaches_the_output_or_a_body(capsys):
     assert fake.calls[0][2] == {"Authorization": "Bearer %s" % TOKEN}
 
 
+def _write_report(tmp_path, report):
+    (tmp_path / ".ci/config").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ur.CONFIG_REL).write_text(json.dumps({"report": report}))
+
+
 def test_ceilings_come_from_the_json_report_object(tmp_path):
-    (tmp_path / ".ci/config").mkdir(parents=True)
-    (tmp_path / ur.CONFIG_REL).write_text(
-        json.dumps({"report": {"r2_storage_bytes": 7, "bogus": 1}})
-    )
+    _write_report(tmp_path, dict.fromkeys(ur.CEILING_KEYS, 5) | {"r2_storage_bytes": 7, "bogus": 1})
     got = ur.load_ceilings(tmp_path)
     assert got["r2_storage_bytes"] == 7.0
-    assert got["workers_requests_month"] == ur.DEFAULT_CEILINGS["workers_requests_month"]
+    assert got["workers_requests_month"] == 5.0
     assert "bogus" not in got
-    assert ur.load_ceilings(tmp_path / "missing") == ur.DEFAULT_CEILINGS
+    assert set(got) == set(ur.CEILING_KEYS)
 
 
-def test_default_ceilings_agree_with_the_ruled_report_object():
-    """Review 24da2fcc.1: a duplicated default drifted (100 against the ruled 350); every ruled key must equal its default."""
-    report = json.loads(
-        (ur.Path(__file__).resolve().parents[2] / "config/cf-spend-guard.json").read_text()
-    )["report"]
-    ruled = {k: v for k, v in report.items() if k in ur.DEFAULT_CEILINGS}
-    assert ruled, "the report object must carry ceilings"
-    for key, value in ruled.items():
-        assert ur.DEFAULT_CEILINGS[key] == value, key
+def test_a_missing_ceiling_key_raises(tmp_path):
+    for key in ur.CEILING_KEYS:
+        _write_report(tmp_path, {k: 5 for k in ur.CEILING_KEYS if k != key})
+        with pytest.raises(ur.ReportError, match=key):
+            ur.load_ceilings(tmp_path)
+
+
+def test_a_missing_file_or_report_object_raises(tmp_path):
+    with pytest.raises(ur.ReportError):
+        ur.load_ceilings(tmp_path / "missing")
+    (tmp_path / ".ci/config").mkdir(parents=True)
+    (tmp_path / ur.CONFIG_REL).write_text("{}")
+    with pytest.raises(ur.ReportError, match="report"):
+        ur.load_ceilings(tmp_path)
+
+
+def test_the_real_report_object_carries_every_ceiling():
+    assert set(ur.load_ceilings()) == set(ur.CEILING_KEYS)
 
 
 def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
@@ -209,7 +233,9 @@ def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
 
 
 def test_container_usage_over_the_ceiling_is_exit_1_and_names_the_cost():
-    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"containers_memory_gib_seconds_month": 40}
+    ceilings = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {
+        "containers_memory_gib_seconds_month": 40
+    }
     rc, text = go(Fake(), ceilings)
     assert rc == 1
     assert "OVER containers.app.app1 gib_seconds=50 (ceiling 40)" in text
@@ -226,7 +252,8 @@ def test_container_usage_over_the_ceiling_is_exit_1_and_names_the_cost():
     }
     rc, text = go(
         Fake(data=data),
-        dict.fromkeys(CEILINGS, 10**12) | {"containers_memory_gib_seconds_month": 3_000_000},
+        (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS)
+        | {"containers_memory_gib_seconds_month": 3_000_000},
     )
     assert rc == 1
     assert "est_cost_usd=10.00" in text
@@ -265,7 +292,9 @@ def test_container_total_over_the_account_ceiling_is_exit_1_though_each_app_is_u
         }
         for n in range(3)
     ]
-    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"containers_total_usd_month": 50}
+    ceilings = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {
+        "containers_total_usd_month": 50
+    }
     rc, text = go(Fake(data=DATA | {"containersMetricsAdaptiveGroups": rows}), ceilings)
     assert rc == 1
     assert "OVER containers.total est_cost_usd=" in text
@@ -287,7 +316,7 @@ def _one_app(usd_memory: float, usd_vcpu: float) -> dict:
 
 
 # The real per-metric ceilings (each about 50 USD alone) and the per-target dollar ceiling.
-TARGET_CEILINGS = dict.fromkeys(CEILINGS, 10**12) | {
+TARGET_CEILINGS = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {
     "containers_memory_gib_seconds_month": 20_000_000,
     "containers_vcpu_seconds_month": 2_500_000,
     "containers_target_usd_month": 50,

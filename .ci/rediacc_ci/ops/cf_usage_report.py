@@ -11,7 +11,7 @@ WHAT IT READS, all from the account GraphQL endpoint (token permission "Account 
   - `workersInvocationsAdaptive`: requests and CPU (`cpuTimeUs` summed, shown in ms) per script over the billing month so far.
   - `containersMetricsAdaptiveGroups`: per Containers application (one per proxy target's container class) over the billing month so far, `sum{cpuTimeSec}` (active vCPU-seconds, what Cloudflare bills CPU on) and `sum{allocatedMemory}` (provisioned byte-seconds, shown as GiB-seconds, what it bills memory on). The estimated cost is those seconds at the published rates (developers.cloudflare.com/containers/pricing, read 2026-10-26: 0.0000025 USD per GiB-second, 0.000020 USD per vCPU-second), without the monthly included amounts, so it is an upper bound. Cloudflare offers no usage alert for Containers (cf-spend-guard.json `notifications.unavailable.containers`), so this is the alarm: an application over `containers_memory_gib_seconds_month`, `containers_vcpu_seconds_month` or the estimated-USD `containers_target_usd_month` (memory plus vCPU together) is an `OVER` line that names the estimated cost, and the run exits 1. Zero container rows is not an error (a month can have no usage); a failed read is exit 2. The application id is the only name the dataset carries.
 
-CEILINGS come from the `report` object of `.ci/config/cf-spend-guard.json` when the file carries one, key by key, and from `DEFAULT_CEILINGS` below otherwise: workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_target_usd_month` bounds each application's estimated memory plus vCPU cost; `containers_total_usd_month` bounds the estimated cost summed over all applications.
+CEILINGS come only from the `report` object of `.ci/config/cf-spend-guard.json` (a missing key is an error): workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_target_usd_month` bounds each application's estimated memory plus vCPU cost; `containers_total_usd_month` bounds the estimated cost summed over all applications.
 
 THE LOG LINE is counted over seven days in Loki (through the Grafana datasource proxy, `OBS_GRAFANA_READ_TOKEN`); when Loki cannot answer, the Workers Observability telemetry query counts it instead. When neither answers the run is exit 2, because a guard that cannot look has not passed.
 
@@ -37,21 +37,22 @@ CONFIG_REL = ".ci/config/cf-spend-guard.json"
 MAINTENANCE_LINE = "Nightly maintenance is NOT running"
 LOOKBACK_DAYS = 7
 
-DEFAULT_CEILINGS: dict[str, float] = {
-    "workers_requests_month": 20_000_000,
-    "workers_cpu_ms_month": 60_000_000,
-    "r2_storage_bytes": 5e12,
-    "r2_class_a_month": 2_000_000,
-    "r2_class_b_month": 20_000_000,
-    "d1_storage_bytes": 4e9,
-    # Per Containers application (one proxy target). Each of these two is about 50 USD alone (20e6 x 0.0000025, 2.5e6 x 0.00002); `containers_target_usd_month` bounds the pair. Kept equal to the `report` object of cf-spend-guard.json, which a test enforces.
-    "containers_memory_gib_seconds_month": 20_000_000,
-    "containers_vcpu_seconds_month": 2_500_000,
-    # Account-wide estimated Containers spend across every application: the per-application ceilings alone let many targets each stay under them while the sum is far larger.
-    "containers_total_usd_month": 350,
-    # Per-application estimated USD (memory plus vCPU): the two per-metric ceilings are each about this much alone, so they do not bound the pair.
-    "containers_target_usd_month": 50,
-}
+# The ceiling names; their values live only in the `report` object of cf-spend-guard.json (one source, written by `npm run settings`).
+CEILING_KEYS = (
+    "workers_requests_month",
+    "workers_cpu_ms_month",
+    "r2_storage_bytes",
+    "r2_class_a_month",
+    "r2_class_b_month",
+    "d1_storage_bytes",
+    # Per Containers application (one proxy target). Each of these two is about 50 USD alone (20e6 x 0.0000025, 2.5e6 x 0.00002); `containers_target_usd_month` bounds the pair.
+    "containers_memory_gib_seconds_month",
+    "containers_vcpu_seconds_month",
+    # Account-wide estimated Containers spend across every application.
+    "containers_total_usd_month",
+    # Per-application estimated USD (memory plus vCPU).
+    "containers_target_usd_month",
+)
 
 # https://developers.cloudflare.com/containers/pricing/ (read 2026-10-26), Workers Paid, USD.
 CONTAINERS_USD_PER_GIB_SECOND = 0.0000025
@@ -103,24 +104,25 @@ class ReportError(Exception):
 
 
 def load_ceilings(root: Path | None = None) -> dict[str, float]:
-    """`DEFAULT_CEILINGS` overlaid by the `report` object of the spend-guard JSON, when present."""
-    ceilings = dict(DEFAULT_CEILINGS)
+    """Every ceiling, read from the `report` object of the spend-guard JSON; a missing file, object or key is an error."""
     path = (root or Path(__file__).resolve().parents[3]) / CONFIG_REL
     try:
         text = path.read_text()
-    except OSError:
-        return ceilings
-    # A file that exists but does not parse must not fall back to the defaults silently: the operator's ceilings would be ignored and the report could pass against thresholds nobody chose.
+    except OSError as exc:
+        raise ReportError("%s cannot be read: %s" % (CONFIG_REL, exc)) from exc
     try:
         data = json.loads(text)
     except ValueError as exc:
         raise ReportError("%s is not valid JSON: %s" % (CONFIG_REL, exc)) from exc
     report = data.get("report") if isinstance(data, dict) else None
-    if isinstance(report, dict):
-        for key in ceilings:
-            value = report.get(key)
-            if isinstance(value, int | float) and not isinstance(value, bool):
-                ceilings[key] = float(value)
+    if not isinstance(report, dict):
+        raise ReportError("%s has no `report` object" % CONFIG_REL)
+    ceilings: dict[str, float] = {}
+    for key in CEILING_KEYS:
+        value = report.get(key)
+        if not isinstance(value, int | float) or isinstance(value, bool):
+            raise ReportError("%s report.%s is missing or not a number" % (CONFIG_REL, key))
+        ceilings[key] = float(value)
     return ceilings
 
 
@@ -324,7 +326,7 @@ def run(
 
     def emit(item: str, value: float, key: str | None, unit: str = "") -> None:
         nonlocal over
-        ceiling = ceilings.get(key, DEFAULT_CEILINGS[key]) if key else None
+        ceiling = ceilings[key] if key else None
         ok = ceiling is None or value <= ceiling
         over += 0 if ok else 1
         print(_line(ok, item, value, ceiling, unit), file=out)
@@ -356,19 +358,10 @@ def run(
     )
     emit("workers.cpu_ms.month", sum(s["cpu_ms"] for s in scripts.values()), "workers_cpu_ms_month")
 
-    mem_cap = ceilings.get(
-        "containers_memory_gib_seconds_month",
-        DEFAULT_CEILINGS["containers_memory_gib_seconds_month"],
-    )
-    cpu_cap = ceilings.get(
-        "containers_vcpu_seconds_month", DEFAULT_CEILINGS["containers_vcpu_seconds_month"]
-    )
-    total_cap = ceilings.get(
-        "containers_total_usd_month", DEFAULT_CEILINGS["containers_total_usd_month"]
-    )
-    target_cap = ceilings.get(
-        "containers_target_usd_month", DEFAULT_CEILINGS["containers_target_usd_month"]
-    )
+    mem_cap = ceilings["containers_memory_gib_seconds_month"]
+    cpu_cap = ceilings["containers_vcpu_seconds_month"]
+    total_cap = ceilings["containers_total_usd_month"]
+    target_cap = ceilings["containers_target_usd_month"]
     total_cost = 0.0
     for name in sorted(apps):
         a = apps[name]

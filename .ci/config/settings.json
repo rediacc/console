@@ -17,9 +17,8 @@
           "json_path": "/notifications/products/worker_standard_request/limit"
         },
         {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "workers_requests_month"
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/workers_requests_month"
         }
       ],
       "reason_paths": [
@@ -56,9 +55,8 @@
           "json_path": "/notifications/products/worker_standard_cpu_ms/limit"
         },
         {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "workers_cpu_ms_month"
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/workers_cpu_ms_month"
         }
       ],
       "reason_paths": [
@@ -91,11 +89,6 @@
         {
           "file": ".ci/config/cf-spend-guard.json",
           "json_path": "/report/r2_storage_bytes"
-        },
-        {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "r2_storage_bytes"
         }
       ],
       "reason_paths": [
@@ -132,9 +125,8 @@
           "json_path": "/notifications/products/r2_class_a_operations/limit"
         },
         {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "r2_class_a_month"
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/r2_class_a_month"
         }
       ],
       "reason_paths": [
@@ -165,9 +157,8 @@
           "json_path": "/notifications/products/r2_class_b_operations/limit"
         },
         {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "r2_class_b_month"
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/r2_class_b_month"
         }
       ],
       "reason_paths": [
@@ -191,12 +182,11 @@
       "unit": "bytes",
       "min": 100000000,
       "max": 1000000000000,
-      "why": "D1 storage across the account: the weekly report's ceiling (its only copy is the code default until PLAN-settings-set-verb S3 moves it into report).",
+      "why": "D1 storage across the account: the weekly report's ceiling.",
       "copies": [
         {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "d1_storage_bytes"
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/d1_storage_bytes"
         }
       ],
       "reason_paths": [],
@@ -218,11 +208,6 @@
         {
           "file": ".ci/config/cf-spend-guard.json",
           "json_path": "/report/containers_memory_gib_seconds_month"
-        },
-        {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "containers_memory_gib_seconds_month"
         }
       ],
       "reason_paths": [
@@ -251,11 +236,6 @@
         {
           "file": ".ci/config/cf-spend-guard.json",
           "json_path": "/report/containers_vcpu_seconds_month"
-        },
-        {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "containers_vcpu_seconds_month"
         }
       ],
       "reason_paths": [
@@ -284,11 +264,6 @@
         {
           "file": ".ci/config/cf-spend-guard.json",
           "json_path": "/report/containers_total_usd_month"
-        },
-        {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "containers_total_usd_month"
         }
       ],
       "reason_paths": [
@@ -317,11 +292,6 @@
         {
           "file": ".ci/config/cf-spend-guard.json",
           "json_path": "/report/containers_target_usd_month"
-        },
-        {
-          "file": ".ci/rediacc_ci/ops/cf_usage_report.py",
-          "py_dict": "DEFAULT_CEILINGS",
-          "py_key": "containers_target_usd_month"
         }
       ],
       "reason_paths": [
