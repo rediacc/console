@@ -4386,8 +4386,8 @@
   {
     "id": "search-13575",
     "content": "3.2 health",
-    "body": "CI/CD 파이프라인을 위한 머신 상태를 확인합니다 health 명령은 시스템 메트릭, 컨테이너 상태, 서비스 안정성, 스토리지 정보를 출력하며, CI/CD 파이프라인 검사에 유용합니다. rdc machine health <name> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -t, --team <name> | 팀 이름 | 아니오 | - | <a id=\"cli-local-machine-provision\"></a>",
-    "excerpt": "CI/CD 파이프라인을 위한 머신 상태를 확인합니다 health 명령은 시스템 메트릭, 컨테이너 상태, 서비스 안정성, 스토리지 정보를 출력하며, CI/CD 파이프라인 검사에 유용합니다. rdc machine health <name> [options] | 플래그 | 설...",
+    "body": "CI/CD 파이프라인을 위한 머신 상태를 확인합니다 health 명령은 시스템 메트릭, 컨테이너 상태, 서비스 안정성, 스토리지 정보를 출력하며, CI/CD 파이프라인 검사에 유용합니다. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
+    "excerpt": "CI/CD 파이프라인을 위한 머신 상태를 확인합니다 health 명령은 시스템 메트릭, 컨테이너 상태, 서비스 안정성, 스토리지 정보를 출력하며, CI/CD 파이프라인 검사에 유용합니다. rdc machine health <name> <a id=\"cli-local-ma...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
     "fragment": "32-health",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-13704",
     "content": "일반적인 오류 메시지",
-    "body": "문제가 발생하면 CLI가 명확한 오류 메시지를 제공합니다: | 오류 | 의미 | |-------|---------| | 인증이 필요합니다. 실행: rdc subscription login | 먼저 로그인해야 합니다 | | 활성 설정이 없습니다. 다음 명령으로 생성하세요: rdc config init <name> | 활성 구성이 없습니다. rdc config init으로 생성하세요 | | 권한이 거부되었습니다 | 계정에 필요한 권한이 없습니다 | | 머신 이름이 필요합니다. --machine <name>을 사용하세요 | --machine으로 머신을 지정하거나 구성 기본값을 설정하세요 | | 팀 이름이 필요합니다. --team을 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set team <name> | --team으로 팀을 지정하거나 구성 기본값을 설정하세요 | | 리전 이름이 필요합니다. --region을 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set region <name> | --region으로 리전을 지정하거나 구성 기본값을 설정하세요 | ---",
+    "body": "문제가 발생하면 CLI가 명확한 오류 메시지를 제공합니다: | 오류 | 의미 | |-------|---------| | 인증이 필요합니다. 실행: rdc subscription login | 먼저 로그인해야 합니다 | | 활성 설정이 없습니다. 다음 명령으로 생성하세요: rdc config init <name> | 활성 구성이 없습니다. rdc config init으로 생성하세요 | | 권한이 거부되었습니다 | 계정에 필요한 권한이 없습니다 | | 머신 이름이 필요합니다. --machine <name>을 사용하세요 | --machine으로 머신을 지정하거나 구성 기본값을 설정하세요 | | 리전 이름이 필요합니다. --region을 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set region <name> | --region으로 리전을 지정하거나 구성 기본값을 설정하세요 | ---",
     "excerpt": "문제가 발생하면 CLI가 명확한 오류 메시지를 제공합니다: | 오류 | 의미 | |-------|---------| | 인증이 필요합니다. 실행: rdc subscription login | 먼저 로그인해야 합니다 | | 활성 설정이 없습니다. 다음 명령으로 생성하세요...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",

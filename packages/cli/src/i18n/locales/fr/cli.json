@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "Vérifications de sauvegarde échouées",
         "verifyFailureWarning": "{{count}} dépôt(s) ont échoué à leur dernière vérification de sauvegarde.",
         "missedTargetSection": "Dépôts qui ont manqué leur objectif de sauvegarde",
-        "missedTargetWarning": "{{count}} dépôt(s) ont manqué leur objectif de sauvegarde lors de la dernière exécution."
+        "missedTargetWarning": "{{count}} dépôt(s) ont manqué leur objectif de sauvegarde lors de la dernière exécution.",
+        "licenseDetailUnreadable": "La liste ne contient aucun détail de licence lisible (renet est antérieur à la section licenses, ou une entrée est mal formée) : l'état des sauvegardes bloquées et du renouvellement est donc inconnu."
       },
       "gpu": {
         "descriptionShort": "Inspecter les GPU et les autorisations de périphériques d'une machine",
@@ -2708,8 +2709,7 @@
         "machineRequired": "Spécifiez une machine avec `--machine` ou définissez un défaut de contexte",
         "noActiveConfig": "Aucune configuration active. Créez-en une avec `rdc config init`",
         "permissionDenied": "Votre compte ne dispose pas des permissions requises",
-        "regionRequired": "Spécifiez une région avec `--region` ou définissez un défaut de contexte",
-        "teamRequired": "Spécifiez une équipe avec `--team` ou définissez un défaut de contexte"
+        "regionRequired": "Spécifiez une région avec `--region` ou définissez un défaut de contexte"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "Lorsque --remote-file est défini, --local doit être un répertoire existant : {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file requiert exactement un chemin --local pointant sur un fichier."
     },
-    "teamRequired": "Le nom de l'équipe est requis. Utilisez --team ou définissez une valeur par défaut avec : rdc config set team <name>",
     "term": {
       "connectivityFailed": "Impossible d'atteindre {{host}}:{{port}}. {{error}}\n\nDépannage :\n  - Vérifiez que la machine est allumée et connectée au réseau\n  - Vérifiez que l'adresse IP est correcte dans le coffre de la machine\n  - Assurez-vous que le port {{port}} n'est pas bloqué par un pare-feu\n  - Essayez de faire un ping à la machine : ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" n'est pas autorisé dans le contexte du dépôt.\n\nUtilisez plutôt \"renet compose -- <args>\" afin que les IP loopback par dépôt, l'injection réseau de l'hôte, les capacités CRIU et la validation du compose soient appliquées. Exécuter \"docker compose\" directement contourne tout cela et corrompt silencieusement le déploiement.\n\nPour les déploiements orchestrés, préférez : rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "Port SSH",
     "sshUser": "Nom d'utilisateur SSH",
     "strategyName": "Nom de la stratégie de sauvegarde",
-    "team": "Nom de l'équipe",
     "urlOnly": "Afficher l'URI VS Code au lieu de le lancer",
     "verifyChecksum": "Vérifier les fichiers à l'aide de sommes de contrôle après synchronisation",
     "vmId": "ID de la machine virtuelle",

@@ -4386,7 +4386,7 @@
   {
     "id": "search-7599",
     "content": "3.2 health",
-    "body": "Kontrollib masina seisundit CI/CD torujuhtmete jaoks Tervisekäsk väljastab süsteemi mõõdikud, konteinerite oleku, teenuste stabiilsuse ja salvestusteabe, mis on kasulik CI/CD torujuhtmete kontrollideks. rdc machine health <name> [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -t, --team <name> | Meeskonna nimi | Ei | - | <a id=\"cli-local-machine-provision\"></a>",
+    "body": "Kontrollib masina seisundit CI/CD torujuhtmete jaoks Tervisekäsk väljastab süsteemi mõõdikud, konteinerite oleku, teenuste stabiilsuse ja salvestusteabe, mis on kasulik CI/CD torujuhtmete kontrollideks. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "excerpt": "Kontrollib masina seisundit CI/CD torujuhtmete jaoks Tervisekäsk väljastab süsteemi mõõdikud, konteinerite oleku, teenuste stabiilsuse ja salvestustea...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-7728",
     "content": "Sagedased veateated",
-    "body": "Probleemi ilmnemisel kuvab CLI selged veateated: | Viga | Tähendus | |-------|---------| | Autentimine on nõutud. Käivita: rdc subscription login | Pead esmalt sisse logima | | Aktiivset konfiguratsiooni ei ole. Loo uus käsuga: rdc config init <name> | Aktiivne konfiguratsioon puudub. Loo üks käsuga rdc config init | | Ligipääs keelatud | Sinu kontol puuduvad vajalikud õigused | | Masina nimi on nõutud. Kasuta --machine <name> | Määra masin lipukesega --machine või sea konfiguratsiooni vaikeväärtus | | Meeskonna nimi on nõutud. Kasuta --team või määra vaikimisi väärtus käsuga: rdc config set team <name> | Määra meeskond lipukesega --team või sea konfiguratsiooni vaikeväärtus | | Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set region <name> | Määra piirkond lipukesega --region või sea konfiguratsiooni vaikeväärtus | ---",
+    "body": "Probleemi ilmnemisel kuvab CLI selged veateated: | Viga | Tähendus | |-------|---------| | Autentimine on nõutud. Käivita: rdc subscription login | Pead esmalt sisse logima | | Aktiivset konfiguratsiooni ei ole. Loo uus käsuga: rdc config init <name> | Aktiivne konfiguratsioon puudub. Loo üks käsuga rdc config init | | Ligipääs keelatud | Sinu kontol puuduvad vajalikud õigused | | Masina nimi on nõutud. Kasuta --machine <name> | Määra masin lipukesega --machine või sea konfiguratsiooni vaikeväärtus | | Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set region <name> | Määra piirkond lipukesega --region või sea konfiguratsiooni vaikeväärtus | ---",
     "excerpt": "Probleemi ilmnemisel kuvab CLI selged veateated: | Viga | Tähendus | |-------|---------| | Autentimine on nõutud. Käivita: rdc subscription login | Pe...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",

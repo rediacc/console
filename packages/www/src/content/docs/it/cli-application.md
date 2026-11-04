@@ -7,7 +7,7 @@ order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "3828d7a40997b642"
+sourceHash: "0b9d4e197ad7716b"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -728,13 +728,8 @@ rdc machine list [options]
 {{t:cli.docs.supplements.machine.health.afterDescription}}
 
 ```bash
-rdc machine health <name> [options]
+rdc machine health <name>
 ```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-
 
 <a id="cli-local-machine-provision"></a>
 ### 3.3 provision
@@ -3456,7 +3451,6 @@ rdc serve [options]
 | {{t:cli.errors.noActiveConfig}} | {{t:cli.docs.errors.meanings.noActiveConfig}} |
 | {{t:cli.errors.permissionDenied}} | {{t:cli.docs.errors.meanings.permissionDenied}} |
 | {{t:cli.errors.machineRequired}} | {{t:cli.docs.errors.meanings.machineRequired}} |
-| {{t:cli.errors.teamRequired}} | {{t:cli.docs.errors.meanings.teamRequired}} |
 | {{t:cli.errors.regionRequired}} | {{t:cli.docs.errors.meanings.regionRequired}} |
 
 ---

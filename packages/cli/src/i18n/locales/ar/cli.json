@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "عمليات التحقق الفاشلة من النسخ الاحتياطي",
         "verifyFailureWarning": "فشل {{count}} مستودع/مستودعات في آخر تحقق من النسخ الاحتياطي.",
         "missedTargetSection": "المستودعات التي لم تحقق هدف النسخ الاحتياطي",
-        "missedTargetWarning": "لم يحقق {{count}} مستودع هدف النسخ الاحتياطي في آخر تشغيل."
+        "missedTargetWarning": "لم يحقق {{count}} مستودع هدف النسخ الاحتياطي في آخر تشغيل.",
+        "licenseDetailUnreadable": "لا تتضمن القائمة تفاصيل ترخيص قابلة للقراءة (renet أقدم من قسم licenses، أو أن أحد الإدخالات تالف)، لذا فإن حالة النسخ الاحتياطي المحظور والتجديد غير معروفة."
       },
       "gpu": {
         "descriptionShort": "فحص وحدات GPU وتصاريح الأجهزة في جهاز",
@@ -2708,8 +2709,7 @@
         "machineRequired": "حدد جهازاً باستخدام `--machine` أو عيّن قيمة افتراضية للسياق",
         "noActiveConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام `rdc config init`",
         "permissionDenied": "حسابك لا يملك الصلاحيات المطلوبة",
-        "regionRequired": "حدد منطقة باستخدام `--region` أو عيّن قيمة افتراضية للسياق",
-        "teamRequired": "حدد فريقاً باستخدام `--team` أو عيّن قيمة افتراضية للسياق"
+        "regionRequired": "حدد منطقة باستخدام `--region` أو عيّن قيمة افتراضية للسياق"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "عند تعيين --remote-file، يجب أن يكون --local مجلداً موجوداً: {{path}}",
       "remoteFileRequiresSingleFile": "‫يتطلب --remote-file مسار --local واحدًا بالضبط يشير إلى ملف."
     },
-    "teamRequired": "اسم الفريق مطلوب. استخدم --team أو عيّن القيمة الافتراضية بـ: rdc config set team <name>",
     "term": {
       "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" غير مسموح به في سياق المستودع.\n\nاستخدم \"renet compose -- <args>\" بدلاً من ذلك حتى يتم تطبيق عناوين IP loopback لكل مستودع، وحقن شبكة المضيف، وقدرات CRIU، والتحقق من ملف compose. تشغيل \"docker compose\" مباشرة يتجاوز كل هذا ويفسد النشر بصمت.\n\nللنشر المنسق، يفضل: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "منفذ SSH",
     "sshUser": "اسم مستخدم SSH",
     "strategyName": "اسم استراتيجية النسخ الاحتياطي",
-    "team": "اسم الفريق",
     "urlOnly": "طباعة عنوان VS Code URI بدلاً من تشغيله",
     "verifyChecksum": "التحقق من الملفات باستخدام المجاميع الاختبارية بعد المزامنة",
     "vmId": "معرّف الآلة الافتراضية",

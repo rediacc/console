@@ -4386,7 +4386,7 @@
   {
     "id": "search-10587",
     "content": "3.2 health",
-    "body": "Controlla la salute della macchina per pipeline CI/CD Il comando health restituisce metriche di sistema, stato dei container, stabilità dei servizi e informazioni sullo storage, utile per i gate nelle pipeline CI/CD. rdc machine health <name> [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | -t, --team <name> | Nome del team | No | - | <a id=\"cli-local-machine-provision\"></a>",
+    "body": "Controlla la salute della macchina per pipeline CI/CD Il comando health restituisce metriche di sistema, stato dei container, stabilità dei servizi e informazioni sullo storage, utile per i gate nelle pipeline CI/CD. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "excerpt": "Controlla la salute della macchina per pipeline CI/CD Il comando health restituisce metriche di sistema, stato dei container, stabilità dei servizi e...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-10716",
     "content": "Messaggi di errore comuni",
-    "body": "Quando qualcosa va storto, la CLI fornisce messaggi di errore chiari: | Errore | Significato | |-------|---------| | Autenticazione richiesta. Esegui: rdc subscription login | Devi effettuare il login prima | | Nessuna config attiva. Creane una con: rdc config init <name> | Nessuna config attiva: creane una con rdc config init | | Permesso negato | Il tuo account non ha i permessi necessari | | Nome macchina obbligatorio. Usa --machine <name> | Specifica una macchina con --machine o imposta un valore predefinito nella config | | Nome team obbligatorio. Usa --team o imposta il valore predefinito con: rdc config set team <name> | Specifica un team con --team o imposta un valore predefinito nella config | | Nome regione obbligatorio. Usa --region o imposta il valore predefinito con: rdc config set region <name> | Specifica una regione con --region o imposta un valore predefinito nella config | ---",
+    "body": "Quando qualcosa va storto, la CLI fornisce messaggi di errore chiari: | Errore | Significato | |-------|---------| | Autenticazione richiesta. Esegui: rdc subscription login | Devi effettuare il login prima | | Nessuna config attiva. Creane una con: rdc config init <name> | Nessuna config attiva: creane una con rdc config init | | Permesso negato | Il tuo account non ha i permessi necessari | | Nome macchina obbligatorio. Usa --machine <name> | Specifica una macchina con --machine o imposta un valore predefinito nella config | | Nome regione obbligatorio. Usa --region o imposta il valore predefinito con: rdc config set region <name> | Specifica una regione con --region o imposta un valore predefinito nella config | ---",
     "excerpt": "Quando qualcosa va storto, la CLI fornisce messaggi di errore chiari: | Errore | Significato | |-------|---------| | Autenticazione richiesta. Esegui:...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",

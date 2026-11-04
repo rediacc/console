@@ -4386,7 +4386,7 @@
   {
     "id": "search-3104",
     "content": "3.2 health",
-    "body": "Machine-Zustand für CI/CD-Pipelines prüfen Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus, nützlich für CI/CD-Pipeline-Prüfungen. rdc machine health <name> [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | -t, --team <name> | Team-Name | Nein | - | <a id=\"cli-local-machine-provision\"></a>",
+    "body": "Machine-Zustand für CI/CD-Pipelines prüfen Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus, nützlich für CI/CD-Pipeline-Prüfungen. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "excerpt": "Machine-Zustand für CI/CD-Pipelines prüfen Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus, nü...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-3233",
     "content": "Häufige Fehlermeldungen",
-    "body": "Wenn etwas schiefgeht, liefert die CLI klare Fehlermeldungen: | Fehler | Bedeutung | |-------|---------| | Authentifizierung erforderlich. Ausführen: rdc subscription login | Sie müssen sich zuerst anmelden | | Keine aktive Konfiguration. Erstellen Sie eine mit: rdc config init <name> | Keine Konfiguration aktiv. Erstellen Sie eine mit rdc config init | | Berechtigung verweigert | Ihr Konto verfügt nicht über die erforderlichen Berechtigungen | | Machine-Name erforderlich. Verwenden Sie --machine <name> | Geben Sie eine Maschine mit --machine an oder setzen Sie einen Kontextstandard | | Team-Name erforderlich. Verwenden Sie --team oder legen Sie einen Standardwert fest mit: rdc config set team <name> | Geben Sie ein Team mit --team an oder setzen Sie einen Kontextstandard | | Regionsname erforderlich. Verwenden Sie --region oder legen Sie einen Standardwert fest mit: rdc config set region <name> | Geben Sie eine Region mit --region an oder setzen Sie einen Kontextstandard | ---",
+    "body": "Wenn etwas schiefgeht, liefert die CLI klare Fehlermeldungen: | Fehler | Bedeutung | |-------|---------| | Authentifizierung erforderlich. Ausführen: rdc subscription login | Sie müssen sich zuerst anmelden | | Keine aktive Konfiguration. Erstellen Sie eine mit: rdc config init <name> | Keine Konfiguration aktiv. Erstellen Sie eine mit rdc config init | | Berechtigung verweigert | Ihr Konto verfügt nicht über die erforderlichen Berechtigungen | | Machine-Name erforderlich. Verwenden Sie --machine <name> | Geben Sie eine Maschine mit --machine an oder setzen Sie einen Kontextstandard | | Regionsname erforderlich. Verwenden Sie --region oder legen Sie einen Standardwert fest mit: rdc config set region <name> | Geben Sie eine Region mit --region an oder setzen Sie einen Kontextstandard | ---",
     "excerpt": "Wenn etwas schiefgeht, liefert die CLI klare Fehlermeldungen: | Fehler | Bedeutung | |-------|---------| | Authentifizierung erforderlich. Ausführen:...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",

@@ -4386,7 +4386,7 @@
   {
     "id": "search-9093",
     "content": "3.2 health",
-    "body": "Vérifier la santé de la machine pour les pipelines CI/CD La commande health affiche les métriques système, l'état des conteneurs, la stabilité des services et les informations de stockage, utile pour les vérifications de pipeline CI/CD. rdc machine health <name> [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | -t, --team <name> | Nom de l'équipe | Non | - | <a id=\"cli-local-machine-provision\"></a>",
+    "body": "Vérifier la santé de la machine pour les pipelines CI/CD La commande health affiche les métriques système, l'état des conteneurs, la stabilité des services et les informations de stockage, utile pour les vérifications de pipeline CI/CD. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "excerpt": "Vérifier la santé de la machine pour les pipelines CI/CD La commande health affiche les métriques système, l'état des conteneurs, la stabilité des ser...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-9222",
     "content": "Messages d'Erreur Courants",
-    "body": "Lorsque quelque chose ne va pas, la CLI fournit des messages d'erreur clairs : | Erreur | Signification | |-------|---------| | L'authentification est requise. Exécutez : rdc subscription login | Vous devez d'abord vous connecter | | Aucune configuration active. Créez-en une avec : rdc config init <name> | Aucune configuration active. Créez-en une avec rdc config init | | Permission refusée | Votre compte ne dispose pas des permissions requises | | Le nom de la machine est requis. Utilisez --machine <name> | Spécifiez une machine avec --machine ou définissez un défaut de contexte | | Le nom de l'équipe est requis. Utilisez --team ou définissez une valeur par défaut avec : rdc config set team <name> | Spécifiez une équipe avec --team ou définissez un défaut de contexte | | Le nom de la région est requis. Utilisez --region ou définissez une valeur par défaut avec : rdc config set region <name> | Spécifiez une région avec --region ou définissez un défaut de contexte | ---",
+    "body": "Lorsque quelque chose ne va pas, la CLI fournit des messages d'erreur clairs : | Erreur | Signification | |-------|---------| | L'authentification est requise. Exécutez : rdc subscription login | Vous devez d'abord vous connecter | | Aucune configuration active. Créez-en une avec : rdc config init <name> | Aucune configuration active. Créez-en une avec rdc config init | | Permission refusée | Votre compte ne dispose pas des permissions requises | | Le nom de la machine est requis. Utilisez --machine <name> | Spécifiez une machine avec --machine ou définissez un défaut de contexte | | Le nom de la région est requis. Utilisez --region ou définissez une valeur par défaut avec : rdc config set region <name> | Spécifiez une région avec --region ou définissez un défaut de contexte | ---",
     "excerpt": "Lorsque quelque chose ne va pas, la CLI fournit des messages d'erreur clairs : | Erreur | Signification | |-------|---------| | L'authentification est...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",

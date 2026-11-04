@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "Ebaõnnestunud varunduskontrollid",
         "verifyFailureWarning": "{{count}} hoidlat ebaõnnestus viimases varunduskontrollis.",
         "missedTargetSection": "Hoidlad, mis jäid varundusest eesmärgist maha",
-        "missedTargetWarning": "{{count}} hoidlat jäi viimasel jooksutusel varundusest eesmärgist maha."
+        "missedTargetWarning": "{{count}} hoidlat jäi viimasel jooksutusel varundusest eesmärgist maha.",
+        "licenseDetailUnreadable": "Loendis pole loetavaid litsentsi üksikasju (renet on vanem kui jaotis licenses või mõni kirje on vigane), seega pole blokeeritud varunduste ja uuendamise olek teada."
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",
@@ -2708,8 +2709,7 @@
         "machineRequired": "Määra masin lipukesega `--machine` või sea konfiguratsiooni vaikeväärtus",
         "noActiveConfig": "Aktiivne konfiguratsioon puudub. Loo üks käsuga `rdc config init`",
         "permissionDenied": "Sinu kontol puuduvad vajalikud õigused",
-        "regionRequired": "Määra piirkond lipukesega `--region` või sea konfiguratsiooni vaikeväärtus",
-        "teamRequired": "Määra meeskond lipukesega `--team` või sea konfiguratsiooni vaikeväärtus"
+        "regionRequired": "Määra piirkond lipukesega `--region` või sea konfiguratsiooni vaikeväärtus"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "Kui --remote-file on seadistatud, peab --local olema olemasolev kaust: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file nõuab täpselt ühte --local teed, mis osutab failile."
     },
-    "teamRequired": "Meeskonna nimi on nõutud. Kasuta --team või määra vaikimisi väärtus käsuga: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" ei ole repositooriumi kontekstis lubatud.\n\nKasuta \"renet compose -- <args>\", et rakendataks repositooriumipõhised loopback-IP-d, hosti võrgu süstimine, CRIU võimalused ja compose valideerimine. \"docker compose\" otse käivitamine hiilib kõigist neist kontrollidest mööda ja rikub kasutuselevõtu vaikselt.\n\nOrkestreeritud kasutusele võtmiseks eelista: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "SSH-port",
     "sshUser": "SSH-kasutajanimi",
     "strategyName": "Varundusstrateegia nimi",
-    "team": "Meeskonna nimi",
     "urlOnly": "Prindi VS Code'i URI käivitamise asemel",
     "verifyChecksum": "Kontrolli faile kontrollsummade abil pärast sünkroonimist",
     "vmId": "Virtuaalmasina ID",

@@ -927,7 +927,8 @@
         "verifyFailureSection": "Failed Backup Verifies",
         "verifyFailureWarning": "{{count}} repository(ies) failed their last backup verify.",
         "missedTargetSection": "Repositories that missed their backup target",
-        "missedTargetWarning": "{{count}} repository(ies) missed their backup target on the latest run."
+        "missedTargetWarning": "{{count}} repository(ies) missed their backup target on the latest run.",
+        "licenseDetailUnreadable": "The listing carries no readable licence detail (renet predates the licenses section, or an entry is malformed), so blocked-backup and renewal state are unknown."
       },
       "gpu": {
         "descriptionShort": "Inspect a machine's GPUs and device grants",
@@ -2945,7 +2946,6 @@
       "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file requires exactly one --local path that points at a file."
     },
-    "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
       "launchFailed": "Failed to launch terminal: {{error}}",
@@ -3113,7 +3113,6 @@
     "sshPort": "SSH port",
     "sshUser": "SSH username",
     "strategyName": "Backup strategy name",
-    "team": "Team name",
     "urlOnly": "Print the VS Code URI instead of launching",
     "verifyChecksum": "Verify files using checksums after sync",
     "vmId": "Virtual machine ID",
@@ -3198,7 +3197,6 @@
         "noActiveConfig": "No config is active. Create one with `rdc config init`",
         "permissionDenied": "Your account lacks the required permissions",
         "machineRequired": "Specify a machine with `--machine` or set a config default",
-        "teamRequired": "Specify a team with `--team` or set a config default",
         "regionRequired": "Specify a region with `--region` or set a config default"
       }
     },

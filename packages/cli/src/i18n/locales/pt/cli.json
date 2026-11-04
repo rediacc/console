@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "Verificações de cópia falhadas",
         "verifyFailureWarning": "{{count}} repositório(s) falharam a última verificação de cópia.",
         "missedTargetSection": "Repositórios que não cumpriram a meta de backup",
-        "missedTargetWarning": "{{count}} repositório(s) não cumpriram a meta de backup na última execução."
+        "missedTargetWarning": "{{count}} repositório(s) não cumpriram a meta de backup na última execução.",
+        "licenseDetailUnreadable": "A listagem não traz detalhes de licença legíveis (o renet é anterior à seção licenses ou uma entrada está malformada), por isso o estado dos backups bloqueados e da renovação é desconhecido."
       },
       "gpu": {
         "descriptionShort": "Inspecionar as GPUs e as concessões de dispositivos de uma máquina",
@@ -2708,8 +2709,7 @@
         "machineRequired": "Especifique uma máquina com `--machine` ou defina um valor predefinido na configuração",
         "noActiveConfig": "Nenhuma configuração está ativa. Crie uma com `rdc config init`",
         "permissionDenied": "A sua conta não tem as permissões necessárias",
-        "regionRequired": "Especifique uma região com `--region` ou defina um valor predefinido na configuração",
-        "teamRequired": "Especifique uma equipa com `--team` ou defina um valor predefinido na configuração"
+        "regionRequired": "Especifique uma região com `--region` ou defina um valor predefinido na configuração"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "Quando --remote-file está definido, --local tem de ser um diretório existente: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file requer exatamente um caminho --local que aponte para um ficheiro."
     },
-    "teamRequired": "Nome da equipa necessário. Use --team ou defina o padrão com: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Não é possível alcançar {{host}}:{{port}}. {{error}}\n\nResolução de problemas:\n  - Verifique se a máquina está ligada e conectada à rede\n  - Confirme que o endereço IP está correto no cofre da máquina\n  - Certifique-se de que a porta {{port}} não está bloqueada por uma firewall\n  - Tente fazer ping à máquina: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" não é permitido no contexto de repositório.\n\nUse \"renet compose -- <args>\" para que os IPs de loopback por repositório, a injeção de rede de anfitrião, as capacidades CRIU e a validação do compose sejam aplicados. Executar \"docker compose\" diretamente ignora tudo isso e corrompe silenciosamente a implementação.\n\nPara implementações orquestradas, prefira: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "Porta SSH",
     "sshUser": "Nome de utilizador SSH",
     "strategyName": "Nome da estratégia de cópia de segurança",
-    "team": "Nome da equipa",
     "urlOnly": "Imprimir o URI do VS Code em vez de o lançar",
     "verifyChecksum": "Verificar ficheiros com checksums após a sincronização",
     "vmId": "ID da máquina virtual",

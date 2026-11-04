@@ -672,9 +672,7 @@ async function gatherStatus(
   const wantsLicenses = sections.length === 0 || sections.includes('licenses');
   const licenseDetail = wantsLicenses ? licenseDetailOf(listResult) : new Map();
   if (wantsLicenses && licenseDetail === undefined) {
-    outputService.warn(
-      'The listing carries no readable licence detail (renet predates the licenses section, or an entry is malformed), so blocked-backup and renewal state are unknown.'
-    );
+    outputService.warn(t('commands.machine.status.licenseDetailUnreadable'));
   }
 
   return {

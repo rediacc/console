@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "실패한 백업 검증",
         "verifyFailureWarning": "저장소 {{count}}개가 마지막 백업 검증에 실패했습니다.",
         "missedTargetSection": "백업 목표를 달성하지 못한 저장소",
-        "missedTargetWarning": "저장소 {{count}}개가 마지막 실행에서 백업 목표를 달성하지 못했습니다."
+        "missedTargetWarning": "저장소 {{count}}개가 마지막 실행에서 백업 목표를 달성하지 못했습니다.",
+        "licenseDetailUnreadable": "목록에 읽을 수 있는 라이선스 정보가 없습니다(renet이 licenses 섹션보다 오래되었거나 항목 형식이 잘못되었습니다). 따라서 백업 차단 상태와 갱신 상태를 알 수 없습니다."
       },
       "gpu": {
         "descriptionShort": "머신의 GPU와 장치 부여 현황 확인",
@@ -2708,8 +2709,7 @@
         "machineRequired": "`--machine`으로 머신을 지정하거나 구성 기본값을 설정하세요",
         "noActiveConfig": "활성 구성이 없습니다. `rdc config init`으로 생성하세요",
         "permissionDenied": "계정에 필요한 권한이 없습니다",
-        "regionRequired": "`--region`으로 리전을 지정하거나 구성 기본값을 설정하세요",
-        "teamRequired": "`--team`으로 팀을 지정하거나 구성 기본값을 설정하세요"
+        "regionRequired": "`--region`으로 리전을 지정하거나 구성 기본값을 설정하세요"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "--remote-file이 설정된 경우 --local은 기존 디렉토리여야 합니다: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file에는 파일을 가리키는 --local 경로가 정확히 하나 필요합니다."
     },
-    "teamRequired": "팀 이름이 필요합니다. --team을 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set team <name>",
     "term": {
       "connectivityFailed": "{{host}}:{{port}}에 연결할 수 없습니다. {{error}}\n\n문제 해결:\n  - 머신이 켜져 있고 네트워크에 연결되어 있는지 확인하세요\n  - 머신 볼트의 IP 주소가 올바른지 확인하세요\n  - 방화벽에서 포트 {{port}}가 차단되어 있지 않은지 확인하세요\n  - 머신에 ping을 시도해 보세요: ping {{host}}",
       "dockerComposeForbidden": "리포지토리 컨텍스트에서 \"docker compose\"는 허용되지 않습니다.\n\n리포지토리별 루프백 IP, 호스트 네트워크 주입, CRIU 기능, 컴포즈 유효성 검사가 적용되도록 대신 \"renet compose -- <args>\"를 사용하세요. \"docker compose\"를 직접 실행하면 이 모든 것이 우회되어 배포가 자동으로 손상됩니다.\n\n오케스트레이션 배포의 경우: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "SSH 포트",
     "sshUser": "SSH 사용자 이름",
     "strategyName": "백업 전략 이름",
-    "team": "팀 이름",
     "urlOnly": "실행 대신 VS Code URI 출력",
     "verifyChecksum": "동기화 후 체크섬으로 파일 검증",
     "vmId": "가상 머신 ID",

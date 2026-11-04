@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "失败的备份验证",
         "verifyFailureWarning": "{{count}} 个仓库的上次备份验证失败。",
         "missedTargetSection": "未达到备份目标的仓库",
-        "missedTargetWarning": "{{count}} 个仓库在最近一次运行中未达到备份目标。"
+        "missedTargetWarning": "{{count}} 个仓库在最近一次运行中未达到备份目标。",
+        "licenseDetailUnreadable": "列表中没有可读取的许可证详情（renet 早于 licenses 部分，或某个条目格式错误），因此无法确定备份受阻和续期的状态。"
       },
       "gpu": {
         "descriptionShort": "查看机器的 GPU 和设备授权",
@@ -2708,8 +2709,7 @@
         "machineRequired": "使用 `--machine` 指定机器或设置上下文默认值",
         "noActiveConfig": "没有活跃的配置。请使用 `rdc config init` 创建一个",
         "permissionDenied": "您的帐户缺少所需的权限",
-        "regionRequired": "使用 `--region` 指定区域或设置上下文默认值",
-        "teamRequired": "使用 `--team` 指定团队或设置上下文默认值"
+        "regionRequired": "使用 `--region` 指定区域或设置上下文默认值"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "设置了 --remote-file 时，--local 必须是已存在的目录：{{path}}",
       "remoteFileRequiresSingleFile": "--remote-file 要求恰好一个指向文件的 --local 路径。"
     },
-    "teamRequired": "需要团队名称。使用 --team 或使用以下命令设置默认值：rdc config set team <name>",
     "term": {
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
       "dockerComposeForbidden": "在仓库上下文中不允许使用 \"docker compose\"。\n\n请改用 \"renet compose -- <args>\"，这样才会应用每个仓库的回环 IP、主机网络注入、CRIU 能力和 compose 验证。直接运行 \"docker compose\" 会绕过所有这些并在不知不觉中破坏部署。\n\n对于编排部署，推荐使用：rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "SSH 端口",
     "sshUser": "SSH 用户名",
     "strategyName": "备份策略名称",
-    "team": "团队名称",
     "urlOnly": "打印 VS Code URI 而不是启动",
     "verifyChecksum": "同步后使用校验和验证文件",
     "vmId": "虚拟机 ID",

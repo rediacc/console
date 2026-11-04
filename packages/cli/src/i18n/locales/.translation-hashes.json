@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2439,
-    "sourceCommit": "148c306d29780c9c08cde577e04278a4efea9d89"
+    "keyCount": 2437,
+    "sourceCommit": "58e47024b27609e50d4b0f1c32ea078ea147afb3"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1205,6 +1205,7 @@
     "commands.machine.status.healthCheck": "8bc8c238",
     "commands.machine.status.infrastructure": "1c4dc948",
     "commands.machine.status.licenseBackupBlocked": "5686ce95",
+    "commands.machine.status.licenseDetailUnreadable": "71569dd0",
     "commands.machine.status.missedTargetSection": "d4ce3a6a",
     "commands.machine.status.missedTargetWarning": "fd78b193",
     "commands.machine.status.runningJobsRow": "0cd99dee",
@@ -2041,7 +2042,6 @@
     "docs.errors.meanings.noActiveConfig": "049428b6",
     "docs.errors.meanings.permissionDenied": "6c948c6e",
     "docs.errors.meanings.regionRequired": "0f2c7d27",
-    "docs.errors.meanings.teamRequired": "e0ab43b4",
     "docs.frontmatter.category": "2c52cbb0",
     "docs.frontmatter.description": "ce20f745",
     "docs.frontmatter.title": "0c70d77e",
@@ -2270,7 +2270,6 @@
     "errors.sync.remoteAndRemoteFile": "90129347",
     "errors.sync.remoteFileLocalNotDir": "db805163",
     "errors.sync.remoteFileRequiresSingleFile": "75b06174",
-    "errors.teamRequired": "9e39ceb3",
     "errors.term.connectivityFailed": "f87c9121",
     "errors.term.dockerComposeForbidden": "f008863a",
     "errors.term.fileWriteDetected": "c91548c7",
@@ -2415,7 +2414,6 @@
     "options.sshPort": "eca9fdb3",
     "options.sshUser": "438ce95f",
     "options.strategyName": "b86f7fe9",
-    "options.team": "76b17fc0",
     "options.urlOnly": "da8c7a8a",
     "options.verifyChecksum": "5b1ad32b",
     "options.vmId": "c9ebcd2c",

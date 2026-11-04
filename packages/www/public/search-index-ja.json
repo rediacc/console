@@ -4386,8 +4386,8 @@
   {
     "id": "search-12081",
     "content": "3.2 health",
-    "body": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。 rdc machine health <name> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -t, --team <name> | チーム名 | いいえ | - | <a id=\"cli-local-machine-provision\"></a>",
-    "excerpt": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。 rdc machine health <name> [options] | フラグ | 説明 | 必...",
+    "body": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。 rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
+    "excerpt": "CI/CDパイプライン用のマシン健全性を確認する healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します。CI/CDパイプラインチェックに便利です。 rdc machine health <name> <a id=\"cli-local-machine...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "32-health",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-12210",
     "content": "一般的なエラーメッセージ",
-    "body": "問題が発生した場合、CLIは明確なエラーメッセージを提供します： | エラー | 意味 | |-------|---------| | 認証が必要です。実行してください: rdc subscription login | 最初にログインする必要があります | | アクティブな設定がありません。次のコマンドで作成してください: rdc config init <name> | アクティブな設定がありません。rdc config init で作成してください | | 権限がありません | アカウントに必要な権限がありません | | マシン名が必要です。--machine <name> を使用してください | --machineでマシンを指定するか、コンテキストのデフォルトを設定してください | | チーム名が必要です。--team を使用するか、次のコマンドでデフォルトを設定してください: rdc config set team <name> | --teamでチームを指定するか、コンテキストのデフォルトを設定してください | | リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name> | --regionでリージョンを指定するか、コンテキストのデフォルトを設定してください | ---",
+    "body": "問題が発生した場合、CLIは明確なエラーメッセージを提供します： | エラー | 意味 | |-------|---------| | 認証が必要です。実行してください: rdc subscription login | 最初にログインする必要があります | | アクティブな設定がありません。次のコマンドで作成してください: rdc config init <name> | アクティブな設定がありません。rdc config init で作成してください | | 権限がありません | アカウントに必要な権限がありません | | マシン名が必要です。--machine <name> を使用してください | --machineでマシンを指定するか、コンテキストのデフォルトを設定してください | | リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name> | --regionでリージョンを指定するか、コンテキストのデフォルトを設定してください | ---",
     "excerpt": "問題が発生した場合、CLIは明確なエラーメッセージを提供します： | エラー | 意味 | |-------|---------| | 認証が必要です。実行してください: rdc subscription login | 最初にログインする必要があります | | アクティブな設定がありません。次のコ...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",

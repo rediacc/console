@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "Fehlgeschlagene Backup-Verifizierungen",
         "verifyFailureWarning": "{{count}} Repository(s) haben ihre letzte Backup-Verifizierung nicht bestanden.",
         "missedTargetSection": "Repositorys, die ihr Backup-Ziel verfehlt haben",
-        "missedTargetWarning": "{{count}} Repository(s) haben ihr Backup-Ziel im letzten Lauf verfehlt."
+        "missedTargetWarning": "{{count}} Repository(s) haben ihr Backup-Ziel im letzten Lauf verfehlt.",
+        "licenseDetailUnreadable": "Die Liste enthält keine lesbaren Lizenzdetails (renet ist älter als der Abschnitt licenses, oder ein Eintrag ist fehlerhaft). Der Status blockierter Backups und der Verlängerung ist daher unbekannt."
       },
       "gpu": {
         "descriptionShort": "GPUs und Geräte-Freigaben einer Maschine anzeigen",
@@ -2708,8 +2709,7 @@
         "machineRequired": "Geben Sie eine Maschine mit `--machine` an oder setzen Sie einen Kontextstandard",
         "noActiveConfig": "Keine Konfiguration aktiv. Erstellen Sie eine mit `rdc config init`",
         "permissionDenied": "Ihr Konto verfügt nicht über die erforderlichen Berechtigungen",
-        "regionRequired": "Geben Sie eine Region mit `--region` an oder setzen Sie einen Kontextstandard",
-        "teamRequired": "Geben Sie ein Team mit `--team` an oder setzen Sie einen Kontextstandard"
+        "regionRequired": "Geben Sie eine Region mit `--region` an oder setzen Sie einen Kontextstandard"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "Wenn --remote-file gesetzt ist, muss --local ein vorhandenes Verzeichnis sein: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file erfordert genau einen --local Pfad, der auf eine Datei verweist."
     },
-    "teamRequired": "Team-Name erforderlich. Verwenden Sie --team oder legen Sie einen Standardwert fest mit: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Kann {{host}}:{{port}} nicht erreichen. {{error}}\n\nFehlerbehebung:\n  - Überprüfen Sie, ob die Machine eingeschaltet ist und mit dem Netzwerk verbunden ist\n  - Überprüfen Sie, ob die IP-Adresse im Machine-Vault korrekt ist\n  - Stellen Sie sicher, dass Port {{port}} nicht durch eine Firewall blockiert ist\n  - Versuchen Sie, die Machine zu pingen: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" ist im Repository-Kontext nicht erlaubt.\n\nVerwenden Sie stattdessen \"renet compose -- <args>\", damit repo-spezifische Loopback-IPs, Host-Netzwerk-Injection, CRIU-Capabilities und Compose-Validierung angewendet werden. \"docker compose\" direkt auszuführen umgeht all dies und beschädigt das Deployment unbemerkt.\n\nFür orchestrierte Deployments empfohlen: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "SSH-Port",
     "sshUser": "SSH-Benutzername",
     "strategyName": "Name der Backup-Strategie",
-    "team": "Team-Name",
     "urlOnly": "Drucke die VS Code-URI statt sie zu starten",
     "verifyChecksum": "Dateien mit Prüfsummen nach der Synchronisierung überprüfen",
     "vmId": "ID der virtuellen Maschine",

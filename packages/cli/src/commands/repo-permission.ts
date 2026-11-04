@@ -110,6 +110,20 @@ const VERB_TEXT = {
   },
 } as const;
 
+/** A grant or revoke names something to change, and an agent may change it on this repository. */
+async function assertGrantChangeAllowed(
+  verb: PermissionVerb,
+  name: string,
+  repoKey: string,
+  options: PermissionOptions
+): Promise<void> {
+  if (!options.root && !options.path) {
+    throw new ValidationError(t('commands.repo.permission.nothingToChange', { verb }));
+  }
+  if (options.root) assertRootGrantAllowed(name);
+  if (options.path) await assertPathGrantAllowed(name, repoKey);
+}
+
 async function handlePermissionVerb(
   verb: PermissionVerb,
   ref: string,
@@ -121,13 +135,7 @@ async function handlePermissionVerb(
   if (kubeCluster) {
     throw new ValidationError(t('errors.cluster.dockerOnlyVerb', { verb: `permission ${verb}` }));
   }
-  if (verb !== 'show') {
-    if (!options.root && !options.path) {
-      throw new ValidationError(t('commands.repo.permission.nothingToChange', { verb }));
-    }
-    if (options.root) assertRootGrantAllowed(name);
-    if (options.path) await assertPathGrantAllowed(name, repoKey);
-  }
+  if (verb !== 'show') await assertGrantChangeAllowed(verb, name, repoKey, options);
   await assertMachineExists(machineName);
 
   const params: Record<string, unknown> = {};

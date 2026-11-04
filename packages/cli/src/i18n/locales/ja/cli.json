@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "失敗したバックアップ検証",
         "verifyFailureWarning": "{{count}} 個のリポジトリが直近のバックアップ検証に失敗しました。",
         "missedTargetSection": "バックアップ目標を達成できなかったリポジトリ",
-        "missedTargetWarning": "{{count}} 件のリポジトリが直近の実行でバックアップ目標を達成できませんでした。"
+        "missedTargetWarning": "{{count}} 件のリポジトリが直近の実行でバックアップ目標を達成できませんでした。",
+        "licenseDetailUnreadable": "一覧に読み取れるライセンス詳細がありません（renet が licenses セクションより古いか、エントリの形式が不正です）。そのため、バックアップのブロック状態と更新状態は不明です。"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",
@@ -2708,8 +2709,7 @@
         "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
         "noActiveConfig": "アクティブな設定がありません。`rdc config init` で作成してください",
         "permissionDenied": "アカウントに必要な権限がありません",
-        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください",
-        "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください"
+        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file には、ファイルを指す --local パスが正確に 1 つ必要です。"
     },
-    "teamRequired": "チーム名が必要です。--team を使用するか、次のコマンドでデフォルトを設定してください: rdc config set team <name>",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
       "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "SSH ポート",
     "sshUser": "SSH ユーザー名",
     "strategyName": "バックアップ戦略名",
-    "team": "チーム名",
     "urlOnly": "VS Code URI を印刷して起動しない",
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "vmId": "仮想マシン ID",

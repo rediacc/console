@@ -1552,7 +1552,8 @@
         "verifyFailureSection": "Başarısız yedek doğrulamaları",
         "verifyFailureWarning": "{{count}} depo son yedek doğrulamasında başarısız oldu.",
         "missedTargetSection": "Yedekleme hedefini kaçıran depolar",
-        "missedTargetWarning": "{{count}} depo son çalıştırmada yedekleme hedefini kaçırdı."
+        "missedTargetWarning": "{{count}} depo son çalıştırmada yedekleme hedefini kaçırdı.",
+        "licenseDetailUnreadable": "Listede okunabilir lisans ayrıntısı yok (renet, licenses bölümünden eski ya da bir kayıt bozuk); bu yüzden engellenen yedekleme ve yenileme durumu bilinmiyor."
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",
@@ -2708,8 +2709,7 @@
         "machineRequired": "`--machine` ile bir makine belirtin veya bağlam varsayılanı ayarlayın",
         "noActiveConfig": "Etkin yapılandırma yok. `rdc config init` ile bir tane oluşturun",
         "permissionDenied": "Hesabınız gerekli izinlere sahip değil",
-        "regionRequired": "`--region` ile bir bölge belirtin veya bağlam varsayılanı ayarlayın",
-        "teamRequired": "`--team` ile bir takım belirtin veya bağlam varsayılanı ayarlayın"
+        "regionRequired": "`--region` ile bir bölge belirtin veya bağlam varsayılanı ayarlayın"
       }
     },
     "frontmatter": {
@@ -2947,7 +2947,6 @@
       "remoteFileLocalNotDir": "--remote-file ayarlandığında, --local var olan bir dizin olmalıdır: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file için, bir dosyaya işaret eden tam olarak bir --local yolu gerekir."
     },
-    "teamRequired": "Takım adı gerekli. --team kullanın veya varsayılanı şu komutla ayarlayın: rdc config set team <name>",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} adresine erişilemiyor. {{error}}\n\nSorun Giderme:\n  - Makineyi kontrol edin ve ağa bağlı olup olmadığını doğrulayın\n  - IP adresinin makine kasasında doğru olduğunu doğrulayın\n  - {{port}} bağlantı noktasının güvenlik duvarı tarafından engellenmediğini doğrulayın\n  - Makineye ping atmayı deneyin: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" depo bağlamında izin verilmiyor.\n\nBunun yerine \"renet compose -- <args>\" kullanın; böylece depoya özel loopback IP'leri, ana bilgisayar ağ enjeksiyonu, CRIU yetenekleri ve compose doğrulaması uygulanır. \"docker compose\" komutunu doğrudan çalıştırmak bunların tümünü atlar ve dağıtımı sessizce bozar.\n\nOrkestrasyonlu dağıtımlar için tercih edin: rdc repo up <repo-ref>",
@@ -3183,7 +3182,6 @@
     "sshPort": "SSH bağlantı noktası",
     "sshUser": "SSH kullanıcı adı",
     "strategyName": "Yedekleme stratejisi adı",
-    "team": "Takım adı",
     "urlOnly": "VS Code URI'sini yazdırın, başlatmayın",
     "verifyChecksum": "Senkronizasyondan sonra dosyaları sağlama toplamı kullanarak doğrulayın",
     "vmId": "Sanal makine kimliği",

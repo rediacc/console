@@ -456,14 +456,7 @@
         {
           "name": "health",
           "descriptionKey": "commands.machine.health.description",
-          "options": [
-            {
-              "flags": "-t, --team <name>",
-              "descriptionKey": "options.team",
-              "mandatory": false,
-              "defaultValue": null
-            }
-          ],
+          "options": [],
           "arguments": [
             {
               "name": "name",

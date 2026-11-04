@@ -4386,8 +4386,8 @@
   {
     "id": "search-19551",
     "content": "3.2 health",
-    "body": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息，适用于 CI/CD 管道检查。 rdc machine health <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -t, --team <name> | 团队名称 | 否 | - | <a id=\"cli-local-machine-provision\"></a>",
-    "excerpt": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息，适用于 CI/CD 管道检查。 rdc machine health <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|-...",
+    "body": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息，适用于 CI/CD 管道检查。 rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
+    "excerpt": "检查 CI/CD 流水线的机器健康状况 health 命令输出系统指标、容器状态、服务稳定性和存储信息，适用于 CI/CD 管道检查。 rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "32-health",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-19680",
     "content": "常见错误消息",
-    "body": "当出现问题时，CLI 会提供清晰的错误消息： | 错误 | 含义 | |-------|---------| | 需要身份验证。运行：rdc subscription login | 您需要先登录 | | 没有活跃的配置。请使用以下命令创建：rdc config init <name> | 没有活跃的配置。请使用 rdc config init 创建一个 | | 权限被拒绝 | 您的帐户缺少所需的权限 | | 需要机器名称。使用 --machine <name> | 使用 --machine 指定机器或设置上下文默认值 | | 需要团队名称。使用 --team 或使用以下命令设置默认值：rdc config set team <name> | 使用 --team 指定团队或设置上下文默认值 | | 需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name> | 使用 --region 指定区域或设置上下文默认值 | ---",
+    "body": "当出现问题时，CLI 会提供清晰的错误消息： | 错误 | 含义 | |-------|---------| | 需要身份验证。运行：rdc subscription login | 您需要先登录 | | 没有活跃的配置。请使用以下命令创建：rdc config init <name> | 没有活跃的配置。请使用 rdc config init 创建一个 | | 权限被拒绝 | 您的帐户缺少所需的权限 | | 需要机器名称。使用 --machine <name> | 使用 --machine 指定机器或设置上下文默认值 | | 需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name> | 使用 --region 指定区域或设置上下文默认值 | ---",
     "excerpt": "当出现问题时，CLI 会提供清晰的错误消息： | 错误 | 含义 | |-------|---------| | 需要身份验证。运行：rdc subscription login | 您需要先登录 | | 没有活跃的配置。请使用以下命令创建：rdc config init <name> | 没有活跃...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

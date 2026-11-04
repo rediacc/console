@@ -4386,7 +4386,7 @@
   {
     "id": "search-18057",
     "content": "3.2 health",
-    "body": "CI/CD pipeline'ları için makine sağlığını kontrol edin Health komutu sistem metriklerini, konteyner durumunu, servis kararlılığını ve depolama bilgilerini çıktılar, CI/CD hattı kontrolleri için kullanışlıdır. rdc machine health <name> [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -t, --team <name> | Takım adı | Hayır | - | <a id=\"cli-local-machine-provision\"></a>",
+    "body": "CI/CD pipeline'ları için makine sağlığını kontrol edin Health komutu sistem metriklerini, konteyner durumunu, servis kararlılığını ve depolama bilgilerini çıktılar, CI/CD hattı kontrolleri için kullanışlıdır. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "excerpt": "CI/CD pipeline'ları için makine sağlığını kontrol edin Health komutu sistem metriklerini, konteyner durumunu, servis kararlılığını ve depolama bilgile...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
@@ -5934,7 +5934,7 @@
   {
     "id": "search-18186",
     "content": "Yaygın Hata Mesajları",
-    "body": "Bir şeyler ters gittiğinde, CLI net hata mesajları sağlar: | Hata | Anlam | |-------|---------| | Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login | Önce giriş yapmanız gerekiyor | | Etkin yapılandırma yok. Şununla oluşturun: rdc config init <name> | Etkin yapılandırma yok. rdc config init ile bir tane oluşturun | | İzin reddedildi | Hesabınız gerekli izinlere sahip değil | | Makine adı gerekli. --machine <name> kullanın | --machine ile bir makine belirtin veya bağlam varsayılanı ayarlayın | | Takım adı gerekli. --team kullanın veya varsayılanı şu komutla ayarlayın: rdc config set team <name> | --team ile bir takım belirtin veya bağlam varsayılanı ayarlayın | | Bölge adı gerekli. --region kullanın veya varsayılanı şu komutla ayarlayın: rdc config set region <name> | --region ile bir bölge belirtin veya bağlam varsayılanı ayarlayın | ---",
+    "body": "Bir şeyler ters gittiğinde, CLI net hata mesajları sağlar: | Hata | Anlam | |-------|---------| | Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login | Önce giriş yapmanız gerekiyor | | Etkin yapılandırma yok. Şununla oluşturun: rdc config init <name> | Etkin yapılandırma yok. rdc config init ile bir tane oluşturun | | İzin reddedildi | Hesabınız gerekli izinlere sahip değil | | Makine adı gerekli. --machine <name> kullanın | --machine ile bir makine belirtin veya bağlam varsayılanı ayarlayın | | Bölge adı gerekli. --region kullanın veya varsayılanı şu komutla ayarlayın: rdc config set region <name> | --region ile bir bölge belirtin veya bağlam varsayılanı ayarlayın | ---",
     "excerpt": "Bir şeyler ters gittiğinde, CLI net hata mesajları sağlar: | Hata | Anlam | |-------|---------| | Kimlik doğrulama gerekli. Çalıştırın: rdc subscripti...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",

@@ -4541,7 +4541,7 @@
   {
     "id": "search-4598",
     "content": "3.2 health",
-    "body": "Check machine health for CI/CD pipelines The health command outputs system metrics, container status, service stability, and storage information, useful for CI/CD pipeline checks. rdc machine health <name> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | -t, --team <name> | Team name | No | - | <a id=\"cli-local-machine-provision\"></a>",
+    "body": "Check machine health for CI/CD pipelines The health command outputs system metrics, container status, service stability, and storage information, useful for CI/CD pipeline checks. rdc machine health <name> <a id=\"cli-local-machine-provision\"></a>",
     "excerpt": "Check machine health for CI/CD pipelines The health command outputs system metrics, container status, service stability, and storage information, usef...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
@@ -6089,7 +6089,7 @@
   {
     "id": "search-4727",
     "content": "Common Error Messages",
-    "body": "When something goes wrong, the CLI provides clear error messages: | Error | Meaning | |-------|---------| | Authentication required. Run: rdc subscription login | You need to log in first | | No active config. Create one with: rdc config init <name> | No config is active. Create one with rdc config init | | Permission denied | Your account lacks the required permissions | | Machine name required. Use --machine <name> | Specify a machine with --machine or set a config default | | Team name required. Use --team or set default with: rdc config set team <name> | Specify a team with --team or set a config default | | Region name required. Use --region or set default with: rdc config set region <name> | Specify a region with --region or set a config default | ---",
+    "body": "When something goes wrong, the CLI provides clear error messages: | Error | Meaning | |-------|---------| | Authentication required. Run: rdc subscription login | You need to log in first | | No active config. Create one with: rdc config init <name> | No config is active. Create one with rdc config init | | Permission denied | Your account lacks the required permissions | | Machine name required. Use --machine <name> | Specify a machine with --machine or set a config default | | Region name required. Use --region or set default with: rdc config set region <name> | Specify a region with --region or set a config default | ---",
     "excerpt": "When something goes wrong, the CLI provides clear error messages: | Error | Meaning | |-------|---------| | Authentication required. Run: rdc subscrip...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",

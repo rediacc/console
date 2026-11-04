@@ -526,7 +526,6 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
     'noActiveConfig',
     'permissionDenied',
     'machineRequired',
-    'teamRequired',
     'regionRequired',
   ];
 
