@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: zh
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "3302d104c8d5e3dd"
+sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
 ---
 
 # 备份与恢复
@@ -93,6 +93,7 @@ rdc backup usage
 | `--dry-run` | 仅计划:不上传。报告会移动哪些内容 |
 | `--cold` | 停止容器,冻结,重启,然后上传。不能与 `--dry-run` 同时使用 |
 | `--reseed` | 不信任本地锚点,上传完整清单。重新上传所有内容并重新计入配额 |
+| `--accept-identity-change` | 当镜像的 LUKS 标识发生变化或镜像变小时,把它作为新的基线。会上传完整快照,定时运行永远不会带上该选项 |
 | `--read-bwlimit <limit>` | 快照从磁盘读取镜像的速度上限,单位与 `--bwlimit` 相同(默认 `50M`,`0` = 不限速) |
 | `--hash-parallelism <n>` | 哈希工作线程数(默认 `1`,`0` = 每个 CPU 一个,最多 `16`) |
 | `--debug` | 启用详细输出 |
@@ -337,12 +338,16 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 | `--at <time>` | 恢复某个时间点:快照 ID 或 RFC 3339 格式的时间 |
 | `--any-stream` | 配合 `--at`,同时考虑其他机器和该谱系 fork 的快照 |
 | `--up` | 传输完成后部署恢复出的仓库 |
+| `--allow-unopenable` | 即使仓库口令无法打开镜像,也照常放置它(口令变更之前生成的快照) |
+| `--salvage` | 跳过丢失或损坏的分块继续恢复,并把对应的单元留作空洞。需要配合 `--as` |
 | `--health-window <seconds>` | 观察已部署仓库健康状况的时长 |
 | `--health-timeout <seconds>` | 等待其变为健康状态的时长 |
 | `-y, --yes` | 跳过确认 |
 | `--debug` | 启用详细输出 |
 
 恢复一个仓库需要用到你配置中保存的 LUKS 凭据。如果你启用了 config storage,该凭据会随配置一起在新机器上恢复。如果没有启用,请把配置的副本保存在不会随该机器故障一起消失的地方。
+
+恢复会在放置任何内容之前先验证口令。镜像组装完成、大小和 LUKS 头都核对无误后,会用配置中的口令试着打开它。能打开,恢复就报告成功;打不开,恢复就失败,且不会放置任何内容,而组装好的镜像会保留在暂存区,这样换用正确口令重试时不必重新下载。口令变更之前生成的快照只能用旧口令打开;`--allow-unopenable` 仍会放置这样的镜像,并说明它没有被打开。
 
 ### 在每台机器上验证恢复
 
@@ -369,6 +374,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 完整的选项列表在[将备份推送到另一台机器](#push-a-backup-to-another-machine)和[从另一台机器拉取备份](#pull-a-backup-from-another-machine)中。
+
+## 验证与修复备份
+
+上传成功的快照,并不等于能恢复的快照。每个快照都带有一个验证状态,下面这些检查会推动它前进。
+
+### 验证阶梯
+
+| 状态 | 由什么设置 | 证明了什么 |
+|-------|--------|--------|
+| `unverified` | 每个新快照 | 目前什么也没证明 |
+| `verified` | 运行后的抽查、`--deep`,或一次干净的 `--store` 检查 | 机器上的锚点或已存储的分块与其哈希一致。内部的文件系统不在评判范围内 |
+| `proven` | `rdc backup check` 或 `--restore-test` | 口令能打开真实内容 |
+| `failed` | 任何发现问题的检查 | 不可依赖 |
+
+`failed` 的快照会一直保持失败,直到有一次读取同一数据的检查通过。除了保留最近若干份的数量之外,保留策略还会为每个未处于 `failed` 的流保留最新的 `verified` 快照和最新的 `proven` 快照,因此连续几晚的失败不会把所有好版本都挤掉。删除这两个快照中的任何一个都会被拒绝。
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` 会重新计算机器上每个单元的哈希。`--store` 让服务器重新计算每个已存储分块的哈希,并指出所有缺失或损坏的分块。`--restore-test` 直接从存储中把锚点对应的快照恢复到一个临时名称下,进行比对,记录结果,然后删除这份副本。这三个选项不能同时使用。
+
+### 验证计划
+
+`rdc backup schedule` 会在生成的单元中加入验证。快照服务以对随机单元的抽查收尾,失败的快照永远不会被标记为已验证。一个错开时间的每日定时器每次运行会对一个仓库做完整验证,并受 `CPUQuota=100%` 限制,按顺序轮流覆盖各个仓库:周期以夜为单位,取 7 与仓库数量中较大的那个。策略中可选的 `verify` 块通过 `spotAfterRun`、`deepSchedule`(一个 cron 表达式)和 `off` 来调节,其中 `off` 既不生成抽查,也不生成定时器。
+
+定时单元按设计不保存口令,因此需要口令的两项检查,即 `rdc backup check` 和 `--restore-test`,要在配置所在的 CLI 中运行。前者每月一次、后者每季度一次是比较合理的节奏。
+
+### 验证口令
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` 用口令打开最近一个快照的已存储清单,把其中一个文件恢复到临时目录,与清单中记录的大小比对,并记录 `proven` 或 `failed`。只有临时目录会被删除。`--path <file>` 用于指定文件,默认选择最小的非空文件。没有已存储清单的快照会被如实报告,并且不会成为 `proven`。
+
+### 修复与抢救
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+分块的键就是其字节的哈希,所以哈希与键不符的已存储对象永远无法满足一次恢复。`rdc backup repair` 让服务器重新读取每个受损对象,仅当它仍然有误时才删除,并在重新计算哈希后,从这台机器的锚点重新上传对应的单元。如果有备份正占用该谱系,它会拒绝运行;它会列出用到受损分块的快照,并把它们标记为 `failed`。机器锚点中没有的分块无法修复,此时命令以非零状态退出。`--dry-run` 不会改动任何内容。
+
+`--salvage` 用于无法修复的快照。它只会恢复到用 `--as` 指定的新名称下,绝不覆盖已有仓库,会把每个损坏的单元写成空洞,按字节范围列出这些空洞,并以非零状态和状态值 `restored-damaged` 退出。LUKS 头内部出现空洞会使镜像无法打开,报告会如实说明。远离损坏单元的单个文件,仍可用 `--path` 干净地恢复。
+
+### 清单密钥
+
+快照的浏览清单用一个公钥加密封存,这样机器无需持有口令也能写入它。CLI 从仓库凭据派生出该密钥,并在部署计划时安装其公钥部分。如果机器上已经持有一个不同的密钥,系统会按仓库名称发出警告,且不会覆盖它。
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` 会用派生出的密钥覆盖不同的旧密钥,并发送口令作为证明。如果某个仓库持有密钥,却既没有密钥文件也没有挂载点,就不会生成清单,单元日志会说明这一点。这样的快照仍可整体恢复;只有浏览和 `rdc backup check` 需要清单。
+
+### 失败告警
+
+失败的快照或验证会通过失败报告传到账户,超过宽限期仍不再上报的流同样会被标记。账户按订阅每天发送一封摘要邮件,取决于门户“通知”页面上的备份健康偏好,该偏好默认开启。`rdc machine health` 会把失败的验证显示为警告,并以非零状态退出。在机器上运行 `renet backup report --test` 会发送一份无害的测试报告,不涉及任何仓库。
 
 ## 定时备份
 

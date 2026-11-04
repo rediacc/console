@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "3302d104c8d5e3dd"
+sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
 ---
 
 # Sauvegarde et restauration
@@ -92,6 +92,7 @@ rdc backup usage
 | `--dry-run` | Planification seule : pas d'envoi. Indique ce qui serait déplacé |
 | `--cold` | Arrêter les conteneurs, geler, redémarrer, puis envoyer. Ne se combine pas avec `--dry-run` |
 | `--reseed` | Ne pas faire confiance à l'ancre locale et envoyer un inventaire complet. Renvoie tout et recharge le quota |
+| `--accept-identity-change` | Adopter l'image comme nouvelle base quand son identité LUKS a changé ou qu'elle a rétréci. Envoie un instantané complet, et une exécution planifiée ne l'applique jamais |
 | `--read-bwlimit <limit>` | Plafond de la vitesse à laquelle l'instantané lit l'image sur le disque, dans les mêmes unités que `--bwlimit` (par défaut `50M`, `0` = illimité) |
 | `--hash-parallelism <n>` | Nombre de workers de hachage (par défaut `1`, `0` = un par CPU, jusqu'à `16`) |
 | `--debug` | Activer la sortie détaillée |
@@ -336,12 +337,16 @@ Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice
 | `--at <time>` | Restaurer un point dans le temps : un id d'instantané ou une heure RFC 3339 |
 | `--any-stream` | Avec `--at`, considère aussi les instantanés d'autres machines et de forks de cette lignée |
 | `--up` | Déployer le dépôt restauré après le transfert |
+| `--allow-unopenable` | Placer l'image même si la phrase secrète du dépôt ne l'ouvre pas (instantané antérieur à un changement de phrase secrète) |
+| `--salvage` | Poursuivre malgré les chunks perdus ou corrompus et laisser leurs cellules comme trous. Nécessite `--as` |
 | `--health-window <seconds>` | Durée d'observation de la santé du dépôt déployé |
 | `--health-timeout <seconds>` | Durée d'attente qu'il devienne sain |
 | `-y, --yes` | Ignorer la confirmation |
 | `--debug` | Activer la sortie détaillée |
 
 Restaurer un dépôt nécessite son identifiant LUKS, qui vit dans votre configuration. Si vous avez activé le stockage de configuration, cet identifiant revient avec votre configuration sur une machine neuve. Sinon, gardez une copie de la configuration quelque part que la machine défaillante n'emportera pas avec elle.
+
+Une restauration vérifie la phrase secrète avant de placer quoi que ce soit. Une fois l'image assemblée et sa taille et son en-tête LUKS validés, la phrase secrète de la configuration tente d'ouvrir l'image à titre d'essai. Si elle s'ouvre, la restauration annonce un succès. Sinon, la restauration échoue et ne place rien, et l'image assemblée reste en attente pour qu'une nouvelle tentative avec la bonne phrase secrète ne la télécharge pas de nouveau. Un instantané pris avant un changement de phrase secrète ne s'ouvre qu'avec l'ancienne ; `--allow-unopenable` place malgré tout une telle image et indique qu'elle n'a pas été ouverte.
 
 ### Prouvez la restauration sur chaque machine
 
@@ -368,6 +373,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Les listes d'options complètes se trouvent sous [Envoyer une sauvegarde vers une autre machine](#push-a-backup-to-another-machine) et [Récupérer une sauvegarde depuis une autre machine](#pull-a-backup-from-another-machine).
+
+## Vérifier et réparer les sauvegardes
+
+Un instantané envoyé n'est pas encore un instantané qui se restaure. Chaque instantané porte un état de vérification, que les contrôles ci-dessous font évoluer.
+
+### L'échelle de vérification
+
+| État | Défini par | Prouve |
+|------|------------|--------|
+| `unverified` | Chaque nouvel instantané | Rien encore |
+| `verified` | Le contrôle ponctuel après une exécution, `--deep`, ou un passage `--store` sans erreur | L'ancre de la machine ou les chunks stockés correspondent à leurs empreintes. Le système de fichiers à l'intérieur n'est pas jugé |
+| `proven` | `rdc backup check`, ou `--restore-test` | La phrase secrète ouvre un vrai contenu |
+| `failed` | Tout contrôle qui a trouvé un problème | À ne pas utiliser comme référence |
+
+Un instantané `failed` le reste jusqu'à ce qu'un contrôle portant sur les mêmes données réussisse. La rétention conserve l'instantané `verified` le plus récent et l'instantané `proven` le plus récent de chaque flux qui n'est pas `failed`, en plus du nombre d'instantanés à garder, si bien qu'une série de mauvaises nuits ne peut pas évincer toutes les bonnes versions. La suppression de l'un de ces deux instantanés est refusée.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` recalcule l'empreinte de chaque cellule sur la machine. `--store` demande au serveur de recalculer l'empreinte de chaque chunk stocké et de nommer ceux qui manquent ou sont corrompus. `--restore-test` restaure l'instantané de l'ancre sous un nom jetable directement depuis le stockage, le compare, enregistre le résultat et supprime la copie. Les trois options ne se combinent pas.
+
+### Calendrier de vérification
+
+`rdc backup schedule` ajoute la vérification aux unités qu'il génère. Le service d'instantané se termine par un contrôle ponctuel de cellules tirées au hasard, et un instantané en échec n'est jamais vérifié. Un minuteur quotidien, à une heure décalée, lance une vérification complète d'un dépôt par exécution sous `CPUQuota=100%`, en parcourant les dépôts à tour de rôle : le cycle est le plus grand entre 7 et le nombre de dépôts, en nuits. Un bloc `verify` facultatif de la stratégie règle cela avec `spotAfterRun`, `deepSchedule` (une expression cron) et `off`, qui ne génère ni le contrôle ponctuel ni le minuteur.
+
+Les unités planifiées ne détiennent aucune phrase secrète par conception, donc les deux contrôles qui en ont besoin, `rdc backup check` et `--restore-test`, s'exécutent depuis la CLI, là où se trouve la configuration. Une fois par mois pour le premier et une fois par trimestre pour le second est un rythme raisonnable.
+
+### Prouver la phrase secrète
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` ouvre avec la phrase secrète la liste stockée d'un instantané récent, restaure un fichier dans un répertoire temporaire, le compare à la taille indiquée et enregistre `proven` ou `failed`. Seul le répertoire temporaire est supprimé. `--path <file>` choisit le fichier ; par défaut, c'est le plus petit fichier non vide. Un instantané sans liste stockée est signalé clairement et n'est pas `proven`.
+
+### Réparation et récupération
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+La clé d'un chunk est l'empreinte de ses octets : un objet stocké dont l'empreinte ne correspond pas à sa clé ne pourra jamais satisfaire une restauration. `rdc backup repair` demande au serveur de relire chaque objet endommagé, de ne le supprimer que s'il est toujours erroné, puis renvoie la cellule depuis l'ancre de cette machine après avoir recalculé son empreinte. La commande refuse de s'exécuter tant qu'une sauvegarde détient la lignée, nomme les instantanés qui utilisaient les chunks endommagés et les marque `failed`. Un chunk que l'ancre de la machine ne contient pas ne peut pas être réparé, et la commande se termine avec un code non nul. `--dry-run` ne modifie rien.
+
+`--salvage` sert pour un instantané impossible à réparer. Il ne restaure que sous un nouveau nom avec `--as`, jamais par-dessus un dépôt existant, écrit chaque cellule défectueuse comme un trou, liste les trous par plage d'octets et se termine avec un code non nul et le statut `restored-damaged`. Un trou dans l'en-tête LUKS rend l'image impossible à ouvrir, et le rapport le dit. Un fichier isolé, éloigné de toute cellule défectueuse, se restaure toujours proprement avec `--path`.
+
+### Clés de liste
+
+La liste de navigation d'un instantané est scellée avec une clé publique, de sorte que la machine puisse l'écrire sans détenir la phrase secrète. La CLI dérive cette clé de l'identifiant du dépôt et installe la moitié publique au déploiement du calendrier. Si une machine détient déjà une clé différente, un avertissement est émis avec le nom du dépôt, et la clé n'est pas écrasée.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` installe la clé dérivée à la place d'une clé différente et envoie la phrase secrète pour le prouver. Un dépôt qui détient une clé mais n'a ni fichier de clé ni montage n'obtient aucune liste, et le journal de l'unité le signale. Un tel instantané se restaure quand même en entier ; seuls la navigation et `rdc backup check` ont besoin de la liste.
+
+### Alertes d'échec
+
+Un instantané ou une vérification en échec parvient au compte par un rapport d'échec, et un flux qui cesse de rapporter au-delà de son délai de grâce est signalé lui aussi. Le compte envoie un e-mail récapitulatif par abonnement et par jour, selon la préférence de santé des sauvegardes de la page Notifications du portail, activée par défaut. `rdc machine health` affiche une vérification en échec comme un avertissement et se termine avec un code non nul. `renet backup report --test` sur la machine envoie un rapport de test inoffensif, sans aucun dépôt concerné.
 
 ## Sauvegardes planifiées
 

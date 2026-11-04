@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "3302d104c8d5e3dd"
+sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
 ---
 
 # Varundamine ja taastamine
@@ -92,6 +92,7 @@ rdc backup usage
 | `--dry-run` | Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks |
 | `--cold` | Peata konteinerid, külmuta, käivita uuesti, seejärel laadi üles. Ei saa kombineerida `--dry-run`-iga |
 | `--reseed` | Ära usalda kohalikku ankrut ja laadi üles täielik sisu. Laadib kõik uuesti üles ja arvestab kvoodi uuesti |
+| `--accept-identity-change` | Võta kujutis uueks lähtejoonaks, kui selle LUKS-i identiteet muutus või see kahanes. Laadib üles täieliku hetktõmmise ja ajastatud käivitus ei kanna seda kunagi |
 | `--read-bwlimit <limit>` | Piirang sellele, kui kiiresti hetktõmmis kettalt kujutist loeb, samades ühikutes nagu `--bwlimit` (vaikimisi `50M`, `0` = piiranguta) |
 | `--hash-parallelism <n>` | Räsitööliste arv (vaikimisi `1`, `0` = üks protsessori kohta, kuni `16`) |
 | `--debug` | Luba detailne väljund |
@@ -336,12 +337,16 @@ Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastam
 | `--at <time>` | Taasta ajahetk: hetktõmmise id või RFC 3339 aeg |
 | `--any-stream` | Koos `--at` arvesta ka teiste masinate ja selle liini forkide hetktõmmiseid |
 | `--up` | Juuruta taastatud repositoorium pärast ülekannet |
+| `--allow-unopenable` | Paiguta kujutis ka siis, kui repositooriumi paroolifraas seda ei ava (hetktõmmis paroolifraasi vahetuse eelsest ajast) |
+| `--salvage` | Jätka ka kadunud või riknenud tükkide korral ja jäta nende lahtrid aukudeks. Vajab `--as` |
 | `--health-window <seconds>` | Kui kaua jälgida juurutatud repositooriumi tervist |
 | `--health-timeout <seconds>` | Kui kaua oodata, kuni see saab terveks |
 | `-y, --yes` | Jäta kinnitus vahele |
 | `--debug` | Luba detailne väljund |
 
 Repositooriumi taastamine vajab selle LUKS-volitust, mis elab sinu konfiguratsioonis. Kui sul on konfiguratsiooni salvestus lubatud, tuleb see volitus tagasi koos sinu konfiguratsiooniga uuel masinal. Kui mitte, hoia konfiguratsiooni koopiat kuskil, kuhu ebaõnnestuv masin seda endaga kaasa ei võta.
+
+Taastamine kontrollib paroolifraasi enne, kui midagi paigutab. Kui kujutis on kokku pandud ning selle suurus ja LUKS-i päis on korras, proovib konfiguratsioonis olev paroolifraas seda avada. Kui see avaneb, teatab taastamine edust. Kui ei avane, taastamine ebaõnnestub ega paiguta midagi, ja kokkupandud kujutis jääb ettevalmistatuks, et uus katse õige paroolifraasiga ei peaks seda uuesti alla laadima. Paroolifraasi vahetuse eelne hetktõmmis avaneb ainult vana paroolifraasiga; `--allow-unopenable` paigutab sellise kujutise ikkagi ja ütleb, et seda ei avatud.
 
 ### Taastamise tõestamine igal masinal
 
@@ -368,6 +373,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Täielikud valikute nimekirjad on [Varukoopia saatmine teise masinasse](#push-a-backup-to-another-machine) ja [Varukoopia tõmbamine teisest masinast](#pull-a-backup-from-another-machine) all.
+
+## Varukoopiate kontrollimine ja parandamine
+
+Üleslaaditud hetktõmmis ei ole veel hetktõmmis, mille saab taastada. Igal hetktõmmisel on kontrollimise olek ja allpool kirjeldatud kontrollid liigutavad seda.
+
+### Kontrollimise redel
+
+| Olek | Määrab | Tõestab |
+|-------|--------|--------|
+| `unverified` | Iga uus hetktõmmis | Veel mitte midagi |
+| `verified` | Valikkontroll pärast käivitust, `--deep` või puhas `--store` läbimine | Masina ankur või salvestatud tükid vastavad oma räsidele. Selle sees olevat failisüsteemi ei hinnata |
+| `proven` | `rdc backup check` või `--restore-test` | Paroolifraas avab päris sisu |
+| `failed` | Iga kontroll, mis leidis probleemi | Sellele ei tohi toetuda |
+
+`failed` hetktõmmis jääb ebaõnnestunuks, kuni läbib kontroll, mis luges samu andmeid. Säilitamine hoiab lisaks viimaste arvule iga voo uusimat `verified` ja uusimat `proven` hetktõmmist, mis ei ole `failed`, nii et halbade ööde jada ei suuda välja suruda iga head versiooni. Ühe nende kahe hetktõmmise kustutamisest keeldutakse.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` arvutab masinas iga lahtri räsi uuesti. `--store` laseb serveril arvutada iga salvestatud tüki räsi uuesti ja nimetada iga puuduva või riknenud tüki. `--restore-test` taastab ankru hetktõmmise ajutise nime all otse hoidlast, võrdleb seda, salvestab tulemuse ja kustutab koopia. Neid kolme ei saa kombineerida.
+
+### Kontrollimise ajakava
+
+`rdc backup schedule` lisab kontrolli genereeritavatele ühikutele. Hetktõmmise teenus lõpeb juhuslike lahtrite valikkontrolliga ja ebaõnnestunud hetktõmmist ei märgita kunagi kontrollituks. Päevane taimer nihutatud ajal käivitab iga kord ühe repositooriumi täieliku kontrolli piirangu `CPUQuota=100%` all ja liigub repositooriumide vahel ringiratast: tsükkel on öödes 7 ja repositooriumide arvu suurem väärtus. Strateegia valikuline `verify` plokk häälestab seda väljadega `spotAfterRun`, `deepSchedule` (cron-avaldis) ja `off`, mis ei genereeri ei valikkontrolli ega taimerit.
+
+Ajastatud ühikutel ei ole paroolifraasi ja see on kavatsuslik, mistõttu kaks kontrolli, mis seda vajavad, `rdc backup check` ja `--restore-test`, jooksevad CLI-st, kus konfiguratsioon asub. Mõistlik rütm on esimest kord kuus ja teist kord kvartalis.
+
+### Paroolifraasi tõestamine
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` avab paroolifraasiga hiljutise hetktõmmise salvestatud loendi, taastab ühe faili ajutisse kataloogi, võrdleb seda loendis oleva suurusega ning salvestab `proven` või `failed`. Kustutatakse ainult ajutine kataloog. `--path <file>` valib faili; vaikimisi on selleks väikseim mittetühi fail. Hetktõmmisest, millel pole salvestatud loendit, teatatakse selgelt ja see ei muutu `proven` olekusse.
+
+### Parandamine ja päästmine
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+Tüki võti on tema baitide räsi, seega salvestatud objekt, mille räsi ei vasta võtmele, ei saa kunagi taastamist rahuldada. `rdc backup repair` laseb serveril iga riknenud objekti uuesti lugeda, kustutada see ainult siis, kui see on ikka vale, ja laadida lahter üles selle masina ankrust pärast räsi uuesti arvutamist. See keeldub töötamast, kuni varukoopia hoiab liini, nimetab hetktõmmised, mis riknenud tükke kasutasid, ja märgib need `failed`. Tükki, mida masina ankur ei sisalda, ei saa parandada ja käsk lõpeb nullist erineva koodiga. `--dry-run` ei muuda midagi.
+
+`--salvage` on mõeldud hetktõmmisele, mida ei saa parandada. See taastab ainult uue nime alla võtmega `--as`, mitte kunagi olemasoleva repositooriumi peale, kirjutab iga halva lahtri august, loetleb augud baidivahemike kaupa ning lõpeb nullist erineva koodiga ja olekuga `restored-damaged`. Auk LUKS-i päises muudab kujutise avamatuks ja aruanne ütleb seda. Üksik fail, mis asub halvast lahtrist eemal, taastub `--path` abil endiselt puhtalt.
+
+### Loendi võtmed
+
+Hetktõmmise sirvimisloend on pitseeritud avaliku võtmega, et masin saaks seda kirjutada ilma paroolifraasi omamata. CLI tuletab selle võtme repositooriumi volitusest ja paigaldab avaliku poole, kui ajakava juurutatakse. Masinat, millel on juba teistsugune võti, hoiatatakse repositooriumi nime järgi ja seda ei kirjutata üle.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` paigaldab tuletatud võtme teistsuguse asemele ja saadab tõestuseks paroolifraasi. Repositoorium, millel on võti, aga pole ei võtmefaili ega haakepunkti, ei saa loendit ja ühiku logi ütleb seda. Selline hetktõmmis taastub endiselt tervikuna; loendit vajavad ainult sirvimine ja `rdc backup check`.
+
+### Rikketeavitused
+
+Ebaõnnestunud hetktõmmis või kontroll jõuab kontole rikkearuande kaudu ja voogu, mis lakkab pärast armuaega aru andmast, märgitakse samuti. Konto saadab tellimuse kohta päevas ühe kokkuvõtliku e-kirja portaali Teavituste lehe varundamise tervise eelistuse järgi, mis on vaikimisi sisse lülitatud. `rdc machine health` näitab ebaõnnestunud kontrolli hoiatusena ja lõpeb nullist erineva koodiga. `renet backup report --test` masinas saadab kahjutu testaruande ilma ühegi repositooriumita.
 
 ## Ajastatud varundamine
 

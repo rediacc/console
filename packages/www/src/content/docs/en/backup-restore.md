@@ -137,6 +137,7 @@ rdc backup usage
 | `--dry-run` | Plan only: no upload. Reports what would move |
 | `--cold` | Stop the containers, freeze, restart, then upload. Cannot be combined with `--dry-run` |
 | `--reseed` | Distrust the local anchor and upload a full inventory. Re-uploads everything and re-charges quota |
+| `--accept-identity-change` | Take the image as the new baseline when its LUKS identity changed or it shrank. Uploads a full snapshot, and a scheduled run never carries it |
 | `--read-bwlimit <limit>` | Cap on how fast the snapshot reads the image from disk, in the same units as `--bwlimit` (default `50M`, `0` = unlimited) |
 | `--hash-parallelism <n>` | Number of hashing workers (default `1`, `0` = one per CPU, up to `16`) |
 | `--debug` | Enable verbose output |
@@ -403,6 +404,8 @@ refused.
 | `--at <time>` | Restore a point in time: a snapshot id or an RFC 3339 time |
 | `--any-stream` | With `--at`, also consider snapshots from other machines and forks of this lineage |
 | `--up` | Deploy the restored repository after the transfer |
+| `--allow-unopenable` | Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change) |
+| `--salvage` | Continue past lost or corrupt chunks and leave their cells as holes. Needs `--as` |
 | `--health-window <seconds>` | How long to watch the deployed repository for health |
 | `--health-timeout <seconds>` | How long to wait for it to become healthy |
 | `-y, --yes` | Skip the confirmation |
@@ -412,6 +415,14 @@ Restoring a repository needs its LUKS credential, which lives in your config. If
 you have config storage enabled, that credential comes back with your config on a
 fresh machine. If you do not, keep a copy of the config somewhere the machine
 failing does not take with it.
+
+A restore proves the passphrase before it places anything. After the image is
+assembled and its size and LUKS header check out, the passphrase from the config
+test-opens it. If it opens, the restore reports success. If it does not, the
+restore fails and places nothing, and the assembled image stays staged so a retry
+with the right passphrase does not download it again. A snapshot taken before a
+passphrase change opens only with the old passphrase; `--allow-unopenable` places
+such an image anyway and says that it was not opened.
 
 ### Prove the restore on each machine
 
@@ -445,6 +456,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 The full option lists are under [Push a Backup to Another
 Machine](#push-a-backup-to-another-machine) and [Pull a Backup from Another
 Machine](#pull-a-backup-from-another-machine).
+
+## Verify and Repair Backups
+
+A snapshot that uploaded is not yet a snapshot that restores. Each snapshot carries a verification state, and the checks below move it.
+
+### The verification ladder
+
+| State | Set by | Proves |
+|-------|--------|--------|
+| `unverified` | Every new snapshot | Nothing yet |
+| `verified` | The spot check after a run, `--deep`, or a clean `--store` pass | The machine's anchor or the stored chunks match their hashes. The filesystem inside is not judged |
+| `proven` | `rdc backup check`, or `--restore-test` | The passphrase opens real content |
+| `failed` | Any check that found a problem | Not to be relied on |
+
+A `failed` snapshot stays failed until a check that read the same data passes. Retention keeps the newest `verified` and the newest `proven` snapshot of each stream that is not `failed`, on top of the keep-last count, so a run of bad nights cannot push out every good version. Deleting one of those two snapshots is refused.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` re-hashes every cell on the machine. `--store` has the server re-hash every stored chunk and name any that is missing or corrupt. `--restore-test` restores the anchor's snapshot under a throwaway name straight from the store, compares it, records the result and deletes the copy. The three cannot be combined.
+
+### Verification schedule
+
+`rdc backup schedule` adds verification to the units it renders. The snapshot service ends with a spot check of random cells, and a failed snapshot is never verified. A daily timer at a staggered time runs a full verify of one repository per run under `CPUQuota=100%`, rotating through the repositories: the cycle is the larger of 7 and the repository count, in nights. A strategy's optional `verify` block tunes this with `spotAfterRun`, `deepSchedule` (a cron expression) and `off`, which renders neither the spot check nor the timer.
+
+The scheduled units hold no passphrase by design, so the two checks that need it, `rdc backup check` and `--restore-test`, run from the CLI where the config lives. Monthly for the first and quarterly for the second is a reasonable cadence.
+
+### Prove the passphrase
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` opens the stored listing of a recent snapshot with the passphrase, restores one file to a scratch directory, compares it with the listed size and records `proven` or `failed`. Only the scratch directory is deleted. `--path <file>` picks the file; the default is the smallest non-empty file. A snapshot with no stored listing is reported plainly and is not `proven`.
+
+### Repair and salvage
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+A chunk's key is the hash of its bytes, so a stored object that does not hash to its key can never satisfy a restore. `rdc backup repair` has the server re-read each damaged object, delete it only if it is still wrong, and re-upload the cell from this machine's anchor after re-hashing it. It refuses while a backup holds the lineage, and it names the snapshots that used the damaged chunks and marks them `failed`. A chunk the machine's anchor does not hold cannot be repaired, and the command exits non-zero. `--dry-run` changes nothing.
+
+`--salvage` is for a snapshot that cannot be repaired. It restores only under a new name with `--as`, never over an existing repository, writes every bad cell as a hole, lists the holes by byte range and exits non-zero with status `restored-damaged`. A hole inside the LUKS header makes the image unopenable, and the report says so. A single file away from a bad cell still restores cleanly with `--path`.
+
+### Listing keys
+
+A snapshot's browse listing is sealed to a public key so that the machine can write it without holding the passphrase. The CLI derives that key from the repository credential and installs the public half when the schedule is deployed. A machine that already holds a different key is warned about by repository name and is not overwritten.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` installs the derived key over a different one and sends the passphrase to prove it. A repository that holds a key but has neither a keyfile nor a mount gets no listing, and the unit journal says so. Such a snapshot still restores whole; only browsing and `rdc backup check` need the listing.
+
+### Failure alerts
+
+A failed snapshot or verify reaches the account through a failure report, and a stream that stops reporting past its grace period is flagged too. The account sends one digest email per subscription per day under the backup health preference on the portal Notifications page, on by default. `rdc machine health` shows a failed verify as a warning and exits non-zero. `renet backup report --test` on the machine sends a harmless test report with no repository involved.
 
 ## Scheduled Backups
 

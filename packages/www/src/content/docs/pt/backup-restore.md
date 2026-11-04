@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: pt
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "3302d104c8d5e3dd"
+sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
 ---
 
 # Backup e Restauro
@@ -93,6 +93,7 @@ rdc backup usage
 | `--dry-run` | Apenas planeamento: sem envio. Reporta o que seria movido |
 | `--cold` | Parar os contentores, congelar, reiniciar, depois enviar. Não pode ser combinado com `--dry-run` |
 | `--reseed` | Desconfiar da âncora local e enviar um inventário completo. Reenvia tudo e volta a debitar a quota |
+| `--accept-identity-change` | Assume a imagem como a nova base quando a sua identidade LUKS mudou ou ela encolheu. Envia um snapshot completo, e uma execução agendada nunca o leva consigo |
 | `--read-bwlimit <limit>` | Limite da velocidade com que o snapshot lê a imagem do disco, nas mesmas unidades de `--bwlimit` (padrão `50M`, `0` = sem limite) |
 | `--hash-parallelism <n>` | Número de workers de hash (padrão `1`, `0` = um por CPU, até `16`) |
 | `--debug` | Ativar saída detalhada |
@@ -339,12 +340,16 @@ Restaurar sob um novo nome com `--as` não substitui nada, pelo que um exercíci
 | `--at <time>` | Restaura um ponto no tempo: um id de snapshot ou uma hora RFC 3339 |
 | `--any-stream` | Com `--at`, considera também snapshots de outras máquinas e de forks desta linhagem |
 | `--up` | Implementa o repositório restaurado após a transferência |
+| `--allow-unopenable` | Coloca a imagem mesmo que a frase-passe do repositório não a abra (um snapshot anterior a uma mudança de frase-passe) |
+| `--salvage` | Continua depois de chunks perdidos ou corrompidos e deixa as respetivas células como buracos. Exige `--as` |
 | `--health-window <seconds>` | Quanto tempo observar o repositório implementado quanto à sua saúde |
 | `--health-timeout <seconds>` | Quanto tempo esperar até ficar saudável |
 | `-y, --yes` | Salta a confirmação |
 | `--debug` | Ativar saída detalhada |
 
 Restaurar um repositório precisa da sua credencial LUKS, que vive na sua configuração. Se tiver o config storage ativado, essa credencial volta com a sua configuração numa máquina nova. Se não tiver, guarde uma cópia da configuração nalgum lugar que a falha da máquina não leve consigo.
+
+Um restauro comprova a frase-passe antes de colocar o que quer que seja. Depois de a imagem estar montada e de o tamanho e o cabeçalho LUKS baterem certo, a frase-passe da configuração tenta abri-la como teste. Se abrir, o restauro dá-se por concluído. Se não abrir, o restauro falha e não coloca nada, e a imagem montada fica em espera para que uma nova tentativa com a frase-passe certa não a volte a descarregar. Um snapshot feito antes de uma mudança de frase-passe só abre com a frase-passe antiga; `--allow-unopenable` coloca essa imagem na mesma e avisa que ela não foi aberta.
 
 ### Prove o restauro em cada máquina
 
@@ -373,6 +378,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 As listas completas de opções estão em [Enviar um Backup para Outra
 Máquina](#push-a-backup-to-another-machine) e [Receber um Backup de Outra
 Máquina](#pull-a-backup-from-another-machine).
+
+## Verificar e Reparar Backups
+
+Um snapshot que foi enviado ainda não é um snapshot que se restaura. Cada snapshot tem um estado de verificação, e as verificações abaixo fazem-no avançar.
+
+### A escada de verificação
+
+| Estado | Definido por | Comprova |
+|-------|--------|--------|
+| `unverified` | Todo o snapshot novo | Ainda nada |
+| `verified` | A verificação por amostragem após uma execução, `--deep`, ou uma passagem `--store` limpa | A âncora da máquina ou os chunks guardados coincidem com os seus hashes. O sistema de ficheiros lá dentro não é avaliado |
+| `proven` | `rdc backup check`, ou `--restore-test` | A frase-passe abre conteúdo real |
+| `failed` | Qualquer verificação que encontrou um problema | Não é de confiar |
+
+Um snapshot `failed` continua falhado até passar uma verificação que tenha lido os mesmos dados. A retenção mantém o `verified` mais recente e o `proven` mais recente de cada fluxo que não esteja `failed`, além da contagem de manter os últimos, para que uma série de noites más não expulse todas as versões boas. Apagar um desses dois snapshots é recusado.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` volta a calcular o hash de todas as células na máquina. `--store` faz o servidor recalcular o hash de cada chunk guardado e indicar os que faltam ou estão corrompidos. `--restore-test` restaura o snapshot da âncora com um nome descartável diretamente a partir do armazenamento, compara-o, regista o resultado e apaga a cópia. Os três não podem ser combinados.
+
+### Agenda de verificação
+
+`rdc backup schedule` acrescenta verificação às unidades que gera. O serviço de snapshot termina com uma verificação por amostragem de células aleatórias, e um snapshot falhado nunca é marcado como verificado. Um temporizador diário, a uma hora escalonada, executa uma verificação completa de um repositório por execução com `CPUQuota=100%`, percorrendo os repositórios em rotação: o ciclo é o maior entre 7 e o número de repositórios, em noites. O bloco opcional `verify` de uma estratégia ajusta isto com `spotAfterRun`, `deepSchedule` (uma expressão cron) e `off`, que não gera nem a verificação por amostragem nem o temporizador.
+
+As unidades agendadas não guardam nenhuma frase-passe, de propósito, pelo que as duas verificações que a exigem, `rdc backup check` e `--restore-test`, correm a partir da CLI, onde está a configuração. Uma vez por mês para a primeira e uma vez por trimestre para a segunda é uma cadência razoável.
+
+### Comprovar a frase-passe
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` abre com a frase-passe a listagem guardada de um snapshot recente, restaura um ficheiro para uma pasta temporária, compara-o com o tamanho listado e regista `proven` ou `failed`. Só a pasta temporária é apagada. `--path <file>` escolhe o ficheiro; por defeito é o menor ficheiro não vazio. Um snapshot sem listagem guardada é indicado como tal e não fica `proven`.
+
+### Reparar e recuperar
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+A chave de um chunk é o hash dos seus bytes, por isso um objeto guardado cujo hash não corresponde à chave nunca poderá satisfazer um restauro. `rdc backup repair` faz o servidor reler cada objeto danificado, apagá-lo só se continuar errado e reenviar a célula a partir da âncora desta máquina depois de recalcular o hash. Recusa-se a correr enquanto um backup detiver a linhagem, indica os snapshots que usaram os chunks danificados e marca-os como `failed`. Um chunk que a âncora da máquina não tenha não pode ser reparado, e o comando termina com código diferente de zero. `--dry-run` não altera nada.
+
+`--salvage` serve para um snapshot que não pode ser reparado. Restaura apenas com um novo nome através de `--as`, nunca por cima de um repositório existente, escreve cada célula má como um buraco, lista os buracos por intervalo de bytes e termina com código diferente de zero e o estado `restored-damaged`. Um buraco dentro do cabeçalho LUKS torna a imagem impossível de abrir, e o relatório di-lo. Um único ficheiro longe de uma célula má continua a restaurar-se sem problemas com `--path`.
+
+### Chaves de listagem
+
+A listagem de navegação de um snapshot é selada com uma chave pública, para que a máquina a possa escrever sem ter a frase-passe. A CLI deriva essa chave da credencial do repositório e instala a metade pública quando a agenda é implementada. Uma máquina que já tenha uma chave diferente é avisada pelo nome do repositório e não é sobrescrita.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` instala a chave derivada por cima de uma diferente e envia a frase-passe para o comprovar. Um repositório que tenha uma chave mas não tenha nem ficheiro de chave nem montagem fica sem listagem, e o diário da unidade di-lo. Esse snapshot continua a restaurar-se por inteiro; só a navegação e o `rdc backup check` precisam da listagem.
+
+### Alertas de falha
+
+Um snapshot ou uma verificação falhados chegam à conta através de um relatório de falha, e um fluxo que deixa de reportar depois do seu período de tolerância também é sinalizado. A conta envia um e-mail de resumo por subscrição e por dia, de acordo com a preferência de saúde dos backups na página Notificações do portal, ativada por defeito. `rdc machine health` mostra uma verificação falhada como aviso e termina com código diferente de zero. `renet backup report --test` na máquina envia um relatório de teste inofensivo, sem nenhum repositório envolvido.
 
 ## Backups Agendados
 

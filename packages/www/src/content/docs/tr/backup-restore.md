@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "3302d104c8d5e3dd"
+sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -93,6 +93,7 @@ rdc backup usage
 | `--dry-run` | Yalnızca planlama: yükleme yok. Nelerin taşınacağını bildirir |
 | `--cold` | Konteynerleri durdur, dondur, yeniden başlat, sonra yükle. `--dry-run` ile birlikte kullanılamaz |
 | `--reseed` | Yerel çıpaya güvenme ve tüm envanteri yükle. Her şeyi yeniden yükler ve kotayı yeniden tüketir |
+| `--accept-identity-change` | LUKS kimliği değiştiğinde veya imaj küçüldüğünde onu yeni temel olarak kabul et. Tam bir anlık görüntü yükler; zamanlanmış çalıştırma bu bayrağı hiçbir zaman kullanmaz |
 | `--read-bwlimit <limit>` | Anlık görüntünün imajı diskten okuma hızının sınırı, `--bwlimit` ile aynı birimlerde (varsayılan `50M`, `0` = sınırsız) |
 | `--hash-parallelism <n>` | Karma (hash) işçisi sayısı (varsayılan `1`, `0` = CPU başına bir, en fazla `16`) |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
@@ -337,12 +338,16 @@ Bir zaman, yalnızca bu deponun kaynak makinesindeki anlık görüntüleri aras�
 | `--at <time>` | Belirli bir zaman noktasını geri yükle: bir anlık görüntü kimliği veya RFC 3339 zamanı |
 | `--any-stream` | `--at` ile birlikte diğer makinelerin ve bu soy hattının fork'larının anlık görüntülerini de dikkate al |
 | `--up` | Aktarımdan sonra geri yüklenen depoyu dağıt |
+| `--allow-unopenable` | Deponun parolası imajı açmasa bile imajı yerine koy (parola değişikliğinden önce alınmış bir anlık görüntü) |
+| `--salvage` | Kayıp veya bozuk chunk'ları atlayarak devam et ve onların hücrelerini boşluk olarak bırak. `--as` gerektirir |
 | `--health-window <seconds>` | Dağıtılan deponun sağlığının izleneceği süre |
 | `--health-timeout <seconds>` | Sağlıklı hale gelmesi için beklenecek süre |
 | `-y, --yes` | Onayı atla |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
 
 Bir depoyu geri yüklemek, yapılandırmanızda bulunan LUKS kimlik bilgisini gerektirir. Config storage'ı etkinleştirdiyseniz, bu kimlik bilgisi yeni bir makinede yapılandırmanızla birlikte geri gelir. Etkinleştirmediyseniz, yapılandırmanızın bir kopyasını, makinenin arızalanmasının birlikte götürmeyeceği bir yerde tutun.
+
+Geri yükleme, herhangi bir şeyi yerine koymadan önce parolayı sınar. İmaj birleştirildikten ve boyutu ile LUKS başlığı doğrulandıktan sonra, yapılandırmadaki parola imajı deneme amaçlı açar. İmaj açılırsa geri yükleme başarılı sayılır. Açılmazsa geri yükleme başarısız olur ve hiçbir şeyi yerine koymaz; birleştirilmiş imaj hazırda bekler, böylece doğru parolayla yapılan yeni bir deneme onu yeniden indirmez. Parola değişikliğinden önce alınmış bir anlık görüntü yalnızca eski parolayla açılır. Böyle bir imajı yine de yerine koymak için `--allow-unopenable` kullanılır ve imajın açılmadığı belirtilir.
 
 ### Geri yüklemeyi her makinede kanıtlayın
 
@@ -369,6 +374,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Tam seçenek listeleri [Bir Yedeği Başka Bir Makineye Gönderme](#push-a-backup-to-another-machine) ve [Başka Bir Makineden Yedek Çekme](#pull-a-backup-from-another-machine) bölümlerindedir.
+
+## Yedekleri Doğrulama ve Onarma
+
+Yüklenmiş bir anlık görüntü, henüz geri yüklenebilen bir anlık görüntü demek değildir. Her anlık görüntünün bir doğrulama durumu vardır ve aşağıdaki kontroller bu durumu ilerletir.
+
+### Doğrulama merdiveni
+
+| Durum | Neyle belirlenir | Neyi kanıtlar |
+|-------|--------|--------|
+| `unverified` | Her yeni anlık görüntü | Henüz hiçbir şeyi |
+| `verified` | Çalıştırma sonrası örnekleme kontrolü, `--deep` veya temiz bir `--store` geçişi | Makinenin çıpası veya saklanan chunk'lar karma değerleriyle eşleşir. İçindeki dosya sistemi değerlendirilmez |
+| `proven` | `rdc backup check` veya `--restore-test` | Parola gerçek içeriği açar |
+| `failed` | Bir sorun bulan herhangi bir kontrol | Güvenilmemeli |
+
+`failed` bir anlık görüntü, aynı veriyi okuyan bir kontrol geçene kadar başarısız kalır. Saklama, son N kopyayı tutma sayısına ek olarak, `failed` olmayan her akışın en yeni `verified` ve en yeni `proven` anlık görüntüsünü korur; böylece üst üste gelen kötü geceler iyi sürümlerin hepsini dışarı itemez. Bu iki anlık görüntüden birini silmek reddedilir.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep`, makinedeki her hücrenin karmasını yeniden hesaplar. `--store`, sunucuya saklanan her chunk'ın karmasını yeniden hesaplatır ve eksik veya bozuk olanları adıyla bildirir. `--restore-test`, çıpanın anlık görüntüsünü doğrudan depodan geçici bir ad altında geri yükler, karşılaştırır, sonucu kaydeder ve kopyayı siler. Bu üçü birlikte kullanılamaz.
+
+### Doğrulama zamanlaması
+
+`rdc backup schedule`, oluşturduğu birimlere doğrulama ekler. Anlık görüntü servisi, rastgele hücrelerin örnekleme kontrolüyle biter ve başarısız bir anlık görüntü hiçbir zaman doğrulanmış sayılmaz. Kaydırılmış bir saatte çalışan günlük bir zamanlayıcı, her çalıştırmada bir depoyu `CPUQuota=100%` altında tam doğrulamadan geçirir ve depoları sırayla dolaşır: döngü, gece olarak 7 ile depo sayısından büyük olanıdır. Bir stratejinin isteğe bağlı `verify` bloğu bunu `spotAfterRun`, `deepSchedule` (bir cron ifadesi) ve `off` ile ayarlar; `off` ne örnekleme kontrolünü ne de zamanlayıcıyı oluşturur.
+
+Zamanlanmış birimler tasarım gereği parola taşımaz. Bu yüzden parola gerektiren iki kontrol, `rdc backup check` ve `--restore-test`, yapılandırmanın bulunduğu CLI'dan çalıştırılır. Birincisini ayda bir, ikincisini üç ayda bir yapmak makul bir sıklıktır.
+
+### Parolayı kanıtlama
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check`, yakın tarihli bir anlık görüntünün saklanan listesini parolayla açar, bir dosyayı geçici bir dizine geri yükler, listelenen boyutla karşılaştırır ve `proven` veya `failed` kaydeder. Yalnızca geçici dizin silinir. Dosyayı `--path <file>` seçer; varsayılan, boş olmayan en küçük dosyadır. Saklanan listesi olmayan bir anlık görüntü açıkça bildirilir ve `proven` olmaz.
+
+### Onarma ve kurtarma
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+Bir chunk'ın anahtarı, baytlarının karmasıdır. Bu yüzden karması anahtarıyla eşleşmeyen saklanmış bir nesne, bir geri yüklemeyi hiçbir zaman karşılayamaz. `rdc backup repair`, sunucuya her hasarlı nesneyi yeniden okuttur, yalnızca hâlâ yanlışsa siler ve hücreyi karmasını yeniden hesapladıktan sonra bu makinenin çıpasından yeniden yükler. Bir yedekleme soy hattını tutarken çalışmayı reddeder; hasarlı chunk'ları kullanan anlık görüntüleri adıyla bildirir ve onları `failed` olarak işaretler. Makinenin çıpasında bulunmayan bir chunk onarılamaz ve komut sıfırdan farklı bir kodla çıkar. `--dry-run` hiçbir şeyi değiştirmez.
+
+`--salvage`, onarılamayan bir anlık görüntü içindir. Yalnızca `--as` ile yeni bir ad altında geri yükler, mevcut bir deponun üzerine asla yazmaz, her bozuk hücreyi boşluk olarak yazar, boşlukları bayt aralığına göre listeler ve sıfırdan farklı bir kodla, `restored-damaged` durumuyla çıkar. LUKS başlığındaki bir boşluk imajı açılamaz hale getirir ve rapor bunu söyler. Bozuk bir hücreden uzaktaki tek bir dosya, `--path` ile hâlâ sorunsuz geri yüklenir.
+
+### Liste anahtarları
+
+Bir anlık görüntünün göz atma listesi, makine onu parolaya sahip olmadan yazabilsin diye bir genel anahtarla mühürlenir. CLI bu anahtarı deponun kimlik bilgisinden türetir ve zamanlama dağıtıldığında genel yarısını kurar. Zaten farklı bir anahtara sahip olan makine, depo adıyla uyarılır ve anahtarın üzerine yazılmaz.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace`, türetilen anahtarı farklı olanın üzerine kurar ve bunu kanıtlamak için parolayı gönderir. Bir anahtara sahip olup ne anahtar dosyası ne de bağlama noktası olan bir depo liste alamaz ve birim günlüğü bunu belirtir. Böyle bir anlık görüntü yine de bütün olarak geri yüklenir; yalnızca göz atma ve `rdc backup check` listeye ihtiyaç duyar.
+
+### Hata uyarıları
+
+Başarısız bir anlık görüntü veya doğrulama, bir hata raporu aracılığıyla hesaba ulaşır; ayrıca tolerans süresini aşıp rapor vermeyi bırakan bir akış da işaretlenir. Hesap, portalın Bildirimler sayfasındaki yedek sağlığı tercihine göre abonelik başına günde bir özet e-postası gönderir; bu tercih varsayılan olarak açıktır. `rdc machine health`, başarısız bir doğrulamayı uyarı olarak gösterir ve sıfırdan farklı bir kodla çıkar. Makinede `renet backup report --test`, hiçbir depo içermeyen zararsız bir test raporu gönderir.
 
 ## Zamanlanmış Yedeklemeler
 

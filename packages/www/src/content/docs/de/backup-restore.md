@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "3302d104c8d5e3dd"
+sourceCommit: "638ae49ec46e32363a8d96a57902e599615aa405"
 ---
 
 # Backup & Wiederherstellung
@@ -92,6 +92,7 @@ rdc backup usage
 | `--dry-run` | Nur planen: kein Upload. Zeigt, was sich bewegen würde |
 | `--cold` | Container stoppen, einfrieren, neu starten, dann hochladen. Nicht mit `--dry-run` kombinierbar |
 | `--reseed` | Dem lokalen Anker misstrauen und ein vollständiges Inventar hochladen. Lädt alles neu hoch und belastet das Kontingent erneut |
+| `--accept-identity-change` | Das Image als neue Basislinie übernehmen, wenn sich seine LUKS-Identität geändert hat oder es geschrumpft ist. Lädt einen vollständigen Snapshot hoch, und ein geplanter Lauf trägt dieses Flag nie |
 | `--read-bwlimit <limit>` | Obergrenze, wie schnell der Snapshot das Image von der Platte liest, in denselben Einheiten wie `--bwlimit` (Standard `50M`, `0` = unbegrenzt) |
 | `--hash-parallelism <n>` | Anzahl der Hash-Worker (Standard `1`, `0` = einer pro CPU, bis zu `16`) |
 | `--debug` | Ausführliche Ausgabe aktivieren |
@@ -336,12 +337,16 @@ Die Wiederherstellung unter einem neuen Namen mit `--as` überschreibt nichts, s
 | `--at <time>` | Einen Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC-3339-Zeit |
 | `--any-stream` | Mit `--at` auch Snapshots von anderen Maschinen und Forks dieser Lineage berücksichtigen |
 | `--up` | Wiederhergestelltes Repository nach der Übertragung bereitstellen |
+| `--allow-unopenable` | Das Image auch ablegen, wenn die Passphrase des Repositorys es nicht öffnet (ein Snapshot aus der Zeit vor einem Passphrase-Wechsel) |
+| `--salvage` | Bei verlorenen oder beschädigten Chunks weitermachen und deren Zellen als Lücken belassen. Erfordert `--as` |
 | `--health-window <seconds>` | Wie lange das bereitgestellte Repository auf Gesundheit beobachtet wird |
 | `--health-timeout <seconds>` | Wie lange gewartet wird, bis es gesund wird |
 | `-y, --yes` | Bestätigung überspringen |
 | `--debug` | Ausführliche Ausgabe aktivieren |
 
 Die Wiederherstellung eines Repositorys benötigt dessen LUKS-Credential, das in Ihrer Konfiguration liegt. Wenn Sie Config-Storage aktiviert haben, kommt dieses Credential mit Ihrer Konfiguration auf einer neuen Maschine zurück. Falls nicht, bewahren Sie eine Kopie der Konfiguration irgendwo auf, das die ausfallende Maschine nicht mit sich reißt.
+
+Eine Wiederherstellung prüft die Passphrase, bevor sie etwas ablegt. Sobald das Image zusammengesetzt ist und Größe und LUKS-Header stimmen, versucht die Passphrase aus der Konfiguration, es probeweise zu öffnen. Gelingt das, meldet die Wiederherstellung Erfolg. Gelingt es nicht, schlägt die Wiederherstellung fehl und legt nichts ab; das zusammengesetzte Image bleibt bereitgestellt, sodass ein neuer Versuch mit der richtigen Passphrase es nicht erneut herunterladen muss. Ein Snapshot aus der Zeit vor einem Passphrase-Wechsel lässt sich nur mit der alten Passphrase öffnen; `--allow-unopenable` legt ein solches Image trotzdem ab und weist darauf hin, dass es nicht geöffnet wurde.
 
 ### Die Wiederherstellung auf jeder Maschine beweisen
 
@@ -368,6 +373,70 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Die vollständigen Optionslisten finden Sie unter [Ein Backup auf eine andere Maschine übertragen](#push-a-backup-to-another-machine) und [Ein Backup von einer anderen Maschine abrufen](#pull-a-backup-from-another-machine).
+
+## Backups prüfen und reparieren
+
+Ein hochgeladener Snapshot ist noch lange kein Snapshot, der sich wiederherstellen lässt. Jeder Snapshot trägt einen Verifizierungsstatus, und die folgenden Prüfungen verändern ihn.
+
+### Die Verifizierungsleiter
+
+| Status | Gesetzt durch | Belegt |
+|-------|--------|--------|
+| `unverified` | Jeden neuen Snapshot | Noch nichts |
+| `verified` | Die Stichprobe nach einem Lauf, `--deep` oder ein sauberer `--store`-Durchlauf | Der Anker der Maschine bzw. die gespeicherten Chunks stimmen mit ihren Hashes überein. Das Dateisystem darin wird nicht beurteilt |
+| `proven` | `rdc backup check` oder `--restore-test` | Die Passphrase öffnet echte Inhalte |
+| `failed` | Jede Prüfung, die ein Problem gefunden hat | Darauf ist kein Verlass |
+
+Ein `failed`-Snapshot bleibt fehlgeschlagen, bis eine Prüfung, die dieselben Daten gelesen hat, besteht. Die Aufbewahrung behält zusätzlich zur Keep-last-Anzahl den neuesten `verified`- und den neuesten `proven`-Snapshot jedes Streams, der nicht `failed` ist, sodass eine Serie schlechter Nächte nicht jede gute Version verdrängen kann. Das Löschen eines dieser beiden Snapshots wird verweigert.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` berechnet die Hashes aller Zellen auf der Maschine neu. `--store` lässt den Server jeden gespeicherten Chunk neu hashen und jeden fehlenden oder beschädigten benennen. `--restore-test` stellt den Snapshot des Ankers unter einem Wegwerfnamen direkt aus dem Store wieder her, vergleicht ihn, hält das Ergebnis fest und löscht die Kopie. Die drei Optionen lassen sich nicht kombinieren.
+
+### Verifizierungszeitplan
+
+`rdc backup schedule` ergänzt die erzeugten Units um die Verifizierung. Der Snapshot-Dienst endet mit einer Stichprobe zufälliger Zellen, und ein fehlgeschlagener Snapshot wird nie als verifiziert geführt. Ein täglicher Timer zu einer versetzten Uhrzeit führt pro Lauf eine vollständige Verifizierung eines Repositorys unter `CPUQuota=100%` aus und rotiert dabei durch die Repositorys: Der Zyklus beträgt in Nächten den größeren Wert aus 7 und der Anzahl der Repositorys. Ein optionaler `verify`-Block der Strategie steuert das über `spotAfterRun`, `deepSchedule` (ein Cron-Ausdruck) und `off`, das weder die Stichprobe noch den Timer erzeugt.
+
+Die geplanten Units enthalten bewusst keine Passphrase. Die beiden Prüfungen, die sie brauchen, `rdc backup check` und `--restore-test`, laufen daher über die CLI, wo die Konfiguration liegt. Monatlich für die erste und vierteljährlich für die zweite ist ein sinnvoller Rhythmus.
+
+### Die Passphrase beweisen
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` öffnet mit der Passphrase das gespeicherte Verzeichnis eines neueren Snapshots, stellt eine Datei in ein temporäres Verzeichnis wieder her, vergleicht sie mit der aufgeführten Größe und hält `proven` oder `failed` fest. Gelöscht wird nur das temporäre Verzeichnis. `--path <file>` wählt die Datei; standardmäßig ist es die kleinste nicht leere Datei. Ein Snapshot ohne gespeichertes Verzeichnis wird klar als solcher gemeldet und gilt nicht als `proven`.
+
+### Reparieren und Retten
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+Der Schlüssel eines Chunks ist der Hash seiner Bytes. Ein gespeichertes Objekt, dessen Hash nicht zu seinem Schlüssel passt, kann daher nie eine Wiederherstellung bedienen. `rdc backup repair` lässt den Server jedes beschädigte Objekt erneut lesen, es nur löschen, wenn es immer noch falsch ist, und die Zelle nach erneutem Hashen aus dem Anker dieser Maschine neu hochladen. Es verweigert die Arbeit, solange ein Backup die Lineage hält, nennt die Snapshots, die die beschädigten Chunks verwendet haben, und markiert sie als `failed`. Ein Chunk, den der Anker der Maschine nicht enthält, lässt sich nicht reparieren, und der Befehl endet mit einem Wert ungleich null. `--dry-run` ändert nichts.
+
+`--salvage` ist für einen Snapshot gedacht, der sich nicht reparieren lässt. Es stellt nur unter einem neuen Namen mit `--as` wieder her, nie über ein vorhandenes Repository, schreibt jede defekte Zelle als Lücke, listet die Lücken nach Byte-Bereich auf und endet mit einem Wert ungleich null und dem Status `restored-damaged`. Eine Lücke im LUKS-Header macht das Image unlesbar für die Passphrase, es lässt sich also nicht mehr öffnen, und der Bericht sagt das. Eine einzelne Datei abseits einer defekten Zelle lässt sich mit `--path` weiterhin sauber wiederherstellen.
+
+### Listenschlüssel
+
+Das Browse-Verzeichnis eines Snapshots ist mit einem öffentlichen Schlüssel versiegelt, damit die Maschine es schreiben kann, ohne die Passphrase zu kennen. Die CLI leitet diesen Schlüssel aus dem Repository-Credential ab und installiert die öffentliche Hälfte, wenn der Zeitplan deployt wird. Hält eine Maschine bereits einen anderen Schlüssel, wird per Repository-Name davor gewarnt, und er wird nicht überschrieben.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` installiert den abgeleiteten Schlüssel über einen abweichenden und sendet dazu die Passphrase als Nachweis. Ein Repository, das einen Schlüssel hält, aber weder Keyfile noch Mount hat, bekommt kein Verzeichnis, und das Unit-Journal sagt das. Ein solcher Snapshot lässt sich weiterhin vollständig wiederherstellen; nur das Durchsuchen und `rdc backup check` brauchen das Verzeichnis.
+
+### Fehlerbenachrichtigungen
+
+Ein fehlgeschlagener Snapshot oder eine fehlgeschlagene Verifizierung erreicht das Konto über einen Fehlerbericht, und ein Stream, der nach Ablauf seiner Karenzzeit nicht mehr berichtet, wird ebenfalls markiert. Das Konto sendet pro Abonnement und Tag eine Sammel-E-Mail gemäß der Einstellung zur Backup-Gesundheit auf der Benachrichtigungsseite des Portals, standardmäßig aktiviert. `rdc machine health` zeigt eine fehlgeschlagene Verifizierung als Warnung an und endet mit einem Wert ungleich null. `renet backup report --test` auf der Maschine sendet einen harmlosen Testbericht ohne beteiligtes Repository.
 
 ## Geplante Backups
 
