@@ -54,6 +54,19 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
         );
     },
   },
+  // J19: one command's jobs on several machines under one group; the gates settle the group's own steps once.
+  privateStep(
+    'groupMemberSucceeded',
+    'success',
+    ['group', 'expected', 'onSuccess', 'onFailure'],
+    () => import('./job-group.js')
+  ),
+  privateStep(
+    'groupMemberFailed',
+    'failure',
+    ['group', 'expected', 'onSuccess', 'onFailure'],
+    () => import('./job-group.js')
+  ),
   privateStep(
     'pushProvisionedInfra',
     'success',

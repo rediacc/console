@@ -112,9 +112,9 @@ describe('terminal job guard', () => {
     const decorated = attachDecorator(executor);
     setBackgroundRequested(true);
     await decorated.execute({ ...call, verb: 'repo up', terminalJob: true });
-    await expect(decorated.execute({ functionName: 'repository_list', machineName: 'm' })).rejects.toThrow(
-      /after the terminal job of "repo up" detached/
-    );
+    await expect(
+      decorated.execute({ functionName: 'repository_list', machineName: 'm' })
+    ).rejects.toThrow(/after the terminal job of "repo up" detached/);
     expect(calls).toHaveLength(1);
   });
 

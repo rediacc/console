@@ -3,8 +3,8 @@
  *
  * A cluster verb sequences renet calls across several machines, and a later call consumes an earlier one (the token
  * read feeds the join, the identity rewrite follows the attach) or a client decision sits between them. renet has no
- * compound function for those chains and the ticket store has no group id, so each phase is its own job on its own
- * ticket, started through `runCommandJob` under the verb's name, and the client drives the order. The audit record and
+ * compound function for those chains, so each phase is its own job on its own
+ * ticket (a phase over every member is one job per member under one group, services/jobs/job-group.ts), started through `runCommandJob` under the verb's name, and the client drives the order. The audit record and
  * the config writes of a verb that has a single closing call ride that call's ticket as steps; a chain never ends
  * early, because a phase still running past the attach window stops the chain with a named error instead of letting
  * the next phase start before the previous one finished.
@@ -24,6 +24,11 @@ const verbs = new AsyncLocalStorage<string>();
 /** Run `fn` with `verb` as the label of every cluster phase it starts. */
 export function withClusterVerb<T>(verb: string, fn: () => Promise<T>): Promise<T> {
   return verbs.run(verb, fn);
+}
+
+/** The verb label of the enclosing {@link withClusterVerb}, for a phase that starts its own group of jobs. */
+export function clusterVerb(): string {
+  return verbs.getStore() ?? DEFAULT_VERB;
 }
 
 /** A phase of a chain was still running when its attach window closed, so the next phase cannot start. */

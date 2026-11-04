@@ -157,7 +157,7 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'machine setup',
   'machine status',
   // J19: datastore verbs are one job each (attach relocation, fork --attach-to and delete on an attached datastore chain
-  // their later phases as steps); each cluster verb is one job per phase, one ticket per phase (no group id exists).
+  // their later phases as steps); each cluster verb is one job per phase, one ticket per phase; a phase that touches every member (the ceph prerequisites of cluster create) starts one job per member under one ticket group (job-group.ts).
   'cluster create',
   'cluster evict',
   'cluster fork',

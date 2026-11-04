@@ -23,6 +23,7 @@ import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
+import { runJobGroup } from '../jobs/job-group.js';
 import {
   ensureClusterDnsRecords,
   pushInfraConfig,
@@ -38,6 +39,7 @@ import {
   exportCephClientConfig,
   resolveCephMembers,
 } from './cluster-ceph.js';
+import { ClusterPhasePendingError, clusterVerb } from './cluster-job.js';
 import type { ControlDatastoreOptions } from './cluster-kube.js';
 import { installK8s, scaleK8sPool } from './cluster-kube.js';
 import { provisionKvmCluster, teardownKvmCluster } from './kvm-provisioner.js';
@@ -228,10 +230,27 @@ async function installCeph(
       `  Ceph already bootstrapped on ${first.name} (ops phase); converging pool only.`
     );
   } else {
-    // 1. Prerequisites on every ceph member.
-    for (const m of members) {
-      outputService.info(`  ceph_install_prerequisites on ${m.name}...`);
-      await dispatchCeph('ceph_install_prerequisites', m.name, {}, debug);
+    // 1. Prerequisites on every ceph member: one job per member under one ticket group, since no member's install needs another's.
+    outputService.info(
+      `  ceph_install_prerequisites on ${members.map((m) => m.name).join(', ')}...`
+    );
+    const prerequisites = await runJobGroup(
+      clusterVerb(),
+      members.map((m) => ({
+        machineName: m.name,
+        functionName: 'ceph_install_prerequisites',
+        params: {},
+      })),
+      {},
+      { debug, label: 'Ceph install step "ceph_install_prerequisites"' }
+    );
+    // The bootstrap below needs every member installed, so a member still running past its window stops the chain.
+    if (prerequisites.pending) {
+      throw new ClusterPhasePendingError(
+        'ceph_install_prerequisites',
+        members.map((m) => m.name).join(', '),
+        undefined
+      );
     }
 
     // 2. Bootstrap the monitor on the first member.
