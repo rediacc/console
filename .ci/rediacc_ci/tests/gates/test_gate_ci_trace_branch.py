@@ -45,7 +45,11 @@ WL_CI = HOOKS_DIR / "wl_ci.py"
 TRACE = paths.from_root(".ci", "scripts", "ci", "ci-trace.py")
 
 # The file that calls `ci_rollup` as a FIXTURE rather than as a consumer. The bash twin was the other, until W7 P5 census batch A10 retired it; an absent file never reaches the enumeration, so the entry goes rather than becoming a path nothing can match.
-SELF_EXCLUDED = (".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py",)
+SELF_EXCLUDED = (
+    ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py",
+    # Hands the fixture builder `ci_status.ci_rollup` a world to write for the Stop hook; it reads no rollup itself.
+    ".claude/hooks/stop/test-wl_worktrees.py",
+)
 
 FAKE_GH = """#!/bin/bash
 q="$*"
