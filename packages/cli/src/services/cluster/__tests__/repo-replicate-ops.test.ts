@@ -826,6 +826,23 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
     expect(calls.length).toBe(before);
   });
 
+  it('a set recorded before the phase field reads as ready: refresh rolls it, create refuses it, remove leaves control alone', async () => {
+    seedPlaced();
+    const { phase: _absent, ...legacy } = seededSet;
+    stored = { [SET]: legacy };
+    await expect(replicateRepo(CREATE)).rejects.toThrow(/already has a replica set/);
+    await refreshReplicaSet('sqldb');
+    expect(set()?.snapshot).not.toBe(OLD_SNAPSHOT);
+
+    seedPlaced();
+    stored = { [SET]: legacy };
+    calls.length = 0;
+    await removeReplicaSet('sqldb');
+    expect(
+      calls.filter((c) => c.functionName === 'replica_discard').map((c) => c.machineName)
+    ).toEqual(['prod-w-1', 'prod-w-2']);
+  });
+
   it('refuses a set still placing, and a repo with none', async () => {
     seedPlaced();
     stored = { [SET]: { ...seededSet, phase: 'placing' } };

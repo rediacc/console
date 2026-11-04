@@ -162,7 +162,6 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
 
 /** Every other function: renet's 10-minute default. */
 export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
-  'replica_publish',
   'backup_browse',
   'backup_browse_at',
   'backup_delete',
@@ -265,6 +264,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'network_prune',
   'network_ps_status',
   'network_used',
+  'replica_publish',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',

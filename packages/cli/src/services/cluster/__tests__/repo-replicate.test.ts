@@ -20,7 +20,7 @@ vi.mock('../../account/license-preflight.js', async (importOriginal) => ({
   assertMachineSlotsAvailable: vi.fn().mockResolvedValue(undefined),
 }));
 
-// The fork licence step: the registry read goes through the executor mock below; issuance and the machine lease are stubbed.
+// The fork licence step: the installed-licence read, issuance and the machine lease are all stubbed.
 const licence = vi.hoisted(() => ({
   free: vi.fn().mockResolvedValue(undefined),
   token: vi.fn().mockResolvedValue(true),
