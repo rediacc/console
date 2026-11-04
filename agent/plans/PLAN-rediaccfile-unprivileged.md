@@ -209,8 +209,9 @@ Root test shape: `sudo -n env -i` is what local uid-1000 gates can't replace (th
 - [x] U10 [console and renet] Bridge functions `repository_permission_grant|revoke`; tiermap (grant as `TierRepoLicenseOperate`, revoke `TierNone`, as gpu at private/renet/pkg/license/tiermap.go:278-279); `rdc repo permission grant|revoke|show <ref>` with `--root`, `--path`. `--root` is refused in agent mode with the same ancestry check as `REDIACC_ALLOW_GRAND_REPO`, and `repo list` shows a root grant. Contract regeneration named for the lead.
   Accept: `npx tsc --noEmit --project packages/cli/tsconfig.json` rc=0, `cd packages/cli && npx vitest run src/commands` rc=0, `npm run check:ci-cli-contract` rc=0, `npm run check:i18n` rc=0, `npm run check:cli-examples` rc=0.
     (ticked) 2026-11-04T14:59:10Z by d778be9d: commit:8d1c76b13 tsc rc=0, vitest src/commands in the run rc=0, check:ci-cli-contract rc=0, check:i18n rc=0, check:cli-examples rc=0; translations are drafts
-- [ ] U11 [docs] Rediaccfile page: runs as the universal user, the failure table, how to ask for a grant. gpu.md: the host-side tool section. private/renet/docs/DOCKERD_SANDBOX.md: lifecycle grants.
+- [x] U11 [docs] Rediaccfile page: runs as the universal user, the failure table, how to ask for a grant. gpu.md: the host-side tool section. private/renet/docs/DOCKERD_SANDBOX.md: lifecycle grants.
   Accept: `npm run check:i18n` rc=0 and `npm run check:ci-prose-style` rc=0.
+    (ticked) 2026-11-04T17:44:32Z by d778be9d: commit:c28a8ce94 npm run check:i18n rc=0, check:ci-prose-style rc=0 on this tree
 
 ### Fleet
 

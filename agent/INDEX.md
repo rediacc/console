@@ -502,7 +502,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1023 | 24 | 15 | 181814 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1025 | 22 | 17 | 182145 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 118 | 1 | 8 | 19848 |
@@ -545,7 +545,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 411 | 8 | 27 | 70356 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
-| `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 257 | 12 | 11 | 39291 |
+| `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 258 | 11 | 12 | 39419 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 121 | 0 | 16 | 30497 |

@@ -69,22 +69,22 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 3 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 65 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 88 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 54 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 15 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:aaf9caa3f6ffe535a, worker:a93b71fbd9a2eda5b, worker:a3dfd9581fa0238bb.
-- Leased items: 4: #49a48721 (worker:aaf9caa3f6ffe535a, d778be9d), #a150016d (worker:queue, d778be9d), #cbef9091 (worker:a93b71fbd9a2eda5b, d778be9d), #cfacb427 (worker:a3dfd9581fa0238bb, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a3dfd9581fa0238bb, worker:a703b58f77a99fa10.
+- Leased items: 3: #0c7ff905 (worker:a703b58f77a99fa10, d778be9d), #a150016d (worker:queue, d778be9d), #cfacb427 (worker:a3dfd9581fa0238bb, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 40 plans done, 645 of 835 boxes done (77%).
+Promoted: 10 of 40 plans done, 648 of 835 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -114,7 +114,7 @@ Promoted: 10 of 40 plans done, 645 of 835 boxes done (77%).
 | 24 | PLAN-ssh-key-source-ranges.md | 10/11 | 1 open |
 | 25 | PLAN-repo-docker-storage-prune.md | 11/14 | 3 open |
 | 26 | PLAN-production-key-only.md | 9/19 | 10 open |
-| 27 | PLAN-detached-jobs.md | 15/39 | 24 open |
+| 27 | PLAN-detached-jobs.md | 17/39 | 22 open |
 | 28 | PLAN-snapshot-read-io-cap.md | 12/16 | 4 open |
 | 29 | PLAN-backup-meter-orphaned-chunks.md | 4/8 | 4 open |
 | 30 | PLAN-backup-local-image.md | 10/14 | 4 open |
@@ -126,7 +126,7 @@ Promoted: 10 of 40 plans done, 645 of 835 boxes done (77%).
 | 36 | PLAN-free-license.md | 6/13 | 7 open |
 | 37 | PLAN-backup-integrity.md | 40/57 | 17 open |
 | 38 | PLAN-backup-critical-tier.md | 36/53 | 17 open |
-| 39 | PLAN-rediaccfile-unprivileged.md | 11/23 | 12 open |
+| 39 | PLAN-rediaccfile-unprivileged.md | 12/23 | 11 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 <!-- queue:progress:end -->
 
