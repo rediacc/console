@@ -21,7 +21,7 @@ Body-Sig: 073b818aa07b0fe4
 ### 14b40d8c.1 [medium] cmd/renet/daemon_grant.go:355
 Anchor: in-diff
 Claim: The EnvComposeGrant branch of applyComposeDelegations ignores networkID and mount, which the Load path checks (ErrMountMismatch, per-network store). A dropped process validating compose for another repo or network applies the projection exported for a different mount, so the client-side check passes where the gate's own check for that mount would refuse. No test covers a value exported for another mount reaching applyComposeDelegations.
-Resolution: open
+Resolution: not-a-bug | read against the current tree: private/renet/cmd/renet/daemon_grant.go:373 comment says client-side check only, the gate re-reads the real grant | d778be9d 2026-11-04T17:14:36Z
 
 ### 14b40d8c.2 [low] cmd/renet/sandbox_exec.go:725
 Anchor: in-diff

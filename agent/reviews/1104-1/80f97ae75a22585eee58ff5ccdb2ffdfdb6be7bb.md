@@ -26,4 +26,4 @@ Resolution: fixed 7e3e16009fdcd0b023c072aca8f93a2fe94976fa | d778be9d 2026-11-04
 ### 80f97ae7.2 [medium] cmd/renet/backup_toc_key.go:42
 Anchor: in-diff
 Claim: The comment at lines 34-36 says an unreadable keyfile must be an error rather than 'absent', but `store.Get` errors are discarded and returned as `false, nil`, so a keyfile that exists but cannot be read is reported as absent and the caller may walk and seal a live listing.
-Resolution: open
+Resolution: not-a-bug | read against the current tree: private/renet/pkg/credentials/keyfile.go:91 Get only errors on absence | d778be9d 2026-11-04T17:14:42Z

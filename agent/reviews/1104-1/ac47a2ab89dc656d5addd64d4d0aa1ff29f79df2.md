@@ -26,7 +26,7 @@ Resolution: open
 ### ac47a2ab.2 [medium] pkg/reporuntime/contract_fixture_docker_test.go:50
 Anchor: in-diff
 Claim: Setting rt.lifecycle = unsandboxedLifecycle means the package's CT-01..15 contract suite no longer runs docker functions through the production lifecycle default, so a regression that drops the sandbox is caught only by the root-only cmd/renet test.
-Resolution: open
+Resolution: not-a-bug | read against the current tree: private/renet/cmd/renet/sandbox_exec_runtime_linux_test.go:586 root-only test covers the production default | d778be9d 2026-11-04T17:14:44Z
 
 ### ac47a2ab.3 [low] pkg/orchestration/rediaccfile.go:229
 Anchor: in-diff
