@@ -441,7 +441,7 @@ rdc backup toc-key sync my-app --replace
 
 ### Alertas de falha
 
-Um snapshot ou uma verificação falhados chegam à conta através de um relatório de falha, e um fluxo que deixa de reportar depois do seu período de tolerância também é sinalizado. A conta envia um e-mail de resumo por subscrição e por dia, de acordo com a preferência de saúde dos backups na página Notificações do portal, ativada por defeito. `rdc machine health` mostra uma verificação falhada como aviso e termina com código diferente de zero. `renet backup report --test` na máquina envia um relatório de teste inofensivo, sem nenhum repositório envolvido.
+Um snapshot ou uma verificação falhados chegam à conta através de um relatório de falha, e um fluxo que deixa de reportar depois do seu período de tolerância também é sinalizado. A conta envia um e-mail de resumo por subscrição e por dia, de acordo com a preferência de saúde dos backups na página Notificações do portal, ativada por defeito. `rdc machine health` mostra uma verificação falhada como aviso e termina com código diferente de zero. Um fluxo com um objetivo declarado que não reportou à hora prevista da sua próxima execução, ou cujas três últimas execuções falharam o objetivo, envia o seu próprio alerta, no máximo um por fluxo a cada 6 horas, com o objetivo, o valor alcançado e o motivo. A latência de deteção é a do ciclo de manutenção, que é de uma hora, pelo que um alerta pode chegar até uma hora depois da falha. Um fluxo sem objetivo continua no resumo diário.
 
 ## Backups Agendados
 

@@ -437,7 +437,7 @@ rdc backup toc-key sync my-app --replace
 
 ### Hata uyarıları
 
-Başarısız bir anlık görüntü veya doğrulama, bir hata raporu aracılığıyla hesaba ulaşır; ayrıca tolerans süresini aşıp rapor vermeyi bırakan bir akış da işaretlenir. Hesap, portalın Bildirimler sayfasındaki yedek sağlığı tercihine göre abonelik başına günde bir özet e-postası gönderir; bu tercih varsayılan olarak açıktır. `rdc machine health`, başarısız bir doğrulamayı uyarı olarak gösterir ve sıfırdan farklı bir kodla çıkar. Makinede `renet backup report --test`, hiçbir depo içermeyen zararsız bir test raporu gönderir.
+Başarısız bir anlık görüntü veya doğrulama, bir hata raporu aracılığıyla hesaba ulaşır; ayrıca tolerans süresini aşıp rapor vermeyi bırakan bir akış da işaretlenir. Hesap, portalın Bildirimler sayfasındaki yedek sağlığı tercihine göre abonelik başına günde bir özet e-postası gönderir; bu tercih varsayılan olarak açıktır. `rdc machine health`, başarısız bir doğrulamayı uyarı olarak gösterir ve sıfırdan farklı bir kodla çıkar. Hedef bildirmiş bir akış, bir sonraki çalışması için beklenen zamana kadar rapor vermezse ya da son üç çalışmasının her biri hedefi kaçırırsa kendi uyarısını gönderir; akış başına 6 saatte en fazla bir uyarı olur ve hedef, ulaşılan değer ile neden belirtilir. Algılama gecikmesi bakım taramasının aralığına, yani bir saate eşittir; bu yüzden uyarı, kaçırmadan en fazla bir saat sonra gelebilir. Hedefi olmayan akış günlük özette kalır.
 
 ## Zamanlanmış Yedeklemeler
 

@@ -436,7 +436,7 @@ rdc backup toc-key sync my-app --replace
 
 ### Alertes d'échec
 
-Un instantané ou une vérification en échec parvient au compte par un rapport d'échec, et un flux qui cesse de rapporter au-delà de son délai de grâce est signalé lui aussi. Le compte envoie un e-mail récapitulatif par abonnement et par jour, selon la préférence de santé des sauvegardes de la page Notifications du portail, activée par défaut. `rdc machine health` affiche une vérification en échec comme un avertissement et se termine avec un code non nul. `renet backup report --test` sur la machine envoie un rapport de test inoffensif, sans aucun dépôt concerné.
+Un instantané ou une vérification en échec parvient au compte par un rapport d'échec, et un flux qui cesse de rapporter au-delà de son délai de grâce est signalé lui aussi. Le compte envoie un e-mail récapitulatif par abonnement et par jour, selon la préférence de santé des sauvegardes de la page Notifications du portail, activée par défaut. `rdc machine health` affiche une vérification en échec comme un avertissement et se termine avec un code non nul. Un flux avec une cible déclarée qui n'a rien signalé à l'heure prévue de son prochain passage, ou dont les trois derniers passages ont chacun manqué la cible, envoie sa propre alerte, au plus une par flux et par période de 6 heures, indiquant la cible, la valeur atteinte et la raison. Le délai de détection est celui du balayage de maintenance, soit une heure, de sorte qu'une alerte peut arriver jusqu'à une heure après le manquement. Un flux sans cible reste dans le résumé quotidien.
 
 ## Sauvegardes planifiées
 

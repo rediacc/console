@@ -513,7 +513,7 @@ rdc backup toc-key sync my-app --replace
 
 ### Failure alerts
 
-A failed snapshot or verify reaches the account through a failure report, and a stream that stops reporting past its grace period is flagged too. The account sends one digest email per subscription per day under the backup health preference on the portal Notifications page, on by default. `rdc machine health` shows a failed verify as a warning and exits non-zero. `renet backup report --test` on the machine sends a harmless test report with no repository involved.
+A failed snapshot or verify reaches the account through a failure report, and a stream that stops reporting past its grace period is flagged too. The account sends one digest email per subscription per day under the backup health preference on the portal Notifications page, on by default. `rdc machine health` shows a failed verify as a warning and exits non-zero. A stream with a declared target that has not reported by the time its next run was due, or whose last three runs each missed the target, sends its own alert, at most one per stream per 6 hours, naming the target, the achieved figure and the reason. Detection latency equals the maintenance sweep interval, which is hourly, so an alert can arrive up to an hour after the miss. A stream with no target stays on the daily digest.
 
 ## Scheduled Backups
 

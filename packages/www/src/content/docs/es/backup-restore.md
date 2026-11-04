@@ -436,7 +436,7 @@ rdc backup toc-key sync my-app --replace
 
 ### Alertas de fallo
 
-Un snapshot o una verificación fallidos llegan a la cuenta mediante un informe de fallo, y también se señala un flujo que deja de informar pasado su plazo de gracia. La cuenta envía un correo resumen por suscripción al día, según la preferencia de salud de los respaldos en la página de Notificaciones del portal, activada por defecto. `rdc machine health` muestra una verificación fallida como advertencia y termina con un código distinto de cero. `renet backup report --test` en la máquina envía un informe de prueba inofensivo sin ningún repositorio de por medio.
+Un snapshot o una verificación fallidos llegan a la cuenta mediante un informe de fallo, y también se señala un flujo que deja de informar pasado su plazo de gracia. La cuenta envía un correo resumen por suscripción al día, según la preferencia de salud de los respaldos en la página de Notificaciones del portal, activada por defecto. `rdc machine health` muestra una verificación fallida como advertencia y termina con un código distinto de cero. Un flujo con un objetivo declarado que no ha informado a la hora prevista de su siguiente ejecución, o cuyas tres últimas ejecuciones incumplieron el objetivo, envía su propia alerta, como máximo una por flujo cada 6 horas, con el objetivo, la cifra lograda y el motivo. La latencia de detección es la del barrido de mantenimiento, que es de una hora, así que una alerta puede llegar hasta una hora después del fallo. Un flujo sin objetivo sigue en el resumen diario.
 
 ## Respaldos Programados
 

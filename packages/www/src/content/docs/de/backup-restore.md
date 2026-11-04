@@ -436,7 +436,7 @@ rdc backup toc-key sync my-app --replace
 
 ### Fehlerbenachrichtigungen
 
-Ein fehlgeschlagener Snapshot oder eine fehlgeschlagene Verifizierung erreicht das Konto über einen Fehlerbericht, und ein Stream, der nach Ablauf seiner Karenzzeit nicht mehr berichtet, wird ebenfalls markiert. Das Konto sendet pro Abonnement und Tag eine Sammel-E-Mail gemäß der Einstellung zur Backup-Gesundheit auf der Benachrichtigungsseite des Portals, standardmäßig aktiviert. `rdc machine health` zeigt eine fehlgeschlagene Verifizierung als Warnung an und endet mit einem Wert ungleich null. `renet backup report --test` auf der Maschine sendet einen harmlosen Testbericht ohne beteiligtes Repository.
+Ein fehlgeschlagener Snapshot oder eine fehlgeschlagene Verifizierung erreicht das Konto über einen Fehlerbericht, und ein Stream, der nach Ablauf seiner Karenzzeit nicht mehr berichtet, wird ebenfalls markiert. Das Konto sendet pro Abonnement und Tag eine Sammel-E-Mail gemäß der Einstellung zur Backup-Gesundheit auf der Benachrichtigungsseite des Portals, standardmäßig aktiviert. `rdc machine health` zeigt eine fehlgeschlagene Verifizierung als Warnung an und endet mit einem Wert ungleich null. Ein Stream mit festgelegtem Ziel, der zum erwarteten Zeitpunkt seines nächsten Laufs nichts gemeldet hat oder dessen letzte drei Läufe das Ziel jeweils verfehlt haben, löst eine eigene Warnung aus, höchstens eine pro Stream und 6 Stunden, mit Ziel, erreichtem Wert und Grund. Die Erkennungsverzögerung entspricht dem Intervall des Wartungslaufs, also einer Stunde, sodass eine Warnung bis zu eine Stunde nach der Verfehlung eintreffen kann. Ein Stream ohne Ziel bleibt beim täglichen Digest.
 
 ## Geplante Backups
 

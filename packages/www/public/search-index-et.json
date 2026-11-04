@@ -3476,7 +3476,7 @@
   {
     "id": "search-7482",
     "content": "Rikketeavitused",
-    "body": "Ebaõnnestunud hetktõmmis või kontroll jõuab kontole rikkearuande kaudu ja voogu, mis lakkab pärast armuaega aru andmast, märgitakse samuti. Konto saadab tellimuse kohta päevas ühe kokkuvõtliku e-kirja portaali Teavituste lehe varundamise tervise eelistuse järgi, mis on vaikimisi sisse lülitatud. rdc machine health näitab ebaõnnestunud kontrolli hoiatusena ja lõpeb nullist erineva koodiga. renet backup report --test masinas saadab kahjutu testaruande ilma ühegi repositooriumita.",
+    "body": "Ebaõnnestunud hetktõmmis või kontroll jõuab kontole rikkearuande kaudu ja voogu, mis lakkab pärast armuaega aru andmast, märgitakse samuti. Konto saadab tellimuse kohta päevas ühe kokkuvõtliku e-kirja portaali Teavituste lehe varundamise tervise eelistuse järgi, mis on vaikimisi sisse lülitatud. rdc machine health näitab ebaõnnestunud kontrolli hoiatusena ja lõpeb nullist erineva koodiga. Voog, millel on deklareeritud siht ja mis ei ole oma järgmise käivituse oodatud ajaks teatanud või mille kolm viimast käivitust igaüks sihi mööda lasid, saadab oma hoiatuse, voo kohta kuni üks 6 tunni jooksul, nimetades sihi, saavutatud näitaja ja põhjuse. Tuvastusviivitus võrdub hooldusringi intervalliga ehk ühe tunniga, seega võib hoiatus tulla kuni tund pärast möödalaskmist. Sihita voog jääb päevaülevaatesse.",
     "excerpt": "Ebaõnnestunud hetktõmmis või kontroll jõuab kontole rikkearuande kaudu ja voogu, mis lakkab pärast armuaega aru andmast, märgitakse samuti. Konto saad...",
     "category": "Documentation",
     "page": "/et/docs/backup-restore",
