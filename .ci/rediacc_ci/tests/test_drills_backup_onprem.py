@@ -274,6 +274,7 @@ def test_the_receipt_module_still_asks_for_the_on_premise_half() -> None:
         (200, "", "unsupported"),
         (501, "NotImplemented", "unsupported"),
         (404, "ObjectLockConfigurationNotFoundError", "unsupported"),
+        (403, "<Code>AccessDenied</Code>", "denied"),
         (0, "connection refused", "unreachable"),
     ],
 )

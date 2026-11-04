@@ -56,6 +56,7 @@ USAGE_PATH = "/account/api/v1/backups/usage"
 BOOT_TRIES = 90
 BOOT_INTERVAL_S = 1.0
 HTTP_OK = 200
+HTTP_FORBIDDEN = 403
 HTTP_UNAUTHORIZED = 401
 HTTP_NOT_FOUND = 404
 # Names of the entry's own boot line and the refusal an unconfigured plane gives.
@@ -232,9 +233,11 @@ def route_verdict(status: int, body: str) -> str:
 
 
 def capability_verdict(status: int, body: str, marker: str) -> str:
-    """`supported`, `unsupported` or `unreachable` for one S3 capability query. `supported` needs a 200 whose body carries the capability's own marker (an answer that merely exists proves nothing); status 0 means nothing answered; any other answer is `unsupported`, which covers a store that returns NotImplemented or an empty configuration."""
+    """`supported`, `unsupported`, `unreachable` or `denied` for one S3 capability query. `supported` needs a 200 whose body carries the capability's own marker (an answer that merely exists proves nothing); status 0 means nothing answered; a 403 is `denied`, the key lacking the read permission, which says nothing about the store; any other answer is `unsupported`, which covers a store that returns NotImplemented or an empty configuration."""
     if status == 0:
         return "unreachable"
+    if status == HTTP_FORBIDDEN:
+        return "denied"
     if status == HTTP_OK and marker in body:
         return "supported"
     return "unsupported"
