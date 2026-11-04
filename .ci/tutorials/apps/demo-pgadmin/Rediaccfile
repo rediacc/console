@@ -70,12 +70,12 @@ _reset_pgadmin_data() {
         chmod 600 "$d/storage/admin_demo.dev/pgpass"
         chown -R 5050:5050 "$d"
         chmod 700 "$d"
-    '
+    ' || return 1
     printf '%s\n' "$PGADMIN_SERVER_MODE" >"$marker"
 }
 
 up() {
-    _apply_auth_mode
+    _apply_auth_mode || return 1
     _reset_pgadmin_data
     renet compose -- up -d
 }

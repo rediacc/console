@@ -8,7 +8,7 @@ up() {
     mkdir -p ./data
     # Solr runs as user 8983:8983 inside the container
     # up() runs as the universal user, so a one-shot container running as root hands the directory over
-    renet compose -- run --rm --no-deps --user 0 --entrypoint chown solr -R 8983:8983 /var/solr
+    renet compose -- run --rm --no-deps --user 0 --entrypoint chown solr -R 8983:8983 /var/solr || return 1
 
     echo "Starting Apache Solr server..."
     renet compose -- up -d
