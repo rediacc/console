@@ -13,7 +13,7 @@ FETCH VERIFIES. Every file is hashed after download and compared with the manife
 
 U3 (the licence key in the renet artifact). `ci-build-renet.yml` builds renet with `ACCOUNT_ED25519_PUBLIC_KEY` from the bws secret of that name, and `build_renet.py` bakes it through `-ldflags`; `cd-deploy-account.yml` and `cd-deploy-worker.yml` read the same single secret name, so the CI artifact is meant to carry the production licence public key. Whether edge and stable verify with it is settled by the live deploy run, not by this module. The artifact lives one day (`retention-days: 1`), so `stage` runs in the same CD pipeline that built it. `stage` takes the renet path as an argument, so a renet built in CD with the key bound through bws drops in with no change here.
 
-THE RENET GATE. `fetch` and `stage-local` hand a renet to an image, so both run `release.renet_key_gate`'s verdict on it (`check_renet`) and refuse a wrongly keyed one, with the expected key from `ACCOUNT_ED25519_PUBLIC_KEY`. Staleness is what the deploy names: `fetch` and `stage` refuse a baked version other than the named one; `stage-local` refuses a `vcs.revision` other than the renet this tree builds, the checkout's HEAD or, with no checkout, the gitlink. `stage` checks the version only, because its CD job binds no key, and `fetch` checks both before any image is built. The build info is read from the binary's bytes, so no step needs a Go toolchain. `stage-local --image-smoke-only` skips the gate for a stage that never leaves its job, the CI image smoke, whose job holds no key and no submodule; a deploy never passes it. A gate at staging cannot end the exposure of a long-lived image: that is why an executor never uploads renet at all (`packages/cli/src/services/renet/renet-execution.ts`, `inExecutor`).
+THE RENET GATE. `fetch` and `stage-local` hand a renet to an image, so both run `release.renet_key_gate`'s verdict on it (`check_renet`) and refuse a wrongly keyed one, with the expected key from `ACCOUNT_ED25519_PUBLIC_KEY`. Staleness is what the deploy names: `fetch` and `stage` refuse a baked version other than the named one; `stage-local` refuses a `vcs.revision` other than the renet this tree builds, the checkout's HEAD or, with no checkout, the gitlink. `stage` checks the version, and the key too when `ACCOUNT_ED25519_PUBLIC_KEY` is bound (its CD job binds none), and `fetch` checks both before any image is built. The build info is read from the binary's bytes, so no step needs a Go toolchain. `stage-local --image-smoke-only` skips the gate for a stage that never leaves its job, the CI image smoke, whose job holds no key and no submodule; a deploy never passes it. A gate at staging cannot end the exposure of a long-lived image: that is why an executor never uploads renet at all (`packages/cli/src/services/renet/renet-execution.ts`, `inExecutor`).
 
 RETENTION. `select_prune` keeps the newest `KEEP_RELEASES` versions plus the current and previous production versions, whatever their age, and refuses when the current version is unknown (unknown is never prunable).
 
@@ -336,10 +336,14 @@ def check_renet(
 
 
 def stage(version: str, git_sha: str, sources: dict[str, pathlib.Path]) -> str:
-    """Write `executor/v<version>/` once. Returns `staged` or `skipped`; refuses when the version exists with other bytes, or holds a renet stamped with another version."""
+    """Write `executor/v<version>/` once. Returns `staged` or `skipped`; refuses when the version exists with other bytes, or when the incoming renet is stamped with another version, or (with `ACCOUNT_ED25519_PUBLIC_KEY` bound) wrongly keyed: the objects are write-once, so a bad renet must not be written."""
     check_version(version)
     manifest = build_manifest(version, git_sha, sources)
-    check_renet(sources[RENET], version=version, key=False)
+    check_renet(
+        sources[RENET],
+        version=version,
+        key=bool(os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "").strip()),
+    )
     with tempfile.TemporaryDirectory(prefix="executor-stage-") as tmp:
         existing = pathlib.Path(tmp) / MANIFEST
         if get_object(key_for(version, MANIFEST), existing):
