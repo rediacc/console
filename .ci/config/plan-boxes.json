@@ -1728,18 +1728,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 22,
-      "done": 1,
+      "open": 14,
+      "done": 9,
       "open_sigs": [
-        "124d9bb0",
         "1fc992df",
         "31a903ee",
-        "32e45dcc",
         "3e8ac9d9",
-        "5aab0155",
-        "5ef1c737",
         "615b09d8",
-        "650c4e79",
         "7428fa28",
         "77f740eb",
         "8d218ccc",
@@ -1749,13 +1744,18 @@
         "b77f4b89",
         "c1809be6",
         "c90ef1b1",
-        "c92fa7a4",
-        "d443ae4f",
-        "d54ce9a0",
         "d5789763"
       ],
       "done_sigs": [
-        "4bc38d4e"
+        "124d9bb0",
+        "32e45dcc",
+        "4bc38d4e",
+        "5aab0155",
+        "5ef1c737",
+        "650c4e79",
+        "c92fa7a4",
+        "d443ae4f",
+        "d54ce9a0"
       ]
     },
     "agent/plans/PLAN-reggate-effort-cap.md": {
