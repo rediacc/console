@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-04T14:17:41.291Z",
+  "generatedAt": "2026-11-04T15:32:01.804Z",
   "legs": [
     {
       "index": 1,
@@ -74,6 +74,7 @@
         "pytest:.ci/rediacc_ci/tests/test_dev_measure_page_density.py",
         "pytest:.ci/rediacc_ci/tests/test_differential_tmp_roots.py",
         "pytest:.ci/rediacc_ci/tests/test_differential_write_recorded.py",
+        "pytest:.ci/rediacc_ci/tests/test_doc_providers_parsing.py",
         "pytest:.ci/rediacc_ci/tests/test_doc_providers_test_path.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_retag_image.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
@@ -247,6 +248,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_tenant_isolation.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_elite_s3_probe.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_obs_ceph_autobump.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_obs_mirror.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_waf_rules.py",
