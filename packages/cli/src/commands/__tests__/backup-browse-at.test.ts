@@ -69,6 +69,34 @@ vi.mock('../../utils/errors.js', async () => {
 
 const { registerBackupStorageCommands } = await import('../backup-storage.js');
 const { ValidationError } = await import('../../utils/errors.js');
+const { renderBrowseListing } = await import('../backup-storage-browse.js');
+
+type BrowseOptions = {
+  job?: { verb: string; steps: { name: string; params: Record<string, string> }[] };
+};
+
+/** The executor answers with `result`; a success then runs the job's render step, as the ticket would. */
+function answer(result: { success: boolean; exitCode: number; stdout: string }): void {
+  mockExecuteRepoFunction.mockImplementation(
+    async (
+      _fn: string,
+      _repo: string,
+      _machine: string,
+      _params: unknown,
+      options: BrowseOptions
+    ) => {
+      const step = options.job?.steps[0];
+      if (result.success && step?.name === 'renderBackupBrowse') {
+        await renderBrowseListing(result.stdout, {
+          repo: step.params.repo,
+          snapshot: step.params.snapshot,
+          limit: step.params.limit,
+        });
+      }
+      return result;
+    }
+  );
+}
 
 async function run(argv: string[]): Promise<void> {
   const program = new Command();
@@ -102,11 +130,7 @@ beforeEach(() => {
     credential: 'secret',
   });
   mockResolveSnapshotAt.mockResolvedValue(SNAPSHOT);
-  mockExecuteRepoFunction.mockResolvedValue({
-    success: true,
-    exitCode: 0,
-    stdout: listingStdout,
-  });
+  answer({ success: true, exitCode: 0, stdout: listingStdout });
 });
 
 afterEach(() => {
@@ -128,7 +152,19 @@ describe('backup browse without --at (regression control)', () => {
       'path',
     ]);
     expect(params.path).toBe('');
-    expect(options).toEqual({ debug: undefined, captureOutput: true });
+    expect(options).toMatchObject({ debug: undefined, captureOutput: true });
+    // The listing print is the job's step, carrying no snapshot for a browse of the live image.
+    expect(options.job).toEqual({
+      verb: 'backup browse',
+      steps: [
+        {
+          name: 'renderBackupBrowse',
+          on: 'success',
+          needsOutput: true,
+          params: { repo: 'shop', snapshot: '', limit: expect.any(String) },
+        },
+      ],
+    });
     expect(mockGetRepository).not.toHaveBeenCalled();
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
     expect(mockResolveSnapshotAt).not.toHaveBeenCalled();
@@ -154,6 +190,18 @@ describe('backup browse failure', () => {
   });
 });
 
+describe('backup browse as a job', () => {
+  it('returns the ticket without printing or failing when the job outlives the attach window', async () => {
+    mockExecuteRepoFunction.mockResolvedValue({ success: true, exitCode: 0, state: 'running' });
+
+    await run(['browse', 'shop']);
+
+    expect(mockPrint).not.toHaveBeenCalled();
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(process.exitCode).not.toBe(18);
+  });
+});
+
 describe('backup browse --at', () => {
   it('dispatches backup_browse_at with a snapshot id as given', async () => {
     await run(['browse', 'shop', '--at', SNAPSHOT, '--path', '/app']);
@@ -165,7 +213,12 @@ describe('backup browse --at', () => {
     expect(repoKey).toBe('shop');
     expect(machine).toBe('m1');
     expect(params).toMatchObject({ lineage: 'repo-guid', at: SNAPSHOT, path: '/app' });
-    expect(options).toEqual({ debug: undefined, captureOutput: true });
+    expect(options).toMatchObject({ debug: undefined, captureOutput: true });
+    expect(options.job.verb).toBe('backup browse');
+    expect(options.job.steps[0]).toMatchObject({
+      name: 'renderBackupBrowse',
+      params: { repo: 'shop', snapshot: SNAPSHOT },
+    });
   });
 
   it('uses the grand GUID as the lineage for a fork', async () => {
@@ -200,7 +253,7 @@ describe('backup browse --at', () => {
   });
 
   it('turns exit 18 into a warning and exit code 18, printing nothing', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({ success: false, exitCode: 18, stdout: '' });
+    answer({ success: false, exitCode: 18, stdout: '' });
 
     await run(['browse', 'shop', '--at', SNAPSHOT]);
 
@@ -220,7 +273,7 @@ describe('backup browse --at', () => {
   });
 
   it('notes once that a live-mount listing may differ from the stored image, and still renders it', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({
+    answer({
       success: true,
       exitCode: 0,
       stdout: JSON.stringify({ ...JSON.parse(listingStdout), listingSource: 'live-mount' }),
@@ -235,7 +288,7 @@ describe('backup browse --at', () => {
   });
 
   it('adds no note for a staged listing', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({
+    answer({
       success: true,
       exitCode: 0,
       stdout: JSON.stringify({ ...JSON.parse(listingStdout), listingSource: 'staged' }),

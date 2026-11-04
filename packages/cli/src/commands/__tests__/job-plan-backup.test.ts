@@ -36,6 +36,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
 const schedule = vi.hoisted(() => ({
   units: ['nightly', 'nightly.ds.fast', 'nightly.repo.gitlab'],
   buildStrategyCommandsForMachine: vi.fn(),
+  expectedStatusUnits: vi.fn(),
+  renderBackupScheduleStatus: vi.fn(),
 }));
 vi.mock('../../services/backup/backup-schedule.js', () => ({
   expectedScheduleUnits: () =>
@@ -43,7 +45,8 @@ vi.mock('../../services/backup/backup-schedule.js', () => ({
       schedule.units.map((unitName) => ({ unitName, strategyName: 'nightly', schedule: '' }))
     ),
   buildStrategyCommandsForMachine: schedule.buildStrategyCommandsForMachine,
-  reportBackupScheduleStatus: vi.fn(),
+  expectedStatusUnits: schedule.expectedStatusUnits,
+  renderBackupScheduleStatus: schedule.renderBackupScheduleStatus,
   sanitizeBackupOutput: (s: string) => s,
 }));
 vi.mock('../../services/backup/backup-schedule-reconcile.js', () => ({
@@ -115,7 +118,8 @@ type Executed = {
   machineName: string;
   verb?: string;
   commandKind?: { name: string; args?: { units: string[] } };
-  jobSteps?: unknown[];
+  captureOutput?: boolean;
+  jobSteps?: { name: string; on: string; params: Record<string, unknown> }[];
 };
 
 const FINISHED = { success: true, exitCode: 0, durationMs: 5, state: 'succeeded' as const };
@@ -132,6 +136,8 @@ beforeEach(() => {
   machine.subState = 'dead';
   machine.stageExit = 0;
   schedule.buildStrategyCommandsForMachine.mockReset();
+  schedule.expectedStatusUnits.mockReset();
+  schedule.renderBackupScheduleStatus.mockReset();
   executed = [];
   answer = FINISHED;
   dir = mkdtempSync(join(tmpdir(), 'job-plan-backup-'));
@@ -282,5 +288,89 @@ describe('backup run ad hoc', () => {
     await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/Failed to stage/);
 
     expect(executed).toHaveLength(0);
+  });
+});
+
+describe('backup status', () => {
+  const EXPECTED = [
+    { unitName: 'nightly', strategyName: 'nightly', schedule: '0 3 * * *' },
+    { unitName: 'nightly.repo.gitlab', strategyName: 'nightly', schedule: '0 4 * * *' },
+  ];
+  const SHOW = 'Id=rediacc-backup-nightly.timer\nLoadState=loaded\n\n';
+
+  beforeEach(() => {
+    schedule.expectedStatusUnits.mockResolvedValue(EXPECTED);
+  });
+
+  it('reads every unit through one backup-status job and makes no client SSH command', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({
+      functionName: 'backup-status',
+      machineName: 'm1',
+      verb: 'backup status',
+      captureOutput: true,
+      commandKind: {
+        name: 'backup-status',
+        args: { units: ['rediacc-backup-nightly', 'rediacc-backup-nightly.repo.gitlab'] },
+      },
+    });
+    expect(machine.commands).toEqual([]);
+    expect(executed[0].jobSteps).toEqual([
+      expect.objectContaining({
+        name: 'renderBackupStatus',
+        params: { machine: 'm1', strategy: '' },
+      }),
+    ]);
+  });
+
+  it('renders the table in the job step from the job output, so the table content is the old one', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', EXPECTED, SHOW);
+  });
+
+  it('hands the ticket back past the attach window and renders nothing yet', async () => {
+    answer = RUNNING;
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(schedule.renderBackupScheduleStatus).not.toHaveBeenCalled();
+    expect(mockRenderFailure).not.toHaveBeenCalled();
+  });
+
+  it('renders a failed job as a failure and prints no table', async () => {
+    answer = { ...FINISHED, success: false, exitCode: 1, state: 'failed', error: 'job failed' };
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+    expect(schedule.renderBackupScheduleStatus).not.toHaveBeenCalled();
+  });
+
+  it('makes no job when no strategy is bound, and still reports through the renderer', async () => {
+    schedule.expectedStatusUnits.mockResolvedValue([]);
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(executed).toHaveLength(0);
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', [], '');
+  });
+
+  it('keeps the strategy journal as the only client read, after the job finished', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+
+    await rdcBackup('status', 'nightly', '-m', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(machine.commands.map((c) => c.command)).toEqual([
+      expect.stringContaining("journalctl -u 'rediacc-backup-nightly.service'"),
+    ]);
   });
 });

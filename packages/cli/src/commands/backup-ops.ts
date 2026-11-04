@@ -6,6 +6,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
@@ -368,9 +369,46 @@ async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<
  * `backup status`: one row per scheduled unit (base, `.ds.`, `.repo.`) with timer presence, last run
  * and result, next run and a missed-run verdict, then the recent journal of a named strategy's units.
  */
-async function showBackupStatus(machineName: string, strategyFilter?: string): Promise<void> {
-  const { reportBackupScheduleStatus } = await import('../services/backup/backup-schedule.js');
-  await reportBackupScheduleStatus(machineName, strategyFilter);
+async function showBackupStatus(
+  machineName: string,
+  strategyFilter?: string,
+  debug?: boolean
+): Promise<void> {
+  const { expectedStatusUnits, renderBackupScheduleStatus } = await import(
+    '../services/backup/backup-schedule.js'
+  );
+  const expected = await expectedStatusUnits(machineName, strategyFilter);
+  if (expected.length === 0) {
+    // Nothing is bound: no unit to read, so no job.
+    renderBackupScheduleStatus(machineName, expected, '');
+    return;
+  }
+
+  // One read job (`systemctl show` of every unit's timer and service); the table is its step, so a ticket handed back early prints nothing half-done.
+  const units = [...new Set(expected.map((u) => `rediacc-backup-${u.unitName}`))];
+  const outcome = await runCommandJob(
+    'backup status',
+    {
+      functionName: 'backup-status',
+      machineName,
+      commandKind: { name: 'backup-status', args: { units } },
+      debug,
+      captureOutput: true,
+    },
+    [planStep('renderBackupStatus', { machine: machineName, strategy: strategyFilter ?? '' })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(
+      outcome.result,
+      `Reading the backup units failed on ${machineName}`
+    );
+    return;
+  }
   if (!strategyFilter) return;
 
   const localConfig = await configService.getLocalConfig();
@@ -396,6 +434,15 @@ async function showBackupStatus(machineName: string, strategyFilter?: string): P
     lease.release();
   }
 }
+
+bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
+  const { expectedStatusUnits, renderBackupScheduleStatus } = await import(
+    '../services/backup/backup-schedule.js'
+  );
+  const strategy =
+    typeof params.strategy === 'string' && params.strategy ? params.strategy : undefined;
+  renderBackupScheduleStatus(machine, await expectedStatusUnits(machine, strategy), output ?? '');
+});
 
 /** Register the machine-scoped backup ops: schedule, run, status, cancel. */
 export function registerBackupOpsCommands(backup: Command): void {
@@ -452,7 +499,7 @@ export function registerBackupOpsCommands(backup: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (strategy: string | undefined, options) => {
       try {
-        await showBackupStatus(options.machine, strategy);
+        await showBackupStatus(options.machine, strategy, options.debug);
       } catch (error) {
         handleError(error);
       }

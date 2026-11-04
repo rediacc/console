@@ -3,9 +3,12 @@
 import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { ValidationError } from '../utils/errors.js';
+import { outputService } from '../services/core/output.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
+import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { isLiveMountListing, parseBrowseResult } from './backup-storage-parser.js';
 
 /** The renet `backup browse-at` and `restore-path` verbs exit 18 when the snapshot's listing cannot serve the request. Propagated verbatim, like the quota refusal's 16. */
 export const RENET_NO_LISTING_EXIT = 18;
@@ -64,7 +67,20 @@ export async function runBrowseAt(
       depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
       limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
     },
-    { debug: options.debug, captureOutput: true },
+    {
+      debug: options.debug,
+      captureOutput: true,
+      job: {
+        verb: 'backup browse',
+        steps: [
+          planStep('renderBackupBrowse', {
+            repo: repoKey,
+            snapshot: snapshotId,
+            limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+          }),
+        ],
+      },
+    },
     {
       starting: t('commands.backup.browse.startingAt', { name: repoKey, snapshot: snapshotId }),
       completed: t('commands.backup.browse.completed', { name: repoKey }),
@@ -73,3 +89,62 @@ export async function runBrowseAt(
   );
   return { result, snapshotId };
 }
+
+/** What the render step needs to say about the job that listed: the repo, the snapshot of `--at`, and the row cap. */
+export interface BrowseRenderContext {
+  repo: string;
+  /** The snapshot id of `--at`; empty for a browse of the live image. */
+  snapshot: string;
+  limit: string;
+}
+
+/**
+ * Print the listing a `backup_browse` or `backup_browse_at` job produced. It is the job's `renderBackupBrowse` step, so
+ * a ticket handed back early prints nothing half-done, and `rdc job wait` renders it from the spooled output.
+ */
+export async function renderBrowseListing(
+  stdout: string | undefined,
+  ctx: BrowseRenderContext
+): Promise<void> {
+  const listing = parseBrowseResult(stdout);
+  if (!listing) {
+    throw new Error(`browse returned no listing for "${ctx.repo}"`);
+  }
+  // A listing walked from the live mount (a repository with no autostart keyfile) can differ slightly from the stored image, and the operator is told so before reading it.
+  if (ctx.snapshot && isLiveMountListing(listing)) {
+    outputService.warn(t('commands.backup.browse.liveMountListing', { snapshot: ctx.snapshot }));
+  }
+  if (listing.entries.length === 0) {
+    outputService.info(t('commands.backup.browse.empty', { name: ctx.repo }));
+    return;
+  }
+
+  const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+  const rows = listing.entries.map((e) => ({
+    name: e.path,
+    type: e.type,
+    size: e.type === 'file' ? formatSizeBytes(e.size) : '-',
+    modified: e.modTime.replace('T', ' ').replace(/\..*$/, ''),
+  }));
+  // Columns are name/type/size/modified, byte-for-byte what the retired `storage browse` produced, so an operator who lost that verb gets the same shape back rather than a new one to learn.
+  outputService.print(
+    outputService.format(rows, getOutputFormat(), [
+      { key: 'name', header: 'Name' },
+      { key: 'type', header: 'Type' },
+      { key: 'size', header: 'Size', align: 'right' as const },
+      { key: 'modified', header: 'Modified' },
+    ])
+  );
+  // A truncated listing that does not say so is how somebody concludes a file is absent from a backup when it is present.
+  if (listing.truncated) {
+    outputService.warn(t('commands.backup.browse.truncated', { limit: ctx.limit }));
+  }
+}
+
+bindStepHandler('renderBackupBrowse', ({ output, params }) =>
+  renderBrowseListing(output, {
+    repo: String(params.repo),
+    snapshot: String(params.snapshot),
+    limit: String(params.limit),
+  })
+);

@@ -49,8 +49,8 @@ import {
   resolveMachineCpuCount,
 } from './backup-schedule-reconcile.js';
 import {
+  buildScheduleStatusRows,
   type ExpectedScheduleUnit,
-  readScheduleStatus,
   type ScheduleStatusRow,
   scheduleStatusExitCode,
 } from './backup-schedule-status.js';
@@ -288,16 +288,15 @@ export async function expectedScheduleUnits(machineName: string): Promise<Expect
 }
 
 /**
- * `backup status` body: per unit, scheduled or not, last run and result, next run, and a missed-run
- * verdict. Prints the table and sets exit code 1 when any unit is unscheduled or missed a run.
+ * The units `backup status` reads: the machine's expected scheduled units, narrowed to one strategy. A named
+ * strategy with no unit spec is still listed under its own name, so status reports it as not scheduled.
  */
-export async function reportBackupScheduleStatus(
+export async function expectedStatusUnits(
   machineName: string,
   strategyFilter?: string
-): Promise<ScheduleStatusRow[]> {
+): Promise<ExpectedScheduleUnit[]> {
   const localConfig = await configService.getLocalConfig();
-  const machine = localConfig.machines[machineName];
-  if (!machine) throw new Error(`Machine "${machineName}" not found`);
+  if (!localConfig.machines[machineName]) throw new Error(`Machine "${machineName}" not found`);
   const expected = (await expectedScheduleUnits(machineName)).filter(
     (u) => strategyFilter === undefined || u.strategyName === strategyFilter
   );
@@ -309,36 +308,42 @@ export async function reportBackupScheduleStatus(
       schedule: strategy?.schedule ?? '',
     });
   }
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-  try {
-    const rows = await readScheduleStatus(lease.sftp, expected);
-    if (rows.length === 0) {
-      outputService.warn(
-        `No backup strategy is bound to ${machineName}, so nothing is scheduled. Bind one with: rdc backup strategy bind <name> -m ${machineName}`
-      );
-      setExitCode(1);
-      return rows;
-    }
-    outputService.print(
-      rows.map((r) => ({
-        strategy: r.strategy,
-        unit: r.unit,
-        status: r.scheduled ? 'scheduled' : 'not scheduled',
-        lastRun: r.lastRun,
-        result: r.result,
-        nextRun: r.nextRun,
-        missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
-      })),
-      'table'
+  return expected;
+}
+
+/**
+ * `backup status` render: per unit, scheduled or not, last run and result, next run, and a missed-run verdict, from
+ * the `systemctl show` text a `backup-status` job returned. Prints the table and sets exit code 1 when any unit is
+ * unscheduled or missed a run.
+ */
+export function renderBackupScheduleStatus(
+  machineName: string,
+  expected: ExpectedScheduleUnit[],
+  showOutput: string
+): ScheduleStatusRow[] {
+  const rows = buildScheduleStatusRows(expected, parseSystemctlShow(showOutput));
+  if (rows.length === 0) {
+    outputService.warn(
+      `No backup strategy is bound to ${machineName}, so nothing is scheduled. Bind one with: rdc backup strategy bind <name> -m ${machineName}`
     );
-    const code = scheduleStatusExitCode(rows);
-    if (code !== 0) setExitCode(code);
+    setExitCode(1);
     return rows;
-  } finally {
-    lease.release();
   }
+  outputService.print(
+    rows.map((r) => ({
+      strategy: r.strategy,
+      unit: r.unit,
+      status: r.scheduled ? 'scheduled' : 'not scheduled',
+      lastRun: r.lastRun,
+      result: r.result,
+      nextRun: r.nextRun,
+      missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
+    })),
+    'table'
+  );
+  const code = scheduleStatusExitCode(rows);
+  if (code !== 0) setExitCode(code);
+  return rows;
 }
 
 function sftpTocKeyTransport(sftp: SFTPClient): TocKeyTransport {

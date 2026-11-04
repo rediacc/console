@@ -29,7 +29,6 @@ import { registerBackupReconcile } from './backup-reconcile.js';
 import { registerBackupRepair } from './backup-repair.js';
 import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
 import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
-import { isLiveMountListing, parseBrowseResult } from './backup-storage-parser.js';
 import { registerBackupSnapshot } from './backup-storage-snapshot.js';
 import { runStoreVerify } from './backup-store-verify.js';
 import { registerBackupTocKey } from './backup-toc-key.js';
@@ -339,6 +338,8 @@ function registerBackupBrowse(backup: Command): void {
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
           let snapshotId = '';
           let result: Awaited<ReturnType<typeof executeRepoFunction>>;
+          // The listing print is the job's step (PLAN-detached-jobs J17), so a ticket handed back early prints nothing half-done.
+          const limit = options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT;
           if (options.at) {
             ({ result, snapshotId } = await runBrowseAt(repoKey, machineName, options.at, options));
           } else {
@@ -349,10 +350,17 @@ function registerBackupBrowse(backup: Command): void {
               {
                 path: options.path ?? '',
                 depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
-                limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+                limit,
               },
               // captureOutput for the same reason as backup verify: the listing IS the answer, and without it the step detector drops the verb's JSON and browse exits 0 with EMPTY stdout.
-              { debug: options.debug, captureOutput: true },
+              {
+                debug: options.debug,
+                captureOutput: true,
+                job: {
+                  verb: 'backup browse',
+                  steps: [planStep('renderBackupBrowse', { repo: repoKey, snapshot: '', limit })],
+                },
+              },
               {
                 starting: t('commands.backup.browse.starting', { name: repoKey }),
                 completed: t('commands.backup.browse.completed', { name: repoKey }),
@@ -361,57 +369,15 @@ function registerBackupBrowse(backup: Command): void {
             );
           }
 
+          // A job that outlived the attach window printed its ticket, and its listing renders from `rdc job wait`.
           // Exit 18: the snapshot has no stored listing (an older snapshot, or one taken without a listing). A distinct code, as with 16, so a script can tell "no listing there" from "it broke".
           if (options.at && result.exitCode === RENET_NO_LISTING_EXIT) {
             outputService.warn(
               t('commands.backup.browse.noListing', { name: repoKey, snapshot: snapshotId })
             );
             setExitCode(RENET_NO_LISTING_EXIT);
-            return;
           }
-
-          // executeRepoFunction already rendered the failure (envelope and exit code).
-          // Falling through would throw "no listing" and print a SECOND envelope, so stdout would stop being one JSON document.
-          if (!result.success) return;
-          const listing = parseBrowseResult(result.stdout);
-          if (!listing) {
-            throw new Error(`browse returned no listing for "${repoKey}"`);
-          }
-          // A listing walked from the live mount (a repository with no autostart keyfile) can differ slightly from the stored image, and the operator is told so before reading it.
-          if (options.at && isLiveMountListing(listing)) {
-            outputService.warn(
-              t('commands.backup.browse.liveMountListing', { snapshot: snapshotId })
-            );
-          }
-          if (listing.entries.length === 0) {
-            outputService.info(t('commands.backup.browse.empty', { name: repoKey }));
-            return;
-          }
-
-          const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
-          const rows = listing.entries.map((e) => ({
-            name: e.path,
-            type: e.type,
-            size: e.type === 'file' ? formatSizeBytes(e.size) : '-',
-            modified: e.modTime.replace('T', ' ').replace(/\..*$/, ''),
-          }));
-          // Columns are name/type/size/modified, byte-for-byte what the retired `storage browse` produced, so an operator who lost that verb gets the same shape back rather than a new one to learn.
-          outputService.print(
-            outputService.format(rows, getOutputFormat(), [
-              { key: 'name', header: 'Name' },
-              { key: 'type', header: 'Type' },
-              { key: 'size', header: 'Size', align: 'right' as const },
-              { key: 'modified', header: 'Modified' },
-            ])
-          );
-          // A truncated listing that does not say so is how somebody concludes a file is absent from a backup when it is present.
-          if (listing.truncated) {
-            outputService.warn(
-              t('commands.backup.browse.truncated', {
-                limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
-              })
-            );
-          }
+          // executeRepoFunction already rendered the failure (envelope and exit code), and a success printed the listing as the job's step.
         } catch (error) {
           handleError(error);
         }

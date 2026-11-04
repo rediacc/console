@@ -30,7 +30,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
 
 const schedule = vi.hoisted(() => ({
   units: ['nightly', 'nightly.ds.fast', 'nightly.repo.gitlab'],
-  reportBackupScheduleStatus: vi.fn(),
+  expectedStatusUnits: vi.fn(),
 }));
 vi.mock('../../services/backup/backup-schedule.js', () => ({
   expectedScheduleUnits: () =>
@@ -38,7 +38,8 @@ vi.mock('../../services/backup/backup-schedule.js', () => ({
       schedule.units.map((unitName) => ({ unitName, strategyName: 'nightly', schedule: '' }))
     ),
   buildStrategyCommandsForMachine: vi.fn(),
-  reportBackupScheduleStatus: schedule.reportBackupScheduleStatus,
+  expectedStatusUnits: schedule.expectedStatusUnits,
+  renderBackupScheduleStatus: vi.fn(),
   sanitizeBackupOutput: (s: string) => s,
 }));
 
@@ -83,8 +84,9 @@ vi.mock('../../utils/errors.js', async (orig) => ({
     throw error;
   },
 }));
+const jobs = vi.hoisted(() => ({ runCommandJob: vi.fn() }));
 vi.mock('../../services/jobs/command-job.js', () => ({
-  runCommandJob: vi.fn(),
+  runCommandJob: jobs.runCommandJob,
   pendingExitCode: vi.fn(),
 }));
 
@@ -102,7 +104,12 @@ beforeEach(() => {
   machine.commands.length = 0;
   machine.subState = 'dead';
   machine.runExit = 0;
-  schedule.reportBackupScheduleStatus.mockReset();
+  schedule.expectedStatusUnits.mockReset();
+  schedule.expectedStatusUnits.mockResolvedValue([
+    { unitName: 'nightly', strategyName: 'nightly', schedule: '' },
+  ]);
+  jobs.runCommandJob.mockReset();
+  jobs.runCommandJob.mockResolvedValue({ kind: 'finished', result: { success: true } });
 });
 
 describe('backup cancel', () => {
@@ -117,10 +124,11 @@ describe('backup cancel', () => {
 });
 
 describe('backup status', () => {
-  it('reports through the per-unit schedule status', async () => {
+  it('reads the units through one backup-status job and touches the machine by no other route', async () => {
     await rdcBackup('status', '-m', 'm1');
 
-    expect(schedule.reportBackupScheduleStatus).toHaveBeenCalledWith('m1', undefined);
+    expect(schedule.expectedStatusUnits).toHaveBeenCalledWith('m1', undefined);
+    expect(jobs.runCommandJob).toHaveBeenCalledTimes(1);
     expect(machine.commands).toEqual([]);
   });
 });
