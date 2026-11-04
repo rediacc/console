@@ -33,12 +33,14 @@ const CLAIM_DIR = 'settled.claim';
 export type ScratchRecord = { ok: true; value: string } | { ok: false; error: string };
 
 function parseRecord(path: string): { key: string; record: ScratchRecord } | undefined {
-  let parsed: { key?: unknown; ok?: unknown; value?: unknown; error?: unknown };
+  let parsed: { key?: unknown; ok?: unknown; value?: unknown; error?: unknown } | null;
   try {
     parsed = JSON.parse(readFileSync(path, 'utf8'));
   } catch {
     return undefined; // a torn file never takes the group down
   }
+  // A file holding the JSON literal `null` (or any non-object) parses fine and is still not a record.
+  if (typeof parsed !== 'object' || parsed === null) return undefined;
   if (typeof parsed.key !== 'string') return undefined;
   if (parsed.ok === true && typeof parsed.value === 'string') {
     return { key: parsed.key, record: { ok: true, value: parsed.value } };
@@ -75,6 +77,7 @@ export class ScratchStore {
   /** Store `record` under `key`; the last write for a key wins. */
   write(group: string, key: string, record: ScratchRecord): void {
     const dir = this.groupDir(group);
+    if (this.settled(dir)) return; // a late record of a group that already settled has no reader
     mkdirSync(dir, { recursive: true, mode: 0o700 });
     chmodSync(this.root, 0o700);
     chmodSync(dir, 0o700);
@@ -103,9 +106,15 @@ export class ScratchStore {
     return out;
   }
 
+  /** Whether the group's settlement was claimed (and so its records are read or dropped). */
+  private settled(dir: string): boolean {
+    return existsSync(join(dir, CLAIM_DIR));
+  }
+
   /** Mark `key` as done with the group: its job ended or never started, so no more records are coming from it. */
   finish(group: string, key: string): void {
     const dir = this.groupDir(group);
+    if (this.settled(dir)) return;
     mkdirSync(dir, { recursive: true, mode: 0o700 });
     writeFileSync(join(dir, ScratchStore.fileFor(key).replace(/\.json$/, '.done')), '', {
       mode: 0o600,
@@ -135,8 +144,22 @@ export class ScratchStore {
     }
   }
 
+  /**
+   * Remove the group's records and done markers but keep the settlement claim, so an observer whose completeness check
+   * ran before the drop cannot claim afterwards and settle a second time from empty scratch. The stale sweep removes the
+   * claim with the group a day later.
+   */
   drop(group: string): void {
-    rmSync(this.groupDir(group), { recursive: true, force: true });
+    const dir = this.groupDir(group);
+    let names: string[];
+    try {
+      names = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of names) {
+      if (name !== CLAIM_DIR) rmSync(join(dir, name), { recursive: true, force: true });
+    }
   }
 
   /** Remove other groups untouched for a day (a command that never reached its final step). */

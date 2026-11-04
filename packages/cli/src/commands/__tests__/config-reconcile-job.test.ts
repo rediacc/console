@@ -9,6 +9,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setCommandJobDeps } from '../../services/jobs/command-job.js';
+import { TicketStore } from '../../services/jobs/ticket-store.js';
 import { installJobDeps } from './job-deps.js';
 
 const mocks = vi.hoisted(() => ({
@@ -149,8 +151,10 @@ describe('config reconcile as one job per machine under one group', () => {
     expect(groups.size).toBe(1);
     expect(mocks.reconciled).toEqual([{ seen: ['m1', 'm2'], unreachable: [] }]);
     expect(mocks.print).toHaveBeenCalledOnce();
-    // The scratch records of the group are gone once it settled.
-    expect(readdirSync(join(configDir, 'rediacc', 'jobs', 'test.scratch'))).toEqual([]);
+    // The scratch records of the group are gone once it settled; only its claim marker stays, against a late second settle.
+    const scratchRoot = join(configDir, 'rediacc', 'jobs', 'test.scratch');
+    const [settled] = readdirSync(scratchRoot);
+    expect(readdirSync(join(scratchRoot, settled))).toEqual(['settled.claim']);
   });
 
   it('a machine whose job could not start is unreachable, with its error, and the last machine still settles', async () => {
@@ -171,6 +175,56 @@ describe('config reconcile as one job per machine under one group', () => {
     expect(mocks.reconciled).toEqual([
       { seen: ['m1'], unreachable: [{ machine: 'm2', error: 'no route' }] },
     ]);
+    expect(mocks.print).toHaveBeenCalledOnce();
+  });
+
+  it('a last job dispatched whose ticket then fails to record settles once: the ticket steps find the claim taken (f5138b83.1, f5b87d0e.2)', async () => {
+    restoreJobDeps();
+    const dir = mkdtempSync(join(tmpdir(), 'reconcile-dispatched-'));
+    const store = new TicketStore('test', dir);
+    let dispatched = false;
+    const append = store.append.bind(store);
+    store.append = ((...args: Parameters<typeof append>) => {
+      if (dispatched) throw new Error('disk full');
+      return append(...args);
+    }) as typeof store.append;
+    setCommandJobDeps({
+      executor: () => ({
+        execute: (options: { machineName: string }) => {
+          executed.push(options as unknown as Executed);
+          if (options.machineName === 'm2') dispatched = true;
+          return Promise.resolve(listing(options.machineName) as never);
+        },
+      }),
+      store: () => store,
+      stepDeps: () =>
+        Promise.resolve({
+          observer: { configName: 'test' },
+          warn: () => undefined,
+          claim: ({ steps }) =>
+            Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
+        }),
+    });
+    restoreJobDeps = () => {
+      setCommandJobDeps();
+      rmSync(dir, { recursive: true, force: true });
+    };
+    await reconcile();
+    // The command settled the group (m2 as unreachable with the recording error), and nothing settles it again.
+    expect(mocks.reconciled).toHaveLength(1);
+    expect(mocks.reconciled[0].unreachable.map((u) => u.machine)).toEqual(['m2']);
+    expect(mocks.print).toHaveBeenCalledOnce();
+    // The late ticket of m2 runs its steps now: a second settlement would reconcile again.
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    const group = executed[0].jobSteps?.[0].params.group;
+    const ctx = { jobId: 'j-m2', machine: 'm2', state: 'succeeded' as const, output: '{}' };
+    const params = executed[1].jobSteps?.find((x) => x.name === 'reconcileConfigState')?.params;
+    await (await resolveStepHandler('recordMachineListing'))({
+      ...ctx,
+      params: { group },
+    } as never);
+    await (await resolveStepHandler('reconcileConfigState'))({ ...ctx, params } as never);
+    expect(mocks.reconciled).toHaveLength(1);
     expect(mocks.print).toHaveBeenCalledOnce();
   });
 

@@ -74,4 +74,47 @@ describe('ScratchStore', () => {
     expect(store.claim('g1')).toBe(false);
     expect(store.read('g1').size).toBe(0);
   });
+
+  it('keeps the claim through a drop, so a late claim cannot settle a second time (f5138b83.2)', () => {
+    const store = new ScratchStore('cfg', dir);
+    store.write('g1', 'm1', { ok: true, value: 'x' });
+    store.finish('g1', 'm1');
+    expect(store.claim('g1')).toBe(true);
+    store.drop('g1');
+    // An observer whose allFinished() ran before the drop reaches claim() after it.
+    expect(store.claim('g1')).toBe(false);
+    expect(store.read('g1').size).toBe(0);
+    expect(store.allFinished('g1', ['m1'])).toBe(false);
+  });
+
+  it('control: a group that was never claimed is dropped whole and can be claimed afterwards', () => {
+    const store = new ScratchStore('cfg', dir);
+    store.write('g1', 'm1', { ok: true, value: 'x' });
+    store.drop('g1');
+    expect(store.read('g1').size).toBe(0);
+    expect(store.claim('g1')).toBe(true);
+  });
+
+  it('ignores a record or marker written after the group settled', () => {
+    const store = new ScratchStore('cfg', dir);
+    expect(store.claim('g1')).toBe(true);
+    store.write('g1', 'm1', { ok: true, value: 'late' });
+    store.finish('g1', 'm1');
+    expect(store.read('g1').size).toBe(0);
+    expect(store.allFinished('g1', ['m1'])).toBe(false);
+  });
+
+  it('skips a record file holding the JSON literal null or another non-object, and keeps the rest', () => {
+    const store = new ScratchStore('cfg', dir);
+    store.write('g1', 'm1', { ok: true, value: 'x' });
+    const group = join(dir, 'jobs', 'cfg.scratch', 'g1');
+    for (const [name, body] of [
+      ['null.json', 'null'],
+      ['num.json', '7'],
+      ['str.json', '"s"'],
+    ]) {
+      writeFileSync(join(group, name), body);
+    }
+    expect([...store.read('g1').keys()]).toEqual(['m1']);
+  });
 });
