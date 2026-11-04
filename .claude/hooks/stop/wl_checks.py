@@ -2363,6 +2363,8 @@ PRIORITY_LADDER = (
                 "pr-review",
                 # An open per-commit review finding at or above `block_at` (agent/plans/PLAN-per-commit-review.md section 7): it protects the PR the way ci-red does, so it shares ci-red's tier rather than sitting in hygiene where it could be starved by real work.
                 "commit-review",
+                # A finished lease of this session holding unlanded work (agent/plans/PLAN-worktree-lease.md Design 7): the box's commits exist nowhere the PR can see.
+                "worktree-unlanded",
             }
         ),
     ),
@@ -2557,6 +2559,39 @@ def _soaked_pins_report(worklist, session_id, state_doc):
         text = wl_soakedpins.advisory(C.project_root(C.project_start()))
         if text:
             outq_add(worklist, session_id, state_doc, "soaked-pins", text, 3)
+
+
+def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
+    """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
+    root = C.project_root(C.project_start(event))
+    cwd = event.get("cwd")
+    try:
+        import wl_worktrees
+
+        got = wl_worktrees.survey(
+            root,
+            session_id,
+            fold.items,
+            lambda: wl_worktrees.live_work(roster, cwd, session_id),
+            state_doc.get("worktrees") or {},
+        )
+        report = wl_worktrees.report_lines(got)
+    except Exception as exc:
+        text = M.N_WORKTREE_REPORT % ("  the survey raised %s: %s" % (type(exc).__name__, exc))
+        outq_add(worklist, session_id, state_doc, "worktree-orphan", text, 3)
+        return
+    state_doc["worktrees"] = got["cache"]
+    if got["unlanded"]:
+        vadd(
+            "worktree-unlanded",
+            False,
+            M.V_WORKTREE_UNLANDED % (len(got["unlanded"]), wl_worktrees.unlanded_lines(got)),
+            subject=[row["id"] for row in got["unlanded"]],
+        )
+    if report:
+        outq_add(
+            worklist, session_id, state_doc, "worktree-orphan", M.N_WORKTREE_REPORT % report, 3
+        )
 
 
 def _renet_tests_report(worklist, session_id, state_doc):
@@ -2958,6 +2993,10 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
 TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
 # The turbo arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
 TURBO_KEEPS = frozenset({"turbo-next"})
+# A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as TURBO_KEEPS does.
+WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
+# The same design keeps the lease report out of a phase's advisory batching.
+WORKTREE_REPORT = "worktree-orphan"
 # The keys a turbo batch that is still building locally stands down (operator ruling 2026-10-13: turbo is for local implementation, so a red on the open PR does not hold a stop until the prompted plans are complete). Each is reported on every stop instead, and blocks again the moment `turbo_build_parks` is empty.
 TURBO_BUILD_PARKS = frozenset({"ci-red"})
 
@@ -3030,7 +3069,12 @@ def focus_advisory_filter(focus, state_doc):
     """The `only=` predicate for this stop's advisory release: None (everything) outside focus or when the batch is due, else the PR's own advisory keys."""
     if not focus or wl_standdown.batch_due(state_doc.get("standdown")):
         return None
-    return wl_standdown.advisory_kept
+    return _focus_advisory_kept
+
+
+def _focus_advisory_kept(key):
+    """wl_standdown's released keys plus the lease report."""
+    return wl_standdown.advisory_kept(key) or str(key).split(":", 1)[0] == WORKTREE_REPORT
 
 
 def focus_advisory_bookkeeping(worklist, session_id, focus, state_doc):
@@ -3041,7 +3085,7 @@ def focus_advisory_bookkeeping(worklist, session_id, focus, state_doc):
     if wl_standdown.batch_due(sd):
         sd["batch_at"] = C.stamp_now()
     sd["adv_held"] = sum(
-        1 for e in _outq(state_doc)["items"] if not wl_standdown.advisory_kept(_outq_display_key(e))
+        1 for e in _outq(state_doc)["items"] if not _focus_advisory_kept(_outq_display_key(e))
     )
     S.save_state(worklist, session_id, state_doc)
 
@@ -3961,6 +4005,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                     me8,
                 ),
             )
+
+    worktree_check(worklist, session_id, state_doc, fold, _roster, event, vadd)
 
     # ---- THE WAKE-UP TIMER (wl_wake; operator 2026-10-03: "the stop hook should check the final step which is 'is stop hook wait triggered in the background?'"). Any background work still running and no timer among the live tasks: the stop would wait on tasks that, if they all hang, never re-invoke the session. INVARIANT, because a rotating or pausable key is exactly how
     # a session stops into that deadlock anyway, and in T_OWED beside bg-report: the work being waited on is the party owed a look.
@@ -5608,6 +5654,8 @@ def run_stop(event, event_ok, worklist, hook_file):
 
         def _keeps(v):
             if _profile is wl_standdown.PR_LOOP and v[0] in TURBO_KEEPS:
+                return True
+            if v[0] in WORKTREE_KEEPS:
                 return True
             return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
 

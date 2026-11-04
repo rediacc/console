@@ -517,6 +517,13 @@
     "wisdom-due": {
       "block": "low",
       "advise": "quiet"
+    },
+    "worktree-orphan": {
+      "advise": "low"
+    },
+    "worktree-unlanded": {
+      "block": "low",
+      "advise": "low"
     }
   },
   "tuned": {

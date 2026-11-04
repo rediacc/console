@@ -3211,6 +3211,17 @@ CLI_STATUS_ROW = (
     "  recorded: %(verdict)s"
 )
 
+V_WORKTREE_UNLANDED = (
+    "UNLANDED LEASE: %d finished lease tree(s) of this session hold work the live branch does "
+    "not:\n"
+    "%s\n"
+    "  Each commit lands through the lines `land` prints, and `gc` then collects the tree:\n"
+    "    ./run.sh worktree gc --write --id <id>\n"
+    "  A dirty path gets committed in the lease first, or `gc` lists the tree for a decision."
+)
+
+N_WORKTREE_REPORT = "LEASE TREES (nothing blocks on these):\n%s"
+
 CLI_STATUS_NONE = (
     "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
     "agent started since it; an id that finished its turn is not live."

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Controls for lease trees and the Stop hook (agent/plans/PLAN-worktree-lease.md).
 
-    python3 .claude/hooks/stop/test-wl_worktrees.py [root]
+    python3 .claude/hooks/stop/test-wl_worktrees.py [root|stop]
 
 Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py. No argument runs every section.
 
 `root` is W1: a lease tree's own copy of these hooks writes to the main checkout's store, and nothing else moves with it. Every control drives a fixture's hook copy in a child process, so WL_WORKTREES_TEST_CLAUDE=<dir> judges another `.claude` tree, the way the fail-before figures were read.
+
+`stop` is W11: the Stop hook follows leases. `wl_worktrees.survey` is driven in a child process over fixture repositories, then the real hook over one fixture through wlfix.
 """
 
 import ast
@@ -23,7 +25,9 @@ _CI = _REAL.parents[3] / ".ci" / "rediacc_ci"
 SOURCE = pathlib.Path(os.environ.get("WL_WORKTREES_TEST_CLAUDE") or _REAL.parents[2])
 ME = "cafe0000"
 SID = ME + "-0000-4000-8000-000000000000"
+PEER = "babe0000-0000-4000-8000-000000000000"
 CONTROL_FLOOR = 40
+STOP_FLOOR = 50
 
 
 def _by_file(name):
@@ -494,7 +498,386 @@ def section_root():
     )
 
 
-SECTIONS = {"root": section_root}
+SURVEY = """
+import json, subprocess, sys
+sys.path.insert(0, sys.argv[1])
+import wl_worktrees as W
+root, session, live, items, cache_path = sys.argv[2:7]
+real = subprocess.run
+statuses = []
+def counting(argv, *a, **k):
+    if "status" in argv:
+        statuses.append(argv)
+    return real(argv, *a, **k)
+subprocess.run = counting
+live = json.loads(live)
+if live is not None:
+    live = {"ids": set(live["ids"]), "trees": set(live["trees"])}
+cache = {}
+if cache_path:
+    try:
+        with open(cache_path, encoding="utf-8") as fh:
+            cache = json.load(fh)
+    except OSError:
+        pass
+got = W.survey(root, session, json.loads(items), lambda: live, cache)
+if cache_path:
+    with open(cache_path, "w", encoding="utf-8") as fh:
+        json.dump(got["cache"], fh)
+got["statuses"] = len(statuses)
+got["lines"] = W.unlanded_lines(got)
+got["report"] = W.report_lines(got)
+print(json.dumps(got))
+"""
+NOBODY = {"ids": [], "trees": []}
+
+
+def read(tmp, main, session=SID, live=NOBODY, items=(), cache=""):
+    """One `survey` in a child process. `statuses` counts its `git status` calls through a stub over `subprocess.run`."""
+    code, out, err = pyrun(
+        tmp,
+        tmp,
+        SURVEY,
+        SOURCE / "hooks/stop",
+        main,
+        session,
+        json.dumps(live),
+        json.dumps(list(items)),
+        cache,
+    )
+    if code != 0:
+        raise SystemExit("survey: %s" % err[-600:])
+    return json.loads(out)
+
+
+def ids(rows):
+    return sorted(row["id"] for row in rows)
+
+
+def lease_main_repo(tmp, name):
+    main = tmp / name / "console"
+    main.mkdir(parents=True)
+    git(tmp, main, "init", "-q", "-b", "main")
+    (main / "a.txt").write_text("a\n", encoding="utf-8")
+    (main / ".gitignore").write_text(".claude/worktrees/\n.worktrees/\n", encoding="utf-8")
+    git(tmp, main, "add", "-A")
+    git(tmp, main, "commit", "-q", "-m", "base")
+    return main
+
+
+def write_record(main, lease_id, owner=ME, agent=""):
+    store = main / ".git/rediacc-worktrees"
+    store.mkdir(exist_ok=True)
+    record = {
+        "id": lease_id,
+        "path": str(main / ".claude/worktrees" / lease_id),
+        "owner": owner,
+        "agent": agent,
+        "base": {},
+        "created_at": "2026-11-04T12:00:00Z",
+    }
+    (store / ("%s.json" % lease_id)).write_text(json.dumps(record), encoding="utf-8")
+
+
+def new_lease(tmp, main, lease_id, owner=ME, agent=""):
+    lease = linked(tmp, main, ".claude/worktrees/%s" % lease_id, "--detach")
+    write_record(main, lease_id, owner, agent)
+    return lease
+
+
+def commit_in(tmp, tree, rel, text, message="c"):
+    (tree / rel).write_text(text, encoding="utf-8")
+    git(tmp, tree, "add", "--", rel)
+    git(tmp, tree, "commit", "-q", "-m", message)
+    return git(tmp, tree, "rev-parse", "HEAD")
+
+
+def control_owner_blocks(tmp):
+    main = lease_main_repo(tmp, "owner")
+    lease = new_lease(tmp, main, "clean")
+    got = read(tmp, main)
+    check("a clean lease of this session does not block", got["unlanded"], [])
+    check("a clean lease is no orphan", got["orphans"], [])
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    got = read(tmp, main)
+    check("a finished lease with a commit blocks", ids(got["unlanded"]), ["clean"])
+    check("the block names the commit", got["unlanded"][0]["commits"], {".": [sha]})
+    check("the block counts no dirty path", got["unlanded"][0]["dirty"], 0)
+    check("the block names `land`", "./run.sh worktree land clean" in got["lines"], True)
+    check("the owner's figures ran git status", got["statuses"] > 0, True)
+    (lease / "c.txt").write_text("c\n", encoding="utf-8")
+    got = read(tmp, main)
+    check("an untracked file counts as dirty", got["unlanded"][0]["dirty"], 1)
+
+
+def control_peer(tmp):
+    main = lease_main_repo(tmp, "peer")
+    lease = new_lease(tmp, main, "w1")
+    commit_in(tmp, lease, "b.txt", "b\n")
+    got = read(tmp, main, session=PEER)
+    check("a peer's lease does not block", got["unlanded"], [])
+    check("a peer's lease is reported", ids(got["peers"]), ["w1"])
+    check(
+        "a peer's lease is one report line",
+        len([x for x in got["report"].splitlines() if "w1" in x]),
+        1,
+    )
+    check("a peer's lease spends no git status", got["statuses"], 0)
+
+
+def control_live(tmp):
+    main = lease_main_repo(tmp, "live")
+    lease = new_lease(tmp, main, "w1", agent="wa1")
+    commit_in(tmp, lease, "b.txt", "b\n")
+    got = read(tmp, main, live={"ids": ["wa1"], "trees": []})
+    check("a live writer by agent id holds the lease", got["unlanded"], [])
+    check("that lease is read as held", got["held"], ["w1"])
+    check("a held lease spends no git status", got["statuses"], 0)
+    got = read(tmp, main, live={"ids": ["other"], "trees": []})
+    check("another agent holds nothing", ids(got["unlanded"]), ["w1"])
+    got = read(tmp, main, live={"ids": [], "trees": [str(lease)]})
+    check("a live writer by recorded tree holds the lease", got["held"], ["w1"])
+    item = {"id": "abcd1234", "state": ">", "worker": "x", "text": "writing in w1"}
+    got = read(tmp, main, items=[item])
+    check("a worklist lease naming it holds the lease", got["held"], ["w1"])
+    got = read(tmp, main, items=[{**item, "state": " "}])
+    check("an open item naming it holds nothing", got["held"], [])
+    sleeper = subprocess.Popen(["sleep", "60"], cwd=lease)
+    try:
+        got = read(tmp, main)
+    finally:
+        sleeper.terminate()
+        sleeper.wait()
+    check("a process inside it holds the lease", got["held"], ["w1"])
+    got = read(tmp, main, live=None)
+    check("a blind roster blocks nothing", got["unlanded"], [])
+    check("a blind roster leaves the lease unjudged", got["unknown"], ["w1"])
+    check("a blind roster says so", "w1" in got["report"], True)
+
+
+def control_landed(tmp):
+    main = lease_main_repo(tmp, "landed")
+    lease = new_lease(tmp, main, "w1")
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    git(tmp, main, "cherry-pick", sha)
+    check("a picked commit reads landed by patch-id", read(tmp, main)["unlanded"], [])
+
+    main = lease_main_repo(tmp, "resolved")
+    lease = new_lease(tmp, main, "w1")
+    sha = commit_in(tmp, lease, "a.txt", "lease\n")
+    commit_in(tmp, main, "a.txt", "other\n")
+    got = read(tmp, main)
+    check("a different commit lands nothing", ids(got["unlanded"]), ["w1"])
+    commit_in(tmp, main, "a.txt", "resolved\n", "pick\n\n(cherry picked from commit %s)" % sha)
+    check(
+        "git cherry alone reads a resolved pick unlanded",
+        git(tmp, lease, "cherry", "main", sha),
+        "+ %s" % sha,
+    )
+    check("a resolved pick reads landed by its -x line", read(tmp, main)["unlanded"], [])
+
+    main = lease_main_repo(tmp, "pinned")
+    lease = new_lease(tmp, main, "w1")
+    base = git(tmp, main, "rev-parse", "HEAD")
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    git(tmp, main, "update-ref", "refs/worktrees/w1", sha)
+    git(tmp, lease, "checkout", "-q", "--detach", base)
+    got = read(tmp, main)
+    check("a pin past HEAD still counts", got["unlanded"][0]["commits"], {".": [sha]})
+
+
+def control_orphans(tmp):
+    main = lease_main_repo(tmp, "orphans")
+    new_lease(tmp, main, "good")
+    head = git(tmp, main, "rev-parse", "HEAD")
+    git(tmp, main, "update-ref", "refs/worktrees/good", head)
+    linked(tmp, main, ".claude/worktrees/norecord", "--detach")
+    write_record(main, "notree")
+    git(tmp, main, "update-ref", "refs/worktrees/gone", head)
+    linked(tmp, main, ".worktrees/0128-1", "-b", "0128-1")
+    got = read(tmp, main)
+    named = dict(got["orphans"])
+    check("a tree with no record is the advisory", named.get("norecord"), "a tree with no record")
+    check("a record with no tree is the advisory", named.get("notree"), "a record with no tree")
+    check("a pin with neither is the advisory", "gone" in named, True)
+    check("a joined lease and pin is no orphan", "good" in named, False)
+    check("an operator's tree is not followed", "0128-1" in got["report"], False)
+    check("no orphan blocks", got["unlanded"], [])
+    check("each orphan has a report line", got["report"].count("orphan "), 3)
+
+
+def control_index(tmp):
+    main = lease_main_repo(tmp, "index")
+    lease = new_lease(tmp, main, "w1")
+    index = main / ".git/worktrees/w1/index"
+    stat = (lease / "a.txt").stat()
+    # Stale stat data is what makes a plain status rewrite the index.
+    os.utime(lease / "a.txt", (stat.st_atime + 100, stat.st_mtime + 100))
+    before = index.stat().st_mtime_ns
+    got = read(tmp, main)
+    check("the probe did run git status", got["statuses"] > 0, True)
+    check("the probe leaves the lease's index mtime alone", index.stat().st_mtime_ns, before)
+    git(tmp, lease, "status")
+    check("a plain git status moves it", index.stat().st_mtime_ns != before, True)
+
+
+def control_cache(tmp):
+    main = lease_main_repo(tmp, "cache")
+    lease = new_lease(tmp, main, "w1")
+    cache = str(tmp / "cache" / "state.json")
+    first = commit_in(tmp, lease, "b.txt", "b\n")
+    got = read(tmp, main, cache=cache)
+    check("the first stop reads the tree", got["statuses"] > 0, True)
+    got = read(tmp, main, cache=cache)
+    check("a second stop with nothing moved runs no git status", got["statuses"], 0)
+    check("that stop still blocks", got["unlanded"][0]["commits"], {".": [first]})
+    second = commit_in(tmp, lease, "c.txt", "c\n")
+    got = read(tmp, main, cache=cache)
+    check("HEAD moving reads the tree again", got["statuses"] > 0, True)
+    check("the new commit is named", got["unlanded"][0]["commits"], {".": [first, second]})
+    check("that reading is cached", read(tmp, main, cache=cache)["statuses"], 0)
+    (lease / "d.txt").write_text("d\n", encoding="utf-8")
+    git(tmp, lease, "add", "--", "d.txt")
+    check(
+        "the index moving reads the tree again", read(tmp, main, cache=cache)["statuses"] > 0, True
+    )
+    commit_in(tmp, main, "e.txt", "e\n")
+    check(
+        "the live tip moving reads the tree again",
+        read(tmp, main, cache=cache)["statuses"] > 0,
+        True,
+    )
+    held = read(tmp, main, live={"ids": [], "trees": [str(lease)]}, cache=cache)
+    check("a held lease drops its cache entry", held["cache"], {})
+    check(
+        "the stop after a writer ends reads the tree",
+        read(tmp, main, cache=cache)["statuses"] > 0,
+        True,
+    )
+
+
+def control_submodule(tmp):
+    """Candidate A's shape from the W0 decision: a gitlink in the console, a linked tree of the module's store inside the lease."""
+    main = lease_main_repo(tmp, "submodule")
+    store = main / ".git/modules/private/sub"
+    store.parent.mkdir(parents=True)
+    (main / "private").mkdir()
+    git(tmp, main, "init", "-q", "-b", "main", "--separate-git-dir", store, main / "private/sub")
+    pinned = commit_in(tmp, main / "private/sub", "s.txt", "s\n")
+    git(tmp, main, "update-index", "--add", "--cacheinfo", "160000,%s,private/sub" % pinned)
+    git(tmp, main, "commit", "-q", "-m", "gitlink")
+    lease = new_lease(tmp, main, "w1")
+    sub = lease / "private/sub"
+    git(tmp, store, "worktree", "add", "-q", "--detach", sub, pinned)
+    check("a clean submodule tree holds nothing", read(tmp, main)["unlanded"], [])
+    sha = commit_in(tmp, sub, "t.txt", "t\n")
+    raw = git(tmp, lease, "status", "--porcelain=v2")
+    check("the console row really is SC..", " SC.. " in raw, True)
+    got = read(tmp, main)
+    check(
+        "the submodule commit is named by its store",
+        got["unlanded"][0]["commits"],
+        {"private/sub": [sha]},
+    )
+    check("the moved gitlink row is excused", got["unlanded"][0]["dirty"], 0)
+    check("the submodule tree is no orphan", got["orphans"], [])
+    git(tmp, main / "private/sub", "cherry-pick", sha)
+    check("a picked submodule commit reads landed", read(tmp, main)["unlanded"], [])
+    (sub / "u.txt").write_text("u\n", encoding="utf-8")
+    check("a dirty submodule tree blocks", read(tmp, main)["unlanded"][0]["dirty"] > 0, True)
+
+
+def control_effort_table(tmp):
+    script = _REAL.parents[3] / ".ci/scripts/quality/check_plan_record.py"
+
+    def judged(*args):
+        return subprocess.run(
+            [sys.executable, str(script), "--effort-table", *args],
+            cwd=_REAL.parents[3],
+            env=child_env(tmp),
+            capture_output=True,
+            text=True,
+            check=False,
+        ).returncode
+
+    check("the effort-table rule accepts the table", judged(), 0)
+    table = json.loads((SOURCE / "config/effort.json").read_text(encoding="utf-8"))
+    for key in ("worktree-unlanded", "worktree-orphan"):
+        planted = json.loads(json.dumps(table))
+        del planted["checks"][key]
+        path = tmp / ("planted-%s.json" % key)
+        path.write_text(json.dumps(planted), encoding="utf-8")
+        check("the rule reds with %s removed" % key, judged(str(path)), 1)
+
+
+def control_real_hook(tmp):
+    """The real Stop hook over a fixture: the wiring, the effort row and the stand-down keep."""
+    sys.path[:0] = [str(_CI.parent), str(SOURCE)]
+    from rediacc_hooks.tests import wlfix
+    from rediacc_hooks.tests.test_wl_focus import focus_off, focus_on, state_doc, stop, world
+
+    needle = "UNLANDED LEASE"
+    fix = wlfix.Fixture(tmp / "hookfix")
+    fix.setup()
+    world(fix, ci=True)
+    with (fix.proj / ".git/info/exclude").open("a", encoding="utf-8") as fh:
+        fh.write(".claude/worktrees/\n")
+    lease = fix.proj / ".claude/worktrees/w1"
+    fix.git("worktree", "add", "-q", "--detach", str(lease), "HEAD")
+    (lease / "b.txt").write_text("b\n", encoding="utf-8")
+    fix.git("-C", str(lease), "add", "--", "b.txt")
+    fix.git("-C", str(lease), "-c", "commit.gpgsign=false", "commit", "-q", "-m", "c")
+    write_record(fix.proj, "w1", owner=wlfix.ME, agent="wa1")
+    # The roster is blind until this session's project directory exists.
+    config = fix.base / "config"
+    (config / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))).mkdir(parents=True)
+    env = {"CLAUDE_CONFIG_DIR": str(config)}
+
+    got = stop(fix, env)
+    check("the hook blocks an owner's finished lease", got.decision, "block")
+    check("the block is this check's", needle in got.out, True)
+    check("the block names land", "./run.sh worktree land w1" in got.out, True)
+    cached = state_doc(fix).get("worktrees", {}).get("w1", {})
+    check("the state doc keeps the figures for the next stop", bool(cached.get("sig")), True)
+
+    fix.bg = json.dumps(
+        [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
+    )
+    got = stop(fix, env)
+    check("a live writer lifts the block", needle in got.out, False)
+    fix.bg = "[]"
+
+    focus_on(fix)
+    got = stop(fix, env)
+    check("a babysit phase keeps the block", got.decision, "block")
+    check("a babysit phase keeps the text", needle in got.out, True)
+    focus_off(fix)
+
+    write_record(fix.proj, "w1", owner="cafe1234", agent="wa1")
+    got = stop(fix, env)
+    check("a peer's lease is no block", got.decision, "allow")
+    check("a peer's lease is no block text", needle in got.out, False)
+    check("a peer's lease is reported once", got.out.count("peer lease w1"), 1)
+
+
+def section_stop():
+    tmp = pathlib.Path(runtmp.run_dir("wl-worktrees-stop-")).resolve()
+    for sub in ("t", "home", "cache"):
+        (tmp / sub).mkdir()
+    control_owner_blocks(tmp)
+    control_peer(tmp)
+    control_live(tmp)
+    control_landed(tmp)
+    control_orphans(tmp)
+    control_index(tmp)
+    control_cache(tmp)
+    control_submodule(tmp)
+    control_effort_table(tmp)
+    control_real_hook(tmp)
+
+
+SECTIONS = {"root": section_root, "stop": section_stop}
+FLOORS = {"root": CONTROL_FLOOR, "stop": STOP_FLOOR}
 
 
 def run_sections(argv):
@@ -503,6 +886,7 @@ def run_sections(argv):
     if unknown:
         sys.stderr.write("usage: test-wl_worktrees.py [%s]\n" % "|".join(SECTIONS))
         sys.exit(2)
+    T.floor = sum(FLOORS[name] for name in wanted)
     for name in wanted:
         SECTIONS[name]()
     T.exit()
