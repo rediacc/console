@@ -828,7 +828,7 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
 
   it('a set recorded before the phase field reads as ready: refresh rolls it, create refuses it, remove leaves control alone', async () => {
     seedPlaced();
-    const { phase: _absent, ...legacy } = seededSet;
+    const legacy: ReplicaSet = { ...seededSet, phase: undefined };
     stored = { [SET]: legacy };
     await expect(replicateRepo(CREATE)).rejects.toThrow(/already has a replica set/);
     await refreshReplicaSet('sqldb');
