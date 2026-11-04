@@ -139,6 +139,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "machine_fix_groups": { tier: "none", pending: false },
   "machine_gpu_list": { tier: "none", pending: false },
   "machine_ping": { tier: "none", pending: false },
+  "machine_prune": { tier: "none", pending: false },
   "machine_ssh_test": { tier: "none", pending: false },
   "machine_uninstall": { tier: "none", pending: false },
   "machine_version": { tier: "none", pending: false },

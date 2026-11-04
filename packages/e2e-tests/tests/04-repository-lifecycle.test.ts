@@ -289,6 +289,13 @@ test.describe
       );
     });
 
+    test('2c. machine prune dry run: both phases report behind their markers', async () => {
+      const result = await runner.machinePruneDryRun(datastorePath);
+      expect(runner.isSuccess(result)).toBe(true);
+      expect(result.stdout).toContain('"prune_phase":"datastore"');
+      expect(result.stdout).toContain('"prune_phase":"units"');
+    });
+
     test('3. info: get repository details', async () => {
       const result = await runner.repositoryInfo(repositoryName, datastorePath);
       expect(runner.isSuccess(result)).toBe(true);

@@ -72,6 +72,7 @@ const { registerGpuCommands } = await import('../machine/gpu.js');
 const { registerConvergeCommand } = await import('../machine/converge.js');
 const { registerRestartServicesCommand } = await import('../machine/restart-services.js');
 const { registerMachineRegistrationCommands } = await import('../machine/register.js');
+const { registerPruneCommand } = await import('../machine/prune.js');
 
 type Executed = {
   functionName: string;
@@ -230,6 +231,53 @@ describe('machine setup', () => {
     await run(registerMachineRegistrationCommands, 'setup', 'm1');
 
     expect(executed).toHaveLength(1);
+    expect(mocks.success).not.toHaveBeenCalled();
+  });
+});
+
+describe('machine prune', () => {
+  const STDOUT = [
+    '{"prune_phase":"datastore"}',
+    '{"removed":[]}',
+    '{"prune_phase":"units"}',
+    'nothing to prune',
+  ].join('\n');
+
+  it('makes one machine_prune job, splits its two phases in the step and prints one document', async () => {
+    answer = { ...OK, stdout: STDOUT };
+    mocks.format = 'json';
+
+    await run(registerPruneCommand, 'prune', 'm1', '--dry-run');
+
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({
+      functionName: 'machine_prune',
+      machineName: 'm1',
+      params: { dry_run: true },
+    });
+    expect(stepNames(executed[0])).toEqual(['renderPruneOutcome']);
+    expect(mocks.print).toHaveBeenCalledTimes(1);
+    expect(mocks.print.mock.calls[0][0]).toMatchObject({
+      datastore: { removed: [] },
+      units: 'nothing to prune',
+    });
+  });
+
+  it('the orphaned-repos form adds the ssh cleanup as a second step', async () => {
+    answer = RUNNING;
+
+    await run(registerPruneCommand, 'prune', 'm1', '--orphaned-repos');
+
+    expect(stepNames(executed[0])).toEqual(['renderPruneOutcome', 'cleanupSshArtifacts']);
+    expect(mocks.warn).toHaveBeenCalled();
+  });
+
+  it('control: a job still running prints nothing', async () => {
+    answer = RUNNING;
+
+    await run(registerPruneCommand, 'prune', 'm1');
+
+    expect(mocks.print).not.toHaveBeenCalled();
     expect(mocks.success).not.toHaveBeenCalled();
   });
 });

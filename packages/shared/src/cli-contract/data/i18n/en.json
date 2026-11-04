@@ -1140,6 +1140,7 @@
   "commands.machine.prune.orphanedReposCompleted": "Pruned {{count}} orphaned repositories",
   "commands.machine.prune.orphanedReposOption": "Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.",
   "commands.machine.prune.orphanedReposStarting": "Scanning for orphaned repositories on {{machine}}...",
+  "commands.machine.prune.orphanFormsNeedFinishedJob": "The prune job is still running, so the orphaned-repo deletions did not start. Run the command again once 'rdc job wait' reports it finished.",
   "commands.machine.prune.previewEmpty": "No orphaned datastore resources found",
   "commands.machine.prune.pruneUnknownOption": "Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.",
   "commands.machine.prune.startingDatastore": "Scanning for orphaned datastore resources on {{machine}}...",

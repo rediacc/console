@@ -156,6 +156,15 @@ export class RepositoryMethods {
     });
   }
 
+  /** machine_prune with dry_run: the datastore and unit phases report, nothing is removed. */
+  machinePruneDryRun(datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'machine_prune',
+      dryRun: true,
+      datastorePath,
+    });
+  }
+
   repositoryResize(
     name: string,
     newSize: string,

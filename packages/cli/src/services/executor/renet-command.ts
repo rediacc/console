@@ -251,6 +251,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'machine_fix_groups',
   'machine_gpu_list',
   'machine_ping',
+  'machine_prune',
   'machine_ssh_test',
   'machine_uninstall',
   'machine_version',

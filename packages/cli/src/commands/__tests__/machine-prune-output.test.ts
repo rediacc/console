@@ -24,17 +24,7 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
       if (req.functionName === 'repository_delete') {
         mocks.deletes.push(String(req.params?.repository));
       }
-      if (mocks.fail) return Promise.resolve({ success: false, error: 'boom' });
-      if (req.functionName === 'repository_prune') {
-        return Promise.resolve({
-          success: true,
-          stdout: JSON.stringify({ stale_locks: null, auth_keys: [] }),
-        });
-      }
-      return Promise.resolve({
-        success: true,
-        stdout: 'Nothing to prune. All networks have repositories.',
-      });
+      return Promise.resolve({ success: true });
     },
   }),
 }));
@@ -66,10 +56,34 @@ vi.mock('../../remote/vscode/index.js', () => ({
 }));
 
 import { registerPruneCommand } from '../machine/prune.js';
+import { installJobDeps } from './job-deps.js';
+
+/** The one machine_prune job's stdout: each phase behind its marker line. */
+const PRUNE_STDOUT = [
+  '{"prune_phase":"datastore"}',
+  JSON.stringify({ stale_locks: null, auth_keys: [] }),
+  '{"prune_phase":"units"}',
+  'Nothing to prune. All networks have repositories.',
+].join('\n');
+
+let restoreJobDeps: () => void;
 
 let stdout = '';
 
 beforeEach(() => {
+  restoreJobDeps = installJobDeps(() =>
+    Promise.resolve(
+      mocks.fail
+        ? { success: false, exitCode: 1, durationMs: 1, state: 'failed' as const, error: 'boom' }
+        : {
+            success: true,
+            exitCode: 0,
+            durationMs: 1,
+            state: 'succeeded' as const,
+            stdout: PRUNE_STDOUT,
+          }
+    )
+  );
   stdout = '';
   mocks.fail = false;
   mocks.repos = [];
@@ -80,7 +94,10 @@ beforeEach(() => {
   });
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  restoreJobDeps();
+  vi.restoreAllMocks();
+});
 
 async function run(...args: string[]): Promise<void> {
   const machine = new Command();

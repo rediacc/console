@@ -111,12 +111,12 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'machine prune': {
     form: 'compound',
-    fn: 'network_prune',
+    fn: 'machine_prune',
     lock: 'machine-exclusive',
     timeout: '10m',
     box: 'J18',
     steps: ['cleanupSshArtifacts', 'purgeExpiredArchives', 'renderPruneOutcome'],
-    note: 'repository_prune then network_prune; the orphaned and unknown forms need the config GUID set in the vault (J0b finding 9)',
+    note: 'one machine_prune job runs repository_prune then the unit prune and renders in renderPruneOutcome; the deletion sets of the orphaned and unknown forms stay client-side after a finished job (the config GUID set is not in the vault)',
   },
   'machine restart-services': {
     form: 'command-kind',

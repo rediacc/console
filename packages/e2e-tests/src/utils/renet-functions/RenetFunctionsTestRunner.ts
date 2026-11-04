@@ -1345,6 +1345,8 @@ export class RenetFunctionsTestRunner {
     this.repositoryMethods.repositoryDown(name, datastorePath, networkId);
   repositoryList = (datastorePath?: string) => this.repositoryMethods.repositoryList(datastorePath);
   repositoryFsck = (datastorePath?: string) => this.repositoryMethods.repositoryFsck(datastorePath);
+  machinePruneDryRun = (datastorePath?: string) =>
+    this.repositoryMethods.machinePruneDryRun(datastorePath);
   repositoryResize = (name: string, newSize: string, password?: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryResize(name, newSize, password, datastorePath);
   repositoryInfo = (name: string, datastorePath?: string) =>

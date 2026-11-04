@@ -135,6 +135,7 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   // J18: one job each; the report, the converge pass and the failure tails are steps.
   'machine converge',
   'machine gpu list',
+  'machine prune',
   'machine restart-services',
   'machine setup',
   // J19: datastore verbs are one job each (attach relocation, fork --attach-to and delete on an attached datastore chain

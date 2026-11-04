@@ -119,12 +119,13 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
     'cleanupSshArtifacts',
     'success',
     ['machine'],
-    () => import('../../commands/machine/prune.js')
+    () => import('../../commands/machine/prune.js'),
+    true
   ),
   privateStep(
     'renderPruneOutcome',
     'success',
-    ['dryRun'],
+    ['dryRun', 'orphaned'],
     () => import('../../commands/machine/prune.js'),
     true
   ),
