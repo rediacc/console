@@ -1337,7 +1337,6 @@
         "push": {
           "description": "Altyapı yapılandırmasını makineye gönderin (Traefik proxy, yönlendirici, Cloudflare DNS). Önce 'machine infra set <machine>' çalıştırın",
           "descriptionShort": "Altyapı yapılandırmasını makineye gönder",
-          "installingProxy": "Router kuruluyor...",
           "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "Artık veri deposu kaynağı bulunamadı",
         "pruneUnknownOption": "Sadece renet .interim/state aynasının sınıflandıramadığı depoları sil (yerel yapılandırmada yok VE fork işaretli ayna yok). --orphaned-repos seçeneğinden kesinlikle daha dardır: ayna onları tanımladığında yapılandırması olmayan fork'lar korunur. Pre-mirror eski yetimler ve yapılandırma girişi silinmiş eski grands ikisi de bu kovaya düşer.",
         "startingDatastore": "{{machine}} üzerinde sahipsiz veri deposu kaynakları taranıyor...",
-        "startingUnits": "{{machine}} üzerinde sahipsiz systemd birimleri taranıyor...",
         "unitsCompleted": "Birim temizliği tamamlandı",
-        "unitsFailed": "Birim temizliği başarısız oldu",
         "unknownCompleted": "{{count}} bilinmeyen depo temizlendi",
         "unknownFound": "{{count}} bilinmeyen depo bulundu (bağlama güvenlik kontrolünden sonra {{deletable}} silinebilir)",
-        "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)..."
+        "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)...",
+        "orphanFormsNeedFinishedJob": "Temizleme işi hâlâ çalışıyor, bu yüzden sahipsiz depoların silinmesi başlamadı. 'rdc job wait' işin bittiğini bildirince komutu yeniden çalıştırın."
       },
       "converge": {
         "autoFailed": "'{{machine}}' üzerinde runtime eşitlemesi başarısız oldu: {{error}}. Kaldığı yerden sürdürmek için: {{command}}",

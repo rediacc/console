@@ -37,6 +37,7 @@ import {
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
+import type { ExtraMachine } from '../executor/types.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
@@ -556,16 +557,13 @@ interface BuildLocalVaultOptions {
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
-  extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
+  extraMachines?: Record<string, ExtraMachine>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, RepoEntryConfig>;
 }
 
 function buildExtraMachines(
-  machines:
-    | Record<string, { ip: string; port?: number; user: string; datastore?: string }>
-    | undefined,
-  sshKnownHosts: string,
+  machines: Record<string, ExtraMachine> | undefined,
   sshPrivateKey: string,
   sshPublicKey: string
 ): Record<string, unknown> {
@@ -577,7 +575,7 @@ function buildExtraMachines(
       user: cfg.user,
       port: cfg.port ?? DEFAULTS.SSH.PORT,
       datastore: cfg.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      known_hosts: sshKnownHosts,
+      known_hosts: cfg.knownHosts ?? '',
       ssh: {
         private_key: sshPrivateKey,
         public_key: sshPublicKey,
@@ -593,7 +591,6 @@ function buildExtraMachines(
 export function buildLocalVault(opts: BuildLocalVaultOptions): string {
   const extraMachines = buildExtraMachines(
     opts.extraMachines,
-    opts.sshKnownHosts,
     opts.sshPrivateKey,
     opts.sshPublicKey
   );

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2435,
-    "sourceCommit": "f5b87d0e43a70f564688f07d2d4bb91743b05614"
+    "keyCount": 2433,
+    "sourceCommit": "57ac7315b0c1130c462c0474aee225d457c704a6"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1071,7 +1071,6 @@
     "commands.machine.infra.description": "98bd6c00",
     "commands.machine.infra.push.description": "8e5b01ab",
     "commands.machine.infra.push.descriptionShort": "805ae5ca",
-    "commands.machine.infra.push.installingProxy": "478a2c75",
     "commands.machine.infra.push.success": "87d65737",
     "commands.machine.infra.set.description": "fc0d9d57",
     "commands.machine.infra.set.descriptionShort": "545f28e6",
@@ -1148,12 +1147,11 @@
     "commands.machine.prune.orphanedReposCompleted": "9b5f6016",
     "commands.machine.prune.orphanedReposOption": "36cee01b",
     "commands.machine.prune.orphanedReposStarting": "84182a2b",
+    "commands.machine.prune.orphanFormsNeedFinishedJob": "c68b7285",
     "commands.machine.prune.previewEmpty": "e6e862ac",
     "commands.machine.prune.pruneUnknownOption": "6fa1dfd1",
     "commands.machine.prune.startingDatastore": "3716a1e2",
-    "commands.machine.prune.startingUnits": "c445b8b0",
     "commands.machine.prune.unitsCompleted": "c81122d8",
-    "commands.machine.prune.unitsFailed": "645e5408",
     "commands.machine.prune.unknownCompleted": "6b9e6bad",
     "commands.machine.prune.unknownFound": "2a2b126e",
     "commands.machine.prune.unknownStarting": "7520b8e8",

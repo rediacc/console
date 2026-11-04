@@ -1337,7 +1337,6 @@
         "push": {
           "description": "インフラ設定をマシンにプッシュします（Traefik プロキシ、ルーター、Cloudflare DNS）。先に 'machine infra set <machine>' を実行してください",
           "descriptionShort": "インフラ設定をマシンにプッシュする",
-          "installingProxy": "ルーターをインストール中...",
           "success": "\"{{name}}\" にインフラ設定をプッシュしました"
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "孤立したデータストアリソースは見つかりませんでした",
         "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
         "startingDatastore": "{{machine}} 上の孤立したデータストアリソースをスキャン中...",
-        "startingUnits": "{{machine}} 上の孤立した systemd ユニットをスキャン中...",
         "unitsCompleted": "ユニットの整理が完了しました",
-        "unitsFailed": "ユニットの整理に失敗しました",
         "unknownCompleted": "{{count}} 件の不明なリポジトリをクリーンアップしました",
         "unknownFound": "{{count}} 件の不明なリポジトリが見つかりました（マウント安全チェック後に {{deletable}} 件削除可能）",
-        "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）..."
+        "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）...",
+        "orphanFormsNeedFinishedJob": "prune ジョブがまだ実行中のため、孤立したリポジトリの削除は開始していません。'rdc job wait' で完了を確認してから、もう一度コマンドを実行してください。"
       },
       "converge": {
         "autoFailed": "'{{machine}}' のランタイム収束に失敗しました: {{error}}。再開するには: {{command}}",

@@ -1337,7 +1337,6 @@
         "push": {
           "description": "Lükka infrastruktuuri konfiguratsioon masinale (Traefik-puhverserver, marsruuter, Cloudflare DNS). Käivita kõigepealt 'machine infra set <machine>'",
           "descriptionShort": "Lükka infrastruktuuri konfiguratsioon masinale",
-          "installingProxy": "Marsruuteri installimine...",
           "success": "Infrastruktuuri konfiguratsioon lükati masinale \"{{name}}\""
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "Orbusid andmehoidla ressursse ei leitud",
         "pruneUnknownOption": "Kustutab ainult repositooriumeid, mida renet-i .interim/state peegel ei suuda klassifitseerida (pole kohalikus konfiguratsioonis JA puudub fork-märgistusega peegel). Rangelt kitsam kui --orphaned-repos: forkid ilma konfiguratsioonita säilitatakse, kui peegel neid tuvastab. Nii eelpeegelalised pärandorpad kui ka käsitsi kustutatud grand-repositooriumid kuuluvad sellesse kategooriasse.",
         "startingDatastore": "Orvu andmesalve ressursside skaneerimine masinal {{machine}}...",
-        "startingUnits": "Orvuks jäänud systemd-üksuste skaneerimine masinal {{machine}}...",
         "unitsCompleted": "Üksuste koristamine lõpetatud",
-        "unitsFailed": "Üksuste koristamine ebaõnnestus",
         "unknownCompleted": "{{count}} tundmatut repositooriumi koristatud",
         "unknownFound": "Leitud {{count}} tundmat repositooriumi ({{deletable}} kustutatavad pärast ühendusohutuse kontrolli)",
-        "unknownStarting": "Tundmatute repositooriumide skaneerimine masinal {{machine}} (pole kohalikus konfiguratsioonis + puudub fork-märgistusega peegel)..."
+        "unknownStarting": "Tundmatute repositooriumide skaneerimine masinal {{machine}} (pole kohalikus konfiguratsioonis + puudub fork-märgistusega peegel)...",
+        "orphanFormsNeedFinishedJob": "Puhastustöö alles käib, seega orbhoidlate kustutamine ei alanud. Käivita käsk uuesti, kui 'rdc job wait' teatab töö lõpust."
       },
       "converge": {
         "autoFailed": "Runtime'i ühtlustamine masinas '{{machine}}' ebaõnnestus: {{error}}. Jätkamiseks: {{command}}",

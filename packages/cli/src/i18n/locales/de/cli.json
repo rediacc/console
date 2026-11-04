@@ -1337,7 +1337,6 @@
         "push": {
           "description": "Infrastrukturkonfiguration auf Maschine übertragen (Traefik-Proxy, Router, Cloudflare DNS). Führen Sie zuerst 'machine infra set <machine>' aus",
           "descriptionShort": "Infrastrukturkonfiguration auf Maschine übertragen",
-          "installingProxy": "Router wird installiert...",
           "success": "Infrastrukturkonfiguration auf \"{{name}}\" übertragen"
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "Keine verwaisten Datastore-Ressourcen gefunden",
         "pruneUnknownOption": "Löscht nur Repos, die der renet .interim/state Mirror nicht klassifizieren kann (nicht in lokaler Konfiguration UND kein fork-markierter Mirror). Strikt enger als --orphaned-repos: Forks ohne Konfiguration werden bewahrt, wenn der Mirror sie identifiziert. Pre-mirror Legacy-Waisen und veraltete Grands mit gelöschtem Konfigurationseintrag fallen beide in diesen Bereich.",
         "startingDatastore": "Suche nach verwaisten Datenspeicher-Ressourcen auf {{machine}}...",
-        "startingUnits": "Suche nach verwaisten systemd-Units auf {{machine}}...",
         "unitsCompleted": "Unit-Bereinigung abgeschlossen",
-        "unitsFailed": "Unit-Bereinigung fehlgeschlagen",
         "unknownCompleted": "{{count}} unbekannte Repositories bereinigt",
         "unknownFound": "{{count}} unbekannte(s) Repository/Repositories gefunden ({{deletable}} löschbar nach Mount-Sicherheitsprüfung)",
-        "unknownStarting": "Suche nach unbekannten Repositories auf {{machine}} (nicht in lokaler Konfiguration + kein fork-markierter Mirror)..."
+        "unknownStarting": "Suche nach unbekannten Repositories auf {{machine}} (nicht in lokaler Konfiguration + kein fork-markierter Mirror)...",
+        "orphanFormsNeedFinishedJob": "Der Prune-Job läuft noch, daher wurden die verwaisten Repositories nicht gelöscht. Führen Sie den Befehl erneut aus, sobald 'rdc job wait' das Ende meldet."
       },
       "converge": {
         "autoFailed": "Runtime-Angleichung auf '{{machine}}' fehlgeschlagen: {{error}}. Fortsetzen mit: {{command}}",

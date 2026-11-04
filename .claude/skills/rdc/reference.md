@@ -56,7 +56,7 @@ Resume following a job from its ticket, then acknowledge it and exit with the jo
 - `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
 
-> MCP tool
+> MCP excluded: Blocks until the job ends, which no MCP timeout covers; poll with job_status and job_logs.
 
 ### rdc job gc
 
@@ -1318,6 +1318,7 @@ Validate the CLI config refs (branches, HEAD) against the objects actually prese
 **Options:**
 
 - `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1762,6 +1763,34 @@ Withdraw a CDI device from the repository's containers. Containers that already 
 **Options:**
 
 - `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
+- `--debug`: Enable debug output
+
+### rdc repo permission grant <ref>
+
+Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
+
+**Options:**
+
+- `--root`: Run up() and down() as root, with no privilege drop
+- `--path <path>`: Absolute path up() and down() may reach, PATH[:ro|:rw] (read-only by default)
+- `--debug`: Enable debug output
+
+### rdc repo permission revoke <ref>
+
+Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.
+
+**Options:**
+
+- `--root`: Withdraw the root grant
+- `--path <path>`: Absolute path to withdraw
+- `--debug`: Enable debug output
+
+### rdc repo permission show <ref>
+
+Show whether the repository's up() and down() run as root, and which paths they may reach.
+
+**Options:**
+
 - `--debug`: Enable debug output
 
 ## Tools

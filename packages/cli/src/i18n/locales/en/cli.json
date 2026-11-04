@@ -714,9 +714,7 @@
         "startingDatastore": "Scanning for orphaned datastore resources on {{machine}}...",
         "datastoreCompleted": "Datastore prune completed",
         "datastoreFailed": "Datastore prune failed",
-        "startingUnits": "Scanning for orphaned systemd units on {{machine}}...",
         "unitsCompleted": "Unit prune completed",
-        "unitsFailed": "Unit prune failed",
         "orphanFormsNeedFinishedJob": "The prune job is still running, so the orphaned-repo deletions did not start. Run the command again once 'rdc job wait' reports it finished.",
         "orphanedReposOption": "Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.",
         "orphanedReposStarting": "Scanning for orphaned repositories on {{machine}}...",
@@ -796,7 +794,6 @@
         "push": {
           "description": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'machine infra set <machine>' first",
           "descriptionShort": "Push infrastructure config to machine",
-          "installingProxy": "Installing the router...",
           "success": "Infrastructure config pushed to \"{{name}}\""
         },
         "set": {

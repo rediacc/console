@@ -71,6 +71,8 @@ export interface ExtraMachine {
   port?: number;
   user: string;
   datastore?: string;
+  /** The peer's own recorded host key lines, which a renet verb reaching it pins. */
+  knownHosts?: string;
 }
 
 /** Options for executing a renet function against a machine or cluster. */

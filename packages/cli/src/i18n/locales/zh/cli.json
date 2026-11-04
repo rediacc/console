@@ -1337,7 +1337,6 @@
         "push": {
           "description": "将基础设施配置推送到机器（Traefik 代理、路由器、Cloudflare DNS）。请先运行 'machine infra set <machine>'",
           "descriptionShort": "将基础设施配置推送到机器",
-          "installingProxy": "正在安装路由器...",
           "success": "已将基础设施配置推送到 \"{{name}}\""
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "未找到孤立的数据存储资源",
         "pruneUnknownOption": "仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。",
         "startingDatastore": "正在扫描 {{machine}} 上的孤立数据存储资源...",
-        "startingUnits": "正在扫描 {{machine}} 上的孤立 systemd 单元...",
         "unitsCompleted": "单元清理完成",
-        "unitsFailed": "单元清理失败",
         "unknownCompleted": "已清理 {{count}} 个未知仓库",
         "unknownFound": "找到 {{count}} 个未知仓库（挂载安全检查后 {{deletable}} 个可删除）",
-        "unknownStarting": "正在 {{machine}} 上扫描未知仓库（不在本地配置中 + 没有标记为 fork 的镜像）..."
+        "unknownStarting": "正在 {{machine}} 上扫描未知仓库（不在本地配置中 + 没有标记为 fork 的镜像）...",
+        "orphanFormsNeedFinishedJob": "清理作业仍在运行，因此尚未开始删除孤立仓库。请在 'rdc job wait' 报告完成后重新运行此命令。"
       },
       "converge": {
         "autoFailed": "'{{machine}}' 上的运行时收敛失败：{{error}}。继续执行：{{command}}",

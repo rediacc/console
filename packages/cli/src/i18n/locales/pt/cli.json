@@ -1337,7 +1337,6 @@
         "push": {
           "description": "Enviar a configuração de infraestrutura para a máquina (proxy Traefik, router, DNS Cloudflare). Execute 'machine infra set <machine>' primeiro.",
           "descriptionShort": "Enviar a configuração de infraestrutura para a máquina",
-          "installingProxy": "A instalar o router...",
           "success": "Configuração de infraestrutura enviada para \"{{name}}\""
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "Nenhum recurso órfão do datastore encontrado",
         "pruneUnknownOption": "Eliminar apenas repositórios que o espelho .interim/state do renet não consegue classificar (não na configuração local E sem espelho marcado como fork). Estritamente mais restrito do que --orphaned-repos: forks sem configuração são preservados quando o espelho os identifica. Órfãos legados anteriores ao espelho e grands desatualizados cuja entrada de configuração foi eliminada entram neste grupo.",
         "startingDatastore": "A procurar recursos de datastore órfãos em {{machine}}...",
-        "startingUnits": "A procurar unidades systemd órfãs em {{machine}}...",
         "unitsCompleted": "Limpeza de unidades concluída",
-        "unitsFailed": "Falha na limpeza de unidades",
         "unknownCompleted": "{{count}} repositório(s) desconhecido(s) removido(s)",
         "unknownFound": "Encontrado(s) {{count}} repositório(s) desconhecido(s) ({{deletable}} eliminável(eis) após verificação de segurança de montagem)",
-        "unknownStarting": "A procurar repositórios desconhecidos em {{machine}} (não na configuração local + sem espelho marcado como fork)..."
+        "unknownStarting": "A procurar repositórios desconhecidos em {{machine}} (não na configuração local + sem espelho marcado como fork)...",
+        "orphanFormsNeedFinishedJob": "A tarefa de limpeza ainda está em execução, por isso a remoção dos repositórios órfãos não começou. Execute o comando novamente quando 'rdc job wait' indicar que terminou."
       },
       "converge": {
         "autoFailed": "A convergência do runtime em '{{machine}}' falhou: {{error}}. Para retomar: {{command}}",

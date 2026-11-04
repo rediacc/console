@@ -1337,7 +1337,6 @@
         "push": {
           "description": "Invia la configurazione infrastruttura al macchinario (proxy Traefik, router, DNS Cloudflare). Esegui prima 'machine infra set <machine>'",
           "descriptionShort": "Invia la configurazione infrastruttura al macchinario",
-          "installingProxy": "Installazione del router in corso...",
           "success": "Configurazione infrastruttura inviata a \"{{name}}\""
         },
         "set": {
@@ -1440,12 +1439,11 @@
         "previewEmpty": "Nessuna risorsa orfana del datastore trovata",
         "pruneUnknownOption": "Elimina solo i repository che il mirror di stato .interim/renet non riesce a classificare (non presenti nella configurazione locale E senza mirror con marcatura fork). Strettamente più ristretto di --orphaned-repos: i fork senza configurazione sono preservati quando il mirror li identifica. In questo bucket rientrano gli orfani legacy pre-mirror e i grand il cui record di configurazione è stato eliminato.",
         "startingDatastore": "Scansione delle risorse del datastore orfane su {{machine}} in corso...",
-        "startingUnits": "Scansione delle unità systemd orfane su {{machine}} in corso...",
         "unitsCompleted": "Pulizia delle unità completata",
-        "unitsFailed": "Pulizia delle unità fallita",
         "unknownCompleted": "{{count}} repository sconosciuti rimossi",
         "unknownFound": "Trovato/i {{count}} repository sconosciuto/i ({{deletable}} eliminabile/i dopo il controllo di sicurezza del montaggio)",
-        "unknownStarting": "Scansione dei repository sconosciuti su {{machine}} (non presenti nella configurazione locale + senza mirror con marcatura fork) in corso..."
+        "unknownStarting": "Scansione dei repository sconosciuti su {{machine}} (non presenti nella configurazione locale + senza mirror con marcatura fork) in corso...",
+        "orphanFormsNeedFinishedJob": "Il job di pulizia è ancora in corso, quindi l'eliminazione dei repository orfani non è partita. Esegui di nuovo il comando quando 'rdc job wait' ne segnala la fine."
       },
       "converge": {
         "autoFailed": "Convergenza del runtime su '{{machine}}' non riuscita: {{error}}. Per riprendere: {{command}}",
