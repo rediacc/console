@@ -1946,7 +1946,7 @@
       },
       "gc": {
         "applied": "Coleta de lixo concluída: {{deleted}}/{{total}} commit(s) excluído(s)",
-        "started": "{{started}} de {{total}} exclusões estão em execução como jobs; rdc job list as mostra.",
+        "started": "{{started}} de {{total}} exclusões estão em execução como jobs; acompanhe-as com rdc job list.",
         "applyOption": "Excluir de fato os commits inalcançáveis (o padrão é uma previsão dry-run)",
         "deleted": "Commit {{commit}} excluído",
         "deleteFailed": "Falha ao excluir o commit {{commit}}",

@@ -1946,7 +1946,7 @@
       },
       "gc": {
         "applied": "Recolección de basura completada: {{deleted}}/{{total}} commit(s) eliminado(s)",
-        "started": "{{started}} de {{total}} borrados se están ejecutando como trabajos; rdc job list los muestra.",
+        "started": "{{started}} de {{total}} borrados se están ejecutando como trabajos; se siguen con rdc job list.",
         "applyOption": "Eliminar realmente los commits inaccesibles (por defecto es una vista previa en modo simulación)",
         "deleted": "Commit {{commit}} eliminado",
         "deleteFailed": "No se pudo eliminar el commit {{commit}}",

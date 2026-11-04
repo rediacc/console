@@ -1946,7 +1946,7 @@
       },
       "gc": {
         "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
-        "started": "{{started}} kustutamisest {{total}}-st töötab tööna; rdc job list näitab neid.",
+        "started": "{{started}} kustutamisest {{total}}-st töötab tööna; jälgi neid käsuga rdc job list.",
         "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
         "deleted": "Commit {{commit}} kustutatud",
         "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",
