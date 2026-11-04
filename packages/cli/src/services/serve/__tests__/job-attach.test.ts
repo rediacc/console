@@ -8,10 +8,18 @@
  * is the seam's, pinned in the executor tests); everything between HTTP and the dispatch is production code.
  */
 
+import { mkdtempSync, rmSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
-import { type StreamLine, StreamLineSchema } from '@rediacc/shared/cli-contract/wire';
+import {
+  JobPollResponseSchema,
+  PROXY_ROUTES,
+  type StreamLine,
+  StreamLineSchema,
+} from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,10 +66,36 @@ vi.mock('../../account/subscription-auth.js', async (original) => ({
   getSubscriptionTokenState: () => ({ kind: 'ready', token: { token: proxyToken.value } }),
 }));
 
+// The poll route reads the job's spool through the job-remote seam; no machine is touched.
+const { spool, observed } = vi.hoisted(() => ({
+  spool: { stdout: '' },
+  observed: [] as { jobId: string; state: string }[],
+}));
+vi.mock('../../executor/job-remote.js', async (original) => ({
+  ...(await original<Record<string, unknown>>()),
+  connectForJobs: vi.fn((machine: string) =>
+    Promise.resolve({
+      machineName: machine,
+      remoteRenetPath: '/usr/bin/renet',
+      lease: { release: vi.fn(), ensure: vi.fn() },
+    })
+  ),
+  runJobCommand: vi.fn(() => Promise.resolve(spool.stdout)),
+}));
+vi.mock('../../jobs/executor-observation.js', () => ({
+  observeTerminalPoll: vi.fn((jobId: string, seen: { state: string }) => {
+    observed.push({ jobId, state: seen.state });
+    return Promise.resolve(undefined);
+  }),
+}));
+
 // Telemetry would otherwise try the network on every dispatched command.
 process.env.REDIACC_TELEMETRY_DISABLED = '1';
 
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
+import { JOB_ATTACH_WINDOW_MS } from '../../jobs/attach.js';
+import { setCommandJobDeps } from '../../jobs/command-job.js';
+import { TicketStore } from '../../jobs/ticket-store.js';
 import { AuthVerifier } from '../auth.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
@@ -264,5 +298,155 @@ describe('attach window over /v1/command', () => {
     boot(() => Promise.resolve({ success: true, exitCode: 0, durationMs: 1 }));
     const res = await post({ pathKey: 'repo sync upload' });
     expect(res.status).toBe(400);
+  });
+  /** Let the real I/O of the in-process server run while the timers are faked. */
+  async function until(condition: () => boolean): Promise<void> {
+    for (let i = 0; i < 2000 && !condition(); i++) await new Promise((r) => setImmediate(r));
+    expect(condition()).toBe(true);
+  }
+
+  /** Fake the timers a long wait uses; the socket layer keeps its own. */
+  const fakeTimers = () =>
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'],
+    });
+
+  describe('with fake timers', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      setCommandJobDeps();
+      spool.stdout = '';
+      observed.length = 0;
+    });
+
+    it('runs the success step exactly once when the client leaves at 1 s of a 2 s job', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'job-attach-'));
+      const handled: string[] = [];
+      const claims: { steps: string[]; done?: boolean }[] = [];
+      setCommandJobDeps({
+        store: () => new TicketStore('test', dir),
+        stepDeps: () =>
+          Promise.resolve({
+            observer: { configName: 'test' },
+            warn: () => undefined,
+            resolve: (name: string) => {
+              handled.push(name);
+              return Promise.resolve(() => Promise.resolve());
+            },
+            claim: ({ steps, done }) => {
+              claims.push({ steps, ...(done ? { done } : {}) });
+              return Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const })));
+            },
+          }),
+      });
+      let started = false;
+      let jobDone = false;
+      boot(async (options) => {
+        if (options.jobSteps === undefined) {
+          return { success: true, exitCode: 0, durationMs: 1 };
+        }
+        started = true;
+        options.onJobStarted?.('j18c1c04dd251ce26-0ccf9fe5', 'hostinger');
+        await wait(2000);
+        jobDone = true;
+        return {
+          success: true,
+          exitCode: 0,
+          durationMs: 2000,
+          state: 'succeeded',
+          attached: true,
+          jobId: 'j18c1c04dd251ce26-0ccf9fe5',
+          stdout: 'RDC_CAT_B64:aGk=\n',
+        };
+      });
+      try {
+        fakeTimers();
+        const controller = new AbortController();
+        const response = await post(
+          { pathKey: 'repo cat', params: { 'remote-file': '/etc/motd' } },
+          controller.signal
+        );
+        await until(() => started);
+        await vi.advanceTimersByTimeAsync(1000);
+        controller.abort();
+        await response.body?.cancel().catch(() => undefined);
+        await vi.advanceTimersByTimeAsync(1500);
+        await until(() => jobDone);
+        await until(() => claims.some((c) => c.done));
+        expect(handled).toEqual(['printRepoCat']);
+        expect(claims.filter((c) => c.done)).toHaveLength(1);
+        expect(claims.filter((c) => !c.done)).toHaveLength(1);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('hands a 40 s job back as running at the 20 s window, and polls finish it', async () => {
+      let window: number | undefined;
+      let returnedAt = 0;
+      let started = false;
+      const t0 = Date.now();
+      boot(async (options) => {
+        window = options.attachWindowMs;
+        started = true;
+        options.onJobStarted?.('j18c1c04dd251ce26-0ccf9fe5', 'hostinger');
+        // The seam's rule, restated for the fake: the attach ends at the window, the job at 40 s.
+        await wait(Math.min(40_000, options.attachWindowMs ?? 40_000));
+        returnedAt = Date.now() - t0;
+        return {
+          success: true,
+          exitCode: 0,
+          durationMs: returnedAt,
+          jobId: 'j18c1c04dd251ce26-0ccf9fe5',
+          state: 'running',
+          attached: false,
+        };
+      });
+      fakeTimers();
+      const response = await post();
+      await until(() => started);
+      await vi.advanceTimersByTimeAsync(JOB_ATTACH_WINDOW_MS);
+      const all = await lines(response);
+      expect(window).toBe(JOB_ATTACH_WINDOW_MS);
+      expect(returnedAt).toBeGreaterThanOrEqual(19_000);
+      expect(returnedAt).toBeLessThanOrEqual(21_000);
+      expect(all.at(-1)).toMatchObject({ kind: 'result', result: { state: 'running' } });
+
+      // While the job runs, a poll sees it running; after 40 s of fake time the same poll sees it finished.
+      const poll = async () =>
+        JobPollResponseSchema.parse(
+          await (
+            await fetch(
+              `${baseUrl}${PROXY_ROUTES.jobPoll('j18c1c04dd251ce26-0ccf9fe5')}?machine=hostinger&sinceLine=1&maxLines=100`,
+              { headers: { authorization: `Bearer ${TOKEN}` } }
+            )
+          ).json()
+        );
+      const trailer = (state: string, exit: number | null) =>
+        `${JSON.stringify({ type: 'job_status', state, function: 'repository_up', exit_code: exit })}\n`;
+      spool.stdout = trailer('running', null);
+      expect((await poll()).status?.state).toBe('running');
+      await vi.advanceTimersByTimeAsync(20_000);
+      spool.stdout = trailer('succeeded', 0);
+      const finished = await poll();
+      expect(finished.status).toMatchObject({ state: 'succeeded', exitCode: 0 });
+      expect(Date.now() - t0).toBeGreaterThanOrEqual(40_000);
+    });
+
+    it('carries at least two heartbeats in a quiet 25 s window at the real 10 s period', async () => {
+      let started = false;
+      boot(async () => {
+        started = true;
+        await wait(25_000);
+        return { success: true, exitCode: 0, durationMs: 25_000 };
+      });
+      fakeTimers();
+      const response = await post();
+      await until(() => started);
+      await vi.advanceTimersByTimeAsync(25_000);
+      const all = await lines(response);
+      expect(all.filter((l) => l.kind === 'heartbeat').length).toBeGreaterThanOrEqual(2);
+      expect(all.at(-1)?.kind).toBe('result');
+    });
   });
 });
