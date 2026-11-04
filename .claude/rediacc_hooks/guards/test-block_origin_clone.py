@@ -39,12 +39,17 @@ wellknown = _load("wellknown_for_origin_clone", HOOKS / "wellknown.py")
 githooks = _load("githooks_for_origin_clone", HOOKS / "git" / "githooks.py")
 
 
+# The GitHub host, spelled from the registry's origin URL rather than typed beside the rows.
+GH_HOST = wellknown.GH_ORIGIN.split("://", 1)[1]
+
+
 def _wk(command):
     """A table row's command with each `<NAME>` token spelled from the registry, so no owned value is typed here."""
     for token, value in (
         ("<GHO_TOKEN>", wellknown.GH_ORIGIN.replace("://", "://x-access-token:t0k@")),
         ("<GHO_HTTP>", wellknown.GH_ORIGIN.replace("https", "http")),
         ("<GHO>", wellknown.GH_ORIGIN),
+        ("<GHHOST>", GH_HOST),
         ("<GH>", wellknown.GH_REPO),
         ("<RENET>", wellknown.RENET_REPO),
         ("<ACCOUNT>", wellknown.ACCOUNT_REPO),
@@ -92,7 +97,7 @@ FIXTURE_FOREIGN = _repo("fixture-foreign", origin="https://example.invalid/other
 OLD_CLONE = _repo("old-clone", origin=CONSOLE)
 OLD_LOCAL = _repo("old-local", origin=ROOT)
 # git reads an existing directory as a path before a colon as a host.
-_repo("github.com:%s" % wellknown.GH_REPO)
+_repo("%s:%s" % (GH_HOST, wellknown.GH_REPO))
 EMPTY_DIR = TMP / "scripts"
 EMPTY_DIR.mkdir()
 X = str(TMP / "x")
@@ -124,11 +129,11 @@ REFUSED = [
     ("https, no .git", "git clone <GHO>/<GH> /tmp/x"),
     ("https, a trailing slash", "git clone <GHO>/<GH>/ /tmp/x"),
     ("http", "git clone <GHO_HTTP>/<GH>.git /tmp/x"),
-    ("git protocol", "git clone git://github.com/<GH>.git /tmp/x"),
-    ("ssh url", "git clone ssh://git@github.com/<GH>.git /tmp/x"),
-    ("ssh url with a port", "git clone ssh://git@ssh.github.com:443/<GH>.git /tmp/x"),
-    ("scp form", "git clone git@github.com:<GH>.git /tmp/x"),
-    ("scp form, no user or .git", "git clone github.com:<GH> /tmp/x"),
+    ("git protocol", "git clone git://<GHHOST>/<GH>.git /tmp/x"),
+    ("ssh url", "git clone ssh://git@<GHHOST>/<GH>.git /tmp/x"),
+    ("ssh url with a port", "git clone ssh://git@ssh.<GHHOST>:443/<GH>.git /tmp/x"),
+    ("scp form", "git clone git@<GHHOST>:<GH>.git /tmp/x"),
+    ("scp form, no user or .git", "git clone <GHHOST>:<GH> /tmp/x"),
     (
         "a token in the url",
         "git clone <GHO_TOKEN>/<GH> /tmp/x",
@@ -143,10 +148,10 @@ REFUSED = [
     ("account", "git clone <GHO>/<ACCOUNT>.git /tmp/x"),
     ("elite", "git clone <GHO>/<ELITE>.git /tmp/x"),
     ("homebrew-tap", "git clone <GHO>/<TAP>.git /tmp/x"),
-    ("renet ssh", "git clone git@github.com:<RENET>.git /tmp/x"),
-    ("account ssh", "git clone ssh://git@github.com/<ACCOUNT>.git /tmp/x"),
-    ("elite ssh", "git clone git@github.com:<ELITE>.git /tmp/x"),
-    ("homebrew-tap ssh", "git clone git@github.com:<TAP>.git /tmp/x"),
+    ("renet ssh", "git clone git@<GHHOST>:<RENET>.git /tmp/x"),
+    ("account ssh", "git clone ssh://git@<GHHOST>/<ACCOUNT>.git /tmp/x"),
+    ("elite ssh", "git clone git@<GHHOST>:<ELITE>.git /tmp/x"),
+    ("homebrew-tap ssh", "git clone git@<GHHOST>:<TAP>.git /tmp/x"),
     # The mirror.
     ("gitlab mirror", "git clone https://<MIRROR>/rediacc-org/github/console.git /tmp/x"),
     ("gitlab mirror ssh", "git clone git@<MIRROR>:rediacc-org/github/renet.git /tmp/x"),
@@ -190,7 +195,7 @@ REFUSED = [
     ("gh owner/repo", "gh repo clone <GH>"),
     ("gh owner/repo with a target", "gh repo clone <RENET> /tmp/x"),
     ("gh with a url", "gh repo clone %s /tmp/x" % CONSOLE),
-    ("gh with host/owner/repo", "gh repo clone github.com/<ACCOUNT>"),
+    ("gh with host/owner/repo", "gh repo clone <GHHOST>/<ACCOUNT>"),
     ("gh with git flags", "gh repo clone <GH> /tmp/x -- --depth 1"),
     ("gh with its own flag", "gh repo clone -u up <GH> /tmp/x"),
     ("gh fork --clone", "gh repo fork <GH> --clone"),
@@ -393,7 +398,7 @@ RELATIVE = [
     (
         "a directory shaped like a host form",
         False,
-        "git clone github.com:<GH> /tmp/y",
+        "git clone <GHHOST>:<GH> /tmp/y",
         str(TMP),
     ),
     ("a -C into a fixture leaves the checkout", False, "git -C %s clone . /tmp/y" % FIXTURE, ROOT),

@@ -38,6 +38,16 @@ if _RUNTMP is None or _RUNTMP.loader is None:
 runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
 
+# The mirror host is `githooks.MIRROR_HOST`, the one place it is typed; loaded BY FILE like `runtmp`, since the git hook layer sits outside any package path.
+_GITHOOKS = importlib.util.spec_from_file_location(
+    "githooks_for_push_guard",
+    pathlib.Path(__file__).resolve().parents[1] / "git" / "githooks.py",
+)
+if _GITHOOKS is None or _GITHOOKS.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/git/githooks.py is missing" % __file__)
+githooks = importlib.util.module_from_spec(_GITHOOKS)
+_GITHOOKS.loader.exec_module(githooks)
+
 RUN_TMP = runtmp.run_dir("guard-push-main-")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_push_to_protected_branch"]
 
@@ -171,7 +181,7 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
-MIRROR_HOST = "gitlab.rediacc.io"
+MIRROR_HOST = githooks.MIRROR_HOST
 MIRROR_URL = "https://%s/rediacc-org/github/console.git" % MIRROR_HOST
 
 
