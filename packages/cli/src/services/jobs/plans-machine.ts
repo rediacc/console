@@ -314,10 +314,10 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'subscription status': {
     form: 'command-kind',
     lock: 'read',
-    lockGap: { runs: 'license-status', overlap: 'read' },
+    lockFrom: 'license-status',
     timeout: '10m',
     box: 'J20',
     steps: ['renderSubscriptionStatus'],
-    note: `${NEW_KIND} (license-status)`,
+    note: 'the license-status command kind (renet d433dc9); the machine activation read stays HTTP',
   },
 };

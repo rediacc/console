@@ -19,7 +19,7 @@ import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
-import { fetchMissedTargets, fetchStaleBackups, fetchStaleBinaries } from './status.js';
+import { fetchMissedTargets, fetchStaleBackups, staleBinariesOf } from './status.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
   0: () => outputService.success(t('commands.machine.health.statusHealthy')),
@@ -261,10 +261,9 @@ export function registerHealthCommand(machine: Command, program: Command): void 
 
         const format = program.opts().output as OutputFormat;
         const listResult = parseListResult(machine.vaultStatus);
-        const [staleBinary, [staleBackups, missedTargets]] = await Promise.all([
-          fetchStaleBinaries(name),
-          backupStanding(name, listResult),
-        ]);
+        // The listing the machine record carries already holds the stale-process section.
+        const staleBinary = listResult ? staleBinariesOf(listResult) : null;
+        const [staleBackups, missedTargets] = await backupStanding(name, listResult);
         const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
         const health = applyStaleness(getMachineHealth(machine), {
           staleBinary,

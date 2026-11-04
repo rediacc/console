@@ -23,6 +23,9 @@ const COMMAND_KIND_ACCESS: Readonly<Record<string, RenetAccess>> = {
   'backup-status': 'read-only',
   'backup-journal': 'read-only',
   'backup-schedule': 'provision',
+  'license-status': 'read-only',
+  'license-scan': 'read-only',
+  'license-write': 'provision',
 };
 
 /** The access of a kind; an unknown kind reads, and renet refuses it against its own allow-list. */

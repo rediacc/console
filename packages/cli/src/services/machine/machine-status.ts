@@ -8,14 +8,8 @@
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import {
-  type RuntimeRepoLicenseStatus,
-  readRuntimeRepoLicenseStatuses,
-} from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
-import { acquireRemoteRenet } from '../renet/renet-execution.js';
-import { machineConnections } from './machine-connection.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
@@ -75,46 +69,4 @@ export async function fetchMachineStatus(
     throw new Error('Failed to parse renet output: unexpected format');
   }
   return parsed;
-}
-
-/**
- * The licensing detail `renet list` does not carry: which datastore each repo's
- * license lives in, the blocked-backup marker, and what the last unattended
- * renewal did.
- *
- * It is a second, deliberately separate read because `list`'s licenses section
- * is a generated contract shared with other consumers, while these three fields
- * come from `repository license-status`, which is also the only reader of the
- * machine-wide marker tree and renewal state. It runs over the SAME pooled
- * connection, so the cost is one exec of a local-only command.
- *
- * Best-effort by contract: an older renet that does not know `--all-datastores`
- * (or a machine with an unreadable datastore) must degrade the license table,
- * never fail `machine status`.
- */
-export async function fetchRepoLicenseDetail(
-  machineName: string
-): Promise<RuntimeRepoLicenseStatus[]> {
-  try {
-    const lease = await machineConnections.acquire(machineName);
-    try {
-      const { remotePath } = await acquireRemoteRenet(
-        'read-only',
-        await configService.getLocalConfig(),
-        lease.machine,
-        lease.sshPrivateKey,
-        { machineName }
-      );
-      return await readRuntimeRepoLicenseStatuses(
-        lease.machine,
-        lease.sshPrivateKey,
-        remotePath,
-        await lease.ensure()
-      );
-    } finally {
-      lease.release();
-    }
-  } catch {
-    return [];
-  }
 }

@@ -650,58 +650,53 @@ async function gatherStatus(
   missedTargets: MissedTargetRepo[];
   failedVerifies: FailedVerifyRepo[];
 }> {
-  const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
-    '../../services/machine/machine-status.js'
-  );
-  const wantsLicenses = sections.length === 0 || sections.includes('licenses');
+  const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
+  // The licence detail and the stale-binary probe ride the same list-all job as the rest: its `licenses` and
+  // `stale-processes` sections, so a filtered run asks for both next to what it was asked for.
+  const requested =
+    sections.length > 0 ? [...new Set([...sections, 'licenses', 'stale-processes'])] : undefined;
 
-  const [listResult, guidMap, machineConfig, licenseEntries, staleBinary] = await Promise.all([
+  const [listResult, guidMap, machineConfig] = await Promise.all([
     withSpinner(
       t('commands.machine.status.fetching', { machine: machineName }),
-      () =>
-        fetchMachineStatus(machineName, {
-          debug,
-          sections: sections.length > 0 ? sections : undefined,
-        }),
+      () => fetchMachineStatus(machineName, { debug, sections: requested }),
       t('commands.machine.status.fetched')
     ),
     loadGuidMap(),
     configService.getLocalMachine(machineName).catch(() => undefined),
-    wantsLicenses ? fetchRepoLicenseDetail(machineName) : Promise.resolve([]),
-    fetchStaleBinaries(machineName),
   ]);
+  const wantsLicenses = sections.length === 0 || sections.includes('licenses');
 
   return {
     listResult,
     guidMap,
     machineConfig,
-    licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
-    staleBinary,
+    licenseDetail: wantsLicenses ? licenseDetailOf(listResult) : new Map(),
+    staleBinary: staleBinariesOf(listResult),
     staleBackups: await fetchStaleBackups(machineName, listResult),
     missedTargets: await fetchMissedTargets(machineName, listResult),
     failedVerifies: failedVerifyRepos(listResult.backup_coverage),
   };
 }
 
+/** The per-repo licence detail of a listing, by repository GUID. */
+function licenseDetailOf(listResult: ListResult): Map<string, RuntimeRepoLicenseStatus> {
+  return new Map(
+    (listResult.license_statuses ?? []).map((entry) => [
+      entry.repositoryGuid,
+      entry as RuntimeRepoLicenseStatus,
+    ])
+  );
+}
+
 /**
- * renet processes still running a replaced binary (C4). Read from /proc over its own exec, so it
- * answers whatever renet version the machine has. Null when the probe could not run: unknown is
- * never reported as "none stale".
+ * renet processes still running a replaced binary, from the listing's `stale-processes` section. Null when
+ * the section is absent (a renet that predates it) or /proc was unreadable: unknown is never "none stale".
  */
-export async function fetchStaleBinaries(machineName: string): Promise<RenetProcess[] | null> {
-  try {
-    const { machineConnections } = await import('../../services/machine/machine-connection.js');
-    const { probeStaleRenetProcesses } = await import('../../services/renet/renet-daemons.js');
-    const { REMOTE_RENET_PATH } = await import('../../services/renet/renet-provisioner.js');
-    const lease = await machineConnections.acquire(machineName);
-    try {
-      return await probeStaleRenetProcesses(lease.sftp, REMOTE_RENET_PATH);
-    } finally {
-      lease.release();
-    }
-  } catch {
-    return null;
-  }
+export function staleBinariesOf(listResult: ListResult): RenetProcess[] | null {
+  const section = listResult.stale_processes;
+  if (section?.status !== 'ok' || !section.processes) return null;
+  return section.processes.map((p) => ({ pid: p.pid, unit: p.unit || '-', exe: p.exe }));
 }
 
 /** Repos whose latest run missed their declared target and that are not yet stale (D-rpo). */

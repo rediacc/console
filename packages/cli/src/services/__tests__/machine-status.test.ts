@@ -1,36 +1,29 @@
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchMachineStatus, fetchRepoLicenseDetail } from '../machine/machine-status.js';
+import { fetchMachineStatus } from '../machine/machine-status.js';
 
-const {
-  mockExecStreaming,
-  mockRelease,
-  mockAcquire,
-  mockConfigService,
-  mockAcquireRenet,
-  mockExecute,
-} = vi.hoisted(() => {
-  const mockExecStreaming = vi.fn();
-  const sftp = { execStreaming: mockExecStreaming };
-  const mockRelease = vi.fn();
-  const mockAcquire = vi.fn().mockResolvedValue({
-    sftp,
-    machine: { machineName: 'm1', ip: '127.0.0.1', user: 'root', port: 22 },
-    sshPrivateKey: 'dummy-key',
-    ensure: vi.fn().mockResolvedValue(sftp),
-    release: mockRelease,
+const { mockExecStreaming, mockAcquire, mockConfigService, mockAcquireRenet, mockExecute } =
+  vi.hoisted(() => {
+    const mockExecStreaming = vi.fn();
+    const sftp = { execStreaming: mockExecStreaming };
+    const mockRelease = vi.fn();
+    const mockAcquire = vi.fn().mockResolvedValue({
+      sftp,
+      machine: { machineName: 'm1', ip: '127.0.0.1', user: 'root', port: 22 },
+      sshPrivateKey: 'dummy-key',
+      ensure: vi.fn().mockResolvedValue(sftp),
+      release: mockRelease,
+    });
+    return {
+      mockExecStreaming,
+      mockAcquire,
+      mockExecute: vi.fn(),
+      mockConfigService: { getLocalConfig: vi.fn() },
+      mockAcquireRenet: vi
+        .fn()
+        .mockResolvedValue({ remotePath: '/usr/lib/rediacc/renet/current/renet' }),
+    };
   });
-  return {
-    mockExecStreaming,
-    mockRelease,
-    mockAcquire,
-    mockExecute: vi.fn(),
-    mockConfigService: { getLocalConfig: vi.fn() },
-    mockAcquireRenet: vi
-      .fn()
-      .mockResolvedValue({ remotePath: '/usr/lib/rediacc/renet/current/renet' }),
-  };
-});
 
 vi.mock('../machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
@@ -118,27 +111,5 @@ describe('fetchMachineStatus', () => {
   it('rejects unknown machines before any job', async () => {
     await expect(fetchMachineStatus('nope')).rejects.toThrow('Machine "nope" not found');
     expect(mockExecute).not.toHaveBeenCalled();
-  });
-});
-
-describe('fetchRepoLicenseDetail', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockConfigService.getLocalConfig.mockResolvedValue({
-      machines: { m1: { ip: '127.0.0.1', user: 'root', port: 22 } },
-    });
-  });
-
-  it('resolves renet read-only, never provisioning it', async () => {
-    await fetchRepoLicenseDetail('m1');
-
-    expect(mockAcquireRenet).toHaveBeenCalledTimes(1);
-    expect(mockAcquireRenet.mock.calls[0][0]).toBe('read-only');
-  });
-
-  it('releases the lease', async () => {
-    await fetchRepoLicenseDetail('m1');
-
-    expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 });

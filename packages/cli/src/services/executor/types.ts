@@ -105,7 +105,7 @@ export interface ExecuteOptions {
   params?: Record<string, unknown>;
   /**
    * Run an allow-listed renet command kind (`job start --command <name> --args <json>`, section 14) instead of a vault
-   * function: `setup`, `list-all`, `backup-unit`, `daemons-restart`, `backup-cancel`, `backup-status`, `backup-schedule` and `backup-journal`. `functionName`
+   * function: `setup`, `list-all`, `backup-unit`, `daemons-restart`, `backup-cancel`, `backup-status`, `backup-schedule`, `backup-journal`, `license-status`, `license-scan` and `license-write`. `functionName`
    * then names the kind (the ticket and the lock class read it), `params` stays empty, and the job carries no vault.
    * `args` is JSON for the argv builder in renet, never a secret.
    */
@@ -113,7 +113,7 @@ export interface ExecuteOptions {
     name: string;
     args?: Record<string, unknown>;
     /**
-     * A blob the kind reads from stdin (`backup-schedule`'s plan, which carries env files with credentials). renet stages
+     * A blob the kind reads from stdin (`backup-schedule`'s plan, which carries env files with credentials, and `license-write`'s signed blob). renet stages
      * it through the 0600 tmpfs file a vault uses, so it never reaches an argument, the status file or the ticket.
      */
     payload?: string;
