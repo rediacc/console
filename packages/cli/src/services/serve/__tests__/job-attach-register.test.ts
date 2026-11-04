@@ -200,6 +200,11 @@ describe('a retried POST of a verb that registers before its job', () => {
     return last;
   }
 
+  function expectDuplicate(line: StreamLine): void {
+    expect(line).toMatchObject({ result: { success: false } });
+    expect(JSON.stringify(line)).toMatch(/already exists/i);
+  }
+
   const verbs = {
     'repo create': () =>
       ['repo create', { machine: 'hostinger', size: '1G' }, { name: 'fresh' }] as const,
@@ -280,7 +285,7 @@ describe('a retried POST of a verb that registers before its job', () => {
       requestId: REQUEST_ID,
     });
 
-    expect(moved).toMatchObject({ result: { success: false } });
+    expectDuplicate(moved);
     expect([...jobs.keys()]).toHaveLength(1);
   });
 
@@ -291,7 +296,7 @@ describe('a retried POST of a verb that registers before its job', () => {
       requestId: REQUEST_ID,
     });
 
-    expect(resized).toMatchObject({ result: { success: false } });
+    expectDuplicate(resized);
     expect([...jobs.keys()]).toHaveLength(1);
   });
 
@@ -302,7 +307,7 @@ describe('a retried POST of a verb that registers before its job', () => {
       requestId: REQUEST_ID,
     });
 
-    expect(hardened).toMatchObject({ result: { success: false } });
+    expectDuplicate(hardened);
     expect([...jobs.keys()]).toHaveLength(1);
   });
 
@@ -312,7 +317,7 @@ describe('a retried POST of a verb that registers before its job', () => {
 
     const moved = await run(...verbs['repo fork'](), { requestId: REQUEST_ID });
 
-    expect(moved).toMatchObject({ result: { success: false } });
+    expectDuplicate(moved);
     expect([...jobs.keys()]).toHaveLength(1);
   });
 
@@ -324,7 +329,7 @@ describe('a retried POST of a verb that registers before its job', () => {
 
     const retried = await run(...verbs['repo fork'](), { requestId: REQUEST_ID });
 
-    expect(retried).toMatchObject({ result: { success: false } });
+    expectDuplicate(retried);
     expect([...jobs.keys()]).toHaveLength(1);
   });
 });
