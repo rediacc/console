@@ -35,6 +35,26 @@ def _load(name, path):
 
 
 runtmp = _load("runtmp", REPO_ROOT / ".ci" / "rediacc_ci" / "runtmp.py")
+wellknown = _load("wellknown_for_origin_clone", HOOKS / "wellknown.py")
+
+
+def _wk(command):
+    """A table row's command with each `<NAME>` token spelled from the registry, so no owned value is typed here."""
+    for token, value in (
+        ("<GHO_TOKEN>", wellknown.GH_ORIGIN.replace("://", "://x-access-token:t0k@")),
+        ("<GHO_HTTP>", wellknown.GH_ORIGIN.replace("https", "http")),
+        ("<GHO>", wellknown.GH_ORIGIN),
+        ("<GH>", wellknown.GH_REPO),
+        ("<RENET>", wellknown.RENET_REPO),
+        ("<ACCOUNT>", wellknown.ACCOUNT_REPO),
+        ("<ELITE>", wellknown.ELITE_REPO),
+        ("<TAP>", wellknown.HOMEBREW_TAP_REPO),
+        ("<MIRROR>", wellknown.GITLAB_MIRROR_HOST),
+    ):
+        command = command.replace(token, value)
+    return command
+
+
 TMP = pathlib.Path(runtmp.run_dir("guard-origin-clone-"))
 
 GIT_ENV = dict(
@@ -64,14 +84,14 @@ def _repo(name, origin=None):
     return str(path)
 
 
-CONSOLE = "https://github.com/rediacc/console.git"
-RENET = "https://github.com/rediacc/renet.git"
+CONSOLE = "%s/%s.git" % (wellknown.GH_ORIGIN, wellknown.GH_REPO)
+RENET = "%s/%s.git" % (wellknown.GH_ORIGIN, wellknown.RENET_REPO)
 FIXTURE = _repo("fixture")
 FIXTURE_FOREIGN = _repo("fixture-foreign", origin="https://example.invalid/other/app.git")
 OLD_CLONE = _repo("old-clone", origin=CONSOLE)
 OLD_LOCAL = _repo("old-local", origin=ROOT)
 # git reads an existing directory as a path before a colon as a host.
-_repo("github.com:rediacc/console")
+_repo("github.com:%s" % wellknown.GH_REPO)
 EMPTY_DIR = TMP / "scripts"
 EMPTY_DIR.mkdir()
 X = str(TMP / "x")
@@ -99,36 +119,36 @@ SH_FIXTURE.write_text("#!/bin/sh\ngit clone %s %s\n" % (FIXTURE, X), encoding="u
 
 REFUSED = [
     # Every spelling of the console's origin.
-    ("https", "git clone https://github.com/rediacc/console.git /tmp/x"),
-    ("https, no .git", "git clone https://github.com/rediacc/console /tmp/x"),
-    ("https, a trailing slash", "git clone https://github.com/rediacc/console/ /tmp/x"),
-    ("http", "git clone http://github.com/rediacc/console.git /tmp/x"),
-    ("git protocol", "git clone git://github.com/rediacc/console.git /tmp/x"),
-    ("ssh url", "git clone ssh://git@github.com/rediacc/console.git /tmp/x"),
-    ("ssh url with a port", "git clone ssh://git@ssh.github.com:443/rediacc/console.git /tmp/x"),
-    ("scp form", "git clone git@github.com:rediacc/console.git /tmp/x"),
-    ("scp form, no user or .git", "git clone github.com:rediacc/console /tmp/x"),
+    ("https", "git clone <GHO>/<GH>.git /tmp/x"),
+    ("https, no .git", "git clone <GHO>/<GH> /tmp/x"),
+    ("https, a trailing slash", "git clone <GHO>/<GH>/ /tmp/x"),
+    ("http", "git clone <GHO_HTTP>/<GH>.git /tmp/x"),
+    ("git protocol", "git clone git://github.com/<GH>.git /tmp/x"),
+    ("ssh url", "git clone ssh://git@github.com/<GH>.git /tmp/x"),
+    ("ssh url with a port", "git clone ssh://git@ssh.github.com:443/<GH>.git /tmp/x"),
+    ("scp form", "git clone git@github.com:<GH>.git /tmp/x"),
+    ("scp form, no user or .git", "git clone github.com:<GH> /tmp/x"),
     (
         "a token in the url",
-        "git clone https://x-access-token:t0k@github.com/rediacc/console /tmp/x",
+        "git clone <GHO_TOKEN>/<GH> /tmp/x",
     ),
     ("case folded", "git clone https://GitHub.com/Rediacc/Console.git /tmp/x"),
-    ("percent encoded", "git clone https://github.com/rediacc/c%6Fnsole.git /tmp/x"),
-    ("no target", "git clone https://github.com/rediacc/console.git"),
-    ("target under home", "git clone https://github.com/rediacc/console.git ~/x"),
-    ("target in the cache", "git clone https://github.com/rediacc/console.git ~/.cache/x"),
+    ("percent encoded", "git clone <GHO>/rediacc/c%6Fnsole.git /tmp/x"),
+    ("no target", "git clone <GHO>/<GH>.git"),
+    ("target under home", "git clone <GHO>/<GH>.git ~/x"),
+    ("target in the cache", "git clone <GHO>/<GH>.git ~/.cache/x"),
     # Each submodule, https and ssh.
-    ("renet", "git clone https://github.com/rediacc/renet.git /tmp/x"),
-    ("account", "git clone https://github.com/rediacc/account.git /tmp/x"),
-    ("elite", "git clone https://github.com/rediacc/elite.git /tmp/x"),
-    ("homebrew-tap", "git clone https://github.com/rediacc/homebrew-tap.git /tmp/x"),
-    ("renet ssh", "git clone git@github.com:rediacc/renet.git /tmp/x"),
-    ("account ssh", "git clone ssh://git@github.com/rediacc/account.git /tmp/x"),
-    ("elite ssh", "git clone git@github.com:rediacc/elite.git /tmp/x"),
-    ("homebrew-tap ssh", "git clone git@github.com:rediacc/homebrew-tap.git /tmp/x"),
+    ("renet", "git clone <GHO>/<RENET>.git /tmp/x"),
+    ("account", "git clone <GHO>/<ACCOUNT>.git /tmp/x"),
+    ("elite", "git clone <GHO>/<ELITE>.git /tmp/x"),
+    ("homebrew-tap", "git clone <GHO>/<TAP>.git /tmp/x"),
+    ("renet ssh", "git clone git@github.com:<RENET>.git /tmp/x"),
+    ("account ssh", "git clone ssh://git@github.com/<ACCOUNT>.git /tmp/x"),
+    ("elite ssh", "git clone git@github.com:<ELITE>.git /tmp/x"),
+    ("homebrew-tap ssh", "git clone git@github.com:<TAP>.git /tmp/x"),
     # The mirror.
-    ("gitlab mirror", "git clone https://gitlab.rediacc.io/rediacc-org/github/console.git /tmp/x"),
-    ("gitlab mirror ssh", "git clone git@gitlab.rediacc.io:rediacc-org/github/renet.git /tmp/x"),
+    ("gitlab mirror", "git clone https://<MIRROR>/rediacc-org/github/console.git /tmp/x"),
+    ("gitlab mirror ssh", "git clone git@<MIRROR>:rediacc-org/github/renet.git /tmp/x"),
     # A local path in this checkout or its git directory.
     ("--shared of the checkout", "git clone --shared %s /tmp/x" % ROOT),
     ("--local of the checkout", "git clone --local %s /tmp/x" % ROOT),
@@ -166,13 +186,13 @@ REFUSED = [
     ("options after the source", "git clone %s /tmp/x --depth 1" % CONSOLE),
     ("--reference beside our source", "git clone --reference %s %s /tmp/x" % (FIXTURE, CONSOLE)),
     # gh.
-    ("gh owner/repo", "gh repo clone rediacc/console"),
-    ("gh owner/repo with a target", "gh repo clone rediacc/renet /tmp/x"),
+    ("gh owner/repo", "gh repo clone <GH>"),
+    ("gh owner/repo with a target", "gh repo clone <RENET> /tmp/x"),
     ("gh with a url", "gh repo clone %s /tmp/x" % CONSOLE),
-    ("gh with host/owner/repo", "gh repo clone github.com/rediacc/account"),
-    ("gh with git flags", "gh repo clone rediacc/console /tmp/x -- --depth 1"),
-    ("gh with its own flag", "gh repo clone -u up rediacc/console /tmp/x"),
-    ("gh fork --clone", "gh repo fork rediacc/console --clone"),
+    ("gh with host/owner/repo", "gh repo clone github.com/<ACCOUNT>"),
+    ("gh with git flags", "gh repo clone <GH> /tmp/x -- --depth 1"),
+    ("gh with its own flag", "gh repo clone -u up <GH> /tmp/x"),
+    ("gh fork --clone", "gh repo fork <GH> --clone"),
     # Wrappers.
     ("sh -c", 'sh -c "git clone %s /tmp/x"' % CONSOLE),
     ("bash -c", "bash -c 'git clone --shared %s /tmp/x'" % ROOT),
@@ -187,7 +207,7 @@ REFUSED = [
     ("a path to git", "/usr/bin/git clone %s /tmp/x" % CONSOLE),
     ("a global -c", "git -c a=b clone %s /tmp/x" % CONSOLE),
     ("a verb in a variable", "V=clone; git $V %s /tmp/x" % CONSOLE),
-    ("a rewrite by -c", "git -c url.https://github.com/.insteadOf=gh: clone gh:rediacc/console /x"),
+    ("a rewrite by -c", "git -c url.<GHO>/.insteadOf=gh: clone gh:<GH> /x"),
     ("xargs", "echo %s | xargs git clone" % CONSOLE),
     ("xargs -I", "echo %s | xargs -I{} git clone {} /tmp/x" % CONSOLE),
     ("find -exec", r"find . -maxdepth 0 -exec git clone %s /tmp/x \;" % CONSOLE),
@@ -270,13 +290,13 @@ ALLOWED = [
     ("a real fixture", "git clone %s /tmp/y" % FIXTURE),
     ("a real fixture with a foreign origin", "git clone %s /tmp/y" % FIXTURE_FOREIGN),
     ("a fixture into this checkout", "git clone %s private/zz-probe" % FIXTURE),
-    ("an unrelated url", "git clone https://github.com/torvalds/linux.git /tmp/y"),
-    ("the same name under another owner", "git clone https://github.com/acme/console.git /tmp/y"),
-    ("another repo of the owner", "git clone https://github.com/rediacc/website.git /tmp/y"),
-    ("a name extending ours", "git clone https://github.com/rediacc/console-docs.git /tmp/y"),
-    ("another mirror group", "git clone https://gitlab.rediacc.io/other/console.git /tmp/y"),
-    ("a foreign host", "git clone https://example.invalid/rediacc/console.git /tmp/y"),
-    ("a scp form elsewhere", "git clone git@example.invalid:rediacc/console.git /tmp/y"),
+    ("an unrelated url", "git clone <GHO>/torvalds/linux.git /tmp/y"),
+    ("the same name under another owner", "git clone <GHO>/acme/console.git /tmp/y"),
+    ("another repo of the owner", "git clone <GHO>/rediacc/website.git /tmp/y"),
+    ("a name extending ours", "git clone <GHO>/rediacc/console-docs.git /tmp/y"),
+    ("another mirror group", "git clone https://<MIRROR>/other/console.git /tmp/y"),
+    ("a foreign host", "git clone https://example.invalid/<GH>.git /tmp/y"),
+    ("a scp form elsewhere", "git clone git@example.invalid:<GH>.git /tmp/y"),
     (
         "--reference to ours for a foreign source",
         "git clone --reference %s https://example.invalid/a.git /tmp/y" % ROOT,
@@ -285,8 +305,8 @@ ALLOWED = [
     ("an unknown scratch variable", 'T=$(mktemp -d); git init -q "$T/a"; git clone "$T/a" "$T/b"'),
     ("gh elsewhere", "gh repo clone torvalds/linux /tmp/y"),
     ("gh with a bare name", "gh repo clone console"),
-    ("gh repo view of ours", "gh repo view rediacc/console"),
-    ("gh fork with no clone", "gh repo fork rediacc/console"),
+    ("gh repo view of ours", "gh repo view <GH>"),
+    ("gh fork with no clone", "gh repo fork <GH>"),
     # Mentions.
     ("echo", "echo git clone %s /tmp/x" % CONSOLE),
     ("echo of a local path", "echo git clone --shared %s /tmp/x" % ROOT),
@@ -372,7 +392,7 @@ RELATIVE = [
     (
         "a directory shaped like a host form",
         False,
-        "git clone github.com:rediacc/console /tmp/y",
+        "git clone github.com:<GH> /tmp/y",
         str(TMP),
     ),
     ("a -C into a fixture leaves the checkout", False, "git -C %s clone . /tmp/y" % FIXTURE, ROOT),
@@ -380,6 +400,10 @@ RELATIVE = [
     ("a bare fetch of a tree with our origin", True, "git fetch", OLD_CLONE),
     ("a bare fetch of a foreign tree", False, "git fetch", FIXTURE_FOREIGN),
 ]
+
+REFUSED = [(name, _wk(command)) for name, command in REFUSED]
+ALLOWED = [(name, _wk(command)) for name, command in ALLOWED]
+RELATIVE = [(name, ours, _wk(command), cwd) for name, ours, command, cwd in RELATIVE]
 
 
 def _payload(command, cwd):

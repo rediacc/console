@@ -19,6 +19,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy, deploy_record
 from rediacc_ci.deploy import executor_artifacts as ea
 from rediacc_ci.release import renet_key_gate
+from rediacc_ci.well_known import RENET_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -102,8 +103,8 @@ def renet_blob(
     """A binary as Go lays one out: its build info, then the end sentinel, then an embedded asset's stamp that must not be read."""
     ldflags = "-s -w -X main.Version=%s" % version
     if key is not None:
-        ldflags += " -X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=%s" % key
-    lines = ["path\tgithub.com/rediacc/renet/cmd/renet", 'build\t-ldflags="%s"' % ldflags]
+        ldflags += " -X github.com/%s/pkg/license/keys.ProductionPublicKey=%s" % (RENET_REPO, key)
+    lines = ["path\tgithub.com/%s/cmd/renet" % RENET_REPO, 'build\t-ldflags="%s"' % ldflags]
     if tags:
         lines.append("build\t-tags=%s" % tags)
     if revision is not None:

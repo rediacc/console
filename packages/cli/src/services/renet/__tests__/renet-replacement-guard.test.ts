@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { WK_RENET_REPO } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CliExitError } from '../../../utils/cli-exit-error.js';
 
@@ -64,7 +65,7 @@ function renetBytes(version: string | null): Buffer {
   return Buffer.concat([
     Buffer.from('\x7fELF junk'),
     Buffer.from(
-      `path\tgithub.com/rediacc/renet/cmd/renet\nmod\tgithub.com/rediacc/renet\t(devel)\t\n${ldflags}build\tvcs.revision=${REVISION}\n`
+      `path\tgithub.com/${WK_RENET_REPO}/cmd/renet\nmod\tgithub.com/${WK_RENET_REPO}\t(devel)\t\n${ldflags}build\tvcs.revision=${REVISION}\n`
     ),
     MODINFO_END,
     Buffer.from(`trailing -X main.Version=9.9.9 from an embedded asset`),

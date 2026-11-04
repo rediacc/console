@@ -171,7 +171,16 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
-MIRROR_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
+_WK = importlib.util.spec_from_file_location(
+    "wellknown_for_push_guard", pathlib.Path(__file__).resolve().parents[1] / "wellknown.py"
+)
+if _WK is None or _WK.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/wellknown.py is missing" % __file__)
+wellknown = importlib.util.module_from_spec(_WK)
+_WK.loader.exec_module(wellknown)
+
+MIRROR_HOST = wellknown.GITLAB_MIRROR_HOST
+MIRROR_URL = "https://%s/rediacc-org/github/console.git" % MIRROR_HOST
 
 
 def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=False):
@@ -207,7 +216,7 @@ def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=
 MIRROR = _make_mirror()
 MIRROR_FEATURE = _make_mirror(on_main=False)
 MIRROR_WRONG_URL = _make_mirror(url="https://gitlab.example.invalid/rediacc-org/github/console.git")
-MIRROR_WRONG_PATH = _make_mirror(url="https://gitlab.rediacc.io/someone/else.git")
+MIRROR_WRONG_PATH = _make_mirror(url="https://%s/someone/else.git" % MIRROR_HOST)
 MIRROR_AHEAD = _make_mirror(ahead=True)
 MIRROR_BEHIND = _make_mirror(behind=True)
 MIRROR_NO_REMOTE = _make_mirror(url=None)

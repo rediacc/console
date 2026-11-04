@@ -1,3 +1,4 @@
+import { WK_RENET_REPO } from '@rediacc/shared/config/well-known.generated';
 import { compareVersions } from '../update/updater.js';
 
 /**
@@ -13,7 +14,7 @@ export type RenetRefusalCode =
   | 'RENET_UPLOAD_REFUSED_IN_EXECUTOR';
 
 /** Where a Go binary's build info starts, for renet's own module: an embedded Go asset carries another. */
-const RENET_MODINFO_START = Buffer.from('path\tgithub.com/rediacc/renet/cmd/renet\n');
+const RENET_MODINFO_START = Buffer.from(`path\tgithub.com/${WK_RENET_REPO}/cmd/renet\n`);
 /** The sentinel Go writes after the build info (cmd/go/internal/modload `infoEnd`). */
 const GO_MODINFO_END = Buffer.from('f932433186182072008242104116d8f2', 'hex');
 /** A bound on the build-info text, so a file with no end sentinel cannot make this read the rest. */
