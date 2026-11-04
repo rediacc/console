@@ -7,7 +7,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "4adc1e01cb49b8f3"
+sourceHash: "073f6ddd68146592"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2325,6 +2325,57 @@ rdc repo gpu revoke <ref> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--device <cdi-name>` | {{t:cli.commands.repo.gpu.deviceOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-permission"></a>
+### 6.34 permission
+
+{{t:cli.commands.repo.permission.description}}
+
+<a id="cli-local-repo-permission-grant"></a>
+#### grant
+
+{{t:cli.commands.repo.permission.grant.description}}
+
+```bash
+rdc repo permission grant <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--root` | {{t:cli.commands.repo.permission.grant.rootOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--path <path>` | {{t:cli.commands.repo.permission.grant.pathOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-permission-revoke"></a>
+#### revoke
+
+{{t:cli.commands.repo.permission.revoke.description}}
+
+```bash
+rdc repo permission revoke <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--root` | {{t:cli.commands.repo.permission.revoke.rootOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--path <path>` | {{t:cli.commands.repo.permission.revoke.pathOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-permission-show"></a>
+#### show
+
+{{t:cli.commands.repo.permission.show.description}}
+
+```bash
+rdc repo permission show <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
