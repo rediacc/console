@@ -120,7 +120,7 @@ export class JobOverlapRefusedError extends CliExitError {
  * the code the client-side presence probe this replaces refused with, and for
  * `repo_present` the same text, so the routing contradiction reads as before.
  */
-class JobPreconditionRefusedError extends CliExitError {
+export class JobPreconditionRefusedError extends CliExitError {
   constructor(
     readonly refusal: PreconditionRefusal,
     machineName: string

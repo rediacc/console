@@ -14,8 +14,10 @@
  * person who finds out during a restore.
  */
 
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { outputService } from '../core/output.js';
+import { JobPreconditionRefusedError } from '../executor/detached-execution.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
 import { bindStepHandler, planStep } from '../jobs/steps.js';
 import { runClusterPhase } from './cluster-job.js';
@@ -94,7 +96,19 @@ export async function createClusterSnapshot(
         }),
       ],
     }
-  );
+  ).catch((error: unknown) => {
+    // The refusal replaces a client-side throw that named the fallback, so the fallback rides the refusal text.
+    if (
+      error instanceof JobPreconditionRefusedError &&
+      error.refusal.expect === 'ceph_datastores_exist'
+    ) {
+      throw new CliExitError(
+        error.code,
+        `${error.message} Snapshot its datastores individually: rdc datastore snapshot create <name>.`
+      );
+    }
+    throw error;
+  });
   if (closing.pending) return;
   if (closing.unfinished.length > 0) {
     throw new Error(`Cluster snapshot "${snapshot}" was taken, but its report did not finish.`);

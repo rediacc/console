@@ -575,6 +575,60 @@ describe('cluster verbs (one job per phase, one ticket per phase)', () => {
     expect(m.success).toHaveBeenCalledOnce();
   });
 
+  it('snapshot create: renet refusing for no ceph datastore names the per-datastore fallback, with the exit code kept', async () => {
+    const { createClusterSnapshot } = await import('../../services/cluster/cluster-snapshot.js');
+    const { JobPreconditionRefusedError } = await import(
+      '../../services/executor/detached-execution.js'
+    );
+    respond = (o) => {
+      if (o.functionName === 'datastore_snapshot_create') {
+        throw new JobPreconditionRefusedError(
+          {
+            refused: 'precondition',
+            expect: 'ceph_datastores_exist',
+            state: 'none',
+            repository: '',
+            repo_guid: '',
+            message: 'Cluster c1 has no ceph-backed datastore.',
+          },
+          'c1-cp-1'
+        );
+      }
+      return o.functionName === 'datastore_list' ? { ...FINISHED, stdout: '[]' } : undefined;
+    };
+    const failure = await createClusterSnapshot('c1', { snapshot: 's1' }).catch((e: unknown) => e);
+    expect(failure).toMatchObject({
+      message: expect.stringContaining('rdc datastore snapshot create <name>'),
+      code: 'STATE_MISMATCH',
+    });
+    expect((failure as Error).message).toContain('Cluster c1 has no ceph-backed datastore.');
+  });
+
+  it('control: a refusal of another kind passes through without the snapshot hint', async () => {
+    const { createClusterSnapshot } = await import('../../services/cluster/cluster-snapshot.js');
+    const { JobPreconditionRefusedError } = await import(
+      '../../services/executor/detached-execution.js'
+    );
+    respond = (o) => {
+      if (o.functionName === 'datastore_snapshot_create') {
+        throw new JobPreconditionRefusedError(
+          {
+            refused: 'precondition',
+            expect: 'repo_unmounted',
+            state: 'mounted',
+            repository: 'r',
+            repo_guid: 'g',
+            message: 'still mounted',
+          },
+          'c1-cp-1'
+        );
+      }
+      return o.functionName === 'datastore_list' ? { ...FINISHED, stdout: '[]' } : undefined;
+    };
+    const failure = await createClusterSnapshot('c1', { snapshot: 's1' }).catch((e: unknown) => e);
+    expect((failure as Error).message).toBe('still mounted');
+  });
+
   it('snapshot create handed back claims no snapshot', async () => {
     const { createClusterSnapshot } = await import('../../services/cluster/cluster-snapshot.js');
     respond = (o) =>
