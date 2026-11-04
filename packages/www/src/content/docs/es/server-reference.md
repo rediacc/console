@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: es
-sourceHash: "a64de9af83bd943a"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "f44f082dfde1c0f4"
+sourceCommit: "6070e89a722d3b5ac511023f5ee069a3bb8f1317"
 ---
 
 # Referencia del Servidor
@@ -195,14 +195,17 @@ Enviar backups a otra máquina. Los snapshots del almacenamiento fragmentado se 
 ```bash
 # Push to remote machine (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
-  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
+  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup \
+  --dest-known-hosts {known-hosts-base64}
 
 # Pull from remote
 renet backup pull --name {uuid} --network-id {id} --source machine \
-  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup
+  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup \
+  --src-known-hosts {known-hosts-base64}
 
 # List remote backups
-renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
+renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
+  --src-known-hosts {known-hosts-base64}
 ```
 
 > La mayoría de los usuarios debería usar `rdc repo push/pull` en su lugar. Los comandos `rdc` gestionan automáticamente las credenciales y la resolución de máquinas.
